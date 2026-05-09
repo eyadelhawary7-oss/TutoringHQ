@@ -336,6 +336,20 @@ export async function applyCardOrderTransition(
 
   await enrichLatestTransitionRow(supabase, orderId, options);
 
+  if (lifecyclePatch.status !== undefined) {
+    const prev = String(snapshot.status);
+    const next = String(lifecyclePatch.status);
+    if (prev.toLowerCase() !== next.toLowerCase()) {
+      void import('@/lib/cardOrderNotifications')
+        .then(({ sendCardOrderStatusUpdate }) =>
+          sendCardOrderStatusUpdate(orderId, prev, next).catch((e) =>
+            console.error('[cardOrderState] sendCardOrderStatusUpdate', e),
+          ),
+        )
+        .catch((e) => console.error('[cardOrderState] notify import', e));
+    }
+  }
+
   const nextStatus = (lifecyclePatch.status as string | undefined) ?? snapshot.status;
   const nextPay = (lifecyclePatch.payment_status as string | undefined) ?? snapshot.payment_status;
   const nextRef =

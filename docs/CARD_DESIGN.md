@@ -95,3 +95,15 @@ Row-level history: `card_order_status_transitions` (trigger on `status` changes)
 - Footer / compliance: tax registration string from **`platform_config.ehg_tax_registration`** (placeholder until finance confirms).
 - If **`refund_status` is non-null**, the PDF includes a short refund block (status, optional payout date, amount).
 - **`GET /api/orders/[orderId]/receipt`** returns **422** while `status` is `pending_payment` or `failed`; successful PDF filename pattern **`centerhq-order-<LAST8>.pdf`**.
+
+## Notifications
+
+- **WhatsApp:** Every transition that changes `card_orders.status` fires `sendCardOrderStatusUpdate` from `src/lib/cardOrderNotifications.ts` (hooked via `applyCardOrderTransition` in `src/lib/cardOrderState.ts`). Sends use Meta templates listed in **`docs/WA_TEMPLATES.md`** (dedicated templates where approved, otherwise **`chq_card_order_status_update`** with `order_id`, `status_label`, `centre_name`). Each send is **deduped** per `(card_order_id, to_status)` in **`card_order_status_wa_dedupe`** and queued to **`webhook_outbox`** (`job_type`: `send_card_order_status_wa`) for **`GET /api/cron/process-outbox`** retries.
+- **In-app:** Same hook inserts **`in_app_notifications`** rows for all **`users`** with role **`owner`** or **`assistant`** on the centre (`kind`: `card_order_status_update`). Bell UI: `src/components/notifications/NotificationBell.tsx`; list: **`/[locale]/notifications`**; APIs: **`GET /api/notifications`**, **`PATCH /api/notifications/[id]/mark-read`**, **`PATCH /api/notifications/mark-all-read`**.
+- **Bosta drift:** **`GET /api/cron/sync-bosta-card-orders`** polls Bosta for tracking numbers when the centre portal might miss webhooks; transitions still go through **`applyCardOrderTransition`** so WhatsApp + in-app stay consistent.
+
+## Mobile UX patterns (orders / checkout)
+
+- **Cart:** Swipe-to-reveal actions on student rows (`CardOrderCartItemRow`) on small screens; sticky cart/checkout bar (`CardOrderMobileStickyFooter`); recommendations when the cart is empty (`CartRecommendations` + **`GET /api/orders/recommendations`**); recently viewed students via **`recentlyViewedStudents.<center_id>`** in `localStorage` (`src/lib/recentlyViewedStudents.ts`).
+- **Checkout:** Step indicator is **sticky** on narrow viewports with **`role="progressbar"`** on the step list; order summary uses a **collapsible bottom sheet** on mobile (`CheckoutShell`).
+- **Cart data:** `CardOrderCartProvider` uses **SWR** (`useSWR`) for stale-while-revalidate against **`GET /api/card-order-cart`**.

@@ -15,6 +15,7 @@ import {
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { CardOrderCartHeader } from '@/components/orders/CardOrderCartHeader';
 import { CardOrderCartContents } from '@/components/orders/CardOrderCartContents';
+import { CardOrderMobileStickyFooter } from '@/components/orders/CardOrderMobileStickyFooter';
 import { useCardOrderCart } from '@/hooks/useCardOrderCart';
 import { useToast } from '@/components/ui/ToastProvider';
 
@@ -136,7 +137,7 @@ export default function OrdersPageClient({
   const locale = useLocale();
   const router = useRouter();
   const { toast } = useToast();
-  const { refresh } = useCardOrderCart();
+  const { refresh, activeItemCount } = useCardOrderCart();
 
   const pageSize = 20;
 
@@ -307,7 +308,13 @@ export default function OrdersPageClient({
   const estimateZoneEn = liveGov ? getShippingZone(liveGov, bostaShippingRates) : '';
 
   return (
-    <div className="min-h-screen w-full bg-[var(--color-surface-0)] animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
+    <div
+      className={`min-h-screen w-full bg-[var(--color-surface-0)] animate-fade-in md:pb-0 ${
+        activeItemCount > 0
+          ? 'pb-[calc(120px+env(safe-area-inset-bottom,0px)+56px)] md:pb-0'
+          : 'pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0'
+      }`}
+    >
       <div className="px-4 pt-4 pb-6 max-w-3xl mx-auto w-full">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
           <div>
@@ -351,7 +358,8 @@ export default function OrdersPageClient({
         ) : null}
 
         <CardOrderCartHeader />
-        <CardOrderCartContents studentsForPicker={students} />
+        <CardOrderCartContents studentsForPicker={students} centerId={centerId} />
+        <CardOrderMobileStickyFooter />
 
         <div className="mt-10 border-t border-[var(--color-border-subtle)] pt-8">
           <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{t('orderHistorySection')}</h2>

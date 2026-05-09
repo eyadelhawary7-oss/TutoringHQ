@@ -3728,6 +3728,7 @@
       "removeFromCart": "إزالة",
       "saveForLater": "حفظ لاحقًا",
       "moveToCart": "نقل إلى السلة",
+      "remove": "إزالة",
       "removedFromCenter": "لم يعد في المركز",
       "alreadyHasCard": "تم تسليم البطاقة",
       "cardPending": "البطاقة قيد التنفيذ"
@@ -4013,6 +4014,37 @@
     "pageNext": "التالي",
     "emptyFiltered": "لا توجد طلبات مطابقة.",
     "showing": "عرض {from}-{to} من {total}"
+  },
+  "notifications": {
+    "bellAria": "الإشعارات",
+    "dropdownTitle": "الإشعارات",
+    "empty": "لا توجد إشعارات بعد.",
+    "markAllRead": "تعليم الكل كمقروء",
+    "viewAll": "عرض الكل",
+    "pageTitle": "الإشعارات"
+  },
+  "recommendations": {
+    "withoutCardsTitle": "طلاب بلا بطاقات بعد",
+    "addAll": "إضافة الكل إلى السلة",
+    "addSelected": "إضافة المحدد ({count})",
+    "recentlyAddedTitle": "طلاب مضافون مؤخرًا",
+    "recentlyAddedHint": "قد يحتاج هؤلاء الطلاب إلى بطاقات.",
+    "recentlyViewedTitle": "شوهدوا مؤخرًا",
+    "addToCart": "أضف إلى السلة",
+    "inCart": "في السلة",
+    "reorderSectionTitle": "إعادة طلب سابق",
+    "reorder": "إعادة الطلب"
+  },
+  "mobile": {
+    "cart": {
+      "liveCartSummary": "تحديث السلة: {count} بطاقات، الإجمالي {total}"
+    },
+    "checkout": {
+      "summaryToggle": "ملخص الطلب",
+      "summaryExpand": "عرض التفاصيل",
+      "summaryCollapse": "إخفاء التفاصيل",
+      "dragHandle": "تغيير حجم لوحة الملخص"
+    }
   },
   "cardOrders": {
     "orderIdCards": "بطاقات معرّف الطلب",

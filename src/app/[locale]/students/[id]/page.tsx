@@ -8,6 +8,7 @@ import { dbSelect } from '@/lib/db-proxy';
 import { useCardOrderCart } from '@/hooks/useCardOrderCart';
 import { useToast } from '@/components/ui/ToastProvider';
 import { ArrowLeft } from 'lucide-react';
+import { pushRecentlyViewedStudent } from '@/lib/recentlyViewedStudents';
 
 type StudentRow = { id: string; name: string; student_number?: string | null };
 
@@ -57,6 +58,10 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
             : null;
         if (cancelled) return;
         setStudent(row);
+
+        if (row && cid) {
+          pushRecentlyViewedStudent(cid, { id: row.id, name: row.name });
+        }
 
         if (row && session.access_token) {
           const stRes = await fetch('/api/card-order-cart/student-card-status', {

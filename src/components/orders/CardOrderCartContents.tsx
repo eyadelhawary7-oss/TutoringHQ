@@ -9,14 +9,19 @@ import type { HydratedCartItem } from '@/lib/card-order-cart/server';
 import { formatCurrency } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { StudentPickerDrawer, type StudentPickerRow } from '@/components/orders/StudentPickerDrawer';
+import { CartRecommendations } from '@/components/orders/CartRecommendations';
+import { CardOrderCartItemRow } from '@/components/orders/CardOrderCartItemRow';
 
 export function CardOrderCartContents({
   studentsForPicker,
+  centerId = null,
 }: {
   studentsForPicker: StudentPickerRow[];
+  centerId?: string | null;
 }) {
   const t = useTranslations('cart');
   const tCommon = useTranslations('common');
+  const tMobile = useTranslations('mobile.cart');
   const locale = useLocale();
   const {
     cart,
@@ -32,6 +37,7 @@ export function CardOrderCartContents({
     addItem,
     createCart,
     refresh,
+    activeItemCount,
   } = useCardOrderCart();
 
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -54,72 +60,33 @@ export function CardOrderCartContents({
     (name?.trim()?.charAt(0) || '?').toUpperCase();
 
   const rowStudent = (item: HydratedCartItem) => (
-    <li
+    <CardOrderCartItemRow
       key={item.id}
-      className={`flex items-start gap-3 py-3 border-b border-[var(--color-border-subtle)] last:border-0 ${item.stale ? 'opacity-80' : ''}`}
-    >
-      <div className="w-9 h-9 rounded-full bg-teal-600/20 text-teal-700 dark:text-teal-300 flex items-center justify-center text-sm font-bold shrink-0">
-        {initials(item.student?.name)}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium text-[var(--color-text-primary)] ${item.stale ? 'line-through' : ''}`}>
-          {item.student?.name ?? '—'}
-        </p>
-        <p className="text-xs text-[var(--color-text-tertiary)] font-mono" dir="ltr">
-          <bdi>#{formatStudentNumberForDisplay(item.student?.student_number ?? '')}</bdi>
-        </p>
-        {item.stale ? (
-          <p className="text-[11px] text-amber-600 dark:text-amber-300 mt-1">{t('studentRow.removedFromCenter')}</p>
-        ) : null}
-        {!item.stale && item.saved_for_later === false ? (
-          <button
-            type="button"
-            className="text-[11px] font-semibold text-teal-600 dark:text-teal-400 mt-1 underline"
-            disabled={!!busyId}
-            onClick={() =>
-              run(async () => {
-                setBusyId(item.id);
-                await toggleSaveForLater(item.id, true);
-                setBusyId(null);
-              })
-            }
-          >
-            {t('studentRow.saveForLater')}
-          </button>
-        ) : null}
-        {!item.stale && item.saved_for_later ? (
-          <button
-            type="button"
-            className="text-[11px] font-semibold text-teal-600 dark:text-teal-400 mt-1 underline"
-            disabled={!!busyId}
-            onClick={() =>
-              run(async () => {
-                setBusyId(item.id);
-                await toggleSaveForLater(item.id, false);
-                setBusyId(null);
-              })
-            }
-          >
-            {t('studentRow.moveToCart')}
-          </button>
-        ) : null}
-      </div>
-      <button
-        type="button"
-        className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] shrink-0"
-        aria-label={t('studentRow.removeFromCart')}
-        disabled={!!busyId}
-        onClick={() =>
-          run(async () => {
-            setBusyId(item.id);
-            await removeItem(item.id);
-            setBusyId(null);
-          })
-        }
-      >
-        <Trash2 size={16} />
-      </button>
-    </li>
+      item={item}
+      busyId={busyId}
+      initials={initials}
+      onRemove={() =>
+        run(async () => {
+          setBusyId(item.id);
+          await removeItem(item.id);
+          setBusyId(null);
+        })
+      }
+      onSaveForLater={() =>
+        run(async () => {
+          setBusyId(item.id);
+          await toggleSaveForLater(item.id, true);
+          setBusyId(null);
+        })
+      }
+      onMoveToCart={() =>
+        run(async () => {
+          setBusyId(item.id);
+          await toggleSaveForLater(item.id, false);
+          setBusyId(null);
+        })
+      }
+    />
   );
 
   const rowBlank = (item: HydratedCartItem) => (
@@ -129,7 +96,7 @@ export function CardOrderCartContents({
         <div className="flex items-center gap-2 mt-2">
           <button
             type="button"
-            className="p-1.5 rounded-lg border border-[var(--color-border-subtle)] disabled:opacity-50"
+            className="flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-[var(--color-border-subtle)] disabled:opacity-50"
             disabled={item.quantity <= 1 || !!busyId}
             onClick={() =>
               run(async () => {
@@ -144,7 +111,7 @@ export function CardOrderCartContents({
           <span className="tabular-nums text-sm font-semibold w-8 text-center">{item.quantity}</span>
           <button
             type="button"
-            className="p-1.5 rounded-lg border border-[var(--color-border-subtle)] disabled:opacity-50"
+            className="flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-[var(--color-border-subtle)] disabled:opacity-50"
             disabled={!!busyId}
             onClick={() =>
               run(async () => {
@@ -183,31 +150,40 @@ export function CardOrderCartContents({
   return (
     <div className="space-y-6 mb-8" data-testid="card-order-cart-contents">
       {showEmpty ? (
-        <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-6 text-center space-y-3">
-          <p className="text-sm text-[var(--color-text-secondary)]">{t('empty.title')}</p>
-          <button
-            type="button"
-            data-testid="card-cart-add-students"
-            className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold"
-            onClick={() => setPickerOpen(true)}
-          >
-            {t('empty.cta')}
-          </button>
-          <Link href="/students" className="block text-xs text-teal-600 dark:text-teal-400 underline">
-            {t('empty.studentsWithoutCards')}
-          </Link>
-          {!hasCart ? (
+        <>
+          <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-6 text-center space-y-3">
+            <p className="text-sm text-[var(--color-text-secondary)]">{t('empty.title')}</p>
             <button
               type="button"
-              className="block mx-auto text-xs font-semibold text-[var(--color-text-secondary)] underline"
-              onClick={() => run(async () => await createCart())}
+              data-testid="card-cart-add-students"
+              className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold"
+              onClick={() => setPickerOpen(true)}
             >
-              {t('startNewOrder')}
+              {t('empty.cta')}
             </button>
-          ) : null}
-        </div>
+            <Link href="/students" className="block text-xs text-teal-600 dark:text-teal-400 underline">
+              {t('empty.studentsWithoutCards')}
+            </Link>
+            {!hasCart ? (
+              <button
+                type="button"
+                className="block mx-auto text-xs font-semibold text-[var(--color-text-secondary)] underline"
+                onClick={() => run(async () => await createCart())}
+              >
+                {t('startNewOrder')}
+              </button>
+            ) : null}
+          </div>
+          <CartRecommendations centerId={centerId} show={showEmpty} />
+        </>
       ) : (
         <>
+          <p className="sr-only" aria-live="polite" aria-atomic>
+            {tMobile('liveCartSummary', {
+              count: activeItemCount,
+              total: formatCurrency(totals.productInclusive, locale),
+            })}
+          </p>
           <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4">
             <p className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-2">
               {t('activeSection')}

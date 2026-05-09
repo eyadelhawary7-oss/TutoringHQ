@@ -56,6 +56,7 @@ export function CheckoutShell({
   const router = useRouter();
   const { user } = useUser();
   const t = useTranslations('checkout');
+  const tCommon = useTranslations('common');
   const locale = useLocale();
   const basePath = stripLocale(pathname);
   const isSuccess = basePath.includes('/checkout/success');
@@ -96,10 +97,37 @@ export function CheckoutShell({
     return 0;
   }, [basePath]);
 
+  const tm = useTranslations('mobile.checkout');
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+
   const gov = cart?.delivery_governorate?.trim() || '';
   const shipFee = getShippingFee(gov || undefined, shippingRates);
   const zoneLabel = formatShippingZoneForLocale(getShippingZone(gov || undefined, shippingRates), locale);
   const grandTotal = totals.productInclusive + shipFee;
+
+  const summaryCard =
+    !isSuccess && !isPayment ? (
+      <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 lg:sticky lg:top-24 space-y-2 text-sm">
+        <p className="font-semibold text-[var(--color-text-primary)]">{t('summary.title')}</p>
+        <div className="flex justify-between gap-2">
+          <span className="text-[var(--color-text-secondary)]">{t('summary.cards')}</span>
+          <span className="tabular-nums font-medium">{activeItemCount}</span>
+        </div>
+        <div className="flex justify-between gap-2">
+          <span className="text-[var(--color-text-secondary)]">{t('summary.subtotal')}</span>
+          <span className="tabular-nums">{formatCurrency(totals.productInclusive, locale)}</span>
+        </div>
+        <div className="flex justify-between gap-2">
+          <span className="text-[var(--color-text-secondary)]">{t('summary.shipping')}</span>
+          <span className="tabular-nums">{gov ? formatCurrency(shipFee, locale) : '—'}</span>
+        </div>
+        {gov ? <p className="text-[11px] text-[var(--color-text-tertiary)]">{zoneLabel}</p> : null}
+        <div className="flex justify-between gap-2 pt-2 border-t border-[var(--color-border-subtle)] font-bold">
+          <span>{t('summary.total')}</span>
+          <span className="tabular-nums text-teal-700 dark:text-teal-300">{formatCurrency(grandTotal, locale)}</span>
+        </div>
+      </div>
+    ) : null;
 
   if (!gateReady) {
     return (
@@ -113,10 +141,20 @@ export function CheckoutShell({
 
   return (
     <CheckoutRatesContext.Provider value={shippingRates}>
-      <div className="max-w-6xl mx-auto px-4 py-6 pb-24 md:pb-8">
+      <div className="max-w-6xl mx-auto px-4 py-6 pb-[calc(96px+env(safe-area-inset-bottom,0px))] lg:pb-8">
       {!isSuccess ? (
-        <nav aria-label={t('stepsAria')} className="mb-6">
-          <ol className="flex flex-wrap items-center justify-center gap-2 md:gap-4">
+        <nav
+          aria-label={t('stepsAria')}
+          className="sticky top-0 z-30 -mx-4 px-4 py-3 mb-4 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]/95 backdrop-blur-md lg:static lg:border-0 lg:bg-transparent lg:backdrop-blur-none lg:px-0 lg:py-0 lg:mb-6"
+        >
+          <ol
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={3}
+            aria-valuenow={stepIndex}
+            aria-label={t('stepsAria')}
+            className="flex flex-wrap items-center justify-center gap-2 md:gap-4"
+          >
             {[
               { href: '/orders/checkout', label: t('stepDelivery') },
               { href: '/orders/checkout/customize', label: t('stepCustomize') },
@@ -128,7 +166,7 @@ export function CheckoutShell({
                 <Link
                   href={s.href}
                   className={cn(
-                    'flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold border transition-colors',
+                    'flex min-h-[44px] items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold border transition-colors',
                     i === stepIndex
                       ? 'border-teal-500 bg-teal-500/15 text-teal-800 dark:text-teal-200'
                       : 'border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
@@ -151,32 +189,84 @@ export function CheckoutShell({
       ) : null}
 
       <div className="flex flex-col lg:flex-row gap-8">
-        <aside className="lg:w-80 shrink-0 order-first lg:order-last">
-          {!isSuccess && !isPayment ? (
-            <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 lg:sticky lg:top-24 space-y-2 text-sm">
-              <p className="font-semibold text-[var(--color-text-primary)]">{t('summary.title')}</p>
-              <div className="flex justify-between gap-2">
-                <span className="text-[var(--color-text-secondary)]">{t('summary.cards')}</span>
-                <span className="tabular-nums font-medium">{activeItemCount}</span>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-[var(--color-text-secondary)]">{t('summary.subtotal')}</span>
-                <span className="tabular-nums">{formatCurrency(totals.productInclusive, locale)}</span>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-[var(--color-text-secondary)]">{t('summary.shipping')}</span>
-                <span className="tabular-nums">{gov ? formatCurrency(shipFee, locale) : '—'}</span>
-              </div>
-              {gov ? <p className="text-[11px] text-[var(--color-text-tertiary)]">{zoneLabel}</p> : null}
-              <div className="flex justify-between gap-2 pt-2 border-t border-[var(--color-border-subtle)] font-bold">
-                <span>{t('summary.total')}</span>
-                <span className="tabular-nums text-teal-700 dark:text-teal-300">{formatCurrency(grandTotal, locale)}</span>
+        <aside className="hidden lg:block lg:w-80 shrink-0 order-first lg:order-last">{summaryCard}</aside>
+        <div className="flex-1 min-w-0 order-last lg:order-first">{children}</div>
+      </div>
+
+      {!isSuccess && !isPayment && summaryCard ? (
+        <>
+          <div
+            className="lg:hidden fixed inset-x-0 bottom-0 z-50 border-t border-[var(--color-border-subtle)] bg-[var(--color-surface-1)]/98 backdrop-blur-md px-4 pt-2 shadow-[0_-4px_24px_rgba(0,0,0,0.06)]"
+            style={{ paddingBottom: `calc(8px + env(safe-area-inset-bottom, 0px))` }}
+          >
+            <button
+              type="button"
+              className="flex w-full min-h-[44px] items-center justify-between gap-3 text-start"
+              aria-expanded={mobileSheetOpen}
+              onClick={() => setMobileSheetOpen(true)}
+            >
+              <span className="text-sm font-semibold text-[var(--color-text-primary)]">{tm('summaryToggle')}</span>
+              <span className="text-sm font-bold tabular-nums text-teal-700 dark:text-teal-300">
+                {activeItemCount} · {formatCurrency(grandTotal, locale)}
+              </span>
+            </button>
+          </div>
+
+          {mobileSheetOpen ? (
+            <div
+              className="lg:hidden fixed inset-0 z-[60] flex flex-col justify-end bg-black/45"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="checkout-summary-sheet-title"
+            >
+              <button
+                type="button"
+                className="min-h-[48px] flex-1 w-full"
+                aria-label={tCommon('cancel')}
+                onClick={() => setMobileSheetOpen(false)}
+              />
+              <div className="max-h-[78vh] overflow-y-auto rounded-t-2xl border-t border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-4 pb-[calc(16px+env(safe-area-inset-bottom,0px))] pt-3 shadow-xl">
+                <div
+                  className="mx-auto mb-3 h-1.5 w-10 shrink-0 rounded-full bg-[var(--color-border-subtle)]"
+                  aria-hidden
+                />
+                <p id="checkout-summary-sheet-title" className="sr-only">
+                  {tm('summaryExpand')}
+                </p>
+                <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] p-4 space-y-2 text-sm">
+                  <p className="font-semibold text-[var(--color-text-primary)]">{t('summary.title')}</p>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-[var(--color-text-secondary)]">{t('summary.cards')}</span>
+                    <span className="tabular-nums font-medium">{activeItemCount}</span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-[var(--color-text-secondary)]">{t('summary.subtotal')}</span>
+                    <span className="tabular-nums">{formatCurrency(totals.productInclusive, locale)}</span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-[var(--color-text-secondary)]">{t('summary.shipping')}</span>
+                    <span className="tabular-nums">{gov ? formatCurrency(shipFee, locale) : '—'}</span>
+                  </div>
+                  {gov ? <p className="text-[11px] text-[var(--color-text-tertiary)]">{zoneLabel}</p> : null}
+                  <div className="flex justify-between gap-2 pt-2 border-t border-[var(--color-border-subtle)] font-bold">
+                    <span>{t('summary.total')}</span>
+                    <span className="tabular-nums text-teal-700 dark:text-teal-300">
+                      {formatCurrency(grandTotal, locale)}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="mt-4 w-full min-h-[44px] rounded-xl border border-[var(--color-border-subtle)] text-sm font-semibold"
+                  onClick={() => setMobileSheetOpen(false)}
+                >
+                  {tm('summaryCollapse')}
+                </button>
               </div>
             </div>
           ) : null}
-        </aside>
-        <div className="flex-1 min-w-0 order-last lg:order-first">{children}</div>
-      </div>
+        </>
+      ) : null}
       </div>
     </CheckoutRatesContext.Provider>
   );

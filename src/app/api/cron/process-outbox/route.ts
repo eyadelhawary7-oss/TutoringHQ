@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendPaymentConfirmed } from '@/lib/centerNotify';
+import { processCardOrderStatusWaOutboxJob } from '@/lib/cardOrderNotifications';
 
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
@@ -79,6 +80,8 @@ export async function GET(request: Request) {
           amount ?? '',
         );
         success = result.success === true || result.skipped === true;
+      } else if (job.job_type === 'send_card_order_status_wa') {
+        success = await processCardOrderStatusWaOutboxJob(job.payload);
       } else {
         console.warn('[process-outbox] unknown job_type', job.job_type);
       }

@@ -17,6 +17,13 @@ Project rule: delivery uses Meta-approved templates only. Wire locations live ne
 
 | Template name | Category | Variables / notes | Wired | Trigger |
 |---------------|----------|-------------------|-------|---------|
+| `chq_card_order_status_update` | card_orders | Body: **`{{order_id}}`**, **`{{status_label}}`**, **`{{centre_name}}`** — parameter order must match Meta registration. | Yes — `sendCardOrderStatusUpdate` | Fallback when no dedicated template for `status` |
+| `chq_card_order_paid` | card_orders | **`{{order_id}}`**, **`{{centre_name}}`** | Yes | `status` → `paid` |
+| `chq_card_order_in_production` | card_orders | Same pair | Yes | `status` → `in_production` |
+| `chq_card_order_in_transit` | card_orders | Same pair | Yes | `status` → `in_transit` |
+| `chq_card_order_delivered` | card_orders | Same pair | Yes | `status` → `delivered` |
+| `chq_card_order_cancelled` | card_orders | Same pair | Yes | `status` → `cancelled` |
+| `chq_card_order_refunded` | card_orders | Same pair | Yes | `status` → `refunded` |
 | `chq_vendor_new_order` | vendor | Body: order ref, quantity, notes, **`{{courier_name}}`** (4th). Quick-reply button index `0` with `READY_<orderId>`. | Yes — `sendVendorNewOrder` | Card order → `notifyVendorOfNewOrder` |
 | `chq_pin_delivery` | auth | PIN / login code (see Meta). | **Registered only — unwired** | Target launch **after Vodafone postpaid SIM + SMS fallback** |
 | *(others)* | various | See Meta Business Manager & `wa_meta_templates` | Partial | See codebase grep for `template_name` |

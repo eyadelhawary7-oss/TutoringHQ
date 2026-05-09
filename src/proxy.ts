@@ -96,6 +96,7 @@ const AUTHENTICATED_ROUTE_PREFIXES = [
   '/messages',
   '/offline',
   '/orders',
+  '/notifications',
   '/whatsapp-pack',
   '/whatsapp',
   '/admin',

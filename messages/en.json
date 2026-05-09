@@ -4649,6 +4649,7 @@
       "removeFromCart": "Remove",
       "saveForLater": "Save for later",
       "moveToCart": "Move to cart",
+      "remove": "Remove",
       "removedFromCenter": "Removed from centre",
       "alreadyHasCard": "Has card delivered",
       "cardPending": "Card pending"
@@ -4934,6 +4935,37 @@
     "pageNext": "Next",
     "emptyFiltered": "No orders match your filters.",
     "showing": "Showing {from}-{to} of {total}"
+  },
+  "notifications": {
+    "bellAria": "Notifications",
+    "dropdownTitle": "Notifications",
+    "empty": "No notifications yet.",
+    "markAllRead": "Mark all read",
+    "viewAll": "View all",
+    "pageTitle": "Notifications"
+  },
+  "recommendations": {
+    "withoutCardsTitle": "Students without cards yet",
+    "addAll": "Add all to cart",
+    "addSelected": "Add selected ({count})",
+    "recentlyAddedTitle": "Recently added students",
+    "recentlyAddedHint": "These students might need cards.",
+    "recentlyViewedTitle": "Recently viewed",
+    "addToCart": "Add to cart",
+    "inCart": "In cart",
+    "reorderSectionTitle": "Reorder past orders",
+    "reorder": "Reorder"
+  },
+  "mobile": {
+    "cart": {
+      "liveCartSummary": "Cart updated: {count} cards, total {total}"
+    },
+    "checkout": {
+      "summaryToggle": "Order summary",
+      "summaryExpand": "Show breakdown",
+      "summaryCollapse": "Hide breakdown",
+      "dragHandle": "Adjust summary panel"
+    }
   },
   "cardOrders": {
     "orderIdCards": "Order ID Cards",

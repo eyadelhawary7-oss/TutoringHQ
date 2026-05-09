@@ -121,7 +121,8 @@ export async function sendTemplateMessage(
   centerId: string,
   to: string,
   templateName: string,
-  variables: Record<string, string> = {}
+  variables: Record<string, string> = {},
+  opts?: { bodyParameterOrder?: string[] },
 ): Promise<SendTemplateResult> {
   const admin = getSupabaseAdmin();
   if (!(await isTemplateApproved(templateName, admin))) {
@@ -139,7 +140,9 @@ export async function sendTemplateMessage(
   const normalizedTo = normalizePhone(to);
 
   const components: { type: string; parameters?: { type: string; text: string }[] }[] = [];
-  const varKeys = Object.keys(variables).sort();
+  const ordered =
+    opts?.bodyParameterOrder?.filter((k) => Object.prototype.hasOwnProperty.call(variables, k)) ?? null;
+  const varKeys = ordered && ordered.length > 0 ? ordered : Object.keys(variables).sort();
   if (varKeys.length > 0) {
     components.push({
       type: 'body',

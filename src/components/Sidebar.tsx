@@ -33,6 +33,7 @@ import {
 import { ChangePinModal } from '@/components/admin/ChangePinModal';
 import { BranchSwitcher } from '@/components/layout/BranchSwitcher';
 import { OrdersNavWithCartPreview } from '@/components/orders/OrdersNavWithCartPreview';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { signOutToLogin } from '@/lib/auth/sign-out-client';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -203,7 +204,14 @@ export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarPr
           )}
           {navItems.map(({ key, href, icon: Icon, showNewBadge }) => {
             if (key === 'orders') {
-              return <OrdersNavWithCartPreview key={href} navLinkClass={navLinkClass} />;
+              return (
+                <div key={href} className="flex items-center gap-1 w-full">
+                  {user?.center_id ? <NotificationBell className="shrink-0" /> : null}
+                  <div className="min-w-0 flex-1">
+                    <OrdersNavWithCartPreview navLinkClass={navLinkClass} />
+                  </div>
+                </div>
+              );
             }
             const isActive = pathname === href || pathname.startsWith(href + '/');
             const showBadge = showNewBadge && showBenchmarksNewBadge;

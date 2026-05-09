@@ -52,6 +52,7 @@ const PAGE_TITLE_MAP: Record<string, string> = {
   '/branches': 'nav.branches',
   '/settings': 'nav.settings',
   '/orders': 'cardOrders.ordersTitle',
+  '/notifications': 'notifications.pageTitle',
   '/scan': 'nav.scanner',
   '/whatsapp-pack': 'nav.whatsappPack',
   '/whatsapp': 'nav.whatsappTemplates',

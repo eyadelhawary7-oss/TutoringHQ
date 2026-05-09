@@ -31,6 +31,7 @@ export function StudentPickerDrawer({
   const { items, addItemsBatch } = useCardOrderCart();
 
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filter, setFilter] = useState<FilterKey>('all');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [statusMap, setStatusMap] = useState<Record<string, 'none' | 'pending' | 'delivered'>>({});
@@ -87,15 +88,22 @@ export function StudentPickerDrawer({
   }, [open, students]);
 
   useEffect(() => {
+    if (!open) return;
+    const tid = window.setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => window.clearTimeout(tid);
+  }, [search, open]);
+
+  useEffect(() => {
     if (!open) {
       setSelected(new Set());
       setSearch('');
+      setDebouncedSearch('');
       setFilter('all');
     }
   }, [open]);
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = debouncedSearch.toLowerCase();
     let list = students.slice();
 
     list.sort((a, b) => {
@@ -124,7 +132,7 @@ export function StudentPickerDrawer({
     });
 
     return list;
-  }, [students, search, filter, statusMap, inCartActiveIds, savedIds]);
+  }, [students, debouncedSearch, filter, statusMap, inCartActiveIds, savedIds]);
 
   const toggle = useCallback((id: string) => {
     setSelected((prev) => {

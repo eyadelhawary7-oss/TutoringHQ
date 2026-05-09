@@ -1,5 +1,6 @@
 'use client';
 
+import useSWR from 'swr';
 import {
   createContext,
   useCallback,
@@ -50,100 +51,105 @@ async function bearerToken(): Promise<string | null> {
   return session?.access_token ?? null;
 }
 
+async function fetchCartPayload(url: string, token: string): Promise<CartPayload> {
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const j = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(j.error ?? res.statusText);
+  }
+  return (await res.json()) as CartPayload;
+}
+
 export function CardOrderCartProvider({ children }: { children: ReactNode }) {
   const { user } = useUser();
   const locale = useLocale();
   const localeShort: 'en' | 'ar' = locale.startsWith('ar') ? 'ar' : 'en';
 
-  const [payload, setPayload] = useState<CartPayload | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [concurrencyConflict, setConcurrencyConflict] = useState(false);
+  const swrKey =
+    user?.id && user?.center_id ? ([`/api/card-order-cart`, user.id, user.center_id] as const) : null;
 
   const mutatingRef = useRef(false);
   const lastSyncedUpdatedAtRef = useRef<string | null>(null);
   const payloadRef = useRef<CartPayload | null>(null);
-  payloadRef.current = payload;
 
-  const fetchCart = useCallback(async () => {
-    const token = await bearerToken();
-    if (!token || !user?.center_id) {
-      setPayload(null);
-      setLoading(false);
-      setError(null);
-      return;
+  const {
+    data: payload,
+    error: swrError,
+    isLoading,
+    mutate,
+  } = useSWR(
+    swrKey,
+    async ([url]) => {
+      const token = await bearerToken();
+      if (!token) throw new Error('Not authenticated');
+      return fetchCartPayload(url, token);
+    },
+    {
+      revalidateOnFocus: true,
+      dedupingInterval: 2500,
+      keepPreviousData: true,
+    },
+  );
+
+  payloadRef.current = payload ?? null;
+
+  useEffect(() => {
+    if (!payload?.cart || !user?.id) return;
+    const curU = payload.cart.updated_at;
+    const curActor = payload.cart.last_modified_by;
+    if (
+      !mutatingRef.current &&
+      lastSyncedUpdatedAtRef.current != null &&
+      curU &&
+      curU !== lastSyncedUpdatedAtRef.current &&
+      curActor &&
+      curActor !== user.id
+    ) {
+      setConcurrencyConflict(true);
     }
+    lastSyncedUpdatedAtRef.current = curU ?? null;
+  }, [payload?.cart?.updated_at, payload?.cart?.last_modified_by, user?.id, payload?.cart]);
 
-    setError(null);
-    try {
-      const res = await fetch('/api/card-order-cart', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        const j = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(j.error ?? res.statusText);
-      }
-      const data = (await res.json()) as CartPayload;
+  const [concurrencyConflict, setConcurrencyConflict] = useState(false);
 
-      if (!mutatingRef.current && data.cart && user?.id) {
-        const prevU = lastSyncedUpdatedAtRef.current;
-        const curU = data.cart.updated_at;
-        const curActor = data.cart.last_modified_by;
-        if (prevU != null && curU !== prevU && curActor && curActor !== user.id) {
-          setConcurrencyConflict(true);
+  const refresh = useCallback(async () => {
+    await mutate();
+  }, [mutate]);
+
+  const mutateJson = useCallback(
+    async (exec: (token: string) => Promise<Response>) => {
+      const token = await bearerToken();
+      if (!token) throw new Error('Not authenticated');
+      const snapshot = payloadRef.current;
+      mutatingRef.current = true;
+      try {
+        await mutate(
+          async () => {
+            const res = await exec(token);
+            if (!res.ok) {
+              const j = (await res.json().catch(() => ({}))) as { error?: string };
+              throw new Error(j.error ?? res.statusText);
+            }
+            const data = (await res.json()) as CartPayload;
+            lastSyncedUpdatedAtRef.current = data.cart?.updated_at ?? null;
+            setConcurrencyConflict(false);
+            return data;
+          },
+          { revalidate: false, populateCache: true },
+        );
+      } catch (e) {
+        if (snapshot) {
+          await mutate(snapshot, { revalidate: false });
         }
+        throw e;
+      } finally {
+        mutatingRef.current = false;
       }
-
-      lastSyncedUpdatedAtRef.current = data.cart?.updated_at ?? null;
-      setPayload(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load cart');
-    } finally {
-      setLoading(false);
-      mutatingRef.current = false;
-    }
-  }, [user?.center_id, user?.id]);
-
-  useEffect(() => {
-    setLoading(true);
-    void fetchCart();
-  }, [fetchCart]);
-
-  useEffect(() => {
-    const onVis = () => {
-      if (document.visibilityState === 'visible') void fetchCart();
-    };
-    const onFocus = () => void fetchCart();
-    document.addEventListener('visibilitychange', onVis);
-    window.addEventListener('focus', onFocus);
-    return () => {
-      document.removeEventListener('visibilitychange', onVis);
-      window.removeEventListener('focus', onFocus);
-    };
-  }, [fetchCart]);
-
-  const mutateJson = useCallback(async (exec: (token: string) => Promise<Response>) => {
-    const token = await bearerToken();
-    if (!token) throw new Error('Not authenticated');
-    const snapshot = payloadRef.current;
-    mutatingRef.current = true;
-    try {
-      const res = await exec(token);
-      if (!res.ok) {
-        const j = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(j.error ?? res.statusText);
-      }
-      const data = (await res.json()) as CartPayload;
-      lastSyncedUpdatedAtRef.current = data.cart?.updated_at ?? null;
-      setPayload(data);
-      setConcurrencyConflict(false);
-    } catch (e) {
-      setPayload(snapshot);
-      throw e;
-    } finally {
-      mutatingRef.current = false;
-    }
-  }, []);
+    },
+    [mutate],
+  );
 
   const addItem = useCallback(
     async (body: { kind: 'student'; student_id: string } | { kind: 'blank'; quantity: number }) => {
@@ -232,8 +238,8 @@ export function CardOrderCartProvider({ children }: { children: ReactNode }) {
 
   const acknowledgeConcurrency = useCallback(() => {
     setConcurrencyConflict(false);
-    void fetchCart();
-  }, [fetchCart]);
+    void mutate();
+  }, [mutate]);
 
   const items = payload?.items ?? [];
   const minimumQuantity = payload?.minimumQuantity ?? 1;
@@ -255,6 +261,9 @@ export function CardOrderCartProvider({ children }: { children: ReactNode }) {
 
   const isStudentInCart = useCallback((studentId: string) => studentIdsInCart.has(studentId), [studentIdsInCart]);
 
+  const loading = Boolean(isLoading && !payload);
+  const error = swrError instanceof Error ? swrError.message : swrError ? String(swrError) : null;
+
   const value = useMemo<CardOrderCartContextValue>(
     () => ({
       cart: payload?.cart ?? null,
@@ -267,7 +276,7 @@ export function CardOrderCartProvider({ children }: { children: ReactNode }) {
       error,
       concurrencyConflict,
       activeItemCount,
-      refresh: fetchCart,
+      refresh,
       acknowledgeConcurrency,
       addItem,
       addItemsBatch,
@@ -289,7 +298,7 @@ export function CardOrderCartProvider({ children }: { children: ReactNode }) {
       error,
       concurrencyConflict,
       activeItemCount,
-      fetchCart,
+      refresh,
       acknowledgeConcurrency,
       addItem,
       addItemsBatch,

@@ -9,6 +9,7 @@ import { Globe, Menu, X, ShoppingCart } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { supabase } from '@/lib/supabase';
 import { useCardOrderCartOptional } from '@/hooks/useCardOrderCart';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 interface MobileTopBarProps {
   openMenu: boolean;
@@ -71,18 +72,21 @@ export default function MobileTopBar({ openMenu, setOpenMenu }: MobileTopBarProp
 
       <div className="absolute end-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
         {user?.center_id ? (
-          <Link
-            href="/orders"
-            className="relative p-2 rounded-lg border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)]"
-            aria-label={locale.startsWith('ar') ? 'الطلبات' : 'Orders'}
-          >
-            <ShoppingCart size={18} />
-            {cartCount > 0 ? (
-              <span className="absolute -top-0.5 -end-0.5 min-w-[16px] h-4 px-0.5 flex items-center justify-center rounded-full bg-teal-600 text-white text-[9px] font-bold leading-none">
-                {cartCount > 99 ? '99+' : cartCount}
-              </span>
-            ) : null}
-          </Link>
+          <>
+            <NotificationBell />
+            <Link
+              href="/orders"
+              className="relative flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)]"
+              aria-label={locale.startsWith('ar') ? 'الطلبات' : 'Orders'}
+            >
+              <ShoppingCart size={18} />
+              {cartCount > 0 ? (
+                <span className="absolute -top-0.5 -end-0.5 min-w-[16px] h-4 px-0.5 flex items-center justify-center rounded-full bg-teal-600 text-white text-[9px] font-bold leading-none">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              ) : null}
+            </Link>
+          </>
         ) : null}
         <ThemeToggle />
         <button
