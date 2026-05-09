@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getShippingFee, getShippingZone } from '@/lib/bostaShipping';
+import { loadBostaShippingRates } from '@/lib/loadBostaShippingRates';
 import { cardOrderProductInclusiveFromQty, explodeInclusive } from '@/lib/pricing/taxMath';
 import { notifyVendorOfNewOrder } from '@/lib/vendorNotify';
 
@@ -52,8 +53,9 @@ async function ensureCardOrderSetupFeeInvoice(
       govFromOrder != null && String(govFromOrder).trim()
         ? String(govFromOrder)
         : (center as { governorate?: string | null } | null)?.governorate;
-    deliveryFee = getShippingFee(gov);
-    shippingZone = getShippingZone(gov);
+    const rates = await loadBostaShippingRates();
+    deliveryFee = getShippingFee(gov, rates);
+    shippingZone = getShippingZone(gov, rates);
   }
   const total = Number(r.total_amount ?? productInclusive + deliveryFee);
 

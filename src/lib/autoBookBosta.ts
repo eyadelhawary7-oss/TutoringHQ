@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createBostaDelivery } from '@/lib/bosta';
 import { getShippingFee } from '@/lib/bostaShipping';
+import { loadBostaShippingRates } from '@/lib/loadBostaShippingRates';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
 export async function autoBookBosta(
@@ -48,7 +49,8 @@ export async function autoBookBosta(
 
     const center = order.centers as { phone?: string | null; governorate?: string | null } | null;
     const centerGovernorate = center?.governorate;
-    const shippingFee = getShippingFee(centerGovernorate);
+    const rates = await loadBostaShippingRates();
+    const shippingFee = getShippingFee(centerGovernorate, rates);
     const prefix = (process.env.BOSTA_BUSINESS_PREFIX ?? 'CHQ').replace(/[^A-Za-z0-9]/g, '') || 'CHQ';
     const ref = `${prefix}-${String(order.id).substring(0, 8).toUpperCase()}`;
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useTransition } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect } from '@/lib/db-proxy';
@@ -11,7 +11,7 @@ import {
   getShippingFee,
   getShippingZone,
 } from '@/lib/bostaShipping';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, X } from 'lucide-react';
 
 export type CardOrdersShippingQuote = {
   hasGovernorate: boolean;
@@ -102,8 +102,10 @@ const PREVIEW_PRICE_PER_CARD = 62;
 
 export default function OrdersPageClient({
   initialShippingQuote,
+  bostaShippingRates,
 }: {
   initialShippingQuote: CardOrdersShippingQuote | null;
+  bostaShippingRates: Record<string, number> | null;
 }) {
   const t = useTranslations('cardOrders');
   const tOrders = useTranslations('orders');
@@ -116,6 +118,8 @@ export default function OrdersPageClient({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [howOrdersOpen, setHowOrdersOpen] = useState(false);
+  const [isOpenPending, startOpenTransition] = useTransition();
 
   const loadData = useCallback(async () => {
     setLoadError(null);
@@ -202,8 +206,8 @@ export default function OrdersPageClient({
   const liveGov = centerInfo?.governorate?.trim();
   const showGovernorateHint = !loading && !!centerId && !liveGov?.length;
   const showShippingEstimate = !loading && !!centerId && !!liveGov?.length;
-  const estimateFee = liveGov ? getShippingFee(liveGov) : 0;
-  const estimateZoneEn = liveGov ? getShippingZone(liveGov) : '';
+  const estimateFee = liveGov ? getShippingFee(liveGov, bostaShippingRates) : 0;
+  const estimateZoneEn = liveGov ? getShippingZone(liveGov, bostaShippingRates) : '';
 
   return (
     <div className="min-h-screen w-full bg-[var(--color-surface-0)] animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
@@ -216,8 +220,9 @@ export default function OrdersPageClient({
           {centerId && (
             <button
               type="button"
-              onClick={() => setShowModal(true)}
-              className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-primary-foreground text-sm font-semibold rounded-xl transition-colors shrink-0"
+              onClick={() => startOpenTransition(() => setShowModal(true))}
+              className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-primary-foreground text-sm font-semibold rounded-xl transition-colors shrink-0 disabled:opacity-70"
+              disabled={isOpenPending}
             >
               {t('newOrder')}
             </button>
@@ -281,11 +286,19 @@ export default function OrdersPageClient({
         ) : orders.length === 0 ? (
           <div className="card p-8 text-center border border-[var(--color-border-subtle)]">
             <p className="text-sm text-[var(--color-text-secondary)] mb-4">{t('ordersEmpty')}</p>
+            <button
+              type="button"
+              onClick={() => setHowOrdersOpen(true)}
+              className="text-[11px] text-[var(--color-text-tertiary)] underline decoration-[var(--color-border)] hover:text-[color:var(--color-teal)] mb-4 block w-full"
+            >
+              {t('howOrdersWorkLink')}
+            </button>
             {centerId && (
               <button
                 type="button"
-                onClick={() => setShowModal(true)}
-                className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-primary-foreground text-sm font-semibold rounded-xl transition-colors"
+                onClick={() => startOpenTransition(() => setShowModal(true))}
+                className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-primary-foreground text-sm font-semibold rounded-xl transition-colors disabled:opacity-70"
+                disabled={isOpenPending}
               >
                 {t('newOrder')}
               </button>
@@ -415,9 +428,49 @@ export default function OrdersPageClient({
           students={students}
           centerId={centerId}
           centerInfo={centerInfo}
+          bostaShippingRates={bostaShippingRates}
           onSuccess={() => void loadData()}
         />
       )}
+
+      {howOrdersOpen ? (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="how-orders-title"
+          onClick={() => setHowOrdersOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-md rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="absolute end-3 top-3 p-2 rounded-lg hover:bg-muted text-[var(--color-text-secondary)]"
+              onClick={() => setHowOrdersOpen(false)}
+              aria-label={t('howOrdersWorkClose')}
+            >
+              <X size={18} aria-hidden />
+            </button>
+            <h2 id="how-orders-title" className="text-lg font-bold text-[var(--color-text-primary)] pe-8 mb-4">
+              {t('howOrdersWorkTitle')}
+            </h2>
+            <ol className="list-decimal list-inside space-y-3 text-sm text-[var(--color-text-secondary)]">
+              <li>{t('howOrdersWorkStep1')}</li>
+              <li>{t('howOrdersWorkStep2')}</li>
+              <li>{t('howOrdersWorkStep3')}</li>
+            </ol>
+            <button
+              type="button"
+              className="mt-6 w-full py-2.5 rounded-lg text-sm font-semibold text-white bg-[color:var(--color-teal)] hover:opacity-90"
+              onClick={() => setHowOrdersOpen(false)}
+            >
+              {t('howOrdersWorkClose')}
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

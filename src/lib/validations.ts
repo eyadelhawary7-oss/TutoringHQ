@@ -356,5 +356,9 @@ export const dbInsertSchemas: Record<string, z.ZodType> = {
     notes: z.string().optional().nullable(),
     /** Not a DB column — used by /api/db to compute delivery_fee from selected governorate; stripped before insert */
     delivery_governorate: z.string().optional().nullable(),
-  }),
+  })
+    .refine((row) => row.quantity >= row.students.length, {
+      message: 'Quantity must be at least the number of students listed',
+      path: ['quantity'],
+    }),
 };

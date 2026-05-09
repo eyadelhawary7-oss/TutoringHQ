@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getShippingFee, getShippingZone } from '@/lib/bostaShipping';
+import { loadBostaShippingRates } from '@/lib/loadBostaShippingRates';
 import OrdersPageClient, { type CardOrdersShippingQuote } from './OrdersPageClient';
 
 export default async function OrdersPage() {
   let initialShippingQuote: CardOrdersShippingQuote | null = null;
+  const bostaShippingRates = supabaseAdmin ? await loadBostaShippingRates() : null;
 
   if (supabaseAdmin) {
     const supabase = await createClient();
@@ -28,12 +30,17 @@ export default async function OrdersPage() {
         const gov = govRaw != null ? String(govRaw).trim() : '';
         initialShippingQuote = {
           hasGovernorate: gov.length > 0,
-          fee: getShippingFee(gov || undefined),
-          zoneEn: getShippingZone(gov || undefined),
+          fee: getShippingFee(gov || undefined, bostaShippingRates),
+          zoneEn: getShippingZone(gov || undefined, bostaShippingRates),
         };
       }
     }
   }
 
-  return <OrdersPageClient initialShippingQuote={initialShippingQuote} />;
+  return (
+    <OrdersPageClient
+      initialShippingQuote={initialShippingQuote}
+      bostaShippingRates={bostaShippingRates}
+    />
+  );
 }

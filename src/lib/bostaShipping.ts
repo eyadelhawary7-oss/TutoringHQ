@@ -59,18 +59,57 @@ export const BOSTA_SHIPPING_FEES: Record<string, number> = {
 
 export const DEFAULT_SHIPPING_FEE = 165 // highest zone if city unknown
 
-export function getShippingFee(governorate: string | null | undefined): number {
+export function normalizeGovernorateKey(governorate: string): string {
+  return governorate.toLowerCase().trim().replace(/\s+/g, '_')
+}
+
+/** Parse JSON from `platform_config.bosta_shipping_rates` (object of slug → EGP). */
+export function parseBostaShippingRatesJson(value: unknown): Record<string, number> | null {
+  let raw: unknown = value
+  if (typeof value === 'string') {
+    try {
+      raw = JSON.parse(value) as unknown
+    } catch {
+      return null
+    }
+  }
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return null
+  const out: Record<string, number> = {}
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    const n = typeof v === 'number' ? v : Number(v)
+    if (Number.isFinite(n)) {
+      out[normalizeGovernorateKey(k)] = n
+    }
+  }
+  return Object.keys(out).length ? out : null
+}
+
+/**
+ * @param rateOverrides — merged lookup from `platform_config`; falls back to `BOSTA_SHIPPING_FEES`.
+ */
+export function getShippingFee(
+  governorate: string | null | undefined,
+  rateOverrides?: Record<string, number> | null,
+): number {
   if (!governorate) return DEFAULT_SHIPPING_FEE
-  const key = governorate.toLowerCase().trim().replace(/\s+/g, '_')
+  const key = normalizeGovernorateKey(governorate)
+  const fromConfig = rateOverrides?.[key]
+  if (typeof fromConfig === 'number' && Number.isFinite(fromConfig)) return fromConfig
   return BOSTA_SHIPPING_FEES[key] ?? DEFAULT_SHIPPING_FEE
 }
 
-export function getShippingZone(governorate: string | null | undefined): string {
-  const fee = getShippingFee(governorate)
+export function getShippingZoneFromFee(fee: number): string {
   if (fee === 115) return 'Cairo'
   if (fee === 120) return 'Alexandria'
   if (fee === 130) return 'Delta / Canal'
   return 'Upper Egypt / Red Sea'
+}
+
+export function getShippingZone(
+  governorate: string | null | undefined,
+  rateOverrides?: Record<string, number> | null,
+): string {
+  return getShippingZoneFromFee(getShippingFee(governorate, rateOverrides))
 }
 
 const SHIPPING_ZONE_LABELS: Record<string, { en: string; ar: string }> = {

@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useLocale } from 'next-intl';
-import { X, Search, ChevronRight, ChevronLeft, Check, CreditCard, Lock } from 'lucide-react';
+import { X, Search, ChevronRight, ChevronLeft, Check, CreditCard, Lock, Minus, Plus } from 'lucide-react';
 import QRCode from 'qrcode';
 import { dbInsert, dbUpdate } from '@/lib/db-proxy';
 import { supabase } from '@/lib/supabase';
@@ -17,6 +17,8 @@ import { cn } from '@/lib/utils';
 import { naturalCompare } from '@/lib/sort/naturalSort';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { getShippingFee, getShippingZone, formatShippingZoneForLocale } from '@/lib/bostaShipping';
+import { StepIndicator } from '@/components/StepIndicator';
+import { CardOrderStyleSampleMock } from '@/components/CardOrderStyleSampleMock';
 
 const CARD_ORDER_PENDING_KEY = 'centerhq_card_order_pending';
 
@@ -91,9 +93,13 @@ interface CardOrderModalProps {
   centerId: string;
   centerInfo: CenterInfo | null;
   onSuccess?: () => void;
+  /** From `platform_config.bosta_shipping_rates`; omit to use code defaults only. */
+  bostaShippingRates?: Record<string, number> | null;
 }
 
 export type QrCardStyle = 'dark' | 'light';
+
+type DeliveryStepField = 'full_name' | 'phone' | 'governorate' | 'city' | 'street' | 'building';
 
 export function CardOrderModal({
   isOpen,
@@ -102,6 +108,7 @@ export function CardOrderModal({
   centerId,
   centerInfo,
   onSuccess,
+  bostaShippingRates = null,
 }: CardOrderModalProps) {
   const t = useTranslations('cardOrders');
   const tOrders = useTranslations('orders');
@@ -140,6 +147,10 @@ export function CardOrderModal({
   const [selectedStyle, setSelectedStyle] = useState<QrCardStyle>('dark');
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsExpanded, setTermsExpanded] = useState(false);
+  const [orderExtraBlanks, setOrderExtraBlanks] = useState(false);
+  const [extraBlankCount, setExtraBlankCount] = useState(1);
+  const [step2Errors, setStep2Errors] = useState<Partial<Record<DeliveryStepField, string>>>({});
+  const [termsInlineError, setTermsInlineError] = useState<string | null>(null);
 
   const centerName = centerInfo?.name ?? 'CenterHQ';
   const centerPhone = centerInfo?.phone ?? null;
@@ -225,10 +236,66 @@ export function CardOrderModal({
     setSelectedIds(new Set());
   };
 
+  const addNextFilteredToSelection = () => {
+    const next = filteredStudents.find((s) => !selectedIds.has(s.id));
+    if (next) toggleStudent(next.id);
+  };
+
+  const removeLastFilteredFromSelection = () => {
+    for (let i = filteredStudents.length - 1; i >= 0; i -= 1) {
+      const id = filteredStudents[i].id;
+      if (selectedIds.has(id)) {
+        toggleStudent(id);
+        break;
+      }
+    }
+  };
+
+  const requireMsg = t('deliveryFieldRequired');
+
+  const validateDeliveryField = (field: DeliveryStepField, d: DeliveryAddress): string | undefined => {
+    const v = (k: keyof DeliveryAddress) => String(d[k] ?? '').trim();
+    switch (field) {
+      case 'full_name':
+        return v('full_name') ? undefined : requireMsg;
+      case 'phone':
+        return v('phone') ? undefined : requireMsg;
+      case 'governorate':
+        return v('governorate') ? undefined : requireMsg;
+      case 'city':
+        return v('city') ? undefined : requireMsg;
+      case 'street':
+        return v('street') ? undefined : requireMsg;
+      case 'building':
+        return v('building') ? undefined : requireMsg;
+      default:
+        return undefined;
+    }
+  };
+
+  const validateAllStep2 = (d: DeliveryAddress): Partial<Record<DeliveryStepField, string>> => {
+    const fields: DeliveryStepField[] = ['full_name', 'phone', 'governorate', 'city', 'street', 'building'];
+    const out: Partial<Record<DeliveryStepField, string>> = {};
+    for (const f of fields) {
+      const err = validateDeliveryField(f, d);
+      if (err) out[f] = err;
+    }
+    return out;
+  };
+
+  const blurDeliveryField = (field: DeliveryStepField) => {
+    setStep2Errors((prev) => ({
+      ...prev,
+      [field]: validateDeliveryField(field, deliveryForm),
+    }));
+  };
+
   const selectedGovernorate = deliveryForm.governorate?.trim() || null;
-  const deliveryFee = getShippingFee(selectedGovernorate);
-  const shippingZoneEn = getShippingZone(selectedGovernorate);
-  const quantity = selectedStudents.length;
+  const deliveryFee = getShippingFee(selectedGovernorate, bostaShippingRates);
+  const shippingZoneEn = getShippingZone(selectedGovernorate, bostaShippingRates);
+  const studentQty = selectedStudents.length;
+  const extraQty = orderExtraBlanks ? Math.max(1, Math.min(500, Math.round(extraBlankCount))) : 0;
+  const quantity = studentQty + extraQty;
   const cardsInclusiveTotal = useMemo(
     () => cardOrderProductInclusiveFromQty(quantity),
     [quantity],
@@ -236,11 +303,22 @@ export function CardOrderModal({
   const perCardInclusive = useMemo(() => cardOrderProductInclusiveFromQty(1), []);
   const taxParts = useMemo(() => explodeInclusive(cardsInclusiveTotal), [cardsInclusiveTotal]);
   const payTotal = cardsInclusiveTotal + deliveryFee;
+  const perCardAllIn = quantity > 0 ? Math.round((payTotal / quantity) * 100) / 100 : 0;
 
   const handleNext = () => {
     if (step === 1 && selectedIds.size > 0) {
       setStep(2);
-    } else if (step === 2) {
+      return;
+    }
+    if (step === 2) {
+      const errs = validateAllStep2(deliveryForm);
+      setStep2Errors(errs);
+      if (Object.keys(errs).length > 0) return;
+      if (!termsAccepted) {
+        setTermsInlineError(tOrders('cardOrderTermsRequired'));
+        return;
+      }
+      setTermsInlineError(null);
       setStep(3);
     }
   };
@@ -280,6 +358,10 @@ export function CardOrderModal({
     setPaymentError(null);
     setTermsAccepted(false);
     setTermsExpanded(false);
+    setOrderExtraBlanks(false);
+    setExtraBlankCount(1);
+    setStep2Errors({});
+    setTermsInlineError(null);
   };
 
   const handleClose = () => {
@@ -335,6 +417,8 @@ export function CardOrderModal({
       let orderId = currentCardOrderId;
 
       if (!orderId) {
+        const extraNote = extraQty > 0 ? t('orderNotesExtraBlanks', { count: extraQty }) : '';
+        const notesForOrder = [notes.trim(), extraNote].filter(Boolean).join('\n\n') || null;
         const { data: inserted, error: insertErr } = await dbInsert({
           table: 'card_orders',
           data: {
@@ -349,7 +433,7 @@ export function CardOrderModal({
             status: 'pending_payment',
             payment_status: 'pending_payment',
             delivery_address: deliveryDisplay || null,
-            notes: notes.trim() || null,
+            notes: notesForOrder,
             card_style: selectedStyle,
             delivery_governorate: selectedGovernorate,
           },
@@ -492,18 +576,27 @@ export function CardOrderModal({
         className="modal-spring-in bg-[var(--color-surface-1)] rounded-2xl border border-border w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
-          <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
-            {step === 1 && t('selectStudents')}
-            {step === 2 && t('previewCard')}
-            {step === 3 && t('orderSummary')}
-          </h2>
-          <button
-            onClick={handleClose}
-            className="p-2 rounded-lg hover:bg-muted text-[var(--color-text-secondary)]"
-          >
-            <X size={20} />
-          </button>
+        <div className="shrink-0 border-b border-border">
+          <div className="flex items-center justify-between p-4 pb-2 gap-2">
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
+              {step === 1 && t('selectStudents')}
+              {step === 2 && t('previewCard')}
+              {step === 3 && t('orderSummary')}
+            </h2>
+            <button
+              type="button"
+              onClick={handleClose}
+              className="p-2 rounded-lg hover:bg-muted text-[var(--color-text-secondary)]"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          <div className="px-4 pb-3">
+            <StepIndicator
+              currentStep={step}
+              labels={[t('selectStudents'), t('previewCard'), t('orderSummary')]}
+            />
+          </div>
         </div>
 
         {submitSuccess ? (
@@ -531,22 +624,89 @@ export function CardOrderModal({
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <button
+                    type="button"
+                    onClick={removeLastFilteredFromSelection}
+                    disabled={selectedIds.size === 0}
+                    className="p-2 rounded-lg text-sm border border-border hover:bg-muted disabled:opacity-40 disabled:pointer-events-none"
+                    aria-label={t('quantityStepDownAria')}
+                  >
+                    <Minus size={16} aria-hidden />
+                  </button>
+                  <button
+                    type="button"
                     onClick={selectAll}
                     className="px-3 py-1.5 rounded-lg text-sm border border-border hover:bg-muted"
                   >
                     {t('selectAll', { defaultValue: 'Select All' })}
                   </button>
                   <button
+                    type="button"
                     onClick={clearSelection}
                     className="px-3 py-1.5 rounded-lg text-sm border border-border hover:bg-muted"
                   >
                     {t('clear', { defaultValue: 'Clear' })}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={addNextFilteredToSelection}
+                    disabled={!filteredStudents.some((s) => !selectedIds.has(s.id))}
+                    className="p-2 rounded-lg text-sm border border-border hover:bg-muted disabled:opacity-40 disabled:pointer-events-none"
+                    aria-label={t('quantityStepUpAria')}
+                  >
+                    <Plus size={16} aria-hidden />
                   </button>
                   <span className="text-sm text-[var(--color-text-secondary)] ms-auto">
                     {selectedIds.size === 1
                       ? tStudents('cardOrderCartSelected', { count: 1 })
                       : tStudents('cardOrderCartSelectedPlural', { count: selectedIds.size })}
                   </span>
+                </div>
+                <div className="rounded-xl border border-border p-3 space-y-3 bg-muted/10">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={orderExtraBlanks}
+                      onChange={(e) => setOrderExtraBlanks(e.target.checked)}
+                      className="rounded accent-primary"
+                    />
+                    <span className="text-sm font-medium text-[var(--color-text-primary)]">{t('orderExtraBlanksToggle')}</span>
+                  </label>
+                  {orderExtraBlanks ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm text-[var(--color-text-secondary)]">{t('orderExtraBlanksLabel')}</span>
+                      <button
+                        type="button"
+                        className="p-2 rounded-lg border border-border hover:bg-muted disabled:opacity-40"
+                        disabled={extraBlankCount <= 1}
+                        onClick={() => setExtraBlankCount((n) => Math.max(1, n - 1))}
+                        aria-label={t('extraCardsDecreaseAria')}
+                      >
+                        <Minus size={14} aria-hidden />
+                      </button>
+                      <input
+                        type="number"
+                        min={1}
+                        max={500}
+                        value={extraBlankCount}
+                        onChange={(e) => {
+                          const n = Math.round(Number(e.target.value));
+                          if (!Number.isFinite(n)) return;
+                          setExtraBlankCount(Math.min(500, Math.max(1, n)));
+                        }}
+                        className="w-16 px-2 py-1.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm text-center font-mono"
+                      />
+                      <button
+                        type="button"
+                        className="p-2 rounded-lg border border-border hover:bg-muted disabled:opacity-40"
+                        disabled={extraBlankCount >= 500}
+                        onClick={() => setExtraBlankCount((n) => Math.min(500, n + 1))}
+                        aria-label={t('extraCardsIncreaseAria')}
+                      >
+                        <Plus size={14} aria-hidden />
+                      </button>
+                      <p className="text-xs text-[var(--color-text-tertiary)] w-full sm:w-auto">{t('orderExtraBlanksHint')}</p>
+                    </div>
+                  ) : null}
                 </div>
                 <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
                   {selectedStudents.map((s) => (
@@ -591,13 +751,18 @@ export function CardOrderModal({
               <>
                 <div className="flex justify-center mb-4">
                   <div
-                    className="flex w-full max-w-[320px] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#dc2626] bg-[var(--color-surface-1)] px-4 text-center text-[#dc2626] aspect-[85.6/54]"
-                    role="img"
+                    className="w-full max-w-[320px] rounded-xl border border-dashed border-stone-300 bg-stone-50/50 dark:bg-stone-950/25 p-3 space-y-2"
+                    role="region"
                     aria-label={tOrders('cardPreviewLockedTitle')}
                   >
-                    <Lock size={28} className="shrink-0" aria-hidden />
-                    <p className="text-[13px] font-bold leading-tight">{tOrders('cardPreviewLockedTitle')}</p>
-                    <p className="text-[11px] opacity-70 leading-tight">{tOrders('cardPreviewLockedSub')}</p>
+                    <div className="flex items-start gap-2 text-stone-600 dark:text-stone-400">
+                      <Lock size={16} className="shrink-0 mt-0.5 opacity-80" aria-hidden />
+                      <p className="text-[12px] font-medium leading-snug">{tOrders('cardPreviewLockedTitle')}</p>
+                    </div>
+                    <CardOrderStyleSampleMock variant={selectedStyle} className="rounded-lg overflow-hidden shadow-sm" />
+                    <p className="text-[11px] text-stone-500 dark:text-stone-400 text-center leading-snug">
+                      {tOrders('cardPreviewLockedSub')}
+                    </p>
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -627,10 +792,10 @@ export function CardOrderModal({
                         type="button"
                         onClick={() => setSelectedStyle('light')}
                         className={cn(
-                          'rounded-xl border-2 p-3 text-start transition-shadow',
+                          'rounded-xl p-3 text-start transition-shadow',
                           selectedStyle === 'light'
-                            ? 'ring-2 ring-[color:var(--color-teal)] border-[color:var(--color-teal)]'
-                            : 'border-[var(--color-border)]',
+                            ? 'border-2 ring-2 ring-[color:var(--color-teal)] border-[color:var(--color-teal)]'
+                            : 'border border-stone-300 dark:border-[var(--color-border)] shadow-sm',
                         )}
                       >
                         <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-tertiary)]">
@@ -659,7 +824,21 @@ export function CardOrderModal({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('fullName', { defaultValue: 'Full name' })}</label>
-                        <input type="text" value={deliveryForm.full_name} onChange={(e) => setDeliveryForm((f) => ({ ...f, full_name: e.target.value }))} placeholder={t('fullNamePlaceholder', { defaultValue: 'الاسم الكامل' })} className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" dir="auto" />
+                        <input
+                          type="text"
+                          value={deliveryForm.full_name}
+                          onChange={(e) => {
+                            setDeliveryForm((f) => ({ ...f, full_name: e.target.value }));
+                            setStep2Errors((prev) => ({ ...prev, full_name: undefined }));
+                          }}
+                          onBlur={() => blurDeliveryField('full_name')}
+                          placeholder={t('fullNamePlaceholder', { defaultValue: 'الاسم الكامل' })}
+                          className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+                          dir="auto"
+                        />
+                        {step2Errors.full_name ? (
+                          <p className="text-xs text-red-600 dark:text-red-400 mt-1">{step2Errors.full_name}</p>
+                        ) : null}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('phone', { defaultValue: 'Phone' })}</label>
@@ -669,32 +848,90 @@ export function CardOrderModal({
                           onChange={(e) => {
                             const v = e.target.value.replace(/[^\d+]/g, '');
                             setDeliveryForm((f) => ({ ...f, phone: v }));
+                            setStep2Errors((prev) => ({ ...prev, phone: undefined }));
                           }}
+                          onBlur={() => blurDeliveryField('phone')}
                           placeholder="+20 1XXXXXXXX"
                           className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm font-mono"
                           dir="ltr"
                         />
+                        {step2Errors.phone ? (
+                          <p className="text-xs text-red-600 dark:text-red-400 mt-1">{step2Errors.phone}</p>
+                        ) : null}
                       </div>
                       <div className="sm:col-span-2">
                         <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('governorate', { defaultValue: 'Governorate' })}</label>
-                        <select value={deliveryForm.governorate} onChange={(e) => setDeliveryForm((f) => ({ ...f, governorate: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm">
+                        <select
+                          value={deliveryForm.governorate}
+                          onChange={(e) => {
+                            setDeliveryForm((f) => ({ ...f, governorate: e.target.value }));
+                            setStep2Errors((prev) => ({ ...prev, governorate: undefined }));
+                          }}
+                          onBlur={() => blurDeliveryField('governorate')}
+                          className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+                        >
                           <option value="">{t('selectGovernorate', { defaultValue: 'اختر المحافظة' })}</option>
                           {EGYPT_GOVERNORATES.map((g) => (
                             <option key={g.value} value={g.value}>{governorateSelectLabel(g, isRTL)}</option>
                           ))}
                         </select>
+                        {step2Errors.governorate ? (
+                          <p className="text-xs text-red-600 dark:text-red-400 mt-1">{step2Errors.governorate}</p>
+                        ) : null}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('cityDistrict', { defaultValue: 'City / District' })}</label>
-                        <input type="text" value={deliveryForm.city} onChange={(e) => setDeliveryForm((f) => ({ ...f, city: e.target.value }))} placeholder={t('cityPlaceholder', { defaultValue: 'المدينة / الحي' })} className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" dir="auto" />
+                        <input
+                          type="text"
+                          value={deliveryForm.city}
+                          onChange={(e) => {
+                            setDeliveryForm((f) => ({ ...f, city: e.target.value }));
+                            setStep2Errors((prev) => ({ ...prev, city: undefined }));
+                          }}
+                          onBlur={() => blurDeliveryField('city')}
+                          placeholder={t('cityPlaceholder', { defaultValue: 'المدينة / الحي' })}
+                          className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+                          dir="auto"
+                        />
+                        {step2Errors.city ? (
+                          <p className="text-xs text-red-600 dark:text-red-400 mt-1">{step2Errors.city}</p>
+                        ) : null}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('streetAddress', { defaultValue: 'Street address' })}</label>
-                        <input type="text" value={deliveryForm.street} onChange={(e) => setDeliveryForm((f) => ({ ...f, street: e.target.value }))} placeholder={t('streetPlaceholder', { defaultValue: 'الشارع' })} className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" dir="auto" />
+                        <input
+                          type="text"
+                          value={deliveryForm.street}
+                          onChange={(e) => {
+                            setDeliveryForm((f) => ({ ...f, street: e.target.value }));
+                            setStep2Errors((prev) => ({ ...prev, street: undefined }));
+                          }}
+                          onBlur={() => blurDeliveryField('street')}
+                          placeholder={t('streetPlaceholder', { defaultValue: 'الشارع' })}
+                          className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+                          dir="auto"
+                        />
+                        {step2Errors.street ? (
+                          <p className="text-xs text-red-600 dark:text-red-400 mt-1">{step2Errors.street}</p>
+                        ) : null}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('buildingApartment', { defaultValue: 'Building / Apartment' })}</label>
-                        <input type="text" value={deliveryForm.building} onChange={(e) => setDeliveryForm((f) => ({ ...f, building: e.target.value }))} placeholder={t('buildingPlaceholder', { defaultValue: 'المبنى / الشقة' })} className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" dir="auto" />
+                        <input
+                          type="text"
+                          value={deliveryForm.building}
+                          onChange={(e) => {
+                            setDeliveryForm((f) => ({ ...f, building: e.target.value }));
+                            setStep2Errors((prev) => ({ ...prev, building: undefined }));
+                          }}
+                          onBlur={() => blurDeliveryField('building')}
+                          placeholder={t('buildingPlaceholder', { defaultValue: 'المبنى / الشقة' })}
+                          className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+                          dir="auto"
+                        />
+                        {step2Errors.building ? (
+                          <p className="text-xs text-red-600 dark:text-red-400 mt-1">{step2Errors.building}</p>
+                        ) : null}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('landmarkOptional', { defaultValue: 'Landmark (optional)' })}</label>
@@ -720,7 +957,10 @@ export function CardOrderModal({
                         id="card-order-terms"
                         type="checkbox"
                         checked={termsAccepted}
-                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                        onChange={(e) => {
+                          setTermsAccepted(e.target.checked);
+                          setTermsInlineError(null);
+                        }}
                         className="mt-1 h-4 w-4 shrink-0 rounded accent-[color:var(--color-teal)]"
                       />
                       <div className="min-w-0 flex-1 text-[13px] text-[var(--color-text-primary)]">
@@ -744,6 +984,9 @@ export function CardOrderModal({
                         {tOrders('cardOrderTermsBody')}
                       </div>
                     ) : null}
+                    {termsInlineError ? (
+                      <p className="text-xs text-red-600 dark:text-red-400 mt-1.5">{termsInlineError}</p>
+                    ) : null}
                   </div>
                 </div>
               </>
@@ -754,13 +997,24 @@ export function CardOrderModal({
               <>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
                   {selectedStudents.map((s) => (
-                    <div key={s.id} className="flex justify-between text-sm py-1 border-b border-border last:border-0">
-                      <span className="font-medium">{s.name}</span>
-                      <span className="font-mono text-[var(--color-text-secondary)]">
-                        {s.student_number ? formatStudentNumberForDisplay(s.student_number) : '-'}
+                    <div key={s.id} className="flex justify-between gap-2 text-sm py-1 border-b border-border last:border-0">
+                      <span className="font-medium min-w-0">
+                        <bdi dir="rtl">{s.name}</bdi>
+                      </span>
+                      <span className="font-mono text-[var(--color-text-secondary)] shrink-0">
+                        {s.student_number ? (
+                          <bdi dir="ltr">{formatStudentNumberForDisplay(s.student_number)}</bdi>
+                        ) : (
+                          '-'
+                        )}
                       </span>
                     </div>
                   ))}
+                  {extraQty > 0 ? (
+                    <p className="text-xs text-[var(--color-text-tertiary)] pt-1 border-t border-dashed border-[var(--color-border)]">
+                      {t('orderSummaryExtraBlanksLine', { count: extraQty })}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="rounded-xl border border-border p-4 space-y-2">
                   <div className="flex justify-between gap-3 text-sm font-medium">
@@ -786,12 +1040,28 @@ export function CardOrderModal({
                     <span className="text-[var(--color-text-secondary)]">{tPricing('netBase')}</span>
                     <span className="font-mono text-end tabular-nums">{formatCurrency(taxParts.base, locale)}</span>
                   </div>
-                  <p className="text-[11px] text-[var(--color-text-tertiary)]">
-                    {t('orderSummaryBreakdownCards', {
-                      qty: quantity,
-                      unit: formatCurrency(CARD_UNIT_BASE_EGP, locale),
-                    })}
-                  </p>
+                  <div className="space-y-1">
+                    <div className="flex justify-between gap-3 items-start">
+                      <div className="min-w-0 space-y-0.5">
+                        <p className="text-[11px] text-[var(--color-text-tertiary)] leading-snug">
+                          {t('orderSummaryBreakdownCards', {
+                            qty: quantity,
+                            unit: formatCurrency(CARD_UNIT_BASE_EGP, locale),
+                          })}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setStep(1)}
+                          className="text-[11px] text-[var(--color-text-tertiary)] underline decoration-[var(--color-border)] hover:text-[color:var(--color-teal)]"
+                        >
+                          {t('orderSummaryChangeQuantity')}
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-[var(--color-text-tertiary)] opacity-90">
+                      {t('orderSummaryPerCardAllIn', { amount: formatCurrency(perCardAllIn, locale) })}
+                    </p>
+                  </div>
                   <div className="border-t border-[var(--color-border)]" />
                   <div className="flex justify-between gap-3 text-sm">
                     <span className="text-[var(--color-text-secondary)]">
@@ -894,14 +1164,9 @@ export function CardOrderModal({
             </button>
             {step < 3 ? (
               <button
+                type="button"
                 onClick={handleNext}
-                disabled={
-                  (step === 1 && selectedIds.size === 0) ||
-                  (step === 2 && !termsAccepted)
-                }
-                title={
-                  step === 2 && !termsAccepted ? tOrders('cardOrderTermsRequired') : undefined
-                }
+                disabled={step === 1 && selectedIds.size === 0}
                 className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary disabled:opacity-50 flex items-center gap-1"
               >
                 {tCommon('next')}

@@ -6,6 +6,7 @@ import { afterStudentWriteParentPackEffects } from '@/lib/studentParentPackWelco
 import { validateCSRFRequest } from '@/lib/csrf';
 import { scanRatelimit, rateLimitedResponse } from '@/lib/ratelimit';
 import { getShippingFee, getShippingZone } from '@/lib/bostaShipping';
+import { loadBostaShippingRates } from '@/lib/loadBostaShippingRates';
 import { parseBodyWithLimit } from '@/lib/validate';
 
 const ALLOWED_TABLES = [
@@ -174,8 +175,9 @@ export async function POST(request: Request) {
         typeof deliveryGovRaw === 'string' && deliveryGovRaw.trim() !== ''
           ? deliveryGovRaw.trim()
           : null;
-      const deliveryFee = getShippingFee(gov);
-      const shippingZone = getShippingZone(gov);
+      const bostaRates = await loadBostaShippingRates();
+      const deliveryFee = getShippingFee(gov, bostaRates);
+      const shippingZone = getShippingZone(gov, bostaRates);
       const qty = Math.round(Number(row.quantity ?? 0));
       const ppc = Number(row.price_per_card ?? 62);
       const total = Math.round((qty * ppc + deliveryFee) * 100) / 100;
