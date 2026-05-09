@@ -81,15 +81,13 @@
     "super_admin": "مدير النظام"
   },
   "pipeline": {
-    "prospect": "عميل محتمل",
-    "contacted": "تم التواصل",
-    "demo_scheduled": "موعد عرض مجدول",
-    "negotiating": "قيد التفاوض",
-    "closed_won": "تم الإغلاق",
-    "closed_lost": "خسارة",
-    "converted": "تم التحويل",
-    "totalLeads": "إجمالي العملاء المحتملين",
-    "conversionRate": "معدل التحويل"
+    "addLead": "إضافة عميل محتمل",
+    "fieldDistrict": "حقل منطقة",
+    "fieldSource": "حقل المصدر",
+    "overdueFollowups": "متأخر Followups",
+    "submitLead": "إرسال عميل محتمل",
+    "title": "عنوان",
+    "viewDetails": "عرض التفاصيل"
   },
   "toasts": {
     "saved": "تم الحفظ بنجاح",
@@ -434,7 +432,6 @@
     "exam": "Exam",
     "expenses": "المصروفات",
     "exportCSV": "تصدير CSV",
-    "exportCsv": "تصدير CSV",
     "exportData": "تصدير بيانات",
     "exportExcelUpgrade": "تصدير Excel ترقية",
     "exporting": "Exporting",
@@ -659,7 +656,6 @@
     "recurring": "Recurring",
     "referEarnCta": "Refer Earn Cta",
     "referrersOwed": "Referrers Owed",
-    "refresh": "تحديث",
     "registerLink": "التسجيل Link",
     "reject": "رفض",
     "remove": "إزالة",
@@ -840,7 +836,9 @@
     "yearName": "سنة الاسم",
     "you": "انت",
     "yourCode": "Your Code",
-    "yourSchedule": "Your الجدول"
+    "yourSchedule": "Your الجدول",
+    "notAuthenticated": "Not Authenticated — TODO: ترجمة",
+    "invalidPin": "Invalid Pin — TODO: ترجمة"
   },
   "emptyStates": {
     "students": {
@@ -1170,7 +1168,7 @@
     "signupButton": "سجّل سنترك",
     "pricingHeading": "خطط الأسعار",
     "pricingSubtitle": "اختر الخطة المناسبة لسنترك",
-    "pricingTitle": "الأسعار",
+    "pricingTitle": "أسعار شفافة، بدون مفاجآت",
     "allInclusiveBadge": "شامل الضرائب والرسوم",
     "pricingRecommendedBadge": "موصى به",
     "pricingPerPeriod": "{amount} ج.م",
@@ -1335,7 +1333,6 @@
     "heroCta": "ابدأ الآن",
     "watchDemo": "شاهد كيف يعمل",
     "featuresTitle": "كل ما تحتاجه لإدارة سنترك",
-    "pricingTitle": "أسعار شفافة، بدون مفاجآت",
     "finalCtaTitle": "ابدأ إدارة سنترك اليوم",
     "finalCtaDesc": "أول ١٠ سناتر تحصل على خصم ٤٠٪ مدى الحياة",
     "marketing": {
@@ -1806,14 +1803,18 @@
     "centerUpdate": "سنتر محدث",
     "centerSuspended": "سنتر موقوف",
     "platformHealth": "صحة المنصة",
-    "pending": "قيد الانتظار",
-    "suspended": "موقوف",
     "atRisk": "في خطر",
     "createdAt": "تاريخ الإنشاء",
     "centersManage": "إدارة",
     "billingPeriod": "فترة الفوترة",
     "nextDue": "الاستحقاق القادم",
     "paymentHistory": "سجل المدفوعات",
+    "paymentProofTypeCol": "النوع",
+    "paymentProofReferenceCol": "المرجع",
+    "proofTypePaymob": "Paymob",
+    "proofTypeManual": "يدوي",
+    "proofTypeRecord": "سجل",
+    "proofTypeNone": "—",
     "recordedBy": "سُجّل بواسطة",
     "markAsPaid": "تأكيد الدفع",
     "sendReminder": "إرسال تذكير",
@@ -1845,7 +1846,6 @@
     "allCenters": "كل السناتر",
     "searchCenters": "بحث بالاسم أو الهاتف أو الكود...",
     "noResults": "لا توجد سناتر",
-    "plan": "الخطة",
     "amount": "المبلغ",
     "stage": "المرحلة",
     "edit": "تعديل",
@@ -1862,7 +1862,6 @@
     "filterAtRisk": "في خطر",
     "lastPayment": "آخر دفعة",
     "daysUntilRenewal": "أيام للتجديد",
-    "paymentProof": "إثبات الدفع",
     "invoiceNumber": "رقم الفاتورة",
     "billingAmount": "مبلغ الفاتورة",
     "sendReminderSuccess": "تم إرسال التذكير",
@@ -1931,7 +1930,8 @@
         "centerCode": "كود السنتر",
         "centerCodeWarning": "لا يمكن تغيير الكود بعد التعيين",
         "cardColor": "لون بطاقة QR",
-        "signupNotes": "ملاحظات التسجيل"
+        "signupNotes": "ملاحظات التسجيل",
+        "centerCodeDuplicate": "Center Code Duplicate — TODO: ترجمة"
       },
       "section2": {
         "title": "الحالة والخطة",
@@ -1942,7 +1942,9 @@
         "pricingType": "نوع التسعير",
         "billingType": "نوع الفوترة",
         "billingPeriod": "فترة الفوترة",
-        "weeklyStudentLimit": "حد الطلاب الأسبوعي"
+        "weeklyStudentLimit": "حد الطلاب الأسبوعي",
+        "planWarning": "Plan Warning — TODO: ترجمة",
+        "paygRate": "Payg Rate — TODO: ترجمة"
       },
       "section3": {
         "title": "تفاصيل الفوترة",
@@ -1954,7 +1956,9 @@
         "autoSuspendAt": "تاريخ الإيقاف التلقائي",
         "autoSuspendWarning": "سيتم إيقاف السنتر في هذا التاريخ إذا لم يُسدَّد",
         "subscriptionStartDate": "تاريخ بداية الاشتراك",
-        "isEarlyAdopter": "مبكر التبني"
+        "isEarlyAdopter": "مبكر التبني",
+        "earlyAdopterPrice": "Early Adopter Price — TODO: ترجمة",
+        "earlyAdopterNumber": "Early Adopter Number — TODO: ترجمة"
       },
       "section4": {
         "title": "الفواتير",
@@ -1966,7 +1970,19 @@
         "dueDate": "تاريخ الاستحقاق",
         "created": "تاريخ الإنشاء",
         "notes": "ملاحظات",
-        "noInvoices": "لا توجد فواتير بعد"
+        "noInvoices": "لا توجد فواتير بعد",
+        "updateStatus": "Update Status — TODO: ترجمة",
+        "discountAmount": "Discount Amount — TODO: ترجمة",
+        "applyDiscount": "Apply Discount — TODO: ترجمة",
+        "markPaid": "Mark Paid — TODO: ترجمة",
+        "cancelInvoice": "Cancel Invoice — TODO: ترجمة",
+        "paymentMethod": "Payment Method — TODO: ترجمة",
+        "paymentReference": "Payment Reference — TODO: ترجمة",
+        "paidAt": "Paid At — TODO: ترجمة",
+        "invoiceType": "Invoice Type — TODO: ترجمة",
+        "totalAmount": "Total Amount — TODO: ترجمة",
+        "periodStart": "Period Start — TODO: ترجمة",
+        "periodEnd": "Period End — TODO: ترجمة"
       },
       "section5": {
         "title": "سجل المدفوعات",
@@ -1975,7 +1991,11 @@
         "date": "التاريخ",
         "amount": "المبلغ",
         "method": "طريقة الدفع",
-        "recordedBy": "سُجّل بواسطة"
+        "recordedBy": "سُجّل بواسطة",
+        "amountRequired": "Amount Required — TODO: ترجمة",
+        "paymentDate": "Payment Date — TODO: ترجمة",
+        "amountPaid": "Amount Paid — TODO: ترجمة",
+        "paymentMethod": "Payment Method — TODO: ترجمة"
       },
       "section6": {
         "title": "باقة واتساب",
@@ -1989,7 +2009,9 @@
         "packCustomMin": "الحد الأدنى المخصص للفاتورة",
         "packPendingBalance": "الرصيد المعلق",
         "packBalanceNote": "الرصيد يُضاف للفاتورة القادمة",
-        "packMonths": "أشهر بدون فاتورة"
+        "packMonths": "أشهر بدون فاتورة",
+        "packCustomMinRequired": "Pack Custom Min Required — TODO: ترجمة",
+        "packRejectionReason": "Pack Rejection Reason — TODO: ترجمة"
       },
       "section7": {
         "title": "الإعلانات",
@@ -2009,7 +2031,8 @@
         "scheduleStart": "ساعة بداية الجدول",
         "scheduleEnd": "ساعة نهاية الجدول",
         "instapayNumber": "رقم الإنستاباي",
-        "instapayNote": "يستخدم لسحب الرصيد"
+        "instapayNote": "يستخدم لسحب الرصيد",
+        "scheduleHourError": "Schedule Hour Error — TODO: ترجمة"
       },
       "section9": {
         "title": "طلبات الخطة",
@@ -2019,7 +2042,11 @@
         "requestedPlan": "الخطة المطلوبة",
         "approve": "قبول",
         "reject": "رفض",
-        "noRequests": "لا توجد طلبات تغيير خطة"
+        "noRequests": "لا توجد طلبات تغيير خطة",
+        "rejectNotesEmpty": "Reject Notes Empty — TODO: ترجمة",
+        "newBillingAmount": "New Billing Amount — TODO: ترجمة",
+        "newAllInPrice": "New All In Price — TODO: ترجمة",
+        "rejectNotes": "Reject Notes — TODO: ترجمة"
       },
       "section10": {
         "title": "الإحالات",
@@ -2033,12 +2060,24 @@
         "rewardAmount": "مبلغ المكافأة",
         "payoutRequests": "طلبات الصرف",
         "noPayouts": "لا توجد طلبات صرف",
-        "noReferrals": "لا توجد إحالات بعد"
+        "noReferrals": "لا توجد إحالات بعد",
+        "commissionTableUnavailable": "Commission Table Unavailable — TODO: ترجمة",
+        "copied": "Copied — TODO: ترجمة",
+        "markPaid": "Mark Paid — TODO: ترجمة"
       },
       "section11": {
         "title": "منطقة الخطر",
         "blacklistBtn": "حظر السنتر",
-        "blacklistWarning": "الحظر يمنع هذا السنتر نهائياً من المنصة"
+        "blacklistWarning": "الحظر يمنع هذا السنتر نهائياً من المنصة",
+        "reasonMinLength": "Reason Min Length — TODO: ترجمة",
+        "blacklistedToast": "Blacklisted Toast — TODO: ترجمة",
+        "unblacklistedInfo": "Unblacklisted Info — TODO: ترجمة",
+        "isBlacklisted": "Is Blacklisted — TODO: ترجمة",
+        "unblacklistWarning": "Unblacklist Warning — TODO: ترجمة",
+        "unblacklistBtn": "Unblacklist Btn — TODO: ترجمة",
+        "confirmBlacklist": "Confirm Blacklist — TODO: ترجمة",
+        "reasonLabel": "Reason Label — TODO: ترجمة",
+        "confirmRemove": "Confirm Remove — TODO: ترجمة"
       },
       "section12": {
         "title": "معلومات النظام",
@@ -2057,7 +2096,23 @@
         "packDisabledAt": "تعطيل الباقة",
         "renewalReminder": "إرسال تذكير التجديد",
         "overdueReminder": "إرسال تذكير التأخر"
-      }
+      },
+      "error": "Error — TODO: ترجمة",
+      "saveError": "Save Error — TODO: ترجمة",
+      "saveSuccess": "Save Success — TODO: ترجمة",
+      "cancellation": {
+        "approved": "Approved — TODO: ترجمة",
+        "rejected": "Rejected — TODO: ترجمة",
+        "bannerTitle": "Banner Title — TODO: ترجمة",
+        "reason": "Reason — TODO: ترجمة",
+        "requested": "Requested — TODO: ترجمة",
+        "approveConfirm": "Approve Confirm — TODO: ترجمة",
+        "approve": "Approve — TODO: ترجمة",
+        "reject": "Reject — TODO: ترجمة"
+      },
+      "loading": "Loading — TODO: ترجمة",
+      "retry": "Retry — TODO: ترجمة",
+      "saving": "Saving — TODO: ترجمة"
     },
     "search": "بحث عن سنتر...",
     "studentsCount": "الطلاب",
@@ -2557,7 +2612,40 @@
       "col_details": "التفاصيل",
       "no_logs": "لا توجد سجلات مراجعة",
       "loadError": "تعذر تحميل سجل المراجعة"
-    }
+    },
+    "overviewInvalidResponse": "Overview Invalid Response — TODO: ترجمة",
+    "cardOrdersNewOrder": "Card Orders New Order — TODO: ترجمة",
+    "subActive": "Sub Active — TODO: ترجمة",
+    "subPending": "Sub Pending — TODO: ترجمة",
+    "subSuspended": "Sub Suspended — TODO: ترجمة",
+    "centerDeleted": "Center Deleted — TODO: ترجمة",
+    "confirmRemoveTeamMember": "Confirm Remove Team Member — TODO: ترجمة",
+    "retry": "Retry — TODO: ترجمة",
+    "overviewUnavailable": "Overview Unavailable — TODO: ترجمة",
+    "viewDetails": "View Details — TODO: ترجمة",
+    "noBillingRows": "No Billing Rows — TODO: ترجمة",
+    "pendingInvoices": "Pending Invoices — TODO: ترجمة",
+    "approvePay": "Approve Pay — TODO: ترجمة",
+    "rejectPayment": "Reject Payment — TODO: ترجمة",
+    "noPlanRequests": "No Plan Requests — TODO: ترجمة",
+    "contactWhatsApp": "Contact Whats App — TODO: ترجمة",
+    "noPending": "No Pending — TODO: ترجمة",
+    "studentsInOrder": "Students In Order — TODO: ترجمة",
+    "deliveryAddress": "Delivery Address — TODO: ترجمة",
+    "cardPreview": "Card Preview — TODO: ترجمة",
+    "noCardOrders": "No Card Orders — TODO: ترجمة",
+    "noTeamMembers": "No Team Members — TODO: ترجمة",
+    "remove": "Remove — TODO: ترجمة",
+    "referralCode": "Referral Code — TODO: ترجمة",
+    "confirmSuspend": "Confirm Suspend — TODO: ترجمة",
+    "deleteCenters": "Delete Centers — TODO: ترجمة",
+    "deleteCenterPermanent": "Delete Center Permanent — TODO: ترجمة",
+    "inviteTeamMember": "Invite Team Member — TODO: ترجمة",
+    "invite": "Invite — TODO: ترجمة",
+    "confirmApprovePayment": "Confirm Approve Payment — TODO: ترجمة",
+    "pricingMinimumCustom": "Pricing Minimum Custom — TODO: ترجمة",
+    "noReferrals": "No Referrals — TODO: ترجمة",
+    "finance": "Finance — TODO: ترجمة"
   },
   "ceo": {
     "brandTitle": "CenterHQ",
@@ -3098,7 +3186,16 @@
         "كام مدفوعات اتسجلت النهارده؟"
       ]
     },
-    "aiChat_fabLabel": "اسأل الذكاء الاصطناعي"
+    "aiChat_fabLabel": "اسأل الذكاء الاصطناعي",
+    "aiChat_loginRequired": "Ai Chat login Required — TODO: ترجمة",
+    "aiChat_errorGeneric": "Ai Chat error Generic — TODO: ترجمة",
+    "aiChat_title": "Ai Chat title — TODO: ترجمة",
+    "aiChat_close": "Ai Chat close — TODO: ترجمة",
+    "aiChat_emptyHint": "Ai Chat empty Hint — TODO: ترجمة",
+    "aiChat_loading": "Ai Chat loading — TODO: ترجمة",
+    "aiChat_placeholder": "Ai Chat placeholder — TODO: ترجمة",
+    "aiChat_send": "Ai Chat send — TODO: ترجمة",
+    "aiChat_beta": "Ai Chat beta — TODO: ترجمة"
   },
   "attendance": {
     "title": "سجل الحضور لـ",
@@ -3169,6 +3266,7 @@
     "pricePerCard": "السعر للبطاقة",
     "cardStyleOptionB": "الخيار B",
     "cardStyleOptionC": "الخيار C",
+    "cardStyleOptionAReservedHint": "الخيار A محجوز لتصميم مستقبلي. الأنماط الفعّالة: B (داكن) و C (فاتح).",
     "viewCardDesignsPdf": "عرض PDF تصاميم البطاقات",
     "selectedCardStyle": "المحدد: {style}",
     "cardPreviewLockedTitle": "معاينة للشكل الذي اخترته — وليست رمز QR الحقيقي.",
@@ -3344,9 +3442,18 @@
       "title": "الفوترة والاشتراكات"
     },
     "period": {
-      "monthly": { "label": "شهري", "premium": "زيادة 15٪" },
-      "quarterly": { "label": "ربع سنوي", "recommended": "الأفضل" },
-      "annual": { "label": "سنوي", "free": "شهرين مجاناً" }
+      "monthly": {
+        "label": "شهري",
+        "premium": "زيادة 15٪"
+      },
+      "quarterly": {
+        "label": "ربع سنوي",
+        "recommended": "الأفضل"
+      },
+      "annual": {
+        "label": "سنوي",
+        "free": "شهرين مجاناً"
+      }
     },
     "currentPlan": {
       "monthlyPrice": "السعر الشهري",
@@ -3575,7 +3682,8 @@
     "whatsappSupport": "دعم واتساب",
     "contactSupportViaWhatsapp": "تواصل مع الدعم عبر واتساب",
     "securityAndSignOut": "الأمان وتسجيل الخروج",
-    "paymobIframeTitle": "دفع عبر Paymob"
+    "paymobIframeTitle": "دفع عبر Paymob",
+    "onlyOwnersCanManageTeam": "Only Owners Can Manage Team — TODO: ترجمة"
   },
   "branches": {
     "title": "الفروع",
@@ -3798,7 +3906,11 @@
     "total": "الإجمالي",
     "noHealthData": "لا توجد بيانات صحية حتى الآن",
     "noCohortData": "لا توجد بيانات للمجموعة",
-    "renewalsThisWeek": "التجديدات هذا الأسبوع"
+    "renewalsThisWeek": "التجديدات هذا الأسبوع",
+    "financials": {
+      "fetchError": "Fetch Error — TODO: ترجمة",
+      "retryButton": "Retry Button — TODO: ترجمة"
+    }
   },
   "ceoRange": {
     "thisMonth": "هذا الشهر",
@@ -4289,7 +4401,9 @@
     "welcomeBack": "مرحباً بعودتك",
     "headline": "سجّل دخولك إلى مركزك",
     "register": "سجل مركزك",
-    "localeToggleAria": "تغيير اللغة"
+    "localeToggleAria": "تغيير اللغة",
+    "smsTooMany": "Sms Too Many — TODO: ترجمة",
+    "otpError": "Otp Error — TODO: ترجمة"
   },
   "onboarding": {
     "title": "مرحبًا بك في CenterHQ",
@@ -4900,6 +5014,7 @@
       "dismiss": "حسناً"
     },
     "duplicateToast": "مسجل مسبقاً اليوم — إدخال فقط",
+    "processing": "جاري المعالجة…",
     "entryRecordedToast": "تم تسجيل الدخول",
     "pendingBadge": "مزامنة معلقة ({count})",
     "viewAllToday": "عرض كل اليوم",
@@ -5417,7 +5532,33 @@
     "announcementConfirm": "إرسال الإعلان",
     "announcementCapWarning": "استخدمت {balance} من {cap} إعلان هذا الشهر",
     "announcementCapReached": "تم الوصول للحد الأقصى للإعلانات هذا الشهر. يتجدد الشهر القادم.",
-    "announcementSentToast": "تم الإرسال إلى {count} ولي أمر · التكلفة: {cost} ج.م"
+    "announcementSentToast": "تم الإرسال إلى {count} ولي أمر · التكلفة: {cost} ج.م",
+    "parentPhoneSaved": "Parent Phone Saved — TODO: ترجمة",
+    "parentPhoneCleared": "Parent Phone Cleared — TODO: ترجمة",
+    "packOptInError": "Pack Opt In Error — TODO: ترجمة",
+    "regenerateQRConfirm": "Regenerate QRConfirm — TODO: ترجمة",
+    "allStudentsHaveQR": "All Students Have QR — TODO: ترجمة",
+    "qrGeneratedNew": "Qr Generated New — TODO: ترجمة",
+    "addStudentSuccess": "Add Student Success — TODO: ترجمة",
+    "empty_title": "Empty title — TODO: ترجمة",
+    "empty_subtitle": "Empty subtitle — TODO: ترجمة",
+    "editParentPhone": "Edit Parent Phone — TODO: ترجمة",
+    "parentPhonePlaceholder": "Parent Phone Placeholder — TODO: ترجمة",
+    "save": "Save — TODO: ترجمة",
+    "cancel": "Cancel — TODO: ترجمة",
+    "alreadyInOrder": "Already In Order — TODO: ترجمة",
+    "addedToOrder": "Added To Order — TODO: ترجمة",
+    "parentConsented": "Parent Consented — TODO: ترجمة",
+    "packDisabledInactive": "Pack Disabled Inactive — TODO: ترجمة",
+    "packDisabledNoPhone": "Pack Disabled No Phone — TODO: ترجمة",
+    "statement": {
+      "printStatement": "Print Statement — TODO: ترجمة"
+    },
+    "parentPackOptInHint": "Parent Pack Opt In Hint — TODO: ترجمة",
+    "assignGroups": "Assign Groups — TODO: ترجمة",
+    "deleteStudent": "Delete Student — TODO: ترجمة",
+    "deleteStudentConfirm": "Delete Student Confirm — TODO: ترجمة",
+    "regenerateQR": "Regenerate QR — TODO: ترجمة"
   },
   "notFound": {
     "heading": "الصفحة غير موجودة",
@@ -6398,15 +6539,6 @@
   "pinPlaceholder": {},
   "pinTooShort": {},
   "pinsDoNotMatch": {},
-  "pipeline": {
-    "addLead": "إضافة عميل محتمل",
-    "fieldDistrict": "حقل منطقة",
-    "fieldSource": "حقل المصدر",
-    "overdueFollowups": "متأخر Followups",
-    "submitLead": "إرسال عميل محتمل",
-    "title": "عنوان",
-    "viewDetails": "عرض التفاصيل"
-  },
   "pipelineEmpty": {},
   "pipelineEmptyDesc": {},
   "pipelineTitle": {},

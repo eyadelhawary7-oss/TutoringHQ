@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import { CheckCircle, XCircle, AlertTriangle, Clock } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Clock, Loader2 } from 'lucide-react';
 
 interface Student {
   id: string;
@@ -79,6 +79,7 @@ export default function ScanResultScreen({
   paymentHeadline = null,
 }: ScanResultScreenProps) {
   const t = useTranslations('scan');
+  const tsScan = useTranslations('scanner');
   const tAllow = useTranslations('scanner.allowEntry');
   const tCommon = useTranslations('common');
   const selectedGroup = selectedGroupProp ?? student.groups?.[0] ?? null;
@@ -91,6 +92,15 @@ export default function ScanResultScreen({
 
   const [countdown, setCountdown] = useState(3);
   const [allowReason, setAllowReason] = useState('parent_paying_tomorrow');
+  const [busyPaymentMethod, setBusyPaymentMethod] = useState<string | null>(null);
+  const [busyAllowEntry, setBusyAllowEntry] = useState(false);
+
+  useEffect(() => {
+    if (!isProcessing) {
+      setBusyPaymentMethod(null);
+      setBusyAllowEntry(false);
+    }
+  }, [isProcessing]);
 
   useEffect(() => {
     if (hasVibrated.current) return;
@@ -240,24 +250,39 @@ export default function ScanResultScreen({
 
         <p className="text-center text-xs uppercase tracking-wider font-semibold text-[var(--color-text-secondary)] mb-3">{t('selectMethod')}</p>
         <div className="grid grid-cols-2 gap-3 w-full mb-4">
-          {PAYMENT_METHODS.map(({ value, icon, labelKey }) => (
+          {PAYMENT_METHODS.map(({ value, icon, labelKey }) => {
+            const busyHere = busyPaymentMethod === value;
+            const disablePayments =
+              isProcessing || busyPaymentMethod !== null || busyAllowEntry;
+            return (
             <button
               key={value}
               type="button"
-              disabled={isProcessing}
-              onClick={() =>
+              disabled={disablePayments}
+              onClick={() => {
+                setBusyPaymentMethod(value);
                 onPaymentSelect(
                   value,
                   selectedGroup?.id ?? student.groups?.[0]?.id,
                   selectedGroup?.fee ?? student.groups?.[0]?.fee ?? student.fee,
-                )
-              }
+                );
+              }}
               className="min-h-[44px] py-3 px-4 bg-[var(--color-surface-0)] hover:bg-[var(--color-surface-2)] rounded-xl font-semibold transition-colors border border-[var(--color-border-default)] text-sm disabled:opacity-50 text-[var(--color-text-primary)]"
             >
-              <span className="block mb-1">{icon}</span>
-              <span>{t(labelKey as 'cash')}</span>
+              {busyHere ? (
+                <>
+                  <Loader2 className="mx-auto mb-1 h-5 w-5 animate-spin text-teal-600" aria-hidden />
+                  <span className="block text-xs">{tsScan('processing')}</span>
+                </>
+              ) : (
+                <>
+                  <span className="block mb-1">{icon}</span>
+                  <span>{t(labelKey as 'cash')}</span>
+                </>
+              )}
             </button>
-          ))}
+            );
+          })}
         </div>
 
         {canAllowLateEntry && onAllowLateEntry && (
@@ -275,11 +300,21 @@ export default function ScanResultScreen({
             </select>
             <button
               type="button"
-              disabled={isProcessing}
-              onClick={() => onAllowLateEntry(allowReason)}
-              className="w-full py-3 bg-[var(--color-surface-0)] hover:bg-[var(--color-surface-2)] border border-[var(--color-border-default)] rounded-xl font-semibold transition-colors text-sm disabled:opacity-50 text-[var(--color-text-primary)]"
+              disabled={isProcessing || busyPaymentMethod !== null || busyAllowEntry}
+              onClick={() => {
+                setBusyAllowEntry(true);
+                onAllowLateEntry(allowReason);
+              }}
+              className="w-full py-3 bg-[var(--color-surface-0)] hover:bg-[var(--color-surface-2)] border border-[var(--color-border-default)] rounded-xl font-semibold transition-colors text-sm disabled:opacity-50 text-[var(--color-text-primary)] inline-flex flex-col items-center justify-center gap-1"
             >
-              {t('allowLateEntry')}
+              {busyAllowEntry ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin text-teal-600" aria-hidden />
+                  <span className="text-xs">{tsScan('processing')}</span>
+                </>
+              ) : (
+                t('allowLateEntry')
+              )}
             </button>
           </div>
         )}

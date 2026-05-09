@@ -81,15 +81,13 @@
     "super_admin": "Super Admin"
   },
   "pipeline": {
-    "prospect": "Prospect",
-    "contacted": "Contacted",
-    "demo_scheduled": "Demo Scheduled",
-    "negotiating": "Negotiating",
-    "closed_won": "Closed Won",
-    "closed_lost": "Closed Lost",
-    "converted": "Converted",
-    "totalLeads": "Total Leads",
-    "conversionRate": "Conversion Rate"
+    "addLead": "Add Lead",
+    "fieldDistrict": "Field District",
+    "fieldSource": "Field Source",
+    "overdueFollowups": "Overdue Followups",
+    "submitLead": "Submit Lead",
+    "title": "Title",
+    "viewDetails": "View Details"
   },
   "toasts": {
     "saved": "Saved successfully",
@@ -434,7 +432,6 @@
     "exam": "Exam",
     "expenses": "Expenses",
     "exportCSV": "Export CSV",
-    "exportCsv": "Export CSV",
     "exportData": "Export Data",
     "exportExcelUpgrade": "Export Excel Upgrade",
     "exporting": "Exporting",
@@ -659,7 +656,6 @@
     "recurring": "Recurring",
     "referEarnCta": "Refer Earn Cta",
     "referrersOwed": "Referrers Owed",
-    "refresh": "Refresh",
     "registerLink": "Register Link",
     "reject": "Reject",
     "remove": "Remove",
@@ -840,7 +836,9 @@
     "yearName": "Year Name",
     "you": "You",
     "yourCode": "Your Code",
-    "yourSchedule": "Your Schedule"
+    "yourSchedule": "Your Schedule",
+    "notAuthenticated": "Not Authenticated [TODO: AR review]",
+    "invalidPin": "Invalid Pin [TODO: AR review]"
   },
   "emptyStates": {
     "students": {
@@ -1023,7 +1021,9 @@
     "welcomeBack": "Welcome back",
     "headline": "Sign in to your center",
     "register": "Register your center",
-    "localeToggleAria": "Switch language"
+    "localeToggleAria": "Switch language",
+    "smsTooMany": "Sms Too Many [TODO: AR review]",
+    "otpError": "Otp Error [TODO: AR review]"
   },
   "forgotPassword": {
     "title": "Reset PIN",
@@ -1525,7 +1525,33 @@
     "announcementConfirm": "Send Announcement",
     "announcementCapWarning": "You have used {balance} of {cap} blasts this month",
     "announcementCapReached": "Monthly blast limit reached. Resets next month.",
-    "announcementSentToast": "Sent to {count} parents · Cost: {cost} EGP"
+    "announcementSentToast": "Sent to {count} parents · Cost: {cost} EGP",
+    "parentPhoneSaved": "Parent Phone Saved [TODO: AR review]",
+    "parentPhoneCleared": "Parent Phone Cleared [TODO: AR review]",
+    "packOptInError": "Pack Opt In Error [TODO: AR review]",
+    "regenerateQRConfirm": "Regenerate QRConfirm [TODO: AR review]",
+    "allStudentsHaveQR": "All Students Have QR [TODO: AR review]",
+    "qrGeneratedNew": "Qr Generated New [TODO: AR review]",
+    "addStudentSuccess": "Add Student Success [TODO: AR review]",
+    "empty_title": "Empty title [TODO: AR review]",
+    "empty_subtitle": "Empty subtitle [TODO: AR review]",
+    "editParentPhone": "Edit Parent Phone [TODO: AR review]",
+    "parentPhonePlaceholder": "Parent Phone Placeholder [TODO: AR review]",
+    "save": "Save [TODO: AR review]",
+    "cancel": "Cancel [TODO: AR review]",
+    "alreadyInOrder": "Already In Order [TODO: AR review]",
+    "addedToOrder": "Added To Order [TODO: AR review]",
+    "parentConsented": "Parent Consented [TODO: AR review]",
+    "packDisabledInactive": "Pack Disabled Inactive [TODO: AR review]",
+    "packDisabledNoPhone": "Pack Disabled No Phone [TODO: AR review]",
+    "statement": {
+      "printStatement": "Print Statement [TODO: AR review]"
+    },
+    "parentPackOptInHint": "Parent Pack Opt In Hint [TODO: AR review]",
+    "assignGroups": "Assign Groups [TODO: AR review]",
+    "deleteStudent": "Delete Student [TODO: AR review]",
+    "deleteStudentConfirm": "Delete Student Confirm [TODO: AR review]",
+    "regenerateQR": "Regenerate QR [TODO: AR review]"
   },
   "print": {
     "title": "Print Student Cards",
@@ -1671,6 +1697,7 @@
       "dismiss": "OK"
     },
     "duplicateToast": "Already recorded today — entry only",
+    "processing": "Processing…",
     "entryRecordedToast": "Entry recorded",
     "pendingBadge": "Pending sync ({count})",
     "viewAllToday": "View all today",
@@ -1972,7 +1999,16 @@
         "How many payments were recorded today?"
       ]
     },
-    "aiChat_fabLabel": "Ask AI"
+    "aiChat_fabLabel": "Ask AI",
+    "aiChat_loginRequired": "Ai Chat login Required [TODO: AR review]",
+    "aiChat_errorGeneric": "Ai Chat error Generic [TODO: AR review]",
+    "aiChat_title": "Ai Chat title [TODO: AR review]",
+    "aiChat_close": "Ai Chat close [TODO: AR review]",
+    "aiChat_emptyHint": "Ai Chat empty Hint [TODO: AR review]",
+    "aiChat_loading": "Ai Chat loading [TODO: AR review]",
+    "aiChat_placeholder": "Ai Chat placeholder [TODO: AR review]",
+    "aiChat_send": "Ai Chat send [TODO: AR review]",
+    "aiChat_beta": "Ai Chat beta [TODO: AR review]"
   },
   "ceoRange": {
     "thisMonth": "This Month",
@@ -2004,7 +2040,11 @@
     "total": "Total",
     "noHealthData": "No health data yet",
     "noCohortData": "No cohort data",
-    "renewalsThisWeek": "Renewals This Week"
+    "renewalsThisWeek": "Renewals This Week",
+    "financials": {
+      "fetchError": "Fetch Error [TODO: AR review]",
+      "retryButton": "Retry Button [TODO: AR review]"
+    }
   },
   "founderDash": {
     "pendingApprovals": "Pending Approvals",
@@ -2143,6 +2183,7 @@
     "pricePerCard": "Price per card",
     "cardStyleOptionB": "Option B",
     "cardStyleOptionC": "Option C",
+    "cardStyleOptionAReservedHint": "Option A is reserved for a future design. Active styles are B (Dark) and C (Light).",
     "viewCardDesignsPdf": "View Card Designs PDF",
     "selectedCardStyle": "Selected: {style}",
     "cardPreviewLockedTitle": "Sample look for the style you chose — not your real QR.",
@@ -3261,14 +3302,18 @@
     "centerUpdate": "Center Updated",
     "centerSuspended": "Center Suspended",
     "platformHealth": "Platform Health",
-    "pending": "Pending",
-    "suspended": "Suspended",
     "atRisk": "At Risk",
     "createdAt": "Created",
     "centersManage": "Manage",
     "billingPeriod": "Billing Period",
     "nextDue": "Next Due",
     "paymentHistory": "Payment History",
+    "paymentProofTypeCol": "Type",
+    "paymentProofReferenceCol": "Reference",
+    "proofTypePaymob": "Paymob",
+    "proofTypeManual": "Manual",
+    "proofTypeRecord": "Record",
+    "proofTypeNone": "—",
     "recordedBy": "Recorded By",
     "markAsPaid": "Mark as Paid",
     "sendReminder": "Send Reminder",
@@ -3300,7 +3345,6 @@
     "allCenters": "All Centers",
     "searchCenters": "Search by name, phone, code...",
     "noResults": "No centers found",
-    "plan": "Plan",
     "amount": "Amount",
     "stage": "Stage",
     "edit": "Edit",
@@ -3317,7 +3361,6 @@
     "filterAtRisk": "At Risk",
     "lastPayment": "Last Payment",
     "daysUntilRenewal": "Days Until Renewal",
-    "paymentProof": "Payment Proof",
     "invoiceNumber": "Invoice",
     "billingAmount": "Billing Amount",
     "sendReminderSuccess": "Reminder sent",
@@ -3386,7 +3429,8 @@
         "centerCode": "Center Code",
         "centerCodeWarning": "Center code cannot be changed after assignment",
         "cardColor": "QR Card Color",
-        "signupNotes": "Signup Notes"
+        "signupNotes": "Signup Notes",
+        "centerCodeDuplicate": "Center Code Duplicate [TODO: AR review]"
       },
       "section2": {
         "title": "Status & Plan",
@@ -3397,7 +3441,9 @@
         "pricingType": "Pricing Type",
         "billingType": "Billing Type",
         "billingPeriod": "Billing Period",
-        "weeklyStudentLimit": "Weekly Student Limit"
+        "weeklyStudentLimit": "Weekly Student Limit",
+        "planWarning": "Plan Warning [TODO: AR review]",
+        "paygRate": "Payg Rate [TODO: AR review]"
       },
       "section3": {
         "title": "Billing Details",
@@ -3409,7 +3455,9 @@
         "autoSuspendAt": "Auto-Suspend Date",
         "autoSuspendWarning": "Center will be suspended on this date if unpaid",
         "subscriptionStartDate": "Subscription Start Date",
-        "isEarlyAdopter": "Early Adopter"
+        "isEarlyAdopter": "Early Adopter",
+        "earlyAdopterPrice": "Early Adopter Price [TODO: AR review]",
+        "earlyAdopterNumber": "Early Adopter Number [TODO: AR review]"
       },
       "section4": {
         "title": "Invoices",
@@ -3421,7 +3469,19 @@
         "dueDate": "Due Date",
         "created": "Created",
         "notes": "Notes",
-        "noInvoices": "No invoices yet"
+        "noInvoices": "No invoices yet",
+        "updateStatus": "Update Status [TODO: AR review]",
+        "discountAmount": "Discount Amount [TODO: AR review]",
+        "applyDiscount": "Apply Discount [TODO: AR review]",
+        "markPaid": "Mark Paid [TODO: AR review]",
+        "cancelInvoice": "Cancel Invoice [TODO: AR review]",
+        "paymentMethod": "Payment Method [TODO: AR review]",
+        "paymentReference": "Payment Reference [TODO: AR review]",
+        "paidAt": "Paid At [TODO: AR review]",
+        "invoiceType": "Invoice Type [TODO: AR review]",
+        "totalAmount": "Total Amount [TODO: AR review]",
+        "periodStart": "Period Start [TODO: AR review]",
+        "periodEnd": "Period End [TODO: AR review]"
       },
       "section5": {
         "title": "Payment History",
@@ -3430,7 +3490,11 @@
         "date": "Date",
         "amount": "Amount",
         "method": "Method",
-        "recordedBy": "Recorded By"
+        "recordedBy": "Recorded By",
+        "amountRequired": "Amount Required [TODO: AR review]",
+        "paymentDate": "Payment Date [TODO: AR review]",
+        "amountPaid": "Amount Paid [TODO: AR review]",
+        "paymentMethod": "Payment Method [TODO: AR review]"
       },
       "section6": {
         "title": "WhatsApp Pack",
@@ -3444,7 +3508,9 @@
         "packCustomMin": "Custom Invoice Minimum",
         "packPendingBalance": "Pending Balance",
         "packBalanceNote": "Balance carried to next invoice",
-        "packMonths": "Months Without Invoice"
+        "packMonths": "Months Without Invoice",
+        "packCustomMinRequired": "Pack Custom Min Required [TODO: AR review]",
+        "packRejectionReason": "Pack Rejection Reason [TODO: AR review]"
       },
       "section7": {
         "title": "Announcements",
@@ -3464,7 +3530,8 @@
         "scheduleStart": "Schedule Start Hour",
         "scheduleEnd": "Schedule End Hour",
         "instapayNumber": "InstaPay Number",
-        "instapayNote": "Used for credit withdrawals"
+        "instapayNote": "Used for credit withdrawals",
+        "scheduleHourError": "Schedule Hour Error [TODO: AR review]"
       },
       "section9": {
         "title": "Plan Requests",
@@ -3474,7 +3541,11 @@
         "requestedPlan": "Requested Plan",
         "approve": "Approve",
         "reject": "Reject",
-        "noRequests": "No plan change requests"
+        "noRequests": "No plan change requests",
+        "rejectNotesEmpty": "Reject Notes Empty [TODO: AR review]",
+        "newBillingAmount": "New Billing Amount [TODO: AR review]",
+        "newAllInPrice": "New All In Price [TODO: AR review]",
+        "rejectNotes": "Reject Notes [TODO: AR review]"
       },
       "section10": {
         "title": "Referrals",
@@ -3488,12 +3559,24 @@
         "rewardAmount": "Reward Amount",
         "payoutRequests": "Payout Requests",
         "noPayouts": "No payout requests",
-        "noReferrals": "No referrals yet"
+        "noReferrals": "No referrals yet",
+        "commissionTableUnavailable": "Commission Table Unavailable [TODO: AR review]",
+        "copied": "Copied [TODO: AR review]",
+        "markPaid": "Mark Paid [TODO: AR review]"
       },
       "section11": {
         "title": "Danger Zone",
         "blacklistBtn": "Blacklist Center",
-        "blacklistWarning": "Blacklisting permanently blocks this center from the platform"
+        "blacklistWarning": "Blacklisting permanently blocks this center from the platform",
+        "reasonMinLength": "Reason Min Length [TODO: AR review]",
+        "blacklistedToast": "Blacklisted Toast [TODO: AR review]",
+        "unblacklistedInfo": "Unblacklisted Info [TODO: AR review]",
+        "isBlacklisted": "Is Blacklisted [TODO: AR review]",
+        "unblacklistWarning": "Unblacklist Warning [TODO: AR review]",
+        "unblacklistBtn": "Unblacklist Btn [TODO: AR review]",
+        "confirmBlacklist": "Confirm Blacklist [TODO: AR review]",
+        "reasonLabel": "Reason Label [TODO: AR review]",
+        "confirmRemove": "Confirm Remove [TODO: AR review]"
       },
       "section12": {
         "title": "System Information",
@@ -3512,7 +3595,23 @@
         "packDisabledAt": "Pack Disabled",
         "renewalReminder": "Renewal Reminder Sent",
         "overdueReminder": "Overdue Reminder Sent"
-      }
+      },
+      "error": "Error [TODO: AR review]",
+      "saveError": "Save Error [TODO: AR review]",
+      "saveSuccess": "Save Success [TODO: AR review]",
+      "cancellation": {
+        "approved": "Approved [TODO: AR review]",
+        "rejected": "Rejected [TODO: AR review]",
+        "bannerTitle": "Banner Title [TODO: AR review]",
+        "reason": "Reason [TODO: AR review]",
+        "requested": "Requested [TODO: AR review]",
+        "approveConfirm": "Approve Confirm [TODO: AR review]",
+        "approve": "Approve [TODO: AR review]",
+        "reject": "Reject [TODO: AR review]"
+      },
+      "loading": "Loading [TODO: AR review]",
+      "retry": "Retry [TODO: AR review]",
+      "saving": "Saving [TODO: AR review]"
     },
     "search": "Search centers...",
     "studentsCount": "Students",
@@ -3611,11 +3710,11 @@
       "pricingControlPanel": "Pricing Control Panel",
       "pricingSectionSubscriptions": "Subscription Plans",
       "pricingPlanName": "Plan Name",
-    "pricingStudentLimit": "Weekly student cap",
-    "pricingMonthlyList": "Monthly (inclusive EGP)",
-    "pricingQuarterlyAllIn": "Quarterly / mo (inclusive)",
-    "pricingAnnualDerived": "Annual / mo (derived)",
-    "pricingMonthlyPremiumDerived": "Monthly vs quarterly (+15% approx.)",
+      "pricingStudentLimit": "Weekly student cap",
+      "pricingMonthlyList": "Monthly (inclusive EGP)",
+      "pricingQuarterlyAllIn": "Quarterly / mo (inclusive)",
+      "pricingAnnualDerived": "Annual / mo (derived)",
+      "pricingMonthlyPremiumDerived": "Monthly vs quarterly (+15% approx.)",
       "pricingActive": "Active",
       "pricingSave": "Save",
       "pricingSectionPack": "Parent WhatsApp Pack",
@@ -4017,7 +4116,40 @@
       "col_details": "Details",
       "no_logs": "No audit log entries",
       "loadError": "Could not load audit log"
-    }
+    },
+    "overviewInvalidResponse": "Overview Invalid Response [TODO: AR review]",
+    "cardOrdersNewOrder": "Card Orders New Order [TODO: AR review]",
+    "subActive": "Sub Active [TODO: AR review]",
+    "subPending": "Sub Pending [TODO: AR review]",
+    "subSuspended": "Sub Suspended [TODO: AR review]",
+    "centerDeleted": "Center Deleted [TODO: AR review]",
+    "confirmRemoveTeamMember": "Confirm Remove Team Member [TODO: AR review]",
+    "retry": "Retry [TODO: AR review]",
+    "overviewUnavailable": "Overview Unavailable [TODO: AR review]",
+    "viewDetails": "View Details [TODO: AR review]",
+    "noBillingRows": "No Billing Rows [TODO: AR review]",
+    "pendingInvoices": "Pending Invoices [TODO: AR review]",
+    "approvePay": "Approve Pay [TODO: AR review]",
+    "rejectPayment": "Reject Payment [TODO: AR review]",
+    "noPlanRequests": "No Plan Requests [TODO: AR review]",
+    "contactWhatsApp": "Contact Whats App [TODO: AR review]",
+    "noPending": "No Pending [TODO: AR review]",
+    "studentsInOrder": "Students In Order [TODO: AR review]",
+    "deliveryAddress": "Delivery Address [TODO: AR review]",
+    "cardPreview": "Card Preview [TODO: AR review]",
+    "noCardOrders": "No Card Orders [TODO: AR review]",
+    "noTeamMembers": "No Team Members [TODO: AR review]",
+    "remove": "Remove [TODO: AR review]",
+    "referralCode": "Referral Code [TODO: AR review]",
+    "confirmSuspend": "Confirm Suspend [TODO: AR review]",
+    "deleteCenters": "Delete Centers [TODO: AR review]",
+    "deleteCenterPermanent": "Delete Center Permanent [TODO: AR review]",
+    "inviteTeamMember": "Invite Team Member [TODO: AR review]",
+    "invite": "Invite [TODO: AR review]",
+    "confirmApprovePayment": "Confirm Approve Payment [TODO: AR review]",
+    "pricingMinimumEgp": "Pricing Minimum Egp [TODO: AR review]",
+    "noReferrals": "No Referrals [TODO: AR review]",
+    "finance": "Finance [TODO: AR review]"
   },
   "notFound": {
     "heading": "Page Not Found",
@@ -4252,9 +4384,18 @@
       "title": "Billing & subscriptions"
     },
     "period": {
-      "monthly": { "label": "Monthly", "premium": "+15%" },
-      "quarterly": { "label": "Quarterly", "recommended": "Best value" },
-      "annual": { "label": "Annual", "free": "2 months free" }
+      "monthly": {
+        "label": "Monthly",
+        "premium": "+15%"
+      },
+      "quarterly": {
+        "label": "Quarterly",
+        "recommended": "Best value"
+      },
+      "annual": {
+        "label": "Annual",
+        "free": "2 months free"
+      }
     },
     "currentPlan": {
       "monthlyPrice": "Monthly price",
@@ -4483,7 +4624,8 @@
     "whatsappSupport": "WhatsApp Support",
     "contactSupportViaWhatsapp": "Contact support via WhatsApp",
     "securityAndSignOut": "Security & Sign Out",
-    "paymobIframeTitle": "Paymob checkout"
+    "paymobIframeTitle": "Paymob checkout",
+    "onlyOwnersCanManageTeam": "Only Owners Can Manage Team [TODO: AR review]"
   },
   "cardOrders": {
     "orderIdCards": "Order ID Cards",
@@ -4863,7 +5005,7 @@
     "signupButton": "Register Your Center",
     "pricingHeading": "Pricing Plans",
     "pricingSubtitle": "Choose the right plan for your center",
-    "pricingTitle": "Pricing",
+    "pricingTitle": "Transparent pricing, no surprises",
     "allInclusiveBadge": "Includes taxes and fees",
     "pricingRecommendedBadge": "Recommended",
     "pricingPerPeriod": "{amount} EGP",
@@ -5028,7 +5170,6 @@
     "heroCta": "Get started",
     "watchDemo": "See how it works",
     "featuresTitle": "Everything you need to run your center",
-    "pricingTitle": "Transparent pricing, no surprises",
     "finalCtaTitle": "Start managing your center today",
     "finalCtaDesc": "First 10 centers get 40% off for life",
     "marketing": {
@@ -6403,15 +6544,6 @@
   "pinPlaceholder": {},
   "pinTooShort": {},
   "pinsDoNotMatch": {},
-  "pipeline": {
-    "addLead": "Add Lead",
-    "fieldDistrict": "Field District",
-    "fieldSource": "Field Source",
-    "overdueFollowups": "Overdue Followups",
-    "submitLead": "Submit Lead",
-    "title": "Title",
-    "viewDetails": "View Details"
-  },
   "pipelineEmpty": {},
   "pipelineEmptyDesc": {},
   "pipelineTitle": {},

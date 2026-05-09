@@ -149,6 +149,13 @@ export async function POST(request: Request) {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
+    const { data: actorRow } = await supabaseAdmin
+      .from('users')
+      .select('center_id, role')
+      .eq('id', user.id)
+      .maybeSingle();
+    const actorCenterId = (actorRow as { center_id?: string | null } | null)?.center_id ?? null;
+
     if (
       table === 'card_orders' &&
       operation === 'insert' &&
@@ -294,6 +301,30 @@ export async function POST(request: Request) {
     }
 
     const result = await query;
+
+    if (isStateChange && !result.error) {
+      const filterPreview =
+        Array.isArray(filters) && filters.length > 0
+          ? filters.slice(0, 8).map((f: { column?: string; op?: string }) => `${f.column}:${f.op}`)
+          : [];
+      void supabaseAdmin
+        .from('audit_log')
+        .insert({
+          center_id: actorCenterId,
+          user_id: user.id,
+          action: `db_proxy.${String(operation)}.${String(table)}`,
+          entity_type: 'db_proxy',
+          details: {
+            table,
+            operation,
+            filter_preview: filterPreview,
+          },
+        })
+        .then(
+          () => {},
+          () => {},
+        );
+    }
 
     if (!result.error && table === 'students') {
       try {

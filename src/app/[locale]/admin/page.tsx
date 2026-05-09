@@ -511,7 +511,18 @@ function AdminPageContent() {
   const [overview, setOverview] = useState<OverviewData | null>(null);
   const [centers, setCenters] = useState<CenterRow[]>([]);
   const [billingData, setBillingData] = useState<BillingRow[]>([]);
-  const [paymentHistory, setPaymentHistory] = useState<Array<{ centerName: string; amount: number; paid_at?: string; billing_period?: string; recorded_by?: string }>>([]);
+  const [paymentHistory, setPaymentHistory] = useState<
+    Array<{
+      centerName: string;
+      amount: number;
+      paid_at?: string;
+      billing_period?: string;
+      recorded_by?: string;
+      proof_type?: string;
+      proof_reference?: string;
+      payment_proof_url?: string | null;
+    }>
+  >([]);
   const [pendingInvoices, setPendingInvoices] = useState<Array<{ id: string; centerName: string; payment_amount?: number; center_id: string; payment_proof_url?: string | null }>>([]);
   const [pendingSignups, setPendingSignups] = useState<PendingSignup[]>([]);
   const [planRequests, setPlanRequests] = useState<PlanRequest[]>([]);
@@ -2145,10 +2156,27 @@ function AdminPageContent() {
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('amount')}</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">{tAdmin('billingPeriod')}</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden lg:table-cell">{tAdmin('recordedBy')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden xl:table-cell">{tAdmin('paymentProofTypeCol')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden xl:table-cell">{tAdmin('paymentProofReferenceCol')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--color-border-subtle)]">
-                    {paymentHistory.map((p, i) => (
+                    {paymentHistory.map((p, i) => {
+                      const proofUrl =
+                        p.proof_type === 'paymob'
+                          ? (p.payment_proof_url || p.proof_reference || '').trim()
+                          : '';
+                      const proofRefDisplay =
+                        proofUrl.length > 48 ? `${proofUrl.slice(0, 45)}…` : (p.proof_reference ?? '—');
+                      const typeLabel =
+                        p.proof_type === 'paymob'
+                          ? tAdmin('proofTypePaymob')
+                          : p.proof_type === 'manual'
+                            ? tAdmin('proofTypeManual')
+                            : p.proof_type === 'record'
+                              ? tAdmin('proofTypeRecord')
+                              : tAdmin('proofTypeNone');
+                      return (
                       <tr key={i} className="hover:bg-[var(--color-surface-0)] transition-colors">
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
                           {p.paid_at ? formatDate(p.paid_at, locale) : tCommon('notSet')}
@@ -2165,8 +2193,30 @@ function AdminPageContent() {
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden lg:table-cell">
                           {p.recorded_by ?? tCommon('notSet')}
                         </td>
+                        <td className="py-3.5 px-4 text-sm hidden xl:table-cell">
+                          <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] text-[var(--color-text-primary)]">
+                            {typeLabel}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden xl:table-cell max-w-[280px]">
+                          {proofUrl ? (
+                            <button
+                              type="button"
+                              onClick={() => setViewingProof(proofUrl)}
+                              className="text-left text-blue-600 hover:underline font-mono text-xs truncate block max-w-full"
+                              title={proofUrl}
+                            >
+                              {proofRefDisplay}
+                            </button>
+                          ) : (
+                            <span className="font-mono text-xs break-all" title={p.proof_reference}>
+                              {p.proof_reference ?? '—'}
+                            </span>
+                          )}
+                        </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

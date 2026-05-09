@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAdminContext } from '@/lib/admin-auth';
+import { derivePaymentProofColumns } from '@/lib/paymentProofDisplay';
 import { adminBillingRecordSchema, adminBillingInvoiceSchema } from '@/lib/validations';
 import { validateCSRFRequest } from '@/lib/csrf';
 import {
@@ -192,11 +193,21 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: payError.message }, { status: 500 });
     }
 
-    const paymentRows = (payments || []).map((p: { center_id: string; [k: string]: unknown }) => ({
-      ...p,
-      centerName: billingRows.find((c: { id: string }) => c.id === p.center_id)?.name ?? '—',
-      source: 'admin_payment' as const,
-    }));
+    const paymentRows = (payments || []).map((p: { center_id: string; notes?: string | null; [k: string]: unknown }) => {
+      const notes = p.notes != null ? String(p.notes) : '';
+      const proof = derivePaymentProofColumns({
+        payment_proof_url: null,
+        payment_reference: notes || null,
+        source: 'admin_payment',
+      });
+      return {
+        ...p,
+        centerName: billingRows.find((c: { id: string }) => c.id === p.center_id)?.name ?? '—',
+        source: 'admin_payment' as const,
+        proof_type: proof.proofType,
+        proof_reference: proof.proofReference,
+      };
+    });
 
     const { data: allInvoices } = await supabaseAdmin
       .from('invoices')
@@ -205,18 +216,28 @@ export async function GET(request: Request) {
       .order('updated_at', { ascending: false })
       .limit(50);
 
-    const invoiceRows = (allInvoices || []).map((inv: { center_id: string; [k: string]: unknown }) => ({
-      id: inv.id,
-      center_id: inv.center_id,
-      centerName: billingRows.find((c: { id: string }) => c.id === inv.center_id)?.name ?? '—',
-      amount: inv.payment_amount ?? 0,
-      billing_period: 'payment_proof',
-      paid_at: inv.paid_at ?? inv.updated_at,
-      notes: `Invoice ${inv.payment_reference ?? inv.id}`,
-      source: 'invoice' as const,
-      invoiceStatus: inv.status,
-      payment_proof_url: inv.payment_proof_url ?? null,
-    }));
+    const invoiceRows = (allInvoices || []).map((inv: { center_id: string; [k: string]: unknown }) => {
+      const proof = derivePaymentProofColumns({
+        payment_proof_url: inv.payment_proof_url as string | null | undefined,
+        payment_reference: inv.payment_reference as string | null | undefined,
+        source: 'invoice',
+      });
+      return {
+        id: inv.id,
+        center_id: inv.center_id,
+        centerName: billingRows.find((c: { id: string }) => c.id === inv.center_id)?.name ?? '—',
+        amount: inv.payment_amount ?? 0,
+        billing_period: 'payment_proof',
+        paid_at: inv.paid_at ?? inv.updated_at,
+        notes: `Invoice ${inv.payment_reference ?? inv.id}`,
+        source: 'invoice' as const,
+        invoiceStatus: inv.status,
+        payment_proof_url: inv.payment_proof_url ?? null,
+        payment_reference: inv.payment_reference ?? null,
+        proof_type: proof.proofType,
+        proof_reference: proof.proofReference,
+      };
+    });
 
     const { data: pendingInvoices } = await supabaseAdmin
       .from('invoices')

@@ -44,10 +44,12 @@ If rows exist: backfill / fix invoice triggers so `next_payment_due` is set; aut
 
 Migration `20260509120001_normalize_starter_monthly_price.sql` sets `monthly_price` from 4500 → 4499 for non-test Starter centres. Confirm with Eyad if any centre should intentionally stay at 4500.
 
-## Predictable centre UUIDs in production (M7)
+## Verification 2026-05-09 — deterministic centre UUID patterns (M7 / F-605)
+
+Eyad runs manually:
 
 ```sql
-SELECT id, name, is_test
+SELECT id, name, status, created_at
 FROM public.centers
 WHERE is_test = false
   AND (
@@ -56,11 +58,16 @@ WHERE is_test = false
   );
 ```
 
-Real customer rows should not use obvious seed patterns.
+Any rows are live centres with predictable UUIDs (security smell). Decision: re-issue UUIDs (destructive FK updates) or accept as residual risk.
 
 ## Admin nav 404 triage (M8)
 
-Re-walk the admin sidebar after route consolidation. Any item that 404s: remove the link or add a redirect, and list the path here for product triage.
+Walked 2026-05-09 against `AdminSidebar.tsx` hrefs and matching pages under `src/app/[locale]/**/admin/**`:
+
+- `/admin/health`, `/admin/referral-rewards`, `/admin/staff`, `/admin/center-assignments`, `/admin/commissions`, `/admin/payouts` — `page.tsx` present.
+- Primary admin tabs resolve on `/admin` (overview, billing, etc.). Flag any new 404 here if product adds links without routes.
+
+RTL / bidirectional UI residuals are gated by `npm run check:bidi` (also runs in `npm run build`).
 
 ---
 
@@ -74,3 +81,9 @@ Run manually after stabilization doc lock:
 - **Deterministic UUID prod centres** — Prompt 6 PART M7 (pattern SQL above).
 - **Enterprise mispricing** — Prompt 5 Step 10 (Enterprise `monthly_price` vs `18499` baseline).
 - **New Prompt 7 gaps** — mobile 375 screenshots under `tests/e2e/__screenshots__/375px/`, RTL grep residuals, security HMAC matrix with live secrets.
+
+---
+
+## Audit closure 2026-05-09
+
+All catalogued findings have a documented disposition (see `docs/tracker_disposition_v4.md`). Pre-launch blockers remaining are operational / manual verification only (SQL in this file, secrets on staging for webhook probes), not undeployed code gaps.

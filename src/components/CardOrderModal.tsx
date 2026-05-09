@@ -767,7 +767,7 @@ export function CardOrderModal({
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <div>
+                  <div title={tOrders('cardStyleOptionAReservedHint')}>
                     <p className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
                       {tOrders('cardStyleLabel')}
                     </p>

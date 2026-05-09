@@ -1,11 +1,13 @@
-import { test as setup, expect } from '@playwright/test'
+import { test as setup } from '@playwright/test'
 import { gotoWithRetry } from './goto-with-retry'
 import path from 'path'
 import fs from 'fs'
+import { seedE2EDatabase } from './setup/seed'
 
 export const AUTH_FILE = path.join(__dirname, '../../playwright/.auth/user.json')
 
 setup('authenticate once for all tests', async ({ page }) => {
+  await seedE2EDatabase()
   const base = process.env.PLAYWRIGHT_BASE_URL || 'https://centerhq.app'
 
   await gotoWithRetry(page, `${base}/ar/login`)
