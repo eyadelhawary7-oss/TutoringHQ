@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useLocale } from 'next-intl';
-import { formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import {
   Bar,
   BarChart,
@@ -46,6 +46,11 @@ export interface BarChartComponentProps {
   showGrid?: boolean;
   /** Mirror category axis for Arabic RTL on vertical layout */
   rtl?: boolean;
+  /** Whole-number ticks on the numeric value axis. */
+  integerYAxis?: boolean;
+  /** Currency ticks on the numeric value axis (revenue, etc.). */
+  currencyYAxis?: { locale: string };
+  dedupYAxisTicks?: boolean;
 }
 
 export function BarChartComponent({
@@ -67,10 +72,49 @@ export function BarChartComponent({
   radius = 6,
   showGrid = true,
   rtl = false,
+  integerYAxis = false,
+  currencyYAxis,
+  dedupYAxisTicks = false,
 }: BarChartComponentProps) {
   const locale = useLocale();
   const lineColor = LINE_BY_GRADIENT[color];
   const safeData = useMemo(() => (Array.isArray(data) ? data : []), [data]);
+
+  const numericTickFmt = useMemo(() => {
+    let base: (v: number) => string;
+    if (currencyYAxis != null) {
+      base = (v: number) => formatCurrency(Number(v), currencyYAxis.locale);
+    } else if (integerYAxis) {
+      base = (v: number) =>
+        formatNumber(Math.round(Number(v)), locale, { maximumFractionDigits: 0 });
+    } else if (layout === 'vertical') {
+      base = xTickFormatter
+        ? (v: number) => String(xTickFormatter(v))
+        : (v: number) => formatNumber(Number(v), locale);
+    } else {
+      base = yTickFormatter
+        ? (v: number) => yTickFormatter(v)
+        : (v: number) => formatNumber(Number(v), locale);
+    }
+    const raw = (v: number | string) => base(Number(v));
+    if (!dedupYAxisTicks) return raw;
+    let prev = '';
+    return (v: number | string) => {
+      const s = raw(v);
+      if (s === prev) return '';
+      prev = s;
+      return s;
+    };
+  }, [
+    currencyYAxis,
+    dedupYAxisTicks,
+    integerYAxis,
+    layout,
+    locale,
+    safeData.length,
+    xTickFormatter,
+    yTickFormatter,
+  ]);
 
   if (!data || !Array.isArray(data) || data.length < 2) {
     return (
@@ -89,10 +133,12 @@ export function BarChartComponent({
   const margin = {
     ...CHART_MARGIN,
     left: layout === 'vertical' ? 4 : showYAxis ? 4 : CHART_MARGIN.left,
-    right: layout === 'vertical' ? 16 : CHART_MARGIN.right,
+    right: layout === 'vertical' ? (currencyYAxis ? 24 : 16) : CHART_MARGIN.right,
   };
 
   const gridVert = layout === 'vertical';
+
+  const numericWidth = currencyYAxis ? 56 : layout === 'vertical' ? 44 : 44;
 
   return (
     <ResponsiveContainer width="100%" height={height}>
@@ -118,11 +164,7 @@ export function BarChartComponent({
               tick={{ fontSize: 11, fill: CHART_STYLE.tickColor, fontFamily: CHART_STYLE.fontFamily }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={
-                xTickFormatter
-                  ? (v: number | string) => String(xTickFormatter(v))
-                  : (v: number | string) => formatNumber(Number(v), locale)
-              }
+              tickFormatter={(v: number | string) => numericTickFmt(v)}
             />
             <YAxis
               type="category"
@@ -149,15 +191,11 @@ export function BarChartComponent({
             />
             {showYAxis ? (
               <YAxis
-                width={44}
+                width={numericWidth}
                 tick={{ fontSize: 11, fill: CHART_STYLE.tickColor, fontFamily: CHART_STYLE.fontFamily }}
                 axisLine={false}
                 tickLine={false}
-                tickFormatter={
-                  yTickFormatter
-                    ? (v: number | string) => yTickFormatter(Number(v))
-                    : (v: number | string) => formatNumber(Number(v), locale)
-                }
+                tickFormatter={(v: number | string) => numericTickFmt(v)}
               />
             ) : null}
           </>

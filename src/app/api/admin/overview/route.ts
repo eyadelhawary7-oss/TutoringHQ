@@ -5,6 +5,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getAdminContext } from '@/lib/admin-auth';
 import { PLAN_STUDENT_LIMITS } from '@/lib/plans';
 import { getImpliedMonthlyMrr, normalizeBillingPeriod, PLANS, type PlanKey } from '@/lib/pricing';
+import { parseIncludeTestCenters } from '@/lib/adminIncludeTest';
 
 export async function GET(request: Request) {
   try {
@@ -76,12 +77,18 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized - admin access required' }, { status: 401 });
     }
 
+    const includeTestCenters = parseIncludeTestCenters(request);
+
     let centers: unknown[] = [];
-    const { data: centersData, error: centersError } = await supabaseAdmin
+    let centersQuery = supabaseAdmin
       .from('centers')
       .select('id, name, phone, plan, status, billing_type, billing_period, all_in_price, is_early_adopter, early_adopter_price, created_at')
       .neq('status', 'deleted')
       .order('created_at', { ascending: false });
+    if (!includeTestCenters) {
+      centersQuery = centersQuery.eq('is_test', false);
+    }
+    const { data: centersData, error: centersError } = await centersQuery;
 
     if (centersError) {
       console.error('[admin/overview] ❌ Centers query error:', centersError);
@@ -252,9 +259,17 @@ export async function GET(request: Request) {
       const inv = await supabaseAdmin.from('invoices').select('id', { count: 'exact', head: true }).eq('status', 'pending');
       pendingPaymentProofsCount = inv.count ?? 0;
     } catch {}
+    const allowedCenterIds = new Set(allCenters.map((c) => c.id));
+
     try {
       const todayStr = new Date().toISOString().split('T')[0];
-      const { data } = await supabaseAdmin.from('centers').select('id, name, next_payment_due').eq('status', 'active').lt('next_payment_due', todayStr);
+      let overdueQ = supabaseAdmin
+        .from('centers')
+        .select('id, name, next_payment_due')
+        .eq('status', 'active')
+        .lt('next_payment_due', todayStr);
+      if (!includeTestCenters) overdueQ = overdueQ.eq('is_test', false);
+      const { data } = await overdueQ;
       overdueCenters = data ?? [];
     } catch {}
 
@@ -271,19 +286,34 @@ export async function GET(request: Request) {
     }
 
     // Revenue KPIs (wrapped for resilience - invoices table may differ by deployment)
-    let revenueData: Array<{ payment_amount?: number; created_at?: string }> = [];
+    let revenueData: Array<{ payment_amount?: number; created_at?: string; center_id?: string | null }> = [];
     let pendingRevenue = 0;
     let churnedThisMonth = 0;
     try {
-      const { data: rev } = await supabaseAdmin.from('invoices').select('payment_amount, status, created_at').in('status', ['approved', 'paid']);
-      revenueData = rev || [];
+      const { data: rev } = await supabaseAdmin
+        .from('invoices')
+        .select('payment_amount, status, created_at, center_id')
+        .in('status', ['approved', 'paid']);
+      const raw = rev || [];
+      revenueData = includeTestCenters
+        ? raw
+        : raw.filter((inv) => inv.center_id && allowedCenterIds.has(String(inv.center_id)));
     } catch {}
     try {
-      const { data: pend } = await supabaseAdmin.from('invoices').select('payment_amount').eq('status', 'pending');
-      pendingRevenue = (pend || []).reduce((sum, inv) => sum + Number(inv.payment_amount || 0), 0);
+      const { data: pend } = await supabaseAdmin
+        .from('invoices')
+        .select('payment_amount, center_id')
+        .eq('status', 'pending');
+      const rawP = pend || [];
+      const filtered = includeTestCenters
+        ? rawP
+        : rawP.filter((inv) => inv.center_id && allowedCenterIds.has(String(inv.center_id)));
+      pendingRevenue = filtered.reduce((sum, inv) => sum + Number(inv.payment_amount || 0), 0);
     } catch {}
     try {
-      const { count } = await supabaseAdmin.from('centers').select('id', { count: 'exact', head: true }).eq('status', 'suspended');
+      let churnQ = supabaseAdmin.from('centers').select('id', { count: 'exact', head: true }).eq('status', 'suspended');
+      if (!includeTestCenters) churnQ = churnQ.eq('is_test', false);
+      const { count } = await churnQ;
       churnedThisMonth = count ?? 0;
     } catch {}
 

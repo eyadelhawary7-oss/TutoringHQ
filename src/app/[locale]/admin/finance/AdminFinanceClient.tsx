@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
@@ -41,6 +42,7 @@ const PLAN_LABEL_AR: Record<string, string> = {
 
 export default function AdminFinanceClient({ initialData }: { initialData: FinanceData }) {
   const locale = useLocale();
+  const searchParams = useSearchParams();
   const isAr = locale === 'ar' || locale.startsWith('ar-');
   const { closeMainSidebar } = useSidebar() ?? {};
   const { setHideShell } = useLayout();
@@ -60,7 +62,8 @@ export default function AdminFinanceClient({ initialData }: { initialData: Finan
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       if (!token) return;
-      const res = await fetch('/api/admin/finance', {
+      const q = searchParams?.toString() ?? '';
+      const res = await fetch(`/api/admin/finance${q ? `?${q}` : ''}`, {
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store',
       });
@@ -71,7 +74,7 @@ export default function AdminFinanceClient({ initialData }: { initialData: Finan
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [searchParams]);
 
   const planLabels = isAr ? PLAN_LABEL_AR : PLAN_LABEL_EN;
   const generated = new Date(data.generatedAt);
@@ -165,7 +168,7 @@ export default function AdminFinanceClient({ initialData }: { initialData: Finan
               color="teal"
               height={220}
               tooltipValueFormatter={(v) => formatCurrency(Number(v), locale)}
-              yTickFormatter={(v) => `${Math.round(Number(v) / 1000)}k`}
+              currencyYAxis={{ locale }}
             />
           </Card>
 
@@ -289,6 +292,8 @@ function PlanDistribution({
       color="teal"
       height={200}
       tooltipValueFormatter={(v) => `${formatNumber(Number(v), locale)}`}
+      integerYAxis
+      dedupYAxisTicks
     />
   );
 }

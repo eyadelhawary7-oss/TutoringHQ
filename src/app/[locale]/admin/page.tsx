@@ -575,8 +575,9 @@ function AdminPageContent() {
       router.replace('/login');
       return;
     }
+    const includeTestAgg = searchParams?.get('include_test') === '1';
     try {
-      const res = await fetch('/api/admin/overview', {
+      const res = await fetch(`/api/admin/overview${includeTestAgg ? '?include_test=1' : ''}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (res.status === 403) {
@@ -598,7 +599,7 @@ function AdminPageContent() {
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : 'Network error');
     }
-  }, [getSession, router, tAdmin]);
+  }, [getSession, router, tAdmin, searchParams]);
 
   const loadCenters = useCallback(async () => {
     const session = await getSession();
@@ -1594,6 +1595,8 @@ function AdminPageContent() {
                     height={200}
                     color="teal"
                     showGrid={false}
+                    integerYAxis
+                    dedupYAxisTicks
                     xTickFormatter={chartMonthAxisFormatter}
                     tooltipLabelFormatter={chartMonthAxisFormatter}
                   />
@@ -1616,6 +1619,8 @@ function AdminPageContent() {
                     color="teal"
                     prefix={`${tCommon('egp')} `}
                     showGrid
+                    currencyYAxis={{ locale }}
+                    dedupYAxisTicks
                     xTickFormatter={chartMonthAxisFormatter}
                     tooltipLabelFormatter={chartMonthAxisFormatter}
                   />
@@ -2628,6 +2633,8 @@ function AdminPageContent() {
                   color="teal"
                   showGrid
                   rtl={isRTL}
+                  integerYAxis
+                  dedupYAxisTicks
                 />
               </ChartCard>
               <ChartCard
@@ -2646,6 +2653,8 @@ function AdminPageContent() {
                   color="blue"
                   showGrid
                   rtl={isRTL}
+                  integerYAxis
+                  dedupYAxisTicks
                 />
               </ChartCard>
             </div>

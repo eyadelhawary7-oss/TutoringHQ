@@ -1267,7 +1267,8 @@ export default function DashboardPage() {
                   xKey="date"
                   color="teal"
                   height={200}
-                  yTickFormatter={(v) => formatNumber(v, locale)}
+                  integerYAxis
+                  dedupYAxisTicks
                 />
               </ChartCard>
             </div>

@@ -1,8 +1,8 @@
 'use client';
 
 import { useLocale } from 'next-intl';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { formatNumber } from '@/lib/formatNumber';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { formatCurrency } from '@/lib/formatNumber';
 import { formatChartMonthLabel } from '@/lib/chartMonthLabel';
 
 function linearRegression(points: { x: number; y: number }[]): { slope: number; intercept: number } {
@@ -26,7 +26,6 @@ export interface MRRTrendProps {
 
 export default function MRRTrend({ data = [] }: MRRTrendProps) {
   const locale = useLocale();
-  const currencySuffix = locale === 'ar' ? 'ج.م' : 'EGP';
 
   if (!data || data.length < 2) {
     return (
@@ -56,7 +55,7 @@ export default function MRRTrend({ data = [] }: MRRTrendProps) {
   withProjection.push({
     month: 'proj',
     amount: 0,
-    label: 'التوقع',
+    label: locale === 'ar' ? 'التوقع' : 'Proj.',
     index: projectionIndex,
     projection: projectionValue,
   });
@@ -73,14 +72,15 @@ export default function MRRTrend({ data = [] }: MRRTrendProps) {
           className="fill-muted-foreground"
         />
         <YAxis
-          tickFormatter={(v) => formatNumber(Number(v), locale)}
+          width={56}
+          tickFormatter={(v) => formatCurrency(Number(v), locale)}
           tick={{ fontSize: 11 }}
           className="fill-muted-foreground"
         />
         <Tooltip
           formatter={(v, name) => [
-            `${formatNumber(Number(v ?? 0), locale)} ${currencySuffix}`,
-            name === 'projection' ? 'التوقع' : '',
+            formatCurrency(Number(v ?? 0), locale),
+            name === 'projection' ? (locale === 'ar' ? 'التوقع' : 'Projection') : '',
           ]}
           labelFormatter={(label) => label}
         />

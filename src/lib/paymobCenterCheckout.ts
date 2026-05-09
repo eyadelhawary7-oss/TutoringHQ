@@ -1,3 +1,5 @@
+import '@/lib/paymobProductionGuard';
+
 const PAYMOB_BASE = 'https://accept.paymob.com/api';
 
 export type PaymobCheckoutResult = {

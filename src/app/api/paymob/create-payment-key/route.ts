@@ -1,3 +1,4 @@
+import '@/lib/paymobProductionGuard';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { parseBodyWithLimit } from '@/lib/validate';

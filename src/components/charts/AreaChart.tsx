@@ -11,7 +11,7 @@ import {
   YAxis,
 } from 'recharts';
 import { useLocale, useTranslations } from 'next-intl';
-import { formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import {
   CHART_MARGIN,
   CHART_STYLE,
@@ -38,6 +38,12 @@ export interface AreaChartComponentProps {
   tooltipLabelFormatter?: (v: string | number) => string;
   showGrid?: boolean;
   showYAxis?: boolean;
+  /** Whole-number ticks on Y axis (counts, attendance). */
+  integerYAxis?: boolean;
+  /** Currency suffix ticks on Y axis (e.g. MRR). */
+  currencyYAxis?: { locale: string };
+  /** Hide consecutive duplicate tick labels (dense domains). */
+  dedupYAxisTicks?: boolean;
 }
 
 export function AreaChartComponent({
@@ -54,6 +60,9 @@ export function AreaChartComponent({
   tooltipLabelFormatter,
   showGrid = false,
   showYAxis = true,
+  integerYAxis = false,
+  currencyYAxis,
+  dedupYAxisTicks = false,
 }: AreaChartComponentProps) {
   const locale = useLocale();
   const t = useTranslations('charts');
@@ -62,6 +71,34 @@ export function AreaChartComponent({
   const lineColor = LINE_BY_GRADIENT[color];
 
   const safeData = useMemo(() => (Array.isArray(data) ? data : []), [data]);
+
+  const yTickCombined = useMemo(() => {
+    const base =
+      currencyYAxis != null
+        ? (v: number) => formatCurrency(Number(v), currencyYAxis.locale)
+        : integerYAxis
+          ? (v: number) =>
+              formatNumber(Math.round(Number(v)), locale, { maximumFractionDigits: 0 })
+          : yTickFormatter
+            ? (v: number) => yTickFormatter(v)
+            : (v: number) => formatNumber(Number(v), locale);
+    const raw = (v: number | string) => base(Number(v));
+    if (!dedupYAxisTicks) return raw;
+    let prev = '';
+    return (v: number | string) => {
+      const s = raw(v);
+      if (s === prev) return '';
+      prev = s;
+      return s;
+    };
+  }, [
+    currencyYAxis,
+    dedupYAxisTicks,
+    integerYAxis,
+    locale,
+    safeData.length,
+    yTickFormatter,
+  ]);
 
   if (!safeData.length || safeData.length < 2) {
     return (
@@ -100,15 +137,11 @@ export function AreaChartComponent({
         />
         {showYAxis ? (
           <YAxis
-            width={44}
+            width={currencyYAxis ? 56 : 44}
             tick={{ fontSize: 11, fill: CHART_STYLE.tickColor, fontFamily: CHART_STYLE.fontFamily }}
             axisLine={false}
             tickLine={false}
-            tickFormatter={
-              yTickFormatter
-                ? (v: number | string) => yTickFormatter(Number(v))
-                : (v: number | string) => formatNumber(Number(v), locale)
-            }
+            tickFormatter={(v: number | string) => yTickCombined(v)}
           />
         ) : null}
         <Tooltip

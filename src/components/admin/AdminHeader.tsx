@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useTransition } from 'react';
@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { Globe } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { ChangePinModal } from './ChangePinModal';
+import { TestLiveToggle } from '@/components/admin/TestLiveToggle';
 
 export function AdminHeader() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export function AdminHeader() {
   const [isPending, startTransition] = useTransition();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [showTestLiveToggle, setShowTestLiveToggle] = useState(false);
   const [userName, setUserName] = useState('');
   const [userPhone, setUserPhone] = useState('');
 
@@ -31,6 +33,22 @@ export function AdminHeader() {
       setUserPhone(displayPhone);
     };
     loadUser();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token || cancelled) return;
+      const res = await fetch('/api/admin/check', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const j = (await res.json().catch(() => ({}))) as { role?: string };
+      if (!cancelled && j.role === 'super_admin') setShowTestLiveToggle(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -78,6 +96,11 @@ export function AdminHeader() {
           <span className="text-teal-600">HQ</span>
         </span>
         <div className="flex items-center gap-3">
+          {showTestLiveToggle ? (
+            <Suspense fallback={null}>
+              <TestLiveToggle />
+            </Suspense>
+          ) : null}
           <ThemeToggle />
           <button
             onClick={handleLocaleToggle}

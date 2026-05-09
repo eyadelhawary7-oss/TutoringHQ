@@ -2,6 +2,7 @@ import 'server-only';
 import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getAdminContext } from '@/lib/admin-auth';
+import { parseIncludeTestCenters } from '@/lib/adminIncludeTest';
 import type {
   FinanceAtRiskCenter,
   FinanceCardPipeline,
@@ -50,13 +51,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const data = await getFinanceData(ctx.supabaseAdmin);
+  const includeTest = parseIncludeTestCenters(request);
+  const data = await getFinanceData(ctx.supabaseAdmin, includeTest);
   return NextResponse.json(data, {
     headers: { 'Cache-Control': 'private, no-store' },
   });
 }
 
-async function getFinanceData(admin: SupabaseClient): Promise<FinanceData> {
+async function getFinanceData(admin: SupabaseClient, includeTest: boolean): Promise<FinanceData> {
   const now = new Date();
   const monthStart = startOfMonthUtc(now);
   const sixMonthsAgo = startOfMonthUtc(addMonths(now, -5));
@@ -67,21 +69,32 @@ async function getFinanceData(admin: SupabaseClient): Promise<FinanceData> {
     cardOrdersData,
     healthData,
   ] = await Promise.all([
-    fetchActiveCenters(admin),
+    fetchActiveCenters(admin, includeTest),
     fetchAllInvoices(admin, addMonths(now, -12)),
     fetchCardOrders(admin),
     fetchAtRiskHealth(admin),
   ]);
 
-  const northStar = computeNorthStar(centersData, invoicesData, monthStart);
-  const unitEconomics = computeUnitEconomics(centersData, invoicesData);
-  const mrrTrend = computeMrrTrend(invoicesData, now);
-  const revenueByType = computeRevenueByType(invoicesData, monthStart);
+  const centerIds = new Set(centersData.map((c) => c.id));
+  const invoicesForMetrics = includeTest
+    ? invoicesData
+    : invoicesData.filter((i) => i.center_id && centerIds.has(i.center_id));
+  const healthForMetrics = includeTest
+    ? healthData
+    : healthData.filter((h) => h.center_id && centerIds.has(h.center_id));
+
+  const northStar = computeNorthStar(centersData, invoicesForMetrics, monthStart);
+  const unitEconomics = computeUnitEconomics(centersData, invoicesForMetrics);
+  const mrrTrend = computeMrrTrend(invoicesForMetrics, now);
+  const revenueByType = computeRevenueByType(invoicesForMetrics, monthStart);
   const planDistribution = computePlanDistribution(centersData);
-  const cohorts = computeCohorts(centersData, invoicesData, sixMonthsAgo, now);
-  const outstandingInvoices = computeOutstanding(invoicesData, centersData, now);
-  const atRiskCenters = computeAtRisk(healthData, centersData);
-  const cardPipeline = computeCardPipeline(cardOrdersData);
+  const cohorts = computeCohorts(centersData, invoicesForMetrics, sixMonthsAgo, now);
+  const outstandingInvoices = computeOutstanding(invoicesForMetrics, centersData, now);
+  const atRiskCenters = computeAtRisk(healthForMetrics, centersData);
+  const cardOrdersFiltered = includeTest
+    ? cardOrdersData
+    : cardOrdersData.filter((o) => o.center_id && centerIds.has(o.center_id));
+  const cardPipeline = computeCardPipeline(cardOrdersFiltered);
 
   return {
     northStar,
@@ -109,11 +122,15 @@ type CenterRow = {
   base_monthly_price: number | null;
 };
 
-async function fetchActiveCenters(admin: SupabaseClient): Promise<CenterRow[]> {
+async function fetchActiveCenters(admin: SupabaseClient, includeTest: boolean): Promise<CenterRow[]> {
   try {
-    const { data } = await admin
+    let q = admin
       .from('centers')
       .select('id, name, plan_key, status, created_at, monthly_price, base_monthly_price');
+    if (!includeTest) {
+      q = q.eq('is_test', false);
+    }
+    const { data } = await q;
     return (data ?? []) as CenterRow[];
   } catch {
     return [];
@@ -142,13 +159,18 @@ async function fetchAllInvoices(admin: SupabaseClient, since: Date): Promise<Inv
   }
 }
 
-type CardOrderRow = { id: string; status: string | null; vendor_bosta_failed?: boolean | null };
+type CardOrderRow = {
+  id: string;
+  center_id: string | null;
+  status: string | null;
+  vendor_bosta_failed?: boolean | null;
+};
 
 async function fetchCardOrders(admin: SupabaseClient): Promise<CardOrderRow[]> {
   try {
     const { data } = await admin
       .from('card_orders')
-      .select('id, status, vendor_bosta_failed');
+      .select('id, center_id, status, vendor_bosta_failed');
     return (data ?? []) as CardOrderRow[];
   } catch {
     return [];

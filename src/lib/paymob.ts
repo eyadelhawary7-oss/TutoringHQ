@@ -1,3 +1,4 @@
+import '@/lib/paymobProductionGuard';
 import crypto from 'crypto';
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
 

@@ -15,6 +15,7 @@ import {
   type PlanKey,
 } from '@/lib/pricing';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { parseIncludeTestCenters } from '@/lib/adminIncludeTest';
 
 function planKeyOrStarter(plan: string | null | undefined): PlanKey {
   const k = String(plan || 'starter').toLowerCase();
@@ -62,11 +63,16 @@ export async function GET(request: Request) {
     const { supabaseAdmin } = ctx;
 
     const planFilter = new URL(request.url).searchParams.get('plan') || '';
+    const includeTest = parseIncludeTestCenters(request);
 
-    const { data: centers, error: centersError } = await supabaseAdmin
+    let centersQuery = supabaseAdmin
       .from('centers')
       .select('id, name, plan, phone, billing_period, all_in_price, next_payment_due, billing_status, status, payment_due_date, auto_suspend_at, is_early_adopter, early_adopter_price, billing_type')
       .in('status', ['active', 'suspended']);
+    if (!includeTest) {
+      centersQuery = centersQuery.eq('is_test', false);
+    }
+    const { data: centers, error: centersError } = await centersQuery;
 
     if (centersError) {
       return NextResponse.json({ error: centersError.message }, { status: 500 });

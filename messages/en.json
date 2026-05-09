@@ -1,4 +1,16 @@
 {
+  "legal": {
+    "terms": {
+      "title": "Terms of Service",
+      "placeholderBody": "These Terms of Service are interim documentation while legal review is completed. Final terms pending review by Adsero · interim copy applies until 9 May 2026.\n\nBy using CenterHQ you agree to operate in good faith and comply with applicable laws and our acceptable use expectations.\n\nWe may update these terms and will publish changes here with an updated \"Last updated\" date.",
+      "lastUpdated": "Last updated: 9 May 2026"
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "placeholderBody": "This Privacy Policy is interim documentation while legal review is completed. Final policy pending review by Adsero · interim copy applies until 9 May 2026.\n\nWe process personal data to deliver CenterHQ services and improve reliability and security.\n\nWe may update this policy and will publish changes here with an updated \"Last updated\" date.",
+      "lastUpdated": "Last updated: 9 May 2026"
+    }
+  },
   "plan": {
     "solo": "Solo",
     "nano": "Nano",

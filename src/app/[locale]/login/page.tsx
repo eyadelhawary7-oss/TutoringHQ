@@ -113,7 +113,7 @@ export default function LoginPage() {
             // Fallback silently - never block login
           }
           const targetPath = result.needsOnboarding ? '/onboarding' : '/dashboard';
-          router.push(`/${targetLocale}${targetPath}`);
+          router.push(targetPath, { locale: targetLocale as 'en' | 'ar' });
         } else if (result.contactSales) {
           setError(t('contactSales'));
           shakePinField();
@@ -131,7 +131,7 @@ export default function LoginPage() {
           } catch {
             // Fallback silently - never block login
           }
-          router.push(`/${targetLocale}/onboarding`);
+          router.push('/onboarding', { locale: targetLocale as 'en' | 'ar' });
         }
       }
     } catch {

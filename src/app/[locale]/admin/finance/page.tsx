@@ -1,5 +1,6 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import type { FinanceData } from '@/types/admin-finance';
 import AdminFinanceClient from './AdminFinanceClient';
@@ -26,8 +27,14 @@ async function sameDeploymentOrigin(): Promise<string> {
 
 export default async function AdminFinancePage({
   params,
-}: { params: Promise<{ locale: string }> }) {
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ include_test?: string }>;
+}) {
   const { locale } = await params;
+  const sp = await searchParams;
+  const financeQs = sp.include_test === '1' ? '?include_test=1' : '';
   const supabase = await createClient();
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -37,7 +44,7 @@ export default async function AdminFinancePage({
   if (!session?.access_token) redirect(`/${locale}/login`);
 
   const origin = await sameDeploymentOrigin();
-  const res = await fetch(`${origin}/api/admin/finance`, {
+  const res = await fetch(`${origin}/api/admin/finance${financeQs}`, {
     headers: { Authorization: `Bearer ${session.access_token}` },
     cache: 'no-store',
   });
@@ -54,5 +61,15 @@ export default async function AdminFinancePage({
     return null;
   }
 
-  return <AdminFinanceClient initialData={initialData} />;
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-1 items-center justify-center min-h-[40vh] text-[var(--color-text-muted)] text-sm">
+          Loading…
+        </div>
+      }
+    >
+      <AdminFinanceClient initialData={initialData} />
+    </Suspense>
+  );
 }

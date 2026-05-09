@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSuperAdminApi } from '@/lib/admin-auth';
 import { requireSuperAdminRow } from '@/lib/admin-access';
+import { parseIncludeTestCenters } from '@/lib/adminIncludeTest';
+import { getPaymobHealthMode } from '@/lib/paymobGuardLogic';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,10 +45,6 @@ function pathToCronLogName(path: string): string {
   return path.replace(/^\/api\/cron\//, '').replace(/\/$/, '');
 }
 
-function paymobMode(): 'live' | 'sandbox' {
-  return process.env.PAYMOB_API_KEY?.startsWith('Key_') ? 'live' : 'sandbox';
-}
-
 function waMode(): 'live' | 'test' {
   return process.env.WHATSAPP_PHONE_NUMBER_ID === '1013787185158313' ? 'test' : 'live';
 }
@@ -71,12 +69,31 @@ export async function GET(request: NextRequest) {
   const row403 = await requireSuperAdminRow(auth.supabaseAdmin, auth.userId);
   if (row403) return row403;
 
+  const includeTest = parseIncludeTestCenters(request);
+
   const supabase = auth.supabaseAdmin;
   const now = new Date();
   const cutoffIso = new Date(Date.now() - 30 * 60 * 1000).toISOString();
   const nowIso = now.toISOString();
 
+  const excludeTest = !includeTest;
+
   try {
+    let activeQ = supabase.from('centers').select('id', { count: 'exact', head: true }).eq('status', 'active');
+    let pendingSignupQ = supabase.from('centers').select('id', { count: 'exact', head: true }).eq('status', 'pending');
+    let pendingCancelQ = supabase.from('centers').select('id', { count: 'exact', head: true }).eq('status', 'pending_cancellation');
+    let zeroBillQ = supabase
+      .from('centers')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'active')
+      .or('billing_amount.eq.0,billing_amount.is.null');
+    if (excludeTest) {
+      activeQ = activeQ.eq('is_test', false);
+      pendingSignupQ = pendingSignupQ.eq('is_test', false);
+      pendingCancelQ = pendingCancelQ.eq('is_test', false);
+      zeroBillQ = zeroBillQ.eq('is_test', false);
+    }
+
     const [
       activeRes,
       pendingSignupRes,
@@ -86,14 +103,8 @@ export async function GET(request: NextRequest) {
       zeroBillRes,
       cronRowsRes,
     ] = await Promise.all([
-      supabase
-        .from('centers')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'active'),
-      supabase
-        .from('centers')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'pending'),
+      activeQ,
+      pendingSignupQ,
       supabase
         .from('combined_payment_sessions')
         .select('id', { count: 'exact', head: true })
@@ -101,19 +112,12 @@ export async function GET(request: NextRequest) {
         .lt('created_at', cutoffIso)
         .gt('expires_at', nowIso)
         .is('finalized_at', null),
-      supabase
-        .from('centers')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'pending_cancellation'),
+      pendingCancelQ,
       supabase
         .from('withdrawal_requests')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'pending'),
-      supabase
-        .from('centers')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'active')
-        .or('billing_amount.eq.0,billing_amount.is.null'),
+      zeroBillQ,
       supabase
         .from('cron_log')
         .select('cron_name, ran_at, status, duration_ms, error_message')
@@ -187,7 +191,7 @@ export async function GET(request: NextRequest) {
     const zero_billing_centers = zeroBillRes.count ?? 0;
 
     return NextResponse.json({
-      paymob_mode: paymobMode(),
+      paymob_mode: getPaymobHealthMode(),
       wa_mode: waMode(),
       active_centers: activeRes.count ?? 0,
       pending_signups: pendingSignupRes.count ?? 0,

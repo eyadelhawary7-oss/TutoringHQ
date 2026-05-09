@@ -4,6 +4,7 @@ import { customPermissionsToKeys, fetchAdminAccessFlags } from '@/lib/admin-acce
 import { getAdminPermissions } from '@/lib/admin-roles';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { parseIncludeTestCenters } from '@/lib/adminIncludeTest';
 
 function addMonths(date: Date, months: number): Date {
   const d = new Date(date);
@@ -51,8 +52,9 @@ export async function GET(request: Request) {
     }
     const url = new URL(request.url);
     const filter = url.searchParams.get('filter') || 'all'; // all | this_week | this_month | overdue
+    const includeTest = parseIncludeTestCenters(request);
 
-    const { data: centers, error } = await supabaseAdmin
+    let renewalCentersQuery = supabaseAdmin
       .from('centers')
       .select(`
         id,
@@ -67,6 +69,10 @@ export async function GET(request: Request) {
       .in('subscription_status', ['active', 'overdue', 'suspended'])
       .not('subscription_renewal_date', 'is', null)
       .order('subscription_renewal_date', { ascending: true });
+    if (!includeTest) {
+      renewalCentersQuery = renewalCentersQuery.eq('is_test', false);
+    }
+    const { data: centers, error } = await renewalCentersQuery;
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

@@ -1,13 +1,14 @@
 /**
- * Locale rule for all numeric and date/time display:
- * - Arabic (`ar`, `ar-EG`, …) → Arabic-Indic numerals (`numberingSystem: 'arab'`) with `ar-EG`
- *   (Egypt); never `ar-AE` etc., so amounts are never formatted with Gulf currency symbols.
- * - otherwise → Western numerals via `en-US`
- *
- * Use `useLocale()` from next-intl in client components, or `getLocale()`
- * from `next-intl/server` in server components / route handlers when the
- * viewer’s locale is known; otherwise pass `'en'` for operator-only output.
+ * Centralized locale-aware number, currency, percent, growth, and date display.
+ * Currency: amount first, NBSP, suffix (EGP / ج.م). Dates: Africa/Cairo; AR uses Eastern Arabic digits.
  */
+
+const CAIRO_TZ = 'Africa/Cairo';
+const NBSP = '\u00A0';
+const MINUS = '\u2212'; // −
+const EGP_EN_SUFFIX = 'EGP';
+const EGP_AR_SUFFIX = '\u062c.\u0645';
+
 function isArabicLocale(locale: string): boolean {
   return locale === 'ar' || locale.startsWith('ar-');
 }
@@ -16,16 +17,31 @@ function intlLocale(locale: string): string {
   return isArabicLocale(locale) ? 'ar-EG' : 'en-US';
 }
 
-export function formatNumber(
-  value: number,
-  locale: string,
-  options?: Intl.NumberFormatOptions,
-): string {
+export type FormatNumberOptions = Intl.NumberFormatOptions & {
+  /** When true, round to integer and show no fraction digits. */
+  integerOnly?: boolean;
+};
+
+export function formatNumber(value: number, locale: string, options?: FormatNumberOptions): string {
   const l = intlLocale(locale);
+  let n = Number(value);
+  if (!Number.isFinite(n)) n = 0;
+
+  const { integerOnly, ...rest } = options ?? {};
+  if (integerOnly) {
+    n = Math.round(n);
+  }
+
+  const base: Intl.NumberFormatOptions = {
+    minimumFractionDigits: integerOnly ? 0 : (rest.minimumFractionDigits ?? 0),
+    maximumFractionDigits: integerOnly ? 0 : (rest.maximumFractionDigits ?? 0),
+    ...rest,
+  };
+
   const opts = isArabicLocale(locale)
-    ? { numberingSystem: 'arab' as const, ...options }
-    : { ...options };
-  return value.toLocaleString(l, opts);
+    ? { numberingSystem: 'arab' as const, ...base }
+    : base;
+  return n.toLocaleString(l, opts);
 }
 
 /** Calendar years, quarter numbers, etc.: never digit-grouping (`2026` not `2,026`). */
@@ -35,69 +51,98 @@ export function formatPlainInteger(value: number, locale: string): string {
   return formatNumber(safe, locale, { useGrouping: false, maximumFractionDigits: 0 });
 }
 
-/** Egyptian pound display for all Arabic UI (product is EGP-only). */
-const EGP_AR_SUFFIX = '\u062c.\u0645';
-
 export function formatCurrency(value: number, locale: string): string {
   const isAr = isArabicLocale(locale);
-  if (!Number.isFinite(value)) {
-    return isAr ? `\u0660 ${EGP_AR_SUFFIX}` : '0 EGP';
-  }
-  if (isAr) {
-    const num = new Intl.NumberFormat('ar-EG', {
-      numberingSystem: 'arab',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(value);
-    return `${num} ${EGP_AR_SUFFIX}`;
-  }
-  // /en/ spec: amount first, then ISO code (not "EGP 900" from Intl currency order).
-  const num = new Intl.NumberFormat('en-US', {
+  const n = Number.isFinite(value) ? value : 0;
+  const rounded = Math.round(n);
+  const num = formatNumber(rounded, locale, {
     minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(value);
-  return `${num} EGP`;
+    maximumFractionDigits: 0,
+  });
+  const suffix = isAr ? EGP_AR_SUFFIX : EGP_EN_SUFFIX;
+  return `${num}${NBSP}${suffix}`;
 }
 
-export function formatPercent(value: number, locale: string): string {
-  const l = intlLocale(locale);
+export type FormatPercentOptions = {
+  minimumFractionDigits?: number;
+  maximumFractionDigits?: number;
+};
+
+/**
+ * Renders numeric percent (e.g. 15 → "15%" / Arabic digits + ٪). Strips U+061C.
+ */
+export function formatPercent(value: number, locale: string, options?: FormatPercentOptions): string {
   const isAr = isArabicLocale(locale);
+  const minF = options?.minimumFractionDigits ?? 0;
+  const maxF = options?.maximumFractionDigits ?? 2;
   const p = Number(value);
   const safe = Number.isFinite(p) ? p : 0;
-  const fraction = safe / 100;
-  if (isAr) {
-    const s = new Intl.NumberFormat(l, {
-      numberingSystem: 'arab',
-      style: 'percent',
-      maximumFractionDigits: 2,
-      minimumFractionDigits: 0,
-    }).format(fraction);
-    // Intl often emits ASCII U+0025; Arabic UI expects U+066A (٪).
-    return s.replace(/%/g, '\u066A');
+  const numStr = formatNumber(safe, locale, {
+    minimumFractionDigits: minF,
+    maximumFractionDigits: maxF,
+  });
+  const sym = isAr ? '\u066A' : '%';
+  return `${numStr}${sym}`.replace(/\u061C/g, '');
+}
+
+/**
+ * Growth percent vs prior period. Null when prior === 0.
+ * Uses −100.0% when current === 0 and prior > 0.
+ */
+export function formatGrowth(current: number, prior: number, locale: string): string | null {
+  if (prior === 0) return null;
+  if (current === 0 && prior > 0) {
+    const s = formatPercent(-100, locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    return s.replace(/^-/, MINUS);
   }
-  return new Intl.NumberFormat('en-US', {
-    style: 'percent',
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 0,
-  }).format(fraction);
+  const pct = ((current - prior) / prior) * 100;
+  const s = formatPercent(pct, locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  return s.replace(/^-/, MINUS);
+}
+
+function mergeDateOpts(
+  locale: string,
+  opts: Intl.DateTimeFormatOptions,
+): Intl.DateTimeFormatOptions {
+  const isAr = isArabicLocale(locale);
+  const base: Intl.DateTimeFormatOptions = { timeZone: CAIRO_TZ, ...opts };
+  if (isAr) {
+    return { ...base, numberingSystem: 'arab' as const };
+  }
+  return base;
 }
 
 export function formatDate(
   date: Date | string,
   locale: string,
-  options?: Intl.DateTimeFormatOptions,
+  formatOrOptions?: 'short' | 'long' | 'time' | Intl.DateTimeFormatOptions,
 ): string {
   const d = typeof date === 'string' ? new Date(date) : date;
-  const isAr = isArabicLocale(locale);
-  const l = isAr ? 'ar-EG' : 'en-US';
-  const base: Intl.DateTimeFormatOptions =
-    options ?? {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    };
-  const opts: Intl.DateTimeFormatOptions = isAr ? { ...base, numberingSystem: 'arab' as const } : base;
-  return d.toLocaleDateString(l, opts);
+  if (Number.isNaN(d.getTime())) return '';
+
+  if (formatOrOptions && typeof formatOrOptions === 'object') {
+    const l = intlLocale(locale);
+    return new Intl.DateTimeFormat(l, mergeDateOpts(locale, formatOrOptions)).format(d);
+  }
+
+  const fmt = formatOrOptions ?? 'long';
+  const l = intlLocale(locale);
+
+  if (fmt === 'time') {
+    return new Intl.DateTimeFormat(l, mergeDateOpts(locale, { hour: 'numeric', minute: '2-digit' })).format(d);
+  }
+
+  if (fmt === 'short') {
+    return new Intl.DateTimeFormat(
+      l,
+      mergeDateOpts(locale, { day: 'numeric', month: 'short', year: 'numeric' }),
+    ).format(d);
+  }
+
+  return new Intl.DateTimeFormat(
+    l,
+    mergeDateOpts(locale, { day: 'numeric', month: 'long', year: 'numeric' }),
+  ).format(d);
 }
 
 export function formatDateTime(
@@ -106,8 +151,16 @@ export function formatDateTime(
   options?: Intl.DateTimeFormatOptions,
 ): string {
   const d = typeof date === 'string' ? new Date(date) : date;
-  const l = isArabicLocale(locale) ? 'ar-EG' : 'en-US';
-  return d.toLocaleString(l, options);
+  if (Number.isNaN(d.getTime())) return '';
+  const l = intlLocale(locale);
+  const opts = options ?? {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  };
+  return new Intl.DateTimeFormat(l, mergeDateOpts(locale, opts)).format(d);
 }
 
 /** Map 12h clock + period to 24h hour (for Date construction). */
@@ -132,16 +185,18 @@ export function formatTime(timeInput: string | Date, locale: string): string {
         minute: '2-digit',
         hour12: true,
         numberingSystem: 'arab',
+        timeZone: CAIRO_TZ,
       }
     : {
         hour: 'numeric',
         minute: '2-digit',
         hour12: true,
+        timeZone: CAIRO_TZ,
       };
 
   if (timeInput instanceof Date) {
     if (Number.isNaN(timeInput.getTime())) return '';
-    return timeInput.toLocaleTimeString(l, timeFmtOpts);
+    return timeInput.toLocaleTimeString(l, mergeDateOpts(locale, timeFmtOpts));
   }
 
   const timeStr = String(timeInput).trim();
@@ -150,7 +205,7 @@ export function formatTime(timeInput: string | Date, locale: string): string {
   if (timeStr.includes('T')) {
     const d = new Date(timeStr);
     if (!Number.isNaN(d.getTime())) {
-      return d.toLocaleTimeString(l, timeFmtOpts);
+      return d.toLocaleTimeString(l, mergeDateOpts(locale, timeFmtOpts));
     }
   }
 
@@ -165,7 +220,7 @@ export function formatTime(timeInput: string | Date, locale: string): string {
       hour24 = hour12AndPeriodTo24(hour24, periodMatch[1]!);
     }
     const d = new Date(2000, 0, 1, hour24, mm, ss);
-    return d.toLocaleTimeString(l, timeFmtOpts);
+    return d.toLocaleTimeString(l, mergeDateOpts(locale, timeFmtOpts));
   }
 
   if (isArabicLocale(locale)) {
