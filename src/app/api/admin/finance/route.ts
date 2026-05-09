@@ -16,7 +16,7 @@ import type {
   FinanceUnitEconomics,
 } from '@/types/admin-finance';
 import { PLANS } from '@/lib/pricing';
-import { requireTopCentersMonthlyPrice } from '@/lib/pricing/topCentersPrice';
+import { requireTopCentersAllInPrice } from '@/lib/pricing/topCentersPrice';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -117,18 +117,18 @@ async function getFinanceData(admin: SupabaseClient, includeTest: boolean): Prom
 type CenterRow = {
   id: string;
   name: string | null;
-  plan_key: string | null;
+  plan: string | null;
   status: string | null;
   created_at: string | null;
-  monthly_price: number | null;
-  base_monthly_price: number | null;
+  all_in_price: number | null;
+  billing_period: string | null;
 };
 
 async function fetchActiveCenters(admin: SupabaseClient, includeTest: boolean): Promise<CenterRow[]> {
   try {
     let q = admin
       .from('centers')
-      .select('id, name, plan_key, status, created_at, monthly_price, base_monthly_price');
+      .select('id, name, plan, status, created_at, all_in_price, billing_period');
     if (!includeTest) {
       q = q.eq('is_test', false);
     }
@@ -214,12 +214,11 @@ function isPending(inv: InvoiceRow): boolean {
 }
 
 function monthlyChargeForCenter(c: CenterRow): number {
-  const pk = (c.plan_key ?? '').toLowerCase();
+  const pk = (c.plan ?? '').toLowerCase();
   if (pk === 'top_centers') {
-    return requireTopCentersMonthlyPrice(c.monthly_price, `finance:${c.id}`);
+    return requireTopCentersAllInPrice(c.all_in_price, `finance:${c.id}`);
   }
-  if (typeof c.monthly_price === 'number' && c.monthly_price > 0) return c.monthly_price;
-  if (typeof c.base_monthly_price === 'number' && c.base_monthly_price > 0) return c.base_monthly_price;
+  if (typeof c.all_in_price === 'number' && c.all_in_price > 0) return c.all_in_price;
   return PLAN_MONTHLY_FALLBACK[pk] ?? 0;
 }
 
@@ -349,12 +348,12 @@ function computePlanDistribution(centers: CenterRow[]): FinancePlanCount[] {
   const order = ['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'];
   const counts = new Map<string, number>();
   for (const c of centers.filter(isActive)) {
-    const key = (c.plan_key ?? 'unknown').toLowerCase();
+    const key = (c.plan ?? 'unknown').toLowerCase();
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
   return order
     .filter((k) => counts.has(k))
-    .map((plan_key) => ({ plan_key, count: counts.get(plan_key) ?? 0 }));
+    .map((plan) => ({ plan, count: counts.get(plan) ?? 0 }));
 }
 
 function computeCohorts(

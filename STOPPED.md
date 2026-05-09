@@ -16,7 +16,7 @@ Any rows indicate live Enterprise centres whose stored monthly inclusive price d
 
 ## Top Centers (`plan_key = top_centers`)
 
-Centres **must** have `monthly_price` set. Application code calls `requireTopCentersMonthlyPrice` where tier pricing is resolved; missing values trigger Sentry and throw.
+Centres **must** have `all_in_price` set for Top Centers tier. Application code calls `requireTopCentersAllInPrice` where tier pricing is resolved; missing values trigger Sentry and throw.
 
 ## Duplicate centre phones (before `centers_phone_unique` migration)
 

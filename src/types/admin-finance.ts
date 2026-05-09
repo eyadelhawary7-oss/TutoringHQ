@@ -18,7 +18,7 @@ export type FinanceMrrPoint = { month: string; amount: number };
 
 export type FinanceRevenueSlice = { type: string; label: string; amount: number; pct: number };
 
-export type FinancePlanCount = { plan_key: string; count: number };
+export type FinancePlanCount = { plan: string; count: number };
 
 export type FinanceCohort = {
   cohortMonth: string;

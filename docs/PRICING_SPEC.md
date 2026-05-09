@@ -26,7 +26,7 @@ Quarterly/mo is baseline shown on signup cards. Monthly ≈ Quarterly × 1.15, A
 
 Exception: Nano Monthly is intentionally +25% not +15% (incentive for Quarterly commitment). Do NOT "fix" to 2,299.
 
-Enterprise is fixed-price. Top Centers is the only custom-priced tier; centers.monthly_price is source of truth, code reading top_centers MUST throw + Sentry-warn if NULL.
+Enterprise is fixed-price. Top Centers is the only custom-priced tier; centers.all_in_price is source of truth, code reading top_centers MUST throw + Sentry-warn if NULL.
 
 ## Add-ons
 qr_card: 62 EGP per card (inclusive). Bosta added on top, not taxed.

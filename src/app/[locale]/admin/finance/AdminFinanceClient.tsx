@@ -303,7 +303,7 @@ function PlanDistribution({
     return <p className="text-xs text-[var(--color-text-muted)]">No active centers yet.</p>;
   }
   const data = plans.map((p) => ({
-    name: labels[p.plan_key] ?? p.plan_key,
+    name: labels[p.plan] ?? p.plan,
     count: p.count,
   }));
   return (

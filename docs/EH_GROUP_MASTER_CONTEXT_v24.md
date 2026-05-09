@@ -24,7 +24,7 @@ See [`docs/HELPERS_INVENTORY.md`](./HELPERS_INVENTORY.md).
 1. Card style labels: only **B (Dark)** and **C (Light)** exposed; **A** reserved — do not rename tiers.
 2. Quarterly tab **+15% / −15%** on signup is marketing shorthand; billed amounts use `.99` endings — totals may not equal exact 1.15× / 0.85× math.
 3. **Nano Monthly** intentionally **+25%** vs Quarterly to push quarterly commitment — do not normalize Nano monthly to `2,299`.
-4. **Enterprise** is fixed-price (`18,499` EGP/mo quarterly baseline). **Top Centers** is the only negotiable tier; `centers.monthly_price` is authoritative — code must throw + Sentry if NULL when resolving Top Centers.
+4. **Enterprise** is fixed-price (`18,499` EGP/mo quarterly baseline). **Top Centers** is the only negotiable tier; `centers.all_in_price` is authoritative — code must throw + Sentry if NULL when resolving Top Centers.
 5. **`chq_parent_welcome`** WhatsApp template is approved but **not auto-wired** to approvals — send manually until ops enables automation.
 6. **`chq_pin_delivery`** is **stub** until Vodafone SIM + SMS fallback — no live PIN blast tests pre-SIM.
 7. **2099-12-31** tombstone dates on legacy test rows — filtered via `is_test`; do not blanket backfill.
