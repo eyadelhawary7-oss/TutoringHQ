@@ -1556,7 +1556,10 @@
     "entryAllowedUnpaid": "Entry Allowed - Unpaid",
     "paymentPendingConfirmation": "Payment Pending Confirmation",
     "balanceDue": "Balance due",
-    "amountAddedToBalance": "{amount} added to balance"
+    "amountAddedToBalance": "{amount} added to balance",
+    "payPrefix": "Pay",
+    "sessionFeeLabel": "Session fee",
+    "pendingAmountLabel": "Amount due"
   },
   "scanner": {
     "title": "QR Scanner",
@@ -1590,7 +1593,82 @@
     "perLesson": "Per Lesson",
     "selectGroupDesc": "Select Group Desc",
     "selectGroupTitle": "Select Group Title",
-    "studentNotFound": "Student Not Found"
+    "studentNotFound": "Student Not Found",
+    "syncPanel": {
+      "openSettings": "Scanner settings",
+      "title": "Sync & device",
+      "swVersion": "Service worker cache",
+      "pendingQueue": "Pending queue",
+      "lastSync": "Last successful sync",
+      "cairoToday": "Today (Cairo)",
+      "retryNow": "Retry sync now",
+      "clearPending": "Clear local pending queue",
+      "clearConfirmTitle": "Clear pending scans?",
+      "clearConfirmBody": "This removes unsynced scan rows from this device only. The student roster stays intact.",
+      "dismiss": "Close",
+      "kioskLock": "Lock to scanner (hide navigation)",
+      "kioskUnlockTitle": "Unlock navigation",
+      "kioskUnlockMessage": "Enter your account PIN to show menus and leave the scanner."
+    },
+    "pendingSheet": {
+      "title": "Pending sync",
+      "subtitle": "Queued on this device",
+      "empty": "Nothing in the queue",
+      "queued": "Queued",
+      "retry": "Retry now",
+      "retrying": "Syncing…",
+      "retryAll": "Retry all",
+      "retryingAll": "Syncing all…",
+      "close": "Close"
+    },
+    "camera": {
+      "enableCamera": "Enable camera",
+      "privacyExplainer": "We use your camera only to read student QR cards. Nothing is uploaded.",
+      "deniedHint": "Camera access is blocked. You can still enter student IDs manually.",
+      "switchManual": "Switch to Manual entry",
+      "hardwareError": "Camera error",
+      "noCamera": "No camera found"
+    },
+    "subscriptionGate": {
+      "title": "Subscription update required",
+      "body": "This center’s subscription is not active. Resolve billing before recording paid attendance.",
+      "dismiss": "OK"
+    },
+    "duplicateToast": "Already recorded today — entry only",
+    "entryRecordedToast": "Entry recorded",
+    "pendingBadge": "Pending sync ({count})",
+    "viewAllToday": "View all today",
+    "offlineBanner": "Offline — attendance saved locally",
+    "hardwareSpecs": {
+      "cardTitle": "Recommended Scanner Hardware",
+      "minimum": "Minimum",
+      "recommended": "Recommended",
+      "addon": "Add-on",
+      "enterpriseNote": "iOS handles large IndexedDB payloads better than Android",
+      "ramMin": "{spec} RAM",
+      "storageMin": "{spec} storage",
+      "cameraMin": "{spec} camera",
+      "recommendedDevice": "Recommended device: {device}"
+    },
+    "allowEntry": {
+      "reasonLabel": "Reason for allowing entry",
+      "reason_parent_paying_tomorrow": "Parent paying tomorrow",
+      "reason_first_time_visit": "First-time visit",
+      "reason_scholarship": "Scholarship",
+      "reason_other": "Other"
+    },
+    "historySheet": {
+      "title": "Today’s full history",
+      "filter_all": "All",
+      "filter_admitted": "Success",
+      "filter_failed": "Failed",
+      "filter_duplicate": "Duplicate",
+      "empty": "No entries for this filter",
+      "close": "Close",
+      "pill_admitted": "OK",
+      "pill_duplicate": "Dup",
+      "pill_failed": "Fail"
+    }
   },
   "sync": {
     "online": "Online",

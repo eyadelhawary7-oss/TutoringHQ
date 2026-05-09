@@ -1,8 +1,30 @@
 import { openDB, type IDBPDatabase } from 'idb';
 import { normalizeStudentNumber } from '@/lib/scanner/normalize';
+import { cairoDateKey, cairoYmdMinusDays } from '@/lib/cairo/day';
 
 const DB_NAME = 'centerhq-offline';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
+
+export type TodayHistoryScanStatus = 'admitted' | 'duplicate' | 'failed' | 'error';
+
+export interface TodayHistoryRow {
+  id: string;
+  rawInput: string;
+  normalizedInput: string;
+  status: TodayHistoryScanStatus;
+  errorReason?: string | null;
+  studentName?: string | null;
+  studentId?: string | null;
+  timestamp: number;
+}
+
+export interface TodayHistoryRecord {
+  dateKey: string;
+  scans: TodayHistoryRow[];
+  updatedAt: number;
+}
+
+const META_LAST_SYNC = 'lastSuccessfulSync';
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -29,6 +51,14 @@ export function getDB() {
         // Today's payments for offline scan check (per-session payment cycle)
         if (!db.objectStoreNames.contains('todayPayments')) {
           db.createObjectStore('todayPayments', { keyPath: 'key' });
+        }
+
+        if (!db.objectStoreNames.contains('today_history')) {
+          db.createObjectStore('today_history', { keyPath: 'dateKey' });
+        }
+
+        if (!db.objectStoreNames.contains('scanner_meta')) {
+          db.createObjectStore('scanner_meta', { keyPath: 'key' });
         }
       },
     });
@@ -103,6 +133,9 @@ export async function queueScan(scanData: {
   scan_kind?: 'late_entry';
   late_fee?: number;
   late_group_id?: string | null;
+  /** Fee-exempt admission (per-session fee 0 + active center subscription). */
+  admission_kind?: 'fee_exempt';
+  group_id?: string | null;
 }): Promise<number> {
   const db = await getDB();
   const localId = await db.add('pending_scans', {
@@ -168,4 +201,83 @@ export async function clearSyncedScans() {
     .filter(Boolean);
   await Promise.all(syncedKeys.map((key) => tx.store.delete(key)));
   await tx.done;
+}
+
+export async function clearPendingScansOnly(): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction('pending_scans', 'readwrite');
+  await tx.store.clear();
+  await tx.done;
+}
+
+export async function recordLastSuccessfulSyncNow(): Promise<void> {
+  const db = await getDB();
+  await db.put('scanner_meta', { key: META_LAST_SYNC, at: Date.now() });
+}
+
+export async function getLastSuccessfulSync(): Promise<number | null> {
+  const db = await getDB();
+  const row = await db.get('scanner_meta', META_LAST_SYNC);
+  const at = (row as { at?: number } | undefined)?.at;
+  return typeof at === 'number' ? at : null;
+}
+
+export async function getTodayHistoryRecord(dateKey: string): Promise<TodayHistoryRecord | null> {
+  const db = await getDB();
+  const row = await db.get('today_history', dateKey);
+  return (row as TodayHistoryRecord | undefined) ?? null;
+}
+
+export async function appendTodayHistoryRow(dateKey: string, row: TodayHistoryRow): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction('today_history', 'readwrite');
+  const store = tx.store;
+  const prev = (await store.get(dateKey)) as TodayHistoryRecord | undefined;
+  const scans = [...(prev?.scans ?? []), row];
+  await store.put({
+    dateKey,
+    scans,
+    updatedAt: Date.now(),
+  });
+  await tx.done;
+}
+
+/** Delete today_history rows strictly older than `keepFromDateKey` (YYYY-MM-DD Cairo). */
+export async function pruneTodayHistoryBefore(cutoffExclusive: string): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction('today_history', 'readwrite');
+  const keys = await tx.store.getAllKeys();
+  for (const k of keys) {
+    const key = String(k);
+    if (key < cutoffExclusive) await tx.store.delete(key);
+  }
+  await tx.done;
+}
+
+/** On scanner mount: drop Cairo history older than 7 days (exclusive of cutoff bucket). */
+export async function pruneStaleTodayHistory(): Promise<void> {
+  const today = cairoDateKey();
+  const cutoffKeep = cairoYmdMinusDays(today, 7);
+  await pruneTodayHistoryBefore(cutoffKeep);
+}
+
+export type PendingScanRow = Record<string, unknown> & {
+  localId: number;
+  student_id: string;
+  timestamp?: number;
+  scanned_at?: string;
+};
+
+export async function getPendingScanRows(): Promise<PendingScanRow[]> {
+  const db = await getDB();
+  const pending = (await db.getAll('pending_scans')) as PendingScanRow[];
+  const legacy = (await db.getAll('syncQueue')).filter((item: Record<string, unknown>) => !item.synced) as PendingScanRow[];
+  return [...pending, ...legacy];
+}
+
+export async function lookupStudentNumberOffline(studentId: string): Promise<string | null> {
+  const db = await getDB();
+  const row = await db.get('students', studentId);
+  const sn = (row as { student_number?: string | null } | undefined)?.student_number;
+  return sn != null && sn !== '' ? String(sn) : null;
 }

@@ -78,10 +78,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
   }, [openMenu]);
 
   const closeMainSidebar = useCallback(() => {}, []);
-  const { hideShell } = useLayout();
+  const { hideShell, scannerKioskLocked } = useLayout();
   const [isPending, startTransition] = useTransition();
 
   const cleanPath = stripLocale(pathname);
+  const isScanRoute = cleanPath === '/scan' || cleanPath.startsWith('/scan/');
+  const kioskChromeHidden = isScanRoute && scannerKioskLocked;
   const isPublic = PUBLIC_PATHS.some((p) => cleanPath === p || cleanPath.startsWith(p + '/'));
   const isAdminRoute =
     cleanPath === '/admin' ||
@@ -130,10 +132,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider closeMainSidebar={closeMainSidebar}>
     <div className="flex min-h-screen w-full min-w-0 overflow-x-clip bg-[var(--color-surface-0)]">
-      {!isAdminRoute && <Sidebar onClose={closeMainSidebar} />}
+      {!isAdminRoute && !kioskChromeHidden && <Sidebar onClose={closeMainSidebar} />}
 
       <div
-        className={`flex-1 flex flex-col min-w-0 overflow-hidden ${isAdminRoute ? '' : 'lg:ms-60 transition-[margin] duration-300'}`}
+        className={`flex-1 flex flex-col min-w-0 overflow-hidden ${isAdminRoute || kioskChromeHidden ? '' : 'lg:ms-60 transition-[margin] duration-300'}`}
       >
         <header
           className={`hidden lg:flex items-center h-14 px-6 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shrink-0 sticky top-0 z-30 ${
@@ -172,7 +174,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </header>
 
         {/* Mobile TopBar - hamburger opens left drawer (not desktop sidebar) */}
-        {!isAdminRoute && <MobileTopBar openMenu={openMenu} setOpenMenu={setOpenMenu} />}
+        {!isAdminRoute && !kioskChromeHidden && <MobileTopBar openMenu={openMenu} setOpenMenu={setOpenMenu} />}
 
         {openMenu && (
           <div
@@ -181,7 +183,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             aria-hidden
           />
         )}
-        {!isAdminRoute && <MobileNavDrawer open={openMenu} onClose={() => setOpenMenu(false)} />}
+        {!isAdminRoute && !kioskChromeHidden && <MobileNavDrawer open={openMenu} onClose={() => setOpenMenu(false)} />}
 
         {/* Page content - scroll + safe-area padding on inner wrapper (MobileWrapper) */}
         <main className="flex-1 flex flex-col min-h-0">
@@ -189,7 +191,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </main>
       </div>
 
-      {!isAdminRoute && (
+      {!isAdminRoute && !kioskChromeHidden && (
         <div className="lg:hidden">
           <BottomTabBar />
         </div>

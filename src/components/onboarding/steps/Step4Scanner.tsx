@@ -31,6 +31,7 @@ export default function Step4Scanner({ isActive, onScanSuccess }: Step4ScannerPr
           <CameraScanner
             onScan={handleScan}
             isActive={isActive}
+            cameraTabActive={isActive}
             fillContainer
           />
         )}

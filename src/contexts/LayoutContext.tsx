@@ -8,12 +8,16 @@ interface LayoutContextValue {
   toggleMode: () => void;
   hideShell: boolean;
   setHideShell: (hide: boolean) => void;
+  /** Scanner kiosk: hide shell navigation until PIN unlock */
+  scannerKioskLocked: boolean;
+  setScannerKioskLocked: (locked: boolean) => void;
 }
 
 const LayoutContext = createContext<LayoutContextValue | null>(null);
 
 export function LayoutProvider({ children }: { children: ReactNode }) {
   const [hideShell, setHideShell] = useState(false);
+  const [scannerKioskLocked, setScannerKioskLocked] = useState(false);
 
   const value: LayoutContextValue = {
     mode: 'app',
@@ -21,6 +25,8 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
     toggleMode: () => {},
     hideShell,
     setHideShell,
+    scannerKioskLocked,
+    setScannerKioskLocked,
   };
 
   return <LayoutContext.Provider value={value}>{children}</LayoutContext.Provider>;

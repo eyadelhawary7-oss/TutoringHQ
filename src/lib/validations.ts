@@ -313,8 +313,15 @@ const cardOrderStudentSchema = z.object({
   qr_code: z.string().optional().nullable(),
 });
 
+export const attendanceOverrideInsertSchema = z.object({
+  student_id: z.string().uuid('Invalid student ID'),
+  override_by_user_id: z.string().uuid('Invalid user ID'),
+  reason: z.string().min(1).max(500),
+});
+
 /** DB route - table-specific validation for insert/update */
 export const dbInsertSchemas: Record<string, z.ZodType> = {
+  attendance_overrides: attendanceOverrideInsertSchema,
   students: studentInsertSchema,
   student_groups: studentGroupSchema,
   payments: paymentSchema.extend({ center_id: z.string().uuid().optional() }),

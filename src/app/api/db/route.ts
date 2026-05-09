@@ -9,7 +9,7 @@ import { getShippingFee, getShippingZone } from '@/lib/bostaShipping';
 import { parseBodyWithLimit } from '@/lib/validate';
 
 const ALLOWED_TABLES = [
-  'payments', 'students', 'student_groups', 'attendance_scans',
+  'payments', 'students', 'student_groups', 'attendance_scans', 'attendance_overrides',
   'rooms', 'schedule_slots', 'centers', 'users', 'subjects',
   'subscriptions', 'whatsapp_messages', 'whatsapp_incoming',
   'permissions', 'demo_requests', 'center_invites', 'student_group_members',

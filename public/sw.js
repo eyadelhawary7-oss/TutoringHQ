@@ -1,43 +1,109 @@
-const CACHE_NAME = 'centerhq-v4';
+/**
+ * CenterHQ service worker — precache minimal scanner shell; runtime StaleWhileRevalidate via Workbox CDN.
+ */
+importScripts('https://storage.googleapis.com/workbox-cdn/releases/7.0.0/workbox-sw.js');
 
-const PRECACHE_URLS = [
-  '/ar/dashboard',
-  '/en/dashboard',
-  '/ar/scan',
-  '/en/scan',
-  '/ar/scanner',
-  '/en/scanner',
-  '/ar/offline',
-  '/en/offline',
-  '/manifest.webmanifest',
-  '/icons/icon.svg',
+const WB = globalThis.workbox;
+const CACHE_LEGACY = 'centerhq-v4';
+
+const PRECACHE_ENTRIES = [
+  { url: '/manifest.webmanifest', revision: null },
+  { url: '/icons/icon.svg', revision: null },
+  { url: '/icons/icon-192.png', revision: null },
+  { url: '/ar/scan', revision: null },
+  { url: '/en/scan', revision: null },
+  { url: '/ar/login', revision: null },
+  { url: '/en/login', revision: null },
 ];
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return Promise.allSettled(
-        PRECACHE_URLS.map((url) =>
-          cache.add(url).catch((err) => {
-            console.warn('[SW] Failed to precache:', url, err);
-          })
-        )
-      );
-    }).then(() => self.skipWaiting())
+if (WB) {
+  WB.core.setCacheNameDetails({
+    prefix: 'centerhq',
+    suffix: 'v5',
+    precache: 'precache',
+    runtime: 'runtime',
+  });
+
+  WB.core.clientsClaim();
+  WB.precaching.cleanupOutdatedCaches();
+  WB.precaching.precacheAndRoute(PRECACHE_ENTRIES);
+
+  WB.routing.registerRoute(
+    ({ request, url }) =>
+      request.method === 'GET' &&
+      url.origin === self.location.origin &&
+      url.pathname.startsWith('/api/'),
+    new WB.strategies.NetworkOnly({
+      plugins: [
+        {
+          handlerDidError: async () =>
+            new Response(JSON.stringify({ error: 'offline' }), {
+              status: 503,
+              headers: { 'Content-Type': 'application/json' },
+            }),
+        },
+      ],
+    }),
   );
-});
+
+  WB.routing.registerRoute(
+    ({ request }) =>
+      request.destination === 'font' ||
+      (typeof request.url === 'string' &&
+        (request.url.includes('fonts.googleapis.com') || request.url.includes('fonts.gstatic.com'))),
+    new WB.strategies.NetworkOnly(),
+  );
+
+  const runtimeSWR = new WB.strategies.StaleWhileRevalidate({
+    cacheName: 'centerhq-v5-runtime',
+  });
+
+  WB.routing.registerRoute(
+    ({ request, url }) =>
+      request.method === 'GET' &&
+      url.origin === self.location.origin &&
+      !url.pathname.startsWith('/api/'),
+    runtimeSWR,
+  );
+
+  WB.routing.setCatchHandler(async ({ event }) => {
+    if (event.request.mode === 'navigate') {
+      try {
+        const path = new URL(event.request.url).pathname;
+        const localePrefix = path.startsWith('/en') ? '/en' : '/ar';
+        const offlinePage = await caches.match(`${localePrefix}/offline`);
+        if (offlinePage) return offlinePage;
+        const arScan = await caches.match('/ar/scan');
+        if (arScan) return arScan;
+        const enScan = await caches.match('/en/scan');
+        if (enScan) return enScan;
+      } catch {
+        //
+      }
+      return new Response(
+        `<html><body><h2 style="font-family:sans-serif;text-align:center;margin-top:40px">افتح التطبيق مرة واحدة وأنت متصل بالإنترنت لتفعيل وضع عدم الاتصال</h2></body></html>`,
+        { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } },
+      );
+    }
+    return Response.error();
+  });
+
+  self.addEventListener('install', (event) => {
+    event.waitUntil(WB.core.skipWaiting());
+  });
+} else {
+  console.warn('[SW] Workbox unavailable — skipping advanced caching');
+}
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(
-        keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
-      )
-    ).then(() => self.clients.claim())
+      Promise.all(keys.filter((k) => k === CACHE_LEGACY || k.startsWith('centerhq-v4')).map((k) => caches.delete(k))),
+    ),
   );
 });
 
-// IndexedDB for offline scan queue
+// IndexedDB for offline scan queue (legacy SW message channel)
 const DB_NAME = 'centerhq-offline';
 const STORE_NAME = 'pending-scans';
 
@@ -85,111 +151,6 @@ async function deletePendingScan(id) {
   });
 }
 
-self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
-
-  if (event.request.method !== 'GET') return;
-  if (!url.protocol.startsWith('http')) return;
-
-  // Skip font requests entirely — fonts are self-hosted
-  if (
-    url.hostname.includes('fonts.googleapis.com') ||
-    url.hostname.includes('fonts.gstatic.com') ||
-    event.request.destination === 'font'
-  ) {
-    return;
-  }
-
-  // API: network only, return error JSON when offline
-  if (url.pathname.startsWith('/api/')) {
-    event.respondWith(
-      fetch(event.request).catch(() =>
-        new Response(JSON.stringify({ error: 'offline' }), {
-          status: 503,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      )
-    );
-    return;
-  }
-
-  // Next.js static chunks: cache first
-  if (url.pathname.startsWith('/_next/static/')) {
-    event.respondWith(
-      caches.match(event.request).then((cached) => {
-        if (cached) return cached;
-        return fetch(event.request).then((res) => {
-          if (res.ok) {
-            const clone = res.clone();
-            caches.open(CACHE_NAME).then((c) => c.put(event.request, clone));
-          }
-          return res;
-        });
-      })
-    );
-    return;
-  }
-
-  // Pages: stale-while-revalidate (with offline navigation fallback)
-  event.respondWith(
-    (async function () {
-      if (event.request.mode === 'navigate') {
-        try {
-          return await fetch(event.request);
-        } catch {
-          try {
-            const cache = await caches.open(CACHE_NAME);
-            const path = new URL(event.request.url).pathname;
-            const localePrefix = path.startsWith('/en') ? '/en' : '/ar';
-            const offlinePage = await cache.match(`${localePrefix}/offline`);
-            if (offlinePage) return offlinePage;
-            const arScan = await cache.match('/ar/scan');
-            if (arScan) return arScan;
-            const enScan = await cache.match('/en/scan');
-            if (enScan) return enScan;
-          } catch {
-            // caches.open or cache.match failed — fall through to HTML fallback
-          }
-          return new Response(
-            `<html><body><h2 style="font-family:sans-serif;text-align:center;margin-top:40px">افتح التطبيق مرة واحدة وأنت متصل بالإنترنت لتفعيل وضع عدم الاتصال</h2></body></html>`,
-            { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
-          );
-        }
-      }
-      const cache = await caches.open(CACHE_NAME);
-      const cached = await cache.match(event.request);
-
-      const networkPromise = fetch(event.request)
-        .then((res) => {
-          if (res.ok) {
-            const clone = res.clone();
-            cache.put(event.request, clone);
-          }
-          return res;
-        })
-        .catch(() => null);
-
-      if (cached) {
-        networkPromise.catch(() => {});
-        return cached;
-      }
-
-      const networkRes = await networkPromise;
-      if (networkRes) return networkRes;
-
-      // Fallback for scan routes when fully offline
-      if (url.pathname.includes('/scan')) {
-        const fallback =
-          (await cache.match('/ar/scan')) ||
-          (await cache.match('/en/scan'));
-        if (fallback) return fallback;
-      }
-
-      return new Response('Offline', { status: 503 });
-    })()
-  );
-});
-
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-scans') {
     event.waitUntil(
@@ -206,7 +167,7 @@ self.addEventListener('sync', (event) => {
             console.warn('[SW] Sync failed:', e);
           }
         }
-      })
+      }),
     );
   }
 });

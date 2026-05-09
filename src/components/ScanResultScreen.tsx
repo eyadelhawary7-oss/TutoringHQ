@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { CheckCircle, XCircle, AlertTriangle, Clock } from 'lucide-react';
 
@@ -19,12 +19,17 @@ interface ScanResultScreenProps {
   student: Student;
   selectedGroup?: { id: string; name: string; fee: number } | null;
   onPaymentSelect: (method: string, groupId?: string, amount?: number) => void;
-  onAllowLateEntry?: () => void;
+  /** Called with audit reason slug after operator confirms */
+  onAllowLateEntry?: (reason: string) => void;
   onDismiss: () => void;
   isProcessing: boolean;
   canAllowLateEntry?: boolean;
   balanceDue?: number;
   addedAmount?: number;
+  /** Outstanding debt (balance_due) — shown in unpaid debt header */
+  outstandingBalance?: number;
+  /** Modal headline for unpaid debt path, e.g. "Pay 100 EGP — Name" */
+  paymentHeadline?: string | null;
 }
 
 const PAYMENT_METHODS: { key: string; value: string; icon: string; labelKey: string }[] = [
@@ -36,15 +41,28 @@ const PAYMENT_METHODS: { key: string; value: string; icon: string; labelKey: str
   { key: 'bank', value: 'bank_transfer', icon: '🏦', labelKey: 'bankTransfer' },
 ];
 
-const GREEN = '#16A34A';
-const RED = '#DC2626';
-const YELLOW = '#EAB308';
-const PURPLE = '#7C3AED';
-
 function vibrate(pattern: number | number[]) {
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
     navigator.vibrate(pattern);
   }
+}
+
+function ModalChrome({
+  borderClass,
+  children,
+}: {
+  borderClass: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="chq-spring-in fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div
+        className={`relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-[var(--color-surface-1)] shadow-2xl border border-[var(--color-border-subtle)] border-t-4 ${borderClass}`}
+      >
+        {children}
+      </div>
+    </div>
+  );
 }
 
 export default function ScanResultScreen({
@@ -57,8 +75,11 @@ export default function ScanResultScreen({
   canAllowLateEntry = true,
   balanceDue = 0,
   addedAmount = 0,
+  outstandingBalance = 0,
+  paymentHeadline = null,
 }: ScanResultScreenProps) {
   const t = useTranslations('scan');
+  const tAllow = useTranslations('scanner.allowEntry');
   const tCommon = useTranslations('common');
   const selectedGroup = selectedGroupProp ?? student.groups?.[0] ?? null;
   const hasVibrated = useRef(false);
@@ -69,6 +90,7 @@ export default function ScanResultScreen({
   const isUnpaid = !isPaid && !isPending && !isLateEntryGranted;
 
   const [countdown, setCountdown] = useState(3);
+  const [allowReason, setAllowReason] = useState('parent_paying_tomorrow');
 
   useEffect(() => {
     if (hasVibrated.current) return;
@@ -95,63 +117,67 @@ export default function ScanResultScreen({
   // ─── GREEN (paid) ───
   if (isPaid) {
     return (
-      <div
-        className="chq-spring-in fixed inset-0 z-50 flex flex-col items-center justify-center text-white pt-6 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]"
-        style={{ backgroundColor: GREEN }}
-      >
-        <div className="relative w-28 h-28 flex items-center justify-center mb-6">
-          {/* Radial pulse: 3 repeats, 600ms each */}
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="absolute w-28 h-28 rounded-full border-2 border-white/50"
-              style={{
-                animation: `scanner-green-pulse 600ms ease-out ${i * 200}ms forwards`,
-              }}
-            />
-          ))}
-          <div className="relative w-28 h-28 bg-[var(--color-surface-1)]/20 rounded-full flex items-center justify-center">
-            <CheckCircle
-              className="w-16 h-16 text-white"
-              style={{ animation: 'scanner-green-check 600ms ease-out forwards' }}
-            />
+      <ModalChrome borderClass="border-t-emerald-500">
+        <div className="flex flex-col items-center text-center px-6 py-8 text-[var(--color-text-primary)]">
+          <div className="relative w-28 h-28 flex items-center justify-center mb-6">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="absolute w-28 h-28 rounded-full border-2 border-emerald-500/40"
+                style={{
+                  animation: `scanner-green-pulse 600ms ease-out ${i * 200}ms forwards`,
+                }}
+              />
+            ))}
+            <div className="relative w-28 h-28 bg-emerald-500/15 rounded-full flex items-center justify-center">
+              <CheckCircle className="w-16 h-16 text-emerald-500" style={{ animation: 'scanner-green-check 600ms ease-out forwards' }} />
+            </div>
           </div>
+          <h2 className="text-2xl font-bold mb-2">{student.name}</h2>
+          <p className="text-[var(--color-text-secondary)] text-lg mb-1">{selectedGroup?.name ?? student.subject}</p>
+          <p className="text-3xl font-bold font-mono mt-2 mb-6 text-emerald-600">{egp(selectedGroup?.fee ?? student.fee ?? 0)}</p>
+          {balanceDue > 0 && (
+            <div className="bg-[var(--color-surface-0)] rounded-xl p-4 mb-6 w-full border border-[var(--color-border-subtle)]">
+              <p className="text-sm text-[var(--color-text-secondary)]">{t('balanceDue')}</p>
+              <p className="text-2xl font-bold font-mono">{egp(balanceDue)}</p>
+            </div>
+          )}
+          <p className="text-[var(--color-text-secondary)] text-sm mb-4">
+            {t('autoDismiss')} {countdown}
+            {t('seconds')}...
+          </p>
         </div>
-        <h2 className="text-3xl font-bold mb-2">{student.name}</h2>
-        <p className="text-green-200 text-lg mb-1">{selectedGroup?.name ?? student.subject}</p>
-        <p className="text-4xl font-bold font-mono mt-2 mb-6">{egp(selectedGroup?.fee ?? student.fee ?? 0)}</p>
-        {balanceDue > 0 && (
-          <div className="bg-[var(--color-surface-1)]/20 rounded-xl p-4 mb-6 w-full max-w-sm text-center border border-white/30">
-            <p className="text-sm text-green-100">{t('balanceDue')}</p>
-            <p className="text-2xl font-bold font-mono">{egp(balanceDue)}</p>
-          </div>
-        )}
-        <p className="text-green-200 text-sm">{t('autoDismiss')} {countdown}{t('seconds')}...</p>
-      </div>
+      </ModalChrome>
     );
   }
 
   // ─── YELLOW (late entry) ───
   if (isLateEntryGranted) {
     return (
-      <div className="chq-spring-in fixed inset-0 z-50 flex flex-col items-center justify-center text-white pt-6 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]" style={{ backgroundColor: YELLOW }}>
-        <div
-          className="w-28 h-28 bg-[var(--color-surface-1)]/20 rounded-full flex items-center justify-center mb-6"
-          style={{ animation: 'scanner-yellow-glow 800ms ease-in-out 2' }}
-        >
-          <AlertTriangle className="w-16 h-16 text-white" />
+      <ModalChrome borderClass="border-t-amber-500">
+        <div className="flex flex-col items-center text-center px-6 py-8">
+          <div
+            className="w-28 h-28 bg-amber-500/15 rounded-full flex items-center justify-center mb-6"
+            style={{ animation: 'scanner-yellow-glow 800ms ease-in-out 2' }}
+          >
+            <AlertTriangle className="w-16 h-16 text-amber-600" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2 text-[var(--color-text-primary)]">{student.name}</h2>
+          <p className="text-[var(--color-text-secondary)] text-lg mb-2">{selectedGroup?.name ?? student.subject}</p>
+          <p className="text-sm text-amber-800 dark:text-amber-200 mb-4">{t('entryAllowedUnpaid')}</p>
+          <div className="bg-[var(--color-surface-0)] rounded-xl p-4 w-full border border-[var(--color-border-subtle)]">
+            <p className="text-sm text-[var(--color-text-secondary)]">{t('amountAddedToBalance', { amount: egp(addedAmount) })}</p>
+            <p className="text-3xl font-bold font-mono text-[var(--color-text-primary)]">{egp(addedAmount)}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="mt-6 px-8 py-3 rounded-xl font-semibold bg-[var(--color-surface-0)] border border-[var(--color-border-default)] text-[var(--color-text-primary)]"
+          >
+            {t('nextStudent')}
+          </button>
         </div>
-        <h2 className="text-3xl font-bold mb-2">{student.name}</h2>
-        <p className="text-amber-100 text-lg mb-2">{selectedGroup?.name ?? student.subject}</p>
-        <p className="text-amber-100 text-sm mb-4">{t('entryAllowedUnpaid')}</p>
-        <div className="bg-[var(--color-surface-1)]/20 rounded-xl p-4 w-full max-w-sm text-center border border-white/30">
-          <p className="text-sm text-amber-100">{t('amountAddedToBalance', { amount: egp(addedAmount) })}</p>
-          <p className="text-3xl font-bold font-mono">{egp(addedAmount)}</p>
-        </div>
-        <button onClick={onDismiss} className="mt-6 px-8 py-3 bg-[var(--color-surface-1)]/20 hover:bg-[var(--color-surface-1)]/30 rounded-xl font-semibold transition-colors border border-white/30">
-          {t('nextStudent')}
-        </button>
-      </div>
+      </ModalChrome>
     );
   }
 
@@ -161,77 +187,120 @@ export default function ScanResultScreen({
       ? PAYMENT_METHODS.find((m) => m.value === student.last_payment_method)?.labelKey ?? 'instapay'
       : 'instapay';
     return (
-      <div
-        className="chq-spring-in fixed inset-0 z-50 flex flex-col items-center justify-center text-white pt-6 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]"
-        style={{ backgroundColor: PURPLE, animation: 'scanner-purple-fade 400ms ease-out forwards' }}
-      >
-        <div className="w-28 h-28 bg-[var(--color-surface-1)]/20 rounded-full flex items-center justify-center mb-6" style={{ animation: 'scanner-purple-fade 400ms ease-out forwards' }}>
-          <Clock className="w-16 h-16 text-white" />
+      <ModalChrome borderClass="border-t-violet-500">
+        <div className="flex flex-col items-center text-center px-6 py-8">
+          <div className="w-28 h-28 bg-violet-500/15 rounded-full flex items-center justify-center mb-6">
+            <Clock className="w-16 h-16 text-violet-600" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2 text-[var(--color-text-primary)]">{student.name}</h2>
+          <p className="text-[var(--color-text-secondary)] text-lg mb-2">{selectedGroup?.name ?? student.subject}</p>
+          <p className="text-sm text-[var(--color-text-secondary)] mb-4">{t('paymentPendingConfirmation')}</p>
+          <div className="bg-[var(--color-surface-0)] rounded-xl p-4 w-full border border-[var(--color-border-subtle)]">
+            <p className="text-sm text-[var(--color-text-secondary)]">{t('pendingAmountLabel')}</p>
+            <p className="text-3xl font-bold font-mono text-[var(--color-text-primary)]">{egp(addedAmount || balanceDue)}</p>
+            <p className="text-sm text-[var(--color-text-tertiary)] mt-1 capitalize">
+              via {t(methodLabel as 'cash')}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="mt-6 px-8 py-3 rounded-xl font-semibold bg-[var(--color-surface-0)] border border-[var(--color-border-default)] text-[var(--color-text-primary)]"
+          >
+            {t('nextStudent')}
+          </button>
         </div>
-        <h2 className="text-3xl font-bold mb-2" style={{ animation: 'scanner-purple-fade 400ms ease-out 50ms forwards' }}>{student.name}</h2>
-        <p className="text-violet-200 text-lg mb-2" style={{ animation: 'scanner-purple-fade 400ms ease-out 100ms forwards' }}>{selectedGroup?.name ?? student.subject}</p>
-        <p className="text-violet-200 text-sm mb-4" style={{ animation: 'scanner-purple-fade 400ms ease-out 150ms forwards' }}>{t('paymentPendingConfirmation')}</p>
-        <div className="bg-[var(--color-surface-1)]/20 rounded-xl p-4 w-full max-w-sm text-center border border-white/30" style={{ animation: 'scanner-purple-fade 400ms ease-out 200ms forwards' }}>
-          <p className="text-sm text-violet-200">{t('pendingPayment')}</p>
-          <p className="text-3xl font-bold font-mono">{egp(addedAmount || balanceDue)}</p>
-          <p className="text-sm text-violet-300 mt-1 capitalize">via {t(methodLabel as 'cash')}</p>
-        </div>
-        <button onClick={onDismiss} className="mt-6 px-8 py-3 bg-[var(--color-surface-1)]/20 hover:bg-[var(--color-surface-1)]/30 rounded-xl font-semibold transition-colors border border-white/30" style={{ animation: 'scanner-purple-fade 400ms ease-out 250ms forwards' }}>
-          {t('nextStudent')}
-        </button>
-      </div>
+      </ModalChrome>
     );
   }
 
-  // ─── RED (unpaid) ───
+  // ─── RED / debt unpaid (card, not full bleed) ───
   const fee = selectedGroup?.fee ?? student.fee ?? 0;
+  const headline =
+    paymentHeadline ||
+    (outstandingBalance > 0
+      ? `${t('payPrefix')} ${egp(outstandingBalance)} — ${student.name}`
+      : student.name);
+
   return (
-    <div
-      className="chq-spring-in fixed inset-0 z-50 flex flex-col items-center justify-center overflow-y-auto pt-6 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] text-white"
-      style={{ backgroundColor: RED, animation: 'scanner-red-shake 400ms ease-in-out' }}
-    >
-      <div className="w-28 h-28 bg-[var(--color-surface-1)]/20 rounded-full flex items-center justify-center mb-6">
-        <XCircle className="w-16 h-16 text-white" />
-      </div>
-      <h2 className="text-3xl font-bold mb-2">{student.name}</h2>
-      <p className="text-red-200 text-lg mb-6">{selectedGroup?.name ?? student.subject}</p>
-      <p className="text-sm text-red-200 mb-3 uppercase tracking-wider font-semibold">{t('selectMethod')}</p>
-      <div className="grid grid-cols-2 gap-3 w-full max-w-sm mb-4">
-        {PAYMENT_METHODS.map(({ value, icon, labelKey }) => (
-          <button
-            key={value}
-            disabled={isProcessing}
-            onClick={() =>
-              onPaymentSelect(
-                value,
-                selectedGroup?.id ?? student.groups?.[0]?.id,
-                selectedGroup?.fee ?? student.groups?.[0]?.fee ?? student.fee
-              )
-            }
-            className="min-h-[44px] py-3 px-4 bg-[var(--color-surface-1)]/20 hover:bg-[var(--color-surface-1)]/30 rounded-xl font-semibold transition-colors border border-white/30 text-sm disabled:opacity-50"
-          >
-            <span className="block mb-1">{icon}</span>
-            <span>{t(labelKey as 'cash')}</span>
-          </button>
-        ))}
-      </div>
-      {canAllowLateEntry && onAllowLateEntry && (
-        <button
-          disabled={isProcessing}
-          onClick={onAllowLateEntry}
-          className="w-full max-w-sm py-3 bg-[var(--color-surface-1)]/10 hover:bg-[var(--color-surface-1)]/20 border border-white/30 rounded-xl font-semibold transition-colors text-sm disabled:opacity-50"
-        >
-          {t('allowLateEntry')}
-        </button>
-      )}
-      {isProcessing && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-10">
-          <svg className="animate-spin h-12 w-12 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
+    <ModalChrome borderClass="border-t-red-600">
+      <div className="px-6 py-8 text-[var(--color-text-primary)]">
+        <div className="flex flex-col items-center text-center mb-6">
+          <div className="w-24 h-24 bg-red-500/15 rounded-full flex items-center justify-center mb-4">
+            <XCircle className="w-14 h-14 text-red-600" />
+          </div>
+          <h2 className="text-xl font-bold leading-snug px-1">{headline}</h2>
+          <p className="text-[var(--color-text-secondary)] mt-2">{selectedGroup?.name ?? student.subject}</p>
+          {outstandingBalance > 0 && (
+            <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+              {t('sessionFeeLabel')}: <span className="font-mono font-semibold text-[var(--color-text-primary)]">{egp(fee)}</span>
+            </p>
+          )}
         </div>
-      )}
-    </div>
+
+        <p className="text-center text-xs uppercase tracking-wider font-semibold text-[var(--color-text-secondary)] mb-3">{t('selectMethod')}</p>
+        <div className="grid grid-cols-2 gap-3 w-full mb-4">
+          {PAYMENT_METHODS.map(({ value, icon, labelKey }) => (
+            <button
+              key={value}
+              type="button"
+              disabled={isProcessing}
+              onClick={() =>
+                onPaymentSelect(
+                  value,
+                  selectedGroup?.id ?? student.groups?.[0]?.id,
+                  selectedGroup?.fee ?? student.groups?.[0]?.fee ?? student.fee,
+                )
+              }
+              className="min-h-[44px] py-3 px-4 bg-[var(--color-surface-0)] hover:bg-[var(--color-surface-2)] rounded-xl font-semibold transition-colors border border-[var(--color-border-default)] text-sm disabled:opacity-50 text-[var(--color-text-primary)]"
+            >
+              <span className="block mb-1">{icon}</span>
+              <span>{t(labelKey as 'cash')}</span>
+            </button>
+          ))}
+        </div>
+
+        {canAllowLateEntry && onAllowLateEntry && (
+          <div className="space-y-3 border-t border-[var(--color-border-subtle)] pt-4">
+            <label className="block text-xs font-medium text-[var(--color-text-secondary)]">{tAllow('reasonLabel')}</label>
+            <select
+              value={allowReason}
+              onChange={(e) => setAllowReason(e.target.value)}
+              className="w-full rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2.5 text-sm text-[var(--color-text-primary)]"
+            >
+              <option value="parent_paying_tomorrow">{tAllow('reason_parent_paying_tomorrow')}</option>
+              <option value="first_time_visit">{tAllow('reason_first_time_visit')}</option>
+              <option value="scholarship">{tAllow('reason_scholarship')}</option>
+              <option value="other">{tAllow('reason_other')}</option>
+            </select>
+            <button
+              type="button"
+              disabled={isProcessing}
+              onClick={() => onAllowLateEntry(allowReason)}
+              className="w-full py-3 bg-[var(--color-surface-0)] hover:bg-[var(--color-surface-2)] border border-[var(--color-border-default)] rounded-xl font-semibold transition-colors text-sm disabled:opacity-50 text-[var(--color-text-primary)]"
+            >
+              {t('allowLateEntry')}
+            </button>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="mt-4 w-full py-2 text-sm text-[var(--color-text-secondary)] underline-offset-2 hover:underline"
+        >
+          {tCommon('cancel')}
+        </button>
+
+        {isProcessing && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/25 rounded-2xl z-10">
+            <svg className="animate-spin h-12 w-12 text-teal-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          </div>
+        )}
+      </div>
+    </ModalChrome>
   );
 }

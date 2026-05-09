@@ -4708,7 +4708,10 @@
     "entryAllowedUnpaid": "الإدخال مسموح به - غير مدفوع",
     "paymentPendingConfirmation": "تم الدفع وفي انتظار التأكيد.",
     "balanceDue": "رصيد مستحق، رصيد مدين",
-    "amountAddedToBalance": "تمت إضافة {amount} إلى الرصيد"
+    "amountAddedToBalance": "تمت إضافة {amount} إلى الرصيد",
+    "payPrefix": "ادفع",
+    "sessionFeeLabel": "رسوم الحصة",
+    "pendingAmountLabel": "المبلغ المستحق"
   },
   "scanner": {
     "title": "ماسح QR",
@@ -4742,7 +4745,82 @@
     "perLesson": "لكل Lesson",
     "selectGroupDesc": "اختيار مجموعة Desc",
     "selectGroupTitle": "اختيار مجموعة عنوان",
-    "studentNotFound": "طالب مش Found"
+    "studentNotFound": "طالب مش Found",
+    "syncPanel": {
+      "openSettings": "إعدادات الماسح",
+      "title": "المزامنة والجهاز",
+      "swVersion": "ذاكرة التخزين المؤقت للخدمة",
+      "pendingQueue": "قائمة الانتظار",
+      "lastSync": "آخر مزامنة ناجحة",
+      "cairoToday": "اليوم (القاهرة)",
+      "retryNow": "إعادة المزامنة الآن",
+      "clearPending": "مسح قائمة الانتظار المحلية",
+      "clearConfirmTitle": "مسح المسحات المعلقة؟",
+      "clearConfirmBody": "يحذف هذا الصفوف غير المتزامنة من هذا الجهاز فقط. قائمة الطلاب تبقى كما هي.",
+      "dismiss": "إغلاق",
+      "kioskLock": "قفل على الماسح (إخفاء القوائم)",
+      "kioskUnlockTitle": "إلغاء القفل",
+      "kioskUnlockMessage": "أدخل رمز PIN لإظهار القوائم ومغادرة الماسح."
+    },
+    "pendingSheet": {
+      "title": "مزامنة معلقة",
+      "subtitle": "في قائمة الانتظار على هذا الجهاز",
+      "empty": "لا يوجد شيء في الطابور",
+      "queued": "في الانتظار",
+      "retry": "إعادة الآن",
+      "retrying": "جاري المزامنة…",
+      "retryAll": "إعادة الكل",
+      "retryingAll": "مزامنة الكل…",
+      "close": "إغلاق"
+    },
+    "camera": {
+      "enableCamera": "تفعيل الكاميرا",
+      "privacyExplainer": "نستخدم الكاميرا لقراءة بطاقات QR للطلاب فقط. لا يتم رفع أي صور.",
+      "deniedHint": "تم حظر الكاميرا. يمكنك إدخال أرقام الطلاب يدوياً.",
+      "switchManual": "التبديل إلى الإدخال اليدوي",
+      "hardwareError": "خطأ في الكاميرا",
+      "noCamera": "لا توجد كاميرا"
+    },
+    "subscriptionGate": {
+      "title": "يتطلب تحديث الاشتراك",
+      "body": "اشتراك هذا المركز غير نشط. يُرجى إتمام الفوترة قبل تسجيل مدفوعات الحضور.",
+      "dismiss": "حسناً"
+    },
+    "duplicateToast": "مسجل مسبقاً اليوم — إدخال فقط",
+    "entryRecordedToast": "تم تسجيل الدخول",
+    "pendingBadge": "مزامنة معلقة ({count})",
+    "viewAllToday": "عرض كل اليوم",
+    "offlineBanner": "غير متصل — الحضور يُحفظ محلياً",
+    "hardwareSpecs": {
+      "cardTitle": "مواصفات جهاز الماسح الموصى بها",
+      "minimum": "الحد الأدنى",
+      "recommended": "موصى به",
+      "addon": "إضافة",
+      "enterpriseNote": "نظام iOS يتعامل مع بيانات IndexedDB الكبيرة أفضل من أندرويد",
+      "ramMin": "ذاكرة {spec}",
+      "storageMin": "تخزين {spec}",
+      "cameraMin": "كاميرا {spec}",
+      "recommendedDevice": "جهاز موصى به: {device}"
+    },
+    "allowEntry": {
+      "reasonLabel": "سبب السماح بالدخول",
+      "reason_parent_paying_tomorrow": "الولي يدفع غداً",
+      "reason_first_time_visit": "زيارة أولى",
+      "reason_scholarship": "منحة",
+      "reason_other": "أخرى"
+    },
+    "historySheet": {
+      "title": "سجل اليوم كاملاً",
+      "filter_all": "الكل",
+      "filter_admitted": "نجاح",
+      "filter_failed": "فشل",
+      "filter_duplicate": "مكرر",
+      "empty": "لا توجد عناصر لهذا الفلتر",
+      "close": "إغلاق",
+      "pill_admitted": "تم",
+      "pill_duplicate": "مكرر",
+      "pill_failed": "فشل"
+    }
   },
   "settings": {
     "title": "الإعدادات",

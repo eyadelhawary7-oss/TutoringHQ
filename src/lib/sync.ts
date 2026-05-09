@@ -4,7 +4,9 @@ import {
   markScanSynced,
   clearSyncedScans,
   deletePendingScanLocal,
+  recordLastSuccessfulSyncNow,
 } from './db';
+import { cairoDateKey } from '@/lib/cairo/day';
 
 export type SyncStatus = 'online' | 'offline' | 'syncing';
 
@@ -16,6 +18,39 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
   for (const scan of unsyncedScans) {
     try {
       const row = scan as Record<string, unknown>;
+      if (row.admission_kind === 'fee_exempt') {
+        const scanned_at = String(row.scanned_at);
+        const sessionDate = cairoDateKey(new Date(scanned_at));
+        const groupId = (row.group_id as string | null | undefined) ?? null;
+
+        const scanData: Record<string, unknown> = {
+          student_id: row.student_id,
+          center_id: row.center_id,
+          scanned_by: row.scanned_by,
+          scanned_at,
+          payment_status_at_scan: 'admitted',
+          session_date: sessionDate,
+          payment_recorded: false,
+        };
+        if (groupId) scanData.group_id = groupId;
+
+        const { error: attendanceError } = await dbInsert({
+          table: 'attendance_scans',
+          data: scanData,
+          select: false,
+        });
+        if (attendanceError) throw new Error(attendanceError.message);
+
+        const isLegacySyncQueue = Object.prototype.hasOwnProperty.call(scan, 'synced');
+        if (isLegacySyncQueue) {
+          await markScanSynced((scan as { localId: number }).localId);
+        } else {
+          await deletePendingScanLocal((scan as { localId: number }).localId);
+        }
+        synced++;
+        continue;
+      }
+
       if (row.scan_kind === 'late_entry') {
         const scanned_at = String(row.scanned_at);
         const sessionDate = scanned_at.split('T')[0];
@@ -130,6 +165,7 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
   // Clean up synced records
   if (synced > 0) {
     await clearSyncedScans();
+    await recordLastSuccessfulSyncNow();
   }
 
   return { synced, errors };
