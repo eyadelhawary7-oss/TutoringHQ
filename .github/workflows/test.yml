@@ -3,6 +3,8 @@ name: Test Suite
 on:
   push:
     branches: [master]
+  pull_request:
+    branches: [master]
 
 jobs:
   i18n-check:
@@ -48,6 +50,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Bidi + locale helper gates (Prompt 7)
+        run: npm run check:bidi && npm run check:tolocale
+
       - name: Run unit tests
         run: npm run test:unit
 
@@ -87,3 +92,27 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  security-audit:
+    name: Security audit harness
+    runs-on: ubuntu-latest
+    needs: [unit-tests]
+    if: ${{ github.event_name != 'pull_request' || !contains(join(github.event.pull_request.labels.*.name, ','), 'security-audit-skip') }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run security-audit.ts --all
+        run: npx tsx scripts/security-audit.ts --all
+        env:
+          SECURITY_AUDIT_BASE_URL: ${{ secrets.PLAYWRIGHT_BASE_URL }}

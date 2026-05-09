@@ -20,6 +20,7 @@ import { normalizeStudentNumber, isValidCanonicalStudentNumber } from '@/lib/sca
 import CameraScanner from '@/components/CameraScanner';
 import BluetoothScanner from '@/components/BluetoothScanner';
 import ScanResultScreen from '@/components/ScanResultScreen';
+import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { Camera, Bluetooth, Hash, BookOpen, ChevronRight, Search, QrCode } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/useToast';
@@ -1006,7 +1007,7 @@ export default function ScanPage() {
 
         <div className="flex-1 flex flex-col px-4 gap-4 max-w-lg mx-auto w-full pb-4">
           <div
-            className="flex gap-1 bg-[var(--color-surface-2)] p-1 rounded-xl"
+            className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:gap-1 bg-[var(--color-surface-2)] p-1 rounded-xl"
             role="tablist"
             aria-label={ts('tab_bar_label')}
           >
@@ -1032,7 +1033,7 @@ export default function ScanPage() {
                     }, 100);
                   }
                 }}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm transition-all ${mode === key ? 'bg-[var(--color-surface-1)] shadow-sm font-semibold text-[var(--color-text-primary)]' : 'font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
+                className={`min-h-[44px] sm:min-h-0 flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm transition-all ${mode === key ? 'bg-[var(--color-surface-1)] shadow-sm font-semibold text-[var(--color-text-primary)]' : 'font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
               >
                 <Icon className={mode === key && key === 'camera' ? 'w-4 h-4 text-brand-400' : 'w-4 h-4'} />
                 <span className="truncate">{label}</span>
@@ -1264,7 +1265,7 @@ export default function ScanPage() {
             )
           : scannedStudent.groups;
         return (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
           <div className="bg-[var(--color-surface-1)] rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-sm max-h-[85vh] min-h-[58vh] flex flex-col">
             {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-1 shrink-0">
@@ -1307,7 +1308,7 @@ export default function ScanPage() {
                         : `${tCommon('egp')} ${formatNumber(0, locale)}`}
                     </p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                  <DirectionalIcon icon={ChevronRight} className="w-4 h-4 text-slate-400 flex-shrink-0" />
                 </button>
               ))}
             </div>

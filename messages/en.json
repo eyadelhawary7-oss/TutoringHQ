@@ -2617,7 +2617,8 @@
     "today": "Today",
     "thisWeek": "This Week",
     "noSessionsToday": "No sessions today",
-    "noSessionsWeek": "No other sessions this week"
+    "noSessionsWeek": "No other sessions this week",
+    "noSessionsSelectedDay": "No sessions on this day"
   },
   "signup": {
     "title": "Register Your Center",

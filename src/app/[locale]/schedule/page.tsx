@@ -301,12 +301,13 @@ export default function SchedulePage() {
       ) : (
         <>
           <div className="hidden md:block">
-          <div className="flex gap-1 bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] rounded-xl p-1 mb-4 overflow-x-auto">
+          <div className="flex gap-1 bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] rounded-xl p-1 mb-4 overflow-x-auto snap-x snap-mandatory scrollbar-thin">
             {DAY_ORDER.map(day => (
               <button
                 key={day}
+                type="button"
                 onClick={() => setSelectedDay(day)}
-                className={`flex-1 min-w-[80px] px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedDay === day ? 'bg-teal-600 text-white font-semibold' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-0)]'}`}
+                className={`snap-start shrink-0 flex-1 min-w-[80px] min-h-[44px] px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedDay === day ? 'bg-teal-600 text-white font-semibold' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-0)]'}`}
               >
                 {t(DAY_KEYS[day])}
               </button>
@@ -393,6 +394,62 @@ export default function SchedulePage() {
           </div>
           </div>
 
+          {/* Owner / admin mobile — scrollable day strip + list for selected day */}
+          <div className={`md:hidden ${isTeacher ? 'hidden' : 'block'}`}>
+            <div className="flex gap-1.5 overflow-x-auto snap-x snap-mandatory pb-2 mb-3 -mx-1 px-1">
+              {DAY_ORDER.map((day) => (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => setSelectedDay(day)}
+                  className={`snap-start shrink-0 min-w-[72px] min-h-[44px] px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors border ${
+                    selectedDay === day
+                      ? 'bg-teal-600 text-white border-teal-600'
+                      : 'bg-[var(--color-surface-1)] border-[var(--color-border-subtle)] text-[var(--color-text-secondary)]'
+                  }`}
+                >
+                  {t(DAY_KEYS[day])}
+                </button>
+              ))}
+            </div>
+            {displaySlots.filter((s) => Number(s.day_of_week) === selectedDay).length === 0 ? (
+              <p className="text-sm text-[var(--color-text-secondary)] py-2">{t('noSessionsSelectedDay')}</p>
+            ) : (
+              displaySlots
+                .filter((s) => Number(s.day_of_week) === selectedDay)
+                .map((session) => (
+                  <div
+                    key={session.id}
+                    className="bg-[var(--color-surface-1)] rounded-lg shadow-sm p-3 mb-2 border border-[var(--color-border-subtle)]"
+                    style={{
+                      borderInlineStartWidth: 4,
+                      borderInlineStartStyle: 'solid',
+                      borderInlineStartColor: DAY_COLORS[selectedDay] ?? '#0D9488',
+                    }}
+                  >
+                    <div className="font-mono text-teal-600 dark:text-teal-400 text-sm">
+                      <span dir="ltr">{formatTime(formatTimeForDisplay(session.start_time), locale)} – {formatTime(formatTimeForDisplay(session.end_time), locale)}</span>
+                    </div>
+                    <div className="font-bold text-sm mt-0.5 text-[var(--color-text-primary)]">
+                      {session.group_name || tCommon('notAvailable')}
+                    </div>
+                    <div className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+                      {session.room_name || tCommon('notAvailable')} • {formatMemberCount(session.member_count ?? 0)}
+                    </div>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSlot(session.id)}
+                        className="mt-2 text-xs font-semibold text-red-600 hover:underline min-h-[44px] min-w-[44px] flex items-center"
+                      >
+                        {t('delete')}
+                      </button>
+                    )}
+                  </div>
+                ))
+            )}
+          </div>
+
           {/* Teacher mobile list view */}
           <div className={`md:hidden ${isTeacher ? 'block' : 'hidden'}`}>
             {(() => {
@@ -474,7 +531,10 @@ export default function SchedulePage() {
 
       {/* Add Session Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 pt-[max(1rem,env(safe-area-inset-top,0px))] pb-[max(1rem,env(safe-area-inset-bottom,0px))]"
+          onClick={() => setShowAddModal(false)}
+        >
           <div className="bg-[var(--color-surface-1)] rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-6 border-b border-[var(--color-border-subtle)]">
               <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('addSession')}</h2>

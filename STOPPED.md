@@ -61,3 +61,16 @@ Real customer rows should not use obvious seed patterns.
 ## Admin nav 404 triage (M8)
 
 Re-walk the admin sidebar after route consolidation. Any item that 404s: remove the link or add a redirect, and list the path here for product triage.
+
+---
+
+## Post-finalization residual queries (Prompt 7 audit closure)
+
+Run manually after stabilization doc lock:
+
+- **Phone uniqueness duplicates** — Prompt 6 PART B1 (`centers_phone_unique` / duplicate SQL in section above).
+- **“Not set” Next Due overdue centres** — Prompt 6 PART B3 (overdue without `next_payment_due`).
+- **Starter price drift** — Prompt 6 PART B4 (normalisation migration confirmation).
+- **Deterministic UUID prod centres** — Prompt 6 PART M7 (pattern SQL above).
+- **Enterprise mispricing** — Prompt 5 Step 10 (Enterprise `monthly_price` vs `18499` baseline).
+- **New Prompt 7 gaps** — mobile 375 screenshots under `tests/e2e/__screenshots__/375px/`, RTL grep residuals, security HMAC matrix with live secrets.

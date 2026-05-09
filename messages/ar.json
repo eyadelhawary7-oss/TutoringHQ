@@ -1395,6 +1395,7 @@
     "noRooms": "لا توجد قاعات بعد. أضف قاعة من صفحة القاعات أولاً.",
     "noSessionsToday": "لا حصص اليوم",
     "noSessionsWeek": "لا حصص أخرى هذا الأسبوع",
+    "noSessionsSelectedDay": "لا حصص في هذا اليوم",
     "noSlots": "لا توجد حصص",
     "readOnly": "للقراءة فقط",
     "recurring": "متكرر أسبوعياً",

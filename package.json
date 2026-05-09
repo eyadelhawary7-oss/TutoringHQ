@@ -14,8 +14,12 @@
  ],
  "scripts": {
   "dev": "next dev",
-  "build": "npm run setup-fonts && node --max-old-space-size=8192 node_modules/next/dist/bin/next build",
+  "build": "npm run check:bidi && npm run check:tolocale && npm run setup-fonts && node --max-old-space-size=8192 node_modules/next/dist/bin/next build",
   "i18n:check": "npx tsx scripts/check-i18n.ts",
+  "check:bidi": "npx tsx scripts/check-bidi.ts",
+  "check:tolocale": "npx tsx scripts/check-no-tolocalestring.ts",
+  "security:audit": "npx tsx scripts/security-audit.ts",
+  "verify:stabilization": "npm run i18n:check && npm run check:bidi && npm run check:tolocale",
   "analyze": "ANALYZE=true npm run build",
   "start": "next start",
   "lint": "eslint",

@@ -51,6 +51,7 @@ export default defineConfig({
     },
     {
       name: 'desktop-chrome',
+      testIgnore: '**/responsive-375.spec.ts',
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'playwright/.auth/user.json',
@@ -59,8 +60,20 @@ export default defineConfig({
     },
     {
       name: 'mobile-chrome',
+      testIgnore: '**/responsive-375.spec.ts',
       use: {
         ...devices['Pixel 5'],
+        storageState: 'playwright/.auth/user.json',
+      },
+      dependencies: ['setup'],
+    },
+    /** Session 14 — iPhone SE-class viewport; same auth fixture as desktop smoke. */
+    {
+      name: '375-chrome',
+      testMatch: '**/responsive-375.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 375, height: 812 },
         storageState: 'playwright/.auth/user.json',
       },
       dependencies: ['setup'],
