@@ -70,6 +70,16 @@ async function tryAutoApprovePack(supabase: SupabaseClient, centerId: string): P
     return false;
   }
 
+  const { error: prErr } = await supabase
+    .from('pack_requests')
+    .update({ status: 'approved' })
+    .eq('center_id', centerId)
+    .eq('status', 'pending_approval');
+
+  if (prErr) {
+    console.error('[tryAutoApprovePack] pack_requests', prErr);
+  }
+
   return true;
 }
 
@@ -110,6 +120,23 @@ export async function POST(request: NextRequest) {
   if (updateErr) {
     console.error('[POST /api/parent-pack/request] update', updateErr);
     return NextResponse.json({ error: 'Update failed' }, { status: 500 });
+  }
+
+  const { data: openPack } = await supabaseAdmin
+    .from('pack_requests')
+    .select('id')
+    .eq('center_id', centerId)
+    .not('status', 'in', '(issued,cancelled)')
+    .maybeSingle();
+
+  if (!openPack) {
+    const { error: insErr } = await supabaseAdmin.from('pack_requests').insert({
+      center_id: centerId,
+      status: 'pending_approval',
+    });
+    if (insErr) {
+      console.error('[POST /api/parent-pack/request] pack_requests insert', insErr);
+    }
   }
 
   const autoApproved = await tryAutoApprovePack(supabaseAdmin, centerId);

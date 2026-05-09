@@ -56,5 +56,15 @@ export async function POST(
     return NextResponse.json({ error: 'Update failed' }, { status: 500 });
   }
 
+  const { error: prErr } = await supabaseAdmin
+    .from('pack_requests')
+    .update({ status: 'cancelled' })
+    .eq('center_id', id)
+    .eq('status', 'pending_approval');
+
+  if (prErr) {
+    console.error('[POST /api/admin/pack-requests/[id]/reject] pack_requests', prErr);
+  }
+
   return NextResponse.json({ success: true });
 }

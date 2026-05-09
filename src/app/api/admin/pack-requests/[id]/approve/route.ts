@@ -67,5 +67,25 @@ export async function POST(
     return NextResponse.json({ error: 'Update failed' }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true });
+  const { error: prErr } = await supabaseAdmin
+    .from('pack_requests')
+    .update({ status: 'approved' })
+    .eq('center_id', id)
+    .eq('status', 'pending_approval');
+
+  if (prErr) {
+    console.error('[POST /api/admin/pack-requests/[id]/approve] pack_requests', prErr);
+  }
+
+  const { data: openPr } = await supabaseAdmin
+    .from('pack_requests')
+    .select('id')
+    .eq('center_id', id)
+    .not('status', 'in', '(issued,cancelled)')
+    .maybeSingle();
+
+  return NextResponse.json({
+    success: true,
+    packFulfillmentId: (openPr as { id?: string } | null)?.id ?? null,
+  });
 }

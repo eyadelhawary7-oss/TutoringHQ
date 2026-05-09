@@ -25,6 +25,25 @@ interface BillingRow {
   status: string
 }
 
+interface PackReqRow {
+  id: string
+  center_id: string
+  status: string
+  updated_at: string
+}
+
+function fulfillRowForCenter(rows: PackReqRow[], centerId: string): { id: string | null; status: string | null } {
+  const mine = rows.filter((r) => r.center_id === centerId)
+  const open = mine.find((r) => r.status !== 'issued' && r.status !== 'cancelled')
+  if (open) return { id: open.id, status: open.status }
+  const issued = mine
+    .filter((r) => r.status === 'issued')
+    .sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1))[0]
+  if (issued) return { id: issued.id, status: issued.status }
+  return { id: null, status: null }
+}
+
+
 function asNum(v: unknown): number {
   const n = Number(v)
   return Number.isFinite(n) ? n : 0
@@ -69,6 +88,23 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Failed to load centers' }, { status: 500 })
   }
 
+  const centerRows = (centersRes.data ?? []) as CenterRow[]
+  const centerIds = centerRows.map((c) => c.id)
+
+  let packRows: PackReqRow[] = []
+  if (centerIds.length > 0) {
+    const packReqRes = await supabaseAdmin
+      .from('pack_requests')
+      .select('id, center_id, status, updated_at')
+      .in('center_id', centerIds)
+
+    if (packReqRes.error) {
+      console.error('[GET /api/admin/whatsapp-pack] pack_requests', packReqRes.error)
+      return NextResponse.json({ error: 'Failed to load pack fulfillment' }, { status: 500 })
+    }
+    packRows = (packReqRes.data ?? []) as PackReqRow[]
+  }
+
   if (pendingReqRes.error) {
     console.error('[GET /api/admin/whatsapp-pack] pending requests', pendingReqRes.error)
     return NextResponse.json({ error: 'Failed to load pending requests' }, { status: 500 })
@@ -96,13 +132,14 @@ export async function GET(request: Request) {
     rawMap.set(row.center_id, [...existing, { amount: row.amount, status: row.status }])
   }
 
-  const centers: WaPackCenter[] = ((centersRes.data ?? []) as CenterRow[]).map((c) => {
+  const centers: WaPackCenter[] = centerRows.map((c) => {
     const billing: WaPackBillingSummary = deriveBillingSummary(rawMap.get(c.id) ?? [])
     const cm = c.pack_custom_invoice_minimum
     const customMinResolved =
       cm != null && cm !== ''
         ? asNum(cm)
         : null
+    const fr = fulfillRowForCenter(packRows, c.id)
     return {
       id: c.id,
       name: c.name,
@@ -119,6 +156,8 @@ export async function GET(request: Request) {
       pack_months_without_invoice: asNum(c.pack_months_without_invoice),
       pack_custom_invoice_minimum:
         customMinResolved != null && customMinResolved > 0 ? customMinResolved : null,
+      pack_fulfillment_id: fr.id,
+      pack_fulfillment_status: fr.status,
     }
   })
 

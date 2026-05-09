@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { dateInNDays } from '@/lib/parentPack';
 import { formatDate, formatNumber, formatCurrency } from '@/lib/formatNumber';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getCourierDisplayName } from '@/lib/courierDisplayName';
 
 const PLATFORM_URL = 'https://centerhq.app';
 
@@ -1264,6 +1265,7 @@ export async function sendWithdrawalProcessed(
 // defined at index 0 in the Meta template editor with any placeholder payload.
 // This code injects the dynamic READY_<orderId> payload at send time.
 // If the template has no button, the dynamic payload is silently ignored by Meta.
+// Body variables (order): reference, quantity, notes, courier display name (platform_config.courier_name).
 export async function sendVendorNewOrder(
   phone: string,
   ref: string,
@@ -1284,6 +1286,7 @@ export async function sendVendorNewOrder(
     const ord = ref.trim() || '—';
     const countStr = formatNumber(quantity, 'ar');
     const notesText = notes.trim() || '—';
+    const courierLabel = await getCourierDisplayName(supabase);
     const oid = orderId.trim();
     const buttonsPayload: WhatsappTemplateButtonComponent[] | undefined =
       oid.length > 0
@@ -1300,7 +1303,7 @@ export async function sendVendorNewOrder(
       templateName: TEMPLATE_VENDOR_NEW_ORDER,
       languageCode: 'ar_EG',
       toDigits: to,
-      bodyParameters: [ord, countStr, notesText],
+      bodyParameters: [ord, countStr, notesText, courierLabel],
       buttonsPayload,
     });
   } catch (err) {

@@ -218,17 +218,21 @@ export default function ReferralsPage() {
                         <span
                           className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                             r.status === 'converted' || r.status === 'active'
-                              ? 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300'
+                              ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/45 dark:text-emerald-100 border border-emerald-200 dark:border-emerald-700'
                               : r.status === 'pending'
-                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
-                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                ? 'bg-amber-100 text-amber-900 dark:bg-amber-900/45 dark:text-amber-100 border border-amber-200 dark:border-amber-800'
+                                : r.status === 'disputed'
+                                  ? 'bg-red-100 text-red-900 dark:bg-red-950/50 dark:text-red-100 border border-red-200 dark:border-red-800'
+                                  : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-600'
                           }`}
                         >
                           {r.status === 'converted' || r.status === 'active'
                             ? t('statusActiveShort')
                             : r.status === 'pending'
                               ? t('statusPendingShort')
-                              : r.status}
+                              : r.status === 'disputed'
+                                ? t('statusDisputedShort')
+                                : r.status}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-end text-slate-900 dark:text-white tabular-nums">{fmt(r.months)}</td>
@@ -286,8 +290,14 @@ export default function ReferralsPage() {
                       );
                     } else if (h.status === 'paid') {
                       statusBadge = (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-900 dark:bg-emerald-900/45 dark:text-emerald-100 border border-emerald-200 dark:border-emerald-700">
                           {t('rewardStatusPaid')}
+                        </span>
+                      );
+                    } else if (h.status === 'disputed') {
+                      statusBadge = (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-900 dark:bg-red-950/50 dark:text-red-100 border border-red-200 dark:border-red-800">
+                          {t('statusDisputedShort')}
                         </span>
                       );
                     } else {

@@ -10,6 +10,12 @@ import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { getAnnouncementCap, PLAN_INVOICE_MINIMUMS } from '@/lib/parentPack'
 import type { NotificationTypes, WaPackBillingSummary, WaPackCenter } from '@/types/whatsapp-pack'
+import {
+  PACK_FULFILLMENT_PIPELINE,
+  nextPackFulfillmentStatus,
+  packFulfillmentStepIndex,
+  type PackFulfillmentStatus,
+} from '@/lib/packFulfillment'
 import { useToast } from '@/hooks/useToast'
 import { formatCurrency, formatDate, formatNumber, formatPhoneLeadPlus } from '@/lib/formatNumber'
 
@@ -79,7 +85,72 @@ function normalizeCenter(raw: Partial<WaPackCenter> & { id?: string }): WaPackCe
     pack_months_without_invoice: asNum(raw.pack_months_without_invoice),
     pack_custom_invoice_minimum:
       Number.isFinite(customMinNum) && customMinNum > 0 ? customMinNum : null,
+    pack_fulfillment_id: typeof raw.pack_fulfillment_id === 'string' ? raw.pack_fulfillment_id : null,
+    pack_fulfillment_status:
+      typeof raw.pack_fulfillment_status === 'string' ? raw.pack_fulfillment_status : null,
   }
+}
+
+function PackFulfillmentTimeline({
+  status,
+  packRequestId,
+  tSteps,
+  advanceLabel,
+  onAdvance,
+  advancing,
+}: {
+  status: string
+  packRequestId: string | null | undefined
+  tSteps: (key: string) => string
+  advanceLabel: string
+  onAdvance: (packRequestId: string) => void
+  advancing: boolean
+}) {
+  const st = status as PackFulfillmentStatus
+  const idx = packFulfillmentStepIndex(st)
+  const next = nextPackFulfillmentStatus(st)
+  if (idx < 0) return null
+
+  return (
+    <div className="mt-2 space-y-1.5">
+      <div className="flex items-center gap-0" role="list">
+        {PACK_FULFILLMENT_PIPELINE.map((step, i) => (
+          <Fragment key={step}>
+            <span
+              role="listitem"
+              title={tSteps(step)}
+              className={cn(
+                'inline-flex h-2 w-2 shrink-0 rounded-full ring-1 ring-offset-1 ring-offset-[var(--color-surface-1)]',
+                i <= idx
+                  ? 'bg-teal-500 ring-teal-600/40'
+                  : 'bg-[var(--color-surface-3)] ring-[var(--color-border)]',
+              )}
+            />
+            {i < PACK_FULFILLMENT_PIPELINE.length - 1 ? (
+              <span
+                className={cn(
+                  'mx-0.5 inline-block h-[2px] min-w-[8px] flex-1 max-w-[24px] rounded-full',
+                  i < idx ? 'bg-teal-500/70' : 'bg-[var(--color-border-subtle)]',
+                )}
+                aria-hidden
+              />
+            ) : null}
+          </Fragment>
+        ))}
+      </div>
+      {packRequestId && next ? (
+        <button
+          type="button"
+          disabled={advancing}
+          onClick={() => onAdvance(packRequestId)}
+          className="rounded-md border border-teal-600/40 bg-teal-600/10 px-2 py-1 text-[11px] font-semibold text-teal-800 hover:bg-teal-600/20 disabled:opacity-50 dark:text-teal-200"
+        >
+          {advancing ? <Loader2 className="inline h-3 w-3 animate-spin me-1" aria-hidden /> : null}
+          {advanceLabel}
+        </button>
+      ) : null}
+    </div>
+  )
 }
 
 const PLAN_NAME_KEYS = ['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const
@@ -169,6 +240,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
     totalMRR: asNum(props.initialStats?.totalMRR),
   }))
   const [togglingId, setTogglingId] = useState<string | null>(null)
+  const [advancingPackId, setAdvancingPackId] = useState<string | null>(null)
   const [savingConfig, setSavingConfig] = useState(false)
   const { setHideShell } = useLayout()
 
@@ -248,6 +320,40 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
         {billingLabels[billStatus]}
       </span>
     )
+  }
+
+  async function advancePackFulfillment(packRequestId: string) {
+    setAdvancingPackId(packRequestId)
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        toast.error(tRoot('common.errorGeneric'))
+        return
+      }
+      const res = await fetch(`/api/admin/pack-fulfillment/${packRequestId}/advance`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      const body = (await res.json().catch(() => ({}))) as { status?: string; error?: string }
+      if (!res.ok) {
+        toast.error(body.error || tRoot('common.errorGeneric'))
+        return
+      }
+      if (body.status) {
+        setLocalCenters((prev) =>
+          prev.map((row) =>
+            row.pack_fulfillment_id === packRequestId
+              ? { ...row, pack_fulfillment_status: body.status! }
+              : row,
+          ),
+        )
+        toast.success(t('packStageAdvanced'))
+      }
+    } finally {
+      setAdvancingPackId(null)
+    }
   }
 
   async function toggleCenter(centerId: string, newValue: boolean) {
@@ -541,7 +647,21 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                               />
                             </div>
                           </td>
-                          <td className="px-4 py-3">{packRequestStatusBadge(c.pack_request_status)}</td>
+                          <td className="px-4 py-3">
+                            <div className="space-y-1">
+                              {packRequestStatusBadge(c.pack_request_status)}
+                              {c.pack_fulfillment_status ? (
+                                <PackFulfillmentTimeline
+                                  status={c.pack_fulfillment_status}
+                                  packRequestId={c.pack_fulfillment_id}
+                                  tSteps={(step) => t(`packStep_${step}`)}
+                                  advanceLabel={t('advancePackStage')}
+                                  advancing={advancingPackId === c.pack_fulfillment_id}
+                                  onAdvance={(id) => void advancePackFulfillment(id)}
+                                />
+                              ) : null}
+                            </div>
+                          </td>
                           <td className="px-4 py-3">
                             {pend > 0 ? (
                               <>
@@ -633,6 +753,16 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                         </span>
                         {packRequestStatusBadge(c.pack_request_status)}
                       </div>
+                      {c.pack_fulfillment_status ? (
+                        <PackFulfillmentTimeline
+                          status={c.pack_fulfillment_status}
+                          packRequestId={c.pack_fulfillment_id}
+                          tSteps={(step) => t(`packStep_${step}`)}
+                          advanceLabel={t('advancePackStage')}
+                          advancing={advancingPackId === c.pack_fulfillment_id}
+                          onAdvance={(id) => void advancePackFulfillment(id)}
+                        />
+                      ) : null}
                       <div>
                         <p className="text-xs font-medium text-[var(--color-text-secondary)]">
                           {tRoot('admin.pendingBalance')}
@@ -698,6 +828,16 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                           <tr className="border-b border-[var(--color-border-subtle)] align-top">
                             <td className="px-4 py-3">
                               <p className="font-bold text-[var(--color-text-primary)]">{c.name}</p>
+                              {c.pack_fulfillment_status ? (
+                                <PackFulfillmentTimeline
+                                  status={c.pack_fulfillment_status}
+                                  packRequestId={c.pack_fulfillment_id}
+                                  tSteps={(step) => t(`packStep_${step}`)}
+                                  advanceLabel={t('advancePackStage')}
+                                  advancing={advancingPackId === c.pack_fulfillment_id}
+                                  onAdvance={(id) => void advancePackFulfillment(id)}
+                                />
+                              ) : null}
                             </td>
                             <td className="px-4 py-3">
                               <span className="inline-flex rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-medium text-teal-800">
@@ -813,6 +953,9 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                                             body: JSON.stringify(body),
                                           })
                                           if (res.ok) {
+                                            const parsed = (await res.json().catch(() => ({}))) as {
+                                              packFulfillmentId?: string | null
+                                            }
                                             setLocalCenters((prev) =>
                                               prev.map((row) =>
                                                 row.id === c.id
@@ -820,6 +963,9 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                                                       ...row,
                                                       pack_request_status: 'approved',
                                                       parent_pack_enabled: true,
+                                                      pack_fulfillment_status: 'approved',
+                                                      pack_fulfillment_id:
+                                                        parsed.packFulfillmentId ?? row.pack_fulfillment_id,
                                                     }
                                                   : row,
                                               ),
@@ -912,7 +1058,12 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                                             setLocalCenters((prev) =>
                                               prev.map((row) =>
                                                 row.id === c.id
-                                                  ? { ...row, pack_request_status: 'rejected' }
+                                                  ? {
+                                                      ...row,
+                                                      pack_request_status: 'rejected',
+                                                      pack_fulfillment_id: null,
+                                                      pack_fulfillment_status: null,
+                                                    }
                                                   : row,
                                               ),
                                             )

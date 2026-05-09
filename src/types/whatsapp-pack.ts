@@ -44,4 +44,7 @@ export interface WaPackCenter {
   pack_pending_balance: number
   pack_months_without_invoice: number
   pack_custom_invoice_minimum: number | null
+  /** Physical pack pipeline (`pack_requests`), when present */
+  pack_fulfillment_id?: string | null
+  pack_fulfillment_status?: string | null
 }
