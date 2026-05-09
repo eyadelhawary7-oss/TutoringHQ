@@ -124,7 +124,9 @@ export async function GET(request: Request) {
 
   const totalEnabled = centers.filter((c) => c.parent_pack_enabled).length
   const totalActiveParents = centers.reduce((s, c) => s + asNum(c.parent_pack_active_parents), 0)
-  const totalMRR = totalActiveParents * 10
+  /** Parent pack default inclusive EGP/parent/month — aligns with PRICING_SPEC / centres.pack_price_per_parent default */
+  const PARENT_PACK_MONTHLY_EGP = 12
+  const totalMRR = totalActiveParents * PARENT_PACK_MONTHLY_EGP
 
   return NextResponse.json({
     centers,

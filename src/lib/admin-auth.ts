@@ -70,27 +70,29 @@ export async function getAdminContext(request: Request): Promise<AdminContext | 
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  // Check admin_users table first
+  // Check admin_users table first (maybeSingle: internal team may have no public.users row)
   const { data: adminRow } = await supabaseAdmin
     .from('admin_users')
     .select('id, role')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
-  // Check phone-based super admin
   const { data: userRecord } = await supabaseAdmin
     .from('users')
-    .select('phone')
+    .select('phone, role')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
+
   const adminByPhone = isSuperAdminPhone(userRecord?.phone ?? null);
-  if (!adminRow && !adminByPhone) {
+  const superByUsersRole = userRecord?.role === 'super_admin';
+
+  if (!adminRow && !adminByPhone && !superByUsersRole) {
     return null;
   }
 
   // Determine role: phone-based admins are always super_admin; only super_admin can manage team
   let internalRole: InternalRole = 'internal_viewer';
-  if (adminByPhone || adminRow?.role === 'super_admin') {
+  if (adminByPhone || adminRow?.role === 'super_admin' || superByUsersRole) {
     internalRole = 'super_admin';
   } else if (adminRow?.role === 'admin' || adminRow?.role === 'internal_admin') {
     internalRole = 'internal_admin';

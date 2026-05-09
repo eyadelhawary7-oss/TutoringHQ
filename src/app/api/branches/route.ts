@@ -30,20 +30,25 @@ async function getAuthContext(request: NextRequest) {
     .from('users')
     .select('id, center_id, organization_id')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
-  let orgId = (userRecord as { organization_id?: string } | null)?.organization_id;
-  if (!orgId && (userRecord as { center_id?: string } | null)?.center_id) {
+  if (!userRecord) return null;
+
+  let orgId = (userRecord as { organization_id?: string }).organization_id;
+  const centerId = (userRecord as { center_id?: string | null }).center_id ?? null;
+  if (!orgId && centerId) {
     const { data: center } = await supabaseAdmin
       .from('centers')
       .select('organization_id')
-      .eq('id', (userRecord as { center_id: string }).center_id)
-      .single();
+      .eq('id', centerId)
+      .maybeSingle();
     orgId = (center as { organization_id?: string } | null)?.organization_id ?? undefined;
   }
-  if (!orgId) return null;
+  if (!orgId) {
+    return { organizationId: null, userId: user.id, supabaseAdmin, centerId };
+  }
 
-  return { organizationId: orgId, userId: user.id, supabaseAdmin };
+  return { organizationId: orgId, userId: user.id, supabaseAdmin, centerId };
 }
 
 /** POST: Add a new branch (center) to the user's organization. Owner only. */
@@ -53,12 +58,18 @@ export async function POST(request: NextRequest) {
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { organizationId, supabaseAdmin } = ctx;
+    if (!organizationId) {
+      return NextResponse.json(
+        { error: 'Multi-branch requires an organization. Your centre may need a data migration.' },
+        { status: 400 },
+      );
+    }
 
     const { data: userRecord } = await supabaseAdmin
       .from('users')
       .select('role')
       .eq('id', ctx.userId)
-      .single();
+      .maybeSingle();
 
     if ((userRecord as { role?: string } | null)?.role !== 'owner') {
       return NextResponse.json({ error: 'Only owners can add branches' }, { status: 403 });
@@ -147,7 +158,25 @@ export async function GET(request: NextRequest) {
     const ctx = await getAuthContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { organizationId, userId, supabaseAdmin } = ctx;
+    const { organizationId, userId, supabaseAdmin, centerId } = ctx;
+
+    if (!organizationId) {
+      if (centerId) {
+        const { data: singleCenter, error: cErr } = await supabaseAdmin
+          .from('centers')
+          .select('id, name, logo_url')
+          .eq('id', centerId)
+          .maybeSingle();
+        if (cErr) {
+          return NextResponse.json({ error: cErr.message }, { status: 500 });
+        }
+        return NextResponse.json({
+          branches: singleCenter ? [singleCenter] : [],
+          plan: 'single',
+        });
+      }
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     // Get centers in org. If user has branch_user_assignments for this org, filter to those only.
     const { data: assignments } = await supabaseAdmin

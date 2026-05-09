@@ -14,6 +14,7 @@ import {
   explodeInclusive,
 } from '@/lib/pricing/taxMath';
 import { cn } from '@/lib/utils';
+import { naturalCompare } from '@/lib/sort/naturalSort';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { getShippingFee, getShippingZone, formatShippingZoneForLocale } from '@/lib/bostaShipping';
 
@@ -175,15 +176,23 @@ export function CardOrderModal({
     }
   }, [isOpen, savedDelivery, useSavedAddress]);
 
+  const sortedStudents = useMemo(
+    () =>
+      [...students].sort((a, b) =>
+        naturalCompare(String(a.student_number ?? ''), String(b.student_number ?? '')),
+      ),
+    [students],
+  );
+
   const filteredStudents = useMemo(() => {
-    if (!searchQuery.trim()) return students;
+    if (!searchQuery.trim()) return sortedStudents;
     const q = searchQuery.toLowerCase().trim();
-    return students.filter(
+    return sortedStudents.filter(
       (s) =>
         s.name?.toLowerCase().includes(q) ||
-        s.student_number?.toUpperCase().includes(q.toUpperCase())
+        s.student_number?.toUpperCase().includes(q.toUpperCase()),
     );
-  }, [students, searchQuery]);
+  }, [sortedStudents, searchQuery]);
 
   const selectedStudents = useMemo(
     () => students.filter((s) => selectedIds.has(s.id)),

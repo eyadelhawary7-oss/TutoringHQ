@@ -54,40 +54,87 @@ export async function GET(request: Request) {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    let userRecord: { id: string; name?: string | null; phone?: string | null; role?: string; center_id?: string | null; can_scan?: boolean; can_view_payments?: boolean; can_record_payments?: boolean; can_view_dashboard?: boolean; can_view_revenue?: boolean; can_manage_students?: boolean; can_manage_groups?: boolean; can_allow_late_entry?: boolean; can_manage_rooms?: boolean; can_view_schedule?: boolean; can_view_settings?: boolean; is_active?: boolean } | null = null;
+    type UserRecordOut = {
+      id: string;
+      name?: string | null;
+      phone?: string | null;
+      role?: string;
+      preferred_locale?: string | null;
+      center_id?: string | null;
+      can_scan?: boolean;
+      can_view_payments?: boolean;
+      can_record_payments?: boolean;
+      can_view_dashboard?: boolean;
+      can_view_revenue?: boolean;
+      can_manage_students?: boolean;
+      can_manage_groups?: boolean;
+      can_allow_late_entry?: boolean;
+      can_manage_rooms?: boolean;
+      can_view_schedule?: boolean;
+      can_view_settings?: boolean;
+      is_active?: boolean;
+    };
 
-    const { data: usersRow, error: userError } = await supabaseAdmin
+    let userRecord: UserRecordOut | null = null;
+
+    const { data: usersRow } = await supabaseAdmin
       .from('users')
-      .select('id, phone, role, center_id, can_scan, can_view_payments, can_record_payments, can_view_dashboard, can_view_revenue, can_manage_students, can_manage_groups, can_allow_late_entry, can_manage_rooms, can_view_schedule, can_view_settings, is_active')
+      .select(
+        'id, phone, role, center_id, name, preferred_locale, can_scan, can_view_payments, can_record_payments, can_view_dashboard, can_view_revenue, can_manage_students, can_manage_groups, can_allow_late_entry, can_manage_rooms, can_view_schedule, can_view_settings, is_active',
+      )
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
+
+    const metaName =
+      typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name.trim() : '';
 
     if (usersRow) {
-      userRecord = { ...usersRow, name: (usersRow as { phone?: string }).phone ?? null };
+      const ur = usersRow as UserRecordOut & { name?: string | null; preferred_locale?: string | null };
+      userRecord = {
+        ...ur,
+        name: (ur.name && String(ur.name).trim()) || metaName || ur.phone || null,
+        preferred_locale: ur.preferred_locale ?? 'ar',
+      };
     } else {
-      // User may be in admin_users but not in users (super admin without center)
       const { data: adminRow } = await supabaseAdmin
         .from('admin_users')
         .select('id, name, phone')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (adminRow) {
         userRecord = {
           id: adminRow.id,
-          name: adminRow.name,
+          name: (adminRow.name && String(adminRow.name).trim()) || metaName || null,
           phone: adminRow.phone ?? user.phone ?? null,
           role: 'super_admin',
+          preferred_locale: 'en',
           center_id: null,
         };
       }
     }
 
     if (!userRecord) {
-      return NextResponse.json(
-        { error: 'Failed to fetch user profile', details: userError?.message ?? 'User not found in users or admin_users' },
-        { status: 500 }
-      );
+      userRecord = {
+        id: user.id,
+        name: metaName || user.phone || user.email || null,
+        phone: user.phone ?? null,
+        role: 'assistant',
+        preferred_locale: 'en',
+        center_id: null,
+        can_scan: false,
+        can_view_payments: false,
+        can_record_payments: false,
+        can_view_dashboard: false,
+        can_view_revenue: false,
+        can_manage_students: false,
+        can_manage_groups: false,
+        can_allow_late_entry: false,
+        can_manage_rooms: false,
+        can_view_schedule: false,
+        can_view_settings: false,
+        is_active: true,
+      };
     }
 
     // Fetch center logo/name and billing when user has center
@@ -188,6 +235,11 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({
+      id: userRecord.id,
+      role: userRecord.role ?? 'assistant',
+      center_id: userRecord.center_id ?? null,
+      name: userRecord.name ?? null,
+      preferred_locale: userRecord.preferred_locale ?? 'ar',
       user: { ...userRecord, center: center ?? null },
     });
 

@@ -17,3 +17,47 @@ Any rows indicate live Enterprise centres whose stored monthly inclusive price d
 ## Top Centers (`plan_key = top_centers`)
 
 Centres **must** have `monthly_price` set. Application code calls `requireTopCentersMonthlyPrice` where tier pricing is resolved; missing values trigger Sentry and throw.
+
+## Duplicate centre phones (before `centers_phone_unique` migration)
+
+```sql
+SELECT phone, count(*) AS n, array_agg(id) AS center_ids, array_agg(name) AS names, bool_or(is_test) AS any_test
+FROM public.centers
+WHERE phone IS NOT NULL AND trim(phone) <> ''
+GROUP BY phone
+HAVING count(*) > 1;
+```
+
+If non-test centres share a phone, resolve data before applying `20260509120000_centers_phone_unique.sql`.
+
+## Overdue without next due (B3)
+
+```sql
+SELECT id, name, status, next_payment_due
+FROM public.centers
+WHERE status = 'overdue' AND next_payment_due IS NULL AND is_test = false;
+```
+
+If rows exist: backfill / fix invoice triggers so `next_payment_due` is set; auto-suspend cron needs a date.
+
+## Starter price normalisation (B4)
+
+Migration `20260509120001_normalize_starter_monthly_price.sql` sets `monthly_price` from 4500 → 4499 for non-test Starter centres. Confirm with Eyad if any centre should intentionally stay at 4500.
+
+## Predictable centre UUIDs in production (M7)
+
+```sql
+SELECT id, name, is_test
+FROM public.centers
+WHERE is_test = false
+  AND (
+    id::text LIKE '%-1111-%'
+    OR id::text LIKE '%-2222-%'
+  );
+```
+
+Real customer rows should not use obvious seed patterns.
+
+## Admin nav 404 triage (M8)
+
+Re-walk the admin sidebar after route consolidation. Any item that 404s: remove the link or add a redirect, and list the path here for product triage.
