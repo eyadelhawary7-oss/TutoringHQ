@@ -23,7 +23,7 @@
   "invoice": {
     "subtotal": "Subtotal",
     "serviceFee": "Service Fee (6%)",
-    "stampDuty": "Stamp Duty (0.4%)",
+    "stampDuty": "Stamp Duty (0.5%)",
     "vat": "VAT (14%)",
     "productBase": "Product Base",
     "productSubtotal": "Product Subtotal",
@@ -34,9 +34,9 @@
     "grossCommissions": "Gross Commissions",
     "withdrawalFee": "Withdrawal Fee (5%)",
     "netPaidOut": "Net Paid Out",
-    "taxNote": "VAT 14% | Service Fee 6% | Stamp Duty 0.4%",
-    "taxNoteSetupFee": "VAT 14% | Service Fee 6% | Stamp Duty 0.4% - applied to product only. Shipping shown separately.",
-    "taxNoteLatePayment": "VAT 14% | Service Fee 6% | Stamp Duty 0.4% - applied to subscription base only. Penalty added after tax.",
+    "taxNote": "VAT 14% | Service Fee 6% | Stamp Duty 0.5%",
+    "taxNoteSetupFee": "VAT 14% | Service Fee 6% | Stamp Duty 0.5% - applied to product only. Shipping shown separately.",
+    "taxNoteLatePayment": "VAT 14% | Service Fee 6% | Stamp Duty 0.5% - applied to subscription base only. Penalty added after tax.",
     "taxNotePayoutOnly": "No VAT or service fees - this is a commission payout from CenterHQ.",
     "taxNoteProofOnly": "Amounts reflect the referenced invoice total."
   },
@@ -2729,7 +2729,7 @@
     "phoneHint": "We will reach you on WhatsApp",
     "subtotal": "Subtotal",
     "serviceFee": "Service fee 6%",
-    "stampDuty": "Stamp duty 0.4%",
+    "stampDuty": "Stamp duty 0.5%",
     "included": "Included",
     "allTaxesIncluded": "All taxes included",
     "periodLabel": "Period",
@@ -4341,10 +4341,11 @@
     "selectStudents": "Select Students",
     "previewCard": "Preview & Customize",
     "orderSummary": "Order Summary",
+    "orderSummaryProductInclusive": "QR cards (incl. taxes)",
     "pricePerCard": "Price per card (EGP)",
     "orderSummaryBreakdownCards": "Cards ({qty} × {unit})",
     "orderSummaryServiceFee": "Service Fee (6%)",
-    "orderSummaryStampDuty": "Stamp Duty (0.4%)",
+    "orderSummaryStampDuty": "Stamp Duty (0.5%)",
     "orderSummaryVat": "VAT (14%)",
     "orderSummaryCardsSubtotal": "Cards Subtotal",
     "orderSummaryShippingZone": "Shipping ({zone})",
@@ -6238,6 +6239,17 @@
   "pricing": {
     "cta": "Cta",
     "enterprise_cta": "Enterprise Cta",
+    "lines": {
+      "subtotal": "Subtotal",
+      "serviceFee": "Service fee (6%)",
+      "stampDuty": "Stamp duty (0.5%)",
+      "vat": "VAT (14%)",
+      "total": "Total",
+      "inclVat": "incl. VAT (14%)",
+      "inclStamp": "incl. stamp duty (0.5%)",
+      "inclService": "incl. service fee (6%)",
+      "netBase": "your net (base)"
+    },
     "plans": {
       "top_centers": {
         "price_month": "Price Month"

@@ -14,6 +14,7 @@ import {
   type BillingPeriod,
   type PlanKey,
 } from '@/lib/pricing';
+import { requireTopCentersMonthlyPrice } from '@/lib/pricing/topCentersPrice';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { parseIncludeTestCenters } from '@/lib/adminIncludeTest';
 
@@ -28,9 +29,13 @@ function quarterlyAllInForCenter(row: {
   is_early_adopter?: boolean;
   early_adopter_price?: number | null;
   all_in_price?: number | null;
+  monthly_price?: number | null;
+  id?: string;
 }): number {
   const pk = planKeyOrStarter(row.plan);
-  if (pk === 'top_centers') return 0;
+  if (pk === 'top_centers') {
+    return requireTopCentersMonthlyPrice(row.monthly_price, `admin-billing:${row.id ?? 'unknown'}`);
+  }
   if (row.is_early_adopter && typeof row.early_adopter_price === 'number') {
     return row.early_adopter_price;
   }
@@ -67,7 +72,7 @@ export async function GET(request: Request) {
 
     let centersQuery = supabaseAdmin
       .from('centers')
-      .select('id, name, plan, phone, billing_period, all_in_price, next_payment_due, billing_status, status, payment_due_date, auto_suspend_at, is_early_adopter, early_adopter_price, billing_type')
+      .select('id, name, plan, phone, billing_period, all_in_price, next_payment_due, billing_status, status, payment_due_date, auto_suspend_at, is_early_adopter, early_adopter_price, billing_type, monthly_price')
       .in('status', ['active', 'suspended']);
     if (!includeTest) {
       centersQuery = centersQuery.eq('is_test', false);

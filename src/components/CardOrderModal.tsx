@@ -8,7 +8,11 @@ import QRCode from 'qrcode';
 import { dbInsert, dbUpdate } from '@/lib/db-proxy';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/formatNumber';
-import { calcExclusive } from '@/lib/invoiceTaxUtils';
+import {
+  CARD_UNIT_BASE_EGP,
+  cardOrderProductInclusiveFromQty,
+  explodeInclusive,
+} from '@/lib/pricing/taxMath';
 import { cn } from '@/lib/utils';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { getShippingFee, getShippingZone, formatShippingZoneForLocale } from '@/lib/bostaShipping';
@@ -79,8 +83,6 @@ interface CardOrderModalProps {
   onSuccess?: () => void;
 }
 
-const PRICE_PER_CARD = 62;
-
 export type QrCardStyle = 'dark' | 'light';
 
 export function CardOrderModal({
@@ -95,6 +97,7 @@ export function CardOrderModal({
   const tOrders = useTranslations('orders');
   const tStudents = useTranslations('students');
   const tCommon = useTranslations('common');
+  const tPricing = useTranslations('pricing.lines');
   const locale = useLocale();
   const isRTL = locale === 'ar';
 
@@ -208,11 +211,13 @@ export function CardOrderModal({
   const deliveryFee = getShippingFee(selectedGovernorate);
   const shippingZoneEn = getShippingZone(selectedGovernorate);
   const quantity = selectedStudents.length;
-  const cardsInclusiveTotal = PRICE_PER_CARD * quantity;
-  const exclusivePricing = useMemo(() => calcExclusive(cardsInclusiveTotal), [cardsInclusiveTotal]);
-  const payTotal = exclusivePricing.total + deliveryFee;
-  const basePricePerCard =
-    quantity > 0 ? Math.round(exclusivePricing.base / quantity) : 0;
+  const cardsInclusiveTotal = useMemo(
+    () => cardOrderProductInclusiveFromQty(quantity),
+    [quantity],
+  );
+  const perCardInclusive = useMemo(() => cardOrderProductInclusiveFromQty(1), []);
+  const taxParts = useMemo(() => explodeInclusive(cardsInclusiveTotal), [cardsInclusiveTotal]);
+  const payTotal = cardsInclusiveTotal + deliveryFee;
 
   const handleNext = () => {
     if (step === 1 && selectedIds.size > 0) {
@@ -319,7 +324,7 @@ export function CardOrderModal({
             created_by: session.user.id,
             students: studentsPayload,
             quantity,
-            price_per_card: PRICE_PER_CARD,
+            price_per_card: perCardInclusive,
             delivery_fee: deliveryFee,
             shipping_zone: shippingZoneEn,
             total_amount: payTotal,
@@ -640,7 +645,17 @@ export function CardOrderModal({
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('phone', { defaultValue: 'Phone' })}</label>
-                        <input type="tel" value={deliveryForm.phone} onChange={(e) => { let v = e.target.value.replace(/\D/g, ''); if (v.startsWith('0') && v.length > 1) v = v.substring(1); setDeliveryForm((f) => ({ ...f, phone: v })); }} placeholder="01XXXXXXXXX" className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm font-mono" dir="ltr" />
+                        <input
+                          type="tel"
+                          value={deliveryForm.phone}
+                          onChange={(e) => {
+                            const v = e.target.value.replace(/[^\d+]/g, '');
+                            setDeliveryForm((f) => ({ ...f, phone: v }));
+                          }}
+                          placeholder="+20 1XXXXXXXX"
+                          className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm font-mono"
+                          dir="ltr"
+                        />
                       </div>
                       <div className="sm:col-span-2">
                         <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('governorate', { defaultValue: 'Governorate' })}</label>
@@ -730,33 +745,36 @@ export function CardOrderModal({
                   ))}
                 </div>
                 <div className="rounded-xl border border-border p-4 space-y-2">
-                  <div className="flex justify-between gap-3 text-sm">
-                    <span className="text-[var(--color-text-secondary)]">
-                      {t('orderSummaryBreakdownCards', {
-                        qty: quantity,
-                        unit: formatCurrency(basePricePerCard, locale),
-                      })}
+                  <div className="flex justify-between gap-3 text-sm font-medium">
+                    <span className="text-[var(--color-text-primary)]">
+                      {t('orderSummaryProductInclusive')}
                     </span>
-                    <span className="font-mono text-end tabular-nums">{formatCurrency(exclusivePricing.base, locale)}</span>
+                    <span className="font-mono text-end tabular-nums">{formatCurrency(taxParts.inclusive, locale)}</span>
                   </div>
                   <div className="border-t border-dashed border-[var(--color-border)]" />
                   <div className="flex justify-between gap-3 text-sm">
-                    <span className="text-[var(--color-text-secondary)]">{t('orderSummaryServiceFee')}</span>
-                    <span className="font-mono text-end tabular-nums">{formatCurrency(exclusivePricing.service, locale)}</span>
+                    <span className="text-[var(--color-text-secondary)]">{tPricing('inclVat')}</span>
+                    <span className="font-mono text-end tabular-nums">{formatCurrency(taxParts.vat, locale)}</span>
                   </div>
                   <div className="flex justify-between gap-3 text-sm">
-                    <span className="text-[var(--color-text-secondary)]">{t('orderSummaryStampDuty')}</span>
-                    <span className="font-mono text-end tabular-nums">{formatCurrency(exclusivePricing.stamp, locale)}</span>
+                    <span className="text-[var(--color-text-secondary)]">{tPricing('inclStamp')}</span>
+                    <span className="font-mono text-end tabular-nums">{formatCurrency(taxParts.stamp, locale)}</span>
                   </div>
                   <div className="flex justify-between gap-3 text-sm">
-                    <span className="text-[var(--color-text-secondary)]">{t('orderSummaryVat')}</span>
-                    <span className="font-mono text-end tabular-nums">{formatCurrency(exclusivePricing.vat, locale)}</span>
+                    <span className="text-[var(--color-text-secondary)]">{tPricing('inclService')}</span>
+                    <span className="font-mono text-end tabular-nums">{formatCurrency(taxParts.service, locale)}</span>
                   </div>
+                  <div className="flex justify-between gap-3 text-sm">
+                    <span className="text-[var(--color-text-secondary)]">{tPricing('netBase')}</span>
+                    <span className="font-mono text-end tabular-nums">{formatCurrency(taxParts.base, locale)}</span>
+                  </div>
+                  <p className="text-[11px] text-[var(--color-text-tertiary)]">
+                    {t('orderSummaryBreakdownCards', {
+                      qty: quantity,
+                      unit: formatCurrency(CARD_UNIT_BASE_EGP, locale),
+                    })}
+                  </p>
                   <div className="border-t border-[var(--color-border)]" />
-                  <div className="flex justify-between gap-3 text-sm font-medium">
-                    <span className="text-[var(--color-text-primary)]">{t('orderSummaryCardsSubtotal')}</span>
-                    <span className="font-mono text-end tabular-nums">{formatCurrency(exclusivePricing.total, locale)}</span>
-                  </div>
                   <div className="flex justify-between gap-3 text-sm">
                     <span className="text-[var(--color-text-secondary)]">
                       {t('orderSummaryShippingZone', { zone: formatShippingZoneForLocale(shippingZoneEn, locale) })}

@@ -336,13 +336,13 @@ function taxNoteRow(note: string): string {
 }
 
 const TAX_NOTE_STANDARD_AR =
-  'ضريبة القيمة المضافة 14٪ | رسوم الخدمة 6٪ | ضريبة الدمغة 0.4٪';
+  'ضريبة القيمة المضافة 14٪ | رسوم الخدمة 6٪ | ضريبة الدمغة 0.5٪';
 
 function exclusiveTotalsStandard(p: ExclusivePricing, totalLabel: string, taxNoteAr: string): string {
   return `${totalsRow('المجموع الجزئي', `${fmtMoney(p.base)} EGP`)}
   ${dividerDashed()}
   ${totalsRow('رسوم الخدمة (6%)', `${fmtMoney(p.service)} EGP`)}
-  ${totalsRow('رسوم الدمغة (0.4%)', `${fmtMoney(p.stamp)} EGP`)}
+  ${totalsRow('رسوم الدمغة (0.5%)', `${fmtMoney(p.stamp)} EGP`)}
   ${totalsRow('ضريبة القيمة المضافة (14%)', `${fmtMoney(p.vat)} EGP`)}
   ${dividerSolid()}
   ${totalsRowBold(totalLabel, `${fmtMoney(p.total)} EGP`)}
@@ -869,7 +869,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     totalsInner = `${totalsRow('المجموع الجزئي (الصافي)', `${fmtMoney(netBase)} EGP`)}
     ${dividerDashed()}
     ${totalsRow('رسوم الخدمة (6%)', `${fmtMoney(netSvc)} EGP`)}
-    ${totalsRow('رسوم الدمغة (0.4%)', `${fmtMoney(netStamp)} EGP`)}
+    ${totalsRow('رسوم الدمغة (0.5%)', `${fmtMoney(netStamp)} EGP`)}
     ${totalsRow('ضريبة القيمة المضافة (14%)', `${fmtMoney(netVat)} EGP`)}
     ${dividerSolid()}
     ${totalsRowBold('فرق الترقية', `${fmtMoney(total)} EGP`)}
@@ -906,14 +906,14 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     totalsInner = `${totalsRow('قيمة المنتج الأساسية', `${fmtMoney(p.base)} EGP`)}
     ${dividerDashed()}
     ${totalsRow('رسوم الخدمة (6%)', `${fmtMoney(p.service)} EGP`)}
-    ${totalsRow('رسوم الدمغة (0.4%)', `${fmtMoney(p.stamp)} EGP`)}
+    ${totalsRow('رسوم الدمغة (0.5%)', `${fmtMoney(p.stamp)} EGP`)}
     ${totalsRow('ضريبة القيمة المضافة (14%)', `${fmtMoney(p.vat)} EGP`)}
     ${dividerLight()}
     ${totalsRow('مجموع المنتج', `${fmtMoney(productSub)} EGP`)}
     ${totalsRow('رسوم شحن بوسطة', `${fmtMoney(p.shipping)} EGP`)}
     ${dividerSolid()}
     ${totalsRowBold('إجمالي المدفوع', `${fmtMoney(p.total)} EGP`)}
-    ${taxNoteRow('ضريبة القيمة المضافة 14٪ | رسوم الخدمة 6٪ | ضريبة الدمغة 0.4٪ - على المنتج فقط. رسوم الشحن منفصلة.')}`;
+    ${taxNoteRow('ضريبة القيمة المضافة 14٪ | رسوم الخدمة 6٪ | ضريبة الدمغة 0.5٪ - على المنتج فقط. رسوم الشحن منفصلة.')}`;
   } else if (invoiceType === 'late_payment_fee') {
     const lf = meta as { late_fee_rate?: number; late_fee_amount?: number; penalty_amount?: number };
     const pct = Math.round(num(lf.late_fee_rate) * 100);
@@ -938,7 +938,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     totalsInner = `${totalsRow('قيمة الاشتراك الأساسية', `${fmtMoney(p.base)} EGP`)}
     ${dividerDashed()}
     ${totalsRow('رسوم الخدمة (6%)', `${fmtMoney(p.service)} EGP`)}
-    ${totalsRow('رسوم الدمغة (0.4%)', `${fmtMoney(p.stamp)} EGP`)}
+    ${totalsRow('رسوم الدمغة (0.5%)', `${fmtMoney(p.stamp)} EGP`)}
     ${totalsRow('ضريبة القيمة المضافة (14%)', `${fmtMoney(p.vat)} EGP`)}
     ${dividerLight()}
     ${totalsRow('مجموع الخطة', `${fmtMoney(planInclusive)} EGP`)}
@@ -948,7 +948,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     )}
     ${dividerSolid()}
     ${totalsRowBold('إجمالي المستحق', `${fmtMoney(total)} EGP`)}
-    ${taxNoteRow('ضريبة القيمة المضافة 14٪ | رسوم الخدمة 6٪ | ضريبة الدمغة 0.4٪ - تطبق على قيمة الاشتراك فقط. تُضاف غرامة التأخر بعد الضريبة.')}`;
+    ${taxNoteRow('ضريبة القيمة المضافة 14٪ | رسوم الخدمة 6٪ | ضريبة الدمغة 0.5٪ - تطبق على قيمة الاشتراك فقط. تُضاف غرامة التأخر بعد الضريبة.')}`;
   } else if (invoiceType === 'referral_payout') {
     showTaxBox = false;
     const metaComm = meta.commissions as { amount: number }[] | undefined;

@@ -3,17 +3,16 @@
 // `quarterlyAllIn` matches pricing_plans.all_in_price: EGP/month when billed quarterly (×3 = one quarter invoice).
 
 import { formatNumber } from '@/lib/formatNumber';
+import { SUBSCRIPTION_PLAN_DEFINITIONS } from '@/lib/pricing/plans';
+
+export { SUBSCRIPTION_PLAN_DEFINITIONS } from '@/lib/pricing/plans';
 
 /** Fixed tiers (excludes `top_centers`), lowest → highest for UI and ranking. */
-export const ORDERED_SUBSCRIPTION_PLAN_KEYS = [
-  'solo',
-  'nano',
-  'starter',
-  'pro',
-  'business',
-  'enterprise',
-] as const;
-export type SubscriptionPlanKey = (typeof ORDERED_SUBSCRIPTION_PLAN_KEYS)[number];
+export type SubscriptionPlanKey = (typeof SUBSCRIPTION_PLAN_DEFINITIONS)[number]['key'];
+
+export const ORDERED_SUBSCRIPTION_PLAN_KEYS = SUBSCRIPTION_PLAN_DEFINITIONS.map(
+  (d) => d.key,
+) as readonly SubscriptionPlanKey[];
 
 export type PlanKey = SubscriptionPlanKey | 'top_centers';
 export type BillingPeriod = 'monthly' | 'quarterly' | 'annual';
@@ -40,56 +39,23 @@ export interface PlanConfig {
   isMegaCenter?: boolean;
 }
 
+const PLANS_FROM_DEFS = Object.fromEntries(
+  SUBSCRIPTION_PLAN_DEFINITIONS.map((d) => {
+    const cfg: PlanConfig = {
+      key: d.key,
+      arabicName: d.arabicName,
+      englishName: d.englishName,
+      weeklyStudentLimit: d.weeklyStudentLimit,
+      quarterlyAllIn: d.quarterlyAllIn,
+      monthlyListPrice: d.monthlyListPrice,
+    };
+    if ('isMegaCenter' in d && d.isMegaCenter) cfg.isMegaCenter = true;
+    return [d.key, cfg];
+  }),
+) as Record<SubscriptionPlanKey, PlanConfig>;
+
 export const PLANS: Record<PlanKey, PlanConfig> = {
-  solo: {
-    key: 'solo',
-    arabicName: 'فردي',
-    englishName: 'Solo',
-    weeklyStudentLimit: 50,
-    quarterlyAllIn: 999,
-    monthlyListPrice: 1149,
-  },
-  nano: {
-    key: 'nano',
-    arabicName: 'سنتر نانو',
-    englishName: 'Nano',
-    weeklyStudentLimit: 75,
-    quarterlyAllIn: 1999,
-    monthlyListPrice: 2499,
-  },
-  starter: {
-    key: 'starter',
-    arabicName: 'أساسي',
-    englishName: 'Starter',
-    weeklyStudentLimit: 150,
-    quarterlyAllIn: 4499,
-    monthlyListPrice: 5199,
-  },
-  pro: {
-    key: 'pro',
-    arabicName: 'محترف',
-    englishName: 'Pro',
-    weeklyStudentLimit: 500,
-    quarterlyAllIn: 7999,
-    monthlyListPrice: 9199,
-  },
-  business: {
-    key: 'business',
-    arabicName: 'أعمال',
-    englishName: 'Business',
-    weeklyStudentLimit: 1000,
-    quarterlyAllIn: 12999,
-    monthlyListPrice: 14999,
-  },
-  enterprise: {
-    key: 'enterprise',
-    arabicName: 'مؤسسات',
-    englishName: 'Enterprise',
-    weeklyStudentLimit: 2000,
-    quarterlyAllIn: 18499,
-    monthlyListPrice: 21299,
-    isMegaCenter: true,
-  },
+  ...PLANS_FROM_DEFS,
   top_centers: {
     key: 'top_centers',
     arabicName: 'كبار السناتر',
@@ -105,10 +71,13 @@ export function isPlanKey(id: string | null | undefined): id is PlanKey {
   return id != null && Object.prototype.hasOwnProperty.call(PLANS, id);
 }
 
-/** Full annual charge from quarterly monthly equivalent (−15% vs 12× quarter months): round to nearest 100 EGP then −1 (99-ending). */
+/**
+ * Full annual cycle inclusive total: quarterly monthly equivalent × 0.85 × 12, whole EGP.
+ * Per docs/PRICING_SPEC.md (marketing annual vs quarterly).
+ */
 export function getAnnualChargeRounded(allInPerMonth: number): number {
   if (!Number.isFinite(allInPerMonth) || allInPerMonth <= 0) return 0;
-  return Math.round((allInPerMonth * 10.2) / 100) * 100 - 1;
+  return Math.round(allInPerMonth * 0.85 * 12);
 }
 
 const WEEKS_PER_QUARTER = 13;
@@ -189,11 +158,11 @@ export function getPlanPrice(planKey: PlanKey, period: BillingPeriod): number {
   }
 }
 
-/** Per-month figure when customer pays annual (−15% on year vs 12× quarterly-monthly). */
+/** Per-month inclusive figure when customer pays annual (≈ quarterly × 0.85), whole EGP. */
 export function getAnnualMonthlyEquivalent(planKey: PlanKey): number {
   const plan = PLANS[planKey];
   if (!plan || planKey === 'top_centers') return 0;
-  return getAnnualChargeRounded(plan.quarterlyAllIn) / 12;
+  return Math.round(plan.quarterlyAllIn * 0.85);
 }
 
 export function getQuarterlyCharge(planKey: PlanKey, period: BillingPeriod): number {

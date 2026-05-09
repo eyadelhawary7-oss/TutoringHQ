@@ -23,7 +23,7 @@
   "invoice": {
     "subtotal": "المجموع الجزئي",
     "serviceFee": "رسوم الخدمة (6٪)",
-    "stampDuty": "ضريبة الدمغة (0.4٪)",
+    "stampDuty": "ضريبة الدمغة (0.5٪)",
     "vat": "ضريبة القيمة المضافة (14٪)",
     "productBase": "قيمة المنتج الأساسية",
     "productSubtotal": "مجموع المنتج",
@@ -34,9 +34,9 @@
     "grossCommissions": "إجمالي العمولات",
     "withdrawalFee": "رسوم السحب (5٪)",
     "netPaidOut": "صافي المدفوع",
-    "taxNote": "ضريبة القيمة المضافة 14٪ | رسوم الخدمة 6٪ | ضريبة الدمغة 0.4٪",
-    "taxNoteSetupFee": "ضريبة القيمة المضافة 14٪ | رسوم الخدمة 6٪ | ضريبة الدمغة 0.4٪ - على المنتج فقط. رسوم الشحن منفصلة.",
-    "taxNoteLatePayment": "ضريبة القيمة المضافة 14٪ | رسوم الخدمة 6٪ | ضريبة الدمغة 0.4٪ - تطبق على قيمة الاشتراك فقط.",
+    "taxNote": "ضريبة القيمة المضافة 14٪ | رسوم الخدمة 6٪ | ضريبة الدمغة 0.5٪",
+    "taxNoteSetupFee": "ضريبة القيمة المضافة 14٪ | رسوم الخدمة 6٪ | ضريبة الدمغة 0.5٪ - على المنتج فقط. رسوم الشحن منفصلة.",
+    "taxNoteLatePayment": "ضريبة القيمة المضافة 14٪ | رسوم الخدمة 6٪ | ضريبة الدمغة 0.5٪ - تطبق على قيمة الاشتراك فقط.",
     "taxNotePayoutOnly": "لا ضريبة قيمة مضافة او رسوم خدمة - هذا دفع عمولات من CenterHQ.",
     "taxNoteProofOnly": "المبالغ تعكس اجمالي الفاتورة المرجعية."
   },
@@ -3519,10 +3519,11 @@
     "selectStudents": "اختر الطلاب،",
     "previewCard": "معاينة وتخصيص",
     "orderSummary": "Order Summary",
+    "orderSummaryProductInclusive": "بطاقات QR (شامل الضرائب)",
     "pricePerCard": "السعر لكل بطاقة (ج.م)",
     "orderSummaryBreakdownCards": "البطاقات ({qty} × {unit})",
     "orderSummaryServiceFee": "رسوم الخدمة (6٪)",
-    "orderSummaryStampDuty": "ضريبة الدمغة (0.4٪)",
+    "orderSummaryStampDuty": "ضريبة الدمغة (0.5٪)",
     "orderSummaryVat": "ضريبة القيمة المضافة (14٪)",
     "orderSummaryCardsSubtotal": "مجموع البطاقات",
     "orderSummaryShippingZone": "الشحن ({zone})",
@@ -5093,7 +5094,7 @@
     "phoneHint": "سنتواصل معك على واتساب",
     "subtotal": "المجموع",
     "serviceFee": "رسوم الخدمة 6٪",
-    "stampDuty": "ضريبة الدمغة 0.4٪",
+    "stampDuty": "ضريبة الدمغة 0.5٪",
     "included": "مشمول",
     "allTaxesIncluded": "شامل جميع الضرائب",
     "periodLabel": "الفترة",
@@ -6238,6 +6239,17 @@
   "pricing": {
     "cta": "Cta",
     "enterprise_cta": "Enterprise Cta",
+    "lines": {
+      "subtotal": "الإجمالي قبل الضرائب",
+      "serviceFee": "رسوم خدمة (٦٪)",
+      "stampDuty": "دمغة (٠٫٥٪)",
+      "vat": "ضريبة القيمة المضافة (١٤٪)",
+      "total": "الإجمالي",
+      "inclVat": "شاملة ضريبة القيمة المضافة (١٤٪)",
+      "inclStamp": "شاملة الدمغة (٠٫٥٪)",
+      "inclService": "شاملة رسوم الخدمة (٦٪)",
+      "netBase": "صافي الإيراد (الأساس)"
+    },
     "plans": {
       "top_centers": {
         "price_month": "السعر شهر"

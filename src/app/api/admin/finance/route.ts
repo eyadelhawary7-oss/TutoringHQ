@@ -15,6 +15,8 @@ import type {
   FinanceRevenueSlice,
   FinanceUnitEconomics,
 } from '@/types/admin-finance';
+import { PLANS } from '@/lib/pricing';
+import { requireTopCentersMonthlyPrice } from '@/lib/pricing/topCentersPrice';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,12 +25,12 @@ export const dynamic = 'force-dynamic';
 // from @/lib/pricing once the duplicated MRR loop in admin/billing/route.ts and
 // admin/overview/route.ts is extracted into a shared helper.
 const PLAN_MONTHLY_FALLBACK: Record<string, number> = {
-  solo: 999,
-  nano: 1999,
-  starter: 4499,
-  pro: 7999,
-  business: 12999,
-  enterprise: 18499,
+  solo: PLANS.solo.quarterlyAllIn,
+  nano: PLANS.nano.quarterlyAllIn,
+  starter: PLANS.starter.quarterlyAllIn,
+  pro: PLANS.pro.quarterlyAllIn,
+  business: PLANS.business.quarterlyAllIn,
+  enterprise: PLANS.enterprise.quarterlyAllIn,
 };
 
 const INVOICE_TYPE_LABELS: Record<string, string> = {
@@ -212,9 +214,13 @@ function isPending(inv: InvoiceRow): boolean {
 }
 
 function monthlyChargeForCenter(c: CenterRow): number {
+  const pk = (c.plan_key ?? '').toLowerCase();
+  if (pk === 'top_centers') {
+    return requireTopCentersMonthlyPrice(c.monthly_price, `finance:${c.id}`);
+  }
   if (typeof c.monthly_price === 'number' && c.monthly_price > 0) return c.monthly_price;
   if (typeof c.base_monthly_price === 'number' && c.base_monthly_price > 0) return c.base_monthly_price;
-  return PLAN_MONTHLY_FALLBACK[c.plan_key ?? ''] ?? 0;
+  return PLAN_MONTHLY_FALLBACK[pk] ?? 0;
 }
 
 function computeNorthStar(

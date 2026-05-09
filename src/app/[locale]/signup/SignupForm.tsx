@@ -1269,7 +1269,7 @@ export default function SignupForm() {
                             }`}
                             style={PLAYFAIR}
                           >
-                            {formatNumber(price, locale)}
+                            {formatNumber(price, locale, { integerOnly: true })}
                           </div>
                           <div className="mt-0.5 text-[9px] text-slate-600" style={SANS}>
                             EGP / {t('month')}

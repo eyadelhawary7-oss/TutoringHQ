@@ -1,15 +1,19 @@
-# Parent pack billing cron — diagnostics
+# STOPPED — pricing rollout checkpoints
 
-## Expected wiring
+## Post-deploy verification
 
-- **Schedule:** `vercel.json` registers `/api/cron/parent-pack-billing` with `1 0 1 * *` (UTC: 00:01 on the 1st of each month).
-- **Handler:** `src/app/api/cron/parent-pack-billing/route.ts` exists and uses `requireCronSecret` at the top of `POST`.
+Eyad runs manually after deploy:
 
-## If `/admin/health` reports it never ran
+```sql
+SELECT id, name, plan_key, monthly_price, status
+FROM public.centers
+WHERE plan_key = 'enterprise'
+  AND is_test = false
+  AND monthly_price != 18499;
+```
 
-1. **`CRON_SECRET`** — Vercel invokes cron jobs with `Authorization: Bearer <CRON_SECRET>`. A missing env var or mismatch yields **401** before any DB work (same as all `/api/cron/*` routes).
-2. **`cron_paused`** — When `platform_config.cron_paused` is `true`, the handler exits early with `{ skipped: 'cron_paused' }` and HTTP 200.
-3. **UTC vs local date** — The schedule is UTC; “May 1” in Cairo may still be April 30 UTC depending on time.
-4. **Vercel dashboard** — Confirm the cron job is listed under the project’s Cron tab and inspect invocation logs for 401/403/5xx.
+Any rows indicate live Enterprise centres whose stored monthly inclusive price does not match the fixed Enterprise tier (`18499` EGP/mo per pricing spec baseline). Investigate before treating pricing/MRR as authoritative.
 
-No separate application bug was identified that would prevent registration when `CRON_SECRET` and Vercel cron are configured correctly.
+## Top Centers (`plan_key = top_centers`)
+
+Centres **must** have `monthly_price` set. Application code calls `requireTopCentersMonthlyPrice` where tier pricing is resolved; missing values trigger Sentry and throw.

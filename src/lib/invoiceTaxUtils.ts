@@ -1,26 +1,38 @@
-const TAX_MULTIPLIER = 1.204; // 1 + 0.06 service + 0.004 stamp + 0.14 VAT
+/**
+ * Invoice / order tax display helpers — cascading inclusive math via pricing/taxMath.
+ */
+
+import { explodeInclusive } from '@/lib/pricing/taxMath';
 
 export interface ExclusivePricing {
-  base: number; // back-calculated pre-tax subtotal
-  service: number; // 6% service fee
-  stamp: number; // 0.4% stamp duty
-  vat: number; // 14% VAT — absorbs rounding, always last
-  total: number; // identical to original inclusive total
+  base: number;
+  service: number;
+  stamp: number;
+  vat: number;
+  total: number;
 }
 
 export function calcExclusive(inclusiveTotal: number): ExclusivePricing {
-  const base = Math.round(inclusiveTotal / TAX_MULTIPLIER);
-  const service = Math.round(base * 0.06);
-  const stamp = Math.round(base * 0.004);
-  const vat = inclusiveTotal - base - service - stamp; // exact residual
-  return { base, service, stamp, vat, total: inclusiveTotal };
+  const b = explodeInclusive(inclusiveTotal);
+  return {
+    base: b.base,
+    service: b.service,
+    stamp: b.stamp,
+    vat: b.vat,
+    total: b.inclusive,
+  };
 }
 
-// setup_fee only: product is taxed, shipping is not
+/** Product portion is taxed (cascade); shipping is added on top and not cascaded. */
 export function calcExclusiveProduct(
   inclusiveTotal: number,
   shippingFee: number,
 ): ExclusivePricing & { shipping: number } {
-  const p = calcExclusive(inclusiveTotal - shippingFee);
-  return { ...p, shipping: shippingFee, total: inclusiveTotal };
+  const ship = Math.round(Number(shippingFee) * 100) / 100;
+  const productIncl = Math.max(
+    0,
+    Math.round((Number(inclusiveTotal) - ship) * 100) / 100,
+  );
+  const p = calcExclusive(productIncl);
+  return { ...p, shipping: ship, total: Math.round(Number(inclusiveTotal) * 100) / 100 };
 }

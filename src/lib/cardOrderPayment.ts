@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getShippingFee, getShippingZone } from '@/lib/bostaShipping';
+import { cardOrderProductInclusiveFromQty, explodeInclusive } from '@/lib/pricing/taxMath';
 import { notifyVendorOfNewOrder } from '@/lib/vendorNotify';
 
 async function ensureCardOrderSetupFeeInvoice(
@@ -19,7 +20,7 @@ async function ensureCardOrderSetupFeeInvoice(
   const { data: ord } = await supabaseAdmin
     .from('card_orders')
     .select(
-      'id, center_id, quantity, price_per_card, delivery_fee, shipping_zone, total_amount, tracking_number, paymob_order_id',
+      'id, center_id, quantity, price_per_card, delivery_fee, shipping_zone, delivery_governorate, total_amount, tracking_number, paymob_order_id',
     )
     .eq('id', orderId)
     .maybeSingle();
@@ -31,22 +32,30 @@ async function ensureCardOrderSetupFeeInvoice(
     price_per_card: number | null;
     delivery_fee: number | null;
     shipping_zone: string | null;
+    delivery_governorate?: string | null;
     total_amount: number | null;
     tracking_number: string | null;
     paymob_order_id?: string | null;
   };
   const cid = r.center_id;
   const qty = Math.round(Number(r.quantity ?? 0));
-  const pricePerCard = Number(r.price_per_card ?? 62);
+  const productInclusive = cardOrderProductInclusiveFromQty(qty);
+  const productTax = explodeInclusive(productInclusive);
+  const pricePerCard =
+    qty > 0 ? Math.round((productInclusive / qty) * 100) / 100 : Number(r.price_per_card ?? 0);
   let deliveryFee = Number(r.delivery_fee ?? 0);
   let shippingZone = r.shipping_zone != null && String(r.shipping_zone).trim() ? String(r.shipping_zone) : '';
   if (!Number.isFinite(deliveryFee) || deliveryFee <= 0 || !shippingZone) {
+    const govFromOrder = r.delivery_governorate;
     const { data: center } = await supabaseAdmin.from('centers').select('governorate').eq('id', cid).maybeSingle();
-    const gov = (center as { governorate?: string | null } | null)?.governorate;
+    const gov =
+      govFromOrder != null && String(govFromOrder).trim()
+        ? String(govFromOrder)
+        : (center as { governorate?: string | null } | null)?.governorate;
     deliveryFee = getShippingFee(gov);
     shippingZone = getShippingZone(gov);
   }
-  const total = Number(r.total_amount ?? qty * pricePerCard + deliveryFee);
+  const total = Number(r.total_amount ?? productInclusive + deliveryFee);
 
   const { data: codeRow } = await supabaseAdmin.from('centers').select('center_code').eq('id', cid).maybeSingle();
   const code = String((codeRow as { center_code?: string } | null)?.center_code ?? 'XXX');
@@ -71,7 +80,7 @@ async function ensureCardOrderSetupFeeInvoice(
     invoice_number: invoiceNumber,
     invoice_type: 'setup_fee',
     total_amount: total,
-    base_amount: Math.round((qty * pricePerCard) * 100) / 100,
+    base_amount: Math.round(productTax.base * 100) / 100,
     billing_period_start: ymd,
     billing_period_end: ymd,
     due_date: ymd,
