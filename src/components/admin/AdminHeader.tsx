@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useTransition } from 'react';
+import { signOutToLogin } from '@/lib/auth/sign-out-client';
 import { supabase } from '@/lib/supabase';
 import { Globe } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
@@ -80,9 +81,7 @@ export function AdminHeader() {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.replace('/login');
-    router.refresh();
+    await signOutToLogin(locale);
   };
 
   return (

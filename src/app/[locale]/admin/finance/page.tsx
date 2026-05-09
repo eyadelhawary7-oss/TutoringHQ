@@ -50,14 +50,14 @@ export default async function AdminFinancePage({
   });
 
   if (res.status === 403 || res.status === 401 || !res.ok) {
-    redirect(`/${locale}/ceo-dashboard`);
+    redirect(`/${locale}/dashboard`);
   }
 
   let initialData: FinanceData;
   try {
     initialData = (await res.json()) as FinanceData;
   } catch {
-    redirect(`/${locale}/ceo-dashboard`);
+    redirect(`/${locale}/dashboard`);
     return null;
   }
 

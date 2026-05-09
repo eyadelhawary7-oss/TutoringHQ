@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
+import { signOutToLogin } from '@/lib/auth/sign-out-client';
 import { supabase } from '@/lib/supabase';
 import { dbSelect } from '@/lib/db-proxy';
 import { Link } from '@/i18n/routing';
@@ -50,8 +51,7 @@ export default function SuspendedPage() {
   }, [isCenterSuspended, isPaymentOverdue]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    window.location.href = `/${locale}/login`;
+    await signOutToLogin(locale);
   };
 
   const waMessage = isPaymentOverdue

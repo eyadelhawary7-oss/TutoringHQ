@@ -7,10 +7,11 @@ import { createBrowserClient } from '@supabase/ssr';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
+import { useToast } from '@/components/ui/ToastProvider';
 import { useLayout } from '@/contexts/LayoutContext';
 import { AreaChartComponent } from '@/components/charts/AreaChart';
 import { BarChartComponent } from '@/components/charts/BarChartComponent';
-import { formatCurrency, formatNumber, formatPercent } from '@/lib/formatNumber';
+import { formatCurrency, formatDate, formatGrowth, formatNumber, formatPercent } from '@/lib/formatNumber';
 import type {
   FinanceCohort,
   FinanceData,
@@ -46,8 +47,10 @@ export default function AdminFinanceClient({ initialData }: { initialData: Finan
   const isAr = locale === 'ar' || locale.startsWith('ar-');
   const { closeMainSidebar } = useSidebar() ?? {};
   const { setHideShell } = useLayout();
+  const { toast } = useToast();
   const [data, setData] = useState<FinanceData>(initialData);
   const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(() => new Date(initialData.generatedAt));
 
   useEffect(() => { setHideShell(true); return () => setHideShell(false); }, [setHideShell]);
   useEffect(() => { closeMainSidebar?.(); }, [closeMainSidebar]);
@@ -70,14 +73,29 @@ export default function AdminFinanceClient({ initialData }: { initialData: Finan
       if (res.ok) {
         const fresh = (await res.json()) as FinanceData;
         setData(fresh);
+        setLastUpdated(new Date(fresh.generatedAt));
+      } else {
+        toast.error(isAr ? 'فشل تحديث البيانات' : 'Could not refresh finance data');
       }
+    } catch {
+      toast.error(isAr ? 'فشل تحديث البيانات' : 'Could not refresh finance data');
     } finally {
       setRefreshing(false);
     }
-  }, [searchParams]);
+  }, [searchParams, isAr, toast]);
 
   const planLabels = isAr ? PLAN_LABEL_AR : PLAN_LABEL_EN;
-  const generated = new Date(data.generatedAt);
+  const mrrGrowthPair =
+    data.mrrTrend.length >= 2
+      ? {
+          current: Number(data.mrrTrend[data.mrrTrend.length - 1]?.amount) || 0,
+          prior: Number(data.mrrTrend[data.mrrTrend.length - 2]?.amount) || 0,
+        }
+      : null;
+  const mrrGrowthLabel =
+    mrrGrowthPair != null ? formatGrowth(mrrGrowthPair.current, mrrGrowthPair.prior, locale) : null;
+  const mrrGrowthNegative =
+    mrrGrowthPair != null && mrrGrowthPair.prior > 0 && mrrGrowthPair.current < mrrGrowthPair.prior;
 
   return (
     <div className="flex flex-col flex-1 min-h-0 min-h-screen w-full bg-[var(--color-surface-0)]">
@@ -93,7 +111,7 @@ export default function AdminFinanceClient({ initialData }: { initialData: Finan
               </h1>
               <p className="text-xs text-[var(--color-text-muted)] mt-1">
                 {isAr ? 'آخر تحديث' : 'Last updated'}{' '}
-                {generated.toLocaleString(isAr ? 'ar-EG' : 'en-US')}
+                {formatDate(lastUpdated, locale, 'time')}
               </p>
             </div>
             <button
@@ -110,10 +128,14 @@ export default function AdminFinanceClient({ initialData }: { initialData: Finan
             <KpiCard
               label={isAr ? 'الإيراد الشهري المتكرر' : 'MRR'}
               primary={formatCurrency(data.northStar.totalMRR, locale)}
-              delta={data.northStar.mrrChangePct === 0
-                ? (isAr ? 'بدون تغيير' : 'no change')
-                : `${data.northStar.mrrChangePct > 0 ? '+' : ''}${formatPercent(data.northStar.mrrChangePct, locale)} ${isAr ? 'مقارنة بالشهر الماضي' : 'vs last month'}`}
-              tone={data.northStar.mrrChangePct >= 0 ? 'success' : 'danger'}
+              delta={
+                mrrGrowthLabel
+                  ? `${mrrGrowthLabel} ${isAr ? 'مقارنة بالشهر الماضي' : 'vs last month'}`
+                  : isAr
+                    ? 'لا بيانات للمقارنة'
+                    : 'no comparison'
+              }
+              tone={mrrGrowthLabel ? (mrrGrowthNegative ? 'danger' : 'success') : 'muted'}
             />
             <KpiCard
               label={isAr ? 'السناتر النشطة' : 'Active centers'}

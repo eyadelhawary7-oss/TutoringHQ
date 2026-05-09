@@ -187,6 +187,13 @@ export default function AttendancePage() {
     loadData();
   }, [loadData]);
 
+  const dateRangeDayCount = useMemo(() => {
+    const a = new Date(dateFrom).getTime();
+    const b = new Date(dateTo).getTime();
+    if (Number.isNaN(a) || Number.isNaN(b)) return 7;
+    return Math.max(1, Math.round((b - a) / (24 * 60 * 60 * 1000)) + 1);
+  }, [dateFrom, dateTo]);
+
   const byStudent = useMemo(() => {
     const scanCount: Record<string, number> = {};
     const lastScan: Record<string, string> = {};
@@ -425,7 +432,10 @@ export default function AttendancePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {byStudent.map((r) => (
+                  {byStudent.map((r) => {
+                    const maxPoss = r.expected > 0 ? r.expected : dateRangeDayCount;
+                    const pctNum = maxPoss > 0 ? (r.totalScans / maxPoss) * 100 : 0;
+                    return (
                     <React.Fragment key={r.student.id}>
                       <tr className="hover:bg-[var(--color-surface-0)] transition-colors">
                         <td className="py-3.5 px-4 text-end">
@@ -447,20 +457,20 @@ export default function AttendancePage() {
                         <td className="py-3.5 px-4 text-sm font-mono font-bold text-[var(--color-text-primary)] text-end">{r.totalScans}</td>
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] text-end">{formatRelativeTime(r.lastScan, locale)}</td>
                         <td className="py-3.5 px-4 text-end">
-                          {r.expected > 0 ? (
+                          {maxPoss > 0 ? (
                             <div className="flex items-center gap-2 justify-end">
                               <div className="w-20 h-2 bg-slate-200 rounded-full overflow-hidden">
                                 <div
                                   className="h-full bg-teal-500 rounded-full"
-                                  style={{ width: `${Math.min(100, (r.totalScans / r.expected) * 100)}%` }}
+                                  style={{ width: `${Math.min(100, pctNum)}%` }}
                                 />
                               </div>
                               <span className="text-sm font-mono font-semibold">
-                                {formatPercent(Math.round((r.totalScans / r.expected) * 100), locale)}
+                                {formatPercent(Math.round(pctNum * 10) / 10, locale)}
                               </span>
                             </div>
                           ) : (
-                            <span className="text-sm font-mono">{r.totalScans}</span>
+                            <span className="text-sm font-mono">{formatPercent(0, locale)}</span>
                           )}
                         </td>
                         <td className="py-3.5 px-4 text-end">
@@ -528,7 +538,8 @@ export default function AttendancePage() {
                         </tr>
                       )}
                     </React.Fragment>
-                  ))}
+                  );
+                  })}
                 </tbody>
               </table>
             </div>

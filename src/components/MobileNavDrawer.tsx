@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Link, usePathname } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
 import { useBranchStore } from '@/stores/branchStore';
@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { ChangePinModal } from '@/components/admin/ChangePinModal';
 import { BranchSwitcher } from '@/components/layout/BranchSwitcher';
+import { signOutToLogin } from '@/lib/auth/sign-out-client';
 
 type NavItem = {
   key: string;
@@ -68,6 +69,7 @@ type MobileNavDrawerProps = {
 
 export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
   const tNav = useTranslations('nav');
+  const locale = useLocale();
   const tSettings = useTranslations('settings');
   const pathname = usePathname();
   const router = useRouter();
@@ -130,10 +132,8 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
   const showBenchmarksNewBadge = (Date.now() - BENCHMARKS_LAUNCH.getTime()) / (24 * 60 * 60 * 1000) < 30;
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.replace('/login');
-    router.refresh();
     onClose();
+    await signOutToLogin(locale);
   };
 
   const linkClass = (active: boolean) =>

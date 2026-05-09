@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import LanguageToggle from './LanguageToggle';
 import SyncIndicator from './SyncIndicator';
@@ -10,6 +10,7 @@ import { Link, usePathname } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
 import type { PermissionKey, UserRole } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
+import { signOutToLogin } from '@/lib/auth/sign-out-client';
 
 const getRoleBadge = (role: UserRole | string) => {
   const badges: Record<string, string> = {
@@ -24,6 +25,7 @@ const getRoleBadge = (role: UserRole | string) => {
 
 export default function Navbar() {
   const t = useTranslations('nav');
+  const locale = useLocale();
   const tRoles = useTranslations('roles');
   const pathname = usePathname();
   const router = useRouter();
@@ -50,9 +52,7 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     setMenuOpen(false);
-    await supabase.auth.signOut();
-    router.replace('/login');
-    router.refresh();
+    await signOutToLogin(locale);
   };
 
   const allNavItems: { key: string; href: string; permission?: PermissionKey }[] = [

@@ -30,6 +30,7 @@ import {
   MapPin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { signOutToLogin } from '@/lib/auth/sign-out-client';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { getAdminPermissions } from '@/lib/admin-roles';
 import { supabase } from '@/lib/supabase';
@@ -276,10 +277,8 @@ export function AdminSidebar({
   }, [locale, pathname, router, startTransition]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.replace('/login');
-    router.refresh();
     afterNavigate();
+    await signOutToLogin(locale);
   };
 
   const runPrimaryNav = (key: AdminTab) => {

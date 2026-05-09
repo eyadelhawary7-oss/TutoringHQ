@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Link, usePathname } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { ChangePinModal } from '@/components/admin/ChangePinModal';
 import { BranchSwitcher } from '@/components/layout/BranchSwitcher';
+import { signOutToLogin } from '@/lib/auth/sign-out-client';
 import { cn } from '@/lib/utils';
 
 /** Desktop sidebar width in px (Tailwind w-60) */
@@ -52,6 +53,7 @@ function navLinkClass(isActive: boolean) {
 
 export default function Sidebar({ onClose }: SidebarProps) {
   const t = useTranslations('nav');
+  const locale = useLocale();
   const tRoles = useTranslations('roles');
   const tSettings = useTranslations('settings');
   const pathname = usePathname();
@@ -80,9 +82,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.replace('/login');
-    router.refresh();
+    await signOutToLogin(locale);
   };
 
   const BENCHMARKS_LAUNCH = new Date('2025-03-15');

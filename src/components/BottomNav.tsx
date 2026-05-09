@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
 import type { PermissionKey } from '@/contexts/UserContext';
@@ -25,6 +25,7 @@ import {
   Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { signOutToLogin } from '@/lib/auth/sign-out-client';
 
 const primaryItems: { key: string; path: string; icon: React.ElementType; permission?: PermissionKey }[] = [
   { key: 'dashboard', path: '/dashboard', icon: LayoutDashboard, permission: 'can_view_dashboard' },
@@ -46,6 +47,7 @@ const moreItems: { key: string; path: string; icon: React.ElementType; permissio
 
 export function BottomNav() {
   const t = useTranslations('nav');
+  const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
   const { user, hasPermission } = useUser();
@@ -94,9 +96,7 @@ export function BottomNav() {
 
   const handleLogout = async () => {
     setShowMore(false);
-    await supabase.auth.signOut();
-    router.replace('/login');
-    router.refresh();
+    await signOutToLogin(locale);
   };
 
   return (

@@ -13,6 +13,7 @@ import PasswordConfirmModal from '@/components/PasswordConfirmModal';
 import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, LayoutDashboard, Loader2, Calendar, Package, Wallet } from 'lucide-react';
 import { SettingsSwitch } from '@/components/settings/SettingsSwitch';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
+import { signOutToLogin } from '@/lib/auth/sign-out-client';
 import { getSupportWhatsAppDisplayLabel, getSupportWhatsAppWaMeBase } from '@/lib/supportWhatsApp';
 
 type TabType = 'general' | 'team';
@@ -150,8 +151,7 @@ function SettingsPageContent() {
   }, [tabParam, router]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.replace('/login');
+    await signOutToLogin(locale);
   };
 
   // Shared state

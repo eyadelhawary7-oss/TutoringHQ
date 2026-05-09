@@ -22,7 +22,8 @@ const DonutChart = dynamic(
   { ssr: false, loading: () => <div className="chq-skeleton h-48 w-full rounded-xl" /> },
 );
 import { useToast } from '@/components/ui/ToastProvider';
-import { formatDate, formatNumber, formatPercent } from '@/lib/formatNumber';
+import { formatDate, formatGrowth, formatNumber, formatPercent } from '@/lib/formatNumber';
+import { getCairoWeekDayKeys, startOfCairoWeek } from '@/lib/cairo/week';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { type InactivePeriod, type InactiveStudent } from '@/components/dashboard/InactiveList';
 import {
@@ -96,12 +97,14 @@ interface DashboardData {
   monthPending: number;
   monthLate: number;
   weeklyTrendPct: number;
+  /** Cairo-week scan totals for formatGrowth vs prior week. */
+  thisWeekScanTotal: number;
+  lastWeekScanTotal: number;
   collectionRatePct: number;
   newStudentsCount: number;
-  atRiskCount: number;
   inactiveStudents: InactiveStudent[];
-  scanDeltaPct: number;
-  revenueDeltaPct: number;
+  yesterdayAttendanceCount: number;
+  yesterdayRevenueAmount: number;
   pendingInvoicesCount: number;
   latePaymentCount: number;
   studentSparkline7d: number[];
@@ -112,6 +115,7 @@ type AtRiskRow = {
   name: string;
   student_number?: string | null;
   days_since_last_scan: number;
+  attendance_rate_pct?: number;
 };
 
 const DASHBOARD_CACHE_KEY = 'chq_dashboard_cache_v5';
@@ -133,12 +137,13 @@ const EMPTY_DASHBOARD_DATA: DashboardData = {
   monthPending: 0,
   monthLate: 0,
   weeklyTrendPct: 0,
+  thisWeekScanTotal: 0,
+  lastWeekScanTotal: 0,
   collectionRatePct: 0,
   newStudentsCount: 0,
-  atRiskCount: 0,
   inactiveStudents: [],
-  scanDeltaPct: 0,
-  revenueDeltaPct: 0,
+  yesterdayAttendanceCount: 0,
+  yesterdayRevenueAmount: 0,
   pendingInvoicesCount: 0,
   latePaymentCount: 0,
   studentSparkline7d: [],
@@ -179,7 +184,7 @@ function atRiskAttendanceIndicator(daysSinceLastScan: number): number {
 function KpiCommandCard({
   label,
   valueDisplay,
-  trendPct,
+  growth,
   icon: Icon,
   delayMs,
   sparkline,
@@ -188,7 +193,8 @@ function KpiCommandCard({
 }: {
   label: string;
   valueDisplay: ReactNode;
-  trendPct?: number;
+  /** Uses formatGrowth; chip hidden when prior period had no baseline (null). */
+  growth?: { current: number; prior: number } | null;
   icon: LucideIcon;
   delayMs: number;
   sparkline: { value: number }[];
@@ -196,7 +202,15 @@ function KpiCommandCard({
   staleMetrics?: boolean;
   locale: string;
 }) {
-  const showTrend = trendPct !== undefined && trendPct !== 0 && Number.isFinite(trendPct);
+  const growthLabel =
+    growth != null && Number.isFinite(growth.prior) && Number.isFinite(growth.current)
+      ? formatGrowth(growth.current, growth.prior, locale)
+      : null;
+  const showTrend = growthLabel != null;
+  const negative =
+    growth != null &&
+    growth.prior > 0 &&
+    growth.current < growth.prior;
   return (
     <div
       className="relative chq-fade-in rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4"
@@ -215,15 +229,15 @@ function KpiCommandCard({
       {showTrend ? (
         <span
           className={`mt-2 inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
-            (trendPct ?? 0) >= 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
+            negative ? 'bg-red-500/15 text-red-400' : 'bg-emerald-500/15 text-emerald-400'
           }`}
         >
-          {(trendPct ?? 0) >= 0 ? (
+          {!negative ? (
             <TrendingUp className="h-3 w-3" aria-hidden />
           ) : (
             <TrendingDown className="h-3 w-3" aria-hidden />
           )}
-          {`${(trendPct ?? 0) >= 0 ? '+' : ''}${formatPercent(Math.abs(trendPct ?? 0), locale)}`}
+          <span>{growthLabel}</span>
         </span>
       ) : null}
       <div className="mt-3 h-8 w-full opacity-95" aria-hidden>
@@ -270,6 +284,11 @@ export default function DashboardPage() {
   } | null>(null);
   const [surgeDismissed, setSurgeDismissed] = useState(false);
   const [atRiskStudents, setAtRiskStudents] = useState<AtRiskRow[]>([]);
+  const [atRiskMeta, setAtRiskMeta] = useState<{
+    totalActive: number;
+    avgAttendancePct: number;
+    atRiskCount: number;
+  } | null>(null);
   const [sendingReport, setSendingReport] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
@@ -395,36 +414,34 @@ export default function DashboardPage() {
         const d = new Date(p.paid_at);
         return d >= yesterdayStart && d <= yesterdayEnd;
       }).reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
-      const scanDeltaPct = yesterdayAttendance > 0 ? Math.round((attendanceCount - yesterdayAttendance) / yesterdayAttendance * 100) : 0;
-      const revenueDeltaPct = yesterdayRev > 0 ? Math.round((todayRevenue - yesterdayRev) / yesterdayRev * 100) : 0;
 
       const paidCount = students.filter(s => s.payment_status === 'paid').length;
       const unpaidCount = students.filter(s => s.payment_status === 'unpaid').length;
 
-      // Trend data: group scans by date
+      // Trend data: Cairo week (7d) or rolling N days
+      const chartDayKeys: string[] =
+        range === 7
+          ? getCairoWeekDayKeys(new Date())
+          : Array.from({ length: range }, (_, i) => {
+              const day = new Date();
+              day.setDate(day.getDate() - (range - 1 - i));
+              return day.toISOString().slice(0, 10);
+            });
+
       const scansByDate: Record<string, number> = {};
-      for (let i = range - 1; i >= 0; i--) {
-        const day = new Date();
-        day.setDate(day.getDate() - i);
-        const dayKey = day.toISOString().slice(0, 10);
-        scansByDate[dayKey] = 0;
-      }
+      chartDayKeys.forEach((k) => {
+        scansByDate[k] = 0;
+      });
       scansData.forEach(s => {
         const key = s.scanned_at?.slice(0, 10);
         if (key && key in scansByDate) scansByDate[key]++;
       });
-      const trendData: { dayKey: string; count: number }[] = [];
-      for (let i = range - 1; i >= 0; i--) {
-        const day = new Date();
-        day.setDate(day.getDate() - i);
-        const dayKey = day.toISOString().slice(0, 10);
-        trendData.push({
-          dayKey,
-          count: scansByDate[dayKey] ?? 0,
-        });
-      }
+      const trendData: { dayKey: string; count: number }[] = chartDayKeys.map((dayKey) => ({
+        dayKey,
+        count: scansByDate[dayKey] ?? 0,
+      }));
 
-      // Revenue chart: group payments by date and method
+      // Revenue chart: group payments by date and method (same day keys as attendance trend)
       const defaultMethods = { cash: 0, instapay: 0, vodafone: 0, orange: 0, fawry: 0, bank: 0, other: 0 };
       const revenueChartData: {
         date: string;
@@ -437,14 +454,12 @@ export default function DashboardPage() {
         bank: number;
         other: number;
       }[] = [];
-      for (let i = range - 1; i >= 0; i--) {
-        const day = new Date();
-        day.setDate(day.getDate() - i);
-        const dayKey = day.toISOString().slice(0, 10);
+      chartDayKeys.forEach((dayKey) => {
+        const day = new Date(`${dayKey}T12:00:00`);
         const byMethod = { ...defaultMethods };
         paymentsData.filter(p => p.confirmed && p.paid_at).forEach(p => {
           const d = new Date(p.paid_at!);
-          if (d.toDateString() !== day.toDateString()) return;
+          if (d.toISOString().slice(0, 10) !== dayKey) return;
           const m = (p.method || 'cash').toLowerCase();
           const amt = parseFloat(String(p.amount || 0));
           if (m === 'cash') byMethod.cash += amt;
@@ -460,7 +475,7 @@ export default function DashboardPage() {
           dayKey,
           ...byMethod,
         });
-      }
+      });
 
       const recentPayments: RecentPaymentRow[] = recentPaymentsRaw.map(p => ({
         id: p.id,
@@ -473,22 +488,18 @@ export default function DashboardPage() {
       }));
 
       const now = new Date();
-      const dayOfWeek = now.getDay();
-      const diffToMon = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-      const thisWeekStart = new Date(now);
-      thisWeekStart.setDate(now.getDate() - diffToMon);
-      thisWeekStart.setHours(0, 0, 0, 0);
-      const thisWeekEnd = new Date(thisWeekStart);
-      thisWeekEnd.setDate(thisWeekStart.getDate() + 6);
+      const cairoWeekStart = startOfCairoWeek(now);
+      const thisWeekEnd = new Date(cairoWeekStart);
+      thisWeekEnd.setDate(cairoWeekStart.getDate() + 6);
       thisWeekEnd.setHours(23, 59, 59, 999);
-      const lastWeekStart = new Date(thisWeekStart);
-      lastWeekStart.setDate(thisWeekStart.getDate() - 7);
+      const lastWeekStart = new Date(cairoWeekStart);
+      lastWeekStart.setDate(cairoWeekStart.getDate() - 7);
       const lastWeekEnd = new Date(lastWeekStart);
       lastWeekEnd.setDate(lastWeekStart.getDate() + 6);
       lastWeekEnd.setHours(23, 59, 59, 999);
       const thisWeekScans = scansData.filter(s => {
         const d = new Date(s.scanned_at);
-        return d >= thisWeekStart && d <= thisWeekEnd;
+        return d >= cairoWeekStart && d <= thisWeekEnd;
       });
       const lastWeekScans = scansData.filter(s => {
         const d = new Date(s.scanned_at);
@@ -507,17 +518,6 @@ export default function DashboardPage() {
       scansData.forEach(s => {
         if (!lastScanByStudent[s.student_id]) lastScanByStudent[s.student_id] = s.scanned_at;
       });
-      const balanceByStudent: Record<string, number> = {};
-      paymentsData.filter(p => !p.confirmed && p.status !== 'late').forEach(p => {
-        if (p.student_id) balanceByStudent[p.student_id] = (balanceByStudent[p.student_id] || 0) + parseFloat(String(p.amount || 0));
-      });
-      const fourteenDaysAgo = new Date();
-      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
-      let atRiskCount = 0;
-      for (const sid of Object.keys(balanceByStudent)) {
-        if ((balanceByStudent[sid] || 0) <= 0) continue;
-        if (!lastScanByStudent[sid] || new Date(lastScanByStudent[sid]) < fourteenDaysAgo) atRiskCount++;
-      }
 
       const periodD = periodDays[inactPeriod];
       const cutoffDate = new Date();
@@ -566,12 +566,13 @@ export default function DashboardPage() {
         monthPending,
         monthLate,
         weeklyTrendPct,
+        thisWeekScanTotal: thisWeek,
+        lastWeekScanTotal: lastWeek,
         collectionRatePct,
         newStudentsCount: newStudentsCount || 0,
-        atRiskCount,
         inactiveStudents,
-        scanDeltaPct,
-        revenueDeltaPct,
+        yesterdayAttendanceCount: yesterdayAttendance,
+        yesterdayRevenueAmount: yesterdayRev,
         pendingInvoicesCount,
         latePaymentCount,
         studentSparkline7d,
@@ -688,11 +689,16 @@ export default function DashboardPage() {
           headers: { Authorization: `Bearer ${session.access_token}` },
         });
         if (res.ok) {
-          const json = (await res.json()) as { students?: AtRiskRow[] };
+          const json = (await res.json()) as {
+            students?: AtRiskRow[];
+            meta?: { totalActive: number; avgAttendancePct: number; atRiskCount: number };
+          };
           setAtRiskStudents(json.students ?? []);
+          setAtRiskMeta(json.meta ?? null);
         }
       } catch {
         setAtRiskStudents([]);
+        setAtRiskMeta(null);
       }
     };
     void fetchAtRisk();
@@ -723,11 +729,15 @@ export default function DashboardPage() {
           headers: { Authorization: `Bearer ${session.access_token}` },
         });
         if (res.ok) {
-          const json = (await res.json()) as { students?: AtRiskRow[] };
+          const json = (await res.json()) as {
+            students?: AtRiskRow[];
+            meta?: { totalActive: number; avgAttendancePct: number; atRiskCount: number };
+          };
           setAtRiskStudents(json.students ?? []);
+          setAtRiskMeta(json.meta ?? null);
         }
       } catch {
-        // Non-fatal
+        /* Non-fatal */
       }
     };
 
@@ -838,8 +848,9 @@ export default function DashboardPage() {
   const attendanceChart7 = useMemo(() => {
     const td = safeData.trendData;
     const slice = td.length <= 7 ? td : td.slice(-7);
-    return slice.map((d, idx, arr) => {
-      const isToday = idx === arr.length - 1;
+    const todayKey = new Date().toISOString().slice(0, 10);
+    return slice.map((d) => {
+      const isToday = d.dayKey === todayKey;
       return {
         date: formatAttendanceChartDayLabel(d.dayKey, locale, isToday),
         count: d.count,
@@ -851,23 +862,6 @@ export default function DashboardPage() {
     () => attendanceChart7.reduce((s, d) => s + d.count, 0),
     [attendanceChart7],
   );
-
-  const monthTrendPct = useMemo(() => {
-    if (monthlyRevenueRaw.length < 2) return undefined;
-    const last = Number(monthlyRevenueRaw[monthlyRevenueRaw.length - 1]?.amount) || 0;
-    const prev = Number(monthlyRevenueRaw[monthlyRevenueRaw.length - 2]?.amount) || 0;
-    if (prev <= 0) return undefined;
-    return Math.round(((last - prev) / prev) * 10000) / 100;
-  }, [monthlyRevenueRaw]);
-
-  const studentTrendPct = useMemo(() => {
-    const s = safeData.studentSparkline7d;
-    if (!s.length || s.length < 2) return undefined;
-    const a = s[0] ?? 0;
-    const b = s[s.length - 1] ?? 0;
-    if (a <= 0) return b > 0 ? 100 : undefined;
-    return Math.round(((b - a) / a) * 10000) / 100;
-  }, [safeData.studentSparkline7d]);
 
   const studentSparklinePoints = useMemo(
     () => safeData.studentSparkline7d.map((n) => ({ value: n })),
@@ -1186,7 +1180,14 @@ export default function DashboardPage() {
             <KpiCommandCard
               label={t('totalStudents')}
               valueDisplay={formatNumber(Number(safeData.totalStudents), locale)}
-              trendPct={studentTrendPct}
+              growth={
+                safeData.studentSparkline7d.length >= 2
+                  ? {
+                      current: safeData.studentSparkline7d[safeData.studentSparkline7d.length - 1] ?? 0,
+                      prior: safeData.studentSparkline7d[0] ?? 0,
+                    }
+                  : null
+              }
               icon={Users}
               delayMs={0}
               sparkline={studentSparklinePoints}
@@ -1203,7 +1204,10 @@ export default function DashboardPage() {
                   </span>
                 </>
               }
-              trendPct={safeData.scanDeltaPct !== 0 ? safeData.scanDeltaPct : undefined}
+              growth={{
+                current: attendanceTodayCount,
+                prior: safeData.yesterdayAttendanceCount,
+              }}
               icon={CalendarCheck}
               delayMs={100}
               sparkline={attendanceSparklinePoints}
@@ -1219,7 +1223,14 @@ export default function DashboardPage() {
                     <span className="ms-1 text-base font-normal text-[var(--color-text-muted)]">{egpSuffix}</span>
                   </>
                 }
-                trendPct={monthlyRevenueRaw.length >= 2 ? monthTrendPct : undefined}
+                growth={
+                  monthlyRevenueRaw.length >= 2
+                    ? {
+                        current: Number(monthlyRevenueRaw[monthlyRevenueRaw.length - 1]?.amount) || 0,
+                        prior: Number(monthlyRevenueRaw[monthlyRevenueRaw.length - 2]?.amount) || 0,
+                      }
+                    : null
+                }
                 icon={TrendingUp}
                 delayMs={200}
                 sparkline={revenueMonthlySpark7}
@@ -1257,7 +1268,10 @@ export default function DashboardPage() {
               <ChartCard
                 title={t('attendanceChart')}
                 value={formatNumber(Number(attendanceWeekTotal), locale)}
-                trend={safeData.weeklyTrendPct !== 0 ? safeData.weeklyTrendPct : undefined}
+                growthPair={{
+                  current: safeData.thisWeekScanTotal,
+                  prior: safeData.lastWeekScanTotal,
+                }}
                 trendLabel={t('vsLastWeek')}
                 minHeight={200}
               >
@@ -1314,11 +1328,24 @@ export default function DashboardPage() {
                 </Link>
               </div>
               {atRiskStudents.length === 0 ? (
-                <p className="py-8 text-center text-sm text-teal-400">{t('allGood')}</p>
+                <div className="py-8 text-center text-sm text-[var(--color-text-secondary)] space-y-2">
+                  {!atRiskMeta ? (
+                    <p className="text-teal-400">{t('allGood')}</p>
+                  ) : atRiskMeta.totalActive === 0 ? (
+                    <p>{t('atRiskNoStudentsYet')}</p>
+                  ) : atRiskMeta.avgAttendancePct > 80 ? (
+                    <p className="text-teal-400">{t('allGood')}</p>
+                  ) : (
+                    <p className="text-[var(--color-text-muted)]">{t('atRiskStable')}</p>
+                  )}
+                </div>
               ) : (
                 <ul className="flex flex-col gap-2">
                   {atRiskStudents.slice(0, 5).map((student) => {
-                    const pct = atRiskAttendanceIndicator(student.days_since_last_scan);
+                    const rawPct =
+                      student.attendance_rate_pct ??
+                      atRiskAttendanceIndicator(student.days_since_last_scan);
+                    const pct = Math.min(100, Math.round(rawPct * 10) / 10);
                     const barColor = pct < 40 ? 'bg-red-500' : 'bg-amber-500';
                     return (
                       <li

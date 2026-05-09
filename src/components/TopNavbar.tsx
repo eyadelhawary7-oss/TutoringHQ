@@ -2,13 +2,14 @@
 
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Link, usePathname } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import type { PermissionKey, UserRole } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
+import { signOutToLogin } from '@/lib/auth/sign-out-client';
 import LanguageToggle from './LanguageToggle';
 import ThemeToggle from './ThemeToggle';
 import SyncIndicator from './SyncIndicator';
@@ -40,6 +41,7 @@ const getRoleBadge = (role: UserRole | string) => {
 
 export default function TopNavbar() {
   const t = useTranslations('nav');
+  const locale = useLocale();
   const tRoles = useTranslations('roles');
   const pathname = usePathname();
   const router = useRouter();
@@ -65,9 +67,7 @@ export default function TopNavbar() {
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.replace('/login');
-    router.refresh();
+    await signOutToLogin(locale);
   };
 
   const allNavItems: { key: string; href: string; icon: React.ReactNode; permission?: PermissionKey }[] = [

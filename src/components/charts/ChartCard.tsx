@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { useLocale } from 'next-intl';
 import { TrendingDown, TrendingUp } from 'lucide-react';
-import { formatNumber, formatPercent } from '@/lib/formatNumber';
+import { formatGrowth, formatNumber, formatPercent } from '@/lib/formatNumber';
 
 export interface ChartCardProps {
   title: string;
@@ -11,8 +11,11 @@ export interface ChartCardProps {
   value?: string | number;
   valuePrefix?: string;
   valueSuffix?: string;
+  /** Legacy numeric trend; prefer `growthPair` for consistent formatGrowth display. */
   trend?: number;
   trendLabel?: string;
+  /** Week-over-week; chip hidden when formatGrowth is null (no prior baseline). */
+  growthPair?: { current: number; prior: number };
   children: ReactNode;
   actions?: ReactNode;
   loading?: boolean;
@@ -27,6 +30,7 @@ export function ChartCard({
   valueSuffix = '',
   trend,
   trendLabel,
+  growthPair,
   children,
   actions,
   loading,
@@ -39,6 +43,13 @@ export function ChartCard({
         ? formatNumber(value, locale)
         : value
       : '';
+
+  const growthLabel =
+    growthPair != null && Number.isFinite(growthPair.prior) && Number.isFinite(growthPair.current)
+      ? formatGrowth(growthPair.current, growthPair.prior, locale)
+      : null;
+  const growthNegative =
+    growthPair != null && growthPair.prior > 0 && growthPair.current < growthPair.prior;
 
   return (
     <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-2xl p-5">
@@ -53,7 +64,21 @@ export function ChartCard({
               {valueSuffix}
             </p>
           ) : null}
-          {trend !== undefined && Number.isFinite(trend) ? (
+          {growthLabel ? (
+            <span
+              className={`inline-flex items-center gap-0.5 text-xs font-semibold mt-2 px-2 py-0.5 rounded-full ${
+                growthNegative ? 'bg-red-500/15 text-red-400' : 'bg-emerald-500/15 text-emerald-400'
+              }`}
+            >
+              {growthNegative ? (
+                <TrendingDown className="w-3.5 h-3.5" aria-hidden />
+              ) : (
+                <TrendingUp className="w-3.5 h-3.5" aria-hidden />
+              )}
+              <span>{growthLabel}</span>
+              {trendLabel ? <span className="ms-1 font-normal opacity-90">{trendLabel}</span> : null}
+            </span>
+          ) : trend !== undefined && Number.isFinite(trend) ? (
             <span
               className={`inline-flex items-center gap-0.5 text-xs font-semibold mt-2 px-2 py-0.5 rounded-full ${
                 trend >= 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
