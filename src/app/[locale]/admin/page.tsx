@@ -853,11 +853,23 @@ function AdminPageContent() {
   }, []);
 
   useEffect(() => {
+    if (tab !== 'overview') {
+      setIsLoading(false);
+      return;
+    }
+    let cancelled = false;
     setIsLoading(true);
-    loadOverview()
-      .then(() => setIsLoading(false))
-      .catch(() => setIsLoading(false));
-  }, [loadOverview]);
+    void loadOverview()
+      .then(() => {
+        if (!cancelled) setIsLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, loadOverview]);
 
   useEffect(() => {
     if (tab === 'centers') loadCenters();
@@ -1367,32 +1379,6 @@ function AdminPageContent() {
     }
   };
 
-  if (isLoading && !overview && !loadError) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface-0)]">
-        <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
-  if (loadError && !overview) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--color-surface-0)]">
-        <div className="text-center">
-          <p className="text-red-600 font-medium mb-2">{loadError}</p>
-          <div className="flex gap-3 justify-center">
-            <button onClick={loadOverview} className="px-4 py-2 bg-primary text-white rounded-lg btn-press chq-focus">
-              {tAdmin('retry')}
-            </button>
-            <Link href="/dashboard" className="px-4 py-2 border rounded-lg">
-              {tAdmin('backToMyCenter')}
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col flex-1 min-h-0 min-h-screen w-full bg-[var(--color-surface-0)] animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
       <AdminHeader />
@@ -1408,6 +1394,34 @@ function AdminPageContent() {
 
       {/* Main content */}
       <div className="flex-1 min-w-0 p-4 md:p-6 overflow-auto lg:ms-56">
+        {tab === 'overview' && loadError && !overview ? (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/5 text-destructive px-4 py-3 mb-4 flex flex-wrap items-center gap-3 justify-between">
+            <p className="text-sm font-medium">{loadError}</p>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => void loadOverview()} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm btn-press chq-focus">
+                {tAdmin('retry')}
+              </button>
+              <Link href="/dashboard" className="px-4 py-2 border rounded-lg text-sm border-[var(--color-border-subtle)]">
+                {tAdmin('backToMyCenter')}
+              </Link>
+            </div>
+          </div>
+        ) : null}
+        {tab === 'overview' && isLoading && !overview ? (
+          <div className="space-y-6 animate-pulse">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="h-24 rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)]" />
+              ))}
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-28 rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)]" />
+              ))}
+            </div>
+            <div className="h-48 rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)]" />
+          </div>
+        ) : null}
         {tab === 'overview' && !overview && !isLoading && (
           <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-8 text-center text-[var(--color-text-secondary)] text-sm">
             {tAdmin('overviewUnavailable', { defaultValue: 'Overview data is not available. Try refreshing the page.' })}

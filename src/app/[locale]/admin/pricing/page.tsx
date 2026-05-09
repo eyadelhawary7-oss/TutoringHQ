@@ -459,7 +459,9 @@ export default function AdminPricingPage() {
                           {packMinimumsRows.map(([key, val]) => (
                             <tr key={key} className="border-t border-[var(--color-border-subtle)]">
                               <td className="p-2 text-[var(--color-text-primary)]">{formatPlanDisplayName(key)}</td>
-                              <td className="p-2 tabular-nums">{fmtMoney(val, locale)}</td>
+                              <td className="p-2 tabular-nums">
+                                {key === 'top_centers' || val === 0 ? t('pricingMinimumCustom') : fmtMoney(val, locale)}
+                              </td>
                             </tr>
                           ))}
                         </tbody>

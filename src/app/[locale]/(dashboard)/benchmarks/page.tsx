@@ -55,6 +55,10 @@ function BenchmarkLockIllustration() {
   );
 }
 
+function hasAnyMetric(d: BenchmarksData): boolean {
+  return !!(d.attendance || d.revenue_per_student || d.retention_30d || d.group_utilization);
+}
+
 export default function BenchmarksPage() {
   const t = useTranslations('benchmarks');
   const tc = useTranslations('common');
@@ -118,39 +122,140 @@ export default function BenchmarksPage() {
   }
 
   const d = data ?? { insufficient_data: true, centers_needed: 10 };
+  const districtNorm = String(d.district ?? '').trim();
+  const isNoDistrict = !districtNorm || d.reason === 'no_district';
+  const showLiveBenchmarks = !d.insufficient_data && !isNoDistrict;
 
-  if (d.insufficient_data) {
+  /** API mismatch: metrics without an unlocked district — show sample overlay only. */
+  const sampleOnlyMode = !showLiveBenchmarks && hasAnyMetric(d);
+
+  const cards: {
+    key: string;
+    icon: React.ElementType;
+    metric: BenchmarkMetric | undefined;
+    format: (n: number) => string;
+    descKey: string;
+  }[] = [
+    { key: 'attendance', icon: TrendingUp, metric: d.attendance, format: formatPct, descKey: 'attendanceDesc' },
+    { key: 'revenue', icon: DollarSign, metric: d.revenue_per_student, format: formatEgp, descKey: 'revenueDesc' },
+    { key: 'retention', icon: Users, metric: d.retention_30d, format: formatPct, descKey: 'retentionDesc' },
+    { key: 'utilization', icon: BookOpen, metric: d.group_utilization, format: formatPct, descKey: 'utilizationDesc' },
+  ];
+
+  const chartGrid = (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {cards.map(({ key, icon: Icon, metric, format, descKey }) => {
+        if (!metric) return null;
+        const yourVal = Number(metric.your_value ?? 0);
+        const avgVal = Number(metric.district_avg ?? 0);
+        const pct = Math.min(100, Math.max(0, Number(metric.percentile ?? 0)));
+        return (
+          <div
+            key={key}
+            className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 card-shadow"
+          >
+            <div className="flex items-center gap-2 text-[var(--color-text-muted)] text-sm mb-2">
+              <Icon className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+              {t(key)}
+            </div>
+            <p className="text-3xl font-bold text-[var(--color-text-primary)] mb-1">{format(yourVal)}</p>
+            <p className="text-sm text-[var(--color-text-muted)] mb-4">
+              {t('districtAvg')}: {format(avgVal)}
+            </p>
+            <div className="h-2 bg-[var(--color-surface-3)] rounded-full overflow-hidden mb-3">
+              <div
+                className="h-full bg-teal-500 rounded-full transition-all duration-500"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-3">
+              {t(descKey, { percentile: formatPercent(pct, locale) })}
+            </p>
+            {(() => {
+              const isMoney = key === 'revenue';
+              const youN = isMoney ? yourVal : yourVal * 100;
+              const distN = isMoney ? avgVal : avgVal * 100;
+              const barData = [
+                { label: t('comparisonYou'), v: youN },
+                { label: t('districtAvg'), v: distN },
+              ];
+              return (
+                <BarChartComponent
+                  data={barData}
+                  xKey="label"
+                  dataKey="v"
+                  height={160}
+                  color="teal"
+                  showGrid={false}
+                  radius={6}
+                  prefix={isMoney ? 'EGP ' : ''}
+                  suffix=""
+                  tooltipValueFormatter={isMoney ? undefined : (v) => formatPercent(Number(v), locale)}
+                />
+              );
+            })()}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  if (sampleOnlyMode) {
+    return (
+      <div className="min-h-screen w-full bg-[var(--color-surface-0)] p-6">
+        <PageHeader title={t('title')} subtitle={t('sampleSubtitle')} />
+        <div className="relative rounded-2xl border border-dashed border-amber-400/50 bg-amber-50/40 dark:bg-amber-950/20 p-4 mb-4">
+          <p className="text-sm text-[var(--color-text-secondary)]">{t('sampleBanner')}</p>
+          <Link
+            href="/settings"
+            className="inline-flex mt-3 px-4 py-2 rounded-lg bg-teal-600 text-primary-foreground text-sm font-semibold hover:bg-teal-700"
+          >
+            {t('settingsCta')}
+          </Link>
+        </div>
+        <div className="relative">
+          <div className="opacity-35 pointer-events-none select-none grayscale">{chartGrid}</div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl bg-[var(--color-surface-0)]/80 backdrop-blur-[2px]">
+            <p className="text-sm font-semibold text-[var(--color-text-primary)] px-4 text-center">{t('sampleOverlay')}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!showLiveBenchmarks) {
     const centersNeeded = d.centers_needed ?? 10;
-    const isNoDistrict = d.reason === 'no_district';
     const currentCenters =
       d.center_count != null ? d.center_count : Math.max(1, DISTRICT_TARGET - centersNeeded);
     const progressPct = Math.min(100, Math.round((currentCenters / DISTRICT_TARGET) * 100));
 
     return (
       <div className="min-h-screen w-full bg-[var(--color-surface-0)] px-4 py-6 md:py-10">
-        <PageHeader title={t('title')} subtitle={t('subtitle')} />
+        <PageHeader title={t('title')} subtitle={isNoDistrict ? t('noDistrictSubtitle') : t('subtitle')} />
         <div className="max-w-md mx-auto text-center pt-10 md:pt-16">
           <BenchmarkLockIllustration />
           <h2 className="text-xl font-bold text-[var(--color-text-primary)] mt-6">{t('districtTitle')}</h2>
           <p className="text-sm text-[var(--color-text-muted)] mt-2">{t('emptySubheading')}</p>
 
-          <div className="mt-8 text-start">
-            <div className="flex justify-between text-xs font-medium text-[var(--color-text-muted)] mb-1">
-              <span>
-                {t('progressLabel', {
-                  current: formatNumber(currentCenters, locale),
-                  total: formatNumber(DISTRICT_TARGET, locale),
-                })}
-              </span>
-              <span className="tabular-nums">{formatPercent(progressPct, locale)}</span>
+          {!isNoDistrict ? (
+            <div className="mt-8 text-start">
+              <div className="flex justify-between text-xs font-medium text-[var(--color-text-muted)] mb-1">
+                <span>
+                  {t('progressLabel', {
+                    current: formatNumber(currentCenters, locale),
+                    total: formatNumber(DISTRICT_TARGET, locale),
+                  })}
+                </span>
+                <span className="tabular-nums">{formatPercent(progressPct, locale)}</span>
+              </div>
+              <div className="h-2.5 rounded-full bg-[var(--color-surface-3)] overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-teal-500 transition-all duration-500"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
             </div>
-            <div className="h-2.5 rounded-full bg-[var(--color-surface-3)] overflow-hidden">
-              <div
-                className="h-full rounded-full bg-teal-500 transition-all duration-500"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
-          </div>
+          ) : null}
 
           <p className="text-sm text-[var(--color-text-muted)] mt-6 leading-relaxed">
             {isNoDistrict ? t('noDistrict') : t('emptyBody')}
@@ -185,80 +290,10 @@ export default function BenchmarksPage() {
     );
   }
 
-  const cards: {
-    key: string;
-    icon: React.ElementType;
-    metric: BenchmarkMetric | undefined;
-    format: (n: number) => string;
-    descKey: string;
-  }[] = [
-    { key: 'attendance', icon: TrendingUp, metric: d.attendance, format: formatPct, descKey: 'attendanceDesc' },
-    { key: 'revenue', icon: DollarSign, metric: d.revenue_per_student, format: formatEgp, descKey: 'revenueDesc' },
-    { key: 'retention', icon: Users, metric: d.retention_30d, format: formatPct, descKey: 'retentionDesc' },
-    { key: 'utilization', icon: BookOpen, metric: d.group_utilization, format: formatPct, descKey: 'utilizationDesc' },
-  ];
-
   return (
     <div className="min-h-screen w-full bg-[var(--color-surface-0)] p-6">
       <PageHeader title={t('title')} subtitle={t('subtitle')} />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {cards.map(({ key, icon: Icon, metric, format, descKey }) => {
-          if (!metric) return null;
-          const yourVal = Number(metric.your_value ?? 0);
-          const avgVal = Number(metric.district_avg ?? 0);
-          const pct = Math.min(100, Math.max(0, Number(metric.percentile ?? 0)));
-          return (
-            <div
-              key={key}
-              className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 card-shadow"
-            >
-              <div className="flex items-center gap-2 text-[var(--color-text-muted)] text-sm mb-2">
-                <Icon className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                {t(key)}
-              </div>
-              <p className="text-3xl font-bold text-[var(--color-text-primary)] mb-1">{format(yourVal)}</p>
-              <p className="text-sm text-[var(--color-text-muted)] mb-4">
-                {t('districtAvg')}: {format(avgVal)}
-              </p>
-              <div className="h-2 bg-[var(--color-surface-3)] rounded-full overflow-hidden mb-3">
-                <div
-                  className="h-full bg-teal-500 rounded-full transition-all duration-500"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-              <p className="text-sm text-[var(--color-text-secondary)] mb-3">
-                {t(descKey, { percentile: formatPercent(pct, locale) })}
-              </p>
-              {(() => {
-                const isMoney = key === 'revenue';
-                const youN = isMoney ? yourVal : yourVal * 100;
-                const distN = isMoney ? avgVal : avgVal * 100;
-                const barData = [
-                  { label: t('comparisonYou'), v: youN },
-                  { label: t('districtAvg'), v: distN },
-                ];
-                return (
-                  <BarChartComponent
-                    data={barData}
-                    xKey="label"
-                    dataKey="v"
-                    height={160}
-                    color="teal"
-                    showGrid={false}
-                    radius={6}
-                    prefix={isMoney ? 'EGP ' : ''}
-                    suffix=""
-                    tooltipValueFormatter={
-                      isMoney ? undefined : (v) => formatPercent(Number(v), locale)
-                    }
-                  />
-                );
-              })()}
-            </div>
-          );
-        })}
-      </div>
+      {chartGrid}
     </div>
   );
 }

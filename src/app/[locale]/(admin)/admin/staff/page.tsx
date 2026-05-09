@@ -411,9 +411,27 @@ export default function StaffPage() {
             <div className="p-12 text-center text-slate-500 dark:text-slate-400">
               {tCommon('loading')}
             </div>
+          ) : staff.length === 0 ? (
+            <div className="p-12 text-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] space-y-4 max-w-lg mx-auto">
+              <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">{t('staff.empty_explainer')}</p>
+              {isSuperAdmin ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetForm()
+                    setEditingMember(null)
+                    setShowAddModal(true)
+                  }}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white rounded-lg text-sm font-semibold transition-colors"
+                >
+                  <Plus className="w-4 h-4" aria-hidden />
+                  {t('staff.empty_cta')}
+                </button>
+              ) : null}
+            </div>
           ) : filtered.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 dark:text-slate-400">
-              {t('staff.no_staff')}
+            <div className="p-12 text-center text-slate-500 dark:text-slate-400 border border-[var(--color-border)] rounded-xl bg-[var(--color-surface-1)]">
+              {t('staff.filter_empty')}
             </div>
           ) : (
             <table className="w-full text-sm min-w-[800px]">

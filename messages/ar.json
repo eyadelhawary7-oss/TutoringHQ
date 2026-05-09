@@ -1428,7 +1428,9 @@
     "statusError": "خطأ",
     "statusRunning": "قيد التشغيل",
     "statusPending": "معلق",
-    "statusPartial": "جزئي"
+    "statusPartial": "جزئي",
+    "viewFullError": "عرض كامل",
+    "errorDetailTitle": "خطأ المهمة المجدولة"
   },
   "admin": {
     "actionError": "إجراء خطأ",
@@ -1881,6 +1883,7 @@
     "centerManagement": {
       "backToList": "العودة للسناتر",
       "title": "إدارة السنتر",
+      "headerPackParents": "باقة واتساب · {count} ولي أمر مشترك",
       "saveSection": "حفظ التغييرات",
       "section1": {
         "title": "هوية السنتر",
@@ -2177,6 +2180,9 @@
       "reports_to": "يتبع لـ",
       "base_salary": "الراتب الأساسي",
       "no_staff": "لا يوجد موظفون بعد",
+      "empty_explainer": "أضف مندوبي مبيعات أو مديري مبيعات أو موظفي تشغيل. لكل منهم تسجيل دخول وتتبّع للعمولات.",
+      "empty_cta": "إضافة أول موظف",
+      "filter_empty": "لا يوجد موظفون يطابقون هذه المرشحات.",
       "centers_count": "السناتر",
       "ytd_commission": "العمولات هذا العام",
       "termination_type_resigned": "استقالة",
@@ -2280,6 +2286,7 @@
     "payouts": {
       "title": "المدفوعات الشهرية",
       "generate": "إنشاء كشف راتب",
+      "generate_for_month": "إنشاء كشف راتب لـ {month}",
       "period": "الفترة",
       "base_salary": "الراتب الأساسي",
       "t1_total": "عمولات الشريحة الأولى",
@@ -2331,8 +2338,9 @@
     },
     "centerAssignments": {
       "title": "تخصيص السناتر",
-      "subtitle": "حدد من أحضر كل سنتر: مندوب أو مدير أو عياد",
+      "subtitle": "عيّن كل سنتر نشط لمندوب مبيعات (SR)، مدير مبيعات (SM)، أو سوبر أدمن مصدر السنتر.",
       "add": "إضافة تخصيص",
+      "add_disabled_tooltip": "أضف موظفاً واحداً على الأقل أولاً. افتح «فريق المبيعات» لدعوة أدوار SR/SM.",
       "edit": "تعديل",
       "save": "حفظ",
       "saving": "جاري الحفظ...",
@@ -2345,12 +2353,12 @@
       "col_status": "الحالة",
       "col_territory": "المنطقة",
       "col_actions": "إجراءات",
-      "sourced_eyad": "عياد (مباشر)",
+      "sourced_eyad": "سوبر أدمن (مباشر)",
       "sourced_sm": "مدير المبيعات",
       "sourced_sr": "مندوب المبيعات",
       "staff_role_sm": "مدير مبيعات",
       "staff_role_sr": "مندوب مبيعات",
-      "staff_display_eyad": "عياد",
+      "staff_display_eyad": "سوبر أدمن",
       "status_approved": "معتمد",
       "status_pending_sm_approval": "في انتظار موافقة المدير",
       "status_disputed": "متنازع عليه",
@@ -2364,7 +2372,7 @@
       "center_label": "السنتر",
       "center_placeholder": "اختر السنتر",
       "staff_label": "الموظف",
-      "staff_placeholder": "اختر موظفاً (اتركه فارغاً لعياد)",
+      "staff_placeholder": "اختر موظفاً (اتركه فارغاً للمصدر سوبر أدمن)",
       "sourced_by_label": "من أحضره",
       "territory_city_label": "مدينة المنطقة (عند التجاوز)",
       "territory_placeholder_example": "مثال: مدينة نصر",
@@ -2865,7 +2873,12 @@
     "statusPending": "في الانتظار",
     "statusFailed": "فشل الخصم",
     "statusNotIssued": "لم تُصدر",
-    "syncTemplates": "مزامنة القوالب"
+    "syncTemplates": "مزامنة القوالب",
+    "phoneColumn": "الهاتف",
+    "syncTemplatesSuccess": "تمت المزامنة: {upserted} قالب ({fetched} من ميتا)",
+    "syncTemplatesFailed": "فشلت المزامنة",
+    "syncRequestFailed": "فشل طلب المزامنة",
+    "notSignedIn": "غير مسجّل الدخول"
   },
   "mobileShell": {
     "tab_bar_label": "التنقل الرئيسي",
@@ -3079,7 +3092,11 @@
     "progressLabel": "{current} من {total} سناتر في منطقتك",
     "emptyBody": "نحتاج سناتر أكتر في منطقتك عشان نفعّل المقارنة. ساعد المنطقة تكبر بدعوة مالكين سناتر تانيين.",
     "referEarnCta": "ادعُ سنتر واكسب",
-    "learnMore": "تعرّف أكتر على المقارنة ←"
+    "learnMore": "تعرّف أكتر على المقارنة ←",
+    "noDistrictSubtitle": "حدّد منطقتك لتفعيل المقارنات الحقيقية",
+    "sampleSubtitle": "مقارنات تجريبية (ليست مباشرة لسنترك)",
+    "sampleBanner": "لم يتم ضبط المنطقة لسنترك أو أعاد الـ API معاينة. القيم أدناه توضيحية فقط.",
+    "sampleOverlay": "بيانات تجريبية — اضبط المنطقة من الإعدادات لعرض مقارنات حقيقية"
   },
   "orders": {
     "card": "بطاقة",

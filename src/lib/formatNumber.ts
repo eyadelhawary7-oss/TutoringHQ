@@ -162,6 +162,32 @@ export function formatRelativeMinutesAgo(iso: string | Date, locale: string): st
   return isAr ? `منذ ${formatPlainInteger(days, locale)} يومًا` : `${days}d ago`;
 }
 
+/** Current calendar month in Africa/Cairo as `YYYY-MM` (for `<input type="month" />`). */
+export function formatCalendarMonthYyyyMmInCairo(date: Date | string = new Date()): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (Number.isNaN(d.getTime())) return '';
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: CAIRO_TZ,
+    year: 'numeric',
+    month: '2-digit',
+  }).formatToParts(d);
+  const y = parts.find((p) => p.type === 'year')?.value;
+  const m = parts.find((p) => p.type === 'month')?.value;
+  return y && m ? `${y}-${m}` : '';
+}
+
+/**
+ * Display-only: normalize Egypt mobiles to leading `+20…`.
+ * Empty string when input has no digits.
+ */
+export function formatPhoneLeadPlus(raw: string | null | undefined): string {
+  if (!raw?.trim()) return '';
+  const d = raw.replace(/\D/g, '');
+  if (!d) return '';
+  const normalized = d.startsWith('20') ? d : d.startsWith('0') ? `20${d.slice(1)}` : `20${d}`;
+  return `+${normalized}`;
+}
+
 export function formatDateTime(
   date: Date | string,
   locale: string,

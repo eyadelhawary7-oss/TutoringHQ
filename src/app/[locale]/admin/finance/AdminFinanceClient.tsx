@@ -41,6 +41,15 @@ const PLAN_LABEL_AR: Record<string, string> = {
   top_centers: 'كبار السناتر',
 };
 
+const FINANCE_LAST_UPDATED_OPTS: Intl.DateTimeFormatOptions = {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+  second: '2-digit',
+};
+
 export default function AdminFinanceClient({ initialData }: { initialData: FinanceData }) {
   const locale = useLocale();
   const searchParams = useSearchParams();
@@ -111,7 +120,7 @@ export default function AdminFinanceClient({ initialData }: { initialData: Finan
               </h1>
               <p className="text-xs text-[var(--color-text-muted)] mt-1">
                 {isAr ? 'آخر تحديث' : 'Last updated'}{' '}
-                {formatDate(lastUpdated, locale, 'time')}
+                {formatDate(lastUpdated, locale, FINANCE_LAST_UPDATED_OPTS)}
               </p>
             </div>
             <button

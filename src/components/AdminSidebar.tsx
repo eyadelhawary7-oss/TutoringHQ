@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
 import { useTransition } from 'react';
@@ -36,6 +36,7 @@ import { getAdminPermissions } from '@/lib/admin-roles';
 import { supabase } from '@/lib/supabase';
 import { ChangePinModal } from '@/components/admin/ChangePinModal';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 export type AdminTab =
   | 'overview'
@@ -62,15 +63,21 @@ const ADMIN_NAV: { key: AdminTab; icon: React.ElementType; labelKey: string; per
   { key: 'centers', icon: Building2, labelKey: 'centers', permissionKey: 'centers' },
   { key: 'billing', icon: CreditCard, labelKey: 'billing', permissionKey: 'billing' },
   { key: 'pendingSignups', icon: Clock, labelKey: 'pendingSignups', permissionKey: 'pending_signups' },
-  { key: 'cardOrders', icon: IdCard, labelKey: 'cardOrders', permissionKey: 'card_orders' },
   { key: 'planRequests', icon: FileText, labelKey: 'planRequests', permissionKey: 'plan_requests' },
-  { key: 'renewals', icon: CalendarCheck, labelKey: 'renewals', permissionKey: 'renewals' },
+  { key: 'analytics', icon: BarChart3, labelKey: 'analytics', permissionKey: 'analytics' },
+  { key: 'salesPipeline', icon: Target, labelKey: 'salesPipeline', permissionKey: 'sales_pipeline' },
   { key: 'referrals', icon: Gift, labelKey: 'referralsNav', permissionKey: 'referrals' },
+  { key: 'cardOrders', icon: IdCard, labelKey: 'cardOrders', permissionKey: 'card_orders' },
   { key: 'withdrawals', icon: Wallet, labelKey: 'withdrawals', permissionKey: 'withdrawals' },
   { key: 'internalTeam', icon: Users, labelKey: 'internalTeam', permissionKey: 'internal_team' },
-  { key: 'salesPipeline', icon: Target, labelKey: 'salesPipeline', permissionKey: 'sales_pipeline' },
-  { key: 'analytics', icon: BarChart3, labelKey: 'analytics', permissionKey: 'analytics' },
 ];
+
+/** Insert uppercase section label before this primary nav item (desktop + mobile single tree). */
+const NAV_SECTION_HEADINGS: Partial<Record<AdminTab, 'sidebarSectionOperational' | 'sidebarSectionGrowth' | 'sidebarSectionReporting'>> = {
+  centers: 'sidebarSectionOperational',
+  pendingSignups: 'sidebarSectionGrowth',
+  analytics: 'sidebarSectionReporting',
+};
 
 interface AdminSidebarProps {
   activeTab?: AdminTab | null;
@@ -152,11 +159,10 @@ export function AdminSidebar({
 
   const navItems = useMemo(
     () =>
-      ADMIN_NAV.filter(({ permissionKey, key }) => {
+      ADMIN_NAV.filter(({ permissionKey }) => {
         if (SUPER_ONLY_PERMISSION_KEYS.has(permissionKey)) {
           return adminRole === 'super_admin' && canSee(permissionKey);
         }
-        if (key === 'renewals' && adminRole === 'super_admin') return false;
         return canSee(permissionKey);
       }),
     [adminRole, canSee],
@@ -303,7 +309,7 @@ export function AdminSidebar({
     onTabChange?.(key);
   };
 
-  const drawerBtn = (active: boolean) =>
+  const navBtnClass = (active: boolean) =>
     cn(
       'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start border-s-4 border-solid',
       active
@@ -311,6 +317,7 @@ export function AdminSidebar({
         : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]',
     );
 
+  const isLg = useMediaQuery('(min-width: 1024px)');
   const desktopAsideTop = desktopSidebarFullHeight ? 'top-0' : 'top-14';
 
   return (
@@ -410,22 +417,27 @@ export function AdminSidebar({
         />
       ) : null}
 
-      {/* Mobile drawer */}
+      {/* Single sidebar tree: off-canvas on small screens, fixed rail on lg (no duplicate nav DOM). */}
       <aside
-        className={`fixed top-0 start-0 h-full w-64 z-[60] lg:hidden flex flex-col bg-[var(--color-surface-1)] border-e border-[var(--color-border)] transition-transform duration-[250ms] ease-in-out ${
-          openMenu ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full'
-        }`}
-        aria-hidden={!openMenu}
+        className={cn(
+          'fixed start-0 flex flex-col bg-[var(--color-surface-1)] border-e border-[var(--color-border)]',
+          'z-[60] lg:z-20 w-64 lg:w-56',
+          'top-0 h-full lg:h-auto lg:bottom-0',
+          desktopAsideTop,
+          'transition-transform duration-[250ms] ease-in-out',
+          openMenu ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full lg:translate-x-0',
+        )}
+        aria-hidden={!isLg && !openMenu}
       >
-        <div className="p-4 border-b border-[var(--color-border)] shrink-0">
+        <div className="p-4 border-b border-[var(--color-border)] shrink-0 lg:bg-[var(--color-surface-2)]">
+          <h2 className="font-bold text-[var(--color-text-primary)]">{t('title')}</h2>
           <Link
             href="/dashboard"
             onClick={afterNavigate}
-            className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] block mb-3"
+            className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] mt-1 block"
           >
             {t('backToMyCenter')}
           </Link>
-          <h2 className="font-bold text-[var(--color-text-primary)]">{t('title')}</h2>
         </div>
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
           {navItems.map(({ key, icon: Icon, labelKey }) => {
@@ -434,13 +446,11 @@ export function AdminSidebar({
                 ? activeTab === 'ceoDashboard' || isCeo
                 : key === 'withdrawals'
                   ? isWithdrawals
-                  : key === 'referrals'
-                    ? activeTab === 'referrals' || isReferrals || isReferralRewards
-                    : key === 'renewals'
-                      ? isRenewals
-                      : key === 'cardOrders'
-                        ? isOrders
-                        : key === 'overview'
+                : key === 'referrals'
+                  ? activeTab === 'referrals' || isReferrals || isReferralRewards
+                  : key === 'cardOrders'
+                    ? isOrders
+                    : key === 'overview'
                           ? activeTab === 'overview' && !onDedicatedAdminSubpage
                           : activeTab === key && !onDedicatedAdminSubpage;
             const items: React.ReactNode[] = [
@@ -448,7 +458,7 @@ export function AdminSidebar({
                 key={key}
                 type="button"
                 onClick={() => runPrimaryNav(key)}
-                className={drawerBtn(!!isActive)}
+                className={navBtnClass(!!isActive)}
               >
                 <Icon size={18} className="shrink-0" />
                 <span>{t(labelKey as Parameters<typeof t>[0])}</span>
@@ -505,7 +515,7 @@ export function AdminSidebar({
                       afterNavigate();
                       router.push('/admin/renewals');
                     }}
-                    className={drawerBtn(!!isRenewals)}
+                    className={navBtnClass(!!isRenewals)}
                   >
                     <CalendarCheck size={18} className="shrink-0" />
                     <span>{t('renewals')}</span>
@@ -517,7 +527,7 @@ export function AdminSidebar({
                       afterNavigate();
                       router.push('/admin/finance');
                     }}
-                    className={drawerBtn(!!isFinance)}
+                    className={navBtnClass(!!isFinance)}
                   >
                     <TrendingUp size={18} className="shrink-0" />
                     <span>{t('finance')}</span>
@@ -533,7 +543,7 @@ export function AdminSidebar({
                       afterNavigate();
                       router.push('/admin/pricing');
                     }}
-                    className={drawerBtn(!!isPricing)}
+                    className={navBtnClass(!!isPricing)}
                   >
                     <Banknote size={18} className="shrink-0" />
                     <span>{t('pricingPanel')}</span>
@@ -549,7 +559,7 @@ export function AdminSidebar({
                       afterNavigate();
                       router.push('/admin/platform-config');
                     }}
-                    className={drawerBtn(!!isPlatformConfig)}
+                    className={navBtnClass(!!isPlatformConfig)}
                   >
                     <Settings size={18} className="shrink-0" />
                     <span>{t('platformConfigNav')}</span>
@@ -565,7 +575,7 @@ export function AdminSidebar({
                       afterNavigate();
                       router.push('/admin/vendors');
                     }}
-                    className={drawerBtn(!!isVendors)}
+                    className={navBtnClass(!!isVendors)}
                   >
                     <Truck size={18} className="shrink-0" />
                     <span>{t('vendorsNav')}</span>
@@ -581,7 +591,7 @@ export function AdminSidebar({
                       afterNavigate();
                       router.push('/admin/whatsapp-pack');
                     }}
-                    className={drawerBtn(!!isWaPack)}
+                    className={navBtnClass(!!isWaPack)}
                   >
                     <MessageCircle size={18} className="shrink-0" />
                     <span>{t('whatsappPack')}</span>
@@ -589,7 +599,17 @@ export function AdminSidebar({
                 );
               }
             }
-            return items;
+            const sectionHeadingKey = NAV_SECTION_HEADINGS[key];
+            return (
+              <Fragment key={key}>
+                {sectionHeadingKey ? (
+                  <p className="px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                    {t(sectionHeadingKey)}
+                  </p>
+                ) : null}
+                {items}
+              </Fragment>
+            );
           })}
           {/* HR & Commissions group */}
           {adminRole === 'super_admin' ? (
@@ -647,313 +667,6 @@ export function AdminSidebar({
                 )}
               >
                 <CreditCard size={18} className="shrink-0" />
-                <span>{t('payouts.title')}</span>
-              </Link>
-            </>
-          ) : null}
-        </nav>
-        <div className="shrink-0 p-2 border-t border-[var(--color-border)]">
-          <div className="px-1">
-            <ThemeToggle />
-          </div>
-        </div>
-      </aside>
-
-      {/* Desktop sidebar */}
-      <aside
-        className={cn(
-          'hidden lg:flex flex-col fixed start-0 w-56 z-20 bg-[var(--color-surface-1)] border-e border-[var(--color-border)] bottom-0',
-          desktopAsideTop,
-        )}
-      >
-        <div className="p-4 border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
-          <h2 className="font-bold text-[var(--color-text-primary)]">{t('title')}</h2>
-          <Link
-            href="/dashboard"
-            className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] mt-1 block"
-          >
-            {t('backToMyCenter')}
-          </Link>
-        </div>
-        <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
-          {navItems.map(({ key, icon: Icon, labelKey }) => {
-            const isActive =
-              key === 'ceoDashboard'
-                ? activeTab === 'ceoDashboard' || isCeo
-                : key === 'withdrawals'
-                  ? isWithdrawals
-                  : key === 'referrals'
-                    ? activeTab === 'referrals' || isReferrals || isReferralRewards
-                    : key === 'renewals'
-                      ? isRenewals
-                      : key === 'cardOrders'
-                        ? isOrders
-                        : key === 'overview'
-                          ? activeTab === 'overview' && !onDedicatedAdminSubpage
-                          : activeTab === key && !onDedicatedAdminSubpage;
-            const items: React.ReactNode[] = [
-              <button
-                key={key}
-                type="button"
-                onClick={() => {
-                  closeMainSidebar?.();
-                  if (key === 'ceoDashboard') {
-                    onTabChange?.(key);
-                    return;
-                  }
-                  if (key === 'renewals') {
-                    router.push('/admin/renewals');
-                    return;
-                  }
-                  if (key === 'cardOrders') {
-                    router.push('/admin/orders');
-                    return;
-                  }
-                  if (key === 'withdrawals') {
-                    router.push('/admin/withdrawals');
-                    return;
-                  }
-                  if (key === 'referrals') {
-                    onTabChange?.(key);
-                    return;
-                  }
-                  if (isCeo || isOrders) router.push('/admin');
-                  onTabChange?.(key);
-                }}
-                className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start border-s-4 border-solid',
-                  isActive
-                    ? 'border-[var(--color-teal)] bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-600/15 dark:text-teal-200'
-                    : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]',
-                )}
-              >
-                <Icon size={18} />
-                <span>{t(labelKey as Parameters<typeof t>[0])}</span>
-                {key === 'pendingSignups' && pendingCentersCount > 0 ? (
-                  <span className="ms-auto min-w-[20px] h-5 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold px-1.5">
-                    {pendingCentersCount}
-                  </span>
-                ) : null}
-              </button>,
-            ];
-            if (key === 'centers' && adminRole === 'super_admin') {
-              items.push(
-                <Link
-                  key="platform-health"
-                  href="/admin/health"
-                  onClick={() => closeMainSidebar?.()}
-                  className={cn(
-                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline border-s-4 border-solid',
-                    isHealth
-                      ? 'border-[var(--color-teal)] bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-600/15 dark:text-teal-200'
-                      : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
-                  )}
-                >
-                  <Activity size={18} className="shrink-0" />
-                  <span>{t('platformHealth')}</span>
-                </Link>,
-              );
-            }
-            if (key === 'referrals') {
-              items.push(
-                <Link
-                  key="referral-rewards"
-                  href="/admin/referral-rewards"
-                  onClick={() => closeMainSidebar?.()}
-                  className={cn(
-                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline border-s-4 border-solid',
-                    isReferralRewards
-                      ? 'border-[var(--color-teal)] bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-600/15 dark:text-teal-200'
-                      : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]',
-                  )}
-                >
-                  <Gift size={18} className="shrink-0" />
-                  <span>{t('referralRewards.title')}</span>
-                </Link>,
-              );
-            }
-            if (key === 'billing') {
-              if (adminRole === 'super_admin' && canSee('renewals')) {
-                items.push(
-                  <button
-                    key="renewals"
-                    type="button"
-                    onClick={() => {
-                      closeMainSidebar?.();
-                      router.push('/admin/renewals');
-                    }}
-                    className={cn(
-                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start border-s-4 border-solid',
-                      isRenewals
-                        ? 'border-[var(--color-teal)] bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-600/15 dark:text-teal-200'
-                        : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
-                    )}
-                  >
-                    <CalendarCheck size={18} />
-                    <span>{t('renewals')}</span>
-                  </button>,
-                  <button
-                    key="finance"
-                    type="button"
-                    onClick={() => {
-                      closeMainSidebar?.();
-                      router.push('/admin/finance');
-                    }}
-                    className={cn(
-                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start border-s-4 border-solid',
-                      isFinance
-                        ? 'border-[var(--color-teal)] bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-600/15 dark:text-teal-200'
-                        : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
-                    )}
-                  >
-                    <TrendingUp size={18} />
-                    <span>{t('finance')}</span>
-                  </button>,
-                );
-              }
-              if (adminRole === 'super_admin') {
-                items.push(
-                  <button
-                    key="pricing"
-                    type="button"
-                    onClick={() => {
-                      closeMainSidebar?.();
-                      router.push('/admin/pricing');
-                    }}
-                    className={cn(
-                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start border-s-4 border-solid',
-                      isPricing
-                        ? 'border-[var(--color-teal)] bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-600/15 dark:text-teal-200'
-                        : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
-                    )}
-                  >
-                    <Banknote size={18} />
-                    <span>{t('pricingPanel')}</span>
-                  </button>,
-                );
-              }
-              if (adminRole === 'super_admin') {
-                items.push(
-                  <button
-                    key="platformConfig"
-                    type="button"
-                    onClick={() => {
-                      closeMainSidebar?.();
-                      router.push('/admin/platform-config');
-                    }}
-                    className={cn(
-                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start border-s-4 border-solid',
-                      isPlatformConfig
-                        ? 'border-[var(--color-teal)] bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-600/15 dark:text-teal-200'
-                        : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
-                    )}
-                  >
-                    <Settings size={18} />
-                    <span>{t('platformConfigNav')}</span>
-                  </button>,
-                );
-              }
-              if (canSee('card_orders') && adminRole === 'super_admin') {
-                items.push(
-                  <button
-                    key="vendors"
-                    type="button"
-                    onClick={() => {
-                      closeMainSidebar?.();
-                      router.push('/admin/vendors');
-                    }}
-                    className={cn(
-                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start border-s-4 border-solid',
-                      isVendors
-                        ? 'border-[var(--color-teal)] bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-600/15 dark:text-teal-200'
-                        : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
-                    )}
-                  >
-                    <Truck size={18} />
-                    <span>{t('vendorsNav')}</span>
-                  </button>,
-                );
-              }
-              if (canSee('ceo_dashboard')) {
-                items.push(
-                  <button
-                    key="whatsappPack"
-                    type="button"
-                    onClick={() => {
-                      closeMainSidebar?.();
-                      router.push('/admin/whatsapp-pack');
-                    }}
-                    className={cn(
-                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start border-s-4 border-solid',
-                      isWaPack
-                        ? 'border-[var(--color-teal)] bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-600/15 dark:text-teal-200'
-                        : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
-                    )}
-                  >
-                    <MessageCircle size={18} />
-                    <span>{t('whatsappPack')}</span>
-                  </button>,
-                );
-              }
-            }
-            return items;
-          })}
-          {/* HR & Commissions group */}
-          {adminRole === 'super_admin' ? (
-            <>
-              <p className="px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
-                {t('sidebarHr')}
-              </p>
-              <Link
-                href="/admin/staff"
-                onClick={() => closeMainSidebar?.()}
-                className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline border-s-4 border-solid',
-                  isStaff
-                    ? 'border-[var(--color-teal)] bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-600/15 dark:text-teal-200'
-                    : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
-                )}
-              >
-                <Users size={18} />
-                <span>{t('staff.title')}</span>
-              </Link>
-              <Link
-                href="/admin/center-assignments"
-                onClick={() => closeMainSidebar?.()}
-                className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline border-s-4 border-solid',
-                  isCenterAssignments
-                    ? 'border-[var(--color-teal)] bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-600/15 dark:text-teal-200'
-                    : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
-                )}
-              >
-                <MapPin size={18} />
-                <span>{t('centerAssignments.title')}</span>
-              </Link>
-              <Link
-                href="/admin/commissions"
-                onClick={() => closeMainSidebar?.()}
-                className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline border-s-4 border-solid',
-                  isCommissions
-                    ? 'border-[var(--color-teal)] bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-600/15 dark:text-teal-200'
-                    : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
-                )}
-              >
-                <TrendingUp size={18} />
-                <span>{t('commissions.title')}</span>
-              </Link>
-              <Link
-                href="/admin/payouts"
-                onClick={() => closeMainSidebar?.()}
-                className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline border-s-4 border-solid',
-                  isPayouts
-                    ? 'border-[var(--color-teal)] bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-600/15 dark:text-teal-200'
-                    : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
-                )}
-              >
-                <CreditCard size={18} />
                 <span>{t('payouts.title')}</span>
               </Link>
             </>

@@ -275,105 +275,106 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
           })}
         </div>
 
-        <div className="rounded-xl border border-[var(--color-border-subtle)] overflow-hidden bg-[var(--color-surface-1)]">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-[var(--color-surface-2)]">
-                <tr>
-                  <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
-                    {tIdCards('orderNumber')}
-                  </th>
-                  <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
-                    {tAdmin('center')}
-                  </th>
-                  <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
-                    {tIdCards('cards')}
-                  </th>
-                  <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
-                    {tIdCards('total')}
-                  </th>
-                  <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
-                    {tCommon('status')}
-                  </th>
-                  <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
-                    {tCommon('date')}
-                  </th>
-                  <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
-                    {tCommon('actions')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrders.map((order) => {
-                  const cfg = cfgFor(order.status);
-                  const StatusIcon = cfg.icon;
-                  return (
-                    <tr
-                      key={order.id}
-                      className="border-t border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-0)] transition-colors"
-                    >
-                      <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] font-mono">
-                        {order.orderNumber}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] font-medium">
-                        {order.center_name}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] font-mono">
-                        {order.quantity}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] font-mono font-bold">
-                        {formatCurrency(Number(order.total_amount), locale)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
-                        <span
-                          className={cn(
-                            'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold',
-                            cfg.bg,
-                            cfg.color,
-                          )}
-                        >
-                          <StatusIcon size={10} /> {tIdCards(cfg.label)}
-                        </span>
-                        {order.vendor_notify_failed ? (
-                          <span
-                            title={tIdCards('vendorNotifyFailed')}
-                            className="ms-1 text-amber-400 text-sm"
-                          >
-                            ⚠️
-                          </span>
-                        ) : null}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
-                        {formatDate(order.created_at, locale)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
-                        <button
-                          type="button"
-                          onClick={() => setSlideOverId(order.id)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
-                        >
-                          <Eye size={12} /> {tCommon('view')}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          {filteredOrders.length === 0 && (
-            <div className="text-center py-16 text-[var(--color-text-secondary)] border-t border-[var(--color-border-subtle)]">
-              <div className="mx-auto mb-4 w-20 h-20 relative">
-                <div className="absolute inset-0 rounded-2xl border-2 border-dashed border-[var(--color-border-default)]/40" />
-                <div className="absolute top-3 start-3 end-3 h-3 rounded bg-[var(--color-text-tertiary)]/10" />
-                <div className="absolute top-8 start-3 end-6 h-2 rounded bg-[var(--color-text-tertiary)]/8" />
-                <div className="absolute top-12 start-3 end-8 h-2 rounded bg-[var(--color-text-tertiary)]/6" />
-              </div>
-              <p className="font-medium text-[var(--color-text-primary)]">{tIdCards('noOrders')}</p>
-              <p className="text-sm mt-1">{tIdCards('noOrdersDesc')}</p>
+        {filteredOrders.length === 0 ? (
+          <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-center py-16 px-4 text-[var(--color-text-secondary)]">
+            <div className="mx-auto mb-4 w-20 h-20 relative">
+              <div className="absolute inset-0 rounded-2xl border-2 border-dashed border-[var(--color-border-default)]/40" />
+              <div className="absolute top-3 start-3 end-3 h-3 rounded bg-[var(--color-text-tertiary)]/10" />
+              <div className="absolute top-8 start-3 end-6 h-2 rounded bg-[var(--color-text-tertiary)]/8" />
+              <div className="absolute top-12 start-3 end-8 h-2 rounded bg-[var(--color-text-tertiary)]/6" />
             </div>
-          )}
-        </div>
+            <p className="font-medium text-[var(--color-text-primary)]">{tIdCards('noOrders')}</p>
+            <p className="text-sm mt-1">{tIdCards('noOrdersDesc')}</p>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-[var(--color-border-subtle)] overflow-hidden bg-[var(--color-surface-1)]">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-[var(--color-surface-2)]">
+                  <tr>
+                    <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                      {tIdCards('orderNumber')}
+                    </th>
+                    <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                      {tAdmin('center')}
+                    </th>
+                    <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                      {tIdCards('cards')}
+                    </th>
+                    <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                      {tIdCards('total')}
+                    </th>
+                    <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                      {tCommon('status')}
+                    </th>
+                    <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                      {tCommon('date')}
+                    </th>
+                    <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                      {tCommon('actions')}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredOrders.map((order) => {
+                    const cfg = cfgFor(order.status);
+                    const StatusIcon = cfg.icon;
+                    return (
+                      <tr
+                        key={order.id}
+                        className="border-t border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-0)] transition-colors"
+                      >
+                        <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] font-mono">
+                          {order.orderNumber}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] font-medium">
+                          {order.center_name}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] font-mono">
+                          {order.quantity}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] font-mono font-bold">
+                          {formatCurrency(Number(order.total_amount), locale)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
+                          <span
+                            className={cn(
+                              'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold',
+                              cfg.bg,
+                              cfg.color,
+                            )}
+                          >
+                            <StatusIcon size={10} aria-hidden /> {tIdCards(cfg.label)}
+                          </span>
+                          {order.vendor_notify_failed ? (
+                            <span
+                              title={tIdCards('vendorNotifyFailed')}
+                              className="ms-1 text-amber-400 text-sm"
+                            >
+                              ⚠️
+                            </span>
+                          ) : null}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
+                          {formatDate(order.created_at, locale)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
+                          <button
+                            type="button"
+                            onClick={() => setSlideOverId(order.id)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
+                          >
+                            <Eye size={12} aria-hidden /> {tCommon('view')}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {slideOrder && (
           <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setSlideOverId(null)}>

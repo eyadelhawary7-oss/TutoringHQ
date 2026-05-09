@@ -32,13 +32,15 @@ import { ChangePinModal } from '@/components/admin/ChangePinModal';
 import { BranchSwitcher } from '@/components/layout/BranchSwitcher';
 import { signOutToLogin } from '@/lib/auth/sign-out-client';
 import { cn } from '@/lib/utils';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 /** Desktop sidebar width in px (Tailwind w-60) */
 const SIDEBAR_EXPANDED = 240;
 const SIDEBAR_COLLAPSED = 64;
 
 interface SidebarProps {
-  open?: boolean;
+  /** Mobile hamburger drawer — single sidebar DOM for lg + max-lg */
+  mobileDrawerOpen?: boolean;
   onClose?: () => void;
 }
 
@@ -51,7 +53,7 @@ function navLinkClass(isActive: boolean) {
   );
 }
 
-export default function Sidebar({ onClose }: SidebarProps) {
+export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarProps) {
   const t = useTranslations('nav');
   const locale = useLocale();
   const tRoles = useTranslations('roles');
@@ -141,10 +143,18 @@ export default function Sidebar({ onClose }: SidebarProps) {
   const activeBranch = branches.find((b) => b.id === activeCenterId);
   const centerName = activeBranch?.name || user?.center?.name || user?.name || user?.phone || 'User';
 
+  const isLg = useMediaQuery('(min-width: 1024px)');
+
   return (
     <>
       <aside
-        className={`hidden lg:flex flex-col fixed top-0 bottom-0 start-0 h-screen ${isArLocale ? 'w-72' : 'w-60'} z-[100] print:hidden bg-[var(--color-surface-1)] border-e border-[var(--color-border)] isolate`}
+        className={cn(
+          'flex flex-col fixed top-0 bottom-0 start-0 h-screen z-[100] print:hidden bg-[var(--color-surface-1)] border-e border-[var(--color-border)] isolate',
+          isArLocale ? 'w-72' : 'w-60',
+          'transition-transform duration-[250ms] ease-in-out lg:transition-none',
+          mobileDrawerOpen ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full lg:translate-x-0',
+        )}
+        aria-hidden={!isLg && !mobileDrawerOpen}
       >
         <div className="relative z-10 flex items-center gap-3 px-4 h-16 border-b border-[var(--color-border)] pointer-events-auto justify-between">
           <Link

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import { useRouter } from '@/i18n/routing'
+import { Link, useRouter } from '@/i18n/routing'
 import { Users, Plus, Edit2, AlertTriangle, CheckCircle, Flag } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { AdminSidebar } from '@/components/AdminSidebar'
@@ -364,6 +364,7 @@ export default function CenterAssignmentsPage() {
 
   const staffOptionsSm = staffList.filter((s) => s.role === 'sm')
   const staffOptionsSr = staffList.filter((s) => s.role === 'sr')
+  const canAddAssignment = staffList.length > 0
 
   if (!gateOk) {
     return (
@@ -396,19 +397,34 @@ export default function CenterAssignmentsPage() {
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              resetForm()
-              setEditingId(null)
-              setError(null)
-              setShowModal(true)
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg text-sm font-medium transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            {t('centerAssignments.add')}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={!canAddAssignment}
+              title={
+                !canAddAssignment ? t('centerAssignments.add_disabled_tooltip') : undefined
+              }
+              onClick={() => {
+                resetForm()
+                setEditingId(null)
+                setError(null)
+                setShowModal(true)
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 disabled:pointer-events-none text-white rounded-lg text-sm font-medium transition-colors"
+              aria-label={t('centerAssignments.add')}
+            >
+              <Plus className="w-4 h-4" aria-hidden />
+              {t('centerAssignments.add')}
+            </button>
+            {!canAddAssignment ? (
+              <Link
+                href="/admin/staff"
+                className="text-sm font-medium text-teal-600 dark:text-teal-400 hover:underline"
+              >
+                {t('staff.title')} →
+              </Link>
+            ) : null}
+          </div>
         </div>
 
         {listError && !loading ? (

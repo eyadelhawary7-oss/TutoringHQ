@@ -88,6 +88,7 @@ export function currentMonthFirstDay(): string {
 
 /** Plan-tiered minimum invoice thresholds (EGP). */
 export const PLAN_INVOICE_MINIMUMS: Record<string, number> = {
+  solo: 600,
   nano: 1_000,
   starter: 2_000,
   pro: 5_000,

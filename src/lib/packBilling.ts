@@ -3,11 +3,14 @@ import { createAction } from '@/lib/ceo';
 
 /** EGP minimums per plan for Parent Pack monthly / partial invoices (Session D). */
 export const PACK_PLAN_MINIMUMS: Record<string, number> = {
+  solo: 600,
   nano: 1000,
   starter: 2000,
   pro: 5000,
   business: 8000,
   enterprise: 10000,
+  /** Sentinel: invoicing uses custom center floor (see resolvePackPlanMinimumEgp). */
+  top_centers: 0,
 };
 
 export function getPackPlanMinimumEgp(
@@ -18,6 +21,9 @@ export function getPackPlanMinimumEgp(
     return Number(packCustomInvoiceMinimum);
   }
   const tier = plan === ['pro', '_plus'].join('') ? 'business' : plan;
+  if (tier === 'top_centers') {
+    return PACK_PLAN_MINIMUMS.starter;
+  }
   return PACK_PLAN_MINIMUMS[tier] ?? PACK_PLAN_MINIMUMS.starter;
 }
 

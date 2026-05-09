@@ -9,7 +9,6 @@ import { useLocale } from 'next-intl';
 import { useTransition } from 'react';
 import Sidebar from '@/components/Sidebar';
 import MobileTopBar from '@/components/MobileTopBar';
-import { MobileNavDrawer } from '@/components/MobileNavDrawer';
 import { BottomTabBar } from '@/components/shell/BottomTabBar';
 import { MobileWrapper } from '@/components/shell/MobileWrapper';
 import { SidebarProvider } from '@/contexts/SidebarContext';
@@ -133,7 +132,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider closeMainSidebar={closeMainSidebar}>
     <div className="flex min-h-screen w-full min-w-0 overflow-x-clip bg-[var(--color-surface-0)]">
-      {!isAdminRoute && !kioskChromeHidden && <Sidebar onClose={closeMainSidebar} />}
+      {!isAdminRoute && !kioskChromeHidden && (
+        <Sidebar mobileDrawerOpen={openMenu} onClose={() => setOpenMenu(false)} />
+      )}
 
       <div
         className={`flex-1 flex flex-col min-w-0 overflow-hidden ${isAdminRoute || kioskChromeHidden ? '' : isArLocale ? 'lg:ms-72' : 'lg:ms-60'} transition-[margin] duration-300`}
@@ -184,8 +185,6 @@ export default function AppShell({ children }: { children: ReactNode }) {
             aria-hidden
           />
         )}
-        {!isAdminRoute && !kioskChromeHidden && <MobileNavDrawer open={openMenu} onClose={() => setOpenMenu(false)} />}
-
         {/* Page content - scroll + safe-area padding on inner wrapper (MobileWrapper) */}
         <main className="flex-1 flex flex-col min-h-0">
           <MobileWrapper fullWidth={isAdminRoute}>{children}</MobileWrapper>

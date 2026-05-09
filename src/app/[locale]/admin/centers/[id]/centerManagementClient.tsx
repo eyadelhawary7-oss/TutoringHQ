@@ -1667,10 +1667,17 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       {translatedCenterAccountStatus(data.center.status, tStatus, tCommon)}
                     </span>
                   </div>
+                  {data.center.parent_pack_enabled ? (
+                    <p className="text-xs text-[var(--color-text-secondary)] mt-1 max-w-prose">
+                      {t('centerManagement.headerPackParents', {
+                        count: formatNumber(Number(data.center.parent_pack_active_parents ?? 0), locale),
+                      })}
+                    </p>
+                  ) : null}
                 </div>
               </div>
 
-              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section1.title')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -1819,7 +1826,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               </section>
 
-              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section2.title')}</h2>
                 {String(data.center?.status) === 'pending_cancellation' ? (
                   <div
@@ -2014,7 +2021,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               </section>
 
-              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section3.title')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm text-slate-600 dark:text-slate-300">
                   <div>
@@ -2148,7 +2155,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               </section>
 
-              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                   <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section4.title')}</h2>
                   <button
@@ -2513,7 +2520,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               ) : null}
 
-              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                   <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section5.title')}</h2>
                   <button
@@ -2647,7 +2654,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               ) : null}
 
-              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section6.title')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm text-slate-500 dark:text-slate-400">
                   <div>
@@ -2675,12 +2682,14 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     </span>
                   </div>
                   <div>
-                    <span className="text-slate-500 dark:text-slate-500">{t('centerManagement.section6.activeParents')}: </span>
-                    <span className="text-slate-800 dark:text-slate-200">
+                    <div className="text-xs font-medium text-slate-500 dark:text-slate-500 mb-0.5">
+                      {t('centerManagement.section6.activeParents')}
+                    </div>
+                    <div className="text-slate-800 dark:text-slate-200 tabular-nums">
                       {data.center.parent_pack_active_parents != null
-                        ? String(data.center.parent_pack_active_parents)
+                        ? formatNumber(Number(data.center.parent_pack_active_parents), locale)
                         : tCommon('notSet')}
-                    </span>
+                    </div>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2793,7 +2802,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               </section>
 
-              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section7.title')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
@@ -2855,7 +2864,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               </section>
 
-              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section8.title')}</h2>
                 {s8ScheduleError ? <p className="text-red-400 text-sm mb-3">{s8ScheduleError}</p> : null}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2937,7 +2946,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               </section>
 
-              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                   <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section9.title')}</h2>
                   <button
@@ -3192,7 +3201,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               ) : null}
 
-              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section10.title')}</h2>
                 <div className="flex flex-wrap items-center gap-3 mb-4">
                   <span className="text-sm text-slate-500 dark:text-slate-400">{t('centerManagement.section10.referralCode')}:</span>
@@ -3357,7 +3366,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 )}
               </section>
 
-              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section11.title')}</h2>
                 {data.center.is_blacklisted ? (
                   <div className="rounded-lg border border-red-800 bg-red-950/40 p-4 mb-4">
@@ -3451,7 +3460,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               ) : null}
 
-              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerNotes.title')}</h2>
                 {opsNotesLoading ? (
                   <p className="text-sm text-slate-500 dark:text-slate-400">{t('centerManagement.loading')}</p>
@@ -3598,7 +3607,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               </section>
 
-              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('manualWA.title')}</h2>
                 <textarea
                   rows={4}
@@ -3654,7 +3663,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </button>
               </section>
 
-              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('auditLog.title')}</h2>
                 {opsAuditLoading ? (
                   <p className="text-sm text-slate-500 dark:text-slate-400">{t('centerManagement.loading')}</p>
@@ -3737,7 +3746,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 )}
               </section>
 
-              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
+              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section12.title')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
                   <div>

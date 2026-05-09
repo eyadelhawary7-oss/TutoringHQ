@@ -9,7 +9,7 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { Activity, ArrowLeft, AlertTriangle } from 'lucide-react';
-import { formatDateTime, formatNumber } from '@/lib/formatNumber';
+import { formatDate, formatNumber } from '@/lib/formatNumber';
 
 type CronStatus = {
   path: string;
@@ -42,14 +42,19 @@ function formatDuration(ms: number | null): string {
   return `${(ms / 1000).toFixed(1)} s`;
 }
 
-function formatRanAt(iso: string | null, locale: string): string {
+const ADMIN_RAN_AT_OPTS: Intl.DateTimeFormatOptions = {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+  second: '2-digit',
+};
+
+function formatCronRanAt(iso: string | null, locale: string): string {
   if (!iso) return '-';
   try {
-    const d = new Date(iso);
-    return formatDateTime(d, locale, {
-      dateStyle: 'short',
-      timeStyle: 'medium',
-    });
+    return formatDate(iso, locale, ADMIN_RAN_AT_OPTS);
   } catch {
     return iso;
   }
@@ -70,6 +75,7 @@ export default function AdminHealthPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+  const [cronErrorDetail, setCronErrorDetail] = useState<string | null>(null);
 
   const getSession = useCallback(async () => {
     const {
@@ -193,9 +199,7 @@ export default function AdminHealthPage() {
             {updatedAt ? (
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-mono" suppressHydrationWarning>
                 {t('healthLastUpdated')}{' '}
-                {formatDateTime(updatedAt, locale, {
-                  timeStyle: 'medium',
-                })}
+                {formatDate(updatedAt, locale, ADMIN_RAN_AT_OPTS)}
               </p>
             ) : null}
           </div>
@@ -342,7 +346,7 @@ export default function AdminHealthPage() {
                             {row.schedule}
                           </td>
                           <td className="p-3 whitespace-nowrap text-[var(--color-text-secondary)]">
-                            {formatRanAt(row.last_ran, locale)}
+                            {formatCronRanAt(row.last_ran, locale)}
                           </td>
                           <td className="p-3 text-[var(--color-text-primary)]">
                             {!row.last_status ? (
@@ -367,14 +371,33 @@ export default function AdminHealthPage() {
                             {formatDuration(row.last_duration_ms)}
                           </td>
                           <td
-                            className={`p-3 max-w-xs truncate font-mono ${
+                            className={`p-3 max-w-xs font-mono ${
                               row.last_error
                                 ? 'text-red-600 dark:text-red-400'
                                 : 'text-[var(--color-text-secondary)]'
                             }`}
-                            title={row.last_error ?? ''}
                           >
-                            {row.last_error ?? '-'}
+                            {(() => {
+                              const errText = row.last_error?.trim() ?? '';
+                              if (!errText) {
+                                return <span>-</span>;
+                              }
+                              const truncated = errText.length > 72 ? `${errText.slice(0, 72)}…` : errText;
+                              return (
+                                <div className="flex flex-col gap-1 items-start">
+                                  <span className="break-words whitespace-pre-wrap">{truncated}</span>
+                                  {errText.length > 72 ? (
+                                    <button
+                                      type="button"
+                                      className="text-xs font-sans font-medium text-teal-600 dark:text-teal-400 hover:underline"
+                                      onClick={() => setCronErrorDetail(errText)}
+                                    >
+                                      {tHealth('viewFullError')}
+                                    </button>
+                                  ) : null}
+                                </div>
+                              );
+                            })()}
                           </td>
                         </tr>
                       );
@@ -418,6 +441,35 @@ export default function AdminHealthPage() {
                 </li>
               </ul>
             </section>
+          </div>
+        ) : null}
+
+        {cronErrorDetail ? (
+          <div
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+            onClick={() => setCronErrorDetail(null)}
+            role="presentation"
+          >
+            <div
+              className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl max-w-lg w-full max-h-[70vh] overflow-y-auto p-5 shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-labelledby="cron-error-title"
+            >
+              <h2 id="cron-error-title" className="text-lg font-semibold text-[var(--color-text-primary)] mb-3">
+                {tHealth('errorDetailTitle')}
+              </h2>
+              <pre className="text-xs whitespace-pre-wrap break-words font-mono text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-lg p-3">
+                {cronErrorDetail}
+              </pre>
+              <button
+                type="button"
+                className="mt-4 w-full py-2 rounded-lg bg-[var(--color-surface-2)] text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-3)]"
+                onClick={() => setCronErrorDetail(null)}
+              >
+                {tCommon('cancel')}
+              </button>
+            </div>
           </div>
         ) : null}
       </main>

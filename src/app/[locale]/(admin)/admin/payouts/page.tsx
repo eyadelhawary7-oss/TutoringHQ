@@ -9,7 +9,7 @@ import { AdminSidebar } from '@/components/AdminSidebar'
 import { AdminHeader } from '@/components/admin/AdminHeader'
 import { useSidebar } from '@/contexts/SidebarContext'
 import { useLayout } from '@/contexts/LayoutContext'
-import { formatDate, formatNumber } from '@/lib/formatNumber'
+import { formatCalendarMonthYyyyMmInCairo, formatDate, formatNumber } from '@/lib/formatNumber'
 
 type StaffEmbed = { id: string; name: string; role: string; base_salary: number } | null
 
@@ -109,9 +109,15 @@ export default function PayoutsPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const currentPeriod = new Date().toISOString().slice(0, 7)
+  const currentPeriod = formatCalendarMonthYyyyMmInCairo()
   const [genForm, setGenForm] = useState({ staff_id: '', period: currentPeriod })
   const [adjForm, setAdjForm] = useState({ adjustment_amount: '', adjustment_reason: '' })
+
+  useEffect(() => {
+    if (generateModal) {
+      setGenForm((p) => ({ ...p, period: formatCalendarMonthYyyyMmInCairo() }))
+    }
+  }, [generateModal])
 
   const getSession = useCallback(async () => {
     const {
@@ -269,6 +275,8 @@ export default function PayoutsPage() {
     })
   }
 
+  const payoutGenerateMonthLabel = formatDate(new Date(), locale, { month: 'long', year: 'numeric' })
+
   if (!gateOk) {
     return (
       <div className="min-h-screen flex items-center justify-center text-slate-500 dark:text-slate-400">
@@ -310,8 +318,8 @@ export default function PayoutsPage() {
             }}
             className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg text-sm font-medium transition-colors"
           >
-            <Plus className="w-4 h-4" />
-            {t('payouts.generate')}
+            <Plus className="w-4 h-4" aria-hidden />
+            {t('payouts.generate_for_month', { month: payoutGenerateMonthLabel })}
           </button>
         </div>
 

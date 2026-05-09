@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
 import { getAnnouncementCap, PLAN_INVOICE_MINIMUMS } from '@/lib/parentPack'
 import type { NotificationTypes, WaPackBillingSummary, WaPackCenter } from '@/types/whatsapp-pack'
 import { useToast } from '@/hooks/useToast'
-import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber'
+import { formatCurrency, formatDate, formatNumber, formatPhoneLeadPlus } from '@/lib/formatNumber'
 
 interface AdminWaPackClientProps {
   initialCenters: WaPackCenter[]
@@ -219,6 +219,37 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
     return <span className="text-[var(--color-text-tertiary)]">-</span>
   }
 
+  function billingStatusDisplay(c: WaPackCenter, billStatus: WaPackBillingSummary['status']) {
+    const approvedPack = c.pack_request_status === 'approved'
+    if (approvedPack && billStatus === 'not_issued') {
+      return (
+        <div className="flex flex-wrap gap-1 items-center">
+          <span className="inline-flex rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-medium text-teal-800 dark:bg-teal-900/35 dark:text-teal-200 border border-teal-200 dark:border-teal-700">
+            {tRoot('admin.statusApproved')}
+          </span>
+          <span
+            className={cn(
+              'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
+              billingBadgeClass('not_issued'),
+            )}
+          >
+            {billingLabels.not_issued}
+          </span>
+        </div>
+      )
+    }
+    return (
+      <span
+        className={cn(
+          'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
+          billingBadgeClass(billStatus),
+        )}
+      >
+        {billingLabels[billStatus]}
+      </span>
+    )
+  }
+
   async function toggleCenter(centerId: string, newValue: boolean) {
     setTogglingId(centerId)
     try {
@@ -301,7 +332,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
       } = await supabase.auth.getSession()
       const token = session?.access_token
       if (!token) {
-        toast.error('Not signed in')
+        toast.error(t('notSignedIn'))
         return
       }
       const res = await fetch('/api/admin/whatsapp/sync-templates', {
@@ -315,12 +346,12 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
         error?: string
       }
       if (!res.ok) {
-        toast.error(body.error || 'Sync failed')
+        toast.error(body.error || t('syncTemplatesFailed'))
         return
       }
-      toast.success(`Synced ${body.upserted ?? 0} templates (${body.fetched ?? 0} from Meta)`)
+      toast.success(t('syncTemplatesSuccess', { upserted: body.upserted ?? 0, fetched: body.fetched ?? 0 }))
     } catch {
-      toast.error('Sync request failed')
+      toast.error(t('syncRequestFailed'))
     } finally {
       setSyncingTemplates(false)
     }
@@ -341,6 +372,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
               type="button"
               onClick={() => void syncMetaTemplates()}
               disabled={syncingTemplates}
+              aria-label={t('syncTemplates')}
               className="ms-auto inline-flex items-center gap-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-1.5 text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] disabled:opacity-50"
             >
               {syncingTemplates ? (
@@ -442,6 +474,9 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                       <th className="px-4 py-3 font-semibold text-[var(--color-text-muted)]">
                         {t('centerName')}
                       </th>
+                      <th className="px-4 py-3 font-semibold text-[var(--color-text-muted)]">
+                        {t('phoneColumn')}
+                      </th>
                       <th className="px-4 py-3 font-semibold text-[var(--color-text-muted)]">{t('plan')}</th>
                       <th className="px-4 py-3 font-semibold text-[var(--color-text-muted)]">
                         {t('activeParents')}
@@ -478,9 +513,11 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                         <tr key={c.id} className="border-b border-[var(--color-border-subtle)]">
                           <td className="px-4 py-3">
                             <p className="font-medium text-[var(--color-text-primary)]">{c.name}</p>
-                            {c.phone ? (
-                              <p className="text-xs text-[var(--color-text-tertiary)]">{c.phone}</p>
-                            ) : null}
+                          </td>
+                          <td className="px-4 py-3 tabular-nums text-[var(--color-text-primary)]" dir="ltr">
+                            {c.phone ? formatPhoneLeadPlus(String(c.phone)) : (
+                              <span className="text-[var(--color-text-tertiary)]">-</span>
+                            )}
                           </td>
                           <td className="px-4 py-3">
                             <span className="inline-flex rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-medium text-teal-800">
@@ -520,14 +557,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                             )}
                           </td>
                           <td className="px-4 py-3">
-                            <span
-                              className={cn(
-                                'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
-                                billingBadgeClass(billStatus),
-                              )}
-                            >
-                              {billingLabels[billStatus]}
-                            </span>
+                            {billingStatusDisplay(c, billStatus)}
                           </td>
                           <td className="px-4 py-3">
                             <PackToggle
@@ -556,22 +586,18 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                     <div key={c.id} className="space-y-3 p-4">
                       <div>
                         <p className="font-medium text-[var(--color-text-primary)]">{c.name}</p>
-                        {c.phone ? (
-                          <p className="text-xs text-[var(--color-text-tertiary)]">{c.phone}</p>
-                        ) : null}
+                        <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{t('phoneColumn')}</p>
+                        <p className="text-xs tabular-nums text-[var(--color-text-primary)]" dir="ltr">
+                          {c.phone ? formatPhoneLeadPlus(String(c.phone)) : (
+                            <span className="text-[var(--color-text-tertiary)]">-</span>
+                          )}
+                        </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="inline-flex rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-medium text-teal-800">
                           {planLabel(c.plan)}
                         </span>
-                        <span
-                          className={cn(
-                            'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
-                            billingBadgeClass(billStatus),
-                          )}
-                        >
-                          {billingLabels[billStatus]}
-                        </span>
+                        {billingStatusDisplay(c, billStatus)}
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div>
@@ -672,17 +698,14 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                           <tr className="border-b border-[var(--color-border-subtle)] align-top">
                             <td className="px-4 py-3">
                               <p className="font-bold text-[var(--color-text-primary)]">{c.name}</p>
-                              {c.phone ? (
-                                <p className="text-xs text-[var(--color-text-tertiary)]">{c.phone}</p>
-                              ) : null}
                             </td>
                             <td className="px-4 py-3">
                               <span className="inline-flex rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-medium text-teal-800">
                                 {planLabel(c.plan)}
                               </span>
                             </td>
-                            <td className="px-4 py-3 tabular-nums text-[var(--color-text-primary)]">
-                              {c.phone ?? '-'}
+                            <td className="px-4 py-3 tabular-nums text-[var(--color-text-primary)]" dir="ltr">
+                              {c.phone ? formatPhoneLeadPlus(String(c.phone)) : '-'}
                             </td>
                             <td className="px-4 py-3 text-[var(--color-text-primary)]">
                               {c.pack_requested_at
