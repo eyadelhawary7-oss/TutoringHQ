@@ -6,7 +6,7 @@ import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import QRCode from 'qrcode';
-import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye, CreditCard, Printer, ShoppingCart, Phone, Pencil, Inbox } from 'lucide-react';
+import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye, CreditCard, Printer, ShoppingCart, Phone, Pencil, Inbox, CircleHelp } from 'lucide-react';
 import { CardOrderModal } from '@/components/CardOrderModal';
 import { QRCard } from '@/components/QRCard';
 import { PrintStatementModal } from '@/components/PrintStatementModal';
@@ -130,6 +130,23 @@ function lifecycleFilterLabelKey(f: LifecycleFilter): FilterLabelKey {
   return 'filter_churned';
 }
 
+type StatusHelpKey =
+  | 'statusHelp_all'
+  | 'statusHelp_active'
+  | 'statusHelp_at_risk'
+  | 'statusHelp_inactive'
+  | 'statusHelp_enrolled'
+  | 'statusHelp_churned';
+
+function lifecycleStatusHelpKey(f: LifecycleFilter): StatusHelpKey {
+  if (f === 'all') return 'statusHelp_all';
+  if (f === 'active') return 'statusHelp_active';
+  if (f === 'at_risk') return 'statusHelp_at_risk';
+  if (f === 'inactive') return 'statusHelp_inactive';
+  if (f === 'enrolled') return 'statusHelp_enrolled';
+  return 'statusHelp_churned';
+}
+
 export default function StudentsPage() {
   const locale = useLocale();
   const ts = useTranslations('students');
@@ -155,6 +172,7 @@ export default function StudentsPage() {
   const [lifecycleFilter, setLifecycleFilter] = useState<LifecycleFilter>('all');
   const [filterKey, setFilterKey] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [statusHelpOpen, setStatusHelpOpen] = useState(false);
   const [addForm, setAddForm] = useState({
     name: '',
     phone: '',
@@ -1074,7 +1092,8 @@ export default function StudentsPage() {
               ))}
             </div>
 
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            <div className="flex items-start gap-2">
+            <div className="flex gap-2 overflow-x-auto pb-1 flex-1 min-w-0">
               {(['all', 'active', 'at_risk', 'inactive', 'enrolled', 'churned'] as const).map((f) => (
                 <button
                   key={f}
@@ -1092,6 +1111,15 @@ export default function StudentsPage() {
                   {ts(lifecycleFilterLabelKey(f))}
                 </button>
               ))}
+            </div>
+              <button
+                type="button"
+                className="shrink-0 rounded-full p-2 text-teal-600 hover:bg-slate-100 dark:text-teal-400 dark:hover:bg-slate-800 btn-press chq-focus"
+                aria-label={ts('statusHelpTitle')}
+                onClick={() => setStatusHelpOpen(true)}
+              >
+                <CircleHelp className="h-5 w-5" aria-hidden />
+              </button>
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
@@ -2220,6 +2248,54 @@ export default function StudentsPage() {
           onClose={() => setPrintStudent(null)}
         />
       )}
+
+      {/* Student lifecycle filters — definitions */}
+      {statusHelpOpen ? (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="status-help-title"
+          onClick={() => setStatusHelpOpen(false)}
+        >
+          <div
+            className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <h2 id="status-help-title" className="text-lg font-semibold text-[var(--color-text-primary)]">
+                {ts('statusHelpTitle')}
+              </h2>
+              <button
+                type="button"
+                className="rounded-lg p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]"
+                onClick={() => setStatusHelpOpen(false)}
+                aria-label={ts('closeModal')}
+              >
+                <X className="h-5 w-5" aria-hidden />
+              </button>
+            </div>
+            <p className="mb-4 text-sm text-[var(--color-text-secondary)]">{ts('statusHelpIntro')}</p>
+            <ul className="space-y-3 text-sm text-[var(--color-text-primary)]">
+              {(['all', 'active', 'at_risk', 'inactive', 'enrolled', 'churned'] as const).map((k) => (
+                <li key={k}>
+                  <span className="font-semibold text-teal-600 dark:text-teal-400">
+                    {ts(lifecycleFilterLabelKey(k))}
+                  </span>
+                  <span className="text-[var(--color-text-secondary)]"> — {ts(lifecycleStatusHelpKey(k))}</span>
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              className="mt-6 w-full rounded-lg bg-teal-600 py-2.5 text-sm font-semibold text-white hover:bg-teal-700"
+              onClick={() => setStatusHelpOpen(false)}
+            >
+              {ts('closeModal')}
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {/* Order ID Cards Modal */}
       {centerId && (

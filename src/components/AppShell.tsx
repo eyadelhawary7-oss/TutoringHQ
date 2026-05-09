@@ -57,6 +57,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const t = useTranslations();
   const locale = useLocale();
+  const isArLocale = locale === 'ar' || locale.startsWith('ar-');
   const router = useRouter();
   const { user } = useUser();
   const [openMenu, setOpenMenu] = useState(false);
@@ -135,7 +136,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       {!isAdminRoute && !kioskChromeHidden && <Sidebar onClose={closeMainSidebar} />}
 
       <div
-        className={`flex-1 flex flex-col min-w-0 overflow-hidden ${isAdminRoute || kioskChromeHidden ? '' : 'lg:ms-60 transition-[margin] duration-300'}`}
+        className={`flex-1 flex flex-col min-w-0 overflow-hidden ${isAdminRoute || kioskChromeHidden ? '' : isArLocale ? 'lg:ms-72' : 'lg:ms-60'} transition-[margin] duration-300`}
       >
         <header
           className={`hidden lg:flex items-center h-14 px-6 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shrink-0 sticky top-0 z-30 ${

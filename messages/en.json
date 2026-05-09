@@ -844,7 +844,7 @@
     },
     "rooms": {
       "title": "No rooms yet",
-      "description": "Create a room first from the Rooms page",
+      "description": "Rooms are physical or virtual spaces where sessions happen. Add one to assign schedule slots.",
       "action": "View Rooms"
     }
   },
@@ -1447,6 +1447,14 @@
     "filter_inactive": "Inactive",
     "filter_enrolled": "Enrolled",
     "filter_churned": "Churned",
+    "statusHelpTitle": "Student statuses",
+    "statusHelpIntro": "Filters use each student's lifecycle status.",
+    "statusHelp_all": "Every student in your center.",
+    "statusHelp_active": "Currently attending and engaged based on recent scans.",
+    "statusHelp_at_risk": "Low attendance or long gaps since their last scan.",
+    "statusHelp_inactive": "No recent attendance within your tracking window.",
+    "statusHelp_enrolled": "Registered but may not yet have regular attendance.",
+    "statusHelp_churned": "Stopped attending or formally marked as churned.",
     "sort": "Sort",
     "sortName": "Sort by Name",
     "sortBalance": "Sort by Balance",
@@ -1789,12 +1797,21 @@
     "last30Days": "Last 30 Days",
     "todayScans": "Today's Scans",
     "todayRevenue": "Today's Revenue",
-    "activeStudents": "Active Students",
-    "pendingPayments": "Pending Payments",
+    "activeStudents": {
+      "label": "Active Students",
+      "timeWindow": "(this week)"
+    },
+    "pendingPayments": {
+      "label": "Pending Payments",
+      "unit": "requests"
+    },
     "greeting": "Welcome",
     "goodMorning": "Good morning",
     "goodAfternoon": "Good afternoon",
     "goodEvening": "Good evening",
+    "chartLastUpdated": "Last updated {time}",
+    "monthlyRevenueSub": "Confirmed collections",
+    "todayAttendanceSub": "Share of students scanned today",
     "attendanceChart": "Attendance: last 7 days",
     "revenueChart": "Revenue",
     "paymentMethods": "Payment Methods",
@@ -2305,7 +2322,8 @@
     "noGroupsYet": "No groups created yet",
     "resultPaid": "Attended + Paid",
     "resultUnpaid": "Attended without payment",
-    "resultPending": "Digital payment pending"
+    "resultPending": "Digital payment pending",
+    "rangeSummary": "Showing {count} scans from {from} – {to}"
   },
   "settings": {
     "title": "Settings",
@@ -2646,7 +2664,8 @@
     "sessionsValue": "Sessions: {count}",
     "scheduleCount": "Sessions",
     "allRooms": "All Rooms",
-    "noRooms": "No rooms yet. Create one to get started.",
+    "noRoomsTitle": "No rooms yet",
+    "noRoomsDescription": "Rooms are physical or virtual spaces where sessions happen. Create one to build your schedule.",
     "deleteConfirm": "Delete this room?",
     "roomNameRequired": "Room Name Required"
   },
@@ -2696,7 +2715,9 @@
     "thisWeek": "This Week",
     "noSessionsToday": "No sessions today",
     "noSessionsWeek": "No other sessions this week",
-    "noSessionsSelectedDay": "No sessions on this day"
+    "noSessionsSelectedDay": "No sessions on this day",
+    "addRoomFirstTooltip": "Add a room first.",
+    "addRoomFirstLink": "Open Rooms"
   },
   "signup": {
     "title": "Register Your Center",

@@ -44,6 +44,23 @@ export function cairoYmdMinusDays(cairoYmd: string, deltaDays: number): string {
   return `${y}-${pad2(m)}-${pad2(day)}`;
 }
 
+/** Add calendar days on the Cairo/Gregorian calendar (inverse of cairoYmdMinusDays). */
+export function cairoYmdPlusDays(cairoYmd: string, deltaDays: number): string {
+  if (!deltaDays) return cairoYmd;
+  if (deltaDays < 0) return cairoYmdMinusDays(cairoYmd, -deltaDays);
+  let { y, m, d } = parseCairoYmd(cairoYmd);
+  let day = d + deltaDays;
+  while (day > daysInGregorianMonth(y, m)) {
+    day -= daysInGregorianMonth(y, m);
+    m += 1;
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
+  }
+  return `${y}-${pad2(m)}-${pad2(day)}`;
+}
+
 /**
  * Nominal instant at noon UTC on the Cairo calendar date `cairoYmd`.
  * Useful as a stable anchor for the Cairo "day" without loading a TZ database.
@@ -52,4 +69,17 @@ export function startOfCairoDay(d: Date = new Date()): Date {
   const key = cairoDateKey(d);
   const { y, m, d: day } = parseCairoYmd(key);
   return new Date(Date.UTC(y, m - 1, day, 12, 0, 0));
+}
+
+/** Wall-clock hour/minute in Africa/Cairo for `now`. */
+export function getCurrentCairoClock(now: Date = new Date()): { hour: number; minute: number } {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Africa/Cairo',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(now);
+  const hour = parseInt(parts.find((p) => p.type === 'hour')?.value ?? '0', 10);
+  const minute = parseInt(parts.find((p) => p.type === 'minute')?.value ?? '0', 10);
+  return { hour: hour === 24 ? 0 : hour, minute };
 }

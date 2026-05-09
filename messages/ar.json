@@ -844,7 +844,7 @@
     },
     "rooms": {
       "title": "لا توجد قاعات بعد",
-      "description": "أنشئ قاعة أولاً من صفحة القاعات",
+      "description": "القاعات مساحات فعلية أو افتراضية حيث تُعقد الحصص. أضف قاعة لتعيين الجدول.",
       "action": "عرض القاعات"
     }
   },
@@ -1396,6 +1396,8 @@
     "noSessionsToday": "لا حصص اليوم",
     "noSessionsWeek": "لا حصص أخرى هذا الأسبوع",
     "noSessionsSelectedDay": "لا حصص في هذا اليوم",
+    "addRoomFirstTooltip": "أضف قاعة أولاً.",
+    "addRoomFirstLink": "افتح القاعات",
     "noSlots": "لا توجد حصص",
     "readOnly": "للقراءة فقط",
     "recurring": "متكرر أسبوعياً",
@@ -3052,7 +3054,8 @@
     "noGroupsYet": "لم يتم إنشاء مجموعات بعد",
     "resultPaid": "حضور + مدفوع",
     "resultUnpaid": "حضرت دون دفع",
-    "resultPending": "الدفع الرقمي معلق"
+    "resultPending": "الدفع الرقمي معلق",
+    "rangeSummary": "عرض {count} مسحة من {from} – {to}"
   },
   "benchmarks": {
     "title": "المقارنة المرجعية",
@@ -3811,12 +3814,21 @@
     "last30Days": "اخر 30 يوم",
     "todayScans": "فحوصات اليوم",
     "todayRevenue": "إيرادات اليوم",
-    "activeStudents": "الطلاب الناشطون",
-    "pendingPayments": "المدفوعات المعلقة",
+    "activeStudents": {
+      "label": "الطلاب الناشطون",
+      "timeWindow": "(هذا الأسبوع)"
+    },
+    "pendingPayments": {
+      "label": "المدفوعات المعلقة",
+      "unit": "طلبات"
+    },
     "greeting": "مرحباً",
     "goodMorning": "صباح الخير",
     "goodAfternoon": "مساء الخير",
     "goodEvening": "مساء النور",
+    "chartLastUpdated": "آخر تحديث {time}",
+    "monthlyRevenueSub": "المتحصل المؤكد هذا الشهر",
+    "todayAttendanceSub": "نسبة الطلاب الذين تم مسحهم اليوم",
     "attendanceChart": "الحضور: آخر ٧ أيام",
     "revenueChart": "الإيرادات",
     "paymentMethods": "طرق الدفع",
@@ -4650,7 +4662,8 @@
     "sessionsValue": "الجلسات: {count}",
     "scheduleCount": "الجلسات",
     "allRooms": "كل الغرف",
-    "noRooms": "No rooms yet. Create one to get started.",
+    "noRoomsTitle": "لا توجد قاعات بعد",
+    "noRoomsDescription": "القاعات مساحات فعلية أو افتراضية حيث تُعقد الحصص. أنشئ قاعة لتبدأ الجدولة.",
     "deleteConfirm": "هل تريد حذف هذه الغرفة ؟",
     "roomNameRequired": "قاعة الاسم مطلوب"
   },
@@ -5251,6 +5264,14 @@
     "filter_inactive": "غير نشط",
     "filter_enrolled": "مسجل",
     "filter_churned": "منسحب",
+    "statusHelpTitle": "حالات الطلاب",
+    "statusHelpIntro": "تصفية حسب دورة حياة الطالب.",
+    "statusHelp_all": "كل الطلاب في المركز.",
+    "statusHelp_active": "حضور منتظم ومشاركة حسب آخر المسحات.",
+    "statusHelp_at_risk": "حضور ضعيف أو غياب طويل عن آخر مسح.",
+    "statusHelp_inactive": "لا حضور حديث ضمن نافذة المتابعة.",
+    "statusHelp_enrolled": "مسجل وقد لا يكون منتظماً بعد.",
+    "statusHelp_churned": "توقف عن الحضور أو مُعلَّم كمنسحب.",
     "sort": "ترتيب",
     "sortName": "ترتيب بالاسم",
     "sortBalance": "ترتيب بالرصيد",

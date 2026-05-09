@@ -145,6 +145,23 @@ export function formatDate(
   ).format(d);
 }
 
+/** Relative age for chart freshness captions ("3 min ago"). */
+export function formatRelativeMinutesAgo(iso: string | Date, locale: string): string {
+  const d = typeof iso === 'string' ? new Date(iso) : iso;
+  if (Number.isNaN(d.getTime())) return '';
+  const diffMs = Date.now() - d.getTime();
+  const mins = Math.floor(diffMs / 60000);
+  const isAr = isArabicLocale(locale);
+  if (mins < 1) return isAr ? 'الآن' : 'Just now';
+  if (mins === 1) return isAr ? 'منذ دقيقة' : '1 min ago';
+  if (mins < 60) return isAr ? `منذ ${formatPlainInteger(mins, locale)} دقيقة` : `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs === 1) return isAr ? 'منذ ساعة' : '1 hr ago';
+  if (hrs < 24) return isAr ? `منذ ${formatPlainInteger(hrs, locale)} ساعة` : `${hrs} hr ago`;
+  const days = Math.floor(hrs / 24);
+  return isAr ? `منذ ${formatPlainInteger(days, locale)} يومًا` : `${days}d ago`;
+}
+
 export function formatDateTime(
   date: Date | string,
   locale: string,

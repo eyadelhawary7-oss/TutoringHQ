@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import { Link } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbDelete, auditLog } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
@@ -11,6 +12,8 @@ import { Plus, Clock, X, AlertTriangle } from 'lucide-react';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { useToast } from '@/components/ui/ToastProvider';
 import { formatTime, formatNumber } from '@/lib/formatNumber';
+import { cairoDateKey, getCurrentCairoClock } from '@/lib/cairo/day';
+import { cairoYmdToJsWeekday, getCairoWeekColumnOrder, getCairoWeekDays } from '@/lib/cairo/week';
 
 interface Room {
   id: string;
@@ -38,9 +41,12 @@ interface ScheduleSlot {
   member_count?: number;
 }
 
-const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
+const CAIRO_COL_ORDER = getCairoWeekColumnOrder();
 const DAY_COLORS = ['#0D9488', '#7C3AED', '#F59E0B', '#DC2626', '#16A34A', '#0EA5E9', '#6B7280'];
-const DAY_ORDER = [0, 1, 2, 3, 4, 5, 6] as const;
+
+const HEADER_ROW_H = 49;
+const ROW_PX = 60;
+const FIRST_HOUR = 8;
 
 function timeToMinutes(t: string): number {
   let timeStr = t;
@@ -83,12 +89,16 @@ export default function SchedulePage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [formGroupId, setFormGroupId] = useState('');
   const [formRoomId, setFormRoomId] = useState('');
-  const [formDay, setFormDay] = useState(0);
+  const [formDay, setFormDay] = useState(6);
   const [formStart, setFormStart] = useState('09:00');
   const [formEnd, setFormEnd] = useState('11:00');
   const [formRecurring, setFormRecurring] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedDay, setSelectedDay] = useState(0);
+  const [selectedDay, setSelectedDay] = useState<number>(() => cairoYmdToJsWeekday(cairoDateKey()));
+  const [minuteTick, setMinuteTick] = useState(0);
+
+  const gridScrollRef = useRef<HTMLDivElement>(null);
+  const didScrollAnchorRef = useRef(false);
 
   const isReadOnly = user?.role === 'teacher' || user?.role === 'assistant';
   const isTeacher = user?.role === 'teacher';
@@ -97,11 +107,22 @@ export default function SchedulePage() {
   const formatMemberCount = (n: number) =>
     `${formatNumber(n, locale)} ${n === 1 ? tCommon('student') : tCommon('students')}`;
 
-  // Teacher group filter: schedule_slots has teacher_id column
+  const weekDays = useMemo(() => getCairoWeekDays(new Date(), locale), [locale]);
+
+  const labelForWeekday = (wd: number) =>
+    weekDays.find((w) => w.jsWeekday === wd)?.label ?? String(wd);
+
   const displaySlots = useMemo(() => {
     if (!isTeacher || !userId) return slots;
     return slots.filter((s) => s.teacher_id === userId);
   }, [slots, isTeacher, userId]);
+
+  const cairoTodayWd = useMemo(() => cairoYmdToJsWeekday(cairoDateKey()), [minuteTick]);
+
+  useEffect(() => {
+    const id = setInterval(() => setMinuteTick((x) => x + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     if ((user?.role === 'assistant' || user?.role === 'teacher') && !hasPermission('can_view_schedule')) {
@@ -110,10 +131,12 @@ export default function SchedulePage() {
   }, [user, hasPermission, router]);
 
   const loadData = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session) return;
 
-    const meRes = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
+    const meRes = await fetch('/api/me', { headers: { Authorization: `Bearer ${session.access_token}` } });
     const meData = await meRes.json();
     if (!meData?.user?.center_id) return;
     const cid = meData.user.center_id;
@@ -121,18 +144,37 @@ export default function SchedulePage() {
     setUserId(meData.user.id);
 
     const [roomsRes, groupsRes, slotsRes] = await Promise.all([
-      dbSelect({ table: 'rooms', select: 'id, name, capacity', filters: [{ column: 'center_id', op: 'eq', value: cid }], order: { column: 'name' } }),
-      dbSelect({ table: 'student_groups', select: 'id, name, subject', filters: [{ column: 'center_id', op: 'eq', value: cid }], order: { column: 'name' } }),
-      dbSelect({ table: 'schedule_slots', select: 'id, room_id, group_id, teacher_id, day_of_week, start_time, end_time, recurring', filters: [{ column: 'center_id', op: 'eq', value: cid }] }),
+      dbSelect({
+        table: 'rooms',
+        select: 'id, name, capacity',
+        filters: [{ column: 'center_id', op: 'eq', value: cid }],
+        order: { column: 'name' },
+      }),
+      dbSelect({
+        table: 'student_groups',
+        select: 'id, name, subject',
+        filters: [{ column: 'center_id', op: 'eq', value: cid }],
+        order: { column: 'name' },
+      }),
+      dbSelect({
+        table: 'schedule_slots',
+        select: 'id, room_id, group_id, teacher_id, day_of_week, start_time, end_time, recurring',
+        filters: [{ column: 'center_id', op: 'eq', value: cid }],
+      }),
     ]);
 
     const roomsData = (roomsRes.data || []) as Room[];
     const groupsData = (groupsRes.data || []) as Group[];
     const slotsData = (slotsRes.data || []) as ScheduleSlot[];
     const groupIds = groupsData.map((g) => g.id);
-    const membersRes = groupIds.length > 0
-      ? await dbSelect({ table: 'student_group_members', select: 'group_id', filters: [{ column: 'group_id', op: 'in' as const, value: groupIds }] })
-      : { data: [] };
+    const membersRes =
+      groupIds.length > 0
+        ? await dbSelect({
+            table: 'student_group_members',
+            select: 'group_id',
+            filters: [{ column: 'group_id', op: 'in' as const, value: groupIds }],
+          })
+        : { data: [] };
     const membersData = (membersRes.data || []) as { group_id: string }[];
     const memberCountByGroup: Record<string, number> = {};
     membersData.forEach((m) => {
@@ -141,26 +183,67 @@ export default function SchedulePage() {
 
     setRooms(roomsData);
     setGroups(groupsData);
-    setSlots(slotsData.map(s => ({
-      ...s,
-      room_name: roomsData.find(r => r.id === s.room_id)?.name ?? '',
-      group_name: s.group_id ? groupsData.find(g => g.id === s.group_id)?.name ?? '' : '',
-      member_count: s.group_id ? memberCountByGroup[s.group_id] ?? 0 : 0,
-    })));
+    setSlots(
+      slotsData.map((s) => ({
+        ...s,
+        room_name: roomsData.find((r) => r.id === s.room_id)?.name ?? '',
+        group_name: s.group_id ? groupsData.find((g) => g.id === s.group_id)?.name ?? '' : '',
+        member_count: s.group_id ? memberCountByGroup[s.group_id] ?? 0 : 0,
+      })),
+    );
     setIsLoading(false);
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    if (isLoading || rooms.length === 0 || didScrollAnchorRef.current) return;
+    didScrollAnchorRef.current = true;
+    const el = gridScrollRef.current;
+    if (!el) return;
+
+    const { hour, minute } = getCurrentCairoClock();
+    const anchorWd = cairoYmdToJsWeekday(cairoDateKey());
+    const slotsForDay = displaySlots.filter((s) => Number(s.day_of_week) === anchorWd);
+    let earliestMin: number | null = null;
+    slotsForDay.forEach((s) => {
+      const sm = timeToMinutes(s.start_time);
+      if (earliestMin === null || sm < earliestMin) earliestMin = sm;
+    });
+
+    let targetHour = hour;
+    const nowTotal = hour * 60 + minute;
+    if (earliestMin != null && nowTotal < earliestMin - 60) {
+      targetHour = Math.max(FIRST_HOUR, Math.floor(earliestMin / 60) - 1);
+    }
+
+    const scrollY = Math.max(
+      0,
+      HEADER_ROW_H + (targetHour - FIRST_HOUR) * ROW_PX - 96,
+    );
+    requestAnimationFrame(() => el.scrollTo({ top: scrollY, behavior: 'smooth' }));
+  }, [isLoading, rooms.length, displaySlots]);
+
+  const scrollColumnIntoView = (jsDay: number) => {
+    document.getElementById(`schedule-col-${jsDay}`)?.scrollIntoView({
+      behavior: 'smooth',
+      inline: 'center',
+      block: 'nearest',
+    });
+  };
 
   const hasConflict = useMemo(() => {
     if (!formRoomId) return false;
     const startM = timeToMinutes(formStart);
     const endM = timeToMinutes(formEnd);
-    return displaySlots.some(s =>
-      s.room_id === formRoomId &&
-      Number(s.day_of_week) === formDay &&
-      timeToMinutes(s.start_time) < endM &&
-      timeToMinutes(s.end_time) > startM
+    return displaySlots.some(
+      (s) =>
+        s.room_id === formRoomId &&
+        Number(s.day_of_week) === formDay &&
+        timeToMinutes(s.start_time) < endM &&
+        timeToMinutes(s.end_time) > startM,
     );
   }, [displaySlots, formRoomId, formDay, formStart, formEnd]);
 
@@ -196,7 +279,7 @@ export default function SchedulePage() {
     }
     setIsSubmitting(true);
     try {
-      const group = groups.find(g => g.id === formGroupId);
+      const group = groups.find((g) => g.id === formGroupId);
       const startTime = formStart.length === 5 ? formStart + ':00' : formStart;
       const endTime = formEnd.length === 5 ? formEnd + ':00' : formEnd;
       const { data, error } = await dbInsert({
@@ -224,7 +307,14 @@ export default function SchedulePage() {
       }
       if (data) {
         const slot = data as ScheduleSlot;
-        await auditLog({ centerId, userId, action: 'schedule_slot_create', entityType: 'schedule_slots', entityId: slot.id, details: {} });
+        await auditLog({
+          centerId,
+          userId,
+          action: 'schedule_slot_create',
+          entityType: 'schedule_slots',
+          entityId: slot.id,
+          details: {},
+        });
         setShowAddModal(false);
         setFormGroupId('');
         setFormRoomId('');
@@ -239,8 +329,14 @@ export default function SchedulePage() {
   const handleDeleteSlot = async (id: string) => {
     if (!centerId || !userId || !confirm(t('deleteConfirm'))) return;
     await dbDelete({ table: 'schedule_slots', filters: [{ column: 'id', op: 'eq', value: id }] });
-    await auditLog({ centerId, userId, action: 'schedule_slot_delete', entityType: 'schedule_slots', entityId: id });
-    setSlots(prev => prev.filter(s => s.id !== id));
+    await auditLog({
+      centerId,
+      userId,
+      action: 'schedule_slot_delete',
+      entityType: 'schedule_slots',
+      entityId: id,
+    });
+    setSlots((prev) => prev.filter((s) => s.id !== id));
   };
 
   if ((user?.role === 'assistant' || user?.role === 'teacher') && !hasPermission('can_view_schedule')) {
@@ -248,16 +344,20 @@ export default function SchedulePage() {
       <div className="min-h-screen w-full bg-[var(--color-surface-0)] flex items-center justify-center">
         <svg className="animate-spin h-8 w-8 text-teal-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          />
         </svg>
       </div>
     );
   }
 
-  const HOURS = Array.from({ length: 15 }, (_, i) => i + 8);
+  const HOURS = Array.from({ length: 15 }, (_, i) => i + FIRST_HOUR);
 
   const getSlotsInCell = (day: number, hour: number) =>
-    displaySlots.filter(s => {
+    displaySlots.filter((s) => {
       if (Number(s.day_of_week) !== day) return false;
       const startM = timeToMinutes(s.start_time);
       const endM = timeToMinutes(s.end_time);
@@ -266,6 +366,16 @@ export default function SchedulePage() {
       return startM < hourEnd && endM > hourStart;
     });
 
+  const { hour: cairoHour, minute: cairoMinute } = getCurrentCairoClock();
+  const nowMinutesFromGridStart = cairoHour * 60 + cairoMinute - FIRST_HOUR * 60;
+  const lastRowMinutes = (22 - FIRST_HOUR + 1) * 60;
+  const clampedNow = Math.max(0, Math.min(lastRowMinutes, nowMinutesFromGridStart));
+  const showNowLine = selectedDay === cairoTodayWd;
+  const nowLineTop =
+    showNowLine && nowMinutesFromGridStart >= 0 && nowMinutesFromGridStart <= lastRowMinutes
+      ? HEADER_ROW_H + (clampedNow / 60) * ROW_PX - 1
+      : null;
+
   return (
     <div className="min-h-screen w-full bg-[var(--color-surface-0)] space-y-5 animate-fade-in">
       <PageHeader
@@ -273,21 +383,39 @@ export default function SchedulePage() {
           <>
             {isTeacher ? t('yourSchedule') : t('title')}
             {isReadOnly && (
-              <span className="inline-flex items-center text-xs bg-teal-50 text-teal-700 border border-teal-200 rounded-full px-2 py-0.5 ms-2">
+              <span className="inline-flex items-center text-xs bg-teal-50 text-teal-700 border border-teal-200 rounded-full px-2 py-0.5 ms-2 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800">
                 {t('readOnly')}
               </span>
             )}
           </>
         }
-        subtitle={(user?.role === 'assistant' || user?.role === 'teacher') && hasPermission('can_view_schedule') ? t('viewOnly', { defaultValue: 'View only' }) : undefined}
+        subtitle={
+          (user?.role === 'assistant' || user?.role === 'teacher') && hasPermission('can_view_schedule')
+            ? t('viewOnly', { defaultValue: 'View only' })
+            : undefined
+        }
       >
         {!isReadOnly && canEdit && (
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
-          >
-            <Plus size={16} /> {t('addSession')}
-          </button>
+          <span className="group relative inline-flex flex-col items-end">
+            <button
+              type="button"
+              aria-disabled={rooms.length === 0}
+              onClick={() => rooms.length > 0 && setShowAddModal(true)}
+              className={`flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors ${
+                rooms.length === 0 ? 'opacity-50 cursor-not-allowed hover:bg-teal-600' : ''
+              }`}
+            >
+              <Plus size={16} /> {t('addSession')}
+            </button>
+            {rooms.length === 0 ? (
+              <span className="pointer-events-none absolute top-full end-0 z-50 mt-1 hidden max-w-[220px] rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 text-start text-xs text-[var(--color-text-secondary)] shadow-lg group-hover:pointer-events-auto group-hover:block">
+                {t('addRoomFirstTooltip')}{' '}
+                <Link href="/rooms" className="font-semibold text-teal-600 hover:underline dark:text-teal-400">
+                  {t('addRoomFirstLink')}
+                </Link>
+              </span>
+            ) : null}
+          </span>
         )}
       </PageHeader>
 
@@ -295,152 +423,206 @@ export default function SchedulePage() {
         <div className="text-center py-16">
           <svg className="animate-spin h-8 w-8 text-teal-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            />
           </svg>
         </div>
+      ) : rooms.length === 0 ? (
+        <EmptyState
+          icon={<Clock />}
+          titleKey="rooms.title"
+          descriptionKey="rooms.description"
+          namespace="emptyStates"
+          actionLabel="rooms.action"
+          onAction={() => router.push(`/${locale}/rooms`)}
+        />
       ) : (
         <>
           <div className="hidden md:block">
-          <div className="flex gap-1 bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] rounded-xl p-1 mb-4 overflow-x-auto snap-x snap-mandatory scrollbar-thin">
-            {DAY_ORDER.map(day => (
-              <button
-                key={day}
-                type="button"
-                onClick={() => setSelectedDay(day)}
-                className={`snap-start shrink-0 flex-1 min-w-[80px] min-h-[44px] px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedDay === day ? 'bg-teal-600 text-white font-semibold' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-0)]'}`}
-              >
-                {t(DAY_KEYS[day])}
-              </button>
-            ))}
-          </div>
-
-          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
-            <div className="grid grid-cols-8 border-b border-[var(--color-border-subtle)]">
-              <div className="py-3 px-3 text-xs font-semibold text-[var(--color-text-secondary)] uppercase bg-[var(--color-surface-0)] border-e border-[var(--color-border-subtle)]">{t('time')}</div>
-              {DAY_ORDER.map(day => (
-                <div key={day} className={`py-3 px-3 text-xs font-semibold text-[var(--color-text-secondary)] uppercase text-center bg-[var(--color-surface-0)] border-e border-[var(--color-border-subtle)] last:border-e-0 ${selectedDay === day ? 'ring-1 ring-teal-500/30' : ''}`}>
-                  {t(DAY_KEYS[day])}
-                </div>
+            <div className="flex gap-1 bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] rounded-xl p-1 mb-4 overflow-x-auto snap-x snap-mandatory scrollbar-thin">
+              {CAIRO_COL_ORDER.map((day, idx) => (
+                <button
+                  key={day}
+                  type="button"
+                  aria-label={labelForWeekday(day)}
+                  onClick={() => {
+                    setSelectedDay(day);
+                    scrollColumnIntoView(day);
+                  }}
+                  className={`snap-start shrink-0 flex min-h-[44px] min-w-[44px] flex-1 items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold tabular-nums transition-colors ${
+                    selectedDay === day
+                      ? 'bg-teal-600 text-white ring-2 ring-teal-400/40'
+                      : 'bg-[var(--color-surface-0)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'
+                  }`}
+                >
+                  {idx + 1}
+                </button>
               ))}
             </div>
-            {HOURS.map(hour => (
-              <div key={hour} className="grid grid-cols-8 border-b border-[var(--color-border-subtle)] min-h-[60px]">
-                <div className="py-3 px-3 text-xs text-[var(--color-text-secondary)] bg-[var(--color-surface-0)]/50 border-e border-[var(--color-border-subtle)] self-start pt-2">
-                  {formatTime(formatHour(hour), locale)}
-                </div>
-                {DAY_ORDER.map(day => {
-                  const cellSlots = getSlotsInCell(day, hour);
-                  return (
-                    <div key={day} className="border-e border-[var(--color-border-subtle)] last:border-e-0 p-1.5">
-                      {cellSlots.map(slot => {
-                        const isConflict = getConflictingSlotIds.has(slot.id);
+
+            <div className="overflow-x-auto rounded-xl border border-[var(--color-border-subtle)] shadow-sm">
+              <div className="min-w-[720px] bg-[var(--color-surface-1)]">
+                <div
+                  ref={gridScrollRef}
+                  className="relative max-h-[min(560px,calc(100vh-220px))] overflow-y-auto overflow-x-hidden"
+                >
+                  {nowLineTop != null ? (
+                    <div
+                      className="pointer-events-none absolute start-0 end-0 z-[8] h-[3px] bg-teal-500/90 shadow-[0_0_8px_rgba(13,148,136,0.6)]"
+                      style={{ top: nowLineTop }}
+                      aria-hidden
+                    />
+                  ) : null}
+                  <div className="sticky top-0 z-[9] grid grid-cols-8 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                    <div className="border-e border-[var(--color-border-subtle)] px-3 py-3 text-xs font-semibold uppercase text-[var(--color-text-secondary)]">
+                      {t('time')}
+                    </div>
+                    {CAIRO_COL_ORDER.map((day) => (
+                      <div
+                        key={day}
+                        id={`schedule-col-${day}`}
+                        className={`border-e border-[var(--color-border-subtle)] px-3 py-3 text-center text-xs font-semibold uppercase text-[var(--color-text-secondary)] last:border-e-0 ${
+                          selectedDay === day ? 'ring-1 ring-inset ring-teal-500/35' : ''
+                        }`}
+                      >
+                        {labelForWeekday(day)}
+                      </div>
+                    ))}
+                  </div>
+                  {HOURS.map((hour) => (
+                    <div key={hour} className="grid grid-cols-8 border-b border-[var(--color-border-subtle)] min-h-[60px]">
+                      <div className="border-e border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]/50 px-3 py-3 text-xs text-[var(--color-text-secondary)] self-start pt-2">
+                        {formatTime(formatHour(hour), locale)}
+                      </div>
+                      {CAIRO_COL_ORDER.map((day) => {
+                        const cellSlots = getSlotsInCell(day, hour);
                         return (
-                          <div
-                            key={slot.id}
-                            className={`relative rounded-lg p-2 cursor-pointer transition-colors group border-y border-e border-[var(--color-border)] ${
-                              isConflict
-                                ? 'bg-red-500/10 hover:bg-red-500/15'
-                                : 'bg-[var(--color-surface-1)] hover:bg-[var(--color-surface-2)]'
-                            }`}
-                            style={{
-                              borderInlineStartWidth: 4,
-                              borderInlineStartStyle: 'solid',
-                              borderInlineStartColor: isConflict ? '#ef4444' : DAY_COLORS[day],
-                            }}
-                          >
-                            {isConflict && <AlertTriangle className="w-3.5 h-3.5 absolute top-1 end-1 text-red-500" />}
-                            <p
-                              className={`text-xs font-semibold truncate pe-5 ${
-                                isConflict ? 'text-red-800 dark:text-red-200' : 'text-[var(--color-text-primary)]'
-                              }`}
-                            >
-                              {slot.group_name || tCommon('notAvailable')}
-                            </p>
-                            <p
-                              className={`text-xs truncate ${
-                                isConflict ? 'text-red-700 dark:text-red-300' : 'text-[var(--color-text-secondary)]'
-                              }`}
-                            >
-                              {slot.room_name || tCommon('notAvailable')}
-                            </p>
-                            <p
-                              className={`text-xs ${
-                                isConflict ? 'text-red-600 dark:text-red-400' : 'text-[var(--color-text-tertiary)]'
-                              }`}
-                            >
-                              <span dir="ltr">{formatTime(formatTimeForDisplay(slot.start_time), locale)} – {formatTime(formatTimeForDisplay(slot.end_time), locale)}</span>
-                            </p>
-                            {canEdit && (
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); handleDeleteSlot(slot.id); }}
-                                className={`hidden group-hover:block absolute top-1 end-1 p-0.5 rounded ${
-                                  isConflict
-                                    ? 'hover:bg-red-500/20 text-red-700 dark:text-red-300'
-                                    : 'hover:bg-[var(--color-surface-2)] text-teal-600 dark:text-teal-400'
-                                }`}
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            )}
+                          <div key={day} className="border-e border-[var(--color-border-subtle)] last:border-e-0 p-1.5">
+                            {cellSlots.map((slot) => {
+                              const isConflict = getConflictingSlotIds.has(slot.id);
+                              return (
+                                <div
+                                  key={slot.id}
+                                  className={`relative rounded-lg p-2 cursor-pointer transition-colors group border-y border-e border-[var(--color-border)] ${
+                                    isConflict
+                                      ? 'bg-red-500/10 hover:bg-red-500/15'
+                                      : 'bg-[var(--color-surface-1)] hover:bg-[var(--color-surface-2)]'
+                                  }`}
+                                  style={{
+                                    borderInlineStartWidth: 4,
+                                    borderInlineStartStyle: 'solid',
+                                    borderInlineStartColor: isConflict ? '#ef4444' : DAY_COLORS[day],
+                                  }}
+                                >
+                                  {isConflict && (
+                                    <AlertTriangle className="w-3.5 h-3.5 absolute top-1 end-1 text-red-500" />
+                                  )}
+                                  <p
+                                    className={`text-xs font-semibold truncate pe-5 ${
+                                      isConflict ? 'text-red-800 dark:text-red-200' : 'text-[var(--color-text-primary)]'
+                                    }`}
+                                  >
+                                    {slot.group_name || tCommon('notAvailable')}
+                                  </p>
+                                  <p
+                                    className={`text-xs truncate ${
+                                      isConflict ? 'text-red-700 dark:text-red-300' : 'text-[var(--color-text-secondary)]'
+                                    }`}
+                                  >
+                                    {slot.room_name || tCommon('notAvailable')}
+                                  </p>
+                                  <p
+                                    className={`text-xs ${
+                                      isConflict ? 'text-red-600 dark:text-red-400' : 'text-[var(--color-text-tertiary)]'
+                                    }`}
+                                  >
+                                    <span dir="ltr">
+                                      {formatTime(formatTimeForDisplay(slot.start_time), locale)} –{' '}
+                                      {formatTime(formatTimeForDisplay(slot.end_time), locale)}
+                                    </span>
+                                  </p>
+                                  {canEdit && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteSlot(slot.id);
+                                      }}
+                                      className={`hidden group-hover:block absolute top-1 end-1 p-0.5 rounded ${
+                                        isConflict
+                                          ? 'hover:bg-red-500/20 text-red-700 dark:text-red-300'
+                                          : 'hover:bg-[var(--color-surface-2)] text-teal-600 dark:text-teal-400'
+                                      }`}
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         );
                       })}
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
+            </div>
           </div>
 
-          {/* Owner / admin mobile — scrollable day strip + list for selected day */}
           <div className={`md:hidden ${isTeacher ? 'hidden' : 'block'}`}>
-            <div className="flex gap-1.5 overflow-x-auto snap-x snap-mandatory pb-2 mb-3 -mx-1 px-1">
-              {DAY_ORDER.map((day) => (
+            <div className="-mx-1 mb-3 flex snap-x snap-mandatory gap-1.5 overflow-x-auto px-1 pb-2">
+              {CAIRO_COL_ORDER.map((day, idx) => (
                 <button
                   key={day}
                   type="button"
+                  aria-label={labelForWeekday(day)}
                   onClick={() => setSelectedDay(day)}
-                  className={`snap-start shrink-0 min-w-[72px] min-h-[44px] px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors border ${
+                  className={`snap-start flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold tabular-nums transition-colors ${
                     selectedDay === day
-                      ? 'bg-teal-600 text-white border-teal-600'
-                      : 'bg-[var(--color-surface-1)] border-[var(--color-border-subtle)] text-[var(--color-text-secondary)]'
+                      ? 'border-teal-600 bg-teal-600 text-white'
+                      : 'border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[var(--color-text-secondary)]'
                   }`}
                 >
-                  {t(DAY_KEYS[day])}
+                  {idx + 1}
                 </button>
               ))}
             </div>
             {displaySlots.filter((s) => Number(s.day_of_week) === selectedDay).length === 0 ? (
-              <p className="text-sm text-[var(--color-text-secondary)] py-2">{t('noSessionsSelectedDay')}</p>
+              <p className="py-2 text-sm text-[var(--color-text-secondary)]">{t('noSessionsSelectedDay')}</p>
             ) : (
               displaySlots
                 .filter((s) => Number(s.day_of_week) === selectedDay)
                 .map((session) => (
                   <div
                     key={session.id}
-                    className="bg-[var(--color-surface-1)] rounded-lg shadow-sm p-3 mb-2 border border-[var(--color-border-subtle)]"
+                    className="mb-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3 shadow-sm"
                     style={{
                       borderInlineStartWidth: 4,
                       borderInlineStartStyle: 'solid',
                       borderInlineStartColor: DAY_COLORS[selectedDay] ?? '#0D9488',
                     }}
                   >
-                    <div className="font-mono text-teal-600 dark:text-teal-400 text-sm">
-                      <span dir="ltr">{formatTime(formatTimeForDisplay(session.start_time), locale)} – {formatTime(formatTimeForDisplay(session.end_time), locale)}</span>
+                    <div className="font-mono text-sm text-teal-600 dark:text-teal-400">
+                      <span dir="ltr">
+                        {formatTime(formatTimeForDisplay(session.start_time), locale)} –{' '}
+                        {formatTime(formatTimeForDisplay(session.end_time), locale)}
+                      </span>
                     </div>
-                    <div className="font-bold text-sm mt-0.5 text-[var(--color-text-primary)]">
+                    <div className="mt-0.5 text-sm font-bold text-[var(--color-text-primary)]">
                       {session.group_name || tCommon('notAvailable')}
                     </div>
-                    <div className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+                    <div className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
                       {session.room_name || tCommon('notAvailable')} • {formatMemberCount(session.member_count ?? 0)}
                     </div>
                     {canEdit && (
                       <button
                         type="button"
                         onClick={() => handleDeleteSlot(session.id)}
-                        className="mt-2 text-xs font-semibold text-red-600 hover:underline min-h-[44px] min-w-[44px] flex items-center"
+                        className="mt-2 flex min-h-[44px] min-w-[44px] items-center text-xs font-semibold text-red-600 hover:underline"
                       >
                         {t('delete')}
                       </button>
@@ -450,22 +632,21 @@ export default function SchedulePage() {
             )}
           </div>
 
-          {/* Teacher mobile list view */}
           <div className={`md:hidden ${isTeacher ? 'block' : 'hidden'}`}>
             {(() => {
-              const todayIndex = new Date().getDay();
+              const todayIndex = cairoTodayWd;
               const todaySessions = displaySlots.filter((s) => Number(s.day_of_week) === todayIndex);
               const thisWeekSessions = displaySlots.filter((s) => Number(s.day_of_week) !== todayIndex);
               return (
                 <>
-                  <h3 className="font-bold text-teal-700 dark:text-teal-400 text-sm mb-2">{t('today')}</h3>
+                  <h3 className="mb-2 text-sm font-bold text-teal-700 dark:text-teal-400">{t('today')}</h3>
                   {todaySessions.length === 0 && (
-                    <p className="text-xs text-[var(--color-text-secondary)] mb-3">{t('noSessionsToday')}</p>
+                    <p className="mb-3 text-xs text-[var(--color-text-secondary)]">{t('noSessionsToday')}</p>
                   )}
                   {todaySessions.map((session) => (
                     <div
                       key={session.id}
-                      className="bg-[var(--color-surface-1)] rounded-lg shadow-sm p-3 mb-2"
+                      className="mb-2 rounded-lg bg-[var(--color-surface-1)] p-3 shadow-sm"
                       style={{
                         borderInlineEndWidth: 4,
                         borderInlineEndStyle: 'solid',
@@ -473,26 +654,29 @@ export default function SchedulePage() {
                       }}
                       dir="rtl"
                     >
-                      <div className="font-mono text-teal-600 dark:text-teal-400 text-sm">
-                        <span dir="ltr">{formatTime(formatTimeForDisplay(session.start_time), locale)} – {formatTime(formatTimeForDisplay(session.end_time), locale)}</span>
+                      <div className="font-mono text-sm text-teal-600 dark:text-teal-400">
+                        <span dir="ltr">
+                          {formatTime(formatTimeForDisplay(session.start_time), locale)} –{' '}
+                          {formatTime(formatTimeForDisplay(session.end_time), locale)}
+                        </span>
                       </div>
-                      <div className="font-bold text-sm mt-0.5 text-[var(--color-text-primary)]">
+                      <div className="mt-0.5 text-sm font-bold text-[var(--color-text-primary)]">
                         {session.group_name || tCommon('notAvailable')}
                       </div>
-                      <div className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+                      <div className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
                         {session.room_name || tCommon('notAvailable')} • {formatMemberCount(session.member_count ?? 0)}
                       </div>
                     </div>
                   ))}
                   <hr className="my-3 border-[var(--color-border-subtle)]" />
-                  <h3 className="font-bold text-[var(--color-text-primary)] text-sm mb-2">{t('thisWeek')}</h3>
+                  <h3 className="mb-2 text-sm font-bold text-[var(--color-text-primary)]">{t('thisWeek')}</h3>
                   {thisWeekSessions.length === 0 && (
                     <p className="text-xs text-[var(--color-text-secondary)]">{t('noSessionsWeek')}</p>
                   )}
                   {thisWeekSessions.map((session) => (
                     <div
                       key={session.id}
-                      className="bg-[var(--color-surface-1)] rounded-lg shadow-sm p-3 mb-2"
+                      className="mb-2 rounded-lg bg-[var(--color-surface-1)] p-3 shadow-sm"
                       style={{
                         borderInlineEndWidth: 4,
                         borderInlineEndStyle: 'solid',
@@ -500,13 +684,16 @@ export default function SchedulePage() {
                       }}
                       dir="rtl"
                     >
-                      <div className="font-mono text-teal-600 dark:text-teal-400 text-sm">
-                        <span dir="ltr">{formatTime(formatTimeForDisplay(session.start_time), locale)} – {formatTime(formatTimeForDisplay(session.end_time), locale)}</span>
+                      <div className="font-mono text-sm text-teal-600 dark:text-teal-400">
+                        <span dir="ltr">
+                          {formatTime(formatTimeForDisplay(session.start_time), locale)} –{' '}
+                          {formatTime(formatTimeForDisplay(session.end_time), locale)}
+                        </span>
                       </div>
-                      <div className="font-bold text-sm mt-0.5 text-[var(--color-text-primary)]">
+                      <div className="mt-0.5 text-sm font-bold text-[var(--color-text-primary)]">
                         {session.group_name || tCommon('notAvailable')}
                       </div>
-                      <div className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+                      <div className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
                         {session.room_name || tCommon('notAvailable')} • {formatMemberCount(session.member_count ?? 0)}
                       </div>
                     </div>
@@ -518,24 +705,15 @@ export default function SchedulePage() {
         </>
       )}
 
-      {rooms.length === 0 && !isLoading && (
-        <EmptyState
-          icon={<Clock />}
-          titleKey="rooms.title"
-          descriptionKey="rooms.description"
-          namespace="emptyStates"
-          actionLabel="rooms.action"
-          onAction={() => router.push(`/${locale}/rooms`)}
-        />
-      )}
-
-      {/* Add Session Modal */}
       {showAddModal && (
         <div
           className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 pt-[max(1rem,env(safe-area-inset-top,0px))] pb-[max(1rem,env(safe-area-inset-bottom,0px))]"
           onClick={() => setShowAddModal(false)}
         >
-          <div className="bg-[var(--color-surface-1)] rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div
+            className="bg-[var(--color-surface-1)] rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between p-6 border-b border-[var(--color-border-subtle)]">
               <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('addSession')}</h2>
               <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-[var(--color-surface-2)] rounded-lg transition-colors">
@@ -544,79 +722,104 @@ export default function SchedulePage() {
             </div>
             <form onSubmit={handleAddSlot}>
               <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('group')}</label>
-                <select
-                  value={formGroupId}
-                  onChange={e => setFormGroupId(e.target.value)}
-                  className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]"
-                  required
-                >
-                  <option value="">{tCommon('select')}</option>
-                  {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('room')}</label>
-                <select
-                  value={formRoomId}
-                  onChange={e => setFormRoomId(e.target.value)}
-                  className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]"
-                  required
-                >
-                  <option value="">{tCommon('select')}</option>
-                  {rooms.map(r => <option key={r.id} value={r.id}>{r.name}{r.capacity != null ? ` (${r.capacity})` : ''}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('day')}</label>
-                <select
-                  value={formDay}
-                  onChange={e => setFormDay(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]"
-                >
-                  {DAY_ORDER.map(d => <option key={d} value={d}>{t(DAY_KEYS[d])}</option>)}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('startTime')}</label>
-                  <input
-                    type="time"
-                    value={formStart}
-                    onChange={e => setFormStart(e.target.value)}
+                  <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('group')}</label>
+                  <select
+                    value={formGroupId}
+                    onChange={(e) => setFormGroupId(e.target.value)}
                     className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]"
-                  />
+                    required
+                  >
+                    <option value="">{tCommon('select')}</option>
+                    {groups.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('endTime')}</label>
-                  <input
-                    type="time"
-                    value={formEnd}
-                    onChange={e => setFormEnd(e.target.value)}
+                  <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('room')}</label>
+                  <select
+                    value={formRoomId}
+                    onChange={(e) => setFormRoomId(e.target.value)}
                     className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]"
+                    required
+                  >
+                    <option value="">{tCommon('select')}</option>
+                    {rooms.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name}
+                        {r.capacity != null ? ` (${r.capacity})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('day')}</label>
+                  <select
+                    value={formDay}
+                    onChange={(e) => setFormDay(Number(e.target.value))}
+                    className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]"
+                  >
+                    {CAIRO_COL_ORDER.map((d) => (
+                      <option key={d} value={d}>
+                        {labelForWeekday(d)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('startTime')}</label>
+                    <input
+                      type="time"
+                      value={formStart}
+                      onChange={(e) => setFormStart(e.target.value)}
+                      className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('endTime')}</label>
+                    <input
+                      type="time"
+                      value={formEnd}
+                      onChange={(e) => setFormEnd(e.target.value)}
+                      className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-1)]"
+                    />
+                  </div>
+                </div>
+                <label className="flex items-center gap-2 py-1">
+                  <input
+                    type="checkbox"
+                    checked={formRecurring}
+                    onChange={(e) => setFormRecurring(e.target.checked)}
+                    className="rounded accent-primary"
                   />
-                </div>
-              </div>
-              <label className="flex items-center gap-2 py-1">
-                <input
-                  type="checkbox"
-                  checked={formRecurring}
-                  onChange={e => setFormRecurring(e.target.checked)}
-                  className="rounded accent-primary"
-                />
-                <span className="text-sm text-[var(--color-text-primary)]">{t('recurring')}</span>
-              </label>
-              {hasConflict && (
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-                  <AlertTriangle size={16} />
-                  <span>{t('conflictMessage')}</span>
-                </div>
-              )}
+                  <span className="text-sm text-[var(--color-text-primary)]">{t('recurring')}</span>
+                </label>
+                {hasConflict && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                    <AlertTriangle size={16} />
+                    <span>{t('conflictMessage')}</span>
+                  </div>
+                )}
               </div>
               <div className="flex justify-end gap-3 p-6 pt-0">
-                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 border border-[var(--color-border)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors">{tCommon('cancel')}</button>
-                <button type="submit" disabled={!formGroupId || !formRoomId || hasConflict || isSubmitting} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50">{t('addSession')}</button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 border border-[var(--color-border)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors"
+                >
+                  {tCommon('cancel')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={!formGroupId || !formRoomId || hasConflict || isSubmitting}
+                  className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {t('addSession')}
+                </button>
               </div>
             </form>
           </div>

@@ -20,6 +20,7 @@ export interface ChartCardProps {
   actions?: ReactNode;
   loading?: boolean;
   minHeight?: number;
+  footer?: ReactNode;
 }
 
 export function ChartCard({
@@ -35,6 +36,7 @@ export function ChartCard({
   actions,
   loading,
   minHeight = 240,
+  footer,
 }: ChartCardProps) {
   const locale = useLocale();
   const valueStr =
@@ -103,6 +105,11 @@ export function ChartCard({
       ) : (
         <div style={{ minHeight }} className="min-h-0">
           {children}
+          {footer ? (
+            <p className="mt-3 border-t border-[var(--color-border-subtle)] pt-2 text-xs text-[var(--color-text-muted)]">
+              {footer}
+            </p>
+          ) : null}
         </div>
       )}
     </div>

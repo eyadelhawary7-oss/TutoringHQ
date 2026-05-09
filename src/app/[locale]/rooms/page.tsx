@@ -152,9 +152,10 @@ export default function RoomsPage() {
         )}
 
         {rooms.length === 0 && !isLoading && (
-          <div className="text-center py-16">
+          <div className="text-center py-16 max-w-md mx-auto px-4">
             <DoorOpen className="w-12 h-12 text-[var(--color-text-secondary)] mx-auto mb-4" />
-            <p className="text-[var(--color-text-secondary)] font-medium">{t('noRooms')}</p>
+            <p className="text-[var(--color-text-primary)] font-semibold">{t('noRoomsTitle')}</p>
+            <p className="text-[var(--color-text-secondary)] text-sm mt-2">{t('noRoomsDescription')}</p>
           </div>
         )}
       </div>

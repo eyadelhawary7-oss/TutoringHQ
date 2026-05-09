@@ -13,17 +13,22 @@ export function ThemeToggle() {
     setMounted(true);
   }, []);
 
-  const isDark = resolvedTheme === undefined || resolvedTheme === 'dark';
+  const isDark = mounted && resolvedTheme === 'dark';
 
   return (
     <button
       type="button"
-      onClick={() => setTheme(isDark ? 'light' : 'dark')}
+      disabled={!mounted}
+      onClick={() => mounted && setTheme(isDark ? 'light' : 'dark')}
       suppressHydrationWarning
-      aria-label={isDark ? t('switchToLightTheme') : t('switchToDarkTheme')}
-      className="flex items-center justify-center w-9 h-9 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors duration-fast ease-out"
+      aria-label={
+        !mounted ? t('switchToDarkTheme') : isDark ? t('switchToLightTheme') : t('switchToDarkTheme')
+      }
+      className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors duration-fast ease-out hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] disabled:pointer-events-none disabled:opacity-60"
     >
-      {isDark ? (
+      {!mounted ? (
+        <span className="h-[18px] w-[18px] rounded-full bg-[var(--color-surface-3)] opacity-50" aria-hidden />
+      ) : isDark ? (
         <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="5" />
           <line x1="12" y1="1" x2="12" y2="3" />

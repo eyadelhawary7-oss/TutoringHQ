@@ -9,7 +9,7 @@ import { Download, Search, ClipboardList, BookOpen, X } from 'lucide-react';
 import { AttendanceHeatmap } from '@/components/AttendanceHeatmap';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { LocalizedDateInput } from '@/components/forms/LocalizedDateInput';
-import { formatDate, formatDateTime, formatPercent } from '@/lib/formatNumber';
+import { formatDate, formatDateTime, formatPercent, formatNumber } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 interface ScanRecord {
@@ -349,6 +349,13 @@ export default function AttendancePage() {
 
       {/* Filter bar */}
       <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-4 flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
+        <p className="w-full text-xs text-[var(--color-text-secondary)] sm:col-span-full">
+          {t('rangeSummary', {
+            count: formatNumber(scans.length, locale),
+            from: formatDate(`${dateFrom}T12:00:00`, locale, { month: 'short', day: 'numeric' }),
+            to: formatDate(`${dateTo}T12:00:00`, locale, { month: 'short', day: 'numeric' }),
+          })}
+        </p>
         <LocalizedDateInput
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}

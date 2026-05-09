@@ -379,7 +379,7 @@ export default function LoginPage() {
                   setResumeSignup(null);
                 }}
                 placeholder="+20 1XXXXXXXXX"
-                autoComplete="tel"
+                autoComplete="off"
                 dir="ltr"
                 required
                 style={{

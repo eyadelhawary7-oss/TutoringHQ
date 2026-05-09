@@ -50,6 +50,15 @@ const EGYPT_GOVERNORATES = [
   { value: 'dakahlia', labelAr: 'الدقهلية', labelEn: 'Dakahlia' },
 ];
 
+function governorateSelectLabel(g: (typeof EGYPT_GOVERNORATES)[number], isRTL: boolean): string {
+  if (g.value === 'cairo') {
+    const en = `\u2066${g.labelEn}\u2069`;
+    const ar = `\u2067${g.labelAr}\u2069`;
+    return isRTL ? `${ar} — ${en}` : `${en} — ${ar}`;
+  }
+  return isRTL ? g.labelAr : g.labelEn;
+}
+
 interface Student {
   id: string;
   name: string;
@@ -671,7 +680,7 @@ export function CardOrderModal({
                         <select value={deliveryForm.governorate} onChange={(e) => setDeliveryForm((f) => ({ ...f, governorate: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm">
                           <option value="">{t('selectGovernorate', { defaultValue: 'اختر المحافظة' })}</option>
                           {EGYPT_GOVERNORATES.map((g) => (
-                            <option key={g.value} value={g.value}>{isRTL ? g.labelAr : g.labelEn}</option>
+                            <option key={g.value} value={g.value}>{governorateSelectLabel(g, isRTL)}</option>
                           ))}
                         </select>
                       </div>

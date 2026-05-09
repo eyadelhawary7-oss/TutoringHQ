@@ -95,7 +95,7 @@ const CANCELLATION_REASON_LABELS: Record<string, string> = {
 };
 
 const GOVERNORATE_OPTIONS: { value: string; label: string }[] = [
-  { value: 'cairo', label: 'Cairo - القاهرة' },
+  { value: 'cairo', label: '\u2066Cairo\u2069 — \u2067القاهرة\u2069' },
   { value: 'giza', label: 'Giza - الجيزة' },
   { value: 'alexandria', label: 'Alexandria - الإسكندرية' },
   { value: 'dakahlia', label: 'Dakahlia - الدقهلية' },

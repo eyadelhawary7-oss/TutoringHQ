@@ -135,8 +135,26 @@ export default function BranchesPage() {
 
   if (loading && branches.length === 0) {
     return (
-      <div className="p-6 flex items-center justify-center min-h-[300px]">
-        <Loader2 className="h-8 w-8 animate-spin text-[var(--color-text-secondary)]" />
+      <div className="min-h-screen w-full bg-[var(--color-surface-0)] p-6" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+        <div className="h-8 w-48 rounded-lg bg-[var(--color-surface-2)] animate-pulse mb-4" />
+        <div className="h-4 w-72 rounded bg-[var(--color-surface-2)] animate-pulse mb-8" />
+        <div className="rounded-xl border border-[var(--color-border)] overflow-hidden mb-8">
+          <div className="h-10 bg-[var(--color-surface-2)] border-b border-[var(--color-border)] animate-pulse" />
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-12 border-b border-[var(--color-border)] flex items-center px-4 gap-4">
+              <div className="h-4 flex-1 rounded bg-[var(--color-surface-2)] animate-pulse" />
+              <div className="h-4 w-16 rounded bg-[var(--color-surface-2)] animate-pulse" />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-24 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+              <div className="h-3 w-24 rounded bg-[var(--color-surface-2)] animate-pulse mb-2" />
+              <div className="h-6 w-20 rounded bg-[var(--color-surface-2)] animate-pulse" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

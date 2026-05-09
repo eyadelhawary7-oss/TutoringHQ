@@ -61,6 +61,12 @@ export default function Sidebar({ onClose }: SidebarProps) {
   const { user, hasPermission } = useUser();
   const [isAdmin, setIsAdmin] = useState(false);
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [showBenchmarksNewBadge, setShowBenchmarksNewBadge] = useState(false);
+
+  useEffect(() => {
+    const BENCHMARKS_LAUNCH = new Date('2025-03-15').getTime();
+    setShowBenchmarksNewBadge((Date.now() - BENCHMARKS_LAUNCH) / (24 * 60 * 60 * 1000) < 30);
+  }, []);
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -85,9 +91,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
     await signOutToLogin(locale);
   };
 
-  const BENCHMARKS_LAUNCH = new Date('2025-03-15');
-  const showBenchmarksNewBadge = (Date.now() - BENCHMARKS_LAUNCH.getTime()) / (24 * 60 * 60 * 1000) < 30;
-
+  const isArLocale = locale === 'ar' || locale.startsWith('ar-');
   const allNavItems: {
     key: string;
     href: string;
@@ -140,7 +144,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
   return (
     <>
       <aside
-        className="hidden lg:flex flex-col fixed top-0 bottom-0 start-0 h-screen w-60 z-[100] print:hidden bg-[var(--color-surface-1)] border-e border-[var(--color-border)] isolate"
+        className={`hidden lg:flex flex-col fixed top-0 bottom-0 start-0 h-screen ${isArLocale ? 'w-72' : 'w-60'} z-[100] print:hidden bg-[var(--color-surface-1)] border-e border-[var(--color-border)] isolate`}
       >
         <div className="relative z-10 flex items-center gap-3 px-4 h-16 border-b border-[var(--color-border)] pointer-events-auto justify-between">
           <Link
@@ -188,7 +192,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
             return (
               <Link key={href} href={href} className={navLinkClass(isActive)} onClick={() => onClose?.()}>
                 <Icon size={18} className="shrink-0" />
-                <span className="truncate">{t(key)}</span>
+                <span className={`${isArLocale ? 'whitespace-normal break-words leading-snug' : 'truncate'}`}>{t(key)}</span>
                 {showBadge ? (
                   <span className="ms-auto px-1.5 py-0.5 text-[10px] font-semibold bg-teal-500/20 text-teal-400 rounded shrink-0">
                     {t('newBadge')}

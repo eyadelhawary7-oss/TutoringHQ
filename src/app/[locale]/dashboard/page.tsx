@@ -22,10 +22,12 @@ const DonutChart = dynamic(
   { ssr: false, loading: () => <div className="chq-skeleton h-48 w-full rounded-xl" /> },
 );
 import { useToast } from '@/components/ui/ToastProvider';
-import { formatDate, formatGrowth, formatNumber, formatPercent } from '@/lib/formatNumber';
+import { formatDate, formatGrowth, formatNumber, formatPercent, formatCurrency, formatRelativeMinutesAgo } from '@/lib/formatNumber';
 import { getCairoWeekDayKeys, startOfCairoWeek } from '@/lib/cairo/week';
+import { cairoDateKey } from '@/lib/cairo/day';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { type InactivePeriod, type InactiveStudent } from '@/components/dashboard/InactiveList';
+import { ClientOnly } from '@/components/ClientOnly';
 import {
   QrCode,
   TrendingUp,
@@ -37,6 +39,7 @@ import {
   ArrowUpRight,
   CalendarCheck,
   Send,
+  Activity,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -108,6 +111,8 @@ interface DashboardData {
   pendingInvoicesCount: number;
   latePaymentCount: number;
   studentSparkline7d: number[];
+  /** ISO timestamp when dashboard aggregate was computed (client fetch). */
+  generatedAt?: string;
 }
 
 type AtRiskRow = {
@@ -184,6 +189,7 @@ function atRiskAttendanceIndicator(daysSinceLastScan: number): number {
 function KpiCommandCard({
   label,
   valueDisplay,
+  subLabel,
   growth,
   icon: Icon,
   delayMs,
@@ -193,6 +199,7 @@ function KpiCommandCard({
 }: {
   label: string;
   valueDisplay: ReactNode;
+  subLabel?: ReactNode;
   /** Uses formatGrowth; chip hidden when prior period had no baseline (null). */
   growth?: { current: number; prior: number } | null;
   icon: LucideIcon;
@@ -226,6 +233,9 @@ function KpiCommandCard({
       >
         {valueDisplay}
       </div>
+      {subLabel ? (
+        <p className="mt-1 text-xs text-[var(--color-text-muted)]">{subLabel}</p>
+      ) : null}
       {showTrend ? (
         <span
           className={`mt-2 inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
@@ -240,9 +250,11 @@ function KpiCommandCard({
           <span>{growthLabel}</span>
         </span>
       ) : null}
-      <div className="mt-3 h-8 w-full opacity-95" aria-hidden>
+      <div className="mt-3 h-8 w-full opacity-95" aria-hidden suppressHydrationWarning>
         {sparkline.length >= 2 ? (
-          <SparklineChart data={sparkline} color="teal" height={32} />
+          <ClientOnly fallback={<div className="h-8 w-full" />}>
+            <SparklineChart data={sparkline} color="teal" height={32} />
+          </ClientOnly>
         ) : (
           <div className="h-8" />
         )}
@@ -299,7 +311,7 @@ export default function DashboardPage() {
     setGreetingKey(hour < 12 ? 'goodMorning' : hour < 17 ? 'goodAfternoon' : 'goodEvening');
   }, []);
 
-  const greetingComma = locale === 'ar' ? '\u060C ' : ', ';
+  const greetingComma = locale === 'ar' ? '\u060C\u00A0' : ',\u00A0';
 
   const startOfToday = () => {
     const now = new Date();
@@ -576,6 +588,7 @@ export default function DashboardPage() {
         pendingInvoicesCount,
         latePaymentCount,
         studentSparkline7d,
+        generatedAt: new Date().toISOString(),
       };
       setData(next);
       try {
@@ -848,7 +861,7 @@ export default function DashboardPage() {
   const attendanceChart7 = useMemo(() => {
     const td = safeData.trendData;
     const slice = td.length <= 7 ? td : td.slice(-7);
-    const todayKey = new Date().toISOString().slice(0, 10);
+    const todayKey = cairoDateKey(new Date());
     return slice.map((d) => {
       const isToday = d.dayKey === todayKey;
       return {
@@ -882,6 +895,11 @@ export default function DashboardPage() {
     const c = safeData.pendingInvoicesCount;
     return Array.from({ length: 7 }, () => ({ value: c }));
   }, [safeData.pendingInvoicesCount]);
+
+  const activeStudentsSpark7 = useMemo(() => {
+    const n = Number(statsData?.activeStudentsThisWeek ?? 0);
+    return Array.from({ length: 7 }, () => ({ value: n }));
+  }, [statsData?.activeStudentsThisWeek]);
 
   const onSendReport = useCallback(async () => {
     try {
@@ -917,7 +935,6 @@ export default function DashboardPage() {
     safeData.totalStudents > 0
       ? Math.min(100, Math.round((attendanceTodayCount / safeData.totalStudents) * 10000) / 100)
       : 0;
-  const egpSuffix = tCommon('egp');
 
   const paymentDueBanner = (() => {
     if (!centerBilling?.payment_due_date || centerBilling.billing_status === 'paid') return null;
@@ -928,7 +945,7 @@ export default function DashboardPage() {
 
     if (diffDays > 0 && diffDays <= 5) {
       return (
-        <div className="mb-4 p-4 rounded-xl border border-[var(--color-warning)]/40 bg-[var(--color-surface-2)] flex flex-wrap items-center justify-between gap-4">
+        <div className="mb-4 p-4 rounded-xl border border-[var(--color-warning)]/40 bg-[var(--color-surface-2)] flex flex-wrap items-center justify-between gap-4" suppressHydrationWarning>
           <span className="text-[var(--color-warning)] font-medium text-sm">
             {t('paymentDue', { days: diffDays, defaultValue: `Payment due in ${diffDays} days` })}
           </span>
@@ -954,7 +971,7 @@ export default function DashboardPage() {
 
       if (hoursRemaining <= 0) {
         return (
-          <div className="mb-4 p-4 rounded-xl border border-[var(--color-danger)]/40 bg-[var(--color-surface-2)] flex flex-wrap items-center justify-between gap-4">
+          <div className="mb-4 p-4 rounded-xl border border-[var(--color-danger)]/40 bg-[var(--color-surface-2)] flex flex-wrap items-center justify-between gap-4" suppressHydrationWarning>
             <span className="text-[var(--color-danger)] font-medium text-sm">
               {t('accountSuspended', { defaultValue: 'Account suspended due to overdue payment.' })}
             </span>
@@ -970,7 +987,7 @@ export default function DashboardPage() {
       }
 
       return (
-        <div className="mb-4 p-4 rounded-xl border border-[var(--color-danger)]/40 bg-[var(--color-surface-2)] flex flex-wrap items-center justify-between gap-4">
+        <div className="mb-4 p-4 rounded-xl border border-[var(--color-danger)]/40 bg-[var(--color-surface-2)] flex flex-wrap items-center justify-between gap-4" suppressHydrationWarning>
           <span className="text-[var(--color-danger)] font-medium text-sm">
             {t('paymentOverdue', {
               hours: hoursRemaining,
@@ -1071,9 +1088,14 @@ export default function DashboardPage() {
           <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
             {t(greetingKey)}
             {greetingComma}
-            {centerBilling?.name ?? 'CenterHQ'}
+            <span className="whitespace-nowrap">
+              <bdi dir="auto">{centerBilling?.name ?? 'CenterHQ'}</bdi>
+            </span>
           </h1>
-          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+          <p
+            className="mt-1 text-sm text-[var(--color-text-secondary)]"
+            suppressHydrationWarning
+          >
             {formatDate(new Date(), locale, {
               weekday: 'long',
               day: 'numeric',
@@ -1176,7 +1198,7 @@ export default function DashboardPage() {
         </div>
       ) : (
         <>
-          <div className="mb-6 grid max-w-6xl grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="mb-6 grid max-w-6xl grid-cols-2 gap-3 lg:grid-cols-5">
             <KpiCommandCard
               label={t('totalStudents')}
               valueDisplay={formatNumber(Number(safeData.totalStudents), locale)}
@@ -1195,13 +1217,24 @@ export default function DashboardPage() {
               locale={locale}
             />
             <KpiCommandCard
+              label={t('activeStudents.label')}
+              subLabel={t('activeStudents.timeWindow')}
+              valueDisplay={formatNumber(Number(statsData?.activeStudentsThisWeek ?? 0), locale)}
+              growth={null}
+              icon={Activity}
+              delayMs={50}
+              sparkline={activeStudentsSpark7}
+              staleMetrics={kpiStale}
+              locale={locale}
+            />
+            <KpiCommandCard
               label={t('todayAttendance')}
-              valueDisplay={
+              valueDisplay={formatNumber(Number(attendanceTodayCount), locale)}
+              subLabel={
                 <>
-                  {formatNumber(Number(attendanceTodayCount), locale)}
-                  <span className="ms-1 text-base font-semibold text-[var(--color-text-muted)]">
-                    ({formatPercent(Number(attendancePctOfTotal), locale)})
-                  </span>
+                  {formatPercent(Number(attendancePctOfTotal), locale)}
+                  <span className="mx-1 opacity-80">·</span>
+                  <span>{t('todayAttendanceSub')}</span>
                 </>
               }
               growth={{
@@ -1217,12 +1250,8 @@ export default function DashboardPage() {
             {canViewRevenue ? (
               <KpiCommandCard
                 label={t('monthlyRevenue')}
-                valueDisplay={
-                  <>
-                    {formatNumber(Number(safeData.monthConfirmed), locale)}
-                    <span className="ms-1 text-base font-normal text-[var(--color-text-muted)]">{egpSuffix}</span>
-                  </>
-                }
+                valueDisplay={formatCurrency(Number(safeData.monthConfirmed), locale)}
+                subLabel={t('monthlyRevenueSub')}
                 growth={
                   monthlyRevenueRaw.length >= 2
                     ? {
@@ -1253,7 +1282,8 @@ export default function DashboardPage() {
               />
             )}
             <KpiCommandCard
-              label={t('pendingPayments')}
+              label={t('pendingPayments.label')}
+              subLabel={t('pendingPayments.unit')}
               valueDisplay={formatNumber(Number(safeData.pendingInvoicesCount), locale)}
               icon={CreditCard}
               delayMs={300}
@@ -1274,6 +1304,13 @@ export default function DashboardPage() {
                 }}
                 trendLabel={t('vsLastWeek')}
                 minHeight={200}
+                footer={
+                  safeData.generatedAt
+                    ? t('chartLastUpdated', {
+                        time: formatRelativeMinutesAgo(safeData.generatedAt, locale),
+                      })
+                    : undefined
+                }
               >
                 <AreaChartComponent
                   data={attendanceChart7 as Record<string, string | number>[]}
@@ -1300,14 +1337,22 @@ export default function DashboardPage() {
                     centerLabel={t('collected')}
                     centerValue={
                       canViewRevenue
-                        ? formatNumber(Number(safeData.monthConfirmed), locale)
+                        ? formatCurrency(Number(safeData.monthConfirmed), locale)
                         : tCommon('noData')
                     }
-                    suffix={canViewRevenue ? ` ${egpSuffix}` : ''}
+                    suffix=""
+                    tooltipValueFormatter={(v) => formatNumber(Number(v), locale)}
                     centerValueFill="var(--color-text-primary)"
                     centerLabelFill="var(--color-text-secondary)"
                   />
                 </div>
+                {safeData.generatedAt ? (
+                  <p className="mt-2 border-t border-[var(--color-border-subtle)] pt-2 text-xs text-[var(--color-text-muted)]">
+                    {t('chartLastUpdated', {
+                      time: formatRelativeMinutesAgo(safeData.generatedAt, locale),
+                    })}
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>
