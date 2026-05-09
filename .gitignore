@@ -63,6 +63,10 @@ supabase/.temp/.claude/
 .cursor/
 .claude/
 
+# Cursor / audit runtime artifacts
+.cursor-i18n-out.txt
+seed-output.log
+
 # Local audit / pre-launch reports (do not commit)
 *.docx
 *-Audit-Report.*
