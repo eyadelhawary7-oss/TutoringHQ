@@ -46,7 +46,7 @@ export async function GET(request: Request) {
 
     let centersQuery = supabaseAdmin
       .from('centers')
-      .select('id, name, plan, phone, billing_period, all_in_price, next_payment_due, billing_status, status, payment_due_date, auto_suspend_at, is_early_adopter, early_adopter_price, billing_type')
+      .select('id, name, plan, phone, billing_period, all_in_price, next_payment_due, billing_status, status, payment_due_date, auto_suspend_at, is_early_adopter, early_adopter_price, billing_type, is_test')
       .neq('status', 'deleted');
     if (!includeTest) {
       centersQuery = centersQuery.eq('is_test', false);
@@ -96,6 +96,7 @@ export async function GET(request: Request) {
           is_early_adopter: (row as { is_early_adopter?: boolean }).is_early_adopter,
           early_adopter_price: (row as { early_adopter_price?: number | null }).early_adopter_price,
           id: (row as { id: string }).id,
+          is_test: (row as { is_test?: boolean | null }).is_test,
         });
         (row as Record<string, unknown>).monthlyEquivalent = Math.round(monthlyEquiv);
         const planKey = (row.plan as string) || 'starter';

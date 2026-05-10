@@ -77,7 +77,7 @@ Display Annual prices ROUNDED to whole EGP. "849.917 EGP/month" is a bug.
 
 **Billing period → implied monthly MRR:** `normalizeBillingPeriod`; semi-annual / half-yearly map to **quarterly** for MRR. **Quarterly** billing: implied MRR equals that monthly all-in rate. **Monthly** / **annual**: derived via `getChargeFromQuarterlyAllIn` / annual rounding ÷ 12 (see `computeImpliedMonthlyMrrFromBase`).
 
-**Centres excluded from subscription MRR** (`isCenterEligibleForSubscriptionMrr`): `suspended`, `churned`, `deleted`, `cancelled`, `inactive`. **PAYG** (`billing_type === 'payg'`): subscription MRR `0`; PAYG estimate is added separately in billing/overview where applicable.
+**Centres excluded from subscription MRR** (`isCenterEligibleForSubscriptionMrr`): **test centres** (`centers.is_test === true`) are always excluded (before status), regardless of account status. Additionally by status: `suspended`, `churned`, `deleted`, `cancelled`, `inactive`. **PAYG** (`billing_type === 'payg'`): subscription MRR `0`; PAYG estimate is added separately in billing/overview where applicable.
 
 ## Daily MRR snapshots (`mrr_snapshots`)
 

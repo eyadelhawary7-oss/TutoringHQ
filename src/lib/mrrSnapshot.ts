@@ -53,7 +53,7 @@ export async function computeMrrSnapshot(supabase: SupabaseClient): Promise<MrrS
   let active_centers = 0;
 
   for (const row of rows) {
-    if (!isCenterEligibleForSubscriptionMrr(row.status)) continue;
+    if (!isCenterEligibleForSubscriptionMrr(row)) continue;
 
     const mrr = getImpliedMonthlyMrr(row);
     total_mrr += mrr;

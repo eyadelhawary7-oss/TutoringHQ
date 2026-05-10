@@ -116,6 +116,30 @@ describe('getImpliedMonthlyMrr', () => {
     ).toBe(0);
   });
 
+  it('is_test=true centre → 0 subscription MRR regardless of plan/status', () => {
+    expect(
+      getImpliedMonthlyMrr({
+        plan: 'starter',
+        all_in_price: 4499,
+        billing_period: 'quarterly',
+        status: 'active',
+        is_test: true,
+      }),
+    ).toBe(0);
+  });
+
+  it('is_test=false, active, starter quarterly → list quarterly all-in as implied MRR', () => {
+    expect(
+      getImpliedMonthlyMrr({
+        plan: 'starter',
+        all_in_price: null,
+        billing_period: 'quarterly',
+        status: 'active',
+        is_test: false,
+      }),
+    ).toBe(PLANS.starter.quarterlyAllIn);
+  });
+
   it('numeric overload unchanged: quarterly base passes through', () => {
     expect(getImpliedMonthlyMrr(999, 'quarterly', 'solo')).toBe(999);
   });
@@ -127,5 +151,11 @@ describe('isCenterEligibleForSubscriptionMrr', () => {
   });
   it('includes active', () => {
     expect(isCenterEligibleForSubscriptionMrr('active')).toBe(true);
+  });
+  it('excludes test centre before status (active + is_test true)', () => {
+    expect(isCenterEligibleForSubscriptionMrr({ status: 'active', is_test: true })).toBe(false);
+  });
+  it('includes non-test active when passed as object', () => {
+    expect(isCenterEligibleForSubscriptionMrr({ status: 'active', is_test: false })).toBe(true);
   });
 });

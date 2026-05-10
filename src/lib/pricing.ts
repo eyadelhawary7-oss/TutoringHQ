@@ -133,13 +133,17 @@ export type ImpliedMrrCenterFields = {
   is_early_adopter?: boolean | null;
   early_adopter_price?: number | null;
   id?: string;
+  /** Seed / audit / fixture centres — never counted toward subscription MRR (see docs/PRICING_SPEC.md). */
+  is_test?: boolean | null;
 };
 
-/**
- * Same exclusions as finance admin `isActive`: these centres do not contribute to subscription MRR.
- * PAYG is excluded via `billing_type`; pending/trial centres still count if paying (unless status excludes).
- */
-export function isCenterEligibleForSubscriptionMrr(status: string | null | undefined): boolean {
+/** Argument for `isCenterEligibleForSubscriptionMrr` when passing a row-shaped input (status + optional flags). */
+export type SubscriptionMrrEligibilityInput = {
+  status?: string | null;
+  is_test?: boolean | null;
+};
+
+function isStatusEligibleForSubscriptionMrr(status: string | null | undefined): boolean {
   const s = (status ?? '').toLowerCase();
   return (
     s !== 'suspended' &&
@@ -148,6 +152,24 @@ export function isCenterEligibleForSubscriptionMrr(status: string | null | undef
     s !== 'cancelled' &&
     s !== 'inactive'
   );
+}
+
+/**
+ * Same exclusions as finance admin `isActive`: these centres do not contribute to subscription MRR.
+ * Test centres (`is_test === true`) are excluded before status is considered.
+ * PAYG is excluded via `billing_type` in `getImpliedMonthlyMrr`; pending/trial centres still count if paying (unless status excludes).
+ *
+ * Pass a **string** (status only) for legacy call sites where `is_test` is unknown — unknown is treated as non-test.
+ * Prefer a **row object** `{ status, is_test }` when available so test centres are excluded.
+ */
+export function isCenterEligibleForSubscriptionMrr(
+  input: string | null | undefined | SubscriptionMrrEligibilityInput,
+): boolean {
+  if (input != null && typeof input === 'object') {
+    if (input.is_test === true) return false;
+    return isStatusEligibleForSubscriptionMrr(input.status);
+  }
+  return isStatusEligibleForSubscriptionMrr(input as string | null | undefined);
 }
 
 /** Maps unknown plans to `starter`; known tiers resolve to their PLANS key (`top_centers` maps to `starter` for tier scaling multipliers). */
@@ -201,7 +223,7 @@ function computeImpliedMonthlyMrrFromBase(
 
 function getImpliedMonthlyMrrFromCenterFields(row: ImpliedMrrCenterFields): number {
   if ((row.billing_type || 'fixed') === 'payg') return 0;
-  if (!isCenterEligibleForSubscriptionMrr(row.status)) return 0;
+  if (!isCenterEligibleForSubscriptionMrr(row)) return 0;
 
   const bp = row.billing_period || 'quarterly';
   const mrrPeriod: BillingPeriod =

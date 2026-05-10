@@ -118,6 +118,7 @@ type CenterRow = {
   billing_type: string | null;
   is_early_adopter: boolean | null;
   early_adopter_price: number | null;
+  is_test: boolean | null;
 };
 
 async function fetchCentersForFinance(admin: SupabaseClient, includeTest: boolean): Promise<CenterRow[]> {
@@ -125,7 +126,7 @@ async function fetchCentersForFinance(admin: SupabaseClient, includeTest: boolea
     let q = admin
       .from('centers')
       .select(
-        'id, name, plan, status, created_at, all_in_price, billing_period, billing_type, is_early_adopter, early_adopter_price',
+        'id, name, plan, status, created_at, all_in_price, billing_period, billing_type, is_early_adopter, early_adopter_price, is_test',
       )
       .neq('status', 'deleted');
     if (!includeTest) {
@@ -295,6 +296,7 @@ function monthlyChargeForCenter(c: CenterRow): number {
     is_early_adopter: c.is_early_adopter,
     early_adopter_price: c.early_adopter_price,
     id: c.id,
+    is_test: c.is_test,
   });
 }
 

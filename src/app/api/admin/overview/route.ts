@@ -83,7 +83,7 @@ export async function GET(request: Request) {
     let centers: unknown[] = [];
     let centersQuery = supabaseAdmin
       .from('centers')
-      .select('id, name, phone, plan, status, billing_type, billing_period, all_in_price, is_early_adopter, early_adopter_price, created_at')
+      .select('id, name, phone, plan, status, billing_type, billing_period, all_in_price, is_early_adopter, early_adopter_price, created_at, is_test')
       .neq('status', 'deleted')
       .order('created_at', { ascending: false });
     if (!includeTestCenters) {
@@ -121,6 +121,7 @@ export async function GET(request: Request) {
       is_early_adopter?: boolean;
       early_adopter_price?: number;
       created_at?: string;
+      is_test?: boolean | null;
     }>;
     const activeCenters = allCenters.filter((c: { status?: string }) => c.status === 'active');
     const suspendedCenters = allCenters.filter((c: { status?: string }) => c.status === 'suspended');
@@ -129,7 +130,9 @@ export async function GET(request: Request) {
     const totalCentersCount = allCenters.length;
 
     /** Same cohort as finance north-star MRR (excludes suspended/churned/etc.; includes pending when paying). */
-    const subscriptionMrrCenters = allCenters.filter((c) => isCenterEligibleForSubscriptionMrr(c.status));
+    const subscriptionMrrCenters = allCenters.filter((c) =>
+      isCenterEligibleForSubscriptionMrr({ status: c.status, is_test: c.is_test }),
+    );
 
     const mrrByPlan: Record<string, number> = {
       solo: 0,
@@ -167,6 +170,7 @@ export async function GET(request: Request) {
         is_early_adopter: c.is_early_adopter,
         early_adopter_price: c.early_adopter_price,
         id: c.id,
+        is_test: c.is_test,
       });
       mrrByPlan[plan] = (mrrByPlan[plan] ?? 0) + amt;
     }

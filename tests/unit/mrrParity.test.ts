@@ -177,4 +177,36 @@ describe('admin MRR parity (billing vs overview vs finance)', () => {
       console.error('MRR parity divergence', { billing: b, overview: o, finance: f });
     }
   });
+
+  it('excludes is_test centres from subscription total while keeping billing/overview/finance parity', () => {
+    const centers = [
+      {
+        id: '1',
+        plan: 'solo',
+        billing_period: 'quarterly',
+        all_in_price: 999,
+        status: 'active',
+        billing_type: 'fixed',
+        is_early_adopter: false,
+        early_adopter_price: null,
+      },
+      {
+        id: 'fixture',
+        plan: 'enterprise',
+        billing_period: 'quarterly',
+        all_in_price: 18_499,
+        status: 'active',
+        billing_type: 'fixed',
+        is_early_adopter: false,
+        early_adopter_price: null,
+        is_test: true,
+      },
+    ];
+    const b = billingRouteSubscriptionTotal(centers);
+    const o = overviewRouteSubscriptionTotal(centers);
+    const f = financeRouteSubscriptionTotal(centers);
+    expect(b).toBe(o);
+    expect(o).toBe(f);
+    expect(b).toBe(billingRouteSubscriptionTotal([centers[0]]));
+  });
 });
