@@ -70,3 +70,5 @@ seed-output.log
 *-Audit-Report.*
 *Audit*.md
 PRELAUNCH_*.md
+playwright-report/
+test-results/
