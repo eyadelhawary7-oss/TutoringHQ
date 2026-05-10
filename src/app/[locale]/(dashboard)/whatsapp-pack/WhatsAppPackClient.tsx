@@ -638,7 +638,7 @@ export default function WhatsAppPackClient({
           </div>
 
           <div className="flex justify-end" dir="ltr">
-            <div className="max-w-[min(100%,20rem)] rounded-2xl rounded-tr-sm border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] shadow-sm">
+            <div className="max-w-[min(100%,20rem)] rounded-2xl rounded-te-sm border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] shadow-sm">
               {blastType === 'ops'
                 ? t('whatsapp.previewOps', { center: center.name, message: message.trim() || '…' })
                 : blastType === 'promo'

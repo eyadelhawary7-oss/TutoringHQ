@@ -178,6 +178,10 @@
   --transition-fast: 150ms ease;
   --transition-normal: 250ms ease;
 
+  /* RTL-aware motion helpers — flipped when <html dir="rtl"> (src/app/[locale]/layout.tsx) */
+  --chq-slide-dir: 1;
+  --chq-slide-enter-tx: 16px;
+
   /* ── Semantic text colors (var() only) ──────────── */
   --color-text-primary:   #f8fafc;
   --color-text-secondary: #94a3b8;
@@ -650,8 +654,25 @@ html.light .skeleton {
   to   { opacity: 1; transform: scale(1); }
 }
 @keyframes slide-in-right {
-  from { opacity: 0; transform: translateX(16px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(var(--chq-slide-enter-tx, 16px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+/* Slide-over panel: enters from inline-end (right in LTR, left in RTL) */
+@keyframes admin-orders-slide-panel {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--chq-slide-dir, 1) * 100%));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 @keyframes slide-in-bottom {
   from { opacity: 0; transform: translateY(12px); }
@@ -948,6 +969,12 @@ html.light .skeleton {
 }
 .toast-slide-in {
   animation: toast-slide-in 300ms ease-out forwards;
+}
+
+/* Full-document RTL overrides for shared motion tokens */
+html[dir="rtl"] {
+  --chq-slide-dir: -1;
+  --chq-slide-enter-tx: -16px;
 }
 
 /* ─── Print styles ─── */
@@ -2256,10 +2283,43 @@ body:has([data-chq-session-expired]) {
   border-color: #0D9488;
   border-style: solid;
 }
-.chq-scanner-corner-tl { top: -2px; right: -2px; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
-.chq-scanner-corner-tr { top: -2px; left: -2px;  border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
-.chq-scanner-corner-bl { bottom: -2px; right: -2px; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
-.chq-scanner-corner-br { bottom: -2px; left: -2px;  border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+/* Scanner frame corners — logical borders so the overlay tracks inline-start/end under RTL */
+.chq-scanner-corner-tl {
+  top: -2px;
+  inset-inline-end: -2px;
+  border-block-start-width: 3px;
+  border-inline-start-width: 3px;
+  border-block-end-width: 0;
+  border-inline-end-width: 0;
+  border-start-start-radius: 4px;
+}
+.chq-scanner-corner-tr {
+  top: -2px;
+  inset-inline-start: -2px;
+  border-block-start-width: 3px;
+  border-inline-end-width: 3px;
+  border-block-end-width: 0;
+  border-inline-start-width: 0;
+  border-start-end-radius: 4px;
+}
+.chq-scanner-corner-bl {
+  bottom: -2px;
+  inset-inline-end: -2px;
+  border-block-end-width: 3px;
+  border-inline-start-width: 3px;
+  border-block-start-width: 0;
+  border-inline-end-width: 0;
+  border-end-start-radius: 4px;
+}
+.chq-scanner-corner-br {
+  bottom: -2px;
+  inset-inline-start: -2px;
+  border-block-end-width: 3px;
+  border-inline-end-width: 3px;
+  border-block-start-width: 0;
+  border-inline-start-width: 0;
+  border-end-end-radius: 4px;
+}
 
 @keyframes chq-scan-line {
   0%   { top: 8px; opacity: 1; }
@@ -2268,8 +2328,7 @@ body:has([data-chq-session-expired]) {
 }
 .chq-scan-line {
   position: absolute;
-  left: 8px;
-  right: 8px;
+  inset-inline: 8px;
   height: 2px;
   background: linear-gradient(90deg, transparent, #0D9488, transparent);
   animation: chq-scan-line 2s ease-in-out infinite;

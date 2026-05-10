@@ -529,7 +529,7 @@ export default function AdminCardOrderDetailClient({
                 <div
                   className={cn(
                     'rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 space-y-3',
-                    'fixed bottom-0 left-0 right-0 z-30 lg:relative lg:z-0 lg:border lg:rounded-xl lg:left-auto lg:right-auto',
+                    'fixed bottom-0 start-0 end-0 z-30 lg:relative lg:z-0 lg:border lg:rounded-xl lg:start-auto lg:end-auto',
                   )}
                   data-testid="admin-card-order-actions"
                 >

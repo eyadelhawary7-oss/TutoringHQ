@@ -25,7 +25,7 @@ function ToastRegion({ children, toasts, dismiss }: { children: ReactNode; toast
       <div
         aria-live="polite"
         aria-label={t('notificationsRegion')}
-        className="pointer-events-none fixed bottom-4 inset-x-0 z-[9999] flex w-full flex-col items-center gap-2 px-4 sm:bottom-auto sm:inset-x-auto sm:start-auto sm:end-4 sm:top-4 sm:w-auto sm:items-end sm:px-0"
+        className="pointer-events-none fixed bottom-4 start-0 end-0 z-[9999] flex w-full flex-col items-center gap-2 px-4 sm:bottom-auto sm:start-auto sm:end-4 sm:top-4 sm:w-auto sm:items-end sm:px-0"
       >
         {toasts.map((x) => (
           <ToastItem key={x.id} toast={x} onDismiss={dismiss} />

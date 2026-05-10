@@ -114,6 +114,7 @@ export function AreaChartComponent({
 
   return (
     <ResponsiveContainer width="100%" height={height}>
+      {/* RTL-EXEMPT: Recharts margin prop uses physical keys only */}
       <AreaChart data={safeData} margin={{ ...CHART_MARGIN, left: showYAxis ? 4 : CHART_MARGIN.left }}>
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">

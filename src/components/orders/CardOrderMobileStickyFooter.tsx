@@ -16,7 +16,7 @@ export function CardOrderMobileStickyFooter() {
 
   return (
     <div
-      className="md:hidden fixed inset-x-0 bottom-0 z-[70] border-t border-[var(--color-border-subtle)] bg-[var(--color-surface-1)]/98 backdrop-blur-md px-4 pt-3 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]"
+      className="md:hidden fixed start-0 end-0 bottom-0 z-[70] border-t border-[var(--color-border-subtle)] bg-[var(--color-surface-1)]/98 backdrop-blur-md px-4 pt-3 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]"
       style={{ paddingBottom: `calc(12px + env(safe-area-inset-bottom, 0px))` }}
       data-testid="card-order-mobile-sticky-footer"
     >

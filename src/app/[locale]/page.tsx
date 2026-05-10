@@ -60,7 +60,7 @@ export default function LocaleHomePage() {
       data-chq-landing
       className="min-h-screen bg-[#080f1a] text-white [&_h1]:text-white [&_h2]:text-white [&_h3]:text-white [&_p]:text-[var(--color-text-secondary)]"
     >
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-800/60 bg-[#080f1a]/90 backdrop-blur-md">
+      <header className="fixed start-0 end-0 top-0 z-50 border-b border-slate-800/60 bg-[#080f1a]/90 backdrop-blur-md">
         <div className="relative mx-auto flex h-14 max-w-6xl items-center px-4 md:h-16 md:px-6">
           <button
             type="button"

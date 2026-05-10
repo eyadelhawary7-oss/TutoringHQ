@@ -436,7 +436,7 @@ export default function SignupForm() {
       >
         <div className="pointer-events-none fixed inset-0" aria-hidden>
           <div
-            className="absolute top-1/2 left-1/2 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full"
+            className="absolute top-1/2 start-1/2 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full"
             style={{
               background: 'radial-gradient(circle, rgba(13,148,136,0.15) 0%, transparent 70%)',
             }}
@@ -521,7 +521,7 @@ export default function SignupForm() {
     >
       <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
         <div
-          className="absolute top-[-20%] left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full"
+          className="absolute top-[-20%] start-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full"
           style={{
             background: 'radial-gradient(circle, rgba(13,148,136,0.12) 0%, transparent 70%)',
             animation: 'breathe 6s ease-in-out infinite',

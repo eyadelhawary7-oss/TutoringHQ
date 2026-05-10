@@ -418,7 +418,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
             <div
               className="relative w-full max-w-md bg-[var(--color-surface-1)] border-s border-border h-full overflow-y-auto animate-fade-in"
               onClick={(e) => e.stopPropagation()}
-              style={{ animation: 'slideInRight 0.3s ease' }}
+              style={{ animation: 'admin-orders-slide-panel 0.3s ease' }}
             >
               <div className="sticky top-0 bg-[var(--color-surface-1)] border-b border-border px-5 py-4 flex items-center justify-between z-10">
                 <div className="flex items-center gap-3">
@@ -678,13 +678,6 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
             </div>
           </div>
         )}
-
-        <style>{`
-        @keyframes slideInRight {
-          from { transform: translateX(100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-      `}</style>
         </div>
       </div>
     </div>

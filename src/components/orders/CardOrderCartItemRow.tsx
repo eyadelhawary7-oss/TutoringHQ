@@ -100,6 +100,7 @@ export function CardOrderCartItemRow({
         </button>
       </div>
 
+      {/* Swipe offset uses physical translateX(px) from touch delta; reset on md+ — RTL-EXEMPT */}
       <div
         ref={trackRef}
         role="group"

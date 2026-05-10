@@ -2203,7 +2203,7 @@ function AdminPageContent() {
                             <button
                               type="button"
                               onClick={() => setViewingProof(proofUrl)}
-                              className="text-left text-blue-600 hover:underline font-mono text-xs truncate block max-w-full"
+                              className="text-start text-blue-600 hover:underline font-mono text-xs truncate block max-w-full"
                               title={proofUrl}
                             >
                               {proofRefDisplay}

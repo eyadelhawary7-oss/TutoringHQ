@@ -104,7 +104,7 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
   return (
     <div ref={scrollRef} className="relative flex-1 min-h-0 overflow-auto touch-pan-y">
       <div
-        className="absolute top-0 inset-x-0 flex flex-col items-center justify-end z-10 pointer-events-none overflow-hidden transition-[height,opacity] duration-fast ease-out"
+        className="absolute top-0 start-0 end-0 flex flex-col items-center justify-end z-10 pointer-events-none overflow-hidden transition-[height,opacity] duration-fast ease-out"
         style={{
           height: refreshing ? 44 : pullDist > 0 ? Math.min(36 + pullDist * 0.35, 72) : 0,
           opacity: showIndicator ? 1 : 0,

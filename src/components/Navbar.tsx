@@ -199,7 +199,7 @@ export default function Navbar() {
             aria-hidden="true"
             onClick={() => setMenuOpen(false)}
           />
-          <div className="fixed inset-x-0 top-0 z-50 md:hidden bg-bg-primary border-b border-[var(--color-border-subtle)] shadow-lg max-h-screen overflow-y-auto">
+          <div className="fixed start-0 end-0 top-0 z-50 md:hidden bg-bg-primary border-b border-[var(--color-border-subtle)] shadow-lg max-h-screen overflow-y-auto">
             <div className="flex justify-between items-center h-14 px-4 border-b border-[var(--color-border-subtle)]">
               <span className="text-lg font-bold text-text-primary">CenterHQ</span>
               <button

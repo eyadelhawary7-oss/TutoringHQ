@@ -64,6 +64,7 @@ export default function MRRTrend({ data = [] }: MRRTrendProps) {
 
   return (
     <ResponsiveContainer width="100%" height={260}>
+      {/* RTL-EXEMPT: Recharts margin prop uses physical keys only */}
       <LineChart data={withProjection} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
         <XAxis

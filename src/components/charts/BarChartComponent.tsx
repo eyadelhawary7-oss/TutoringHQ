@@ -130,6 +130,7 @@ export function BarChartComponent({
   const barSize = Math.max(8, 32 - safeData.length);
   const cat = categoryKey ?? xKey;
 
+  // RTL-EXEMPT: Recharts margin prop uses physical keys only
   const margin = {
     ...CHART_MARGIN,
     left: layout === 'vertical' ? 4 : showYAxis ? 4 : CHART_MARGIN.left,

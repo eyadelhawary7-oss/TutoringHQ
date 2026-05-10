@@ -1,6 +1,8 @@
 import { formatDate, formatDateTime, formatNumber, formatPercent, formatTime } from '@/lib/formatNumber';
 import { calcExclusive, calcExclusiveProduct, type ExclusivePricing } from '@/lib/invoiceTaxUtils';
 
+/** HTML for PDF/email previews. RTL-EXEMPT: email clients + tax PDFs use physical box model for predictable rendering. */
+
 const PDF_LOCALE = 'ar';
 
 export const BLAST_PRICE_PER_PARENT_INCLUSIVE = 9.8;

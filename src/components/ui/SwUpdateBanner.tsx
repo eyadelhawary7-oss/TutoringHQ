@@ -26,7 +26,7 @@ export function SwUpdateBanner() {
   if (!show) return null;
 
   return (
-    <div className="fixed bottom-[calc(56px+env(safe-area-inset-bottom,0px)+8px)] inset-x-0 flex justify-center px-4 z-[9997] md:bottom-4 no-print">
+    <div className="fixed bottom-[calc(56px+env(safe-area-inset-bottom,0px)+8px)] start-0 end-0 flex justify-center px-4 z-[9997] md:bottom-4 no-print">
       <div className="card p-4 flex items-center gap-3 shadow-lg max-w-sm w-full">
         <div className="w-8 h-8 rounded-lg bg-[rgba(13,148,136,0.12)] flex items-center justify-center shrink-0">
           <svg

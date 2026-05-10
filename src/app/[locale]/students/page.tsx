@@ -1792,6 +1792,7 @@ export default function StudentsPage() {
                                   }}
                                   className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${s.parent_pack_opted_in ? 'bg-teal-600' : 'bg-slate-200'} btn-press chq-focus`}
                                 >
+                                  {/* RTL-EXEMPT: knob uses physical translateX until refactored to inset-based thumb */}
                                   <span
                                     className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-[var(--color-surface-1)] shadow transition-transform ${s.parent_pack_opted_in ? 'translate-x-4' : 'translate-x-0.5'}`}
                                   />
@@ -2272,7 +2273,7 @@ export default function StudentsPage() {
       )}
 
       {bulkSelected.size > 0 ? (
-        <div className="fixed inset-x-0 bottom-[calc(56px+env(safe-area-inset-bottom,0px))] md:bottom-6 z-[70] flex justify-center px-4 pointer-events-none">
+        <div className="fixed start-0 end-0 bottom-[calc(56px+env(safe-area-inset-bottom,0px))] md:bottom-6 z-[70] flex justify-center px-4 pointer-events-none">
           <div className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shadow-xl px-4 py-3 max-w-lg w-full">
             <span className="text-sm text-[var(--color-text-secondary)] flex-1 tabular-nums">{bulkSelected.size}</span>
             <button

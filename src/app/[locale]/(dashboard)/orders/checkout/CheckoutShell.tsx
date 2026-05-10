@@ -196,7 +196,7 @@ export function CheckoutShell({
       {!isSuccess && !isPayment && summaryCard ? (
         <>
           <div
-            className="lg:hidden fixed inset-x-0 bottom-0 z-50 border-t border-[var(--color-border-subtle)] bg-[var(--color-surface-1)]/98 backdrop-blur-md px-4 pt-2 shadow-[0_-4px_24px_rgba(0,0,0,0.06)]"
+            className="lg:hidden fixed start-0 end-0 bottom-0 z-50 border-t border-[var(--color-border-subtle)] bg-[var(--color-surface-1)]/98 backdrop-blur-md px-4 pt-2 shadow-[0_-4px_24px_rgba(0,0,0,0.06)]"
             style={{ paddingBottom: `calc(8px + env(safe-area-inset-bottom, 0px))` }}
           >
             <button

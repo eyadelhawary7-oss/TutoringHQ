@@ -99,10 +99,10 @@ export default function CardTemplatePreview({
       style={{ '--card-color': color } as React.CSSProperties}
     >
       <div
-        className="absolute top-0 inset-x-0 h-[20%]"
+        className="absolute top-0 start-0 end-0 h-[20%]"
         style={{ background: `linear-gradient(135deg, ${color}, ${color}dd)` }}
       />
-      <div className="absolute top-0 inset-x-0 h-[20%] flex items-center justify-between px-2 py-1">
+      <div className="absolute top-0 start-0 end-0 h-[20%] flex items-center justify-between px-2 py-1">
         {centerLogo ? (
           <img src={centerLogo} alt="" className="h-5 w-5 object-contain" />
         ) : (

@@ -14,6 +14,7 @@ export interface SparklineChartProps {
   height?: number;
 }
 
+/** RTL-EXEMPT: Recharts margin prop uses physical keys only */
 const SPARK_MARGIN = { top: 2, right: 2, bottom: 2, left: 2 };
 
 export function SparklineChart({ data, color = 'teal', height = 48 }: SparklineChartProps) {

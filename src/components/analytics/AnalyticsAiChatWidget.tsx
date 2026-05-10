@@ -92,7 +92,7 @@ export default function AnalyticsAiChatWidget() {
   };
 
   return (
-    <div className="no-print fixed z-[60] bottom-0 inset-x-0 md:bottom-6 md:inset-x-auto md:end-6 flex flex-col items-stretch md:items-end pointer-events-none">
+    <div className="no-print fixed z-[60] bottom-0 start-0 end-0 md:bottom-6 md:start-auto md:end-6 flex flex-col items-stretch md:items-end pointer-events-none">
       {open && (
         <div
           className="pointer-events-auto mb-3 mx-4 md:mx-0 w-[min(100%,360px)] max-h-[min(70vh,480px)] flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] shadow-lg card-shadow ms-auto me-4 md:me-0 overflow-hidden"

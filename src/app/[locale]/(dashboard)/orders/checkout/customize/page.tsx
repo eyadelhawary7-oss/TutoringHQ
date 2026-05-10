@@ -99,7 +99,7 @@ export default function CheckoutCustomizePage() {
                 data-testid={`checkout-style-${v}`}
                 onClick={() => setStyle(v)}
                 className={cn(
-                  'relative rounded-xl border-2 p-3 text-left transition-colors',
+                  'relative rounded-xl border-2 p-3 text-start transition-colors',
                   style === v
                     ? 'border-teal-500 bg-teal-500/10'
                     : 'border-[var(--color-border-subtle)] hover:border-[var(--color-border)]',

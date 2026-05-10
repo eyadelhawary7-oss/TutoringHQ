@@ -35,6 +35,10 @@ export const CHART_STYLE = {
   curveType: 'monotone' as const,
 } as const;
 
+/**
+ * Recharts `<*Chart margin={...} />` only accepts physical keys (`left`/`right`/…).
+ * RTL-EXEMPT: axis gutters are chart-library API, not layout CSS.
+ */
 export const CHART_MARGIN = {
   top: 8,
   right: 8,

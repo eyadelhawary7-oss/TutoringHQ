@@ -106,7 +106,7 @@ export default function TopNavbar() {
   return (
     <>
     <nav
-      className="fixed top-0 inset-x-0 z-40 flex items-center justify-between h-14 px-4 gap-2 print:hidden"
+      className="fixed top-0 start-0 end-0 z-40 flex items-center justify-between h-14 px-4 gap-2 print:hidden"
       style={{
         background: 'var(--glass-bg, rgba(15, 23, 42, 0.6))',
         backdropFilter: 'blur(20px)',

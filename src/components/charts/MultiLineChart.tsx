@@ -67,6 +67,7 @@ export function MultiLineChart({
 
   return (
     <ResponsiveContainer width="100%" height={height}>
+      {/* RTL-EXEMPT: Recharts margin prop uses physical keys only */}
       <LineChart data={safeData} margin={{ ...CHART_MARGIN, left: 4 }}>
         <CartesianGrid stroke={CHART_STYLE.gridColor} strokeDasharray="4 4" vertical={false} />
         <XAxis
