@@ -3269,65 +3269,6 @@
     "billing": "Billing",
     "pendingSignups": "Pending Signups",
     "cardOrders": "Card Orders",
-    "nav": {
-      "cardRefunds": "Card refunds"
-    },
-    "cardRefunds": {
-      "title": "Card order refunds",
-      "loading": "Updating…",
-      "empty": "No refund requests yet",
-      "toastSuccess": "Refund action saved",
-      "filter": {
-        "all": "All",
-        "pending": "Pending",
-        "approved": "Approved",
-        "paid": "Paid",
-        "rejected": "Rejected"
-      },
-      "status": {
-        "pending": "Pending",
-        "approved": "Approved",
-        "paid": "Paid",
-        "rejected": "Rejected"
-      },
-      "col": {
-        "order": "Order #",
-        "centre": "Centre name",
-        "items": "Items",
-        "total": "Original total",
-        "refundStatus": "Refund status",
-        "requested": "Requested",
-        "daysWaiting": "Days waiting",
-        "actions": "Actions"
-      },
-      "action": {
-        "approve": "Approve refund",
-        "reject": "Reject refund",
-        "markPaid": "Mark refund paid"
-      },
-      "pagination": "Showing {from}–{to} of {total}",
-      "prev": "Previous",
-      "next": "Next",
-      "modal": {
-        "approveTitle": "Approve refund?",
-        "approveBody": "The centre will be notified that the refund is approved. Complete the Paymob refund manually, then mark this row as paid with the Paymob refund reference.",
-        "rejectTitle": "Reject refund request",
-        "rejectReasonLabel": "Reason shown to ops",
-        "rejectReasonPlaceholder": "Explain why this refund cannot be processed (10–500 characters).",
-        "rejectReasonHint": "Minimum 10 characters, maximum 500.",
-        "rejectTooShort": "Reason must be at least 10 characters.",
-        "rejectTooLong": "Reason must be at most 500 characters.",
-        "markPaidTitle": "Mark refund as paid?",
-        "markPaidBody": "Confirm that you've sent the refund through the Paymob dashboard.",
-        "externalRefLabel": "Paymob refund ID",
-        "externalRefPlaceholder": "Paste the Paymob refund reference",
-        "cancel": "Cancel",
-        "working": "Saving…",
-        "confirmApprove": "Approve",
-        "confirmReject": "Reject refund",
-        "confirmMarkPaid": "Confirm paid"
-      }
-    },
     "planRequests": "Plan Requests",
     "referrals": {
       "pageTitle": "Referrals",
@@ -4761,6 +4702,9 @@
   },
   "checkout": {
     "pageTitle": "Checkout",
+    "terms": {
+      "noRefund": "I understand that card orders cannot be cancelled or refunded once payment is confirmed. Cancellation is only available before payment is processed."
+    },
     "loading": "Loading checkout…",
     "stepsAria": "Checkout steps",
     "stepDelivery": "Delivery",
@@ -4849,7 +4793,6 @@
       "shippingLine": "Shipping ({zone})",
       "grandTotal": "Total",
       "perCardAllIn": "= {amount} per card all-in",
-      "terms": "I agree to the <link>terms</link>, including the no-refund policy after vendor production starts.",
       "placeOrder": "Place order",
       "placing": "Placing order…",
       "errors": {
@@ -4962,10 +4905,8 @@
   },
   "cardOrderCancel": {
     "title": "Cancel this order?",
-    "warn": {
-      "pending_payment": "This order will be cancelled with no charge.",
-      "paid": "This order will be cancelled. If eligible, a full refund will be processed within 7–14 business days.",
-      "vendor_assigned": "This order was sent to the vendor but production has not started. If cancelled, a full refund will be processed within 7–14 business days. After production starts, refunds are no longer available."
+    "warning": {
+      "beforePayment": "Order will be cancelled, no charge has been made."
     },
     "reasonLabel": "Reason",
     "reason": {
@@ -4978,7 +4919,10 @@
     "confirmTypeLabel": "Type CANCEL to confirm",
     "back": "Close",
     "confirm": "Cancel order",
-    "errors": { "generic": "Could not cancel order." }
+    "errors": {
+      "generic": "Could not cancel order.",
+      "alreadyPaid": "This order cannot be cancelled because payment has already been processed."
+    }
   },
   "receipt": {
     "header": "Receipt",

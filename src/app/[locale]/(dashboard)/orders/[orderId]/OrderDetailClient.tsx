@@ -88,7 +88,7 @@ export default function OrderDetailClient({
 
   const trackingNo = order.bosta_tracking_number != null ? String(order.bosta_tracking_number).trim() : '';
   const showTracking = ['in_transit', 'delivered', 'issued'].includes(status);
-  const showCancel = ['pending_payment', 'paid', 'vendor_assigned'].includes(status);
+  const showCancel = status === 'pending_payment';
   const canMarkIssued = viewerRole === 'owner' && status === 'delivered';
 
   async function refreshOrder() {

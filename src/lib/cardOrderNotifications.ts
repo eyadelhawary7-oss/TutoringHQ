@@ -48,8 +48,6 @@ function pickDedicatedTemplate(
       return { templateName: 'chq_card_order_delivered', parameterOrder: BODY_ORDER_PAIR };
     case 'cancelled':
       return { templateName: 'chq_card_order_cancelled', parameterOrder: BODY_ORDER_PAIR };
-    case 'refunded':
-      return { templateName: 'chq_card_order_refunded', parameterOrder: BODY_ORDER_PAIR };
     default:
       return null;
   }
@@ -95,10 +93,12 @@ export async function sendCardOrderStatusUpdate(
   _fromStatus: string,
   toStatus: string,
 ): Promise<void> {
+  const normTo = toStatus.trim().toLowerCase().replace(/-/g, '_');
+  /* Policy: card orders are non-refundable; do not enqueue WhatsApp/in-app for legacy `refunded` rows. */
+  if (normTo === 'refunded') return;
+
   const admin = supabaseAdmin;
   if (!admin) return;
-
-  const normTo = toStatus.trim().toLowerCase();
 
   const { error: dedupeErr } = await admin.from('card_order_status_wa_dedupe').insert({
     card_order_id: orderId,

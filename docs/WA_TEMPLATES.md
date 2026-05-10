@@ -23,10 +23,11 @@ Project rule: delivery uses Meta-approved templates only. Wire locations live ne
 | `chq_card_order_in_transit` | card_orders | Same pair | Yes | `status` → `in_transit` |
 | `chq_card_order_delivered` | card_orders | Same pair | Yes | `status` → `delivered` |
 | `chq_card_order_cancelled` | card_orders | Same pair | Yes | `status` → `cancelled` |
-| `chq_card_order_refunded` | card_orders | Same pair | Yes | `status` → `refunded` |
 | `chq_vendor_new_order` | vendor | Body: order ref, quantity, notes, **`{{courier_name}}`** (4th). Quick-reply button index `0` with `READY_<orderId>`. | Yes — `sendVendorNewOrder` | Card order → `notifyVendorOfNewOrder` |
 | `chq_pin_delivery` | auth | PIN / login code (see Meta). | **Registered only — unwired** | Target launch **after Vodafone postpaid SIM + SMS fallback** |
 | *(others)* | various | See Meta Business Manager & `wa_meta_templates` | Partial | See codebase grep for `template_name` |
+
+**`chq_card_order_refunded` — DEPRECATED.** Do **not** register on Meta. Card orders are non-refundable; refunds are not offered. Legacy `wa_meta_templates` rows (e.g. `PENDING`) are harmless and may be deleted manually via SQL.
 
 ### `chq_vendor_new_order`
 
@@ -63,7 +64,8 @@ Templates seeded as **PENDING** in `wa_meta_templates` that need Meta-side regis
 | `chq_card_order_in_transit` | `order_id`, `centre_name`, `tracking_number` |
 | `chq_card_order_delivered` | `order_id`, `centre_name` |
 | `chq_card_order_cancelled` | `order_id`, `centre_name`, `reason` |
-| `chq_card_order_refunded` | `order_id`, `centre_name`, `refund_amount` |
+
+**Deprecated (do not register):** `chq_card_order_refunded` — refunds are not offered on card orders. If a seed row exists as `PENDING` in `wa_meta_templates`, leave it or delete manually; do not submit for Meta approval.
 
 ### Process
 

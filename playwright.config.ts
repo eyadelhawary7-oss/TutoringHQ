@@ -15,11 +15,11 @@ const UNAUTH_SPECS =
 const MOBILE_SPECS = /(mobile-cart|responsive-375)\.spec\.ts$/;
 
 /** Requires super-admin storage + TEST_SUPER_ADMIN_* env */
-const ADMIN_SUPER_SPECS = /(admin-pages|card-order-full|admin-card-refunds)\.spec\.ts$/;
+const ADMIN_SUPER_SPECS = /(admin-pages|card-order-full)\.spec\.ts$/;
 
 /** Authenticated desktop projects exclude unauth-only, mobile-only, and super-admin-only specs */
 const DESKTOP_IGNORE =
-  /(login-locale-redirect|pricing-page|signup-happy|signup-resume|mobile-cart|responsive-375|admin-pages|card-order-full|admin-card-refunds)\.spec\.ts$/;
+  /(login-locale-redirect|pricing-page|signup-happy|signup-resume|mobile-cart|responsive-375|admin-pages|card-order-full)\.spec\.ts$/;
 
 export default defineConfig({
   testDir: './tests/e2e',

@@ -10,11 +10,7 @@ export type CardOrderLifecycleEvent =
   | 'bosta_picked_up'
   | 'bosta_delivered'
   | 'centre_confirmed_issued'
-  | 'cancelled_before_payment'
-  | 'cancelled_after_payment'
-  | 'refund_approved'
-  | 'refund_paid'
-  | 'refund_rejected';
+  | 'cancelled_before_payment';
 
 export interface ApplyTransitionContext {
   actorUserId?: string;
@@ -188,7 +184,7 @@ export function buildCardOrderTransitionPatch(
     case 'cancelled_before_payment': {
       if (s === 'cancelled' && (r == null || r === '')) return {};
       if (s !== 'pending_payment') {
-        throw new IllegalCardOrderTransitionError('cancelled_before_payment requires pending_payment', 'bad_status');
+        throw new Error('CARD_ORDER_CANCEL_NOT_ALLOWED: order is past payment');
       }
       if (!reason) {
         throw new IllegalCardOrderTransitionError('Cancellation reason required', 'reason_required');
@@ -199,64 +195,6 @@ export function buildCardOrderTransitionPatch(
         refund_status: null,
         cancelled_at: stamp(),
         cancellation_reason: reason,
-      };
-    }
-
-    case 'cancelled_after_payment': {
-      if (s === 'cancelled' && r === 'pending') return {};
-      if (s !== 'paid' && s !== 'vendor_assigned') {
-        throw new IllegalCardOrderTransitionError(
-          'cancelled_after_payment requires paid or vendor_assigned',
-          'bad_status',
-        );
-      }
-      if (!reason) {
-        throw new IllegalCardOrderTransitionError('Cancellation reason required', 'reason_required');
-      }
-      return {
-        status: 'cancelled',
-        payment_status: 'paid',
-        refund_status: 'pending',
-        cancelled_at: stamp(),
-        refund_requested_at: stamp(),
-        cancellation_reason: reason,
-      };
-    }
-
-    case 'refund_approved': {
-      if (r === 'approved') return {};
-      if (s !== 'cancelled' || r !== 'pending') {
-        throw new IllegalCardOrderTransitionError('refund_approved requires cancelled + refund pending', 'bad_refund');
-      }
-      return {
-        status: 'cancelled',
-        payment_status: 'paid',
-        refund_status: 'approved',
-      };
-    }
-
-    case 'refund_paid': {
-      if (s === 'refunded' && r === 'paid') return {};
-      if (s !== 'cancelled' || r !== 'approved') {
-        throw new IllegalCardOrderTransitionError('refund_paid requires cancelled + refund approved', 'bad_refund');
-      }
-      return {
-        status: 'refunded',
-        payment_status: 'paid',
-        refund_status: 'paid',
-        refund_paid_at: stamp(),
-      };
-    }
-
-    case 'refund_rejected': {
-      if (r === 'rejected') return {};
-      if (s !== 'cancelled' || r !== 'pending') {
-        throw new IllegalCardOrderTransitionError('refund_rejected requires cancelled + refund pending', 'bad_refund');
-      }
-      return {
-        status: 'cancelled',
-        payment_status: 'paid',
-        refund_status: 'rejected',
       };
     }
 

@@ -1770,65 +1770,6 @@
     "billing": "الفوترة",
     "pendingSignups": "التسجيلات المعلقة",
     "cardOrders": "طلبات البطاقات",
-    "nav": {
-      "cardRefunds": "استرداد البطاقات"
-    },
-    "cardRefunds": {
-      "title": "استرداد طلبات البطاقات",
-      "loading": "جارٍ التحديث…",
-      "empty": "لا توجد طلبات استرداد بعد",
-      "toastSuccess": "تم حفظ إجراء الاسترداد",
-      "filter": {
-        "all": "الكل",
-        "pending": "معلق",
-        "approved": "موافق عليه",
-        "paid": "مدفوع",
-        "rejected": "مرفوض"
-      },
-      "status": {
-        "pending": "معلق",
-        "approved": "موافق عليه",
-        "paid": "مدفوع",
-        "rejected": "مرفوض"
-      },
-      "col": {
-        "order": "رقم الطلب",
-        "centre": "اسم السنتر",
-        "items": "العناصر",
-        "total": "الإجمالي الأصلي",
-        "refundStatus": "حالة الاسترداد",
-        "requested": "تاريخ الطلب",
-        "daysWaiting": "أيام الانتظار",
-        "actions": "إجراءات"
-      },
-      "action": {
-        "approve": "الموافقة على الاسترداد",
-        "reject": "رفض الاسترداد",
-        "markPaid": "تسجيل الاسترداد كمدفوع"
-      },
-      "pagination": "عرض {from}–{to} من {total}",
-      "prev": "السابق",
-      "next": "التالي",
-      "modal": {
-        "approveTitle": "الموافقة على الاسترداد؟",
-        "approveBody": "سيُبلَّغ السنتر بأن الاسترداد وُافق عليه. أكمِل استرداد Paymob يدويًا، ثم سجِّل الصف كمدفوع مع مرجع استرداد Paymob.",
-        "rejectTitle": "رفض طلب الاسترداد",
-        "rejectReasonLabel": "السبب (للعمليات)",
-        "rejectReasonPlaceholder": "اشرح سبب تعذّر معالجة هذا الاسترداد (10–500 حرفًا).",
-        "rejectReasonHint": "الحد الأدنى 10 أحرف، والحد الأقصى 500.",
-        "rejectTooShort": "يجب أن يكون السبب 10 أحرف على الأقل.",
-        "rejectTooLong": "يجب ألا يزيد السبب عن 500 حرف.",
-        "markPaidTitle": "تسجيل الاسترداد كمدفوع؟",
-        "markPaidBody": "أكِّد أنك أرسلتَ الاسترداد عبر لوحة تحكم Paymob.",
-        "externalRefLabel": "معرّف استرداد Paymob",
-        "externalRefPlaceholder": "الصق مرجع استرداد Paymob",
-        "cancel": "إلغاء",
-        "working": "جارٍ الحفظ…",
-        "confirmApprove": "موافقة",
-        "confirmReject": "رفض الاسترداد",
-        "confirmMarkPaid": "تأكيد الدفع"
-      }
-    },
     "planRequests": "طلبات الخطة",
     "referrals": {
       "pageTitle": "الإحالات",
@@ -3840,6 +3781,9 @@
   },
   "checkout": {
     "pageTitle": "إتمام الطلب",
+    "terms": {
+      "noRefund": "أفهم أن طلبات البطاقات لا يمكن إلغاؤها أو استردادها بعد تأكيد الدفع. الإلغاء متاح فقط قبل معالجة الدفع."
+    },
     "loading": "جاري تحميل الدفع…",
     "stepsAria": "خطوات إتمام الطلب",
     "stepDelivery": "التوصيل",
@@ -3928,7 +3872,6 @@
       "shippingLine": "الشحن ({zone})",
       "grandTotal": "الإجمالي",
       "perCardAllIn": "= {amount} للبطاقة الواحدة شاملًا كل شيء",
-      "terms": "أوافق على <link>الشروط</link>، بما في ذلك سياسة عدم الاسترداد بعد بدء إنتاج المورد.",
       "placeOrder": "تأكيد الطلب",
       "placing": "جاري تأكيد الطلب…",
       "errors": {
@@ -4041,10 +3984,8 @@
   },
   "cardOrderCancel": {
     "title": "إلغاء هذا الطلب؟",
-    "warn": {
-      "pending_payment": "سيتم إلغاء الطلب دون أي رسوم.",
-      "paid": "سيتم إلغاء الطلب. إن انطبقت الشروط، يُعالج الاسترداد الكامل خلال 7–14 يوم عمل.",
-      "vendor_assigned": "أُرسل الطلب للمورد ولم يبدأ الإنتاج بعد. عند الإلغاء، يُعالج استرداد كامل خلال 7–14 يوم عمل. بعد بدء الإنتاج لا يتوفر الاسترداد."
+    "warning": {
+      "beforePayment": "سيتم إلغاء الطلب، ولم يتم تحصيل أي مبلغ."
     },
     "reasonLabel": "السبب",
     "reason": {
@@ -4057,7 +3998,10 @@
     "confirmTypeLabel": "اكتب CANCEL للتأكيد",
     "back": "إغلاق",
     "confirm": "إلغاء الطلب",
-    "errors": { "generic": "تعذر إلغاء الطلب." }
+    "errors": {
+      "generic": "تعذر إلغاء الطلب.",
+      "alreadyPaid": "لا يمكن إلغاء هذا الطلب لأن الدفع تم بالفعل."
+    }
   },
   "receipt": {
     "header": "إيصال",

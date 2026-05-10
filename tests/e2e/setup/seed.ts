@@ -21,8 +21,6 @@ const STUDENT_SPECS: { name: string; student_number: string }[] = [
 
 /** Paid order with blank lines only so roster students stay “without cards” for recommendations. */
 const ORDER_PAID_ID = 'e2eca501-2001-4001-8001-000000000001';
-/** Cancelled + refund pending for admin refunds console (super-admin tests). */
-const ORDER_REFUND_PENDING_ID = 'e2eca501-2001-4001-8001-000000000002';
 
 function phoneLookupVariants(raw: string): string[] {
   const t = raw.trim();
@@ -161,45 +159,6 @@ export async function seedE2EDatabase(): Promise<void> {
         student_id: null,
         quantity: 2,
       });
-    }
-  }
-
-  if (!process.env.TEST_SUPER_ADMIN_PHONE?.trim()) {
-    return;
-  }
-
-  const { data: refundExisting } = await admin
-    .from('card_orders')
-    .select('id')
-    .eq('id', ORDER_REFUND_PENDING_ID)
-    .maybeSingle();
-
-  if (!refundExisting) {
-    const insertRefund: Record<string, unknown> = {
-      id: ORDER_REFUND_PENDING_ID,
-      center_id: centerId,
-      created_by: ownerUserId,
-      students: [],
-      quantity: 1,
-      price_per_card: 50,
-      delivery_fee: 0,
-      total_amount: 50,
-      status: 'cancelled',
-      payment_status: 'paid',
-      refund_status: 'pending',
-      refund_requested_at: new Date().toISOString(),
-      cancelled_at: new Date().toISOString(),
-      cancellation_reason: 'e2e_seed refund pipeline',
-      delivery_address: 'E2E Seed',
-      delivery_governorate: 'cairo',
-      delivery_phone: '+201012345678',
-      notes: SEED_TAG,
-      card_style: 'dark',
-    };
-
-    const { error: rErr } = await admin.from('card_orders').insert(insertRefund);
-    if (rErr) {
-      console.warn('[e2e seed] refund-pending card_order:', rErr.message);
     }
   }
 }

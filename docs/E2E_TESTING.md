@@ -67,7 +67,7 @@ Projects:
 - **`desktop-chrome`** — authenticated specs (excludes unauth-only, mobile-only, super-admin-only files)
 - **`mobile-chrome`** — `mobile-cart` + `responsive-375` at **375×812**
 - **`unauth-chrome`** — empty `storageState`; pricing, signup mocks, locale login
-- **`desktop-super-admin`** — `admin-pages`, `card-order-full`, `admin-card-refunds`
+- **`desktop-super-admin`** — `admin-pages`, `card-order-full`
 
 ## Seeding
 
@@ -75,7 +75,6 @@ If Supabase env vars are set, `global.setup.ts` calls `seedE2EDatabase()` once b
 
 - Six roster students: `Test Student 01..05` (`TEST-00001`…`TEST-00005`) plus `Test Student No Card` (`TEST-NOCARD01`)
 - One **paid** `card_order` with **blank** line items only (so roster students stay eligible for recommendations)
-- One **cancelled** `card_order` with `refund_status = pending` **only when** `TEST_SUPER_ADMIN_PHONE` is set (for admin refunds UI)
 
 Idempotent: existing rows are detected by fixed order IDs / `student_number` / `notes = e2e_seed:v1`.
 
@@ -85,7 +84,6 @@ Runs under **`desktop-super-admin`** only:
 
 - `admin-pages.spec.ts`
 - `card-order-full.spec.ts`
-- `admin-card-refunds.spec.ts`
 
 Without `TEST_SUPER_ADMIN_PHONE`, tests in those files **skip** with a clear reason.
 

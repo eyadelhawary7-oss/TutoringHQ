@@ -17,6 +17,7 @@ import {
 
 export default function CheckoutReviewPage() {
   const t = useTranslations('checkout.review');
+  const tCheckout = useTranslations('checkout');
   const router = useRouter();
   const locale = useLocale();
   const localeShort: 'en' | 'ar' = locale.startsWith('ar') ? 'ar' : 'en';
@@ -202,15 +203,7 @@ export default function CheckoutReviewPage() {
           checked={terms}
           onChange={(e) => setTerms(e.target.checked)}
         />
-        <span>
-          {t.rich('terms', {
-            link: (chunks) => (
-              <Link href="/terms" className="text-teal-600 font-semibold underline">
-                {chunks}
-              </Link>
-            ),
-          })}
-        </span>
+        <span>{tCheckout('terms.noRefund')}</span>
       </label>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}

@@ -12,16 +12,6 @@ const row = (partial: Partial<{ status: string; payment_status: string; refund_s
 });
 
 describe('buildCardOrderTransitionPatch', () => {
-  it('paid → cancelled_after_payment sets refund pending', () => {
-    const patch = buildCardOrderTransitionPatch(row({ status: 'paid', payment_status: 'paid' }), 'cancelled_after_payment', {
-      reason: 'no_longer_needed',
-    });
-    expect(patch.status).toBe('cancelled');
-    expect(patch.payment_status).toBe('paid');
-    expect(patch.refund_status).toBe('pending');
-    expect(patch.refund_requested_at).toBeTruthy();
-  });
-
   it('pending_payment → cancelled_before_payment leaves refund_status null', () => {
     const patch = buildCardOrderTransitionPatch(
       row({ status: 'pending_payment', payment_status: 'unpaid' }),
@@ -33,28 +23,27 @@ describe('buildCardOrderTransitionPatch', () => {
     expect(patch.status).toBe('cancelled');
   });
 
-  it('issued → cancelled_after_payment throws', () => {
+  it('paid → cancelled_before_payment throws CARD_ORDER_CANCEL_NOT_ALLOWED', () => {
     expect(() =>
-      buildCardOrderTransitionPatch(row({ status: 'issued', payment_status: 'paid' }), 'cancelled_after_payment', {
-        reason: 'x',
+      buildCardOrderTransitionPatch(row({ status: 'paid', payment_status: 'paid' }), 'cancelled_before_payment', {
+        reason: 'no_longer_needed',
       }),
-    ).toThrow(IllegalCardOrderTransitionError);
+    ).toThrow(/CARD_ORDER_CANCEL_NOT_ALLOWED/);
   });
 
-  it('refund_paid only valid from refund_status approved', () => {
+  it('vendor_assigned → cancelled_before_payment throws CARD_ORDER_CANCEL_NOT_ALLOWED', () => {
     expect(() =>
       buildCardOrderTransitionPatch(
-        row({ status: 'cancelled', payment_status: 'paid', refund_status: 'pending' }),
-        'refund_paid',
+        row({ status: 'vendor_assigned', payment_status: 'paid' }),
+        'cancelled_before_payment',
+        { reason: 'no_longer_needed' },
       ),
-    ).toThrow(IllegalCardOrderTransitionError);
+    ).toThrow(/CARD_ORDER_CANCEL_NOT_ALLOWED/);
+  });
 
-    const patch = buildCardOrderTransitionPatch(
-      row({ status: 'cancelled', payment_status: 'paid', refund_status: 'approved' }),
-      'refund_paid',
-    );
-    expect(patch.status).toBe('refunded');
-    expect(patch.refund_status).toBe('paid');
-    expect(patch.refund_paid_at).toBeTruthy();
+  it('cancelled_before_payment without reason throws IllegalCardOrderTransitionError', () => {
+    expect(() =>
+      buildCardOrderTransitionPatch(row({ status: 'pending_payment', payment_status: 'unpaid' }), 'cancelled_before_payment', {}),
+    ).toThrow(IllegalCardOrderTransitionError);
   });
 });

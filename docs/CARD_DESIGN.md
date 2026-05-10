@@ -55,13 +55,15 @@ Between steps the client **`PATCH /api/card-order-cart`** so cart row state surv
 
 ## Order State Machine
 
+**Refund policy: NO REFUNDS.** Card orders are non-refundable. Cancellation is allowed ONLY before Paymob payment completes (`status='pending_payment'`). After payment, the order proceeds through the lifecycle regardless of centre preference. Lost-shipment recovery happens via vendor reship (manual support workflow, out of scope for code).
+
 `card_orders` carries **three independent columns** that must stay audit-consistent:
 
 | Column | Meaning |
 |--------|---------|
 | `status` | **Canonical lifecycle for UI** — where the physical/digital fulfilment is in the pipeline. |
 | `payment_status` | Money **in** (Paymob / unpaid / failed). Never shown directly in centre UI; kept for finance and chargebacks. |
-| `refund_status` | Money **back out** (`NULL` until a refund path exists, then `pending` → `approved` \| `rejected` → `paid`). Never shown as raw columns to owners except contextual refund copy on cancelled orders. |
+| `refund_status` | **Legacy / historical only.** Column retained for older rows (may be non-null). New lifecycle paths do not initiate refunds; leave `NULL` on new orders. |
 
 **Rule:** Every lifecycle write updates the triple **atomically** (single transaction / single `UPDATE`). Centre-facing surfaces read **`status` only** for progress (see `CardOrderStatusTimeline`). Use **`applyCardOrderTransition`** in `src/lib/cardOrderState.ts` — direct `UPDATE card_orders SET status = …` outside the helper is forbidden for production lifecycle paths.
 
@@ -79,12 +81,15 @@ Between steps the client **`PATCH /api/card-order-cart`** so cart row state surv
 | Centre confirms cards in hand | `issued` | `paid` | `NULL` |
 | Paymob declined | `failed` | `failed` | `NULL` |
 | Cancelled before payment | `cancelled` | `unpaid` | `NULL` |
-| Cancelled after payment (refund TBD) | `cancelled` | `paid` | `pending` |
-| Refund approved (admin) | `cancelled` | `paid` | `approved` |
-| Refund paid out | `refunded` | `paid` | `paid` |
-| Refund rejected | `cancelled` | `paid` | `rejected` |
+
+The enum value **`refunded`** (and non-null **`refund_status`** on cancelled orders) may still exist on **legacy** rows; current application code does not transition into refund workflows.
 
 Row-level history: `card_order_status_transitions` (trigger on `status` changes); actor metadata is enriched post-insert when transitions go through the helper.
+
+### Cancel flow
+
+- **Before payment only (`pending_payment`):** centre owner may cancel via UI or `POST /api/orders/[orderId]/cancel`. This applies `cancelled_before_payment` → `status=cancelled`, `payment_status=unpaid`, `cancelled_at` set. Refund columns are not used on this path.
+- **After payment:** cancellation is not offered in product UI or owner-facing APIs; operational exceptions are handled manually (no automated refunds).
 
 ## Receipt PDF
 
@@ -98,7 +103,7 @@ Row-level history: `card_order_status_transitions` (trigger on `status` changes)
 
 ## Notifications
 
-- **WhatsApp:** Every transition that changes `card_orders.status` fires `sendCardOrderStatusUpdate` from `src/lib/cardOrderNotifications.ts` (hooked via `applyCardOrderTransition` in `src/lib/cardOrderState.ts`). Sends use Meta templates listed in **`docs/WA_TEMPLATES.md`** (dedicated templates where approved, otherwise **`chq_card_order_status_update`** with `order_id`, `status_label`, `centre_name`). Each send is **deduped** per `(card_order_id, to_status)` in **`card_order_status_wa_dedupe`** and queued to **`webhook_outbox`** (`job_type`: `send_card_order_status_wa`) for **`GET /api/cron/process-outbox`** retries.
+- **WhatsApp:** Every transition that changes `card_orders.status` fires `sendCardOrderStatusUpdate` from `src/lib/cardOrderNotifications.ts` (hooked via `applyCardOrderTransition` in `src/lib/cardOrderState.ts`). Sends use Meta templates listed in **`docs/WA_TEMPLATES.md`** (dedicated templates where approved, otherwise **`chq_card_order_status_update`** with `order_id`, `status_label`, `centre_name`). **`refunded`** transitions do **not** enqueue WhatsApp or in-app notifications (legacy-only status; see WA template notes). Each allowed send is **deduped** per `(card_order_id, to_status)` in **`card_order_status_wa_dedupe`** and queued to **`webhook_outbox`** (`job_type`: `send_card_order_status_wa`) for **`GET /api/cron/process-outbox`** retries.
 - **In-app:** Same hook inserts **`in_app_notifications`** rows for all **`users`** with role **`owner`** or **`assistant`** on the centre (`kind`: `card_order_status_update`). Bell UI: `src/components/notifications/NotificationBell.tsx`; list: **`/[locale]/notifications`**; APIs: **`GET /api/notifications`**, **`PATCH /api/notifications/[id]/mark-read`**, **`PATCH /api/notifications/mark-all-read`**.
 - **Bosta drift:** **`GET /api/cron/sync-bosta-card-orders`** polls Bosta for tracking numbers when the centre portal might miss webhooks; transitions still go through **`applyCardOrderTransition`** so WhatsApp + in-app stay consistent.
 
