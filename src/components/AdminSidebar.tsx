@@ -28,6 +28,7 @@ import {
   Activity,
   TrendingUp,
   MapPin,
+  RotateCcw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { signOutToLogin } from '@/lib/auth/sign-out-client';
@@ -109,12 +110,14 @@ export function AdminSidebar({
   const [adminRole, setAdminRole] = useState<string | null>(null);
   const [customPermissions, setCustomPermissions] = useState<string[]>([]);
   const [pendingCentersCount, setPendingCentersCount] = useState(0);
+  const [pendingRefundCount, setPendingRefundCount] = useState(0);
   const isCeo =
     activeRoute === '/ceo' ||
     activeRoute === '/ceo-dashboard' ||
     activeRoute?.endsWith('/ceo') ||
     activeRoute?.endsWith('/ceo-dashboard');
   const isOrders = activeRoute?.includes('admin/orders');
+  const isCardRefunds = activeRoute?.includes('admin/card-refunds');
   const isVendors = activeRoute?.includes('admin/vendors');
   const isRenewals = activeRoute?.includes('admin/renewals');
   const isFinance = activeRoute?.includes('admin/finance');
@@ -140,6 +143,7 @@ export function AdminSidebar({
     isVendors ||
     isWaPack ||
     isOrders ||
+    isCardRefunds ||
     isReferrals ||
     isReferralRewards ||
     isHealth ||
@@ -209,6 +213,33 @@ export function AdminSidebar({
       }
     };
     void loadAdminRole();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadPendingRefundCount = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token || cancelled) return;
+      const params = new URLSearchParams({ status: 'pending', page: '1', pageSize: '1' });
+      const res = await fetch(`/api/admin/card-order-refunds?${params}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        cache: 'no-store',
+      });
+      if (!res.ok || cancelled) return;
+      const j = (await res.json().catch(() => ({}))) as { pendingCount?: number };
+      if (!cancelled) setPendingRefundCount(Math.max(0, Math.round(Number(j.pendingCount ?? 0))));
+    };
+    void loadPendingRefundCount();
+    const onFocus = () => {
+      void loadPendingRefundCount();
+    };
+    window.addEventListener('focus', onFocus);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', onFocus);
+    };
   }, []);
 
   useEffect(() => {
@@ -449,7 +480,7 @@ export function AdminSidebar({
                 : key === 'referrals'
                   ? activeTab === 'referrals' || isReferrals || isReferralRewards
                   : key === 'cardOrders'
-                    ? isOrders
+                    ? isOrders && !isCardRefunds
                     : key === 'overview'
                           ? activeTab === 'overview' && !onDedicatedAdminSubpage
                           : activeTab === key && !onDedicatedAdminSubpage;
@@ -502,6 +533,29 @@ export function AdminSidebar({
                 >
                   <Gift size={18} className="shrink-0" />
                   <span>{t('referralRewards.title')}</span>
+                </Link>,
+              );
+            }
+            if (key === 'cardOrders' && (adminRole === 'super_admin' || adminRole === 'admin')) {
+              items.push(
+                <Link
+                  key="card-refunds"
+                  href="/admin/card-refunds"
+                  onClick={afterNavigate}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start no-underline border-s-4 border-solid',
+                    isCardRefunds
+                      ? 'border-[var(--color-teal)] bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-600/15 dark:text-teal-200'
+                      : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]',
+                  )}
+                >
+                  <RotateCcw size={18} className="shrink-0" />
+                  <span>{t('nav.cardRefunds' as Parameters<typeof t>[0])}</span>
+                  {pendingRefundCount > 0 ? (
+                    <span className="ms-auto min-w-[20px] h-5 flex items-center justify-center rounded-full bg-amber-500 text-white text-[11px] font-bold px-1.5">
+                      {pendingRefundCount}
+                    </span>
+                  ) : null}
                 </Link>,
               );
             }

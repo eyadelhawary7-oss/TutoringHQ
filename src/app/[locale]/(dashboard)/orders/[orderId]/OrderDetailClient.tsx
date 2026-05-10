@@ -33,6 +33,13 @@ export default function OrderDetailClient({
   const [order, setOrder] = useState<UnknownRecord>(initialOrder);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [reorderOpen, setReorderOpen] = useState(false);
+  const [reorderPhase, setReorderPhase] = useState<'confirm' | 'result'>('confirm');
+  const [reorderBusy, setReorderBusy] = useState(false);
+  const [reorderOutcome, setReorderOutcome] = useState<{
+    addedCount: number;
+    blanksAdded: number;
+    skippedReasons: { student_id: string; reason: string }[];
+  } | null>(null);
 
   const shortRef = String(order.id ?? '').replace(/-/g, '').slice(-8).toUpperCase();
   const status = String(order.status ?? '');
@@ -120,25 +127,59 @@ export default function OrderDetailClient({
     URL.revokeObjectURL(url);
   }
 
+  const SKIP_REASON_KEYS = new Set([
+    'alreadyInCart',
+    'transferredOut',
+    'inactive',
+    'alreadyHasCard',
+    'studentNotFound',
+  ]);
+
+  function skippedReasonLabel(reason: string): string {
+    if (SKIP_REASON_KEYS.has(reason)) {
+      return tr(`skippedReasons.${reason}` as 'skippedReasons.alreadyInCart');
+    }
+    return tr('skippedReasons.unknownReason');
+  }
+
   async function postReorder() {
     const {
       data: { session },
     } = await supabase.auth.getSession();
     const token = session?.access_token;
     if (!token) return;
-    const res = await fetch(`/api/orders/${encodeURIComponent(String(order.id))}/reorder`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const body = (await res.json().catch(() => ({}))) as { addedCount?: number; error?: string };
-    if (!res.ok) {
-      toast.error(body.error ?? tr('failed'));
-      return;
+    setReorderBusy(true);
+    try {
+      const res = await fetch(`/api/orders/${encodeURIComponent(String(order.id))}/reorder`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        addedCount?: number;
+        blanksAdded?: number;
+        skippedReasons?: { student_id: string; reason: string }[];
+        error?: string;
+      };
+      if (!res.ok) {
+        toast.error(body.error ?? tr('failed'));
+        return;
+      }
+      const skipped = Array.isArray(body.skippedReasons) ? body.skippedReasons : [];
+      const added = Math.round(Number(body.addedCount ?? 0));
+      const blanks = Math.round(Number(body.blanksAdded ?? 0));
+      if (skipped.length > 0) {
+        setReorderOutcome({ addedCount: added, blanksAdded: blanks, skippedReasons: skipped });
+        setReorderPhase('result');
+        return;
+      }
+      toast.success(tr('toastSuccess', { count: added }));
+      setReorderOpen(false);
+      setReorderPhase('confirm');
+      setReorderOutcome(null);
+      router.push('/orders');
+    } finally {
+      setReorderBusy(false);
     }
-    const n = Math.round(Number(body.addedCount ?? 0));
-    toast.success(tr('toastSuccess', { count: n }));
-    setReorderOpen(false);
-    router.push('/orders');
   }
 
   async function postMarkIssued() {
@@ -305,7 +346,11 @@ export default function OrderDetailClient({
         </button>
         <button
           type="button"
-          onClick={() => setReorderOpen(true)}
+          onClick={() => {
+            setReorderPhase('confirm');
+            setReorderOutcome(null);
+            setReorderOpen(true);
+          }}
           className="inline-flex justify-center px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold"
         >
           {t('reorder')}
@@ -354,20 +399,68 @@ export default function OrderDetailClient({
       {reorderOpen ? (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-5 space-y-4">
-            <h2 className="text-lg font-bold">{tr('confirmTitle')}</h2>
-            <p className="text-sm text-[var(--color-text-secondary)]">{tr('confirmBody')}</p>
-            <div className="flex justify-end gap-2">
-              <button type="button" className="px-4 py-2 rounded-xl border text-sm font-semibold" onClick={() => setReorderOpen(false)}>
-                {tr('back')}
-              </button>
-              <button
-                type="button"
-                className="px-4 py-2 rounded-xl bg-teal-600 text-white text-sm font-semibold"
-                onClick={() => void postReorder()}
-              >
-                {tr('confirm')}
-              </button>
-            </div>
+            {reorderPhase === 'confirm' ? (
+              <>
+                <h2 className="text-lg font-bold">{tr('confirmTitle')}</h2>
+                <p className="text-sm text-[var(--color-text-secondary)]">{tr('confirmBody')}</p>
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    className="px-4 py-2 rounded-xl border text-sm font-semibold"
+                    disabled={reorderBusy}
+                    onClick={() => {
+                      setReorderOpen(false);
+                      setReorderPhase('confirm');
+                      setReorderOutcome(null);
+                    }}
+                  >
+                    {tr('back')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={reorderBusy}
+                    className="px-4 py-2 rounded-xl bg-teal-600 text-white text-sm font-semibold disabled:opacity-50"
+                    onClick={() => void postReorder()}
+                  >
+                    {reorderBusy ? tr('working') : tr('confirm')}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="text-lg font-bold">{tr('resultTitle')}</h2>
+                <p className="text-sm text-[var(--color-text-secondary)]">
+                  {tr('addedSummary', {
+                    students: reorderOutcome?.addedCount ?? 0,
+                    blanks: reorderOutcome?.blanksAdded ?? 0,
+                  })}
+                </p>
+                {(reorderOutcome?.skippedReasons?.length ?? 0) > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-[var(--color-text-primary)]">{tr('skippedHeading')}</p>
+                    <ul className="max-h-48 overflow-y-auto space-y-1 text-sm text-[var(--color-text-secondary)] list-disc ps-4">
+                      {(reorderOutcome?.skippedReasons ?? []).map((row, idx) => (
+                        <li key={`${row.student_id}-${idx}`}>{skippedReasonLabel(String(row.reason ?? ''))}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    className="px-4 py-2 rounded-xl bg-teal-600 text-white text-sm font-semibold"
+                    onClick={() => {
+                      setReorderOpen(false);
+                      setReorderPhase('confirm');
+                      setReorderOutcome(null);
+                      router.push('/orders');
+                    }}
+                  >
+                    {tr('done')}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       ) : null}

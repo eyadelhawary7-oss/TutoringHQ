@@ -3269,6 +3269,65 @@
     "billing": "Billing",
     "pendingSignups": "Pending Signups",
     "cardOrders": "Card Orders",
+    "nav": {
+      "cardRefunds": "Card refunds"
+    },
+    "cardRefunds": {
+      "title": "Card order refunds",
+      "loading": "Updating…",
+      "empty": "No refund requests yet",
+      "toastSuccess": "Refund action saved",
+      "filter": {
+        "all": "All",
+        "pending": "Pending",
+        "approved": "Approved",
+        "paid": "Paid",
+        "rejected": "Rejected"
+      },
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "paid": "Paid",
+        "rejected": "Rejected"
+      },
+      "col": {
+        "order": "Order #",
+        "centre": "Centre name",
+        "items": "Items",
+        "total": "Original total",
+        "refundStatus": "Refund status",
+        "requested": "Requested",
+        "daysWaiting": "Days waiting",
+        "actions": "Actions"
+      },
+      "action": {
+        "approve": "Approve refund",
+        "reject": "Reject refund",
+        "markPaid": "Mark refund paid"
+      },
+      "pagination": "Showing {from}–{to} of {total}",
+      "prev": "Previous",
+      "next": "Next",
+      "modal": {
+        "approveTitle": "Approve refund?",
+        "approveBody": "The centre will be notified that the refund is approved. Complete the Paymob refund manually, then mark this row as paid with the Paymob refund reference.",
+        "rejectTitle": "Reject refund request",
+        "rejectReasonLabel": "Reason shown to ops",
+        "rejectReasonPlaceholder": "Explain why this refund cannot be processed (10–500 characters).",
+        "rejectReasonHint": "Minimum 10 characters, maximum 500.",
+        "rejectTooShort": "Reason must be at least 10 characters.",
+        "rejectTooLong": "Reason must be at most 500 characters.",
+        "markPaidTitle": "Mark refund as paid?",
+        "markPaidBody": "Confirm that you've sent the refund through the Paymob dashboard.",
+        "externalRefLabel": "Paymob refund ID",
+        "externalRefPlaceholder": "Paste the Paymob refund reference",
+        "cancel": "Cancel",
+        "working": "Saving…",
+        "confirmApprove": "Approve",
+        "confirmReject": "Reject refund",
+        "confirmMarkPaid": "Confirm paid"
+      }
+    },
     "planRequests": "Plan Requests",
     "referrals": {
       "pageTitle": "Referrals",
@@ -4886,7 +4945,20 @@
     "back": "Back",
     "confirm": "Add to cart",
     "failed": "Could not reorder.",
-    "toastSuccess": "Added {count} students to cart"
+    "toastSuccess": "Added {count} students to cart",
+    "working": "Adding…",
+    "resultTitle": "Reorder complete",
+    "addedSummary": "{students} students added · {blanks} blank cards",
+    "skippedHeading": "Skipped students",
+    "done": "Go to cart",
+    "skippedReasons": {
+      "alreadyInCart": "Already in cart",
+      "transferredOut": "Transferred to another centre",
+      "inactive": "No longer active",
+      "alreadyHasCard": "Already has a card",
+      "studentNotFound": "Student no longer exists",
+      "unknownReason": "Skipped"
+    }
   },
   "cardOrderCancel": {
     "title": "Cancel this order?",

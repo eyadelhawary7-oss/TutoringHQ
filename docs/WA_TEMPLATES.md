@@ -51,3 +51,34 @@ Admin: **`/admin/whatsapp-pack`** timeline + **Next stage** action (`POST /api/a
 - **`chq_parent_welcome`** — May be APPROVED but intentionally not auto-sent on student approval until ops enables it.
 
 Keep template **status** (`PENDING` / `APPROVED` / `REJECTED`) in sync with Meta review state via admin template sync.
+
+## Card order status templates — registration checklist
+
+Templates seeded as **PENDING** in `wa_meta_templates` that need Meta-side registration:
+
+| Template name | Variables (body parameters) |
+|---------------|----------------------------|
+| `chq_card_order_paid` | `order_id`, `centre_name` |
+| `chq_card_order_in_production` | `order_id`, `centre_name` |
+| `chq_card_order_in_transit` | `order_id`, `centre_name`, `tracking_number` |
+| `chq_card_order_delivered` | `order_id`, `centre_name` |
+| `chq_card_order_cancelled` | `order_id`, `centre_name`, `reason` |
+| `chq_card_order_refunded` | `order_id`, `centre_name`, `refund_amount` |
+
+### Process
+
+1. Log in to **Meta Business Manager** → **WhatsApp Manager**.
+2. Open **Templates** → **Create template**.
+3. For each template above: choose category **UTILITY**, add **Arabic** and **English** languages, and paste the body text matching the seed row in `wa_meta_templates` (parameter order must match Meta).
+4. **Submit for review** (Meta typically responds within 24–48 hours).
+5. After Meta marks a template **APPROVED**, flip the DB row:
+
+   ```sql
+   UPDATE public.wa_meta_templates SET status = 'APPROVED' WHERE template_name = 'chq_card_order_paid';
+   ```
+
+   Run one `UPDATE` per template name.
+
+6. Re-test by changing status on a **test** `card_order` — `webhook_outbox` should drain successfully.
+
+Until templates are **APPROVED** in the database, `sendCardOrderStatusUpdate` falls back gracefully (logs to Sentry but does not throw).

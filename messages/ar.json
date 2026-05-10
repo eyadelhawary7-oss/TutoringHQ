@@ -1770,6 +1770,65 @@
     "billing": "الفوترة",
     "pendingSignups": "التسجيلات المعلقة",
     "cardOrders": "طلبات البطاقات",
+    "nav": {
+      "cardRefunds": "استرداد البطاقات"
+    },
+    "cardRefunds": {
+      "title": "استرداد طلبات البطاقات",
+      "loading": "جارٍ التحديث…",
+      "empty": "لا توجد طلبات استرداد بعد",
+      "toastSuccess": "تم حفظ إجراء الاسترداد",
+      "filter": {
+        "all": "الكل",
+        "pending": "معلق",
+        "approved": "موافق عليه",
+        "paid": "مدفوع",
+        "rejected": "مرفوض"
+      },
+      "status": {
+        "pending": "معلق",
+        "approved": "موافق عليه",
+        "paid": "مدفوع",
+        "rejected": "مرفوض"
+      },
+      "col": {
+        "order": "رقم الطلب",
+        "centre": "اسم السنتر",
+        "items": "العناصر",
+        "total": "الإجمالي الأصلي",
+        "refundStatus": "حالة الاسترداد",
+        "requested": "تاريخ الطلب",
+        "daysWaiting": "أيام الانتظار",
+        "actions": "إجراءات"
+      },
+      "action": {
+        "approve": "الموافقة على الاسترداد",
+        "reject": "رفض الاسترداد",
+        "markPaid": "تسجيل الاسترداد كمدفوع"
+      },
+      "pagination": "عرض {from}–{to} من {total}",
+      "prev": "السابق",
+      "next": "التالي",
+      "modal": {
+        "approveTitle": "الموافقة على الاسترداد؟",
+        "approveBody": "سيُبلَّغ السنتر بأن الاسترداد وُافق عليه. أكمِل استرداد Paymob يدويًا، ثم سجِّل الصف كمدفوع مع مرجع استرداد Paymob.",
+        "rejectTitle": "رفض طلب الاسترداد",
+        "rejectReasonLabel": "السبب (للعمليات)",
+        "rejectReasonPlaceholder": "اشرح سبب تعذّر معالجة هذا الاسترداد (10–500 حرفًا).",
+        "rejectReasonHint": "الحد الأدنى 10 أحرف، والحد الأقصى 500.",
+        "rejectTooShort": "يجب أن يكون السبب 10 أحرف على الأقل.",
+        "rejectTooLong": "يجب ألا يزيد السبب عن 500 حرف.",
+        "markPaidTitle": "تسجيل الاسترداد كمدفوع؟",
+        "markPaidBody": "أكِّد أنك أرسلتَ الاسترداد عبر لوحة تحكم Paymob.",
+        "externalRefLabel": "معرّف استرداد Paymob",
+        "externalRefPlaceholder": "الصق مرجع استرداد Paymob",
+        "cancel": "إلغاء",
+        "working": "جارٍ الحفظ…",
+        "confirmApprove": "موافقة",
+        "confirmReject": "رفض الاسترداد",
+        "confirmMarkPaid": "تأكيد الدفع"
+      }
+    },
     "planRequests": "طلبات الخطة",
     "referrals": {
       "pageTitle": "الإحالات",
@@ -3965,7 +4024,20 @@
     "back": "رجوع",
     "confirm": "أضف إلى السلة",
     "failed": "تعذرت إعادة الطلب.",
-    "toastSuccess": "تمت إضافة {count} طالبًا إلى السلة"
+    "toastSuccess": "تمت إضافة {count} طالبًا إلى السلة",
+    "working": "جارٍ الإضافة…",
+    "resultTitle": "اكتملت إعادة الطلب",
+    "addedSummary": "أُضيف {students} طالبًا · {blanks} بطاقات فارغة",
+    "skippedHeading": "طلاب تم تخطيهم",
+    "done": "الانتقال إلى السلة",
+    "skippedReasons": {
+      "alreadyInCart": "موجود في السلة بالفعل",
+      "transferredOut": "تم النقل إلى سنتر آخر",
+      "inactive": "غير نشط",
+      "alreadyHasCard": "لديه بطاقة بالفعل",
+      "studentNotFound": "الطالب غير موجود",
+      "unknownReason": "تم التخطي"
+    }
   },
   "cardOrderCancel": {
     "title": "إلغاء هذا الطلب؟",
