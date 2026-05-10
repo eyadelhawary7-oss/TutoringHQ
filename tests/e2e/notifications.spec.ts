@@ -1,12 +1,14 @@
 import { test, expect } from '@playwright/test';
+import { gotoWithRetry } from './goto-with-retry';
+
+const BASE = process.env.PLAYWRIGHT_BASE_URL ?? process.env.BASE_URL ?? 'https://centerhq.app';
 
 /**
- * Requires authenticated centre session + seeded order that triggers in_app_notifications.
- * Enable when Playwright auth storage state is available for a test centre.
+ * Requires authenticated centre session + optional notifications in DB.
  */
-test.describe.skip('notifications bell', () => {
+test.describe('notifications bell', () => {
   test('badge and navigation', async ({ page }) => {
-    await page.goto('/en/orders');
+    await gotoWithRetry(page, `${BASE}/en/orders`);
     await expect(page.getByRole('button', { name: /notifications/i })).toBeVisible();
   });
 });

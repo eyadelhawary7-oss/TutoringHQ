@@ -34,7 +34,7 @@ const MOCK_ORDER = {
 };
 
 /** Full flow needs a signed-in centre owner + real order; keep mocked API coverage for local iteration. */
-test.describe.skip('order detail (requires centre auth — enable when E2E auth storage exists)', () => {
+test.describe('order detail (mocked API + centre session)', () => {
   test('timeline renders for paid order (mocked API)', async ({ page }) => {
     await page.route(`**/api/orders/${ORDER_ID}`, async (route) => {
       if (route.request().method() !== 'GET') {

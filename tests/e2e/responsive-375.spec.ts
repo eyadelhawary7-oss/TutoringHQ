@@ -110,7 +110,7 @@ test.describe('375px — admin (super_admin only)', () => {
     await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {});
     test.skip(
       page.url().includes('/login'),
-      'Fixture user is not super_admin — full admin 375 matrix requires elevated session',
+      'TEST_SUPER_ADMIN_PHONE not configured or user is not super_admin — admin 375 matrix needs elevated session',
     );
 
     const adminUrls: [string, string][] = [

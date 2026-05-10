@@ -14,10 +14,8 @@
 /coverage
 /security-audit-report.md
 
-# Playwright
-playwright-report/
-test-results/
-/tests/e2e/.auth/
+# Playwright — JSON storage states only (keep tests/e2e/.auth/.gitignore tracked)
+tests/e2e/.auth/*.json
 playwright/.auth/
 
 # next.js

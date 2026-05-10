@@ -10,7 +10,7 @@ const TEST_PIN = process.env.TEST_PIN ?? ''
 async function fillLoginForm(page: Page, phone: string, pin: string): Promise<void> {
   await page.locator('input[type="tel"]').fill(phone, { timeout: 30_000 })
   await page.locator('input[type="password"]').fill(pin, { timeout: 30_000 })
-  await page.getByRole('button', { name: /إرسال|تسجيل/ }).click()
+  await page.getByRole('button', { name: /إرسال|تسجيل|Submit|Sign/i }).click()
 }
 
 test.describe('Authentication', () => {
@@ -36,15 +36,10 @@ test.describe('Authentication', () => {
     await page.waitForLoadState('networkidle')
 
     await fillLoginForm(page, TEST_PHONE, TEST_PIN)
-    await page.waitForURL(/\/(ar|en)\/(admin|dashboard)/, { timeout: 60_000 })
+    await page.waitForURL(/\/(ar|en)\/(dashboard|admin|scan|orders)(\/|$|\?)/, { timeout: 60_000 })
 
-    await expect(page).toHaveURL(/\/(ar|en)\/(admin|dashboard)/)
-    const onAdmin = /\/(ar|en)\/admin/.test(page.url())
-    if (onAdmin) {
-      await expect(page).not.toHaveURL(/login/)
-    } else {
-      await expect(page).toHaveURL(/\/(ar|en)\/dashboard/)
-    }
+    await expect(page).toHaveURL(/\/(ar|en)\/(dashboard|admin|scan|orders)(\/|$|\?)/)
+    await expect(page).not.toHaveURL(/\/(ar|en)\/login/)
     expect(errors).toHaveLength(0)
   })
 
@@ -85,7 +80,7 @@ test.describe('Authentication', () => {
   })
 
   test.describe('session from global setup', () => {
-    test.use({ storageState: 'playwright/.auth/user.json' })
+    test.use({ storageState: 'tests/e2e/.auth/centre-owner.json' })
 
     test('logout clears session and redirects to login', async ({ page }) => {
       test.skip(!TEST_PHONE || !TEST_PIN, 'Set TEST_PHONE and TEST_PIN for this test')

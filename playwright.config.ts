@@ -1,23 +1,35 @@
-import dotenv from 'dotenv'
-import path from 'path'
-dotenv.config({ path: path.resolve(__dirname, '.env.test') })
-dotenv.config({ path: path.resolve(__dirname, '.env.local') })
+import dotenv from 'dotenv';
+import path from 'path';
 
-import { defineConfig, devices } from '@playwright/test'
+dotenv.config({ path: path.resolve(__dirname, '.env.test') });
+dotenv.config({ path: path.resolve(__dirname, '.env.local') });
+dotenv.config({ path: path.resolve(__dirname, 'tests/e2e/.env.local') });
+
+import { defineConfig, devices } from '@playwright/test';
+
+/** Runs without saved session (signup mocks, pricing, locale login, etc.) */
+const UNAUTH_SPECS =
+  /(login-locale-redirect|pricing-page|signup-happy|signup-resume)\.spec\.ts$/;
+
+/** Mobile viewport suite */
+const MOBILE_SPECS = /(mobile-cart|responsive-375)\.spec\.ts$/;
+
+/** Requires super-admin storage + TEST_SUPER_ADMIN_* env */
+const ADMIN_SUPER_SPECS = /(admin-pages|card-order-full|admin-card-refunds)\.spec\.ts$/;
+
+/** Authenticated desktop projects exclude unauth-only, mobile-only, and super-admin-only specs */
+const DESKTOP_IGNORE =
+  /(login-locale-redirect|pricing-page|signup-happy|signup-resume|mobile-cart|responsive-375|admin-pages|card-order-full|admin-card-refunds)\.spec\.ts$/;
 
 export default defineConfig({
   testDir: './tests/e2e',
 
-  // Tests within a file run sequentially — prevents auth state collisions
   fullyParallel: false,
 
-  // Fail fast in CI — stop on first failure to save time and credits
   forbidOnly: !!process.env.CI,
 
-  // No retries — flaky tests must be fixed, not hidden
   retries: 0,
 
-  // Single worker in CI to avoid rate limiting on the login endpoint
   workers: process.env.CI ? 1 : undefined,
 
   reporter: [
@@ -31,13 +43,10 @@ export default defineConfig({
       process.env.BASE_URL ??
       'https://centerhq.app',
 
-    // Screenshot on failure only
     screenshot: 'only-on-failure',
 
-    // Trace on failure for debugging
     trace: 'retain-on-failure',
 
-    // Arabic locale — matches app default
     locale: 'ar-EG',
 
     actionTimeout: 15_000,
@@ -47,38 +56,50 @@ export default defineConfig({
   projects: [
     {
       name: 'setup',
-      testMatch: '**/global.setup.ts',
+      testMatch: /global\.setup\.ts/,
+    },
+    {
+      name: 'setup-super-admin',
+      testMatch: /super-admin\.setup\.ts/,
+      dependencies: ['setup'],
     },
     {
       name: 'desktop-chrome',
-      testIgnore: '**/responsive-375.spec.ts',
+      testIgnore: DESKTOP_IGNORE,
       use: {
         ...devices['Desktop Chrome'],
-        storageState: 'playwright/.auth/user.json',
+        storageState: 'tests/e2e/.auth/centre-owner.json',
       },
       dependencies: ['setup'],
     },
     {
       name: 'mobile-chrome',
-      testIgnore: '**/responsive-375.spec.ts',
-      use: {
-        ...devices['Pixel 5'],
-        storageState: 'playwright/.auth/user.json',
-      },
-      dependencies: ['setup'],
-    },
-    /** Session 14 — iPhone SE-class viewport; same auth fixture as desktop smoke. */
-    {
-      name: '375-chrome',
-      testMatch: '**/responsive-375.spec.ts',
+      testMatch: MOBILE_SPECS,
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 375, height: 812 },
-        storageState: 'playwright/.auth/user.json',
+        storageState: 'tests/e2e/.auth/centre-owner.json',
       },
       dependencies: ['setup'],
+    },
+    {
+      name: 'unauth-chrome',
+      testMatch: UNAUTH_SPECS,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: { cookies: [], origins: [] },
+      },
+    },
+    {
+      name: 'desktop-super-admin',
+      testMatch: ADMIN_SUPER_SPECS,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'tests/e2e/.auth/super-admin.json',
+      },
+      dependencies: ['setup', 'setup-super-admin'],
     },
   ],
 
   timeout: 90_000,
-})
+});

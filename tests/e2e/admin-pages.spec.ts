@@ -1,9 +1,13 @@
 import { test, expect } from '@playwright/test'
 import { gotoWithRetry } from './goto-with-retry'
 
-const BASE_URL = process.env.BASE_URL ?? 'https://centerhq.app'
+const BASE_URL = process.env.BASE_URL ?? process.env.PLAYWRIGHT_BASE_URL ?? 'https://centerhq.app'
 
 test.describe('Admin Platform Pages', () => {
+  test.beforeEach(() => {
+    test.skip(!process.env.TEST_SUPER_ADMIN_PHONE?.trim(), 'TEST_SUPER_ADMIN_PHONE not configured')
+  })
+
   test('CEO dashboard loads all three founder panels', async ({ page }) => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(err.message))
