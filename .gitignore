@@ -25,6 +25,10 @@ playwright/.auth/
 # production
 /build
 
+# local agent / i18n audit outputs (do not commit)
+/tmp/
+tmp/
+
 # misc
 .DS_Store
 *.pem

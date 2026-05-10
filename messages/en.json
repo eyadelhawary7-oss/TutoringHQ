@@ -21,7 +21,7 @@
     "top_centers": "Top Centers"
   },
   "pricingPage": {
-    "metaTitle": "Pricing — CenterHQ",
+    "metaTitle": "Pricing – CenterHQ",
     "metaDescription": "Compare Solo through Enterprise plans and Top Centers. Transparent monthly, quarterly, and annual pricing for tutoring centres.",
     "navHome": "Home",
     "title": "Plans for every centre size",
@@ -3825,7 +3825,7 @@
       "healthPendingSignupsLink": "Pending Signups",
       "lastError": {
         "columnHeader": "Last Error",
-        "empty": "—",
+        "empty": "–",
         "viewFull": "View full error"
       },
       "errorModal": {

@@ -21,8 +21,8 @@
     "top_centers": "كبار السناتر"
   },
   "pricingPage": {
-    "metaTitle": "الأسعار — CenterHQ",
-    "metaDescription": "قارِن خطط Solo إلى Enterprise وخطة كبار السناتر. أسعار شهرية وربع سنوية وسنوية شفافة لمراكز الدروس.",
+    "metaTitle": "الأسعار – CenterHQ",
+    "metaDescription": "قارِن خطط Solo إلى Enterprise وخطة كبار السناتر. أسعار شهرية وربع سنوية وسنوية شفافة لسناتر الدروس.",
     "navHome": "الرئيسية",
     "title": "خطط تناسب كل حجم سنتر",
     "subtitle": "فوترة شهرية أو ربع سنوية أو سنوية. المبالغ تشمل ضريبة القيمة المضافة حيثما تنطبق.",
@@ -2326,7 +2326,7 @@
       "healthPendingSignupsLink": "التسجيلات المعلقة",
       "lastError": {
         "columnHeader": "آخر خطأ",
-        "empty": "—",
+        "empty": "–",
         "viewFull": "عرض الخطأ كاملًا"
       },
       "errorModal": {
@@ -2339,6 +2339,11 @@
     },
     "sidebarTitle": "لوحة الإدارة",
     "sidebarHr": "الموارد البشرية والعمولات",
+    "sidebarSectionOperational": "التشغيل",
+    "sidebarSectionGrowth": "النمو",
+    "sidebarSectionReporting": "التقارير",
+    "roleSuperAdmin": "سوبر أدمن",
+    "roleFounder": "قيادة المنصة",
     "darkMode": "الوضع الداكن",
     "referralsNav": "الإحالات",
     "referralsPageTitle": "الإحالات",
