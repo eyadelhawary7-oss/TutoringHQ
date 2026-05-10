@@ -106,7 +106,7 @@ export default function ImportStudentsPage() {
     setCsvGroupOrder([]);
     try {
       const buffer = await file.arrayBuffer();
-      const data = parseFile(buffer, file.name);
+      const data = await parseFile(buffer, file.name);
       if (data.rows.length === 0) {
         setError(t('error'));
         return;

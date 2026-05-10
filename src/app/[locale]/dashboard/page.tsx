@@ -824,7 +824,7 @@ export default function DashboardPage() {
       const attendanceRaw = (attendanceRes.data || []) as { student_id: string; scanned_at: string }[];
       const paymentsRaw = (paymentsRes.data || []) as { student_id: string; amount: number; method: string; paid_at: string; recorded_by: string }[];
       const studentMap = new Map(students.map(s => [s.id, s]));
-      exportDashboardToExcel({
+      await exportDashboardToExcel({
         students,
         attendance: attendanceRaw.map(a => ({
           student_name: studentMap.get(a.student_id)?.name || '',
