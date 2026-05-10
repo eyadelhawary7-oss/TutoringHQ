@@ -130,6 +130,10 @@ export async function POST(request: Request) {
 
   if (alertList.length === 0) {
     await upsertCronHealth(admin);
+    await insertCronLogSuccess(admin, CRON_NAME, {
+      duration_ms: Date.now() - cronStart,
+      metadata: { alerted: 0, skipped },
+    });
     return NextResponse.json({ alerted: 0, skipped });
   }
 
@@ -137,6 +141,10 @@ export async function POST(request: Request) {
   if (!adminRaw?.trim()) {
     console.warn(`[${CRON_NAME}] ADMIN_WHATSAPP_NUMBER not set`);
     await upsertCronHealth(admin);
+    await insertCronLogSuccess(admin, CRON_NAME, {
+      duration_ms: Date.now() - cronStart,
+      metadata: { alerted: 0, skipped, error: 'ADMIN_WHATSAPP_NUMBER not set' },
+    });
     return NextResponse.json({ alerted: 0, skipped, error: 'ADMIN_WHATSAPP_NUMBER not set' });
   }
 
@@ -170,6 +178,10 @@ export async function POST(request: Request) {
 
   if (!sendOk) {
     await upsertCronHealth(admin);
+    await insertCronLogFailure(admin, CRON_NAME, new Error('WhatsApp sendFreeformMessage failed or returned false'), {
+      duration_ms: Date.now() - cronStart,
+      metadata: { skipped, candidate_invoices: alertList.length },
+    });
     return NextResponse.json({ alerted: 0, skipped });
   }
 
@@ -180,6 +192,10 @@ export async function POST(request: Request) {
   if (upErr) {
     console.error(`[${CRON_NAME}] invoice update:`, upErr.message);
     await upsertCronHealth(admin);
+    await insertCronLogFailure(admin, CRON_NAME, new Error(upErr.message), {
+      duration_ms: Date.now() - cronStart,
+      metadata: { skipped, post_send: true },
+    });
     return NextResponse.json({ alerted: 0, skipped, error: upErr.message });
   }
 
