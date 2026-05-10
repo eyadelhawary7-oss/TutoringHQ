@@ -160,6 +160,7 @@ export async function sendCardOrderStatusUpdate(
     kind: 'card_order_status_update',
     title: `Order #${shortRef}`,
     body: labelForStatus(normTo),
+    // Centre-owner / staff bell — tenant order detail (not internal admin chrome).
     href: `/orders/${orderId}`,
   });
 

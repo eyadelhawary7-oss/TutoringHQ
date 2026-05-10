@@ -15,7 +15,7 @@ import {
   type CardOrderReceiptLineItem,
   type CardOrderReceiptModel,
 } from '@/lib/pdf/cardOrderReceiptTemplate';
-import { loadCardOrderDetailForCenter } from '@/lib/loadCardOrderDetail';
+import { loadCardOrderDetailForAdmin, loadCardOrderDetailForCenter } from '@/lib/loadCardOrderDetail';
 
 const PDF_NUM_LOCALE = 'ar';
 
@@ -1062,16 +1062,19 @@ export async function generateStaffCommissionPayoutPdf(
   return htmlToPdfBuffer(html);
 }
 
-/** Owner-facing receipt for a centre card order (QR cards). */
+/** Owner-facing receipt for a centre card order (QR cards). Pass `centerId: null` with service-role client for internal admin. */
 export async function generateCardOrderReceiptPdf(
   orderId: string,
   supabase: SupabaseClient,
-  centerId: string,
+  centerId: string | null,
 ): Promise<
   | { ok: true; buffer: Buffer }
   | { ok: false; reason: 'not_found' | 'unavailable' }
 > {
-  const loaded = await loadCardOrderDetailForCenter(supabase, centerId, orderId);
+  const loaded =
+    centerId != null && centerId !== ''
+      ? await loadCardOrderDetailForCenter(supabase, centerId, orderId)
+      : await loadCardOrderDetailForAdmin(supabase, orderId);
   if (!loaded.ok) {
     return { ok: false, reason: 'not_found' };
   }

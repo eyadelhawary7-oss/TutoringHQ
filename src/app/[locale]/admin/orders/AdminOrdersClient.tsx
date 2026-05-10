@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { usePathname } from '@/i18n/routing';
+import { useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from '@/i18n/routing';
 import {
   Package,
   Clock,
@@ -102,10 +103,18 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
   const tAdmin = useTranslations('admin');
   const locale = useLocale();
   const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const toast = useToast();
   const { closeMainSidebar } = useSidebar() ?? {};
   const [orders, setOrders] = useState<AdminCardOrderRow[]>(initialOrders);
-  const [filter, setFilter] = useState<'all' | CardOrderFulfillmentStatus>('all');
+  const [filter, setFilter] = useState<'all' | CardOrderFulfillmentStatus>(() => {
+    const f = searchParams?.get('filter');
+    if (f && STATUS_ORDER.includes(f as CardOrderFulfillmentStatus)) {
+      return f as CardOrderFulfillmentStatus;
+    }
+    return 'all';
+  });
   const [slideOverId, setSlideOverId] = useState<string | null>(null);
   const [statusSavingId, setStatusSavingId] = useState<string | null>(null);
   const [bookingCourier, setBookingCourier] = useState<string | null>(null);
@@ -120,6 +129,18 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
 
   const filteredOrders = filter === 'all' ? orders : orders.filter((o) => o.status === filter);
   const slideOrder = orders.find((o) => o.id === slideOverId);
+
+  const applyFilter = useCallback(
+    (f: 'all' | CardOrderFulfillmentStatus) => {
+      setFilter(f);
+      if (f === 'all') {
+        router.replace(pathname);
+      } else {
+        router.replace(`${pathname}?filter=${encodeURIComponent(f)}`);
+      }
+    },
+    [pathname, router],
+  );
 
   const kpis = [
     { label: tIdCards('totalOrders'), value: orders.length, icon: Package, color: '#3B82F6' },
@@ -245,7 +266,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
         <div className="flex gap-1 flex-wrap">
           <button
             type="button"
-            onClick={() => setFilter('all')}
+            onClick={() => applyFilter('all')}
             className={cn(
               'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
               filter === 'all'
@@ -261,7 +282,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
               <button
                 key={f}
                 type="button"
-                onClick={() => setFilter(f)}
+                onClick={() => applyFilter(f)}
                 className={cn(
                   'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
                   filter === f
@@ -319,13 +340,25 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                   {filteredOrders.map((order) => {
                     const cfg = cfgFor(order.status);
                     const StatusIcon = cfg.icon;
+                    const returnToBase = filter === 'all' ? pathname : `${pathname}?filter=${encodeURIComponent(filter)}`;
+                    const detailUrl = `/admin/card-orders/${order.id}?returnTo=${encodeURIComponent(returnToBase)}`;
+                    const idLast8 = order.id.replace(/-/g, '').slice(-8).toUpperCase();
                     return (
                       <tr
                         key={order.id}
-                        className="border-t border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-0)] transition-colors"
+                        role="link"
+                        tabIndex={0}
+                        onClick={() => router.push(detailUrl)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            router.push(detailUrl);
+                          }
+                        }}
+                        className="border-t border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-0)] transition-colors cursor-pointer"
                       >
                         <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] font-mono">
-                          {order.orderNumber}
+                          #{idLast8}
                         </td>
                         <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] font-medium">
                           {order.center_name}
@@ -361,7 +394,10 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                         <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
                           <button
                             type="button"
-                            onClick={() => setSlideOverId(order.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSlideOverId(order.id);
+                            }}
                             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
                           >
                             <Eye size={12} aria-hidden /> {tCommon('view')}

@@ -3061,6 +3061,64 @@
       "tab_paid": "Paid",
       "tab_rejected": "Rejected"
     },
+    "cardOrderDetail": {
+      "detail": {
+        "title": "Order #{id}",
+        "back": "Back to orders",
+        "toast": {
+          "transitionOk": "Status updated"
+        },
+        "sections": {
+          "payment": "Payment",
+          "tracking": "Tracking",
+          "centre": "Centre",
+          "items": "Items",
+          "delivery": "Delivery",
+          "pricing": "Pricing"
+        },
+        "tracking": {
+          "shippingCost": "Shipping cost",
+          "lastStatus": "Last courier status"
+        },
+        "centre": {
+          "plan": "Plan",
+          "planPrice": "Plan price",
+          "subscription": "Subscription status",
+          "openAdmin": "Centre admin"
+        },
+        "transitions": {
+          "title": "Status history",
+          "empty": "No transitions yet",
+          "count": "{count} transitions",
+          "cols": {
+            "from": "From",
+            "to": "To",
+            "date": "Date",
+            "actor": "Changed by",
+            "reason": "Reason",
+            "metadata": "Metadata"
+          }
+        },
+        "actions": {
+          "title": "Admin actions",
+          "advanceStatus": {
+            "label": "Advance status",
+            "confirm": "Confirm transition",
+            "reasonLabel": "Reason",
+            "reasonPlaceholder": "Why are you updating this status?",
+            "unavailable": "No manual transitions available",
+            "placeholder": "Select next step…"
+          },
+          "downloadReceipt": "Download receipt",
+          "viewBostaData": "View Bosta data",
+          "viewPaymobLog": "View Paymob log"
+        },
+        "errors": {
+          "transitionFailed": "Could not update status",
+          "invalidEvent": "This transition is not allowed"
+        }
+      }
+    },
     "financePage": {
       "title": "Finance",
       "lastUpdated": "Last updated",

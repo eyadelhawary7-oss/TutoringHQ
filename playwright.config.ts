@@ -15,7 +15,7 @@ const UNAUTH_SPECS =
 const MOBILE_SPECS = /(mobile-cart|responsive-375)\.spec\.ts$/;
 
 /** Requires super-admin storage + TEST_SUPER_ADMIN_* env */
-const ADMIN_SUPER_SPECS = /(admin-pages|card-order-full)\.spec\.ts$/;
+const ADMIN_SUPER_SPECS = /(admin-pages|card-order-full|admin-card-order-detail)\.spec\.ts$/;
 
 /** Authenticated desktop projects exclude unauth-only, mobile-only, and super-admin-only specs */
 const DESKTOP_IGNORE =

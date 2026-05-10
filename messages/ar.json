@@ -1562,6 +1562,64 @@
       "tab_paid": "مدفوعة",
       "tab_rejected": "مرفوضة"
     },
+    "cardOrderDetail": {
+      "detail": {
+        "title": "طلب #{id}",
+        "back": "العودة إلى الطلبات",
+        "toast": {
+          "transitionOk": "تم تحديث الحالة"
+        },
+        "sections": {
+          "payment": "الدفع",
+          "tracking": "الشحن",
+          "centre": "السنتر",
+          "items": "العناصر",
+          "delivery": "التوصيل",
+          "pricing": "التسعير"
+        },
+        "tracking": {
+          "shippingCost": "تكلفة الشحن",
+          "lastStatus": "آخر حالة من شركة الشحن"
+        },
+        "centre": {
+          "plan": "الباقة",
+          "planPrice": "سعر الباقة",
+          "subscription": "حالة الاشتراك",
+          "openAdmin": "إدارة السنتر"
+        },
+        "transitions": {
+          "title": "سجل الحالات",
+          "empty": "لا توجد تحديثات",
+          "count": "{count} انتقالات",
+          "cols": {
+            "from": "من",
+            "to": "إلى",
+            "date": "التاريخ",
+            "actor": "بواسطة",
+            "reason": "السبب",
+            "metadata": "بيانات إضافية"
+          }
+        },
+        "actions": {
+          "title": "إجراءات الإدارة",
+          "advanceStatus": {
+            "label": "تحديث الحالة",
+            "confirm": "تأكيد التحديث",
+            "reasonLabel": "السبب",
+            "reasonPlaceholder": "لماذا تقوم بتحديث الحالة؟",
+            "unavailable": "لا توجد تحديثات متاحة",
+            "placeholder": "اختر الخطوة التالية…"
+          },
+          "downloadReceipt": "تحميل الإيصال",
+          "viewBostaData": "بيانات بوسطة",
+          "viewPaymobLog": "سجل Paymob"
+        },
+        "errors": {
+          "transitionFailed": "فشل تحديث الحالة",
+          "invalidEvent": "هذا التحديث غير مسموح"
+        }
+      }
+    },
     "financePage": {
       "title": "المالية",
       "lastUpdated": "آخر تحديث",

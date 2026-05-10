@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
@@ -83,5 +84,9 @@ export default async function AdminOrdersPage({
     redirect(`/${locale}/ceo-dashboard`);
   }
 
-  return <AdminOrdersClient initialOrders={orders} />;
+  return (
+    <Suspense fallback={<div className="p-6 text-[var(--color-text-secondary)]">Loading…</div>}>
+      <AdminOrdersClient initialOrders={orders} />
+    </Suspense>
+  );
 }
