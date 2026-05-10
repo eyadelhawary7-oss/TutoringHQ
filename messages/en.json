@@ -3518,6 +3518,25 @@
         "earlyAdopterPrice": "Early Adopter Price [TODO: AR review]",
         "earlyAdopterNumber": "Early Adopter Number [TODO: AR review]"
       },
+      "subscription": {
+        "panelTitle": "Subscription overrides",
+        "reasonLabel": "Reason (required, 10–500 characters)",
+        "reasonPlaceholder": "Internal note — visible in audit log",
+        "extend30": "Extend due date by 30 days",
+        "extendCustom": "Extend by custom days",
+        "daysLabel": "Days to add",
+        "suspend": "Suspend subscription",
+        "reactivate": "Reactivate subscription",
+        "overridePrice": "Override all-in price",
+        "allInLabel": "All-in price (EGP)",
+        "earlyAdopterToggle": "Mark as early adopter price",
+        "successExtend": "Due date extended",
+        "successSuspend": "Center suspended",
+        "successReactivate": "Center reactivated",
+        "successPrice": "Price updated",
+        "internalRoleOnly": "Internal admin access required",
+        "superAdminOnly": "Super admin only"
+      },
       "section4": {
         "title": "Invoices",
         "createInvoice": "Create Invoice",
@@ -4452,7 +4471,92 @@
     "billedAnnuallyLine": "{amount} EGP · billed annually",
     "perStudentWeekly": "{price} EGP per student/week",
     "page": {
-      "title": "Billing & subscriptions"
+      "title": "Billing & Subscription"
+    },
+    "sub": {
+      "title": "Billing & Subscription",
+      "loading": "Loading billing…",
+      "loadError": "Could not load billing data.",
+      "ownerOnly": "Only the centre owner can manage billing and payments.",
+      "currentPlan": {
+        "title": "Current plan",
+        "planCap": "Student capacity",
+        "studentsUsage": "{current} / {cap} students",
+        "studentsUsageUnlimited": "{current} students",
+        "earlyAdopter": "Early adopter pricing",
+        "periodMonthly": "Monthly",
+        "periodQuarterly": "Quarterly",
+        "periodAnnual": "Annual",
+        "priceLine": "{amount} · {period}"
+      },
+      "status": {
+        "active": "Active",
+        "pending": "Pending",
+        "suspended": "Suspended",
+        "pastDue": "Past due",
+        "cancelled": "Cancelled",
+        "trial": "Trial"
+      },
+      "nextPayment": {
+        "title": "Next payment",
+        "dueDate": "Due date",
+        "relative": "{relative}",
+        "amount": "Amount due",
+        "payNow": "Pay now",
+        "paying": "Opening payment…",
+        "payDisabled": "Online payment is not enabled.",
+        "paidUp": "No payment due right now.",
+        "pastDueBanner": "Payment overdue — pay now to avoid suspension.",
+        "paySuccess": "Payment recorded. Thank you!",
+        "payFailed": "Payment could not be completed."
+      },
+      "history": {
+        "title": "Payment history",
+        "empty": "No invoices yet.",
+        "colDate": "Date",
+        "colType": "Type",
+        "colAmount": "Amount",
+        "colStatus": "Status",
+        "colActions": "Actions",
+        "download": "Download PDF",
+        "typeRenewal": "Renewal",
+        "typeInitial": "Initial",
+        "typeAddon": "Add-on",
+        "typeOther": "Other",
+        "invoiceStatusPaid": "Paid",
+        "invoiceStatusPending": "Pending",
+        "invoiceStatusFailed": "Failed",
+        "invoiceStatusOverdue": "Overdue",
+        "pagePrev": "Previous",
+        "pageNext": "Next",
+        "pageIndicator": "Page {page} of {totalPages}"
+      },
+      "addons": {
+        "title": "Add-ons & usage",
+        "parentPack": "Parent pack · {parents} parents × {price} EGP",
+        "parentPackOff": "Parent pack is not active.",
+        "blastLine": "Announcements this month · {messages} messages · {amount} EGP",
+        "cardOrders": "Card orders in pipeline: {count}",
+        "ordersLink": "View orders"
+      },
+      "cancellation": {
+        "footer": "To cancel your subscription, contact support at ops@ehgintelligence.com"
+      },
+      "pastDue": {
+        "bannerWithDate": "Payment overdue. Your access will be suspended on {date}. Pay now to maintain service.",
+        "bannerNoDate": "Payment overdue. Pay now to maintain service.",
+        "payNow": "Pay now",
+        "paying": "Opening payment…",
+        "payDisabled": "Online payment is not enabled.",
+        "paySuccess": "Payment recorded.",
+        "payFailed": "Payment could not be completed.",
+        "noOpenInvoice": "No unpaid invoice found. Open billing support if this looks wrong.",
+        "dismiss": "Dismiss",
+        "modalTitle": "Complete payment",
+        "modalIframeTitle": "Paymob checkout",
+        "modalClose": "Close",
+        "scannerNotice": "Subscription payment is overdue. Scanning stays available — settle billing soon to avoid suspension."
+      }
     },
     "period": {
       "monthly": {

@@ -331,8 +331,8 @@ export async function runSubscriptionBillingCron(
     }
   }
 
-  // Auto-suspend when auto_suspend_at falls on today. Grace period is hardcoded at +6 calendar days
-  // after next_payment_due wherever auto_suspend_at is set (DB / payment handlers — not platform_config).
+  // Auto-suspend when auto_suspend_at falls on today. Grace is normally next_payment_due + N calendar days
+  // (see platform_config.subscription_grace_period_days; billingSchedule.autoSuspendAtFromDue when writing centers).
   const tomorrow = calendarAddDays(today, 1);
   const { data: suspendRows, error: susErr } = await supabase
     .from('centers')

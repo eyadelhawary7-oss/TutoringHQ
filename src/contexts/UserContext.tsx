@@ -21,6 +21,11 @@ interface UserProfile {
     parent_pack_enabled?: boolean;
     parent_pack_active_parents?: number;
     announcement_balance?: string | number;
+    status?: string;
+    subscription_status?: string;
+    billing_status?: string;
+    next_payment_due?: string | null;
+    auto_suspend_at?: string | null;
   } | null;
   can_scan?: boolean;
   can_view_payments?: boolean;

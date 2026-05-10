@@ -34,6 +34,7 @@ import { useLayout } from '@/contexts/LayoutContext';
 import SyncStatusPanel from '@/components/scanner/SyncStatusPanel';
 import PendingSyncSheet from '@/components/scanner/PendingSyncSheet';
 import TodayHistorySheet from '@/components/scanner/TodayHistorySheet';
+import { ScannerPastDueNotice } from '@/components/billing/ScannerPastDueNotice';
 
 type ScanMode = 'camera' | 'bluetooth' | 'manual';
 
@@ -1182,6 +1183,7 @@ export default function ScanPage() {
             <span>{ts('offlineBanner')}</span>
           </div>
         )}
+        <ScannerPastDueNotice />
 
         <div className="flex flex-col gap-3 px-4 pt-4 pb-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">

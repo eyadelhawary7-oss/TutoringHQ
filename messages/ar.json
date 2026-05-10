@@ -2019,6 +2019,25 @@
         "earlyAdopterPrice": "Early Adopter Price — TODO: ترجمة",
         "earlyAdopterNumber": "Early Adopter Number — TODO: ترجمة"
       },
+      "subscription": {
+        "panelTitle": "تجاوزات الاشتراك",
+        "reasonLabel": "السبب (مطلوب، 10–500 حرف)",
+        "reasonPlaceholder": "ملاحظة داخلية — تظهر في سجل التدقيق",
+        "extend30": "تمديد الاستحقاق 30 يوماً",
+        "extendCustom": "تمديد بأيام مخصصة",
+        "daysLabel": "أيام للإضافة",
+        "suspend": "إيقاف الاشتراك",
+        "reactivate": "إعادة تفعيل الاشتراك",
+        "overridePrice": "تجاوز السعر الشامل",
+        "allInLabel": "السعر الشامل (ج.م)",
+        "earlyAdopterToggle": "وضع علامة تسعيرة مبكرين",
+        "successExtend": "تم تمديد الاستحقاق",
+        "successSuspend": "تم إيقاف السنتر",
+        "successReactivate": "تم إعادة التفعيل",
+        "successPrice": "تم تحديث السعر",
+        "internalRoleOnly": "يتطلب صلاحية إدارية داخلية",
+        "superAdminOnly": "للمشرف الأعلى فقط"
+      },
       "section4": {
         "title": "الفواتير",
         "createInvoice": "إنشاء فاتورة",
@@ -3510,7 +3529,92 @@
     "billedAnnuallyLine": "{amount} ج.م · يُحسب سنوياً",
     "perStudentWeekly": "{price} ج.م لكل طالب أسبوعياً",
     "page": {
-      "title": "الفوترة والاشتراكات"
+      "title": "الفوترة والاشتراك"
+    },
+    "sub": {
+      "title": "الفوترة والاشتراك",
+      "loading": "جاري تحميل الفوترة…",
+      "loadError": "تعذر تحميل بيانات الفوترة.",
+      "ownerOnly": "مالك المركز فقط يمكنه إدارة الفوترة والمدفوعات.",
+      "currentPlan": {
+        "title": "الباقة الحالية",
+        "planCap": "سعة الطلاب",
+        "studentsUsage": "{current} / {cap} طالباً",
+        "studentsUsageUnlimited": "{current} طالباً",
+        "earlyAdopter": "تسعيرة المبكرين",
+        "periodMonthly": "شهري",
+        "periodQuarterly": "ربع سنوي",
+        "periodAnnual": "سنوي",
+        "priceLine": "{amount} · {period}"
+      },
+      "status": {
+        "active": "نشط",
+        "pending": "قيد الانتظار",
+        "suspended": "موقوف",
+        "pastDue": "متأخر السداد",
+        "cancelled": "ملغى",
+        "trial": "تجريبي"
+      },
+      "nextPayment": {
+        "title": "الدفعة القادمة",
+        "dueDate": "تاريخ الاستحقاق",
+        "relative": "{relative}",
+        "amount": "المبلغ المستحق",
+        "payNow": "ادفع الآن",
+        "paying": "جاري فتح الدفع…",
+        "payDisabled": "الدفع الإلكتروني غير مفعّل.",
+        "paidUp": "لا يوجد مستحق الآن.",
+        "pastDueBanner": "الدفع متأخر — ادفع الآن لتجنب الإيقاف.",
+        "paySuccess": "تم تسجيل الدفع. شكراً!",
+        "payFailed": "تعذر إتمام الدفع."
+      },
+      "history": {
+        "title": "سجل المدفوعات",
+        "empty": "لا توجد فواتير بعد.",
+        "colDate": "التاريخ",
+        "colType": "النوع",
+        "colAmount": "المبلغ",
+        "colStatus": "الحالة",
+        "colActions": "إجراءات",
+        "download": "تحميل PDF",
+        "typeRenewal": "تجديد",
+        "typeInitial": "أولية",
+        "typeAddon": "إضافة",
+        "typeOther": "أخرى",
+        "invoiceStatusPaid": "مدفوع",
+        "invoiceStatusPending": "معلق",
+        "invoiceStatusFailed": "فشل",
+        "invoiceStatusOverdue": "متأخر",
+        "pagePrev": "السابق",
+        "pageNext": "التالي",
+        "pageIndicator": "صفحة {page} من {totalPages}"
+      },
+      "addons": {
+        "title": "الإضافات والاستخدام",
+        "parentPack": "باقة أولياء الأمور · {parents} ولياً × {price} ج.م",
+        "parentPackOff": "باقة أولياء الأمور غير مفعّلة.",
+        "blastLine": "إعلانات هذا الشهر · {messages} رسالة · {amount} ج.م",
+        "cardOrders": "طلبات بطاقات قيد التنفيذ: {count}",
+        "ordersLink": "عرض الطلبات"
+      },
+      "cancellation": {
+        "footer": "لإلغاء الاشتراك، تواصل مع الدعم على ops@ehgintelligence.com"
+      },
+      "pastDue": {
+        "bannerWithDate": "الدفع متأخر. سيُوقف وصولك في {date}. ادفع الآن للحفاظ على الخدمة.",
+        "bannerNoDate": "الدفع متأخر. ادفع الآن للحفاظ على الخدمة.",
+        "payNow": "ادفع الآن",
+        "paying": "جاري فتح الدفع…",
+        "payDisabled": "الدفع الإلكتروني غير مفعّل.",
+        "paySuccess": "تم تسجيل الدفع.",
+        "payFailed": "تعذر إتمام الدفع.",
+        "noOpenInvoice": "لا توجد فاتورة غير مدفوعة. تواصل مع الدعم إن كان ذلك غير متوقع.",
+        "dismiss": "تجاهل",
+        "modalTitle": "إتمام الدفع",
+        "modalIframeTitle": "دفع Paymob",
+        "modalClose": "إغلاق",
+        "scannerNotice": "اشتراكك متأخر السداد. المسح لا يزال متاحاً — سدّد الفوترة قريباً لتجنب الإيقاف."
+      }
     },
     "period": {
       "monthly": {

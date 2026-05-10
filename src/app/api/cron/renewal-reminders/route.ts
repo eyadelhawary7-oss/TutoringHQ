@@ -1,3 +1,8 @@
+/**
+ * Freeform renewal reminders (7d / 1d before `next_payment_due`).
+ * Meta template–based nudges (T-7, T-3, overdue streaks) are not wired here; see
+ * `docs/WA_TEMPLATES.md` and `runSubscriptionBillingCron` + `centerNotify` for template paths.
+ */
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { requireCronSecret } from '@/lib/cron/requireCronSecret';

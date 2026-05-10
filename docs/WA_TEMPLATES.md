@@ -53,6 +53,22 @@ Admin: **`/admin/whatsapp-pack`** timeline + **Next stage** action (`POST /api/a
 
 Keep template **status** (`PENDING` / `APPROVED` / `REJECTED`) in sync with Meta review state via admin template sync.
 
+## Subscription renewal reminders (future Meta templates)
+
+Today `/api/cron/renewal-reminders` sends **freeform** WhatsApp copy for centres with `next_payment_due` in **7 days** or **1 day** — not Meta templates.
+
+If product moves to approved templates, register these names in Meta and seed **`wa_meta_templates`** before switching sends:
+
+| Template name | Intended use |
+|---------------|----------------|
+| `chq_payment_reminder` | T-7, T-3 before due |
+| `chq_payment_due_today` | T+0 |
+| `chq_payment_overdue` | T+1, T+3, T+7 after due (grace window) |
+| `chq_subscription_suspended` | After grace + suspension |
+| `chq_payment_received` | Successful renewal (partial overlap with existing `chq_payment_confirmed`) |
+
+Until approved, keep renewal-reminders on freeform text or rely on `sendChqRenewalOverdueTemplate` (`chq_renewal_overdue`) from `subscriptionBillingCron`.
+
 ## Card order status templates — registration checklist
 
 Templates seeded as **PENDING** in `wa_meta_templates` that need Meta-side registration:

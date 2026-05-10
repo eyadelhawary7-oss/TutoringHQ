@@ -46,7 +46,10 @@ export function calendarAddDaysYmd(baseYmd: string, delta: number): string {
   return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
 }
 
-export function autoSuspendAtFromDue(nextPaymentDueYmd: string): string {
-  const day = calendarAddDaysYmd(nextPaymentDueYmd, 6);
+/** Calendar days after due date before suspension; aligns with platform_config.subscription_grace_period_days (default 7). */
+export const SUBSCRIPTION_GRACE_CALENDAR_DAYS = 7;
+
+export function autoSuspendAtFromDue(nextPaymentDueYmd: string, graceCalendarDays = SUBSCRIPTION_GRACE_CALENDAR_DAYS): string {
+  const day = calendarAddDaysYmd(nextPaymentDueYmd, graceCalendarDays);
   return `${day}T12:00:00.000Z`;
 }

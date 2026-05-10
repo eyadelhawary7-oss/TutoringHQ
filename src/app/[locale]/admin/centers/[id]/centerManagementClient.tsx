@@ -15,6 +15,7 @@ import { Pin, Trash2 } from 'lucide-react';
 import { districtSlugFromDisplay } from '@/lib/formatDistrict';
 import { formatDate as formatDateI18n, formatDateTime, formatNumber } from '@/lib/formatNumber';
 import { LocalizedDateInput } from '@/components/forms/LocalizedDateInput';
+import { SubscriptionOverridesPanel } from './SubscriptionOverridesPanel';
 
 const ADMIN_LOCALIZED_DATE_CLASS =
   'w-full rounded-lg px-3 py-2 text-sm border border-gray-300 bg-gray-100 text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500';
@@ -2154,6 +2155,8 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                   </button>
                 </div>
               </section>
+
+              <SubscriptionOverridesPanel centerId={centerId} getAuthHeaders={getAuthHeaders} />
 
               <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">

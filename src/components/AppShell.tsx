@@ -16,6 +16,7 @@ import { CardOrderCartProvider } from '@/hooks/useCardOrderCart';
 import { Globe } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useRouter } from '@/i18n/routing';
+import { PastDueBanner } from '@/components/billing/PastDueBanner';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
 import { isRefreshTokenNotFoundError } from '@/lib/supabaseRefreshSilence';
@@ -44,6 +45,7 @@ const PAGE_TITLE_MAP: Record<string, string> = {
   '/dashboard': 'nav.dashboard',
   '/students': 'nav.students',
   '/payments': 'nav.payments',
+  '/billing': 'billing.sub.title',
   '/attendance': 'nav.attendance',
   '/groups': 'nav.groups',
   '/rooms': 'nav.rooms',
@@ -202,6 +204,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         )}
         {/* Page content - scroll + safe-area padding on inner wrapper (MobileWrapper) */}
         <main className="flex-1 flex flex-col min-h-0">
+          {!isAdminRoute && !kioskChromeHidden ? <PastDueBanner /> : null}
           <MobileWrapper fullWidth={isAdminRoute}>{children}</MobileWrapper>
         </main>
       </div>

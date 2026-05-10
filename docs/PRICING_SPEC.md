@@ -88,5 +88,10 @@ curl -H "Authorization: Bearer $CRON_SECRET" https://centerhq.app/api/cron/snaps
 ```
 
 Without this, the finance dashboard falls back to live subscription MRR for the trend (acceptable), but historical points stay flat until the nightly cron runs (`0 22 * * *` UTC — midnight Cairo).
+## Subscription suspension grace period
+
+- **`platform_config.subscription_grace_period_days`** — calendar days after `next_payment_due` before automatic suspension. Seeded default **7** (migration `20260510130000_subscription_grace_platform_config.sql`).
+- **`centers.auto_suspend_at`** is computed when invoices/payments run using `autoSuspendAtFromDue(next_payment_due)` in `src/lib/billingSchedule.ts`, which defaults to **`SUBSCRIPTION_GRACE_CALENDAR_DAYS` (7)** unless callers pass a different grace length.
+- **`process-renewals`** cron (`runSubscriptionBillingCron`) suspends centres when **`auto_suspend_at`** falls on the Cairo calendar **today** (not by recomputing grace inside the cron).
 
 (End of spec doc.)
