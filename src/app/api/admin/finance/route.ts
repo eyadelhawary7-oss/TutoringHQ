@@ -15,6 +15,8 @@ import type {
   FinanceRevenueSlice,
   FinanceUnitEconomics,
 } from '@/types/admin-finance';
+import { computeSubscriptionTotalMrrRounded } from '@/lib/adminSubscriptionMrr';
+import { computeMrrSnapshot } from '@/lib/mrrSnapshot';
 import { getImpliedMonthlyMrr } from '@/lib/pricing';
 
 export const runtime = 'nodejs';
@@ -57,12 +59,16 @@ async function getFinanceData(admin: SupabaseClient, includeTest: boolean): Prom
     invoicesData,
     cardOrdersData,
     healthData,
+    snapshotRows,
   ] = await Promise.all([
-    fetchActiveCenters(admin, includeTest),
+    fetchCentersForFinance(admin, includeTest),
     fetchAllInvoices(admin, addMonths(now, -12)),
     fetchCardOrders(admin),
     fetchAtRiskHealth(admin),
+    fetchMrrSnapshots(admin),
   ]);
+
+  const subscriptionTotalMrr = computeSubscriptionTotalMrrRounded(centersData);
 
   const centerIds = new Set(centersData.map((c) => c.id));
   const invoicesForMetrics = includeTest
@@ -72,9 +78,9 @@ async function getFinanceData(admin: SupabaseClient, includeTest: boolean): Prom
     ? healthData
     : healthData.filter((h) => h.center_id && centerIds.has(h.center_id));
 
-  const northStar = computeNorthStar(centersData, invoicesForMetrics, monthStart);
+  const northStar = computeNorthStar(centersData, invoicesForMetrics, monthStart, subscriptionTotalMrr);
   const unitEconomics = computeUnitEconomics(centersData, invoicesForMetrics);
-  const mrrTrend = computeMrrTrend(invoicesForMetrics, now);
+  const mrrTrend = await buildMrrTrend(admin, now, snapshotRows, subscriptionTotalMrr);
   const revenueByType = computeRevenueByType(invoicesForMetrics, monthStart);
   const planDistribution = computePlanDistribution(centersData);
   const cohorts = computeCohorts(centersData, invoicesForMetrics, sixMonthsAgo, now);
@@ -114,13 +120,14 @@ type CenterRow = {
   early_adopter_price: number | null;
 };
 
-async function fetchActiveCenters(admin: SupabaseClient, includeTest: boolean): Promise<CenterRow[]> {
+async function fetchCentersForFinance(admin: SupabaseClient, includeTest: boolean): Promise<CenterRow[]> {
   try {
     let q = admin
       .from('centers')
       .select(
         'id, name, plan, status, created_at, all_in_price, billing_period, billing_type, is_early_adopter, early_adopter_price',
-      );
+      )
+      .neq('status', 'deleted');
     if (!includeTest) {
       q = q.eq('is_test', false);
     }
@@ -128,6 +135,79 @@ async function fetchActiveCenters(admin: SupabaseClient, includeTest: boolean): 
     return (data ?? []) as CenterRow[];
   } catch {
     return [];
+  }
+}
+
+async function fetchMrrSnapshots(
+  admin: SupabaseClient,
+): Promise<{ snapshot_date: string; total_mrr: number | string | null }[]> {
+  try {
+    const since = new Date();
+    since.setUTCMonth(since.getUTCMonth() - 7);
+    const sinceStr = since.toISOString().slice(0, 10);
+    const { data } = await admin
+      .from('mrr_snapshots')
+      .select('snapshot_date, total_mrr')
+      .gte('snapshot_date', sinceStr)
+      .order('snapshot_date', { ascending: true });
+    return (data ?? []) as { snapshot_date: string; total_mrr: number | string | null }[];
+  } catch {
+    return [];
+  }
+}
+
+async function buildMrrTrend(
+  admin: SupabaseClient,
+  now: Date,
+  snapshots: { snapshot_date: string; total_mrr: number | string | null }[],
+  liveSubscriptionMrr: number,
+): Promise<FinanceMrrPoint[]> {
+  const hasToday = snapshots.some((r) => String(r.snapshot_date).slice(0, 10) === now.toISOString().slice(0, 10));
+
+  if (snapshots.length === 0) {
+    const flat = await safeLiveSnapshotTotal(admin, liveSubscriptionMrr);
+    const out: FinanceMrrPoint[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = startOfMonthUtc(addMonths(now, -i));
+      out.push({ month: yearMonthKey(d), amount: flat });
+    }
+    return out;
+  }
+
+  const currentMonthKey = yearMonthKey(startOfMonthUtc(now));
+  const points: FinanceMrrPoint[] = [];
+
+  for (let i = 5; i >= 0; i--) {
+    const monthStart = startOfMonthUtc(addMonths(now, -i));
+    const monthEnd = startOfMonthUtc(addMonths(monthStart, 1));
+    const monthKey = yearMonthKey(monthStart);
+
+    const inMonth = snapshots.filter((r) => {
+      const sd = String(r.snapshot_date).slice(0, 10);
+      const t = new Date(`${sd}T12:00:00.000Z`);
+      return t >= monthStart && t < monthEnd;
+    });
+
+    let amount =
+      inMonth.length > 0 ? Math.round(Number(inMonth[inMonth.length - 1].total_mrr ?? 0)) : 0;
+
+    if (monthKey === currentMonthKey && !hasToday) {
+      amount = liveSubscriptionMrr;
+    }
+
+    points.push({ month: monthKey, amount });
+  }
+
+  return points;
+}
+
+/** When snapshots are empty, prefer computeMrrSnapshot so trend matches cron payload after deploy. */
+async function safeLiveSnapshotTotal(admin: SupabaseClient, fallback: number): Promise<number> {
+  try {
+    const snap = await computeMrrSnapshot(admin);
+    return Math.round(Number(snap.total_mrr));
+  } catch {
+    return fallback;
   }
 }
 
@@ -222,14 +302,15 @@ function computeNorthStar(
   centers: CenterRow[],
   invoices: InvoiceRow[],
   monthStart: Date,
+  subscriptionTotalMrr: number,
 ): FinanceNorthStar {
   const active = centers.filter(isActive);
-  const totalMRR = Math.round(active.reduce((s, c) => s + monthlyChargeForCenter(c), 0));
+  const totalMRR = subscriptionTotalMrr;
 
   const activeLastMonth = active.filter(
     (c) => c.created_at && new Date(c.created_at) < monthStart,
   );
-  const mrrLastMonth = Math.round(activeLastMonth.reduce((s, c) => s + monthlyChargeForCenter(c), 0));
+  const mrrLastMonth = computeSubscriptionTotalMrrRounded(activeLastMonth);
   const mrrChangePct = mrrLastMonth > 0
     ? Math.round(((totalMRR - mrrLastMonth) / mrrLastMonth) * 1000) / 10
     : 0;
@@ -298,20 +379,6 @@ function computeUnitEconomics(
   const ttfpDays = ttfpSamples.length > 0 ? Math.round(median(ttfpSamples) * 10) / 10 : null;
 
   return { monthlyChurnRate, ltv, ttfpDays };
-}
-
-function computeMrrTrend(invoices: InvoiceRow[], now: Date): FinanceMrrPoint[] {
-  const out: FinanceMrrPoint[] = [];
-  for (let i = 5; i >= 0; i--) {
-    const start = startOfMonthUtc(addMonths(now, -i));
-    const end = startOfMonthUtc(addMonths(now, -i + 1));
-    const amount = invoices
-      .filter(isPaid)
-      .filter((inv) => inv.created_at && new Date(inv.created_at) >= start && new Date(inv.created_at) < end)
-      .reduce((s, inv) => s + Number(inv.payment_amount ?? 0), 0);
-    out.push({ month: yearMonthKey(start), amount: Math.round(amount) });
-  }
-  return out;
 }
 
 function computeRevenueByType(invoices: InvoiceRow[], monthStart: Date): FinanceRevenueSlice[] {

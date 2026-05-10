@@ -10,7 +10,7 @@ export async function GET(request: Request) {
 
   const { data: snapshots, error } = await supabase
     .from('mrr_snapshots')
-    .select('snapshot_date, mrr, active_centers, new_centers, churned_centers')
+    .select('snapshot_date, total_mrr, active_centers')
     .order('snapshot_date', { ascending: false })
     .limit(30);
 
@@ -36,10 +36,10 @@ export async function GET(request: Request) {
     // Chart data: ascending order (oldest first), ready for Recharts
     snapshots: chartSnapshots,
     summary: {
-      currentMrr: latest?.mrr ?? 0,
+      currentMrr: Number(latest?.total_mrr ?? 0),
       activeCenters: latest?.active_centers ?? 0,
-      newThisMonth: thisMonthRows.reduce((sum, s) => sum + (s.new_centers ?? 0), 0),
-      churnedThisMonth: thisMonthRows.reduce((sum, s) => sum + (s.churned_centers ?? 0), 0),
+      newThisMonth: 0,
+      churnedThisMonth: 0,
     },
     hasData: safeSnapshots.length > 0,
   });

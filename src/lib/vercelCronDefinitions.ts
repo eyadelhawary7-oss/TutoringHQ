@@ -21,7 +21,7 @@ export const VERCEL_CRON_DEFINITIONS = [
   { path: '/api/cron/compute-benchmarks', schedule: '0 1 * * *' },
   { path: '/api/cron/recompute-health-scores', schedule: '0 2 * * *' },
   { path: '/api/cron/status-ping', schedule: '*/5 * * * *' },
-  { path: '/api/cron/mrr-snapshot', schedule: '0 0 * * *' },
+  { path: '/api/cron/snapshot-mrr', schedule: '0 22 * * *' },
   { path: '/api/cron/check-token-health', schedule: '0 8 * * 1' },
   { path: '/api/cron/renewal-reminders', schedule: '0 7 * * *' },
   { path: '/api/cron/weekly-backup', schedule: '0 3 * * 0' },

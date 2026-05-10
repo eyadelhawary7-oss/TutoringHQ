@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
   const results = await Promise.all([
     supabase.from('centers').select('id, created_at, subscription_status, subscription_monthly_fee, early_adopter_price, billing_amount, billing_period, all_in_price, plan', { count: 'exact', head: false }).in('subscription_status', ['active', 'overdue']).eq('status', 'active'),
-    supabase.from('mrr_snapshots').select('mrr, active_centers').order('snapshot_date', { ascending: false }).limit(1).maybeSingle(),
+    supabase.from('mrr_snapshots').select('total_mrr, active_centers').order('snapshot_date', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('centers').select('id').eq('status', 'active').gte('created_at', new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).toISOString()).lt('created_at', new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()),
     supabase.from('centers').select('id').in('subscription_status', ['suspended', 'cancelled']).gte('updated_at', monthStartDateStr),
     supabase.from('payments').select('amount, status, confirmed').gte('paid_at', monthStartDateStr),
@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
   }
 
   const centers = (activeCentersRes.data ?? []) as { id: string; subscription_monthly_fee: number | null; early_adopter_price: number | null; billing_amount: number | null; billing_period?: string | null; all_in_price?: number | null; plan: string | null }[];
-  const mrrSnapshot = mrrSnapshotRes.data as { mrr?: number; active_centers?: number } | null;
+  const mrrSnapshot = mrrSnapshotRes.data as { total_mrr?: number; active_centers?: number } | null;
   const newYesterday = (newYesterdayRes.data ?? []).length;
   const churned = (churnedRes.data ?? []).length;
   const payments = (paymentsRes.data ?? []) as { amount: number; status: string; confirmed: boolean }[];
@@ -154,7 +154,7 @@ export async function GET(request: NextRequest) {
   }[];
   const healthBands = (healthRes.data ?? []) as { health_score_band: string | null }[];
 
-  const mrr = mrrSnapshot?.mrr ?? centers.reduce((s, c) => {
+  const mrr = Number(mrrSnapshot?.total_mrr ?? centers.reduce((s, c) => {
     const pk: PlanKey = isPlanKey(c.plan) ? (c.plan as PlanKey) : 'starter';
     let baseQ = 0;
     if (c.all_in_price != null && Number(c.all_in_price) > 0) {
@@ -169,7 +169,7 @@ export async function GET(request: NextRequest) {
     const period = normalizeBillingPeriod(c.billing_period);
     const fee = getImpliedMonthlyMrr(baseQ, period, pk);
     return s + Number(fee);
-  }, 0);
+  }, 0));
   const arr = mrr * 12;
   const activeCount = centers.length;
 

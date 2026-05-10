@@ -6,6 +6,7 @@ import { getAdminContext } from '@/lib/admin-auth';
 import { PLAN_STUDENT_LIMITS } from '@/lib/plans';
 import { getImpliedMonthlyMrr, isCenterEligibleForSubscriptionMrr } from '@/lib/pricing';
 import { parseIncludeTestCenters } from '@/lib/adminIncludeTest';
+import { computeSubscriptionTotalMrrRounded } from '@/lib/adminSubscriptionMrr';
 
 export async function GET(request: Request) {
   try {
@@ -131,14 +132,30 @@ export async function GET(request: Request) {
     const subscriptionMrrCenters = allCenters.filter((c) => isCenterEligibleForSubscriptionMrr(c.status));
 
     const mrrByPlan: Record<string, number> = {
-      nano: 0, starter: 0, pro: 0, business: 0, enterprise: 0, top_centers: 0, payg: 0,
+      solo: 0,
+      nano: 0,
+      starter: 0,
+      pro: 0,
+      business: 0,
+      enterprise: 0,
+      top_centers: 0,
+      payg: 0,
     };
-    const centersByPlan: Record<string, number> = { nano: 0, starter: 0, pro: 0, business: 0, enterprise: 0, top_centers: 0, payg: 0 };
-    const mrr = subscriptionMrrCenters.reduce((sum: number, c: (typeof allCenters)[number]) => {
+    const centersByPlan: Record<string, number> = {
+      solo: 0,
+      nano: 0,
+      starter: 0,
+      pro: 0,
+      business: 0,
+      enterprise: 0,
+      top_centers: 0,
+      payg: 0,
+    };
+    for (const c of subscriptionMrrCenters) {
       const plan = c.plan || 'starter';
       if ((c.billing_type || 'fixed') === 'payg') {
         centersByPlan.payg = (centersByPlan.payg ?? 0) + 1;
-        return sum;
+        continue;
       }
       centersByPlan[plan] = (centersByPlan[plan] ?? 0) + 1;
       const amt = getImpliedMonthlyMrr({
@@ -152,9 +169,9 @@ export async function GET(request: Request) {
         id: c.id,
       });
       mrrByPlan[plan] = (mrrByPlan[plan] ?? 0) + amt;
-      return sum + amt;
-    }, 0);
+    }
 
+    let paygMRR = 0;
     try {
       const paygCenterIds = activeCenters
         .filter((c: { billing_type?: string }) => (c.billing_type || 'fixed') === 'payg')
@@ -173,11 +190,12 @@ export async function GET(request: Request) {
           paygByCenter[c.center_id].push(Number(c.total_charge));
         });
         const MONTHLY_WEEKS = 4.333;
-        let paygMRR = 0;
+        let paygAccum = 0;
         Object.values(paygByCenter).forEach((charges) => {
           const avgWeekly = charges.length > 0 ? charges.reduce((a, b) => a + b, 0) / charges.length : 0;
-          paygMRR += avgWeekly * MONTHLY_WEEKS;
+          paygAccum += avgWeekly * MONTHLY_WEEKS;
         });
+        paygMRR = paygAccum;
         mrrByPlan.payg = Math.round(paygMRR);
       }
     } catch (paygErr) {
@@ -363,9 +381,9 @@ export async function GET(request: Request) {
       });
     }
 
-    const churnRate = totalCentersCount > 0 ? Math.round((churnedThisMonth / totalCentersCount) * 100) : 0;
+    const totalMRR = computeSubscriptionTotalMrrRounded(allCenters);
 
-    const totalMRR = mrr + (mrrByPlan.payg ?? 0);
+    const churnRate = totalCentersCount > 0 ? Math.round((churnedThisMonth / totalCentersCount) * 100) : 0;
 
     const counts = {
       total: allCenters.length,
@@ -397,6 +415,7 @@ export async function GET(request: Request) {
       pendingCenters: pendingCenters.length,
       totalStudents,
       totalMRR,
+      paygMRR: Math.round(paygMRR),
       mrr: totalMRR,
       mrrByPlan,
       arpuByPlan,

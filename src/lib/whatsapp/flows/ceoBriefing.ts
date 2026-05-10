@@ -102,10 +102,10 @@ export async function fetchCeoBriefingData(): Promise<CeoBriefingData> {
     supabase.from('centers').select('id').in('subscription_status', ['suspended', 'cancelled']).gte('updated_at', yesterdayStart.toISOString()),
     supabase.from('centers').select('id').eq('status', 'active').in('health_score_band', ['At Risk', 'Critical']),
     supabase.from('centers').select('id').in('subscription_status', ['active', 'overdue']).eq('status', 'active').gte('subscription_renewal_date', weekStartStr).lte('subscription_renewal_date', weekEndStr),
-    supabase.from('mrr_snapshots').select('mrr').order('snapshot_date', { ascending: false }).limit(1).maybeSingle(),
+    supabase.from('mrr_snapshots').select('total_mrr').order('snapshot_date', { ascending: false }).limit(1).maybeSingle(),
   ]);
 
-  let mrr = (mrrRes.data as { mrr?: number } | null)?.mrr ?? 0;
+  let mrr = Number((mrrRes.data as { total_mrr?: number } | null)?.total_mrr ?? 0);
   if (mrr === 0) {
     const { data: centers } = await supabase
       .from('centers')

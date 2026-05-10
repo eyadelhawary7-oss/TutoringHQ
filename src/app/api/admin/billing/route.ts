@@ -17,6 +17,7 @@ import {
 } from '@/lib/pricing';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { parseIncludeTestCenters } from '@/lib/adminIncludeTest';
+import { computeSubscriptionTotalMrrRounded } from '@/lib/adminSubscriptionMrr';
 
 function adminCycleAmount(periodRaw: string, baseQ: number, plan: string): number {
   const p = normalizeBillingPeriod(periodRaw);
@@ -46,7 +47,7 @@ export async function GET(request: Request) {
     let centersQuery = supabaseAdmin
       .from('centers')
       .select('id, name, plan, phone, billing_period, all_in_price, next_payment_due, billing_status, status, payment_due_date, auto_suspend_at, is_early_adopter, early_adopter_price, billing_type')
-      .in('status', ['active', 'suspended']);
+      .neq('status', 'deleted');
     if (!includeTest) {
       centersQuery = centersQuery.eq('is_test', false);
     }
@@ -68,7 +69,6 @@ export async function GET(request: Request) {
       }
     });
     let billingRows = centers || [];
-    let fixedMRR = 0;
     let paygMRR = 0;
     const mrrByPlan: Record<string, number> = {};
 
@@ -98,7 +98,6 @@ export async function GET(request: Request) {
           id: (row as { id: string }).id,
         });
         (row as Record<string, unknown>).monthlyEquivalent = Math.round(monthlyEquiv);
-        fixedMRR += monthlyEquiv;
         const planKey = (row.plan as string) || 'starter';
         mrrByPlan[planKey] = (mrrByPlan[planKey] ?? 0) + monthlyEquiv;
       }
@@ -245,9 +244,9 @@ export async function GET(request: Request) {
       };
     });
 
-    const totalMRR = fixedMRR + paygMRR;
+    const totalMRR = computeSubscriptionTotalMrrRounded(billingRows as Parameters<typeof computeSubscriptionTotalMrrRounded>[0]);
     const activeFixedCount = (centers || []).filter((c: { billing_type?: string }) => (c.billing_type || 'fixed') === 'fixed').length;
-    const revenueProjection = totalMRR * 12;
+    const revenueProjection = (totalMRR + paygMRR) * 12;
 
     return NextResponse.json({
       centers: billingRows,
@@ -261,7 +260,7 @@ export async function GET(request: Request) {
       pendingInvoices: pendingInvoiceRows,
       mrrByPlan,
       totalMRR,
-      fixedMRR,
+      fixedMRR: totalMRR,
       paygMRR,
       revenueProjection,
       activeFixedCount,

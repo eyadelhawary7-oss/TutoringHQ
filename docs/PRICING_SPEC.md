@@ -79,4 +79,14 @@ Display Annual prices ROUNDED to whole EGP. "849.917 EGP/month" is a bug.
 
 **Centres excluded from subscription MRR** (`isCenterEligibleForSubscriptionMrr`): `suspended`, `churned`, `deleted`, `cancelled`, `inactive`. **PAYG** (`billing_type === 'payg'`): subscription MRR `0`; PAYG estimate is added separately in billing/overview where applicable.
 
+## Daily MRR snapshots (`mrr_snapshots`)
+
+After applying the `mrr_snapshots` migration and **before** relying on the finance trend chart, trigger one snapshot so the table has at least one row:
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" https://centerhq.app/api/cron/snapshot-mrr
+```
+
+Without this, the finance dashboard falls back to live subscription MRR for the trend (acceptable), but historical points stay flat until the nightly cron runs (`0 22 * * *` UTC — midnight Cairo).
+
 (End of spec doc.)
