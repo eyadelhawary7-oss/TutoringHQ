@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { insertCronLogFailure, insertCronLogSuccess } from '@/lib/cron/cronLog';
 
 export const maxDuration = 300;
+
+const CRON_NAME = 'recompute-health-scores';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const BATCH_SIZE = 50;
@@ -35,6 +38,8 @@ export async function GET(request: Request) {
 
   const admin = supabaseAdmin;
 
+  const cronStart = Date.now();
+
   const { data: centerRows, error: centersError } = await admin
     .from('centers')
     .select('id, plan, last_scan_at, approved_at')
@@ -42,12 +47,19 @@ export async function GET(request: Request) {
 
   if (centersError) {
     console.error('[recompute-health-scores] centers:', centersError.message);
+    await insertCronLogFailure(admin, CRON_NAME, new Error(centersError.message), {
+      duration_ms: Date.now() - cronStart,
+    });
     return NextResponse.json({ error: centersError.message }, { status: 500 });
   }
 
   const centers = (centerRows ?? []) as CenterRow[];
   if (centers.length === 0) {
     await upsertCronHealth();
+    await insertCronLogSuccess(admin, CRON_NAME, {
+      duration_ms: Date.now() - cronStart,
+      metadata: { processed: 0 },
+    });
     return NextResponse.json({ processed: 0, errors: 0 });
   }
 
@@ -64,6 +76,9 @@ export async function GET(request: Request) {
 
   if (metricsError) {
     console.error('[recompute-health-scores] metrics:', metricsError.message);
+    await insertCronLogFailure(admin, CRON_NAME, new Error(metricsError.message), {
+      duration_ms: Date.now() - cronStart,
+    });
     return NextResponse.json({ error: metricsError.message }, { status: 500 });
   }
 
@@ -212,6 +227,12 @@ export async function GET(request: Request) {
   }
 
   await upsertCronHealth();
+
+  await insertCronLogSuccess(admin, CRON_NAME, {
+    duration_ms: Date.now() - cronStart,
+    records_processed: processed,
+    metadata: { errors },
+  });
 
   return NextResponse.json({ processed, errors, updatedAt });
 }

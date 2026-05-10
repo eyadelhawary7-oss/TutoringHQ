@@ -10,6 +10,7 @@ import { FEATURES } from '@/lib/features';
 import { ownerContactByCenterId, resolveOwnerWaPhoneCached } from '@/lib/ownerPhone';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { assertIsoDateForOrFilter } from '@/lib/postgrestSafe';
+import { insertCronLogFailure, insertCronLogSuccess } from '@/lib/cron/cronLog';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -51,7 +52,15 @@ export async function POST(request: Request) {
   const unauthorized = requireCronSecret(request);
   if (unauthorized) return unauthorized;
 
+  const cronStart = Date.now();
+
   if (!FEATURES.PAYMOB_ENABLED) {
+    if (supabaseAdmin) {
+      await insertCronLogSuccess(supabaseAdmin, CRON_NAME, {
+        duration_ms: Date.now() - cronStart,
+        metadata: { skipped: 'paymob_disabled' },
+      });
+    }
     return NextResponse.json({
       skipped: true,
       reason: 'Paymob disabled',
@@ -63,6 +72,8 @@ export async function POST(request: Request) {
   }
 
   const admin = supabaseAdmin;
+
+  try {
   const todayStr = assertIsoDateForOrFilter(new Date().toISOString().slice(0, 10), 'todayStr');
 
   let rows: InvoiceRetryRow[] = [];
@@ -233,11 +244,22 @@ export async function POST(request: Request) {
     console.error(`[${CRON_NAME}] cron_health_log:`, e);
   }
 
+  await insertCronLogSuccess(admin, CRON_NAME, {
+    duration_ms: Date.now() - cronStart,
+    records_processed: retried,
+    metadata: { processed, skipped },
+  });
+
   return NextResponse.json({
     processed,
     retried,
     skipped,
   });
+  } catch (e) {
+    console.error(`[${CRON_NAME}] fatal`, e);
+    await insertCronLogFailure(admin, CRON_NAME, e, { duration_ms: Date.now() - cronStart });
+    return NextResponse.json({ error: 'internal' }, { status: 500 });
+  }
 }
 
 export async function GET(request: Request) {

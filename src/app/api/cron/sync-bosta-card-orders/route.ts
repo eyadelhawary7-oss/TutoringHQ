@@ -3,6 +3,9 @@ import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { fetchBostaDeliveryByTracking } from '@/lib/bosta';
 import { applyCardOrderTransition, IllegalCardOrderTransitionError } from '@/lib/cardOrderState';
+import { insertCronLogFailure, insertCronLogSuccess } from '@/lib/cron/cronLog';
+
+const CRON_NAME = 'sync-bosta-card-orders';
 
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
@@ -17,6 +20,10 @@ export async function GET(request: Request) {
 
   const admin = supabaseAdmin;
 
+  const cronStart = Date.now();
+
+  try {
+
   const { data: orders, error } = await admin
     .from('card_orders')
     .select('id, tracking_number, status')
@@ -26,6 +33,9 @@ export async function GET(request: Request) {
 
   if (error) {
     console.error('[sync-bosta-card-orders]', error.message);
+    await insertCronLogFailure(admin, CRON_NAME, new Error(error.message), {
+      duration_ms: Date.now() - cronStart,
+    });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
@@ -81,5 +91,16 @@ export async function GET(request: Request) {
     }
   }
 
+  await insertCronLogSuccess(admin, CRON_NAME, {
+    duration_ms: Date.now() - cronStart,
+    records_processed: polled,
+    metadata: { transitioned, noop },
+  });
+
   return NextResponse.json({ polled, transitioned, noop });
+  } catch (e) {
+    console.error('[sync-bosta-card-orders]', e);
+    await insertCronLogFailure(admin, CRON_NAME, e, { duration_ms: Date.now() - cronStart });
+    return NextResponse.json({ error: 'internal' }, { status: 500 });
+  }
 }

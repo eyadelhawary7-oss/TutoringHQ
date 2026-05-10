@@ -3803,7 +3803,19 @@
       "healthPendingActions": "Pending Actions",
       "healthPendingCancellations": "Pending Cancellations",
       "healthPendingWithdrawals": "Pending Withdrawals",
-      "healthPendingSignupsLink": "Pending Signups"
+      "healthPendingSignupsLink": "Pending Signups",
+      "lastError": {
+        "columnHeader": "Last Error",
+        "empty": "—",
+        "viewFull": "View full error"
+      },
+      "errorModal": {
+        "title": "Cron failure details",
+        "stackHeading": "Stack trace",
+        "recentErrorsHeading": "Recent failures",
+        "noStack": "No stack trace recorded.",
+        "noRecentFailures": "No failed runs in the retention window."
+      }
     },
     "sidebarTitle": "Admin Panel",
     "sidebarHr": "HR & Commissions",

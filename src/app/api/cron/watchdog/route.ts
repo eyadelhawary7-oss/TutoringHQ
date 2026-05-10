@@ -7,6 +7,9 @@ import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { normalizeWhatsAppNumber, sendWhatsAppMessage } from '@/lib/whatsapp';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { formatNumber } from '@/lib/formatNumber';
+import { insertCronLogFailure, insertCronLogSuccess } from '@/lib/cron/cronLog';
+
+const CRON_NAME = 'watchdog';
 
 const OP_LOCALE = 'en';
 
@@ -153,14 +156,27 @@ async function runWatchdog(): Promise<{ overdue: number; alerted: number }> {
 }
 
 export async function POST(request: Request) {
+  const cronStart = Date.now();
   try {
     const unauthorized = requireCronSecret(request);
     if (unauthorized) return unauthorized;
 
     const result = await runWatchdog();
+    if (supabaseAdmin) {
+      await insertCronLogSuccess(supabaseAdmin, CRON_NAME, {
+        duration_ms: Date.now() - cronStart,
+        records_processed: result.alerted + result.overdue,
+        metadata: { overdue: result.overdue, alerted: result.alerted },
+      });
+    }
     return NextResponse.json(result);
   } catch (e) {
     console.error('[watchdog] fatal:', e);
+    if (supabaseAdmin) {
+      await insertCronLogFailure(supabaseAdmin, CRON_NAME, e, {
+        duration_ms: Date.now() - cronStart,
+      });
+    }
     try {
       if (supabaseAdmin) {
         await upsertWatchdogSuccess(supabaseAdmin);

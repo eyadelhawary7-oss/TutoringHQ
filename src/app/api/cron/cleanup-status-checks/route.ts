@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { tCronBackup } from '@/lib/cronBackupI18n';
+import { insertCronLogFailure, insertCronLogSuccess } from '@/lib/cron/cronLog';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,9 +15,13 @@ const supabase = createClient(
   { auth: { persistSession: false, autoRefreshToken: false } },
 );
 
+const CRON_NAME = 'cleanup-status-checks';
+
 export async function GET(request: Request) {
   const unauthorized = requireCronSecret(request);
   if (unauthorized) return unauthorized;
+
+  const cronStart = Date.now();
 
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - 30);
@@ -28,17 +33,17 @@ export async function GET(request: Request) {
 
   if (error) {
     console.error('[cleanup-status-checks]', error.message);
+    await insertCronLogFailure(supabase, CRON_NAME, new Error(error.message), {
+      duration_ms: Date.now() - cronStart,
+    });
     return NextResponse.json(
       { success: false, error: tCronBackup('cleanupFailed', { message: error.message }) },
       { status: 500 },
     );
   }
 
-  await supabase.from('cron_log').insert({
-    cron_name: 'cleanup-status-checks',
-    ran_at: new Date().toISOString(),
-    status: 'success',
-    duration_ms: 0,
+  await insertCronLogSuccess(supabase, CRON_NAME, {
+    duration_ms: Date.now() - cronStart,
     records_processed: count ?? 0,
   });
 
@@ -46,7 +51,7 @@ export async function GET(request: Request) {
     if (supabaseAdmin) {
       await supabaseAdmin.from('cron_health_log').upsert(
         {
-          cron_name: 'cleanup-status-checks',
+          cron_name: CRON_NAME,
           last_success_at: new Date().toISOString(),
           failure_count: 0,
         },

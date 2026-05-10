@@ -7,6 +7,7 @@ import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { sendFreeformMessage } from '@/lib/whatsapp/client';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { formatNumber } from '@/lib/formatNumber';
+import { insertCronLogFailure, insertCronLogSuccess } from '@/lib/cron/cronLog';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
   }
 
   const admin = supabaseAdmin;
+  const cronStart = Date.now();
   const now = Date.now();
   const today = new Date().toISOString().slice(0, 10);
   const twoHoursAgo = new Date(now - 2 * 60 * 60 * 1000).toISOString();
@@ -75,6 +77,9 @@ export async function POST(request: Request) {
 
   if (invErr) {
     console.error(`[${CRON_NAME}] invoices:`, invErr.message);
+    await insertCronLogFailure(admin, CRON_NAME, new Error(invErr.message), {
+      duration_ms: Date.now() - cronStart,
+    });
     return NextResponse.json({ error: invErr.message }, { status: 500 });
   }
 
@@ -83,6 +88,10 @@ export async function POST(request: Request) {
 
   if (totalCandidates === 0) {
     await upsertCronHealth(admin);
+    await insertCronLogSuccess(admin, CRON_NAME, {
+      duration_ms: Date.now() - cronStart,
+      metadata: { alerted: 0 },
+    });
     return NextResponse.json({ alerted: 0, skipped: 0 });
   }
 
@@ -175,6 +184,11 @@ export async function POST(request: Request) {
   }
 
   await upsertCronHealth(admin);
+  await insertCronLogSuccess(admin, CRON_NAME, {
+    duration_ms: Date.now() - cronStart,
+    records_processed: alertList.length,
+    metadata: { skipped },
+  });
   return NextResponse.json({ alerted: alertList.length, skipped });
 }
 

@@ -9,6 +9,7 @@ import { ownerContactByCenterId, resolveOwnerWaPhoneCached } from '@/lib/ownerPh
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { PLANS, type PlanKey } from '@/lib/pricing';
+import { insertCronLogFailure, insertCronLogSuccess } from '@/lib/cron/cronLog';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -70,6 +71,7 @@ export async function POST(request: Request) {
   }
 
   const admin = supabaseAdmin;
+  const cronStart = Date.now();
   const now = Date.now();
   const nowIso = new Date().toISOString();
 
@@ -80,6 +82,9 @@ export async function POST(request: Request) {
 
   if (cErr) {
     console.error(`[${CRON_NAME}] centers:`, cErr.message);
+    await insertCronLogFailure(admin, CRON_NAME, new Error(cErr.message), {
+      duration_ms: Date.now() - cronStart,
+    });
     return NextResponse.json({ error: cErr.message }, { status: 500 });
   }
 
@@ -99,6 +104,9 @@ export async function POST(request: Request) {
 
   if (sErr) {
     console.error(`[${CRON_NAME}] students:`, sErr.message);
+    await insertCronLogFailure(admin, CRON_NAME, new Error(sErr.message), {
+      duration_ms: Date.now() - cronStart,
+    });
     return NextResponse.json({ error: sErr.message }, { status: 500 });
   }
 
@@ -187,6 +195,12 @@ export async function POST(request: Request) {
   } catch (healthLogErr) {
     console.error(`[${CRON_NAME}] cron_health_log:`, healthLogErr);
   }
+
+  await insertCronLogSuccess(admin, CRON_NAME, {
+    duration_ms: Date.now() - cronStart,
+    records_processed: nudgesSent,
+    metadata: { processed, skipped },
+  });
 
   return NextResponse.json({ processed, nudgesSent, skipped });
 }

@@ -2304,7 +2304,19 @@
       "healthPendingActions": "الإجراءات المعلقة",
       "healthPendingCancellations": "الإلغاءات المعلقة",
       "healthPendingWithdrawals": "السحوبات المعلقة",
-      "healthPendingSignupsLink": "التسجيلات المعلقة"
+      "healthPendingSignupsLink": "التسجيلات المعلقة",
+      "lastError": {
+        "columnHeader": "آخر خطأ",
+        "empty": "—",
+        "viewFull": "عرض الخطأ كاملًا"
+      },
+      "errorModal": {
+        "title": "تفاصيل فشل المهمة المجدولة",
+        "stackHeading": "تتبع المكدس",
+        "recentErrorsHeading": "أحدث الإخفاقات",
+        "noStack": "لا يوجد تتبع مكدس مسجّل.",
+        "noRecentFailures": "لا توجد تشغيلات فاشلة في نافذة الاحتفاظ."
+      }
     },
     "sidebarTitle": "لوحة الإدارة",
     "sidebarHr": "الموارد البشرية والعمولات",

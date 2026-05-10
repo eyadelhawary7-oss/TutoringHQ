@@ -3,6 +3,9 @@ import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendPaymentConfirmed } from '@/lib/centerNotify';
 import { processCardOrderStatusWaOutboxJob } from '@/lib/cardOrderNotifications';
+import { insertCronLogFailure, insertCronLogSuccess } from '@/lib/cron/cronLog';
+
+const CRON_NAME = 'process-outbox';
 
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
@@ -26,6 +29,7 @@ export async function GET(request: Request) {
   }
 
   const admin = supabaseAdmin;
+  const cronStart = Date.now();
 
   let processed = 0;
   let failed = 0;
@@ -43,12 +47,19 @@ export async function GET(request: Request) {
 
   if (fetchErr) {
     console.error('[process-outbox] fetch:', fetchErr.message);
+    await insertCronLogFailure(admin, CRON_NAME, new Error(fetchErr.message), {
+      duration_ms: Date.now() - cronStart,
+    });
     return NextResponse.json({ error: fetchErr.message }, { status: 500 });
   }
 
   const rows = (jobs ?? []) as WebhookOutboxJob[];
   if (rows.length === 0) {
     await upsertCronHealth();
+    await insertCronLogSuccess(admin, CRON_NAME, {
+      duration_ms: Date.now() - cronStart,
+      records_processed: 0,
+    });
     return NextResponse.json({ processed: 0, failed: 0, dead: 0 });
   }
 
@@ -149,6 +160,11 @@ export async function GET(request: Request) {
   }
 
   await upsertCronHealth();
+  await insertCronLogSuccess(admin, CRON_NAME, {
+    duration_ms: Date.now() - cronStart,
+    records_processed: processed + failed + dead,
+    metadata: { processed, failed, dead },
+  });
   return NextResponse.json({ processed, failed, dead });
 }
 

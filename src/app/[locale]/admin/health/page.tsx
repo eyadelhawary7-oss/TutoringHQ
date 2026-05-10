@@ -12,6 +12,12 @@ import { Activity, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
 
+type CronRecentFailure = {
+  ran_at: string;
+  error_message: string | null;
+  error_stack: string | null;
+};
+
 type CronStatus = {
   path: string;
   schedule: string;
@@ -20,6 +26,8 @@ type CronStatus = {
   last_status: 'success' | 'failure' | 'partial' | null;
   last_duration_ms: number | null;
   last_error: string | null;
+  last_error_stack: string | null;
+  recent_failures: CronRecentFailure[];
 };
 
 type HealthPayload = {
@@ -76,7 +84,7 @@ export default function AdminHealthPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
-  const [cronErrorDetail, setCronErrorDetail] = useState<string | null>(null);
+  const [cronDetailRow, setCronDetailRow] = useState<CronStatus | null>(null);
 
   const getSession = useCallback(async () => {
     const {
@@ -317,23 +325,40 @@ export default function AdminHealthPage() {
                         {t('healthColDuration')}
                       </th>
                       <th className="p-3 font-medium text-[var(--color-text-primary)]">
-                        {t('healthColError')}
+                        {t('health.lastError.columnHeader')}
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.cron_status.map((row) => {
-                      const errRow = row.last_error != null && row.last_error !== '';
+                      const failedLast = row.last_status === 'failure';
+                      const errRow = failedLast && row.last_error != null && row.last_error !== '';
                       const stale = isStaleFrequent(row);
                       return (
                         <tr
                           key={row.path}
-                          className={`border-b border-gray-100 dark:border-slate-700 last:border-0 hover:bg-[var(--color-surface-2)] ${
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setCronDetailRow(row)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setCronDetailRow(row);
+                            }
+                          }}
+                          className={`border-b border-gray-100 dark:border-slate-700 last:border-0 hover:bg-[var(--color-surface-2)] cursor-pointer ${
                             errRow ? 'bg-red-50 dark:bg-red-950/35' : stale ? 'bg-amber-50 dark:bg-amber-950/20' : ''
                           }`}
                         >
                           <td className="p-3 font-mono text-[var(--color-text-primary)] whitespace-nowrap">
                             <span className="inline-flex items-center gap-1.5">
+                              {failedLast ? (
+                                <span
+                                  className="inline-block h-2 w-2 rounded-full bg-red-600 dark:bg-red-400 shrink-0"
+                                  title={tHealth('statusError')}
+                                  aria-hidden
+                                />
+                              ) : null}
                               {row.path}
                               {stale ? (
                                 <AlertTriangle
@@ -381,19 +406,22 @@ export default function AdminHealthPage() {
                             {(() => {
                               const errText = row.last_error?.trim() ?? '';
                               if (!errText) {
-                                return <span>-</span>;
+                                return <span className="font-sans">{t('health.lastError.empty')}</span>;
                               }
-                              const truncated = errText.length > 72 ? `${errText.slice(0, 72)}…` : errText;
+                              const truncated = errText.length > 80 ? `${errText.slice(0, 80)}…` : errText;
                               return (
                                 <div className="flex flex-col gap-1 items-start">
                                   <span className="break-words whitespace-pre-wrap">{truncated}</span>
-                                  {errText.length > 72 ? (
+                                  {errText.length > 80 ? (
                                     <button
                                       type="button"
                                       className="text-xs font-sans font-medium text-teal-600 dark:text-teal-400 hover:underline"
-                                      onClick={() => setCronErrorDetail(errText)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setCronDetailRow(row);
+                                      }}
                                     >
-                                      {tHealth('viewFullError')}
+                                      {t('health.lastError.viewFull')}
                                     </button>
                                   ) : null}
                                 </div>
@@ -445,28 +473,70 @@ export default function AdminHealthPage() {
           </div>
         ) : null}
 
-        {cronErrorDetail ? (
+        {cronDetailRow ? (
           <div
             className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
-            onClick={() => setCronErrorDetail(null)}
+            onClick={() => setCronDetailRow(null)}
             role="presentation"
           >
             <div
-              className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl max-w-lg w-full max-h-[70vh] overflow-y-auto p-5 shadow-xl"
+              className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-5 shadow-xl"
               onClick={(e) => e.stopPropagation()}
               role="dialog"
               aria-labelledby="cron-error-title"
             >
-              <h2 id="cron-error-title" className="text-lg font-semibold text-[var(--color-text-primary)] mb-3">
-                {tHealth('errorDetailTitle')}
+              <h2 id="cron-error-title" className="text-lg font-semibold text-[var(--color-text-primary)] mb-1">
+                {t('health.errorModal.title')}
               </h2>
-              <pre className="text-xs whitespace-pre-wrap break-words font-mono text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-lg p-3">
-                {cronErrorDetail}
-              </pre>
+              <p className="text-sm font-mono text-[var(--color-text-secondary)] mb-4">{cronDetailRow.path}</p>
+
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">
+                {t('health.errorModal.stackHeading')}
+              </h3>
+              {cronDetailRow.last_error_stack?.trim() ? (
+                <pre className="text-xs whitespace-pre-wrap break-words font-mono text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-lg p-3 mb-6">
+                  {cronDetailRow.last_error_stack}
+                </pre>
+              ) : (
+                <p className="text-sm text-[var(--color-text-secondary)] mb-6">{t('health.errorModal.noStack')}</p>
+              )}
+
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">
+                {t('health.errorModal.recentErrorsHeading')}
+              </h3>
+              {cronDetailRow.recent_failures.length === 0 ? (
+                <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+                  {t('health.errorModal.noRecentFailures')}
+                </p>
+              ) : (
+                <ul className="space-y-3 mb-4">
+                  {cronDetailRow.recent_failures.map((f, idx) => (
+                    <li
+                      key={`recent-fail-${idx}-${f.ran_at}`}
+                      className="border border-[var(--color-border)] rounded-lg p-3 bg-[var(--color-surface-0)]"
+                    >
+                      <p className="text-xs text-[var(--color-text-secondary)] font-mono mb-1">
+                        {formatCronRanAt(f.ran_at, locale)}
+                      </p>
+                      {f.error_message ? (
+                        <p className="text-sm text-red-600 dark:text-red-400 whitespace-pre-wrap break-words">
+                          {f.error_message}
+                        </p>
+                      ) : null}
+                      {f.error_stack?.trim() ? (
+                        <pre className="mt-2 text-[10px] whitespace-pre-wrap break-words font-mono text-[var(--color-text-secondary)] max-h-32 overflow-y-auto">
+                          {f.error_stack}
+                        </pre>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
               <button
                 type="button"
-                className="mt-4 w-full py-2 rounded-lg bg-[var(--color-surface-2)] text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-3)]"
-                onClick={() => setCronErrorDetail(null)}
+                className="mt-2 w-full py-2 rounded-lg bg-[var(--color-surface-2)] text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-3)]"
+                onClick={() => setCronDetailRow(null)}
               >
                 {tCommon('cancel')}
               </button>

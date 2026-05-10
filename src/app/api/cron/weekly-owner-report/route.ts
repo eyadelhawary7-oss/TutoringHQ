@@ -7,6 +7,7 @@ import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { sendWeeklyReport } from '@/lib/centerNotify';
 import { ownerContactByCenterId, resolveOwnerWaPhoneCached } from '@/lib/ownerPhone';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { insertCronLogFailure, insertCronLogSuccess } from '@/lib/cron/cronLog';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -61,12 +62,18 @@ export async function POST(request: Request) {
 
   const admin = supabaseAdmin;
 
+  const cronStart = Date.now();
+
   const { data: pausedRow } = await admin
     .from('platform_config')
     .select('value')
     .eq('key', 'cron_paused')
     .maybeSingle();
   if (pausedRow?.value === true) {
+    await insertCronLogSuccess(admin, CRON_NAME, {
+      duration_ms: Date.now() - cronStart,
+      metadata: { skipped: 'cron_paused' },
+    });
     return NextResponse.json({ skipped: 'cron_paused' }, { status: 200 });
   }
 
@@ -82,6 +89,9 @@ export async function POST(request: Request) {
 
   if (centersErr) {
     console.error(`[${CRON_NAME}] centers:`, centersErr.message);
+    await insertCronLogFailure(admin, CRON_NAME, new Error(centersErr.message), {
+      duration_ms: Date.now() - cronStart,
+    });
     return NextResponse.json({ error: centersErr.message }, { status: 500 });
   }
 
@@ -242,6 +252,12 @@ export async function POST(request: Request) {
   } catch (healthLogErr) {
     console.error(`[${CRON_NAME}] cron_health_log:`, healthLogErr);
   }
+
+  await insertCronLogSuccess(admin, CRON_NAME, {
+    duration_ms: Date.now() - cronStart,
+    records_processed: sent,
+    metadata: { processed, skipped, week_start: weekStartDate },
+  });
 
   return NextResponse.json({
     processed,

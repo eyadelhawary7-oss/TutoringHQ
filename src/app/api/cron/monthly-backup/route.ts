@@ -2,12 +2,14 @@ import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { tCronBackup } from '@/lib/cronBackupI18n';
 import { notifyBackupComplete, runBackup } from '@/lib/googleDriveBackup';
+import { insertCronLogFailure, insertCronLogPartial, insertCronLogSuccess } from '@/lib/cron/cronLog';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
+
+const CRON_NAME = 'monthly-backup';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,37 +23,39 @@ export async function GET(request: Request) {
 
   const startTime = Date.now();
 
-  await supabase.from('cron_log').insert({
-    cron_name: 'monthly-backup',
-    ran_at: new Date().toISOString(),
-    status: 'running',
-    duration_ms: 0,
-    records_processed: 0,
-  });
-
   try {
     const result = await runBackup('monthly');
     await notifyBackupComplete(result);
 
-    await supabase.from('cron_log').insert({
-      cron_name: 'monthly-backup',
-      ran_at: new Date().toISOString(),
-      status: result.errors.length === 0 ? 'success' : 'partial',
-      duration_ms: result.durationMs,
-      records_processed: result.totalRows,
-      metadata: {
-        files: result.files.length,
-        errors: result.errors,
-        folder_id: result.folderId,
-        date: result.date,
-      },
-    });
+    const durationMs = result.durationMs;
+    if (result.errors.length === 0) {
+      await insertCronLogSuccess(supabase, CRON_NAME, {
+        duration_ms: durationMs,
+        records_processed: result.totalRows,
+        metadata: {
+          files: result.files.length,
+          folder_id: result.folderId,
+          date: result.date,
+        },
+      });
+    } else {
+      await insertCronLogPartial(supabase, CRON_NAME, {
+        duration_ms: durationMs,
+        records_processed: result.totalRows,
+        metadata: {
+          files: result.files.length,
+          errors: result.errors,
+          folder_id: result.folderId,
+          date: result.date,
+        },
+      });
+    }
 
     try {
       if (supabaseAdmin) {
         await supabaseAdmin.from('cron_health_log').upsert(
           {
-            cron_name: 'monthly-backup',
+            cron_name: CRON_NAME,
             last_success_at: new Date().toISOString(),
             failure_count: 0,
           },
@@ -74,18 +78,9 @@ export async function GET(request: Request) {
     });
   } catch (err) {
     const durationMs = Date.now() - startTime;
-    const message = String(err);
-
-    await supabase.from('cron_log').insert({
-      cron_name: 'monthly-backup',
-      ran_at: new Date().toISOString(),
-      status: 'error',
-      duration_ms: durationMs,
-      records_processed: 0,
-      error_message: message,
-    });
+    await insertCronLogFailure(supabase, CRON_NAME, err, { duration_ms: durationMs });
 
     console.error('[monthly-backup] Failed:', err);
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
   }
 }

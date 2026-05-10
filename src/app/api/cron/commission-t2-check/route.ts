@@ -7,6 +7,9 @@ import {
   parseClockPauseLog,
 } from '@/lib/commissionActiveDays';
 import { tCronBackup } from '@/lib/cronBackupI18n';
+import { insertCronLogFailure, insertCronLogSuccess } from '@/lib/cron/cronLog';
+
+const CRON_NAME = 'commission-t2-check';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -30,6 +33,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: tCronBackup('errorServerMisconfigured') }, { status: 500 });
   }
 
+  const cronStart = Date.now();
+
+  try {
   const today = new Date().toISOString().split('T')[0];
   let unlocked = 0;
   let forfeited = 0;
@@ -172,7 +178,7 @@ export async function GET(request: Request) {
     if (supabaseAdmin) {
       await supabaseAdmin.from('cron_health_log').upsert(
         {
-          cron_name: 'commission-t2-check',
+          cron_name: CRON_NAME,
           last_success_at: new Date().toISOString(),
           failure_count: 0,
         },
@@ -183,6 +189,11 @@ export async function GET(request: Request) {
     console.error('[commission-t2-check] cron_health_log:', healthLogErr);
   }
 
+  await insertCronLogSuccess(supabase, CRON_NAME, {
+    duration_ms: Date.now() - cronStart,
+    records_processed: unlocked + forfeited,
+  });
+
   return NextResponse.json({
     success: true,
     date: today,
@@ -190,4 +201,12 @@ export async function GET(request: Request) {
     t2_forfeited: forfeited,
     skipped,
   });
+  } catch (e) {
+    console.error('[commission-t2-check]', e);
+    await insertCronLogFailure(supabase, CRON_NAME, e, { duration_ms: Date.now() - cronStart });
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : 'internal' },
+      { status: 500 },
+    );
+  }
 }
