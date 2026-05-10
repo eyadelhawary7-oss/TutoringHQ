@@ -10,40 +10,13 @@ import {
 import {
   getChargeFromQuarterlyAllIn,
   getImpliedMonthlyMrr,
+  getQuarterlyAllInMonthlyRateFromCenter,
   normalizeBillingPeriod,
-  PLANS,
-  type BillingPeriod,
+  planKeyOrStarter,
   type PlanKey,
 } from '@/lib/pricing';
-import { requireTopCentersAllInPrice } from '@/lib/pricing/topCentersPrice';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { parseIncludeTestCenters } from '@/lib/adminIncludeTest';
-
-function planKeyOrStarter(plan: string | null | undefined): PlanKey {
-  const k = String(plan || 'starter').toLowerCase();
-  if (k in PLANS && k !== 'top_centers') return k as PlanKey;
-  return 'starter';
-}
-
-function quarterlyAllInForCenter(row: {
-  plan?: string | null;
-  is_early_adopter?: boolean;
-  early_adopter_price?: number | null;
-  all_in_price?: number | null;
-  id?: string;
-}): number {
-  const pk = planKeyOrStarter(row.plan);
-  if (pk === 'top_centers') {
-    return requireTopCentersAllInPrice(row.all_in_price, `admin-billing:${row.id ?? 'unknown'}`);
-  }
-  if (row.is_early_adopter && typeof row.early_adopter_price === 'number') {
-    return row.early_adopter_price;
-  }
-  if (row.all_in_price != null && Number(row.all_in_price) > 0) {
-    return Number(row.all_in_price);
-  }
-  return PLANS[pk].quarterlyAllIn;
-}
 
 function adminCycleAmount(periodRaw: string, baseQ: number, plan: string): number {
   const p = normalizeBillingPeriod(periodRaw);
@@ -108,13 +81,22 @@ export async function GET(request: Request) {
         (row as Record<string, unknown>).amount = 0;
         (row as Record<string, unknown>).monthlyEquivalent = 0;
       } else {
-        const baseQ = quarterlyAllInForCenter(row as Parameters<typeof quarterlyAllInForCenter>[0]);
+        const baseQ = getQuarterlyAllInMonthlyRateFromCenter(
+          row as Parameters<typeof getQuarterlyAllInMonthlyRateFromCenter>[0],
+        );
         const planStr = (row as { plan?: string }).plan || 'starter';
         const amount = adminCycleAmount(bp, baseQ, planStr);
         (row as Record<string, unknown>).amount = amount;
-        const mrrPeriod: BillingPeriod =
-          bp === 'semi_annual' || bp === 'half_yearly' ? 'quarterly' : normalizeBillingPeriod(bp);
-        const monthlyEquiv = getImpliedMonthlyMrr(baseQ, mrrPeriod, planKeyOrStarter(planStr));
+        const monthlyEquiv = getImpliedMonthlyMrr({
+          plan: (row as { plan?: string }).plan,
+          all_in_price: (row as { all_in_price?: number | null }).all_in_price,
+          billing_period: bp,
+          status: (row as { status?: string }).status,
+          billing_type: billingType,
+          is_early_adopter: (row as { is_early_adopter?: boolean }).is_early_adopter,
+          early_adopter_price: (row as { early_adopter_price?: number | null }).early_adopter_price,
+          id: (row as { id: string }).id,
+        });
         (row as Record<string, unknown>).monthlyEquivalent = Math.round(monthlyEquiv);
         fixedMRR += monthlyEquiv;
         const planKey = (row.plan as string) || 'starter';

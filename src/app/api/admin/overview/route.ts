@@ -4,7 +4,7 @@ import { createServerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getAdminContext } from '@/lib/admin-auth';
 import { PLAN_STUDENT_LIMITS } from '@/lib/plans';
-import { getImpliedMonthlyMrr, normalizeBillingPeriod, PLANS, type PlanKey } from '@/lib/pricing';
+import { getImpliedMonthlyMrr, isCenterEligibleForSubscriptionMrr } from '@/lib/pricing';
 import { parseIncludeTestCenters } from '@/lib/adminIncludeTest';
 
 export async function GET(request: Request) {
@@ -109,38 +109,48 @@ export async function GET(request: Request) {
       console.warn('[admin/overview] Students count failed:', e);
     }
 
-    const allCenters = centers as Array<{ id: string; name: string; plan?: string; status?: string; billing_type?: string; billing_period?: string | null; all_in_price?: number | null; is_early_adopter?: boolean; early_adopter_price?: number; created_at?: string }>;
+    const allCenters = centers as Array<{
+      id: string;
+      name: string;
+      plan?: string;
+      status?: string;
+      billing_type?: string;
+      billing_period?: string | null;
+      all_in_price?: number | null;
+      is_early_adopter?: boolean;
+      early_adopter_price?: number;
+      created_at?: string;
+    }>;
     const activeCenters = allCenters.filter((c: { status?: string }) => c.status === 'active');
     const suspendedCenters = allCenters.filter((c: { status?: string }) => c.status === 'suspended');
     const pendingCenters = allCenters.filter((c: { status?: string }) => c.status === 'pending');
     const activeCentersCount = activeCenters.length;
     const totalCentersCount = allCenters.length;
 
+    /** Same cohort as finance north-star MRR (excludes suspended/churned/etc.; includes pending when paying). */
+    const subscriptionMrrCenters = allCenters.filter((c) => isCenterEligibleForSubscriptionMrr(c.status));
+
     const mrrByPlan: Record<string, number> = {
       nano: 0, starter: 0, pro: 0, business: 0, enterprise: 0, top_centers: 0, payg: 0,
     };
     const centersByPlan: Record<string, number> = { nano: 0, starter: 0, pro: 0, business: 0, enterprise: 0, top_centers: 0, payg: 0 };
-    const mrr = activeCenters.reduce((sum: number, c: (typeof allCenters)[number]) => {
+    const mrr = subscriptionMrrCenters.reduce((sum: number, c: (typeof allCenters)[number]) => {
       const plan = c.plan || 'starter';
       if ((c.billing_type || 'fixed') === 'payg') {
         centersByPlan.payg = (centersByPlan.payg ?? 0) + 1;
         return sum;
       }
       centersByPlan[plan] = (centersByPlan[plan] ?? 0) + 1;
-      const pk = (plan in PLANS ? plan : 'starter') as PlanKey;
-      let baseQ = 0;
-      if (c.all_in_price != null && Number(c.all_in_price) > 0) {
-        baseQ = Number(c.all_in_price);
-      } else if (c.is_early_adopter && typeof c.early_adopter_price === 'number' && c.early_adopter_price > 0) {
-        baseQ = Math.round(Number(c.early_adopter_price) / 3);
-      } else {
-        baseQ = PLANS[pk]?.quarterlyAllIn ?? 0;
-      }
-      const period =
-        c.billing_period === 'semi_annual' || c.billing_period === 'half_yearly'
-          ? normalizeBillingPeriod('quarterly')
-          : normalizeBillingPeriod(c.billing_period);
-      const amt = getImpliedMonthlyMrr(baseQ, period, pk);
+      const amt = getImpliedMonthlyMrr({
+        plan: c.plan,
+        all_in_price: c.all_in_price,
+        billing_period: c.billing_period,
+        status: c.status,
+        billing_type: c.billing_type,
+        is_early_adopter: c.is_early_adopter,
+        early_adopter_price: c.early_adopter_price,
+        id: c.id,
+      });
       mrrByPlan[plan] = (mrrByPlan[plan] ?? 0) + amt;
       return sum + amt;
     }, 0);

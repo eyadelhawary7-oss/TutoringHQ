@@ -61,4 +61,22 @@ Display Annual prices ROUNDED to whole EGP. "849.917 EGP/month" is a bug.
 3. Stamp hard-coded 0.4% in places. Spec: 0.5%.
 4. Some invoices may not show VAT as last line — must fix for legal compliance.
 
+## MRR computation (admin dashboards)
+
+**Canonical API:** `getImpliedMonthlyMrr` in `src/lib/pricing.ts`.
+
+- **Centre overload:** pass a `centers`-shaped object (`plan`, `all_in_price`, `billing_period`, `status`, `billing_type`, optional early-adopter fields). This is the single implementation used by **GET `/api/admin/billing`**, **GET `/api/admin/overview`**, and **GET `/api/admin/finance`** for subscription MRR.
+- **Numeric overload:** `getImpliedMonthlyMrr(allInPerMonth, billingPeriod, planKey)` remains for callers that already resolved the quarterly monthly all-in rate.
+
+**Fallback chain for the quarterly-plan monthly all-in rate** (`getQuarterlyAllInMonthlyRateFromCenter`):
+
+1. Plan `top_centers`: `centers.all_in_price` required (invalid/missing → `0` in aggregates; strict paths may throw elsewhere).
+2. Early adopter: `early_adopter_price` when `is_early_adopter`.
+3. Else if `all_in_price > 0`: use it (same semantics as list **quarterly/mo** in the table above — not the monthly column).
+4. Else: `PLANS[plan].quarterlyAllIn` for the resolved plan key (`planKeyOrStarter` maps unknown plans to `starter`).
+
+**Billing period → implied monthly MRR:** `normalizeBillingPeriod`; semi-annual / half-yearly map to **quarterly** for MRR. **Quarterly** billing: implied MRR equals that monthly all-in rate. **Monthly** / **annual**: derived via `getChargeFromQuarterlyAllIn` / annual rounding ÷ 12 (see `computeImpliedMonthlyMrrFromBase`).
+
+**Centres excluded from subscription MRR** (`isCenterEligibleForSubscriptionMrr`): `suspended`, `churned`, `deleted`, `cancelled`, `inactive`. **PAYG** (`billing_type === 'payg'`): subscription MRR `0`; PAYG estimate is added separately in billing/overview where applicable.
+
 (End of spec doc.)

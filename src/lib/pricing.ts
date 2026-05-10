@@ -4,6 +4,7 @@
 
 import { formatNumber } from '@/lib/formatNumber';
 import { SUBSCRIPTION_PLAN_DEFINITIONS } from '@/lib/pricing/plans';
+import { requireTopCentersAllInPrice } from '@/lib/pricing/topCentersPrice';
 
 export { SUBSCRIPTION_PLAN_DEFINITIONS } from '@/lib/pricing/plans';
 
@@ -121,8 +122,70 @@ export function getChargeFromQuarterlyAllIn(
   }
 }
 
-/** MRR-style monthly equivalent for dashboards. */
-export function getImpliedMonthlyMrr(
+/** Fields needed for dashboard MRR from a `centers` row (subset allowed). */
+export type ImpliedMrrCenterFields = {
+  plan?: string | null;
+  all_in_price?: number | null;
+  billing_period?: string | null;
+  /** Account row status (not billing_status). Excluded when not eligible — see `isCenterEligibleForSubscriptionMrr`. */
+  status?: string | null;
+  billing_type?: string | null;
+  is_early_adopter?: boolean | null;
+  early_adopter_price?: number | null;
+  id?: string;
+};
+
+/**
+ * Same exclusions as finance admin `isActive`: these centres do not contribute to subscription MRR.
+ * PAYG is excluded via `billing_type`; pending/trial centres still count if paying (unless status excludes).
+ */
+export function isCenterEligibleForSubscriptionMrr(status: string | null | undefined): boolean {
+  const s = (status ?? '').toLowerCase();
+  return (
+    s !== 'suspended' &&
+    s !== 'churned' &&
+    s !== 'deleted' &&
+    s !== 'cancelled' &&
+    s !== 'inactive'
+  );
+}
+
+/** Maps unknown plans to `starter`; known tiers resolve to their PLANS key (`top_centers` maps to `starter` for tier scaling multipliers). */
+export function planKeyOrStarter(plan: string | null | undefined): PlanKey {
+  const k = String(plan || 'starter').toLowerCase();
+  if (k in PLANS && k !== 'top_centers') return k as PlanKey;
+  return 'starter';
+}
+
+/**
+ * `centers.all_in_price` / early-adopter / plan list price as the quarterly-plan **monthly all-in rate**
+ * (same semantics as `PLANS[].quarterlyAllIn`). Used before billing-period normalization.
+ */
+export function getQuarterlyAllInMonthlyRateFromCenter(
+  row: Pick<
+    ImpliedMrrCenterFields,
+    'plan' | 'all_in_price' | 'is_early_adopter' | 'early_adopter_price'
+  > & { id?: string },
+): number {
+  const rawPlan = String(row.plan || 'starter').toLowerCase();
+  if (rawPlan === 'top_centers') {
+    try {
+      return requireTopCentersAllInPrice(row.all_in_price, `mrr:${row.id ?? 'unknown'}`);
+    } catch {
+      return 0;
+    }
+  }
+  const pk = planKeyOrStarter(row.plan);
+  if (row.is_early_adopter && typeof row.early_adopter_price === 'number') {
+    return Number(row.early_adopter_price);
+  }
+  if (row.all_in_price != null && Number(row.all_in_price) > 0) {
+    return Number(row.all_in_price);
+  }
+  return PLANS[pk].quarterlyAllIn;
+}
+
+function computeImpliedMonthlyMrrFromBase(
   allInPerMonth: number,
   period: BillingPeriod,
   planKey?: PlanKey,
@@ -134,6 +197,41 @@ export function getImpliedMonthlyMrr(
     return getChargeFromQuarterlyAllIn(allInPerMonth, 'monthly', planKey);
   }
   return getAnnualChargeRounded(allInPerMonth) / 12;
+}
+
+function getImpliedMonthlyMrrFromCenterFields(row: ImpliedMrrCenterFields): number {
+  if ((row.billing_type || 'fixed') === 'payg') return 0;
+  if (!isCenterEligibleForSubscriptionMrr(row.status)) return 0;
+
+  const bp = row.billing_period || 'quarterly';
+  const mrrPeriod: BillingPeriod =
+    bp === 'semi_annual' || bp === 'half_yearly'
+      ? 'quarterly'
+      : normalizeBillingPeriod(bp);
+
+  const baseQ = getQuarterlyAllInMonthlyRateFromCenter(row);
+  const pk = planKeyOrStarter(row.plan);
+
+  return computeImpliedMonthlyMrrFromBase(baseQ, mrrPeriod, pk);
+}
+
+/** MRR-style monthly equivalent for dashboards — numeric base path. */
+export function getImpliedMonthlyMrr(
+  allInPerMonth: number,
+  period: BillingPeriod,
+  planKey?: PlanKey,
+): number;
+/** Canonical path: derive implied MRR from a centre row (billing period, plan tier, PAYG / inactive exclusions). */
+export function getImpliedMonthlyMrr(center: ImpliedMrrCenterFields): number;
+export function getImpliedMonthlyMrr(
+  a: number | ImpliedMrrCenterFields,
+  b?: BillingPeriod,
+  c?: PlanKey,
+): number {
+  if (typeof a === 'object' && a !== null) {
+    return getImpliedMonthlyMrrFromCenterFields(a as ImpliedMrrCenterFields);
+  }
+  return computeImpliedMonthlyMrrFromBase(a as number, b ?? 'quarterly', c);
 }
 
 /**

@@ -15,23 +15,10 @@ import type {
   FinanceRevenueSlice,
   FinanceUnitEconomics,
 } from '@/types/admin-finance';
-import { PLANS } from '@/lib/pricing';
-import { requireTopCentersAllInPrice } from '@/lib/pricing/topCentersPrice';
+import { getImpliedMonthlyMrr } from '@/lib/pricing';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-// TODO(post-launch): swap PLAN_MONTHLY_FALLBACK for getImpliedMonthlyMrr / PLANS
-// from @/lib/pricing once the duplicated MRR loop in admin/billing/route.ts and
-// admin/overview/route.ts is extracted into a shared helper.
-const PLAN_MONTHLY_FALLBACK: Record<string, number> = {
-  solo: PLANS.solo.quarterlyAllIn,
-  nano: PLANS.nano.quarterlyAllIn,
-  starter: PLANS.starter.quarterlyAllIn,
-  pro: PLANS.pro.quarterlyAllIn,
-  business: PLANS.business.quarterlyAllIn,
-  enterprise: PLANS.enterprise.quarterlyAllIn,
-};
 
 const INVOICE_TYPE_LABELS: Record<string, string> = {
   subscription: 'Subscriptions',
@@ -122,13 +109,18 @@ type CenterRow = {
   created_at: string | null;
   all_in_price: number | null;
   billing_period: string | null;
+  billing_type: string | null;
+  is_early_adopter: boolean | null;
+  early_adopter_price: number | null;
 };
 
 async function fetchActiveCenters(admin: SupabaseClient, includeTest: boolean): Promise<CenterRow[]> {
   try {
     let q = admin
       .from('centers')
-      .select('id, name, plan, status, created_at, all_in_price, billing_period');
+      .select(
+        'id, name, plan, status, created_at, all_in_price, billing_period, billing_type, is_early_adopter, early_adopter_price',
+      );
     if (!includeTest) {
       q = q.eq('is_test', false);
     }
@@ -214,12 +206,16 @@ function isPending(inv: InvoiceRow): boolean {
 }
 
 function monthlyChargeForCenter(c: CenterRow): number {
-  const pk = (c.plan ?? '').toLowerCase();
-  if (pk === 'top_centers') {
-    return requireTopCentersAllInPrice(c.all_in_price, `finance:${c.id}`);
-  }
-  if (typeof c.all_in_price === 'number' && c.all_in_price > 0) return c.all_in_price;
-  return PLAN_MONTHLY_FALLBACK[pk] ?? 0;
+  return getImpliedMonthlyMrr({
+    plan: c.plan,
+    all_in_price: c.all_in_price,
+    billing_period: c.billing_period,
+    status: c.status,
+    billing_type: c.billing_type,
+    is_early_adopter: c.is_early_adopter,
+    early_adopter_price: c.early_adopter_price,
+    id: c.id,
+  });
 }
 
 function computeNorthStar(
