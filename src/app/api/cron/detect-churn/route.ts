@@ -6,6 +6,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { requireCronSecret } from '@/lib/cron/requireCronSecret';
+import { insertCronLogSuccess, insertCronLogFailure } from '@/lib/cron/cronLog';
 import {
   sendDay3InactivityAlert,
   sendDay7SalesManagerAlert,
@@ -203,9 +204,7 @@ export async function POST(request: Request) {
     }
 
     if (actions.length === 0) {
-      await admin.from('cron_log').insert({
-        cron_name: CRON_NAME,
-        status: 'success',
+      await insertCronLogSuccess(admin, CRON_NAME, {
         duration_ms: Date.now() - cronStart,
         records_processed: 0,
         metadata: { inactivityTemplateSent, reengagementSent },
@@ -321,9 +320,7 @@ export async function POST(request: Request) {
 
     const processed = results.filter((r) => r.success).length;
 
-    await admin.from('cron_log').insert({
-      cron_name: CRON_NAME,
-      status: 'success',
+    await insertCronLogSuccess(admin, CRON_NAME, {
       duration_ms: Date.now() - cronStart,
       records_processed: processed,
       metadata: { actionCount: actions.length, inactivityTemplateSent, reengagementSent },
@@ -351,16 +348,9 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error(`[${CRON_NAME}] Error:`, error);
-    try {
-      await admin.from('cron_log').insert({
-        cron_name: CRON_NAME,
-        status: 'failure',
-        duration_ms: Date.now() - cronStart,
-        error_message: error instanceof Error ? error.message.slice(0, 2000) : 'Unknown',
-      });
-    } catch (logErr) {
-      console.error(`[${CRON_NAME}] cron_log:`, logErr);
-    }
+    await insertCronLogFailure(admin, CRON_NAME, error, {
+      duration_ms: Date.now() - cronStart,
+    });
     return NextResponse.json({ success: false }, { status: 200 });
   }
 }

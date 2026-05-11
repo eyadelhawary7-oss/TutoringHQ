@@ -13,3 +13,11 @@ export { MultiLineChart, type MultiLineChartProps, type MultiLineDataPoint, type
 export { SparklineChart, type SparklineChartProps, type SparklinePoint } from './SparklineChart';
 export { ChartCard, type ChartCardProps } from './ChartCard';
 export { ChartLegend, type ChartLegendProps, type ChartLegendItem } from './ChartLegend';
+export {
+  BarChart, Bar,
+  PieChart, Pie, Cell,
+  AreaChart, Area,
+  ComposedChart, Line,
+  XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, Legend,
+} from './recharts';

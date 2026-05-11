@@ -37,7 +37,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from 'recharts';
+} from '@/components/charts/recharts';
 import { ChartTooltip } from '@/components/charts/ChartTooltip';
 import { CHART_STYLE, RECHARTS_TOOLTIP_WRAPPER_PROPS } from '@/components/charts/ChartTokens';
 import { formatChartMonthLabel } from '@/lib/chartMonthLabel';

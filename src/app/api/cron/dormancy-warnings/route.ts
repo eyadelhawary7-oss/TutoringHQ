@@ -5,6 +5,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { requireCronSecret } from '@/lib/cron/requireCronSecret';
+import { insertCronLogSuccess, insertCronLogFailure, insertCronLogPartial } from '@/lib/cron/cronLog';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { todayISO } from '@/lib/parentPack';
 import { tCronBackup } from '@/lib/cronBackupI18n';
@@ -131,14 +132,18 @@ export async function POST(request: Request) {
       }
     }
 
-    await supabase.from('cron_log').insert({
-      cron_name: CRON_NAME,
-      status: errors.length > 0 && purged === 0 && warned90 === 0 && warned30 === 0 ? 'partial' : 'success',
-      duration_ms: Date.now() - cronStart,
-      records_processed: (dormantRows ?? []).length,
-      metadata: { today, warned90, warned30, purged, errors: errors.slice(0, 20) },
-      error_message: errors.length ? errors.join('; ').slice(0, 2000) : null,
-    });
+    {
+      const _opts = {
+        duration_ms: Date.now() - cronStart,
+        records_processed: (dormantRows ?? []).length,
+        metadata: { today, warned90, warned30, purged, errors: errors.slice(0, 20) } as Record<string, unknown>,
+      };
+      if (errors.length > 0 && purged === 0 && warned90 === 0 && warned30 === 0) {
+        await insertCronLogPartial(supabase, CRON_NAME, _opts);
+      } else {
+        await insertCronLogSuccess(supabase, CRON_NAME, _opts);
+      }
+    }
 
     try {
       if (supabaseAdmin) {
@@ -158,16 +163,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, today, warned90, warned30, purged, errors });
   } catch (error) {
     console.error(`[${CRON_NAME}]`, error);
-    try {
-      await supabase.from('cron_log').insert({
-        cron_name: CRON_NAME,
-        status: 'failure',
-        duration_ms: Date.now() - cronStart,
-        error_message: error instanceof Error ? error.message.slice(0, 2000) : 'Unknown',
-      });
-    } catch (logErr) {
-      console.error(`[${CRON_NAME}] cron_log:`, logErr);
-    }
+    await insertCronLogFailure(supabase, CRON_NAME, error, {
+      duration_ms: Date.now() - cronStart,
+    });
     return NextResponse.json({ success: false }, { status: 200 });
   }
 }

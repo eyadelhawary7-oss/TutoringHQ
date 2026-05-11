@@ -7,7 +7,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { insertCronLogFailure } from '@/lib/cron/cronLog';
+import { insertCronLogSuccess, insertCronLogFailure } from '@/lib/cron/cronLog';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -103,9 +103,7 @@ export async function POST(request: Request) {
       throw new Error(error.message);
     }
 
-    await supabase.from('cron_log').insert({
-      cron_name: CRON_NAME,
-      status: 'success',
+    await insertCronLogSuccess(supabase, CRON_NAME, {
       duration_ms: Date.now() - cronStart,
       records_processed: rows.length,
     });

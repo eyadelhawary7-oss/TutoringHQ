@@ -26,7 +26,6 @@ const PLAN_LABEL_KEYS = [
 
 function canonicalPlanKey(plan?: string): string {
   const raw = plan?.toLowerCase() ?? 'starter';
-  if (raw === 'pro_plus') return 'pro';
   return raw;
 }
 
