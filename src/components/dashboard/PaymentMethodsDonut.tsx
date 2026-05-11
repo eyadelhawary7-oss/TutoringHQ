@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations, useLocale } from 'next-intl';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from '@/components/charts/recharts';
 import { formatPercent } from '@/lib/formatNumber';
 
 interface PaymentMethodsDonutProps {
