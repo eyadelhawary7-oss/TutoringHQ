@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { HeroVisuals } from '@/components/landing/HeroVisuals';
+import { LandingFAQ } from '@/components/landing/LandingFAQ';
 import { Link } from '@/i18n/routing';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { PLANS, ORDERED_SUBSCRIPTION_PLAN_KEYS } from '@/lib/pricing';
@@ -417,6 +418,8 @@ export default function LocaleHomePage() {
           </Link>
         </div>
       </section>
+
+      <LandingFAQ />
 
       <section className="border-t border-slate-800/40 bg-[#080f1a] px-4 py-16 md:px-6 md:py-24">
         <div className="mx-auto max-w-2xl text-center">

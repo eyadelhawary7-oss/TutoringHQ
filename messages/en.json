@@ -5725,6 +5725,42 @@
     "pricing": {
       "largerCentresHeading": "For larger centres"
     },
+    "faq": {
+      "heading": "Common questions",
+      "subheading": "Centre owners ask these first.",
+      "q1": {
+        "question": "Who owns the data I put into CenterHQ?",
+        "answer": "You do. Always. Your students, parents, payments, and history belong to your centre. If you ever leave, we export everything as Excel + CSV in one click. No lock-in."
+      },
+      "q2": {
+        "question": "How long does it take to set up?",
+        "answer": "About 15 minutes. Register, import your student list from Excel (or add manually), assign cards, start scanning. No installation, no servers, no IT person needed."
+      },
+      "q3": {
+        "question": "I already use a spreadsheet / paper book / WhatsApp. Why switch?",
+        "answer": "Because at scale, those break down. A single spreadsheet can't tell you which group is profitable. A paper book can't send a parent a payment reminder. A WhatsApp group can't track who's paid and who hasn't. CenterHQ does all of it in one place — and the data is searchable, exportable, and accurate."
+      },
+      "q4": {
+        "question": "What if my centre's internet is unreliable?",
+        "answer": "The QR scanner works fully offline. Scan attendance even with no WiFi, and the data syncs automatically when connection returns. Designed specifically for Egyptian centres on shaky 3G/4G."
+      },
+      "q5": {
+        "question": "Can I cancel my subscription anytime?",
+        "answer": "Yes. Contact ops@ehgintelligence.com to cancel — no automatic renewal traps. We don't refund partial months (you keep access through the period you paid for) but there's no penalty for leaving."
+      },
+      "q6": {
+        "question": "How does fee collection work?",
+        "answer": "Two ways. (1) Cash at the centre — log it in CenterHQ, automatic receipt. (2) Online — parent gets a WhatsApp link, pays via Paymob (Visa, Mastercard, Meeza, Vodafone Cash). Payment instantly appears in your dashboard."
+      },
+      "q7": {
+        "question": "Who do I talk to if something breaks?",
+        "answer": "ops@ehgintelligence.com or WhatsApp +20 100 123 4567. Responses within 24 hours, usually faster. The founder personally reads every message during the early months."
+      },
+      "q8": {
+        "question": "How is my data protected?",
+        "answer": "All data is encrypted in transit (HTTPS) and at rest (database encryption). Centre data is isolated per tenant — no other centre can ever see yours. Daily backups to encrypted cloud storage. We follow Egyptian PDPL (Law 151) standards."
+      }
+    },
     "marketing": {
       "navFeatures": "Features",
       "navPricing": "Pricing",
