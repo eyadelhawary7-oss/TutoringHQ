@@ -24,7 +24,7 @@
   "analyze": "ANALYZE=true npm run build",
   "start": "next start",
   "lint": "eslint",
-  "typecheck": "rimraf .next/types && tsc --noEmit",
+  "typecheck": "rimraf .next/types .next/dev/types && node --max-old-space-size=8192 node_modules/typescript/bin/tsc --noEmit",
   "generate-business-plan": "node scripts/generate-business-plan.mjs",
   "check-secrets": "node scripts/check-secret-rotation.js",
   "verify-backup": "node scripts/verify-backup.js",
