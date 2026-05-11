@@ -5725,6 +5725,62 @@
     "pricing": {
       "largerCentresHeading": "For larger centres"
     },
+    "compare": {
+      "heading": "Why centre owners switch.",
+      "subheading": "Excel and notebooks work — until they don't.",
+      "colCriterion": "Criterion",
+      "colSpreadsheet": "Spreadsheet",
+      "colPaper": "Paper book",
+      "colCenterhq": "CenterHQ",
+      "row1": {
+        "criterion": "Tracks who attended each session",
+        "spreadsheet": "Manual data entry, mistakes common",
+        "paper": "Yes, but slow + error-prone",
+        "centerhq": "✓ QR scan, instant, accurate"
+      },
+      "row2": {
+        "criterion": "Notifies parent when student attends or misses",
+        "spreadsheet": "✗ Manual WhatsApp/SMS to each parent",
+        "paper": "✗ Manual or none",
+        "centerhq": "✓ Automatic WhatsApp on every scan"
+      },
+      "row3": {
+        "criterion": "Collects fees online + tracks cash",
+        "spreadsheet": "~ Manual tracking only",
+        "paper": "~ Cash only, no proof",
+        "centerhq": "✓ Paymob online + cash logging"
+      },
+      "row4": {
+        "criterion": "Shows monthly revenue + which groups are profitable",
+        "spreadsheet": "~ If you build the formulas yourself",
+        "paper": "✗ Manual calculation",
+        "centerhq": "✓ Built-in MRR + cohort analysis"
+      },
+      "row5": {
+        "criterion": "Works when internet is down",
+        "spreadsheet": "~ Excel local, online sheets break",
+        "paper": "✓ Always works (no tech needed)",
+        "centerhq": "✓ Scanner + dashboard work offline, sync later"
+      },
+      "row6": {
+        "criterion": "Multiple staff use simultaneously",
+        "spreadsheet": "✗ Conflicts + version chaos",
+        "paper": "✗ One person at a time",
+        "centerhq": "✓ Roles + permissions for staff"
+      },
+      "row7": {
+        "criterion": "Backups if computer/notebook is lost",
+        "spreadsheet": "✗ You forgot to save",
+        "paper": "✗ Lost forever",
+        "centerhq": "✓ Daily encrypted cloud backups"
+      },
+      "row8": {
+        "criterion": "Time spent on admin per week (100 students)",
+        "spreadsheet": "8–12 hours",
+        "paper": "12–15 hours",
+        "centerhq": "✓ 1–2 hours"
+      }
+    },
     "faq": {
       "heading": "Common questions",
       "subheading": "Centre owners ask these first.",

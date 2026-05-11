@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { HeroVisuals } from '@/components/landing/HeroVisuals';
+import { ComparisonTable } from '@/components/landing/ComparisonTable';
 import { LandingFAQ } from '@/components/landing/LandingFAQ';
 import { Link } from '@/i18n/routing';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
@@ -297,6 +298,8 @@ export default function LocaleHomePage() {
           </div>
         </div>
       </section>
+
+      <ComparisonTable />
 
       <section
         id="features"
