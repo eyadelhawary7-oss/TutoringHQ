@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import Image from 'next/image';
+import { AnimatedPhoneMockup } from '@/components/landing/AnimatedPhoneMockup';
 import { Link } from '@/i18n/routing';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { PLANS, ORDERED_SUBSCRIPTION_PLAN_KEYS } from '@/lib/pricing';
@@ -239,14 +239,7 @@ export default function LocaleHomePage() {
 
           <div className="flex justify-center md:justify-end">
             <div className="relative mx-auto h-[560px] w-[280px] shrink-0 drop-shadow-[0_0_80px_rgba(13,148,136,0.2)]">
-              <Image
-                src={locale === 'ar' ? '/landing/phone-mockup-ar.png' : '/landing/phone-mockup-en.png'}
-                alt=""
-                fill
-                className="object-contain object-center"
-                sizes="280px"
-                priority
-              />
+              <AnimatedPhoneMockup locale={locale as 'ar' | 'en'} />
             </div>
           </div>
         </div>
