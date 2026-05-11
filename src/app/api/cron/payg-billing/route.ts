@@ -5,6 +5,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { requireCronSecret } from '@/lib/cron/requireCronSecret';
+import { insertCronLogSuccess, insertCronLogFailure, insertCronLogPartial } from '@/lib/cron/cronLog';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { todayISO, dateInNDays } from '@/lib/parentPack';
 import { calculatePaygBill, isLastDayOfMonthCairo } from '@/lib/paygBilling';
@@ -263,20 +264,25 @@ export async function POST(request: Request) {
       }
     }
 
-    await supabase.from('cron_log').insert({
-      cron_name: CRON_NAME,
-      status: errors > 0 ? 'partial' : 'success',
-      duration_ms: Date.now() - cronStart,
-      records_processed: billed,
-      metadata: {
-        billingMonth,
-        billed,
-        skipped,
-        errors,
-        switchesProcessed,
-        pendingSwitchRows: pendingSwitches?.length ?? 0,
-      },
-    });
+    {
+      const _opts = {
+        duration_ms: Date.now() - cronStart,
+        records_processed: billed,
+        metadata: {
+          billingMonth,
+          billed,
+          skipped,
+          errors,
+          switchesProcessed,
+          pendingSwitchRows: pendingSwitches?.length ?? 0,
+        } as Record<string, unknown>,
+      };
+      if (errors > 0) {
+        await insertCronLogPartial(supabase, CRON_NAME, _opts);
+      } else {
+        await insertCronLogSuccess(supabase, CRON_NAME, _opts);
+      }
+    }
 
     try {
       if (supabaseAdmin) {
@@ -303,16 +309,9 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error(`[${CRON_NAME}]`, error);
-    try {
-      await supabase.from('cron_log').insert({
-        cron_name: CRON_NAME,
-        status: 'failure',
-        duration_ms: Date.now() - cronStart,
-        error_message: error instanceof Error ? error.message.slice(0, 2000) : 'Unknown',
-      });
-    } catch (logErr) {
-      console.error(`[${CRON_NAME}] cron_log`, logErr);
-    }
+    await insertCronLogFailure(supabase, CRON_NAME, error, {
+      duration_ms: Date.now() - cronStart,
+    });
     return NextResponse.json({ success: false }, { status: 200 });
   }
 }

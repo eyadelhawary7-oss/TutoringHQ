@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireCronSecret } from '@/lib/cron/requireCronSecret';
+import { insertCronLogSuccess, insertCronLogFailure, insertCronLogPartial } from '@/lib/cron/cronLog';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { tCronBackup } from '@/lib/cronBackupI18n';
 import { netReferralBaseFromAllInPrice } from '@/lib/referralNetBase';
@@ -73,12 +74,8 @@ export async function GET(request: Request) {
 
   if (refErr) {
     errors.push(refErr.message);
-    await supabase.from('cron_log').insert({
-      cron_name: CRON_NAME,
-      status: 'failure',
+    await insertCronLogFailure(supabase, CRON_NAME, refErr, {
       duration_ms: Date.now() - cronStart,
-      records_processed: 0,
-      error_message: refErr.message,
       metadata: { period_month: periodMonth },
     });
     return NextResponse.json({ success: false, error: refErr.message }, { status: 500 });
@@ -226,15 +223,17 @@ export async function GET(request: Request) {
     }
   }
 
-  const logStatus = errors.length === 0 ? 'success' : created > 0 ? 'partial' : 'failure';
-  await supabase.from('cron_log').insert({
-    cron_name: CRON_NAME,
-    status: logStatus,
-    duration_ms: Date.now() - cronStart,
-    records_processed: created,
-    error_message: errors.length > 0 ? errors.join('; ').slice(0, 10000) : null,
-    metadata: { period_month: periodMonth, created, skipped },
-  });
+  {
+    const _refDurationMs = Date.now() - cronStart;
+    const _refMeta = { period_month: periodMonth, created, skipped } as Record<string, unknown>;
+    if (errors.length === 0) {
+      await insertCronLogSuccess(supabase, CRON_NAME, { duration_ms: _refDurationMs, records_processed: created, metadata: _refMeta });
+    } else if (created > 0) {
+      await insertCronLogPartial(supabase, CRON_NAME, { duration_ms: _refDurationMs, records_processed: created, metadata: _refMeta });
+    } else {
+      await insertCronLogFailure(supabase, CRON_NAME, errors.join('; '), { duration_ms: _refDurationMs, metadata: _refMeta });
+    }
+  }
 
   try {
     if (supabaseAdmin) {
