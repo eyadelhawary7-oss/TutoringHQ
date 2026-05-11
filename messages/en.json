@@ -5808,7 +5808,7 @@
       },
       "q2": {
         "question": "How long does it take to set up?",
-        "answer": "About 15 minutes. Register, import your student list from Excel (or add manually), assign cards, start scanning. No installation, no servers, no IT person needed."
+        "answer": "About 15 minutes. Register, then add students three ways: import from Excel, add manually, or share a group link they self-join (you approve from your dashboard). Assign cards, start scanning. No installation, no servers, no IT person needed."
       },
       "q3": {
         "question": "I already use a spreadsheet / paper book / WhatsApp. Why switch?",
@@ -5824,7 +5824,7 @@
       },
       "q6": {
         "question": "How does fee collection work?",
-        "answer": "Two ways. (1) Cash at the centre — log it in CenterHQ, automatic receipt. (2) Online — parent gets a WhatsApp link, pays via Paymob (Visa, Mastercard, Meeza, Vodafone Cash). Payment instantly appears in your dashboard."
+        "answer": "For now, log cash payments at the centre — CenterHQ generates an automatic receipt. Online payments via WhatsApp link (Paymob — Visa, Mastercard, Meeza, Vodafone Cash, and 100,000+ kiosks) are coming soon, with payments appearing instantly in your dashboard."
       },
       "q7": {
         "question": "Who do I talk to if something breaks?",
