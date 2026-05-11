@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { AnimatedPhoneMockup } from '@/components/landing/AnimatedPhoneMockup';
+import { HeroVisuals } from '@/components/landing/HeroVisuals';
 import { Link } from '@/i18n/routing';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { PLANS, ORDERED_SUBSCRIPTION_PLAN_KEYS } from '@/lib/pricing';
@@ -240,9 +240,7 @@ export default function LocaleHomePage() {
           </div>
 
           <div className="flex justify-center md:justify-end">
-            <div className="relative mx-auto h-[560px] w-[280px] shrink-0 drop-shadow-[0_0_80px_rgba(13,148,136,0.2)]">
-              <AnimatedPhoneMockup locale={locale as 'ar' | 'en'} />
-            </div>
+            <HeroVisuals locale={locale as 'ar' | 'en'} />
           </div>
         </div>
       </section>
