@@ -25,6 +25,8 @@ export default function LocaleHomePage() {
 
   const heroLines = t('heroTitle').split('\n').filter((line) => line.length > 0);
   const featureKeys = ['f1', 'f2', 'f3', 'f4', 'f5', 'f6'] as const;
+  const primaryPlanKeys = ORDERED_SUBSCRIPTION_PLAN_KEYS.slice(0, 3);
+  const secondaryPlanKeys = ORDERED_SUBSCRIPTION_PLAN_KEYS.slice(3);
 
   const renderHeroTitleLines = () =>
     heroLines.map((line, i) => {
@@ -245,21 +247,13 @@ export default function LocaleHomePage() {
         </div>
       </section>
 
-      <section className="border-y border-slate-800/40 bg-[#080f1a] px-4 py-12 md:px-6">
-        <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
-          {[
-            { v: m('stat1Value'), l: m('stat1Label') },
-            { v: m('stat2Value'), l: m('stat2Label') },
-            { v: m('stat3Value'), l: m('stat3Label') },
-          ].map((s, i) => (
-            <div
-              key={i}
-              className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-center"
-            >
-              <p className="text-3xl font-bold text-teal-400">{s.v}</p>
-              <p className="mt-1 text-sm text-[var(--color-text-muted)]">{s.l}</p>
-            </div>
-          ))}
+      <section className="border-y border-slate-800/40 bg-[#080f1a] px-4 py-16 md:px-6 md:py-20">
+        <div className="mx-auto max-w-[700px] text-center">
+          <h2 className="text-2xl font-bold !text-white md:text-3xl">{t('problem.heading')}</h2>
+          <p className="mx-auto mt-6 text-base leading-relaxed text-[var(--color-text-secondary)]">
+            {t('problem.body')}
+          </p>
+          <p className="mx-auto mt-6 text-lg font-medium text-teal-400">{t('problem.connector')}</p>
         </div>
       </section>
 
@@ -345,7 +339,7 @@ export default function LocaleHomePage() {
             {m('pricingSubtitle')}
           </p>
           <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {ORDERED_SUBSCRIPTION_PLAN_KEYS.map((planKey) => {
+            {primaryPlanKeys.map((planKey) => {
               const p = PLANS[planKey];
               const priceLine = `${formatCurrency(p.quarterlyAllIn, locale)}${m('pricePerMonthSuffix')}`;
               const planTitle = locale === 'ar' ? p.arabicName : p.englishName;
@@ -387,11 +381,69 @@ export default function LocaleHomePage() {
               );
             })}
           </div>
+          <div className="mt-8 border-t border-slate-800/40 pt-6">
+            <p className="mb-4 text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
+              {t('pricing.largerCentresHeading')}
+            </p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {secondaryPlanKeys.map((planKey) => {
+                const p = PLANS[planKey];
+                const priceLine = `${formatCurrency(p.quarterlyAllIn, locale)}${m('pricePerMonthSuffix')}`;
+                const planTitle = locale === 'ar' ? p.arabicName : p.englishName;
+                const cap = p.weeklyStudentLimit;
+                const studentsLine =
+                  cap != null
+                    ? locale === 'ar'
+                      ? `حتى ${formatNumber(cap, locale)} طالب`
+                      : `Up to ${formatNumber(cap, locale)} students`
+                    : '';
+                return (
+                  <div
+                    key={planKey}
+                    className="rounded-xl border border-slate-700/50 bg-[var(--color-surface-2)] p-4 text-start opacity-80"
+                    style={{ color: '#ffffff' }}
+                  >
+                    <p className="text-sm font-semibold !text-white/80">{planTitle}</p>
+                    <p className="mt-1.5 text-lg font-bold !text-white/80">{priceLine}</p>
+                    <p className="mt-2 text-xs text-[var(--color-text-muted)]">{studentsLine}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
           <Link
             href="/pricing"
             className="mt-10 inline-flex rounded-xl border border-slate-600 bg-[var(--color-surface-1)] px-6 py-3 text-sm font-semibold text-[var(--color-text-secondary)] transition-colors hover:border-slate-500 hover:bg-[var(--color-surface-2)] hover:text-white btn-press chq-focus"
           >
             {m('pricingCta')}
+          </Link>
+        </div>
+      </section>
+
+      <section className="border-t border-slate-800/40 bg-[#080f1a] px-4 py-16 md:px-6 md:py-24">
+        <div className="mx-auto max-w-2xl text-center">
+          <div className="mb-8 grid grid-cols-3 gap-3" aria-hidden="true">
+            {['1', '2', '3'].map((n) => (
+              <div
+                key={n}
+                className="rounded-2xl border border-slate-800/60 bg-[var(--color-surface-1)] p-4"
+              >
+                <div className="mx-auto mb-3 h-8 w-16 rounded-md bg-slate-800/80" />
+                <div className="h-2 w-full rounded bg-slate-800/60" />
+                <div className="mt-1.5 h-2 w-3/4 rounded bg-slate-800/60" />
+                <div className="mt-3 h-2 w-1/2 rounded bg-slate-800/40" />
+              </div>
+            ))}
+          </div>
+          <h2 className="text-2xl font-bold !text-white md:text-3xl">{t('founding.heading')}</h2>
+          <p className="mx-auto mt-4 max-w-lg text-sm text-[var(--color-text-secondary)] md:text-base">
+            {t('founding.body')}
+          </p>
+          <Link
+            href="/signup"
+            className="mt-8 inline-flex rounded-xl bg-teal-600 px-8 py-4 text-lg font-semibold text-white transition-colors hover:bg-teal-500 btn-press chq-focus"
+          >
+            {t('founding.cta')}
           </Link>
         </div>
       </section>

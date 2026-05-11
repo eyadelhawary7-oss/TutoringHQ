@@ -5712,6 +5712,19 @@
     "featuresTitle": "Everything you need to run your center",
     "finalCtaTitle": "Start managing your center today",
     "finalCtaDesc": "First 10 centers get 40% off for life",
+    "problem": {
+      "heading": "Running a centre shouldn't feel like firefighting.",
+      "body": "Every day: spreadsheets that don't match, notebooks with missing pages, WhatsApp groups full of parent questions, a cash box no one wants to count. A student attends but the invoice never gets sent. A parent asks for proof of payment — no one can find it. You can't even tell which groups are profitable.",
+      "connector": "CenterHQ replaces all of it. One platform. Built for Egyptian tutoring centres."
+    },
+    "founding": {
+      "heading": "Join the founding 10.",
+      "body": "Your story could be here. The first 10 centres get CenterHQ at 40% off for life — and we feature their stories on this page as they grow.",
+      "cta": "Claim founding access"
+    },
+    "pricing": {
+      "largerCentresHeading": "For larger centres"
+    },
     "marketing": {
       "navFeatures": "Features",
       "navPricing": "Pricing",
