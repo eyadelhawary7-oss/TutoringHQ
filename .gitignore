@@ -76,3 +76,6 @@ seed-output.log
 PRELAUNCH_*.md
 playwright-report/
 test-results/
+
+# Supabase CLI cache (broader rule — covers everything in .temp/)
+supabase/.temp/
