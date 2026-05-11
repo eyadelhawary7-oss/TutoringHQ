@@ -5711,16 +5711,34 @@
     "watchDemo": "See how it works",
     "featuresTitle": "Everything you need to run your center",
     "finalCtaTitle": "Start managing your center today",
-    "finalCtaDesc": "First 10 centers get 40% off for life",
+    "finalCta": {
+      "setup": "Set up your centre in under 15 minutes",
+      "payment": "Pay by card, mobile wallet, or cash at 100,000+ kiosks"
+    },
     "problem": {
       "heading": "Running a centre shouldn't feel like firefighting.",
       "body": "Every day: spreadsheets that don't match, notebooks with missing pages, WhatsApp groups full of parent questions, a cash box no one wants to count. A student attends but the invoice never gets sent. A parent asks for proof of payment — no one can find it. You can't even tell which groups are profitable.",
       "connector": "CenterHQ replaces all of it. One platform. Built for Egyptian tutoring centres."
     },
-    "founding": {
-      "heading": "Join the founding 10.",
-      "body": "Your story could be here. The first 10 centres get CenterHQ at 40% off for life — and we feature their stories on this page as they grow.",
-      "cta": "Claim founding access"
+    "trust": {
+      "heading": "Your data isn't held hostage.",
+      "subheading": "Encrypted, isolated, and exportable. Backed up every night.",
+      "tile1": {
+        "title": "Encrypted end-to-end",
+        "body": "AES-256 encryption at rest, TLS 1.3 in transit."
+      },
+      "tile2": {
+        "title": "Tenant-isolated",
+        "body": "Row-level security per centre. Other centres can never see your data."
+      },
+      "tile3": {
+        "title": "Exportable anytime",
+        "body": "All data as Excel or CSV in one click. No lock-in."
+      },
+      "tile4": {
+        "title": "Backed up nightly",
+        "body": "Daily encrypted backups, kept 7 days."
+      }
     },
     "pricing": {
       "largerCentresHeading": "For larger centres"
@@ -5823,12 +5841,6 @@
       "navContact": "Contact us",
       "login": "Log in",
       "heroBadge": "The #1 tutoring center management platform in Egypt",
-      "stat1Value": "60%+",
-      "stat1Label": "time saved on admin",
-      "stat2Value": "100%",
-      "stat2Label": "accurate attendance tracking",
-      "stat3Value": "15 min",
-      "stat3Label": "to set up your first center",
       "howTitle": "How it works",
       "step1Title": "Register your center",
       "step1Desc": "Create your account in under 5 minutes",

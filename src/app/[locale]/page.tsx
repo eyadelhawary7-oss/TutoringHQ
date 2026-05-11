@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { HeroVisuals } from '@/components/landing/HeroVisuals';
 import { ComparisonTable } from '@/components/landing/ComparisonTable';
 import { LandingFAQ } from '@/components/landing/LandingFAQ';
+import { TrustSignals } from '@/components/landing/TrustSignals';
 import { Link } from '@/i18n/routing';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { PLANS, ORDERED_SUBSCRIPTION_PLAN_KEYS } from '@/lib/pricing';
@@ -424,38 +425,15 @@ export default function LocaleHomePage() {
 
       <LandingFAQ />
 
-      <section className="border-t border-slate-800/40 bg-[#080f1a] px-4 py-16 md:px-6 md:py-24">
-        <div className="mx-auto max-w-2xl text-center">
-          <div className="mb-8 grid grid-cols-3 gap-3" aria-hidden="true">
-            {['1', '2', '3'].map((n) => (
-              <div
-                key={n}
-                className="rounded-2xl border border-slate-800/60 bg-[var(--color-surface-1)] p-4"
-              >
-                <div className="mx-auto mb-3 h-8 w-16 rounded-md bg-slate-800/80" />
-                <div className="h-2 w-full rounded bg-slate-800/60" />
-                <div className="mt-1.5 h-2 w-3/4 rounded bg-slate-800/60" />
-                <div className="mt-3 h-2 w-1/2 rounded bg-slate-800/40" />
-              </div>
-            ))}
-          </div>
-          <h2 className="text-2xl font-bold !text-white md:text-3xl">{t('founding.heading')}</h2>
-          <p className="mx-auto mt-4 max-w-lg text-sm text-[var(--color-text-secondary)] md:text-base">
-            {t('founding.body')}
-          </p>
-          <Link
-            href="/signup"
-            className="mt-8 inline-flex rounded-xl bg-teal-600 px-8 py-4 text-lg font-semibold text-white transition-colors hover:bg-teal-500 btn-press chq-focus"
-          >
-            {t('founding.cta')}
-          </Link>
-        </div>
-      </section>
+      <TrustSignals />
 
       <section className="bg-[#080f1a] bg-gradient-to-b from-[#080f1a] via-[#0f172a] to-teal-950/50 px-4 py-16 md:px-6 md:py-24">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-2xl font-bold !text-white md:text-3xl">{t('finalCtaTitle')}</h2>
-          <p className="mt-3 text-sm text-[var(--color-text-secondary)] md:text-base">{t('finalCtaDesc')}</p>
+          <div className="mt-3 flex flex-col gap-1">
+            <p className="text-sm text-[var(--color-text-secondary)] md:text-base">{t('finalCta.setup')}</p>
+            <p className="text-sm text-[var(--color-text-secondary)] md:text-base">{t('finalCta.payment')}</p>
+          </div>
           <Link
             href="/signup"
             className="mt-8 inline-flex rounded-xl bg-teal-600 px-8 py-4 text-lg font-semibold text-white transition-colors hover:bg-teal-500 btn-press chq-focus"
