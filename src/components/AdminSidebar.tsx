@@ -425,7 +425,7 @@ export function AdminSidebar({
           'top-0 h-full lg:h-auto lg:bottom-0',
           desktopAsideTop,
           'transition-transform duration-[250ms] ease-in-out',
-          openMenu ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full lg:translate-x-0',
+          openMenu ? 'translate-x-0' : 'max-lg:ltr:-translate-x-full max-lg:rtl:translate-x-full lg:translate-x-0',
         )}
         aria-hidden={!isLg && !openMenu}
       >
