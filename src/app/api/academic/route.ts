@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import { requirePermission } from '@/lib/centerPermissions';
 import { parseBodyWithLimit } from '@/lib/validate';
 
 export async function GET(request: NextRequest) {
@@ -51,6 +52,9 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await requireCenterAuth(request);
     if (!auth.ok) return auth.response;
+    // Permission gate added May 12 per docs/AUDIT_center_role_gating.md
+    const permErr = requirePermission(auth, 'can_manage_academic_calendar');
+    if (permErr) return permErr;
 
     const { centerId, supabaseAdmin } = auth;
     const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;

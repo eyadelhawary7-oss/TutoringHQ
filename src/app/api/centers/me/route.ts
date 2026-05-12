@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import { requirePermission } from '@/lib/centerPermissions';
 import { parseBodyWithLimit } from '@/lib/validate';
 
 const ALLOWED_PATCH = new Set([
@@ -18,6 +19,9 @@ export async function PATCH(request: NextRequest) {
     if (!auth.ok) {
       return auth.response;
     }
+    // Permission gate added May 12 per docs/AUDIT_center_role_gating.md
+    const permErr = requirePermission(auth, 'can_edit_center_profile');
+    if (permErr) return permErr;
 
     let body: Record<string, unknown>;
     try {

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import QRCode from 'qrcode';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import { requirePermission } from '@/lib/centerPermissions';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { normalizePhone, isValidEgyptianMobileE164 } from '@/lib/utils/phone';
 import {
@@ -33,6 +34,9 @@ function eligibleCartItems(items: HydratedCartItem[]): HydratedCartItem[] {
 export async function POST(request: NextRequest) {
   const auth = await requireCenterAuth(request);
   if (!auth.ok) return auth.response;
+  // Permission gate added May 12 per docs/AUDIT_center_role_gating.md
+  const permErr = requirePermission(auth, 'can_place_card_orders');
+  if (permErr) return permErr;
 
   let body: unknown;
   try {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import { requirePermission } from '@/lib/centerPermissions';
 import { parseBodyWithLimit } from '@/lib/validate';
 
 export const dynamic = 'force-dynamic';
@@ -69,6 +70,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireCenterAuth(request);
   if (!auth.ok) return auth.response;
+  // Permission gate added May 12 per docs/AUDIT_center_role_gating.md
+  const permErr = requirePermission(auth, 'can_delete_students');
+  if (permErr) return permErr;
 
   const { id } = await params;
   const { supabaseAdmin, centerId } = auth;

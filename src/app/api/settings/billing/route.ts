@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import { requirePermission } from '@/lib/centerPermissions';
 import {
   getPlanPrice,
   normalizeBillingPeriod,
@@ -48,6 +49,9 @@ export async function GET(request: NextRequest) {
   try {
     const auth = await requireCenterAuth(request);
     if (!auth.ok) return auth.response;
+    // Permission gate added May 12 per docs/AUDIT_center_role_gating.md
+    const permErr = requirePermission(auth, 'can_manage_billing');
+    if (permErr) return permErr;
 
     const { data: center, error: centerError } = await auth.supabaseAdmin
       .from('centers')

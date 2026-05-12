@@ -1,12 +1,16 @@
 import '@/lib/paymobProductionGuard';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import { requirePermission } from '@/lib/centerPermissions';
 import { parseBodyWithLimit } from '@/lib/validate';
 
 export async function POST(request: NextRequest) {
   try {
     const auth = await requireCenterAuth(request);
     if (!auth.ok) return auth.response;
+    // Permission gate added May 12 per docs/AUDIT_center_role_gating.md
+    const permErr = requirePermission(auth, 'can_place_card_orders');
+    if (permErr) return permErr;
 
     const apiKey = process.env.PAYMOB_API_KEY;
     const integrationId = process.env.PAYMOB_INTEGRATION_ID;
