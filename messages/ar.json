@@ -5855,6 +5855,49 @@
     "canManageRooms": "إدارة الغرف ",
     "canViewSchedule": "عرض الجدول الزمني",
     "canViewSettings": "عرض الإعدادات",
+    "sensitivePermissions": "الصلاحيات الحساسة",
+    "staff": {
+      "heading": "الفريق والصلاحيات",
+      "subheading": "تحكّم في ما يمكن لكل عضو من الفريق فعله",
+      "permissions": {
+        "ownerHasAll": "المالك لديه جميع الصلاحيات",
+        "saving": "جارٍ الحفظ...",
+        "saved": "تم الحفظ",
+        "errorSaving": "تعذّر الحفظ. حاول مرة أخرى.",
+        "can_record_payments": {
+          "label": "تسجيل المدفوعات",
+          "description": "تأكيد وتسجيل المدفوعات النقدية أو الرقمية"
+        },
+        "can_view_payments": {
+          "label": "عرض المدفوعات",
+          "description": "عرض قائمة مدفوعات الطلاب"
+        },
+        "can_manage_billing": {
+          "label": "إدارة الفواتير",
+          "description": "عرض لوحة الفواتير وتغيير الخطة والمدفوعات"
+        },
+        "can_edit_center_profile": {
+          "label": "تعديل ملف السنتر",
+          "description": "تحديث اسم المركز والمدينة والهاتف والمحافظة"
+        },
+        "can_delete_students": {
+          "label": "حذف الطلاب",
+          "description": "إلغاء تفعيل (حذف مؤقت) الطلاب"
+        },
+        "can_manage_academic_calendar": {
+          "label": "إدارة التقويم الأكاديمي",
+          "description": "إضافة/تعديل/حذف الأعوام الدراسية والفترات والعطلات"
+        },
+        "can_place_card_orders": {
+          "label": "إنشاء طلبات البطاقات",
+          "description": "تقديم طلبات بطاقات مدفوعة عبر Paymob"
+        },
+        "can_request_referral_payouts": {
+          "label": "طلب صرف مكافآت الإحالة",
+          "description": "سحب مكافآت الإحالة إلى الإنستاباي"
+        }
+      }
+    },
     "teacherAccessInfo": "يستطيع المعلم الوصول إلى مجموعاته فقط وإضافة الطلاب إليها",
     "assignGroups": "تخصيص مجموعات",
     "editPermissions": "عدّل الصلاحيات",

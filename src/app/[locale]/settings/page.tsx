@@ -13,6 +13,8 @@ import PasswordConfirmModal from '@/components/PasswordConfirmModal';
 import { Building2, BookOpen, Users, QrCode, Gift, CreditCard, MessageCircle, Shield, Camera, ChevronRight, Copy, KeyRound, LogOut, UserPlus, Pencil, UserX, X, LayoutDashboard, Loader2, Calendar, Package, Wallet } from 'lucide-react';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { SettingsSwitch } from '@/components/settings/SettingsSwitch';
+import { StaffMemberCard, SIX_NEW_FLAGS } from '@/components/settings/StaffMemberCard';
+import type { CenterPermission } from '@/lib/centerPermissions';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
 import { signOutToLogin } from '@/lib/auth/sign-out-client';
 import { getSupportWhatsAppDisplayLabel, getSupportWhatsAppWaMeBase } from '@/lib/supportWhatsApp';
@@ -58,6 +60,12 @@ interface TeamMember {
   can_manage_rooms?: boolean;
   can_view_schedule?: boolean;
   can_view_settings?: boolean;
+  can_manage_billing?: boolean;
+  can_edit_center_profile?: boolean;
+  can_delete_students?: boolean;
+  can_manage_academic_calendar?: boolean;
+  can_place_card_orders?: boolean;
+  can_request_referral_payouts?: boolean;
 }
 
 interface PendingInvite {
@@ -332,7 +340,7 @@ function SettingsPageContent() {
 
     const { data: membersData } = await dbSelect({
       table: 'users',
-      select: 'id, name, phone, role, is_active, can_scan, can_view_payments, can_record_payments, can_view_dashboard, can_view_revenue, can_manage_students, can_manage_groups, can_allow_late_entry, can_manage_rooms, can_view_schedule, can_view_settings',
+      select: 'id, name, phone, role, is_active, can_scan, can_view_payments, can_record_payments, can_view_dashboard, can_view_revenue, can_manage_students, can_manage_groups, can_allow_late_entry, can_manage_rooms, can_view_schedule, can_view_settings, can_manage_billing, can_edit_center_profile, can_delete_students, can_manage_academic_calendar, can_place_card_orders, can_request_referral_payouts',
       filters: [{ column: 'center_id', op: 'eq', value: centerId! }],
     });
     const permMap: Record<string, Record<string, boolean>> = {};
@@ -350,6 +358,12 @@ function SettingsPageContent() {
           can_manage_rooms: m.can_manage_rooms === true,
           can_view_schedule: m.can_view_schedule === true,
           can_view_settings: m.can_view_settings === true,
+          can_manage_billing: m.can_manage_billing === true,
+          can_edit_center_profile: m.can_edit_center_profile === true,
+          can_delete_students: m.can_delete_students === true,
+          can_manage_academic_calendar: m.can_manage_academic_calendar === true,
+          can_place_card_orders: m.can_place_card_orders === true,
+          can_request_referral_payouts: m.can_request_referral_payouts === true,
         };
         return { id: m.id, name: m.name ?? null, phone: m.phone, role: m.role, is_active: m.is_active };
       }));
@@ -1423,6 +1437,19 @@ function SettingsPageContent() {
                                           {t(labelKey)}
                                         </label>
                                       ))}
+                                    </div>
+                                    <div className="mt-3 pt-3 border-t border-[var(--color-border-subtle)]">
+                                      <p className="text-xs font-semibold text-[var(--color-text-secondary)] mb-2 uppercase tracking-wide">{t('sensitivePermissions')}</p>
+                                      <StaffMemberCard
+                                        userId={member.id}
+                                        role={member.role}
+                                        permissions={assistantPermissions[member.id] as Partial<Record<CenterPermission, boolean>> ?? {}}
+                                        visibleFlags={SIX_NEW_FLAGS}
+                                        onUpdate={(flag, value) => setAssistantPermissions(prev => ({
+                                          ...prev,
+                                          [member.id]: { ...prev[member.id], [flag]: value },
+                                        }))}
+                                      />
                                     </div>
                                     <button type="button" onClick={() => setEditingPermissionsId(null)} className="text-xs text-teal-600 hover:underline">{tCommon('cancel')}</button>
                                   </div>

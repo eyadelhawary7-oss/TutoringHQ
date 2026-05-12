@@ -2541,6 +2541,49 @@
     "canManageRooms": "Manage Rooms",
     "canViewSchedule": "View Schedule",
     "canViewSettings": "View Settings",
+    "sensitivePermissions": "Sensitive permissions",
+    "staff": {
+      "heading": "Team & permissions",
+      "subheading": "Control what each team member can do",
+      "permissions": {
+        "ownerHasAll": "Owner has all permissions",
+        "saving": "Saving...",
+        "saved": "Saved",
+        "errorSaving": "Couldn't save. Try again.",
+        "can_record_payments": {
+          "label": "Record Payments",
+          "description": "Confirm and record cash or digital payments"
+        },
+        "can_view_payments": {
+          "label": "View Payments",
+          "description": "View the list of student payments"
+        },
+        "can_manage_billing": {
+          "label": "Manage billing",
+          "description": "View billing dashboard, plan changes, payouts"
+        },
+        "can_edit_center_profile": {
+          "label": "Edit center profile",
+          "description": "Update center name, city, phone, governorate"
+        },
+        "can_delete_students": {
+          "label": "Delete students",
+          "description": "Deactivate (soft-delete) students"
+        },
+        "can_manage_academic_calendar": {
+          "label": "Manage academic calendar",
+          "description": "Add/edit/delete academic years, periods, holidays"
+        },
+        "can_place_card_orders": {
+          "label": "Place card orders",
+          "description": "Place paid card orders via Paymob"
+        },
+        "can_request_referral_payouts": {
+          "label": "Request referral payouts",
+          "description": "Withdraw referral rewards to InstaPay"
+        }
+      }
+    },
     "teacherAccessInfo": "Teacher can access their own groups only and add students to them",
     "assignGroups": "Assign Groups",
     "editPermissions": "Edit Permissions",
