@@ -90,13 +90,18 @@ export async function GET(request: Request) {
 function verifyMetaSignature(rawBody: string, request: Request): boolean {
   const appSecret = process.env.WHATSAPP_APP_SECRET ?? '';
   if (!appSecret) {
-    console.warn(
-      '[whatsapp-inbound] WHATSAPP_APP_SECRET is not set; webhook HMAC verification skipped',
+    console.error(
+      '[whatsapp-inbound] WHATSAPP_APP_SECRET is not set; rejecting request',
     );
-    return true;
+    return false;
   }
 
   const sig = request.headers.get('x-hub-signature-256') ?? '';
+  if (!sig) {
+    console.warn('[whatsapp-inbound] Missing x-hub-signature-256 header');
+    return false;
+  }
+
   const expected =
     'sha256=' + createHmac('sha256', appSecret).update(rawBody, 'utf8').digest('hex');
   const sigBuf = Buffer.from(sig, 'utf8');
@@ -289,7 +294,7 @@ export async function POST(request: Request) {
     }
 
     if (!verifyMetaSignature(rawBody, request)) {
-      return postOk();
+      return new NextResponse(null, { status: 401 });
     }
 
     let payload: Record<string, unknown>;
