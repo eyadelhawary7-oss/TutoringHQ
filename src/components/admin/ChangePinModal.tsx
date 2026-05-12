@@ -12,6 +12,7 @@ interface ChangePinModalProps {
 export function ChangePinModal({ isOpen, onClose }: ChangePinModalProps) {
   const tSettings = useTranslations('settings');
   const tPin = useTranslations('settings.pin');
+  const tResetPassword = useTranslations('resetPassword');
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
@@ -37,7 +38,7 @@ export function ChangePinModal({ isOpen, onClose }: ChangePinModalProps) {
 
   const handleSubmit = async () => {
     setError(null);
-    if (!/^\d{4,}$/.test(newPin)) {
+    if (!/^\d{6}$/.test(newPin)) {
       setError(tPin('errorMinDigits'));
       return;
     }
@@ -48,35 +49,37 @@ export function ChangePinModal({ isOpen, onClose }: ChangePinModalProps) {
 
     setLoading(true);
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user?.email) throw new Error(tPin('errorUserNotFound'));
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error(tPin('errorUserNotFound'));
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: currentPin,
+      const res = await fetch('/api/auth/change-pin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ currentPin, newPin }),
       });
-      if (signInError) {
-        setError(tPin('errorCurrentInvalid'));
-        setLoading(false);
+
+      if (res.status === 429) {
+        setError(tPin('errorGeneric'));
         return;
       }
 
-      const { error: authUpdateError } = await supabase.auth.updateUser({
-        password: newPin,
-      });
-      if (authUpdateError) throw authUpdateError;
+      const json = await res.json() as { error?: string; ok?: boolean };
 
-      const encoder = new TextEncoder();
-      const data = encoder.encode(newPin);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashedPin = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-
-      const { error: dbUpdateError } = await supabase
-        .from('users')
-        .update({ pin_code: hashedPin })
-        .eq('id', user.id);
-      if (dbUpdateError) throw dbUpdateError;
+      if (!res.ok) {
+        if (json.error === 'weak_pin') {
+          setError(tResetPassword('weakPin'));
+        } else if (json.error === 'wrong_current_pin') {
+          setError(tPin('errorCurrentInvalid'));
+        } else if (json.error === 'invalid_format') {
+          setError(tPin('errorMinDigits'));
+        } else {
+          setError(tPin('errorGeneric'));
+        }
+        return;
+      }
 
       setSuccess(true);
       setTimeout(() => handleClose(), 1500);

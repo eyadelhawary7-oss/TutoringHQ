@@ -54,30 +54,38 @@ export default function ResetPasswordPage() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      const email = session?.user?.email;
-      if (!email) {
+      if (!session?.access_token) {
         setError(t('errorUpdateFailed'));
         setLoading(false);
         return;
       }
 
-      const { error: verifyError } = await supabase.auth.signInWithPassword({
-        email,
-        password: currentPin,
+      const res = await fetch('/api/auth/change-pin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ currentPin, newPin }),
       });
 
-      if (verifyError) {
-        setError(t('errorCurrentIncorrect'));
-        setLoading(false);
+      if (res.status === 429) {
+        setError(t('errorUpdateFailed'));
         return;
       }
 
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPin,
-      });
+      const json = await res.json() as { error?: string; ok?: boolean };
 
-      if (updateError) {
-        setError(t('errorUpdateFailed'));
+      if (!res.ok) {
+        if (json.error === 'weak_pin') {
+          setError(t('weakPin'));
+        } else if (json.error === 'wrong_current_pin') {
+          setError(t('errorCurrentIncorrect'));
+        } else if (json.error === 'invalid_format') {
+          setError(t('errorPinLength'));
+        } else {
+          setError(t('errorUpdateFailed'));
+        }
       } else {
         setSuccess(true);
         setTimeout(() => {
