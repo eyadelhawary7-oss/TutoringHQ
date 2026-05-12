@@ -13,7 +13,6 @@ import { customPermissionsToKeys, fetchAdminAccessFlags } from '@/lib/admin-acce
 import { getAdminPermissions } from '@/lib/admin-roles';
 import { PLANS, type PlanKey } from '@/lib/pricing';
 import { todayISO } from '@/lib/parentPack';
-import { phoneFromCenterhqAuthEmail } from '@/lib/ownerPhone';
 import { parseBodyWithLimit } from '@/lib/validate';
 
 function calendarAddDays(baseYmd: string, delta: number): string {
@@ -111,33 +110,17 @@ async function enrichCentersList(
       ownerRowByCenter.set(row.center_id, { id: row.id, phone: row.phone ?? null });
     }
   }
-  const uniqueOwnerAuthIds = [...new Set(Array.from(ownerRowByCenter.values()).map((v) => v.id))];
-  const waPhoneByAuthId = new Map<string, string | null>();
-  await Promise.all(
-    uniqueOwnerAuthIds.map(async (authId) => {
-      try {
-        const { data, error } = await adminClient.auth.admin.getUserById(authId);
-        if (error || !data?.user?.email) {
-          waPhoneByAuthId.set(authId, null);
-          return;
-        }
-        waPhoneByAuthId.set(authId, phoneFromCenterhqAuthEmail(data.user.email));
-      } catch {
-        waPhoneByAuthId.set(authId, null);
-      }
-    }),
-  );
+  // N+1 fix per docs/AUDIT_n_plus_1_hotpath_may13.md
+  // Drop per-owner auth.admin.getUserById calls (N round-trips to auth API per page).
+  // users.phone already holds the contact phone — no auth API lookup needed.
   const centerById = new Map(centers.map((c) => [String((c as { id: string }).id), c as Record<string, unknown>]));
   const ownerMap = new Map<string, { name: string; phone: string | null }>();
   for (const [cid, row] of ownerRowByCenter) {
-    const fromAuth = waPhoneByAuthId.get(row.id) ?? null;
-    const phone =
-      (fromAuth && fromAuth.length > 0 ? fromAuth : null) ?? (row.phone && row.phone.trim() ? row.phone : null);
+    const phone = (row.phone && row.phone.trim()) ? row.phone : null;
     const cr = centerById.get(cid) as { owner_name?: string | null } | undefined;
     const dispName =
       (cr?.owner_name && String(cr.owner_name).trim()) ||
       (row.phone && String(row.phone).trim()) ||
-      (phone && String(phone).trim()) ||
       '—';
     ownerMap.set(cid, { name: dispName, phone });
   }
