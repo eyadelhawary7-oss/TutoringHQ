@@ -22,9 +22,9 @@
   },
   "pricingPage": {
     "metaTitle": "Pricing – CenterHQ",
-    "metaDescription": "Compare Solo through Enterprise plans and Top Centers. Transparent monthly, quarterly, and annual pricing for tutoring centres.",
+    "metaDescription": "Compare Solo through Enterprise plans and Top Centers. Transparent monthly, quarterly, and annual pricing for tutoring centers.",
     "navHome": "Home",
-    "title": "Plans for every centre size",
+    "title": "Plans for every center size",
     "subtitle": "Monthly, quarterly, and annual billing. All amounts include VAT where applicable.",
     "studentsCapEn": "Up to {count} students/week",
     "studentsCapAr": "حتى {count} طالب/أسبوع",
@@ -3115,7 +3115,7 @@
         "sections": {
           "payment": "Payment",
           "tracking": "Tracking",
-          "centre": "Centre",
+          "centre": "Center",
           "items": "Items",
           "delivery": "Delivery",
           "pricing": "Pricing"
@@ -3128,7 +3128,7 @@
           "plan": "Plan",
           "planPrice": "Plan price",
           "subscription": "Subscription status",
-          "openAdmin": "Centre admin"
+          "openAdmin": "Center admin"
         },
         "transitions": {
           "title": "Status history",
@@ -4523,7 +4523,7 @@
       "title": "Billing & Subscription",
       "loading": "Loading billing…",
       "loadError": "Could not load billing data.",
-      "ownerOnly": "Only the centre owner can manage billing and payments.",
+      "ownerOnly": "Only the center owner can manage billing and payments.",
       "currentPlan": {
         "title": "Current plan",
         "planCap": "Student capacity",
@@ -4870,7 +4870,7 @@
       "saveForLater": "Save for later",
       "moveToCart": "Move to cart",
       "remove": "Remove",
-      "removedFromCenter": "Removed from centre",
+      "removedFromCenter": "Removed from center",
       "alreadyHasCard": "Has card delivered",
       "cardPending": "Card pending"
     },
@@ -4939,7 +4939,7 @@
       "total": "Total"
     },
     "errors": {
-      "noCenter": "Select a centre to continue checkout.",
+      "noCenter": "Select a center to continue checkout.",
       "noCart": "Your cart is not available. Open checkout from the Orders page.",
       "belowMinimum": "Add more cards to meet the minimum before checkout.",
       "generic": "Checkout is unavailable right now."
@@ -4953,7 +4953,7 @@
       "phone": "Mobile phone",
       "phonePlaceholder": "+20 1XXXXXXXX",
       "notes": "Delivery notes (optional)",
-      "saveDefaults": "Save as default for my centre",
+      "saveDefaults": "Save as default for my center",
       "continue": "Continue",
       "saving": "Saving…",
       "shippingPreview": "Shipping: {amount}",
@@ -5116,7 +5116,7 @@
     "done": "Go to cart",
     "skippedReasons": {
       "alreadyInCart": "Already in cart",
-      "transferredOut": "Transferred to another centre",
+      "transferredOut": "Transferred to another center",
       "inactive": "No longer active",
       "alreadyHasCard": "Already has a card",
       "studentNotFound": "Student no longer exists",
@@ -5757,13 +5757,13 @@
     "featuresTitle": "Everything you need to run your center",
     "finalCtaTitle": "Start managing your center today",
     "finalCta": {
-      "setup": "Set up your centre in under 15 minutes",
+      "setup": "Set up your center in under 15 minutes",
       "payment": "Pay by card, mobile wallet, or cash at 100,000+ kiosks"
     },
     "problem": {
-      "heading": "Running a centre shouldn't feel like firefighting.",
+      "heading": "Running a center shouldn't feel like firefighting.",
       "body": "Every day: spreadsheets that don't match, notebooks with missing pages, WhatsApp groups full of parent questions, a cash box no one wants to count. A student attends but the invoice never gets sent. A parent asks for proof of payment — no one can find it. You can't even tell which groups are profitable.",
-      "connector": "CenterHQ replaces all of it. One platform. Built for Egyptian tutoring centres."
+      "connector": "CenterHQ replaces all of it. One platform. Built for Egyptian tutoring centers."
     },
     "trust": {
       "heading": "Your data isn't held hostage.",
@@ -5774,7 +5774,7 @@
       },
       "tile2": {
         "title": "Tenant-isolated",
-        "body": "Row-level security per centre. Other centres can never see your data."
+        "body": "Row-level security per center. Other centers can never see your data."
       },
       "tile3": {
         "title": "Exportable anytime",
@@ -5786,10 +5786,10 @@
       }
     },
     "pricing": {
-      "largerCentresHeading": "For larger centres"
+      "largerCentresHeading": "For larger centers"
     },
     "compare": {
-      "heading": "Why centre owners switch.",
+      "heading": "Why center owners switch.",
       "subheading": "Excel and notebooks work — until they don't.",
       "colCriterion": "Criterion",
       "colSpreadsheet": "Spreadsheet",
@@ -5846,10 +5846,10 @@
     },
     "faq": {
       "heading": "Common questions",
-      "subheading": "Centre owners ask these first.",
+      "subheading": "Center owners ask these first.",
       "q1": {
         "question": "Who owns the data I put into CenterHQ?",
-        "answer": "You do. Always. Your students, parents, payments, and history belong to your centre. If you ever leave, we export everything as Excel + CSV in one click. No lock-in."
+        "answer": "You do. Always. Your students, parents, payments, and history belong to your center. If you ever leave, we export everything as Excel + CSV in one click. No lock-in."
       },
       "q2": {
         "question": "How long does it take to set up?",
@@ -5860,8 +5860,8 @@
         "answer": "Because at scale, those break down. A single spreadsheet can't tell you which group is profitable. A paper book can't send a parent a payment reminder. A WhatsApp group can't track who's paid and who hasn't. CenterHQ does all of it in one place — and the data is searchable, exportable, and accurate."
       },
       "q4": {
-        "question": "What if my centre's internet is unreliable?",
-        "answer": "The QR scanner works fully offline. Scan attendance even with no WiFi, and the data syncs automatically when connection returns. Designed specifically for Egyptian centres on shaky 3G/4G."
+        "question": "What if my center's internet is unreliable?",
+        "answer": "The QR scanner works fully offline. Scan attendance even with no WiFi, and the data syncs automatically when connection returns. Designed specifically for Egyptian centers on shaky 3G/4G."
       },
       "q5": {
         "question": "Can I cancel my subscription anytime?",
@@ -5877,7 +5877,7 @@
       },
       "q8": {
         "question": "How is my data protected?",
-        "answer": "All data is encrypted in transit (HTTPS) and at rest (database encryption). Centre data is isolated per tenant — no other centre can ever see yours. Daily backups to encrypted cloud storage. We follow Egyptian PDPL (Law 151) standards."
+        "answer": "All data is encrypted in transit (HTTPS) and at rest (database encryption). Center data is isolated per tenant — no other center can ever see yours. Daily backups to encrypted cloud storage. We follow Egyptian PDPL (Law 151) standards."
       }
     },
     "marketing": {
@@ -5936,7 +5936,7 @@
       "closeMenuAria": "Close menu",
       "switchLocaleAria": "Switch language",
       "trustBandKicker": "Trusted nationwide",
-      "trustBandTitle": "Built for tutoring centres that outgrow spreadsheets",
+      "trustBandTitle": "Built for tutoring centers that outgrow spreadsheets",
       "trustBandBody": "Attendance, billing, parent messaging, and reporting in one platform — secure and ready to scale.",
       "trustBandPricing": "View pricing",
       "trustBandContact": "Contact us"
