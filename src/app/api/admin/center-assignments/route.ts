@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import { parseBodyWithLimit } from '@/lib/validate';
+import { requireAdminRole } from '@/lib/admin-auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -153,12 +154,9 @@ export async function POST(request: Request) {
   if (!admin) {
     return NextResponse.json({ errorKey: 'centerAssignments.errors.unauthorized' }, { status: 401 })
   }
-  if (admin.role !== 'super_admin') {
-    return NextResponse.json(
-      { errorKey: 'centerAssignments.errors.forbidden_super_admin' },
-      { status: 403 },
-    )
-  }
+  // Role gate added per docs/AUDIT_v22.md Phase 3 / Phase 8 P0 (Task 9)
+  const roleErr = requireAdminRole(admin, ['super_admin', 'admin'])
+  if (roleErr) return roleErr
 
   let body: Record<string, unknown>
   try {
@@ -243,4 +241,38 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ assignment: data }, { status: 201 })
+}
+
+// DELETE /api/admin/center-assignments?id=<assignment_id>
+export async function DELETE(request: Request) {
+  if (!supabaseAdmin) {
+    return NextResponse.json(
+      { errorKey: 'centerAssignments.errors.misconfigured' },
+      { status: 500 },
+    )
+  }
+
+  const admin = await getAdminUser(request)
+  if (!admin) {
+    return NextResponse.json({ errorKey: 'centerAssignments.errors.unauthorized' }, { status: 401 })
+  }
+  // Role gate added per docs/AUDIT_v22.md Phase 3 / Phase 8 P0 (Task 9)
+  const roleErr = requireAdminRole(admin, ['super_admin', 'admin'])
+  if (roleErr) return roleErr
+
+  const { searchParams } = new URL(request.url)
+  const id = searchParams.get('id')
+  if (!id) {
+    return NextResponse.json({ errorKey: 'centerAssignments.errors.id_required' }, { status: 400 })
+  }
+
+  const { error } = await supabaseAdmin.from('center_assignments').delete().eq('id', id)
+  if (error) {
+    return NextResponse.json(
+      { errorKey: 'centerAssignments.errors.save_failed', detail: error.message },
+      { status: 500 },
+    )
+  }
+
+  return NextResponse.json({ success: true })
 }

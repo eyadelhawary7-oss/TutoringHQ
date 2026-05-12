@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { requireAdminRole } from '@/lib/admin-auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -205,9 +206,9 @@ export async function PATCH(request: Request) {
   if (!admin) {
     return NextResponse.json({ errorKey: 'referralRewards.errors.unauthorized' }, { status: 401 });
   }
-  if (admin.role !== 'super_admin') {
-    return NextResponse.json({ errorKey: 'referralRewards.errors.superAdminOnly' }, { status: 403 });
-  }
+  // Role gate added per docs/AUDIT_v22.md Phase 3 / Phase 8 P0 (Task 9)
+  const roleErr = requireAdminRole(admin, ['super_admin']);
+  if (roleErr) return roleErr;
 
   let body: { record_ids?: unknown };
   try {

@@ -110,6 +110,35 @@ export async function getAdminContext(request: Request): Promise<AdminContext | 
   return { userId: user.id, internalRole, supabaseAdmin };
 }
 
+// Informational hierarchy for future use — actual gate uses explicit includes, not numeric comparison.
+const ROLE_HIERARCHY: Record<string, number> = {
+  super_admin: 100,
+  admin: 80,
+  internal_admin: 60,
+  accountant: 40,
+  sales_rep: 30,
+  support_agent: 30,
+  internal_viewer: 20,
+  custom: 10,
+};
+// Prevent unused-variable lint error without removing the declaration.
+void ROLE_HIERARCHY;
+
+/**
+ * Returns null when the caller's role is in the permitted set, or a 403 Response otherwise.
+ * Designed for use after a local getAdminUser() call that returns { role: string }.
+ */
+export function requireAdminRole(
+  admin: { role: string },
+  permitted: ReadonlyArray<string>,
+): Response | null {
+  if (permitted.includes(admin.role)) return null;
+  return Response.json(
+    { error: 'insufficient_admin_role', required: permitted, current: admin.role },
+    { status: 403 },
+  );
+}
+
 export type RequireSuperAdminResult =
   | { ok: true; supabaseAdmin: SupabaseClient; userId: string }
   | { ok: false; response: NextResponse };

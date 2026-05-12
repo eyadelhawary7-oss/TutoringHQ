@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { isTemplateApproved } from '@/lib/centerNotify';
+import { requireAdminRole } from '@/lib/admin-auth';
 import { createCommissionsForCenter } from '@/lib/commissions';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { parseBodyWithLimit } from '@/lib/validate';
@@ -109,9 +110,9 @@ export async function POST(request: Request) {
   if (!admin) {
     return NextResponse.json({ errorKey: 'bulk.errors.unauthorized' }, { status: 401 });
   }
-  if (admin.role !== 'super_admin') {
-    return NextResponse.json({ errorKey: 'bulk.errors.superAdminOnly' }, { status: 403 });
-  }
+  // Role gate added per docs/AUDIT_v22.md Phase 3 / Phase 8 P0 (Task 9)
+  const roleErr = requireAdminRole(admin, ['super_admin']);
+  if (roleErr) return roleErr;
 
   if (!validateCSRFRequest(request, admin.id)) {
     return NextResponse.json({ errorKey: 'bulk.errors.csrf' }, { status: 403 });

@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import { parseBodyWithLimit } from '@/lib/validate';
+import { requireAdminRole } from '@/lib/admin-auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -81,9 +82,7 @@ export async function GET(
   if (!admin) {
     return NextResponse.json({ errorKey: 'payouts.errors.unauthorized' }, { status: 401 })
   }
-  if (admin.role !== 'super_admin') {
-    return NextResponse.json({ errorKey: 'payouts.errors.forbidden' }, { status: 403 })
-  }
+  // GET stays open to all admin_users members — no role gate per AUDIT_v22.md Phase 3
 
   const { id } = await params
   const { data, error } = await supabaseAdmin
@@ -109,9 +108,9 @@ export async function PATCH(
   if (!admin) {
     return NextResponse.json({ errorKey: 'payouts.errors.unauthorized' }, { status: 401 })
   }
-  if (admin.role !== 'super_admin') {
-    return NextResponse.json({ errorKey: 'payouts.errors.forbidden' }, { status: 403 })
-  }
+  // Role gate added per docs/AUDIT_v22.md Phase 3 / Phase 8 P0 (Task 9)
+  const roleErr = requireAdminRole(admin, ['super_admin'])
+  if (roleErr) return roleErr
 
   const { id } = await params
   let body: unknown
@@ -244,4 +243,46 @@ export async function PATCH(
   })
 
   return NextResponse.json({ payout: updated })
+}
+
+// DELETE — void a draft payout (super_admin only)
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  if (!supabaseAdmin) {
+    return NextResponse.json({ errorKey: 'payouts.errors.saveFailed' }, { status: 500 })
+  }
+
+  const admin = await getAdminUser(request)
+  if (!admin) {
+    return NextResponse.json({ errorKey: 'payouts.errors.unauthorized' }, { status: 401 })
+  }
+  // Role gate added per docs/AUDIT_v22.md Phase 3 / Phase 8 P0 (Task 9)
+  const roleErr = requireAdminRole(admin, ['super_admin'])
+  if (roleErr) return roleErr
+
+  const { id } = await params
+
+  const { data: payout, error: fetchErr } = await supabaseAdmin
+    .from('commission_payouts')
+    .select('status')
+    .eq('id', id)
+    .single()
+  if (fetchErr || !payout) {
+    return NextResponse.json({ errorKey: 'payouts.errors.notFound' }, { status: 404 })
+  }
+  if (payout.status !== 'draft') {
+    return NextResponse.json({ errorKey: 'payouts.errors.cannotDeleteNonDraft' }, { status: 400 })
+  }
+
+  const { error } = await supabaseAdmin.from('commission_payouts').delete().eq('id', id)
+  if (error) {
+    return NextResponse.json(
+      { errorKey: 'payouts.errors.saveFailed', error: error.message },
+      { status: 500 },
+    )
+  }
+
+  return NextResponse.json({ success: true })
 }
