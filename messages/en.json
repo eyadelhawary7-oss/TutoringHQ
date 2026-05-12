@@ -1052,7 +1052,8 @@
     "resendOTP": "Didn't receive code? Send again",
     "resetting": "Resetting...",
     "resetFailed": "Failed to reset PIN. Please try again.",
-    "backToLogin": "Back to Login"
+    "backToLogin": "Back to Login",
+    "weakPin": "PIN is too common. Please choose a less obvious 6-digit code."
   },
   "onboarding": {
     "title": "Welcome to CenterHQ",
@@ -4305,6 +4306,7 @@
     "errorPinLength": "PIN must be 6 digits",
     "errorUpdateFailed": "Could not change your PIN. Please try again.",
     "pinHelper": "Use a 6-digit numeric PIN.",
+    "weakPin": "PIN is too common. Please choose a less obvious 6-digit code.",
     "backToSettings": "Back to settings",
     "redirecting": "Redirecting to settings…",
     "updating": "Saving…"

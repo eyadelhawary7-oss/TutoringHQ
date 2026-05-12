@@ -2,9 +2,14 @@ import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'crypto';
 import { NextResponse } from 'next/server';
 import { normalizePhone } from '@/lib/utils/phone';
+import { isWeakPin } from '@/lib/weakPins';
 
 function generatePin(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  let pin: string;
+  do {
+    pin = Math.floor(100000 + Math.random() * 900000).toString();
+  } while (isWeakPin(pin));
+  return pin;
 }
 
 

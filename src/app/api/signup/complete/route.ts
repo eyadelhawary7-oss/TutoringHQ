@@ -4,9 +4,14 @@ import { NextResponse } from 'next/server';
 import { normalizePhone } from '@/lib/utils/phone';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { isWeakPin } from '@/lib/weakPins';
 
 function generatePin(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  let pin: string;
+  do {
+    pin = Math.floor(100000 + Math.random() * 900000).toString();
+  } while (isWeakPin(pin));
+  return pin;
 }
 
 export async function POST(request: Request) {

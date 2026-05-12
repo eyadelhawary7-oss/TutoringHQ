@@ -7,6 +7,7 @@ import {
   rateLimitedResponse,
 } from '@/lib/ratelimit';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { isWeakPin } from '@/lib/weakPins';
 
 const SIX_DIGITS = /^\d{6}$/;
 
@@ -32,6 +33,13 @@ export async function POST(request: NextRequest) {
 
     if (!rawPhone || !SIX_DIGITS.test(otp) || !SIX_DIGITS.test(newPin)) {
       return NextResponse.json({ error: 'invalid_input' }, { status: 400 });
+    }
+
+    if (isWeakPin(newPin)) {
+      return NextResponse.json(
+        { error: 'weak_pin', message: 'PIN is too common. Please choose a less obvious 6-digit code.' },
+        { status: 400 },
+      );
     }
 
     const normalizedPhone = normalizePhone(rawPhone);
