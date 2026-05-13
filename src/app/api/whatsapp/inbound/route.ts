@@ -1,11 +1,13 @@
 /**
  * WhatsApp Cloud API — inbound webhook (Automation 8a + 8b).
- * Public route: GET verification, POST inbound (signature-verified when secret set).
- * POST always responds 200 JSON so Meta does not retry.
+ * Public route: GET verification, POST inbound (HMAC fail-closed; same verification
+ * pattern as /api/whatsapp/webhook). POST responds 200 JSON on success so Meta does not retry.
  */
 
-import { createHmac, timingSafeEqual } from 'crypto';
+import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
+import { readRawBodyWithLimit, ValidationError } from '@/lib/validate';
+import { hmacSha256Hex, timingSafeEqualUtf8 } from '@/lib/verifyHmac';
 import { sendFreeformMessage } from '@/lib/whatsapp/client';
 import { normalizeWhatsAppNumber, sendWhatsAppMessage } from '@/lib/whatsapp';
 import { supabaseAdmin } from '@/lib/supabase-admin';
@@ -13,6 +15,8 @@ import { formatCurrency } from '@/lib/formatNumber';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+const WA_BODY_LIMIT = 64 * 1024;
 
 const FAQ_PATTERNS = [
   {
@@ -85,32 +89,6 @@ export async function GET(request: Request) {
     return new Response(challenge, { status: 200 });
   }
   return new Response('Forbidden', { status: 403 });
-}
-
-function verifyMetaSignature(rawBody: string, request: Request): boolean {
-  const appSecret = process.env.WHATSAPP_APP_SECRET ?? '';
-  if (!appSecret) {
-    console.error(
-      '[whatsapp-inbound] WHATSAPP_APP_SECRET is not set; rejecting request',
-    );
-    return false;
-  }
-
-  const sig = request.headers.get('x-hub-signature-256') ?? '';
-  if (!sig) {
-    console.warn('[whatsapp-inbound] Missing x-hub-signature-256 header');
-    return false;
-  }
-
-  const expected =
-    'sha256=' + createHmac('sha256', appSecret).update(rawBody, 'utf8').digest('hex');
-  const sigBuf = Buffer.from(sig, 'utf8');
-  const expectedBuf = Buffer.from(expected, 'utf8');
-  if (sigBuf.length !== expectedBuf.length || !timingSafeEqual(sigBuf, expectedBuf)) {
-    console.warn('[whatsapp-inbound] Invalid x-hub-signature-256');
-    return false;
-  }
-  return true;
 }
 
 function lastDigitsForMatch(fromRaw: string, len = 10): string {
@@ -286,14 +264,31 @@ async function processInboundMessage(payload: Record<string, unknown>): Promise<
 
 export async function POST(request: Request) {
   try {
-    let rawBody: string;
-    try {
-      rawBody = await request.text();
-    } catch {
-      return postOk();
+    const rawBody = await readRawBodyWithLimit(request, WA_BODY_LIMIT);
+
+    const appSecret = process.env.WHATSAPP_APP_SECRET;
+    if (!appSecret) {
+      Sentry.captureMessage('whatsapp inbound missing WHATSAPP_APP_SECRET', {
+        level: 'warning',
+        tags: { provider: 'whatsapp', route: 'inbound' },
+      });
+      return new NextResponse(null, { status: 401 });
     }
 
-    if (!verifyMetaSignature(rawBody, request)) {
+    const signatureHeader = request.headers.get('x-hub-signature-256');
+    if (!signatureHeader) {
+      return new NextResponse(null, { status: 401 });
+    }
+
+    const expectedHex = hmacSha256Hex(appSecret, rawBody);
+    const expectedSignature = `sha256=${expectedHex}`;
+    const receivedNorm = signatureHeader.trim().toLowerCase();
+    const expectedNorm = expectedSignature.toLowerCase();
+    if (!timingSafeEqualUtf8(receivedNorm, expectedNorm)) {
+      Sentry.captureMessage('WhatsApp inbound signature mismatch', {
+        level: 'warning',
+        tags: { provider: 'whatsapp', route: 'inbound' },
+      });
       return new NextResponse(null, { status: 401 });
     }
 
@@ -301,49 +296,62 @@ export async function POST(request: Request) {
     try {
       payload = JSON.parse(rawBody) as Record<string, unknown>;
     } catch {
-      return postOk();
+      return new NextResponse(null, { status: 401 });
     }
 
-    const messageId = extractMetaMessageId(payload);
+    try {
+      const messageId = extractMetaMessageId(payload);
 
-    if (messageId && supabaseAdmin) {
-      const idempotencyKey = 'meta:' + messageId;
+      if (messageId && supabaseAdmin) {
+        const idempotencyKey = 'meta:' + messageId;
 
-      const { data: existing } = await supabaseAdmin
-        .from('webhook_inbox')
-        .select('id, processed')
-        .eq('idempotency_key', idempotencyKey)
-        .maybeSingle();
+        const { data: existing } = await supabaseAdmin
+          .from('webhook_inbox')
+          .select('id, processed')
+          .eq('idempotency_key', idempotencyKey)
+          .maybeSingle();
 
-      if (existing && (existing as { processed?: boolean }).processed === true) {
-        return postOk();
+        if (existing && (existing as { processed?: boolean }).processed === true) {
+          return postOk();
+        }
+
+        await supabaseAdmin.from('webhook_inbox').upsert(
+          {
+            idempotency_key: idempotencyKey,
+            source: 'meta',
+            payload,
+            processed: false,
+          },
+          { onConflict: 'idempotency_key' },
+        );
+
+        await processInboundMessage(payload);
+
+        await supabaseAdmin
+          .from('webhook_inbox')
+          .update({
+            processed: true,
+            processed_at: new Date().toISOString(),
+          })
+          .eq('idempotency_key', idempotencyKey);
+      } else {
+        await processInboundMessage(payload);
       }
 
-      await supabaseAdmin.from('webhook_inbox').upsert(
-        {
-          idempotency_key: idempotencyKey,
-          source: 'meta',
-          payload,
-          processed: false,
-        },
-        { onConflict: 'idempotency_key' },
-      );
-
-      await processInboundMessage(payload);
-
-      await supabaseAdmin
-        .from('webhook_inbox')
-        .update({
-          processed: true,
-          processed_at: new Date().toISOString(),
-        })
-        .eq('idempotency_key', idempotencyKey);
-    } else {
-      await processInboundMessage(payload);
+      return postOk();
+    } catch (handlerErr) {
+      console.error('[whatsapp-inbound] handler error:', handlerErr);
+      return postOk();
     }
-
-    return postOk();
-  } catch {
-    return postOk();
+  } catch (e) {
+    if (e instanceof ValidationError && e.message === 'Request payload too large') {
+      Sentry.captureMessage('whatsapp inbound payload limit exceeded', {
+        level: 'warning',
+        tags: { provider: 'whatsapp', route: 'inbound' },
+      });
+      return new NextResponse(null, { status: 413 });
+    }
+    Sentry.captureException(e, { tags: { provider: 'whatsapp', route: 'inbound' } });
+    return new NextResponse(null, { status: 401 });
   }
 }
