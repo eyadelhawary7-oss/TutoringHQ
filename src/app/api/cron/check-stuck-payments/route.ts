@@ -115,7 +115,7 @@ export async function POST(request: Request) {
                 type: 'ops',
                 priority: 'red',
                 center_id: (session as { center_id: string }).center_id,
-                title: `Stuck payment session — ${(session as { center_id: string }).center_id}`,
+                title: `Stuck payment session, ${(session as { center_id: string }).center_id}`,
                 subtitle: `Order ${orderId} · ${ageHours.toFixed(1)}h · ${String((session as { session_type?: string }).session_type ?? '')}`,
                 revenue_at_risk: Number((session as { total_amount?: number | string }).total_amount) || 0,
                 auto_generated: true,

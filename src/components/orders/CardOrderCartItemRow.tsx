@@ -56,7 +56,7 @@ export function CardOrderCartItemRow({
   const closeSwipe = useCallback(() => setOffset(0), []);
 
   const label =
-    `${item.student?.name ?? '—'}, ${item.stale ? t('studentRow.removedFromCenter') : item.saved_for_later ? t('savedSection') : t('activeSection')}`;
+    `${item.student?.name ?? ','}, ${item.stale ? t('studentRow.removedFromCenter') : item.saved_for_later ? t('savedSection') : t('activeSection')}`;
 
   return (
     <li className="relative overflow-hidden border-b border-[var(--color-border-subtle)] last:border-0 md:overflow-visible">
@@ -100,7 +100,7 @@ export function CardOrderCartItemRow({
         </button>
       </div>
 
-      {/* Swipe offset uses physical translateX(px) from touch delta; reset on md+ — RTL-EXEMPT */}
+      {/* Swipe offset uses physical translateX(px) from touch delta; reset on md+, RTL-EXEMPT */}
       <div
         ref={trackRef}
         role="group"
@@ -125,7 +125,7 @@ export function CardOrderCartItemRow({
         </div>
         <div className="flex-1 min-w-0">
           <p className={`text-sm font-medium text-[var(--color-text-primary)] ${item.stale ? 'line-through' : ''}`}>
-            {item.student?.name ?? '—'}
+            {item.student?.name ?? ','}
           </p>
           <p className="text-xs text-[var(--color-text-tertiary)] font-mono" dir="ltr">
             <bdi>#{formatStudentNumberForDisplay(item.student?.student_number ?? '')}</bdi>

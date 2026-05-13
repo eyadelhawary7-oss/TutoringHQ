@@ -5,8 +5,8 @@ import { NextRequest } from 'next/server';
 
 /*
   Required env vars (set in Vercel dashboard and .env.local):
-  MONTHLY_FIXED_COSTS_EGP  — default 2500
-  CARD_COGS_EGP            — default 0, set to actual print cost per card
+  MONTHLY_FIXED_COSTS_EGP , default 2500
+  CARD_COGS_EGP           , default 0, set to actual print cost per card
                              once printer deal is signed. No code change needed.
 */
 

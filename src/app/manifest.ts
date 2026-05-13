@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'CenterHQ — إدارة السناتر',
+    name: 'CenterHQ, إدارة السناتر',
     short_name: 'CenterHQ',
     description: 'منصة إدارة السناتر التعليمية',
     start_url: '/ar/dashboard',

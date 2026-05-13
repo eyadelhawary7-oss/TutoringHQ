@@ -119,7 +119,7 @@ export function StaffMemberCard({
                 htmlFor={switchId}
                 className="text-xs font-medium text-[var(--color-text-primary)] cursor-pointer select-none"
               >
-                {/* dynamic key — labels live at settings.staff.permissions.<flag>.label */}
+                {/* dynamic key, labels live at settings.staff.permissions.<flag>.label */}
                 {t((`staff.permissions.${flag}.label`) as Parameters<typeof t>[0])}
               </label>
               {state === 'saving' && (

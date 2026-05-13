@@ -162,7 +162,7 @@ export default function SyncStatusPanel({ probeOk, onPendingChanged }: SyncStatu
             <div className="space-y-4 px-4 py-4 text-sm text-[var(--color-text-secondary)]">
               <div>
                 <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-tertiary)]">{t('swVersion')}</p>
-                <p className="text-[var(--color-text-primary)] font-mono">{swVer ?? '—'}</p>
+                <p className="text-[var(--color-text-primary)] font-mono">{swVer ?? ','}</p>
               </div>
               <div>
                 <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-tertiary)]">{t('pendingQueue')}</p>
@@ -171,7 +171,7 @@ export default function SyncStatusPanel({ probeOk, onPendingChanged }: SyncStatu
               <div>
                 <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-tertiary)]">{t('lastSync')}</p>
                 <p className="text-[var(--color-text-primary)]">
-                  {lastSync ? formatDate(new Date(lastSync), locale, 'time') : '—'}
+                  {lastSync ? formatDate(new Date(lastSync), locale, 'time') : ','}
                 </p>
               </div>
               <div>

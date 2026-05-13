@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     try {
       await sendPinDelivery(normalizedPhone, otp);
     } catch {
-      console.error('[reset-pin] sendPinDelivery failed — WA not yet live');
+      console.error('[reset-pin] sendPinDelivery failed, WA not yet live');
     }
 
     return NextResponse.json({ success: true });

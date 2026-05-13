@@ -209,7 +209,7 @@ export async function POST(request: Request) {
               billing_period_end: periodEnd,
               due_date: dateInNDays(7),
               status: 'pending',
-              payment_reference: `Parent Pack — ${prevPeriod} (${rolling} parents)`,
+              payment_reference: `Parent Pack, ${prevPeriod} (${rolling} parents)`,
             });
 
             if (packInvErr) {
@@ -223,7 +223,7 @@ export async function POST(request: Request) {
               if (balErr) console.error('[cron/parent-pack-billing] reset pack_pending_balance', centerId, balErr);
 
               void sendChqPackInvoiceTemplate(supabaseAdmin, packInvoiceEnabled, {
-                name: (center as { name?: string }).name ?? '—',
+                name: (center as { name?: string }).name ?? ',',
                 phone: (center as { phone?: string | null }).phone ?? null,
                 monthArabic: billingPeriodArabicMonthYear(prevPeriod),
                 parentCountStr: String(rolling),
@@ -268,7 +268,7 @@ export async function POST(request: Request) {
               billing_period_end: periodEnd,
               due_date: dateInNDays(7),
               status: 'pending',
-              payment_reference: `WhatsApp Pack — ${prevPeriod} (${descCount} students)`,
+              payment_reference: `WhatsApp Pack, ${prevPeriod} (${descCount} students)`,
             });
 
             if (invErr) {
@@ -365,7 +365,7 @@ export async function POST(request: Request) {
           );
           for (const cid of suspendIds) {
             const cen = cenById.get(cid);
-            const name = cen?.name ?? '—';
+            const name = cen?.name ?? ',';
             const phone = cen?.phone ?? null;
             const digits = (phone ?? '').replace(/\D/g, '');
             if (digits) {

@@ -175,7 +175,7 @@ export async function parseFile(file: ArrayBuffer, fileName: string): Promise<Pa
   } catch (err) {
     if (ext === 'xls') {
       throw new Error(
-        'ملفات .xls القديمة غير مدعومة. احفظ الملف كـ .xlsx أو استخدم .csv — Legacy .xls is not supported; save as .xlsx or CSV.',
+        'ملفات .xls القديمة غير مدعومة. احفظ الملف كـ .xlsx أو استخدم .csv, Legacy .xls is not supported; save as .xlsx or CSV.',
       );
     }
     throw err;

@@ -162,7 +162,7 @@ export async function POST(request: Request) {
 
     const dueYmd = String(raw.due_date).slice(0, 10);
     const centerName = (center.name ?? 'Center').trim() || 'Center';
-    const ownerName = (center.owner_name ?? center.name ?? '').trim() || '—';
+    const ownerName = (center.owner_name ?? center.name ?? '').trim() || ',';
 
     let paymentLink = '';
     let paymobOrderId = '';

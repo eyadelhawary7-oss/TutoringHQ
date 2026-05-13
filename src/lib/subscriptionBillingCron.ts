@@ -41,7 +41,7 @@ function filterCentersWithPaymentDue<
     if (!center.next_payment_due) {
       console.warn(
         `[subscriptionBillingCron] Skipping center ${center.id}`,
-        `(${center.name ?? ''}) — next_payment_due is null`,
+        `(${center.name ?? ''}), next_payment_due is null`,
       );
       continue;
     }

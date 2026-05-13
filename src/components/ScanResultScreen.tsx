@@ -229,7 +229,7 @@ export default function ScanResultScreen({
   const headline =
     paymentHeadline ||
     (outstandingBalance > 0
-      ? `${t('payPrefix')} ${egp(outstandingBalance)} — ${student.name}`
+      ? `${t('payPrefix')} ${egp(outstandingBalance)}, ${student.name}`
       : student.name);
 
   return (

@@ -238,7 +238,7 @@ export default function BillingPageClient() {
     if (v === 'pending') return t('history.invoiceStatusPending');
     if (v === 'failed') return t('history.invoiceStatusFailed');
     if (v === 'overdue') return t('history.invoiceStatusOverdue');
-    return raw ?? '—';
+    return raw ?? ',';
   };
 
   const showPagination = (data?.invoicePagination.total ?? 0) > 20;
@@ -365,7 +365,7 @@ export default function BillingPageClient() {
             />
           </div>
           <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-            {t('currentPlan.planCap')}: {cap > 0 ? cap : '—'}
+            {t('currentPlan.planCap')}: {cap > 0 ? cap : ','}
           </p>
         </div>
       </section>
@@ -392,7 +392,7 @@ export default function BillingPageClient() {
                 ? `${formatDate(`${npd}T12:00:00`, locale, 'long')} · ${t('nextPayment.relative', {
                     relative: relativeDuePhrase(npd, locale),
                   })}`
-                : '—'}
+                : ','}
             </p>
           </div>
           <div>
@@ -446,7 +446,7 @@ export default function BillingPageClient() {
                 <tbody>
                   {data.invoices.map((inv) => {
                     const id = String(inv.id ?? '');
-                    const created = inv.created_at ? formatDate(String(inv.created_at), locale) : '—';
+                    const created = inv.created_at ? formatDate(String(inv.created_at), locale) : ',';
                     const amt = Number(inv.total_amount ?? 0);
                     return (
                       <tr key={id} className="border-b border-[var(--color-border-subtle)]/60">

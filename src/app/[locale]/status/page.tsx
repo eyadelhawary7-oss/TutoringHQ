@@ -65,7 +65,7 @@ function formatUptime90dPercent(
   locale: string,
 ): string {
   const dayKeys = Object.keys(uptime90d ?? {});
-  if (dayKeys.length === 0) return '—';
+  if (dayKeys.length === 0) return ',';
   return formatPercent(computeUptimePercent90d(uptime90d ?? {}, serviceKey), locale);
 }
 

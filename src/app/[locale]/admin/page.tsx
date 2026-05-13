@@ -2167,7 +2167,7 @@ function AdminPageContent() {
                           ? (p.payment_proof_url || p.proof_reference || '').trim()
                           : '';
                       const proofRefDisplay =
-                        proofUrl.length > 48 ? `${proofUrl.slice(0, 45)}…` : (p.proof_reference ?? '—');
+                        proofUrl.length > 48 ? `${proofUrl.slice(0, 45)}…` : (p.proof_reference ?? ',');
                       const typeLabel =
                         p.proof_type === 'paymob'
                           ? tAdmin('proofTypePaymob')
@@ -2210,7 +2210,7 @@ function AdminPageContent() {
                             </button>
                           ) : (
                             <span className="font-mono text-xs break-all" title={p.proof_reference}>
-                              {p.proof_reference ?? '—'}
+                              {p.proof_reference ?? ','}
                             </span>
                           )}
                         </td>

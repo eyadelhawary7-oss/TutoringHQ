@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
   try {
     if (!process.env.CEO_PHONE) {
-      console.warn('[ceo-briefing] CEO_PHONE not set — skipping WA');
+      console.warn('[ceo-briefing] CEO_PHONE not set, skipping WA');
       await insertCronLogSuccess(supabase, CRON_NAME, {
         duration_ms: Date.now() - cronStart,
         records_processed: 0,

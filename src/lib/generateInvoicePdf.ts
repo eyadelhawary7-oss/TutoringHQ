@@ -47,16 +47,16 @@ function fmtEgp(n: number): string {
 }
 
 function fmtDate(iso: string | null | undefined): string {
-  if (!iso) return '—';
+  if (!iso) return ',';
   const d = new Date(iso.includes('T') ? iso : `${iso}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return '—';
+  if (Number.isNaN(d.getTime())) return ',';
   return formatDate(d, PDF_NUM_LOCALE, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 function fmtDateTime(iso: string | null | undefined): string {
-  if (!iso) return '—';
+  if (!iso) return ',';
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
+  if (Number.isNaN(d.getTime())) return ',';
   return formatDateTime(d, PDF_NUM_LOCALE, {
     day: '2-digit',
     month: 'short',
@@ -71,7 +71,7 @@ function billingCycleAr(period: string | null | undefined): string {
   if (p === 'monthly') return 'شهري';
   if (p === 'quarterly') return 'ربع سنوي';
   if (p === 'annual' || p === 'yearly') return 'سنوي';
-  return period?.trim() ? esc(period) : '—';
+  return period?.trim() ? esc(period) : ',';
 }
 
 function paymentMethodAr(raw: string | null | undefined): string {
@@ -114,7 +114,7 @@ function planPresentation(planRaw: string | null | undefined): { en: string; ar:
   if (hit) return hit;
   const label = (planRaw ?? 'starter').replace(/_/g, ' ');
   const title = label.replace(/\b\w/g, (c) => c.toUpperCase());
-  return { en: title, ar: '—' };
+  return { en: title, ar: ',' };
 }
 
 type LineRow = {
@@ -341,7 +341,7 @@ function buildMainColumn(params: {
   referralStrip?: string;
   extraTitleAr?: string;
 }): string {
-  const cityLine = params.centerCity.trim() ? `${esc(params.centerCity.trim())}` : '—';
+  const cityLine = params.centerCity.trim() ? `${esc(params.centerCity.trim())}` : ',';
   const bannerLineColor = params.topBanner?.bannerLineColor ?? TEAL;
   const banner = params.topBanner
     ? `<div style="text-align:left;margin-bottom:12px;">
@@ -360,7 +360,7 @@ function buildMainColumn(params: {
     <div>
       <div style="font-size:10px;color:#64748b;font-family:Cairo,sans-serif;">${esc(params.headerLabel)}</div>
       <div style="font-size:22px;font-weight:800;color:#0f172a;margin-top:6px;font-family:Cairo,sans-serif;">${esc(params.centerName)}</div>
-      <div style="font-size:12px;color:#475569;margin-top:6px;font-family:system-ui,sans-serif;">${esc(params.centerPhone || '—')}</div>
+      <div style="font-size:12px;color:#475569;margin-top:6px;font-family:system-ui,sans-serif;">${esc(params.centerPhone || ',')}</div>
       <div style="font-size:12px;color:#475569;font-family:Cairo,sans-serif;">${cityLine}</div>
     </div>
     <div style="text-align:left;">
@@ -404,7 +404,7 @@ function resolveInvoiceNumber(
 
 function monthArabicFromDate(iso: string): string {
   const d = new Date(iso.includes("T") ? iso : `${iso}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return ",";
   return d.toLocaleDateString("ar-EG", { month: "long", year: "numeric" });
 }
 
@@ -571,7 +571,7 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
     }
     const md = (sess?.metadata as Record<string, unknown> | undefined) ?? {};
     const newPlan = String(md.newPlan ?? planKey);
-    const oldPlan = String(md.previousPlan ?? "—");
+    const oldPlan = String(md.previousPlan ?? ",");
     const daysRem = Number(md.daysRemaining ?? 0);
     const charged = Number(md.amountCharged ?? inv.total_amount ?? 0);
     const capped = Number(md.cappedProratedCost ?? charged);
@@ -641,7 +641,7 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
     if (centerIds.length) {
       const { data: cen } = await supabase.from("centers").select("id, name").in("id", centerIds);
       for (const row of cen ?? []) {
-        names.set(String((row as { id: string }).id), String((row as { name?: string }).name ?? "—"));
+        names.set(String((row as { id: string }).id), String((row as { name?: string }).name ?? ","));
       }
     }
     function monthLabelComm(r: (typeof commissions)[0]): string {
@@ -656,12 +656,12 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
     }
     render.referralGross = gross;
     render.referralWithdrawalFee = fee;
-    render.referralInstapay = String(details.instapay_number ?? "—");
+    render.referralInstapay = String(details.instapay_number ?? ",");
     render.referralCount = commissions.filter((x) => x.id !== "agg").length || commissions.length;
     render.referralCommissions = commissions.map((r) => {
       const ref = r.referral_id ? referralById.get(r.referral_id) : undefined;
       const cid = ref?.referred_center_id;
-      const cname = cid ? names.get(cid) ?? "—" : "—";
+      const cname = cid ? names.get(cid) ?? "," : ",";
       const pctFloat = Number(r.commission_rate ?? 0);
       const pct = pctFloat <= 1 ? Math.round(pctFloat * 100) : Math.round(pctFloat);
       const pmStr =
@@ -728,7 +728,7 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
     },
     center: {
       id: String(center.id),
-      name: String(center.name ?? "—"),
+      name: String(center.name ?? ","),
       center_code: String(center.center_code ?? center.id ?? "").slice(0, 12),
       phone: center.phone != null ? String(center.phone) : null,
       plan: center.plan != null ? String(center.plan) : null,
@@ -791,7 +791,7 @@ export async function generatePayoutReceiptPdf(payoutId: string, supabase: Supab
   const details = (p.payment_details as PayoutReceiptDetails | null) ?? {};
   const fee = Number(details.withdrawal_fee ?? 0);
   const gross = Number(details.gross_amount ?? amountReq + fee);
-  const instapay = String(details.instapay_number ?? '—');
+  const instapay = String(details.instapay_number ?? ',');
 
   const { data: center, error: cErr } = await supabase
     .from('centers')
@@ -863,7 +863,7 @@ export async function generatePayoutReceiptPdf(payoutId: string, supabase: Supab
   const names = new Map<string, string>();
   if (centerIds.length) {
     const { data: cen } = await supabase.from('centers').select('id, name').in('id', centerIds);
-    for (const row of cen ?? []) names.set(String((row as { id: string }).id), String((row as { name?: string }).name ?? '—'));
+    for (const row of cen ?? []) names.set(String((row as { id: string }).id), String((row as { name?: string }).name ?? ','));
   }
 
   function monthLabel(r: (typeof commissions)[0]): string {
@@ -883,7 +883,7 @@ export async function generatePayoutReceiptPdf(payoutId: string, supabase: Supab
       {
         titleAr: 'إجمالي عمولات الإحالة',
         subAr: 'ملخص السحب',
-        mid: commissions[0].period_month || '—',
+        mid: commissions[0].period_month || ',',
         amount: gross,
       },
     ];
@@ -891,10 +891,10 @@ export async function generatePayoutReceiptPdf(payoutId: string, supabase: Supab
     lineRows = commissions.map((r) => {
       const ref = r.referral_id ? referralById.get(r.referral_id) : undefined;
       const cid = ref?.referred_center_id;
-      const cname = cid ? names.get(cid) ?? '—' : '—';
+      const cname = cid ? names.get(cid) ?? ',' : ',';
       const pct = Math.round(Number(r.commission_rate ?? 0) * 100);
       return {
-        titleAr: `عمولة ${formatPercent(pct, PDF_NUM_LOCALE)} — ${cname}`,
+        titleAr: `عمولة ${formatPercent(pct, PDF_NUM_LOCALE)}, ${cname}`,
         subAr: 'عمولة إحالة',
         mid: monthLabel(r),
         amount: Number(r.commission_amount ?? 0),
@@ -913,7 +913,7 @@ export async function generatePayoutReceiptPdf(payoutId: string, supabase: Supab
 
   const docNo = `PAY-${String(payoutId).slice(0, 8).toUpperCase()}`;
   const issuedAt = fmtDate(p.requested_at != null ? String(p.requested_at) : undefined);
-  const paidTs = p.processed_at ? fmtDateTime(String(p.processed_at)) : '—';
+  const paidTs = p.processed_at ? fmtDateTime(String(p.processed_at)) : ',';
 
   const statusHtml =
     st === 'paid'
@@ -921,7 +921,7 @@ export async function generatePayoutReceiptPdf(payoutId: string, supabase: Supab
       : `<span style="display:inline-block;padding:6px 14px;border-radius:9999px;font-size:11px;font-weight:700;font-family:Cairo,sans-serif;border:2px solid ${AMBER};color:${AMBER};">قيد المعالجة</span>`;
 
   const commissionCount = commissions.filter((x) => x.id !== 'agg').length || (commissions[0]?.id === 'agg' ? 0 : commissions.length);
-  const periodStr = [...new Set(commissions.map((x) => x.period_month).filter(Boolean))].slice(0, 4).join('، ') || '—';
+  const periodStr = [...new Set(commissions.map((x) => x.period_month).filter(Boolean))].slice(0, 4).join('، ') || ',';
 
   const sidebar = buildSidebar({
     docTypeAr: 'إيصال صرف عمولات',
@@ -934,14 +934,14 @@ export async function generatePayoutReceiptPdf(payoutId: string, supabase: Supab
       { label: 'رقم Instapay', value: esc(instapay) },
     ],
     paymentMethodLine:
-      st === 'paid' ? 'تحويل Instapay — تمت الموافقة من المشرف' : 'تحويل Instapay — بانتظار الموافقة',
+      st === 'paid' ? 'تحويل Instapay, تمت الموافقة من المشرف' : 'تحويل Instapay, بانتظار الموافقة',
     paymentTs: paidTs,
   });
 
   const main = buildMainColumn({
     headerLabel: 'مُصروف إلى',
-    centerName: String(c.name ?? '—'),
-    centerPhone: String(c.phone ?? '—'),
+    centerName: String(c.name ?? ','),
+    centerPhone: String(c.phone ?? ','),
     centerCity: String(c.city ?? ''),
     amountLabel: 'إجمالي المبلغ المُصروف',
     totalAmount: amountReq,
@@ -984,22 +984,22 @@ export async function generateStaffCommissionPayoutPdf(
     return null;
   }
 
-  let staffName = '—';
-  let staffRole = '—';
+  let staffName = ',';
+  let staffRole = ',';
   const s = p.staff;
   if (Array.isArray(s) && s[0]) {
-    staffName = String((s[0] as { name?: string }).name ?? '—');
-    staffRole = String((s[0] as { role?: string }).role ?? '—');
+    staffName = String((s[0] as { name?: string }).name ?? ',');
+    staffRole = String((s[0] as { role?: string }).role ?? ',');
   } else if (s && typeof s === 'object') {
-    staffName = String((s as { name?: string }).name ?? '—');
-    staffRole = String((s as { role?: string }).role ?? '—');
+    staffName = String((s as { name?: string }).name ?? ',');
+    staffRole = String((s as { role?: string }).role ?? ',');
   }
 
-  const period = String(p.period ?? '—');
+  const period = String(p.period ?? ',');
   const total = Number(p.total_amount ?? 0);
   const adj = Number(p.adjustment_amount ?? 0);
   const paidAt =
-    p.paid_at != null ? fmtDateTime(String(p.paid_at)) : st === 'paid' ? '—' : 'لم يُسجَّل بعد';
+    p.paid_at != null ? fmtDateTime(String(p.paid_at)) : st === 'paid' ? ',' : 'لم يُسجَّل بعد';
 
   const lineItems: { ar: string; amount: number; muted?: boolean }[] = [
     { ar: 'الراتب الأساسي', amount: Number(p.base_salary ?? 0) },
@@ -1012,7 +1012,7 @@ export async function generateStaffCommissionPayoutPdf(
     lineItems.push({ ar: 'تعديل', amount: adj, muted: false });
   }
 
-  const statusAr = st === 'paid' ? 'مدفوع' : 'معتمد — بانتظار الصرف';
+  const statusAr = st === 'paid' ? 'مدفوع' : 'معتمد, بانتظار الصرف';
   const statusHtml =
     st === 'paid'
       ? `<span style="display:inline-block;padding:6px 14px;border-radius:9999px;font-size:11px;font-weight:700;font-family:Cairo,sans-serif;background:${TEAL};color:${WHITE};">${esc(statusAr)}</span>`
@@ -1118,9 +1118,9 @@ export async function generateCardOrderReceiptPdf(
     createdAtLabel: fmtDate(o.created_at != null ? String(o.created_at) : undefined),
     centreName: (o.receipt_center_name as string | null) ?? null,
     centreAddress: (o.receipt_center_address as string | null) ?? null,
-    deliveryGovernorate: String(o.delivery_governorate ?? '—').trim() || '—',
-    deliveryAddress: String(o.delivery_address ?? '—').trim() || '—',
-    deliveryPhone: String(o.delivery_phone ?? '—').trim() || '—',
+    deliveryGovernorate: String(o.delivery_governorate ?? ',').trim() || ',',
+    deliveryAddress: String(o.delivery_address ?? ',').trim() || ',',
+    deliveryPhone: String(o.delivery_phone ?? ',').trim() || ',',
     notes: String(o.notes ?? '').trim(),
     lineItems: lineItems.length ? lineItems : [{ title: 'بطاقات QR', qty: qty }],
     productInclusive,

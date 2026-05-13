@@ -1320,7 +1320,7 @@ function SettingsPageContent() {
                 <p className="text-sm text-[var(--color-text-secondary)] mb-3" dir="ltr">
                   {t('supportContact', {
                     email: 'support@centerhq.com',
-                    phone: getSupportWhatsAppDisplayLabel() || '—',
+                    phone: getSupportWhatsAppDisplayLabel() || ',',
                   })}
                 </p>
                 {getSupportWhatsAppWaMeBase() ? (

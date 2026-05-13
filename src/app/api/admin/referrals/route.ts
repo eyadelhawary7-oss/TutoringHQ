@@ -47,8 +47,8 @@ export async function GET(request: NextRequest) {
 
     const allReferrals = (referrals || []).map((r: { referrer_center_id: string; referred_center_id: string; referral_code: string; status: string; created_at: string }) => ({
       ...r,
-      referrer_name: centerMap.get(r.referrer_center_id) ?? '—',
-      referred_name: centerMap.get(r.referred_center_id) ?? '—',
+      referrer_name: centerMap.get(r.referrer_center_id) ?? ',',
+      referred_name: centerMap.get(r.referred_center_id) ?? ',',
     }));
 
     const { data: withdrawableCommissions } = await ctx.supabaseAdmin
@@ -71,8 +71,8 @@ export async function GET(request: NextRequest) {
 
     const pendingPayouts = referrerIds.map((id) => ({
       center_id: id,
-      center_name: referrerMap.get(id)?.name ?? '—',
-      code: referrerMap.get(id)?.code ?? '—',
+      center_name: referrerMap.get(id)?.name ?? ',',
+      code: referrerMap.get(id)?.code ?? ',',
       amount: byReferrer[id].total,
     }));
 

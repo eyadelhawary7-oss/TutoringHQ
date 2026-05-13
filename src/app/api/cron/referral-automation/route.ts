@@ -181,7 +181,7 @@ export async function GET(request: Request) {
       }
       if (commission_amount > 0) {
         try {
-          const referredName = String(referred.name ?? '').trim() || '—';
+          const referredName = String(referred.name ?? '').trim() || ',';
           const { data: sumRows } = await supabase
             .from('referral_commissions')
             .select('commission_amount')
@@ -210,7 +210,7 @@ export async function GET(request: Request) {
             rc?.phone,
           );
           if (ownerPhone) {
-            const ownerName = (rc?.owner_name ?? '').trim() || (rc?.name ?? '').trim() || '—';
+            const ownerName = (rc?.owner_name ?? '').trim() || (rc?.name ?? '').trim() || ',';
             await sendReferralCommission(ownerPhone, ownerName, referredName, commission_amount, totalBalance);
           }
         } catch (waErr) {

@@ -408,7 +408,7 @@ export async function POST(request: Request) {
 - Name: ${centerName}
 - Owner: ${ownerName}
 - Phone: ${formattedPhone}
-- City: ${cityDb || '—'}
+- City: ${cityDb || ','}
 - Plan: ${normalizedPlan}
 - Billing period: ${periodResolved}
 

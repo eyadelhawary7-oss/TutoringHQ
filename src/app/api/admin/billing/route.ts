@@ -184,7 +184,7 @@ export async function GET(request: Request) {
       });
       return {
         ...p,
-        centerName: billingRows.find((c: { id: string }) => c.id === p.center_id)?.name ?? '—',
+        centerName: billingRows.find((c: { id: string }) => c.id === p.center_id)?.name ?? ',',
         source: 'admin_payment' as const,
         proof_type: proof.proofType,
         proof_reference: proof.proofReference,
@@ -207,7 +207,7 @@ export async function GET(request: Request) {
       return {
         id: inv.id,
         center_id: inv.center_id,
-        centerName: billingRows.find((c: { id: string }) => c.id === inv.center_id)?.name ?? '—',
+        centerName: billingRows.find((c: { id: string }) => c.id === inv.center_id)?.name ?? ',',
         amount: inv.payment_amount ?? 0,
         billing_period: 'payment_proof',
         paid_at: inv.paid_at ?? inv.updated_at,
@@ -238,10 +238,10 @@ export async function GET(request: Request) {
       const center = centerById[inv.center_id];
       return {
         ...inv,
-        centerName: center?.name ?? billingRows.find((c: { id: string }) => c.id === inv.center_id)?.name ?? '—',
-        centerStatus: center?.status ?? '—',
-        centerPlan: center?.plan ?? '—',
-        centerBillingPeriod: center?.billing_period ?? '—',
+        centerName: center?.name ?? billingRows.find((c: { id: string }) => c.id === inv.center_id)?.name ?? ',',
+        centerStatus: center?.status ?? ',',
+        centerPlan: center?.plan ?? ',',
+        centerBillingPeriod: center?.billing_period ?? ',',
       };
     });
 

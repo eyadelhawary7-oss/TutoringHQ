@@ -79,19 +79,19 @@ async function sendPendingSignupPaymentWhatsApp(
 ): Promise<void> {
   if (!(await isTemplateApproved(PENDING_SIGNUP_PAYMENT_WA_TEMPLATE, supabase))) {
     console.warn(
-      `[signupInvoiceAutoApprove] skipped — template not approved: ${PENDING_SIGNUP_PAYMENT_WA_TEMPLATE}`,
+      `[signupInvoiceAutoApprove] skipped, template not approved: ${PENDING_SIGNUP_PAYMENT_WA_TEMPLATE}`,
     );
     return;
   }
 
   if (!(await waSendingEnabled(supabase))) {
-    console.warn('[signupInvoiceAutoApprove] skipped — wa_sending_enabled is false');
+    console.warn('[signupInvoiceAutoApprove] skipped, wa_sending_enabled is false');
     return;
   }
 
   if (shouldSkipWaForTestPhoneId()) {
     console.warn(
-      '[signupInvoiceAutoApprove] skipped — Meta test PHONE_NUMBER_ID or missing phone number ID',
+      '[signupInvoiceAutoApprove] skipped, Meta test PHONE_NUMBER_ID or missing phone number ID',
     );
     return;
   }
@@ -100,7 +100,7 @@ async function sendPendingSignupPaymentWhatsApp(
   const token = waApiToken();
   if (!phoneId || !token) {
     console.warn(
-      '[signupInvoiceAutoApprove] pending payment WA skipped — missing PHONE_NUMBER_ID/WHATSAPP_PHONE_ID or WHATSAPP_TOKEN',
+      '[signupInvoiceAutoApprove] pending payment WA skipped, missing PHONE_NUMBER_ID/WHATSAPP_PHONE_ID or WHATSAPP_TOKEN',
     );
     return;
   }
@@ -361,7 +361,7 @@ export async function processInvoiceSignupAfterPaymobSuccess(
       const normalizedPhone = normalizePhone(phoneRaw);
       const phoneDigits = normalizedPhone.replace(/\D/g, '');
       if (!phoneDigits) {
-        console.warn('[signupInvoiceAutoApprove] pending payment WA skipped — no valid phone', centerId);
+        console.warn('[signupInvoiceAutoApprove] pending payment WA skipped, no valid phone', centerId);
       } else {
         const locale = inferPendingSignupWaLocale(c);
         const ownerDisplay =

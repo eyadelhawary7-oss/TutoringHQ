@@ -8,7 +8,7 @@ export async function sendWhatsAppMessage(
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
 
   if (!phoneNumberId || !accessToken) {
-    console.warn('[WhatsApp] Credentials not set — skipping message to', toPhone);
+    console.warn('[WhatsApp] Credentials not set, skipping message to', toPhone);
     return false;
   }
 

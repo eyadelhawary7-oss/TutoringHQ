@@ -172,13 +172,13 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
         });
       } else {
         if (!(await isTemplateApproved(VENDOR_ORDER_TEMPLATE, supabaseAdmin))) {
-          console.warn('[vendorNotify] Skipping PDF WA — vendor order template not approved');
+          console.warn('[vendorNotify] Skipping PDF WA, vendor order template not approved');
           vendorNotifyFailed = true;
         } else if (!(await waSendingEnabled())) {
-          console.warn('[vendorNotify] Skipping PDF WA — wa_sending_enabled is off');
+          console.warn('[vendorNotify] Skipping PDF WA, wa_sending_enabled is off');
           vendorNotifyFailed = true;
         } else if (shouldSkipWaForTestPhoneId()) {
-          console.warn('[vendorNotify] Skipping PDF WA — Meta test phone ID');
+          console.warn('[vendorNotify] Skipping PDF WA, Meta test phone ID');
           vendorNotifyFailed = true;
         } else {
           const docRes = await fetch(
@@ -209,7 +209,7 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
               ref,
               quantity: pdfOrderData?.quantity ?? 0,
               orderId,
-              reason: 'وصلت رسالة الطلب — لكن فشل إرسال ملف PDF',
+              reason: 'وصلت رسالة الطلب, لكن فشل إرسال ملف PDF',
             });
           } else {
             console.info('[vendorNotify] PDF sent successfully for', ref);

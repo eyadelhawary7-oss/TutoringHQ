@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       parsed = JSON.parse(cleaned) as { sql?: string; explanation_ar?: string };
     } catch {
       return NextResponse.json(
-        { error: 'parse_error', message: 'تعذر فهم السؤال — حاول بطريقة مختلفة' },
+        { error: 'parse_error', message: 'تعذر فهم السؤال, حاول بطريقة مختلفة' },
         { status: 400 }
       );
     }
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     const sql = parsed.sql?.trim();
     if (!sql) {
       return NextResponse.json(
-        { error: 'no_sql', message: 'تعذر فهم السؤال — حاول بطريقة مختلفة' },
+        { error: 'no_sql', message: 'تعذر فهم السؤال, حاول بطريقة مختلفة' },
         { status: 400 }
       );
     }
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
     if (rpcError) {
       console.error('[ai/query] RPC error:', rpcError);
       return NextResponse.json(
-        { error: 'query_error', message: 'تعذر تنفيذ الاستعلام — حاول بصياغة أخرى' },
+        { error: 'query_error', message: 'تعذر تنفيذ الاستعلام, حاول بصياغة أخرى' },
         { status: 500 }
       );
     }
@@ -165,7 +165,7 @@ Respond with ONLY the Arabic summary, no JSON, no quotes.`;
   } catch (err) {
     console.error('[ai/query] Error:', err);
     return NextResponse.json(
-      { error: 'server_error', message: 'حدث خطأ — حاول مرة أخرى لاحقاً' },
+      { error: 'server_error', message: 'حدث خطأ, حاول مرة أخرى لاحقاً' },
       { status: 500 }
     );
   }

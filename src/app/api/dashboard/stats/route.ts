@@ -205,7 +205,7 @@ export async function GET(request: NextRequest) {
     recentPayments.forEach((p) => {
       recentActivity.push({
         type: 'payment',
-        student: p.students?.name ?? '—',
+        student: p.students?.name ?? ',',
         detail: `${p.amount} EGP (${p.method})`,
         time: formatTimeAgo(p.paid_at, locale),
         ts: p.paid_at,
@@ -214,7 +214,7 @@ export async function GET(request: NextRequest) {
     recentScans.forEach((s) => {
       recentActivity.push({
         type: 'scan',
-        student: s.students?.name ?? '—',
+        student: s.students?.name ?? ',',
         detail: s.payment_status_at_scan === 'paid' ? (locale === 'ar' ? 'حضر + دفع' : 'Attended + Paid') : (locale === 'ar' ? 'حضر' : 'Attended'),
         time: formatTimeAgo(s.scanned_at, locale),
         ts: s.scanned_at,

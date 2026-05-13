@@ -87,7 +87,7 @@ export async function GET(request: Request) {
       const priceDiff = requestedPrice - currentPrice;
       return {
         ...r,
-        centerName: center?.name ?? '—',
+        centerName: center?.name ?? ',',
         centerPhone: center?.phone ?? null,
         currentPrice,
         requestedPrice,
@@ -97,7 +97,7 @@ export async function GET(request: Request) {
             ? `+${formatNumber(priceDiff, ADMIN_UI_LOCALE)} EGP/mo`
             : priceDiff < 0
               ? `${formatNumber(priceDiff, ADMIN_UI_LOCALE)} EGP/mo`
-              : '—',
+              : ',',
       };
     });
 

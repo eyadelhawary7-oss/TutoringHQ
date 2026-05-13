@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
         .select('id, name')
         .in('id', referredCenterIds);
       (centers || []).forEach((c: { id: string; name: string }) => {
-        centerNames[c.id] = c.name || '—';
+        centerNames[c.id] = c.name || ',';
       });
     }
 
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
           const meta = referralMap.get(r.id);
           return {
             id: r.id,
-            center_name: centerNames[meta?.referred_center_id ?? (r as { referred_center_id?: string }).referred_center_id ?? ''] ?? '—',
+            center_name: centerNames[meta?.referred_center_id ?? (r as { referred_center_id?: string }).referred_center_id ?? ''] ?? ',',
             status: meta?.status ?? (r as { status?: string }).status ?? 'pending',
             months: meta?.months ?? 0,
             monthly_reward: meta?.monthlyReward ?? 0,
@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
     const rewardHistory = records.map((r: { id: string; referred_center_id: string; referred_center_name?: string; month_number: number; reward_percentage: number; base_amount: number; reward_amount: number; status: string; held_until?: string; paid_at?: string; period_month: string }) => ({
       id: r.id,
       referred_center_id: r.referred_center_id,
-      referred_center_name: centerNames[r.referred_center_id] ?? '—',
+      referred_center_name: centerNames[r.referred_center_id] ?? ',',
       month_number: r.month_number,
       reward_percentage: r.reward_percentage,
       base_amount: r.base_amount,

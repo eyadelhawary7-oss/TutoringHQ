@@ -271,7 +271,7 @@ export async function tryFinalizeCombinedPaymentSession(
 
       const { error: logErr } = await supabase.from('upgrade_log').insert({
         center_id: row.center_id,
-        previous_plan: meta.previousPlan ?? '—',
+        previous_plan: meta.previousPlan ?? ',',
         new_plan: newPlan,
         previous_period: meta.previousBillingPeriod ?? 'quarterly',
         new_period: newBp,

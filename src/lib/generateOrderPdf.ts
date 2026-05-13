@@ -194,7 +194,7 @@ body{font-family:Arial,sans-serif;background:#fff;color:#0F172A}
     <tr><td>تاريخ الطلب</td><td>${displayDate}</td></tr>
     <tr><td>ملاحظات</td><td>${displayNotes}</td></tr>
   </table>
-  <div class="warning">⚠️ هذا المستند سري — للاستخدام الداخلي فقط</div>
+  <div class="warning">⚠️ هذا المستند سري, للاستخدام الداخلي فقط</div>
   <div class="footer">Powered by CenterHQ</div>
 </div>
 

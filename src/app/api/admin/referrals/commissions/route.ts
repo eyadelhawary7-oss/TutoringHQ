@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
       ? await auth.supabaseAdmin.from('centers').select('id, name').in('id', [...centerIds])
       : { data: [] as { id: string; name: string }[] };
 
-  const nameById = new Map((centers ?? []).map((c) => [c.id, c.name ?? '—']));
+  const nameById = new Map((centers ?? []).map((c) => [c.id, c.name ?? ',']));
 
   const commissions = list.map((r) => {
     const referredId = r.referral_id ? referredByReferralId.get(r.referral_id) ?? null : null;
@@ -101,8 +101,8 @@ export async function GET(request: NextRequest) {
       referral_id: r.referral_id,
       referrer_center_id: r.referrer_center_id,
       referred_center_id: referredId,
-      referrer_name: nameById.get(r.referrer_center_id) ?? '—',
-      referred_name: referredId ? (nameById.get(referredId) ?? '—') : '—',
+      referrer_name: nameById.get(r.referrer_center_id) ?? ',',
+      referred_name: referredId ? (nameById.get(referredId) ?? ',') : ',',
       period_month: r.period_month,
       commission_rate: r.commission_rate,
       commission_amount: Number(r.commission_amount ?? 0),

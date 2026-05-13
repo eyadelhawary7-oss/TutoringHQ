@@ -126,8 +126,8 @@ export async function POST(request: Request) {
     );
     if (!ownerPhone) continue;
 
-    const ownerName = (row.owner_name ?? '').trim() || (row.name ?? '').trim() || '—';
-    const centerName = (row.name ?? '').trim() || '—';
+    const ownerName = (row.owner_name ?? '').trim() || (row.name ?? '').trim() || ',';
+    const centerName = (row.name ?? '').trim() || ',';
 
     let sent = false;
     try {

@@ -81,7 +81,7 @@ async function handlePlanUpgradeInvoicePaid(
   const c = center as { name?: string; phone?: string | null; billing_amount?: number | null } | null;
   try {
     await sendChqPaymentConfirmedTemplate(supabaseAdmin, {
-      name: c?.name ?? '—',
+      name: c?.name ?? ',',
       phone: c?.phone ?? null,
       billingPeriodLabel: QUARTERLY_LABEL_AR,
       billingAmountStr: String(c?.billing_amount ?? newAmt),
@@ -158,7 +158,7 @@ async function handleSubscriptionInvoicePaid(
 
   try {
     await sendChqPaymentConfirmedTemplate(supabaseAdmin, {
-      name: c.name ?? '—',
+      name: c.name ?? ',',
       phone: c.phone ?? null,
       billingPeriodLabel: QUARTERLY_LABEL_AR,
       billingAmountStr: String(c.billing_amount ?? totalAmt),
@@ -365,7 +365,7 @@ export async function notifySubscriptionInvoicePaymentFailed(
   const c = center as { name?: string; phone?: string | null } | null;
   try {
     await sendChqPaymentFailedTemplate(supabaseAdmin, templateEnabled, {
-      name: c?.name ?? '—',
+      name: c?.name ?? ',',
       phone: c?.phone ?? null,
       amountStr: String(row.total_amount ?? ''),
     });
@@ -408,7 +408,7 @@ export async function finalizeInvoiceChargeback(
     .eq('id', row.center_id)
     .maybeSingle();
 
-  const name = (center as { name?: string } | null)?.name ?? '—';
+  const name = (center as { name?: string } | null)?.name ?? ',';
   const ceoRaw = process.env.CEO_PHONE;
   if (!ceoRaw) return;
 
@@ -416,6 +416,6 @@ export async function finalizeInvoiceChargeback(
   const digits = ceoRaw.replace(/\D/g, '');
   if (!digits) return;
 
-  const text = `Chargeback: ${name} — amount ${row.total_amount ?? '—'} EGP — Paymob txn ${paymobTransactionId}`;
+  const text = `Chargeback: ${name}, amount ${row.total_amount ?? ','} EGP, Paymob txn ${paymobTransactionId}`;
   await sendWhatsAppMessage(digits, text);
 }

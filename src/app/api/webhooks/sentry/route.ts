@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
   if (sentrySecret) {
     const signature = request.headers.get('sentry-hook-signature') || '';
     if (!verifySentrySignature(rawBody, signature, sentrySecret)) {
-      console.warn('[Sentry Webhook] Invalid signature — rejecting');
+      console.warn('[Sentry Webhook] Invalid signature, rejecting');
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
   }
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
   const lines: string[] = [
     `${levelEmoji} *CenterHQ Alert*`,
     '',
-    `*${level}* — ${title}`,
+    `*${level}*, ${title}`,
   ];
   if (culprit) lines.push(`📍 ${culprit}`);
   if (issueUrl) lines.push('', `🔗 ${issueUrl}`);

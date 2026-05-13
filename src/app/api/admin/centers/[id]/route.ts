@@ -415,7 +415,7 @@ export async function PATCH(
         .eq('id', planRequestId)
         .eq('center_id', centerId);
       return NextResponse.json(
-        { error: 'Failed to update center plan — plan request rolled back' },
+        { error: 'Failed to update center plan, plan request rolled back' },
         { status: 500 },
       );
     }
@@ -600,7 +600,7 @@ export async function PATCH(
           const d = new Date(`${peRaw}T12:00:00`);
           return Number.isNaN(d.getTime()) ? peRaw : formatDate(d, 'ar');
         })()
-      : '—';
+      : ',';
     const phone = String(r.phone ?? '').trim();
     if (phone) {
       try {

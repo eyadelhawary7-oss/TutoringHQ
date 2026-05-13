@@ -79,11 +79,11 @@ export function CheckoutSuccessClient({ orderId }: { orderId: string }) {
           <p>
             {t('total')}:{' '}
             <span className="font-semibold text-[var(--color-text-primary)] tabular-nums">
-              {order?.total_amount != null ? formatCurrency(Number(order.total_amount), locale) : '—'}
+              {order?.total_amount != null ? formatCurrency(Number(order.total_amount), locale) : ','}
             </span>
           </p>
           <p>
-            {t('delivery')}: {order?.delivery_governorate ?? '—'} — {order?.delivery_address?.trim() || '—'}
+            {t('delivery')}: {order?.delivery_governorate ?? ','}, {order?.delivery_address?.trim() || ','}
           </p>
         </div>
       </details>

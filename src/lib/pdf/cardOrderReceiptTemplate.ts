@@ -123,7 +123,7 @@ export function buildCardOrderReceiptInnerHtml(model: CardOrderReceiptModel): st
       <tr><td style="padding:6px 0;color:${MUTED};width:34%;">المحافظة</td><td style="padding:6px 0;">${esc(model.deliveryGovernorate)}</td></tr>
       <tr><td style="padding:6px 0;color:${MUTED};vertical-align:top;">العنوان</td><td style="padding:6px 0;white-space:pre-wrap;">${esc(model.deliveryAddress)}</td></tr>
       <tr><td style="padding:6px 0;color:${MUTED};">الهاتف</td><td style="padding:6px 0;direction:ltr;text-align:right;">${esc(model.deliveryPhone)}</td></tr>
-      <tr><td style="padding:6px 0;color:${MUTED};vertical-align:top;">ملاحظات</td><td style="padding:6px 0;white-space:pre-wrap;">${model.notes.trim() ? esc(model.notes.trim()) : '—'}</td></tr>
+      <tr><td style="padding:6px 0;color:${MUTED};vertical-align:top;">ملاحظات</td><td style="padding:6px 0;white-space:pre-wrap;">${model.notes.trim() ? esc(model.notes.trim()) : ','}</td></tr>
     </table>
 
     <div style="font-size:12px;font-weight:700;margin-bottom:6px;color:${NAVY};">البنود</div>

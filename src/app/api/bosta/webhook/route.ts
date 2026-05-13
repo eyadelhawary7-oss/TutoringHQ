@@ -104,8 +104,8 @@ async function notifyOwnerOrderShipped(
       c.phone,
     );
     if (!ownerPhone) return;
-    const ownerName = (c.owner_name ?? '').trim() || (c.name ?? '').trim() || '—';
-    const centerName = (c.name ?? '').trim() || '—';
+    const ownerName = (c.owner_name ?? '').trim() || (c.name ?? '').trim() || ',';
+    const centerName = (c.name ?? '').trim() || ',';
     await sendOrderShipped(ownerPhone, ownerName, centerName, order.quantity, trackingUrl);
   } catch (e) {
     console.error('[bosta-webhook] notifyOwnerOrderShipped:', e);

@@ -171,7 +171,7 @@ export function AnimatedPhoneMockup({ locale }: AnimatedPhoneMockupProps) {
               {isAr ? 'طلاب حضروا اليوم' : 'Students attended today'}
             </p>
             <div className="flex items-end gap-1.5">
-              {/* Animated tick counter — pure CSS slot machine */}
+              {/* Animated tick counter, pure CSS slot machine */}
               <div className="overflow-hidden" style={{ height: ROW_H }}>
                 <div className="chq-counter">
                   {COUNTER_STEPS.map((v, i) => (
@@ -240,7 +240,7 @@ export function AnimatedPhoneMockup({ locale }: AnimatedPhoneMockupProps) {
             </div>
           </div>
 
-          {/* Stats grid — 2×2 */}
+          {/* Stats grid, 2×2 */}
           <div className="grid grid-cols-2 gap-1.5">
             {stats.map((stat, i) => (
               <div

@@ -137,7 +137,7 @@ export async function POST(request: Request) {
         } else {
           for (const c of centers ?? []) {
             const row = c as { id: string; name?: string; phone?: string | null };
-            centerMap.set(row.id, { name: row.name ?? '—', phone: row.phone ?? null });
+            centerMap.set(row.id, { name: row.name ?? ',', phone: row.phone ?? null });
           }
         }
       }
@@ -155,7 +155,7 @@ export async function POST(request: Request) {
         let sent: Awaited<ReturnType<typeof sendChqCreditExpiryTemplate>> = { skipped: true };
         try {
           sent = await sendChqCreditExpiryTemplate(supabase, creditExpiryWaEnabled, {
-            name: meta?.name ?? '—',
+            name: meta?.name ?? ',',
             phone: meta?.phone ?? null,
             amountStr: String(row.amount ?? 0),
             expiresOnStr,

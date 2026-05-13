@@ -139,8 +139,8 @@ export async function POST(request: Request) {
       .select('name')
       .eq('id', currentUser.center_id)
       .maybeSingle();
-    const centerName = String((centerNameRow as { name?: string | null } | null)?.name ?? '').trim() || '—';
-    const inviteeName = name.trim() || '—';
+    const centerName = String((centerNameRow as { name?: string | null } | null)?.name ?? '').trim() || ',';
+    const inviteeName = name.trim() || ',';
     const roleLabel =
       role === 'teacher'
         ? 'معلم'

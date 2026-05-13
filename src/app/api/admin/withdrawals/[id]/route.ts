@@ -124,8 +124,8 @@ export async function PATCH(
       cRow?.phone,
     );
     if (ownerPhone) {
-      const ownerName = (cRow?.owner_name ?? '').trim() || (cRow?.name ?? '').trim() || '—';
-      const note = notesUpdate ?? `إنستاباي: ${instapay || '—'}`;
+      const ownerName = (cRow?.owner_name ?? '').trim() || (cRow?.name ?? '').trim() || ',';
+      const note = notesUpdate ?? `إنستاباي: ${instapay || ','}`;
       try {
         await sendWithdrawalProcessed(ownerPhone, ownerName, 'قبول', cashAmount, note);
       } catch (e) {
@@ -178,7 +178,7 @@ export async function PATCH(
     cRow2?.phone,
   );
   if (ownerPhone2) {
-    const ownerName = (cRow2?.owner_name ?? '').trim() || (cRow2?.name ?? '').trim() || '—';
+    const ownerName = (cRow2?.owner_name ?? '').trim() || (cRow2?.name ?? '').trim() || ',';
     const note = notesUpdate ?? formatNumber(credits, WA_AR) + ' نقطة أُعيدت للرصيد';
     try {
       await sendWithdrawalProcessed(ownerPhone2, ownerName, 'رفض', credits, note);

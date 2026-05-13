@@ -33,7 +33,7 @@ const FAQ_PATTERNS = [
   {
     triggers: ['نسيت رمز', 'forgot pin', 'PIN', 'كلمة السر'],
     response:
-      'لإعادة تعيين الرمز: centerhq.app/ar/forgot-password — ستصلك رسالة على رقمك.',
+      'لإعادة تعيين الرمز: centerhq.app/ar/forgot-password, ستصلك رسالة على رقمك.',
     key: 'forgot_pin',
   },
   {

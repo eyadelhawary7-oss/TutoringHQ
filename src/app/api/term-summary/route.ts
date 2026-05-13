@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   if (gErr || !groupRow || (groupRow as { center_id?: string }).center_id !== centerId) {
     return NextResponse.json({ error: 'Group not found' }, { status: 404 });
   }
-  const groupName = String((groupRow as { name?: string | null }).name ?? '').trim() || '—';
+  const groupName = String((groupRow as { name?: string | null }).name ?? '').trim() || ',';
   const groupFee = Number((groupRow as { fee?: number | string | null }).fee ?? 0) || 0;
 
   const { data: centerRow } = await supabaseAdmin
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     .select('name')
     .eq('id', centerId)
     .maybeSingle();
-  const centerName = String((centerRow as { name?: string | null } | null)?.name ?? '').trim() || '—';
+  const centerName = String((centerRow as { name?: string | null } | null)?.name ?? '').trim() || ',';
 
   const { data: scans } = await supabaseAdmin
     .from('attendance_scans')
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
 
     const ok = await sendParentTermSummary(
       parentPhone,
-      (row.name ?? '').trim() || '—',
+      (row.name ?? '').trim() || ',',
       groupName,
       attended,
       totalSessions || attended,

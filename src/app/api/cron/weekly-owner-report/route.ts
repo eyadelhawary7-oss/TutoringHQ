@@ -18,10 +18,10 @@ const BATCH_SIZE = 20;
 const TIPS = [
   'طالب منتظم في الحضور = نتيجة أفضل. تابع المتغيبين هذا الأسبوع.',
   'المجموعات الصغيرة تحقق نتائج أكبر. هل حان وقت إضافة مجموعة جديدة؟',
-  'ذكّر أولياء الأمور بالدفع مبكراً — يقلل المتأخرات بنسبة 40%.',
-  'سجّل الحضور يومياً — البيانات المنتظمة تعطيك صورة أوضح.',
+  'ذكّر أولياء الأمور بالدفع مبكراً, يقلل المتأخرات بنسبة 40%.',
+  'سجّل الحضور يومياً, البيانات المنتظمة تعطيك صورة أوضح.',
   'مركز منظم = مركز ناجح. استمر على هذا المستوى.',
-  'الطلاب الجدد في أول شهر هم الأكثر تأثراً — تابعهم عن كثب.',
+  'الطلاب الجدد في أول شهر هم الأكثر تأثراً, تابعهم عن كثب.',
   'راجع قائمة طلابك غير النشطين هذا الأسبوع.',
 ];
 
@@ -198,8 +198,8 @@ export async function POST(request: Request) {
       console.error(`[${CRON_NAME}] aggregate`, center.id, aggErr);
     }
 
-    const ownerName = (center.owner_name ?? center.name ?? '—').trim() || '—';
-    const centerName = (center.name ?? '—').trim() || '—';
+    const ownerName = (center.owner_name ?? center.name ?? ',').trim() || ',';
+    const centerName = (center.name ?? ',').trim() || ',';
 
     let notify: Awaited<ReturnType<typeof sendWeeklyReport>> = { skipped: true };
     try {

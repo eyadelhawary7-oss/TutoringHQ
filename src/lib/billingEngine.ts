@@ -52,7 +52,7 @@ export function getDailyRate(
   billingContext?: { billing_type?: string | null; pricing_type?: string | null },
 ): number {
   if (billingContext && isPaygCenter(billingContext)) {
-    throw new Error('getDailyRate called on PAYG center — use calculatePaygBill');
+    throw new Error('getDailyRate called on PAYG center, use calculatePaygBill');
   }
   const days = getPeriodDays(billingPeriod);
   if (days <= 0) return 0;

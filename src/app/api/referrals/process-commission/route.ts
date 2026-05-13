@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
           .select('name')
           .eq('id', referral.referred_center_id)
           .maybeSingle();
-        const referredName = String((refCenter as { name?: string | null } | null)?.name ?? '').trim() || '—';
+        const referredName = String((refCenter as { name?: string | null } | null)?.name ?? '').trim() || ',';
 
         const { data: sumRows } = await supabaseAdmin
           .from('referral_commissions')
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
           rc?.phone,
         );
         if (ownerPhone) {
-          const ownerName = (rc?.owner_name ?? '').trim() || (rc?.name ?? '').trim() || '—';
+          const ownerName = (rc?.owner_name ?? '').trim() || (rc?.name ?? '').trim() || ',';
           await sendReferralCommission(ownerPhone, ownerName, referredName, commission, totalBalance);
         }
       } catch (e) {

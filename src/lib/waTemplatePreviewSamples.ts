@@ -20,11 +20,11 @@ export const WA_TEMPLATE_PREVIEW_SAMPLES: Record<string, string> = {
   commission_amount: '250 ج.م',
   commission_total: '1٬500 ج.م',
   decision: 'تمت الموافقة',
-  note: '—',
+  note: ',',
   attended: '12',
   total_sessions: '14',
   balance: '400 ج.م',
-  group_name: 'صف ثالث ثانوي — أ',
+  group_name: 'صف ثالث ثانوي, أ',
   parent_count: '48',
   month_label: 'مايو 2026',
   billing_amount: '576 ج.م',
@@ -70,27 +70,27 @@ export const WA_TEMPLATE_PREVIEW_BODIES: Record<string, string> = {
   chq_parent_announcement_promo: '📣 {{centre}}\n{{body}}',
   chq_parent_announcement_ops: '📣 {{centre}}\n{{body}}',
   chq_parent_term_summary:
-    'ملخص الفترة — {{student_name}}\nالمجموعة: {{group_name}}\nالحضور: {{attended}} من {{total_sessions}}\nالرصيد: {{balance}}\n{{centre}}',
+    'ملخص الفترة, {{student_name}}\nالمجموعة: {{group_name}}\nالحضور: {{attended}} من {{total_sessions}}\nالرصيد: {{balance}}\n{{centre}}',
   chq_pin_delivery: 'رمز الدخول السريع لـ {{centre}}: {{pin_code}}\nاحفظه في مكان آمن.',
   chq_onboarding_step2: 'أهلًا {{owner_name}}، خطوة 2 من إعداد {{center}}:\nاضغط لترتيب المجموعات:\n{{groups_url}}',
   chq_onboarding_step3: 'أهلًا {{owner_name}}، خطوة 3:\n{{settings_url}}',
   chq_onboarding_step4: 'أهلًا {{owner_name}}، جاهز للمسح؟\n{{scan_url}}',
-  chq_team_invite: 'دعوة فريق — {{center}}\n{{role_label}}\n{{invite_url}}',
+  chq_team_invite: 'دعوة فريق, {{center}}\n{{role_label}}\n{{invite_url}}',
   chq_order_shipped:
     'أهلًا {{owner_name}}، تم شحن طلب الكروت لـ {{center}}.\nالكمية: {{quantity}}\nالتتبع: {{track_url}}',
   chq_referral_commission:
-    'عمولة إحالة — {{owner_name}}\n{{referred_center}}: {{commission_amount}}\nالإجمالي المتاح: {{commission_total}}',
+    'عمولة إحالة, {{owner_name}}\n{{referred_center}}: {{commission_amount}}\nالإجمالي المتاح: {{commission_total}}',
   chq_vendor_new_order:
-    'طلب كروت جديد — مرجع {{order_ref}}\nالكمية: {{quantity}}\nملاحظات: {{notes}}\nالشحن عبر {{courier_name}}',
+    'طلب كروت جديد, مرجع {{order_ref}}\nالكمية: {{quantity}}\nملاحظات: {{notes}}\nالشحن عبر {{courier_name}}',
   chq_payment_retry:
     'أهلًا {{owner_name}}، {{center_name}}\nالمستحق {{amount_str}}\nادفع من الرابط:\n{{payment_link}}',
   chq_weekly_summary:
-    'ملخص الأسبوع — {{center_name}}\nطلاب نشطون: {{active_students}}\nجلسات: {{sessions_week}}\nإيراد تقريبي: {{revenue}}\nجدد: {{new_students}}\n{{tip}}',
+    'ملخص الأسبوع, {{center_name}}\nطلاب نشطون: {{active_students}}\nجلسات: {{sessions_week}}\nإيراد تقريبي: {{revenue}}\nجدد: {{new_students}}\n{{tip}}',
 }
 
 export function previewBodyForTemplate(templateName: string): string {
   return (
     WA_TEMPLATE_PREVIEW_BODIES[templateName] ??
-    `قالب ${templateName}\n(معاينة تقريبية — راجع Meta Business Manager للنص النهائي)`
+    `قالب ${templateName}\n(معاينة تقريبية, راجع Meta Business Manager للنص النهائي)`
   )
 }

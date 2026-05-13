@@ -127,7 +127,7 @@ function PaymentInner() {
     <div className="space-y-4 max-w-4xl mx-auto" data-testid="checkout-payment">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-lg font-bold text-[var(--color-text-primary)]">
-          {t('orderRef', { ref: shortRef || '—' })}
+          {t('orderRef', { ref: shortRef || ',' })}
         </h1>
         <p className="text-sm tabular-nums text-amber-700 dark:text-amber-200 font-semibold">
           {t('timeout', { mm, ss })}

@@ -193,19 +193,19 @@ export async function POST(request: Request) {
 
     if (!(await isTemplateApproved(BULK_CENTER_WA_TEMPLATE, supabaseAdmin))) {
       console.warn(
-        `[admin/centers/bulk] send_wa skipped — template not approved: ${BULK_CENTER_WA_TEMPLATE}`,
+        `[admin/centers/bulk] send_wa skipped, template not approved: ${BULK_CENTER_WA_TEMPLATE}`,
       );
       return NextResponse.json({ success: true, action, processed: 0 });
     }
 
     if (!(await waSendingEnabled())) {
-      console.warn('[admin/centers/bulk] send_wa skipped — wa_sending_enabled is false');
+      console.warn('[admin/centers/bulk] send_wa skipped, wa_sending_enabled is false');
       return NextResponse.json({ success: true, action, processed: 0 });
     }
 
     if (shouldSkipWaForTestPhoneId()) {
       console.warn(
-        '[admin/centers/bulk] send_wa skipped — Meta test PHONE_NUMBER_ID or missing phone number ID',
+        '[admin/centers/bulk] send_wa skipped, Meta test PHONE_NUMBER_ID or missing phone number ID',
       );
       return NextResponse.json({ success: true, action, processed: 0 });
     }

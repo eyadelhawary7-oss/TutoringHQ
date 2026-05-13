@@ -121,7 +121,7 @@ async function enrichCentersList(
     const dispName =
       (cr?.owner_name && String(cr.owner_name).trim()) ||
       (row.phone && String(row.phone).trim()) ||
-      '—';
+      ',';
     ownerMap.set(cid, { name: dispName, phone });
   }
 

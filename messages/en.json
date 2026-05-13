@@ -1698,12 +1698,12 @@
       "body": "This center’s subscription is not active. Resolve billing before recording paid attendance.",
       "dismiss": "OK"
     },
-    "duplicateToast": "Already recorded today — entry only",
+    "duplicateToast": "Already recorded today, entry only",
     "processing": "Processing…",
     "entryRecordedToast": "Entry recorded",
     "pendingBadge": "Pending sync ({count})",
     "viewAllToday": "View all today",
-    "offlineBanner": "Offline — attendance saved locally",
+    "offlineBanner": "Offline, attendance saved locally",
     "hardwareSpecs": {
       "cardTitle": "Recommended Scanner Hardware",
       "minimum": "Minimum",
@@ -1910,7 +1910,7 @@
     "sendReport": "Send Report",
     "atRiskDesc": "Attendance vs expected scans (rolling 7 days)",
     "allGood": "All students have excellent attendance",
-    "atRiskNoStudentsYet": "No active students yet — add your first student",
+    "atRiskNoStudentsYet": "No active students yet, add your first student",
     "atRiskStable": "No urgent attendance follow-ups right now",
     "todayAttendance": "Today's Attendance",
     "vsLastWeek": "vs last week",
@@ -2174,7 +2174,7 @@
     "noDistrictSubtitle": "Set your district to unlock real benchmarks",
     "sampleSubtitle": "Sample benchmarks (not live for your center)",
     "sampleBanner": "Your center does not have a district set, or the API returned preview metrics. Values below are illustrative only.",
-    "sampleOverlay": "Sample data — set district in settings to see real comparisons"
+    "sampleOverlay": "Sample data, set district in settings to see real comparisons"
   },
   "orders": {
     "card": "card",
@@ -2188,7 +2188,7 @@
     "cardStyleOptionAReservedHint": "Option A is reserved for a future design. Active styles are B (Dark) and C (Light).",
     "viewCardDesignsPdf": "View Card Designs PDF",
     "selectedCardStyle": "Selected: {style}",
-    "cardPreviewLockedTitle": "Sample look for the style you chose — not your real QR.",
+    "cardPreviewLockedTitle": "Sample look for the style you chose, not your real QR.",
     "cardPreviewLockedSub": "Each student gets their own QR after payment; we handle printing and dispatch.",
     "cardOrderTermsLabel": "I agree to the QR card order",
     "cardOrderTermsLink": "terms",
@@ -3416,7 +3416,7 @@
     "proofTypePaymob": "Paymob",
     "proofTypeManual": "Manual",
     "proofTypeRecord": "Record",
-    "proofTypeNone": "—",
+    "proofTypeNone": ",",
     "recordedBy": "Recorded By",
     "markAsPaid": "Mark as Paid",
     "sendReminder": "Send Reminder",
@@ -3565,7 +3565,7 @@
       "subscription": {
         "panelTitle": "Subscription overrides",
         "reasonLabel": "Reason (required, 10–500 characters)",
-        "reasonPlaceholder": "Internal note — visible in audit log",
+        "reasonPlaceholder": "Internal note, visible in audit log",
         "extend30": "Extend due date by 30 days",
         "extendCustom": "Extend by custom days",
         "daysLabel": "Days to add",
@@ -4552,7 +4552,7 @@
         "paying": "Opening payment…",
         "payDisabled": "Online payment is not enabled.",
         "paidUp": "No payment due right now.",
-        "pastDueBanner": "Payment overdue — pay now to avoid suspension.",
+        "pastDueBanner": "Payment overdue, pay now to avoid suspension.",
         "paySuccess": "Payment recorded. Thank you!",
         "payFailed": "Payment could not be completed."
       },
@@ -4601,7 +4601,7 @@
         "modalTitle": "Complete payment",
         "modalIframeTitle": "Paymob checkout",
         "modalClose": "Close",
-        "scannerNotice": "Subscription payment is overdue. Scanning stays available — settle billing soon to avoid suspension."
+        "scannerNotice": "Subscription payment is overdue. Scanning stays available, settle billing soon to avoid suspension."
       }
     },
     "period": {
@@ -4885,7 +4885,7 @@
     },
     "lastModifiedBy": "Updated by {name} · {timeAgo}",
     "concurrency": {
-      "conflict": "Cart was updated by {name} — refresh?",
+      "conflict": "Cart was updated by {name}, refresh?",
       "refreshCta": "Refresh cart"
     },
     "picker": {
@@ -4976,7 +4976,7 @@
         "light": "Light (Option C)"
       },
       "vendorNotes": "Special instructions for the vendor",
-      "vendorNotesHint": "Optional — max 200 characters.",
+      "vendorNotesHint": "Optional, max 200 characters.",
       "rememberStyle": "Remember this style for next orders",
       "continue": "Continue",
       "saving": "Saving…",
@@ -5099,7 +5099,7 @@
       "cancelled": { "title": "Cancelled order" },
       "refunded": { "title": "Refunded order" },
       "refundPipeline": "Refund status: {status}",
-      "failed": "Payment failed — please retry checkout."
+      "failed": "Payment failed, please retry checkout."
     }
   },
   "reorder": {
@@ -5762,7 +5762,7 @@
     },
     "problem": {
       "heading": "Running a center shouldn't feel like firefighting.",
-      "body": "Every day: spreadsheets that don't match, notebooks with missing pages, WhatsApp groups full of parent questions, a cash box no one wants to count. A student attends but the invoice never gets sent. A parent asks for proof of payment — no one can find it. You can't even tell which groups are profitable.",
+      "body": "Every day: spreadsheets that don't match, notebooks with missing pages, WhatsApp groups full of parent questions, a cash box no one wants to count. A student attends but the invoice never gets sent. A parent asks for proof of payment, no one can find it. You can't even tell which groups are profitable.",
       "connector": "CenterHQ replaces all of it. One platform. Built for Egyptian tutoring centers."
     },
     "trust": {
@@ -5790,7 +5790,7 @@
     },
     "compare": {
       "heading": "Why center owners switch.",
-      "subheading": "Excel and notebooks work — until they don't.",
+      "subheading": "Excel and notebooks work, until they don't.",
       "colCriterion": "Criterion",
       "colSpreadsheet": "Spreadsheet",
       "colPaper": "Paper book",
@@ -5857,7 +5857,7 @@
       },
       "q3": {
         "question": "I already use a spreadsheet / paper book / WhatsApp. Why switch?",
-        "answer": "Because at scale, those break down. A single spreadsheet can't tell you which group is profitable. A paper book can't send a parent a payment reminder. A WhatsApp group can't track who's paid and who hasn't. CenterHQ does all of it in one place — and the data is searchable, exportable, and accurate."
+        "answer": "Because at scale, those break down. A single spreadsheet can't tell you which group is profitable. A paper book can't send a parent a payment reminder. A WhatsApp group can't track who's paid and who hasn't. CenterHQ does all of it in one place, and the data is searchable, exportable, and accurate."
       },
       "q4": {
         "question": "What if my center's internet is unreliable?",
@@ -5865,7 +5865,7 @@
       },
       "q5": {
         "question": "Can I cancel my subscription anytime?",
-        "answer": "Yes. Contact ops@ehgintelligence.com to cancel — no automatic renewal traps. We don't refund partial months (you keep access through the period you paid for) but there's no penalty for leaving."
+        "answer": "Yes. Contact ops@ehgintelligence.com to cancel, no automatic renewal traps. We don't refund partial months (you keep access through the period you paid for) but there's no penalty for leaving."
       },
       "q6": {
         "question": "How do I pay for my subscription?",
@@ -5877,7 +5877,7 @@
       },
       "q8": {
         "question": "How is my data protected?",
-        "answer": "All data is encrypted in transit (HTTPS) and at rest (database encryption). Center data is isolated per tenant — no other center can ever see yours. Daily backups to encrypted cloud storage. We follow Egyptian PDPL (Law 151) standards."
+        "answer": "All data is encrypted in transit (HTTPS) and at rest (database encryption). Center data is isolated per tenant, no other center can ever see yours. Daily backups to encrypted cloud storage. We follow Egyptian PDPL (Law 151) standards."
       }
     },
     "marketing": {
@@ -5937,7 +5937,7 @@
       "switchLocaleAria": "Switch language",
       "trustBandKicker": "Trusted nationwide",
       "trustBandTitle": "Built for tutoring centers that outgrow spreadsheets",
-      "trustBandBody": "Attendance, billing, parent messaging, and reporting in one platform — secure and ready to scale.",
+      "trustBandBody": "Attendance, billing, parent messaging, and reporting in one platform, secure and ready to scale.",
       "trustBandPricing": "View pricing",
       "trustBandContact": "Contact us"
     },
@@ -6322,7 +6322,7 @@
     "statusLabel": "Status",
     "preview": "Preview",
     "previewModalTitle": "Template preview",
-    "previewSampleNote": "Sample variables — actual Meta copy may differ slightly.",
+    "previewSampleNote": "Sample variables, actual Meta copy may differ slightly.",
     "close": "Close",
     "noTemplates": "No templates loaded yet. Ask super-admin to sync from Meta."
   },

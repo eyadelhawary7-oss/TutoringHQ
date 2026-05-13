@@ -138,7 +138,7 @@ export async function PATCH(request: NextRequest) {
         billing_period_end: periodEnd,
         due_date: dateInNDays(7),
         status: 'pending',
-        payment_reference: `Parent Pack — partial ${ym} (through ${periodEnd})`,
+        payment_reference: `Parent Pack, partial ${ym} (through ${periodEnd})`,
       })
 
       if (invErr) {
@@ -162,7 +162,7 @@ export async function PATCH(request: NextRequest) {
 
       try {
         await sendChqPackInvoiceTemplate(ctx.supabaseAdmin, packInvoiceEnabled, {
-          name: (centerRow as { name?: string }).name ?? '—',
+          name: (centerRow as { name?: string }).name ?? ',',
           phone: (centerRow as { phone?: string | null }).phone ?? null,
           monthArabic: billingPeriodArabicMonthYear(ym),
           parentCountStr: String(rolling),

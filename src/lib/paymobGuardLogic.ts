@@ -23,7 +23,7 @@ export function assertPaymobProductionOrThrow(): void {
   if (process.env.NEXT_PHASE === 'phase-production-build') return;
   if (!isProductionDeployEnv()) return;
   if (!paymobCredentialsLookSandbox()) return;
-  throw new Error('PAYMOB_PRODUCTION_GUARD: refusing to boot — set live keys in Vercel env.');
+  throw new Error('PAYMOB_PRODUCTION_GUARD: refusing to boot, set live keys in Vercel env.');
 }
 
 /** Health UI: mirrors guard inputs (sandbox-shaped keys → sandbox). */

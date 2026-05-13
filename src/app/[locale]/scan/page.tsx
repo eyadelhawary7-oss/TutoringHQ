@@ -760,7 +760,7 @@ export default function ScanPage() {
       } else {
         const bal = Number(st.balance_due ?? 0);
         setPaymentModalHeadline(
-          bal > 0 ? `${t('payPrefix')} ${formatNumber(bal, locale)}\u00A0${tCommon('egp')} — ${st.name}` : null,
+          bal > 0 ? `${t('payPrefix')} ${formatNumber(bal, locale)}\u00A0${tCommon('egp')}, ${st.name}` : null,
         );
         setScannedStudent(studentForDisplay);
         if (modeRef.current === 'manual') {
@@ -978,7 +978,7 @@ export default function ScanPage() {
     } else {
       const bal = Number(student.balance_due ?? 0);
       setPaymentModalHeadline(
-        bal > 0 ? `${t('payPrefix')} ${formatNumber(bal, locale)}\u00A0${tCommon('egp')} — ${student.name}` : null,
+        bal > 0 ? `${t('payPrefix')} ${formatNumber(bal, locale)}\u00A0${tCommon('egp')}, ${student.name}` : null,
       );
       setScannedStudent(studentForDisplay);
       if (mode === 'manual') {

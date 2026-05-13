@@ -97,7 +97,7 @@ async function canSendApprovedTemplate(
   if (!(await waSendingEnabled(supabase))) return false;
   const approved = await isTemplateApproved(templateName, supabase);
   if (!approved) {
-    console.warn(`[centerNotify] Skipping ${templateName} — not approved`);
+    console.warn(`[centerNotify] Skipping ${templateName}, not approved`);
     return false;
   }
   return true;
@@ -359,7 +359,7 @@ export async function sendInactivityAlert(
 
     const approved = await isTemplateApproved(TEMPLATE, supabase);
     if (!approved) {
-      console.warn(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+      console.warn(`[centerNotify] Skipping ${TEMPLATE}, not approved`);
       return { skipped: true };
     }
 
@@ -422,7 +422,7 @@ export async function sendPaymentRetry(
     if (isUrgent) {
       try {
         const r = await sendChqRenewalOverdueTemplate(supabase, {
-          name: ownerName || centerName || '—',
+          name: ownerName || centerName || ',',
           phone: ownerPhone,
           daysLate: '2',
           amountStr,
@@ -455,7 +455,7 @@ export async function sendPaymentRetry(
           templateName: TEMPLATE_PAYMENT_RETRY,
           languageCode: 'ar_EG',
           toDigits: to,
-          bodyParameters: [ownerName || '—', centerName || '—', amountStr, paymentLink],
+          bodyParameters: [ownerName || ',', centerName || ',', amountStr, paymentLink],
         });
         if (!ok) {
           console.error(`[centerNotify] ${TEMPLATE_PAYMENT_RETRY} send failed:`, centerId);
@@ -468,7 +468,7 @@ export async function sendPaymentRetry(
       }
     }
 
-    const body = `مرحباً ${ownerName || '—'}، فاتورة مركز ${centerName || '—'} بقيمة ${amountStr} لم تُسدَّد بعد. اضغط هنا للدفع: ${paymentLink}`;
+    const body = `مرحباً ${ownerName || ','}، فاتورة مركز ${centerName || ','} بقيمة ${amountStr} لم تُسدَّد بعد. اضغط هنا للدفع: ${paymentLink}`;
     try {
       const ok = await postWhatsappTextMessage({ toDigits: to, body });
       return ok ? { success: true } : { error: true };
@@ -498,7 +498,7 @@ export async function sendChqRenewalOverdueTemplate(
 
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.warn(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE}, not approved`);
     return { skipped: true };
   }
 
@@ -507,7 +507,7 @@ export async function sendChqRenewalOverdueTemplate(
       templateName: TEMPLATE,
       languageCode: 'ar_EG',
       toDigits: to,
-      bodyParameters: [opts.name ?? '—', opts.daysLate, opts.amountStr],
+      bodyParameters: [opts.name ?? ',', opts.daysLate, opts.amountStr],
     });
     if (!ok) {
       console.error(`[centerNotify] ${TEMPLATE} send failed:`, opts.name);
@@ -530,7 +530,7 @@ export async function sendChqDormancyNoticeTemplate(
   if (!to) return { skipped: true };
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.warn(`[centerNotify] Skipping ${TEMPLATE} — template not APPROVED in wa_meta_templates`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE}, template not APPROVED in wa_meta_templates`);
     return { skipped: true };
   }
   try {
@@ -538,7 +538,7 @@ export async function sendChqDormancyNoticeTemplate(
       templateName: TEMPLATE,
       languageCode: 'ar_EG',
       toDigits: to,
-      bodyParameters: [opts.name ?? '—', opts.dormancyDateStr, opts.reactivationUrl],
+      bodyParameters: [opts.name ?? ',', opts.dormancyDateStr, opts.reactivationUrl],
     });
     return ok ? { success: true } : { error: true };
   } catch (err) {
@@ -563,9 +563,9 @@ export async function sendDormancyNotice(
   }
   const c = row as { name: string | null; phone: string | null; dormancy_date: string | null };
   const dormYmd = c.dormancy_date ? String(c.dormancy_date).slice(0, 10) : '';
-  const dormancyDateStr = dormYmd ? formatDateArEg(dormYmd) : '—';
+  const dormancyDateStr = dormYmd ? formatDateArEg(dormYmd) : ',';
   return sendChqDormancyNoticeTemplate(supabase, {
-    name: c.name ?? '—',
+    name: c.name ?? ',',
     phone: c.phone,
     dormancyDateStr,
     reactivationUrl: reactivationBillingUrl(),
@@ -582,7 +582,7 @@ export async function sendChqReactivationWarning90Template(
   if (!to) return { skipped: true };
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.warn(`[centerNotify] Skipping ${TEMPLATE} — template not APPROVED in wa_meta_templates`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE}, template not APPROVED in wa_meta_templates`);
     return { skipped: true };
   }
   try {
@@ -590,7 +590,7 @@ export async function sendChqReactivationWarning90Template(
       templateName: TEMPLATE,
       languageCode: 'ar_EG',
       toDigits: to,
-      bodyParameters: [opts.name ?? '—', opts.deletionDateStr],
+      bodyParameters: [opts.name ?? ',', opts.deletionDateStr],
     });
     return ok ? { success: true } : { error: true };
   } catch (err) {
@@ -619,7 +619,7 @@ export async function sendReactivationWarning90(
   const deletionYmd = addMonthsYmd(dormYmd, 12);
   const deletionDateStr = formatDateArEg(deletionYmd);
   return sendChqReactivationWarning90Template(supabase, {
-    name: c.name ?? '—',
+    name: c.name ?? ',',
     phone: c.phone,
     deletionDateStr,
   });
@@ -635,7 +635,7 @@ export async function sendChqReactivationWarning30Template(
   if (!to) return { skipped: true };
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.warn(`[centerNotify] Skipping ${TEMPLATE} — template not APPROVED in wa_meta_templates`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE}, template not APPROVED in wa_meta_templates`);
     return { skipped: true };
   }
   try {
@@ -643,7 +643,7 @@ export async function sendChqReactivationWarning30Template(
       templateName: TEMPLATE,
       languageCode: 'ar_EG',
       toDigits: to,
-      bodyParameters: [opts.name ?? '—', opts.deletionDateStr],
+      bodyParameters: [opts.name ?? ',', opts.deletionDateStr],
     });
     return ok ? { success: true } : { error: true };
   } catch (err) {
@@ -671,7 +671,7 @@ export async function sendReactivationWarning30(
   const deletionYmd = addMonthsYmd(dormYmd, 12);
   const deletionDateStr = formatDateArEg(deletionYmd);
   return sendChqReactivationWarning30Template(supabase, {
-    name: c.name ?? '—',
+    name: c.name ?? ',',
     phone: c.phone,
     deletionDateStr,
   });
@@ -687,7 +687,7 @@ export async function sendChqDataDeletionNoticeTemplate(
   if (!to) return { skipped: true };
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.warn(`[centerNotify] Skipping ${TEMPLATE} — template not APPROVED in wa_meta_templates`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE}, template not APPROVED in wa_meta_templates`);
     return { skipped: true };
   }
   try {
@@ -695,7 +695,7 @@ export async function sendChqDataDeletionNoticeTemplate(
       templateName: TEMPLATE,
       languageCode: 'ar_EG',
       toDigits: to,
-      bodyParameters: [opts.name ?? '—', opts.deletionDateStr],
+      bodyParameters: [opts.name ?? ',', opts.deletionDateStr],
     });
     return ok ? { success: true } : { error: true };
   } catch (err) {
@@ -723,7 +723,7 @@ export async function sendDataDeletionNotice(
   const ymd = (purgeDateYmd ?? new Date().toISOString().slice(0, 10)).slice(0, 10);
   const deletionDateStr = formatDateArEg(ymd);
   return sendChqDataDeletionNoticeTemplate(supabase, {
-    name: c.name ?? '—',
+    name: c.name ?? ',',
     phone: c.phone,
     deletionDateStr,
   });
@@ -763,7 +763,7 @@ export async function sendChqPaymentConfirmedTemplate(
 
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.warn(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE}, not approved`);
     return { skipped: true };
   }
 
@@ -812,7 +812,7 @@ export async function sendChqPackInvoiceTemplate(
 
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.warn(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE}, not approved`);
     return { skipped: true };
   }
 
@@ -855,7 +855,7 @@ export async function sendChqCreditExpiryTemplate(
 
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.warn(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE}, not approved`);
     return { skipped: true };
   }
 
@@ -905,7 +905,7 @@ export async function sendWeeklyReport(
 
     const approved = await isTemplateApproved(TEMPLATE_WEEKLY_SUMMARY, supabase);
     if (!approved) {
-      console.warn(`[centerNotify] Skipping ${TEMPLATE_WEEKLY_SUMMARY} — not approved`);
+      console.warn(`[centerNotify] Skipping ${TEMPLATE_WEEKLY_SUMMARY}, not approved`);
       return { skipped: true };
     }
 
@@ -953,7 +953,7 @@ export async function sendChqPaymentFailedTemplate(
 
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.warn(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE}, not approved`);
     return { skipped: true };
   }
 
@@ -985,13 +985,13 @@ export async function sendWelcomeTemplate(
 ): Promise<CenterNotifyResult> {
   const TEMPLATE = 'chq_welcome';
   if (!center.phone || !digitsOnly(center.phone)) {
-    console.warn('[centerNotify] Welcome skipped — no phone', center.id);
+    console.warn('[centerNotify] Welcome skipped, no phone', center.id);
     return { skipped: true };
   }
 
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.warn(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE}, not approved`);
     return { skipped: true };
   }
 
@@ -1024,13 +1024,13 @@ export async function sendOnboardingStep1Template(
 ): Promise<CenterNotifyResult> {
   const TEMPLATE = 'chq_onboarding_step1';
   if (!center.phone || !digitsOnly(center.phone)) {
-    console.warn('[centerNotify] Onboarding step1 skipped — no phone', center.id);
+    console.warn('[centerNotify] Onboarding step1 skipped, no phone', center.id);
     return { skipped: true };
   }
 
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.warn(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE}, not approved`);
     return { skipped: true };
   }
 
@@ -1068,8 +1068,8 @@ export async function sendOnboardingStep2(
     if (!to) return false;
     const base = publicAppBase();
     const groupsUrl = `${base}/ar/groups`;
-    const owner = ownerName.trim() || centerName.trim() || '—';
-    const center = centerName.trim() || '—';
+    const owner = ownerName.trim() || centerName.trim() || ',';
+    const center = centerName.trim() || ',';
     return await postWhatsappTemplate({
       templateName: TEMPLATE_ONBOARDING_STEP2,
       languageCode: onboardingTemplateLang(locale),
@@ -1097,8 +1097,8 @@ export async function sendOnboardingStep3(
     if (!to) return false;
     const base = publicAppBase();
     const settingsUrl = `${base}/ar/settings`;
-    const owner = ownerName.trim() || centerName.trim() || '—';
-    const center = centerName.trim() || '—';
+    const owner = ownerName.trim() || centerName.trim() || ',';
+    const center = centerName.trim() || ',';
     return await postWhatsappTemplate({
       templateName: TEMPLATE_ONBOARDING_STEP3,
       languageCode: onboardingTemplateLang(locale),
@@ -1126,8 +1126,8 @@ export async function sendOnboardingStep4(
     if (!to) return false;
     const base = publicAppBase();
     const scanUrl = `${base}/ar/scan`;
-    const owner = ownerName.trim() || centerName.trim() || '—';
-    const center = centerName.trim() || '—';
+    const owner = ownerName.trim() || centerName.trim() || ',';
+    const center = centerName.trim() || ',';
     return await postWhatsappTemplate({
       templateName: TEMPLATE_ONBOARDING_STEP4,
       languageCode: onboardingTemplateLang(locale),
@@ -1156,9 +1156,9 @@ export async function sendTeamInvite(
     if (!to) return false;
     const base = publicAppBase();
     const inviteUrl = `${base}/ar/accept-invite?token=${encodeURIComponent(inviteToken)}`;
-    const name = inviteeName.trim() || '—';
-    const center = centerName.trim() || '—';
-    const roleLabel = role.trim() || '—';
+    const name = inviteeName.trim() || ',';
+    const center = centerName.trim() || ',';
+    const roleLabel = role.trim() || ',';
     return await postWhatsappTemplate({
       templateName: TEMPLATE_TEAM_INVITE,
       languageCode: 'ar_EG',
@@ -1185,8 +1185,8 @@ export async function sendOrderShipped(
     if (!(await canSendApprovedTemplate(supabase, TEMPLATE_ORDER_SHIPPED))) return false;
     const to = digitsOnly(phone);
     if (!to) return false;
-    const owner = ownerName.trim() || centerName.trim() || '—';
-    const center = centerName.trim() || '—';
+    const owner = ownerName.trim() || centerName.trim() || ',';
+    const center = centerName.trim() || ',';
     const countStr = formatNumber(cardCount, 'ar');
     const track = trackingUrl.trim() || publicAppBase();
     return await postWhatsappTemplate({
@@ -1215,8 +1215,8 @@ export async function sendReferralCommission(
     if (!(await canSendApprovedTemplate(supabase, TEMPLATE_REFERRAL_COMMISSION))) return false;
     const to = digitsOnly(phone);
     if (!to) return false;
-    const owner = ownerName.trim() || '—';
-    const referred = referredCenterName.trim() || '—';
+    const owner = ownerName.trim() || ',';
+    const referred = referredCenterName.trim() || ',';
     const amt = formatNumber(commissionAmount, 'ar');
     const total = formatNumber(totalBalance, 'ar');
     return await postWhatsappTemplate({
@@ -1245,10 +1245,10 @@ export async function sendWithdrawalProcessed(
     if (!(await canSendApprovedTemplate(supabase, TEMPLATE_WITHDRAWAL_PROCESSED))) return false;
     const to = digitsOnly(phone);
     if (!to) return false;
-    const owner = ownerName.trim() || '—';
-    const dec = decision.trim() || '—';
+    const owner = ownerName.trim() || ',';
+    const dec = decision.trim() || ',';
     const amtStr = formatNumber(amount, 'ar');
-    const noteText = note.trim() || '—';
+    const noteText = note.trim() || ',';
     return await postWhatsappTemplate({
       templateName: TEMPLATE_WITHDRAWAL_PROCESSED,
       languageCode: 'ar_EG',
@@ -1283,9 +1283,9 @@ export async function sendVendorNewOrder(
       console.warn('[centerNotify] sendVendorNewOrder: no vendor phone (arg or VENDOR_WHATSAPP_NUMBER)');
       return false;
     }
-    const ord = ref.trim() || '—';
+    const ord = ref.trim() || ',';
     const countStr = formatNumber(quantity, 'ar');
-    const notesText = notes.trim() || '—';
+    const notesText = notes.trim() || ',';
     const courierLabel = await getCourierDisplayName(supabase);
     const oid = orderId.trim();
     const buttonsPayload: WhatsappTemplateButtonComponent[] | undefined =
@@ -1324,8 +1324,8 @@ export async function sendParentAnnouncementPromo(
     if (!(await canSendApprovedTemplate(supabase, TEMPLATE_PARENT_ANNOUNCEMENT_PROMO))) return false;
     const to = digitsOnly(parentPhone);
     if (!to) return false;
-    const center = centerName.trim() || '—';
-    const body = messageBody.trim() || '—';
+    const center = centerName.trim() || ',';
+    const body = messageBody.trim() || ',';
     return await postWhatsappTemplate({
       templateName: TEMPLATE_PARENT_ANNOUNCEMENT_PROMO,
       languageCode: 'ar_EG',
@@ -1350,8 +1350,8 @@ export async function sendParentAnnouncementOps(
     if (!(await canSendApprovedTemplate(supabase, TEMPLATE_PARENT_ANNOUNCEMENT_OPS))) return false;
     const to = digitsOnly(parentPhone);
     if (!to) return false;
-    const center = centerName.trim() || '—';
-    const body = messageBody.trim() || '—';
+    const center = centerName.trim() || ',';
+    const body = messageBody.trim() || ',';
     return await postWhatsappTemplate({
       templateName: TEMPLATE_PARENT_ANNOUNCEMENT_OPS,
       languageCode: 'ar_EG',
@@ -1380,12 +1380,12 @@ export async function sendParentTermSummary(
     if (!(await canSendApprovedTemplate(supabase, TEMPLATE_PARENT_TERM_SUMMARY))) return false;
     const to = digitsOnly(parentPhone);
     if (!to) return false;
-    const student = studentName.trim() || '—';
-    const group = groupName.trim() || '—';
+    const student = studentName.trim() || ',';
+    const group = groupName.trim() || ',';
     const attendedStr = formatNumber(attendedSessions, 'ar');
     const totalStr = formatNumber(totalSessions, 'ar');
     const balanceStr = formatNumber(balance, 'ar');
-    const center = centerName.trim() || '—';
+    const center = centerName.trim() || ',';
     return await postWhatsappTemplate({
       templateName: TEMPLATE_PARENT_TERM_SUMMARY,
       languageCode: 'ar_EG',
@@ -1407,7 +1407,7 @@ export async function sendPinDelivery(phone: string, otpCode: string): Promise<b
     if (!(await canSendApprovedTemplate(supabase, TEMPLATE_PIN_DELIVERY))) return false;
     const to = digitsOnly(phone);
     if (!to) return false;
-    const code = otpCode.trim() || '—';
+    const code = otpCode.trim() || ',';
     return await postWhatsappTemplate({
       templateName: TEMPLATE_PIN_DELIVERY,
       languageCode: 'ar_EG',
@@ -1509,7 +1509,7 @@ export async function runChqInactivityAlertTemplates(supabase: SupabaseClient): 
 
   const approved = await isTemplateApproved(TEMPLATE, supabase);
   if (!approved) {
-    console.warn(`[centerNotify] Skipping ${TEMPLATE} — not approved`);
+    console.warn(`[centerNotify] Skipping ${TEMPLATE}, not approved`);
     return 0;
   }
 
@@ -1547,7 +1547,7 @@ export async function runChqInactivityAlertTemplates(supabase: SupabaseClient): 
           templateName: TEMPLATE,
           languageCode: 'ar',
           toDigits: to,
-          bodyParameters: [row.name ?? '—', daysStr],
+          bodyParameters: [row.name ?? ',', daysStr],
         });
       } catch (sendErr) {
         console.error(`[centerNotify] ${TEMPLATE} send failed:`, sendErr);

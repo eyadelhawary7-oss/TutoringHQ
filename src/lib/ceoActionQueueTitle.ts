@@ -29,7 +29,7 @@ export function localizeCeoActionQueueTitle(
       break;
   }
 
-  let m = /^Stuck payment session — (.+)$/.exec(title);
+  let m = /^Stuck payment session, (.+)$/.exec(title);
   if (m) return msg('stuckPaymentSession', { centerId: m[1]! });
 
   m = /^Cancellation request: (.+)$/.exec(title);
@@ -41,7 +41,7 @@ export function localizeCeoActionQueueTitle(
   m = /^Bosta RETURNED: card order (.+)$/.exec(title);
   if (m) return msg('bostaReturned', { orderId: m[1]! });
 
-  m = /^Pack billing skipped — (.+)$/.exec(title);
+  m = /^Pack billing skipped, (.+)$/.exec(title);
   if (m) return msg('packBillingSkipped', { centerName: m[1]! });
 
   m = /^⚠️ (\d+) active centers with no billing amount$/.exec(title);

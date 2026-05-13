@@ -2299,7 +2299,7 @@ export default function StudentsPage() {
         />
       )}
 
-      {/* Student lifecycle filters — definitions */}
+      {/* Student lifecycle filters, definitions */}
       {statusHelpOpen ? (
         <div
           className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4"
@@ -2332,7 +2332,7 @@ export default function StudentsPage() {
                   <span className="font-semibold text-teal-600 dark:text-teal-400">
                     {ts(lifecycleFilterLabelKey(k))}
                   </span>
-                  <span className="text-[var(--color-text-secondary)]"> — {ts(lifecycleStatusHelpKey(k))}</span>
+                  <span className="text-[var(--color-text-secondary)]">, {ts(lifecycleStatusHelpKey(k))}</span>
                 </li>
               ))}
             </ul>

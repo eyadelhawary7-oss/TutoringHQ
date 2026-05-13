@@ -53,7 +53,7 @@ export async function resolvePackBillingMinimumEgp(
           type: 'pack_billing_blocked',
           priority: 'red',
           center_id: center.id,
-          title: `Pack billing skipped — ${center.name}`,
+          title: `Pack billing skipped, ${center.name}`,
           subtitle: JSON.stringify({
             centerId: center.id,
             reason: 'top_centers plan missing pack_custom_invoice_minimum',
@@ -67,7 +67,7 @@ export async function resolvePackBillingMinimumEgp(
       }
       console.warn(
         `[packBilling] Skipping top_centers ${center.id}`,
-        '— pack_custom_invoice_minimum is null or 0',
+        ', pack_custom_invoice_minimum is null or 0',
       );
       return null;
     }

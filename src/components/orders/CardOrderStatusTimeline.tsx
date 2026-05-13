@@ -130,7 +130,7 @@ export function CardOrderStatusTimeline({
                 ? 'ring-2 ring-teal-600 bg-teal-600 text-white'
                 : 'ring-1 ring-stone-300 bg-transparent text-stone-500 dark:ring-stone-600';
 
-          const aria = `${labels[stage]} — ${t(`state.${state}`)}${timeLabel ? ` — ${timeLabel}` : ''}`;
+          const aria = `${labels[stage]}, ${t(`state.${state}`)}${timeLabel ? `, ${timeLabel}` : ''}`;
 
           return (
             <div key={stage} className="flex-1 min-w-0 flex flex-col items-center text-center gap-1">
@@ -165,7 +165,7 @@ export function CardOrderStatusTimeline({
                 ? 'ring-2 ring-teal-600 bg-teal-600 text-white'
                 : 'ring-1 ring-stone-300 bg-transparent text-stone-500';
 
-          const aria = `${labels[stage]} — ${t(`state.${state}`)}${timeLabel ? ` — ${timeLabel}` : ''}`;
+          const aria = `${labels[stage]}, ${t(`state.${state}`)}${timeLabel ? `, ${timeLabel}` : ''}`;
 
           return (
             <div key={stage} className="flex items-start gap-3">

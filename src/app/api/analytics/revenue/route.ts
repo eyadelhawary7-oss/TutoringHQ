@@ -161,7 +161,7 @@ export async function GET(request: NextRequest) {
         gid === 'ungrouped'
           ? groups.length > 0
             ? ''
-            : '—'
+            : ','
           : (groupMap.get(gid) ?? gid);
       revenueByGroup.push({
         group_id: gid,
@@ -241,7 +241,7 @@ export async function GET(request: NextRequest) {
       aging_report.push({
         student_id: st.id,
         student_name: st.name ?? '',
-        group_name: groupNames.join(' • ') || '—',
+        group_name: groupNames.join(' • ') || ',',
         days_overdue,
         amount: Number(st.balance_due) || 0,
       });

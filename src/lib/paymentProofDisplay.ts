@@ -10,11 +10,11 @@ export function derivePaymentProofColumns(row: {
   const url = row.payment_proof_url != null ? String(row.payment_proof_url).trim() : '';
   const ref = row.payment_reference != null ? String(row.payment_reference).trim() : '';
   const primary = url || ref;
-  if (!primary) return { proofType: 'none', proofReference: '—' };
+  if (!primary) return { proofType: 'none', proofReference: ',' };
   if (primary.toLowerCase().startsWith('manual:')) {
     return {
       proofType: 'manual',
-      proofReference: primary.replace(/^manual:/i, '').trim() || '—',
+      proofReference: primary.replace(/^manual:/i, '').trim() || ',',
     };
   }
   if (/^https?:\/\//i.test(primary)) {

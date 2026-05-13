@@ -165,16 +165,16 @@ function fmtMoney(n: number): string {
 }
 
 function fmtDateAr(iso: string | null | undefined): string {
-  if (!iso) return '—';
+  if (!iso) return ',';
   const d = new Date(iso.includes('T') ? iso : `${iso}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return '—';
+  if (Number.isNaN(d.getTime())) return ',';
   return formatDate(d, PDF_LOCALE, { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 function fmtDateTimeAr(iso: string | null | undefined): string {
-  if (!iso) return '—';
+  if (!iso) return ',';
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
+  if (Number.isNaN(d.getTime())) return ',';
   return formatDateTime(d, PDF_LOCALE, {
     day: 'numeric',
     month: 'short',
@@ -189,7 +189,7 @@ function billingCycleAr(period: string | null | undefined): string {
   if (p === 'monthly') return 'شهري';
   if (p === 'quarterly') return 'ربع سنوي';
   if (p === 'annual' || p === 'yearly') return 'سنوي';
-  return period?.trim() ? esc(period) : '—';
+  return period?.trim() ? esc(period) : ',';
 }
 
 function paymentMethodAr(raw: string | null | undefined): string {
@@ -231,7 +231,7 @@ function planPresentation(planRaw: string | null | undefined): { en: string; ar:
   if (hit) return hit;
   const label = (planRaw ?? 'starter').replace(/_/g, ' ');
   const title = label.replace(/\b\w/g, (c) => c.toUpperCase());
-  return { en: title, ar: '—' };
+  return { en: title, ar: ',' };
 }
 
 type BadgeKey =
@@ -458,8 +458,8 @@ function headerRecipientTotal(opts: {
     <div class="recipient">
       <div style="color:#64748b;font-size:11px;">${esc(opts.recipientLabel)}</div>
       <div style="color:#f8fafc;font-size:20px;font-weight:700;font-family:'Cairo',sans-serif;">${esc(opts.centerName)}</div>
-      <div style="color:#cbd5e1;font-size:12px;">${esc(opts.centerPhone || '—')}</div>
-      <div style="color:#64748b;font-size:11px;">${esc(opts.centerAddress || '—')}</div>
+      <div style="color:#cbd5e1;font-size:12px;">${esc(opts.centerPhone || ',')}</div>
+      <div style="color:#64748b;font-size:11px;">${esc(opts.centerAddress || ',')}</div>
     </div>
     <div class="total-block" style="text-align:left;">
       <div style="color:#64748b;font-size:11px;">${esc(opts.totalLabel)}</div>
@@ -500,7 +500,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
   const dueYmd = inv.due_date ? String(inv.due_date).slice(0, 10) : undefined;
   const daysLate = overdueDaysFromDue(dueYmd);
   const { key: badgeKey, overdueExtra } = resolveBadgeKey(invoiceType, status, daysLate);
-  const invNo = String(inv.invoice_number ?? '—').trim() || '—';
+  const invNo = String(inv.invoice_number ?? ',').trim() || ',';
 
   const planAr = r.planArabic ?? planPresentation(c.plan).ar;
   const billingCycle = billingCycleAr(c.subscription_billing_period ?? null);
@@ -520,7 +520,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
   const paymentTs =
     status === 'paid' || status === 'approved'
       ? fmtDateTimeAr(inv.paid_at ? String(inv.paid_at) : null)
-      : '—';
+      : ',';
   const paymentMethod = paymentMethodAr(inv.payment_method ?? null);
 
   let recipientLabel = 'مُرسلة إلى';
@@ -536,13 +536,13 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
 
   let contextBanner = '';
   if (invoiceType === 'base_subscription') {
-    const next = c.next_payment_due ? fmtDateAr(String(c.next_payment_due)) : '—';
+    const next = c.next_payment_due ? fmtDateAr(String(c.next_payment_due)) : ',';
     contextBanner = `<div style="background:#451a03;border-right:3px solid #f59e0b;padding:10px 12px;margin-bottom:16px;border-radius:4px;">
       <div style="color:#f8fafc;font-weight:700;font-size:13px;">الشهر الأول من اشتراكك.</div>
       <div style="color:#cbd5e1;font-size:12px;">الفاتورة التالية ستصدر في ${esc(next)}.</div>
     </div>`;
   } else if (invoiceType === 'signup_first_payment') {
-    const renew = inv.billing_period_end ? fmtDateAr(String(inv.billing_period_end)) : '—';
+    const renew = inv.billing_period_end ? fmtDateAr(String(inv.billing_period_end)) : ',';
     contextBanner = `<div style="background:#042f2e;border-right:3px solid #0D9488;padding:10px 12px;margin-bottom:16px;border-radius:4px;">
       <div style="color:#f8fafc;font-weight:700;font-size:13px;">مرحباً بك في CenterHQ.</div>
       <div style="color:#cbd5e1;font-size:12px;">حسابك نشط الآن. التجديد القادم: ${esc(renew)}. ستصلك رسالة تذكير قبل 7 أيام.</div>
@@ -586,7 +586,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       <div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">دورة الفوترة</div>
       <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(billingCycle)}</div>
       <div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">تاريخ الاستحقاق</div>
-      <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(dueYmd ? fmtDateAr(dueYmd) : '—')}</div>`;
+      <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(dueYmd ? fmtDateAr(dueYmd) : ',')}</div>`;
   } else if (invoiceType === 'signup_first_payment') {
     typeSpecificSidebar = `
       <div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">الخطة</div>
@@ -615,7 +615,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       <div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">عدد الإعلانات</div>
       <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(String(annCount))} إعلانات</div>
       <div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">إجمالي المستلِمين</div>
-      <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(String(totalRecv || '—'))} ولي أمر</div>
+      <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(String(totalRecv || ','))} ولي أمر</div>
       <div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">الفترة</div>
       <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(r.monthArabic ?? periodArabic)}</div>`;
   } else if (invoiceType === 'announcement_cap') {
@@ -640,15 +640,15 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     const u = r.upgrade;
     typeSpecificSidebar = `
       <div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">من الخطة</div>
-      <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(u?.fromPlanAr ?? '—')}</div>
+      <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(u?.fromPlanAr ?? ',')}</div>
       <div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">إلى الخطة</div>
       <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(u?.toPlanAr ?? planAr)}</div>
       <div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">الأيام المتبقية</div>
-      <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(String(u?.daysRemaining ?? '—'))} يوم</div>`;
+      <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(String(u?.daysRemaining ?? ','))} يوم</div>`;
   } else if (invoiceType === 'setup_fee') {
     const productName = String(meta.product_name_ar ?? 'ماسح البطاقات الذكية');
     const shipCo = String(meta.shipping_company ?? 'Bosta');
-    const track = String(meta.tracking_number ?? payRef ?? '—');
+    const track = String(meta.tracking_number ?? payRef ?? ',');
     typeSpecificSidebar = `
       <div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">المنتج</div>
       <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(productName)}</div>
@@ -669,7 +669,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(formatPercent(pct || 0, PDF_LOCALE))}</div>`;
   } else if (invoiceType === 'referral_payout') {
     const rc = r.referralCount ?? r.referralCommissions?.length ?? 0;
-    const inst = r.referralInstapay ?? String(meta.instapay_number ?? '—');
+    const inst = r.referralInstapay ?? String(meta.instapay_number ?? ',');
     typeSpecificSidebar = `
       <div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">عدد الإحالات</div>
       <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(String(rc))} مراكز</div>
@@ -678,7 +678,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       <div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">Instapay</div>
       <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(inst)}</div>`;
   } else if (invoiceType === 'payment_proof') {
-    const refInv = String(meta.reference_invoice_number ?? payRef ?? '—');
+    const refInv = String(meta.reference_invoice_number ?? payRef ?? ',');
     typeSpecificSidebar = `
       <div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">طريقة الدفع</div>
       <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">${esc(paymentMethod)}</div>
@@ -726,7 +726,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       amount: total,
       detail: periodRange,
       title: `${planAr}, ${billingCycle}`,
-      subtitle: `حتى ${studentCap > 0 ? studentCap : '—'} طالب`,
+      subtitle: `حتى ${studentCap > 0 ? studentCap : ','} طالب`,
     });
     totalsInner = `${totalsRow(`${planAr} × ${billingCycle}`, `${fmtMoney(subPre)} EGP`)}
     ${discountRowHtml}
@@ -737,7 +737,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       amount: total,
       detail: periodRange,
       title: `${planAr}, ${billingCycle} (أول دفعة)`,
-      subtitle: `حتى ${studentCap > 0 ? studentCap : '—'} طالب`,
+      subtitle: `حتى ${studentCap > 0 ? studentCap : ','} طالب`,
     });
     const subPreSu = discount > 0 ? total + discount : total;
     totalsInner = `${totalsRow(`${planAr} × ${billingCycle}`, `${fmtMoney(subPreSu)} EGP`)}
@@ -860,7 +860,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       lineRowHtml({
         amount: -credit,
         detail: 'رصيد مُعاد',
-        title: `خصم الخطة ${u?.fromPlanAr ?? '—'} (${days} يوم)`,
+        title: `خصم الخطة ${u?.fromPlanAr ?? ','} (${days} يوم)`,
         subtitle: 'الأيام المتبقية من الفترة الحالية',
         amountRed: true,
       });
@@ -879,7 +879,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
   } else if (invoiceType === 'setup_fee') {
     showTaxBox = false;
     const productName = String(meta.product_name_ar ?? 'ماسح البطاقات الذكية');
-    const city = String(meta.city ?? c.city ?? '—');
+    const city = String(meta.city ?? c.city ?? ',');
     const qty = num(meta.qty ?? 1) || 1;
     const unitPrice =
       meta.scanner_unit_price != null && num(meta.scanner_unit_price) > 0
@@ -928,11 +928,11 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
         amount: base,
         detail: periodRange,
         title: `${planAr}, ${billingCycle}`,
-        subtitle: `حتى ${studentCap > 0 ? studentCap : '—'} طالب`,
+        subtitle: `حتى ${studentCap > 0 ? studentCap : ','} طالب`,
       }) +
       lineRowHtml({
         amount: feeAmt,
-        detail: `استحق ${dueYmd ? fmtDateAr(dueYmd) : '—'} · صدر ${issueDate}`,
+        detail: `استحق ${dueYmd ? fmtDateAr(dueYmd) : ','} · صدر ${issueDate}`,
         title: `غرامة التأخر في السداد (${formatPercent(pct, PDF_LOCALE)})`,
         subtitle: `${formatPercent(pct, PDF_LOCALE)} من المبلغ المستحق`,
         amountAmber: true,
@@ -996,7 +996,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     ${taxNoteRow('لا ضريبة قيمة مضافة او رسوم خدمة - هذا دفع عمولات من CenterHQ.')}`;
   } else if (invoiceType === 'payment_proof') {
     showTaxBox = false;
-    const refInv = String(meta.reference_invoice_number ?? payRef ?? '—');
+    const refInv = String(meta.reference_invoice_number ?? payRef ?? ',');
     lineRowsHtml = lineRowHtml({
       amount: total,
       detail: 'تجديد',
@@ -1007,7 +1007,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     ${taxNoteRow('المبالغ تعكس اجمالي الفاتورة المرجعية.')}`;
   } else if (invoiceType === 'whatsapp_addon') {
     const p = calcExclusive(total);
-    const desc = String(meta.description ?? inv.notes ?? '—');
+    const desc = String(meta.description ?? inv.notes ?? ',');
     lineRowsHtml = lineRowHtml({
       amount: total,
       detail: periodRange,
@@ -1091,7 +1091,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
   ${headerRecipientTotal({
     recipientLabel,
     centerName: c.name,
-    centerPhone: c.phone ?? '—',
+    centerPhone: c.phone ?? ',',
     centerAddress,
     totalLabel,
     totalFormatted: fmtMoney(total),

@@ -16,7 +16,7 @@ const ALLOWED_REASONS = new Set([
 ]);
 
 function periodEndLabel(ymd: string | null | undefined): string {
-  if (!ymd) return '—';
+  if (!ymd) return ',';
   const d = new Date(`${ymd.slice(0, 10)}T12:00:00`);
   return Number.isNaN(d.getTime()) ? ymd.slice(0, 10) : formatDate(d, 'ar');
 }
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       priority: 'red',
       center_id: centerId,
       title: `Cancellation request: ${c.name ?? centerId}`,
-      subtitle: `Reason: ${reason}. Period ends: ${periodEnd ?? '—'}`,
+      subtitle: `Reason: ${reason}. Period ends: ${periodEnd ?? ','}`,
       revenue_at_risk: 0,
       auto_generated: true,
     });

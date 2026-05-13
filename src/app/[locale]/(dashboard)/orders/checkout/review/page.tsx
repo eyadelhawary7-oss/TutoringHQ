@@ -117,9 +117,9 @@ export default function CheckoutReviewPage() {
             {activeItems.map((i) =>
               i.kind === 'student' ? (
                 <li key={i.id}>
-                  {i.student?.name?.trim() || '—'}{' '}
+                  {i.student?.name?.trim() || ','}{' '}
                   <span className="text-[var(--color-text-tertiary)]">
-                    #<bdi>{i.student?.student_number?.trim() || '—'}</bdi>
+                    #<bdi>{i.student?.student_number?.trim() || ','}</bdi>
                   </span>
                 </li>
               ) : null,
@@ -139,17 +139,17 @@ export default function CheckoutReviewPage() {
           </Link>
         </div>
         <p>
-          <span className="text-[var(--color-text-secondary)]">{t('govLabel')}:</span> {govLabel || '—'}
+          <span className="text-[var(--color-text-secondary)]">{t('govLabel')}:</span> {govLabel || ','}
         </p>
         <p>
-          <span className="text-[var(--color-text-secondary)]">{t('addressLabel')}:</span> {cart?.delivery_address?.trim() || '—'}
+          <span className="text-[var(--color-text-secondary)]">{t('addressLabel')}:</span> {cart?.delivery_address?.trim() || ','}
         </p>
         <p>
-          <span className="text-[var(--color-text-secondary)]">{t('phoneLabel')}:</span> {phoneDisp || '—'}
+          <span className="text-[var(--color-text-secondary)]">{t('phoneLabel')}:</span> {phoneDisp || ','}
         </p>
         <p>
           <span className="text-[var(--color-text-secondary)]">{t('deliveryNotesLabel')}:</span>{' '}
-          {cart?.notes?.trim() ? cart.notes.trim() : '—'}
+          {cart?.notes?.trim() ? cart.notes.trim() : ','}
         </p>
       </section>
 
@@ -162,11 +162,11 @@ export default function CheckoutReviewPage() {
         </div>
         <p>
           <span className="text-[var(--color-text-secondary)]">{t('styleLabel')}:</span>{' '}
-          {cart?.card_style === 'light' ? t('styleLight') : cart?.card_style === 'dark' ? t('styleDark') : '—'}
+          {cart?.card_style === 'light' ? t('styleLight') : cart?.card_style === 'dark' ? t('styleDark') : ','}
         </p>
         <p>
           <span className="text-[var(--color-text-secondary)]">{t('vendorNotesLabel')}:</span>{' '}
-          {cart?.vendor_notes?.trim() ? cart.vendor_notes.trim() : '—'}
+          {cart?.vendor_notes?.trim() ? cart.vendor_notes.trim() : ','}
         </p>
       </section>
 
@@ -184,7 +184,7 @@ export default function CheckoutReviewPage() {
             <span className="tabular-nums font-medium">{formatCurrency(productInclusive, locale)}</span>
           </div>
           <div className="flex justify-between gap-2">
-            <span className="text-[var(--color-text-secondary)]">{t('shippingLine', { zone: zoneLabel || '—' })}</span>
+            <span className="text-[var(--color-text-secondary)]">{t('shippingLine', { zone: zoneLabel || ',' })}</span>
             <span className="tabular-nums">{formatCurrency(shipFee, locale)}</span>
           </div>
           <div className="flex justify-between gap-2 pt-2 text-lg font-bold">

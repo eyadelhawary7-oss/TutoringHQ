@@ -355,7 +355,7 @@ export async function runLateFeeAndDormancyScan(
         }
 
         await sendChqRenewalOverdueTemplate(supabase, {
-          name: c.name ?? '—',
+          name: c.name ?? ',',
           phone: c.phone,
           daysLate: String(daysLate),
           amountStr: String(total),
@@ -403,7 +403,7 @@ export async function runLateFeeAndDormancyScan(
         }
 
         await sendChqRenewalOverdueTemplate(supabase, {
-          name: c.name ?? '—',
+          name: c.name ?? ',',
           phone: c.phone,
           daysLate: String(daysLate),
           amountStr: String(total),

@@ -44,7 +44,7 @@ export async function notifyAdminOfVendorFailure(opts: AdminFailureOpts): Promis
     }
 
     const messageBody = [
-      '⚠️ تنبيه — CenterHQ',
+      '⚠️ تنبيه, CenterHQ',
       '',
       'فشل إرسال طلب الطباعة للمورد تلقائياً',
       `رقم الطلب: ${opts.ref}`,
@@ -58,25 +58,25 @@ export async function notifyAdminOfVendorFailure(opts: AdminFailureOpts): Promis
     try {
       supabase = getSupabaseAdmin();
     } catch {
-      console.warn('[notifyAdminFailure] skipped — Supabase admin client not configured');
+      console.warn('[notifyAdminFailure] skipped, Supabase admin client not configured');
       return;
     }
 
     if (!(await isTemplateApproved(VENDOR_FAILURE_WA_TEMPLATE, supabase))) {
       console.warn(
-        `[notifyAdminFailure] skipped — template not approved: ${VENDOR_FAILURE_WA_TEMPLATE}`,
+        `[notifyAdminFailure] skipped, template not approved: ${VENDOR_FAILURE_WA_TEMPLATE}`,
       );
       return;
     }
 
     if (!(await waSendingEnabled(supabase))) {
-      console.warn('[notifyAdminFailure] skipped — wa_sending_enabled is false');
+      console.warn('[notifyAdminFailure] skipped, wa_sending_enabled is false');
       return;
     }
 
     if (shouldSkipWaForTestPhoneId()) {
       console.warn(
-        '[notifyAdminFailure] skipped — Meta test PHONE_NUMBER_ID or missing phone number ID',
+        '[notifyAdminFailure] skipped, Meta test PHONE_NUMBER_ID or missing phone number ID',
       );
       return;
     }
@@ -84,7 +84,7 @@ export async function notifyAdminOfVendorFailure(opts: AdminFailureOpts): Promis
     const graphPhoneId = waPhoneNumberId();
     const token = process.env.WHATSAPP_TOKEN;
     if (!graphPhoneId || !token) {
-      console.warn('[notifyAdminFailure] skipped — missing WHATSAPP_TOKEN or phone number ID');
+      console.warn('[notifyAdminFailure] skipped, missing WHATSAPP_TOKEN or phone number ID');
       return;
     }
 

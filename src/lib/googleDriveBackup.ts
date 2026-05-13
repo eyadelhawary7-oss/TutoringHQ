@@ -417,19 +417,19 @@ export async function notifyBackupComplete(result: BackupResult): Promise<void> 
   try {
     if (!(await isTemplateApproved(BACKUP_COMPLETE_WA_TEMPLATE, supabase))) {
       console.warn(
-        `[googleDriveBackup] skipped — template not approved: ${BACKUP_COMPLETE_WA_TEMPLATE}`,
+        `[googleDriveBackup] skipped, template not approved: ${BACKUP_COMPLETE_WA_TEMPLATE}`,
       );
       return;
     }
 
     if (!(await waSendingEnabled(supabase))) {
-      console.warn('[googleDriveBackup] skipped — wa_sending_enabled is false');
+      console.warn('[googleDriveBackup] skipped, wa_sending_enabled is false');
       return;
     }
 
     if (shouldSkipWaForTestPhoneId()) {
       console.warn(
-        '[googleDriveBackup] skipped — Meta test PHONE_NUMBER_ID or missing phone number ID',
+        '[googleDriveBackup] skipped, Meta test PHONE_NUMBER_ID or missing phone number ID',
       );
       return;
     }
@@ -437,7 +437,7 @@ export async function notifyBackupComplete(result: BackupResult): Promise<void> 
     const phoneId = waPhoneNumberId();
     const token = process.env.WHATSAPP_TOKEN;
     if (!phoneId || !token) {
-      console.warn('[googleDriveBackup] skipped — missing WHATSAPP_TOKEN or phone number ID');
+      console.warn('[googleDriveBackup] skipped, missing WHATSAPP_TOKEN or phone number ID');
       return;
     }
 

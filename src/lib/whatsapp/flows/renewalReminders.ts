@@ -38,7 +38,7 @@ function formatMonthlyFee(amount: number | null): string {
 }
 
 function formatRenewalDate(dateStr: string | null): string {
-  if (!dateStr) return '—';
+  if (!dateStr) return ',';
   try {
     return formatDateDisplay(new Date(dateStr + 'T12:00:00'), WA_AR, {
       year: 'numeric',

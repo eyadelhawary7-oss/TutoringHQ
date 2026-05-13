@@ -333,12 +333,12 @@ export default function AdminCardOrderDetailClient({
                     href={`/admin/centers/${encodeURIComponent(String(order.center_id ?? centreSnap?.center_id ?? ''))}`}
                     className="font-medium text-teal-600 hover:underline"
                   >
-                    {typeof centreSnap?.name === 'string' ? centreSnap.name : '—'}
+                    {typeof centreSnap?.name === 'string' ? centreSnap.name : ','}
                   </Link>
                   {' · '}
                   {order.created_at
                     ? formatDateTime(String(order.created_at), locale)
-                    : '—'}
+                    : ','}
                 </p>
               </div>
               <span
@@ -373,7 +373,7 @@ export default function AdminCardOrderDetailClient({
                       (order.items as UnknownRecord[]).map((it, idx) => {
                         const kind = String(it.kind ?? '');
                         if (kind === 'student') {
-                          const name = String(it.student_name ?? '—');
+                          const name = String(it.student_name ?? ',');
                           const num = it.student_number != null ? String(it.student_number) : '';
                           return (
                             <li key={idx} className="flex flex-wrap items-center justify-between gap-2">
@@ -415,9 +415,9 @@ export default function AdminCardOrderDetailClient({
                   <h2 className="text-sm font-bold text-[var(--color-text-primary)] mb-1">
                     {ta('detail.sections.delivery')}
                   </h2>
-                  <p>{String(order.delivery_governorate ?? '—')}</p>
-                  <p className="whitespace-pre-wrap">{String(order.delivery_address ?? '').trim() || '—'}</p>
-                  <p className="tabular-nums direction-ltr text-end">{String(order.delivery_phone ?? '—')}</p>
+                  <p>{String(order.delivery_governorate ?? ',')}</p>
+                  <p className="whitespace-pre-wrap">{String(order.delivery_address ?? '').trim() || ','}</p>
+                  <p className="tabular-nums direction-ltr text-end">{String(order.delivery_phone ?? ',')}</p>
                   {order.notes?.toString().trim() ? (
                     <p className="text-[var(--color-text-secondary)] whitespace-pre-wrap">{String(order.notes)}</p>
                   ) : null}
@@ -449,7 +449,7 @@ export default function AdminCardOrderDetailClient({
               <div className="space-y-6 lg:sticky lg:top-4 self-start">
                 <section className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 space-y-2 text-sm">
                   <h2 className="text-sm font-bold text-[var(--color-text-primary)]">{ta('detail.sections.payment')}</h2>
-                  <p className="font-mono text-xs break-all">{paymobId ?? '—'}</p>
+                  <p className="font-mono text-xs break-all">{paymobId ?? ','}</p>
                   <span
                     className={cn(
                       'inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-full',
@@ -461,7 +461,7 @@ export default function AdminCardOrderDetailClient({
                     {paymentStatus}
                   </span>
                   <p className="text-xs text-[var(--color-text-secondary)]">
-                    {paidAtIso ? formatDateTime(paidAtIso, locale) : '—'}
+                    {paidAtIso ? formatDateTime(paidAtIso, locale) : ','}
                   </p>
                   {FEATURES.PAYMOB_ENABLED && paymobId ? (
                     <a
@@ -494,29 +494,29 @@ export default function AdminCardOrderDetailClient({
                         : formatCurrency(shipFee, locale)}
                     </p>
                     <p>
-                      {ta('detail.tracking.lastStatus')}: {bostaStatusLast ?? '—'}
+                      {ta('detail.tracking.lastStatus')}: {bostaStatusLast ?? ','}
                     </p>
                     <p className="text-xs text-[var(--color-text-secondary)]">
-                      {bostaUpdated ? formatDateTime(bostaUpdated, locale) : '—'}
+                      {bostaUpdated ? formatDateTime(bostaUpdated, locale) : ','}
                     </p>
                   </section>
                 ) : null}
 
                 <section className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 space-y-2 text-sm">
                   <h2 className="text-sm font-bold text-[var(--color-text-primary)]">{ta('detail.sections.centre')}</h2>
-                  <p className="font-medium">{centreSnap?.name ?? '—'}</p>
+                  <p className="font-medium">{centreSnap?.name ?? ','}</p>
                   <p className="text-[var(--color-text-secondary)] whitespace-pre-wrap">
-                    {centreSnap?.address_text ?? '—'}
+                    {centreSnap?.address_text ?? ','}
                   </p>
                   <p>
-                    {ta('detail.centre.plan')}: {centreSnap?.plan ?? '—'}
+                    {ta('detail.centre.plan')}: {centreSnap?.plan ?? ','}
                   </p>
                   <p>
                     {ta('detail.centre.planPrice')}:{' '}
-                    {centreSnap?.plan_price != null ? formatCurrency(centreSnap.plan_price, locale) : '—'}
+                    {centreSnap?.plan_price != null ? formatCurrency(centreSnap.plan_price, locale) : ','}
                   </p>
                   <p>
-                    {ta('detail.centre.subscription')}: {centreSnap?.subscription_status ?? '—'}
+                    {ta('detail.centre.subscription')}: {centreSnap?.subscription_status ?? ','}
                   </p>
                   <Link
                     href={`/admin/centers/${encodeURIComponent(String(centreSnap?.center_id ?? order.center_id ?? ''))}`}
@@ -569,13 +569,13 @@ export default function AdminCardOrderDetailClient({
                   <details className="rounded-lg border border-[var(--color-border-subtle)] p-3">
                     <summary className="cursor-pointer text-sm font-medium">{ta('detail.actions.viewBostaData')}</summary>
                     <pre className="mt-2 text-[10px] overflow-auto max-h-64 whitespace-pre-wrap break-all">
-                      {bostaPayload ? JSON.stringify(bostaPayload, null, 2) : '—'}
+                      {bostaPayload ? JSON.stringify(bostaPayload, null, 2) : ','}
                     </pre>
                   </details>
                   <details className="rounded-lg border border-[var(--color-border-subtle)] p-3">
                     <summary className="cursor-pointer text-sm font-medium">{ta('detail.actions.viewPaymobLog')}</summary>
                     <pre className="mt-2 text-[10px] overflow-auto max-h-64 whitespace-pre-wrap break-all">
-                      {paymobPayload ? JSON.stringify(paymobPayload, null, 2) : '—'}
+                      {paymobPayload ? JSON.stringify(paymobPayload, null, 2) : ','}
                     </pre>
                   </details>
                 </div>
@@ -606,15 +606,15 @@ export default function AdminCardOrderDetailClient({
                   <tbody>
                     {transitions.map((tr, i) => {
                       const rowKey = String(tr.id ?? i);
-                      const from = String(tr.from_status ?? tr.previous_status ?? '—');
-                      const to = String(tr.to_status ?? transitionToStatusHelper(tr) ?? '—');
+                      const from = String(tr.from_status ?? tr.previous_status ?? ',');
+                      const to = String(tr.to_status ?? transitionToStatusHelper(tr) ?? ',');
                       const tsIso =
                         typeof tr.transitioned_at === 'string'
                           ? tr.transitioned_at
                           : typeof tr.created_at === 'string'
                             ? tr.created_at
                             : '';
-                      const actor = String(tr.transitioned_by_role ?? tr.actor_role ?? '—');
+                      const actor = String(tr.transitioned_by_role ?? tr.actor_role ?? ',');
                       const reason = String(tr.reason ?? '');
                       const meta = tr.metadata;
                       const expanded = expandedMetaId === rowKey;
@@ -623,13 +623,13 @@ export default function AdminCardOrderDetailClient({
                           <td className="py-2 pe-3">{from}</td>
                           <td className="py-2 pe-3">{to}</td>
                           <td className="py-2 pe-3 whitespace-nowrap">
-                            <div>{tsIso ? formatDateTime(tsIso, locale) : '—'}</div>
+                            <div>{tsIso ? formatDateTime(tsIso, locale) : ','}</div>
                             <div className="text-[10px] text-[var(--color-text-tertiary)]">
                               {tsIso ? formatRelativeMinutesAgo(tsIso, locale) : ''}
                             </div>
                           </td>
                           <td className="py-2 pe-3">{actor}</td>
-                          <td className="py-2 pe-3 max-w-[200px] break-words">{reason || '—'}</td>
+                          <td className="py-2 pe-3 max-w-[200px] break-words">{reason || ','}</td>
                           <td className="py-2">
                             {meta != null ? (
                               <button
@@ -640,7 +640,7 @@ export default function AdminCardOrderDetailClient({
                                 {expanded ? '▼' : '▶'} JSON
                               </button>
                             ) : (
-                              '—'
+                              ','
                             )}
                             {expanded && meta != null ? (
                               <pre className="mt-1 text-[10px] max-h-40 overflow-auto whitespace-pre-wrap">
