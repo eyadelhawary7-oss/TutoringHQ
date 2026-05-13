@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
 import { isTemplateApproved } from '@/lib/centerNotify';
-import { requireAdminRole } from '@/lib/admin-auth';
+import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
 import { createCommissionsForCenter } from '@/lib/commissions';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { parseBodyWithLimit } from '@/lib/validate';
@@ -14,7 +12,6 @@ const BULK_CENTER_WA_TEMPLATE = 'chq_parent_announcement_ops';
 const WHATSAPP_META_TEST_PHONE_NUMBER_ID = '1013787185158313';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const supabaseAdmin =
@@ -23,58 +20,6 @@ const supabaseAdmin =
         auth: { persistSession: false, autoRefreshToken: false },
       })
     : null;
-
-async function getAdminUser(request: Request) {
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseAdmin) return null;
-
-  const cookieStore = await cookies();
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
-          });
-        } catch {
-          /* read-only cookie context */
-        }
-      },
-    },
-  });
-
-  let userId: string | null = null;
-  const {
-    data: { user: cookieUser },
-  } = await supabase.auth.getUser();
-  if (cookieUser) userId = cookieUser.id;
-  else {
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.slice(7);
-      const {
-        data: { user: bearerUser },
-        error,
-      } = await supabase.auth.getUser(token);
-      if (bearerUser && !error) userId = bearerUser.id;
-    }
-  }
-
-  if (!userId) return null;
-  const { data: adminUser } = await supabaseAdmin.from('admin_users').select('id,role').eq('id', userId).single();
-  if (adminUser) return adminUser;
-  const { data: userRecord } = await supabaseAdmin.from('users').select('phone').eq('id', userId).single();
-  const phones = (process.env.SUPER_ADMIN_PHONES || '')
-    .split(',')
-    .map((p: string) => p.trim())
-    .filter(Boolean);
-  if (userRecord?.phone && phones.includes(String(userRecord.phone))) {
-    return { id: userId, role: 'super_admin' as const };
-  }
-  return null;
-}
 
 function waPhoneNumberId(): string | null {
   return process.env.PHONE_NUMBER_ID || process.env.WHATSAPP_PHONE_ID || null;
@@ -102,19 +47,19 @@ async function waSendingEnabled(): Promise<boolean> {
 // POST /api/admin/centers/bulk
 // Actions: approve | suspend | reactivate | send_wa
 export async function POST(request: Request) {
-  if (!supabaseAdmin || !supabaseUrl || !supabaseAnonKey) {
+  if (!supabaseAdmin || !supabaseUrl) {
     return NextResponse.json({ errorKey: 'bulk.errors.config' }, { status: 500 });
   }
 
-  const admin = await getAdminUser(request);
-  if (!admin) {
+  const ctx = await getAdminContext(request);
+  if (!ctx) {
     return NextResponse.json({ errorKey: 'bulk.errors.unauthorized' }, { status: 401 });
   }
   // Role gate added per docs/AUDIT_v22.md Phase 3 / Phase 8 P0 (Task 9)
-  const roleErr = requireAdminRole(admin, ['super_admin']);
+  const roleErr = requireAdminRole(ctx, ['super_admin']);
   if (roleErr) return roleErr;
 
-  if (!validateCSRFRequest(request, admin.id)) {
+  if (!validateCSRFRequest(request, ctx.userId)) {
     return NextResponse.json({ errorKey: 'bulk.errors.csrf' }, { status: 403 });
   }
 
@@ -174,7 +119,7 @@ export async function POST(request: Request) {
         subscription_status: 'active',
         billing_status: 'active',
         approved_at: new Date().toISOString(),
-        approved_by: admin.id,
+        approved_by: ctx.userId,
         subscription_start_date: today,
         next_payment_due: nextPaymentDue.toISOString().split('T')[0],
         auto_suspend_at: autoSuspendAt.toISOString().split('T')[0],
