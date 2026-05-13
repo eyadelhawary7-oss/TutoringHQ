@@ -110,6 +110,54 @@ export async function getAdminContext(request: Request): Promise<AdminContext | 
   return { userId: user.id, internalRole, supabaseAdmin };
 }
 
+/** Informational hierarchy for future use; gates use explicit role names / internalRole, not numeric comparison. */
+export const ROLE_HIERARCHY: Record<string, number> = {
+  super_admin: 100,
+  admin: 80,
+  internal_admin: 60,
+  accountant: 40,
+  sales_rep: 30,
+  support_agent: 30,
+  internal_viewer: 20,
+  custom: 10,
+};
+
+function internalRolePermitted(ctx: AdminContext, permitted: ReadonlyArray<string>): boolean {
+  const superOnly = permitted.length === 1 && permitted[0] === 'super_admin';
+  if (superOnly) return ctx.internalRole === 'super_admin';
+  if (permitted.includes('super_admin') && permitted.includes('admin')) {
+    return ctx.internalRole === 'super_admin' || ctx.internalRole === 'internal_admin';
+  }
+  return permitted.includes(ctx.internalRole);
+}
+
+/**
+ * Returns null when the caller is allowed, or a 403 JSON Response otherwise.
+ * Use after `getAdminContext` (pass full {@link AdminContext}) or with `{ role }` from `admin_users`.
+ */
+export function requireAdminRole(
+  admin: AdminContext | { role: string },
+  permitted: ReadonlyArray<string>,
+): Response | null {
+  if ('internalRole' in admin && 'userId' in admin) {
+    const ctx = admin as AdminContext;
+    if (internalRolePermitted(ctx, permitted)) return null;
+    return Response.json(
+      { error: 'insufficient_admin_role', required: permitted, current: ctx.internalRole },
+      { status: 403 },
+    );
+  }
+  const row = admin as { role: string };
+  const allowed =
+    permitted.includes(row.role) ||
+    (permitted.includes('admin') && row.role === 'internal_admin');
+  if (allowed) return null;
+  return Response.json(
+    { error: 'insufficient_admin_role', required: permitted, current: row.role },
+    { status: 403 },
+  );
+}
+
 export type RequireSuperAdminResult =
   | { ok: true; supabaseAdmin: SupabaseClient; userId: string }
   | { ok: false; response: NextResponse };

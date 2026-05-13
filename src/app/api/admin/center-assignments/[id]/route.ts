@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
-import { createServerClient } from '@supabase/ssr'
 import { parseBodyWithLimit } from '@/lib/validate';
+import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 const supabaseAdmin =
@@ -14,53 +12,6 @@ const supabaseAdmin =
         auth: { persistSession: false, autoRefreshToken: false },
       })
     : null
-
-async function getAdminUser(request: Request) {
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseAdmin) return null
-
-  const cookieStore = await cookies()
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll()
-      },
-      setAll(cookiesToSet) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options)
-          })
-        } catch {
-          /* read-only cookies */
-        }
-      },
-    },
-  })
-
-  let userId: string | null = null
-  const {
-    data: { user: cookieUser },
-  } = await supabase.auth.getUser()
-  if (cookieUser) userId = cookieUser.id
-  else {
-    const authHeader = request.headers.get('Authorization')
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.slice(7)
-      const {
-        data: { user: bearerUser },
-        error,
-      } = await supabase.auth.getUser(token)
-      if (bearerUser && !error) userId = bearerUser.id
-    }
-  }
-
-  if (!userId) return null
-  const { data: adminUser } = await supabaseAdmin
-    .from('admin_users')
-    .select('id, role')
-    .eq('id', userId)
-    .single()
-  return adminUser
-}
 
 function validateSourcedStaff(sourced_by: string, staff_id: string | null): string | null {
   if (sourced_by === 'eyad' && staff_id) return 'centerAssignments.errors.eyad_no_staff'
@@ -78,16 +29,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     )
   }
 
-  const admin = await getAdminUser(request)
-  if (!admin) {
+  const ctx = await getAdminContext(request)
+  if (!ctx) {
     return NextResponse.json({ errorKey: 'centerAssignments.errors.unauthorized' }, { status: 401 })
   }
-  if (admin.role !== 'super_admin') {
-    return NextResponse.json(
-      { errorKey: 'centerAssignments.errors.forbidden_super_admin' },
-      { status: 403 },
-    )
-  }
+  // Role gate added per docs/AUDIT_v22.md Phase 3 / Phase 8 P0 (Task 9)
+  const roleErr = requireAdminRole(ctx, ['super_admin', 'admin'])
+  if (roleErr) return roleErr
 
   const { id } = await params
 
@@ -166,4 +114,37 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   return NextResponse.json({ assignment: data })
+}
+
+// DELETE /api/admin/center-assignments/[id]
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  if (!supabaseAdmin) {
+    return NextResponse.json(
+      { errorKey: 'centerAssignments.errors.misconfigured' },
+      { status: 500 },
+    )
+  }
+
+  const ctx = await getAdminContext(request)
+  if (!ctx) {
+    return NextResponse.json({ errorKey: 'centerAssignments.errors.unauthorized' }, { status: 401 })
+  }
+  // Role gate added per docs/AUDIT_v22.md Phase 3 / Phase 8 P0 (Task 9)
+  const roleErr = requireAdminRole(ctx, ['super_admin', 'admin'])
+  if (roleErr) return roleErr
+
+  const { id } = await params
+
+  const { error } = await supabaseAdmin.from('center_assignments').delete().eq('id', id)
+  if (error) {
+    return NextResponse.json(
+      { errorKey: 'centerAssignments.errors.save_failed', detail: error.message },
+      { status: 500 },
+    )
+  }
+
+  return NextResponse.json({ success: true })
 }

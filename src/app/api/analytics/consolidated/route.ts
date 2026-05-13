@@ -69,41 +69,52 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // N+1 fix per docs/AUDIT_n_plus_1_hotpath_may13.md
+    // Replaced 4N per-center queries with 3 batched .in() queries + in-memory grouping.
+    const [paymentsRes, studentsRes, usersRes] = await Promise.all([
+      supabaseAdmin
+        .from('payments')
+        .select('center_id, amount, status')
+        .in('center_id', centerIds)
+        .gte('paid_at', monthStart.toISOString())
+        .lte('paid_at', monthEnd.toISOString()),
+      supabaseAdmin
+        .from('students')
+        .select('center_id, balance_due')
+        .in('center_id', centerIds),
+      supabaseAdmin
+        .from('users')
+        .select('center_id')
+        .in('center_id', centerIds),
+    ]);
+
+    const mrrByCenter: Record<string, number> = {};
+    for (const p of (paymentsRes.data ?? []) as { center_id: string; amount?: number; status?: string }[]) {
+      if (p.status === 'confirmed' || p.status === 'paid') {
+        mrrByCenter[p.center_id] = (mrrByCenter[p.center_id] ?? 0) + (p.amount ?? 0);
+      }
+    }
+    const outstandingByCenter: Record<string, number> = {};
+    const studentCountByCenter: Record<string, number> = {};
+    for (const st of (studentsRes.data ?? []) as { center_id: string; balance_due?: number }[]) {
+      outstandingByCenter[st.center_id] = (outstandingByCenter[st.center_id] ?? 0) + (Number(st.balance_due) || 0);
+      studentCountByCenter[st.center_id] = (studentCountByCenter[st.center_id] ?? 0) + 1;
+    }
+    const staffCountByCenter: Record<string, number> = {};
+    for (const u of (usersRes.data ?? []) as { center_id: string }[]) {
+      staffCountByCenter[u.center_id] = (staffCountByCenter[u.center_id] ?? 0) + 1;
+    }
+
     const byBranch: { center_id: string; name: string; mrr: number; students: number; outstanding: number; staff_count: number }[] = [];
     let totalMrr = 0;
     let totalStudents = 0;
     let totalOutstanding = 0;
 
     for (const c of centers ?? []) {
-      const [paymentsRes, studentsRes, studentCountRes, staffCountRes] = await Promise.all([
-        supabaseAdmin
-          .from('payments')
-          .select('amount, paid_at, status')
-          .eq('center_id', c.id)
-          .gte('paid_at', monthStart.toISOString())
-          .lte('paid_at', monthEnd.toISOString()),
-        supabaseAdmin
-          .from('students')
-          .select('id, balance_due')
-          .eq('center_id', c.id),
-        supabaseAdmin
-          .from('students')
-          .select('*', { count: 'exact', head: true })
-          .eq('center_id', c.id),
-        supabaseAdmin
-          .from('users')
-          .select('*', { count: 'exact', head: true })
-          .eq('center_id', c.id),
-      ]);
-
-      const payments = paymentsRes.data ?? [];
-      const students = studentsRes.data ?? [];
-      const studentCount = (studentCountRes as { count?: number }).count ?? 0;
-      const staffCount = (staffCountRes as { count?: number }).count ?? 0;
-
-      const confirmed = payments.filter((p: { status?: string }) => p.status === 'confirmed' || p.status === 'paid');
-      const mrr = confirmed.reduce((s: number, p: { amount?: number }) => s + (p.amount ?? 0), 0);
-      const outstanding = students.reduce((s: number, st: { balance_due?: number }) => s + (Number(st.balance_due) || 0), 0);
+      const mrr = mrrByCenter[c.id] ?? 0;
+      const outstanding = outstandingByCenter[c.id] ?? 0;
+      const studentCount = studentCountByCenter[c.id] ?? 0;
+      const staffCount = staffCountByCenter[c.id] ?? 0;
 
       totalMrr += mrr;
       totalStudents += studentCount;

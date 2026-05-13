@@ -2,6 +2,8 @@ import { createServerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { parseBodyWithLimit } from '@/lib/validate';
+import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
 
 export async function GET(request: Request) {
   try {
@@ -134,4 +136,120 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
+}
+
+// POST /api/admin/pending-signups — approve a single pending centre signup
+export async function POST(request: Request) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !supabaseServiceKey) {
+    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+  }
+
+  const ctx = await getAdminContext(request);
+  if (!ctx) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  // Role gate added per docs/AUDIT_v22.md Phase 3 / Phase 8 P0 (Task 9)
+  const roleErr = requireAdminRole(ctx, ['super_admin', 'admin']);
+  if (roleErr) return roleErr;
+
+  let body: Record<string, unknown>;
+  try {
+    body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+  }
+
+  const center_id = typeof body.center_id === 'string' ? body.center_id : null;
+  if (!center_id) {
+    return NextResponse.json({ error: 'center_id is required' }, { status: 400 });
+  }
+
+  const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { data: center, error: fetchErr } = await adminClient
+    .from('centers')
+    .select('id, status, plan, all_in_price, billing_period')
+    .eq('id', center_id)
+    .eq('status', 'pending')
+    .single();
+
+  if (fetchErr || !center) {
+    return NextResponse.json({ error: 'Center not found or not pending' }, { status: 404 });
+  }
+
+  const nextPaymentDue = new Date();
+  nextPaymentDue.setDate(nextPaymentDue.getDate() + 30);
+  const autoSuspendAt = new Date();
+  autoSuspendAt.setDate(autoSuspendAt.getDate() + 38);
+  const today = new Date().toISOString().split('T')[0];
+
+  const { error: updateErr } = await adminClient
+    .from('centers')
+    .update({
+      status: 'active',
+      subscription_status: 'active',
+      billing_status: 'active',
+      approved_at: new Date().toISOString(),
+      approved_by: ctx.userId,
+      subscription_start_date: today,
+      next_payment_due: nextPaymentDue.toISOString().split('T')[0],
+      auto_suspend_at: autoSuspendAt.toISOString().split('T')[0],
+    })
+    .eq('id', center_id);
+
+  if (updateErr) {
+    return NextResponse.json({ error: updateErr.message }, { status: 500 });
+  }
+
+  try {
+    const { createCommissionsForCenter } = await import('@/lib/commissions');
+    await createCommissionsForCenter(center_id);
+  } catch (err) {
+    console.error('[admin/pending-signups] Commission creation failed:', err);
+  }
+
+  return NextResponse.json({ success: true, center_id }, { status: 200 });
+}
+
+// DELETE /api/admin/pending-signups?id=<center_id> — reject a pending signup
+export async function DELETE(request: Request) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !supabaseServiceKey) {
+    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+  }
+
+  const ctx = await getAdminContext(request);
+  if (!ctx) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  // Role gate added per docs/AUDIT_v22.md Phase 3 / Phase 8 P0 (Task 9)
+  const roleErr = requireAdminRole(ctx, ['super_admin', 'admin']);
+  if (roleErr) return roleErr;
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get('id');
+  if (!id) {
+    return NextResponse.json({ error: 'id query parameter is required' }, { status: 400 });
+  }
+
+  const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { error } = await adminClient
+    .from('centers')
+    .update({ status: 'rejected' })
+    .eq('id', id)
+    .eq('status', 'pending');
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
 }

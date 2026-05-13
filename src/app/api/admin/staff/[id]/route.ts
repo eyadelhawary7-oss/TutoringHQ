@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
-import { createServerClient } from '@supabase/ssr'
 import { parseBodyWithLimit } from '@/lib/validate';
+import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 const supabaseAdmin =
@@ -15,53 +13,6 @@ const supabaseAdmin =
       })
     : null
 
-async function getAdminUser(request: Request) {
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseAdmin) return null
-
-  const cookieStore = await cookies()
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll()
-      },
-      setAll(cookiesToSet) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options)
-          })
-        } catch {
-          /* read-only cookie context */
-        }
-      },
-    },
-  })
-
-  let userId: string | null = null
-  const {
-    data: { user: cookieUser },
-  } = await supabase.auth.getUser()
-  if (cookieUser) userId = cookieUser.id
-  else {
-    const authHeader = request.headers.get('Authorization')
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.slice(7)
-      const {
-        data: { user: bearerUser },
-        error,
-      } = await supabase.auth.getUser(token)
-      if (bearerUser && !error) userId = bearerUser.id
-    }
-  }
-
-  if (!userId) return null
-  const { data: adminUser } = await supabaseAdmin
-    .from('admin_users')
-    .select('id, role')
-    .eq('id', userId)
-    .single()
-  return adminUser
-}
-
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -70,8 +21,7 @@ export async function GET(
     return NextResponse.json({ errorKey: 'staff.errors.listFailed' }, { status: 500 })
   }
 
-  const admin = await getAdminUser(request)
-  if (!admin) {
+  if (!(await getAdminContext(request))) {
     return NextResponse.json({ errorKey: 'staff.errors.unauthorized' }, { status: 401 })
   }
 
@@ -108,7 +58,7 @@ export async function GET(
   })
 }
 
-// PATCH /api/admin/staff/[id] — update or terminate (super_admin only)
+// PATCH /api/admin/staff/[id] — update or terminate (super_admin or admin role)
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -117,13 +67,13 @@ export async function PATCH(
     return NextResponse.json({ errorKey: 'staff.errors.saveFailed' }, { status: 500 })
   }
 
-  const admin = await getAdminUser(request)
-  if (!admin) {
+  const ctx = await getAdminContext(request)
+  if (!ctx) {
     return NextResponse.json({ errorKey: 'staff.errors.unauthorized' }, { status: 401 })
   }
-  if (admin.role !== 'super_admin') {
-    return NextResponse.json({ errorKey: 'staff.errors.forbidden' }, { status: 403 })
-  }
+  // Role gate added per docs/AUDIT_v22.md Phase 3 / Phase 8 P0 (Task 9)
+  const roleErr = requireAdminRole(ctx, ['super_admin', 'admin'])
+  if (roleErr) return roleErr
 
   const { id } = await params
   let body: unknown
@@ -194,4 +144,34 @@ export async function PATCH(
     )
   }
   return NextResponse.json({ staff: data })
+}
+
+// DELETE /api/admin/staff/[id] — remove a staff member (super_admin or admin)
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  if (!supabaseAdmin) {
+    return NextResponse.json({ errorKey: 'staff.errors.saveFailed' }, { status: 500 })
+  }
+
+  const ctx = await getAdminContext(request)
+  if (!ctx) {
+    return NextResponse.json({ errorKey: 'staff.errors.unauthorized' }, { status: 401 })
+  }
+  // Role gate added per docs/AUDIT_v22.md Phase 3 / Phase 8 P0 (Task 9)
+  const roleErr = requireAdminRole(ctx, ['super_admin', 'admin'])
+  if (roleErr) return roleErr
+
+  const { id } = await params
+
+  const { error } = await supabaseAdmin.from('staff').delete().eq('id', id)
+  if (error) {
+    return NextResponse.json(
+      { errorKey: 'staff.errors.saveFailed', error: error.message },
+      { status: 500 },
+    )
+  }
+
+  return NextResponse.json({ success: true })
 }

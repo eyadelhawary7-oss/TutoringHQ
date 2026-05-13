@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
-import { createServerClient } from '@supabase/ssr'
 import { parseBodyWithLimit } from '@/lib/validate';
+import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 const supabaseAdmin =
@@ -14,53 +12,6 @@ const supabaseAdmin =
         auth: { persistSession: false, autoRefreshToken: false },
       })
     : null
-
-async function getAdminUser(request: Request) {
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseAdmin) return null
-
-  const cookieStore = await cookies()
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll()
-      },
-      setAll(cookiesToSet) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options)
-          })
-        } catch {
-          /* read-only cookie context */
-        }
-      },
-    },
-  })
-
-  let userId: string | null = null
-  const {
-    data: { user: cookieUser },
-  } = await supabase.auth.getUser()
-  if (cookieUser) userId = cookieUser.id
-  else {
-    const authHeader = request.headers.get('Authorization')
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.slice(7)
-      const {
-        data: { user: bearerUser },
-        error,
-      } = await supabase.auth.getUser(token)
-      if (bearerUser && !error) userId = bearerUser.id
-    }
-  }
-
-  if (!userId) return null
-  const { data: adminUser } = await supabaseAdmin
-    .from('admin_users')
-    .select('id, role')
-    .eq('id', userId)
-    .single()
-  return adminUser
-}
 
 type Breakdown = {
   t1_details?: Array<{ id: string }>
@@ -77,13 +28,10 @@ export async function GET(
     return NextResponse.json({ errorKey: 'payouts.errors.listFailed' }, { status: 500 })
   }
 
-  const admin = await getAdminUser(request)
-  if (!admin) {
+  if (!(await getAdminContext(request))) {
     return NextResponse.json({ errorKey: 'payouts.errors.unauthorized' }, { status: 401 })
   }
-  if (admin.role !== 'super_admin') {
-    return NextResponse.json({ errorKey: 'payouts.errors.forbidden' }, { status: 403 })
-  }
+  // GET stays open to all admin_users members — no role gate per AUDIT_v22.md Phase 3
 
   const { id } = await params
   const { data, error } = await supabaseAdmin
@@ -105,13 +53,13 @@ export async function PATCH(
     return NextResponse.json({ errorKey: 'payouts.errors.saveFailed' }, { status: 500 })
   }
 
-  const admin = await getAdminUser(request)
-  if (!admin) {
+  const ctx = await getAdminContext(request)
+  if (!ctx) {
     return NextResponse.json({ errorKey: 'payouts.errors.unauthorized' }, { status: 401 })
   }
-  if (admin.role !== 'super_admin') {
-    return NextResponse.json({ errorKey: 'payouts.errors.forbidden' }, { status: 403 })
-  }
+  // Role gate added per docs/AUDIT_v22.md Phase 3 / Phase 8 P0 (Task 9)
+  const roleErr = requireAdminRole(ctx, ['super_admin'])
+  if (roleErr) return roleErr
 
   const { id } = await params
   let body: unknown
@@ -156,7 +104,7 @@ export async function PATCH(
       return NextResponse.json({ errorKey: 'payouts.errors.markPaidConfirmedOnly' }, { status: 400 })
     }
     const paidAt = new Date().toISOString()
-    updates = { status: 'paid', paid_at: paidAt, paid_by: admin.id }
+    updates = { status: 'paid', paid_at: paidAt, paid_by: ctx.userId }
     auditAction = 'payout_paid'
 
     const breakdown = payout.breakdown as Breakdown
@@ -238,10 +186,52 @@ export async function PATCH(
     commission_id: null,
     action: auditAction,
     triggered_by: 'manual',
-    performed_by: admin.id,
+    performed_by: ctx.userId,
     previous_value: { status: payout.status, total_amount: payout.total_amount },
     new_value: updates,
   })
 
   return NextResponse.json({ payout: updated })
+}
+
+// DELETE — void a draft payout (super_admin only)
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  if (!supabaseAdmin) {
+    return NextResponse.json({ errorKey: 'payouts.errors.saveFailed' }, { status: 500 })
+  }
+
+  const ctx = await getAdminContext(request)
+  if (!ctx) {
+    return NextResponse.json({ errorKey: 'payouts.errors.unauthorized' }, { status: 401 })
+  }
+  // Role gate added per docs/AUDIT_v22.md Phase 3 / Phase 8 P0 (Task 9)
+  const roleErr = requireAdminRole(ctx, ['super_admin'])
+  if (roleErr) return roleErr
+
+  const { id } = await params
+
+  const { data: payout, error: fetchErr } = await supabaseAdmin
+    .from('commission_payouts')
+    .select('status')
+    .eq('id', id)
+    .single()
+  if (fetchErr || !payout) {
+    return NextResponse.json({ errorKey: 'payouts.errors.notFound' }, { status: 404 })
+  }
+  if (payout.status !== 'draft') {
+    return NextResponse.json({ errorKey: 'payouts.errors.cannotDeleteNonDraft' }, { status: 400 })
+  }
+
+  const { error } = await supabaseAdmin.from('commission_payouts').delete().eq('id', id)
+  if (error) {
+    return NextResponse.json(
+      { errorKey: 'payouts.errors.saveFailed', error: error.message },
+      { status: 500 },
+    )
+  }
+
+  return NextResponse.json({ success: true })
 }
