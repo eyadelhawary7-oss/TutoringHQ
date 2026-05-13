@@ -2,137 +2,83 @@
 
 *Generated: 2026-05-13*
 
----
-
 ## File 1: `src/app/api/admin/billing/route.ts`
 
-**Pattern found:** No. The GET handler's `for (const row of billingRows)` loop (line 75) contains only in-memory computation — no `.from()` calls inside the loop. All DB fetches are batched before the loop:
-- `centers` — single query, all columns, all centers
-- `referral_rewards` — single `.in('referring_center_id', centerIds)` call
-- `payg_weekly_charges` — single `.in('center_id', paygCenterIds)` call
-- `admin_payments`, `invoices` (approved), `invoices` (pending) — each a single bounded query (`.limit(100)` / `.limit(50)`)
+**Pattern found:** No. The main `for (const row of billingRows)` loop only computes derived fields in memory (amounts, MRR, discounts, `daysUntilDue`). There is no `await supabase...` or `.from()` inside that loop. Referral credits and PAYG charges are loaded with batched `.in('center_id', ...)` / `.in('referring_center_id', ...)` before the loop. `paymentRows` / `invoiceRows` use `.find()` on `billingRows` for `centerName` — that is extra CPU (O(payments × centers)) but **not** extra round-trips to Postgres.
 
-The audit grep likely matched the `.map(...)` callbacks that reference `.from()` only indirectly through imported functions, or the sequential single-center queries in the PUT/POST mutation handlers (which are not hot-path GET responses).
+**Loop bound:** `billingRows` grows with all non-deleted centres (growing table).
 
-**Loop bound:** N/A
-**Real N+1 risk:** No
-**Proposed fix:** None
-**Estimated query reduction at 100 centres:** 0 (already optimal in the GET path)
+**Real N+1 risk:** No (queries are not executed per row inside a loop).
+
+**Proposed fix:** None required for query count. Optional future work: a `Map<centerId, name>` built once from `centers` for O(1) name lookup in payment/invoice maps (CPU only; must keep response semantics if `billingRows` is plan-filtered).
+
+**Estimated query reduction at 100 centres:** 0 (already constant query count for the hot GET path aside from list size).
 
 ---
 
 ## File 2: `src/app/api/admin/centers/route.ts`
 
-**Pattern found:** Yes. Inside `enrichCentersList()`, after fetching all owners from the `users` table in one batched query, the code issues one **Supabase Admin Auth API call per unique owner** in a `Promise.all` block (lines 114–129):
+**Pattern found:** Yes, in **DELETE** only. `GET` uses `enrichCentersList`, which already batches `students`, `attendance_scans`, `users`, `admin_payments`, and referring centres with `.in('center_id', centerIds)` (see inline note re prior auth N+1 removal). However, when deleting a centre, the handler loads `studentIds` then runs:
 
-```ts
-const uniqueOwnerAuthIds = [...new Set(...)];
-const waPhoneByAuthId = new Map<string, string | null>();
-await Promise.all(
-  uniqueOwnerAuthIds.map(async (authId) => {
-    const { data, error } = await adminClient.auth.admin.getUserById(authId);
-    waPhoneByAuthId.set(authId, phoneFromCenterhqAuthEmail(data.user.email));
-  }),
-);
-```
+`for (const sid of studentIds) { await adminSupabase.from('parent_portal_tokens').delete().eq('student_id', sid) }`
 
-The purpose is to extract the owner's phone from their auth email (`${phoneDigits}@centerhq.local`). But the `users` table already stores `phone` in `row.phone`, which is fetched in the same preceding query. The code then immediately falls back to `row.phone` if the auth lookup is null:
+That is **one DELETE round-trip per student** (classic sequential N+1).
 
-```ts
-const phone = (fromAuth && fromAuth.length > 0 ? fromAuth : null) ?? (row.phone && row.phone.trim() ? row.phone : null);
-```
+**Loop bound:** Grows with student count for the deleted centre.
 
-This means the auth API calls are redundant — `row.phone` is always available and carries the same value.
+**Real N+1 risk:** Yes.
 
-**Loop bound:** Grows with number of centres on the current page (default 50). For a 50-centre page there are up to 50 auth Admin API calls per GET request.
-**Real N+1 risk:** Yes
-**Proposed fix:** Drop the `Promise.all` auth admin lookup block entirely. Remove `uniqueOwnerAuthIds`, `waPhoneByAuthId`, and the `phoneFromCenterhqAuthEmail` import. Use `row.phone` directly in the `ownerMap` construction loop.
-**Estimated query reduction at 100 centres:** Eliminates ~50 HTTP round-trips to the auth API per page request (from 51+ calls to 0 auth admin calls; the batched DB queries remain unchanged).
+**Proposed fix:** Replace the loop with a single `delete().in('student_id', studentIds)` (wrapped in the same try/catch pattern).
+
+**Estimated query reduction:** For one centre with *S* students, from *S* queries to **1** (e.g. 200 students → 200 to 1).
 
 ---
 
 ## File 3: `src/app/api/analytics/consolidated/route.ts`
 
-**Pattern found:** Yes. The handler iterates over every centre in the organisation and issues 4 parallel DB queries per centre (lines 77–120):
+**Pattern found:** No remaining DB N+1. The route uses `Promise.all` with three batched queries (`payments`, `students`, `users`) scoped by `.in('center_id', centerIds)`, then aggregates in memory. The `for (const c of centers)` loop only reads maps.
 
-```ts
-for (const c of centers ?? []) {
-  const [paymentsRes, studentsRes, studentCountRes, staffCountRes] = await Promise.all([
-    supabaseAdmin.from('payments').select(...).eq('center_id', c.id)...,
-    supabaseAdmin.from('students').select(...).eq('center_id', c.id),
-    supabaseAdmin.from('students').select('*', { count: 'exact', head: true }).eq('center_id', c.id),
-    supabaseAdmin.from('users').select('*', { count: 'exact', head: true }).eq('center_id', c.id),
-  ]);
-}
-```
+**Loop bound:** Branches (centres) in the org — growing.
 
-Each iteration is parallelised internally (`Promise.all`), but iterations are sequential with `await` on the outer `for`. An organisation with N branches fires 4N queries for this single endpoint.
+**Real N+1 risk:** No (already refactored; see existing comment in source).
 
-**Loop bound:** Grows with number of branches in the organisation. An org with 10 branches = 40 queries; 20 branches = 80 queries.
-**Real N+1 risk:** Yes
-**Proposed fix:** Replace the entire loop with 3 batched queries (`.in('center_id', centerIds)`), then group/count in-memory:
-1. `payments` for all center_ids in date range → group by `center_id` → compute `mrr` per branch
-2. `students` with `center_id, balance_due` for all center_ids → count per branch + sum `balance_due` per branch
-3. `users` with `center_id` for all center_ids → count per branch
+**Proposed fix:** None.
 
-Response shape (`total_mrr`, `total_students`, `total_outstanding`, `by_branch[]`) is preserved exactly.
-
-**Estimated query reduction at 100 centres:** From ~400 queries per request to 4 queries (1 for centers + 3 batched dimensions). At a typical 5-branch org: from 21 to 4.
+**Estimated query reduction at 100 centres:** Already ~3 queries instead of O(N) per metric family.
 
 ---
 
 ## File 4: `src/app/api/settings/billing/route.ts`
 
-**Pattern found:** No. Every DB fetch in the GET handler targets a single centre via `.eq('center_id', auth.centerId)`:
-- `centers` single row
-- `pricing_plans` (global, no filter)
-- `payg_rates` (global, no filter)
-- `attendance_scans` (monthly), `attendance_scans` (this week)
-- `payg_weekly_charges`, `invoices`, `announcement_blasts`
+**Pattern found:** No. `GET` runs a fixed sequence of scoped queries (`centers` by id, `pricing_plans`, `payg_rates`, `attendance_scans` twice for month/week windows, `payg_weekly_charges`, `invoices`, `announcement_blasts`). The only `for` loop is `for (const p of order)` over `ORDERED_SUBSCRIPTION_PLAN_KEYS` (small constant list) calling `getPlanPrice` in memory — no Supabase inside the loop.
 
-The `for (const p of order)` loop (line 145) iterates over a local in-memory `PlanKey[]` array and does no DB I/O. The mutation PUT/POST handlers each perform 1–2 single-row operations.
+**Loop bound:** N/A for DB.
 
-**Loop bound:** N/A — no DB calls in any loop
-**Real N+1 risk:** No
-**Proposed fix:** None
-**Estimated query reduction at 100 centres:** 0 (single-centre route by design)
+**Real N+1 risk:** No.
+
+**Proposed fix:** None.
+
+**Estimated query reduction:** 0.
 
 ---
 
 ## File 5: `src/app/api/auth/check-invite/route.ts`
 
-**Pattern found:** Technically yes, but bounded. The `for (const p of phoneVariants)` loop (lines 64–73) issues one DB query per phone variant:
+**Pattern found:** A `for (const p of phoneVariants)` loop issues up to **two** `center_invites` selects (normalized vs leading-zero variant). This is bounded by a constant (2), not by centres/students/invites table cardinality.
 
-```ts
-const phoneVariants = [normalizedPhone, digits.startsWith('0') ? digits : '0' + digits];
-for (const p of phoneVariants) {
-  const { data } = await supabaseAdmin.from('center_invites').select(...).eq('phone', p)...;
-  if (data) { invite = data; break; }
-}
-```
+**Loop bound:** Fixed (≤2).
 
-`phoneVariants` is **always exactly 2 elements**, and the loop breaks on first match. Maximum 2 DB round-trips per call; often just 1 (when the first format matches).
+**Real N+1 risk:** No — intentional format fallback, not scaling N+1.
 
-**Loop bound:** Fixed — always ≤ 2 variants, with early exit on first hit
-**Real N+1 risk:** No — the worst case is 2 sequential queries, not unbounded growth
-**Proposed fix:** Could be simplified to a single `.in('phone', phoneVariants)` query, but the saving is ≤ 1 round-trip per login. Not worth refactoring under these scope rules.
-**Estimated query reduction at 100 centres:** 0 (this route is per-login, not per-centre)
+**Proposed fix:** None (optional micro-optimization: single query with `.or('phone.eq.x,phone.eq.y)` could shave one round-trip but is not required for Phase 15 “hot path N+1”).
+
+**Estimated query reduction:** 0 for audit purposes.
 
 ---
 
 ## Summary
 
-| File | Real N+1 | Pattern | Queries at 50-centre page | After fix |
-|------|----------|---------|--------------------------|-----------|
-| admin/billing | No | N/A (false positive) | ~6 queries | 0 change |
-| **admin/centers** | **Yes** | N auth admin API calls per page | ~56 calls | ~6 calls |
-| **analytics/consolidated** | **Yes** | 4 DB queries × N branches | 4N + 1 | 4 total |
-| settings/billing | No | N/A (single-centre route) | ~8 queries | 0 change |
-| auth/check-invite | No | Fixed-2 loop w/ early exit | ≤ 2 queries | 0 change |
-
-- **Files with real N+1:** 2
-- **Files with intentional / bounded sequential queries:** 3 (false positives from audit grep)
-- **Total queries eliminated at 10-branch org (analytics):** 36 queries → 3 (–91%)
-- **Total auth API calls eliminated at 50-centre admin page:** 50 calls → 0 (–100%)
-
-The remaining 21 files flagged in audit Phase 15 are intentional rate-limit-respecting cron loops and are not in scope for this refactor.
+- **Files with real N+1:** **1** — `src/app/api/admin/centers/route.ts` (DELETE handler, `parent_portal_tokens` per student).
+- **Files with intentional sequential queries:** **1** — `check-invite` (≤2 phone variants; not table-scaled).
+- **Files already batched / no query-in-loop:** **3** — `admin/billing` (GET), `analytics/consolidated`, `settings/billing`.
+- **Total queries eliminated at scale:** Per **single centre delete**, up to **(S − 1)** redundant DELETEs removed where *S* = student count (e.g. **199** fewer queries when *S* = 200). Not expressed “per 100 centres” because this path is per-delete, not per list page.

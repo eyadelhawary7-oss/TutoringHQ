@@ -482,12 +482,17 @@ export async function DELETE(request: NextRequest) {
     const { data: studentRows } = await adminSupabase.from('students').select('id').eq('center_id', centerId);
     const studentIds = studentRows?.map((s: { id: string }) => s.id) ?? [];
     if (studentIds.length > 0) {
-      for (const sid of studentIds) {
-        try {
-          await adminSupabase.from('parent_portal_tokens').delete().eq('student_id', sid);
-        } catch {
-          /* continue */
+      // N+1 fix per docs/AUDIT_n_plus_1_hotpath_may13.md
+      try {
+        const { error: tokErr } = await adminSupabase
+          .from('parent_portal_tokens')
+          .delete()
+          .in('student_id', studentIds);
+        if (tokErr) {
+          console.warn('[admin/centers DELETE] parent_portal_tokens failed:', tokErr.message);
         }
+      } catch {
+        /* continue */
       }
     }
 
