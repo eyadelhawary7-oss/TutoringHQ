@@ -3,22 +3,14 @@ import { requireSuperAdminRow } from '@/lib/admin-access';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { NextRequest, NextResponse } from 'next/server';
 import { parseBodyWithLimit } from '@/lib/validate';
+import {
+  logPlatformConfigWriteFailure,
+  serializePlatformConfigJsonbValue,
+  upsertPlatformConfigRowUpdateInsert,
+} from '@/lib/platformConfigWrite';
 
 const KEY = 'pack_price_per_parent';
 const DEFAULT_PACK_PRICE = 12;
-
-/**
- * `platform_config.value` is JSONB NOT NULL. PostgREST batched upserts set `?columns=…`
- * and map JSON `null` to SQL NULL for cells, which violates NOT NULL. Single-row
- * update/insert (or per-object upserts) avoids that path; explicit jsonb `null`
- * uses `serializePlatformConfigJsonbValue` parity with `/api/admin/pricing-config`.
- */
-function serializePlatformConfigJsonbValue(v: unknown): unknown {
-  if (v === null) {
-    return JSON.parse('null') as null;
-  }
-  return v;
-}
 
 function parsePackPrice(value: unknown): number {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
@@ -46,7 +38,12 @@ export async function GET(request: Request) {
       updated_at: new Date().toISOString(),
     });
     if (seedErr && !String(seedErr.message).toLowerCase().includes('duplicate')) {
-      console.error('[GET /api/admin/pricing/pack] seed', seedErr);
+      logPlatformConfigWriteFailure(
+        `[GET /api/admin/pricing/pack seed] Trigger: admin/pricing page load GET /api/admin/pricing/pack (bootstrap row missing)`,
+        'insert',
+        { key: KEY },
+        seedErr,
+      );
       return NextResponse.json({ error: seedErr.message }, { status: 500 });
     }
   }
@@ -87,33 +84,22 @@ export async function PATCH(request: NextRequest) {
   }
 
   const nowIso = new Date().toISOString();
-  const value = serializePlatformConfigJsonbValue(n);
-  const rowPatch = {
-    value,
-    updated_at: nowIso,
-    updated_by: auth.userId,
-  };
-
-  const { data: updatedKeys, error: updateErr } = await auth.supabaseAdmin
-    .from('platform_config')
-    .update(rowPatch)
-    .eq('key', KEY)
-    .select('key');
-
-  if (updateErr) {
-    console.error('[PATCH /api/admin/pricing/pack] platform_config update', updateErr);
-    return NextResponse.json({ error: updateErr.message }, { status: 500 });
-  }
-
-  if (!updatedKeys?.length) {
-    const { error: insertErr } = await auth.supabaseAdmin.from('platform_config').insert({
+  const saveSource =
+    request.headers.get('x-chq-pricing-save-source') ?? request.headers.get('X-CHQ-Pricing-Save-Source') ?? 'unknown';
+  const trigger = `[PATCH /api/admin/pricing/pack] save_source=${saveSource} platform_config.key=${KEY}`;
+  const result = await upsertPlatformConfigRowUpdateInsert(
+    auth.supabaseAdmin,
+    {
       key: KEY,
-      ...rowPatch,
-    });
-    if (insertErr && !String(insertErr.message).toLowerCase().includes('duplicate')) {
-      console.error('[PATCH /api/admin/pricing/pack] platform_config insert', insertErr);
-      return NextResponse.json({ error: insertErr.message }, { status: 500 });
-    }
+      value: n,
+      updated_at: nowIso,
+      updated_by: auth.userId,
+    },
+    trigger,
+  );
+
+  if (!result.ok) {
+    return NextResponse.json({ error: result.message ?? 'platform_config write failed' }, { status: 500 });
   }
 
   const { data: updatedRows, error: centersErr } = await auth.supabaseAdmin

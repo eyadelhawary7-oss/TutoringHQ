@@ -30,6 +30,16 @@ const BANNER_STYLE_PREVIEW: Record<BannerStyle, string> = {
 const PROMO_INTERVALS = ['monthly', 'quarterly', 'annual'] as const;
 type PromoIntervalId = (typeof PROMO_INTERVALS)[number];
 
+/**
+ * Correlates `platform_config` write logs on the server (`[PATCH /api/admin/pricing-config]` /
+ * `[PATCH /api/admin/pricing/pack]`). Writes on this page come from:
+ * - Page load `GET /api/admin/pricing/pack` (bootstrap insert if `pack_price_per_parent` missing — no button).
+ * - WhatsApp Pack section Save → `PATCH /api/admin/pricing/pack` (value below).
+ * - "Save all changes" → `PATCH /api/admin/pricing-config` (value below).
+ * Per-plan saves use `pricing_plans` only — not `platform_config`.
+ */
+const PRICING_PLATFORM_CONFIG_SAVE_SOURCE = 'X-CHQ-Pricing-Save-Source' as const;
+
 type PlanRow = {
   plan_key: string;
   arabic_name: string;
@@ -256,6 +266,7 @@ export default function AdminPricingPage() {
 
     setSavingPricingCfg(true);
     try {
+      headers[PRICING_PLATFORM_CONFIG_SAVE_SOURCE] = 'pricing-config-save-all';
       const res = await fetch('/api/admin/pricing-config', {
         method: 'PATCH',
         headers,
@@ -353,6 +364,7 @@ export default function AdminPricingPage() {
     if (!headers) return;
     setSavingPack(true);
     try {
+      headers[PRICING_PLATFORM_CONFIG_SAVE_SOURCE] = 'whatsapp-pack-save';
       const res = await fetch('/api/admin/pricing/pack', {
         method: 'PATCH',
         headers,

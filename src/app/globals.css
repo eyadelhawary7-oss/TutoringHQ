@@ -585,6 +585,24 @@ html.light [data-chq-session-expired] {
   color: #f8fafc !important;
 }
 
+/* Public /pricing — lock dark semantic tokens under html.light (theme uses class on <html>, not Tailwind dark:). */
+html [data-chq-pricing],
+html.light [data-chq-pricing] {
+  --color-surface-0: #080f1a !important;
+  --color-surface-1: #0f172a !important;
+  --color-surface-2: #1e293b !important;
+  --color-surface-3: #334155 !important;
+  --color-text-primary: #f8fafc !important;
+  --color-text-secondary: #cbd5e1 !important;
+  --color-text-muted: #64748b !important;
+  --color-border: #1e293b !important;
+  --color-border-subtle: rgba(148, 163, 184, 0.08) !important;
+  --color-border-default: rgba(148, 163, 184, 0.14) !important;
+  --color-border-strong: rgba(148, 163, 184, 0.24) !important;
+  background-color: #080f1a !important;
+  color: #f8fafc !important;
+}
+
 /* Light theme — component overrides */
 html.light .card {
   background: #ffffff;
