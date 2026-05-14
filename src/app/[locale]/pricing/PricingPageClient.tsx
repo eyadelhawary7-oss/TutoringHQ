@@ -7,6 +7,7 @@ import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { ORDERED_SUBSCRIPTION_PLAN_KEYS, PLANS } from '@/lib/pricing';
 import type { SubscriptionPlanKey } from '@/lib/pricing';
 import { Menu, X } from 'lucide-react';
+import PricingBannerClient from '@/components/landing/PricingBannerClient';
 
 const CONTACT_MAIL = 'mailto:eyad@ehgintelligence.com';
 
@@ -22,6 +23,7 @@ export default function PricingPageClient() {
       data-chq-pricing
       className="min-h-screen bg-[#080f1a] text-white [&_h1]:text-white [&_h2]:text-white [&_p]:text-[var(--color-text-secondary)]"
     >
+      <PricingBannerClient locale={locale} variant="strip" />
       <header className="sticky top-0 z-50 border-b border-slate-800/60 bg-[#080f1a]/90 backdrop-blur-md">
         <div className="relative mx-auto flex h-14 max-w-6xl items-center px-4 md:h-16 md:px-6">
           <button

@@ -14,6 +14,7 @@ import {
   getSupportWhatsAppWaMeBase,
 } from '@/lib/supportWhatsApp';
 import { Menu, X } from 'lucide-react';
+import PricingBannerClient from '@/components/landing/PricingBannerClient';
 
 const WA_SUPPORT = getSupportWhatsAppWaMeBase();
 const WA_SUPPORT_LABEL = getSupportWhatsAppDisplayLabel();
@@ -65,6 +66,7 @@ export default function LocaleHomePage() {
       data-chq-landing
       className="min-h-screen bg-[#080f1a] text-white [&_h1]:text-white [&_h2]:text-white [&_h3]:text-white [&_p]:text-[var(--color-text-secondary)]"
     >
+      <PricingBannerClient locale={locale} variant="strip" />
       <header className="fixed start-0 end-0 top-0 z-50 border-b border-slate-800/60 bg-[#080f1a]/90 backdrop-blur-md">
         <div className="relative mx-auto flex h-14 max-w-6xl items-center px-4 md:h-16 md:px-6">
           <button
@@ -336,6 +338,9 @@ export default function LocaleHomePage() {
         id="pricing-preview"
         className="scroll-mt-20 bg-[#080f1a] px-4 py-16 md:px-6 md:py-24"
       >
+        <div className="mx-auto max-w-5xl">
+          <PricingBannerClient locale={locale} variant="section" />
+        </div>
         <div className="mx-auto max-w-5xl text-center">
           <h2 className="text-2xl font-bold !text-white md:text-3xl">{t('pricingTitle')}</h2>
           <p className="mx-auto mt-3 max-w-xl text-sm text-[var(--color-text-muted)] md:text-base">

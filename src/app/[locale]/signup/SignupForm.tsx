@@ -272,6 +272,27 @@ export default function SignupForm() {
   const [showReferral, setShowReferral] = useState(false);
   const [appliedReferralCode, setAppliedReferralCode] = useState<string | null>(null);
   const [step1Errors, setStep1Errors] = useState<Partial<Record<string, string>>>({});
+  const [promoCfg, setPromoCfg] = useState<{
+    enabled: boolean;
+    discountPct: number;
+    applicableIntervals: string[];
+    endDate: string | null;
+    spotsTotal: number | null;
+    spotsUsed: number;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/pricing/public-config')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.promo) setPromoCfg(data.promo);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const { persist } = usePendingSignup(
     setForm,
@@ -1201,6 +1222,51 @@ export default function SignupForm() {
                   </p>
                 </div>
 
+                {(() => {
+                  if (!promoCfg?.enabled) return null;
+                  if (!promoCfg.applicableIntervals.includes(form.billingPeriod)) return null;
+                  if (promoCfg.endDate) {
+                    const end = new Date(promoCfg.endDate);
+                    if (!Number.isNaN(end.getTime()) && end.getTime() < Date.now()) return null;
+                  }
+                  const spotsRemaining =
+                    promoCfg.spotsTotal != null
+                      ? Math.max(0, promoCfg.spotsTotal - promoCfg.spotsUsed)
+                      : null;
+                  if (spotsRemaining != null && spotsRemaining <= 0) return null;
+                  const endsText =
+                    promoCfg.endDate &&
+                    !Number.isNaN(new Date(promoCfg.endDate).getTime())
+                      ? formatDate(promoCfg.endDate, locale, 'short')
+                      : null;
+                  return (
+                    <div
+                      className="mb-4 rounded-xl border border-teal-700/50 bg-teal-900/30 px-4 py-3 text-[12px] text-teal-200"
+                      style={SANS}
+                    >
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span className="font-semibold text-teal-300">
+                          {locale === 'ar'
+                            ? `خصم ${formatNumber(promoCfg.discountPct, locale)}٪`
+                            : `${formatNumber(promoCfg.discountPct, locale)}% off`}
+                        </span>
+                        {endsText ? (
+                          <span className="text-teal-200/80">
+                            {locale === 'ar' ? `ينتهي ${endsText}` : `Ends ${endsText}`}
+                          </span>
+                        ) : null}
+                        {spotsRemaining != null ? (
+                          <span className="text-teal-200/80">
+                            {locale === 'ar'
+                              ? `${formatNumber(spotsRemaining, locale)} مقعد متبقٍ`
+                              : `${formatNumber(spotsRemaining, locale)} spots remaining`}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <div className="mb-8 flex gap-6 border-b border-slate-800 pb-0">
                   {(['monthly', 'quarterly', 'annual'] as const).map((p) => (
                     <button
@@ -1237,6 +1303,23 @@ export default function SignupForm() {
                 {SIGNUP_PLANS.map((plan) => {
                   const selected = form.plan === plan.key;
                   const price = getDisplayPrice(plan, form.billingPeriod);
+                  const promoActive = (() => {
+                    if (!promoCfg?.enabled) return false;
+                    if (!promoCfg.applicableIntervals.includes(form.billingPeriod)) return false;
+                    if (promoCfg.endDate) {
+                      const end = new Date(promoCfg.endDate);
+                      if (!Number.isNaN(end.getTime()) && end.getTime() < Date.now()) return false;
+                    }
+                    if (
+                      promoCfg.spotsTotal != null &&
+                      promoCfg.spotsTotal - promoCfg.spotsUsed <= 0
+                    )
+                      return false;
+                    return true;
+                  })();
+                  const displayedPrice = promoActive
+                    ? Math.max(1, Math.round(price * (1 - promoCfg!.discountPct / 100)))
+                    : price;
                   return (
                     <button
                       key={plan.key}
@@ -1275,13 +1358,22 @@ export default function SignupForm() {
                         </div>
 
                         <div className="shrink-0 text-end">
+                          {promoActive ? (
+                            <div className="text-[10px] text-slate-500 line-through" style={SANS}>
+                              {formatNumber(price, locale, { integerOnly: true })}
+                            </div>
+                          ) : null}
                           <div
                             className={`text-[20px] font-black leading-none transition-colors ${
-                              selected ? 'text-white' : 'text-slate-400'
+                              selected
+                                ? promoActive
+                                  ? 'text-teal-300'
+                                  : 'text-white'
+                                : 'text-slate-400'
                             }`}
                             style={PLAYFAIR}
                           >
-                            {formatNumber(price, locale, { integerOnly: true })}
+                            {formatNumber(displayedPrice, locale, { integerOnly: true })}
                           </div>
                           <div className="mt-0.5 text-[9px] text-slate-600" style={SANS}>
                             EGP / {t('month')}
