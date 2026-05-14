@@ -245,8 +245,18 @@ export default function AdminPricingPage() {
     // separate objects with the same normalized representation. This prevents any
     // subtle divergence (e.g. undefined vs null, property-order differences, or
     // shared-reference mutation) from triggering a spurious dirty flag on load.
-    const committedCfg = JSON.parse(JSON.stringify(data.config)) as PricingConfigSnapshot;
-    const draftCfg = JSON.parse(JSON.stringify(data.config)) as PricingConfigSnapshot;
+    const normalize = (cfg: PricingConfigSnapshot): PricingConfigSnapshot => ({
+      ...cfg,
+      promo: {
+        ...cfg.promo,
+        // Normalize sentinels to null so both states are always in identical form.
+        // 0 = unlimited sentinel; "" = no-deadline sentinel (see getPromoConfig).
+        endDate: cfg.promo.endDate === '' ? null : cfg.promo.endDate,
+        spotsTotal: cfg.promo.spotsTotal === 0 ? null : cfg.promo.spotsTotal,
+      },
+    });
+    const committedCfg = normalize(JSON.parse(JSON.stringify(data.config)) as PricingConfigSnapshot);
+    const draftCfg = normalize(JSON.parse(JSON.stringify(data.config)) as PricingConfigSnapshot);
     setPricingCfg(committedCfg);
     setPricingCfgDraft(draftCfg);
   }, [getSession, t]);
@@ -916,7 +926,12 @@ export default function AdminPricingPage() {
                             min={0}
                             placeholder={t('pricingPromoSpotsUnlimited')}
                             className="w-full max-w-xs rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2"
-                            value={pricingCfgDraft.promo.spotsTotal ?? ''}
+                            value={
+                              pricingCfgDraft.promo.spotsTotal === null ||
+                              pricingCfgDraft.promo.spotsTotal === 0
+                                ? ''
+                                : pricingCfgDraft.promo.spotsTotal
+                            }
                             onChange={(e) => {
                               const raw = e.target.value;
                               if (raw === '') {
@@ -961,7 +976,7 @@ export default function AdminPricingPage() {
                               ? `خصم ${formatNumber(pricingCfgDraft.promo.discountPct, locale)}٪`
                               : `${formatNumber(pricingCfgDraft.promo.discountPct, locale)}% off`}
                           </span>
-                          {pricingCfgDraft.promo.spotsTotal != null ? (
+                          {pricingCfgDraft.promo.spotsTotal != null && pricingCfgDraft.promo.spotsTotal !== 0 ? (
                             <span className="ms-2 text-[var(--color-text-secondary)]">
                               {t('pricingPromoSpotsRemaining', {
                                 count: formatNumber(

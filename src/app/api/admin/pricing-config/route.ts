@@ -159,7 +159,8 @@ export async function PATCH(request: NextRequest) {
     }
     if (p.endDate !== undefined) {
       if (p.endDate === null || p.endDate === '') {
-        updates.push({ key: 'pricing.promo.end_date', value: null });
+        // Store "" sentinel — platform_config.value is NOT NULL; JS null → SQL NULL violates constraint.
+        updates.push({ key: 'pricing.promo.end_date', value: '' });
       } else if (!isStr(p.endDate) || Number.isNaN(new Date(p.endDate).getTime())) {
         errors.push('promo.endDate must be ISO date string or null');
       } else {
@@ -168,7 +169,8 @@ export async function PATCH(request: NextRequest) {
     }
     if (p.spotsTotal !== undefined) {
       if (p.spotsTotal === null) {
-        updates.push({ key: 'pricing.promo.spots_total', value: null });
+        // Store 0 sentinel for "unlimited" — platform_config.value is NOT NULL; JS null → SQL NULL violates constraint.
+        updates.push({ key: 'pricing.promo.spots_total', value: 0 });
       } else if (!isNum(p.spotsTotal) || p.spotsTotal < 0) {
         errors.push('promo.spotsTotal must be a non-negative number or null');
       } else {

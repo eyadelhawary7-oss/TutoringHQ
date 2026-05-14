@@ -238,12 +238,18 @@ export async function getPromoConfig(): Promise<PromoConfig> {
     'pricing.promo.spots_total',
     'pricing.promo.spots_used',
   ]);
+  // end_date: "" is the sentinel for "no deadline" (stored to satisfy NOT NULL).
+  // maybeStr already converts "" → null via the trim() === '' branch.
+  const endDate = maybeStr(rows['pricing.promo.end_date'], null);
+  // spots_total: 0 is the sentinel for "unlimited" (stored to satisfy NOT NULL).
+  const rawSpotsTotal = maybeNum(rows['pricing.promo.spots_total'], null);
+  const spotsTotal = rawSpotsTotal === 0 ? null : rawSpotsTotal;
   return {
     enabled: bool(rows['pricing.promo.enabled'], PROMO_DEFAULTS.enabled),
     discountPct: num(rows['pricing.promo.discount_pct'], PROMO_DEFAULTS.discountPct),
     applicableIntervals: asStringArray(rows['pricing.promo.applicable_intervals'], PROMO_DEFAULTS.applicableIntervals),
-    endDate: maybeStr(rows['pricing.promo.end_date'], null),
-    spotsTotal: maybeNum(rows['pricing.promo.spots_total'], null),
+    endDate,
+    spotsTotal,
     spotsUsed: num(rows['pricing.promo.spots_used'], PROMO_DEFAULTS.spotsUsed),
   };
 }
