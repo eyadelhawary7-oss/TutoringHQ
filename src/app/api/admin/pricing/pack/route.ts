@@ -7,6 +7,19 @@ import { parseBodyWithLimit } from '@/lib/validate';
 const KEY = 'pack_price_per_parent';
 const DEFAULT_PACK_PRICE = 12;
 
+/**
+ * `platform_config.value` is JSONB NOT NULL. PostgREST batched upserts set `?columns=…`
+ * and map JSON `null` to SQL NULL for cells, which violates NOT NULL. Single-row
+ * update/insert (or per-object upserts) avoids that path; explicit jsonb `null`
+ * uses `serializePlatformConfigJsonbValue` parity with `/api/admin/pricing-config`.
+ */
+function serializePlatformConfigJsonbValue(v: unknown): unknown {
+  if (v === null) {
+    return JSON.parse('null') as null;
+  }
+  return v;
+}
+
 function parsePackPrice(value: unknown): number {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   if (typeof value === 'string') {
@@ -29,7 +42,7 @@ export async function GET(request: Request) {
   if (!existingKey) {
     const { error: seedErr } = await auth.supabaseAdmin.from('platform_config').insert({
       key: KEY,
-      value: DEFAULT_PACK_PRICE,
+      value: serializePlatformConfigJsonbValue(DEFAULT_PACK_PRICE),
       updated_at: new Date().toISOString(),
     });
     if (seedErr && !String(seedErr.message).toLowerCase().includes('duplicate')) {
@@ -73,21 +86,34 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'pack_price_per_parent must be a positive number' }, { status: 400 });
   }
 
-  const { error: upCfgErr } = await auth.supabaseAdmin
-    .from('platform_config')
-    .upsert(
-      {
-        key: KEY,
-        value: n,
-        updated_at: new Date().toISOString(),
-        updated_by: auth.userId,
-      },
-      { onConflict: 'key' },
-    );
+  const nowIso = new Date().toISOString();
+  const value = serializePlatformConfigJsonbValue(n);
+  const rowPatch = {
+    value,
+    updated_at: nowIso,
+    updated_by: auth.userId,
+  };
 
-  if (upCfgErr) {
-    console.error('[PATCH /api/admin/pricing/pack] platform_config', upCfgErr);
-    return NextResponse.json({ error: upCfgErr.message }, { status: 500 });
+  const { data: updatedKeys, error: updateErr } = await auth.supabaseAdmin
+    .from('platform_config')
+    .update(rowPatch)
+    .eq('key', KEY)
+    .select('key');
+
+  if (updateErr) {
+    console.error('[PATCH /api/admin/pricing/pack] platform_config update', updateErr);
+    return NextResponse.json({ error: updateErr.message }, { status: 500 });
+  }
+
+  if (!updatedKeys?.length) {
+    const { error: insertErr } = await auth.supabaseAdmin.from('platform_config').insert({
+      key: KEY,
+      ...rowPatch,
+    });
+    if (insertErr && !String(insertErr.message).toLowerCase().includes('duplicate')) {
+      console.error('[PATCH /api/admin/pricing/pack] platform_config insert', insertErr);
+      return NextResponse.json({ error: insertErr.message }, { status: 500 });
+    }
   }
 
   const { data: updatedRows, error: centersErr } = await auth.supabaseAdmin

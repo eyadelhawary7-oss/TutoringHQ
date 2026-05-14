@@ -128,12 +128,12 @@ export default function PricingPageClient() {
                   className={`flex flex-col rounded-2xl border p-6 text-start ${
                     isPopular
                       ? 'border-teal-600/60 bg-slate-800 ring-1 ring-teal-600/30'
-                      : 'border-slate-700 bg-[var(--color-surface-2)]'
+                      : 'border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-800'
                   }`}
                 >
                   <div className="flex min-h-[28px] flex-wrap items-center gap-2">
                     {isEntry ? (
-                      <span className="inline-block rounded-full border border-slate-600 bg-[var(--color-surface-2)] px-2 py-0.5 text-xs text-slate-400">
+                      <span className="inline-block rounded-full border border-slate-500 bg-slate-200/90 px-2 py-0.5 text-xs text-slate-600 dark:border-slate-600 dark:bg-slate-900/55 dark:text-slate-400">
                         {t('badgeEntry')}
                       </span>
                     ) : null}
@@ -147,43 +147,55 @@ export default function PricingPageClient() {
                     className={
                       isPopular
                         ? 'mt-3 text-lg font-bold !text-[#f8fafc]'
-                        : 'mt-3 text-lg font-bold text-white'
+                        : 'mt-3 text-lg font-bold text-[var(--color-text-primary)] dark:text-white'
                     }
                   >
                     {title}
                   </p>
                   <dl className="mt-4 space-y-2 text-sm">
-                    <div className="flex justify-between gap-2 border-b border-slate-700/80 pb-2">
-                      <dt className={isPopular ? 'text-[#cbd5e1]' : 'text-slate-400'}>{t('colMonthly')}</dt>
+                    <div
+                      className={`flex justify-between gap-2 border-b pb-2 ${
+                        isPopular ? 'border-slate-700/80' : 'border-slate-300/90 dark:border-slate-700/80'
+                      }`}
+                    >
+                      <dt className={isPopular ? 'text-[#cbd5e1]' : 'text-slate-600 dark:text-slate-400'}>
+                        {t('colMonthly')}
+                      </dt>
                       <dd
                         className={
                           isPopular
                             ? 'font-mono font-semibold tabular-nums text-[#f8fafc]'
-                            : 'font-mono font-semibold tabular-nums text-white'
+                            : 'font-mono font-semibold tabular-nums text-slate-900 dark:text-white'
                         }
                       >
                         {formatCurrency(p.monthlyListPrice, locale)}
                       </dd>
                     </div>
-                    <div className="flex justify-between gap-2 border-b border-slate-700/80 pb-2">
-                      <dt className={isPopular ? 'text-[#cbd5e1]' : 'text-slate-400'}>{t('colQuarterly')}</dt>
+                    <div
+                      className={`flex justify-between gap-2 border-b pb-2 ${
+                        isPopular ? 'border-slate-700/80' : 'border-slate-300/90 dark:border-slate-700/80'
+                      }`}
+                    >
+                      <dt className={isPopular ? 'text-[#cbd5e1]' : 'text-slate-600 dark:text-slate-400'}>
+                        {t('colQuarterly')}
+                      </dt>
                       <dd
                         className={
                           isPopular
                             ? 'font-mono font-semibold tabular-nums text-[#f8fafc]'
-                            : 'font-mono font-semibold tabular-nums text-white'
+                            : 'font-mono font-semibold tabular-nums text-slate-900 dark:text-white'
                         }
                       >
                         {formatCurrency(p.quarterlyAllIn, locale)}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-2">
-                      <dt className={isPopular ? 'text-[#cbd5e1]' : 'text-slate-400'}>{t('colAnnual')}</dt>
+                      <dt className={isPopular ? 'text-[#cbd5e1]' : 'text-slate-600 dark:text-slate-400'}>{t('colAnnual')}</dt>
                       <dd
                         className={
                           isPopular
                             ? 'font-mono font-semibold tabular-nums text-[#f8fafc]'
-                            : 'font-mono font-semibold tabular-nums text-white'
+                            : 'font-mono font-semibold tabular-nums text-slate-900 dark:text-white'
                         }
                       >
                         {formatCurrency(p.annualEffectiveMonthly, locale)}
@@ -192,7 +204,7 @@ export default function PricingPageClient() {
                   </dl>
                   <p
                     className={
-                      isPopular ? 'mt-4 text-xs !text-[#94a3b8]' : 'mt-4 text-xs text-slate-500'
+                      isPopular ? 'mt-4 text-xs !text-[#94a3b8]' : 'mt-4 text-xs text-slate-600 dark:text-slate-400'
                     }
                   >
                     {studentsLine}
@@ -201,7 +213,7 @@ export default function PricingPageClient() {
                     className={
                       isPopular
                         ? 'mt-2 text-[11px] !text-[#64748b]'
-                        : 'mt-2 text-[11px] text-slate-600'
+                        : 'mt-2 text-[11px] text-slate-600 dark:text-slate-400'
                     }
                   >
                     {t('priceDisclaimer')}
