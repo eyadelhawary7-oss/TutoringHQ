@@ -272,27 +272,18 @@ export default function SignupForm() {
   const [showReferral, setShowReferral] = useState(false);
   const [appliedReferralCode, setAppliedReferralCode] = useState<string | null>(null);
   const [step1Errors, setStep1Errors] = useState<Partial<Record<string, string>>>({});
-  const [promoCfg, setPromoCfg] = useState<{
-    enabled: boolean;
-    discountPct: number;
-    applicableIntervals: string[];
-    endDate: string | null;
-    spotsTotal: number | null;
-    spotsUsed: number;
-  } | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/pricing/public-config')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (!cancelled && data?.promo) setPromoCfg(data.promo);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const [showPromoInput, setShowPromoInput] = useState(false);
+  const [promoInputValue, setPromoInputValue] = useState('');
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState<{
+    code: string;
+    discountPct: number;
+    originalAmountEgp: number;
+    discountedAmountEgp: number;
+    savingsEgp: number;
+  } | null>(null);
 
   const { persist } = usePendingSignup(
     setForm,
@@ -372,6 +363,53 @@ export default function SignupForm() {
     startTransition(() => router.replace(pathname, { locale: next }));
   };
 
+  const applyPromo = async () => {
+    const code = promoInputValue.trim().toUpperCase();
+    if (!code) return;
+    setPromoLoading(true);
+    setPromoError('');
+    try {
+      const res = await fetch('/api/promo/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code,
+          planKey: form.plan,
+          billingInterval: form.billingPeriod,
+        }),
+      });
+      const data = (await res.json()) as {
+        valid?: boolean;
+        error?: string;
+        discountPct?: number;
+        originalAmountEgp?: number;
+        discountedAmountEgp?: number;
+        savingsEgp?: number;
+      };
+      if (!res.ok || !data.valid) {
+        const errKey = data.error ?? 'generic';
+        if (errKey === 'code_expired') setPromoError(t('promoErrorExpired'));
+        else if (errKey === 'code_exhausted') setPromoError(t('promoErrorExhausted'));
+        else if (errKey === 'already_used') setPromoError(t('promoErrorAlreadyUsed'));
+        else setPromoError(t('promoErrorNotFound'));
+        return;
+      }
+      setAppliedPromo({
+        code,
+        discountPct: data.discountPct ?? 0,
+        originalAmountEgp: data.originalAmountEgp ?? 0,
+        discountedAmountEgp: data.discountedAmountEgp ?? 0,
+        savingsEgp: data.savingsEgp ?? 0,
+      });
+      setPromoInputValue('');
+      setShowPromoInput(false);
+    } catch {
+      setPromoError(t('promoErrorNotFound'));
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!termsAccepted || paymentSubmitting) return;
     setPaymentSubmitting(true);
@@ -396,6 +434,7 @@ export default function SignupForm() {
           plan: form.plan,
           billingPeriod: form.billingPeriod,
           referralCode: referralEffective || null,
+          promoCode: appliedPromo?.code ?? null,
           notes: form.notes,
           initiatePayment: true,
           termsAccepted: true,
@@ -744,6 +783,93 @@ export default function SignupForm() {
               </div>
             ))}
 
+            {/* Promo code section */}
+            <div style={{ marginTop: '14px' }}>
+              {!appliedPromo ? (
+                !showPromoInput ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowPromoInput(true)}
+                    style={{ ...SANS, fontSize: '11px', color: '#475569', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                  >
+                    + {t('havePromoCode')}
+                  </button>
+                ) : (
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                      <input
+                        type="text"
+                        dir="ltr"
+                        value={promoInputValue}
+                        onChange={(e) => {
+                          setPromoInputValue(e.target.value.toUpperCase());
+                          setPromoError('');
+                        }}
+                        placeholder={t('promoCodePlaceholder')}
+                        style={{
+                          ...SANS,
+                          flex: 1,
+                          fontSize: '13px',
+                          background: '#0f172a',
+                          border: '1px solid #1e293b',
+                          borderRadius: '8px',
+                          padding: '8px 12px',
+                          color: '#f8fafc',
+                          outline: 'none',
+                          letterSpacing: '1px',
+                        }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') void applyPromo(); }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void applyPromo()}
+                        disabled={promoLoading || !promoInputValue.trim()}
+                        style={{
+                          ...SANS,
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          background: '#0D9488',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '8px 14px',
+                          cursor: 'pointer',
+                          opacity: promoLoading || !promoInputValue.trim() ? 0.5 : 1,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {promoLoading ? '...' : t('promoApplyButton')}
+                      </button>
+                    </div>
+                    {promoError ? (
+                      <p style={{ ...SANS, fontSize: '11px', color: '#f87171', margin: 0 }}>{promoError}</p>
+                    ) : null}
+                  </div>
+                )
+              ) : (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', borderRadius: '8px', background: 'rgba(13,148,136,0.12)', border: '1px solid rgba(13,148,136,0.3)' }}>
+                  <div>
+                    <span style={{ ...SANS, fontSize: '11px', fontWeight: 700, color: '#0D9488', letterSpacing: '1px' }}>
+                      {appliedPromo.code}
+                    </span>
+                    <span style={{ ...SANS, fontSize: '10px', color: '#5eead4', marginInlineStart: '8px' }}>
+                      {t('promoApplied', {
+                        discountPct: String(appliedPromo.discountPct),
+                        savings: formatNumber(appliedPromo.savingsEgp, locale),
+                      })}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setAppliedPromo(null); setShowPromoInput(false); }}
+                    style={{ ...SANS, fontSize: '10px', color: '#475569', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                  >
+                    {t('promoRemove')}
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div
               style={{
                 display: 'flex',
@@ -768,6 +894,11 @@ export default function SignupForm() {
                 </div>
               </div>
               <div style={{ textAlign: 'end' }}>
+                {appliedPromo ? (
+                  <div style={{ ...SANS, fontSize: '11px', color: '#475569', textDecoration: 'line-through', textAlign: 'end' }}>
+                    {formatNumber(appliedPromo.originalAmountEgp, locale)} EGP
+                  </div>
+                ) : null}
                 <div
                   style={{
                     display: 'flex',
@@ -781,13 +912,18 @@ export default function SignupForm() {
                       ...PLAYFAIR,
                       fontSize: '26px',
                       fontWeight: 700,
-                      color: '#f8fafc',
+                      color: appliedPromo ? '#5eead4' : '#f8fafc',
                       lineHeight: '1',
                       letterSpacing: '-0.3px',
                     }}
                   >
                     {selectedPlan
-                      ? formatNumber(getTotalAmount(selectedPlan, form.billingPeriod), locale)
+                      ? formatNumber(
+                          appliedPromo
+                            ? appliedPromo.discountedAmountEgp
+                            : getTotalAmount(selectedPlan, form.billingPeriod),
+                          locale,
+                        )
                       : '0'}
                   </div>
                   <div
@@ -1222,51 +1358,6 @@ export default function SignupForm() {
                   </p>
                 </div>
 
-                {(() => {
-                  if (!promoCfg?.enabled) return null;
-                  if (!promoCfg.applicableIntervals.includes(form.billingPeriod)) return null;
-                  if (promoCfg.endDate) {
-                    const end = new Date(promoCfg.endDate);
-                    if (!Number.isNaN(end.getTime()) && end.getTime() < Date.now()) return null;
-                  }
-                  const spotsRemaining =
-                    promoCfg.spotsTotal != null
-                      ? Math.max(0, promoCfg.spotsTotal - promoCfg.spotsUsed)
-                      : null;
-                  if (spotsRemaining != null && spotsRemaining <= 0) return null;
-                  const endsText =
-                    promoCfg.endDate &&
-                    !Number.isNaN(new Date(promoCfg.endDate).getTime())
-                      ? formatDate(promoCfg.endDate, locale, 'short')
-                      : null;
-                  return (
-                    <div
-                      className="mb-4 rounded-xl border border-teal-700/50 bg-teal-900/30 px-4 py-3 text-[12px] text-teal-200"
-                      style={SANS}
-                    >
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                        <span className="font-semibold text-teal-300">
-                          {locale === 'ar'
-                            ? `خصم ${formatNumber(promoCfg.discountPct, locale)}٪`
-                            : `${formatNumber(promoCfg.discountPct, locale)}% off`}
-                        </span>
-                        {endsText ? (
-                          <span className="text-teal-200/80">
-                            {locale === 'ar' ? `ينتهي ${endsText}` : `Ends ${endsText}`}
-                          </span>
-                        ) : null}
-                        {spotsRemaining != null ? (
-                          <span className="text-teal-200/80">
-                            {locale === 'ar'
-                              ? `${formatNumber(spotsRemaining, locale)} مقعد متبقٍ`
-                              : `${formatNumber(spotsRemaining, locale)} spots remaining`}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  );
-                })()}
-
                 <div className="mb-8 flex gap-6 border-b border-slate-800 pb-0">
                   {(['monthly', 'quarterly', 'annual'] as const).map((p) => (
                     <button
@@ -1303,23 +1394,6 @@ export default function SignupForm() {
                 {SIGNUP_PLANS.map((plan) => {
                   const selected = form.plan === plan.key;
                   const price = getDisplayPrice(plan, form.billingPeriod);
-                  const promoActive = (() => {
-                    if (!promoCfg?.enabled) return false;
-                    if (!promoCfg.applicableIntervals.includes(form.billingPeriod)) return false;
-                    if (promoCfg.endDate) {
-                      const end = new Date(promoCfg.endDate);
-                      if (!Number.isNaN(end.getTime()) && end.getTime() < Date.now()) return false;
-                    }
-                    if (
-                      promoCfg.spotsTotal != null &&
-                      promoCfg.spotsTotal - promoCfg.spotsUsed <= 0
-                    )
-                      return false;
-                    return true;
-                  })();
-                  const displayedPrice = promoActive
-                    ? Math.max(1, Math.round(price * (1 - promoCfg!.discountPct / 100)))
-                    : price;
                   return (
                     <button
                       key={plan.key}
@@ -1358,22 +1432,13 @@ export default function SignupForm() {
                         </div>
 
                         <div className="shrink-0 text-end">
-                          {promoActive ? (
-                            <div className="text-[10px] text-slate-500 line-through" style={SANS}>
-                              {formatNumber(price, locale, { integerOnly: true })}
-                            </div>
-                          ) : null}
                           <div
                             className={`text-[20px] font-black leading-none transition-colors ${
-                              selected
-                                ? promoActive
-                                  ? 'text-teal-300'
-                                  : 'text-white'
-                                : 'text-slate-400'
+                              selected ? 'text-white' : 'text-slate-400'
                             }`}
                             style={PLAYFAIR}
                           >
-                            {formatNumber(displayedPrice, locale, { integerOnly: true })}
+                            {formatNumber(price, locale, { integerOnly: true })}
                           </div>
                           <div className="mt-0.5 text-[9px] text-slate-600" style={SANS}>
                             EGP / {t('month')}

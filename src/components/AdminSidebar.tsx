@@ -29,6 +29,7 @@ import {
   TrendingUp,
   MapPin,
   ChevronRight,
+  Tag,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { signOutToLogin } from '@/lib/auth/sign-out-client';
@@ -122,6 +123,7 @@ export function AdminSidebar({
   const isRenewals = activeRoute?.includes('admin/renewals');
   const isFinance = activeRoute?.includes('admin/finance');
   const isPricing = activeRoute?.includes('admin/pricing');
+  const isPromoCodes = activeRoute?.includes('admin/promo-codes');
   const isPlatformConfig = activeRoute?.includes('admin/platform-config');
   const isWaPack = activeRoute?.includes('admin/whatsapp-pack');
   const isWithdrawals = activeRoute?.includes('admin/withdrawals');
@@ -139,6 +141,7 @@ export function AdminSidebar({
     isRenewals ||
     isFinance ||
     isPricing ||
+    isPromoCodes ||
     isPlatformConfig ||
     isVendors ||
     isWaPack ||
@@ -288,9 +291,10 @@ export function AdminSidebar({
     if (inOperational) autoOpen.push('operational');
 
     const inGrowth =
-      activeTab != null &&
-      (['pendingSignups', 'planRequests'] as AdminTab[]).includes(activeTab) &&
-      !onDedicatedAdminSubpage;
+      (activeTab != null &&
+        (['pendingSignups', 'planRequests'] as AdminTab[]).includes(activeTab) &&
+        !onDedicatedAdminSubpage) ||
+      !!isPromoCodes;
     if (inGrowth) autoOpen.push('growth');
 
     const inReporting =
@@ -532,6 +536,14 @@ export function AdminSidebar({
           isActive: activeTab === 'planRequests' && !onDedicatedAdminSubpage,
           canShow: canSee('plan_requests'),
           action: () => runPrimaryNav('planRequests'),
+        },
+        {
+          key: 'promoCodes',
+          icon: Tag,
+          label: t('promoCodesNavLabel'),
+          isActive: !!isPromoCodes,
+          canShow: adminRole === 'super_admin' || adminRole === 'admin' || adminRole === 'internal_admin',
+          href: '/admin/promo-codes',
         },
       ],
     },

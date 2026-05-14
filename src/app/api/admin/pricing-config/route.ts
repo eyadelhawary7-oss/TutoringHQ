@@ -29,14 +29,6 @@ type PatchBody = Partial<{
     cardOrderBase: number;
     shippingCost: number;
   }>;
-  promo: Partial<{
-    enabled: boolean;
-    discountPct: number;
-    applicableIntervals: string[];
-    endDate: string | null;
-    spotsTotal: number | null;
-    spotsUsed: number;
-  }>;
   banner: Partial<{
     enabled: boolean;
     textEn: string;
@@ -49,8 +41,6 @@ type PatchBody = Partial<{
     ctaUrl: string;
   }>;
 }>;
-
-const ALLOWED_PROMO_INTERVALS = new Set(['monthly', 'quarterly', 'annual']);
 
 function isNum(v: unknown): v is number {
   return typeof v === 'number' && Number.isFinite(v);
@@ -132,55 +122,6 @@ export async function PATCH(request: NextRequest) {
       if (!isNum(a.shippingCost) || a.shippingCost < 0) {
         errors.push('addons.shippingCost must be a non-negative number');
       } else updates.push({ key: 'pricing.shipping.default_cost', value: a.shippingCost });
-    }
-  }
-
-  // ── Promo ────────────────────────────────────────────────────────────────
-  if (body.promo) {
-    const p = body.promo;
-    if (p.enabled !== undefined) {
-      if (typeof p.enabled !== 'boolean') errors.push('promo.enabled must be boolean');
-      else updates.push({ key: 'pricing.promo.enabled', value: p.enabled });
-    }
-    if (p.discountPct !== undefined) {
-      if (!isNum(p.discountPct) || p.discountPct < 0 || p.discountPct > 100) {
-        errors.push('promo.discountPct must be between 0 and 100');
-      } else updates.push({ key: 'pricing.promo.discount_pct', value: p.discountPct });
-    }
-    if (p.applicableIntervals !== undefined) {
-      if (!Array.isArray(p.applicableIntervals)) {
-        errors.push('promo.applicableIntervals must be an array');
-      } else {
-        const cleaned = p.applicableIntervals.filter(
-          (s) => typeof s === 'string' && ALLOWED_PROMO_INTERVALS.has(s),
-        );
-        updates.push({ key: 'pricing.promo.applicable_intervals', value: cleaned });
-      }
-    }
-    if (p.endDate !== undefined) {
-      if (p.endDate === null || p.endDate === '') {
-        // Store "" sentinel — platform_config.value is NOT NULL; JS null → SQL NULL violates constraint.
-        updates.push({ key: 'pricing.promo.end_date', value: '' });
-      } else if (!isStr(p.endDate) || Number.isNaN(new Date(p.endDate).getTime())) {
-        errors.push('promo.endDate must be ISO date string or null');
-      } else {
-        updates.push({ key: 'pricing.promo.end_date', value: p.endDate });
-      }
-    }
-    if (p.spotsTotal !== undefined) {
-      if (p.spotsTotal === null) {
-        // Store 0 sentinel for "unlimited" — platform_config.value is NOT NULL; JS null → SQL NULL violates constraint.
-        updates.push({ key: 'pricing.promo.spots_total', value: 0 });
-      } else if (!isNum(p.spotsTotal) || p.spotsTotal < 0) {
-        errors.push('promo.spotsTotal must be a non-negative number or null');
-      } else {
-        updates.push({ key: 'pricing.promo.spots_total', value: Math.floor(p.spotsTotal) });
-      }
-    }
-    if (p.spotsUsed !== undefined) {
-      if (!isNum(p.spotsUsed) || p.spotsUsed < 0) {
-        errors.push('promo.spotsUsed must be a non-negative number');
-      } else updates.push({ key: 'pricing.promo.spots_used', value: Math.floor(p.spotsUsed) });
     }
   }
 

@@ -27,9 +27,6 @@ const BANNER_STYLE_PREVIEW: Record<BannerStyle, string> = {
   success: 'bg-emerald-600 text-white',
 };
 
-const PROMO_INTERVALS = ['monthly', 'quarterly', 'annual'] as const;
-type PromoIntervalId = (typeof PROMO_INTERVALS)[number];
-
 /**
  * Correlates `platform_config` write logs on the server (`[PATCH /api/admin/pricing-config]` /
  * `[PATCH /api/admin/pricing/pack]`). Writes on this page come from:
@@ -107,7 +104,6 @@ export default function AdminPricingPage() {
     plans: true,
     interval: false,
     addons: false,
-    promo: false,
     banner: false,
   });
   const toggleSection = useCallback((key: string) => {
@@ -132,32 +128,6 @@ export default function AdminPricingPage() {
     Object.assign(headers, csrf);
     return headers;
   }, [getSession]);
-
-  useEffect(() => {
-    console.log('pricing page mounted, no auto-save');
-  }, []);
-
-  useEffect(() => {
-    if (!pricingCfg || !pricingCfgDraft) return;
-    const cfgStr = JSON.stringify(pricingCfg);
-    const draftStr = JSON.stringify(pricingCfgDraft);
-    if (cfgStr !== draftStr) {
-      console.warn('[pricing dirty on load] pricingCfg and pricingCfgDraft differ unexpectedly');
-      const cfgParsed = JSON.parse(cfgStr) as Record<string, unknown>;
-      const draftParsed = JSON.parse(draftStr) as Record<string, unknown>;
-      for (const section of ['interval', 'addons', 'promo', 'banner'] as const) {
-        const s1 = JSON.stringify(cfgParsed[section]);
-        const s2 = JSON.stringify(draftParsed[section]);
-        if (s1 !== s2) {
-          console.warn(`[pricing dirty on load] section "${section}" differs`, {
-            pricingCfg: cfgParsed[section],
-            pricingCfgDraft: draftParsed[section],
-          });
-        }
-      }
-      console.trace('[pricing dirty on load] call stack');
-    }
-  }, [pricingCfg, pricingCfgDraft]);
 
   useEffect(() => {
     setHideShell(true);
@@ -242,23 +212,10 @@ export default function AdminPricingPage() {
     }
     const data = (await res.json()) as { config: PricingConfigSnapshot };
     // Deep-clone via JSON round-trip so pricingCfg and pricingCfgDraft are always
-    // separate objects with the same normalized representation. This prevents any
-    // subtle divergence (e.g. undefined vs null, property-order differences, or
-    // shared-reference mutation) from triggering a spurious dirty flag on load.
-    const normalize = (cfg: PricingConfigSnapshot): PricingConfigSnapshot => ({
-      ...cfg,
-      promo: {
-        ...cfg.promo,
-        // Normalize sentinels to null so both states are always in identical form.
-        // 0 = unlimited sentinel; "" = no-deadline sentinel (see getPromoConfig).
-        endDate: cfg.promo.endDate === '' ? null : cfg.promo.endDate,
-        spotsTotal: cfg.promo.spotsTotal === 0 ? null : cfg.promo.spotsTotal,
-      },
-    });
-    const committedCfg = normalize(JSON.parse(JSON.stringify(data.config)) as PricingConfigSnapshot);
-    const draftCfg = normalize(JSON.parse(JSON.stringify(data.config)) as PricingConfigSnapshot);
-    setPricingCfg(committedCfg);
-    setPricingCfgDraft(draftCfg);
+    // separate objects — prevents shared-reference mutation from triggering a spurious
+    // dirty flag on load.
+    setPricingCfg(JSON.parse(JSON.stringify(data.config)) as PricingConfigSnapshot);
+    setPricingCfgDraft(JSON.parse(JSON.stringify(data.config)) as PricingConfigSnapshot);
   }, [getSession, t]);
 
   useEffect(() => {
@@ -298,9 +255,6 @@ export default function AdminPricingPage() {
     if (JSON.stringify(pricingCfg.addons) !== JSON.stringify(pricingCfgDraft.addons)) {
       body.addons = pricingCfgDraft.addons;
     }
-    if (JSON.stringify(pricingCfg.promo) !== JSON.stringify(pricingCfgDraft.promo)) {
-      body.promo = pricingCfgDraft.promo;
-    }
     if (JSON.stringify(pricingCfg.banner) !== JSON.stringify(pricingCfgDraft.banner)) {
       body.banner = pricingCfgDraft.banner;
     }
@@ -327,10 +281,6 @@ export default function AdminPricingPage() {
       setSavingPricingCfg(false);
     }
   }, [getAuthHeaders, pricingCfg, pricingCfgDraft, t, tCommon, toast]);
-
-  const resetSpotsUsed = useCallback(() => {
-    setPricingCfgDraft((d) => (d ? { ...d, promo: { ...d.promo, spotsUsed: 0 } } : d));
-  }, []);
 
   const packMinimumsRows = useMemo(
     () =>
@@ -813,185 +763,6 @@ export default function AdminPricingPage() {
                         </p>
                       </div>
                     </div>
-                  </CollapsibleSection>
-
-                  {/* SECTION: Launch Promo */}
-                  <CollapsibleSection
-                    title={t('pricingSectionPromo')}
-                    open={openSections.promo}
-                    onToggle={() => toggleSection('promo')}
-                  >
-                    <label className="inline-flex items-center gap-2 cursor-pointer mb-4">
-                      <input
-                        type="checkbox"
-                        checked={pricingCfgDraft.promo.enabled}
-                        onChange={(e) =>
-                          setPricingCfgDraft((d) =>
-                            d ? { ...d, promo: { ...d.promo, enabled: e.target.checked } } : d,
-                          )
-                        }
-                        className="rounded border-[var(--color-border-default)]"
-                      />
-                      <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                        {t('pricingPromoEnabled')}
-                      </span>
-                    </label>
-
-                    {pricingCfgDraft.promo.enabled ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-                            {t('pricingPromoDiscountPct')}
-                          </label>
-                          <input
-                            type="number"
-                            min={0}
-                            max={100}
-                            step="1"
-                            className="w-full max-w-xs rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2"
-                            value={pricingCfgDraft.promo.discountPct}
-                            onChange={(e) => {
-                              const n = parseFloat(e.target.value);
-                              setPricingCfgDraft((d) =>
-                                d
-                                  ? {
-                                      ...d,
-                                      promo: { ...d.promo, discountPct: Number.isFinite(n) ? n : 0 },
-                                    }
-                                  : d,
-                              );
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-                            {t('pricingPromoAppliesTo')}
-                          </label>
-                          <div className="flex flex-wrap gap-3">
-                            {PROMO_INTERVALS.map((iv) => {
-                              const checked = pricingCfgDraft.promo.applicableIntervals.includes(iv);
-                              return (
-                                <label key={iv} className="inline-flex items-center gap-2 cursor-pointer text-sm">
-                                  <input
-                                    type="checkbox"
-                                    checked={checked}
-                                    onChange={(e) => {
-                                      setPricingCfgDraft((d) => {
-                                        if (!d) return d;
-                                        const list = new Set(d.promo.applicableIntervals);
-                                        if (e.target.checked) list.add(iv);
-                                        else list.delete(iv);
-                                        return {
-                                          ...d,
-                                          promo: {
-                                            ...d.promo,
-                                            applicableIntervals: Array.from(list) as PromoIntervalId[],
-                                          },
-                                        };
-                                      });
-                                    }}
-                                    className="rounded border-[var(--color-border-default)]"
-                                  />
-                                  <span className="text-[var(--color-text-primary)]">
-                                    {t(`pricingPromoInterval_${iv}` as 'pricingPromoInterval_monthly')}
-                                  </span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-                            {t('pricingPromoEndDate')}
-                          </label>
-                          <input
-                            type="date"
-                            className="w-full max-w-xs rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2"
-                            value={pricingCfgDraft.promo.endDate ?? ''}
-                            onChange={(e) =>
-                              setPricingCfgDraft((d) =>
-                                d
-                                  ? { ...d, promo: { ...d.promo, endDate: e.target.value || null } }
-                                  : d,
-                              )
-                            }
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-                            {t('pricingPromoSpotsTotal')}
-                          </label>
-                          <input
-                            type="number"
-                            min={0}
-                            placeholder={t('pricingPromoSpotsUnlimited')}
-                            className="w-full max-w-xs rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2"
-                            value={
-                              pricingCfgDraft.promo.spotsTotal === null ||
-                              pricingCfgDraft.promo.spotsTotal === 0
-                                ? ''
-                                : pricingCfgDraft.promo.spotsTotal
-                            }
-                            onChange={(e) => {
-                              const raw = e.target.value;
-                              if (raw === '') {
-                                setPricingCfgDraft((d) =>
-                                  d ? { ...d, promo: { ...d.promo, spotsTotal: null } } : d,
-                                );
-                                return;
-                              }
-                              const n = parseInt(raw, 10);
-                              setPricingCfgDraft((d) =>
-                                d
-                                  ? {
-                                      ...d,
-                                      promo: { ...d.promo, spotsTotal: Number.isFinite(n) ? n : null },
-                                    }
-                                  : d,
-                              );
-                            }}
-                          />
-                        </div>
-                        <div className="md:col-span-2">
-                          <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-                            {t('pricingPromoSpotsUsed')}
-                          </label>
-                          <div className="flex items-center gap-3">
-                            <span className="tabular-nums text-[var(--color-text-primary)]">
-                              {formatNumber(pricingCfgDraft.promo.spotsUsed, locale)}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={resetSpotsUsed}
-                              className="rounded-lg border border-[var(--color-border-default)] px-3 py-1.5 text-xs hover:bg-[var(--color-surface-2)]"
-                            >
-                              {t('pricingPromoResetSpots')}
-                            </button>
-                          </div>
-                        </div>
-                        <div className="md:col-span-2 mt-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] px-3 py-2 text-xs">
-                          <span className="text-[var(--color-text-secondary)]">{t('pricingPreview')}:</span>{' '}
-                          <span className="ms-2 inline-flex items-center gap-2 rounded-full bg-teal-600/20 px-2 py-0.5 text-teal-400">
-                            {locale === 'ar'
-                              ? `خصم ${formatNumber(pricingCfgDraft.promo.discountPct, locale)}٪`
-                              : `${formatNumber(pricingCfgDraft.promo.discountPct, locale)}% off`}
-                          </span>
-                          {pricingCfgDraft.promo.spotsTotal != null && pricingCfgDraft.promo.spotsTotal !== 0 ? (
-                            <span className="ms-2 text-[var(--color-text-secondary)]">
-                              {t('pricingPromoSpotsRemaining', {
-                                count: formatNumber(
-                                  Math.max(
-                                    0,
-                                    pricingCfgDraft.promo.spotsTotal - pricingCfgDraft.promo.spotsUsed,
-                                  ),
-                                  locale,
-                                ),
-                              })}
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-                    ) : null}
                   </CollapsibleSection>
 
                   {/* SECTION: Landing Banner */}

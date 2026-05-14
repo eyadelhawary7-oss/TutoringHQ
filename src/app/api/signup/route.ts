@@ -21,6 +21,7 @@ import { isFeatureEnabled } from '@/lib/features';
 import { todayISO } from '@/lib/parentPack';
 import { formatNumber } from '@/lib/formatNumber';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { validatePromoCodeServerSide } from '@/lib/promoCode';
 
 function getTotalSignupAmount(planKey: PlanKey, period: BillingPeriod): number {
   return getPlanPrice(planKey, period);
@@ -121,6 +122,7 @@ export async function POST(request: Request) {
       plan?: string;
       notes?: string;
       referralCode?: string;
+      promoCode?: unknown;
       email?: string;
       initiatePayment?: unknown;
       billingPeriod?: unknown;
@@ -154,10 +156,14 @@ export async function POST(request: Request) {
       plan,
       notes,
       referralCode,
+      promoCode: promoCodeRaw,
       email,
       initiatePayment: initiatePaymentRaw,
       termsAccepted: termsAcceptedRaw,
     } = body;
+
+    const rawPromoCode =
+      typeof promoCodeRaw === 'string' ? promoCodeRaw.trim().toUpperCase() : '';
 
     if (termsAcceptedRaw !== true) {
       return NextResponse.json({ error: 'Terms of Service must be accepted' }, { status: 400 });
@@ -319,10 +325,31 @@ export async function POST(request: Request) {
     }
 
     if (initiatePayment && center?.id) {
-      const amountEgp = getTotalSignupAmount(planKey, periodResolved);
-      if (!Number.isFinite(amountEgp) || amountEgp <= 0) {
+      const baseAmountEgp = getTotalSignupAmount(planKey, periodResolved);
+      if (!Number.isFinite(baseAmountEgp) || baseAmountEgp <= 0) {
         return NextResponse.json({ error: 'Invalid payment amount' }, { status: 400 });
       }
+
+      // Server-side promo validation (do not trust client-side validation).
+      let promoResult: Awaited<ReturnType<typeof validatePromoCodeServerSide>> | null = null;
+      if (rawPromoCode) {
+        promoResult = await validatePromoCodeServerSide(supabase, {
+          code: rawPromoCode,
+          planKey,
+          billingInterval: periodResolved,
+        });
+        if (!promoResult.valid) {
+          return NextResponse.json(
+            { error: 'promo_code_invalid', promoError: promoResult.error },
+            { status: 400 },
+          );
+        }
+      }
+
+      const amountEgp =
+        promoResult?.valid ? promoResult.discountedAmountEgp : baseAmountEgp;
+      const invoiceDiscountAmount =
+        promoResult?.valid ? promoResult.savingsEgp : 0;
 
       const startYmd = todayISO();
       const endYmd = billingEndForPeriod(startYmd, periodResolved);
@@ -352,21 +379,27 @@ export async function POST(request: Request) {
           centerName: centerName.trim(),
         });
 
+        const invoiceInsert: Record<string, unknown> = {
+          center_id: center.id,
+          invoice_number: invoiceNumber,
+          invoice_type: 'signup_first_payment',
+          total_amount: amountEgp,
+          base_amount: baseAmountEgp,
+          billing_period_start: startYmd,
+          billing_period_end: endYmd,
+          due_date: dueYmdPlus1,
+          status: 'pending',
+          discount_amount: invoiceDiscountAmount,
+          paymob_order_id: orderId,
+        };
+        if (promoResult?.valid) {
+          invoiceInsert.promo_code = promoResult.code;
+          invoiceInsert.promo_original_amount = promoResult.originalAmountEgp;
+        }
+
         const { data: invRow, error: invErr } = await supabase
           .from('invoices')
-          .insert({
-            center_id: center.id,
-            invoice_number: invoiceNumber,
-            invoice_type: 'signup_first_payment',
-            total_amount: amountEgp,
-            base_amount: amountEgp,
-            billing_period_start: startYmd,
-            billing_period_end: endYmd,
-            due_date: dueYmdPlus1,
-            status: 'pending',
-            discount_amount: 0,
-            paymob_order_id: orderId,
-          })
+          .insert(invoiceInsert)
           .select('id')
           .single();
 

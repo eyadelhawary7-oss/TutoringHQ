@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/nextjs';
 import { NextRequest, NextResponse } from 'next/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { verifyCardOrderPaymobHmac } from '@/lib/paymob';
 import { triggerT1Eligible, resumeCommissionClocks } from '@/lib/commissions';
 import { sendPaymentConfirmed } from '@/lib/centerNotify';
@@ -8,6 +9,80 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { readRawBodyWithLimit, ValidationError } from '@/lib/validate';
 import { hmacSha512Hex, timingSafeEqualHex } from '@/lib/verifyHmac';
+
+/**
+ * After a successful Paymob payment, check if the paid invoice has a promo code
+ * and create the redemption record + increment uses_count.
+ * Runs inside the idempotency guard so retries are safe.
+ */
+async function redeemPromoCodeForPaymobOrder(
+  supabase: SupabaseClient,
+  paymobOrderId: string,
+): Promise<void> {
+  const { data: inv } = await supabase
+    .from('invoices')
+    .select('id, center_id, promo_code, promo_original_amount, total_amount')
+    .eq('paymob_order_id', paymobOrderId)
+    .eq('invoice_type', 'signup_first_payment')
+    .eq('status', 'paid')
+    .maybeSingle();
+
+  if (!inv) return;
+
+  type InvRow = {
+    id: string;
+    center_id: string;
+    promo_code: string | null;
+    promo_original_amount: number | null;
+    total_amount: number;
+  };
+  const invRow = inv as InvRow;
+  if (!invRow.promo_code) return;
+
+  const { data: pc } = await supabase
+    .from('promo_codes')
+    .select('id, discount_pct')
+    .eq('code', invRow.promo_code)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (!pc) return;
+  type PcRow = { id: string; discount_pct: number };
+  const pcRow = pc as PcRow;
+
+  // Guard: skip if already redeemed for this center (idempotency)
+  const { data: existingRedemption } = await supabase
+    .from('promo_code_redemptions')
+    .select('id')
+    .eq('promo_code_id', pcRow.id)
+    .eq('center_id', invRow.center_id)
+    .maybeSingle();
+  if (existingRedemption) return;
+
+  const originalAmountEgp = Math.round(invRow.promo_original_amount ?? invRow.total_amount);
+  const discountAmountEgp = Math.max(0, originalAmountEgp - Math.round(invRow.total_amount));
+
+  // Look up the center owner (user) if already created (auto-approve path)
+  const { data: ownerUser } = await supabase
+    .from('users')
+    .select('id')
+    .eq('center_id', invRow.center_id)
+    .eq('role', 'owner')
+    .maybeSingle();
+  const userId = (ownerUser as { id?: string } | null)?.id ?? null;
+
+  await supabase.from('promo_code_redemptions').insert({
+    promo_code_id: pcRow.id,
+    user_id: userId,
+    center_id: invRow.center_id,
+    paymob_order_id: paymobOrderId,
+    original_amount_egp: originalAmountEgp,
+    discount_amount_egp: discountAmountEgp,
+  });
+
+  // Increment uses_count atomically
+  await supabase.rpc('increment_promo_uses', { code_id: pcRow.id });
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -100,6 +175,12 @@ async function processPaymobEvent(payload: Record<string, unknown>): Promise<voi
       }
       const { processSignupAutoApprovalAfterPaymobSuccess } = await import('@/lib/signupPaymobAutoApprove');
       await processSignupAutoApprovalAfterPaymobSuccess(supabaseAdminLocal, orderId, transactionId);
+
+      try {
+        await redeemPromoCodeForPaymobOrder(supabaseAdminLocal, orderId);
+      } catch (promoErr) {
+        console.error('[paymob-webhook] promo redemption error', promoErr);
+      }
 
       const { data: paidInv } = await supabaseAdminLocal
         .from('invoices')
