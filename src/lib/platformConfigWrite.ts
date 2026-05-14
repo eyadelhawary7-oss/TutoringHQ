@@ -60,6 +60,10 @@ export async function upsertPlatformConfigRowUpdateInsert(
     patch.updated_by = row.updated_by;
   }
 
+  console.trace(
+    '[platform_config WRITE] update',
+    { context: logContext, key: row.key, value, valueType: typeof value, isNull: value === null },
+  );
   const { data: updatedKeys, error: updateErr } = await supabase
     .from('platform_config')
     .update(patch)
@@ -76,6 +80,10 @@ export async function upsertPlatformConfigRowUpdateInsert(
   }
 
   const insertBody: Record<string, unknown> = { key: row.key, ...patch };
+  console.trace(
+    '[platform_config WRITE] insert (row missing, seeding)',
+    { context: logContext, key: row.key, value, valueType: typeof value, isNull: value === null },
+  );
   const { error: insertErr } = await supabase.from('platform_config').insert(insertBody);
 
   if (insertErr && !String(insertErr.message ?? '').toLowerCase().includes('duplicate')) {

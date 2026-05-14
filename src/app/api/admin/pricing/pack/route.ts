@@ -32,9 +32,14 @@ export async function GET(request: Request) {
   const { data: existingKey } = await auth.supabaseAdmin.from('platform_config').select('key').eq('key', KEY).maybeSingle();
 
   if (!existingKey) {
+    const seedValue = serializePlatformConfigJsonbValue(DEFAULT_PACK_PRICE);
+    console.trace(
+      '[platform_config WRITE] pack bootstrap insert',
+      { key: KEY, seedValue, valueType: typeof seedValue, isNull: seedValue === null },
+    );
     const { error: seedErr } = await auth.supabaseAdmin.from('platform_config').insert({
       key: KEY,
-      value: serializePlatformConfigJsonbValue(DEFAULT_PACK_PRICE),
+      value: seedValue,
       updated_at: new Date().toISOString(),
     });
     if (seedErr && !String(seedErr.message).toLowerCase().includes('duplicate')) {

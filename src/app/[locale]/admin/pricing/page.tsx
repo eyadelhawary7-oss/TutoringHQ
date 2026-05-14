@@ -134,6 +134,32 @@ export default function AdminPricingPage() {
   }, [getSession]);
 
   useEffect(() => {
+    console.log('pricing page mounted, no auto-save');
+  }, []);
+
+  useEffect(() => {
+    if (!pricingCfg || !pricingCfgDraft) return;
+    const cfgStr = JSON.stringify(pricingCfg);
+    const draftStr = JSON.stringify(pricingCfgDraft);
+    if (cfgStr !== draftStr) {
+      console.warn('[pricing dirty on load] pricingCfg and pricingCfgDraft differ unexpectedly');
+      const cfgParsed = JSON.parse(cfgStr) as Record<string, unknown>;
+      const draftParsed = JSON.parse(draftStr) as Record<string, unknown>;
+      for (const section of ['interval', 'addons', 'promo', 'banner'] as const) {
+        const s1 = JSON.stringify(cfgParsed[section]);
+        const s2 = JSON.stringify(draftParsed[section]);
+        if (s1 !== s2) {
+          console.warn(`[pricing dirty on load] section "${section}" differs`, {
+            pricingCfg: cfgParsed[section],
+            pricingCfgDraft: draftParsed[section],
+          });
+        }
+      }
+      console.trace('[pricing dirty on load] call stack');
+    }
+  }, [pricingCfg, pricingCfgDraft]);
+
+  useEffect(() => {
     setHideShell(true);
     return () => setHideShell(false);
   }, [setHideShell]);
@@ -215,8 +241,14 @@ export default function AdminPricingPage() {
       throw new Error(err?.error || t('pricingLoadError'));
     }
     const data = (await res.json()) as { config: PricingConfigSnapshot };
-    setPricingCfg(data.config);
-    setPricingCfgDraft(data.config);
+    // Deep-clone via JSON round-trip so pricingCfg and pricingCfgDraft are always
+    // separate objects with the same normalized representation. This prevents any
+    // subtle divergence (e.g. undefined vs null, property-order differences, or
+    // shared-reference mutation) from triggering a spurious dirty flag on load.
+    const committedCfg = JSON.parse(JSON.stringify(data.config)) as PricingConfigSnapshot;
+    const draftCfg = JSON.parse(JSON.stringify(data.config)) as PricingConfigSnapshot;
+    setPricingCfg(committedCfg);
+    setPricingCfgDraft(draftCfg);
   }, [getSession, t]);
 
   useEffect(() => {
@@ -277,8 +309,9 @@ export default function AdminPricingPage() {
         toast.error(typeof data.error === 'string' ? data.error : tCommon('errorGeneric'));
         return;
       }
-      setPricingCfg(data.config as PricingConfigSnapshot);
-      setPricingCfgDraft(data.config as PricingConfigSnapshot);
+      const savedCfg = JSON.parse(JSON.stringify(data.config)) as PricingConfigSnapshot;
+      setPricingCfg(savedCfg);
+      setPricingCfgDraft(JSON.parse(JSON.stringify(data.config)) as PricingConfigSnapshot);
       toast.success(t('pricingSaved'));
     } finally {
       setSavingPricingCfg(false);
