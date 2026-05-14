@@ -143,29 +143,69 @@ export default function PricingPageClient() {
                       </span>
                     ) : null}
                   </div>
-                  <p className="mt-3 text-lg font-bold text-white">{title}</p>
+                  <p
+                    className={
+                      isPopular
+                        ? 'mt-3 text-lg font-bold !text-[#f8fafc]'
+                        : 'mt-3 text-lg font-bold text-white'
+                    }
+                  >
+                    {title}
+                  </p>
                   <dl className="mt-4 space-y-2 text-sm">
                     <div className="flex justify-between gap-2 border-b border-slate-700/80 pb-2">
-                      <dt className="text-slate-400">{t('colMonthly')}</dt>
-                      <dd className="font-mono font-semibold tabular-nums text-white">
+                      <dt className={isPopular ? 'text-[#cbd5e1]' : 'text-slate-400'}>{t('colMonthly')}</dt>
+                      <dd
+                        className={
+                          isPopular
+                            ? 'font-mono font-semibold tabular-nums text-[#f8fafc]'
+                            : 'font-mono font-semibold tabular-nums text-white'
+                        }
+                      >
                         {formatCurrency(p.monthlyListPrice, locale)}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-2 border-b border-slate-700/80 pb-2">
-                      <dt className="text-slate-400">{t('colQuarterly')}</dt>
-                      <dd className="font-mono font-semibold tabular-nums text-white">
+                      <dt className={isPopular ? 'text-[#cbd5e1]' : 'text-slate-400'}>{t('colQuarterly')}</dt>
+                      <dd
+                        className={
+                          isPopular
+                            ? 'font-mono font-semibold tabular-nums text-[#f8fafc]'
+                            : 'font-mono font-semibold tabular-nums text-white'
+                        }
+                      >
                         {formatCurrency(p.quarterlyAllIn, locale)}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-2">
-                      <dt className="text-slate-400">{t('colAnnual')}</dt>
-                      <dd className="font-mono font-semibold tabular-nums text-white">
+                      <dt className={isPopular ? 'text-[#cbd5e1]' : 'text-slate-400'}>{t('colAnnual')}</dt>
+                      <dd
+                        className={
+                          isPopular
+                            ? 'font-mono font-semibold tabular-nums text-[#f8fafc]'
+                            : 'font-mono font-semibold tabular-nums text-white'
+                        }
+                      >
                         {formatCurrency(p.annualEffectiveMonthly, locale)}
                       </dd>
                     </div>
                   </dl>
-                  <p className="mt-4 text-xs text-slate-500">{studentsLine}</p>
-                  <p className="mt-2 text-[11px] text-slate-600">{t('priceDisclaimer')}</p>
+                  <p
+                    className={
+                      isPopular ? 'mt-4 text-xs !text-[#94a3b8]' : 'mt-4 text-xs text-slate-500'
+                    }
+                  >
+                    {studentsLine}
+                  </p>
+                  <p
+                    className={
+                      isPopular
+                        ? 'mt-2 text-[11px] !text-[#64748b]'
+                        : 'mt-2 text-[11px] text-slate-600'
+                    }
+                  >
+                    {t('priceDisclaimer')}
+                  </p>
                   <Link
                     href="/signup"
                     className="mt-6 inline-flex w-full justify-center rounded-xl bg-teal-600 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-teal-500 btn-press chq-focus"
