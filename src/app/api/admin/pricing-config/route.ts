@@ -51,6 +51,19 @@ type PatchBody = Partial<{
 
 const ALLOWED_PROMO_INTERVALS = new Set(['monthly', 'quarterly', 'annual']);
 
+/**
+ * `platform_config.value` is JSONB NOT NULL. PostgREST batched upserts set `?columns=…`
+ * and map JSON `null` to SQL NULL for cells, which violates NOT NULL. Single-object
+ * upserts avoid that path so JSON `null` is stored as the jsonb atom (`'null'::jsonb`).
+ * Empty strings pass through unchanged.
+ */
+function serializePlatformConfigJsonbValue(v: unknown): unknown {
+  if (v === null) {
+    return JSON.parse('null') as null;
+  }
+  return v;
+}
+
 function isNum(v: unknown): v is number {
   return typeof v === 'number' && Number.isFinite(v);
 }
@@ -223,18 +236,19 @@ export async function PATCH(request: NextRequest) {
   const nowIso = new Date().toISOString();
   const rows = updates.map((u) => ({
     key: u.key,
-    value: u.value,
+    value: serializePlatformConfigJsonbValue(u.value),
     updated_at: nowIso,
     updated_by: ctx.userId,
   }));
 
-  const { error: upErr } = await ctx.supabaseAdmin
-    .from('platform_config')
-    .upsert(rows, { onConflict: 'key' });
-
-  if (upErr) {
-    console.error('[PATCH /api/admin/pricing-config] upsert', upErr);
-    return NextResponse.json({ error: upErr.message }, { status: 500 });
+  for (const row of rows) {
+    const { error: upErr } = await ctx.supabaseAdmin
+      .from('platform_config')
+      .upsert(row, { onConflict: 'key' });
+    if (upErr) {
+      console.error('[PATCH /api/admin/pricing-config] upsert', upErr);
+      return NextResponse.json({ error: upErr.message }, { status: 500 });
+    }
   }
 
   try {
