@@ -10,13 +10,17 @@ import { Globe } from 'lucide-react';
 import {
   PLANS,
   ORDERED_SUBSCRIPTION_PLAN_KEYS,
-  getPlanPrice,
-  getSignupDisplayMonthlyPrice,
   type BillingPeriod,
   type PlanKey,
+  type SubscriptionPlanKey,
 } from '@/lib/pricing';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
 import { getSupportWhatsAppWaMeWithText } from '@/lib/supportWhatsApp';
+import {
+  usePublicPlanPrices,
+  type DynamicPlanPrice,
+  type DynamicPlanPriceMap,
+} from '@/hooks/usePublicPlanPrices';
 
 const PLAYFAIR = {
   fontFamily: "var(--font-playfair), 'Playfair Display', 'Didot', 'Bodoni MT', Georgia, serif",
@@ -59,16 +63,22 @@ const SIGNUP_CITIES = [
   { id: 'other', ar: 'أخرى', en: 'Other' },
 ] as const;
 
+/**
+ * Static plan metadata — name + key only. Prices are sourced dynamically per
+ * render via `usePublicPlanPrices()` so admin edits on /admin/pricing reflect
+ * in the signup flow without a redeploy. Student limits are also DB-driven
+ * with the PLANS hardcoded value as a fallback (see `studentsFor`).
+ *
+ * The synchronous PLANS constant in @/lib/pricing remains the source of truth
+ * for billing engines, MRR aggregates, and other server math; this component
+ * only overrides the DISPLAY surface.
+ */
 const SIGNUP_PLANS = ORDERED_SUBSCRIPTION_PLAN_KEYS.map((key) => {
   const p = PLANS[key];
   return {
     key,
     name: p.englishName,
     arabicName: p.arabicName,
-    students: p.weeklyStudentLimit ?? 0,
-    allInPrice: p.quarterlyAllIn,
-    monthlyPrice: p.monthlyListPrice,
-    annualPrice: getPlanPrice(key, 'annual'),
   };
 });
 
@@ -79,24 +89,63 @@ function billingPeriodFromUi(period: string): BillingPeriod {
   return 'quarterly';
 }
 
-function getDisplayPrice(plan: SignupPlan, period: string): number {
-  return getSignupDisplayMonthlyPrice(plan.key as PlanKey, billingPeriodFromUi(period));
+/** EGP/month headline figure shown on the plan card for the selected period. */
+function getSignupMonthlyDisplay(dyn: DynamicPlanPrice, period: BillingPeriod): number {
+  if (period === 'quarterly') return dyn.quarterlyAllIn;
+  if (period === 'monthly') return dyn.monthlyListPrice;
+  return dyn.annualEffectiveMonthly;
 }
 
-function getTotalAmount(plan: SignupPlan | undefined, period: string): number {
+/**
+ * Full cycle amount the customer is billed for the selected period. Same
+ * formula used by `getPlanPrice(planKey, period)` in @/lib/pricing — kept here
+ * so DB-edited prices can override the synchronous constant for display only.
+ */
+function getSignupCycleTotal(dyn: DynamicPlanPrice, period: BillingPeriod): number {
+  switch (period) {
+    case 'quarterly':
+      return dyn.quarterlyAllIn * 3;
+    case 'monthly':
+      return dyn.monthlyListPrice;
+    case 'annual':
+      return Math.round(dyn.quarterlyAllIn * 0.85 * 12);
+    default:
+      return dyn.quarterlyAllIn * 3;
+  }
+}
+
+function studentsFor(plan: SignupPlan, dyn: DynamicPlanPriceMap): number {
+  return dyn[plan.key as SubscriptionPlanKey]?.weeklyStudentLimit ?? PLANS[plan.key].weeklyStudentLimit ?? 0;
+}
+
+function getDisplayPrice(plan: SignupPlan, period: string, dyn: DynamicPlanPriceMap): number {
+  return getSignupMonthlyDisplay(dyn[plan.key as SubscriptionPlanKey], billingPeriodFromUi(period));
+}
+
+function getTotalAmount(
+  plan: SignupPlan | undefined,
+  period: string,
+  dyn: DynamicPlanPriceMap,
+): number {
   if (!plan) return 0;
-  return getPlanPrice(plan.key as PlanKey, billingPeriodFromUi(period));
+  return getSignupCycleTotal(dyn[plan.key as SubscriptionPlanKey], billingPeriodFromUi(period));
 }
 
-function getPerStudentCost(plan: SignupPlan, period: string, loc: string): string {
-  const monthly = getDisplayPrice(plan, period);
+function getPerStudentCost(
+  plan: SignupPlan,
+  period: string,
+  loc: string,
+  dyn: DynamicPlanPriceMap,
+): string {
+  const monthly = getDisplayPrice(plan, period, dyn);
   const weekly = monthly / 4.33;
-  const perStudent = plan.students > 0 ? weekly / plan.students : 0;
+  const students = studentsFor(plan, dyn);
+  const perStudent = students > 0 ? weekly / students : 0;
   return formatNumber(perStudent, loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function getBilledAmount(plan: SignupPlan, period: string): number {
-  return getTotalAmount(plan, period);
+function getBilledAmount(plan: SignupPlan, period: string, dyn: DynamicPlanPriceMap): number {
+  return getTotalAmount(plan, period, dyn);
 }
 
 const getPeriodDateRange = (period: string, loc: string): string => {
@@ -252,6 +301,8 @@ export default function SignupForm() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+
+  const dynamicPlanPrices = usePublicPlanPrices();
 
   const [stage, setStage] = useState<Stage>('info');
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
@@ -485,7 +536,7 @@ export default function SignupForm() {
         ? 'renewsAnnually'
         : 'renewsQuarterly';
   const renewsAmount = selectedPlan
-    ? formatNumber(getTotalAmount(selectedPlan, form.billingPeriod), locale)
+    ? formatNumber(getTotalAmount(selectedPlan, form.billingPeriod, dynamicPlanPrices), locale)
     : '0';
   const slideAnim = direction === 'forward' ? 'slideIn' : 'slideInBack';
 
@@ -551,7 +602,7 @@ export default function SignupForm() {
       lineId: 'students',
       label: t('studentsLabel'),
       val: selectedPlan
-        ? `${t('upTo')} ${formatNumber(selectedPlan.students, locale)} ${t('studentsPerWeek')}`
+        ? `${t('upTo')} ${formatNumber(studentsFor(selectedPlan, dynamicPlanPrices), locale)} ${t('studentsPerWeek')}`
         : '',
       serif: false,
     },
@@ -573,7 +624,9 @@ export default function SignupForm() {
     {
       taxKey: 'subtotal',
       label: t('subtotal'),
-      val: selectedPlan ? `${formatNumber(getTotalAmount(selectedPlan, form.billingPeriod), locale)} EGP` : '',
+      val: selectedPlan
+        ? `${formatNumber(getTotalAmount(selectedPlan, form.billingPeriod, dynamicPlanPrices), locale)} EGP`
+        : '',
       teal: false,
     },
     { taxKey: 'service', label: t('serviceFee'), val: t('included'), teal: true },
@@ -946,7 +999,7 @@ export default function SignupForm() {
                       ? formatNumber(
                           appliedPromo
                             ? appliedPromo.discountedAmountEgp
-                            : getTotalAmount(selectedPlan, form.billingPeriod),
+                            : getTotalAmount(selectedPlan, form.billingPeriod, dynamicPlanPrices),
                           locale,
                         )
                       : '0'}
@@ -1128,7 +1181,7 @@ export default function SignupForm() {
             >
               {t('authNote', {
                 amount: selectedPlan
-                  ? formatNumber(getTotalAmount(selectedPlan, form.billingPeriod), locale)
+                  ? formatNumber(getTotalAmount(selectedPlan, form.billingPeriod, dynamicPlanPrices), locale)
                   : '0',
                 period: tb(`period.${form.billingPeriod}.label` as 'billing.period.monthly.label'),
               })}
@@ -1419,7 +1472,8 @@ export default function SignupForm() {
 
                 {SIGNUP_PLANS.map((plan) => {
                   const selected = form.plan === plan.key;
-                  const price = getDisplayPrice(plan, form.billingPeriod);
+                  const price = getDisplayPrice(plan, form.billingPeriod, dynamicPlanPrices);
+                  const planStudents = studentsFor(plan, dynamicPlanPrices);
                   return (
                     <button
                       key={plan.key}
@@ -1452,7 +1506,7 @@ export default function SignupForm() {
                               {locale === 'ar' ? plan.arabicName : plan.name}
                             </div>
                             <div className="mt-0.5 text-[11px] text-slate-600" style={SANS}>
-                              {t('upTo')} {formatNumber(plan.students, locale)} {t('studentsPerWeek')}
+                              {t('upTo')} {formatNumber(planStudents, locale)} {t('studentsPerWeek')}
                             </div>
                           </div>
                         </div>
@@ -1475,10 +1529,12 @@ export default function SignupForm() {
                       {selected ? (
                         <div className="mt-2 flex items-center gap-4 ps-12">
                           <span className="text-[10px] text-slate-600" style={SANS}>
-                            {formatNumber(getBilledAmount(plan, form.billingPeriod), locale)} EGP {t('billedLabel')}
+                            {formatNumber(getBilledAmount(plan, form.billingPeriod, dynamicPlanPrices), locale)} EGP {t('billedLabel')}
                           </span>
                           <span className="text-[10px] text-teal-600" style={SANS}>
-                            {tb('perStudentWeekly', { price: getPerStudentCost(plan, form.billingPeriod, locale) })}
+                            {tb('perStudentWeekly', {
+                              price: getPerStudentCost(plan, form.billingPeriod, locale, dynamicPlanPrices),
+                            })}
                           </span>
                         </div>
                       ) : null}

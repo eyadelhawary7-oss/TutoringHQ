@@ -16,6 +16,7 @@ import {
 import { Menu, X } from 'lucide-react';
 import PricingBannerClient from '@/components/landing/PricingBannerClient';
 import PromoPopup from '@/components/landing/PromoPopup';
+import { usePublicPlanPrices } from '@/hooks/usePublicPlanPrices';
 
 const WA_SUPPORT = getSupportWhatsAppWaMeBase();
 const WA_SUPPORT_LABEL = getSupportWhatsAppDisplayLabel();
@@ -32,6 +33,7 @@ export default function LocaleHomePage() {
   const featureKeys = ['f1', 'f2', 'f3', 'f4', 'f5', 'f6'] as const;
   const primaryPlanKeys = ORDERED_SUBSCRIPTION_PLAN_KEYS.slice(0, 3);
   const secondaryPlanKeys = ORDERED_SUBSCRIPTION_PLAN_KEYS.slice(3);
+  const dynamicPlanPrices = usePublicPlanPrices();
 
   const renderHeroTitleLines = () =>
     heroLines.map((line, i) => {
@@ -351,9 +353,10 @@ export default function LocaleHomePage() {
           <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {primaryPlanKeys.map((planKey) => {
               const p = PLANS[planKey];
-              const priceLine = `${formatCurrency(p.quarterlyAllIn, locale)}${m('pricePerMonthSuffix')}`;
+              const dyn = dynamicPlanPrices[planKey];
+              const priceLine = `${formatCurrency(dyn.quarterlyAllIn, locale)}${m('pricePerMonthSuffix')}`;
               const planTitle = locale === 'ar' ? p.arabicName : p.englishName;
-              const cap = p.weeklyStudentLimit;
+              const cap = dyn.weeklyStudentLimit ?? p.weeklyStudentLimit;
               const studentsLine =
                 cap != null
                   ? locale === 'ar'
@@ -398,9 +401,10 @@ export default function LocaleHomePage() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {secondaryPlanKeys.map((planKey) => {
                 const p = PLANS[planKey];
-                const priceLine = `${formatCurrency(p.quarterlyAllIn, locale)}${m('pricePerMonthSuffix')}`;
+                const dyn = dynamicPlanPrices[planKey];
+                const priceLine = `${formatCurrency(dyn.quarterlyAllIn, locale)}${m('pricePerMonthSuffix')}`;
                 const planTitle = locale === 'ar' ? p.arabicName : p.englishName;
-                const cap = p.weeklyStudentLimit;
+                const cap = dyn.weeklyStudentLimit ?? p.weeklyStudentLimit;
                 const studentsLine =
                   cap != null
                     ? locale === 'ar'

@@ -8,6 +8,7 @@ import { ORDERED_SUBSCRIPTION_PLAN_KEYS, PLANS } from '@/lib/pricing';
 import type { SubscriptionPlanKey } from '@/lib/pricing';
 import { Menu, X } from 'lucide-react';
 import PricingBannerClient from '@/components/landing/PricingBannerClient';
+import { usePublicPlanPrices } from '@/hooks/usePublicPlanPrices';
 
 const CONTACT_MAIL = 'mailto:eyad@ehgintelligence.com';
 
@@ -17,6 +18,7 @@ export default function PricingPageClient() {
   const locale = useLocale();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const dynamicPlanPrices = usePublicPlanPrices();
 
   return (
     <main
@@ -111,8 +113,9 @@ export default function PricingPageClient() {
           <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-5">
             {ORDERED_SUBSCRIPTION_PLAN_KEYS.map((planKey) => {
               const p = PLANS[planKey as SubscriptionPlanKey];
+              const dyn = dynamicPlanPrices[planKey as SubscriptionPlanKey];
               const title = locale === 'ar' ? p.arabicName : p.englishName;
-              const cap = p.weeklyStudentLimit;
+              const cap = dyn.weeklyStudentLimit ?? p.weeklyStudentLimit;
               const studentsLine =
                 cap != null
                   ? locale === 'ar'
@@ -168,7 +171,7 @@ export default function PricingPageClient() {
                             : 'font-mono font-semibold tabular-nums text-[var(--color-text-primary)]'
                         }
                       >
-                        {formatCurrency(p.monthlyListPrice, locale)}
+                        {formatCurrency(dyn.monthlyListPrice, locale)}
                       </dd>
                     </div>
                     <div
@@ -186,7 +189,7 @@ export default function PricingPageClient() {
                             : 'font-mono font-semibold tabular-nums text-[var(--color-text-primary)]'
                         }
                       >
-                        {formatCurrency(p.quarterlyAllIn, locale)}
+                        {formatCurrency(dyn.quarterlyAllIn, locale)}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-2">
@@ -198,7 +201,7 @@ export default function PricingPageClient() {
                             : 'font-mono font-semibold tabular-nums text-[var(--color-text-primary)]'
                         }
                       >
-                        {formatCurrency(p.annualEffectiveMonthly, locale)}
+                        {formatCurrency(dyn.annualEffectiveMonthly, locale)}
                       </dd>
                     </div>
                   </dl>

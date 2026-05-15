@@ -367,6 +367,71 @@ export async function getPlanPrices(): Promise<Record<SubscriptionPlanKey, numbe
   return out;
 }
 
+/**
+ * Per-plan display prices for visitor / signup / billing UI surfaces.
+ *
+ * - `monthlyListPrice` — `pricing_plans.monthly_fee` (fallback `PLANS[k].monthlyListPrice`).
+ * - `quarterlyAllIn`  — `pricing_plans.all_in_price` (fallback `PLANS[k].quarterlyAllIn`).
+ * - `annualEffectiveMonthly` — derived from quarterlyAllIn × `pricing.interval.annual_multiplier`
+ *   (rounded to whole EGP, per docs/PRICING_SPEC.md "Display Annual prices ROUNDED to whole EGP").
+ * - `weeklyStudentLimit` — `pricing_plans.weekly_student_limit` (fallback `PLANS[k].weeklyStudentLimit`).
+ *
+ * Top Centers is excluded (custom-priced).
+ */
+export interface PublicPlanPrice {
+  monthlyListPrice: number;
+  quarterlyAllIn: number;
+  annualEffectiveMonthly: number;
+  weeklyStudentLimit: number | null;
+}
+
+export async function getPublicPlanPrices(): Promise<Record<SubscriptionPlanKey, PublicPlanPrice>> {
+  const client = svc();
+  const interval = await getIntervalConfig();
+
+  const fallbackFor = (k: SubscriptionPlanKey): PublicPlanPrice => ({
+    monthlyListPrice: PLANS[k].monthlyListPrice,
+    quarterlyAllIn: PLANS[k].quarterlyAllIn,
+    annualEffectiveMonthly: PLANS[k].annualEffectiveMonthly,
+    weeklyStudentLimit: PLANS[k].weeklyStudentLimit,
+  });
+  const fallback = Object.fromEntries(
+    ORDERED_SUBSCRIPTION_PLAN_KEYS.map((k) => [k, fallbackFor(k)]),
+  ) as Record<SubscriptionPlanKey, PublicPlanPrice>;
+
+  if (!client) return fallback;
+
+  const { data } = await client
+    .from('pricing_plans')
+    .select('plan_key, monthly_fee, all_in_price, weekly_student_limit, is_active')
+    .in('plan_key', ORDERED_SUBSCRIPTION_PLAN_KEYS as unknown as string[]);
+
+  const out: Record<SubscriptionPlanKey, PublicPlanPrice> = { ...fallback };
+  for (const row of data ?? []) {
+    const key = (row as { plan_key: string }).plan_key as SubscriptionPlanKey;
+    if (!(key in fallback)) continue;
+    const fb = fallback[key];
+    const quarterlyAllIn = num((row as { all_in_price: unknown }).all_in_price, fb.quarterlyAllIn);
+    const monthlyListPrice = num((row as { monthly_fee: unknown }).monthly_fee, fb.monthlyListPrice);
+    const limitRaw = (row as { weekly_student_limit: unknown }).weekly_student_limit;
+    const weeklyStudentLimit =
+      typeof limitRaw === 'number' && Number.isFinite(limitRaw) && limitRaw > 0
+        ? Math.round(limitRaw)
+        : fb.weeklyStudentLimit;
+    const annualEffectiveMonthly = Math.round(
+      Math.max(0, quarterlyAllIn) * interval.annualMultiplier,
+    );
+    out[key] = {
+      monthlyListPrice: monthlyListPrice > 0 ? monthlyListPrice : fb.monthlyListPrice,
+      quarterlyAllIn: quarterlyAllIn > 0 ? quarterlyAllIn : fb.quarterlyAllIn,
+      annualEffectiveMonthly:
+        annualEffectiveMonthly > 0 ? annualEffectiveMonthly : fb.annualEffectiveMonthly,
+      weeklyStudentLimit,
+    };
+  }
+  return out;
+}
+
 /** All pricing config in one shot — used by admin GET. */
 export async function getPricingConfigSnapshot(): Promise<PricingConfigSnapshot> {
   const [interval, addons, promo, banner, popup] = await Promise.all([

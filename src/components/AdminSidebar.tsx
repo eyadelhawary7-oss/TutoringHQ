@@ -650,6 +650,19 @@ export function AdminSidebar({
   ];
 
   const isLg = useMediaQuery('(min-width: 1024px)');
+  /**
+   * SSR-safe gate for the `inert` attribute. `useMediaQuery` returns `false`
+   * until its post-mount effect runs, so naively applying `inert` when
+   * `!isLg && !openMenu` would block all clicks on the desktop rail during
+   * SSR + the first client paint (race observed in 190a850). We only ever
+   * apply inert after the component is mounted AND we've confirmed we're
+   * below the `lg` breakpoint — never on desktop.
+   */
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  const shouldInertSidebar = mounted && !isLg && !openMenu;
   const desktopTop = desktopSidebarFullHeight ? 'lg:top-0' : 'lg:top-14';
 
   const isOverviewActive = activeTab === 'overview' && !onDedicatedAdminSubpage;
@@ -761,7 +774,7 @@ export function AdminSidebar({
               ? 'max-lg:translate-x-full lg:translate-x-0'
               : 'max-lg:-translate-x-full lg:translate-x-0',
         )}
-        {...(!isLg && !openMenu ? { inert: true } : {})}
+        {...(shouldInertSidebar ? { inert: true } : {})}
       >
         <div className="p-4 border-b border-[var(--color-border)] shrink-0 lg:bg-[var(--color-surface-2)] flex items-start justify-between gap-2">
           <div>
