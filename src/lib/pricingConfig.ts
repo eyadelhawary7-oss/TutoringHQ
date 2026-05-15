@@ -64,12 +64,26 @@ export interface BannerConfig {
   ctaUrl: string;
 }
 
+export interface PopupConfig {
+  enabled: boolean;
+  titleEn: string;
+  titleAr: string;
+  bodyEn: string;
+  bodyAr: string;
+  promoCode: string;
+  ctaTextEn: string;
+  ctaTextAr: string;
+  ctaUrl: string;
+  delaySeconds: number;
+}
+
 /** Combined snapshot for the admin page. */
 export interface PricingConfigSnapshot {
   interval: IntervalConfig;
   addons: AddonPrices;
   promo: PromoConfig;
   banner: BannerConfig;
+  popup: PopupConfig;
 }
 
 const INTERVAL_DEFAULTS: IntervalConfig = {
@@ -104,6 +118,19 @@ const BANNER_DEFAULTS: BannerConfig = {
   ctaTextEn: '',
   ctaTextAr: '',
   ctaUrl: '',
+};
+
+const POPUP_DEFAULTS: PopupConfig = {
+  enabled: false,
+  titleEn: '',
+  titleAr: '',
+  bodyEn: '',
+  bodyAr: '',
+  promoCode: '',
+  ctaTextEn: '',
+  ctaTextAr: '',
+  ctaUrl: '/pricing',
+  delaySeconds: 3,
 };
 
 function num(value: unknown, fallback: number): number {
@@ -182,6 +209,16 @@ export const PRICING_CONFIG_KEYS = [
   'pricing.banner.cta_text_en',
   'pricing.banner.cta_text_ar',
   'pricing.banner.cta_url',
+  'landing.popup.enabled',
+  'landing.popup.title_en',
+  'landing.popup.title_ar',
+  'landing.popup.body_en',
+  'landing.popup.body_ar',
+  'landing.popup.promo_code',
+  'landing.popup.cta_text_en',
+  'landing.popup.cta_text_ar',
+  'landing.popup.cta_url',
+  'landing.popup.delay_seconds',
 ] as const;
 
 export type PricingConfigKey = (typeof PRICING_CONFIG_KEYS)[number];
@@ -279,6 +316,33 @@ export async function getBannerConfig(): Promise<BannerConfig> {
   };
 }
 
+export async function getPopupConfig(): Promise<PopupConfig> {
+  const rows = await readKeys([
+    'landing.popup.enabled',
+    'landing.popup.title_en',
+    'landing.popup.title_ar',
+    'landing.popup.body_en',
+    'landing.popup.body_ar',
+    'landing.popup.promo_code',
+    'landing.popup.cta_text_en',
+    'landing.popup.cta_text_ar',
+    'landing.popup.cta_url',
+    'landing.popup.delay_seconds',
+  ]);
+  return {
+    enabled: bool(rows['landing.popup.enabled'], POPUP_DEFAULTS.enabled),
+    titleEn: str(rows['landing.popup.title_en'], ''),
+    titleAr: str(rows['landing.popup.title_ar'], ''),
+    bodyEn: str(rows['landing.popup.body_en'], ''),
+    bodyAr: str(rows['landing.popup.body_ar'], ''),
+    promoCode: str(rows['landing.popup.promo_code'], ''),
+    ctaTextEn: str(rows['landing.popup.cta_text_en'], ''),
+    ctaTextAr: str(rows['landing.popup.cta_text_ar'], ''),
+    ctaUrl: str(rows['landing.popup.cta_url'], POPUP_DEFAULTS.ctaUrl),
+    delaySeconds: num(rows['landing.popup.delay_seconds'], POPUP_DEFAULTS.delaySeconds),
+  };
+}
+
 /**
  * Dynamic per-plan quarterly all-in price sourced from the `pricing_plans` DB table.
  * Falls back to the hardcoded `PLANS[plan].quarterlyAllIn` when the row is missing.
@@ -305,13 +369,14 @@ export async function getPlanPrices(): Promise<Record<SubscriptionPlanKey, numbe
 
 /** All pricing config in one shot — used by admin GET. */
 export async function getPricingConfigSnapshot(): Promise<PricingConfigSnapshot> {
-  const [interval, addons, promo, banner] = await Promise.all([
+  const [interval, addons, promo, banner, popup] = await Promise.all([
     getIntervalConfig(),
     getAddonPrices(),
     getPromoConfig(),
     getBannerConfig(),
+    getPopupConfig(),
   ]);
-  return { interval, addons, promo, banner };
+  return { interval, addons, promo, banner, popup };
 }
 
 export type { PlanKey, SubscriptionPlanKey };
@@ -321,4 +386,5 @@ export const PRICING_CONFIG_DEFAULTS = {
   addons: ADDON_DEFAULTS,
   promo: PROMO_DEFAULTS,
   banner: BANNER_DEFAULTS,
+  popup: POPUP_DEFAULTS,
 } as const;

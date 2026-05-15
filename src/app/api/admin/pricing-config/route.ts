@@ -40,6 +40,18 @@ type PatchBody = Partial<{
     ctaTextAr: string;
     ctaUrl: string;
   }>;
+  popup: Partial<{
+    enabled: boolean;
+    titleEn: string;
+    titleAr: string;
+    bodyEn: string;
+    bodyAr: string;
+    promoCode: string;
+    ctaTextEn: string;
+    ctaTextAr: string;
+    ctaUrl: string;
+    delaySeconds: number;
+  }>;
 }>;
 
 function isNum(v: unknown): v is number {
@@ -153,6 +165,38 @@ export async function PATCH(request: NextRequest) {
       if (!isStr(b.style) || !(BANNER_STYLES as readonly string[]).includes(b.style)) {
         errors.push(`banner.style must be one of ${BANNER_STYLES.join(', ')}`);
       } else updates.push({ key: 'pricing.banner.style', value: b.style });
+    }
+  }
+
+  // ── Popup ────────────────────────────────────────────────────────────────
+  if (body.popup) {
+    const p = body.popup;
+    if (p.enabled !== undefined) {
+      if (typeof p.enabled !== 'boolean') errors.push('popup.enabled must be boolean');
+      else updates.push({ key: 'landing.popup.enabled', value: p.enabled });
+    }
+    const popupStringKeys: Array<[keyof typeof p, string]> = [
+      ['titleEn', 'landing.popup.title_en'],
+      ['titleAr', 'landing.popup.title_ar'],
+      ['bodyEn', 'landing.popup.body_en'],
+      ['bodyAr', 'landing.popup.body_ar'],
+      ['promoCode', 'landing.popup.promo_code'],
+      ['ctaTextEn', 'landing.popup.cta_text_en'],
+      ['ctaTextAr', 'landing.popup.cta_text_ar'],
+      ['ctaUrl', 'landing.popup.cta_url'],
+    ];
+    for (const [field, dbKey] of popupStringKeys) {
+      const v = p[field];
+      if (v !== undefined) {
+        if (!isStr(v) || v.length > 500) {
+          errors.push(`popup.${String(field)} must be a string up to 500 chars`);
+        } else updates.push({ key: dbKey, value: v });
+      }
+    }
+    if (p.delaySeconds !== undefined) {
+      if (!isNum(p.delaySeconds) || p.delaySeconds < 0 || p.delaySeconds > 60) {
+        errors.push('popup.delaySeconds must be a number between 0 and 60');
+      } else updates.push({ key: 'landing.popup.delay_seconds', value: p.delaySeconds });
     }
   }
 

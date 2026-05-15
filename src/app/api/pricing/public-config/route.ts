@@ -4,19 +4,20 @@
 // selector's promo display. Cached for 60 seconds.
 
 import { NextResponse } from 'next/server';
-import { getBannerConfig, getIntervalConfig, getPromoConfig } from '@/lib/pricingConfig';
+import { getBannerConfig, getIntervalConfig, getPromoConfig, getPopupConfig } from '@/lib/pricingConfig';
 
 export const revalidate = 60;
 
 export async function GET() {
-  const [banner, promo, interval] = await Promise.all([
+  const [banner, promo, interval, popup] = await Promise.all([
     getBannerConfig(),
     getPromoConfig(),
     getIntervalConfig(),
+    getPopupConfig(),
   ]);
 
   return NextResponse.json(
-    { banner, promo, interval },
+    { banner, promo, interval, popup },
     {
       headers: {
         'Cache-Control': 's-maxage=60, stale-while-revalidate=300',

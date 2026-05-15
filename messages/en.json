@@ -2971,6 +2971,8 @@
     "promoApplyButton": "Apply",
     "promoApplied": "{discountPct}% off - saves {savings} EGP on your first billing cycle",
     "promoRemove": "Remove",
+    "removeReferralToUsePromo": "Remove your referral code first to apply a promo code.",
+    "removePromoToUseReferral": "Remove your promo code first to apply a referral code.",
     "promoErrorNotFound": "This code is invalid or inactive.",
     "promoErrorExpired": "This code has expired.",
     "promoErrorExhausted": "This code has run out of uses.",
@@ -3319,6 +3321,17 @@
     "pricingBannerCtaTextEn": "CTA button text (English)",
     "pricingBannerCtaTextAr": "CTA button text (Arabic)",
     "pricingBannerCtaUrl": "CTA URL",
+    "pricingSectionPopup": "Landing Page Popup",
+    "pricingPopupEnabled": "Enable promotional popup",
+    "pricingPopupDelaySeconds": "Delay before appearing (seconds)",
+    "pricingPopupPromoCode": "Promo code to display",
+    "pricingPopupTitleEn": "Popup title (English)",
+    "pricingPopupTitleAr": "Popup title (Arabic)",
+    "pricingPopupBodyEn": "Body text (English)",
+    "pricingPopupBodyAr": "Body text (Arabic)",
+    "pricingPopupCtaTextEn": "CTA button text (English)",
+    "pricingPopupCtaTextAr": "CTA button text (Arabic)",
+    "pricingPopupCtaUrl": "CTA URL",
     "pricingPreview": "Preview",
     "pricingSaveAll": "Save all changes",
     "pricingUnsavedChanges": "Unsaved changes",
@@ -7865,5 +7878,11 @@
     "success": "Done",
     "error": "Something went wrong, try again",
     "retry": "Retry"
+  },
+  "promoPopup": {
+    "ariaLabel": "Promotional offer",
+    "closeAria": "Close popup",
+    "copy": "Copy",
+    "copied": "Copied!"
   }
 }

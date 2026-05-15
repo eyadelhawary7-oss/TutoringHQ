@@ -105,6 +105,7 @@ export default function AdminPricingPage() {
     interval: false,
     addons: false,
     banner: false,
+    popup: false,
   });
   const toggleSection = useCallback((key: string) => {
     setOpenSections((s) => ({ ...s, [key]: !s[key] }));
@@ -257,6 +258,9 @@ export default function AdminPricingPage() {
     }
     if (JSON.stringify(pricingCfg.banner) !== JSON.stringify(pricingCfgDraft.banner)) {
       body.banner = pricingCfgDraft.banner;
+    }
+    if (JSON.stringify(pricingCfg.popup) !== JSON.stringify(pricingCfgDraft.popup)) {
+      body.popup = pricingCfgDraft.popup;
     }
     if (Object.keys(body).length === 0) return;
 
@@ -948,6 +952,201 @@ export default function AdminPricingPage() {
                     ) : null}
                   </CollapsibleSection>
 
+                  {/* SECTION: Landing Page Popup */}
+                  <CollapsibleSection
+                    title={t('pricingSectionPopup')}
+                    open={openSections.popup}
+                    onToggle={() => toggleSection('popup')}
+                  >
+                    <label className="inline-flex items-center gap-2 cursor-pointer mb-4">
+                      <input
+                        type="checkbox"
+                        checked={pricingCfgDraft.popup.enabled}
+                        onChange={(e) =>
+                          setPricingCfgDraft((d) =>
+                            d ? { ...d, popup: { ...d.popup, enabled: e.target.checked } } : d,
+                          )
+                        }
+                        className="rounded border-[var(--color-border-default)]"
+                      />
+                      <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                        {t('pricingPopupEnabled')}
+                      </span>
+                    </label>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+                          {t('pricingPopupDelaySeconds')}
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={60}
+                          step={1}
+                          className="w-full max-w-xs rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2"
+                          value={pricingCfgDraft.popup.delaySeconds}
+                          onChange={(e) => {
+                            const n = parseFloat(e.target.value);
+                            setPricingCfgDraft((d) =>
+                              d
+                                ? { ...d, popup: { ...d.popup, delaySeconds: Number.isFinite(n) ? n : 0 } }
+                                : d,
+                            );
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+                          {t('pricingPopupPromoCode')}
+                        </label>
+                        <input
+                          type="text"
+                          dir="ltr"
+                          maxLength={50}
+                          placeholder="e.g. LAUNCH30"
+                          className="w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2 font-mono tracking-widest"
+                          value={pricingCfgDraft.popup.promoCode}
+                          onChange={(e) =>
+                            setPricingCfgDraft((d) =>
+                              d
+                                ? { ...d, popup: { ...d.popup, promoCode: e.target.value.toUpperCase() } }
+                                : d,
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+                          {t('pricingPopupTitleEn')}
+                        </label>
+                        <input
+                          type="text"
+                          dir="ltr"
+                          maxLength={120}
+                          className="w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2"
+                          value={pricingCfgDraft.popup.titleEn}
+                          onChange={(e) =>
+                            setPricingCfgDraft((d) =>
+                              d ? { ...d, popup: { ...d.popup, titleEn: e.target.value } } : d,
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+                          {t('pricingPopupTitleAr')}
+                        </label>
+                        <input
+                          type="text"
+                          dir="rtl"
+                          maxLength={120}
+                          className="w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2"
+                          value={pricingCfgDraft.popup.titleAr}
+                          onChange={(e) =>
+                            setPricingCfgDraft((d) =>
+                              d ? { ...d, popup: { ...d.popup, titleAr: e.target.value } } : d,
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+                          {t('pricingPopupBodyEn')}
+                        </label>
+                        <textarea
+                          dir="ltr"
+                          maxLength={400}
+                          rows={3}
+                          className="w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2 resize-none"
+                          value={pricingCfgDraft.popup.bodyEn}
+                          onChange={(e) =>
+                            setPricingCfgDraft((d) =>
+                              d ? { ...d, popup: { ...d.popup, bodyEn: e.target.value } } : d,
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+                          {t('pricingPopupBodyAr')}
+                        </label>
+                        <textarea
+                          dir="rtl"
+                          maxLength={400}
+                          rows={3}
+                          className="w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2 resize-none"
+                          value={pricingCfgDraft.popup.bodyAr}
+                          onChange={(e) =>
+                            setPricingCfgDraft((d) =>
+                              d ? { ...d, popup: { ...d.popup, bodyAr: e.target.value } } : d,
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+                          {t('pricingPopupCtaTextEn')}
+                        </label>
+                        <input
+                          type="text"
+                          dir="ltr"
+                          maxLength={60}
+                          className="w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2"
+                          value={pricingCfgDraft.popup.ctaTextEn}
+                          onChange={(e) =>
+                            setPricingCfgDraft((d) =>
+                              d ? { ...d, popup: { ...d.popup, ctaTextEn: e.target.value } } : d,
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+                          {t('pricingPopupCtaTextAr')}
+                        </label>
+                        <input
+                          type="text"
+                          dir="rtl"
+                          maxLength={60}
+                          className="w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2"
+                          value={pricingCfgDraft.popup.ctaTextAr}
+                          onChange={(e) =>
+                            setPricingCfgDraft((d) =>
+                              d ? { ...d, popup: { ...d.popup, ctaTextAr: e.target.value } } : d,
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+                          {t('pricingPopupCtaUrl')}
+                        </label>
+                        <input
+                          type="text"
+                          dir="ltr"
+                          maxLength={500}
+                          placeholder="/pricing"
+                          className="w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2"
+                          value={pricingCfgDraft.popup.ctaUrl}
+                          onChange={(e) =>
+                            setPricingCfgDraft((d) =>
+                              d ? { ...d, popup: { ...d.popup, ctaUrl: e.target.value } } : d,
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    {pricingCfgDraft.popup.enabled && (pricingCfgDraft.popup.titleEn || pricingCfgDraft.popup.titleAr || pricingCfgDraft.popup.promoCode) ? (
+                      <div className="mt-6 space-y-3">
+                        <p className="text-xs text-[var(--color-text-secondary)]">{t('pricingPreview')}:</p>
+                        <PopupPreview cfg={pricingCfgDraft.popup} locale="en" />
+                        <PopupPreview cfg={pricingCfgDraft.popup} locale="ar" />
+                      </div>
+                    ) : null}
+                  </CollapsibleSection>
+
                   {/* Global save bar */}
                   <div className="sticky bottom-0 -mx-4 md:-mx-6 mt-6 border-t border-[var(--color-border-default)] bg-[var(--color-surface-1)] px-4 py-3 md:px-6 flex items-center justify-end gap-2">
                     {pricingCfgDirty ? (
@@ -1024,6 +1223,41 @@ function BannerPreview({ cfg, locale }: BannerPreviewProps) {
           </span>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+interface PopupPreviewProps {
+  cfg: PricingConfigSnapshot['popup'];
+  locale: 'en' | 'ar';
+}
+
+function PopupPreview({ cfg, locale }: PopupPreviewProps) {
+  const isAr = locale === 'ar';
+  const title = isAr ? cfg.titleAr : cfg.titleEn;
+  const body = isAr ? cfg.bodyAr : cfg.bodyEn;
+  const cta = isAr ? cfg.ctaTextAr : cfg.ctaTextEn;
+  return (
+    <div
+      dir={isAr ? 'rtl' : 'ltr'}
+      className="mx-auto max-w-xs rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-surface-0)] p-4 shadow-lg text-xs"
+    >
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <p className="font-semibold text-sm text-[var(--color-text-primary)] leading-tight">{title || (isAr ? '(عنوان)' : '(Title)')}</p>
+        <span className="shrink-0 rounded-full p-0.5 text-[var(--color-text-muted)] border border-[var(--color-border-subtle)] text-[10px] px-1.5">x</span>
+      </div>
+      {body ? <p className="mb-3 text-[var(--color-text-secondary)] leading-relaxed">{body}</p> : null}
+      {cfg.promoCode ? (
+        <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border border-teal-700/50 bg-teal-950/30 px-3 py-2">
+          <span className="font-mono font-bold tracking-widest text-teal-400 text-sm">{cfg.promoCode}</span>
+          <span className="text-[10px] text-teal-600 border border-teal-800/60 rounded px-1.5 py-0.5">{isAr ? 'نسخ' : 'Copy'}</span>
+        </div>
+      ) : null}
+      {cta && cfg.ctaUrl ? (
+        <div className="mt-2 w-full rounded-lg bg-teal-600 px-3 py-1.5 text-center text-white font-semibold text-xs">
+          {cta}
+        </div>
+      ) : null}
     </div>
   );
 }

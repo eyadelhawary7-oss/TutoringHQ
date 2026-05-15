@@ -1884,6 +1884,17 @@
     "pricingBannerCtaTextEn": "نص زر الإجراء (إنجليزي)",
     "pricingBannerCtaTextAr": "نص زر الإجراء (عربي)",
     "pricingBannerCtaUrl": "رابط زر الإجراء",
+    "pricingSectionPopup": "نافذة الصفحة الرئيسية",
+    "pricingPopupEnabled": "تفعيل النافذة الترويجية",
+    "pricingPopupDelaySeconds": "التأخير قبل الظهور (ثانية)",
+    "pricingPopupPromoCode": "كود الخصم للعرض",
+    "pricingPopupTitleEn": "عنوان النافذة (إنجليزي)",
+    "pricingPopupTitleAr": "عنوان النافذة (عربي)",
+    "pricingPopupBodyEn": "نص المحتوى (إنجليزي)",
+    "pricingPopupBodyAr": "نص المحتوى (عربي)",
+    "pricingPopupCtaTextEn": "نص زر الإجراء (إنجليزي)",
+    "pricingPopupCtaTextAr": "نص زر الإجراء (عربي)",
+    "pricingPopupCtaUrl": "رابط زر الإجراء",
     "pricingPreview": "معاينة",
     "pricingSaveAll": "حفظ كل التغييرات",
     "pricingUnsavedChanges": "تغييرات غير محفوظة",
@@ -6204,6 +6215,8 @@
     "promoApplyButton": "تطبيق",
     "promoApplied": "خصم {discountPct}% - توفير {savings} جنيه على دورة الفوترة الأولى",
     "promoRemove": "إزالة",
+    "removeReferralToUsePromo": "أزل كود الإحالة أولاً لتطبيق كود الخصم.",
+    "removePromoToUseReferral": "أزل كود الخصم أولاً لتطبيق كود الإحالة.",
     "promoErrorNotFound": "هذا الكود غير صحيح أو غير مفعّل.",
     "promoErrorExpired": "انتهت صلاحية هذا الكود.",
     "promoErrorExhausted": "استُنفد عدد استخدامات هذا الكود.",
@@ -7865,5 +7878,11 @@
     "success": "تم بنجاح",
     "error": "حدث خطأ، حاول مجدداً",
     "retry": "إعادة المحاولة"
+  },
+  "promoPopup": {
+    "ariaLabel": "عرض ترويجي",
+    "closeAria": "اغلاق النافذة",
+    "copy": "نسخ",
+    "copied": "تم النسخ!"
   }
 }

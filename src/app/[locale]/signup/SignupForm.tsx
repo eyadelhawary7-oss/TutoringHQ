@@ -421,7 +421,11 @@ export default function SignupForm() {
         else if (!phone.startsWith('20')) phone = '+20' + phone;
         else phone = '+' + phone;
       }
-      const referralEffective = (form.referralCode.trim() || appliedReferralCode || '').trim().toUpperCase();
+      // Promo takes priority if both exist (edge case — UI prevents this normally).
+      let referralEffective = (form.referralCode.trim() || appliedReferralCode || '').trim().toUpperCase();
+      if (appliedPromo && referralEffective) {
+        referralEffective = '';
+      }
       const res = await fetch('/api/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -469,6 +473,9 @@ export default function SignupForm() {
       setPaymentSubmitting(false);
     }
   };
+
+  // True when a referral discount is active (auto-detected or typed).
+  const hasActiveReferral = Boolean(form.referralCode.trim() || appliedReferralCode);
 
   const selectedPlan = SIGNUP_PLANS.find((p) => p.key === form.plan);
   const renewsKey =
@@ -569,9 +576,9 @@ export default function SignupForm() {
       val: selectedPlan ? `${formatNumber(getTotalAmount(selectedPlan, form.billingPeriod), locale)} EGP` : '',
       teal: false,
     },
-    { taxKey: 'vat', label: 'VAT 14%', val: t('included'), teal: true },
     { taxKey: 'service', label: t('serviceFee'), val: t('included'), teal: true },
     { taxKey: 'stamp', label: t('stampDuty'), val: t('included'), teal: true },
+    { taxKey: 'vat', label: 'VAT 14%', val: t('included'), teal: true },
   ];
 
   return (
@@ -785,68 +792,8 @@ export default function SignupForm() {
 
             {/* Promo code section */}
             <div style={{ marginTop: '14px' }}>
-              {!appliedPromo ? (
-                !showPromoInput ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowPromoInput(true)}
-                    style={{ ...SANS, fontSize: '11px', color: '#475569', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
-                  >
-                    + {t('havePromoCode')}
-                  </button>
-                ) : (
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', flexDirection: 'column' }}>
-                    <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                      <input
-                        type="text"
-                        dir="ltr"
-                        value={promoInputValue}
-                        onChange={(e) => {
-                          setPromoInputValue(e.target.value.toUpperCase());
-                          setPromoError('');
-                        }}
-                        placeholder={t('promoCodePlaceholder')}
-                        style={{
-                          ...SANS,
-                          flex: 1,
-                          fontSize: '13px',
-                          background: '#0f172a',
-                          border: '1px solid #1e293b',
-                          borderRadius: '8px',
-                          padding: '8px 12px',
-                          color: '#f8fafc',
-                          outline: 'none',
-                          letterSpacing: '1px',
-                        }}
-                        onKeyDown={(e) => { if (e.key === 'Enter') void applyPromo(); }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => void applyPromo()}
-                        disabled={promoLoading || !promoInputValue.trim()}
-                        style={{
-                          ...SANS,
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          background: '#0D9488',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '8px',
-                          padding: '8px 14px',
-                          cursor: 'pointer',
-                          opacity: promoLoading || !promoInputValue.trim() ? 0.5 : 1,
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {promoLoading ? '...' : t('promoApplyButton')}
-                      </button>
-                    </div>
-                    {promoError ? (
-                      <p style={{ ...SANS, fontSize: '11px', color: '#f87171', margin: 0 }}>{promoError}</p>
-                    ) : null}
-                  </div>
-                )
-              ) : (
+              {appliedPromo ? (
+                /* Applied promo badge */
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', borderRadius: '8px', background: 'rgba(13,148,136,0.12)', border: '1px solid rgba(13,148,136,0.3)' }}>
                   <div>
                     <span style={{ ...SANS, fontSize: '11px', fontWeight: 700, color: '#0D9488', letterSpacing: '1px' }}>
@@ -862,10 +809,88 @@ export default function SignupForm() {
                   <button
                     type="button"
                     onClick={() => { setAppliedPromo(null); setShowPromoInput(false); }}
-                    style={{ ...SANS, fontSize: '10px', color: '#475569', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                    style={{ ...SANS, fontSize: '10px', color: '#f87171', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600 }}
                   >
                     {t('promoRemove')}
                   </button>
+                </div>
+              ) : hasActiveReferral ? (
+                /* Blocked: referral is active */
+                <div style={{ padding: '9px 12px', borderRadius: '8px', background: 'rgba(15,23,42,0.6)', border: '1px solid #1e293b' }}>
+                  <p style={{ ...SANS, fontSize: '11px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                    {t('removeReferralToUsePromo')}{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateForm('referralCode', '');
+                        setAppliedReferralCode(null);
+                      }}
+                      style={{ ...SANS, fontSize: '11px', color: '#f87171', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 600 }}
+                    >
+                      {t('promoRemove')}
+                    </button>
+                  </p>
+                </div>
+              ) : !showPromoInput ? (
+                /* Entry point */
+                <button
+                  type="button"
+                  onClick={() => setShowPromoInput(true)}
+                  style={{ ...SANS, fontSize: '11px', color: '#475569', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                >
+                  + {t('havePromoCode')}
+                </button>
+              ) : (
+                /* Input form */
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                    <input
+                      type="text"
+                      dir="ltr"
+                      value={promoInputValue}
+                      onChange={(e) => {
+                        setPromoInputValue(e.target.value.toUpperCase());
+                        setPromoError('');
+                      }}
+                      placeholder={t('promoCodePlaceholder')}
+                      style={{
+                        ...SANS,
+                        flex: 1,
+                        fontSize: '13px',
+                        background: '#0f172a',
+                        border: '1px solid #1e293b',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        color: '#f8fafc',
+                        outline: 'none',
+                        letterSpacing: '1px',
+                      }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') void applyPromo(); }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void applyPromo()}
+                      disabled={promoLoading || !promoInputValue.trim()}
+                      style={{
+                        ...SANS,
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        background: '#0D9488',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '8px 14px',
+                        cursor: 'pointer',
+                        opacity: promoLoading || !promoInputValue.trim() ? 0.5 : 1,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {promoLoading ? '...' : t('promoApplyButton')}
+                    </button>
+                  </div>
+                  {promoError ? (
+                    <p style={{ ...SANS, fontSize: '11px', color: '#f87171', margin: 0 }}>{promoError}</p>
+                  ) : null}
                 </div>
               )}
             </div>
@@ -968,17 +993,18 @@ export default function SignupForm() {
               </div>
             </div>
 
-            <div className="mt-4 flex items-start gap-3">
+            <div className="mt-4 flex items-start gap-2">
               <input
                 type="checkbox"
                 id="terms"
                 checked={termsAccepted}
                 onChange={(e) => setTermsAccepted(e.target.checked)}
-                className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded border border-[var(--color-border)] accent-[#0D9488]"
+                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border border-slate-500 accent-[#0D9488]"
+                style={{ minWidth: '16px', minHeight: '16px' }}
               />
               <label
                 htmlFor="terms"
-                className="cursor-pointer text-sm leading-relaxed text-[var(--color-text-secondary)]"
+                className="cursor-pointer text-[11px] leading-relaxed text-slate-500"
                 style={SANS}
               >
                 {t.rich('termsAcceptance', {
@@ -1496,14 +1522,36 @@ export default function SignupForm() {
                     >
                       + {t('haveReferralCode')}
                     </button>
+                  ) : appliedPromo ? (
+                    /* Blocked: promo is applied on payment stage */
+                    <div style={{ padding: '9px 12px', borderRadius: '8px', background: 'rgba(15,23,42,0.6)', border: '1px solid #1e293b' }}>
+                      <p style={{ ...SANS, fontSize: '11px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                        {t('removePromoToUseReferral')}{' '}
+                        <button
+                          type="button"
+                          onClick={() => { setAppliedPromo(null); setShowPromoInput(false); }}
+                          style={{ ...SANS, fontSize: '11px', color: '#f87171', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 600 }}
+                        >
+                          {t('promoRemove')}
+                        </button>
+                      </p>
+                    </div>
                   ) : (
                     <div className="space-y-2">
                       {appliedReferralCode ? (
                         <div
-                          className="mb-2 inline-flex rounded-full border border-teal-800/60 bg-teal-950/40 px-3 py-1 text-[11px] font-medium text-teal-400"
+                          className="mb-2 inline-flex items-center gap-2 rounded-full border border-teal-800/60 bg-teal-950/40 px-3 py-1 text-[11px] font-medium text-teal-400"
                           style={SANS}
                         >
-                          {t('referralApplied', { code: appliedReferralCode })}
+                          <span>{t('referralApplied', { code: appliedReferralCode })}</span>
+                          <button
+                            type="button"
+                            onClick={() => { setAppliedReferralCode(null); setShowReferral(false); }}
+                            style={{ ...SANS, fontSize: '10px', color: '#f87171', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 600 }}
+                            aria-label={t('promoRemove')}
+                          >
+                            {t('promoRemove')}
+                          </button>
                         </div>
                       ) : null}
                       <UnderlineInput
