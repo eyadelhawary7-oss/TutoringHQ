@@ -650,7 +650,7 @@ export function AdminSidebar({
   ];
 
   const isLg = useMediaQuery('(min-width: 1024px)');
-  const desktopAsideTop = desktopSidebarFullHeight ? 'top-0' : 'top-14';
+  const desktopTop = desktopSidebarFullHeight ? 'lg:top-0' : 'lg:top-14';
 
   const isOverviewActive = activeTab === 'overview' && !onDedicatedAdminSubpage;
   const isCeoDashActive = activeTab === 'ceoDashboard' || !!isCeo;
@@ -659,19 +659,14 @@ export function AdminSidebar({
     <>
       {/* Mobile top bar - matches center shell pattern */}
       <header className="lg:hidden fixed top-0 start-0 end-0 z-40 bg-[var(--color-surface-1)] border-b border-[var(--color-border-subtle)] min-h-14 flex items-center justify-center print:hidden relative px-4">
-        <div className="absolute start-4 top-1/2 -translate-y-1/2 z-10 lg:hidden">
-          {openMenu ? (
-            <X
-              className="h-6 w-6 cursor-pointer text-[var(--color-text-primary)]"
-              onClick={() => setOpenMenu(false)}
-            />
-          ) : (
-            <Menu
-              className="h-6 w-6 cursor-pointer text-[var(--color-text-primary)]"
-              onClick={() => setOpenMenu(true)}
-            />
-          )}
-        </div>
+        <button
+          type="button"
+          aria-label="Open navigation menu"
+          onClick={() => setOpenMenu(true)}
+          className="absolute start-2 top-1/2 -translate-y-1/2 z-10 lg:hidden min-h-11 min-w-11 flex items-center justify-center rounded-lg text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
+        >
+          <Menu className="h-6 w-6" aria-hidden />
+        </button>
 
         <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
           <Image
@@ -746,7 +741,7 @@ export function AdminSidebar({
 
       {openMenu ? (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-[50] lg:hidden"
           onClick={() => setOpenMenu(false)}
           aria-hidden
         />
@@ -758,21 +753,35 @@ export function AdminSidebar({
           'fixed start-0 flex flex-col bg-[var(--color-surface-1)] border-e border-[var(--color-border)]',
           'z-[60] lg:z-20 w-64 lg:w-56',
           'top-0 h-full lg:h-auto lg:bottom-0',
-          desktopAsideTop,
-          'transition-transform duration-[250ms] ease-in-out',
-          openMenu ? 'translate-x-0' : 'max-lg:ltr:-translate-x-full max-lg:rtl:translate-x-full lg:translate-x-0',
+          desktopTop,
+          'transition-transform duration-200 ease-in-out',
+          openMenu
+            ? 'translate-x-0'
+            : locale === 'ar'
+              ? 'max-lg:translate-x-full lg:translate-x-0'
+              : 'max-lg:-translate-x-full lg:translate-x-0',
         )}
         aria-hidden={!isLg && !openMenu}
       >
-        <div className="p-4 border-b border-[var(--color-border)] shrink-0 lg:bg-[var(--color-surface-2)]">
-          <h2 className="font-bold text-[var(--color-text-primary)]">{t('title')}</h2>
-          <Link
-            href="/dashboard"
-            onClick={afterNavigate}
-            className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] mt-1 block"
+        <div className="p-4 border-b border-[var(--color-border)] shrink-0 lg:bg-[var(--color-surface-2)] flex items-start justify-between gap-2">
+          <div>
+            <h2 className="font-bold text-[var(--color-text-primary)]">{t('title')}</h2>
+            <Link
+              href="/dashboard"
+              onClick={afterNavigate}
+              className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] mt-1 block"
+            >
+              {t('backToMyCenter')}
+            </Link>
+          </div>
+          <button
+            type="button"
+            aria-label="Close navigation menu"
+            onClick={() => setOpenMenu(false)}
+            className="lg:hidden -me-2 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors shrink-0"
           >
-            {t('backToMyCenter')}
-          </Link>
+            <X size={20} aria-hidden />
+          </button>
         </div>
 
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
