@@ -1404,9 +1404,9 @@ function AdminPageContent() {
       )}
 
       {/* Main content */}
-      <div className="flex-1 min-w-0 p-4 md:p-6 overflow-auto lg:ms-56">
+      <div className="flex-1 min-w-0 p-4 md:p-6 overflow-auto lg:ms-56 flex flex-col">
         {tab === 'overview' && loadError && !overview ? (
-          <div className="rounded-xl border border-destructive/30 bg-destructive/5 text-destructive px-4 py-3 mb-4 flex flex-wrap items-center gap-3 justify-between">
+          <div className="flex-1 rounded-xl border border-destructive/30 bg-destructive/5 text-destructive px-4 py-3 mb-4 flex flex-wrap items-center gap-3 justify-between">
             <p className="text-sm font-medium">{loadError}</p>
             <div className="flex gap-2">
               <button type="button" onClick={() => void loadOverview()} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm btn-press chq-focus">
@@ -1419,7 +1419,7 @@ function AdminPageContent() {
           </div>
         ) : null}
         {tab === 'overview' && isLoading && !overview ? (
-          <div className="space-y-6 animate-pulse">
+          <div className="flex-1 space-y-6 animate-pulse">
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="h-24 rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)]" />
@@ -1434,13 +1434,13 @@ function AdminPageContent() {
           </div>
         ) : null}
         {tab === 'overview' && !overview && !isLoading && (
-          <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-8 text-center text-[var(--color-text-secondary)] text-sm">
+          <div className="flex-1 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-8 text-center text-[var(--color-text-secondary)] text-sm">
             {tAdmin('overviewUnavailable', { defaultValue: 'Overview data is not available. Try refreshing the page.' })}
           </div>
         )}
         {/* Overview */}
         {tab === 'overview' && overview && (
-          <>
+          <div className="flex-1 flex flex-col">
             {/* Section: PLATFORM HEALTH */}
             <div className="flex items-center gap-3 mb-4">
               <span className="text-xs font-semibold tracking-widest text-[var(--color-text-secondary)] uppercase">{tAdmin('platformHealth')}</span>
@@ -1673,11 +1673,11 @@ function AdminPageContent() {
                 </div>
               </div>
             )}
-          </>
+          </div>
         )}
 
         {tab === 'ceoDashboard' && (
-          <div className="flex flex-col items-center justify-center py-16 gap-4">
+          <div className="flex-1 flex flex-col items-center justify-center py-16 gap-4">
             <p className="text-[var(--color-text-secondary)] text-center max-w-md">{tAdmin('ceoDashboardLink')}</p>
             <Link
               href="/ceo-dashboard"
@@ -1688,11 +1688,15 @@ function AdminPageContent() {
           </div>
         )}
 
-        {tab === 'referrals' && <AdminReferralsTabPanel />}
+        {tab === 'referrals' && (
+          <div className="flex-1 flex flex-col">
+            <AdminReferralsTabPanel />
+          </div>
+        )}
 
         {/* Centers */}
         {tab === 'centers' && (
-          <>
+          <div className="flex-1 flex flex-col">
             <div className="flex flex-wrap gap-2 items-center justify-end mb-3">
               <a
                 href="/api/admin/export/centers"
@@ -2001,12 +2005,12 @@ function AdminPageContent() {
                 </div>
               )}
             </div>
-          </>
+          </div>
         )}
 
         {/* Billing */}
         {tab === 'billing' && (
-          <>
+          <div className="flex-1 flex flex-col">
             <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('billing')}</h2>
             <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden mb-6">
               <div className="overflow-x-auto">
@@ -2221,12 +2225,12 @@ function AdminPageContent() {
                 </table>
               </div>
             </div>
-          </>
+          </div>
         )}
 
         {/* Plan Requests */}
         {tab === 'planRequests' && (
-          <>
+          <div className="flex-1 flex flex-col">
             <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('planRequests')}</h2>
             <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
@@ -2291,12 +2295,12 @@ function AdminPageContent() {
                 </table>
               </div>
             </div>
-          </>
+          </div>
         )}
 
         {/* Pending Signups */}
         {tab === 'pendingSignups' && (
-          <>
+          <div className="flex-1 flex flex-col">
             <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('pendingSignups')}</h2>
             <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
@@ -2362,12 +2366,12 @@ function AdminPageContent() {
                 </table>
               </div>
             </div>
-          </>
+          </div>
         )}
 
         {/* Card Orders */}
         {tab === 'cardOrders' && (
-          <>
+          <div className="flex-1 flex flex-col">
             <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('cardOrders')}</h2>
             <div className="glass overflow-hidden rounded-xl">
               <div className="overflow-x-auto">
@@ -2523,12 +2527,12 @@ function AdminPageContent() {
                 </table>
               </div>
             </div>
-          </>
+          </div>
         )}
 
         {/* Internal Team */}
         {tab === 'internalTeam' && (
-          <>
+          <div className="flex-1 flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{tAdmin('internalTeam')}</h2>
               <button onClick={() => setShowAddAdmin(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 btn-press chq-focus">
@@ -2580,12 +2584,12 @@ function AdminPageContent() {
                 </tbody>
               </table>
             </div>
-          </>
+          </div>
         )}
 
         {/* Sales Pipeline */}
         {tab === 'salesPipeline' && (
-          <>
+          <div className="flex-1 flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{tAdmin('salesPipeline') ?? 'Sales Pipeline'}</h2>
               <button onClick={() => setShowAddLead(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary btn-press chq-focus">
@@ -2634,12 +2638,12 @@ function AdminPageContent() {
                 </div>
               ))}
             </div>
-          </>
+          </div>
         )}
 
         {/* Analytics */}
         {tab === 'analytics' && (
-          <>
+          <div className="flex-1 flex flex-col">
             <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('analytics')}</h2>
             <div className="grid md:grid-cols-2 gap-4 mb-6">
               <ChartCard
@@ -2753,7 +2757,7 @@ function AdminPageContent() {
                 </div>
               ))}
             </div>
-          </>
+          </div>
         )}
       </div>
 

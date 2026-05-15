@@ -752,13 +752,14 @@ export function AdminSidebar({
 
       <ChangePinModal isOpen={isPinModalOpen} onClose={() => setIsPinModalOpen(false)} />
 
-      {openMenu ? (
-        <div
-          className="fixed inset-0 bg-black/50 z-[50] lg:hidden"
-          onClick={() => setOpenMenu(false)}
-          aria-hidden
-        />
-      ) : null}
+      <div
+        className={cn(
+          'fixed inset-0 bg-black/50 z-[50] lg:hidden transition-opacity duration-200',
+          openMenu ? 'opacity-100' : 'opacity-0 pointer-events-none',
+        )}
+        onClick={() => setOpenMenu(false)}
+        aria-hidden
+      />
 
       {/* Single sidebar tree: off-canvas on small screens, fixed rail on lg (no duplicate nav DOM). */}
       <aside
@@ -768,12 +769,14 @@ export function AdminSidebar({
           'top-0 h-full lg:h-auto lg:bottom-0',
           desktopTop,
           'transition-transform duration-200 ease-in-out',
-          openMenu
-            ? 'translate-x-0'
-            : locale === 'ar'
-              ? 'max-lg:translate-x-full lg:translate-x-0'
-              : 'max-lg:-translate-x-full lg:translate-x-0',
         )}
+        style={{
+          transform: shouldInertSidebar
+            ? locale === 'ar'
+              ? 'translateX(100%)'
+              : 'translateX(-100%)'
+            : 'translateX(0)',
+        }}
         {...(shouldInertSidebar ? { inert: true } : {})}
       >
         <div className="p-4 border-b border-[var(--color-border)] shrink-0 lg:bg-[var(--color-surface-2)] flex items-start justify-between gap-2">
