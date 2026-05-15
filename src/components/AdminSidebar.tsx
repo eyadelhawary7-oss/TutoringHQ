@@ -761,7 +761,7 @@ export function AdminSidebar({
               ? 'max-lg:translate-x-full lg:translate-x-0'
               : 'max-lg:-translate-x-full lg:translate-x-0',
         )}
-        aria-hidden={!isLg && !openMenu}
+        {...(!isLg && !openMenu ? { inert: true } : {})}
       >
         <div className="p-4 border-b border-[var(--color-border)] shrink-0 lg:bg-[var(--color-surface-2)] flex items-start justify-between gap-2">
           <div>
