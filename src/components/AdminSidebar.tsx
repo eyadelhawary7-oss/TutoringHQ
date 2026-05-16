@@ -82,8 +82,11 @@ interface SectionDef {
 }
 
 interface AdminSidebarProps {
+  /**
+   * Set to "overview" when rendering on `/admin` to highlight the Overview entry.
+   * Dedicated admin sub-pages omit this prop and rely on `activeRoute`.
+   */
   activeTab?: AdminTab | null;
-  onTabChange?: (tab: AdminTab) => void;
   activeRoute?: string;
   /** Desktop rail from top-0 when there is no fixed admin header (e.g. hideShell tools page) */
   desktopSidebarFullHeight?: boolean;
@@ -91,7 +94,6 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({
   activeTab,
-  onTabChange,
   activeRoute,
   desktopSidebarFullHeight = false,
 }: AdminSidebarProps) {
@@ -136,8 +138,15 @@ export function AdminSidebar({
   const isCenterAssignments = activeRoute?.includes('admin/center-assignments');
   const isCommissions = activeRoute?.includes('admin/commissions');
   const isPayouts = activeRoute?.includes('admin/payouts');
+  const isCenters = activeRoute?.includes('admin/centers');
+  const isBilling = activeRoute === '/admin/billing' || activeRoute?.endsWith('/admin/billing') || false;
+  const isPlanRequests = activeRoute?.includes('admin/plan-requests');
+  const isPendingSignups = activeRoute?.includes('admin/pending-signups');
+  const isInternalTeam = activeRoute?.includes('admin/internal-team');
+  const isSalesPipeline = activeRoute?.includes('admin/sales-pipeline');
+  const isAnalytics = activeRoute?.includes('admin/analytics');
 
-  /** Sub-routes under admin - main `?tab=` items must not stay highlighted as Overview, etc. */
+  /** Sub-routes under admin — main Overview entry must not stay highlighted on these. */
   const onDedicatedAdminSubpage =
     isWithdrawals ||
     isRenewals ||
@@ -155,6 +164,13 @@ export function AdminSidebar({
     isCenterAssignments ||
     isCommissions ||
     isPayouts ||
+    isCenters ||
+    isBilling ||
+    isPlanRequests ||
+    isPendingSignups ||
+    isInternalTeam ||
+    isSalesPipeline ||
+    isAnalytics ||
     isCeo;
 
   const allowedKeys =
@@ -334,24 +350,6 @@ export function AdminSidebar({
   const handleLogout = async () => {
     afterNavigate();
     await signOutToLogin(locale);
-  };
-
-  const runPrimaryNav = (key: AdminTab) => {
-    afterNavigate();
-    if (key === 'ceoDashboard') {
-      onTabChange?.(key);
-      return;
-    }
-    if (key === 'renewals') {
-      router.push('/admin/renewals');
-      return;
-    }
-    if (key === 'withdrawals') {
-      router.push('/admin/withdrawals');
-      return;
-    }
-    if (isCeo || isOrders) router.push('/admin');
-    onTabChange?.(key);
   };
 
   const navBtnClass = (active: boolean) =>
