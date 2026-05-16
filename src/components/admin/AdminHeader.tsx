@@ -135,7 +135,7 @@ export function AdminHeader() {
                   onClick={handleLogout}
                   className="w-full text-start px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                 >
-                  تسجيل الخروج
+                  {tSettings('logout')}
                 </button>
               </div>
             )}

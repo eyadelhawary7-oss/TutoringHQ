@@ -68,7 +68,7 @@ export default async function AdminOrdersPage({
   });
 
   if (res.status === 403 || res.status === 401 || !res.ok) {
-    redirect(`/${locale}/ceo-dashboard`);
+    redirect(`/${locale}/admin`);
   }
 
   let orders: AdminCardOrderRow[] = [];
@@ -81,7 +81,7 @@ export default async function AdminOrdersPage({
       }
     }
   } catch {
-    redirect(`/${locale}/ceo-dashboard`);
+    redirect(`/${locale}/admin`);
   }
 
   return (

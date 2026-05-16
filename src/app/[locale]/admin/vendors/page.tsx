@@ -76,7 +76,7 @@ export default async function AdminVendorsPage({
   });
 
   if (res.status === 403 || res.status === 401 || !res.ok) {
-    redirect(`/${locale}/ceo-dashboard`);
+    redirect(`/${locale}/admin`);
   }
 
   let vendor: VendorRow | null = null;
@@ -89,7 +89,7 @@ export default async function AdminVendorsPage({
       }
     }
   } catch {
-    redirect(`/${locale}/ceo-dashboard`);
+    redirect(`/${locale}/admin`);
   }
 
   return <AdminVendorsClient initialVendor={vendor} />;

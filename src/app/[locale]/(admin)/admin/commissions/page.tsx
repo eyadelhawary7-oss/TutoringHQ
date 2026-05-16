@@ -295,7 +295,7 @@ export default function CommissionsPage() {
       <AdminHeader />
       <AdminSidebar activeTab="billing" activeRoute="/admin/commissions" />
 
-      <main className="lg:ms-56 p-6 space-y-6 max-w-[1400px] w-full mx-auto">
+      <main className="lg:ms-56 p-6 space-y-6 max-w-[1400px] w-full mx-auto min-w-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center">
             <TrendingUp className="w-5 h-5 text-teal-600 dark:text-teal-400" />

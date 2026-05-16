@@ -265,15 +265,17 @@ export function AdminSidebar({
   }, []);
 
   /**
-   * Initialise accordion open-state from localStorage + auto-open whichever section
-   * contains the current route (initial mount only — the user controls it from that point).
-   * Empty deps array is intentional: we want the initial-render snapshot of route state.
+   * Initialise accordion open-state.
+   * Default: all sections open so every permitted item is visible regardless of route.
+   * If the user has explicitly collapsed a section we still honour their localStorage
+   * preference, but a missing entry means "open" (open-by-default).
    */
   useEffect(() => {
     if (sectionsInitialized.current) return;
     sectionsInitialized.current = true;
 
-    let stored: string[] = [];
+    const ALL_SECTION_KEYS = ['operational', 'growth', 'reporting', 'hrCommissions'];
+    let stored: string[] | null = null;
     try {
       const raw = localStorage.getItem(SIDEBAR_SECTIONS_KEY);
       if (raw) stored = JSON.parse(raw) as string[];
@@ -281,33 +283,7 @@ export function AdminSidebar({
       /* ignore parse errors */
     }
 
-    const autoOpen: string[] = [];
-
-    const inOperational =
-      (activeTab != null &&
-        (['centers', 'billing'] as AdminTab[]).includes(activeTab) &&
-        !onDedicatedAdminSubpage) ||
-      !!(isHealth || isRenewals || isFinance || isPricing || isPlatformConfig || isVendors || isWaPack);
-    if (inOperational) autoOpen.push('operational');
-
-    const inGrowth =
-      (activeTab != null &&
-        (['pendingSignups', 'planRequests'] as AdminTab[]).includes(activeTab) &&
-        !onDedicatedAdminSubpage) ||
-      !!isPromoCodes;
-    if (inGrowth) autoOpen.push('growth');
-
-    const inReporting =
-      (activeTab != null &&
-        (['analytics', 'salesPipeline', 'referrals', 'cardOrders', 'internalTeam'] as AdminTab[]).includes(activeTab) &&
-        !onDedicatedAdminSubpage) ||
-      !!(isWithdrawals || isReferralRewards);
-    if (inReporting) autoOpen.push('reporting');
-
-    const inHrCommissions = !!(isStaff || isCenterAssignments || isCommissions || isPayouts);
-    if (inHrCommissions) autoOpen.push('hrCommissions');
-
-    setOpenSections(new Set([...stored, ...autoOpen]));
+    setOpenSections(new Set(stored ?? ALL_SECTION_KEYS));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -366,10 +342,6 @@ export function AdminSidebar({
     }
     if (key === 'renewals') {
       router.push('/admin/renewals');
-      return;
-    }
-    if (key === 'cardOrders') {
-      router.push('/admin/orders');
       return;
     }
     if (key === 'withdrawals') {
@@ -587,7 +559,7 @@ export function AdminSidebar({
           key: 'cardOrders',
           icon: IdCard,
           label: t('cardOrders'),
-          isActive: !!isOrders,
+          isActive: (activeTab === 'cardOrders' && !onDedicatedAdminSubpage) || !!isOrders,
           canShow: canSee('card_orders'),
           action: () => runPrimaryNav('cardOrders'),
         },
@@ -742,7 +714,7 @@ export function AdminSidebar({
                   onClick={() => void handleLogout()}
                   className="w-full text-start px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                 >
-                  تسجيل الخروج
+                  {tSettings('logout')}
                 </button>
               </div>
             ) : null}

@@ -254,7 +254,7 @@ export default function ReferralRewardsPage() {
       <AdminHeader />
       <AdminSidebar activeTab="referrals" activeRoute="/admin/referral-rewards" />
 
-      <main className="lg:ms-56 p-6 space-y-6 max-w-[1400px] w-full mx-auto">
+      <main className="lg:ms-56 p-6 space-y-6 max-w-[1400px] w-full mx-auto min-w-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center">
             <Gift className="w-5 h-5 text-teal-600 dark:text-teal-400" />
@@ -307,17 +307,13 @@ export default function ReferralRewardsPage() {
           </div>
         ) : null}
 
-        <div>
+        <div className={totals.length === 0 && !loading ? 'hidden' : undefined}>
           <h2 className="text-sm font-semibold text-[var(--color-text-muted)] mb-2">
             {t('referralRewards.totals_heading')}
           </h2>
           <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl overflow-hidden overflow-x-auto">
             {loading ? (
               <div className="p-8 text-center text-[var(--color-text-muted)]">{tCommon('loading')}</div>
-            ) : totals.length === 0 ? (
-              <div className="p-8 text-center text-[var(--color-text-muted)]">
-                {t('referralRewards.no_records')}
-              </div>
             ) : (
               <table className="w-full text-sm min-w-[640px]">
                 <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">

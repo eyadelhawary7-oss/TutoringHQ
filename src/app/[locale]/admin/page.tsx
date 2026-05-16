@@ -70,6 +70,7 @@ import { getCsrfHeaders } from '@/lib/csrf-client';
 import type { AdminCardOrderRow } from '@/types/admin-card-orders';
 import { formatChartMonthLabel } from '@/lib/chartMonthLabel';
 import { formatCurrency, formatDate, formatNumber, formatPercent } from '@/lib/formatNumber';
+import { normalizePhone } from '@/lib/utils/phone';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 function formatAdminLastActiveDisplay(
@@ -418,15 +419,17 @@ function adminTabToQueryParam(tab: AdminTab): string | null {
 
 function AdminReferralsTabPanel() {
   const tAdmin = useTranslations('admin');
+  const router = useRouter();
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-4">
       <p className="text-[var(--color-text-secondary)] text-center max-w-md">{tAdmin('referralsTabEmbedHint')}</p>
-      <Link
-        href="/admin/referrals"
+      <button
+        type="button"
+        onClick={() => router.push('/admin/referrals')}
         className="bg-teal-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-teal-700 transition"
       >
         {tAdmin('openReferralsAdmin')}
-      </Link>
+      </button>
     </div>
   );
 }
@@ -500,6 +503,7 @@ function AdminPageContent() {
   const [sortBy, setSortBy] = useState<string>('newest');
   const [centersPage, setCentersPage] = useState(1);
   const [centersTotalPages, setCentersTotalPages] = useState(1);
+  const [centersError, setCentersError] = useState<string | null>(null);
   const [analyticsCenters, setAnalyticsCenters] = useState<CenterRow[]>([]);
   const [analyticsCentersLoading, setAnalyticsCentersLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
@@ -623,11 +627,17 @@ function AdminPageContent() {
     if (filterPlan !== 'all') params.set('plan', filterPlan);
     if (centerSearch.trim()) params.set('search', centerSearch.trim());
     if (sortBy === 'oldest') params.set('sort', 'oldest');
+    setCentersError(null);
     try {
       const res = await fetch(`/api/admin/centers?${params}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => ({}))) as { error?: string };
+        console.error('[loadCenters] failed:', res.status, errBody.error);
+        setCentersError(errBody.error ?? `HTTP ${res.status}`);
+        return;
+      }
       const data = (await res.json().catch(() => ({}))) as {
         centers?: unknown;
         pagination?: { total_pages?: number };
@@ -635,8 +645,9 @@ function AdminPageContent() {
       setCenters(Array.isArray(data.centers) ? (data.centers as CenterRow[]) : []);
       const tp = data.pagination?.total_pages ?? 0;
       setCentersTotalPages(Math.max(1, tp || 1));
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error('[loadCenters] exception:', err);
+      setCentersError(err instanceof Error ? err.message : 'Network error');
     }
   }, [getSession, centersPage, statusFilter, filterPlan, centerSearch, sortBy]);
 
@@ -1391,7 +1402,7 @@ function AdminPageContent() {
   };
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 min-h-screen w-full bg-[var(--color-surface-0)] animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="flex flex-col flex-1 min-h-0 min-h-screen w-full bg-[var(--color-surface-0)]" dir={isRTL ? 'rtl' : 'ltr'}>
       <AdminHeader />
       <div className="flex flex-col lg:flex-row flex-1">
         <AdminSidebar activeTab={tab} onTabChange={handleTabChange} activeRoute={pathname ?? undefined} />
@@ -1679,12 +1690,13 @@ function AdminPageContent() {
         {tab === 'ceoDashboard' && (
           <div className="flex-1 flex flex-col items-center justify-center py-16 gap-4">
             <p className="text-[var(--color-text-secondary)] text-center max-w-md">{tAdmin('ceoDashboardLink')}</p>
-            <Link
-              href="/ceo-dashboard"
+            <button
+              type="button"
+              onClick={() => router.push('/ceo-dashboard')}
               className="bg-teal-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-teal-700 transition text-center"
             >
               {tAdmin('openCeoDashboard')}
-            </Link>
+            </button>
           </div>
         )}
 
@@ -1697,6 +1709,18 @@ function AdminPageContent() {
         {/* Centers */}
         {tab === 'centers' && (
           <div className="flex-1 flex flex-col">
+            {centersError ? (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/5 text-destructive px-4 py-3 mb-3 flex flex-wrap items-center gap-3 justify-between">
+                <p className="text-sm font-medium">{centersError}</p>
+                <button
+                  type="button"
+                  onClick={() => void loadCenters()}
+                  className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs btn-press chq-focus"
+                >
+                  {tAdmin('retry')}
+                </button>
+              </div>
+            ) : null}
             <div className="flex flex-wrap gap-2 items-center justify-end mb-3">
               <a
                 href="/api/admin/export/centers"
@@ -2171,7 +2195,7 @@ function AdminPageContent() {
                           ? (p.payment_proof_url || p.proof_reference || '').trim()
                           : '';
                       const proofRefDisplay =
-                        proofUrl.length > 48 ? `${proofUrl.slice(0, 45)}…` : (p.proof_reference ?? ',');
+                        proofUrl.length > 48 ? `${proofUrl.slice(0, 45)}…` : (p.proof_reference ?? '—');
                       const typeLabel =
                         p.proof_type === 'paymob'
                           ? tAdmin('proofTypePaymob')
@@ -2213,8 +2237,8 @@ function AdminPageContent() {
                               {proofRefDisplay}
                             </button>
                           ) : (
-                            <span className="font-mono text-xs break-all" title={p.proof_reference}>
-                              {p.proof_reference ?? ','}
+                            <span className="font-mono text-xs break-all" title={p.proof_reference ?? undefined}>
+                              {p.proof_reference ?? '—'}
                             </span>
                           )}
                         </td>
@@ -2314,7 +2338,7 @@ function AdminPageContent() {
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('plan')}</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">{tAdmin('referredBy')}</th>
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('createdAt')}</th>
-                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
+                      <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[220px] whitespace-nowrap">{tCommon('actions')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--color-border-subtle)]">
@@ -2337,7 +2361,7 @@ function AdminPageContent() {
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
                           {ps.created_at ? formatDate(ps.created_at, locale) : tCommon('notSet')}
                         </td>
-                        <td className="py-3.5 px-4">
+                        <td className="py-3.5 px-4 whitespace-nowrap">
                           <div className="flex items-center gap-2 flex-nowrap">
                             <button
                               onClick={() => contactViaWhatsApp(ps.phone ?? '', ps.name ?? '')}
@@ -2564,7 +2588,7 @@ function AdminPageContent() {
                     <tr key={m.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
                       <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{m.name}</td>
                       <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">
-                        {m.phone ?? m.email ?? tCommon('notSet')}
+                        {m.phone ? normalizePhone(m.phone) : (m.email ?? tCommon('notSet'))}
                       </td>
                       <td className="py-3.5 px-4">
                         <RoleBadge role={m.role} />
@@ -2573,10 +2597,12 @@ function AdminPageContent() {
                         {m.created_at ? formatDate(m.created_at, locale) : tCommon('notSet')}
                       </td>
                       <td className="py-3.5 px-4">
-                        {!['super_admin', 'admin'].includes(m.role) && (
+                        {!['super_admin', 'admin'].includes(m.role) ? (
                           <button onClick={() => handleRemoveTeamMember(m.id)} disabled={actionLoading} className="px-2 py-1 rounded text-xs font-semibold border border-red-300 text-red-600  hover:bg-red-50 btn-press chq-focus">
                             {tAdmin('remove')}
                           </button>
+                        ) : (
+                          <span className="text-[var(--color-text-muted)]">—</span>
                         )}
                       </td>
                     </tr>

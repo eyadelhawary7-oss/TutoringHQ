@@ -374,7 +374,10 @@ export default function StaffPage() {
           </p>
         ) : null}
 
-        <div className="flex gap-3 flex-wrap">
+        <div className="flex gap-3 flex-wrap items-center">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 me-1">
+            {tCommon('status')}:
+          </span>
           {(['all', 'active', 'inactive', 'terminated'] as const).map((s) => (
             <button
               key={s}
@@ -390,6 +393,9 @@ export default function StaffPage() {
             </button>
           ))}
           <div className="h-6 w-px bg-slate-300 dark:bg-slate-700 self-center" />
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 me-1">
+            {tCommon('role')}:
+          </span>
           {(['all', 'sm', 'sr'] as const).map((r) => (
             <button
               key={r}

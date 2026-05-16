@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { usePathname } from '@/i18n/routing';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { AdminSidebar } from '@/components/AdminSidebar';
+import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/useToast';
@@ -156,14 +157,12 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
 
   return (
     <div className="-mt-14 flex min-h-0 flex-1 flex-col">
+      <AdminHeader />
       <div className="flex min-h-0 min-h-[calc(100vh-3.5rem)] flex-1 md:min-h-[calc(100dvh-3.5rem)]">
         <AdminSidebar activeRoute={pathname} />
         <div className="w-full min-w-0 flex-1 space-y-6 overflow-auto p-6 lg:ms-56">
         <div>
           <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('vendorsTitle')}</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
-            {vendor ? '' : t('noVendorYet')}
-          </p>
         </div>
 
         <div className="max-w-lg space-y-4 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-6">

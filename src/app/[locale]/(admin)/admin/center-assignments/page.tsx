@@ -382,7 +382,7 @@ export default function CenterAssignmentsPage() {
       <AdminHeader />
       <AdminSidebar activeTab="internalTeam" activeRoute="/admin/center-assignments" />
 
-      <main className="lg:ms-56 p-6 space-y-6 max-w-[1400px] w-full mx-auto">
+      <main className="lg:ms-56 p-6 space-y-6 max-w-[1400px] w-full mx-auto min-w-0">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center">
@@ -410,10 +410,10 @@ export default function CenterAssignmentsPage() {
                 setError(null)
                 setShowModal(true)
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 disabled:pointer-events-none text-white rounded-lg text-sm font-medium transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 disabled:pointer-events-none text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0"
               aria-label={t('centerAssignments.add')}
             >
-              <Plus className="w-4 h-4" aria-hidden />
+              <Plus className="w-4 h-4 shrink-0" aria-hidden />
               {t('centerAssignments.add')}
             </button>
             {!canAddAssignment ? (

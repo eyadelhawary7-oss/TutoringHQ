@@ -3,6 +3,7 @@
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { getSupportWhatsAppWaMeBase } from '@/lib/supportWhatsApp';
+import { formatNumber } from '@/lib/formatNumber';
 
 export default function NotFound() {
   const t = useTranslations('errors');
@@ -20,7 +21,7 @@ export default function NotFound() {
           CH
         </div>
         <div className="text-8xl font-bold leading-none text-slate-800" aria-hidden>
-          ٤٠٤
+          {formatNumber(404, locale)}
         </div>
         <div>
           <h1 className="text-xl font-semibold text-white">{t('notFoundTitle')}</h1>

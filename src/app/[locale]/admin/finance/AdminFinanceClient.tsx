@@ -140,9 +140,7 @@ export default function AdminFinanceClient({ initialData }: { initialData: Finan
               delta={
                 mrrGrowthLabel
                   ? `${mrrGrowthLabel} ${isAr ? 'مقارنة بالشهر الماضي' : 'vs last month'}`
-                  : isAr
-                    ? 'لا بيانات للمقارنة'
-                    : 'no comparison'
+                  : '—'
               }
               tone={mrrGrowthLabel ? (mrrGrowthNegative ? 'danger' : 'success') : 'muted'}
             />
