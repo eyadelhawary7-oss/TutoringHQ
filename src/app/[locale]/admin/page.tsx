@@ -66,40 +66,19 @@ import { AdminSidebar, type AdminTab } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { ALL_ADMIN_PERMISSIONS } from '@/lib/admin-roles';
 import { PlanBadge, BillingStatusBadge, RoleBadge } from '@/components/shared';
-import { getCsrfHeaders } from '@/lib/csrf-client';
+import { getAdminSession, getAdminAuthHeaders } from '@/lib/adminAuth-client';
+import {
+  STATUS_STYLES,
+  centerStatusLabel,
+  formatAdminLastActiveDisplay,
+  isAdminLastActiveStaleRaw,
+} from '@/lib/adminUtils';
+import type { CenterRow } from '@/types/admin';
 import type { AdminCardOrderRow } from '@/types/admin-card-orders';
 import { formatChartMonthLabel } from '@/lib/chartMonthLabel';
 import { formatCurrency, formatDate, formatNumber, formatPercent } from '@/lib/formatNumber';
 import { normalizePhone } from '@/lib/utils/phone';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
-
-function formatAdminLastActiveDisplay(
-  raw: string | null | undefined,
-  locale: string,
-  tAdmin: (key: string, values?: Record<string, string>) => string,
-): string {
-  const s = raw?.trim() ?? '';
-  if (!s || /^never$/i.test(s)) return tAdmin('neverActive');
-  const m = s.match(/^(\d+)\s*days?\s*ago$/i);
-  if (m) {
-    const days = parseInt(m[1]!, 10);
-    return tAdmin('daysAgo', { days: formatNumber(days, locale) });
-  }
-  return s;
-}
-
-function isAdminLastActiveStaleRaw(raw: string | null | undefined): boolean {
-  const s = raw?.trim() ?? '';
-  return /^never$/i.test(s) || /\bdays?\s*ago$/i.test(s) || s.toLowerCase().includes('days');
-}
-
-const STATUS_STYLES: Record<string, string> = {
-  active: 'bg-green-100 text-green-700',
-  suspended: 'bg-red-100 text-red-700',
-  pending: 'bg-amber-100 text-amber-700',
-  trial: 'bg-blue-100 text-blue-700',
-  rejected: 'bg-red-100 text-red-700',
-};
 
 interface OverviewData {
   totalCenters: number;
@@ -115,30 +94,6 @@ interface OverviewData {
   totalRevenueCollected?: number;
   revenueThisMonth?: number;
   pendingRevenue?: number;
-}
-
-interface CenterRow {
-  id: string;
-  name: string;
-  phone?: string;
-  email?: string | null;
-  plan?: string;
-  status?: string;
-  created_at: string;
-  students_count?: number;
-  owner?: { name?: string; phone?: string } | null;
-  last_payment?: string | null;
-  next_due?: string | null;
-  billing_period?: string;
-  billing_status?: string;
-  owner_name?: string | null;
-  referral_code?: string | null;
-  referral_code_used?: string | null;
-  referring_center_name?: string | null;
-  last_active?: string;
-  usage_scans?: number;
-  is_blacklisted?: boolean;
-  blacklist_reason?: string | null;
 }
 
 interface SalesLead {
@@ -291,26 +246,6 @@ function formatActivitySummary(
   if (action === 'suspend_center') return t('activityCenterSuspended');
   if (action === 'reactivate_center') return t('activityCenterReactivated');
   return action?.replace(/_/g, ' ') ?? '';
-}
-
-function centerStatusLabel(
-  status: string | undefined,
-  tStatus: (key: string) => string,
-): string {
-  const s = (status || 'active').toLowerCase().replace(/-/g, '_');
-  const known = new Set([
-    'active',
-    'suspended',
-    'pending',
-    'trial',
-    'rejected',
-    'cancelled',
-    'pending_payment',
-    'paid',
-    'overdue',
-  ]);
-  if (known.has(s)) return tStatus(s);
-  return tStatus('active');
 }
 
 /** Tabs rendered on `/[locale]/admin` with `?tab=` (dedicated tools use their own routes). */
@@ -567,24 +502,8 @@ function AdminPageContent() {
     return () => setHideShell(false);
   }, [setHideShell]);
 
-  const getSession = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session;
-  }, []);
-
-  const getAuthHeaders = useCallback(async (includeCsrf = true) => {
-    const session = await getSession();
-    if (!session) return null;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${session.access_token}`,
-    };
-    if (includeCsrf) {
-      const csrf = await getCsrfHeaders(session.access_token);
-      Object.assign(headers, csrf);
-    }
-    return headers;
-  }, [getSession]);
+  const getSession = getAdminSession;
+  const getAuthHeaders = getAdminAuthHeaders;
 
   const loadOverview = useCallback(async () => {
     const session = await getSession();

@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 CenterHQ — multi-tenant SaaS for Egyptian tutoring centers (سناتر). Next.js 16 App Router on Vercel, Supabase Postgres + Auth, served bilingually at `/ar/...` (default, RTL) and `/en/...` (LTR). Production: `https://centerhq.app`.
 
+**Stack:** React 19.2 + Next 16.2 (App Router, React Compiler on) · TypeScript 5 · Tailwind 4 · Zod 4 · Recharts 3 · SWR + Zustand · `next-intl` 4 · Supabase JS 2 + `@supabase/ssr` · Sentry · Upstash Redis (rate limiting) · Playwright + Vitest 4.
+
 ## Commands
 
 ```bash
@@ -21,11 +23,16 @@ npm run test:unit           # vitest run (tests/unit/**/*.test.ts, TZ=UTC)
 npm run test:unit:watch
 npm run test:e2e            # playwright test (needs tests/e2e/.env.local — see docs/E2E_TESTING.md)
 npm run test:e2e:ui
+npm run test:all            # unit + e2e
 npx playwright test --project=desktop-chrome   # owner-auth smoke only
 npx playwright test path/to/spec.ts            # single spec
 npx vitest run path/to/file.test.ts            # single unit file
 
 # Audits / one-offs
+npm run security:audit                         # wraps scripts/security-audit.ts
+npm run check:env                              # scripts/check-env.ts — validates required env vars
+npm run check-secrets                          # scripts/check-secret-rotation.js — rotation status
+npm run verify-backup                          # scripts/verify-backup.js — Supabase backup sanity check
 npx tsx scripts/security-audit.ts --all        # needs SECURITY_AUDIT_BASE_URL / PLAYWRIGHT_BASE_URL
 npx tsx scripts/check-i18n.ts                  # ar/en parity
 npx tsx scripts/check-bidi.ts                  # logical-property enforcement
@@ -65,7 +72,7 @@ CSRF is gated by `CSRF_SECRET` (`src/lib/csrf.ts`). When unset, validation is sk
 - `src/app/api/cron/*` — Vercel-scheduled jobs (see `vercel.json`). Each expects `Authorization: Bearer ${CRON_SECRET}`.
 - `src/app/api/webhooks/*` and the explicit paths in `PUBLIC_WEBHOOK_PREFIXES` are **public** (no Origin check, no auth); they must verify HMAC themselves (see `verifyHmac.ts`).
 - `src/app/auth/callback` — Supabase auth callback. Listed in `publicRoutes` and `apiRoutes`.
-- `src/pages/` — legacy Pages Router (limited surface, may still hold a handful of routes).
+- **No Pages Router.** Everything is App Router; `src/pages/` is unused. Don't add routes there.
 
 ### Domain modules of note
 
@@ -104,9 +111,10 @@ Most business logic lives in **`src/lib/`** as standalone modules. Prefer import
 
 ### Build / runtime config
 
-- **React Compiler is on** (`reactCompiler: true` in `next.config.ts` + `babel-plugin-react-compiler`). Avoid manual `useMemo`/`useCallback` boilerplate unless you measure a regression.
+- **React 19 + React Compiler is on** (`reactCompiler: true` in `next.config.ts` + `babel-plugin-react-compiler`). Avoid manual `useMemo`/`useCallback` boilerplate unless you measure a regression. **`ref` is a normal prop in React 19** — no `forwardRef` for new components, and remove it when touching old ones.
 - **CSP is set in two places** — `next.config.ts` `headers()` and `src/proxy.ts` `SECURITY_HEADERS`. Keep them in sync when adding a third-party origin (PostHog, Sentry, Paymob, Supabase realtime).
-- Sentry wraps the Next config (`withSentryConfig`) with sourcemaps **disabled** in the upload step. Server vs edge runtime branches in `instrumentation.ts`.
+- **Sentry** wraps the Next config (`withSentryConfig`) with sourcemaps **disabled** in the upload step. Server vs edge runtime branches in `instrumentation.ts`. Requires `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN`; `SENTRY_AUTH_TOKEN` only needed if re-enabling sourcemap upload.
+- **Upstash Redis** is runtime-critical — scanner inserts via `/api/db` and several abuse-prone endpoints rate-limit through `@upstash/ratelimit`. Set `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` on Vercel; without them rate-limiting falls open.
 - Path alias: `@/*` → `./src/*` (`tsconfig.json`). `supabase/functions` is excluded from tsc.
 
 ## Conventions to keep

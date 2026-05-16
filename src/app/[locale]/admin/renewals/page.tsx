@@ -3,12 +3,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
-import { supabase } from '@/lib/supabase';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
-import { getCsrfHeaders } from '@/lib/csrf-client';
+import { getAdminSession, getAdminAuthHeaders } from '@/lib/adminAuth-client';
 import {
   RefreshCw,
   CreditCard,
@@ -95,25 +94,8 @@ export default function AdminRenewalsPage() {
   const [recordNotes, setRecordNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const getSession = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session;
-  }, []);
-
-  const getAuthHeaders = useCallback(async () => {
-    const session = await getSession();
-    if (!session) return null;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${session.access_token}`,
-    };
-    const csrf = await getCsrfHeaders(session.access_token);
-    Object.assign(headers, csrf);
-    return headers;
-  }, [getSession]);
-
   const loadData = useCallback(async () => {
-    const session = await getSession();
+    const session = await getAdminSession();
     if (!session) {
       router.replace('/login');
       return;
@@ -141,7 +123,7 @@ export default function AdminRenewalsPage() {
     } finally {
       setLoading(false);
     }
-  }, [getSession, router, filter]);
+  }, [router, filter]);
 
   useEffect(() => {
     setHideShell(true);
@@ -160,7 +142,7 @@ export default function AdminRenewalsPage() {
     if (!recordModal) return;
     const amount = parseFloat(recordAmount);
     if (isNaN(amount) || amount <= 0) return;
-    const headers = await getAuthHeaders();
+    const headers = await getAdminAuthHeaders();
     if (!headers) return;
     setSubmitting(true);
     try {
