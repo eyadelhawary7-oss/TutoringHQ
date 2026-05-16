@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useLocale } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
@@ -9,9 +10,21 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useLayout } from '@/contexts/LayoutContext';
-import { AreaChartComponent } from '@/components/charts/AreaChart';
-import { BarChartComponent } from '@/components/charts/BarChartComponent';
 import { formatCurrency, formatDate, formatGrowth, formatNumber, formatPercent } from '@/lib/formatNumber';
+
+// Recharts' ResponsiveContainer reads parentNode.offsetWidth at render time,
+// which differs between SSR (0) and client (real px). That mismatch produced
+// "Cannot read properties of null (reading 'parentNode')" + React #418 on
+// /admin/finance. Loading the chart components client-only sidesteps the
+// hydration boundary entirely. Same pattern is used in /dashboard.
+const AreaChartComponent = dynamic(
+  () => import('@/components/charts/AreaChart').then((m) => ({ default: m.AreaChartComponent })),
+  { ssr: false, loading: () => <div className="chq-skeleton h-[220px] w-full rounded-xl" /> },
+);
+const BarChartComponent = dynamic(
+  () => import('@/components/charts/BarChartComponent').then((m) => ({ default: m.BarChartComponent })),
+  { ssr: false, loading: () => <div className="chq-skeleton h-[200px] w-full rounded-xl" /> },
+);
 import type {
   FinanceCohort,
   FinanceData,
@@ -122,7 +135,10 @@ export default function AdminFinanceClient({ initialData }: { initialData: Finan
               <h1 className="text-xl font-medium text-[var(--color-text-primary)]">
                 {isAr ? 'المالية' : 'Finance'}
               </h1>
-              <p className="text-xs text-[var(--color-text-muted)] mt-1">
+              <p
+                className="text-xs text-[var(--color-text-muted)] mt-1"
+                suppressHydrationWarning
+              >
                 {isAr ? 'آخر تحديث' : 'Last updated'}{' '}
                 {formatDate(lastUpdated, locale, FINANCE_LAST_UPDATED_OPTS)}
               </p>

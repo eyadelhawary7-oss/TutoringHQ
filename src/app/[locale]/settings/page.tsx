@@ -1230,7 +1230,7 @@ function SettingsPageContent() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => router.push(`/${locale}/settings/referrals`)}
+                    onClick={() => router.push('/settings/referrals')}
                     className="flex items-center gap-2 px-4 py-2 border border-teal-600 text-teal-600 dark:text-teal-400 rounded-lg text-sm hover:bg-teal-50 dark:hover:bg-teal-950/40 transition-colors"
                   >
                     {t('manageReferrals')}
