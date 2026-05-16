@@ -3472,6 +3472,7 @@
     "pendingSignups": "Pending Signups",
     "cardOrders": "Card Orders",
     "planRequests": "Plan Requests",
+    "planChangeHeader": "Current / Requested",
     "referrals": {
       "pageTitle": "Referrals",
       "tabReferrals": "Referrals",

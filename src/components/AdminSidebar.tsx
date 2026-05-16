@@ -507,9 +507,9 @@ export function AdminSidebar({
           key: 'planRequests',
           icon: FileText,
           label: t('planRequests'),
-          isActive: activeTab === 'planRequests' && !onDedicatedAdminSubpage,
+          isActive: activeRoute?.includes('admin/plan-requests') ?? false,
           canShow: canSee('plan_requests'),
-          action: () => runPrimaryNav('planRequests'),
+          href: '/admin/plan-requests',
         },
         {
           key: 'promoCodes',

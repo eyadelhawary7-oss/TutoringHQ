@@ -1930,6 +1930,7 @@
     "pendingSignups": "التسجيلات المعلقة",
     "cardOrders": "طلبات البطاقات",
     "planRequests": "طلبات الخطة",
+    "planChangeHeader": "الخطة الحالية / المطلوبة",
     "referrals": {
       "pageTitle": "الإحالات",
       "tabReferrals": "الإحالات",
