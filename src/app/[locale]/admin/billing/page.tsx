@@ -428,7 +428,10 @@ export default function AdminBillingPage() {
                               {p.paid_at ? formatDate(p.paid_at, locale) : tCommon('notSet')}
                             </td>
                             <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">
-                              {p.centerName ?? tCommon('notAvailable')}
+                              {(() => {
+                                const cleaned = (p.centerName ?? '').replace(/[\s,]/g, '');
+                                return cleaned.length > 0 ? p.centerName : tCommon('notAvailable');
+                              })()}
                             </td>
                             <td className="py-3.5 px-4 font-mono font-bold text-[var(--color-text-primary)]">
                               {formatCurrency(Number(p.amount ?? 0), locale)}

@@ -115,7 +115,13 @@ export function AreaChartComponent({
   return (
     <ResponsiveContainer width="100%" height={height}>
       {/* RTL-EXEMPT: Recharts margin prop uses physical keys only */}
-      <AreaChart data={safeData} margin={{ ...CHART_MARGIN, left: showYAxis ? 4 : CHART_MARGIN.left }}>
+      <AreaChart
+        data={safeData}
+        margin={{
+          ...CHART_MARGIN,
+          left: showYAxis ? (currencyYAxis ? 12 : 4) : CHART_MARGIN.left,
+        }}
+      >
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={lineColor} stopOpacity={0.25} />
@@ -138,7 +144,7 @@ export function AreaChartComponent({
         />
         {showYAxis ? (
           <YAxis
-            width={currencyYAxis ? 56 : 44}
+            width={currencyYAxis ? 76 : 44}
             tick={{ fontSize: 11, fill: CHART_STYLE.tickColor, fontFamily: CHART_STYLE.fontFamily }}
             axisLine={false}
             tickLine={false}

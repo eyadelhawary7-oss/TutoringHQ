@@ -301,7 +301,14 @@ export function AdminSidebar({
       /* ignore parse errors */
     }
 
-    setOpenSections(new Set(stored ?? ALL_SECTION_KEYS));
+    // hrCommissions was added after the others; existing localStorage entries
+    // don't list it, so it would ship collapsed. Force-include it unless the
+    // user has explicitly toggled it (which can't have happened on first load).
+    const initial = new Set(stored ?? ALL_SECTION_KEYS);
+    if (stored && !initial.has('hrCommissions')) {
+      initial.add('hrCommissions');
+    }
+    setOpenSections(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -642,8 +649,10 @@ export function AdminSidebar({
 
   return (
     <>
-      {/* Mobile top bar - matches center shell pattern */}
-      <header className="lg:hidden fixed top-0 start-0 end-0 z-40 bg-[var(--color-surface-1)] border-b border-[var(--color-border-subtle)] min-h-14 flex items-center justify-center print:hidden relative px-4">
+      {/* Mobile top bar - matches center shell pattern. */}
+      {/* Must be position:fixed; pages render AdminSidebar inside a flex-row, */}
+      {/* and any in-flow header here would steal ~240px of horizontal space. */}
+      <header className="lg:hidden fixed top-0 start-0 end-0 z-40 bg-[var(--color-surface-1)] border-b border-[var(--color-border-subtle)] min-h-14 flex items-center justify-center print:hidden px-4">
         <button
           type="button"
           aria-label="Open navigation menu"

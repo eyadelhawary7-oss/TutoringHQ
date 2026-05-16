@@ -236,7 +236,7 @@ export default function AdminInternalTeamPage() {
                         <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">
                           {m.phone ? normalizePhone(m.phone) : (m.email ?? tCommon('notSet'))}
                         </td>
-                        <td className="py-3.5 px-4">
+                        <td className="py-3.5 px-4 whitespace-nowrap">
                           <RoleBadge role={m.role} />
                         </td>
                         <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
