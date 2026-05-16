@@ -129,7 +129,10 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
 
       <div
         className="min-h-full transition-transform duration-75 ease-out"
-        style={{ transform: refreshing ? 'translateY(0)' : `translateY(${pullDist}px)` }}
+        // Only apply a transform when actively pulling. A static `translateY(0)`
+        // still creates a containing block for fixed-positioned descendants
+        // (e.g., AdminHeader), which breaks `position: fixed` anchoring.
+        style={pullDist > 0 || refreshing ? { transform: `translateY(${pullDist}px)` } : undefined}
       >
         {children}
       </div>

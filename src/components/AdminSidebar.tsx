@@ -39,6 +39,8 @@ import { supabase } from '@/lib/supabase';
 import { ChangePinModal } from '@/components/admin/ChangePinModal';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { Suspense } from 'react';
+import { TestLiveToggle } from '@/components/admin/TestLiveToggle';
 
 export type AdminTab =
   | 'overview'
@@ -674,6 +676,11 @@ export function AdminSidebar({
           className="absolute end-4 top-1/2 -translate-y-1/2 flex items-center gap-2"
           data-admin-mobile-user-menu
         >
+          {adminRole === 'super_admin' ? (
+            <Suspense fallback={null}>
+              <TestLiveToggle />
+            </Suspense>
+          ) : null}
           <button
             type="button"
             onClick={handleLocaleToggle}
