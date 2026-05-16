@@ -782,14 +782,15 @@ export function AdminSidebar({
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
           {/* ── Free-floating items (always visible, never inside an accordion) ── */}
           {canSee('overview') ? (
-            <button
-              type="button"
-              onClick={() => runPrimaryNav('overview')}
-              className={navBtnClass(isOverviewActive)}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            <Link
+              href={'/admin' as any}
+              onClick={afterNavigate}
+              className={cn(navBtnClass(isOverviewActive), 'no-underline')}
             >
               <LayoutDashboard size={18} className="shrink-0" />
               <span>{t('overview')}</span>
-            </button>
+            </Link>
           ) : null}
 
           {canSee('ceo_dashboard') ? (
