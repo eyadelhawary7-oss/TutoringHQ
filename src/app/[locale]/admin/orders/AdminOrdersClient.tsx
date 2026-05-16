@@ -128,6 +128,92 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
     if (typeof closeMainSidebar === 'function') closeMainSidebar();
   }, [closeMainSidebar]);
 
+  const playNewOrderChime = useCallback(() => {
+    try {
+      const AudioCtor =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtor) return;
+      const ctx = new AudioCtor();
+      const freqs = [523, 659, 784];
+      let t = 0;
+      freqs.forEach((freq) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.15, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+        osc.start(t);
+        osc.stop(t + 0.15);
+        t += 0.15;
+      });
+    } catch {
+      // ignore — audio is best-effort
+    }
+  }, []);
+
+  const reloadOrders = useCallback(async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) return;
+    try {
+      const res = await fetch('/api/admin/card-orders', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = (await res.json().catch(() => ({}))) as { orders?: unknown };
+      const raw = Array.isArray(data.orders) ? data.orders : [];
+      setOrders(
+        raw
+          .filter((o) => o && typeof (o as AdminCardOrderRow).id === 'string' && (o as AdminCardOrderRow).id.length > 0)
+          .map((o) => {
+            const row = o as AdminCardOrderRow;
+            return { ...row, students: Array.isArray(row.students) ? row.students : [] };
+          }),
+      );
+    } catch {
+      // ignore network errors — realtime will retry
+    }
+  }, []);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('card_orders_realtime_admin')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'card_orders' },
+        async (payload) => {
+          const newRow = payload.new as Record<string, unknown> | null;
+          const centerId = newRow?.center_id as string | undefined;
+          let centerName = '';
+          if (centerId) {
+            try {
+              const { data: center } = await supabase
+                .from('centers')
+                .select('name')
+                .eq('id', centerId)
+                .single();
+              centerName = (center as { name?: string } | null)?.name ?? '';
+            } catch {
+              // ignore — name lookup is best-effort
+            }
+          }
+          playNewOrderChime();
+          toast.success(centerName ? `${tAdmin('cardOrdersNewOrder')} - ${centerName}` : tAdmin('cardOrdersNewOrder'));
+          void reloadOrders();
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [playNewOrderChime, reloadOrders, tAdmin, toast]);
+
   const filteredOrders = filter === 'all' ? orders : orders.filter((o) => o.status === filter);
   const slideOrder = orders.find((o) => o.id === slideOverId);
 

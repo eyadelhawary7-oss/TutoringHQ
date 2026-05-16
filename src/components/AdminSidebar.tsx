@@ -426,7 +426,7 @@ export function AdminSidebar({
           label: t('renewals'),
           isActive: !!isRenewals,
           canShow: adminRole === 'super_admin' && canSee('renewals'),
-          action: () => runPrimaryNav('renewals'),
+          href: '/admin/renewals',
         },
         {
           key: 'finance',
@@ -545,9 +545,9 @@ export function AdminSidebar({
           key: 'referrals',
           icon: Gift,
           label: t('referralsNav'),
-          isActive: (activeTab === 'referrals' && !onDedicatedAdminSubpage) || !!isReferrals,
+          isActive: !!isReferrals,
           canShow: canSee('referrals'),
-          action: () => runPrimaryNav('referrals'),
+          href: '/admin/referrals',
         },
         {
           key: 'referralRewards',
@@ -561,9 +561,9 @@ export function AdminSidebar({
           key: 'cardOrders',
           icon: IdCard,
           label: t('cardOrders'),
-          isActive: (activeTab === 'cardOrders' && !onDedicatedAdminSubpage) || !!isOrders,
+          isActive: !!isOrders,
           canShow: canSee('card_orders'),
-          action: () => runPrimaryNav('cardOrders'),
+          href: '/admin/orders',
         },
         {
           key: 'withdrawals',
@@ -571,7 +571,7 @@ export function AdminSidebar({
           label: t('withdrawals'),
           isActive: !!isWithdrawals,
           canShow: canShowPermKey('withdrawals'),
-          action: () => runPrimaryNav('withdrawals'),
+          href: '/admin/withdrawals',
         },
         {
           key: 'internalTeam',
@@ -793,14 +793,15 @@ export function AdminSidebar({
           ) : null}
 
           {canSee('ceo_dashboard') ? (
-            <button
-              type="button"
-              onClick={() => runPrimaryNav('ceoDashboard')}
-              className={navBtnClass(isCeoDashActive)}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            <Link
+              href={'/ceo-dashboard' as any}
+              onClick={afterNavigate}
+              className={cn(navBtnClass(isCeoDashActive), 'no-underline')}
             >
               <BarChart3 size={18} className="shrink-0" />
               <span>{t('ceoDashboard')}</span>
-            </button>
+            </Link>
           ) : null}
 
           {/* ── Collapsible accordion sections ── */}
