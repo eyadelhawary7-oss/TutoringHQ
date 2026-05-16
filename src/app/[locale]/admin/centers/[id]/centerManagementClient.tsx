@@ -18,7 +18,7 @@ import { LocalizedDateInput } from '@/components/forms/LocalizedDateInput';
 import { SubscriptionOverridesPanel } from './SubscriptionOverridesPanel';
 
 const ADMIN_LOCALIZED_DATE_CLASS =
-  'w-full rounded-lg px-3 py-2 text-sm border border-gray-300 bg-gray-100 text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500';
+  'w-full rounded-lg px-3 py-2 text-sm border border-[var(--color-border-default)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-teal-500';
 
 type CenterData = {
   center: Record<string, unknown>;
@@ -83,7 +83,7 @@ const Toggle = ({
         }}
       />
     </div>
-    <span className="text-sm text-slate-600 dark:text-slate-300">{label}</span>
+    <span className="text-sm text-[var(--color-text-secondary)]">{label}</span>
   </div>
 );
 
@@ -159,11 +159,11 @@ function statusBadgeClass(status: string | undefined): string {
     case 'pending_cancellation':
       return 'bg-amber-900 text-amber-200';
     case 'cancelled':
-      return 'bg-slate-700 text-slate-200';
+      return 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]';
     case 'rejected':
-      return 'bg-gray-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400';
+      return 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]';
     default:
-      return 'bg-gray-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400';
+      return 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]';
   }
 }
 
@@ -185,7 +185,7 @@ function invoiceStatusBadgeClass(status: string): string {
     case 'overdue':
       return 'bg-red-900 text-red-300';
     case 'cancelled':
-      return 'bg-gray-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400';
+      return 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]';
     case 'approved':
       return 'bg-teal-900 text-teal-300';
     case 'rejected':
@@ -194,7 +194,7 @@ function invoiceStatusBadgeClass(status: string): string {
     case 'chargeback':
       return 'bg-orange-900 text-orange-300';
     default:
-      return 'bg-gray-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400';
+      return 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]';
   }
 }
 
@@ -1617,9 +1617,9 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
         <main className="flex-1 flex flex-col min-w-0 p-4 md:p-6 overflow-auto lg:ms-56">
           {loading ? (
             <div className="space-y-3 max-w-xl" aria-busy="true">
-              <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded animate-pulse" />
-              <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded animate-pulse w-5/6" />
-              <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded animate-pulse w-4/6" />
+              <div className="h-4 bg-[var(--color-surface-2)] rounded animate-pulse" />
+              <div className="h-4 bg-[var(--color-surface-2)] rounded animate-pulse w-5/6" />
+              <div className="h-4 bg-[var(--color-surface-2)] rounded animate-pulse w-4/6" />
               <p className="text-sm text-[var(--color-text-secondary)] pt-2">{t('centerManagement.loading')}</p>
             </div>
           ) : null}
@@ -1656,7 +1656,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       {(data.center.name as string) ?? tCommon('notAvailable')}
                     </h1>
                     {data.center.center_code ? (
-                      <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-[var(--color-surface-2)] text-slate-200 border border-slate-600">
+                      <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]">
                         {String(data.center.center_code)}
                       </span>
                     ) : null}
@@ -1679,78 +1679,78 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
               </div>
 
               <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section1.title')}</h2>
+                <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section1.title')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">{t('centerManagement.section1.name')}</label>
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">{t('centerManagement.section1.name')}</label>
                     <input
                       type="text"
                       value={s1Name}
                       onChange={(e) => setS1Name(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section1.ownerName')}
                     </label>
                     <input
                       type="text"
                       value={s1OwnerName}
                       onChange={(e) => setS1OwnerName(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">{t('centerManagement.section1.phone')}</label>
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">{t('centerManagement.section1.phone')}</label>
                     <input
                       type="text"
                       value={s1Phone}
                       onChange={(e) => setS1Phone(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                       dir="ltr"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">{t('centerManagement.section1.email')}</label>
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">{t('centerManagement.section1.email')}</label>
                     <input
                       type="email"
                       value={s1Email}
                       onChange={(e) => setS1Email(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                       dir="ltr"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">{t('centerManagement.section1.city')}</label>
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">{t('centerManagement.section1.city')}</label>
                     <input
                       type="text"
                       value={/_/.test(s1City) ? formatDistrictLabel(s1City) : s1City}
                       onChange={(e) =>
                         setS1City(s1City.includes('_') ? districtSlugFromDisplay(e.target.value) : e.target.value)
                       }
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section1.district')}
                     </label>
                     <input
                       type="text"
                       value={formatDistrictLabel(s1District)}
                       onChange={(e) => setS1District(districtSlugFromDisplay(e.target.value))}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section1.governorate')}
                     </label>
                     <select
                       value={s1Governorate}
                       onChange={(e) => setS1Governorate(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                     >
                       <option value="">{tCommon('select')}</option>
                       {s1Governorate !== '' &&
@@ -1765,20 +1765,20 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     </select>
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section1.centerCode')}
                     </label>
                     <input
                       type="text"
                       value={s1CenterCode}
                       onChange={(e) => setS1CenterCode(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm font-mono"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm font-mono"
                       dir="ltr"
                     />
                     <p className="text-amber-400/90 text-sm mt-1">{t('centerManagement.section1.centerCodeWarning')}</p>
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section1.cardColor')}
                     </label>
                     <div className="flex items-center gap-3">
@@ -1786,18 +1786,18 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                         type="color"
                         value={s1CardColor}
                         onChange={(e) => setS1CardColor(e.target.value)}
-                        className="h-10 w-14 cursor-pointer rounded border border-gray-300 dark:border-slate-600 bg-transparent p-0"
+                        className="h-10 w-14 cursor-pointer rounded border border-[var(--color-border-default)] bg-transparent p-0"
                         aria-label={t('centerManagement.section1.cardColor')}
                       />
                       <span
-                        className="h-8 w-8 min-h-[32px] min-w-[32px] rounded-full border-2 border-gray-400 dark:border-slate-500 shrink-0"
+                        className="h-8 w-8 min-h-[32px] min-w-[32px] rounded-full border-2 border-[var(--color-border-strong)] shrink-0"
                         style={{ backgroundColor: s1CardColor }}
                         aria-hidden
                       />
                     </div>
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section1.signupNotes')}
                     </label>
                     <textarea
@@ -1828,19 +1828,19 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
               </section>
 
               <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section2.title')}</h2>
+                <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section2.title')}</h2>
                 {String(data.center?.status) === 'pending_cancellation' ? (
                   <div
                     className="mb-4 rounded-xl border border-amber-400/60 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:border-amber-600 dark:bg-amber-950/30 dark:text-amber-100"
                     dir={isRTL ? 'rtl' : 'ltr'}
                   >
                     <p className="font-semibold">⚠️ {t('centerManagement.cancellation.bannerTitle')}</p>
-                    <p className="mt-2 text-slate-800 dark:text-amber-50/95">
+                    <p className="mt-2 text-[var(--color-text-primary)]">
                       {t('centerManagement.cancellation.reason')}:{' '}
                       {CANCELLATION_REASON_LABELS[String(data.center?.cancellation_reason)] ??
                         String(data.center?.cancellation_reason ?? tCommon('notSet'))}
                     </p>
-                    <p className="mt-1 text-slate-700 dark:text-amber-50/90">
+                    <p className="mt-1 text-[var(--color-text-secondary)]">
                       {t('centerManagement.cancellation.requested')}: {formatDate(data.center?.cancellation_requested_at)}
                     </p>
                     <div className="mt-4 flex flex-wrap gap-3">
@@ -1877,11 +1877,11 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 ) : null}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">{t('centerManagement.section2.status')}</label>
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">{t('centerManagement.section2.status')}</label>
                     <select
                       value={s2Status}
                       onChange={(e) => setS2Status(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                     >
                       <option value="active">active</option>
                       <option value="pending_cancellation">pending_cancellation</option>
@@ -1894,13 +1894,13 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section2.subscriptionStatus')}
                     </label>
                     <select
                       value={s2SubscriptionStatus}
                       onChange={(e) => setS2SubscriptionStatus(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                     >
                       <option value="active">active</option>
                       <option value="suspended">suspended</option>
@@ -1909,13 +1909,13 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section2.billingStatus')}
                     </label>
                     <select
                       value={s2BillingStatus}
                       onChange={(e) => setS2BillingStatus(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                     >
                       <option value="active">active</option>
                       <option value="suspended">suspended</option>
@@ -1923,11 +1923,11 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">{t('centerManagement.section2.plan')}</label>
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">{t('centerManagement.section2.plan')}</label>
                     <select
                       value={s2Plan}
                       onChange={(e) => handlePlanChange(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                     >
                       {(data.pricingPlans ?? []).map((p) => (
                         <option key={String(p.plan_key)} value={String(p.plan_key)}>
@@ -1940,39 +1940,39 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section2.pricingType')}
                     </label>
                     <select
                       value={s2PricingType}
                       onChange={(e) => setS2PricingType(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                     >
                       <option value="fixed">fixed</option>
                       <option value="payg">payg</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section2.billingType')}
                     </label>
                     <select
                       value={s2BillingType}
                       onChange={(e) => setS2BillingType(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                     >
                       <option value="fixed">fixed</option>
                       <option value="subscription">subscription</option>
                     </select>
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section2.billingPeriod')}
                     </label>
                     <select
                       value={s2SubBillingPeriod}
                       onChange={(e) => setS2SubBillingPeriod(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                     >
                       <option value="monthly">monthly</option>
                       <option value="quarterly">quarterly</option>
@@ -1981,7 +1981,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section2.weeklyStudentLimit')}
                     </label>
                     <input
@@ -1989,13 +1989,13 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       min={0}
                       value={s2WeeklyStudentLimit}
                       onChange={(e) => setS2WeeklyStudentLimit(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                       dir="ltr"
                     />
                   </div>
                   {s2PricingType === 'payg' ? (
                     <div>
-                      <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                      <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                         {t('centerManagement.section2.paygRate')}
                       </label>
                       <input
@@ -2004,7 +2004,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                         step="0.01"
                         value={s2PaygRate}
                         onChange={(e) => setS2PaygRate(e.target.value)}
-                        className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                        className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                         dir="ltr"
                       />
                     </div>
@@ -2023,11 +2023,11 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
               </section>
 
               <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section3.title')}</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm text-slate-600 dark:text-slate-300">
+                <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section3.title')}</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm text-[var(--color-text-secondary)]">
                   <div>
                     {t('centerManagement.section3.effectiveMonthly')}:{' '}
-                    <span className="text-slate-900 dark:text-white font-medium tabular-nums">
+                    <span className="text-[var(--color-text-primary)] font-medium tabular-nums">
                       {!isNaN(billingNum)
                         ? formatNumber(effectiveMonthly, locale)
                         : `${formatNumber(0, locale)} ${tCommon('egp')}`}
@@ -2035,7 +2035,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                   </div>
                   <div>
                     {t('centerManagement.section3.annualEquivalent')}:{' '}
-                    <span className="text-slate-900 dark:text-white font-medium tabular-nums">
+                    <span className="text-[var(--color-text-primary)] font-medium tabular-nums">
                       {!isNaN(allInNum)
                         ? formatNumber(Math.round(annualEquivalent), locale)
                         : `${formatNumber(0, locale)} ${tCommon('egp')}`}
@@ -2044,7 +2044,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section3.billingAmount')}
                     </label>
                     <input
@@ -2053,12 +2053,12 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       step="0.01"
                       value={s3BillingAmount}
                       onChange={(e) => setS3BillingAmount(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                       dir="ltr"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section3.allInPrice')}
                     </label>
                     <input
@@ -2067,12 +2067,12 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       step="0.01"
                       value={s3AllInPrice}
                       onChange={(e) => setS3AllInPrice(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                       dir="ltr"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section3.nextPaymentDue')}
                     </label>
                     <LocalizedDateInput
@@ -2083,7 +2083,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section3.autoSuspendAt')}
                     </label>
                     <LocalizedDateInput
@@ -2092,10 +2092,10 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       locale={locale}
                       className={ADMIN_LOCALIZED_DATE_CLASS}
                     />
-                    <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">{t('centerManagement.section3.autoSuspendWarning')}</p>
+                    <p className="text-[var(--color-text-muted)] text-xs mt-1">{t('centerManagement.section3.autoSuspendWarning')}</p>
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section3.subscriptionStartDate')}
                     </label>
                     <LocalizedDateInput
@@ -2115,7 +2115,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                   {s3IsEarlyAdopter ? (
                     <>
                       <div>
-                        <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                        <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                           {t('centerManagement.section3.earlyAdopterPrice')}
                         </label>
                         <input
@@ -2124,12 +2124,12 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                           step="0.01"
                           value={s3EarlyAdopterPrice}
                           onChange={(e) => setS3EarlyAdopterPrice(e.target.value)}
-                          className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                          className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                           dir="ltr"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                        <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                           {t('centerManagement.section3.earlyAdopterNumber')}
                         </label>
                         <input
@@ -2137,7 +2137,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                           min={0}
                           value={s3EarlyAdopterNumber}
                           onChange={(e) => setS3EarlyAdopterNumber(e.target.value)}
-                          className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                          className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                           dir="ltr"
                         />
                       </div>
@@ -2160,7 +2160,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
 
               <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                  <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section4.title')}</h2>
+                  <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section4.title')}</h2>
                   <button
                     type="button"
                     onClick={() => openCreateModal()}
@@ -2170,11 +2170,11 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                   </button>
                 </div>
                 {s4Invoices.length === 0 ? (
-                  <p className="text-slate-500 dark:text-slate-400">{t('centerManagement.section4.noInvoices')}</p>
+                  <p className="text-[var(--color-text-muted)]">{t('centerManagement.section4.noInvoices')}</p>
                 ) : (
-                  <div className="overflow-x-auto rounded-lg border border-gray-300 dark:border-slate-600">
-                    <table className="w-full text-sm text-start text-slate-800 dark:text-slate-200 min-w-[720px]">
-                      <thead className="bg-[var(--color-surface-0)] text-slate-500 dark:text-slate-400">
+                  <div className="overflow-x-auto rounded-lg border border-[var(--color-border-default)]">
+                    <table className="w-full text-sm text-start text-[var(--color-text-primary)] min-w-[720px]">
+                      <thead className="bg-[var(--color-surface-0)] text-[var(--color-text-muted)]">
                         <tr>
                           <th className="p-2 font-medium">{t('centerManagement.section4.invoiceNumber')}</th>
                           <th className="p-2 font-medium">{t('centerManagement.section4.type')}</th>
@@ -2272,11 +2272,11 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                                 </td>
                               </tr>
                               {s4ExpandedId === invId ? (
-                                <tr className="bg-gray-50 dark:bg-[var(--color-surface-2)] border-t border-gray-200 dark:border-t-slate-700">
+                                <tr className="bg-[var(--color-surface-2)] border-t border-gray-200 dark:border-t-slate-700">
                                   <td colSpan={8} className="p-4 space-y-4">
                                     <div className="flex flex-wrap gap-3 items-end">
                                       <div>
-                                        <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                                        <label className="block text-xs text-[var(--color-text-muted)] mb-1">
                                           {t('centerManagement.section4.updateStatus')}
                                         </label>
                                         <select
@@ -2287,7 +2287,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                                               [invId]: e.target.value,
                                             }))
                                           }
-                                          className="rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-100 text-slate-900 dark:bg-slate-700 dark:text-white px-2 py-1.5 text-sm"
+                                          className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] px-2 py-1.5 text-sm"
                                         >
                                           <option value="pending">pending</option>
                                           <option value="paid">paid</option>
@@ -2308,7 +2308,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                                       </div>
                                       {isPendingOnly ? (
                                         <div>
-                                          <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                                          <label className="block text-xs text-[var(--color-text-muted)] mb-1">
                                             {t('centerManagement.section4.discountAmount')}
                                           </label>
                                           <input
@@ -2322,14 +2322,14 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                                                 [invId]: e.target.value,
                                               }))
                                             }
-                                            className="w-28 shrink-0 bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-2 py-1.5 text-sm"
+                                            className="w-28 shrink-0 bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-2 py-1.5 text-sm"
                                             dir="ltr"
                                           />
                                           <button
                                             type="button"
                                             disabled={busy}
                                             onClick={() => void saveInvoiceDiscount(invId)}
-                                            className="ms-2 rounded bg-gray-300 text-slate-900 dark:bg-slate-600 dark:text-white px-2 py-1.5 text-xs disabled:opacity-50"
+                                            className="ms-2 rounded bg-[var(--color-surface-3)] text-[var(--color-text-primary)] px-2 py-1.5 text-xs disabled:opacity-50"
                                           >
                                             {t('centerManagement.section4.applyDiscount')}
                                           </button>
@@ -2371,15 +2371,15 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
               {s4MarkPaidId ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
                   <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 max-w-md w-full space-y-3">
-                    <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section4.markPaid')}</h3>
+                    <h3 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section4.markPaid')}</h3>
                     <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      <label className="block text-xs text-[var(--color-text-muted)] mb-1">
                         {t('centerManagement.section4.paymentMethod')}
                       </label>
                       <select
                         value={s4MarkPaidMethod}
                         onChange={(e) => setS4MarkPaidMethod(e.target.value)}
-                        className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                        className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                       >
                         <option value="cash">cash</option>
                         <option value="bank_transfer">bank_transfer</option>
@@ -2388,19 +2388,19 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      <label className="block text-xs text-[var(--color-text-muted)] mb-1">
                         {t('centerManagement.section4.paymentReference')}
                       </label>
                       <input
                         type="text"
                         value={s4MarkPaidRef}
                         onChange={(e) => setS4MarkPaidRef(e.target.value)}
-                        className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                        className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                         dir="ltr"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      <label className="block text-xs text-[var(--color-text-muted)] mb-1">
                         {t('centerManagement.section4.paidAt')}
                       </label>
                       <LocalizedDateInput
@@ -2414,7 +2414,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       <button
                         type="button"
                         onClick={() => setS4MarkPaidId(null)}
-                        className="px-4 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                        className="px-4 py-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]"
                       >
                         {tCommon('cancel')}
                       </button>
@@ -2433,18 +2433,18 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
               {s4ShowCreate ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
                   <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 max-w-lg w-full space-y-3 max-h-[90vh] overflow-y-auto">
-                    <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">
+                    <h3 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">
                       {t('centerManagement.section4.createInvoice')}
                     </h3>
                     {s4CreateError ? <p className="text-red-400 text-sm">{s4CreateError}</p> : null}
                     <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      <label className="block text-xs text-[var(--color-text-muted)] mb-1">
                         {t('centerManagement.section4.invoiceType')}
                       </label>
                       <select
                         value={s4CreateType}
                         onChange={(e) => setS4CreateType(e.target.value)}
-                        className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                        className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                       >
                         {CREATE_INVOICE_TYPES.map((ty) => (
                           <option key={ty} value={ty}>
@@ -2454,7 +2454,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      <label className="block text-xs text-[var(--color-text-muted)] mb-1">
                         {t('centerManagement.section4.totalAmount')}
                       </label>
                       <input
@@ -2463,13 +2463,13 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                         step="0.01"
                         value={s4CreateAmount}
                         onChange={(e) => setS4CreateAmount(e.target.value)}
-                        className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                        className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                         dir="ltr"
                       />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                        <label className="block text-xs text-[var(--color-text-muted)] mb-1">
                           {t('centerManagement.section4.periodStart')}
                         </label>
                         <LocalizedDateInput
@@ -2480,7 +2480,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                         />
                       </div>
                       <div>
-                        <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                        <label className="block text-xs text-[var(--color-text-muted)] mb-1">
                           {t('centerManagement.section4.periodEnd')}
                         </label>
                         <LocalizedDateInput
@@ -2492,7 +2492,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      <label className="block text-xs text-[var(--color-text-muted)] mb-1">
                         {t('centerManagement.section4.dueDate')}
                       </label>
                       <LocalizedDateInput
@@ -2506,7 +2506,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       <button
                         type="button"
                         onClick={() => setS4ShowCreate(false)}
-                        className="px-4 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                        className="px-4 py-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]"
                       >
                         {tCommon('cancel')}
                       </button>
@@ -2525,7 +2525,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
 
               <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                  <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section5.title')}</h2>
+                  <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section5.title')}</h2>
                   <button
                     type="button"
                     onClick={() => openRecordModal()}
@@ -2535,11 +2535,11 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                   </button>
                 </div>
                 {s5History.length === 0 ? (
-                  <p className="text-slate-500 dark:text-slate-400">{t('centerManagement.section5.noPayments')}</p>
+                  <p className="text-[var(--color-text-muted)]">{t('centerManagement.section5.noPayments')}</p>
                 ) : (
-                  <div className="overflow-x-auto rounded-lg border border-gray-300 dark:border-slate-600">
-                    <table className="w-full text-sm text-slate-800 dark:text-slate-200 min-w-[640px]">
-                      <thead className="bg-[var(--color-surface-0)] text-slate-500 dark:text-slate-400">
+                  <div className="overflow-x-auto rounded-lg border border-[var(--color-border-default)]">
+                    <table className="w-full text-sm text-[var(--color-text-primary)] min-w-[640px]">
+                      <thead className="bg-[var(--color-surface-0)] text-[var(--color-text-muted)]">
                         <tr>
                           <th className="text-start p-2 font-medium">{t('centerManagement.section5.date')}</th>
                           <th className="text-start p-2 font-medium">{t('centerManagement.section5.amount')}</th>
@@ -2581,12 +2581,12 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
               {s5ShowModal ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
                   <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 max-w-md w-full space-y-3">
-                    <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">
+                    <h3 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">
                       {t('centerManagement.section5.recordPayment')}
                     </h3>
                     {s5AmountError ? <p className="text-red-400 text-sm">{s5AmountError}</p> : null}
                     <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      <label className="block text-xs text-[var(--color-text-muted)] mb-1">
                         {t('centerManagement.section5.paymentDate')}
                       </label>
                       <LocalizedDateInput
@@ -2597,7 +2597,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      <label className="block text-xs text-[var(--color-text-muted)] mb-1">
                         {t('centerManagement.section5.amountPaid')}
                       </label>
                       <input
@@ -2606,18 +2606,18 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                         step="0.01"
                         value={s5Amount}
                         onChange={(e) => setS5Amount(e.target.value)}
-                        className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                        className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                         dir="ltr"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      <label className="block text-xs text-[var(--color-text-muted)] mb-1">
                         {t('centerManagement.section5.paymentMethod')}
                       </label>
                       <select
                         value={s5Method}
                         onChange={(e) => setS5Method(e.target.value)}
-                        className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                        className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                       >
                         <option value="cash">cash</option>
                         <option value="bank_transfer">bank_transfer</option>
@@ -2626,21 +2626,21 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      <label className="block text-xs text-[var(--color-text-muted)] mb-1">
                         {t('centerManagement.section4.notes')}
                       </label>
                       <textarea
                         rows={3}
                         value={s5Notes}
                         onChange={(e) => setS5Notes(e.target.value)}
-                        className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm resize-none"
+                        className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm resize-none"
                       />
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
                       <button
                         type="button"
                         onClick={() => setS5ShowModal(false)}
-                        className="px-4 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                        className="px-4 py-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]"
                       >
                         {tCommon('cancel')}
                       </button>
@@ -2658,37 +2658,37 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
               ) : null}
 
               <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section6.title')}</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm text-slate-500 dark:text-slate-400">
+                <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section6.title')}</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm text-[var(--color-text-muted)]">
                   <div>
-                    <span className="text-slate-500 dark:text-slate-500">{t('centerManagement.section6.packApprovedAt')}: </span>
-                    <span className="text-slate-800 dark:text-slate-200">
+                    <span className="text-[var(--color-text-muted)]">{t('centerManagement.section6.packApprovedAt')}: </span>
+                    <span className="text-[var(--color-text-primary)]">
                       {data.center.pack_approved_at != null
                         ? String(data.center.pack_approved_at).slice(0, 19)
                         : tCommon('notSet')}
                     </span>
                   </div>
                   <div>
-                    <span className="text-slate-500 dark:text-slate-500">{t('centerManagement.section6.packRequestedAt')}: </span>
-                    <span className="text-slate-800 dark:text-slate-200">
+                    <span className="text-[var(--color-text-muted)]">{t('centerManagement.section6.packRequestedAt')}: </span>
+                    <span className="text-[var(--color-text-primary)]">
                       {data.center.pack_requested_at != null
                         ? String(data.center.pack_requested_at).slice(0, 19)
                         : tCommon('notSet')}
                     </span>
                   </div>
                   <div>
-                    <span className="text-slate-500 dark:text-slate-500">{t('centerManagement.section6.packDisabledAt')}: </span>
-                    <span className="text-slate-800 dark:text-slate-200">
+                    <span className="text-[var(--color-text-muted)]">{t('centerManagement.section6.packDisabledAt')}: </span>
+                    <span className="text-[var(--color-text-primary)]">
                       {data.center.pack_disabled_at != null
                         ? String(data.center.pack_disabled_at).slice(0, 19)
                         : tCommon('notSet')}
                     </span>
                   </div>
                   <div>
-                    <div className="text-xs font-medium text-slate-500 dark:text-slate-500 mb-0.5">
+                    <div className="text-xs font-medium text-[var(--color-text-muted)] mb-0.5">
                       {t('centerManagement.section6.activeParents')}
                     </div>
-                    <div className="text-slate-800 dark:text-slate-200 tabular-nums">
+                    <div className="text-[var(--color-text-primary)] tabular-nums">
                       {data.center.parent_pack_active_parents != null
                         ? formatNumber(Number(data.center.parent_pack_active_parents), locale)
                         : tCommon('notSet')}
@@ -2704,13 +2704,13 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section6.packRequestStatus')}
                     </label>
                     <select
                       value={s6PackRequestStatus}
                       onChange={(e) => setS6PackRequestStatus(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                     >
                       <option value="none">none</option>
                       <option value="requested">requested</option>
@@ -2720,7 +2720,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section6.packPrice')}
                     </label>
                     <input
@@ -2729,12 +2729,12 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       step="0.01"
                       value={s6PackPrice}
                       onChange={(e) => setS6PackPrice(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                       dir="ltr"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section6.packCustomMin')}
                     </label>
                     <input
@@ -2743,7 +2743,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       step="0.01"
                       value={s6PackCustomMin}
                       onChange={(e) => setS6PackCustomMin(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                       dir="ltr"
                     />
                     {s2Plan === 'top_centers' ? (
@@ -2753,7 +2753,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     ) : null}
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section6.packPendingBalance')}
                     </label>
                     <input
@@ -2761,13 +2761,13 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       step="0.01"
                       value={s6PackPendingBalance}
                       onChange={(e) => setS6PackPendingBalance(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                       dir="ltr"
                     />
-                    <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{t('centerManagement.section6.packBalanceNote')}</p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-1">{t('centerManagement.section6.packBalanceNote')}</p>
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section6.packMonths')}
                     </label>
                     <input
@@ -2775,20 +2775,20 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       min={0}
                       value={s6PackMonthsNoInvoice}
                       onChange={(e) => setS6PackMonthsNoInvoice(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                       dir="ltr"
                     />
                   </div>
                   {s6PackRequestStatus === 'rejected' ? (
                     <div className="md:col-span-2">
-                      <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                      <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                         {t('centerManagement.section6.packRejectionReason')}
                       </label>
                       <textarea
                         rows={3}
                         value={s6PackRejectionReason}
                         onChange={(e) => setS6PackRejectionReason(e.target.value)}
-                        className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm resize-none"
+                        className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm resize-none"
                       />
                     </div>
                   ) : null}
@@ -2806,10 +2806,10 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
               </section>
 
               <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section7.title')}</h2>
+                <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section7.title')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section7.balance')}
                     </label>
                     <input
@@ -2817,11 +2817,11 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       step="0.01"
                       value={s7Balance}
                       onChange={(e) => setS7Balance(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                       dir="ltr"
                     />
-                    <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{t('centerManagement.section7.balanceNote')}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    <p className="text-xs text-[var(--color-text-muted)] mt-1">{t('centerManagement.section7.balanceNote')}</p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-1">
                       {t('centerManagement.section7.balanceUpdated')}:{' '}
                       {data.center.announcement_balance_updated_at != null
                         ? String(data.center.announcement_balance_updated_at).slice(0, 19)
@@ -2829,7 +2829,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section7.pricePerBlast')}
                     </label>
                     <input
@@ -2838,19 +2838,19 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       step="0.01"
                       value={s7PricePerBlast}
                       onChange={(e) => setS7PricePerBlast(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                       dir="ltr"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">{t('centerManagement.section7.cap')}</label>
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">{t('centerManagement.section7.cap')}</label>
                     <input
                       type="number"
                       min={0}
                       step="0.01"
                       value={s7Cap}
                       onChange={(e) => setS7Cap(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                       dir="ltr"
                     />
                   </div>
@@ -2868,7 +2868,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
               </section>
 
               <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section8.title')}</h2>
+                <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section8.title')}</h2>
                 {s8ScheduleError ? <p className="text-red-400 text-sm mb-3">{s8ScheduleError}</p> : null}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2 flex flex-col gap-3">
@@ -2895,7 +2895,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                   </div>
                   <p className="md:col-span-2 text-xs text-amber-400/90">{t('centerManagement.section8.summerModeWarning')}</p>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section8.scheduleStart')}
                     </label>
                     <input
@@ -2904,12 +2904,12 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       max={23}
                       value={s8ScheduleStart}
                       onChange={(e) => setS8ScheduleStart(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                       dir="ltr"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section8.scheduleEnd')}
                     </label>
                     <input
@@ -2918,23 +2918,23 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       max={23}
                       value={s8ScheduleEnd}
                       onChange={(e) => setS8ScheduleEnd(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                       dir="ltr"
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section8.instapayNumber')}
                     </label>
                     <input
                       type="tel"
                       value={s8InstapayNumber}
                       onChange={(e) => setS8InstapayNumber(e.target.value)}
-                      className="bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm w-full"
+                      className="bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm w-full"
                       placeholder="01XXXXXXXXX"
                       dir="ltr"
                     />
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('centerManagement.section8.instapayNote')}</p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-1">{t('centerManagement.section8.instapayNote')}</p>
                   </div>
                 </div>
                 <div className="mt-6 flex justify-end">
@@ -2951,7 +2951,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
 
               <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                  <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section9.title')}</h2>
+                  <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section9.title')}</h2>
                   <button
                     type="button"
                     onClick={() => openOverrideModal()}
@@ -2962,11 +2962,11 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
                 <p className="text-xs text-amber-400/80 mb-4">{t('centerManagement.section9.overrideWarning')}</p>
                 {s9Requests.length === 0 ? (
-                  <p className="text-slate-500 dark:text-slate-400">{t('centerManagement.section9.noRequests')}</p>
+                  <p className="text-[var(--color-text-muted)]">{t('centerManagement.section9.noRequests')}</p>
                 ) : (
-                  <div className="overflow-x-auto rounded-lg border border-gray-300 dark:border-slate-600">
-                    <table className="w-full text-sm text-slate-800 dark:text-slate-200 min-w-[800px]">
-                      <thead className="bg-[var(--color-surface-0)] text-slate-500 dark:text-slate-400">
+                  <div className="overflow-x-auto rounded-lg border border-[var(--color-border-default)]">
+                    <table className="w-full text-sm text-[var(--color-text-primary)] min-w-[800px]">
+                      <thead className="bg-[var(--color-surface-0)] text-[var(--color-text-muted)]">
                         <tr>
                           <th className="text-start p-2 font-medium">{t('centerManagement.section9.currentPlan')}</th>
                           <th className="text-start p-2 font-medium">{t('centerManagement.section9.requestedPlan')}</th>
@@ -3017,7 +3017,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                                     </button>
                                   </>
                                 ) : (
-                                  <span className="text-slate-600 text-xs" aria-hidden>
+                                  <span className="text-[var(--color-text-muted)] text-xs" aria-hidden>
                                     -
                                   </span>
                                 )}
@@ -3034,13 +3034,13 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
               {s9ApproveId ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
                   <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 max-w-md w-full space-y-3">
-                    <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section9.approve')}</h3>
+                    <h3 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section9.approve')}</h3>
                     <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section2.plan')}</label>
+                      <label className="block text-xs text-[var(--color-text-muted)] mb-1">{t('centerManagement.section2.plan')}</label>
                       <select
                         value={s9ApprovePlan}
                         onChange={(e) => handleApprovePlanChange(e.target.value)}
-                        className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                        className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                       >
                         {(data.pricingPlans ?? []).map((p) => (
                           <option key={String(p.plan_key)} value={String(p.plan_key)}>
@@ -3053,7 +3053,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      <label className="block text-xs text-[var(--color-text-muted)] mb-1">
                         {t('centerManagement.section9.newBillingAmount')}
                       </label>
                       <input
@@ -3061,12 +3061,12 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                         step="0.01"
                         value={s9ApproveBilling}
                         onChange={(e) => setS9ApproveBilling(e.target.value)}
-                        className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                        className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                         dir="ltr"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      <label className="block text-xs text-[var(--color-text-muted)] mb-1">
                         {t('centerManagement.section9.newAllInPrice')}
                       </label>
                       <input
@@ -3074,7 +3074,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                         step="0.01"
                         value={s9ApproveAllIn}
                         onChange={(e) => setS9ApproveAllIn(e.target.value)}
-                        className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                        className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                         dir="ltr"
                       />
                     </div>
@@ -3082,7 +3082,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       <button
                         type="button"
                         onClick={() => setS9ApproveId(null)}
-                        className="px-4 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                        className="px-4 py-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]"
                       >
                         {tCommon('cancel')}
                       </button>
@@ -3102,24 +3102,24 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
               {s9RejectId ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
                   <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 max-w-md w-full space-y-3">
-                    <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section9.reject')}</h3>
+                    <h3 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section9.reject')}</h3>
                     {s9RejectNotesError ? <p className="text-red-400 text-sm">{s9RejectNotesError}</p> : null}
                     <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      <label className="block text-xs text-[var(--color-text-muted)] mb-1">
                         {t('centerManagement.section9.rejectNotes')}
                       </label>
                       <textarea
                         rows={4}
                         value={s9RejectNotes}
                         onChange={(e) => setS9RejectNotes(e.target.value)}
-                        className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm resize-none"
+                        className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm resize-none"
                       />
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
                       <button
                         type="button"
                         onClick={() => setS9RejectId(null)}
-                        className="px-4 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                        className="px-4 py-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]"
                       >
                         {tCommon('cancel')}
                       </button>
@@ -3139,13 +3139,13 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
               {s9ShowOverride ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
                   <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 max-w-md w-full space-y-3">
-                    <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section9.overridePlan')}</h3>
+                    <h3 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section9.overridePlan')}</h3>
                     <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section2.plan')}</label>
+                      <label className="block text-xs text-[var(--color-text-muted)] mb-1">{t('centerManagement.section2.plan')}</label>
                       <select
                         value={s9OverridePlan}
                         onChange={(e) => handleOverridePlanChange(e.target.value)}
-                        className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                        className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                       >
                         {(data.pricingPlans ?? []).map((p) => (
                           <option key={String(p.plan_key)} value={String(p.plan_key)}>
@@ -3158,7 +3158,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      <label className="block text-xs text-[var(--color-text-muted)] mb-1">
                         {t('centerManagement.section9.newBillingAmount')}
                       </label>
                       <input
@@ -3166,12 +3166,12 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                         step="0.01"
                         value={s9OverrideBilling}
                         onChange={(e) => setS9OverrideBilling(e.target.value)}
-                        className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                        className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                         dir="ltr"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      <label className="block text-xs text-[var(--color-text-muted)] mb-1">
                         {t('centerManagement.section9.newAllInPrice')}
                       </label>
                       <input
@@ -3179,7 +3179,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                         step="0.01"
                         value={s9OverrideAllIn}
                         onChange={(e) => setS9OverrideAllIn(e.target.value)}
-                        className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                        className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                         dir="ltr"
                       />
                     </div>
@@ -3187,7 +3187,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       <button
                         type="button"
                         onClick={() => setS9ShowOverride(false)}
-                        className="px-4 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                        className="px-4 py-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]"
                       >
                         {tCommon('cancel')}
                       </button>
@@ -3205,9 +3205,9 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
               ) : null}
 
               <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section10.title')}</h2>
+                <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section10.title')}</h2>
                 <div className="flex flex-wrap items-center gap-3 mb-4">
-                  <span className="text-sm text-slate-500 dark:text-slate-400">{t('centerManagement.section10.referralCode')}:</span>
+                  <span className="text-sm text-[var(--color-text-muted)]">{t('centerManagement.section10.referralCode')}:</span>
                   <code className="text-teal-300 font-mono text-sm">
                     {String(data.center.referral_code ?? tCommon('notSet'))}
                   </code>
@@ -3222,38 +3222,38 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                         })
                         .catch(() => {});
                     }}
-                    className="rounded-lg bg-gray-200 text-slate-900 dark:bg-slate-700 dark:text-white px-3 py-1.5 text-xs font-semibold hover:bg-gray-300 dark:hover:bg-slate-600"
+                    className="rounded-lg bg-[var(--color-surface-2)] text-[var(--color-text-primary)] px-3 py-1.5 text-xs font-semibold hover:bg-[var(--color-surface-3)]"
                   >
                     {s10CopiedCode ? t('centerManagement.section10.copied') : t('centerManagement.section10.copy')}
                   </button>
                 </div>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
+                <p className="text-sm text-[var(--color-text-muted)] mb-2">
                   {t('centerManagement.section10.referredBy')}:{' '}
-                  <span className="text-slate-800 dark:text-slate-200">{shortUuid(data.center.referred_by)}</span>
+                  <span className="text-[var(--color-text-primary)]">{shortUuid(data.center.referred_by)}</span>
                 </p>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                <p className="text-sm text-[var(--color-text-muted)] mb-4">
                   {(data.referralsMade ?? []).length} {t('centerManagement.section10.centersReferred')}
                 </p>
                 {(data.referralsMade ?? []).length === 0 ? (
-                  <p className="text-slate-500 dark:text-slate-500 text-sm mb-6">{t('centerManagement.section10.noReferrals')}</p>
+                  <p className="text-[var(--color-text-muted)] text-sm mb-6">{t('centerManagement.section10.noReferrals')}</p>
                 ) : (
-                  <ul className="list-disc list-inside text-slate-600 dark:text-slate-300 text-sm mb-6 space-y-1">
+                  <ul className="list-disc list-inside text-[var(--color-text-secondary)] text-sm mb-6 space-y-1">
                     {(data.referralsMade ?? []).map((ref, j) => (
                       <li key={String(ref.id ?? j)}>
                         {String((ref as { name?: string }).name ?? tCommon('notAvailable'))}{' '}
-                        <span className="text-slate-500">·</span>{' '}
+                        <span className="text-[var(--color-text-muted)]">·</span>{' '}
                         {String((ref as { plan?: string }).plan ?? '')}
                       </li>
                     ))}
                   </ul>
                 )}
-                <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section10.commissions')}</h3>
+                <h3 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section10.commissions')}</h3>
                 {s10Commissions.length === 0 ? (
-                  <p className="text-slate-500 dark:text-slate-500 text-sm mb-4">{t('centerManagement.section10.noCommissions')}</p>
+                  <p className="text-[var(--color-text-muted)] text-sm mb-4">{t('centerManagement.section10.noCommissions')}</p>
                 ) : (
-                  <div className="overflow-x-auto rounded-lg border border-gray-300 dark:border-slate-600 mb-4">
-                    <table className="w-full text-sm text-slate-800 dark:text-slate-200 min-w-[360px]">
-                      <thead className="bg-[var(--color-surface-0)] text-slate-500 dark:text-slate-400">
+                  <div className="overflow-x-auto rounded-lg border border-[var(--color-border-default)] mb-4">
+                    <table className="w-full text-sm text-[var(--color-text-primary)] min-w-[360px]">
+                      <thead className="bg-[var(--color-surface-0)] text-[var(--color-text-muted)]">
                         <tr>
                           <th className="text-start p-2 font-medium">{t('centerManagement.section4.amount')}</th>
                           <th className="text-start p-2 font-medium">{t('centerManagement.section4.status')}</th>
@@ -3285,7 +3285,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                                     {t('centerManagement.section10.markPaid')}
                                   </button>
                                 ) : (
-                                  <span className="text-slate-600 text-xs" aria-hidden>
+                                  <span className="text-[var(--color-text-muted)] text-xs" aria-hidden>
                                     -
                                   </span>
                                 )}
@@ -3299,13 +3299,13 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section10.rewardStatus')}
                     </label>
                     <select
                       value={s10RewardStatus}
                       onChange={(e) => setS10RewardStatus(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                     >
                       <option value="pending">pending</option>
                       <option value="paid">paid</option>
@@ -3313,7 +3313,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       {t('centerManagement.section10.rewardAmount')}
                     </label>
                     <input
@@ -3321,7 +3321,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       step="0.01"
                       value={s10RewardAmount}
                       onChange={(e) => setS10RewardAmount(e.target.value)}
-                      className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm"
+                      className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                       dir="ltr"
                     />
                   </div>
@@ -3334,13 +3334,13 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 >
                   {s10Saving ? t('centerManagement.saving') : t('centerManagement.saveSection')}
                 </button>
-                <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section10.payoutRequests')}</h3>
+                <h3 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section10.payoutRequests')}</h3>
                 {(data.payoutRequests ?? []).length === 0 ? (
-                  <p className="text-slate-500 dark:text-slate-500 text-sm">{t('centerManagement.section10.noPayouts')}</p>
+                  <p className="text-[var(--color-text-muted)] text-sm">{t('centerManagement.section10.noPayouts')}</p>
                 ) : (
-                  <div className="overflow-x-auto rounded-lg border border-gray-300 dark:border-slate-600">
-                    <table className="w-full text-sm text-slate-800 dark:text-slate-200">
-                      <thead className="bg-[var(--color-surface-0)] text-slate-500 dark:text-slate-400">
+                  <div className="overflow-x-auto rounded-lg border border-[var(--color-border-default)]">
+                    <table className="w-full text-sm text-[var(--color-text-primary)]">
+                      <thead className="bg-[var(--color-surface-0)] text-[var(--color-text-muted)]">
                         <tr>
                           <th className="text-start p-2 font-medium">ID</th>
                           <th className="text-start p-2 font-medium">{t('centerManagement.section4.status')}</th>
@@ -3370,7 +3370,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
               </section>
 
               <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section11.title')}</h2>
+                <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section11.title')}</h2>
                 {data.center.is_blacklisted ? (
                   <div className="rounded-lg border border-red-800 bg-red-950/40 p-4 mb-4">
                     <p className="text-red-200 font-medium mb-2">{t('centerManagement.section11.isBlacklisted')}</p>
@@ -3379,7 +3379,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       type="button"
                       disabled={s11Loading}
                       onClick={() => setS11ShowUnblacklist(true)}
-                      className="rounded-lg bg-gray-200 text-slate-900 dark:bg-slate-700 dark:text-white px-4 py-2 text-sm font-semibold hover:bg-gray-300 dark:hover:bg-slate-600 disabled:opacity-50"
+                      className="rounded-lg bg-[var(--color-surface-2)] text-[var(--color-text-primary)] px-4 py-2 text-sm font-semibold hover:bg-[var(--color-surface-3)] disabled:opacity-50"
                     >
                       {t('centerManagement.section11.unblacklistBtn')}
                     </button>
@@ -3403,24 +3403,24 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
               {s11ShowBlacklist ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
                   <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 max-w-md w-full space-y-3">
-                    <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section11.confirmBlacklist')}</h3>
+                    <h3 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section11.confirmBlacklist')}</h3>
                     {s11ReasonError ? <p className="text-red-400 text-sm">{s11ReasonError}</p> : null}
                     <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      <label className="block text-xs text-[var(--color-text-muted)] mb-1">
                         {t('centerManagement.section11.reasonLabel')}
                       </label>
                       <textarea
                         rows={4}
                         value={s11Reason}
                         onChange={(e) => setS11Reason(e.target.value)}
-                        className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm resize-none"
+                        className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm resize-none"
                       />
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
                       <button
                         type="button"
                         onClick={() => setS11ShowBlacklist(false)}
-                        className="px-4 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                        className="px-4 py-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]"
                       >
                         {tCommon('cancel')}
                       </button>
@@ -3440,13 +3440,13 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
               {s11ShowUnblacklist ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
                   <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-6 max-w-md w-full space-y-3">
-                    <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section11.confirmRemove')}</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{t('centerManagement.section11.unblacklistWarning')}</p>
+                    <h3 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section11.confirmRemove')}</h3>
+                    <p className="text-sm text-[var(--color-text-muted)]">{t('centerManagement.section11.unblacklistWarning')}</p>
                     <div className="flex justify-end gap-2 pt-2">
                       <button
                         type="button"
                         onClick={() => setS11ShowUnblacklist(false)}
-                        className="px-4 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                        className="px-4 py-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]"
                       >
                         {tCommon('cancel')}
                       </button>
@@ -3464,11 +3464,11 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
               ) : null}
 
               <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerNotes.title')}</h2>
+                <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerNotes.title')}</h2>
                 {opsNotesLoading ? (
-                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('centerManagement.loading')}</p>
+                  <p className="text-sm text-[var(--color-text-muted)]">{t('centerManagement.loading')}</p>
                 ) : opsNotes.length === 0 ? (
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{t('centerNotes.no_notes')}</p>
+                  <p className="text-sm text-[var(--color-text-muted)] mb-4">{t('centerNotes.no_notes')}</p>
                 ) : (
                   <ul className="space-y-3 mb-4">
                     {opsNotes.map((note) => {
@@ -3479,11 +3479,11 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       return (
                         <li
                           key={nid}
-                          className="rounded-lg border border-gray-200 dark:border-slate-600 p-3 bg-gray-50 dark:bg-[var(--color-surface-2)]"
+                          className="rounded-lg border border-[var(--color-border-subtle)] p-3 bg-[var(--color-surface-2)]"
                         >
                           <div className="flex flex-wrap items-start justify-between gap-2 mb-1">
-                            <div className="text-xs text-slate-500 dark:text-slate-400">
-                              <span className="font-medium text-slate-700 dark:text-slate-200">{authorName}</span>
+                            <div className="text-xs text-[var(--color-text-muted)]">
+                              <span className="font-medium text-[var(--color-text-secondary)]">{authorName}</span>
                               {' · '}
                               {note.created_at
                                 ? formatDateTime(String(note.created_at), locale, {
@@ -3523,7 +3523,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                                     }
                                   })();
                                 }}
-                                className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 disabled:opacity-50"
+                                className="p-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] disabled:opacity-50"
                                 aria-label={pinned ? t('centerNotes.unpin') : t('centerNotes.pin')}
                                 title={pinned ? t('centerNotes.unpin') : t('centerNotes.pin')}
                               >
@@ -3563,7 +3563,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                               </button>
                             </div>
                           </div>
-                          <p className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap">{String(note.body ?? '')}</p>
+                          <p className="text-sm text-[var(--color-text-primary)] whitespace-pre-wrap">{String(note.body ?? '')}</p>
                         </li>
                       );
                     })}
@@ -3575,7 +3575,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     value={opsNewNote}
                     onChange={(e) => setOpsNewNote(e.target.value)}
                     placeholder={t('centerNotes.placeholder')}
-                    className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm resize-none"
+                    className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm resize-none"
                   />
                   <button
                     type="button"
@@ -3611,15 +3611,15 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
               </section>
 
               <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('manualWA.title')}</h2>
+                <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('manualWA.title')}</h2>
                 <textarea
                   rows={4}
                   value={opsWaText}
                   onChange={(e) => setOpsWaText(e.target.value)}
                   placeholder={t('manualWA.placeholder')}
-                  className="w-full bg-gray-100 border border-gray-300 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-white rounded-lg px-3 py-2 text-sm resize-none mb-2"
+                  className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm resize-none mb-2"
                 />
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+                <p className="text-xs text-[var(--color-text-muted)] mb-3">
                   {t('manualWA.char_count', { count: formatNumber(opsWaText.length, locale) })}
                 </p>
                 <button
@@ -3667,15 +3667,15 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
               </section>
 
               <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('auditLog.title')}</h2>
+                <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('auditLog.title')}</h2>
                 {opsAuditLoading ? (
-                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('centerManagement.loading')}</p>
+                  <p className="text-sm text-[var(--color-text-muted)]">{t('centerManagement.loading')}</p>
                 ) : opsAuditLogs.length === 0 ? (
-                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('auditLog.no_logs')}</p>
+                  <p className="text-sm text-[var(--color-text-muted)]">{t('auditLog.no_logs')}</p>
                 ) : (
-                  <div className="overflow-x-auto rounded-lg border border-gray-300 dark:border-slate-600">
-                    <table className="w-full text-sm text-slate-800 dark:text-slate-200 min-w-[640px]">
-                      <thead className="bg-[var(--color-surface-0)] text-slate-500 dark:text-slate-400">
+                  <div className="overflow-x-auto rounded-lg border border-[var(--color-border-default)]">
+                    <table className="w-full text-sm text-[var(--color-text-primary)] min-w-[640px]">
+                      <thead className="bg-[var(--color-surface-0)] text-[var(--color-text-muted)]">
                         <tr>
                           <th className="text-start p-2 font-medium">{t('auditLog.col_date')}</th>
                           <th className="text-start p-2 font-medium">{t('auditLog.col_action')}</th>
@@ -3698,7 +3698,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                               {log.action != null && String(log.action) !== ''
                                 ? String(log.action)
                                 : (
-                                    <span className="text-slate-600 text-xs" aria-hidden>
+                                    <span className="text-[var(--color-text-muted)] text-xs" aria-hidden>
                                       -
                                     </span>
                                   )}
@@ -3707,7 +3707,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                               {log.actor_label != null && String(log.actor_label) !== ''
                                 ? String(log.actor_label)
                                 : (
-                                    <span className="text-slate-600 text-xs" aria-hidden>
+                                    <span className="text-[var(--color-text-muted)] text-xs" aria-hidden>
                                       -
                                     </span>
                                   )}
@@ -3724,17 +3724,17 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                                     : null;
                                 if (!d || Object.keys(d).length === 0) {
                                   return (
-                                    <span className="text-slate-600 text-xs" aria-hidden>
+                                    <span className="text-[var(--color-text-muted)] text-xs" aria-hidden>
                                       -
                                     </span>
                                   );
                                 }
                                 return (
-                                  <div className="text-xs text-slate-400 space-y-0.5">
+                                  <div className="text-xs text-[var(--color-text-muted)] space-y-0.5">
                                     {Object.entries(d).map(([k, v]) => (
                                       <div key={k}>
-                                        <span className="text-slate-500">{k}:</span>{' '}
-                                        <span className="text-slate-300">{String(v)}</span>
+                                        <span className="text-[var(--color-text-muted)]">{k}:</span>{' '}
+                                        <span className="text-[var(--color-text-secondary)]">{String(v)}</span>
                                       </div>
                                     ))}
                                   </div>
@@ -3750,51 +3750,51 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
               </section>
 
               <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">{t('centerManagement.section12.title')}</h2>
+                <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section12.title')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
                   <div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section12.id')}</div>
-                    <div className="text-sm font-medium text-slate-900 dark:text-slate-900 dark:text-white font-mono">{shortUuid(data?.center?.id)}</div>
+                    <div className="text-xs text-[var(--color-text-muted)] mb-1">{t('centerManagement.section12.id')}</div>
+                    <div className="text-sm font-medium text-[var(--color-text-primary)] font-mono">{shortUuid(data?.center?.id)}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section12.createdAt')}</div>
-                    <div className="text-sm font-medium text-slate-900 dark:text-white">{formatDate(data?.center?.created_at)}</div>
+                    <div className="text-xs text-[var(--color-text-muted)] mb-1">{t('centerManagement.section12.createdAt')}</div>
+                    <div className="text-sm font-medium text-[var(--color-text-primary)]">{formatDate(data?.center?.created_at)}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section12.approvedAt')}</div>
-                    <div className="text-sm font-medium text-slate-900 dark:text-white">{formatDate(data?.center?.approved_at)}</div>
+                    <div className="text-xs text-[var(--color-text-muted)] mb-1">{t('centerManagement.section12.approvedAt')}</div>
+                    <div className="text-sm font-medium text-[var(--color-text-primary)]">{formatDate(data?.center?.approved_at)}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section12.approvedBy')}</div>
-                    <div className="text-sm font-medium text-slate-900 dark:text-white">{getAdminName(data?.center?.approved_by)}</div>
+                    <div className="text-xs text-[var(--color-text-muted)] mb-1">{t('centerManagement.section12.approvedBy')}</div>
+                    <div className="text-sm font-medium text-[var(--color-text-primary)]">{getAdminName(data?.center?.approved_by)}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section12.healthScore')}</div>
-                    <div className="text-sm font-medium text-slate-900 dark:text-white">
+                    <div className="text-xs text-[var(--color-text-muted)] mb-1">{t('centerManagement.section12.healthScore')}</div>
+                    <div className="text-sm font-medium text-[var(--color-text-primary)]">
                       {data.center.health_score != null && !isNaN(Number(data.center.health_score))
                         ? formatNumber(Number(data.center.health_score), locale)
                         : tCommon('notSet')}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section12.healthBand')}</div>
-                    <div className="text-sm font-medium text-slate-900 dark:text-white">
+                    <div className="text-xs text-[var(--color-text-muted)] mb-1">{t('centerManagement.section12.healthBand')}</div>
+                    <div className="text-sm font-medium text-[var(--color-text-primary)]">
                       {data.center.health_score_band != null
                         ? String(data.center.health_score_band)
                         : tCommon('notSet')}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section12.onboardingStep')}</div>
-                    <div className="text-sm font-medium text-slate-900 dark:text-white">
+                    <div className="text-xs text-[var(--color-text-muted)] mb-1">{t('centerManagement.section12.onboardingStep')}</div>
+                    <div className="text-sm font-medium text-[var(--color-text-primary)]">
                       {data.center.onboarding_step != null
                         ? String(data.center.onboarding_step)
                         : tCommon('notSet')}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section12.onboardingCompleted')}</div>
-                    <div className="text-sm font-medium text-slate-900 dark:text-white">
+                    <div className="text-xs text-[var(--color-text-muted)] mb-1">{t('centerManagement.section12.onboardingCompleted')}</div>
+                    <div className="text-sm font-medium text-[var(--color-text-primary)]">
                       {data.center.onboarding_completed === true
                         ? '✅'
                         : data.center.onboarding_completed === false
@@ -3803,36 +3803,36 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section12.onboardingStarted')}</div>
-                    <div className="text-sm font-medium text-slate-900 dark:text-white">{formatDate(data?.center?.onboarding_started_at)}</div>
+                    <div className="text-xs text-[var(--color-text-muted)] mb-1">{t('centerManagement.section12.onboardingStarted')}</div>
+                    <div className="text-sm font-medium text-[var(--color-text-primary)]">{formatDate(data?.center?.onboarding_started_at)}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section12.lastPayment')}</div>
-                    <div className="text-sm font-medium text-slate-900 dark:text-white">{formatDate(data?.center?.last_payment_date)}</div>
+                    <div className="text-xs text-[var(--color-text-muted)] mb-1">{t('centerManagement.section12.lastPayment')}</div>
+                    <div className="text-sm font-medium text-[var(--color-text-primary)]">{formatDate(data?.center?.last_payment_date)}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section12.studentSequence')}</div>
-                    <div className="text-sm font-medium text-slate-900 dark:text-white">
+                    <div className="text-xs text-[var(--color-text-muted)] mb-1">{t('centerManagement.section12.studentSequence')}</div>
+                    <div className="text-sm font-medium text-[var(--color-text-primary)]">
                       {data.center.student_sequence != null && !isNaN(Number(data.center.student_sequence))
                         ? formatNumber(Number(data.center.student_sequence), locale)
                         : tCommon('notSet')}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section12.packActivatedAt')}</div>
-                    <div className="text-sm font-medium text-slate-900 dark:text-white">{formatDate(data?.center?.parent_pack_activated_at)}</div>
+                    <div className="text-xs text-[var(--color-text-muted)] mb-1">{t('centerManagement.section12.packActivatedAt')}</div>
+                    <div className="text-sm font-medium text-[var(--color-text-primary)]">{formatDate(data?.center?.parent_pack_activated_at)}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section12.packDisabledAt')}</div>
-                    <div className="text-sm font-medium text-slate-900 dark:text-white">{formatDate(data?.center?.pack_disabled_at)}</div>
+                    <div className="text-xs text-[var(--color-text-muted)] mb-1">{t('centerManagement.section12.packDisabledAt')}</div>
+                    <div className="text-sm font-medium text-[var(--color-text-primary)]">{formatDate(data?.center?.pack_disabled_at)}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section12.renewalReminder')}</div>
-                    <div className="text-sm font-medium text-slate-900 dark:text-white">{formatDate(data?.center?.renewal_reminder_sent_at)}</div>
+                    <div className="text-xs text-[var(--color-text-muted)] mb-1">{t('centerManagement.section12.renewalReminder')}</div>
+                    <div className="text-sm font-medium text-[var(--color-text-primary)]">{formatDate(data?.center?.renewal_reminder_sent_at)}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('centerManagement.section12.overdueReminder')}</div>
-                    <div className="text-sm font-medium text-slate-900 dark:text-white">{formatDate(data?.center?.overdue_reminder_sent_at)}</div>
+                    <div className="text-xs text-[var(--color-text-muted)] mb-1">{t('centerManagement.section12.overdueReminder')}</div>
+                    <div className="text-sm font-medium text-[var(--color-text-primary)]">{formatDate(data?.center?.overdue_reminder_sent_at)}</div>
                   </div>
                 </div>
               </section>

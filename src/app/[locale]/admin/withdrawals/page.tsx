@@ -152,13 +152,13 @@ export default function AdminWithdrawalsPage() {
             <button
               type="button"
               onClick={() => router.push('/admin')}
-              className="rounded-lg p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700"
+              className="rounded-lg p-1.5 hover:bg-[var(--color-surface-2)]"
               aria-label={tCommon('back')}
             >
               <DirectionalIcon icon={ArrowLeft} className="h-5 w-5 text-[var(--color-text-primary)]" />
             </button>
             <Wallet className="h-6 w-6 text-teal-600 dark:text-teal-400" aria-hidden />
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">{t('title')}</h1>
+            <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
           </div>
 
           <div className="mb-4 flex flex-wrap gap-2">
@@ -170,7 +170,7 @@ export default function AdminWithdrawalsPage() {
                 className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                   tab === k
                     ? 'bg-teal-600 text-white'
-                    : 'border border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+                    : 'border border-[var(--color-border-default)] bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-3)]'
                 }`}
               >
                 {t(`tab_${k}`)}
@@ -189,7 +189,7 @@ export default function AdminWithdrawalsPage() {
 
           {tab === 'pending' && !loading ? (
             <div className="mb-6 rounded-xl border border-teal-500/30 bg-teal-950/20 p-4 dark:bg-teal-950/30">
-              <p className="text-sm font-medium text-slate-800 dark:text-teal-100">
+              <p className="text-sm font-medium text-[var(--color-text-primary)]">
                 {t('summary', {
                   quarter: formatPlainInteger(quarter, locale),
                   year: String(year),
@@ -201,33 +201,33 @@ export default function AdminWithdrawalsPage() {
           ) : null}
 
           {loading ? (
-            <p className="text-slate-500 dark:text-slate-400">{tCommon('loading')}</p>
+            <p className="text-[var(--color-text-muted)]">{tCommon('loading')}</p>
           ) : rows.length === 0 ? (
             <div className="text-center py-16 text-[var(--color-text-muted)]">{tAdmin('noWithdrawals')}</div>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+            <div className="overflow-x-auto rounded-xl border border-[var(--color-border-subtle)]">
               <table className="w-full min-w-[880px] border-collapse text-start text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
-                    <th className="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">
+                  <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-2)]">
+                    <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">
                       {t('colCenter')}
                     </th>
-                    <th className="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">
+                    <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">
                       {t('colCredits')}
                     </th>
-                    <th className="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">
+                    <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">
                       {t('colCash')}
                     </th>
-                    <th className="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">
+                    <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">
                       {t('colInstapay')}
                     </th>
-                    <th className="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">
+                    <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">
                       {t('colRequested')}
                     </th>
-                    <th className="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">
+                    <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">
                       {tAdmin('status')}
                     </th>
-                    <th className="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">
+                    <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">
                       {t('colActions')}
                     </th>
                   </tr>
@@ -239,26 +239,26 @@ export default function AdminWithdrawalsPage() {
                     return (
                       <tr
                         key={r.id}
-                        className="border-b border-slate-100 dark:border-slate-700/80"
+                        className="border-b border-[var(--color-border-subtle)]"
                       >
-                        <td className="px-3 py-2 text-slate-900 dark:text-slate-100">
+                        <td className="px-3 py-2 text-[var(--color-text-primary)]">
                           {r.center_name ?? '-'}
                         </td>
-                        <td className="px-3 py-2 tabular-nums text-slate-800 dark:text-slate-200">
+                        <td className="px-3 py-2 tabular-nums text-[var(--color-text-primary)]">
                           {formatNumber(r.credits_deducted, locale)}
                         </td>
-                        <td className="px-3 py-2 tabular-nums text-slate-800 dark:text-slate-200">
+                        <td className="px-3 py-2 tabular-nums text-[var(--color-text-primary)]">
                           {formatNumber(r.cash_amount, locale)} {tCommon('egp')}
                         </td>
-                        <td className="px-3 py-2 font-mono text-slate-700 dark:text-slate-300" dir="ltr">
+                        <td className="px-3 py-2 font-mono text-[var(--color-text-secondary)]" dir="ltr">
                           {r.instapay_number ?? '-'}
                         </td>
-                        <td className="px-3 py-2 text-slate-600 dark:text-slate-400">
+                        <td className="px-3 py-2 text-[var(--color-text-muted)]">
                           {r.requested_at
                             ? formatDateTime(r.requested_at, locale)
                             : '-'}
                         </td>
-                        <td className="px-3 py-2 text-slate-700 dark:text-slate-300">
+                        <td className="px-3 py-2 text-[var(--color-text-secondary)]">
                           {st === 'paid' && r.processed_at
                             ? `${t('statusPaid')} · ${formatDateTime(r.processed_at, locale)}`
                             : st === 'rejected' && r.processed_at
@@ -292,7 +292,7 @@ export default function AdminWithdrawalsPage() {
                               </button>
                             </div>
                           ) : (
-                            <span className="text-slate-400">-</span>
+                            <span className="text-[var(--color-text-muted)]">-</span>
                           )}
                         </td>
                       </tr>

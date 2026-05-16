@@ -308,13 +308,13 @@ export default function AdminReferralsPage() {
             <button
               type="button"
               onClick={() => router.push('/admin')}
-              className="rounded-lg p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700"
+              className="rounded-lg p-1.5 hover:bg-[var(--color-surface-2)]"
               aria-label={tCommon('back')}
             >
               <DirectionalIcon icon={ArrowLeft} className="h-5 w-5 text-[var(--color-text-primary)]" />
             </button>
             <Gift className="h-6 w-6 text-teal-600 dark:text-teal-400" aria-hidden />
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">{t('pageTitle')}</h1>
+            <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('pageTitle')}</h1>
           </div>
 
           <div className="mb-4 flex flex-wrap gap-2">
@@ -324,7 +324,7 @@ export default function AdminReferralsPage() {
               className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                 mainTab === 'referrals'
                   ? 'bg-teal-600 text-white'
-                  : 'border border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+                  : 'border border-[var(--color-border-default)] bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-3)]'
               }`}
             >
               {t('tabReferrals')}
@@ -336,7 +336,7 @@ export default function AdminReferralsPage() {
                 className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                   mainTab === 'commissions'
                     ? 'bg-teal-600 text-white'
-                    : 'border border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+                    : 'border border-[var(--color-border-default)] bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-3)]'
                 }`}
               >
                 {t('tabCommissions')}
@@ -495,7 +495,7 @@ export default function AdminReferralsPage() {
             <>
               {summary ? (
                 <div className="mb-6 rounded-xl border border-teal-500/30 bg-teal-950/20 p-4 dark:bg-teal-950/30">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-teal-100 mb-2">
+                  <p className="text-sm font-semibold text-[var(--color-text-primary)] mb-2">
                     {!summary.quarterAll && summary.quarter != null && summary.year != null
                       ? t('commissionSummaryTitle', {
                           quarter: formatPlainInteger(summary.quarter, locale),
@@ -503,7 +503,7 @@ export default function AdminReferralsPage() {
                         })
                       : t('commissionSummaryAll')}
                   </p>
-                  <div className="grid gap-2 sm:grid-cols-3 text-sm text-slate-800 dark:text-slate-200">
+                  <div className="grid gap-2 sm:grid-cols-3 text-sm text-[var(--color-text-primary)]">
                     <p>
                       <span className="text-[var(--color-text-secondary)]">{t('totalOwed')}: </span>
                       <span className="font-mono font-semibold">
@@ -528,13 +528,13 @@ export default function AdminReferralsPage() {
 
               <div className="mb-4 flex flex-wrap items-end gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
+                  <label className="mb-1 block text-xs font-medium text-[var(--color-text-muted)]">
                     {t('filterStatus')}
                   </label>
                   <select
                     value={commissionStatus}
                     onChange={(e) => setCommissionStatus(e.target.value as 'all' | 'pending' | 'paid')}
-                    className="rounded-lg border border-slate-600 bg-[var(--color-surface-2)] px-3 py-2 text-sm text-slate-100"
+                    className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
                   >
                     <option value="all">{tAdmin('filterAll')}</option>
                     <option value="pending">{tAdmin('filterPending')}</option>
@@ -542,13 +542,13 @@ export default function AdminReferralsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
+                  <label className="mb-1 block text-xs font-medium text-[var(--color-text-muted)]">
                     {t('filterQuarter')}
                   </label>
                   <select
                     value={commissionQuarter}
                     onChange={(e) => setCommissionQuarter(e.target.value)}
-                    className="rounded-lg border border-slate-600 bg-[var(--color-surface-2)] px-3 py-2 text-sm text-slate-100"
+                    className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
                   >
                     {qOpts.map((o) => (
                       <option key={o.value} value={o.value}>
@@ -562,7 +562,7 @@ export default function AdminReferralsPage() {
                     type="button"
                     onClick={exportCsv}
                     disabled={commissions.length === 0}
-                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
+                    className="rounded-lg border border-[var(--color-border-default)] px-4 py-2 text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] disabled:opacity-50"
                   >
                     {tCommon('exportCsv')}
                   </button>
@@ -579,21 +579,21 @@ export default function AdminReferralsPage() {
               ) : null}
 
               {commissionsLoading ? (
-                <p className="text-slate-500 dark:text-slate-400">{tCommon('loading')}</p>
+                <p className="text-[var(--color-text-muted)]">{tCommon('loading')}</p>
               ) : commissions.length === 0 ? (
-                <p className="text-slate-500 dark:text-slate-400">{t('emptyCommissions')}</p>
+                <p className="text-[var(--color-text-muted)]">{t('emptyCommissions')}</p>
               ) : (
-                <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                <div className="overflow-x-auto rounded-xl border border-[var(--color-border-subtle)]">
                   <table className="w-full min-w-[900px] border-collapse text-start text-sm">
                     <thead>
-                      <tr className="border-b border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
-                        <th className="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">{t('colReferrer')}</th>
-                        <th className="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">{t('colReferred')}</th>
-                        <th className="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">{t('colMonth')}</th>
-                        <th className="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">{t('colRate')}</th>
-                        <th className="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">{t('colAmount')}</th>
-                        <th className="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">{t('colStatus')}</th>
-                        <th className="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">{t('colAction')}</th>
+                      <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-2)]">
+                        <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">{t('colReferrer')}</th>
+                        <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">{t('colReferred')}</th>
+                        <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">{t('colMonth')}</th>
+                        <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">{t('colRate')}</th>
+                        <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">{t('colAmount')}</th>
+                        <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">{t('colStatus')}</th>
+                        <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">{t('colAction')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -603,23 +603,23 @@ export default function AdminReferralsPage() {
                         return (
                           <Fragment key={row.id}>
                             {showGroup ? (
-                              <tr className="bg-slate-200/80 dark:bg-slate-800/90">
-                                <td colSpan={7} className="px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                              <tr className="bg-[var(--color-surface-2)]">
+                                <td colSpan={7} className="px-3 py-2 text-xs font-bold text-[var(--color-text-secondary)]">
                                   {t('groupReferrer', { name: row.referrer_name })}
                                 </td>
                               </tr>
                             ) : null}
-                            <tr className="border-b border-slate-100 dark:border-slate-700/80">
-                              <td className="px-3 py-2 text-slate-900 dark:text-slate-100">{row.referrer_name}</td>
-                              <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{row.referred_name}</td>
-                              <td className="px-3 py-2 tabular-nums text-slate-700 dark:text-slate-300">
+                            <tr className="border-b border-[var(--color-border-subtle)]">
+                              <td className="px-3 py-2 text-[var(--color-text-primary)]">{row.referrer_name}</td>
+                              <td className="px-3 py-2 text-[var(--color-text-secondary)]">{row.referred_name}</td>
+                              <td className="px-3 py-2 tabular-nums text-[var(--color-text-secondary)]">
                                 {(row.period_month || '').slice(0, 7)}
                               </td>
-                              <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{formatRatePct(row, locale)}</td>
-                              <td className="px-3 py-2 font-mono tabular-nums text-slate-800 dark:text-slate-200">
+                              <td className="px-3 py-2 text-[var(--color-text-secondary)]">{formatRatePct(row, locale)}</td>
+                              <td className="px-3 py-2 font-mono tabular-nums text-[var(--color-text-primary)]">
                                 {formatCurrency(row.commission_amount, locale)}
                               </td>
-                              <td className="px-3 py-2 text-slate-600 dark:text-slate-400">{statusLabel(row)}</td>
+                              <td className="px-3 py-2 text-[var(--color-text-muted)]">{statusLabel(row)}</td>
                               <td className="px-3 py-2">
                                 {row.status === 'withdrawable' ? (
                                   <button
@@ -631,7 +631,7 @@ export default function AdminReferralsPage() {
                                     {markingId === row.id ? tCommon('loading') : tAdmin('markAsPaid')}
                                   </button>
                                 ) : (
-                                  <span className="text-slate-400">-</span>
+                                  <span className="text-[var(--color-text-muted)]">-</span>
                                 )}
                               </td>
                             </tr>

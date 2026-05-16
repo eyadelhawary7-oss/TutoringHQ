@@ -176,7 +176,7 @@ export default function AdminHealthPage() {
 
   if (!gateOk) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-slate-500 dark:text-slate-400">
+      <div className="min-h-screen flex items-center justify-center text-[var(--color-text-muted)]">
         {tCommon('loading')}
       </div>
     );
@@ -203,10 +203,10 @@ export default function AdminHealthPage() {
         <div className="flex items-start gap-3 mb-1">
           <Activity className="h-8 w-8 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
           <div>
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-white">{t('healthTitle')}</h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t('healthSubtitle')}</p>
+            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('healthTitle')}</h1>
+            <p className="text-sm text-[var(--color-text-muted)] mt-1">{t('healthSubtitle')}</p>
             {updatedAt ? (
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-mono" suppressHydrationWarning>
+              <p className="text-xs text-[var(--color-text-muted)] mt-2 font-mono" suppressHydrationWarning>
                 {t('healthLastUpdated')}{' '}
                 {formatDate(updatedAt, locale, ADMIN_RAN_AT_OPTS)}
               </p>
@@ -215,7 +215,7 @@ export default function AdminHealthPage() {
         </div>
 
         {loading && !data ? (
-          <p className="text-slate-500 dark:text-slate-400 mt-10">{tCommon('loading')}</p>
+          <p className="text-[var(--color-text-muted)] mt-10">{tCommon('loading')}</p>
         ) : error && !data ? (
           <p className="text-red-600 dark:text-red-400 mt-10">{error}</p>
         ) : data ? (
@@ -242,7 +242,7 @@ export default function AdminHealthPage() {
             </section>
 
             <section>
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-3">
                 {t('healthQuickStats')}
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -283,14 +283,14 @@ export default function AdminHealthPage() {
                             : ''
                       }`}
                     >
-                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{c.label}</p>
+                      <p className="text-xs text-[var(--color-text-muted)] font-medium">{c.label}</p>
                       <p
                         className={`text-2xl font-bold font-mono mt-2 ${
                           bad
                             ? 'text-red-600 dark:text-red-400'
                             : ok
                               ? 'text-green-600 dark:text-green-400'
-                              : 'text-slate-800 dark:text-white'
+                              : 'text-[var(--color-text-primary)]'
                         }`}
                       >
                         {formatNumber(Number(c.value), locale)}
@@ -302,13 +302,13 @@ export default function AdminHealthPage() {
             </section>
 
             <section>
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-3">
                 {t('healthCronStatus')}
               </h2>
               <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] overflow-x-auto">
                 <table className="w-full text-sm text-start">
                   <thead>
-                    <tr className="border-b border-gray-200 dark:border-slate-700 bg-[var(--color-surface-0)]">
+                    <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
                       <th className="p-3 font-medium text-[var(--color-text-primary)]">
                         {t('healthColCron')}
                       </th>
@@ -346,7 +346,7 @@ export default function AdminHealthPage() {
                               setCronDetailRow(row);
                             }
                           }}
-                          className={`border-b border-gray-100 dark:border-slate-700 last:border-0 hover:bg-[var(--color-surface-2)] cursor-pointer ${
+                          className={`border-b border-[var(--color-border-subtle)] last:border-0 hover:bg-[var(--color-surface-2)] cursor-pointer ${
                             errRow ? 'bg-red-50 dark:bg-red-950/35' : stale ? 'bg-amber-50 dark:bg-amber-950/20' : ''
                           }`}
                         >
@@ -437,17 +437,17 @@ export default function AdminHealthPage() {
             </section>
 
             <section>
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-3">
                 {t('healthPendingActions')}
               </h2>
-              <ul className="space-y-2 text-slate-700 dark:text-slate-300">
+              <ul className="space-y-2 text-[var(--color-text-secondary)]">
                 <li>
                   <Link
                     href="/admin"
                     className="text-teal-600 dark:text-teal-400 hover:underline inline-flex items-center gap-2"
                   >
                     {t('healthPendingCancellations')}{' '}
-                    <span className="font-mono text-slate-500 dark:text-slate-400">({data.pending_cancellations})</span>
+                    <span className="font-mono text-[var(--color-text-muted)]">({data.pending_cancellations})</span>
                   </Link>
                 </li>
                 <li>
@@ -456,7 +456,7 @@ export default function AdminHealthPage() {
                     className="text-teal-600 dark:text-teal-400 hover:underline inline-flex items-center gap-2"
                   >
                     {t('healthPendingWithdrawals')}{' '}
-                    <span className="font-mono text-slate-500 dark:text-slate-400">({data.pending_withdrawals})</span>
+                    <span className="font-mono text-[var(--color-text-muted)]">({data.pending_withdrawals})</span>
                   </Link>
                 </li>
                 <li>
@@ -465,7 +465,7 @@ export default function AdminHealthPage() {
                     className="text-teal-600 dark:text-teal-400 hover:underline inline-flex items-center gap-2"
                   >
                     {t('healthPendingSignupsLink')}{' '}
-                    <span className="font-mono text-slate-500 dark:text-slate-400">({data.pending_signups})</span>
+                    <span className="font-mono text-[var(--color-text-muted)]">({data.pending_signups})</span>
                   </Link>
                 </li>
               </ul>
@@ -490,7 +490,7 @@ export default function AdminHealthPage() {
               </h2>
               <p className="text-sm font-mono text-[var(--color-text-secondary)] mb-4">{cronDetailRow.path}</p>
 
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-2">
                 {t('health.errorModal.stackHeading')}
               </h3>
               {cronDetailRow.last_error_stack?.trim() ? (
@@ -501,7 +501,7 @@ export default function AdminHealthPage() {
                 <p className="text-sm text-[var(--color-text-secondary)] mb-6">{t('health.errorModal.noStack')}</p>
               )}
 
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-2">
                 {t('health.errorModal.recentErrorsHeading')}
               </h3>
               {cronDetailRow.recent_failures.length === 0 ? (

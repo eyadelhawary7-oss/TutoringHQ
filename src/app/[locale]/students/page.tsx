@@ -1018,13 +1018,13 @@ export default function StudentsPage() {
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
               <Link
                 href="/students/import"
-                className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow"
+                className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow"
               >
                 <Upload size={16} /> {ts('import')}
               </Link>
               <Link
                 href="/orders"
-                className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow btn-press chq-focus"
+                className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow btn-press chq-focus"
                 aria-label={ts('order_cards')}
               >
                 <ShoppingCart size={16} />
@@ -1037,7 +1037,7 @@ export default function StudentsPage() {
               </Link>
               <Link
                 href="/students/pending"
-                className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow btn-press chq-focus"
+                className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow btn-press chq-focus"
                 aria-label={ts('pendingRequests')}
               >
                 <Inbox size={16} /> {ts('pendingRequests')}
@@ -1056,7 +1056,7 @@ export default function StudentsPage() {
                     setAnnouncementMessage('');
                     setShowAnnouncementModal(true);
                   }}
-                  className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow disabled:opacity-50 disabled:cursor-not-allowed btn-press chq-focus"
+                  className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow disabled:opacity-50 disabled:cursor-not-allowed btn-press chq-focus"
                 >
                   {ts('sendAnnouncement')}
                 </button>
@@ -1074,27 +1074,27 @@ export default function StudentsPage() {
           <div className="grid grid-cols-2 gap-3 mb-4">
             {students === null ? (
               <>
-                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-4 card-shadow flex flex-col gap-2" aria-hidden>
+                <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 card-shadow flex flex-col gap-2" aria-hidden>
                   <div className="h-3 w-24 rounded bg-[var(--color-surface-2)] animate-pulse" />
                   <div className="h-7 w-16 rounded bg-[var(--color-surface-2)] animate-pulse" />
                 </div>
-                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-4 card-shadow flex flex-col gap-2" aria-hidden>
+                <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 card-shadow flex flex-col gap-2" aria-hidden>
                   <div className="h-3 w-28 rounded bg-[var(--color-surface-2)] animate-pulse" />
                   <div className="h-7 w-12 rounded bg-[var(--color-surface-2)] animate-pulse" />
                 </div>
               </>
             ) : (
               <>
-                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-4 card-shadow flex flex-col gap-1">
-                  <span className="text-slate-500 dark:text-[var(--color-text-muted)] text-xs font-medium">{ts('total_students')}</span>
+                <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 card-shadow flex flex-col gap-1">
+                  <span className="text-[var(--color-text-muted)] text-xs font-medium">{ts('total_students')}</span>
                   <span
-                    className={`text-lg font-bold text-slate-900 dark:text-white tabular-nums transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}
+                    className={`text-lg font-bold text-[var(--color-text-primary)] tabular-nums transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}
                   >
                     {formatNumber(studentsList.length, locale)}
                   </span>
                 </div>
-                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-4 card-shadow flex flex-col gap-1">
-                  <span className="text-slate-500 dark:text-[var(--color-text-muted)] text-xs font-medium">{ts('active_students')}</span>
+                <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 card-shadow flex flex-col gap-1">
+                  <span className="text-[var(--color-text-muted)] text-xs font-medium">{ts('active_students')}</span>
                   <span
                     className={`text-lg font-bold text-teal-600 dark:text-teal-400 tabular-nums transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}
                   >
@@ -1110,7 +1110,7 @@ export default function StudentsPage() {
 
           <div className="rounded-xl bg-[var(--color-surface-1)] mb-3 ring-1 ring-slate-200 dark:ring-slate-700 border-0 shadow-sm focus-within:ring-2 focus-within:ring-teal-500 transition-shadow duration-150">
             <div className="relative">
-              <Search size={18} className="absolute top-1/2 -translate-y-1/2 start-4 text-[var(--color-text-muted)] dark:text-slate-500 pointer-events-none" />
+              <Search size={18} className="absolute top-1/2 -translate-y-1/2 start-4 text-[var(--color-text-muted)] pointer-events-none" />
               <input
                 type="search"
                 value={searchQuery}
@@ -1119,7 +1119,7 @@ export default function StudentsPage() {
                   setFilterKey((k) => k + 1);
                 }}
                 placeholder={ts('search_placeholder')}
-                className="w-full bg-transparent ps-12 pe-4 py-3 text-sm text-slate-900 dark:text-white placeholder:text-[var(--color-text-muted)] dark:placeholder:text-slate-500 outline-none border-0 rounded-xl"
+                className="w-full bg-transparent ps-12 pe-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none border-0 rounded-xl"
                 dir="auto"
               />
             </div>
@@ -1136,7 +1136,7 @@ export default function StudentsPage() {
                 className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 ${
                   subjectFilter === null
                     ? 'bg-teal-600 text-white shadow-sm'
-                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-[var(--color-text-secondary)] hover:bg-slate-200 dark:hover:bg-slate-600'
+                    : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-3)]'
                 } btn-press chq-focus`}
               >
                 {ts('allGroups')}
@@ -1152,7 +1152,7 @@ export default function StudentsPage() {
                   className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 ${
                     subjectFilter === sub
                       ? 'bg-teal-600 text-white shadow-sm'
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-[var(--color-text-secondary)] hover:bg-slate-200 dark:hover:bg-slate-600'
+                      : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-3)]'
                   } btn-press chq-focus`}
                 >
                   {sub}
@@ -1173,7 +1173,7 @@ export default function StudentsPage() {
                   className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 ${
                     lifecycleFilter === f
                       ? 'bg-teal-600 text-white shadow-sm'
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-[var(--color-text-secondary)] hover:bg-slate-200 dark:hover:bg-slate-600'
+                      : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-3)]'
                   } btn-press chq-focus`}
                 >
                   {ts(lifecycleFilterLabelKey(f))}
@@ -1182,7 +1182,7 @@ export default function StudentsPage() {
             </div>
               <button
                 type="button"
-                className="shrink-0 rounded-full p-2 text-teal-600 hover:bg-slate-100 dark:text-teal-400 dark:hover:bg-slate-800 btn-press chq-focus"
+                className="shrink-0 rounded-full p-2 text-teal-600 hover:bg-[var(--color-surface-2)] btn-press chq-focus"
                 aria-label={ts('statusHelpTitle')}
                 onClick={() => setStatusHelpOpen(true)}
               >
@@ -1201,7 +1201,7 @@ export default function StudentsPage() {
                 className={`px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 ${
                   sortBy === 'name'
                     ? 'bg-teal-600 text-white shadow-sm'
-                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-[var(--color-text-secondary)]'
+                    : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'
                 } btn-press chq-focus`}
               >
                 {ts('sortName')}
@@ -1215,7 +1215,7 @@ export default function StudentsPage() {
                 className={`px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 ${
                   sortBy === 'balance'
                     ? 'bg-teal-600 text-white shadow-sm'
-                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-[var(--color-text-secondary)]'
+                    : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'
                 } btn-press chq-focus`}
               >
                 {ts('sortBalance')}
@@ -1229,24 +1229,24 @@ export default function StudentsPage() {
 
           {students === null ? (
             <div className="space-y-3" aria-busy="true">
-              <div className="hidden md:block rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] overflow-hidden card-shadow">
+              <div className="hidden md:block rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] overflow-hidden card-shadow">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-[var(--color-surface-2)]">
-                        <th className="px-4 py-3 text-start font-semibold text-slate-700 dark:text-slate-200">
+                        <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-secondary)]">
                           {ts('name')}
                         </th>
-                        <th className="px-4 py-3 text-start font-semibold text-slate-700 dark:text-slate-200">
+                        <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-secondary)]">
                           {ts('studentId')}
                         </th>
-                        <th className="px-4 py-3 text-start font-semibold text-slate-700 dark:text-slate-200">
+                        <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-secondary)]">
                           {ts('parentPhone')}
                         </th>
-                        <th className="px-4 py-3 text-start font-semibold text-slate-700 dark:text-slate-200">
+                        <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-secondary)]">
                           {ts('balance')}
                         </th>
-                        <th className="px-4 py-3 text-end font-semibold text-slate-700 dark:text-slate-200">
+                        <th className="px-4 py-3 text-end font-semibold text-[var(--color-text-secondary)]">
                           {tCommon('actions')}
                         </th>
                       </tr>
@@ -1255,7 +1255,7 @@ export default function StudentsPage() {
                       {[...Array(8)].map((_, i) => (
                         <tr
                           key={i}
-                          className="border-b border-slate-100 dark:border-slate-700 last:border-b-0 transition-colors duration-150"
+                          className="border-b border-[var(--color-border-subtle)] last:border-b-0 transition-colors duration-150"
                         >
                           <td className="px-4 py-4 align-top">
                             <div className="flex items-start gap-2">
@@ -1288,7 +1288,7 @@ export default function StudentsPage() {
                 {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
-                    className="card p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] card-shadow"
+                    className="card p-4 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow"
                   >
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-9 h-9 rounded-full shrink-0 bg-[var(--color-surface-2)] animate-pulse" />
@@ -1335,7 +1335,7 @@ export default function StudentsPage() {
                 </div>
               ) : (
                 <>
-                  <div className="hidden md:block rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] overflow-hidden mb-2 card-shadow">
+                  <div className="hidden md:block rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] overflow-hidden mb-2 card-shadow">
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
@@ -1369,19 +1369,19 @@ export default function StudentsPage() {
                                 }}
                               />
                             </th>
-                            <th className="px-4 py-3 text-start font-semibold text-slate-700 dark:text-slate-200">
+                            <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-secondary)]">
                               {ts('name')}
                             </th>
-                            <th className="px-4 py-3 text-start font-semibold text-slate-700 dark:text-slate-200">
+                            <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-secondary)]">
                               {ts('studentId')}
                             </th>
-                            <th className="px-4 py-3 text-start font-semibold text-slate-700 dark:text-slate-200">
+                            <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-secondary)]">
                               {ts('parentPhone')}
                             </th>
-                            <th className="px-4 py-3 text-start font-semibold text-slate-700 dark:text-slate-200">
+                            <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-secondary)]">
                               {ts('balance')}
                             </th>
-                            <th className="px-4 py-3 text-end font-semibold text-slate-700 dark:text-slate-200">
+                            <th className="px-4 py-3 text-end font-semibold text-[var(--color-text-secondary)]">
                               {tCommon('actions')}
                             </th>
                           </tr>
@@ -1395,7 +1395,7 @@ export default function StudentsPage() {
                             return (
                               <tr
                                 key={s.id}
-                                className="transition-colors duration-150 hover:bg-slate-700/50"
+                                className="transition-colors duration-150 hover:bg-[var(--color-surface-2)]"
                               >
                                 <td className="px-2 py-4 align-top">
                                   <input
@@ -1434,7 +1434,7 @@ export default function StudentsPage() {
                                       <button
                                         type="button"
                                         data-parent-phone-trigger
-                                        className="inline-flex items-center justify-center rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-slate-600 btn-press chq-focus"
+                                        className="inline-flex items-center justify-center rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] btn-press chq-focus"
                                         aria-label={ts('addParentPhone')}
                                         onClick={() => {
                                           setOpenPopoverId(s.id);
@@ -1486,7 +1486,7 @@ export default function StudentsPage() {
                                           </button>
                                           <button
                                             type="button"
-                                            className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-700/50 dark:border-slate-600 dark:text-[var(--color-text-secondary)] btn-press chq-focus"
+                                            className="rounded-lg border border-[var(--color-border-default)] px-3 py-2 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] btn-press chq-focus"
                                             onClick={() => setOpenPopoverId(null)}
                                           >
                                             {ts('cancel')}
@@ -1502,7 +1502,7 @@ export default function StudentsPage() {
                                       {formatCurrency(balNum, locale)}
                                     </span>
                                   ) : (
-                                    <span className="text-sm text-[var(--color-text-muted)] dark:text-slate-500">{ts('no_balance')}</span>
+                                    <span className="text-sm text-[var(--color-text-muted)]">{ts('no_balance')}</span>
                                   )}
                                 </td>
                                 <td className="px-4 py-4 align-top text-end">
@@ -1510,7 +1510,7 @@ export default function StudentsPage() {
                                     <button
                                       type="button"
                                       onClick={() => openEdit(s)}
-                                      className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-600 dark:text-[var(--color-text-secondary)] transition-colors duration-150 btn-press chq-focus"
+                                      className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] transition-colors duration-150 btn-press chq-focus"
                                       title={tCommon('edit')}
                                     >
                                       <Edit size={18} />
@@ -1518,7 +1518,7 @@ export default function StudentsPage() {
                                     <button
                                       type="button"
                                       onClick={() => openQRModal(s)}
-                                      className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-600 dark:text-[var(--color-text-secondary)] transition-colors duration-150 btn-press chq-focus"
+                                      className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] transition-colors duration-150 btn-press chq-focus"
                                       title={ts('viewQR')}
                                     >
                                       <Eye size={18} />
@@ -1705,7 +1705,7 @@ export default function StudentsPage() {
                                     </button>
                                     <button
                                       type="button"
-                                      className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-700/50 btn-press chq-focus"
+                                      className="rounded-lg border border-[var(--color-border-default)] px-3 py-2 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] btn-press chq-focus"
                                       onClick={() => setOpenPopoverId(null)}
                                     >
                                       {ts('cancel')}
@@ -1757,7 +1757,7 @@ export default function StudentsPage() {
                             </div>
                           </div>
                         ) : (
-                          <p className="text-xs text-[var(--color-text-muted)] dark:text-slate-500">{ts('no_balance')}</p>
+                          <p className="text-xs text-[var(--color-text-muted)]">{ts('no_balance')}</p>
                         )}
 
                         {user?.center?.parent_pack_enabled === true && (
@@ -1790,7 +1790,7 @@ export default function StudentsPage() {
                                     e.stopPropagation();
                                     if (canOptIn) void handlePackToggle(s);
                                   }}
-                                  className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${s.parent_pack_opted_in ? 'bg-teal-600' : 'bg-slate-200'} btn-press chq-focus`}
+                                  className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${s.parent_pack_opted_in ? 'bg-teal-600' : 'bg-[var(--color-surface-3)]'} btn-press chq-focus`}
                                 >
                                   {/* RTL-EXEMPT: knob uses physical translateX until refactored to inset-based thumb */}
                                   <span
@@ -1868,7 +1868,7 @@ export default function StudentsPage() {
                 })}
                   </div>
                   {studentTotalPages > 1 ? (
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] card-shadow">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow">
                       <span className="text-sm text-[var(--color-text-secondary)]">
                         {ts('pageOf', { page: studentPageClamped, total: studentTotalPages })}
                       </span>

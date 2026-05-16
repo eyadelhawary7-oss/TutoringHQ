@@ -271,7 +271,7 @@ export default function AdminInternalTeamPage() {
           onClick={() => setShowAdd(false)}
         >
           <div
-            className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full max-h-[90vh] overflow-y-auto bg-[var(--color-surface-1)]"
+            className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 max-w-sm mx-4 w-full max-h-[90vh] overflow-y-auto bg-[var(--color-surface-1)]"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="font-bold text-[var(--color-text-primary)] mb-4">{t('inviteTeamMember')}</h3>

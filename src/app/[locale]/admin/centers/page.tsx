@@ -807,7 +807,7 @@ function AdminCentersPageInner() {
                 const rendered: ReactNode = row.isPlan ? (
                   <PlanBadge plan={row.value ?? ''} />
                 ) : showEmpty ? (
-                  <span className="text-slate-500 text-xs italic">{row.empty ?? tCommon('notSet')}</span>
+                  <span className="text-[var(--color-text-muted)] text-xs italic">{row.empty ?? tCommon('notSet')}</span>
                 ) : (
                   <p className="font-medium text-[var(--color-text-primary)]">{row.value}</p>
                 );
@@ -829,7 +829,7 @@ function AdminCentersPageInner() {
           onClick={() => setShowSuspendConfirm(null)}
         >
           <div
-            className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full bg-[var(--color-surface-1)]"
+            className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 max-w-sm mx-4 w-full bg-[var(--color-surface-1)]"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="font-bold text-[var(--color-text-primary)] mb-2">{t('confirmSuspend')}</h3>

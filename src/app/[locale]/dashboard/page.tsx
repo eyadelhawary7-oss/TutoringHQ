@@ -220,7 +220,7 @@ function KpiCommandCard({
     growth.current < growth.prior;
   return (
     <div
-      className="relative chq-fade-in rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4"
+      className="relative chq-fade-in rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4"
       style={{ animationDelay: `${delayMs}ms` }}
     >
       <div className="absolute top-4 end-4 text-teal-500" aria-hidden>
@@ -1031,7 +1031,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Link
             href="/scan"
-            className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-center transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+            className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-6 text-center transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
           >
             <QrCode className="mx-auto mb-3 h-14 w-14 text-teal-500" strokeWidth={1.5} />
             <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('action_scan')}</h2>
@@ -1039,7 +1039,7 @@ export default function DashboardPage() {
           </Link>
           <Link
             href="/payments"
-            className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+            className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-6 transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
           >
             <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)]">{t('unpaidCount')}</p>
             <p
@@ -1051,7 +1051,7 @@ export default function DashboardPage() {
             <p className="mt-2 text-sm text-teal-400">{t('goToPayments')}</p>
           </Link>
         </div>
-        <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+        <div className="mt-4 rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
           <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)]">{t('stats.attendance_today')}</p>
           <p
             className={`mt-1 text-2xl font-bold text-[var(--color-text-primary)] tabular-nums transition-opacity duration-300 ${kpiStale ? 'opacity-70' : 'opacity-100'}`}
@@ -1142,7 +1142,7 @@ export default function DashboardPage() {
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="relative min-h-[136px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4"
+                className="relative min-h-[136px] rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4"
                 aria-hidden
               >
                 <div className="absolute top-4 end-4 h-4 w-4 rounded bg-[var(--color-surface-2)] animate-pulse" />
@@ -1154,20 +1154,20 @@ export default function DashboardPage() {
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
             <div className="md:col-span-3">
-              <div className="flex min-h-[200px] flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+              <div className="flex min-h-[200px] flex-col rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
                 <div className="mb-3 h-4 w-40 rounded bg-[var(--color-surface-2)] animate-pulse" />
                 <div className="h-[168px] w-full rounded-lg bg-[var(--color-surface-2)] animate-pulse" />
               </div>
             </div>
             <div className="flex flex-col md:col-span-2">
-              <div className="flex min-h-[240px] flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+              <div className="flex min-h-[240px] flex-col rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
                 <div className="mb-2 h-3 w-28 rounded bg-[var(--color-surface-2)] animate-pulse" />
                 <div className="min-h-0 flex-1 rounded-xl bg-[var(--color-surface-2)] animate-pulse" />
               </div>
             </div>
           </div>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+            <div className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
               <div className="mb-3 h-4 w-32 rounded bg-[var(--color-surface-2)] animate-pulse" />
               {[1, 2, 3].map((i) => (
                 <div
@@ -1182,7 +1182,7 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
-            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+            <div className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
               <div className="mb-3 h-4 w-36 rounded bg-[var(--color-surface-2)] animate-pulse" />
               {[1, 2, 3, 4].map((i) => (
                 <div
@@ -1324,7 +1324,7 @@ export default function DashboardPage() {
               </ChartCard>
             </div>
             <div className="flex flex-col md:col-span-2">
-              <div className="flex h-full min-h-[240px] flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+              <div className="flex h-full min-h-[240px] flex-col rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
                 <p className="text-xs uppercase tracking-wide text-[var(--color-text-muted)]">{t('paymentStatus')}</p>
                 <div className="min-h-0 flex-1">
                   <DonutChart
@@ -1358,7 +1358,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="mb-6 grid max-w-6xl grid-cols-1 gap-4 lg:grid-cols-2">
-            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+            <div className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
               <div className="mb-1 flex items-start justify-between gap-2">
                 <div>
                   <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{t('atRisk')}</h2>
@@ -1431,7 +1431,7 @@ export default function DashboardPage() {
               )}
             </div>
 
-            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+            <div className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
               <h2 className="mb-3 text-sm font-semibold text-[var(--color-text-primary)]">{t('quickActions')}</h2>
               <div className="flex flex-col gap-2">
                 <Link

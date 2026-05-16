@@ -779,7 +779,7 @@ function SettingsPageContent() {
       <div className="min-h-screen w-full bg-[var(--color-surface-0)] page-enter" dir={isRTL ? 'rtl' : 'ltr'}>
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           <PageHeader title={t('title')} />
-          <div className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow p-6 space-y-4">
+          <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow p-6 space-y-4">
             <p className="text-sm text-[var(--color-text-secondary)]">{t('platformAdminSettingsHint')}</p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
@@ -859,14 +859,14 @@ function SettingsPageContent() {
         {activeTab === 'general' && (
           <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-200px)] pb-4">
             {/* 1. Center Information */}
-            <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] card-shadow mb-4">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
               <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
                 <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
                   <Building2 className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-semibold text-[var(--color-text-primary)]">{t('centerInfo')}</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('centerName')} · {t('centerPhone')}</p>
+                  <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('centerName')} · {t('centerPhone')}</p>
                 </div>
               </div>
               <div className="p-6">
@@ -971,14 +971,14 @@ function SettingsPageContent() {
             </div>
 
             {/* 2. Subject Management */}
-            <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] card-shadow mb-4">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
               <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
                 <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
                   <BookOpen className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-semibold text-[var(--color-text-primary)]">{t('subjects')}</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('subjectName')}</p>
+                  <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('subjectName')}</p>
                 </div>
               </div>
               <div className="p-6">
@@ -1007,18 +1007,18 @@ function SettingsPageContent() {
             </div>
 
             {/* 3. Team Members */}
-            <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] card-shadow mb-4">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
               <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
                 <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
                   <Users className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-semibold text-[var(--color-text-primary)]">{t('teamMembers')}</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('manageTeamDesc')}</p>
+                  <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('manageTeamDesc')}</p>
                 </div>
               </div>
               <div className="p-6">
-                <button type="button" onClick={() => setActiveTab('team')} className="flex items-center gap-2 px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors w-fit">
+                <button type="button" onClick={() => setActiveTab('team')} className="flex items-center gap-2 px-4 py-2 border border-[var(--color-border-default)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors w-fit">
                   <Users className="w-4 h-4" /> {t('manageTeam')}{' '}
                   <DirectionalIcon icon={ChevronRight} className="inline w-4 h-4 ms-1 align-middle" />
                 </button>
@@ -1026,14 +1026,14 @@ function SettingsPageContent() {
             </div>
 
             {/* 4. Scanner Settings */}
-            <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] card-shadow mb-4">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
               <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
                 <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
                   <QrCode className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-semibold text-[var(--color-text-primary)]">{t('scannerTitle')}</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('defaultMode')}</p>
+                  <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('defaultMode')}</p>
                 </div>
               </div>
               <div className="p-6">
@@ -1051,21 +1051,21 @@ function SettingsPageContent() {
             </div>
 
             {/* 4b. Daily WhatsApp Summary */}
-            <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] card-shadow mb-4">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
               <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
                 <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
                   <MessageCircle className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-semibold text-[var(--color-text-primary)]">{t('dailySummary')}</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('dailySummaryDesc')}</p>
+                  <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('dailySummaryDesc')}</p>
                 </div>
               </div>
               <div className="p-6">
                 <div className="flex items-center justify-between gap-4">
                   <div id={dailySummarySwitchId} className="min-w-0">
                     <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('dailySummaryToggle')}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t('dailySummaryDesc')}</p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{t('dailySummaryDesc')}</p>
                   </div>
                   <SettingsSwitch
                     checked={dailySummaryEnabled}
@@ -1077,21 +1077,21 @@ function SettingsPageContent() {
             </div>
 
             {/* 4c. Summer mode */}
-            <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] card-shadow mb-4">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
               <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
                 <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
                   <Calendar className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-semibold text-[var(--color-text-primary)]">{t('summerMode')}</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('summerModeDesc')}</p>
+                  <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('summerModeDesc')}</p>
                 </div>
               </div>
               <div className="p-6">
                 <div className="flex items-center justify-between gap-4">
                   <div id={summerSwitchId} className="min-w-0">
                     <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('summerModeToggle')}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t('summerModeDesc')}</p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{t('summerModeDesc')}</p>
                   </div>
                   <SettingsSwitch
                     checked={summerModeEnabled}
@@ -1104,14 +1104,14 @@ function SettingsPageContent() {
 
             {/* Financial Settings (owner - InstaPay for withdrawals) */}
             {currentUser?.role === 'owner' || currentUser?.role === 'super_admin' ? (
-              <div className="bg-[var(--color-surface-1)] dark:bg-slate-800 rounded-2xl border border-[var(--color-border-subtle)] p-6 mb-4 card-shadow">
+              <div className="bg-[var(--color-surface-1)] dark:bg-slate-800 rounded-xl border border-[var(--color-border-subtle)] p-6 mb-4 card-shadow">
                 <div className="flex items-center gap-4 mb-6">
                   <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
                     <Wallet className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                   </div>
                   <div className="min-w-0">
                     <h3 className="font-semibold text-[var(--color-text-primary)]">{t('financialSettingsTitle')}</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('financialSettingsSubtitle')}</p>
+                    <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('financialSettingsSubtitle')}</p>
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -1187,14 +1187,14 @@ function SettingsPageContent() {
             ) : null}
 
             {/* 5. Referral Program */}
-            <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] card-shadow mb-4">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
               <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
                 <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
                   <Gift className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-semibold text-[var(--color-text-primary)]">{tReferral('title')}</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
                     {tReferral('shareText', {
                       p25: formatNumber(25, locale),
                       p10: formatNumber(10, locale),
@@ -1222,7 +1222,7 @@ function SettingsPageContent() {
                           setTimeout(() => setReferralCopied(false), 2000);
                         }
                       }}
-                      className="flex items-center gap-2 px-4 py-2 border border-slate-300 dark:border-slate-600 hover:bg-[var(--color-surface-1)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors shrink-0"
+                      className="flex items-center gap-2 px-4 py-2 border border-[var(--color-border-default)] hover:bg-[var(--color-surface-1)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors shrink-0"
                     >
                       <Copy className="w-4 h-4 shrink-0" aria-hidden />
                       {referralCopied ? tReferral('copied') : tReferral('copyCode')}
@@ -1293,27 +1293,27 @@ function SettingsPageContent() {
 
             <Link
               href="/settings/billing"
-              className="group flex items-center gap-4 w-full p-6 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow btn-lift mb-4 text-start transition-colors hover:border-teal-500/30"
+              className="group flex items-center gap-4 w-full p-6 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow btn-lift mb-4 text-start transition-colors hover:border-teal-500/30"
             >
               <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
                 <CreditCard className="w-5 h-5 text-teal-600 dark:text-teal-400" aria-hidden />
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-[var(--color-text-primary)]">{t('billingCardTitle')}</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('billingDesc')}</p>
+                <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('billingDesc')}</p>
               </div>
               <DirectionalIcon icon={ChevronRight} className="w-6 h-6 text-teal-600 dark:text-teal-400 shrink-0" aria-hidden />
             </Link>
 
             {/* 7. WhatsApp Support */}
-            <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] card-shadow mb-4">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
               <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
                 <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
                   <MessageCircle className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-semibold text-[var(--color-text-primary)]">{tBilling('whatsappSupport')}</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{tBilling('contactSupportViaWhatsapp')}</p>
+                  <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{tBilling('contactSupportViaWhatsapp')}</p>
                 </div>
               </div>
               <div className="p-6">
@@ -1338,19 +1338,19 @@ function SettingsPageContent() {
             </div>
 
             {/* 8. Account */}
-            <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] card-shadow mb-4">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
               <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
                 <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
                   <Shield className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-semibold text-[var(--color-text-primary)]">{t('account')}</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{tBilling('securityAndSignOut')}</p>
+                  <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{tBilling('securityAndSignOut')}</p>
                 </div>
               </div>
               <div className="p-6">
                 <div className="flex items-center gap-3">
-                  <Link href="/settings/reset-password" className="flex items-center gap-2 px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors">
+                  <Link href="/settings/reset-password" className="flex items-center gap-2 px-4 py-2 border border-[var(--color-border-default)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors">
                     <KeyRound className="w-4 h-4" /> {t('resetPassword')}
                   </Link>
                   <button type="button" onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors">
@@ -1549,7 +1549,7 @@ function SettingsPageContent() {
                   </div>
                 )}
                 <div className="flex justify-end gap-3 pt-4">
-                  <button type="button" onClick={() => setShowInviteModal(false)} className="px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg">{tCommon('cancel')}</button>
+                  <button type="button" onClick={() => setShowInviteModal(false)} className="px-4 py-2 border border-[var(--color-border-default)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg">{tCommon('cancel')}</button>
                   <button type="submit" disabled={inviteSubmitting || !invitePhone.trim()} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg disabled:opacity-50">{inviteSubmitting ? tCommon('loading') : t('invite')}</button>
                 </div>
               </form>

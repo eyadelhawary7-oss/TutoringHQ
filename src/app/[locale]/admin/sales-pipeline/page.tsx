@@ -240,7 +240,7 @@ export default function AdminSalesPipelinePage() {
           onClick={() => setShowAdd(false)}
         >
           <div
-            className="rounded-2xl border border-border p-6 max-w-md mx-4 w-full max-h-[90vh] overflow-y-auto bg-[var(--color-surface-1)] text-start"
+            className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 max-w-md mx-4 w-full max-h-[90vh] overflow-y-auto bg-[var(--color-surface-1)] text-start"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="font-bold text-[var(--color-text-primary)] mb-4">{tPipeline('modalTitle')}</h3>

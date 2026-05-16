@@ -391,7 +391,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
         {filteredOrders.length === 0 ? (
           <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-center py-16 px-4 text-[var(--color-text-secondary)]">
             <div className="mx-auto mb-4 w-20 h-20 relative">
-              <div className="absolute inset-0 rounded-2xl border-2 border-dashed border-[var(--color-border-default)]/40" />
+              <div className="absolute inset-0 rounded-xl border-2 border-dashed border-[var(--color-border-default)]/40" />
               <div className="absolute top-3 start-3 end-3 h-3 rounded bg-[var(--color-text-tertiary)]/10" />
               <div className="absolute top-8 start-3 end-6 h-2 rounded bg-[var(--color-text-tertiary)]/8" />
               <div className="absolute top-12 start-3 end-8 h-2 rounded bg-[var(--color-text-tertiary)]/6" />
@@ -567,7 +567,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                     }}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full mt-2 py-2 px-4 rounded-lg border border-slate-600 text-slate-300 text-sm font-medium text-center block hover:border-teal-500 hover:text-teal-300 transition-colors"
+                    className="w-full mt-2 py-2 px-4 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] text-sm font-medium text-center block hover:border-teal-500 hover:text-teal-300 transition-colors"
                   >
                     ⬇ {tIdCards('downloadPdf')}
                   </a>

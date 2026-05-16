@@ -315,7 +315,7 @@ export default function PlatformConfigPage() {
       return (
         <div
           key={key}
-          className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 border-b border-slate-100 dark:border-slate-800 last:border-0 pb-4 last:pb-0"
+          className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 border-b border-[var(--color-border-subtle)] last:border-0 pb-4 last:pb-0"
         >
           <div className="flex-1 min-w-0">
             <p className="font-medium text-[var(--color-text-primary)]">{labelFor(key)}</p>
@@ -335,7 +335,7 @@ export default function PlatformConfigPage() {
               style={{ backgroundColor: checked ? '#0d9488' : '#64748b' }}
             >
               <span
-                className="absolute top-[3px] h-5 w-5 rounded-full bg-slate-200 shadow transition-[inset-inline-start]"
+                className="absolute top-[3px] h-5 w-5 rounded-full bg-[var(--color-surface-3)] shadow transition-[inset-inline-start]"
                 style={{ insetInlineStart: checked ? 25 : 3 }}
               />
             </span>
@@ -348,7 +348,7 @@ export default function PlatformConfigPage() {
     return (
       <div
         key={key}
-        className="flex flex-col gap-2 border-b border-slate-100 dark:border-slate-800 last:border-0 pb-4 last:pb-0"
+        className="flex flex-col gap-2 border-b border-[var(--color-border-subtle)] last:border-0 pb-4 last:pb-0"
       >
         <div className="flex-1 min-w-0">
           <p className="font-medium text-[var(--color-text-primary)]">{labelFor(key)}</p>
@@ -413,7 +413,7 @@ export default function PlatformConfigPage() {
 
   if (!gateOk) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-slate-500 dark:text-slate-400">
+      <div className="min-h-screen flex items-center justify-center text-[var(--color-text-muted)]">
         {tCommon('loading')}
       </div>
     );
@@ -421,7 +421,7 @@ export default function PlatformConfigPage() {
 
   return (
     <div
-      className="flex flex-col flex-1 min-h-0 min-h-screen bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100"
+      className="flex flex-col flex-1 min-h-0 min-h-screen bg-[var(--color-surface-0)] text-[var(--color-text-primary)]"
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       <AdminHeader />
@@ -440,13 +440,13 @@ export default function PlatformConfigPage() {
         <div className="flex items-start gap-3 mb-2">
           <Settings className="h-8 w-8 text-teal-600 shrink-0 mt-0.5" />
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t('platformConfigTitle')}</h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t('platformConfigSubtitle')}</p>
+            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('platformConfigTitle')}</h1>
+            <p className="text-sm text-[var(--color-text-muted)] mt-1">{t('platformConfigSubtitle')}</p>
           </div>
         </div>
 
         {loading ? (
-          <p className="text-slate-500 mt-8">{tCommon('loading')}</p>
+          <p className="text-[var(--color-text-muted)] mt-8">{tCommon('loading')}</p>
         ) : error ? (
           <p className="text-red-600 mt-8">{error}</p>
         ) : (

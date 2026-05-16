@@ -115,15 +115,15 @@ export function SubscriptionOverridesPanel({
 
   return (
     <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
-      <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">
+      <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">
         {t('panelTitle')}
       </h2>
-      <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">{t('reasonLabel')}</label>
+      <label className="block text-sm text-[var(--color-text-secondary)] mb-1">{t('reasonLabel')}</label>
       <textarea
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         rows={3}
-        className="w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white mb-4"
+        className="w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)] mb-4"
         placeholder={t('reasonPlaceholder')}
       />
       <div className="flex flex-wrap gap-2 mb-4">
@@ -142,7 +142,7 @@ export function SubscriptionOverridesPanel({
             max={730}
             value={daysCustom}
             onChange={(e) => setDaysCustom(e.target.value)}
-            className="w-24 rounded-lg border border-gray-300 bg-gray-100 px-2 py-1 text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+            className="w-24 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-2 py-1 text-sm text-[var(--color-text-primary)]"
             aria-label={t('daysLabel')}
           />
           <button
@@ -168,27 +168,27 @@ export function SubscriptionOverridesPanel({
           type="button"
           disabled={busy !== null}
           onClick={() => void runReactivate()}
-          className="rounded-lg bg-slate-700 text-white px-4 py-2 text-sm font-semibold hover:bg-slate-600 disabled:opacity-50"
+          className="rounded-lg bg-[var(--color-surface-3)] text-[var(--color-text-primary)] px-4 py-2 text-sm font-semibold hover:bg-[var(--color-surface-4)] disabled:opacity-50"
         >
           {t('reactivate')}
         </button>
       </div>
       <div className="border-t border-[var(--color-border)] pt-4 mt-2">
-        <p className="text-xs text-slate-500 mb-2">{t('superAdminOnly')}</p>
+        <p className="text-xs text-[var(--color-text-muted)] mb-2">{t('superAdminOnly')}</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
           <div>
-            <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">{t('allInLabel')}</label>
+            <label className="block text-sm text-[var(--color-text-secondary)] mb-1">{t('allInLabel')}</label>
             <input
               type="number"
               min={0}
               step="0.01"
               value={allInPrice}
               onChange={(e) => setAllInPrice(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+              className="w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
               dir="ltr"
             />
           </div>
-          <label className="flex items-center gap-2 mt-6 md:mt-8 cursor-pointer text-sm text-slate-700 dark:text-slate-200">
+          <label className="flex items-center gap-2 mt-6 md:mt-8 cursor-pointer text-sm text-[var(--color-text-secondary)]">
             <input
               type="checkbox"
               checked={earlyAdopter}

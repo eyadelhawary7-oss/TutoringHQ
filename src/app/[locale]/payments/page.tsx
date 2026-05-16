@@ -697,7 +697,7 @@ export default function PaymentsPage() {
                     <div className="flex flex-col gap-0.5 min-w-0">
                       <p className="text-sm text-[var(--color-text-secondary)] truncate">{payment.student_name}</p>
                       {payment.student_number && payment.student_number !== tCommon('notSet') ? (
-                        <p className="text-xs text-slate-400 truncate" dir="ltr">
+                        <p className="text-xs text-[var(--color-text-muted)] truncate" dir="ltr">
                           {formatStudentNumberForDisplay(payment.student_number)}
                         </p>
                       ) : null}
@@ -746,7 +746,7 @@ export default function PaymentsPage() {
           role="presentation"
         >
           <div
-            className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-default)] w-full max-w-md p-6 modal-spring-in"
+            className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-default)] shadow-sm w-full max-w-md p-6 modal-spring-in"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-labelledby="collect-payment-title"
@@ -835,7 +835,7 @@ export default function PaymentsPage() {
           onClick={() => setConfirmModal(null)}
         >
           <div
-            className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-default)] w-full max-w-md p-6 modal-spring-in"
+            className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-default)] shadow-sm w-full max-w-md p-6 modal-spring-in"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tp('confirmPayment')}</h3>

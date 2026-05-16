@@ -207,9 +207,9 @@ export default function AdminPromoCodesPage() {
       : t('promoCodesStatusInactive');
     const cls =
       s === 'active' ? 'bg-teal-600/20 text-teal-400 border-teal-700/40'
-      : s === 'expired' ? 'bg-slate-700/40 text-slate-400 border-slate-600/40'
+      : s === 'expired' ? 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)] border-[var(--color-border-default)]'
       : s === 'exhausted' ? 'bg-red-900/30 text-red-400 border-red-700/40'
-      : 'bg-slate-700/40 text-slate-500 border-slate-600/40';
+      : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)] border-[var(--color-border-default)]';
     return (
       <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${cls}`}>
         {label}

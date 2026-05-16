@@ -245,7 +245,7 @@ export default function AdminPendingSignupsPage() {
           onClick={() => setShowRejectReason(null)}
         >
           <div
-            className="rounded-2xl border border-border p-6 max-w-sm mx-4 w-full bg-[var(--color-surface-1)]"
+            className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 max-w-sm mx-4 w-full bg-[var(--color-surface-1)]"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="font-bold text-[var(--color-text-primary)] mb-3">{t('rejectionReason')}</h3>

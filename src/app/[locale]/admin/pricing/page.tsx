@@ -23,7 +23,7 @@ import type {
 const BANNER_STYLE_PREVIEW: Record<BannerStyle, string> = {
   promo: 'bg-teal-600 text-white',
   info: 'bg-blue-600 text-white',
-  warning: 'bg-amber-500 text-slate-900',
+  warning: 'bg-amber-500 text-[var(--color-text-inverse)]',
   success: 'bg-emerald-600 text-white',
 };
 
@@ -1218,7 +1218,7 @@ function BannerPreview({ cfg, locale }: BannerPreviewProps) {
         <span className="font-semibold">{text}</span>
         {subtext ? <span className="opacity-90">{subtext}</span> : null}
         {cta && cfg.ctaUrl ? (
-          <span className="ms-2 inline-flex items-center rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-slate-900">
+          <span className="ms-2 inline-flex items-center rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-[var(--color-text-inverse)]">
             {cta}
           </span>
         ) : null}
@@ -1240,7 +1240,7 @@ function PopupPreview({ cfg, locale }: PopupPreviewProps) {
   return (
     <div
       dir={isAr ? 'rtl' : 'ltr'}
-      className="mx-auto max-w-xs rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-surface-0)] p-4 shadow-lg text-xs"
+      className="mx-auto max-w-xs rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-0)] p-4 shadow-lg text-xs"
     >
       <div className="mb-2 flex items-start justify-between gap-2">
         <p className="font-semibold text-sm text-[var(--color-text-primary)] leading-tight">{title || (isAr ? '(عنوان)' : '(Title)')}</p>
