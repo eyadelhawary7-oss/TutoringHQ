@@ -6,7 +6,8 @@ import { supabase } from '@/lib/supabase';
 import { auditLog, dbInsert, dbSelect, type Filter } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
 import { getCsrfHeaders } from '@/lib/csrf-client';
-import { Download, Search } from 'lucide-react';
+import { Download, Search, DollarSign, AlertCircle, CreditCard } from 'lucide-react';
+import { KpiCard, SectionHeader } from '@/components/shared';
 import { useRouter } from 'next/navigation';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { ReceiptModal } from '@/components/payments/ReceiptModal';
@@ -466,7 +467,7 @@ export default function PaymentsPage() {
       <div className="min-h-screen w-full bg-[var(--color-surface-0)] animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
         <div className="px-4 pt-4 pb-3 max-w-3xl mx-auto w-full flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white">{tp('title')}</h1>
+            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{tp('title')}</h1>
             <p className="text-xs text-[var(--color-text-secondary)]">{tp('subtitle')}</p>
           </div>
           {canCollectPayment ? (
@@ -492,47 +493,50 @@ export default function PaymentsPage() {
           </div>
         ) : null}
 
-        <div className="grid grid-cols-3 gap-3 px-4 mb-4 max-w-3xl mx-auto w-full">
+        <div className="px-4 mb-3 max-w-3xl mx-auto w-full">
+          <SectionHeader title={tCommon('sectionAtAGlance')} />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 px-4 mb-4 max-w-3xl mx-auto w-full">
           {records === null ? (
             <>
-              <div className="card p-3 flex flex-col gap-2" aria-hidden>
-                <div className="h-2.5 w-16 rounded bg-[var(--color-surface-2)] animate-pulse" />
-                <div className="h-6 w-20 rounded bg-[var(--color-surface-2)] animate-pulse" />
-                <div className="h-2.5 w-8 rounded bg-[var(--color-surface-2)] animate-pulse" />
+              <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shadow-sm p-6 flex flex-col gap-2" aria-hidden>
+                <div className="h-3 w-24 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                <div className="h-7 w-28 rounded bg-[var(--color-surface-2)] animate-pulse" />
               </div>
-              <div className="card p-3 flex flex-col gap-2" aria-hidden>
-                <div className="h-2.5 w-20 rounded bg-[var(--color-surface-2)] animate-pulse" />
-                <div className="h-6 w-20 rounded bg-[var(--color-surface-2)] animate-pulse" />
-                <div className="h-2.5 w-8 rounded bg-[var(--color-surface-2)] animate-pulse" />
+              <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shadow-sm p-6 flex flex-col gap-2" aria-hidden>
+                <div className="h-3 w-28 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                <div className="h-7 w-28 rounded bg-[var(--color-surface-2)] animate-pulse" />
               </div>
-              <div className="card p-3 flex flex-col gap-2" aria-hidden>
-                <div className="h-2.5 w-20 rounded bg-[var(--color-surface-2)] animate-pulse" />
-                <div className="h-6 w-20 rounded bg-[var(--color-surface-2)] animate-pulse" />
-                <div className="h-2.5 w-8 rounded bg-[var(--color-surface-2)] animate-pulse" />
+              <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shadow-sm p-6 flex flex-col gap-2" aria-hidden>
+                <div className="h-3 w-28 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                <div className="h-7 w-28 rounded bg-[var(--color-surface-2)] animate-pulse" />
               </div>
             </>
           ) : (
             <div
               className={`contents transition-opacity duration-300 ${paymentsStale ? 'opacity-70' : 'opacity-100'}`}
             >
-              <div className="card p-3 flex flex-col gap-1">
-                <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('total_today')}</span>
-                <span className="text-base font-bold text-[var(--color-success)] tabular-nums">
-                  {formatCurrency(totalToday, locale)}
-                </span>
-              </div>
-              <div className="card p-3 flex flex-col gap-1">
-                <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('total_pending')}</span>
-                <span className="text-base font-bold text-[var(--color-warning)] tabular-nums">
-                  {formatCurrency(totalPending, locale)}
-                </span>
-              </div>
-              <div className="card p-3 flex flex-col gap-1">
-                <span className="text-[10px] text-[var(--color-text-tertiary)]">{tp('total_month')}</span>
-                <span className="text-base font-bold text-[var(--color-text-primary)] tabular-nums">
-                  {formatCurrency(totalMonth, locale)}
-                </span>
-              </div>
+              <KpiCard
+                title={tp('total_today')}
+                value={formatCurrency(totalToday, locale)}
+                icon={DollarSign}
+                iconBg="bg-green-100"
+                iconColor="text-green-600"
+              />
+              <KpiCard
+                title={tp('total_pending')}
+                value={formatCurrency(totalPending, locale)}
+                icon={AlertCircle}
+                iconBg="bg-amber-100"
+                iconColor="text-amber-600"
+              />
+              <KpiCard
+                title={tp('total_month')}
+                value={formatCurrency(totalMonth, locale)}
+                icon={CreditCard}
+                iconBg="bg-teal-100"
+                iconColor="text-teal-600"
+              />
             </div>
           )}
         </div>

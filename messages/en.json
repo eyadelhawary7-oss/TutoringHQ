@@ -272,6 +272,9 @@
     "you": "You"
   },
   "common": {
+    "sectionAtAGlance": "AT A GLANCE",
+    "sectionTrends": "TRENDS",
+    "sectionOverview": "OVERVIEW",
     "password": "Password",
     "passwordPlaceholder": "Enter your password",
     "pin": "PIN",

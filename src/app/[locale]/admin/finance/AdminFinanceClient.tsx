@@ -11,6 +11,20 @@ import { useSidebar } from '@/contexts/SidebarContext';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useLayout } from '@/contexts/LayoutContext';
 import { formatCurrency, formatDate, formatGrowth, formatNumber, formatPercent } from '@/lib/formatNumber';
+import { KpiCard, SectionHeader, Card } from '@/components/shared';
+import {
+  TrendingUp,
+  TrendingDown,
+  LayoutDashboard,
+  CreditCard,
+  AlertTriangle,
+  Activity,
+  DollarSign,
+  Clock,
+  Truck,
+  CheckCircle2,
+  XCircle,
+} from 'lucide-react';
 
 // Recharts' ResponsiveContainer reads parentNode.offsetWidth at render time,
 // which differs between SSR (0) and client (real px). That mismatch produced
@@ -152,63 +166,91 @@ export default function AdminFinanceClient({ initialData }: { initialData: Finan
             </button>
           </div>
 
-          <SectionLabel>{isAr ? 'الأرقام الرئيسية' : 'North star'}</SectionLabel>
+          <SectionHeader title={isAr ? 'الأرقام الرئيسية' : 'NORTH STAR'} />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <KpiCard
-              label={isAr ? 'الإيراد الشهري المتكرر' : 'MRR'}
-              primary={formatCurrency(data.northStar.totalMRR, locale)}
-              delta={
-                mrrGrowthLabel
-                  ? `${mrrGrowthLabel} ${isAr ? 'مقارنة بالشهر الماضي' : 'vs last month'}`
-                  : '—'
+              title={isAr ? 'الإيراد الشهري المتكرر' : 'MRR'}
+              value={formatCurrency(data.northStar.totalMRR, locale)}
+              subLabel={
+                mrrGrowthLabel ? (
+                  <FinanceDelta tone={mrrGrowthNegative ? 'danger' : 'success'}>
+                    {`${mrrGrowthLabel} ${isAr ? 'مقارنة بالشهر الماضي' : 'vs last month'}`}
+                  </FinanceDelta>
+                ) : undefined
               }
-              tone={mrrGrowthLabel ? (mrrGrowthNegative ? 'danger' : 'success') : 'muted'}
+              icon={mrrGrowthNegative ? TrendingDown : TrendingUp}
+              iconBg={mrrGrowthNegative ? 'bg-red-100' : 'bg-green-100'}
+              iconColor={mrrGrowthNegative ? 'text-red-600' : 'text-green-600'}
             />
             <KpiCard
-              label={isAr ? 'السناتر النشطة' : 'Active centers'}
-              primary={formatNumber(data.northStar.activeCenters, locale)}
-              delta={`+${formatNumber(data.northStar.newCentersThisMonth, locale)} ${isAr ? 'هذا الشهر' : 'this month'}`}
-              tone="success"
+              title={isAr ? 'السناتر النشطة' : 'Active centers'}
+              value={formatNumber(data.northStar.activeCenters, locale)}
+              subLabel={
+                <FinanceDelta tone="success">
+                  {`+${formatNumber(data.northStar.newCentersThisMonth, locale)} ${isAr ? 'هذا الشهر' : 'this month'}`}
+                </FinanceDelta>
+              }
+              icon={LayoutDashboard}
+              iconBg="bg-green-100"
+              iconColor="text-green-600"
             />
             <KpiCard
-              label={isAr ? 'إيراد هذا الشهر' : 'This month'}
-              primary={formatCurrency(data.northStar.thisMonthRevenue, locale)}
-              delta={isAr ? 'كل أنواع الفواتير' : 'all invoice types'}
-              tone="muted"
+              title={isAr ? 'إيراد هذا الشهر' : 'This month'}
+              value={formatCurrency(data.northStar.thisMonthRevenue, locale)}
+              subLabel={isAr ? 'كل أنواع الفواتير' : 'all invoice types'}
+              icon={CreditCard}
+              iconBg="bg-teal-100"
+              iconColor="text-teal-600"
             />
             <KpiCard
-              label={isAr ? 'فواتير معلقة' : 'Outstanding'}
-              primary={formatCurrency(data.northStar.outstandingTotal, locale)}
-              delta={`${formatNumber(data.northStar.outstandingCount, locale)} ${isAr ? 'فاتورة' : 'invoices'}`}
-              tone="warning"
+              title={isAr ? 'فواتير معلقة' : 'Outstanding'}
+              value={formatCurrency(data.northStar.outstandingTotal, locale)}
+              subLabel={
+                <FinanceDelta tone="warning">
+                  {`${formatNumber(data.northStar.outstandingCount, locale)} ${isAr ? 'فاتورة' : 'invoices'}`}
+                </FinanceDelta>
+              }
+              icon={AlertTriangle}
+              iconBg="bg-amber-100"
+              iconColor="text-amber-600"
             />
           </div>
 
-          <SectionLabel>{isAr ? 'وحدة الاقتصاد' : 'Unit economics'}</SectionLabel>
+          <SectionHeader title={isAr ? 'وحدة الاقتصاد' : 'UNIT ECONOMICS'} />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <KpiCard
-              label={isAr ? 'معدل الفقدان الشهري' : 'Monthly churn'}
-              primary={formatPercent(data.unitEconomics.monthlyChurnRate, locale)}
-              delta={isAr ? 'راقبه' : 'watch closely'}
-              tone={data.unitEconomics.monthlyChurnRate > 5 ? 'danger' : 'success'}
+              title={isAr ? 'معدل الفقدان الشهري' : 'Monthly churn'}
+              value={formatPercent(data.unitEconomics.monthlyChurnRate, locale)}
+              subLabel={
+                <FinanceDelta tone={data.unitEconomics.monthlyChurnRate > 5 ? 'danger' : 'success'}>
+                  {isAr ? 'راقبه' : 'watch closely'}
+                </FinanceDelta>
+              }
+              icon={Activity}
+              iconBg={data.unitEconomics.monthlyChurnRate > 5 ? 'bg-red-100' : 'bg-green-100'}
+              iconColor={data.unitEconomics.monthlyChurnRate > 5 ? 'text-red-600' : 'text-green-600'}
             />
             <KpiCard
-              label={isAr ? 'القيمة العمرية' : 'LTV'}
-              primary={formatCurrency(data.unitEconomics.ltv, locale)}
-              delta={isAr ? 'متوسط لكل سنتر' : 'avg per center'}
-              tone="muted"
+              title={isAr ? 'القيمة العمرية' : 'LTV'}
+              value={formatCurrency(data.unitEconomics.ltv, locale)}
+              subLabel={isAr ? 'متوسط لكل سنتر' : 'avg per center'}
+              icon={DollarSign}
+              iconBg="bg-teal-100"
+              iconColor="text-teal-600"
             />
             <KpiCard
-              label={isAr ? 'وقت أول دفعة' : 'Time to first payment'}
-              primary={data.unitEconomics.ttfpDays === null
-                ? '–'
+              title={isAr ? 'وقت أول دفعة' : 'Time to first payment'}
+              value={data.unitEconomics.ttfpDays === null
+                ? '-'
                 : `${formatNumber(data.unitEconomics.ttfpDays, locale)} ${isAr ? 'يوم' : 'days'}`}
-              delta={isAr ? 'الوسيط منذ التسجيل' : 'median, signup to paid'}
-              tone="muted"
+              subLabel={isAr ? 'الوسيط منذ التسجيل' : 'median, signup to paid'}
+              icon={Clock}
+              iconBg="bg-blue-100"
+              iconColor="text-blue-600"
             />
           </div>
 
-          <SectionLabel>{isAr ? 'الإيراد على مدار الأشهر' : 'MRR trend (last 6 months)'}</SectionLabel>
+          <SectionHeader title={isAr ? 'الإيراد على مدار الأشهر' : 'MRR TREND (LAST 6 MONTHS)'} />
           <Card>
             <AreaChartComponent
               data={data.mrrTrend.map((p) => ({ date: p.month, amount: p.amount }))}
@@ -221,7 +263,7 @@ export default function AdminFinanceClient({ initialData }: { initialData: Finan
             />
           </Card>
 
-          <SectionLabel>{isAr ? 'التفصيل' : 'Composition'}</SectionLabel>
+          <SectionHeader title={isAr ? 'التفصيل' : 'COMPOSITION'} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Card title={isAr ? 'الإيراد حسب المنتج' : 'Revenue by product'}>
               <RevenueByTypeBars slices={data.revenueByType} locale={locale} />
@@ -231,12 +273,12 @@ export default function AdminFinanceClient({ initialData }: { initialData: Finan
             </Card>
           </div>
 
-          <SectionLabel>{isAr ? 'الاحتفاظ حسب فوج التسجيل' : 'Cohort retention'}</SectionLabel>
+          <SectionHeader title={isAr ? 'الاحتفاظ حسب فوج التسجيل' : 'COHORT RETENTION'} />
           <Card>
             <CohortGrid cohorts={data.cohorts} isAr={isAr} locale={locale} />
           </Card>
 
-          <SectionLabel>{isAr ? 'يحتاج انتباهك' : 'Needs attention'}</SectionLabel>
+          <SectionHeader title={isAr ? 'يحتاج انتباهك' : 'NEEDS ATTENTION'} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Card title={isAr ? 'فواتير معلقة' : 'Outstanding invoices'}>
               <OutstandingList items={data.outstandingInvoices} locale={locale} isAr={isAr} />
@@ -246,12 +288,36 @@ export default function AdminFinanceClient({ initialData }: { initialData: Finan
             </Card>
           </div>
 
-          <SectionLabel>{isAr ? 'مسار الكروت' : 'Card pipeline'}</SectionLabel>
+          <SectionHeader title={isAr ? 'مسار الكروت' : 'CARD PIPELINE'} />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <KpiCard label={isAr ? 'في انتظار المورد' : 'Pending vendor'} primary={formatNumber(data.cardPipeline.pendingVendor, locale)} tone="muted" />
-            <KpiCard label={isAr ? 'في الطريق' : 'In transit'} primary={formatNumber(data.cardPipeline.inTransit, locale)} tone="muted" />
-            <KpiCard label={isAr ? 'تم التسليم' : 'Delivered'} primary={formatNumber(data.cardPipeline.delivered, locale)} tone="success" />
-            <KpiCard label={isAr ? 'فشل' : 'Failed'} primary={formatNumber(data.cardPipeline.failed, locale)} tone={data.cardPipeline.failed > 0 ? 'danger' : 'muted'} />
+            <KpiCard
+              title={isAr ? 'في انتظار المورد' : 'Pending vendor'}
+              value={formatNumber(data.cardPipeline.pendingVendor, locale)}
+              icon={Clock}
+              iconBg="bg-amber-100"
+              iconColor="text-amber-600"
+            />
+            <KpiCard
+              title={isAr ? 'في الطريق' : 'In transit'}
+              value={formatNumber(data.cardPipeline.inTransit, locale)}
+              icon={Truck}
+              iconBg="bg-blue-100"
+              iconColor="text-blue-600"
+            />
+            <KpiCard
+              title={isAr ? 'تم التسليم' : 'Delivered'}
+              value={formatNumber(data.cardPipeline.delivered, locale)}
+              icon={CheckCircle2}
+              iconBg="bg-green-100"
+              iconColor="text-green-600"
+            />
+            <KpiCard
+              title={isAr ? 'فشل' : 'Failed'}
+              value={formatNumber(data.cardPipeline.failed, locale)}
+              icon={XCircle}
+              iconBg={data.cardPipeline.failed > 0 ? 'bg-red-100' : 'bg-teal-100'}
+              iconColor={data.cardPipeline.failed > 0 ? 'text-red-600' : 'text-teal-600'}
+            />
           </div>
 
         </main>
@@ -260,40 +326,15 @@ export default function AdminFinanceClient({ initialData }: { initialData: Finan
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-xs font-medium text-[var(--color-text-muted)] mt-2 mb-0">
-      {children}
-    </p>
-  );
-}
+type FinanceDeltaTone = 'success' | 'warning' | 'danger' | 'muted';
 
-function Card({ children, title }: { children: React.ReactNode; title?: string }) {
-  return (
-    <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4">
-      {title ? <p className="text-sm font-medium mb-3 text-[var(--color-text-primary)]">{title}</p> : null}
-      {children}
-    </div>
-  );
-}
-
-type KpiTone = 'muted' | 'success' | 'warning' | 'danger';
-
-function KpiCard({
-  label, primary, delta, tone = 'muted',
-}: { label: string; primary: string; delta?: string; tone?: KpiTone }) {
-  const toneColor =
+function FinanceDelta({ children, tone = 'muted' }: { children: React.ReactNode; tone?: FinanceDeltaTone }) {
+  const cls =
     tone === 'success' ? 'text-emerald-500'
     : tone === 'warning' ? 'text-amber-500'
     : tone === 'danger' ? 'text-red-500'
     : 'text-[var(--color-text-muted)]';
-  return (
-    <div className="bg-[var(--color-surface-2)] rounded-lg p-4">
-      <p className="text-xs text-[var(--color-text-muted)]">{label}</p>
-      <p className="text-xl md:text-2xl font-medium mt-1 text-[var(--color-text-primary)] leading-tight">{primary}</p>
-      {delta ? <p className={`text-[11px] mt-1 ${toneColor}`}>{delta}</p> : null}
-    </div>
-  );
+  return <p className={`text-xs ${cls}`}>{children}</p>;
 }
 
 function RevenueByTypeBars({ slices, locale }: { slices: FinanceRevenueSlice[]; locale: string }) {

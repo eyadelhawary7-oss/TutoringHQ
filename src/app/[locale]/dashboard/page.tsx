@@ -12,6 +12,7 @@ import { useUser } from '@/contexts/UserContext';
 import { Link } from '@/i18n/routing';
 import PlanUsageCard from '@/components/dashboard/PlanUsageCard';
 import { ChartCard, SparklineChart } from '@/components/charts';
+import { KpiCard, SectionHeader } from '@/components/shared';
 
 const AreaChartComponent = dynamic(
   () => import('@/components/charts').then((m) => ({ default: m.AreaChartComponent })),
@@ -186,12 +187,23 @@ function atRiskAttendanceIndicator(daysSinceLastScan: number): number {
   return Math.max(5, Math.min(59, 100 - Math.min(30, daysSinceLastScan) * 3));
 }
 
+type KpiIconTone = 'teal' | 'blue' | 'green' | 'emerald' | 'amber' | 'red';
+const KPI_ICON_TONES: Record<KpiIconTone, { bg: string; color: string }> = {
+  teal:    { bg: 'bg-teal-100',    color: 'text-teal-600' },
+  blue:    { bg: 'bg-blue-100',    color: 'text-blue-600' },
+  green:   { bg: 'bg-green-100',   color: 'text-green-600' },
+  emerald: { bg: 'bg-emerald-100', color: 'text-emerald-600' },
+  amber:   { bg: 'bg-amber-100',   color: 'text-amber-600' },
+  red:     { bg: 'bg-red-100',     color: 'text-red-600' },
+};
+
 function KpiCommandCard({
   label,
   valueDisplay,
   subLabel,
   growth,
   icon: Icon,
+  iconTone = 'teal',
   delayMs,
   sparkline,
   staleMetrics,
@@ -203,6 +215,7 @@ function KpiCommandCard({
   /** Uses formatGrowth; chip hidden when prior period had no baseline (null). */
   growth?: { current: number; prior: number } | null;
   icon: LucideIcon;
+  iconTone?: KpiIconTone;
   delayMs: number;
   sparkline: { value: number }[];
   /** When true, main KPI value is dimmed until fresh data arrives (sessionStorage rehydrate). */
@@ -218,27 +231,17 @@ function KpiCommandCard({
     growth != null &&
     growth.prior > 0 &&
     growth.current < growth.prior;
-  return (
-    <div
-      className="relative chq-fade-in rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4"
-      style={{ animationDelay: `${delayMs}ms` }}
-    >
-      <div className="absolute top-4 end-4 text-teal-500" aria-hidden>
-        <Icon className="h-4 w-4" strokeWidth={2} />
-      </div>
-      <p className="pe-8 text-xs uppercase tracking-wider text-[var(--color-text-muted)]">{label}</p>
-      <div
-        className={`mt-1 text-2xl font-bold text-[var(--color-text-primary)] tabular-nums transition-opacity duration-300 ${staleMetrics ? 'opacity-70' : 'opacity-100'}`}
-        style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
-      >
-        {valueDisplay}
-      </div>
+  const tone = KPI_ICON_TONES[iconTone];
+
+  // Compose sublabel slot: optional subLabel text, growth chip, sparkline.
+  const composedSub = (
+    <div className="flex flex-col gap-2">
       {subLabel ? (
-        <p className="mt-1 text-xs text-[var(--color-text-muted)]">{subLabel}</p>
+        <p className="text-xs text-[var(--color-text-muted)]">{subLabel}</p>
       ) : null}
       {showTrend ? (
         <span
-          className={`mt-2 inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
+          className={`inline-flex w-fit items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
             negative ? 'bg-red-500/15 text-red-400' : 'bg-emerald-500/15 text-emerald-400'
           }`}
         >
@@ -250,7 +253,7 @@ function KpiCommandCard({
           <span>{growthLabel}</span>
         </span>
       ) : null}
-      <div className="mt-3 h-8 w-full opacity-95" aria-hidden suppressHydrationWarning>
+      <div className="h-8 w-full opacity-95" aria-hidden suppressHydrationWarning>
         {sparkline.length >= 2 ? (
           <ClientOnly fallback={<div className="h-8 w-full" />}>
             <SparklineChart data={sparkline} color="teal" height={32} />
@@ -259,6 +262,19 @@ function KpiCommandCard({
           <div className="h-8" />
         )}
       </div>
+    </div>
+  );
+
+  return (
+    <div className={`chq-fade-in transition-opacity duration-300 ${staleMetrics ? 'opacity-70' : 'opacity-100'}`} style={{ animationDelay: `${delayMs}ms` }}>
+      <KpiCard
+        title={label}
+        value={<span className="tabular-nums">{valueDisplay}</span>}
+        subLabel={composedSub}
+        icon={Icon}
+        iconBg={tone.bg}
+        iconColor={tone.color}
+      />
     </div>
   );
 }
@@ -1198,6 +1214,9 @@ export default function DashboardPage() {
         </div>
       ) : (
         <>
+          <div className="mb-4 max-w-6xl">
+            <SectionHeader title={tCommon('sectionAtAGlance')} />
+          </div>
           <div className="mb-6 grid max-w-6xl grid-cols-2 gap-3 lg:grid-cols-5">
             <KpiCommandCard
               label={t('totalStudents')}
@@ -1211,6 +1230,7 @@ export default function DashboardPage() {
                   : null
               }
               icon={Users}
+              iconTone="blue"
               delayMs={0}
               sparkline={studentSparklinePoints}
               staleMetrics={kpiStale}
@@ -1222,6 +1242,7 @@ export default function DashboardPage() {
               valueDisplay={formatNumber(Number(statsData?.activeStudentsThisWeek ?? 0), locale)}
               growth={null}
               icon={Activity}
+              iconTone="teal"
               delayMs={50}
               sparkline={activeStudentsSpark7}
               staleMetrics={kpiStale}
@@ -1242,6 +1263,7 @@ export default function DashboardPage() {
                 prior: safeData.yesterdayAttendanceCount,
               }}
               icon={CalendarCheck}
+              iconTone="green"
               delayMs={100}
               sparkline={attendanceSparklinePoints}
               staleMetrics={kpiStale}
@@ -1261,6 +1283,7 @@ export default function DashboardPage() {
                     : null
                 }
                 icon={TrendingUp}
+                iconTone="emerald"
                 delayMs={200}
                 sparkline={revenueMonthlySpark7}
                 staleMetrics={kpiStale}
@@ -1275,6 +1298,7 @@ export default function DashboardPage() {
                   </span>
                 }
                 icon={TrendingUp}
+                iconTone="emerald"
                 delayMs={200}
                 sparkline={[]}
                 staleMetrics={kpiStale}
@@ -1286,6 +1310,7 @@ export default function DashboardPage() {
               subLabel={t('pendingPayments.unit')}
               valueDisplay={formatNumber(Number(safeData.pendingInvoicesCount), locale)}
               icon={CreditCard}
+              iconTone="amber"
               delayMs={300}
               sparkline={pendingInvoicesSpark7}
               staleMetrics={kpiStale}
@@ -1293,6 +1318,9 @@ export default function DashboardPage() {
             />
           </div>
 
+          <div className="mb-4 max-w-6xl">
+            <SectionHeader title={tCommon('sectionTrends')} />
+          </div>
           <div className="mb-6 grid max-w-6xl grid-cols-1 gap-4 md:grid-cols-5">
             <div className="md:col-span-3">
               <ChartCard

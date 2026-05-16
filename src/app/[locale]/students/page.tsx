@@ -6,7 +6,8 @@ import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import QRCode from 'qrcode';
-import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye, Printer, ShoppingCart, Phone, Pencil, Inbox, CircleHelp } from 'lucide-react';
+import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye, Printer, ShoppingCart, Phone, Pencil, Inbox, CircleHelp, Activity } from 'lucide-react';
+import { KpiCard, SectionHeader } from '@/components/shared';
 import { QRCard } from '@/components/QRCard';
 import { PrintStatementModal } from '@/components/PrintStatementModal';
 import EmptyState from '@/components/empty-states/EmptyState';
@@ -1006,11 +1007,11 @@ export default function StudentsPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-bold text-white">{ts('title')}</h1>
+                <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{ts('title')}</h1>
                 <span
                   className={`inline-flex items-center rounded-full bg-teal-600 text-white text-xs font-semibold px-2.5 py-0.5 tabular-nums shrink-0 transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}
                 >
-                  {students === null ? '–' : formatNumber(studentsList.length, locale)}
+                  {students === null ? '-' : formatNumber(studentsList.length, locale)}
                 </span>
               </div>
               <p className="text-xs text-[var(--color-text-secondary)] mt-1">{ts('subtitle')}</p>
@@ -1071,44 +1072,45 @@ export default function StudentsPage() {
             </div>
           </div>
 
+          <div className="mb-3">
+            <SectionHeader title={tCommon('sectionAtAGlance')} />
+          </div>
           <div className="grid grid-cols-2 gap-3 mb-4">
             {students === null ? (
               <>
-                <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 card-shadow flex flex-col gap-2" aria-hidden>
+                <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shadow-sm p-6 flex flex-col gap-2" aria-hidden>
                   <div className="h-3 w-24 rounded bg-[var(--color-surface-2)] animate-pulse" />
                   <div className="h-7 w-16 rounded bg-[var(--color-surface-2)] animate-pulse" />
                 </div>
-                <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 card-shadow flex flex-col gap-2" aria-hidden>
+                <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shadow-sm p-6 flex flex-col gap-2" aria-hidden>
                   <div className="h-3 w-28 rounded bg-[var(--color-surface-2)] animate-pulse" />
                   <div className="h-7 w-12 rounded bg-[var(--color-surface-2)] animate-pulse" />
                 </div>
               </>
             ) : (
-              <>
-                <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 card-shadow flex flex-col gap-1">
-                  <span className="text-[var(--color-text-muted)] text-xs font-medium">{ts('total_students')}</span>
-                  <span
-                    className={`text-lg font-bold text-[var(--color-text-primary)] tabular-nums transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}
-                  >
-                    {formatNumber(studentsList.length, locale)}
-                  </span>
-                </div>
-                <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 card-shadow flex flex-col gap-1">
-                  <span className="text-[var(--color-text-muted)] text-xs font-medium">{ts('active_students')}</span>
-                  <span
-                    className={`text-lg font-bold text-teal-600 dark:text-teal-400 tabular-nums transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}
-                  >
-                    {formatNumber(
-                      studentsList.filter((s) => s.lifecycle_status === 'active').length,
-                      locale,
-                    )}
-                  </span>
-                </div>
-              </>
+              <div className={`contents transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}>
+                <KpiCard
+                  title={ts('total_students')}
+                  value={formatNumber(studentsList.length, locale)}
+                  icon={Users}
+                  iconBg="bg-blue-100"
+                  iconColor="text-blue-600"
+                />
+                <KpiCard
+                  title={ts('active_students')}
+                  value={formatNumber(
+                    studentsList.filter((s) => s.lifecycle_status === 'active').length,
+                    locale,
+                  )}
+                  icon={Activity}
+                  iconBg="bg-green-100"
+                  iconColor="text-green-600"
+                />
+              </div>
             )}
           </div>
 
-          <div className="rounded-xl bg-[var(--color-surface-1)] mb-3 ring-1 ring-slate-200 dark:ring-slate-700 border-0 shadow-sm focus-within:ring-2 focus-within:ring-teal-500 transition-shadow duration-150">
+          <div className="rounded-xl bg-[var(--color-surface-1)] mb-3 ring-1 ring-[var(--color-border-subtle)] border-0 shadow-sm focus-within:ring-2 focus-within:ring-teal-500 transition-shadow duration-150">
             <div className="relative">
               <Search size={18} className="absolute top-1/2 -translate-y-1/2 start-4 text-[var(--color-text-muted)] pointer-events-none" />
               <input

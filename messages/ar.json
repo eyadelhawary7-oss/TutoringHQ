@@ -272,6 +272,9 @@
     "you": "انت"
   },
   "common": {
+    "sectionAtAGlance": "نظرة سريعة",
+    "sectionTrends": "الاتجاهات",
+    "sectionOverview": "نظرة عامة",
     "password": "كلمة السر",
     "passwordPlaceholder": "اكتب كلمة السر بتاعتك",
     "pin": "رمز PIN",

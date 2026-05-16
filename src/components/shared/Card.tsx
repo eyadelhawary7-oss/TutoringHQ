@@ -2,8 +2,10 @@
 
 import { cn } from '@/lib/utils';
 
-interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+interface CardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title'> {
   padding?: 'sm' | 'md' | 'lg' | 'none';
+  /** Optional title rendered above children with admin Overview typography. */
+  title?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -14,7 +16,7 @@ const PADDING = {
   lg: 'p-8',
 } as const;
 
-export default function Card({ padding = 'md', className, children, ...rest }: CardProps) {
+export default function Card({ padding = 'md', title, className, children, ...rest }: CardProps) {
   return (
     <div
       className={cn(
@@ -24,6 +26,9 @@ export default function Card({ padding = 'md', className, children, ...rest }: C
       )}
       {...rest}
     >
+      {title != null && (
+        <p className="text-sm font-medium mb-3 text-[var(--color-text-primary)]">{title}</p>
+      )}
       {children}
     </div>
   );
