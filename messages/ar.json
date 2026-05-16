@@ -2842,7 +2842,9 @@
     "confirmApprovePayment": "الموافقة على هذا الدفع؟",
     "pricingMinimumCustom": "مخصص (لكل سنتر)",
     "noReferrals": "لا توجد إحالات",
-    "finance": "المالية"
+    "finance": "المالية",
+    "demoRequestsTitle": "طلبات العرض التوضيحي",
+    "demoRequestsEmpty": "لا توجد طلبات عرض توضيحي بعد"
   },
   "ceo": {
     "brandTitle": "CenterHQ",

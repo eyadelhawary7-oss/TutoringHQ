@@ -1,14 +1,29 @@
 'use client';
 
-import { useTranslations, useLocale } from 'next-intl';
-import { Link } from '@/i18n/routing';
+import { useEffect, useState } from 'react';
+import en from '../../../messages/en.json';
+import ar from '../../../messages/ar.json';
 import { getSupportWhatsAppWaMeBase } from '@/lib/supportWhatsApp';
 import { formatNumber } from '@/lib/formatNumber';
 
+type Locale = 'ar' | 'en';
+
+function readLocale(): Locale {
+  if (typeof window === 'undefined') return 'ar';
+  const path = window.location.pathname;
+  if (path === '/en' || path.startsWith('/en/')) return 'en';
+  if (path === '/ar' || path.startsWith('/ar/')) return 'ar';
+  return 'ar';
+}
+
 export default function NotFound() {
-  const t = useTranslations('errors');
-  const locale = useLocale();
+  const [locale, setLocale] = useState<Locale>(readLocale);
+  useEffect(() => {
+    setLocale(readLocale());
+  }, []);
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
+  const messages = locale === 'en' ? en : ar;
+  const t = (key: keyof typeof messages.errors) => messages.errors[key];
   const waSupport = getSupportWhatsAppWaMeBase();
 
   return (
@@ -28,12 +43,12 @@ export default function NotFound() {
           <p className="mt-2 text-sm text-slate-400">{t('notFoundDesc')}</p>
         </div>
         <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-          <Link
-            href="/dashboard"
+          <a
+            href={`/${locale}/dashboard`}
             className="inline-flex rounded-xl bg-teal-600 px-6 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-teal-500 btn-press chq-focus"
           >
             {t('goHome')}
-          </Link>
+          </a>
           {waSupport ? (
             <a
               href={waSupport}

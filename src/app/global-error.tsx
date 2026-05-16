@@ -8,7 +8,11 @@ import ar from '../../messages/ar.json';
 type Locale = 'ar' | 'en';
 
 function readLocale(): Locale {
-  if (typeof document === 'undefined') return 'ar';
+  if (typeof window === 'undefined') return 'ar';
+  // URL path is the source of truth — the visited URL carries the locale segment.
+  const path = window.location.pathname;
+  if (path === '/en' || path.startsWith('/en/')) return 'en';
+  if (path === '/ar' || path.startsWith('/ar/')) return 'ar';
   const m = document.cookie.match(/NEXT_LOCALE=(en|ar)/);
   if (m?.[1] === 'en' || m?.[1] === 'ar') return m[1];
   const htmlLang = document.documentElement.getAttribute('lang');
@@ -23,7 +27,7 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const [locale, setLocale] = useState<Locale>('ar');
+  const [locale, setLocale] = useState<Locale>(readLocale);
 
   useEffect(() => {
     setLocale(readLocale());

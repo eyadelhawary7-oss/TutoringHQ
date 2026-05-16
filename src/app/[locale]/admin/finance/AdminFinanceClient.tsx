@@ -101,8 +101,12 @@ export default function AdminFinanceClient({ initialData }: { initialData: Finan
           prior: Number(data.mrrTrend[data.mrrTrend.length - 2]?.amount) || 0,
         }
       : null;
+  // Suppress the growth percentage entirely when either side is zero — a
+  // delta against a zero baseline (or to a zero current) carries no signal.
   const mrrGrowthLabel =
-    mrrGrowthPair != null ? formatGrowth(mrrGrowthPair.current, mrrGrowthPair.prior, locale) : null;
+    mrrGrowthPair != null && mrrGrowthPair.prior !== 0 && mrrGrowthPair.current !== 0
+      ? formatGrowth(mrrGrowthPair.current, mrrGrowthPair.prior, locale)
+      : null;
   const mrrGrowthNegative =
     mrrGrowthPair != null && mrrGrowthPair.prior > 0 && mrrGrowthPair.current < mrrGrowthPair.prior;
 

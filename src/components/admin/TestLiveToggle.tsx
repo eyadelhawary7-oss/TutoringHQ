@@ -26,14 +26,14 @@ export function TestLiveToggle() {
 
   return (
     <div
-      className="inline-flex rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] p-0.5 text-xs font-medium"
+      className="inline-flex shrink-0 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] p-0.5 text-xs font-medium whitespace-nowrap"
       role="group"
       aria-label="Aggregate data mode"
     >
       <button
         type="button"
         onClick={() => apply(true)}
-        className={`rounded-md px-3 py-1 transition-colors ${
+        className={`shrink-0 whitespace-nowrap rounded-md px-3 py-1 transition-colors ${
           live ? 'bg-teal-600 text-white' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-1)]'
         }`}
       >
@@ -42,7 +42,7 @@ export function TestLiveToggle() {
       <button
         type="button"
         onClick={() => apply(false)}
-        className={`rounded-md px-3 py-1 transition-colors ${
+        className={`shrink-0 whitespace-nowrap rounded-md px-3 py-1 transition-colors ${
           !live ? 'bg-amber-600 text-white' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-1)]'
         }`}
       >

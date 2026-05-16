@@ -504,6 +504,8 @@ function AdminPageContent() {
   const [centersPage, setCentersPage] = useState(1);
   const [centersTotalPages, setCentersTotalPages] = useState(1);
   const [centersError, setCentersError] = useState<string | null>(null);
+  const [centersLoading, setCentersLoading] = useState(false);
+  const [centersFirstLoadDone, setCentersFirstLoadDone] = useState(false);
   const [analyticsCenters, setAnalyticsCenters] = useState<CenterRow[]>([]);
   const [analyticsCentersLoading, setAnalyticsCentersLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
@@ -628,6 +630,7 @@ function AdminPageContent() {
     if (centerSearch.trim()) params.set('search', centerSearch.trim());
     if (sortBy === 'oldest') params.set('sort', 'oldest');
     setCentersError(null);
+    setCentersLoading(true);
     try {
       const res = await fetch(`/api/admin/centers?${params}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
@@ -648,6 +651,9 @@ function AdminPageContent() {
     } catch (err) {
       console.error('[loadCenters] exception:', err);
       setCentersError(err instanceof Error ? err.message : 'Network error');
+    } finally {
+      setCentersLoading(false);
+      setCentersFirstLoadDone(true);
     }
   }, [getSession, centersPage, statusFilter, filterPlan, centerSearch, sortBy]);
 
@@ -1884,7 +1890,17 @@ function AdminPageContent() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--color-border-subtle)]">
-                    {displayedCenters.length === 0 ? (
+                    {centersLoading && !centersFirstLoadDone ? (
+                      <>
+                        {Array.from({ length: 6 }).map((_, i) => (
+                          <tr key={`skel-${i}`} className="animate-pulse">
+                            <td colSpan={11} className="py-3.5 px-4">
+                              <div className="h-5 w-full rounded bg-[var(--color-surface-2)]" />
+                            </td>
+                          </tr>
+                        ))}
+                      </>
+                    ) : displayedCenters.length === 0 ? (
                       <tr>
                         <td
                           colSpan={11}
@@ -2324,11 +2340,11 @@ function AdminPageContent() {
 
         {/* Pending Signups */}
         {tab === 'pendingSignups' && (
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col min-w-0">
             <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">{tAdmin('pendingSignups')}</h2>
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden min-w-0">
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[920px]">
                   <thead>
                     <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
                       <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tAdmin('center')}</th>

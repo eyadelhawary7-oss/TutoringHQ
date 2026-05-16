@@ -1,8 +1,24 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
-import { Link } from '@/i18n/routing';
+import { useEffect, useState } from 'react';
+import en from '../../../messages/en.json';
+import ar from '../../../messages/ar.json';
+
+type Locale = 'ar' | 'en';
+
+/**
+ * Locale detection from URL pathname. The next-intl `useTranslations` /
+ * `useLocale` hooks can throw or return the default locale when this error
+ * boundary fires before the NextIntlClientProvider has fully initialised, so
+ * we don't depend on them here.
+ */
+function readLocale(): Locale {
+  if (typeof window === 'undefined') return 'ar';
+  const path = window.location.pathname;
+  if (path === '/en' || path.startsWith('/en/')) return 'en';
+  if (path === '/ar' || path.startsWith('/ar/')) return 'ar';
+  return 'ar';
+}
 
 export default function LocaleError({
   error,
@@ -11,9 +27,13 @@ export default function LocaleError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const t = useTranslations('errors');
-  const locale = useLocale();
+  const [locale, setLocale] = useState<Locale>(readLocale);
+  useEffect(() => {
+    setLocale(readLocale());
+  }, []);
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
+  const messages = locale === 'en' ? en : ar;
+  const t = (key: keyof typeof messages.errors) => messages.errors[key];
 
   useEffect(() => {
     console.error('[CenterHQ Error]', error);
@@ -56,12 +76,12 @@ export default function LocaleError({
           >
             {t('tryAgain')}
           </button>
-          <Link
-            href="/dashboard"
+          <a
+            href={`/${locale}/dashboard`}
             className="rounded-xl bg-slate-700 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-600 btn-press chq-focus"
           >
             {t('goDashboard')}
-          </Link>
+          </a>
         </div>
       </div>
     </div>

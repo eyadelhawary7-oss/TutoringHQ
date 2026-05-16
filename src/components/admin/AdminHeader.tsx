@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, type ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useTransition } from 'react';
@@ -10,6 +10,18 @@ import { Globe } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { ChangePinModal } from './ChangePinModal';
 import { TestLiveToggle } from '@/components/admin/TestLiveToggle';
+
+function TestLiveTogglePlaceholder(): ReactNode {
+  return (
+    <div
+      aria-hidden
+      className="inline-flex shrink-0 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] p-0.5 text-xs font-medium opacity-0"
+    >
+      <span className="rounded-md px-3 py-1">Live</span>
+      <span className="rounded-md px-3 py-1">Test</span>
+    </div>
+  );
+}
 
 export function AdminHeader() {
   const router = useRouter();
@@ -96,7 +108,7 @@ export function AdminHeader() {
         </span>
         <div className="flex items-center gap-3">
           {showTestLiveToggle ? (
-            <Suspense fallback={null}>
+            <Suspense fallback={<TestLiveTogglePlaceholder />}>
               <TestLiveToggle />
             </Suspense>
           ) : null}

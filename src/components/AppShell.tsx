@@ -156,41 +156,29 @@ export default function AppShell({ children }: { children: ReactNode }) {
       <div
         className={`flex-1 flex flex-col min-w-0 overflow-hidden ${isAdminRoute || kioskChromeHidden ? '' : isArLocale ? 'lg:ms-72' : 'lg:ms-60'} transition-[margin] duration-300`}
       >
-        <header
-          className={`hidden lg:flex items-center h-14 px-6 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shrink-0 sticky top-0 z-30 ${
-            isAdminRoute ? 'justify-between' : 'justify-end'
-          }`}
-        >
-          {isAdminRoute ? (
+        {/* Admin routes render their own <AdminHeader />; AppShell suppresses its desktop header there to prevent a duplicate 56px strip. */}
+        {!isAdminRoute && !kioskChromeHidden && (
+          <header className="hidden lg:flex items-center h-14 px-6 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shrink-0 sticky top-0 z-30 justify-end">
             <div className="flex items-center gap-3">
-              <span
-                className="text-lg"
-                style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}
+              <ThemeToggle />
+              <button
+                onClick={handleLocaleToggle}
+                disabled={isPending}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)] transition-colors"
               >
-                <span className="text-[var(--color-text-primary)]">CENTER</span>
-                <span className="text-teal-600">HQ</span>
-              </span>
-            </div>
-          ) : null}
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <button
-              onClick={handleLocaleToggle}
-              disabled={isPending}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)] transition-colors"
-            >
-              <Globe size={14} />
-              <span>{locale === 'ar' ? 'English' : 'العربية'}</span>
-            </button>
-            {user && (
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-primary-foreground bg-teal-600">
-                  {(user?.name || user?.phone || 'U').charAt(0).toUpperCase()}
+                <Globe size={14} />
+                <span>{locale === 'ar' ? 'English' : 'العربية'}</span>
+              </button>
+              {user && (
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-primary-foreground bg-teal-600">
+                    {(user?.name || user?.phone || 'U').charAt(0).toUpperCase()}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        </header>
+              )}
+            </div>
+          </header>
+        )}
 
         {/* Mobile TopBar - hamburger opens left drawer (not desktop sidebar) */}
         {!isAdminRoute && !kioskChromeHidden && <MobileTopBar openMenu={openMenu} setOpenMenu={setOpenMenu} />}

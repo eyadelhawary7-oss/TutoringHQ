@@ -4384,7 +4384,9 @@
     "confirmApprovePayment": "Approve this payment?",
     "pricingMinimumEgp": "Pricing Minimum (EGP)",
     "noReferrals": "No referrals",
-    "finance": "Finance"
+    "finance": "Finance",
+    "demoRequestsTitle": "Demo Requests",
+    "demoRequestsEmpty": "No demo requests yet"
   },
   "notFound": {
     "heading": "Page Not Found",
