@@ -334,6 +334,7 @@ const ADMIN_TAB_REDIRECTS: Record<string, string> = {
   sales_pipeline: '/admin/sales-pipeline',
   analytics: '/admin/analytics',
   billing: '/admin/billing',
+  centers: '/admin/centers',
   pricing: '/admin/pricing',
   'pricing-panel': '/admin/pricing',
   pricingpanel: '/admin/pricing',

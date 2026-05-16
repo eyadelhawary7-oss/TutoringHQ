@@ -400,9 +400,9 @@ export function AdminSidebar({
           key: 'centers',
           icon: Building2,
           label: t('centers'),
-          isActive: activeTab === 'centers' && !onDedicatedAdminSubpage,
+          isActive: activeRoute?.startsWith('/admin/centers') || activeRoute?.includes('/admin/centers') || false,
           canShow: canSee('centers'),
-          action: () => runPrimaryNav('centers'),
+          href: '/admin/centers',
         },
         {
           key: 'platformHealth',
