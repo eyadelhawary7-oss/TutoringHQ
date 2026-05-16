@@ -182,6 +182,10 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
   }, []);
 
   useEffect(() => {
+    void reloadOrders();
+  }, [reloadOrders]);
+
+  useEffect(() => {
     const channel = supabase
       .channel('card_orders_realtime_admin')
       .on(
