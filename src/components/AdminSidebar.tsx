@@ -416,9 +416,9 @@ export function AdminSidebar({
           key: 'billing',
           icon: CreditCard,
           label: t('billing'),
-          isActive: activeTab === 'billing' && !onDedicatedAdminSubpage,
+          isActive: (activeRoute?.includes('admin/billing') ?? false) && !activeRoute?.includes('admin/billing-'),
           canShow: canShowPermKey('billing'),
-          action: () => runPrimaryNav('billing'),
+          href: '/admin/billing',
         },
         {
           key: 'renewals',
