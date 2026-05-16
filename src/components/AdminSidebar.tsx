@@ -537,9 +537,9 @@ export function AdminSidebar({
           key: 'salesPipeline',
           icon: Target,
           label: t('salesPipeline'),
-          isActive: activeTab === 'salesPipeline' && !onDedicatedAdminSubpage,
+          isActive: activeRoute?.includes('admin/sales-pipeline') ?? false,
           canShow: canSee('sales_pipeline'),
-          action: () => runPrimaryNav('salesPipeline'),
+          href: '/admin/sales-pipeline',
         },
         {
           key: 'referrals',
