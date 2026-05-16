@@ -493,7 +493,7 @@ export function AdminSidebar({
           key: 'pendingSignups',
           icon: Clock,
           label: t('pendingSignups'),
-          isActive: activeTab === 'pendingSignups' && !onDedicatedAdminSubpage,
+          isActive: activeRoute?.includes('admin/pending-signups') ?? false,
           canShow: canSee('pending_signups'),
           badge:
             pendingCentersCount > 0 ? (
@@ -501,7 +501,7 @@ export function AdminSidebar({
                 {pendingCentersCount}
               </span>
             ) : undefined,
-          action: () => runPrimaryNav('pendingSignups'),
+          href: '/admin/pending-signups',
         },
         {
           key: 'planRequests',
