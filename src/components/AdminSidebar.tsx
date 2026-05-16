@@ -529,9 +529,9 @@ export function AdminSidebar({
           key: 'analytics',
           icon: BarChart3,
           label: t('analytics'),
-          isActive: activeTab === 'analytics' && !onDedicatedAdminSubpage,
+          isActive: activeRoute?.includes('admin/analytics') ?? false,
           canShow: canSee('analytics'),
-          action: () => runPrimaryNav('analytics'),
+          href: '/admin/analytics',
         },
         {
           key: 'salesPipeline',
