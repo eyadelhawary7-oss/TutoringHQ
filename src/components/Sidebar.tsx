@@ -160,7 +160,9 @@ export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarPr
           'flex flex-col fixed top-0 bottom-0 start-0 h-screen z-[100] print:hidden bg-[var(--color-surface-1)] border-e border-[var(--color-border)] isolate',
           isArLocale ? 'w-72' : 'w-60',
           'transition-transform duration-[250ms] ease-in-out lg:transition-none',
-          mobileDrawerOpen ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full lg:translate-x-0',
+          mobileDrawerOpen
+            ? 'translate-x-0'
+            : 'ltr:-translate-x-full rtl:translate-x-full lg:ltr:translate-x-0 lg:rtl:translate-x-0',
         )}
         aria-hidden={!isLg && !mobileDrawerOpen}
       >

@@ -1794,10 +1794,10 @@
     "title": "Dashboard",
     "subtitle": "Here's your summary for today",
     "stats": {
-      "revenue_today": "Revenue Today",
-      "active_students": "Active Students This Week",
-      "attendance_today": "Attendance Today",
-      "pending_payments": "Pending Payments"
+      "revenue_today": "Revenue today",
+      "active_students": "Active students this week",
+      "attendance_today": "Attendance today",
+      "pending_payments": "Pending payments"
     },
     "sparkline_title": "Monthly Revenue",
     "attendance_title": "Attendance Rate",
@@ -1846,8 +1846,8 @@
     "currency": "EGP",
     "scanNow": "Scan QR",
     "scanSubtitle": "Record attendance or collect payment",
-    "unpaidCount": "Unpaid Students",
-    "goToPayments": "Go to Payments",
+    "unpaidCount": "Unpaid students",
+    "goToPayments": "Go to payments",
     "teacherDashboard": "Teacher Dashboard",
     "mySchedule": "My Schedule",
     "viewCalendar": "View your classes and book time slots",

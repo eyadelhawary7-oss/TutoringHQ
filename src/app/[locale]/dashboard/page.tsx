@@ -1035,7 +1035,7 @@ export default function DashboardPage() {
             href="/payments"
             className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-6 transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
           >
-            <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)]">{t('unpaidCount')}</p>
+            <p className="text-xs font-medium text-[var(--color-text-muted)]">{t('unpaidCount')}</p>
             <p
               className={`mt-1 text-3xl font-bold text-[var(--color-text-primary)] tabular-nums transition-opacity duration-300 ${kpiStale ? 'opacity-70' : 'opacity-100'}`}
               style={{ fontFamily: 'Georgia, serif' }}
@@ -1046,7 +1046,7 @@ export default function DashboardPage() {
           </Link>
         </div>
         <div className="mt-4 rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
-          <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)]">{t('stats.attendance_today')}</p>
+          <p className="text-xs font-medium text-[var(--color-text-muted)]">{t('stats.attendance_today')}</p>
           <p
             className={`mt-1 text-2xl font-bold text-[var(--color-text-primary)] tabular-nums transition-opacity duration-300 ${kpiStale ? 'opacity-70' : 'opacity-100'}`}
             style={{ fontFamily: 'Georgia, serif' }}
@@ -1321,7 +1321,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex flex-col md:col-span-2">
               <div className="flex h-full min-h-[240px] flex-col rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
-                <p className="text-xs uppercase tracking-wide text-[var(--color-text-muted)]">{t('paymentStatus')}</p>
+                <p className="text-xs font-medium text-[var(--color-text-muted)]">{t('paymentStatus')}</p>
                 <div className="min-h-0 flex-1">
                   <DonutChart
                     data={[
