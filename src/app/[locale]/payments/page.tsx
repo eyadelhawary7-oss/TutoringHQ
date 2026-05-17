@@ -541,7 +541,8 @@ export default function PaymentsPage() {
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2 px-4 pb-2 max-w-3xl mx-auto w-full">
+        <div className="flex flex-wrap items-center gap-2 px-4 pb-2 max-w-3xl mx-auto w-full">
+          <span className="text-xs font-medium text-[var(--color-text-secondary)] me-1">{tCommon('status')}</span>
           {(['all', 'pending', 'confirmed', 'today', 'month'] as const).map((f) => (
             <button
               key={f}
@@ -557,7 +558,8 @@ export default function PaymentsPage() {
           ))}
         </div>
 
-        <div className="flex flex-wrap gap-2 px-4 pb-3 max-w-3xl mx-auto w-full">
+        <div className="flex flex-wrap items-center gap-2 px-4 pb-3 max-w-3xl mx-auto w-full">
+          <span className="text-xs font-medium text-[var(--color-text-secondary)] me-1">{tp('method')}</span>
           {(['all', 'cash', 'instapay', 'vodafone_cash', 'orange_cash', 'fawry', 'bank_transfer'] as const).map((m) => {
             const cfg = METHOD_CONFIG[m];
             const isActive = methodFilter === m;
@@ -626,7 +628,7 @@ export default function PaymentsPage() {
             <button
               type="button"
               onClick={handleExportCSV}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-brand-500 hover:opacity-90 text-white text-sm font-semibold rounded-lg shrink-0 btn-press chq-focus"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)] text-sm font-semibold hover:bg-[var(--color-surface-2)] hover:border-teal-500/40 shrink-0 btn-press chq-focus self-end ms-auto"
             >
               <Download size={14} /> {tCommon('exportCsv')}
             </button>

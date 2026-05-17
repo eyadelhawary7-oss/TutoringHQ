@@ -1200,10 +1200,10 @@ export default function StudentsPage() {
                   setSortBy('name');
                   setFilterKey((k) => k + 1);
                 }}
-                className={`px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 ${
+                className={`px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 border ${
                   sortBy === 'name'
-                    ? 'bg-teal-600 text-white shadow-sm'
-                    : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'
+                    ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
+                    : 'bg-[var(--color-surface-1)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)] hover:border-teal-500/40'
                 } btn-press chq-focus`}
               >
                 {ts('sortName')}
@@ -1214,10 +1214,10 @@ export default function StudentsPage() {
                   setSortBy('balance');
                   setFilterKey((k) => k + 1);
                 }}
-                className={`px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 ${
+                className={`px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 border ${
                   sortBy === 'balance'
-                    ? 'bg-teal-600 text-white shadow-sm'
-                    : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'
+                    ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
+                    : 'bg-[var(--color-surface-1)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)] hover:border-teal-500/40'
                 } btn-press chq-focus`}
               >
                 {ts('sortBalance')}

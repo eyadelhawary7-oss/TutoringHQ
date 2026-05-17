@@ -808,24 +808,6 @@ function SettingsPageContent() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <PageHeader title={t('title')} />
 
-        <Link
-          href="/orders"
-          className="btn-lift flex items-center gap-3 w-full mb-4 px-4 py-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow hover:border-teal-500/30 hover:bg-[var(--color-surface-0)] transition-colors text-[var(--color-text-primary)]"
-        >
-          <Package className="w-5 h-5 text-teal-600 shrink-0" aria-hidden />
-          <span className="font-medium text-sm flex-1 text-start">{tCardOrders('ordersNav')}</span>
-          <DirectionalIcon icon={ChevronRight} className="w-4 h-4 text-[var(--color-text-tertiary)] shrink-0" />
-        </Link>
-
-        <Link
-          href="/whatsapp-pack"
-          className="btn-lift flex items-center gap-3 w-full mb-4 px-4 py-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow hover:border-teal-500/30 hover:bg-[var(--color-surface-0)] transition-colors text-[var(--color-text-primary)]"
-        >
-          <MessageCircle className="w-5 h-5 text-teal-600 shrink-0" aria-hidden />
-          <span className="font-medium text-sm flex-1 text-start">{t('whatsappPack')}</span>
-          <DirectionalIcon icon={ChevronRight} className="w-4 h-4 text-[var(--color-text-tertiary)] shrink-0" />
-        </Link>
-
         {/* Tabs */}
         <div className="flex gap-1 p-1 rounded-xl border border-[var(--color-border-subtle)] w-fit mb-6 bg-[var(--color-surface-1)]">
           <button
@@ -836,10 +818,9 @@ function SettingsPageContent() {
           </button>
           <Link
             href="/settings/billing"
-            className="btn-lift inline-flex items-center gap-1 px-4 py-2.5 rounded-xl text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)] transition-colors card-shadow"
+            className="btn-lift inline-flex items-center gap-1 px-4 py-2.5 rounded-xl text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)] transition-colors card-shadow whitespace-nowrap"
           >
             {t('billing')}
-            <DirectionalIcon icon={ChevronRight} className="w-6 h-6 text-teal-600 dark:text-teal-400" aria-hidden />
           </Link>
           <button
             onClick={() => setActiveTab('team')}
@@ -858,6 +839,24 @@ function SettingsPageContent() {
         {/* GENERAL TAB */}
         {activeTab === 'general' && (
           <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-200px)] pb-4">
+            <Link
+              href="/orders"
+              className="btn-lift flex items-center gap-3 w-full px-4 py-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow hover:border-teal-500/30 hover:bg-[var(--color-surface-0)] transition-colors text-[var(--color-text-primary)]"
+            >
+              <Package className="w-5 h-5 text-teal-600 shrink-0" aria-hidden />
+              <span className="font-medium text-sm flex-1 text-start">{tCardOrders('ordersNav')}</span>
+              <DirectionalIcon icon={ChevronRight} className="w-4 h-4 text-[var(--color-text-tertiary)] shrink-0" />
+            </Link>
+
+            <Link
+              href="/whatsapp-pack"
+              className="btn-lift flex items-center gap-3 w-full px-4 py-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow hover:border-teal-500/30 hover:bg-[var(--color-surface-0)] transition-colors text-[var(--color-text-primary)]"
+            >
+              <MessageCircle className="w-5 h-5 text-teal-600 shrink-0" aria-hidden />
+              <span className="font-medium text-sm flex-1 text-start">{t('whatsappPack')}</span>
+              <DirectionalIcon icon={ChevronRight} className="w-4 h-4 text-[var(--color-text-tertiary)] shrink-0" />
+            </Link>
+
             {/* 1. Center Information */}
             <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
               <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
@@ -872,7 +871,7 @@ function SettingsPageContent() {
               <div className="p-6">
                 <div className="flex items-start gap-6 flex-wrap">
                   <div className="relative w-24 h-24 flex-shrink-0">
-                    <div className="w-24 h-24 rounded-full bg-[var(--color-surface-2)] border-2 border-[var(--color-border-subtle)] overflow-hidden flex items-center justify-center">
+                    <div className="w-24 h-24 rounded-full bg-teal-100 dark:bg-teal-900/30 border-2 border-[var(--color-border-subtle)] overflow-hidden flex items-center justify-center">
                       {logoUrl ? (
                         <img
                           src={logoUrl}
@@ -881,7 +880,7 @@ function SettingsPageContent() {
                           onError={() => setLogoUrl(null)}
                         />
                       ) : (
-                        <Building2 className="w-10 h-10 text-slate-400" />
+                        <Building2 className="w-10 h-10 text-teal-600 dark:text-teal-400" aria-hidden />
                       )}
                     </div>
                     <label className="absolute bottom-0 end-0 w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center shadow-md hover:bg-teal-700 cursor-pointer transition-colors">
@@ -1381,7 +1380,7 @@ function SettingsPageContent() {
                       </p>
                     )}
                   </div>
-                  <button onClick={() => { setInviteRole('assistant'); setInviteTeacherGroupIds([]); setInvitePerms({ can_scan: true, can_view_payments: true, can_view_dashboard: true, can_manage_students: false, can_manage_groups: false, can_view_settings: false }); setShowInviteModal(true); }} disabled={limits ? !limits.canAddTeacher : false} className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"><UserPlus className="w-4 h-4" /> {t('inviteMemberPlus')}</button>
+                  <button onClick={() => { setInviteRole('assistant'); setInviteTeacherGroupIds([]); setInvitePerms({ can_scan: true, can_view_payments: true, can_view_dashboard: true, can_manage_students: false, can_manage_groups: false, can_view_settings: false }); setShowInviteModal(true); }} disabled={limits ? !limits.canAddTeacher : false} className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0"><UserPlus className="w-4 h-4 shrink-0" /> {t('inviteMemberPlus')}</button>
                 </div>
 
                 {lastInvitePassword && (
@@ -1393,7 +1392,7 @@ function SettingsPageContent() {
 
                 <div className="bg-[var(--color-surface-1)] rounded-2xl overflow-hidden border border-[var(--color-border-subtle)] card-shadow">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                    <table className="w-full text-sm min-w-[840px]">
                       <thead>
                         <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
                           <th className="px-4 py-3 text-start text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('inviteName')}</th>

@@ -1100,14 +1100,22 @@ export default function DashboardPage() {
       {paymentDueBanner}
 
       <header className="mb-6 flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 text-end">
-          <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
-            {t(greetingKey)}
-            {greetingComma}
-            <span className="whitespace-nowrap">
-              <bdi dir="auto">{centerBilling?.name ?? 'CenterHQ'}</bdi>
+        <div className="min-w-0 text-start">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
+              {t(greetingKey)}
+              {greetingComma}
+              <span className="whitespace-nowrap">
+                <bdi dir="auto">{centerBilling?.name ?? 'CenterHQ'}</bdi>
+              </span>
+            </h1>
+            <span
+              className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium text-teal-300"
+              style={{ backgroundColor: 'rgba(13,148,136,0.2)' }}
+            >
+              {planLabel}
             </span>
-          </h1>
+          </div>
           <p
             className="mt-1 text-sm text-[var(--color-text-secondary)]"
             suppressHydrationWarning
@@ -1118,12 +1126,6 @@ export default function DashboardPage() {
               month: 'long',
             })}
           </p>
-          <span
-            className="mt-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium text-teal-300"
-            style={{ backgroundColor: 'rgba(13,148,136,0.2)' }}
-          >
-            {planLabel}
-          </span>
         </div>
         <button
           type="button"
