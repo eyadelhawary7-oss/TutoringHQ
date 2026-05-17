@@ -5,22 +5,10 @@ import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useState } 
 import { useTranslations, useLocale } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { useRouter, Link } from '@/i18n/routing';
-import {
-  Activity,
-  AlertTriangle,
-  BarChart3,
-  Building2,
-  Clock,
-  CreditCard,
-  LayoutDashboard,
-  Shield,
-  ShieldAlert,
-  TrendingUp,
-  Users,
-} from 'lucide-react';
 import { ChartCard } from '@/components/charts';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
+import { KpiCard, SectionHeader } from '@/components/shared';
 import { useLayout } from '@/contexts/LayoutContext';
 import { getAdminSession } from '@/lib/adminAuth-client';
 import { formatChartMonthLabel } from '@/lib/chartMonthLabel';
@@ -342,205 +330,103 @@ function AdminOverviewPageContent() {
 
           {overview && (
             <div className="flex-1 flex flex-col">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-xs font-semibold tracking-widest text-[var(--color-text-secondary)] uppercase">
-                  {tAdmin('platformHealth')}
-                </span>
-                <div className="flex-1 h-px bg-[var(--color-border-subtle)]" />
+              <div className="mb-3">
+                <SectionHeader title={tAdmin('platformHealth')} />
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
-                {[
-                  {
-                    label: tAdmin('totalCenters'),
-                    value: formatNumber(overview.totalCenters ?? 0, locale),
-                    iconBg: 'bg-teal-100',
-                    iconColor: 'text-teal-600',
-                    Icon: Building2,
-                  },
-                  {
-                    label: tAdmin('activeCenters'),
-                    value: formatNumber(overview.activeCenters ?? 0, locale),
-                    iconBg: 'bg-green-100',
-                    iconColor: 'text-green-600',
-                    Icon: LayoutDashboard,
-                  },
-                  {
-                    label: tAdmin('pendingSignups'),
-                    value: formatNumber(overview.pendingSignups ?? 0, locale),
-                    iconBg: 'bg-amber-100',
-                    iconColor: 'text-amber-600',
-                    Icon: Clock,
-                  },
-                  {
-                    label: tAdmin('suspendedCenters'),
-                    value: formatNumber(overview.suspendedCenters ?? 0, locale),
-                    iconBg: 'bg-red-100',
-                    iconColor: 'text-red-600',
-                    Icon: AlertTriangle,
-                  },
-                  {
-                    label: tAdmin('totalStudents'),
-                    value: formatNumber(overview.totalStudents ?? 0, locale),
-                    iconBg: 'bg-blue-100',
-                    iconColor: 'text-blue-600',
-                    Icon: Users,
-                  },
-                ].map(({ label, value, iconBg, iconColor, Icon }) => (
-                  <div
-                    key={label}
-                    className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="text-sm text-[var(--color-text-secondary)] mb-1">{label}</p>
-                        <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{value}</p>
-                      </div>
-                      <div className={`p-3 rounded-full ${iconBg}`}>
-                        <Icon className={`w-5 h-5 ${iconColor}`} />
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+                <KpiCard
+                  label={tAdmin('totalCenters')}
+                  value={formatNumber(overview.totalCenters ?? 0, locale)}
+                />
+                <KpiCard
+                  label={tAdmin('activeCenters')}
+                  value={formatNumber(overview.activeCenters ?? 0, locale)}
+                  tone="success"
+                />
+                <KpiCard
+                  label={tAdmin('pendingSignups')}
+                  value={formatNumber(overview.pendingSignups ?? 0, locale)}
+                  tone={overview.pendingSignups ? 'warning' : 'muted'}
+                />
+                <KpiCard
+                  label={tAdmin('suspendedCenters')}
+                  value={formatNumber(overview.suspendedCenters ?? 0, locale)}
+                  tone={overview.suspendedCenters ? 'danger' : 'muted'}
+                />
+                <KpiCard
+                  label={tAdmin('totalStudents')}
+                  value={formatNumber(overview.totalStudents ?? 0, locale)}
+                />
               </div>
 
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-xs font-semibold tracking-widest text-[var(--color-text-secondary)] uppercase">
-                  {tAdmin('revenue')}
-                </span>
-                <div className="flex-1 h-px bg-[var(--color-border-subtle)]" />
+              <div className="mb-3">
+                <SectionHeader title={tAdmin('revenue')} />
               </div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('mrr')}</p>
-                      <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">
-                        {formatCurrency(overview.totalMRR ?? overview.mrr ?? 0, locale)}
-                      </p>
-                    </div>
-                    <div className="p-3 rounded-full bg-green-100">
-                      <TrendingUp className="w-5 h-5 text-green-600" />
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('outstandingInvoices')}</p>
-                      <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">
-                        {formatCurrency(overview.pendingRevenue ?? 0, locale)}
-                      </p>
-                    </div>
-                    <div className="p-3 rounded-full bg-red-100">
-                      <AlertTriangle className="w-5 h-5 text-red-600" />
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('collectedThisMonth')}</p>
-                      <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">
-                        {formatCurrency(overview.revenueThisMonth ?? 0, locale)}
-                      </p>
-                    </div>
-                    <div className="p-3 rounded-full bg-teal-100">
-                      <CreditCard className="w-5 h-5 text-teal-600" />
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('collectionRate')}</p>
-                      <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">
-                        {formatNumber(
-                          overview.totalRevenueCollected != null &&
-                            overview.pendingRevenue != null &&
-                            overview.totalRevenueCollected + overview.pendingRevenue > 0
-                            ? Math.round(
-                                (overview.totalRevenueCollected /
-                                  (overview.totalRevenueCollected + overview.pendingRevenue)) *
-                                  100,
-                              )
-                            : 0,
-                          locale,
-                        )}
-                        %
-                      </p>
-                    </div>
-                    <div className="p-3 rounded-full bg-blue-100">
-                      <BarChart3 className="w-5 h-5 text-blue-600" />
-                    </div>
-                  </div>
-                </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                <KpiCard
+                  label={tAdmin('mrr')}
+                  value={formatCurrency(overview.totalMRR ?? overview.mrr ?? 0, locale)}
+                  tone="success"
+                />
+                <KpiCard
+                  label={tAdmin('outstandingInvoices')}
+                  value={formatCurrency(overview.pendingRevenue ?? 0, locale)}
+                  tone={overview.pendingRevenue ? 'danger' : 'muted'}
+                />
+                <KpiCard
+                  label={tAdmin('collectedThisMonth')}
+                  value={formatCurrency(overview.revenueThisMonth ?? 0, locale)}
+                  tone="muted"
+                />
+                <KpiCard
+                  label={tAdmin('collectionRate')}
+                  value={`${formatNumber(
+                    overview.totalRevenueCollected != null &&
+                      overview.pendingRevenue != null &&
+                      overview.totalRevenueCollected + overview.pendingRevenue > 0
+                      ? Math.round(
+                          (overview.totalRevenueCollected /
+                            (overview.totalRevenueCollected + overview.pendingRevenue)) *
+                            100,
+                        )
+                      : 0,
+                    locale,
+                  )}%`}
+                />
               </div>
 
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-xs font-semibold tracking-widest text-[var(--color-text-secondary)] uppercase">
-                  {tAdmin('securityAlerts')}
-                </span>
-                <div className="flex-1 h-px bg-[var(--color-border-subtle)]" />
+              <div className="mb-3">
+                <SectionHeader title={tAdmin('securityAlerts')} />
               </div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm text-[var(--color-text-secondary)] mb-1">
-                        {tAdmin('failedLogins24h', { hours: formatNumber(24, locale) })}
-                      </p>
-                      <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{formatNumber(0, locale)}</p>
-                    </div>
-                    <div className="p-3 rounded-full bg-orange-100">
-                      <Shield className="w-5 h-5 text-orange-600" />
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm text-[var(--color-text-secondary)] mb-1">
-                        {tAdmin('newRegistrations7d', { days: formatNumber(7, locale) })}
-                      </p>
-                      <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">
-                        {formatNumber(overview.pendingSignups ?? 0, locale)}
-                      </p>
-                    </div>
-                    <div className="p-3 rounded-full bg-purple-100">
-                      <Users className="w-5 h-5 text-purple-600" />
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('flaggedActivity')}</p>
-                      <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{formatNumber(0, locale)}</p>
-                    </div>
-                    <div className="p-3 rounded-full bg-red-100">
-                      <ShieldAlert className="w-5 h-5 text-red-600" />
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm text-[var(--color-text-secondary)] mb-1">{tAdmin('systemStatus')}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="relative flex h-2.5 w-2.5">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
-                        </span>
-                        <span className="text-sm font-semibold text-[var(--color-text-primary)]">
-                          {tAdmin('allSystemsOperational')}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-full bg-green-100">
-                      <Activity className="w-5 h-5 text-green-600" />
-                    </div>
-                  </div>
-                </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                <KpiCard
+                  label={tAdmin('failedLogins24h', { hours: formatNumber(24, locale) })}
+                  value={formatNumber(0, locale)}
+                  tone="muted"
+                />
+                <KpiCard
+                  label={tAdmin('newRegistrations7d', { days: formatNumber(7, locale) })}
+                  value={formatNumber(overview.pendingSignups ?? 0, locale)}
+                  tone="muted"
+                />
+                <KpiCard
+                  label={tAdmin('flaggedActivity')}
+                  value={formatNumber(0, locale)}
+                  tone="muted"
+                />
+                <KpiCard
+                  label={tAdmin('systemStatus')}
+                  value={
+                    <span className="inline-flex items-center gap-2">
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                      </span>
+                      <span className="text-base font-medium">{tAdmin('allSystemsOperational')}</span>
+                    </span>
+                  }
+                  tone="success"
+                />
               </div>
 
               <div className="grid md:grid-cols-2 gap-4 mb-6">

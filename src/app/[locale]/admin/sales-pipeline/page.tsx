@@ -206,14 +206,14 @@ export default function AdminSalesPipelinePage() {
             {PIPELINE_STAGES.map((stage) => (
               <div
                 key={stage}
-                className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-4 flex flex-col gap-3"
+                className="bg-[var(--color-surface-2)] rounded-lg p-4 flex flex-col gap-3"
               >
                 <div className="flex items-baseline justify-between gap-2">
-                  <h3 className="text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
+                  <h3 className="text-xs font-medium text-[var(--color-text-muted)]">
                     {tPipeline(stage)}
                   </h3>
                 </div>
-                <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">
+                <p className="text-xl md:text-2xl font-medium text-[var(--color-text-primary)] leading-tight">
                   {formatNumber(leadsByStage[stage].length, locale)}
                 </p>
                 <div className="space-y-2">
@@ -222,7 +222,7 @@ export default function AdminSalesPipelinePage() {
                       key={lead.id}
                       type="button"
                       onClick={() => setSelectedLead(lead)}
-                      className="block w-full text-start bg-[var(--color-surface-2)] rounded-lg border border-[var(--color-border-subtle)] p-3 cursor-pointer hover:bg-[var(--color-surface-3)] transition-colors"
+                      className="block w-full text-start bg-[var(--color-surface-1)] rounded-lg border border-[var(--color-border-subtle)] p-3 cursor-pointer hover:bg-[var(--color-surface-0)] transition-colors"
                     >
                       <p className="font-semibold text-sm text-[var(--color-text-primary)]">{lead.name}</p>
                       <p className="text-xs text-[var(--color-text-secondary)]">{lead.contact_person}</p>
@@ -231,7 +231,7 @@ export default function AdminSalesPipelinePage() {
                       </p>
                       <div className="flex items-center gap-2 mt-2">
                         <span className="text-xs text-[var(--color-text-secondary)]">{lead.area}</span>
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--color-surface-1)] text-[var(--color-text-secondary)]">
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]">
                           {lead.source}
                         </span>
                       </div>
