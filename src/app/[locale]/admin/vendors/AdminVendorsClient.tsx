@@ -158,11 +158,11 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
   }, [vendor, name, whatsapp, address, city, isActive, toast, t, tCommon]);
 
   return (
-    <div className="-mt-14 flex min-h-0 flex-1 flex-col">
+    <div className="flex flex-col flex-1 min-h-0 min-h-screen w-full bg-[var(--color-surface-0)]">
       <AdminHeader />
-      <div className="flex min-h-0 min-h-[calc(100vh-3.5rem)] flex-1 md:min-h-[calc(100dvh-3.5rem)]">
+      <div className="flex flex-1">
         <AdminSidebar activeRoute={pathname} />
-        <div className="w-full min-w-0 flex-1 space-y-6 overflow-auto p-6 lg:ms-56">
+        <main className="flex-1 flex flex-col min-w-0 p-4 md:p-6 overflow-auto space-y-6 lg:ms-56">
         <div className="flex items-center gap-2 mb-2">
           <button
             type="button"
@@ -338,7 +338,7 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
             </table>
           </div>
         </div>
-        </div>
+        </main>
       </div>
     </div>
   );
