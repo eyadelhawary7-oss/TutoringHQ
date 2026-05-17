@@ -33,15 +33,11 @@ import {
   QrCode,
   TrendingUp,
   TrendingDown,
-  Users,
   CreditCard,
   UserPlus,
   X,
   ArrowUpRight,
-  CalendarCheck,
   Send,
-  Activity,
-  type LucideIcon,
 } from 'lucide-react';
 
 const AR_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
@@ -187,23 +183,11 @@ function atRiskAttendanceIndicator(daysSinceLastScan: number): number {
   return Math.max(5, Math.min(59, 100 - Math.min(30, daysSinceLastScan) * 3));
 }
 
-type KpiIconTone = 'teal' | 'blue' | 'green' | 'emerald' | 'amber' | 'red';
-const KPI_ICON_TONES: Record<KpiIconTone, { bg: string; color: string }> = {
-  teal:    { bg: 'bg-teal-100',    color: 'text-teal-600' },
-  blue:    { bg: 'bg-blue-100',    color: 'text-blue-600' },
-  green:   { bg: 'bg-green-100',   color: 'text-green-600' },
-  emerald: { bg: 'bg-emerald-100', color: 'text-emerald-600' },
-  amber:   { bg: 'bg-amber-100',   color: 'text-amber-600' },
-  red:     { bg: 'bg-red-100',     color: 'text-red-600' },
-};
-
 function KpiCommandCard({
   label,
   valueDisplay,
   subLabel,
   growth,
-  icon: Icon,
-  iconTone = 'teal',
   delayMs,
   sparkline,
   staleMetrics,
@@ -214,8 +198,6 @@ function KpiCommandCard({
   subLabel?: ReactNode;
   /** Uses formatGrowth; chip hidden when prior period had no baseline (null). */
   growth?: { current: number; prior: number } | null;
-  icon: LucideIcon;
-  iconTone?: KpiIconTone;
   delayMs: number;
   sparkline: { value: number }[];
   /** When true, main KPI value is dimmed until fresh data arrives (sessionStorage rehydrate). */
@@ -231,18 +213,17 @@ function KpiCommandCard({
     growth != null &&
     growth.prior > 0 &&
     growth.current < growth.prior;
-  const tone = KPI_ICON_TONES[iconTone];
 
   // Compose sublabel slot: optional subLabel text, growth chip, sparkline.
   const composedSub = (
     <div className="flex flex-col gap-2">
       {subLabel ? (
-        <p className="text-xs text-[var(--color-text-muted)]">{subLabel}</p>
+        <p className="text-[11px] text-[var(--color-text-muted)]">{subLabel}</p>
       ) : null}
       {showTrend ? (
         <span
-          className={`inline-flex w-fit items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
-            negative ? 'bg-red-500/15 text-red-400' : 'bg-emerald-500/15 text-emerald-400'
+          className={`inline-flex w-fit items-center gap-0.5 text-[11px] font-semibold ${
+            negative ? 'text-red-500' : 'text-emerald-500'
           }`}
         >
           {!negative ? (
@@ -268,12 +249,9 @@ function KpiCommandCard({
   return (
     <div className={`chq-fade-in transition-opacity duration-300 ${staleMetrics ? 'opacity-70' : 'opacity-100'}`} style={{ animationDelay: `${delayMs}ms` }}>
       <KpiCard
-        title={label}
+        label={label}
         value={<span className="tabular-nums">{valueDisplay}</span>}
         subLabel={composedSub}
-        icon={Icon}
-        iconBg={tone.bg}
-        iconColor={tone.color}
       />
     </div>
   );
@@ -1231,8 +1209,6 @@ export default function DashboardPage() {
                     }
                   : null
               }
-              icon={Users}
-              iconTone="blue"
               delayMs={0}
               sparkline={studentSparklinePoints}
               staleMetrics={kpiStale}
@@ -1243,8 +1219,6 @@ export default function DashboardPage() {
               subLabel={t('activeStudents.timeWindow')}
               valueDisplay={formatNumber(Number(statsData?.activeStudentsThisWeek ?? 0), locale)}
               growth={null}
-              icon={Activity}
-              iconTone="teal"
               delayMs={50}
               sparkline={activeStudentsSpark7}
               staleMetrics={kpiStale}
@@ -1264,8 +1238,6 @@ export default function DashboardPage() {
                 current: attendanceTodayCount,
                 prior: safeData.yesterdayAttendanceCount,
               }}
-              icon={CalendarCheck}
-              iconTone="green"
               delayMs={100}
               sparkline={attendanceSparklinePoints}
               staleMetrics={kpiStale}
@@ -1284,8 +1256,6 @@ export default function DashboardPage() {
                       }
                     : null
                 }
-                icon={TrendingUp}
-                iconTone="emerald"
                 delayMs={200}
                 sparkline={revenueMonthlySpark7}
                 staleMetrics={kpiStale}
@@ -1299,8 +1269,6 @@ export default function DashboardPage() {
                     -
                   </span>
                 }
-                icon={TrendingUp}
-                iconTone="emerald"
                 delayMs={200}
                 sparkline={[]}
                 staleMetrics={kpiStale}
@@ -1311,8 +1279,6 @@ export default function DashboardPage() {
               label={t('pendingPayments.label')}
               subLabel={t('pendingPayments.unit')}
               valueDisplay={formatNumber(Number(safeData.pendingInvoicesCount), locale)}
-              icon={CreditCard}
-              iconTone="amber"
               delayMs={300}
               sparkline={pendingInvoicesSpark7}
               staleMetrics={kpiStale}

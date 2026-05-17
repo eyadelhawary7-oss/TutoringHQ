@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
-import { Gift, Copy, Link2, Wallet, Users, MessageCircle, Clock, TrendingUp } from 'lucide-react';
+import { Gift, Copy, Link2, Wallet, Users, MessageCircle } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
 import KpiCard from '@/components/shared/KpiCard';
 import { ReferralWithdrawalPanel } from '@/components/referrals/ReferralWithdrawalPanel';
@@ -144,35 +144,26 @@ export default function ReferralsPage() {
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <KpiCard
-            title={t('totalReferrals')}
+            label={t('totalReferrals')}
             value={fmt(data?.totalReferrals ?? 0)}
-            icon={Users}
-            iconBg="bg-slate-100 dark:bg-slate-800"
-            iconColor="text-slate-600 dark:text-slate-300"
           />
           <KpiCard
-            title={t('pending')}
+            label={t('pending')}
             value={fmt(data?.pending ?? 0)}
-            subLabel={tc('egp')}
-            icon={Clock}
-            iconBg="bg-amber-100 dark:bg-amber-900/40"
-            iconColor="text-amber-600 dark:text-amber-300"
+            delta={tc('egp')}
+            tone="warning"
           />
           <KpiCard
-            title={t('withdrawable')}
+            label={t('withdrawable')}
             value={fmt(data?.available ?? 0)}
-            subLabel={tc('egp')}
-            icon={Wallet}
-            iconBg="bg-teal-100 dark:bg-teal-900/40"
-            iconColor="text-teal-600 dark:text-teal-300"
+            delta={tc('egp')}
+            tone="success"
           />
           <KpiCard
-            title={t('totalEarned')}
+            label={t('totalEarned')}
             value={fmt(data?.totalEarned ?? 0)}
-            subLabel={tc('egp')}
-            icon={TrendingUp}
-            iconBg="bg-emerald-100 dark:bg-emerald-900/40"
-            iconColor="text-emerald-600 dark:text-emerald-300"
+            delta={tc('egp')}
+            tone="muted"
           />
         </div>
 

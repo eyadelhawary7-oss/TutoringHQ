@@ -12,7 +12,7 @@ import { getAdminSession } from '@/lib/adminAuth-client';
 import { isAdminLastActiveStaleRaw } from '@/lib/adminUtils';
 import { ChartCard, ChartLegend } from '@/components/charts';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
-import { ArrowLeft, Users, DollarSign, CircleSlash, AlertTriangle } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { KpiCard, SectionHeader } from '@/components/shared';
 import type { CenterRow } from '@/types/admin';
@@ -244,32 +244,23 @@ export default function AdminAnalyticsPage() {
               <div className="mb-3"><SectionHeader title={tCommon('sectionAtAGlance')} /></div>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
                 <KpiCard
-                  title={t('analyticsAvgStudentsPerCenter')}
+                  label={t('analyticsAvgStudentsPerCenter')}
                   value={formatNumber(avgStudentsPerCenter, locale)}
-                  icon={Users}
-                  iconBg="bg-blue-100"
-                  iconColor="text-blue-600"
                 />
                 <KpiCard
-                  title={t('analyticsAvgRevenuePerCenter')}
+                  label={t('analyticsAvgRevenuePerCenter')}
                   value={avgRevenuePerCenterCell}
-                  icon={DollarSign}
-                  iconBg="bg-emerald-100"
-                  iconColor="text-emerald-600"
+                  tone="success"
                 />
                 <KpiCard
-                  title={t('analyticsCentersZeroStudents')}
+                  label={t('analyticsCentersZeroStudents')}
                   value={formatNumber(zeroStudentsCount, locale)}
-                  icon={CircleSlash}
-                  iconBg={zeroStudentsCount > 0 ? 'bg-amber-100' : 'bg-teal-100'}
-                  iconColor={zeroStudentsCount > 0 ? 'text-amber-600' : 'text-teal-600'}
+                  tone={zeroStudentsCount > 0 ? 'warning' : 'muted'}
                 />
                 <KpiCard
-                  title={t('analyticsCentersAtRisk')}
+                  label={t('analyticsCentersAtRisk')}
                   value={formatNumber(atRiskCount, locale)}
-                  icon={AlertTriangle}
-                  iconBg={atRiskCount > 0 ? 'bg-red-100' : 'bg-teal-100'}
-                  iconColor={atRiskCount > 0 ? 'text-red-600' : 'text-teal-600'}
+                  tone={atRiskCount > 0 ? 'danger' : 'muted'}
                 />
               </div>
               <div className="grid md:grid-cols-2 gap-4 mb-6">

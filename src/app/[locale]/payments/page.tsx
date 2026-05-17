@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { auditLog, dbInsert, dbSelect, type Filter } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
 import { getCsrfHeaders } from '@/lib/csrf-client';
-import { Download, Search, DollarSign, AlertCircle, CreditCard } from 'lucide-react';
+import { Download, Search } from 'lucide-react';
 import { KpiCard, SectionHeader } from '@/components/shared';
 import { useRouter } from 'next/navigation';
 import EmptyState from '@/components/empty-states/EmptyState';
@@ -517,25 +517,19 @@ export default function PaymentsPage() {
               className={`contents transition-opacity duration-300 ${paymentsStale ? 'opacity-70' : 'opacity-100'}`}
             >
               <KpiCard
-                title={tp('total_today')}
+                label={tp('total_today')}
                 value={formatCurrency(totalToday, locale)}
-                icon={DollarSign}
-                iconBg="bg-green-100"
-                iconColor="text-green-600"
+                tone="success"
               />
               <KpiCard
-                title={tp('total_pending')}
+                label={tp('total_pending')}
                 value={formatCurrency(totalPending, locale)}
-                icon={AlertCircle}
-                iconBg="bg-amber-100"
-                iconColor="text-amber-600"
+                tone="warning"
               />
               <KpiCard
-                title={tp('total_month')}
+                label={tp('total_month')}
                 value={formatCurrency(totalMonth, locale)}
-                icon={CreditCard}
-                iconBg="bg-teal-100"
-                iconColor="text-teal-600"
+                tone="muted"
               />
             </div>
           )}

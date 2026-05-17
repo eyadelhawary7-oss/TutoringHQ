@@ -6,7 +6,7 @@ import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import QRCode from 'qrcode';
-import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye, Printer, ShoppingCart, Phone, Pencil, Inbox, CircleHelp, Activity } from 'lucide-react';
+import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye, Printer, ShoppingCart, Phone, Pencil, Inbox, CircleHelp } from 'lucide-react';
 import { KpiCard, SectionHeader } from '@/components/shared';
 import { QRCard } from '@/components/QRCard';
 import { PrintStatementModal } from '@/components/PrintStatementModal';
@@ -1090,21 +1090,16 @@ export default function StudentsPage() {
             ) : (
               <div className={`contents transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}>
                 <KpiCard
-                  title={ts('total_students')}
+                  label={ts('total_students')}
                   value={formatNumber(studentsList.length, locale)}
-                  icon={Users}
-                  iconBg="bg-blue-100"
-                  iconColor="text-blue-600"
                 />
                 <KpiCard
-                  title={ts('active_students')}
+                  label={ts('active_students')}
                   value={formatNumber(
                     studentsList.filter((s) => s.lifecycle_status === 'active').length,
                     locale,
                   )}
-                  icon={Activity}
-                  iconBg="bg-green-100"
-                  iconColor="text-green-600"
+                  tone="success"
                 />
               </div>
             )}

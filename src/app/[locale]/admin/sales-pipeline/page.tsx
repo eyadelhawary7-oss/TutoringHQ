@@ -10,7 +10,7 @@ import { useLayout } from '@/contexts/LayoutContext';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { formatNumber, formatPercent } from '@/lib/formatNumber';
 import { KpiCard, SectionHeader } from '@/components/shared';
-import { ArrowLeft, Plus, X, Users, Phone, Calendar, CheckCircle, TrendingUp, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Plus, X } from 'lucide-react';
 
 const PIPELINE_STAGES = ['prospect', 'contacted', 'demo_scheduled', 'converted'] as const;
 type PipelineStage = (typeof PIPELINE_STAGES)[number];
@@ -182,21 +182,20 @@ export default function AdminSalesPipelinePage() {
           <div className="mb-3"><SectionHeader title={tCommon('sectionAtAGlance')} /></div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             {(() => {
-              const cards: { statKey: 'totalLeads' | 'contacted' | 'demo_scheduled' | 'converted' | 'conversionRate'; value: string; icon: LucideIcon; iconBg: string; iconColor: string }[] = [
-                { statKey: 'totalLeads', value: formatNumber(leads.length, locale), icon: Users, iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
-                { statKey: 'contacted', value: formatNumber(stats.contacted, locale), icon: Phone, iconBg: 'bg-teal-100', iconColor: 'text-teal-600' },
-                { statKey: 'demo_scheduled', value: formatNumber(stats.demo_scheduled, locale), icon: Calendar, iconBg: 'bg-amber-100', iconColor: 'text-amber-600' },
-                { statKey: 'converted', value: formatNumber(stats.converted, locale), icon: CheckCircle, iconBg: 'bg-green-100', iconColor: 'text-green-600' },
-                { statKey: 'conversionRate', value: String(stats.conversionRate), icon: TrendingUp, iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600' },
+              type PipelineStatKey = 'totalLeads' | 'contacted' | 'demo_scheduled' | 'converted' | 'conversionRate';
+              const cards: { statKey: PipelineStatKey; value: string; tone?: 'muted' | 'success' | 'warning' | 'danger' }[] = [
+                { statKey: 'totalLeads', value: formatNumber(leads.length, locale) },
+                { statKey: 'contacted', value: formatNumber(stats.contacted, locale) },
+                { statKey: 'demo_scheduled', value: formatNumber(stats.demo_scheduled, locale), tone: 'warning' },
+                { statKey: 'converted', value: formatNumber(stats.converted, locale), tone: 'success' },
+                { statKey: 'conversionRate', value: String(stats.conversionRate), tone: 'success' },
               ];
-              return cards.map(({ statKey, value, icon, iconBg, iconColor }) => (
+              return cards.map(({ statKey, value, tone }) => (
                 <KpiCard
                   key={statKey}
-                  title={tPipeline(statKey)}
+                  label={tPipeline(statKey)}
                   value={value}
-                  icon={icon}
-                  iconBg={iconBg}
-                  iconColor={iconColor}
+                  tone={tone}
                 />
               ));
             })()}

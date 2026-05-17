@@ -82,7 +82,7 @@
   },
   "pipeline": {
     "addLead": "Add Lead",
-    "stagesHeader": "PIPELINE STAGES",
+    "stagesHeader": "Pipeline stages",
     "areaDokki": "Cairo / Dokki",
     "areaHeliopolis": "Cairo / Heliopolis",
     "areaLabel": "Area",
@@ -273,9 +273,9 @@
     "you": "You"
   },
   "common": {
-    "sectionAtAGlance": "AT A GLANCE",
-    "sectionTrends": "TRENDS",
-    "sectionOverview": "OVERVIEW",
+    "sectionAtAGlance": "At a glance",
+    "sectionTrends": "Trends",
+    "sectionOverview": "Overview",
     "startDate": "Start date",
     "endDate": "End date",
     "password": "Password",
@@ -3553,7 +3553,7 @@
     "centersManage": "Manage",
     "billingPeriod": "Billing Period",
     "nextDue": "Next Due",
-    "paymentHistory": "Payment History",
+    "paymentHistory": "Payment history",
     "paymentProofTypeCol": "Type",
     "paymentProofReferenceCol": "Reference",
     "proofTypePaymob": "Paymob",

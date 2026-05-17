@@ -1,42 +1,39 @@
 'use client';
 
-import type { LucideIcon } from 'lucide-react';
+export type KpiTone = 'muted' | 'success' | 'warning' | 'danger';
 
 interface KpiCardProps {
-  title: string;
+  /** Canonical label prop. `title` is accepted as a back-compat alias. */
+  label?: string;
+  title?: string;
   value: React.ReactNode;
-  /** Optional secondary content beneath the value. Accepts strings or rich nodes (sparklines, deltas, progress bars). */
+  /** Sub-label / delta. Strings get tone color; nodes render as-is. `delta` is an alias. */
   subLabel?: React.ReactNode;
-  /** Omit for a label-only card with no icon badge. */
-  icon?: LucideIcon;
-  iconBg?: string;
-  iconColor?: string;
+  delta?: React.ReactNode;
+  /** Tone for string sub-label / delta. Defaults to muted. */
+  tone?: KpiTone;
 }
 
-export default function KpiCard({
-  title,
-  value,
-  subLabel,
-  icon: Icon,
-  iconBg = 'bg-teal-100',
-  iconColor = 'text-teal-600',
-}: KpiCardProps) {
+const TONE_CLASS: Record<KpiTone, string> = {
+  muted: 'text-[var(--color-text-muted)]',
+  success: 'text-emerald-500',
+  warning: 'text-amber-500',
+  danger: 'text-red-500',
+};
+
+export default function KpiCard({ label, title, value, subLabel, delta, tone = 'muted' }: KpiCardProps) {
+  const labelText = label ?? title ?? '';
+  const sub = subLabel ?? delta;
+  const toneClass = TONE_CLASS[tone];
   return (
-    <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 flex items-start justify-between gap-3">
-      <div className="min-w-0 flex-1">
-        <p className="text-sm text-[var(--color-text-secondary)] mb-1">{title}</p>
-        <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{value}</p>
-        {subLabel != null && (
-          typeof subLabel === 'string' || typeof subLabel === 'number'
-            ? <p className="text-xs text-[var(--color-text-muted)] mt-1">{subLabel}</p>
-            : <div className="mt-2">{subLabel}</div>
-        )}
-      </div>
-      {Icon ? (
-        <div className={`shrink-0 p-3 rounded-full ${iconBg}`}>
-          <Icon className={`w-5 h-5 ${iconColor}`} />
-        </div>
-      ) : null}
+    <div className="bg-[var(--color-surface-2)] rounded-lg p-4">
+      <p className="text-xs text-[var(--color-text-muted)]">{labelText}</p>
+      <p className="text-xl md:text-2xl font-medium mt-1 text-[var(--color-text-primary)] leading-tight">{value}</p>
+      {sub != null && (
+        typeof sub === 'string' || typeof sub === 'number'
+          ? <p className={`text-[11px] mt-1 ${toneClass}`}>{sub}</p>
+          : <div className="mt-1">{sub}</div>
+      )}
     </div>
   );
 }
