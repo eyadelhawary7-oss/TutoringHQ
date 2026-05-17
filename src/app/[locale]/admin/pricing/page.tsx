@@ -14,6 +14,7 @@ import { getAnnualChargeRounded } from '@/lib/pricing';
 import { useToast } from '@/hooks/useToast';
 import { ArrowLeft, Banknote, ChevronDown } from 'lucide-react';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
+import { SectionHeader } from '@/components/shared';
 import { formatNumber } from '@/lib/formatNumber';
 import type {
   BannerStyle,
@@ -456,20 +457,20 @@ export default function AdminPricingPage() {
           ) : (
             <>
               <section className="mb-10">
-                <h2 className="text-sm font-semibold tracking-wide text-[var(--color-text-secondary)] uppercase mb-3">
-                  {t('pricingSectionSubscriptions')}
-                </h2>
+                <div className="mb-3">
+                  <SectionHeader title={t('pricingSectionSubscriptions')} />
+                </div>
                 <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-1)] overflow-x-auto">
                   <table className="w-full text-sm min-w-[720px]">
                     <thead>
-                      <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-secondary)]">
-                        <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('pricingPlanName')}</th>
-                        <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('pricingStudentLimit')}</th>
-                        <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('pricingMonthlyList')}</th>
-                        <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('pricingQuarterlyAllIn')}</th>
-                        <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('pricingAnnualDerived')}</th>
-                        <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('pricingMonthlyPremiumDerived')}</th>
-                        <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('pricingActive')}</th>
+                      <tr className="border-b border-[var(--color-border-subtle)]">
+                        <th className="text-start p-3 text-xs font-medium text-[var(--color-text-muted)]">{t('pricingPlanName')}</th>
+                        <th className="text-start p-3 text-xs font-medium text-[var(--color-text-muted)]">{t('pricingStudentLimit')}</th>
+                        <th className="text-start p-3 text-xs font-medium text-[var(--color-text-muted)]">{t('pricingMonthlyList')}</th>
+                        <th className="text-start p-3 text-xs font-medium text-[var(--color-text-muted)]">{t('pricingQuarterlyAllIn')}</th>
+                        <th className="text-start p-3 text-xs font-medium text-[var(--color-text-muted)]">{t('pricingAnnualDerived')}</th>
+                        <th className="text-start p-3 text-xs font-medium text-[var(--color-text-muted)]">{t('pricingMonthlyPremiumDerived')}</th>
+                        <th className="text-start p-3 text-xs font-medium text-[var(--color-text-muted)]">{t('pricingActive')}</th>
                         <th className="p-3 w-28" />
                       </tr>
                     </thead>
@@ -549,9 +550,9 @@ export default function AdminPricingPage() {
               </section>
 
               <section className="mb-10">
-                <h2 className="text-sm font-semibold tracking-wide text-[var(--color-text-secondary)] uppercase mb-3">
-                  {t('pricingSectionPack')}
-                </h2>
+                <div className="mb-3">
+                  <SectionHeader title={t('pricingSectionPack')} />
+                </div>
                 <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-1)] p-4 md:p-6 space-y-6">
                   <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4">
                     <div className="flex-1 min-w-0">
@@ -587,8 +588,8 @@ export default function AdminPricingPage() {
                       <table className="w-full text-sm min-w-[280px]">
                         <thead>
                           <tr className="bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]">
-                            <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('pricingPlanKey')}</th>
-                            <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('pricingMinimumEgp')}</th>
+                            <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('pricingPlanKey')}</th>
+                            <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('pricingMinimumEgp')}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1219,7 +1220,7 @@ function CollapsibleSection({ title, open, onToggle, children }: CollapsibleSect
         onClick={onToggle}
         className="w-full flex items-center justify-between px-4 py-3 text-start"
       >
-        <h2 className="text-sm font-semibold tracking-wide text-[var(--color-text-primary)] uppercase">
+        <h2 className="text-sm font-medium text-[var(--color-text-primary)]">
           {title}
         </h2>
         <ChevronDown

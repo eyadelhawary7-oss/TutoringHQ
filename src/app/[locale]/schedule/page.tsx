@@ -488,14 +488,14 @@ export default function SchedulePage() {
                     />
                   ) : null}
                   <div className="sticky top-0 z-[9] grid grid-cols-8 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
-                    <div className="border-e border-[var(--color-border-subtle)] px-3 py-3 text-xs font-semibold uppercase text-[var(--color-text-secondary)]">
+                    <div className="border-e border-[var(--color-border-subtle)] px-3 py-3 text-xs font-medium text-[var(--color-text-muted)]">
                       {t('time')}
                     </div>
                     {CAIRO_COL_ORDER.map((day) => (
                       <div
                         key={day}
                         id={`schedule-col-${day}`}
-                        className={`border-e border-[var(--color-border-subtle)] px-3 py-3 text-center text-xs font-semibold uppercase text-[var(--color-text-secondary)] last:border-e-0 ${
+                        className={`border-e border-[var(--color-border-subtle)] px-3 py-3 text-center text-xs font-medium text-[var(--color-text-muted)] last:border-e-0 ${
                           selectedDay === day ? 'ring-1 ring-inset ring-teal-500/35' : ''
                         }`}
                       >

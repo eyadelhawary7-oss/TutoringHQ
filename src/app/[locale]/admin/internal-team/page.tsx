@@ -213,11 +213,11 @@ export default function AdminInternalTeamPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[180px]">{tCommon('name')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('phone')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{t('internalTeamRoleLabel')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{t('joinedDate')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[120px]">{tCommon('actions')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-medium text-[var(--color-text-muted)] min-w-[180px]">{tCommon('name')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-medium text-[var(--color-text-muted)]">{tCommon('phone')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-medium text-[var(--color-text-muted)]">{t('internalTeamRoleLabel')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-medium text-[var(--color-text-muted)]">{t('joinedDate')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-medium text-[var(--color-text-muted)] min-w-[120px]">{tCommon('actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--color-border-subtle)]">

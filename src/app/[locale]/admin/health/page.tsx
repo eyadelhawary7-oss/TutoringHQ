@@ -10,6 +10,7 @@ import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { Activity, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
+import { SectionHeader } from '@/components/shared';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
 
 type CronRecentFailure = {
@@ -242,9 +243,9 @@ export default function AdminHealthPage() {
             </section>
 
             <section>
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-3">
-                {t('healthQuickStats')}
-              </h2>
+              <div className="mb-3">
+                <SectionHeader title={t('healthQuickStats')} />
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {(
                   [
@@ -302,29 +303,29 @@ export default function AdminHealthPage() {
             </section>
 
             <section>
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-3">
-                {t('healthCronStatus')}
-              </h2>
+              <div className="mb-3">
+                <SectionHeader title={t('healthCronStatus')} />
+              </div>
               <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] overflow-x-auto">
                 <table className="w-full text-sm text-start">
                   <thead>
                     <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
-                      <th className="p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
+                      <th className="p-3 text-xs font-medium text-[var(--color-text-muted)]">
                         {t('healthColCron')}
                       </th>
-                      <th className="p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
+                      <th className="p-3 text-xs font-medium text-[var(--color-text-muted)]">
                         {t('healthColSchedule')}
                       </th>
-                      <th className="p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
+                      <th className="p-3 text-xs font-medium text-[var(--color-text-muted)]">
                         {t('healthColLastRun')}
                       </th>
-                      <th className="p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
+                      <th className="p-3 text-xs font-medium text-[var(--color-text-muted)]">
                         {t('healthColStatus')}
                       </th>
-                      <th className="p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
+                      <th className="p-3 text-xs font-medium text-[var(--color-text-muted)]">
                         {t('healthColDuration')}
                       </th>
-                      <th className="p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
+                      <th className="p-3 text-xs font-medium text-[var(--color-text-muted)]">
                         {t('health.lastError.columnHeader')}
                       </th>
                     </tr>
@@ -437,9 +438,9 @@ export default function AdminHealthPage() {
             </section>
 
             <section>
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-3">
-                {t('healthPendingActions')}
-              </h2>
+              <div className="mb-3">
+                <SectionHeader title={t('healthPendingActions')} />
+              </div>
               <ul className="space-y-2 text-[var(--color-text-secondary)]">
                 <li>
                   <Link
@@ -490,7 +491,7 @@ export default function AdminHealthPage() {
               </h2>
               <p className="text-sm font-mono text-[var(--color-text-secondary)] mb-4">{cronDetailRow.path}</p>
 
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-2">
+              <h3 className="text-xs font-medium text-[var(--color-text-muted)] mb-2">
                 {t('health.errorModal.stackHeading')}
               </h3>
               {cronDetailRow.last_error_stack?.trim() ? (
@@ -501,7 +502,7 @@ export default function AdminHealthPage() {
                 <p className="text-sm text-[var(--color-text-secondary)] mb-6">{t('health.errorModal.noStack')}</p>
               )}
 
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-2">
+              <h3 className="text-xs font-medium text-[var(--color-text-muted)] mb-2">
                 {t('health.errorModal.recentErrorsHeading')}
               </h3>
               {cronDetailRow.recent_failures.length === 0 ? (

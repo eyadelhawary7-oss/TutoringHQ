@@ -5,7 +5,6 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { usePathname, useRouter } from '@/i18n/routing';
 import {
-  Package,
   Clock,
   Printer,
   Truck,
@@ -20,6 +19,8 @@ import { cn } from '@/lib/utils';
 import CardTemplatePreview from '@/components/CardTemplatePreview';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
+import { KpiCard } from '@/components/shared';
+import type { KpiTone } from '@/components/shared/KpiCard';
 import { useSidebar } from '@/contexts/SidebarContext';
 import type { AdminCardOrderRow, CardOrderFulfillmentStatus } from '@/types/admin-card-orders';
 import { supabase } from '@/lib/supabase';
@@ -233,25 +234,22 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
     [pathname, router],
   );
 
-  const kpis = [
-    { label: tIdCards('totalOrders'), value: orders.length, icon: Package, color: '#3B82F6' },
+  const kpis: { label: string; value: number; tone: KpiTone }[] = [
+    { label: tIdCards('totalOrders'), value: orders.length, tone: 'muted' },
     {
       label: tIdCards('statusPending'),
       value: orders.filter((o) => o.status === 'pending').length,
-      icon: Clock,
-      color: '#F59E0B',
+      tone: 'warning',
     },
     {
       label: tIdCards('statusPrinting'),
       value: orders.filter((o) => o.status === 'printing').length,
-      icon: Printer,
-      color: '#7C3AED',
+      tone: 'muted',
     },
     {
       label: tIdCards('statusDelivered'),
       value: orders.filter((o) => o.status === 'delivered').length,
-      icon: CheckCircle,
-      color: '#16A34A',
+      tone: 'success',
     },
   ];
 
@@ -333,25 +331,9 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
           <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{tIdCards('adminSubtitle')}</p>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-          {kpis.map(({ label, value, icon: Icon, color }) => (
-            <div
-              key={label}
-              className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6"
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-[var(--color-text-secondary)] mb-1">{label}</p>
-                  <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">{value}</p>
-                </div>
-                <div
-                  className="p-3 rounded-full shrink-0 flex items-center justify-center"
-                  style={{ background: `${color}22` }}
-                >
-                  <Icon className="w-5 h-5" style={{ color }} aria-hidden />
-                </div>
-              </div>
-            </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          {kpis.map(({ label, value, tone }) => (
+            <KpiCard key={label} label={label} value={value} tone={tone} />
           ))}
         </div>
 
@@ -405,25 +387,25 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
               <table className="w-full">
                 <thead className="bg-[var(--color-surface-2)]">
                   <tr>
-                    <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                    <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-muted)]">
                       {tIdCards('orderNumber')}
                     </th>
-                    <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                    <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-muted)]">
                       {tAdmin('center')}
                     </th>
-                    <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                    <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-muted)]">
                       {tIdCards('cards')}
                     </th>
-                    <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                    <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-muted)]">
                       {tIdCards('total')}
                     </th>
-                    <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                    <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-muted)]">
                       {tCommon('status')}
                     </th>
-                    <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                    <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-muted)]">
                       {tCommon('date')}
                     </th>
-                    <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                    <th className="px-4 py-3 text-start text-xs font-medium text-[var(--color-text-muted)]">
                       {tCommon('actions')}
                     </th>
                   </tr>

@@ -514,16 +514,16 @@ function AdminCentersPageInner() {
                         className="rounded border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] text-primary focus:ring-primary"
                       />
                     </th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('name')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">{t('owner')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden lg:table-cell">{tCommon('phone')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{t('plan')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('status')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">{t('studentsCount')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden lg:table-cell">{t('lastActive')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden lg:table-cell">{t('usage')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden lg:table-cell">{t('createdAt')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-medium text-[var(--color-text-muted)]">{tCommon('name')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-medium text-[var(--color-text-muted)] hidden md:table-cell">{t('owner')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-medium text-[var(--color-text-muted)] hidden lg:table-cell">{tCommon('phone')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-medium text-[var(--color-text-muted)]">{t('plan')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-medium text-[var(--color-text-muted)]">{tCommon('status')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-medium text-[var(--color-text-muted)] hidden md:table-cell">{t('studentsCount')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-medium text-[var(--color-text-muted)] hidden lg:table-cell">{t('lastActive')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-medium text-[var(--color-text-muted)] hidden lg:table-cell">{t('usage')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-medium text-[var(--color-text-muted)] hidden lg:table-cell">{t('createdAt')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-medium text-[var(--color-text-muted)]">{tCommon('actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--color-border-subtle)]">
