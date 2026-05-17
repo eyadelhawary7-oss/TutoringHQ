@@ -72,7 +72,7 @@ CSRF is gated by `CSRF_SECRET` (`src/lib/csrf.ts`). When unset, validation is sk
 - `src/app/api/cron/*` — Vercel-scheduled jobs (see `vercel.json`). Each expects `Authorization: Bearer ${CRON_SECRET}`.
 - `src/app/api/webhooks/*` and the explicit paths in `PUBLIC_WEBHOOK_PREFIXES` are **public** (no Origin check, no auth); they must verify HMAC themselves (see `verifyHmac.ts`).
 - `src/app/auth/callback` — Supabase auth callback. Listed in `publicRoutes` and `apiRoutes`.
-- **No Pages Router.** Everything is App Router; `src/pages/` is unused. Don't add routes there.
+- **No Pages Router.** Everything is App Router.
 
 ### Domain modules of note
 
@@ -125,6 +125,7 @@ Most business logic lives in **`src/lib/`** as standalone modules. Prefer import
 - **`is_test = false` default** on admin aggregates.
 - **CSRF on mutations** routed through `/api/db`; new mutation endpoints should call `validateCSRFRequest`.
 - **Webhooks verify HMAC themselves** — middleware does not check auth on `PUBLIC_WEBHOOK_PREFIXES`.
+- **No `forwardRef` boilerplate.** `ref` is a normal prop in React 19 — don't wrap new components in `forwardRef`, and strip it from older components when you touch them. Footgun: copy-pasting pre-React-19 component patterns drags `forwardRef` back in.
 
 ## Where to look first
 
