@@ -8,9 +8,9 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
-import { ArrowLeft, Plus, X } from 'lucide-react';
-import { formatPercent } from '@/lib/formatNumber';
-import { SectionHeader } from '@/components/shared';
+import { formatNumber, formatPercent } from '@/lib/formatNumber';
+import { KpiCard, SectionHeader } from '@/components/shared';
+import { ArrowLeft, Plus, X, Users, Phone, Calendar, CheckCircle, TrendingUp, type LucideIcon } from 'lucide-react';
 
 const PIPELINE_STAGES = ['prospect', 'contacted', 'demo_scheduled', 'converted'] as const;
 type PipelineStage = (typeof PIPELINE_STAGES)[number];
@@ -180,41 +180,50 @@ export default function AdminSalesPipelinePage() {
           </div>
 
           <div className="mb-3"><SectionHeader title={tCommon('sectionAtAGlance')} /></div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
-            {([
-              { statKey: 'totalLeads' as const, value: leads.length },
-              { statKey: 'contacted' as const, value: stats.contacted },
-              { statKey: 'demo_scheduled' as const, value: stats.demo_scheduled },
-              { statKey: 'converted' as const, value: stats.converted },
-              { statKey: 'conversionRate' as const, value: stats.conversionRate },
-            ] as const).map(({ statKey, value }) => (
-              <div
-                key={statKey}
-                className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6"
-              >
-                <div className="text-2xl font-bold font-mono text-[var(--color-text-primary)]">{value}</div>
-                <div className="text-sm text-[var(--color-text-secondary)]">{tPipeline(statKey)}</div>
-              </div>
-            ))}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+            {(() => {
+              const cards: { statKey: 'totalLeads' | 'contacted' | 'demo_scheduled' | 'converted' | 'conversionRate'; value: string; icon: LucideIcon; iconBg: string; iconColor: string }[] = [
+                { statKey: 'totalLeads', value: formatNumber(leads.length, locale), icon: Users, iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
+                { statKey: 'contacted', value: formatNumber(stats.contacted, locale), icon: Phone, iconBg: 'bg-teal-100', iconColor: 'text-teal-600' },
+                { statKey: 'demo_scheduled', value: formatNumber(stats.demo_scheduled, locale), icon: Calendar, iconBg: 'bg-amber-100', iconColor: 'text-amber-600' },
+                { statKey: 'converted', value: formatNumber(stats.converted, locale), icon: CheckCircle, iconBg: 'bg-green-100', iconColor: 'text-green-600' },
+                { statKey: 'conversionRate', value: String(stats.conversionRate), icon: TrendingUp, iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600' },
+              ];
+              return cards.map(({ statKey, value, icon, iconBg, iconColor }) => (
+                <KpiCard
+                  key={statKey}
+                  title={tPipeline(statKey)}
+                  value={value}
+                  icon={icon}
+                  iconBg={iconBg}
+                  iconColor={iconColor}
+                />
+              ));
+            })()}
           </div>
 
+          <div className="mb-3"><SectionHeader title={tPipeline('stagesHeader')} /></div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {PIPELINE_STAGES.map((stage) => (
-              <div key={stage} className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-sm text-[var(--color-text-primary)]">
+              <div
+                key={stage}
+                className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-4 flex flex-col gap-3"
+              >
+                <div className="flex items-baseline justify-between gap-2">
+                  <h3 className="text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
                     {tPipeline(stage)}
                   </h3>
-                  <span className="text-xs font-mono text-[var(--color-text-secondary)]">
-                    {leadsByStage[stage].length}
-                  </span>
                 </div>
+                <p className="text-2xl font-bold text-[var(--color-text-primary)] font-mono">
+                  {formatNumber(leadsByStage[stage].length, locale)}
+                </p>
                 <div className="space-y-2">
                   {leadsByStage[stage].map((lead) => (
-                    <div
+                    <button
                       key={lead.id}
+                      type="button"
                       onClick={() => setSelectedLead(lead)}
-                      className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow"
+                      className="block w-full text-start bg-[var(--color-surface-2)] rounded-lg border border-[var(--color-border-subtle)] p-3 cursor-pointer hover:bg-[var(--color-surface-3)] transition-colors"
                     >
                       <p className="font-semibold text-sm text-[var(--color-text-primary)]">{lead.name}</p>
                       <p className="text-xs text-[var(--color-text-secondary)]">{lead.contact_person}</p>
@@ -223,11 +232,11 @@ export default function AdminSalesPipelinePage() {
                       </p>
                       <div className="flex items-center gap-2 mt-2">
                         <span className="text-xs text-[var(--color-text-secondary)]">{lead.area}</span>
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]">
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--color-surface-1)] text-[var(--color-text-secondary)]">
                           {lead.source}
                         </span>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>

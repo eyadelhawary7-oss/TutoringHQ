@@ -3,13 +3,14 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { usePathname } from '@/i18n/routing';
-import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Check } from 'lucide-react';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/useToast';
 import { formatDate } from '@/lib/formatNumber';
+import { PageHeader } from '@/components/shared';
 
 type VendorRow = {
   id: string;
@@ -161,9 +162,7 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
       <div className="flex min-h-0 min-h-[calc(100vh-3.5rem)] flex-1 md:min-h-[calc(100dvh-3.5rem)]">
         <AdminSidebar activeRoute={pathname} />
         <div className="w-full min-w-0 flex-1 space-y-6 overflow-auto p-6 lg:ms-56">
-        <div>
-          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('vendorsTitle')}</h1>
-        </div>
+        <PageHeader title={t('vendorsTitle')} subtitle={t('vendorsSubtitle')} />
 
         <div className="max-w-lg space-y-4 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-6">
           <div>
@@ -208,13 +207,19 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
               className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
             />
           </div>
-          <label className="flex items-center gap-2 text-sm text-[var(--color-text-primary)] cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-              className="rounded border-input"
-            />
+          <label className="flex items-center gap-2 text-sm text-[var(--color-text-primary)] cursor-pointer select-none">
+            <span className="relative inline-flex">
+              <input
+                type="checkbox"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+                className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-[var(--color-border-default)] bg-[var(--color-surface-2)] checked:border-teal-600 checked:bg-teal-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface-1)] transition-colors"
+              />
+              <Check
+                className="pointer-events-none absolute inset-0 m-auto h-3.5 w-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity"
+                aria-hidden
+              />
+            </span>
             {t('vendorActive')}
           </label>
           <button

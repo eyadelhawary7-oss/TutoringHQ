@@ -82,6 +82,7 @@
   },
   "pipeline": {
     "addLead": "Add Lead",
+    "stagesHeader": "PIPELINE STAGES",
     "areaDokki": "Cairo / Dokki",
     "areaHeliopolis": "Cairo / Heliopolis",
     "areaLabel": "Area",
@@ -3490,6 +3491,7 @@
     },
     "vendorSaved": "Vendor Saved",
     "vendorsTitle": "Vendors",
+    "vendorsSubtitle": "Manage the active card vendor and review WhatsApp contact details.",
     "vendorWhatsapp": "WhatsApp Number",
     "whatsappPack": "WhatsApp Pack",
     "overview": "Overview",

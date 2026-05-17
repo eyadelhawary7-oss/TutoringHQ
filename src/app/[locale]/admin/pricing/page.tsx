@@ -170,9 +170,23 @@ export default function AdminPricingPage() {
       throw new Error(err?.error || t('pricingLoadError'));
     }
     const data = await res.json();
-    const list = ((data.plans || []) as PlanRow[]).filter(
-      (p) => p.plan_key !== ['pro', '_plus'].join(''),
-    );
+    const tierOrder: Record<string, number> = {
+      solo: 0,
+      nano: 1,
+      starter: 2,
+      pro: 3,
+      business: 4,
+      enterprise: 5,
+      top_centers: 6,
+    };
+    const list = ((data.plans || []) as PlanRow[])
+      .filter((p) => p.plan_key !== ['pro', '_plus'].join(''))
+      .sort((a, b) => {
+        const aRank = tierOrder[a.plan_key] ?? 99;
+        const bRank = tierOrder[b.plan_key] ?? 99;
+        if (aRank !== bRank) return aRank - bRank;
+        return a.plan_key.localeCompare(b.plan_key);
+      });
     setPlans(list);
     const next: Record<string, PlanDraft> = {};
     for (const p of list) {

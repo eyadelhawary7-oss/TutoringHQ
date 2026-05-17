@@ -82,6 +82,7 @@
   },
   "pipeline": {
     "addLead": "إضافة عميل محتمل",
+    "stagesHeader": "مراحل المسار",
     "areaDokki": "القاهرة - الدقي",
     "areaHeliopolis": "القاهرة - مصر الجديدة",
     "areaLabel": "المنطقة",
@@ -1948,6 +1949,7 @@
     },
     "vendorSaved": "المورد Saved",
     "vendorsTitle": "الموردون",
+    "vendorsSubtitle": "إدارة مورد الكروت النشط ومراجعة بيانات التواصل عبر واتساب.",
     "vendorWhatsapp": "رقم واتساب",
     "whatsappPack": "باقة واتساب",
     "overview": "نظرة عامة",

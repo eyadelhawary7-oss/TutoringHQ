@@ -8,7 +8,7 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { getAdminSession, getAdminAuthHeaders } from '@/lib/adminAuth-client';
-import { PlanBadge, BillingStatusBadge, SectionHeader } from '@/components/shared';
+import { PlanBadge, BillingStatusBadge, SectionHeader, KpiCard } from '@/components/shared';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import {
@@ -21,6 +21,9 @@ import {
   XCircle,
   ExternalLink,
   X,
+  Building2,
+  AlertTriangle,
+  CreditCard,
 } from 'lucide-react';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
 
@@ -229,11 +232,64 @@ export default function AdminBillingPage() {
           )}
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <RefreshCw className="animate-spin text-[var(--color-text-secondary)]" size={24} />
+            <div className="space-y-4" aria-busy="true" aria-live="polite">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-24 rounded-xl bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] chq-skeleton"
+                  />
+                ))}
+              </div>
+              <div className="chq-skeleton h-72 w-full rounded-xl" />
             </div>
           ) : (
             <>
+              <div className="mb-3"><SectionHeader title={tCommon('sectionAtAGlance')} /></div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                <KpiCard
+                  title={t('totalCenters')}
+                  value={formatNumber(billingData.filter((b) => b && b.id).length, locale)}
+                  icon={Building2}
+                  iconBg="bg-teal-100"
+                  iconColor="text-teal-600"
+                />
+                <KpiCard
+                  title={t('pendingInvoices')}
+                  value={formatNumber(pendingInvoices.length, locale)}
+                  icon={AlertTriangle}
+                  iconBg={pendingInvoices.length > 0 ? 'bg-amber-100' : 'bg-blue-100'}
+                  iconColor={pendingInvoices.length > 0 ? 'text-amber-600' : 'text-blue-600'}
+                />
+                <KpiCard
+                  title={t('outstandingInvoices')}
+                  value={formatCurrency(
+                    pendingInvoices.reduce((sum, inv) => sum + (inv.payment_amount ?? 0), 0),
+                    locale,
+                  )}
+                  icon={CreditCard}
+                  iconBg="bg-red-100"
+                  iconColor="text-red-600"
+                />
+                <KpiCard
+                  title={t('collectedThisMonth')}
+                  value={formatCurrency(
+                    paymentHistory
+                      .filter((p) => {
+                        if (!p.paid_at) return false;
+                        const d = new Date(p.paid_at);
+                        const now = new Date();
+                        return d.getUTCFullYear() === now.getUTCFullYear() && d.getUTCMonth() === now.getUTCMonth();
+                      })
+                      .reduce((sum, p) => sum + Number(p.amount ?? 0), 0),
+                    locale,
+                  )}
+                  icon={CheckCircle}
+                  iconBg="bg-green-100"
+                  iconColor="text-green-600"
+                />
+              </div>
+
               <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden mb-6">
                 <div className="overflow-x-auto">
                   <table className="w-full">
@@ -281,8 +337,8 @@ export default function AdminBillingPage() {
                                   nextDue={nextDueStr || new Date().toISOString()}
                                 />
                               </td>
-                              <td className="py-3.5 px-4">
-                                <div className="flex items-center gap-2 flex-nowrap">
+                              <td className="py-3.5 px-4 min-w-[280px]">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   {!isPaid && (
                                     <button
                                       type="button"
@@ -335,8 +391,8 @@ export default function AdminBillingPage() {
                               <td className="py-3.5 px-4 font-mono font-bold text-[var(--color-text-primary)]">
                                 {formatCurrency(inv.payment_amount ?? 0, locale)}
                               </td>
-                              <td className="py-3.5 px-4">
-                                <div className="flex items-center gap-2 flex-nowrap">
+                              <td className="py-3.5 px-4 min-w-[360px]">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   {inv.payment_proof_url ? (
                                     <button
                                       type="button"
@@ -346,7 +402,7 @@ export default function AdminBillingPage() {
                                       <Eye className="w-3.5 h-3.5" /> {t('viewProof')}
                                     </button>
                                   ) : (
-                                    <span className="text-xs text-[var(--color-text-tertiary)] px-3">{t('noImage')}</span>
+                                    <span className="inline-flex items-center text-xs text-[var(--color-text-tertiary)] px-3 py-1.5 whitespace-nowrap">{t('noImage')}</span>
                                   )}
                                   <button
                                     type="button"

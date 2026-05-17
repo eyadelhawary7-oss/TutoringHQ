@@ -375,7 +375,7 @@ export default function StaffPage() {
         ) : null}
 
         <div className="flex gap-3 flex-wrap items-center">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 me-1">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-secondary)] me-1">
             {tCommon('status')}:
           </span>
           {(['all', 'active', 'inactive', 'terminated'] as const).map((s) => (
@@ -383,17 +383,17 @@ export default function StaffPage() {
               key={s}
               type="button"
               onClick={() => setFilterStatus(s)}
-              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
                 filterStatus === s
-                  ? 'bg-teal-600 text-white'
-                  : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
+                  : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-3)] hover:text-[var(--color-text-primary)]'
               }`}
             >
               {s === 'all' ? t('filterAll') : t(`staff.status_${s}`)}
             </button>
           ))}
-          <div className="h-6 w-px bg-slate-300 dark:bg-slate-700 self-center" />
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 me-1">
+          <div className="h-6 w-px bg-[var(--color-border-subtle)] self-center" />
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-secondary)] me-1">
             {tCommon('role')}:
           </span>
           {(['all', 'sm', 'sr'] as const).map((r) => (
@@ -401,10 +401,10 @@ export default function StaffPage() {
               key={r}
               type="button"
               onClick={() => setFilterRole(r)}
-              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
                 filterRole === r
-                  ? 'bg-slate-600 text-white'
-                  : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
+                  : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-3)] hover:text-[var(--color-text-primary)]'
               }`}
             >
               {r === 'all' ? t('filterAll') : t(`staff.role_${r}`)}

@@ -12,8 +12,9 @@ import { getAdminSession } from '@/lib/adminAuth-client';
 import { isAdminLastActiveStaleRaw } from '@/lib/adminUtils';
 import { ChartCard, ChartLegend } from '@/components/charts';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
-import { formatCurrency } from '@/lib/formatNumber';
+import { ArrowLeft, Users, DollarSign, CircleSlash, AlertTriangle } from 'lucide-react';
+import { formatCurrency, formatNumber } from '@/lib/formatNumber';
+import { KpiCard, SectionHeader } from '@/components/shared';
 import type { CenterRow } from '@/types/admin';
 
 const BarChartComponent = dynamic(
@@ -224,13 +225,55 @@ export default function AdminAnalyticsPage() {
           )}
 
           {loading && centers.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
-              <RefreshCw className="animate-spin text-[var(--color-text-secondary)]" size={24} />
+            <div className="space-y-4" aria-busy="true" aria-live="polite">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-24 rounded-xl bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] chq-skeleton"
+                  />
+                ))}
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="chq-skeleton h-72 rounded-xl" />
+                <div className="chq-skeleton h-72 rounded-xl" />
+              </div>
             </div>
           ) : (
             <>
+              <div className="mb-3"><SectionHeader title={tCommon('sectionAtAGlance')} /></div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                <KpiCard
+                  title={t('analyticsAvgStudentsPerCenter')}
+                  value={formatNumber(avgStudentsPerCenter, locale)}
+                  icon={Users}
+                  iconBg="bg-blue-100"
+                  iconColor="text-blue-600"
+                />
+                <KpiCard
+                  title={t('analyticsAvgRevenuePerCenter')}
+                  value={avgRevenuePerCenterCell}
+                  icon={DollarSign}
+                  iconBg="bg-emerald-100"
+                  iconColor="text-emerald-600"
+                />
+                <KpiCard
+                  title={t('analyticsCentersZeroStudents')}
+                  value={formatNumber(zeroStudentsCount, locale)}
+                  icon={CircleSlash}
+                  iconBg={zeroStudentsCount > 0 ? 'bg-amber-100' : 'bg-teal-100'}
+                  iconColor={zeroStudentsCount > 0 ? 'text-amber-600' : 'text-teal-600'}
+                />
+                <KpiCard
+                  title={t('analyticsCentersAtRisk')}
+                  value={formatNumber(atRiskCount, locale)}
+                  icon={AlertTriangle}
+                  iconBg={atRiskCount > 0 ? 'bg-red-100' : 'bg-teal-100'}
+                  iconColor={atRiskCount > 0 ? 'text-red-600' : 'text-teal-600'}
+                />
+              </div>
               <div className="grid md:grid-cols-2 gap-4 mb-6">
-                <ChartCard title={tCharts('centersByPlan')} value={centers.length} loading={loading} minHeight={300}>
+                <ChartCard title={tCharts('centersByPlan')} loading={loading} minHeight={300}>
                   <DonutChart
                     data={planDonutData}
                     height={200}
@@ -246,7 +289,7 @@ export default function AdminAnalyticsPage() {
                     }))}
                   />
                 </ChartCard>
-                <ChartCard title={tCharts('centersByStatus')} value={centers.length} loading={loading} minHeight={300}>
+                <ChartCard title={tCharts('centersByStatus')} loading={loading} minHeight={300}>
                   <DonutChart
                     data={statusDonutData}
                     height={200}
@@ -299,22 +342,6 @@ export default function AdminAnalyticsPage() {
                     dedupYAxisTicks
                   />
                 </ChartCard>
-              </div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                {([
-                  { key: 'avgStudents', label: t('analyticsAvgStudentsPerCenter'), value: avgStudentsPerCenter },
-                  { key: 'avgRevenue', label: t('analyticsAvgRevenuePerCenter'), value: avgRevenuePerCenterCell },
-                  { key: 'zeroStudents', label: t('analyticsCentersZeroStudents'), value: zeroStudentsCount },
-                  { key: 'atRisk', label: t('analyticsCentersAtRisk'), value: atRiskCount },
-                ] as const).map(({ key, label, value }) => (
-                  <div
-                    key={key}
-                    className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6"
-                  >
-                    <div className="text-2xl font-bold font-mono text-[var(--color-text-primary)]">{value}</div>
-                    <div className="text-sm text-[var(--color-text-secondary)]">{label}</div>
-                  </div>
-                ))}
               </div>
             </>
           )}

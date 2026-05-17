@@ -213,11 +213,11 @@ export default function AdminInternalTeamPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('name')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[180px]">{tCommon('name')}</th>
                     <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('phone')}</th>
                     <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{t('internalTeamRoleLabel')}</th>
                     <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{t('joinedDate')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{tCommon('actions')}</th>
+                    <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[120px]">{tCommon('actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--color-border-subtle)]">
@@ -232,7 +232,7 @@ export default function AdminInternalTeamPage() {
                     .filter((m) => m && typeof m.id === 'string' && m.id.length > 0)
                     .map((m) => (
                       <tr key={m.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
-                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{m.name}</td>
+                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium min-w-[180px] max-w-[240px] truncate" title={m.name}>{m.name}</td>
                         <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">
                           {m.phone ? normalizePhone(m.phone) : (m.email ?? tCommon('notSet'))}
                         </td>

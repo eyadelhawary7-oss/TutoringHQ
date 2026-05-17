@@ -175,6 +175,35 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: payError.message }, { status: 500 });
     }
 
+    const { data: allInvoices } = await supabaseAdmin
+      .from('invoices')
+      .select('id, center_id, payment_amount, payment_reference, payment_proof_url, status, paid_at, updated_at')
+      .in('status', ['approved', 'rejected'])
+      .order('updated_at', { ascending: false })
+      .limit(50);
+
+    // Resolve center names from a full lookup so payments for test/deleted/plan-filtered
+    // centers still surface a real name (avoids "N/A" in the payment history table).
+    const paymentCenterIds = [
+      ...new Set([
+        ...(payments || []).map((p: { center_id: string }) => p.center_id),
+        ...((allInvoices ?? []) as { center_id?: string }[])
+          .map((inv) => inv.center_id)
+          .filter((id): id is string => typeof id === 'string'),
+      ]),
+    ];
+    const { data: paymentCentersData } = paymentCenterIds.length > 0
+      ? await supabaseAdmin
+          .from('centers')
+          .select('id, name')
+          .in('id', paymentCenterIds)
+      : { data: [] };
+    const centerNameById = Object.fromEntries(
+      ((paymentCentersData || []) as { id: string; name: string }[]).map((c) => [c.id, c.name]),
+    );
+    const lookupCenterName = (centerId: string): string =>
+      centerNameById[centerId] ?? billingRows.find((c: { id: string }) => c.id === centerId)?.name ?? '';
+
     const paymentRows = (payments || []).map((p: { center_id: string; notes?: string | null; [k: string]: unknown }) => {
       const notes = p.notes != null ? String(p.notes) : '';
       const proof = derivePaymentProofColumns({
@@ -184,19 +213,12 @@ export async function GET(request: Request) {
       });
       return {
         ...p,
-        centerName: billingRows.find((c: { id: string }) => c.id === p.center_id)?.name ?? ',',
+        centerName: lookupCenterName(p.center_id),
         source: 'admin_payment' as const,
         proof_type: proof.proofType,
         proof_reference: proof.proofReference,
       };
     });
-
-    const { data: allInvoices } = await supabaseAdmin
-      .from('invoices')
-      .select('id, center_id, payment_amount, payment_reference, payment_proof_url, status, paid_at, updated_at')
-      .in('status', ['approved', 'rejected'])
-      .order('updated_at', { ascending: false })
-      .limit(50);
 
     const invoiceRows = (allInvoices || []).map((inv: { center_id: string; [k: string]: unknown }) => {
       const proof = derivePaymentProofColumns({
@@ -207,7 +229,7 @@ export async function GET(request: Request) {
       return {
         id: inv.id,
         center_id: inv.center_id,
-        centerName: billingRows.find((c: { id: string }) => c.id === inv.center_id)?.name ?? ',',
+        centerName: lookupCenterName(inv.center_id),
         amount: inv.payment_amount ?? 0,
         billing_period: 'payment_proof',
         paid_at: inv.paid_at ?? inv.updated_at,
