@@ -107,6 +107,7 @@ export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarPr
     ownerAdminOnly?: boolean;
     ownerOnly?: boolean;
     showNewBadge?: boolean;
+    matchPrefix?: string;
   }[] = [
     { key: 'dashboard', href: '/dashboard', icon: LayoutDashboard, permission: 'can_view_dashboard' },
     { key: 'analytics', href: '/analytics', icon: BarChart3, permission: 'can_view_revenue' },
@@ -125,7 +126,7 @@ export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarPr
     { key: 'academic', href: '/academic', icon: GraduationCap, ownerAdminOnly: true },
     { key: 'referrals', href: '/referrals', icon: Gift, ownerOnly: true },
     { key: 'branches', href: '/branches', icon: Building2, ownerAdminOnly: true },
-    { key: 'settings', href: '/settings', icon: Settings, permission: 'can_view_settings' },
+    { key: 'settings', href: '/settings/general', icon: Settings, permission: 'can_view_settings', matchPrefix: '/settings' },
   ];
 
   const isSuperAdminOnly = isAdmin && !user?.center_id;
@@ -206,7 +207,7 @@ export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarPr
               <span>{t('admin')}</span>
             </Link>
           )}
-          {navItems.map(({ key, href, icon: Icon, showNewBadge }) => {
+          {navItems.map(({ key, href, icon: Icon, showNewBadge, matchPrefix }) => {
             if (key === 'orders') {
               return (
                 <div key={href} className="flex items-center gap-1 w-full">
@@ -217,7 +218,8 @@ export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarPr
                 </div>
               );
             }
-            const isActive = pathname === href || pathname.startsWith(href + '/');
+            const activeMatch = matchPrefix ?? href;
+            const isActive = pathname === activeMatch || pathname.startsWith(activeMatch + '/');
             const showBadge = showNewBadge && showBenchmarksNewBadge;
             return (
               <Link key={href} href={href} className={navLinkClass(isActive)} onClick={() => onClose?.()}>
