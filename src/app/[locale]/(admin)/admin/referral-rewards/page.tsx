@@ -241,8 +241,31 @@ export default function ReferralRewardsPage() {
 
   if (!gateOk) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-[var(--color-text-muted)]">
-        {tCommon('loading')}
+      <div
+        className="flex flex-col flex-1 min-h-0 min-h-screen bg-[var(--color-surface-0)] text-[var(--color-text-primary)]"
+        dir={isRTL ? 'rtl' : 'ltr'}
+      >
+        <AdminHeader />
+        <AdminSidebar activeTab="referrals" activeRoute="/admin/referral-rewards" />
+        <main className="lg:ms-56 p-6 space-y-6 max-w-[1400px] w-full mx-auto min-w-0">
+          <div className="flex items-center gap-3" aria-busy="true" aria-live="polite">
+            <div className="chq-skeleton h-10 w-10 rounded-xl" />
+            <div className="space-y-2">
+              <div className="chq-skeleton h-5 w-48 rounded-md" />
+              <div className="chq-skeleton h-3.5 w-64 rounded-md" />
+            </div>
+          </div>
+          <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="chq-skeleton h-12 w-full rounded-lg" />
+            ))}
+          </div>
+          <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="chq-skeleton h-12 w-full rounded-lg" />
+            ))}
+          </div>
+        </main>
       </div>
     );
   }

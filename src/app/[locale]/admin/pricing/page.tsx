@@ -394,10 +394,21 @@ export default function AdminPricingPage() {
 
   if (!gateOk) {
     return (
-      <div className="flex flex-col flex-1 min-h-0 min-h-screen">
+      <div className="flex flex-col flex-1 min-h-0 min-h-screen bg-[var(--color-surface-0)]" dir={isRTL ? 'rtl' : 'ltr'}>
         <AdminHeader />
-        <div className="flex flex-1 items-center justify-center text-[var(--color-text-secondary)]">
-          {tCommon('loading')}
+        <div className="flex flex-1">
+          <AdminSidebar activeRoute="/admin/pricing" />
+          <main className="flex-1 flex flex-col min-w-0 p-4 md:p-6 overflow-auto lg:ms-56">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="chq-skeleton h-8 w-8 rounded-lg" />
+              <div className="chq-skeleton h-7 w-40 rounded-md" />
+            </div>
+            <div className="space-y-3" aria-busy="true" aria-live="polite">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} className="chq-skeleton h-14 w-full rounded-xl" />
+              ))}
+            </div>
+          </main>
         </div>
       </div>
     );

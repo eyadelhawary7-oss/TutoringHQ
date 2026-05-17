@@ -2,15 +2,15 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { usePathname } from '@/i18n/routing';
-import { ArrowDown, ArrowUp, ArrowUpDown, Check } from 'lucide-react';
+import { usePathname, useRouter } from '@/i18n/routing';
+import { ArrowDown, ArrowLeft, ArrowUp, ArrowUpDown, Check, Store } from 'lucide-react';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
+import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/useToast';
 import { formatDate } from '@/lib/formatNumber';
-import { PageHeader } from '@/components/shared';
 
 type VendorRow = {
   id: string;
@@ -34,6 +34,7 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const pathname = usePathname();
+  const router = useRouter();
   const toast = useToast();
   const { closeMainSidebar } = useSidebar() ?? {};
   const [vendor, setVendor] = useState<VendorRow | null>(initialVendor);
@@ -162,7 +163,21 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
       <div className="flex min-h-0 min-h-[calc(100vh-3.5rem)] flex-1 md:min-h-[calc(100dvh-3.5rem)]">
         <AdminSidebar activeRoute={pathname} />
         <div className="w-full min-w-0 flex-1 space-y-6 overflow-auto p-6 lg:ms-56">
-        <PageHeader title={t('vendorsTitle')} subtitle={t('vendorsSubtitle')} />
+        <div className="flex items-center gap-2 mb-2">
+          <button
+            type="button"
+            onClick={() => router.push('/admin')}
+            className="p-1.5 rounded-lg hover:bg-muted"
+            aria-label={tCommon('back')}
+          >
+            <DirectionalIcon icon={ArrowLeft} className="h-5 w-5" />
+          </button>
+          <div className="flex items-center gap-2">
+            <Store className="h-6 w-6 text-[var(--color-brand-500)]" aria-hidden />
+            <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('vendorsTitle')}</h1>
+          </div>
+        </div>
+        <p className="text-sm text-[var(--color-text-muted)] -mt-3">{t('vendorsSubtitle')}</p>
 
         <div className="max-w-lg space-y-4 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-6">
           <div>
