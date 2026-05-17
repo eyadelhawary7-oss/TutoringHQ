@@ -1257,7 +1257,7 @@ export default function ScanPage() {
 
         <div className="flex-1 flex flex-col px-4 gap-4 max-w-lg mx-auto w-full pb-4">
           <div
-            className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:gap-1 bg-[var(--color-surface-2)] p-1 rounded-xl"
+            className="grid grid-cols-3 gap-1 sm:flex sm:flex-row sm:gap-1 bg-[var(--color-surface-2)] p-1 rounded-xl"
             role="tablist"
             aria-label={ts('tab_bar_label')}
           >

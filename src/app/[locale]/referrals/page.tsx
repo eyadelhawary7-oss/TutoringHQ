@@ -4,8 +4,9 @@ import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
-import { Gift, Copy, Link2, Wallet, Users, MessageCircle } from 'lucide-react';
+import { Gift, Copy, Link2, Wallet, Users, MessageCircle, Clock, TrendingUp } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
+import KpiCard from '@/components/shared/KpiCard';
 import { ReferralWithdrawalPanel } from '@/components/referrals/ReferralWithdrawalPanel';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
 
@@ -142,41 +143,53 @@ export default function ReferralsPage() {
 
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] p-4 card-shadow btn-lift">
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">{t('totalReferrals')}</p>
-            <p className="text-xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">{fmt(data?.totalReferrals ?? 0)}</p>
-          </div>
-          <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/30 p-4 card-shadow btn-lift">
-            <p className="text-xs text-amber-800 dark:text-amber-200 font-medium mb-1">{t('pending')}</p>
-            <p className="text-xl font-bold text-amber-900 dark:text-amber-100 font-mono tabular-nums">{fmt(data?.pending ?? 0)}</p>
-            <p className="text-xs text-amber-700 dark:text-amber-300">{tc('egp')}</p>
-          </div>
-          <div className="rounded-xl border border-teal-200 dark:border-teal-800/50 bg-teal-50 dark:bg-teal-950/30 p-4 card-shadow btn-lift">
-            <p className="text-xs text-teal-800 dark:text-teal-200 font-medium mb-1">{t('withdrawable')}</p>
-            <p className="text-xl font-bold text-teal-900 dark:text-teal-100 font-mono tabular-nums">{fmt(data?.available ?? 0)}</p>
-            <p className="text-xs text-teal-700 dark:text-teal-300">{tc('egp')}</p>
-          </div>
-          <div className="rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/30 p-4 card-shadow btn-lift">
-            <p className="text-xs text-emerald-800 dark:text-emerald-200 font-medium mb-1">{t('totalEarned')}</p>
-            <p className="text-xl font-bold text-emerald-900 dark:text-emerald-100 font-mono tabular-nums">{fmt(data?.totalEarned ?? 0)}</p>
-            <p className="text-xs text-emerald-700 dark:text-emerald-300">{tc('egp')}</p>
-          </div>
+          <KpiCard
+            title={t('totalReferrals')}
+            value={fmt(data?.totalReferrals ?? 0)}
+            icon={Users}
+            iconBg="bg-slate-100 dark:bg-slate-800"
+            iconColor="text-slate-600 dark:text-slate-300"
+          />
+          <KpiCard
+            title={t('pending')}
+            value={fmt(data?.pending ?? 0)}
+            subLabel={tc('egp')}
+            icon={Clock}
+            iconBg="bg-amber-100 dark:bg-amber-900/40"
+            iconColor="text-amber-600 dark:text-amber-300"
+          />
+          <KpiCard
+            title={t('withdrawable')}
+            value={fmt(data?.available ?? 0)}
+            subLabel={tc('egp')}
+            icon={Wallet}
+            iconBg="bg-teal-100 dark:bg-teal-900/40"
+            iconColor="text-teal-600 dark:text-teal-300"
+          />
+          <KpiCard
+            title={t('totalEarned')}
+            value={fmt(data?.totalEarned ?? 0)}
+            subLabel={tc('egp')}
+            icon={TrendingUp}
+            iconBg="bg-emerald-100 dark:bg-emerald-900/40"
+            iconColor="text-emerald-600 dark:text-emerald-300"
+          />
         </div>
 
         <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] card-shadow p-6">
           <h2 className="font-bold text-slate-900 dark:text-white mb-4">{t('commissionStructureTitle')}</h2>
-          <ul className="space-y-3 text-sm text-slate-700 dark:text-slate-200">
-            <li className="border-s-4 border-teal-600/80 ps-3">
-              <span className="font-medium text-slate-900 dark:text-white">{t('tier1Label')}: </span>
-              {t('tier1Value')}
+          <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-200">
+            <li className="flex flex-wrap items-baseline justify-between gap-2 py-2 border-b border-[var(--color-border-subtle)] last:border-0">
+              <span className="font-medium text-slate-900 dark:text-white">{t('tier1Label')}</span>
+              <span className="text-[var(--color-text-secondary)]">{t('tier1Value')}</span>
             </li>
-            <li className="border-s-4 border-teal-600/50 ps-3">
-              <span className="font-medium text-slate-900 dark:text-white">{t('tier2Label')}: </span>
-              {t('tier2Value')}
+            <li className="flex flex-wrap items-baseline justify-between gap-2 py-2 border-b border-[var(--color-border-subtle)] last:border-0">
+              <span className="font-medium text-slate-900 dark:text-white">{t('tier2Label')}</span>
+              <span className="text-[var(--color-text-secondary)]">{t('tier2Value')}</span>
             </li>
-            <li className="border-s-4 border-teal-600/30 ps-3">
-              <span className="font-medium text-slate-900 dark:text-white">{t('tier3Label')}: </span>
-              {t('tier3Value')}
+            <li className="flex flex-wrap items-baseline justify-between gap-2 py-2 border-b border-[var(--color-border-subtle)] last:border-0">
+              <span className="font-medium text-slate-900 dark:text-white">{t('tier3Label')}</span>
+              <span className="text-[var(--color-text-secondary)]">{t('tier3Value')}</span>
             </li>
           </ul>
           <p className="text-xs text-amber-700 dark:text-amber-400 mt-4 leading-snug">{t('tierCondition')}</p>

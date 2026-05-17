@@ -112,20 +112,20 @@ export default function AttendancePage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const loadData = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-
-    const meRes = await fetch('/api/me', { headers: { Authorization: `Bearer ${session.access_token}` } });
-    const meData = await meRes.json();
-    if (!meData?.user?.center_id) return;
-    const cid = meData.user.center_id;
-    setCenterId(cid);
-
     setIsLoading(true);
     const fromTs = `${dateFrom}T00:00:00.000Z`;
     const toTs = `${dateTo}T23:59:59.999Z`;
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const meRes = await fetch('/api/me', { headers: { Authorization: `Bearer ${session.access_token}` } });
+      const meData = await meRes.json();
+      if (!meData?.user?.center_id) return;
+      const cid = meData.user.center_id;
+      setCenterId(cid);
+
       const [scansRes, studentsRes, groupsRes] = await Promise.all([
         dbSelect({
           table: 'attendance_scans',
@@ -384,8 +384,9 @@ export default function AttendancePage() {
           />
         </div>
         <button
+          type="button"
           onClick={handleExportCSV}
-          className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors shrink-0"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)] text-sm font-semibold hover:bg-[var(--color-surface-2)] hover:border-teal-500/40 shrink-0 self-end ms-auto"
         >
           <Download size={14} /> {tCommon('exportCsv')}
         </button>

@@ -13,6 +13,30 @@ import type { WaMetaTemplateOwnerRow } from '@/types/wa-meta-owner';
 
 const SUPPORT_MAIL = 'support@centerhq.com';
 
+function formatTemplateName(raw: string): string {
+  if (!raw) return '';
+  return raw
+    .replace(/^chq[_-]?/i, '')
+    .split(/[_\-]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function statusBadgeClasses(status: string): string {
+  const normalized = (status ?? '').toUpperCase();
+  if (normalized === 'APPROVED' || normalized === 'ACTIVE') {
+    return 'bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-200 dark:border-emerald-800';
+  }
+  if (normalized === 'PENDING' || normalized === 'IN_APPEAL' || normalized === 'PENDING_DELETION') {
+    return 'bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:border-amber-800';
+  }
+  if (normalized === 'REJECTED' || normalized === 'DISABLED' || normalized === 'PAUSED') {
+    return 'bg-red-100 text-red-800 border border-red-200 dark:bg-red-950/40 dark:text-red-200 dark:border-red-900';
+  }
+  return 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border border-[var(--color-border-subtle)]';
+}
+
 export default function WhatsAppTemplatesClient({
   locale,
   templates,
@@ -44,7 +68,7 @@ export default function WhatsAppTemplatesClient({
           <Link
             href="/whatsapp-pack"
             locale={locale}
-            className="shrink-0 rounded-lg border border-teal-600/40 bg-teal-600/10 px-4 py-2 text-sm font-semibold text-teal-800 hover:bg-teal-600/15 dark:text-teal-200"
+            className="shrink-0 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 transition-colors"
           >
             {t('openPackSettings')}
           </Link>
@@ -78,13 +102,21 @@ export default function WhatsAppTemplatesClient({
                 className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 shadow-sm flex flex-col gap-3"
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="font-mono text-sm font-semibold text-[var(--color-text-primary)] break-all">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-[var(--color-text-primary)] break-words">
+                      {formatTemplateName(row.template_name)}
+                    </p>
+                    <p className="font-mono text-[11px] text-[var(--color-text-tertiary)] break-all mt-0.5">
                       {row.template_name}
                     </p>
-                    <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                      {t('categoryLabel')}: {row.category} · {t('statusLabel')}: {row.status}
-                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border border-[var(--color-border-subtle)]">
+                        {t('categoryLabel')}: {row.category}
+                      </span>
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${statusBadgeClasses(row.status)}`}>
+                        {row.status}
+                      </span>
+                    </div>
                   </div>
                   <button
                     type="button"

@@ -445,10 +445,10 @@ export default function GroupsPage() {
                 </div>
               </div>
               <h3 className="font-semibold text-[var(--color-text-primary)] mb-1">{g.name}</h3>
-              <p className="text-sm text-[var(--color-text-secondary)] mb-3">{g.subject ?? '\u2014'}</p>
+              <p className="text-sm text-[var(--color-text-secondary)] mb-3">{g.subject || tCommon('notSet')}</p>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-[var(--color-text-primary)] font-mono">
-                  {g.fee != null ? formatCurrency(g.fee, locale) : '\u2014'}
+                  {g.fee != null ? formatCurrency(g.fee, locale) : tCommon('notSet')}
                 </span>
                 <span className="text-xs text-slate-400">{t('perLesson')}</span>
               </div>
@@ -554,11 +554,11 @@ export default function GroupsPage() {
             </div>
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-3 gap-3">
-                <div><p className="text-xs text-[var(--color-text-secondary)]">{t('subject')}</p><p className="font-semibold text-[var(--color-text-primary)]">{detailGroup.subject ?? '\u2014'}</p></div>
+                <div><p className="text-xs text-[var(--color-text-secondary)]">{t('subject')}</p><p className="font-semibold text-[var(--color-text-primary)]">{detailGroup.subject || tCommon('notSet')}</p></div>
                 <div>
                   <p className="text-xs text-[var(--color-text-secondary)]">{t('feePerLesson')}</p>
                   <p className="font-semibold text-[var(--color-text-primary)] font-mono">
-                    {detailGroup.fee != null ? formatCurrency(detailGroup.fee, locale) : '\u2014'}
+                    {detailGroup.fee != null ? formatCurrency(detailGroup.fee, locale) : tCommon('notSet')}
                   </p>
                 </div>
                 <div>

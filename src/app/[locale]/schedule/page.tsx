@@ -42,7 +42,15 @@ interface ScheduleSlot {
 }
 
 const CAIRO_COL_ORDER = getCairoWeekColumnOrder();
-const DAY_COLORS = ['#0D9488', '#7C3AED', '#F59E0B', '#DC2626', '#16A34A', '#0EA5E9', '#6B7280'];
+const SHORT_DAY_KEYS: Record<number, string> = {
+  6: 'shortSat',
+  0: 'shortSun',
+  1: 'shortMon',
+  2: 'shortTue',
+  3: 'shortWed',
+  4: 'shortThu',
+  5: 'shortFri',
+};
 
 const HEADER_ROW_H = 49;
 const ROW_PX = 60;
@@ -96,6 +104,7 @@ export default function SchedulePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDay, setSelectedDay] = useState<number>(() => cairoYmdToJsWeekday(cairoDateKey()));
   const [minuteTick, setMinuteTick] = useState(0);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const gridScrollRef = useRef<HTMLDivElement>(null);
   const didScrollAnchorRef = useRef(false);
@@ -326,8 +335,9 @@ export default function SchedulePage() {
     }
   };
 
-  const handleDeleteSlot = async (id: string) => {
-    if (!centerId || !userId || !confirm(t('deleteConfirm'))) return;
+  const handleDeleteSlot = async (id: string, skipConfirm = false) => {
+    if (!centerId || !userId) return;
+    if (!skipConfirm && !confirm(t('deleteConfirm'))) return;
     await dbDelete({ table: 'schedule_slots', filters: [{ column: 'id', op: 'eq', value: id }] });
     await auditLog({
       centerId,
@@ -452,13 +462,14 @@ export default function SchedulePage() {
                     setSelectedDay(day);
                     scrollColumnIntoView(day);
                   }}
-                  className={`snap-start shrink-0 flex min-h-[44px] min-w-[44px] flex-1 items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold tabular-nums transition-colors ${
+                  className={`snap-start shrink-0 flex min-h-[44px] min-w-[44px] flex-1 flex-col items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold tabular-nums transition-colors ${
                     selectedDay === day
                       ? 'bg-teal-600 text-white ring-2 ring-teal-400/40'
                       : 'bg-[var(--color-surface-0)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'
                   }`}
                 >
-                  {idx + 1}
+                  <span className="text-[10px] font-medium uppercase opacity-80 leading-none">{t(SHORT_DAY_KEYS[day])}</span>
+                  <span className="text-sm leading-tight mt-0.5">{formatNumber(idx + 1, locale)}</span>
                 </button>
               ))}
             </div>
@@ -506,16 +517,11 @@ export default function SchedulePage() {
                               return (
                                 <div
                                   key={slot.id}
-                                  className={`relative rounded-lg p-2 cursor-pointer transition-colors group border-y border-e border-[var(--color-border)] ${
+                                  className={`relative rounded-xl p-2 cursor-pointer transition-colors group border shadow-sm ${
                                     isConflict
-                                      ? 'bg-red-500/10 hover:bg-red-500/15'
-                                      : 'bg-[var(--color-surface-1)] hover:bg-[var(--color-surface-2)]'
+                                      ? 'bg-red-500/10 hover:bg-red-500/15 border-red-500/40'
+                                      : 'bg-[var(--color-surface-1)] hover:bg-[var(--color-surface-2)] border-[var(--color-border-subtle)]'
                                   }`}
-                                  style={{
-                                    borderInlineStartWidth: 4,
-                                    borderInlineStartStyle: 'solid',
-                                    borderInlineStartColor: isConflict ? '#ef4444' : DAY_COLORS[day],
-                                  }}
                                 >
                                   {isConflict && (
                                     <AlertTriangle className="w-3.5 h-3.5 absolute top-1 end-1 text-red-500" />
@@ -581,13 +587,14 @@ export default function SchedulePage() {
                   type="button"
                   aria-label={labelForWeekday(day)}
                   onClick={() => setSelectedDay(day)}
-                  className={`snap-start flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold tabular-nums transition-colors ${
+                  className={`snap-start flex min-h-[44px] min-w-[44px] shrink-0 flex-col items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold tabular-nums transition-colors ${
                     selectedDay === day
                       ? 'border-teal-600 bg-teal-600 text-white'
                       : 'border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[var(--color-text-secondary)]'
                   }`}
                 >
-                  {idx + 1}
+                  <span className="text-[10px] font-medium uppercase opacity-80 leading-none">{t(SHORT_DAY_KEYS[day])}</span>
+                  <span className="text-sm leading-tight mt-0.5">{formatNumber(idx + 1, locale)}</span>
                 </button>
               ))}
             </div>
@@ -599,12 +606,7 @@ export default function SchedulePage() {
                 .map((session) => (
                   <div
                     key={session.id}
-                    className="mb-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3 shadow-sm"
-                    style={{
-                      borderInlineStartWidth: 4,
-                      borderInlineStartStyle: 'solid',
-                      borderInlineStartColor: DAY_COLORS[selectedDay] ?? '#0D9488',
-                    }}
+                    className="mb-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3 shadow-sm"
                   >
                     <div className="font-mono text-sm text-teal-600 dark:text-teal-400">
                       <span dir="ltr">
@@ -619,13 +621,35 @@ export default function SchedulePage() {
                       {session.room_name || tCommon('notAvailable')} • {formatMemberCount(session.member_count ?? 0)}
                     </div>
                     {canEdit && (
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteSlot(session.id)}
-                        className="mt-2 flex min-h-[44px] min-w-[44px] items-center text-xs font-semibold text-red-600 hover:underline"
-                      >
-                        {t('delete')}
-                      </button>
+                      confirmDeleteId === session.id ? (
+                        <div className="mt-2 flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setConfirmDeleteId(null);
+                              handleDeleteSlot(session.id, true);
+                            }}
+                            className="flex min-h-[44px] items-center text-xs font-semibold text-red-600 hover:underline"
+                          >
+                            {t('confirmDelete', { defaultValue: 'Sure?' })}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="flex min-h-[44px] items-center text-xs font-semibold text-[var(--color-text-secondary)] hover:underline"
+                          >
+                            {tCommon('cancel')}
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteId(session.id)}
+                          className="mt-2 flex min-h-[44px] min-w-[44px] items-center text-xs font-semibold text-red-600 hover:underline"
+                        >
+                          {t('delete')}
+                        </button>
+                      )
                     )}
                   </div>
                 ))
@@ -646,12 +670,7 @@ export default function SchedulePage() {
                   {todaySessions.map((session) => (
                     <div
                       key={session.id}
-                      className="mb-2 rounded-lg bg-[var(--color-surface-1)] p-3 shadow-sm"
-                      style={{
-                        borderInlineEndWidth: 4,
-                        borderInlineEndStyle: 'solid',
-                        borderInlineEndColor: DAY_COLORS[todayIndex] ?? '#0D9488',
-                      }}
+                      className="mb-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3 shadow-sm"
                       dir="rtl"
                     >
                       <div className="font-mono text-sm text-teal-600 dark:text-teal-400">
@@ -676,12 +695,7 @@ export default function SchedulePage() {
                   {thisWeekSessions.map((session) => (
                     <div
                       key={session.id}
-                      className="mb-2 rounded-lg bg-[var(--color-surface-1)] p-3 shadow-sm"
-                      style={{
-                        borderInlineEndWidth: 4,
-                        borderInlineEndStyle: 'solid',
-                        borderInlineEndColor: DAY_COLORS[Number(session.day_of_week)] ?? '#0D9488',
-                      }}
+                      className="mb-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3 shadow-sm"
                       dir="rtl"
                     >
                       <div className="font-mono text-sm text-teal-600 dark:text-teal-400">
