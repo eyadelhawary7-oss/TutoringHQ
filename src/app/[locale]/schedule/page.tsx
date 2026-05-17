@@ -468,7 +468,7 @@ export default function SchedulePage() {
                       : 'bg-[var(--color-surface-0)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'
                   }`}
                 >
-                  <span className="text-[10px] font-medium uppercase opacity-80 leading-none">{t(SHORT_DAY_KEYS[day])}</span>
+                  <span className="text-[10px] font-medium opacity-80 leading-none">{t(SHORT_DAY_KEYS[day])}</span>
                   <span className="text-sm leading-tight mt-0.5">{formatNumber(idx + 1, locale)}</span>
                 </button>
               ))}
@@ -593,7 +593,7 @@ export default function SchedulePage() {
                       : 'border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[var(--color-text-secondary)]'
                   }`}
                 >
-                  <span className="text-[10px] font-medium uppercase opacity-80 leading-none">{t(SHORT_DAY_KEYS[day])}</span>
+                  <span className="text-[10px] font-medium opacity-80 leading-none">{t(SHORT_DAY_KEYS[day])}</span>
                   <span className="text-sm leading-tight mt-0.5">{formatNumber(idx + 1, locale)}</span>
                 </button>
               ))}

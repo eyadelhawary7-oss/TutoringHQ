@@ -1648,7 +1648,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                   >
                     {t('centerManagement.backToList')}
                   </Link>
-                  <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-secondary)]">
+                  <p className="text-xs font-medium text-[var(--color-text-muted)]">
                     {t('centerManagement.title')}
                   </p>
                   <div className="flex flex-wrap items-center gap-2">
@@ -2176,13 +2176,13 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     <table className="w-full text-sm text-start text-[var(--color-text-primary)] min-w-[720px]">
                       <thead className="bg-[var(--color-surface-0)] text-[var(--color-text-muted)]">
                         <tr>
-                          <th className="p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('centerManagement.section4.invoiceNumber')}</th>
-                          <th className="p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('centerManagement.section4.type')}</th>
-                          <th className="p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('centerManagement.section4.amount')}</th>
-                          <th className="p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('centerManagement.section4.status')}</th>
-                          <th className="p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('centerManagement.section4.dueDate')}</th>
-                          <th className="p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('centerManagement.section4.created')}</th>
-                          <th className="p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{tCommon('downloadPdf')}</th>
+                          <th className="p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('centerManagement.section4.invoiceNumber')}</th>
+                          <th className="p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('centerManagement.section4.type')}</th>
+                          <th className="p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('centerManagement.section4.amount')}</th>
+                          <th className="p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('centerManagement.section4.status')}</th>
+                          <th className="p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('centerManagement.section4.dueDate')}</th>
+                          <th className="p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('centerManagement.section4.created')}</th>
+                          <th className="p-2 text-xs font-medium text-[var(--color-text-muted)]">{tCommon('downloadPdf')}</th>
                           <th className="p-2 w-24" />
                         </tr>
                       </thead>
@@ -2541,11 +2541,11 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     <table className="w-full text-sm text-[var(--color-text-primary)] min-w-[640px]">
                       <thead className="bg-[var(--color-surface-0)] text-[var(--color-text-muted)]">
                         <tr>
-                          <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('centerManagement.section5.date')}</th>
-                          <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('centerManagement.section5.amount')}</th>
-                          <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('centerManagement.section5.method')}</th>
-                          <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('centerManagement.section5.recordedBy')}</th>
-                          <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('centerManagement.section4.notes')}</th>
+                          <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('centerManagement.section5.date')}</th>
+                          <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('centerManagement.section5.amount')}</th>
+                          <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('centerManagement.section5.method')}</th>
+                          <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('centerManagement.section5.recordedBy')}</th>
+                          <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('centerManagement.section4.notes')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2968,12 +2968,12 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     <table className="w-full text-sm text-[var(--color-text-primary)] min-w-[800px]">
                       <thead className="bg-[var(--color-surface-0)] text-[var(--color-text-muted)]">
                         <tr>
-                          <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('centerManagement.section9.currentPlan')}</th>
-                          <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('centerManagement.section9.requestedPlan')}</th>
-                          <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('centerManagement.section4.status')}</th>
-                          <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('requestedAt')}</th>
-                          <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('centerManagement.section4.notes')}</th>
-                          <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{tCommon('actions')}</th>
+                          <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('centerManagement.section9.currentPlan')}</th>
+                          <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('centerManagement.section9.requestedPlan')}</th>
+                          <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('centerManagement.section4.status')}</th>
+                          <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('requestedAt')}</th>
+                          <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('centerManagement.section4.notes')}</th>
+                          <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{tCommon('actions')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -3255,9 +3255,9 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     <table className="w-full text-sm text-[var(--color-text-primary)] min-w-[360px]">
                       <thead className="bg-[var(--color-surface-0)] text-[var(--color-text-muted)]">
                         <tr>
-                          <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('centerManagement.section4.amount')}</th>
-                          <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('centerManagement.section4.status')}</th>
-                          <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{tCommon('actions')}</th>
+                          <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('centerManagement.section4.amount')}</th>
+                          <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('centerManagement.section4.status')}</th>
+                          <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{tCommon('actions')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -3342,9 +3342,9 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     <table className="w-full text-sm text-[var(--color-text-primary)]">
                       <thead className="bg-[var(--color-surface-0)] text-[var(--color-text-muted)]">
                         <tr>
-                          <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">ID</th>
-                          <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('centerManagement.section4.status')}</th>
-                          <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('centerManagement.section4.amount')}</th>
+                          <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">ID</th>
+                          <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('centerManagement.section4.status')}</th>
+                          <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('centerManagement.section4.amount')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -3677,10 +3677,10 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     <table className="w-full text-sm text-[var(--color-text-primary)] min-w-[640px]">
                       <thead className="bg-[var(--color-surface-0)] text-[var(--color-text-muted)]">
                         <tr>
-                          <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('auditLog.col_date')}</th>
-                          <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('auditLog.col_action')}</th>
-                          <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('auditLog.col_user')}</th>
-                          <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('auditLog.col_details')}</th>
+                          <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('auditLog.col_date')}</th>
+                          <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('auditLog.col_action')}</th>
+                          <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('auditLog.col_user')}</th>
+                          <th className="text-start p-2 text-xs font-medium text-[var(--color-text-muted)]">{t('auditLog.col_details')}</th>
                         </tr>
                       </thead>
                       <tbody>
