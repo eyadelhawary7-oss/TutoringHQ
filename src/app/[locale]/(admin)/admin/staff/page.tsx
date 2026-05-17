@@ -445,15 +445,15 @@ export default function StaffPage() {
                 <tr
                   className={`text-slate-500 dark:text-slate-400 ${isRTL ? 'text-end' : 'text-start'}`}
                 >
-                  <th className="px-4 py-3 font-medium">{t('staff.col_name')}</th>
-                  <th className="px-4 py-3 font-medium">{t('staff.col_role')}</th>
-                  <th className="px-4 py-3 font-medium">{t('staff.col_city')}</th>
-                  <th className="px-4 py-3 font-medium">{t('staff.reports_to')}</th>
-                  <th className="px-4 py-3 font-medium">{t('staff.centers_count')}</th>
-                  <th className="px-4 py-3 font-medium">{t('staff.ytd_commission')}</th>
-                  <th className="px-4 py-3 font-medium">{t('staff.base_salary')}</th>
-                  <th className="px-4 py-3 font-medium">{t('staff.col_status')}</th>
-                  <th className="px-4 py-3 font-medium" aria-label={t('actions')} />
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('staff.col_name')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('staff.col_role')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('staff.col_city')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('staff.reports_to')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('staff.centers_count')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('staff.ytd_commission')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('staff.base_salary')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('staff.col_status')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]" aria-label={t('actions')} />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-700/50">

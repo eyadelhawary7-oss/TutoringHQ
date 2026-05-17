@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/routing'
-import { CreditCard, Plus, AlertTriangle, CheckCircle, Clock } from 'lucide-react'
+import { CreditCard, Plus, AlertTriangle, CheckCircle, Clock, Banknote } from 'lucide-react'
+import { EmptyState } from '@/components/shared'
 import { supabase } from '@/lib/supabase'
 import { AdminSidebar } from '@/components/AdminSidebar'
 import { AdminHeader } from '@/components/admin/AdminHeader'
@@ -338,8 +339,12 @@ export default function PayoutsPage() {
               {tCommon('loading')}
             </div>
           ) : payouts.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 dark:text-slate-400 bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl">
-              {t('payouts.no_payouts')}
+            <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl">
+              <EmptyState
+                icon={Banknote}
+                title={t('payouts.no_payouts')}
+                description={t('payouts.no_payouts_description')}
+              />
             </div>
           ) : (
             payouts.map((payout) => (

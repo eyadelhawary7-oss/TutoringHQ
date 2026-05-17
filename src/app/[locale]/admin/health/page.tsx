@@ -309,22 +309,22 @@ export default function AdminHealthPage() {
                 <table className="w-full text-sm text-start">
                   <thead>
                     <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
-                      <th className="p-3 font-medium text-[var(--color-text-primary)]">
+                      <th className="p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
                         {t('healthColCron')}
                       </th>
-                      <th className="p-3 font-medium text-[var(--color-text-primary)]">
+                      <th className="p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
                         {t('healthColSchedule')}
                       </th>
-                      <th className="p-3 font-medium text-[var(--color-text-primary)]">
+                      <th className="p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
                         {t('healthColLastRun')}
                       </th>
-                      <th className="p-3 font-medium text-[var(--color-text-primary)]">
+                      <th className="p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
                         {t('healthColStatus')}
                       </th>
-                      <th className="p-3 font-medium text-[var(--color-text-primary)]">
+                      <th className="p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
                         {t('healthColDuration')}
                       </th>
-                      <th className="p-3 font-medium text-[var(--color-text-primary)]">
+                      <th className="p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
                         {t('health.lastError.columnHeader')}
                       </th>
                     </tr>

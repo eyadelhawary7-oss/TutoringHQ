@@ -356,18 +356,24 @@ export default function AttendancePage() {
             to: formatDate(`${dateTo}T12:00:00`, locale, { month: 'short', day: 'numeric' }),
           })}
         </p>
-        <LocalizedDateInput
-          value={dateFrom}
-          onChange={(e) => setDateFrom(e.target.value)}
-          locale={locale}
-          className="px-3 py-2 rounded-lg text-sm border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)]"
-        />
-        <LocalizedDateInput
-          value={dateTo}
-          onChange={(e) => setDateTo(e.target.value)}
-          locale={locale}
-          className="px-3 py-2 rounded-lg text-sm border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)]"
-        />
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-[var(--color-text-secondary)]">{tCommon('startDate')}</span>
+          <LocalizedDateInput
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            locale={locale}
+            className="px-3 py-2 rounded-lg text-sm border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)]"
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-[var(--color-text-secondary)]">{tCommon('endDate')}</span>
+          <LocalizedDateInput
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            locale={locale}
+            className="px-3 py-2 rounded-lg text-sm border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)]"
+          />
+        </label>
         <div className="relative flex-1 min-w-[160px]">
           <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
           <input

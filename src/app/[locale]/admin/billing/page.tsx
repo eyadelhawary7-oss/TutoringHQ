@@ -8,7 +8,7 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { getAdminSession, getAdminAuthHeaders } from '@/lib/adminAuth-client';
-import { PlanBadge, BillingStatusBadge } from '@/components/shared';
+import { PlanBadge, BillingStatusBadge, SectionHeader } from '@/components/shared';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import {
@@ -317,7 +317,7 @@ export default function AdminBillingPage() {
 
               {pendingInvoices.length > 0 && (
                 <>
-                  <h3 className="font-bold text-[var(--color-text-primary)] mt-6 mb-3">{t('pendingInvoices')}</h3>
+                  <div className="mt-6 mb-3"><SectionHeader title={t('pendingInvoices')} /></div>
                   <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden mb-6">
                     <div className="overflow-x-auto">
                       <table className="w-full">
@@ -364,7 +364,7 @@ export default function AdminBillingPage() {
                                       }
                                     }}
                                     disabled={actionLoading}
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50"
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50"
                                   >
                                     <CheckCircle className="w-4 h-4" />
                                     {t('approvePay')}
@@ -389,7 +389,7 @@ export default function AdminBillingPage() {
                 </>
               )}
 
-              <h3 className="font-bold text-[var(--color-text-primary)] mt-6 mb-3">{t('paymentHistory')}</h3>
+              <div className="mt-6 mb-3"><SectionHeader title={t('paymentHistory')} /></div>
               <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">

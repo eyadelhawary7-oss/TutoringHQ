@@ -209,25 +209,25 @@ export default function AdminWithdrawalsPage() {
               <table className="w-full min-w-[880px] border-collapse text-start text-sm">
                 <thead>
                   <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-2)]">
-                    <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">
+                    <th className="px-3 py-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
                       {t('colCenter')}
                     </th>
-                    <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">
+                    <th className="px-3 py-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
                       {t('colCredits')}
                     </th>
-                    <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">
+                    <th className="px-3 py-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
                       {t('colCash')}
                     </th>
-                    <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">
+                    <th className="px-3 py-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
                       {t('colInstapay')}
                     </th>
-                    <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">
+                    <th className="px-3 py-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
                       {t('colRequested')}
                     </th>
-                    <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">
+                    <th className="px-3 py-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
                       {tAdmin('status')}
                     </th>
-                    <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">
+                    <th className="px-3 py-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
                       {t('colActions')}
                     </th>
                   </tr>

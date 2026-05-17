@@ -12,6 +12,8 @@ import { getCsrfHeaders } from '@/lib/csrf-client';
 import { useToast } from '@/hooks/useToast';
 import { ArrowLeft, Tag } from 'lucide-react';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
+import { LocalizedDateInput } from '@/components/forms/LocalizedDateInput';
+import { formatDate } from '@/lib/formatNumber';
 
 type PromoCode = {
   id: string;
@@ -316,12 +318,11 @@ export default function AdminPromoCodesPage() {
                   <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
                     {t('promoCodesExpiresAtLabel')}
                   </label>
-                  <input
-                    type="date"
-                    dir="ltr"
-                    className="w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2 text-sm"
+                  <LocalizedDateInput
                     value={newExpiresAt}
                     onChange={(e) => setNewExpiresAt(e.target.value)}
+                    locale={locale}
+                    className="w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2 text-sm"
                   />
                 </div>
               </div>
@@ -348,11 +349,11 @@ export default function AdminPromoCodesPage() {
               <table className="w-full text-sm min-w-[700px]">
                 <thead>
                   <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-secondary)]">
-                    <th className="text-start p-3 font-medium">{t('promoCodesColCode')}</th>
-                    <th className="text-start p-3 font-medium">{t('promoCodesColDiscount')}</th>
-                    <th className="text-start p-3 font-medium">{t('promoCodesColUses')}</th>
-                    <th className="text-start p-3 font-medium">{t('promoCodesColExpires')}</th>
-                    <th className="text-start p-3 font-medium">{t('promoCodesColStatus')}</th>
+                    <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase">{t('promoCodesColCode')}</th>
+                    <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase">{t('promoCodesColDiscount')}</th>
+                    <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase">{t('promoCodesColUses')}</th>
+                    <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase">{t('promoCodesColExpires')}</th>
+                    <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase">{t('promoCodesColStatus')}</th>
                     <th className="p-3 w-40" />
                   </tr>
                 </thead>
@@ -375,9 +376,9 @@ export default function AdminPromoCodesPage() {
                           {p.uses_count}
                           {p.max_uses_total !== null ? ` / ${p.max_uses_total}` : ` / ${t('promoCodesUnlimited')}`}
                         </td>
-                        <td className="p-3 text-[var(--color-text-secondary)]" dir="ltr">
+                        <td className="p-3 text-[var(--color-text-secondary)]">
                           {p.expires_at
-                            ? new Date(p.expires_at).toLocaleDateString('en-GB')
+                            ? formatDate(p.expires_at, locale, { dateStyle: 'medium' })
                             : t('promoCodesNoExpiry')}
                         </td>
                         <td className="p-3">{statusBadge(p)}</td>

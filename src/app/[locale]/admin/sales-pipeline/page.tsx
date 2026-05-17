@@ -10,6 +10,7 @@ import { useLayout } from '@/contexts/LayoutContext';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { ArrowLeft, Plus, X } from 'lucide-react';
 import { formatPercent } from '@/lib/formatNumber';
+import { SectionHeader } from '@/components/shared';
 
 const PIPELINE_STAGES = ['prospect', 'contacted', 'demo_scheduled', 'converted'] as const;
 type PipelineStage = (typeof PIPELINE_STAGES)[number];
@@ -178,6 +179,7 @@ export default function AdminSalesPipelinePage() {
             </button>
           </div>
 
+          <div className="mb-3"><SectionHeader title={tCommon('sectionAtAGlance')} /></div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
             {([
               { statKey: 'totalLeads' as const, value: leads.length },

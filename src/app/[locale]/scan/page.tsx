@@ -1219,7 +1219,7 @@ export default function ScanPage() {
                 localStorage.setItem('chq-scanner-sound', String(next));
               }}
               aria-label={soundEnabled ? ts('sound_on') : ts('sound_off')}
-              className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-full border border-slate-600 bg-slate-800 text-slate-100 shadow-sm hover:border-teal-500/40 transition-all duration-200 ease-out"
+              className="flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[var(--color-text-secondary)] shadow-sm hover:border-teal-500/40 transition-all duration-200 ease-out"
             >
               <span className="tabular-nums">{soundEnabled ? ts('sound_on_label') : ts('sound_off_label')}</span>
             </button>

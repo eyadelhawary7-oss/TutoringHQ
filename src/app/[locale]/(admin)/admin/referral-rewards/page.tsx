@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
 import { Gift } from 'lucide-react';
+import { EmptyState } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
@@ -313,15 +314,19 @@ export default function ReferralRewardsPage() {
           </h2>
           <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl overflow-hidden overflow-x-auto">
             {loading ? (
-              <div className="p-8 text-center text-[var(--color-text-muted)]">{tCommon('loading')}</div>
+              <div className="p-4 space-y-3" aria-busy="true" aria-live="polite">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="chq-skeleton h-12 w-full rounded-lg" />
+                ))}
+              </div>
             ) : (
               <table className="w-full text-sm min-w-[640px]">
                 <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
                   <tr className={`text-[var(--color-text-muted)] ${isRTL ? 'text-end' : 'text-start'}`}>
-                    <th className="px-4 py-3 font-medium">{t('referralRewards.col_referrer')}</th>
-                    <th className="px-4 py-3 font-medium">{t('referralRewards.col_total_pending')}</th>
-                    <th className="px-4 py-3 font-medium">{t('referralRewards.col_total_paid')}</th>
-                    <th className="px-4 py-3 font-medium">{t('referralRewards.col_total_records')}</th>
+                    <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('referralRewards.col_referrer')}</th>
+                    <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('referralRewards.col_total_pending')}</th>
+                    <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('referralRewards.col_total_paid')}</th>
+                    <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('referralRewards.col_total_records')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--color-border)]">
@@ -354,29 +359,35 @@ export default function ReferralRewardsPage() {
 
         <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl overflow-hidden overflow-x-auto">
           {loading ? (
-            <div className="p-12 text-center text-[var(--color-text-muted)]">{tCommon('loading')}</div>
-          ) : records.length === 0 ? (
-            <div className="p-12 text-center text-[var(--color-text-muted)]">
-              {t('referralRewards.no_records')}
+            <div className="p-4 space-y-3" aria-busy="true" aria-live="polite">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="chq-skeleton h-12 w-full rounded-lg" />
+              ))}
             </div>
+          ) : records.length === 0 ? (
+            <EmptyState
+              icon={Gift}
+              title={t('referralRewards.no_records')}
+              description={t('referralRewards.no_records_description')}
+            />
           ) : (
             <table className="w-full text-sm min-w-[1000px]">
               <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
                 <tr className={`text-[var(--color-text-muted)] ${isRTL ? 'text-end' : 'text-start'}`}>
                   {isSuperAdmin ? (
-                    <th className="px-4 py-3 font-medium w-10" aria-label={t('referralRewards.mark_paid')}>
+                    <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)] w-10" aria-label={t('referralRewards.mark_paid')}>
                       <span className="sr-only">{t('referralRewards.mark_paid')}</span>
                     </th>
                   ) : null}
-                  <th className="px-4 py-3 font-medium">{t('referralRewards.col_referrer')}</th>
-                  <th className="px-4 py-3 font-medium">{t('referralRewards.col_referred')}</th>
-                  <th className="px-4 py-3 font-medium">{t('referralRewards.col_month')}</th>
-                  <th className="px-4 py-3 font-medium">{t('referralRewards.col_rate')}</th>
-                  <th className="px-4 py-3 font-medium">{t('referralRewards.col_base')}</th>
-                  <th className="px-4 py-3 font-medium">{t('referralRewards.col_reward')}</th>
-                  <th className="px-4 py-3 font-medium">{t('referralRewards.col_period')}</th>
-                  <th className="px-4 py-3 font-medium">{t('referralRewards.col_status')}</th>
-                  <th className="px-4 py-3 font-medium">{t('referralRewards.col_held_until')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('referralRewards.col_referrer')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('referralRewards.col_referred')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('referralRewards.col_month')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('referralRewards.col_rate')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('referralRewards.col_base')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('referralRewards.col_reward')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('referralRewards.col_period')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('referralRewards.col_status')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('referralRewards.col_held_until')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border)]">

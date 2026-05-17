@@ -185,7 +185,7 @@ export default function AdminInternalTeamPage() {
             <button
               type="button"
               onClick={() => setShowAdd(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700"
             >
               {t('addAdmin')}
             </button>

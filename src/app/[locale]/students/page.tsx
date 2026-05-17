@@ -1128,7 +1128,7 @@ export default function StudentsPage() {
           </div>
 
           <div className="flex flex-col gap-3 mb-3">
-            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <div className="flex flex-wrap items-center gap-2 pb-1">
               <button
                 type="button"
                 onClick={() => {
@@ -1163,7 +1163,7 @@ export default function StudentsPage() {
             </div>
 
             <div className="flex items-start gap-2">
-            <div className="flex gap-2 overflow-x-auto pb-1 flex-1 min-w-0">
+            <div className="flex flex-wrap gap-2 pb-1 flex-1 min-w-0">
               {(['all', 'active', 'at_risk', 'inactive', 'enrolled', 'churned'] as const).map((f) => (
                 <button
                   key={f}

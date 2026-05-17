@@ -2851,22 +2851,22 @@ export default function BillingPage() {
                 <table className="w-full min-w-[640px] border-collapse text-start text-sm">
                   <thead>
                     <tr className="border-b border-slate-200 text-slate-500 dark:border-slate-600 dark:text-slate-400">
-                      <th className="py-2 pe-4 font-medium" style={cairoFont}>
+                      <th className="py-2 pe-4 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]" style={cairoFont}>
                         {t('history.date')}
                       </th>
-                      <th className="py-2 pe-4 font-medium" style={cairoFont}>
+                      <th className="py-2 pe-4 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]" style={cairoFont}>
                         {t('history.reference')}
                       </th>
-                      <th className="py-2 pe-4 font-medium" style={cairoFont}>
+                      <th className="py-2 pe-4 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]" style={cairoFont}>
                         {t('history.amount')}
                       </th>
-                      <th className="py-2 pe-4 font-medium" style={cairoFont}>
+                      <th className="py-2 pe-4 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]" style={cairoFont}>
                         {t('history.period')}
                       </th>
-                      <th className="py-2 pe-4 font-medium" style={cairoFont}>
+                      <th className="py-2 pe-4 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]" style={cairoFont}>
                         {t('history.status')}
                       </th>
-                      <th className="py-2 font-medium" style={cairoFont}>
+                      <th className="py-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]" style={cairoFont}>
                         {t('history.action')}
                       </th>
                     </tr>
@@ -2917,16 +2917,16 @@ export default function BillingPage() {
               <table className="w-full min-w-[480px] text-start text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-500 dark:border-slate-600 dark:text-slate-400">
-                    <th className="py-2 pe-4 font-medium" style={cairoFont}>
+                    <th className="py-2 pe-4 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]" style={cairoFont}>
                       {t('planHistory.date')}
                     </th>
-                    <th className="py-2 pe-4 font-medium" style={cairoFont}>
+                    <th className="py-2 pe-4 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]" style={cairoFont}>
                       {t('planHistory.from')}
                     </th>
-                    <th className="py-2 pe-4 font-medium" style={cairoFont}>
+                    <th className="py-2 pe-4 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]" style={cairoFont}>
                       {t('planHistory.to')}
                     </th>
-                    <th className="py-2 font-medium" style={cairoFont}>
+                    <th className="py-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]" style={cairoFont}>
                       {t('planHistory.status')}
                     </th>
                   </tr>

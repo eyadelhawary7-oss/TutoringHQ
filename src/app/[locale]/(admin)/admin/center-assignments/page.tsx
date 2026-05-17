@@ -465,22 +465,22 @@ export default function CenterAssignmentsPage() {
             <table className="w-full text-sm min-w-[800px]">
               <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
                 <tr className="text-[var(--color-text-muted)]">
-                  <th className={`px-4 py-3 font-medium text-start`}>
+                  <th className={`px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)] text-start`}>
                     {t('centerAssignments.col_center')}
                   </th>
-                  <th className={`px-4 py-3 font-medium text-start`}>
+                  <th className={`px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)] text-start`}>
                     {t('centerAssignments.col_sourced_by')}
                   </th>
-                  <th className={`px-4 py-3 font-medium text-start`}>
+                  <th className={`px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)] text-start`}>
                     {t('centerAssignments.col_staff')}
                   </th>
-                  <th className={`px-4 py-3 font-medium text-start`}>
+                  <th className={`px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)] text-start`}>
                     {t('centerAssignments.col_territory')}
                   </th>
-                  <th className={`px-4 py-3 font-medium text-start`}>
+                  <th className={`px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)] text-start`}>
                     {t('centerAssignments.col_status')}
                   </th>
-                  <th className={`px-4 py-3 font-medium text-end`}>
+                  <th className={`px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)] text-end`}>
                     {t('centerAssignments.col_actions')}
                   </th>
                 </tr>

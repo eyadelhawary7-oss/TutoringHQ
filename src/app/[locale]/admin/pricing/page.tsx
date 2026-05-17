@@ -420,7 +420,14 @@ export default function AdminPricingPage() {
           ) : null}
 
           {loading ? (
-            <p className="text-[var(--color-text-secondary)]">{tCommon('loading')}</p>
+            <div className="space-y-3" aria-busy="true" aria-live="polite">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="chq-skeleton h-14 w-full rounded-xl"
+                />
+              ))}
+            </div>
           ) : (
             <>
               <section className="mb-10">
@@ -431,13 +438,13 @@ export default function AdminPricingPage() {
                   <table className="w-full text-sm min-w-[720px]">
                     <thead>
                       <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-secondary)]">
-                        <th className="text-start p-3 font-medium">{t('pricingPlanName')}</th>
-                        <th className="text-start p-3 font-medium">{t('pricingStudentLimit')}</th>
-                        <th className="text-start p-3 font-medium">{t('pricingMonthlyList')}</th>
-                        <th className="text-start p-3 font-medium">{t('pricingQuarterlyAllIn')}</th>
-                        <th className="text-start p-3 font-medium">{t('pricingAnnualDerived')}</th>
-                        <th className="text-start p-3 font-medium">{t('pricingMonthlyPremiumDerived')}</th>
-                        <th className="text-start p-3 font-medium">{t('pricingActive')}</th>
+                        <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('pricingPlanName')}</th>
+                        <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('pricingStudentLimit')}</th>
+                        <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('pricingMonthlyList')}</th>
+                        <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('pricingQuarterlyAllIn')}</th>
+                        <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('pricingAnnualDerived')}</th>
+                        <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('pricingMonthlyPremiumDerived')}</th>
+                        <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('pricingActive')}</th>
                         <th className="p-3 w-28" />
                       </tr>
                     </thead>
@@ -555,8 +562,8 @@ export default function AdminPricingPage() {
                       <table className="w-full text-sm min-w-[280px]">
                         <thead>
                           <tr className="bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]">
-                            <th className="text-start p-2 font-medium">{t('pricingPlanKey')}</th>
-                            <th className="text-start p-2 font-medium">{t('pricingMinimumEgp')}</th>
+                            <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('pricingPlanKey')}</th>
+                            <th className="text-start p-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('pricingMinimumEgp')}</th>
                           </tr>
                         </thead>
                         <tbody>

@@ -587,13 +587,13 @@ export default function AdminReferralsPage() {
                   <table className="w-full min-w-[900px] border-collapse text-start text-sm">
                     <thead>
                       <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-2)]">
-                        <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">{t('colReferrer')}</th>
-                        <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">{t('colReferred')}</th>
-                        <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">{t('colMonth')}</th>
-                        <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">{t('colRate')}</th>
-                        <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">{t('colAmount')}</th>
-                        <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">{t('colStatus')}</th>
-                        <th className="px-3 py-2 font-medium text-[var(--color-text-secondary)]">{t('colAction')}</th>
+                        <th className="px-3 py-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('colReferrer')}</th>
+                        <th className="px-3 py-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('colReferred')}</th>
+                        <th className="px-3 py-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('colMonth')}</th>
+                        <th className="px-3 py-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('colRate')}</th>
+                        <th className="px-3 py-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('colAmount')}</th>
+                        <th className="px-3 py-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('colStatus')}</th>
+                        <th className="px-3 py-2 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('colAction')}</th>
                       </tr>
                     </thead>
                     <tbody>

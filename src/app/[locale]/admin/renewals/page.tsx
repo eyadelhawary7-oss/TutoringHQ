@@ -251,12 +251,12 @@ export default function AdminRenewalsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border bg-muted/50">
-                      <th className="text-start p-3 font-medium">{t('name')}</th>
-                      <th className="text-start p-3 font-medium">{t('renewalDate')}</th>
-                      <th className="text-start p-3 font-medium">{t('daysRemaining')}</th>
-                      <th className="text-start p-3 font-medium">{t('monthlyFee')}</th>
-                      <th className="text-start p-3 font-medium">{t('status')}</th>
-                      <th className="text-end p-3 font-medium">{t('actions')}</th>
+                      <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('name')}</th>
+                      <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('renewalDate')}</th>
+                      <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('daysRemaining')}</th>
+                      <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('monthlyFee')}</th>
+                      <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('status')}</th>
+                      <th className="text-end p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('actions')}</th>
                     </tr>
                   </thead>
                   <tbody>

@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/routing'
-import { TrendingUp, Pause, Unlock } from 'lucide-react'
+import { TrendingUp, Pause, Unlock, Wallet } from 'lucide-react'
+import { EmptyState } from '@/components/shared'
 import { supabase } from '@/lib/supabase'
 import { AdminSidebar } from '@/components/AdminSidebar'
 import { AdminHeader } from '@/components/admin/AdminHeader'
@@ -365,24 +366,26 @@ export default function CommissionsPage() {
               {tCommon('loading')}
             </div>
           ) : commissions.length === 0 ? (
-            <div className="p-12 text-center text-[var(--color-text-muted)]">
-              {t('commissions.no_commissions')}
-            </div>
+            <EmptyState
+              icon={Wallet}
+              title={t('commissions.no_commissions')}
+              description={t('commissions.no_commissions_description')}
+            />
           ) : (
             <table className="w-full text-sm min-w-[900px]">
               <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
                 <tr
                   className={`text-[var(--color-text-muted)] ${isRTL ? 'text-end' : 'text-start'}`}
                 >
-                  <th className="px-4 py-3 font-medium">{t('commissions.col_center')}</th>
-                  <th className="px-4 py-3 font-medium">{t('commissions.col_staff')}</th>
-                  <th className="px-4 py-3 font-medium">{t('commissions.col_plan')}</th>
-                  <th className="px-4 py-3 font-medium">{t('commissions.col_total')}</th>
-                  <th className="px-4 py-3 font-medium">{t('commissions.col_t1')}</th>
-                  <th className="px-4 py-3 font-medium">{t('commissions.col_t2')}</th>
-                  <th className="px-4 py-3 font-medium">{t('commissions.col_loyalty')}</th>
-                  <th className="px-4 py-3 font-medium">{t('commissions.active_days')}</th>
-                  <th className="px-4 py-3 font-medium">{t('commissions.col_actions')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('commissions.col_center')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('commissions.col_staff')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('commissions.col_plan')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('commissions.col_total')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('commissions.col_t1')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('commissions.col_t2')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('commissions.col_loyalty')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('commissions.active_days')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('commissions.col_actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border)]">

@@ -221,7 +221,7 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
             type="button"
             onClick={() => void save()}
             disabled={saving || !name.trim() || !whatsapp.trim() || !address.trim()}
-            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50"
+            className="px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium disabled:opacity-50"
           >
             {saving ? t('creating') : t('saveVendor')}
           </button>
@@ -236,7 +236,7 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
                     <button
                       type="button"
                       onClick={() => toggleSort('name')}
-                      className="inline-flex items-center gap-1.5 font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] btn-press chq-focus rounded-md"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] btn-press chq-focus rounded-md"
                     >
                       {t('vendorName')}
                       <SortIcon col="name" />
@@ -246,7 +246,7 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
                     <button
                       type="button"
                       onClick={() => toggleSort('whatsapp_number')}
-                      className="inline-flex items-center gap-1.5 font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] btn-press chq-focus rounded-md"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] btn-press chq-focus rounded-md"
                     >
                       {t('vendorWhatsapp')}
                       <SortIcon col="whatsapp_number" />
@@ -256,7 +256,7 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
                     <button
                       type="button"
                       onClick={() => toggleSort('city')}
-                      className="inline-flex items-center gap-1.5 font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] btn-press chq-focus rounded-md"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] btn-press chq-focus rounded-md"
                     >
                       {t('vendorCity')}
                       <SortIcon col="city" />
@@ -266,7 +266,7 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
                     <button
                       type="button"
                       onClick={() => toggleSort('is_active')}
-                      className="inline-flex items-center gap-1.5 font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] btn-press chq-focus rounded-md"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] btn-press chq-focus rounded-md"
                     >
                       {t('vendorActive')}
                       <SortIcon col="is_active" />
@@ -276,7 +276,7 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
                     <button
                       type="button"
                       onClick={() => toggleSort('created_at')}
-                      className="inline-flex items-center gap-1.5 font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] btn-press chq-focus rounded-md"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] btn-press chq-focus rounded-md"
                     >
                       {tCommon('date')}
                       <SortIcon col="created_at" />

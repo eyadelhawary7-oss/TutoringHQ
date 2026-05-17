@@ -541,7 +541,7 @@ export default function PaymentsPage() {
           )}
         </div>
 
-        <div className="flex gap-2 overflow-x-auto px-4 pb-2 max-w-3xl mx-auto w-full">
+        <div className="flex flex-wrap gap-2 px-4 pb-2 max-w-3xl mx-auto w-full">
           {(['all', 'pending', 'confirmed', 'today', 'month'] as const).map((f) => (
             <button
               key={f}
@@ -557,7 +557,7 @@ export default function PaymentsPage() {
           ))}
         </div>
 
-        <div className="flex gap-2 overflow-x-auto px-4 pb-3 max-w-3xl mx-auto w-full">
+        <div className="flex flex-wrap gap-2 px-4 pb-3 max-w-3xl mx-auto w-full">
           {(['all', 'cash', 'instapay', 'vodafone_cash', 'orange_cash', 'fawry', 'bank_transfer'] as const).map((m) => {
             const cfg = METHOD_CONFIG[m];
             const isActive = methodFilter === m;
@@ -595,19 +595,25 @@ export default function PaymentsPage() {
         </div>
 
         <div className="px-4 max-w-3xl mx-auto w-full space-y-3 mb-4">
-          <div className="flex flex-col sm:flex-row flex-wrap gap-2 items-stretch">
-            <LocalizedDateInput
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              locale={locale}
-              className="px-3 py-2 rounded-lg text-sm border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)]"
-            />
-            <LocalizedDateInput
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              locale={locale}
-              className="px-3 py-2 rounded-lg text-sm border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)]"
-            />
+          <div className="flex flex-col sm:flex-row flex-wrap gap-2 items-end">
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-[var(--color-text-secondary)]">{tCommon('startDate')}</span>
+              <LocalizedDateInput
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                locale={locale}
+                className="px-3 py-2 rounded-lg text-sm border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)]"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-[var(--color-text-secondary)]">{tCommon('endDate')}</span>
+              <LocalizedDateInput
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                locale={locale}
+                className="px-3 py-2 rounded-lg text-sm border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)]"
+              />
+            </label>
             <div className="relative flex-1 min-w-[160px]">
               <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-[var(--color-text-tertiary)]" />
               <input
