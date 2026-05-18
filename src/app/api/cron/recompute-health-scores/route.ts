@@ -13,7 +13,6 @@ const BATCH_SIZE = 50;
 type CenterRow = {
   id: string;
   plan: string | null;
-  last_scan_at: string | null;
   approved_at: string | null;
 };
 
@@ -42,7 +41,7 @@ export async function GET(request: Request) {
 
   const { data: centerRows, error: centersError } = await admin
     .from('centers')
-    .select('id, plan, last_scan_at, approved_at')
+    .select('id, plan, approved_at')
     .eq('status', 'active');
 
   if (centersError) {
@@ -107,7 +106,7 @@ export async function GET(request: Request) {
         rows.some(
           (r) =>
             r.last_upserted_at != null &&
-            Date.now() - new Date(r.last_upserted_at).getTime() <
+            Date.now() - new Date(r.last_upserted_at).getTime() 
               staleThresholdMs,
         );
 
@@ -115,6 +114,7 @@ export async function GET(request: Request) {
       let scanScore: number;
       let paymentScore: number;
       let studentScore: number;
+      let lastScanAt: string | null = null;
 
       if (hasRecentMetrics) {
         const totalLogins = rows.reduce(
@@ -138,8 +138,15 @@ export async function GET(request: Request) {
         scanScore = Math.min(100, totalScans * 3);
         paymentScore = Math.min(100, totalPayments * 34);
         studentScore = Math.min(100, latestStudents * 2);
+
+        // Derive last_scan_at from the metrics rows we already have.
+        lastScanAt = rows.reduce<string | null>((acc, r) => {
+          if (!r.last_scan_at) return acc;
+          if (!acc) return r.last_scan_at;
+          return r.last_scan_at > acc ? r.last_scan_at : acc;
+        }, null);
       } else {
-        const [scansRes, paymentsRes, usersRes, studentsRes] =
+        const [scansRes, paymentsRes, usersRes, studentsRes, latestScanRes] =
           await Promise.all([
             admin
               .from('attendance_scans')
@@ -160,6 +167,13 @@ export async function GET(request: Request) {
               .select('id', { count: 'exact', head: true })
               .eq('center_id', center.id)
               .eq('is_active', true),
+            admin
+              .from('attendance_scans')
+              .select('scanned_at')
+              .eq('center_id', center.id)
+              .order('scanned_at', { ascending: false })
+              .limit(1)
+              .maybeSingle(),
           ]);
 
         const totalScans = scansRes.count ?? 0;
@@ -171,6 +185,10 @@ export async function GET(request: Request) {
         scanScore = Math.min(100, totalScans * 3);
         paymentScore = Math.min(100, totalPayments * 34);
         studentScore = Math.min(100, latestStudents * 2);
+
+        lastScanAt =
+          (latestScanRes.data as { scanned_at: string | null } | null)
+            ?.scanned_at ?? null;
       }
 
       let score = Math.round(
@@ -180,9 +198,9 @@ export async function GET(request: Request) {
           paymentScore * 0.15,
       );
 
-      if (center.last_scan_at) {
+      if (lastScanAt) {
         const daysSinceLastScan = Math.floor(
-          (Date.now() - new Date(center.last_scan_at).getTime()) / MS_PER_DAY,
+          (Date.now() - new Date(lastScanAt).getTime()) / MS_PER_DAY,
         );
         if (daysSinceLastScan >= 4) {
           score = Math.max(0, score - 25);
