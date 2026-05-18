@@ -106,8 +106,7 @@ export async function GET(request: Request) {
         rows.some(
           (r) =>
             r.last_upserted_at != null &&
-            Date.now() - new Date(r.last_upserted_at).getTime() 
-              staleThresholdMs,
+            Date.now() - new Date(r.last_upserted_at).getTime() < staleThresholdMs,
         );
 
       let loginScore: number;
