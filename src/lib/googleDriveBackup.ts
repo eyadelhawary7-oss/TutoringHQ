@@ -34,6 +34,19 @@ const supabase = createClient(
   { auth: { persistSession: false, autoRefreshToken: false } },
 );
 
+const sharedDriveId = process.env.BACKUP_DRIVE_SHARED_DRIVE_ID ?? '';
+
+const sharedDriveCreateOpts = {
+  supportsAllDrives: true,
+};
+
+const sharedDriveListOpts = {
+  supportsAllDrives: true,
+  includeItemsFromAllDrives: true,
+  corpora: 'drive' as const,
+  driveId: sharedDriveId,
+};
+
 type DriveClient = ReturnType<typeof google.drive>;
 
 function getDriveClient(): DriveClient {
@@ -70,6 +83,7 @@ async function uploadToDrive(
 ): Promise<string> {
   const stream = Readable.from([content]);
   const res = await drive.files.create({
+    ...sharedDriveCreateOpts,
     requestBody: {
       name: filename,
       parents: [folderId],
@@ -96,6 +110,7 @@ async function uploadPdfToDrive(
 ): Promise<string> {
   const stream = Readable.from(buffer);
   const res = await drive.files.create({
+    ...sharedDriveCreateOpts,
     requestBody: {
       name: filename,
       parents: [folderId],
@@ -114,6 +129,7 @@ async function loadDriveFileNamesInFolder(drive: DriveClient, folderId: string):
   let pageToken: string | undefined;
   do {
     const res = await drive.files.list({
+      ...sharedDriveListOpts,
       q: `'${escapeDriveQueryLiteral(folderId)}' in parents and trashed=false`,
       fields: 'nextPageToken, files(name)',
       pageSize: 1000,
@@ -133,6 +149,7 @@ async function getOrCreateFolder(
   name: string,
 ): Promise<string> {
   const existing = await drive.files.list({
+    ...sharedDriveListOpts,
     q: `name='${name}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
     fields: 'files(id,name)',
   });
@@ -140,6 +157,7 @@ async function getOrCreateFolder(
     return existing.data.files[0].id!;
   }
   const created = await drive.files.create({
+    ...sharedDriveCreateOpts,
     requestBody: {
       name,
       mimeType: 'application/vnd.google-apps.folder',
@@ -297,6 +315,11 @@ export async function runBackup(type: 'weekly' | 'monthly'): Promise<BackupResul
   }
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
     throw new Error(tBackup('errorMissingGoogleCredentials'));
+  }
+  if (!sharedDriveId) {
+    throw new Error(
+      'BACKUP_DRIVE_SHARED_DRIVE_ID is required. Service Accounts have no personal Drive quota; backups must target a Google Shared Drive. Set BACKUP_DRIVE_SHARED_DRIVE_ID to the Shared Drive ID and ensure the service account is a Manager of that Shared Drive.',
+    );
   }
 
   const drive = getDriveClient();

@@ -76,6 +76,17 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 **Note:** Update this table after each rotation. The `check-secrets` script parses "Next Due" dates from this table for reminders.
 
+## Secret Inventory
+
+### Drive / Backup
+
+| Env var | Purpose | Notes |
+|---|---|---|
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | Service-account credentials JSON (single-line) used by `src/lib/googleDriveBackup.ts` to authenticate against the Drive API. | Scope: `https://www.googleapis.com/auth/drive.file`. |
+| `BACKUP_DRIVE_FOLDER_ID` | Root folder ID inside the Shared Drive where weekly/monthly backup subfolders are created. | Must live inside the Shared Drive referenced by `BACKUP_DRIVE_SHARED_DRIVE_ID`. |
+| `BACKUP_DRIVE_SHARED_DRIVE_ID` | Google Shared Drive ID that owns the backup destination. Required as of ADR-018 — Service Accounts have no personal Drive quota. | The Shared Drive **must list the service account's `client_email` as a Manager**, or all uploads fail with permission errors. |
+| `BACKUP_NOTIFY_PHONE` | Optional WhatsApp phone number that receives backup-complete notifications. | Notification path gated by Meta template approval + `wa_sending_enabled` platform_config. |
+
 ## Emergency Rotation (Security Breach)
 
 If a secret is compromised:
