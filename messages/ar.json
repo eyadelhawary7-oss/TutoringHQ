@@ -2444,7 +2444,8 @@
       "pricingPackMinimumsTitle": "الحد الأدنى للفاتورة لكل خطة",
       "pricingPackMinimumsNote": "الحد الأدنى المحصّل لكل خطة بغض النظر عن عدد الأولياء النشطين",
       "pricingPlanKey": "الخطة",
-      "pricingMinimumEgp": "الحد الأدنى (ج.م)"
+      "pricingMinimumEgp": "الحد الأدنى (ج.م)",
+      "readOnlyBanner": "لديك صلاحية القراءة فقط للأسعار. التعديل متاح للمدير العام فقط."
     },
     "health": {
       "healthBack": "رجوع",
@@ -2899,7 +2900,10 @@
     "noReferrals": "لا توجد إحالات",
     "finance": "المالية",
     "demoRequestsTitle": "طلبات العرض التوضيحي",
-    "demoRequestsEmpty": "لا توجد طلبات عرض توضيحي بعد"
+    "demoRequestsEmpty": "لا توجد طلبات عرض توضيحي بعد",
+    "errors": {
+      "forbidden": "ليس لديك صلاحية لتنفيذ هذا الإجراء."
+    }
   },
   "ceo": {
     "brandTitle": "CenterHQ",
@@ -4963,7 +4967,14 @@
     "subjectRequired": "مادة مطلوب",
     "validFeeRequired": "Valid رسوم مطلوب",
     "waitlist": "قائمة الانتظار",
-    "linkCopied": "تم نسخ الرابط"
+    "linkCopied": "تم نسخ الرابط",
+    "errors": {
+      "saveFailedGeneric": "تعذّر حفظ المجموعة. يرجى المحاولة مرة أخرى."
+    },
+    "add": {
+      "noSubjectsPlaceholder": "لا توجد مواد بعد، أنشئ مادة أولاً",
+      "createSubjectHelper": "أنشئ مادتك الأولى"
+    }
   },
   "join": {
     "eyebrow": "تسجيل الطالب",
@@ -6044,7 +6055,10 @@
     "upgradePlan": "ترقية باقة",
     "upgradeRecommended": "ترقية Recommended",
     "view_all": "عرض كل",
-    "view_student": "عرض طالب"
+    "view_student": "عرض طالب",
+    "subjectManagement": {
+      "ownerOnlyMessage": "يمكن لمالك السنتر فقط إدارة المواد."
+    }
   },
   "signup": {
     "title": "سجّل مركزك",
@@ -6191,6 +6205,16 @@
       "insufficientFunds": "رصيد غير كافٍ. جرّب وسيلة دفع أخرى.",
       "threeDsFailed": "فشل التحقق 3-D Secure. أعد المحاولة أو استخدم بطاقة أخرى.",
       "paymentGeneric": "تعذّر إتمام الدفع عبر الإنترنت. أعد المحاولة أو تواصل مع الدعم."
+    },
+    "progress": {
+      "step1Of4": "الخطوة ١ من ٤",
+      "step2Of4": "الخطوة ٢ من ٤",
+      "step3Of4": "الخطوة ٣ من ٤: تأكيد الطلب",
+      "step4Payment": "الخطوة ٤: الدفع"
+    },
+    "authSentence": {
+      "standard": "بالتأكيد، أنت تفوّض CenterHQ بسحب {amount} ج.م {interval}.",
+      "withPromo": "بالتأكيد، أنت تفوّض CenterHQ بسحب {firstCycle} ج.م اليوم و{recurring} ج.م {interval} بعد ذلك."
     }
   },
   "students": {
@@ -6324,7 +6348,12 @@
     "assignGroups": "تعيين المجموعات",
     "deleteStudent": "حذف الطالب",
     "deleteStudentConfirm": "هل أنت متأكد من حذف هذا الطالب؟",
-    "regenerateQR": "إعادة إنشاء QR"
+    "regenerateQR": "إعادة إنشاء QR",
+    "add": {
+      "noGroupsPlaceholder": "لا توجد مجموعات بعد، أنشئ مجموعة أولاً",
+      "createGroupHelper": "أنشئ مجموعتك الأولى"
+    },
+    "status_active": "نشط"
   },
   "notFound": {
     "heading": "الصفحة غير موجودة",
@@ -6340,7 +6369,13 @@
     "unexpectedDesc": "تم تسجيل الخطأ تلقائياً. اضغط إعادة المحاولة أو عد للرئيسية.",
     "tryAgain": "إعادة المحاولة",
     "goDashboard": "الرئيسية",
-    "backToDashboard": "العودة للوحة التحكم"
+    "backToDashboard": "العودة للوحة التحكم",
+    "notFound": {
+      "title": "الصفحة غير موجودة",
+      "message": "الصفحة التي تبحث عنها غير موجودة أو تم نقلها.",
+      "backToHome": "العودة إلى الصفحة الرئيسية",
+      "viewPricing": "عرض الأسعار"
+    }
   },
   "sentryTest": {
     "title": "اختبار Sentry",
@@ -7293,7 +7328,13 @@
   "periodName": {},
   "periods": {},
   "permissionUpdateFailed": {},
-  "permissions": {},
+  "permissions": {
+    "ownerOnly": {
+      "title": "قسم خاص بالمالك",
+      "message": "هذا القسم متاح لمالك السنتر فقط.",
+      "backToDashboard": "العودة إلى لوحة التحكم"
+    }
+  },
   "phone": {},
   "phoneHelper": {},
   "phoneHint": {},
@@ -7357,7 +7398,10 @@
       }
     },
     "subtitle": "وصف",
-    "title": "عنوان"
+    "title": "عنوان",
+    "tile": {
+      "quarterlyDisclosure": "يُدفع كل ٣ أشهر بمبلغ {amount} ج.م"
+    }
   },
   "pricingActive": {},
   "pricingAnnualDerived": {},
@@ -7849,5 +7893,12 @@
     "closeAria": "اغلاق النافذة",
     "copy": "نسخ",
     "copied": "تم النسخ!"
+  },
+  "demoRequest": {
+    "stub": {
+      "title": "طلب عرض توضيحي",
+      "message": "نموذج طلب العرض التوضيحي قادم قريباً. حالياً، يرجى التواصل معنا عبر واتساب وسنرتب جلسة شرح خلال ٢٤ ساعة.",
+      "whatsappCta": "تواصل معنا عبر واتساب"
+    }
   }
 }

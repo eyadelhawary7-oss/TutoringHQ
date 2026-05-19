@@ -1591,7 +1591,12 @@
     "assignGroups": "Assign groups",
     "deleteStudent": "Delete student",
     "deleteStudentConfirm": "Are you sure you want to delete this student?",
-    "regenerateQR": "Regenerate QR"
+    "regenerateQR": "Regenerate QR",
+    "add": {
+      "noGroupsPlaceholder": "No groups yet, create one first",
+      "createGroupHelper": "Create your first group"
+    },
+    "status_active": "Active"
   },
   "print": {
     "title": "Print Student Cards",
@@ -2721,7 +2726,10 @@
     "upgradePlan": "Upgrade Plan",
     "upgradeRecommended": "Upgrade Recommended",
     "view_all": "View All",
-    "view_student": "View Student"
+    "view_student": "View Student",
+    "subjectManagement": {
+      "ownerOnlyMessage": "Only the center owner can manage subjects."
+    }
   },
   "groups": {
     "title": "Groups",
@@ -2757,7 +2765,14 @@
     "subjectRequired": "Subject Required",
     "validFeeRequired": "Valid Fee Required",
     "waitlist": "Waitlist",
-    "linkCopied": "Link copied to clipboard"
+    "linkCopied": "Link copied to clipboard",
+    "errors": {
+      "saveFailedGeneric": "Couldn't save the group. Please try again."
+    },
+    "add": {
+      "noSubjectsPlaceholder": "No subjects yet, create one first",
+      "createSubjectHelper": "Create your first subject"
+    }
   },
   "join": {
     "eyebrow": "Student Self-Registration",
@@ -3029,6 +3044,16 @@
       "insufficientFunds": "Insufficient funds. Try another payment method.",
       "threeDsFailed": "3-D Secure verification failed. Try again or use another card.",
       "paymentGeneric": "Online payment could not be completed. Try again or contact support."
+    },
+    "progress": {
+      "step1Of4": "Step 1 of 4",
+      "step2Of4": "Step 2 of 4",
+      "step3Of4": "Step 3 of 4: Confirm order",
+      "step4Payment": "Step 4: Payment"
+    },
+    "authSentence": {
+      "standard": "By confirming, you authorize CenterHQ to charge {amount} EGP {interval}.",
+      "withPromo": "By confirming, you authorize CenterHQ to charge {firstCycle} EGP today and {recurring} EGP {interval} thereafter."
     }
   },
   "acceptInvite": {
@@ -3987,7 +4012,8 @@
       "pricingPackMinimumsTitle": "Plan Invoice Minimums",
       "pricingPackMinimumsNote": "Minimum charged per plan regardless of active parent count",
       "pricingPlanKey": "Plan",
-      "pricingMinimumEgp": "Minimum (EGP)"
+      "pricingMinimumEgp": "Minimum (EGP)",
+      "readOnlyBanner": "You have read access to pricing. Only super admins can edit."
     },
     "health": {
       "healthBack": "Back",
@@ -4442,7 +4468,10 @@
     "noReferrals": "No referrals",
     "finance": "Finance",
     "demoRequestsTitle": "Demo Requests",
-    "demoRequestsEmpty": "No demo requests yet"
+    "demoRequestsEmpty": "No demo requests yet",
+    "errors": {
+      "forbidden": "You don't have permission to perform this action."
+    }
   },
   "notFound": {
     "heading": "Page Not Found",
@@ -4458,7 +4487,13 @@
     "unexpectedDesc": "The error was logged automatically. Try again or return to your dashboard.",
     "tryAgain": "Try again",
     "goDashboard": "Dashboard",
-    "backToDashboard": "Back to dashboard"
+    "backToDashboard": "Back to dashboard",
+    "notFound": {
+      "title": "Page not found",
+      "message": "The page you're looking for doesn't exist or has moved.",
+      "backToHome": "Back to home",
+      "viewPricing": "View pricing"
+    }
   },
   "sentryTest": {
     "title": "Sentry Test",
@@ -7293,7 +7328,13 @@
   "periodName": {},
   "periods": {},
   "permissionUpdateFailed": {},
-  "permissions": {},
+  "permissions": {
+    "ownerOnly": {
+      "title": "Owner-only section",
+      "message": "This section is only available to the center owner.",
+      "backToDashboard": "Back to dashboard"
+    }
+  },
   "phone": {},
   "phoneHelper": {},
   "phoneHint": {},
@@ -7357,7 +7398,10 @@
       }
     },
     "subtitle": "Subtitle",
-    "title": "Title"
+    "title": "Title",
+    "tile": {
+      "quarterlyDisclosure": "billed quarterly at {amount} EGP every 3 months"
+    }
   },
   "pricingActive": {},
   "pricingAnnualDerived": {},
@@ -7849,5 +7893,12 @@
     "closeAria": "Close popup",
     "copy": "Copy",
     "copied": "Copied!"
+  },
+  "demoRequest": {
+    "stub": {
+      "title": "Request a demo",
+      "message": "Our demo request form is coming soon. For now, please contact us on WhatsApp and we'll arrange a walkthrough within 24 hours.",
+      "whatsappCta": "Contact us on WhatsApp"
+    }
   }
 }
