@@ -180,7 +180,7 @@ export default function AdminInternalTeamPage() {
               >
                 <DirectionalIcon icon={ArrowLeft} className="h-5 w-5" />
               </button>
-              <h1 className="text-xl font-bold">{t('internalTeam')}</h1>
+              <h1 className="text-xl font-bold">{t('internalTeam.title')}</h1>
             </div>
             <button
               type="button"

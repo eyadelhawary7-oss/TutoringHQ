@@ -1978,7 +1978,16 @@
       "tabCommissions": "العمولات"
     },
     "withdrawals": "طلبات السحب",
-    "internalTeam": "الفريق الداخلي",
+    "internalTeam": {
+      "title": "الفريق الداخلي",
+      "editRole": "تعديل الدور",
+      "deactivate": "تعطيل",
+      "deactivateConfirmTitle": "تعطيل هذا المدير؟",
+      "deactivateConfirmMessage": "سيفقدون الوصول فوراً. يمكنك إعادة تفعيلهم لاحقاً.",
+      "deactivateConfirmCta": "تعطيل",
+      "editRoleTitle": "تعديل الدور",
+      "editRoleSave": "حفظ التغييرات"
+    },
     "salesPipeline": "خط المبيعات",
     "analytics": "التحليلات",
     "totalCenters": "إجمالي السناتر",

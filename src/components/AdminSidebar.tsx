@@ -581,7 +581,7 @@ export function AdminSidebar({
         {
           key: 'internalTeam',
           icon: Users,
-          label: t('internalTeam'),
+          label: t('internalTeam.title'),
           isActive: activeRoute?.includes('admin/internal-team') ?? false,
           canShow: canShowPermKey('internal_team'),
           href: '/admin/internal-team',
