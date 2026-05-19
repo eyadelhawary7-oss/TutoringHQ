@@ -543,8 +543,9 @@ export default function SignupForm() {
   const stageSubtitle =
     stage === 'info' ? t('stageOneSubtitle') : stage === 'plan' ? t('stageTwoSubtitle') : t('stageThreeTitle');
 
-  const progressWidth = stage === 'info' ? '33%' : stage === 'plan' ? '66%' : '100%';
-  const progressNow = stage === 'info' ? 33 : stage === 'plan' ? 66 : 100;
+  const progressWidth = stage === 'info' ? '25%' : stage === 'plan' ? '50%' : '75%';
+  const progressNow = stage === 'info' ? 25 : stage === 'plan' ? 50 : 75;
+  const currentStepNumber = stage === 'info' ? 1 : stage === 'plan' ? 2 : 3;
 
   if (stage === 'success') {
     return (
@@ -677,15 +678,45 @@ export default function SignupForm() {
 
       <div className="relative z-10 mx-auto max-w-md px-6 pt-14 pb-20">
         {(stage === 'info' || stage === 'plan' || stage === 'payment') ? (
-          <p
-            className="mb-6 text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-teal-500/90"
-            style={SANS}
-          >
-            {t('stepProgress', {
-              step: stage === 'info' ? 1 : stage === 'plan' ? 2 : 3,
-              total: 3,
-            })}
-          </p>
+          <div className="mb-6 flex flex-col items-center gap-2">
+            <p
+              className="text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-teal-500/90"
+              style={SANS}
+            >
+              {currentStepNumber === 1
+                ? t('progress.step1Of4')
+                : currentStepNumber === 2
+                  ? t('progress.step2Of4')
+                  : t('progress.step3Of4')}
+            </p>
+            <div className="flex items-center gap-1.5" aria-hidden>
+              {[1, 2, 3, 4].map((step) => {
+                const isCompleted = step < currentStepNumber;
+                const isActive = step === currentStepNumber;
+                const isPayment = step === 4;
+                return (
+                  <span
+                    key={step}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      isActive
+                        ? 'w-6 bg-teal-500'
+                        : isCompleted
+                          ? 'w-1.5 bg-teal-600'
+                          : isPayment
+                            ? 'w-1.5 bg-slate-800'
+                            : 'w-1.5 bg-slate-700'
+                    }`}
+                  />
+                );
+              })}
+            </div>
+            <p
+              className="text-center text-[10px] tracking-[0.1em] text-slate-600"
+              style={SANS}
+            >
+              {t('progress.step4Payment')}
+            </p>
+          </div>
         ) : null}
         <div className="mb-12 flex flex-col items-center">
           <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600 shadow-[0_0_20px_rgba(13,148,136,0.4)]">
