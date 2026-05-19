@@ -98,7 +98,6 @@ export default function GeneralSettingsPage() {
   const tReferral = useTranslations('referral');
   const tBilling = useTranslations('billing');
   const tCardOrders = useTranslations('cardOrders');
-  const tDashboard = useTranslations('dashboard');
   const router = useRouter();
   const locale = useLocale();
   const { user: currentUser, hasPermission, refreshUser } = useUser();
@@ -766,7 +765,7 @@ export default function GeneralSettingsPage() {
                     ))}
                   </div>
                   <p className="text-sm text-[var(--color-text-secondary)]">
-                    {tDashboard('subjectManagement.ownerOnlyMessage')}
+                    {t('subjectManagement.ownerOnlyMessage')}
                   </p>
                 </>
               )}
