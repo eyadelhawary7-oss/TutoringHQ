@@ -87,6 +87,7 @@ export default function AdminPricingPage() {
   const isRTL = locale === 'ar';
 
   const [gateOk, setGateOk] = useState(false);
+  const [readOnly, setReadOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [plans, setPlans] = useState<PlanRow[]>([]);
@@ -151,10 +152,13 @@ export default function AdminPricingPage() {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       const data = await res.json().catch(() => ({}));
-      if (!data?.isAdmin || data.role !== 'super_admin') {
+      if (!data?.isAdmin) {
         router.replace('/dashboard');
         return;
       }
+      // internal_admin / internal_viewer can view pricing read-only;
+      // only super_admin can save changes.
+      setReadOnly(data.role !== 'super_admin');
       setGateOk(true);
     };
     void gate();
@@ -439,6 +443,12 @@ export default function AdminPricingPage() {
             </div>
           </div>
 
+          {readOnly ? (
+            <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 px-4 py-3 mb-4 text-sm">
+              {t('pricing.readOnlyBanner')}
+            </div>
+          ) : null}
+
           {error ? (
             <div className="rounded-xl border border-destructive/30 bg-destructive/5 text-destructive px-4 py-3 mb-4">
               {error}
@@ -532,14 +542,16 @@ export default function AdminPricingPage() {
                               </label>
                             </td>
                             <td className="p-2">
-                              <button
-                                type="button"
-                                disabled={busy}
-                                onClick={() => void savePlan(p.plan_key)}
-                                className="w-full rounded-lg bg-[var(--color-brand-500)] text-white px-3 py-2 text-xs font-semibold hover:opacity-90 disabled:opacity-50"
-                              >
-                                {busy ? t('pricingSaving') : t('pricingSave')}
-                              </button>
+                              {readOnly ? null : (
+                                <button
+                                  type="button"
+                                  disabled={busy}
+                                  onClick={() => void savePlan(p.plan_key)}
+                                  className="w-full rounded-lg bg-[var(--color-brand-500)] text-white px-3 py-2 text-xs font-semibold hover:opacity-90 disabled:opacity-50"
+                                >
+                                  {busy ? t('pricingSaving') : t('pricingSave')}
+                                </button>
+                              )}
                             </td>
                           </tr>
                         );
@@ -569,14 +581,16 @@ export default function AdminPricingPage() {
                         onChange={(e) => setPackPrice(e.target.value)}
                       />
                     </div>
-                    <button
-                      type="button"
-                      disabled={savingPack || !packLoaded}
-                      onClick={() => void savePack()}
-                      className="rounded-lg bg-[var(--color-brand-500)] text-white px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 shrink-0"
-                    >
-                      {savingPack ? t('pricingSaving') : t('pricingSave')}
-                    </button>
+                    {readOnly ? null : (
+                      <button
+                        type="button"
+                        disabled={savingPack || !packLoaded}
+                        onClick={() => void savePack()}
+                        className="rounded-lg bg-[var(--color-brand-500)] text-white px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 shrink-0"
+                      >
+                        {savingPack ? t('pricingSaving') : t('pricingSave')}
+                      </button>
+                    )}
                   </div>
 
                   <div>
@@ -1181,19 +1195,21 @@ export default function AdminPricingPage() {
                   </CollapsibleSection>
 
                   {/* Global save bar */}
-                  <div className="sticky bottom-0 -mx-4 md:-mx-6 mt-6 border-t border-[var(--color-border-default)] bg-[var(--color-surface-1)] px-4 py-3 md:px-6 flex items-center justify-end gap-2">
-                    {pricingCfgDirty ? (
-                      <span className="text-xs text-amber-500">{t('pricingUnsavedChanges')}</span>
-                    ) : null}
-                    <button
-                      type="button"
-                      disabled={!pricingCfgDirty || savingPricingCfg}
-                      onClick={() => void savePricingCfg()}
-                      className="rounded-lg bg-[var(--color-brand-500)] text-white px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50"
-                    >
-                      {savingPricingCfg ? t('pricingSaving') : t('pricingSaveAll')}
-                    </button>
-                  </div>
+                  {readOnly ? null : (
+                    <div className="sticky bottom-0 -mx-4 md:-mx-6 mt-6 border-t border-[var(--color-border-default)] bg-[var(--color-surface-1)] px-4 py-3 md:px-6 flex items-center justify-end gap-2">
+                      {pricingCfgDirty ? (
+                        <span className="text-xs text-amber-500">{t('pricingUnsavedChanges')}</span>
+                      ) : null}
+                      <button
+                        type="button"
+                        disabled={!pricingCfgDirty || savingPricingCfg}
+                        onClick={() => void savePricingCfg()}
+                        className="rounded-lg bg-[var(--color-brand-500)] text-white px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50"
+                      >
+                        {savingPricingCfg ? t('pricingSaving') : t('pricingSaveAll')}
+                      </button>
+                    </div>
+                  )}
                 </>
               ) : null}
             </>
