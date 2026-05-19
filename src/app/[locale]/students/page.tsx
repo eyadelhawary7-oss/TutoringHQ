@@ -297,48 +297,54 @@ export default function StudentsPage() {
 
   useEffect(() => {
     const loadStudents = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const meRes = await fetch('/api/me', {
-        headers: { 'Authorization': `Bearer ${session.access_token}` },
-      });
-      const meData = await meRes.json();
-
-      if (!meData?.user?.center_id) return;
-      setCenterId(meData.user.center_id);
-      setCenterInfo(
-        meData.user.center
-          ? {
-              name: meData.user.center.name,
-              logo_url: meData.user.center.logo_url,
-              phone: meData.user.center.phone,
-              governorate: meData.user.center.governorate,
-              delivery_address: meData.user.center.delivery_address,
-              parent_pack_enabled: meData.user.center.parent_pack_enabled,
-              plan: meData.user.center.plan,
-              announcement_balance: meData.user.center.announcement_balance,
-              parent_pack_active_parents: meData.user.center.parent_pack_active_parents,
-            }
-          : null
-      );
-
-      const { data } = await dbSelect({
-        table: 'students',
-        select:
-          'id, name, phone, parent_phone, parent_consent_given, parent_pack_opted_in, subject, fee, payment_status, student_number, qr_code, is_active, lifecycle_status, sibling_family_id, center_id',
-        filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
-        order: { column: 'name' },
-      });
-
-      const list = Array.isArray(data) ? (data as Student[]) : [];
-      setStudents(list);
       try {
-        sessionStorage.setItem(STUDENTS_CACHE_KEY, JSON.stringify(list));
-      } catch {
-        /* private mode / quota */
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const meRes = await fetch('/api/me', {
+          headers: { 'Authorization': `Bearer ${session.access_token}` },
+        });
+        const meData = await meRes.json().catch(() => null);
+
+        if (!meData?.user?.center_id) return;
+        setCenterId(meData.user.center_id);
+        setCenterInfo(
+          meData.user.center
+            ? {
+                name: meData.user.center.name,
+                logo_url: meData.user.center.logo_url,
+                phone: meData.user.center.phone,
+                governorate: meData.user.center.governorate,
+                delivery_address: meData.user.center.delivery_address,
+                parent_pack_enabled: meData.user.center.parent_pack_enabled,
+                plan: meData.user.center.plan,
+                announcement_balance: meData.user.center.announcement_balance,
+                parent_pack_active_parents: meData.user.center.parent_pack_active_parents,
+              }
+            : null
+        );
+
+        const { data } = await dbSelect({
+          table: 'students',
+          select:
+            'id, name, phone, parent_phone, parent_consent_given, parent_pack_opted_in, subject, fee, payment_status, student_number, qr_code, is_active, lifecycle_status, sibling_family_id, center_id',
+          filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
+          order: { column: 'name' },
+        });
+
+        const list = Array.isArray(data) ? (data as Student[]) : [];
+        setStudents(list);
+        try {
+          sessionStorage.setItem(STUDENTS_CACHE_KEY, JSON.stringify(list));
+        } catch {
+          /* private mode / quota */
+        }
+        setStudentsListFresh(true);
+      } catch (err) {
+        console.error('[students] loadStudents failed', err);
+        setStudents((prev) => prev ?? []);
+        setStudentsListFresh(true);
       }
-      setStudentsListFresh(true);
     };
 
     loadStudents();
@@ -370,10 +376,11 @@ export default function StudentsPage() {
   useEffect(() => {
     if (groups.length === 0) return;
     const loadBalanceData = async () => {
+      try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       const meRes = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
-      const meData = await meRes.json();
+      const meData = await meRes.json().catch(() => null);
       if (!meData?.user?.center_id) return;
       const cid = meData.user.center_id;
 
@@ -420,16 +427,20 @@ export default function StudentsPage() {
         balance[sid] = Math.max(0, owed - paid);
       }
       setBalanceByStudent(balance);
+      } catch (err) {
+        console.error('[students] loadBalanceData failed', err);
+      }
     };
     loadBalanceData();
   }, [groups]);
 
   useEffect(() => {
     const loadSubjectsAndGroups = async () => {
+      try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       const meRes = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
-      const meData = await meRes.json();
+      const meData = await meRes.json().catch(() => null);
       if (!meData?.user?.center_id) return;
       const [subRes, grpRes] = await Promise.all([
         dbSelect({ table: 'subjects', select: 'id, name', filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }], order: { column: 'name' } }),
@@ -461,6 +472,9 @@ export default function StudentsPage() {
           }
           setStudentGroupsMap(map);
         }
+      }
+      } catch (err) {
+        console.error('[students] loadSubjectsAndGroups failed', err);
       }
     };
     loadSubjectsAndGroups();
