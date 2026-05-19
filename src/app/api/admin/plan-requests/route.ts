@@ -4,33 +4,32 @@ import { adminPlanRequestsSchema } from '@/lib/validations';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { getImpliedMonthlyMrr, isPlanKey, normalizeBillingPeriod, PLANS, type PlanKey } from '@/lib/pricing';
 import { todayISO } from '@/lib/parentPack';
-import { formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { parseBodyWithLimit } from '@/lib/validate';
 
 const ADMIN_UI_LOCALE = 'en';
 const WA_AR_LOCALE = 'ar';
 
-function monthlyEquivFromCenter(
+/**
+ * Canonical monthly equivalent for a plan, derived from the live pricing_plans
+ * table (quarterly all_in_price normalised to monthly). Falls back to compiled
+ * PLANS[] only if pricing_plans has no row. The center's own all_in_price is
+ * intentionally ignored for the plan-requests delta — using it produced
+ * nonsense deltas like "-1 EGP/mo" when test centers had a placeholder price.
+ */
+function monthlyEquivFromPricingPlanRow(
   plan: string | undefined,
-  c: { all_in_price?: number | null; billing_period?: string | null } | null | undefined,
+  pricingRow: { all_in_price?: number | null } | null | undefined,
 ): number {
   const k = (plan || 'starter').toLowerCase();
   if (k === 'payg') return 0;
   if (!isPlanKey(k) || k === 'top_centers') return 0;
   const pk = k as PlanKey;
   const base =
-    c && typeof c.all_in_price === 'number' && c.all_in_price > 0
-      ? c.all_in_price
+    pricingRow && typeof pricingRow.all_in_price === 'number' && pricingRow.all_in_price > 0
+      ? pricingRow.all_in_price
       : PLANS[pk].quarterlyAllIn;
-  return getImpliedMonthlyMrr(base, normalizeBillingPeriod(c?.billing_period), pk);
-}
-
-function monthlyEquivListPlan(plan: string | undefined): number {
-  const k = (plan || 'starter').toLowerCase();
-  if (k === 'payg') return 0;
-  if (!isPlanKey(k) || k === 'top_centers') return 0;
-  const pk = k as PlanKey;
-  return getImpliedMonthlyMrr(PLANS[pk].quarterlyAllIn, 'quarterly', pk);
+  return getImpliedMonthlyMrr(base, 'quarterly', pk);
 }
 
 function calendarAddDays(baseYmd: string, delta: number): string {
@@ -65,26 +64,53 @@ export async function GET(request: Request) {
     const centerIds = [...new Set((requests || []).map((r: { center_id: string }) => r.center_id))];
     const { data: centers } = await supabaseAdmin
       .from('centers')
-      .select('id, name, phone, all_in_price, billing_period')
+      .select('id, name, phone')
       .in('id', centerIds);
 
     const centerMap = new Map(
-      (centers || []).map(
-        (c: {
-          id: string;
-          name: string;
-          phone?: string;
-          all_in_price?: number | null;
-          billing_period?: string | null;
-        }) => [c.id, c],
+      (centers || []).map((c: { id: string; name: string; phone?: string }) => [c.id, c]),
+    );
+
+    const planKeys = [
+      ...new Set(
+        (requests || []).flatMap((r: { current_plan?: string; requested_plan?: string }) =>
+          [r.current_plan, r.requested_plan].filter((p): p is string => typeof p === 'string' && p.length > 0),
+        ),
       ),
+    ];
+    const { data: pricingRows } = planKeys.length > 0
+      ? await supabaseAdmin
+          .from('pricing_plans')
+          .select('plan_key, all_in_price')
+          .in('plan_key', planKeys)
+      : { data: [] };
+    const pricingMap = new Map(
+      (pricingRows || []).map((p: { plan_key: string; all_in_price: number | null }) => [
+        p.plan_key,
+        p,
+      ]),
     );
 
     const rows = (requests || []).map((r: { center_id: string; current_plan?: string; requested_plan?: string; [k: string]: unknown }) => {
       const center = centerMap.get(r.center_id);
-      const currentPrice = monthlyEquivFromCenter(r.current_plan as string, center);
-      const requestedPrice = monthlyEquivListPlan(r.requested_plan as string);
+      const currentPrice = monthlyEquivFromPricingPlanRow(
+        r.current_plan,
+        pricingMap.get(r.current_plan ?? '') ?? null,
+      );
+      const requestedPrice = monthlyEquivFromPricingPlanRow(
+        r.requested_plan,
+        pricingMap.get(r.requested_plan ?? '') ?? null,
+      );
       const priceDiff = requestedPrice - currentPrice;
+      let priceDiffFormatted: string;
+      if (priceDiff === 0) {
+        priceDiffFormatted = `${formatNumber(0, ADMIN_UI_LOCALE)} EGP/mo`;
+      } else if (priceDiff > 0) {
+        priceDiffFormatted = `+${formatCurrency(priceDiff, ADMIN_UI_LOCALE)}/mo`;
+      } else {
+        // Use minus sign + absolute value via formatCurrency to keep digit-grouping.
+        priceDiffFormatted = `−${formatCurrency(Math.abs(priceDiff), ADMIN_UI_LOCALE)}/mo`;
+      }
       return {
         ...r,
         centerName: center?.name ?? ',',
@@ -92,12 +118,7 @@ export async function GET(request: Request) {
         currentPrice,
         requestedPrice,
         priceDiff,
-        priceDiffFormatted:
-          priceDiff > 0
-            ? `+${formatNumber(priceDiff, ADMIN_UI_LOCALE)} EGP/mo`
-            : priceDiff < 0
-              ? `${formatNumber(priceDiff, ADMIN_UI_LOCALE)} EGP/mo`
-              : ',',
+        priceDiffFormatted,
       };
     });
 
