@@ -8,7 +8,7 @@ import { useUser } from '@/contexts/UserContext';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { Download, Search } from 'lucide-react';
 import { KpiCard, SectionHeader } from '@/components/shared';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { ReceiptModal } from '@/components/payments/ReceiptModal';
 import { LoadingButton } from '@/components/ui/LoadingButton';
@@ -127,6 +127,7 @@ export default function PaymentsPage() {
   const { toast } = useToast();
   const locale = useLocale();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, hasPermission } = useUser();
   const canViewPayments =
     user?.role === 'owner' || user?.role === 'admin' || user?.role === 'super_admin' || hasPermission('can_view_payments');
@@ -270,6 +271,12 @@ export default function PaymentsPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'collect' && canCollectPayment) {
+      setShowCollectModal(true);
+    }
+  }, [searchParams, canCollectPayment]);
 
   const recordsList = records ?? [];
   const paymentsStale = Boolean(records !== null && !paymentsFresh);

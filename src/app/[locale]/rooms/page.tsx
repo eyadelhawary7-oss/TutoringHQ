@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, auditLog } from '@/lib/db-proxy';
 import { Plus, DoorOpen, X, MoreVertical } from 'lucide-react';
@@ -18,6 +19,7 @@ export default function RoomsPage() {
   const t = useTranslations('rooms');
   const tCommon = useTranslations('common');
   const locale = useLocale();
+  const searchParams = useSearchParams();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [centerId, setCenterId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -67,6 +69,12 @@ export default function RoomsPage() {
     return () => clearTimeout(id);
   }, []);
 
+  useEffect(() => {
+    if (searchParams.get('action') === 'add') {
+      setShowAddModal(true);
+    }
+  }, [searchParams]);
+
   const handleAddRoom = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddError('');
@@ -108,6 +116,7 @@ export default function RoomsPage() {
           </p>
         </div>
         <button
+          type="button"
           onClick={() => setShowAddModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
         >
