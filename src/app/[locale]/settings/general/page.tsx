@@ -227,7 +227,7 @@ export default function GeneralSettingsPage() {
     load();
   }, []);
 
-  // Load referral
+  // Load referral (owner-only — revenue share)
   useEffect(() => {
     const fetchReferral = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -239,8 +239,10 @@ export default function GeneralSettingsPage() {
         console.error('Referral fetch error:', err);
       }
     };
-    if (centerId) fetchReferral();
-  }, [centerId]);
+    if (centerId && (currentUser?.role === 'owner' || currentUser?.role === 'super_admin')) {
+      fetchReferral();
+    }
+  }, [centerId, currentUser?.role]);
 
   const showSaved = () => {
     setSavedMessage(t('saved'));
@@ -771,27 +773,29 @@ export default function GeneralSettingsPage() {
             </div>
           </div>
 
-          {/* Team Members shortcut */}
-          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
-            <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-              <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
-                <Users className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
+          {/* Team Members shortcut — owner-only */}
+          {(currentUser?.role === 'owner' || currentUser?.role === 'super_admin') && (
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
+                <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
+                  <Users className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-[var(--color-text-primary)]">{t('teamMembers')}</h3>
+                  <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('manageTeamDesc')}</p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <h3 className="font-semibold text-[var(--color-text-primary)]">{t('teamMembers')}</h3>
-                <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('manageTeamDesc')}</p>
+              <div className="p-6">
+                <Link
+                  href="/settings/team"
+                  className="inline-flex items-center gap-2 px-4 py-2 border border-[var(--color-border-default)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors w-fit"
+                >
+                  <Users className="w-4 h-4" /> {t('manageTeam')}
+                  <DirectionalIcon icon={ChevronRight} className="inline w-4 h-4 ms-1 align-middle" />
+                </Link>
               </div>
             </div>
-            <div className="p-6">
-              <Link
-                href="/settings/team"
-                className="inline-flex items-center gap-2 px-4 py-2 border border-[var(--color-border-default)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors w-fit"
-              >
-                <Users className="w-4 h-4" /> {t('manageTeam')}
-                <DirectionalIcon icon={ChevronRight} className="inline w-4 h-4 ms-1 align-middle" />
-              </Link>
-            </div>
-          </div>
+          )}
 
           {/* Scanner Settings */}
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
@@ -966,7 +970,8 @@ export default function GeneralSettingsPage() {
             </div>
           ) : null}
 
-          {/* Referral Program */}
+          {/* Referral Program — owner-only (revenue share) */}
+          {(currentUser?.role === 'owner' || currentUser?.role === 'super_admin') && (
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
             <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
               <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
@@ -1074,6 +1079,7 @@ export default function GeneralSettingsPage() {
               {!referralData && <p className="text-sm text-[var(--color-text-secondary)]">{tCommon('loading')}</p>}
             </div>
           </div>
+          )}
 
           {/* Billing card */}
           <Link
