@@ -1,4 +1,5 @@
 import { requireSuperAdminApi } from '@/lib/admin-auth'
+import { parseIncludeTestCenters } from '@/lib/adminIncludeTest'
 import { currentMonthStr, deriveBillingSummary } from '@/lib/whatsapp-pack'
 import type { NotificationTypes, WaPackBillingSummary, WaPackCenter } from '@/types/whatsapp-pack'
 import { NextResponse } from 'next/server'
@@ -57,17 +58,23 @@ export async function GET(request: Request) {
 
   const { supabaseAdmin } = auth
   const month = currentMonthStr()
+  const includeTest = parseIncludeTestCenters(request)
+
+  let centersQuery = supabaseAdmin
+    .from('centers')
+    .select(
+      `id, name, plan, phone, parent_pack_enabled, parent_pack_active_parents, announcement_balance,
+      pack_request_status, pack_requested_at, pack_rejection_reason,
+      pack_pending_balance, pack_months_without_invoice, pack_custom_invoice_minimum`,
+    )
+    .order('parent_pack_enabled', { ascending: false })
+    .order('name', { ascending: true })
+  if (!includeTest) {
+    centersQuery = centersQuery.eq('is_test', false)
+  }
 
   const [centersRes, configRes, billingRes, pendingReqRes] = await Promise.all([
-    supabaseAdmin
-      .from('centers')
-      .select(
-        `id, name, plan, phone, parent_pack_enabled, parent_pack_active_parents, announcement_balance,
-        pack_request_status, pack_requested_at, pack_rejection_reason,
-        pack_pending_balance, pack_months_without_invoice, pack_custom_invoice_minimum`,
-      )
-      .order('parent_pack_enabled', { ascending: false })
-      .order('name', { ascending: true }),
+    centersQuery,
     supabaseAdmin
       .from('platform_config')
       .select('value')
