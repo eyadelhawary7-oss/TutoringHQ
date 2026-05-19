@@ -112,6 +112,15 @@ function studentStatusLabelKey(lifecycle: Student['lifecycle_status']): StudentS
   return 'status_enrolled';
 }
 
+function studentStatusLabelFallback(lifecycle: Student['lifecycle_status']): string {
+  const x = lifecycle ?? 'enrolled';
+  if (x === 'active') return 'Active';
+  if (x === 'at_risk') return 'At Risk';
+  if (x === 'inactive') return 'Inactive';
+  if (x === 'churned') return 'Churned';
+  return 'Enrolled';
+}
+
 type FilterLabelKey =
   | 'filter_all'
   | 'filter_active'
@@ -1413,7 +1422,7 @@ export default function StudentsPage() {
                                       <span className="font-semibold text-[var(--color-text-primary)]">{s.name}</span>
                                     </Link>
                                     <div className="mt-1">
-                                      <LifecycleBadge status={s.lifecycle_status} label={ts(statusKey)} />
+                                      <LifecycleBadge status={s.lifecycle_status} label={ts(statusKey, { defaultValue: studentStatusLabelFallback(s.lifecycle_status) })} />
                                     </div>
                                   </div>
                                 </td>
@@ -1620,7 +1629,7 @@ export default function StudentsPage() {
                               >
                                 {s.name}
                               </Link>
-                              <LifecycleBadge status={s.lifecycle_status} label={ts(statusKey)} />
+                              <LifecycleBadge status={s.lifecycle_status} label={ts(statusKey, { defaultValue: studentStatusLabelFallback(s.lifecycle_status) })} />
                               {s.parent_consent_given && (
                                 <span
                                   className="badge badge-success text-[10px] px-1.5 py-0"
