@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbDelete, auditLog } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
+import { Link as RouterLink } from '@/i18n/routing';
 import { Plus, BookOpen, X, Users, Search, Link as LinkIcon } from 'lucide-react';
 import { AttendanceHeatmap } from '@/components/AttendanceHeatmap';
 import EmptyState from '@/components/empty-states/EmptyState';
@@ -490,10 +491,23 @@ export default function GroupsPage() {
                   onChange={e => setAddForm(prev => ({ ...prev, subjectId: e.target.value }))}
                   className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm text-[var(--color-text-primary)]"
                   required
+                  disabled={subjects.length === 0}
                 >
-                  <option value="">{tCommon('select')}</option>
+                  {subjects.length === 0 ? (
+                    <option value="" disabled>{t('add.noSubjectsPlaceholder')}</option>
+                  ) : (
+                    <option value="">{tCommon('select')}</option>
+                  )}
                   {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
+                {subjects.length === 0 && (
+                  <RouterLink
+                    href="/settings/general"
+                    className="mt-1.5 inline-block text-xs text-teal-600 hover:underline"
+                  >
+                    {t('add.createSubjectHelper')}
+                  </RouterLink>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('feePerLesson')}</label>

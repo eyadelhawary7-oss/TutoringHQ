@@ -1947,8 +1947,18 @@ export default function StudentsPage() {
               )}
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{ts('groupRequired')}</label>
-                <select value={addForm.groupId} onChange={(e) => { const gId = e.target.value; const g = groups.find((gr) => gr.id === gId); setAddForm((f) => ({ ...f, groupId: gId, subjectId: g ? subjects.find((s) => s.name === g.subject)?.id ?? '' : '', monthlyFee: g?.fee != null ? String(g.fee) : '' })); }} className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" required>
-                  <option value="">{tCommon('select')}</option>
+                <select
+                  value={addForm.groupId}
+                  onChange={(e) => { const gId = e.target.value; const g = groups.find((gr) => gr.id === gId); setAddForm((f) => ({ ...f, groupId: gId, subjectId: g ? subjects.find((s) => s.name === g.subject)?.id ?? '' : '', monthlyFee: g?.fee != null ? String(g.fee) : '' })); }}
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+                  required
+                  disabled={groups.length === 0}
+                >
+                  {groups.length === 0 ? (
+                    <option value="" disabled>{ts('add.noGroupsPlaceholder')}</option>
+                  ) : (
+                    <option value="">{tCommon('select')}</option>
+                  )}
                   {groups.map((g) => (
                     <option key={g.id} value={g.id}>
                       {g.name}
@@ -1956,6 +1966,14 @@ export default function StudentsPage() {
                     </option>
                   ))}
                 </select>
+                {groups.length === 0 && (
+                  <Link
+                    href="/groups"
+                    className="mt-1.5 inline-block text-xs text-teal-600 hover:underline"
+                  >
+                    {ts('add.createGroupHelper')}
+                  </Link>
+                )}
               </div>
               <p className="text-xs text-[var(--color-text-secondary)]">{ts('autoGenerateNumber')}</p>
               <div className="flex gap-2 justify-end mt-4">
