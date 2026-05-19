@@ -1212,12 +1212,32 @@ export default function SignupForm() {
                 lineHeight: '1.5',
               }}
             >
-              {t('authNote', {
-                amount: selectedPlan
-                  ? formatNumber(getTotalAmount(selectedPlan, form.billingPeriod, dynamicPlanPrices), locale)
-                  : '0',
-                period: tb(`period.${form.billingPeriod}.label` as 'billing.period.monthly.label'),
-              })}
+              {selectedPlan
+                ? (() => {
+                    const recurringAmount = getTotalAmount(
+                      selectedPlan,
+                      form.billingPeriod,
+                      dynamicPlanPrices,
+                    );
+                    const intervalLabel = tb(
+                      `period.${form.billingPeriod}.label` as 'billing.period.monthly.label',
+                    );
+                    if (appliedPromo) {
+                      return t('authSentence.withPromo', {
+                        firstCycle: formatNumber(
+                          appliedPromo.discountedAmountEgp,
+                          locale,
+                        ),
+                        recurring: formatNumber(recurringAmount, locale),
+                        interval: intervalLabel,
+                      });
+                    }
+                    return t('authSentence.standard', {
+                      amount: formatNumber(recurringAmount, locale),
+                      interval: intervalLabel,
+                    });
+                  })()
+                : null}
             </p>
           </div>
         ) : (
