@@ -1,5 +1,25 @@
 import { formatNumber } from '@/lib/formatNumber';
 
+/**
+ * Canonical center-count semantics for ALL admin KPI surfaces.
+ *
+ * - "Total Centers" = count(centers WHERE status != 'deleted' AND is_test = false)
+ * - "Active Centers" = count(centers WHERE status = 'active' AND is_test = false)
+ *
+ * `is_test = false` is the default for every admin aggregate (see CLAUDE.md).
+ * Use the `include_test=1` query string only as a documented diagnostic.
+ *
+ * Pages that label a KPI "Total Centers" (admin overview, /admin/billing,
+ * /admin/analytics) MUST source from queries that match the Total filter.
+ * Pages labeled "Active Centers" (/admin/finance, /admin/health, /ceo-dashboard)
+ * MUST source from queries that match the Active filter. Misalignment between
+ * label and underlying query is the cause of cross-page KPI drift.
+ */
+export const ADMIN_CENTER_COUNT_SEMANTICS = Object.freeze({
+  totalLabel: 'totalCenters',
+  activeLabel: 'activeCenters',
+} as const);
+
 /** Tailwind class strings keyed by center / subscription status. */
 export const STATUS_STYLES: Record<string, string> = {
   active: 'bg-green-100 text-green-700',

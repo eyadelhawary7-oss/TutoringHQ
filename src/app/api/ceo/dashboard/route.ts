@@ -43,20 +43,21 @@ export async function GET(request: NextRequest) {
   const thirtyDaysAgoStr = thirtyDaysAgo.slice(0, 10);
 
   const results = await Promise.all([
-    supabase.from('centers').select('id, created_at, subscription_status, subscription_monthly_fee, early_adopter_price, billing_amount, billing_period, all_in_price, plan', { count: 'exact', head: false }).in('subscription_status', ['active', 'overdue']).eq('status', 'active'),
+    supabase.from('centers').select('id, created_at, subscription_status, subscription_monthly_fee, early_adopter_price, billing_amount, billing_period, all_in_price, plan', { count: 'exact', head: false }).in('subscription_status', ['active', 'overdue']).eq('status', 'active').eq('is_test', false),
     supabase.from('mrr_snapshots').select('total_mrr, active_centers').order('snapshot_date', { ascending: false }).limit(1).maybeSingle(),
-    supabase.from('centers').select('id').eq('status', 'active').gte('created_at', new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).toISOString()).lt('created_at', new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()),
-    supabase.from('centers').select('id').in('subscription_status', ['suspended', 'cancelled']).gte('updated_at', monthStartDateStr),
+    supabase.from('centers').select('id').eq('status', 'active').eq('is_test', false).gte('created_at', new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).toISOString()).lt('created_at', new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()),
+    supabase.from('centers').select('id').in('subscription_status', ['suspended', 'cancelled']).eq('is_test', false).gte('updated_at', monthStartDateStr),
     supabase.from('payments').select('amount, status, confirmed').gte('paid_at', monthStartDateStr),
     supabase.from('referrals').select('id').not('referrer_center_id', 'is', null),
-    supabase.from('centers').select('id, created_at, subscription_status').eq('status', 'active'),
+    supabase.from('centers').select('id, created_at, subscription_status').eq('status', 'active').eq('is_test', false),
     supabase
       .from('centers')
       .select('id, created_at, subscription_status')
       .eq('status', 'active')
+      .eq('is_test', false)
       .gte('created_at', `${fromDate}T00:00:00Z`)
       .lte('created_at', `${toDate}T23:59:59Z`),
-    supabase.from('centers').select('health_score_band').eq('status', 'active').not('health_score_band', 'is', null),
+    supabase.from('centers').select('health_score_band').eq('status', 'active').eq('is_test', false).not('health_score_band', 'is', null),
     supabase
       .from('centers')
       .select(
