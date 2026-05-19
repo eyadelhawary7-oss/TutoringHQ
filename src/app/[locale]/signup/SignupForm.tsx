@@ -21,6 +21,7 @@ import {
   type DynamicPlanPrice,
   type DynamicPlanPriceMap,
 } from '@/hooks/usePublicPlanPrices';
+import { readReferralCode, clearReferralCode } from '@/lib/referralCode';
 
 const PLAYFAIR = {
   fontFamily: "var(--font-playfair), 'Playfair Display', 'Didot', 'Bodoni MT', Georgia, serif",
@@ -359,8 +360,7 @@ export default function SignupForm() {
 
   useEffect(() => {
     const refFromUrl = searchParams?.get('ref')?.trim().toUpperCase() ?? '';
-    const refFromLs =
-      typeof window !== 'undefined' ? localStorage.getItem('referral_code')?.trim().toUpperCase() ?? '' : '';
+    const refFromLs = (readReferralCode() ?? '').trim().toUpperCase();
     let refFromCookie = '';
     if (typeof document !== 'undefined') {
       const m = document.cookie.match(/(?:^|;\s*)chq_referral_code=([^;]+)/);
@@ -514,8 +514,10 @@ export default function SignupForm() {
         return;
       }
       if (data.paymentUrl) {
+        clearReferralCode();
         window.location.href = data.paymentUrl;
       } else if (data.success) {
+        clearReferralCode();
         setStage('success');
       }
     } catch {
