@@ -11,6 +11,8 @@ import EmptyState from '@/components/empty-states/EmptyState';
 import { useToast } from '@/components/ui/ToastProvider';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
+import { isUuid, keepValidUuids } from '@/lib/uuid';
+import * as Sentry from '@sentry/nextjs';
 
 interface Group {
   id: string;
@@ -239,7 +241,7 @@ export default function GroupsPage() {
 
   const handleAddGroup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!centerId || !userId) {
+    if (!centerId || !userId || !isUuid(centerId)) {
       toast.error(tToast('error'), t('pleaseWait', { defaultValue: 'Please wait, loading...' }));
       return;
     }
@@ -257,6 +259,7 @@ export default function GroupsPage() {
       return;
     }
     const subjectName = subjects.find(s => s.id === addForm.subjectId)?.name ?? '';
+    const memberIds = keepValidUuids(addForm.studentIds);
     setIsAdding(true);
     try {
       const maxCap = addForm.maxCapacity.trim() ? parseInt(addForm.maxCapacity, 10) : null;
@@ -266,10 +269,11 @@ export default function GroupsPage() {
         single: true,
       });
       if (error) {
-        toast.error(
-          tToast('error'),
-          typeof error === 'object' && error?.message ? String(error.message) : t('groupCreateFailed'),
-        );
+        Sentry.captureException(error, {
+          tags: { feature: 'groups', action: 'create' },
+          extra: { centerId, name: addForm.name, memberCount: memberIds.length },
+        });
+        toast.error(tToast('error'), t('errors.saveFailedGeneric'));
         setIsAdding(false);
         return;
       }
@@ -278,10 +282,10 @@ export default function GroupsPage() {
         try {
           await auditLog({ centerId, userId, action: 'group_create', entityType: 'student_groups', entityId: inserted.id, details: { name: inserted.name } });
         } catch {}
-        for (const sid of addForm.studentIds) {
+        for (const sid of memberIds) {
           await dbInsert({ table: 'student_group_members', data: { group_id: inserted.id, student_id: sid }, select: false });
         }
-        const addN = addForm.studentIds.length;
+        const addN = memberIds.length;
         setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, subject: subjectName, fee, member_count: addN, student_count: addN, teacher_name: null, max_capacity: maxCap }]);
         setShowAddModal(false);
         setAddForm({ name: '', subjectId: '', fee: '', studentIds: [], maxCapacity: '' });
@@ -290,7 +294,11 @@ export default function GroupsPage() {
         toast.warning(t('groupCreatedRefresh'));
       }
     } catch (err) {
-      toast.error(tToast('error'), err instanceof Error ? err.message : t('groupCreateFailed'));
+      Sentry.captureException(err, {
+        tags: { feature: 'groups', action: 'create' },
+        extra: { centerId, name: addForm.name },
+      });
+      toast.error(tToast('error'), t('errors.saveFailedGeneric'));
     } finally {
       setIsAdding(false);
     }
