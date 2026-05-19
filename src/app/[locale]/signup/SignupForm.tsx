@@ -6,7 +6,7 @@ import { signupStep1Schema } from '@/lib/signup/step1Schema';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link, useRouter, usePathname } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
-import { Globe } from 'lucide-react';
+import { ArrowRight, Globe } from 'lucide-react';
 import {
   PLANS,
   ORDERED_SUBSCRIPTION_PLAN_KEYS,
@@ -1461,10 +1461,11 @@ export default function SignupForm() {
                     setStage('plan');
                     setStep1Errors({});
                   }}
-                  className="mt-4 w-full rounded-2xl bg-teal-600 py-4 text-[14px] font-semibold text-white shadow-[0_4px_30px_rgba(13,148,136,0.35)] transition-all duration-300 hover:bg-teal-500 hover:shadow-[0_4px_40px_rgba(13,148,136,0.5)] active:scale-[0.98]"
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 py-4 text-[14px] font-semibold text-white shadow-[0_4px_30px_rgba(13,148,136,0.35)] transition-all duration-300 hover:bg-teal-500 hover:shadow-[0_4px_40px_rgba(13,148,136,0.5)] active:scale-[0.98]"
                   style={PLAYFAIR}
                 >
-                  {t('continueToPlans')} →
+                  <span>{t('continueToPlans')}</span>
+                  <ArrowRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
                 </button>
 
                 <p className="mt-6 text-center text-[11px] text-slate-700" style={SANS}>
@@ -1703,10 +1704,11 @@ export default function SignupForm() {
                       setStage('payment');
                     }}
                     disabled={!form.plan || !form.ownerName.trim()}
-                    className="flex-1 rounded-2xl bg-teal-600 py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_30px_rgba(13,148,136,0.35)] transition-all duration-200 hover:bg-teal-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30"
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-teal-600 py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_30px_rgba(13,148,136,0.35)] transition-all duration-200 hover:bg-teal-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30"
                     style={PLAYFAIR}
                   >
-                    {t('reviewOrder')} →
+                    <span>{t('reviewOrder')}</span>
+                    <ArrowRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
                   </button>
                 </div>
               </>
