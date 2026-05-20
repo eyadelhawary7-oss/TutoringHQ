@@ -1,10 +1,24 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false, autoRefreshToken: false } },
-)
+let cachedAdmin: SupabaseClient | null = null
+
+function getAdminClient(): SupabaseClient {
+  if (cachedAdmin) return cachedAdmin
+  cachedAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  )
+  return cachedAdmin
+}
+
+const supabaseAdmin = new Proxy({} as SupabaseClient, {
+  get(_target, prop, receiver) {
+    const client = getAdminClient()
+    const value = Reflect.get(client, prop, receiver)
+    return typeof value === 'function' ? value.bind(client) : value
+  },
+})
 
 export const COMMISSION_TABLE = {
   sr: {
