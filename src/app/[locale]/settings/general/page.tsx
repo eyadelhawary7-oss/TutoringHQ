@@ -226,7 +226,7 @@ export default function GeneralSettingsPage() {
     load();
   }, []);
 
-  // Load referral
+  // Load referral (owner-only — revenue share)
   useEffect(() => {
     const fetchReferral = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -238,8 +238,10 @@ export default function GeneralSettingsPage() {
         console.error('Referral fetch error:', err);
       }
     };
-    if (centerId) fetchReferral();
-  }, [centerId]);
+    if (centerId && (currentUser?.role === 'owner' || currentUser?.role === 'super_admin')) {
+      fetchReferral();
+    }
+  }, [centerId, currentUser?.role]);
 
   const showSaved = () => {
     setSavedMessage(t('saved'));
@@ -700,80 +702,99 @@ export default function GeneralSettingsPage() {
               </div>
             </div>
             <div className="p-6">
-              <div className="flex flex-wrap gap-2 mb-4">
-                {subjects.map((subject) =>
-                  editingSubject === subject.id ? (
-                    <div key={subject.id} className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        className="px-3 py-1.5 border border-[var(--color-border-subtle)] rounded-lg text-sm bg-[var(--color-surface-1)]"
-                      />
-                      <button type="button" onClick={() => handleUpdateSubject(subject.id)} className="text-teal-600 text-sm font-medium hover:underline">
-                        {tCommon('save')}
-                      </button>
-                      <button type="button" onClick={() => setEditingSubject(null)} className="text-[var(--color-text-secondary)] text-sm hover:underline">
-                        {tCommon('cancel')}
-                      </button>
-                    </div>
-                  ) : (
-                    <span key={subject.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-surface-2)] text-[var(--color-text-primary)] rounded-full text-sm font-medium">
-                      {subject.name}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingSubject(subject.id);
-                          setEditName(subject.name);
-                        }}
-                        className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-                      >
-                        {tCommon('edit')}
-                      </button>
-                      <button type="button" onClick={() => handleDeleteSubject(subject.id)} className="hover:text-red-500 transition-colors">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </span>
-                  ),
-                )}
-              </div>
-              <form onSubmit={handleAddSubject} className="flex gap-2">
-                <input
-                  type="text"
-                  value={newSubjectName}
-                  onChange={(e) => setNewSubjectName(e.target.value)}
-                  placeholder={t('subjectName')}
-                  className="flex-1 px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm bg-[var(--color-surface-1)] focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  required
-                />
-                <button type="submit" className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors">
-                  {t('addSubject')}
-                </button>
-              </form>
+              {currentUser?.role === 'owner' || currentUser?.role === 'super_admin' ? (
+                <>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {subjects.map((subject) =>
+                      editingSubject === subject.id ? (
+                        <div key={subject.id} className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            className="px-3 py-1.5 border border-[var(--color-border-subtle)] rounded-lg text-sm bg-[var(--color-surface-1)]"
+                          />
+                          <button type="button" onClick={() => handleUpdateSubject(subject.id)} className="text-teal-600 text-sm font-medium hover:underline">
+                            {tCommon('save')}
+                          </button>
+                          <button type="button" onClick={() => setEditingSubject(null)} className="text-[var(--color-text-secondary)] text-sm hover:underline">
+                            {tCommon('cancel')}
+                          </button>
+                        </div>
+                      ) : (
+                        <span key={subject.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-surface-2)] text-[var(--color-text-primary)] rounded-full text-sm font-medium">
+                          {subject.name}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingSubject(subject.id);
+                              setEditName(subject.name);
+                            }}
+                            className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                          >
+                            {tCommon('edit')}
+                          </button>
+                          <button type="button" onClick={() => handleDeleteSubject(subject.id)} className="hover:text-red-500 transition-colors">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </span>
+                      ),
+                    )}
+                  </div>
+                  <form onSubmit={handleAddSubject} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newSubjectName}
+                      onChange={(e) => setNewSubjectName(e.target.value)}
+                      placeholder={t('subjectName')}
+                      className="flex-1 px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm bg-[var(--color-surface-1)] focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      required
+                    />
+                    <button type="submit" className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors">
+                      {t('addSubject')}
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {subjects.map((subject) => (
+                      <span key={subject.id} className="inline-flex items-center px-3 py-1.5 bg-[var(--color-surface-2)] text-[var(--color-text-primary)] rounded-full text-sm font-medium">
+                        {subject.name}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-sm text-[var(--color-text-secondary)]">
+                    {t('subjectManagement.ownerOnlyMessage')}
+                  </p>
+                </>
+              )}
             </div>
           </div>
 
-          {/* Team Members shortcut */}
-          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
-            <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-              <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
-                <Users className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
+          {/* Team Members shortcut — owner-only */}
+          {(currentUser?.role === 'owner' || currentUser?.role === 'super_admin') && (
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
+              <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
+                <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
+                  <Users className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-[var(--color-text-primary)]">{t('teamMembers')}</h3>
+                  <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('manageTeamDesc')}</p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <h3 className="font-semibold text-[var(--color-text-primary)]">{t('teamMembers')}</h3>
-                <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('manageTeamDesc')}</p>
+              <div className="p-6">
+                <Link
+                  href="/settings/team"
+                  className="inline-flex items-center gap-2 px-4 py-2 border border-[var(--color-border-default)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors w-fit"
+                >
+                  <Users className="w-4 h-4" /> {t('manageTeam')}
+                  <DirectionalIcon icon={ChevronRight} className="inline w-4 h-4 ms-1 align-middle" />
+                </Link>
               </div>
             </div>
-            <div className="p-6">
-              <Link
-                href="/settings/team"
-                className="inline-flex items-center gap-2 px-4 py-2 border border-[var(--color-border-default)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors w-fit"
-              >
-                <Users className="w-4 h-4" /> {t('manageTeam')}
-                <DirectionalIcon icon={ChevronRight} className="inline w-4 h-4 ms-1 align-middle" />
-              </Link>
-            </div>
-          </div>
+          )}
 
           {/* Scanner Settings */}
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
@@ -948,7 +969,8 @@ export default function GeneralSettingsPage() {
             </div>
           ) : null}
 
-          {/* Referral Program */}
+          {/* Referral Program — owner-only (revenue share) */}
+          {(currentUser?.role === 'owner' || currentUser?.role === 'super_admin') && (
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
             <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
               <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
@@ -1056,6 +1078,7 @@ export default function GeneralSettingsPage() {
               {!referralData && <p className="text-sm text-[var(--color-text-secondary)]">{tCommon('loading')}</p>}
             </div>
           </div>
+          )}
 
           {/* Billing card */}
           <Link
