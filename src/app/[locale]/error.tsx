@@ -33,7 +33,10 @@ export default function LocaleError({
   }, []);
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
   const messages = locale === 'en' ? en : ar;
-  const t = (key: keyof typeof messages.errors) => messages.errors[key];
+  const t = (key: keyof typeof messages.errors): string => {
+    const v = messages.errors[key];
+    return typeof v === 'string' ? v : '';
+  };
 
   useEffect(() => {
     console.error('[CenterHQ Error]', error);

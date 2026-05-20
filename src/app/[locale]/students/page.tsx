@@ -112,6 +112,15 @@ function studentStatusLabelKey(lifecycle: Student['lifecycle_status']): StudentS
   return 'status_enrolled';
 }
 
+function studentStatusLabelFallback(lifecycle: Student['lifecycle_status']): string {
+  const x = lifecycle ?? 'enrolled';
+  if (x === 'active') return 'Active';
+  if (x === 'at_risk') return 'At Risk';
+  if (x === 'inactive') return 'Inactive';
+  if (x === 'churned') return 'Churned';
+  return 'Enrolled';
+}
+
 type FilterLabelKey =
   | 'filter_all'
   | 'filter_active'
@@ -288,48 +297,54 @@ export default function StudentsPage() {
 
   useEffect(() => {
     const loadStudents = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const meRes = await fetch('/api/me', {
-        headers: { 'Authorization': `Bearer ${session.access_token}` },
-      });
-      const meData = await meRes.json();
-
-      if (!meData?.user?.center_id) return;
-      setCenterId(meData.user.center_id);
-      setCenterInfo(
-        meData.user.center
-          ? {
-              name: meData.user.center.name,
-              logo_url: meData.user.center.logo_url,
-              phone: meData.user.center.phone,
-              governorate: meData.user.center.governorate,
-              delivery_address: meData.user.center.delivery_address,
-              parent_pack_enabled: meData.user.center.parent_pack_enabled,
-              plan: meData.user.center.plan,
-              announcement_balance: meData.user.center.announcement_balance,
-              parent_pack_active_parents: meData.user.center.parent_pack_active_parents,
-            }
-          : null
-      );
-
-      const { data } = await dbSelect({
-        table: 'students',
-        select:
-          'id, name, phone, parent_phone, parent_consent_given, parent_pack_opted_in, subject, fee, payment_status, student_number, qr_code, is_active, lifecycle_status, sibling_family_id, center_id',
-        filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
-        order: { column: 'name' },
-      });
-
-      const list = Array.isArray(data) ? (data as Student[]) : [];
-      setStudents(list);
       try {
-        sessionStorage.setItem(STUDENTS_CACHE_KEY, JSON.stringify(list));
-      } catch {
-        /* private mode / quota */
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const meRes = await fetch('/api/me', {
+          headers: { 'Authorization': `Bearer ${session.access_token}` },
+        });
+        const meData = await meRes.json().catch(() => null);
+
+        if (!meData?.user?.center_id) return;
+        setCenterId(meData.user.center_id);
+        setCenterInfo(
+          meData.user.center
+            ? {
+                name: meData.user.center.name,
+                logo_url: meData.user.center.logo_url,
+                phone: meData.user.center.phone,
+                governorate: meData.user.center.governorate,
+                delivery_address: meData.user.center.delivery_address,
+                parent_pack_enabled: meData.user.center.parent_pack_enabled,
+                plan: meData.user.center.plan,
+                announcement_balance: meData.user.center.announcement_balance,
+                parent_pack_active_parents: meData.user.center.parent_pack_active_parents,
+              }
+            : null
+        );
+
+        const { data } = await dbSelect({
+          table: 'students',
+          select:
+            'id, name, phone, parent_phone, parent_consent_given, parent_pack_opted_in, subject, fee, payment_status, student_number, qr_code, is_active, lifecycle_status, sibling_family_id, center_id',
+          filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
+          order: { column: 'name' },
+        });
+
+        const list = Array.isArray(data) ? (data as Student[]) : [];
+        setStudents(list);
+        try {
+          sessionStorage.setItem(STUDENTS_CACHE_KEY, JSON.stringify(list));
+        } catch {
+          /* private mode / quota */
+        }
+        setStudentsListFresh(true);
+      } catch (err) {
+        console.error('[students] loadStudents failed', err);
+        setStudents((prev) => prev ?? []);
+        setStudentsListFresh(true);
       }
-      setStudentsListFresh(true);
     };
 
     loadStudents();
@@ -361,10 +376,11 @@ export default function StudentsPage() {
   useEffect(() => {
     if (groups.length === 0) return;
     const loadBalanceData = async () => {
+      try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       const meRes = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
-      const meData = await meRes.json();
+      const meData = await meRes.json().catch(() => null);
       if (!meData?.user?.center_id) return;
       const cid = meData.user.center_id;
 
@@ -411,16 +427,20 @@ export default function StudentsPage() {
         balance[sid] = Math.max(0, owed - paid);
       }
       setBalanceByStudent(balance);
+      } catch (err) {
+        console.error('[students] loadBalanceData failed', err);
+      }
     };
     loadBalanceData();
   }, [groups]);
 
   useEffect(() => {
     const loadSubjectsAndGroups = async () => {
+      try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       const meRes = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
-      const meData = await meRes.json();
+      const meData = await meRes.json().catch(() => null);
       if (!meData?.user?.center_id) return;
       const [subRes, grpRes] = await Promise.all([
         dbSelect({ table: 'subjects', select: 'id, name', filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }], order: { column: 'name' } }),
@@ -452,6 +472,9 @@ export default function StudentsPage() {
           }
           setStudentGroupsMap(map);
         }
+      }
+      } catch (err) {
+        console.error('[students] loadSubjectsAndGroups failed', err);
       }
     };
     loadSubjectsAndGroups();
@@ -1413,7 +1436,7 @@ export default function StudentsPage() {
                                       <span className="font-semibold text-[var(--color-text-primary)]">{s.name}</span>
                                     </Link>
                                     <div className="mt-1">
-                                      <LifecycleBadge status={s.lifecycle_status} label={ts(statusKey)} />
+                                      <LifecycleBadge status={s.lifecycle_status} label={ts(statusKey, { defaultValue: studentStatusLabelFallback(s.lifecycle_status) })} />
                                     </div>
                                   </div>
                                 </td>
@@ -1620,7 +1643,7 @@ export default function StudentsPage() {
                               >
                                 {s.name}
                               </Link>
-                              <LifecycleBadge status={s.lifecycle_status} label={ts(statusKey)} />
+                              <LifecycleBadge status={s.lifecycle_status} label={ts(statusKey, { defaultValue: studentStatusLabelFallback(s.lifecycle_status) })} />
                               {s.parent_consent_given && (
                                 <span
                                   className="badge badge-success text-[10px] px-1.5 py-0"
@@ -1947,8 +1970,18 @@ export default function StudentsPage() {
               )}
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{ts('groupRequired')}</label>
-                <select value={addForm.groupId} onChange={(e) => { const gId = e.target.value; const g = groups.find((gr) => gr.id === gId); setAddForm((f) => ({ ...f, groupId: gId, subjectId: g ? subjects.find((s) => s.name === g.subject)?.id ?? '' : '', monthlyFee: g?.fee != null ? String(g.fee) : '' })); }} className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" required>
-                  <option value="">{tCommon('select')}</option>
+                <select
+                  value={addForm.groupId}
+                  onChange={(e) => { const gId = e.target.value; const g = groups.find((gr) => gr.id === gId); setAddForm((f) => ({ ...f, groupId: gId, subjectId: g ? subjects.find((s) => s.name === g.subject)?.id ?? '' : '', monthlyFee: g?.fee != null ? String(g.fee) : '' })); }}
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+                  required
+                  disabled={groups.length === 0}
+                >
+                  {groups.length === 0 ? (
+                    <option value="" disabled>{ts('add.noGroupsPlaceholder')}</option>
+                  ) : (
+                    <option value="">{tCommon('select')}</option>
+                  )}
                   {groups.map((g) => (
                     <option key={g.id} value={g.id}>
                       {g.name}
@@ -1956,6 +1989,14 @@ export default function StudentsPage() {
                     </option>
                   ))}
                 </select>
+                {groups.length === 0 && (
+                  <Link
+                    href="/groups"
+                    className="mt-1.5 inline-block text-xs text-teal-600 hover:underline"
+                  >
+                    {ts('add.createGroupHelper')}
+                  </Link>
+                )}
               </div>
               <p className="text-xs text-[var(--color-text-secondary)]">{ts('autoGenerateNumber')}</p>
               <div className="flex gap-2 justify-end mt-4">
