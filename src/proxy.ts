@@ -170,7 +170,7 @@ export default async function proxy(request: NextRequest) {
     return applySecurityHeaders(intlResponse, requestId);
   }
 
-  let supabaseResponse = intlResponse;
+  const supabaseResponse = intlResponse;
   type CookieEntry = { name: string; value: string; options?: Record<string, unknown> };
   let storedCookies: CookieEntry[] = [];
 

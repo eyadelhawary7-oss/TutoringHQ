@@ -54,9 +54,8 @@ export async function POST(request: Request) {
     metaUrl.searchParams.set('input_token', inputToken);
     metaUrl.searchParams.set('access_token', accessToken);
 
-    let json: unknown;
     const res = await fetch(metaUrl.toString(), { cache: 'no-store' });
-    json = await res.json();
+    const json: unknown = await res.json();
 
     const root = json as { error?: { message?: string }; data?: { expires_at?: number | null } };
     if (root.error) {

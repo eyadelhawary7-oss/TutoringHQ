@@ -309,7 +309,7 @@ export function AdminSidebar({
       initial.add('hrCommissions');
     }
     setOpenSections(initial);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const toggleSection = useCallback((key: string) => {
@@ -789,8 +789,8 @@ export function AdminSidebar({
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
           {/* ── Free-floating items (always visible, never inside an accordion) ── */}
           {canSee('overview') ? (
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             <Link
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               href={'/admin' as any}
               onClick={afterNavigate}
               className={cn(navBtnClass(isOverviewActive), 'no-underline')}
@@ -801,8 +801,8 @@ export function AdminSidebar({
           ) : null}
 
           {canSee('ceo_dashboard') ? (
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             <Link
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               href={'/ceo-dashboard' as any}
               onClick={afterNavigate}
               className={cn(navBtnClass(isCeoDashActive), 'no-underline')}

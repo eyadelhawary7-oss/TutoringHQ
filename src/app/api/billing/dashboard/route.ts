@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
       ? Number((payInv as { total_amount: number }).total_amount)
       : Number(c.billing_amount ?? 0) || 0;
 
-  let cardOrdersSummary: { openPipeline: number } = { openPipeline: 0 };
+  const cardOrdersSummary: { openPipeline: number } = { openPipeline: 0 };
   try {
     const { data: ord } = await auth.supabaseAdmin
       .from('card_orders')

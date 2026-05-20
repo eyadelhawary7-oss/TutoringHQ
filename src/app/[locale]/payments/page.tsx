@@ -273,7 +273,7 @@ export default function PaymentsPage() {
   }, [loadData]);
 
   useEffect(() => {
-    if (searchParams.get('action') === 'collect' && canCollectPayment) {
+    if (searchParams?.get('action') === 'collect' && canCollectPayment) {
       setShowCollectModal(true);
     }
   }, [searchParams, canCollectPayment]);
