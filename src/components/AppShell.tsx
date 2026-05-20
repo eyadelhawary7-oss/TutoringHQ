@@ -207,7 +207,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider closeMainSidebar={closeMainSidebar}>
-      {user?.center_id && !isAdminRoute ? (
+      {!isAdminRoute ? (
+        // Mount the cart provider regardless of user.center_id readiness — the
+        // provider already skips its SWR fetch when user?.center_id is null
+        // (see useCardOrderCart.tsx: swrKey = user?.id && user?.center_id ? … : null).
+        // Without this, a render-phase race (most reliably observable on the
+        // /ar locale path where RTL hydration ordering surfaces it) lets the
+        // /students page call useCardOrderCart() before UserContext populates
+        // center_id, throwing "must be used within CardOrderCartProvider".
         <CardOrderCartProvider>{shellBody}</CardOrderCartProvider>
       ) : (
         shellBody

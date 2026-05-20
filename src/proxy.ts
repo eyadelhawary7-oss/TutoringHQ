@@ -267,18 +267,24 @@ export default async function proxy(request: NextRequest) {
           }
         }
 
-        const { data: subscription } = await supabase
-          .from('subscriptions')
-          .select('status')
-          .eq('center_id', userRecord.center_id)
-          .single();
+        // Only consult the subscriptions row as a fallback when the center itself
+        // is not explicitly active. If centers.status === 'active' (e.g. an admin
+        // manually unsuspended the center), a stale subscriptions.status='suspended'
+        // row must NOT keep redirecting the owner away from the dashboard.
+        if (center?.status !== 'active') {
+          const { data: subscription } = await supabase
+            .from('subscriptions')
+            .select('status')
+            .eq('center_id', userRecord.center_id)
+            .single();
 
-        if (subscription?.status === 'suspended' && !cleanPath.startsWith('/suspended')) {
-          const redirectResp = NextResponse.redirect(new URL(suspendedPath, request.url));
-          storedCookies.forEach(({ name, value, options }) =>
-            redirectResp.cookies.set(name, value, options ?? {})
-          );
-          return applySecurityHeaders(redirectResp, requestId);
+          if (subscription?.status === 'suspended' && !cleanPath.startsWith('/suspended')) {
+            const redirectResp = NextResponse.redirect(new URL(suspendedPath, request.url));
+            storedCookies.forEach(({ name, value, options }) =>
+              redirectResp.cookies.set(name, value, options ?? {})
+            );
+            return applySecurityHeaders(redirectResp, requestId);
+          }
         }
       }
     }

@@ -79,20 +79,24 @@ export async function getAdminContext(request: Request): Promise<AdminContext | 
 
   const { data: userRecord } = await supabaseAdmin
     .from('users')
-    .select('phone, role')
+    .select('phone')
     .eq('id', user.id)
     .maybeSingle();
 
   const adminByPhone = isSuperAdminPhone(userRecord?.phone ?? null);
-  const superByUsersRole = userRecord?.role === 'super_admin';
 
-  if (!adminRow && !adminByPhone && !superByUsersRole) {
+  // admin_users (and SUPER_ADMIN_PHONES) are the only source of truth for internal
+  // admin roles. public.users.role is the center-side role (owner/assistant/…) and
+  // historically the audit seed populates it as 'super_admin' for internal users —
+  // never let that elevate ctx.internalRole, or routes gated by
+  // requireAdminRole(ctx, ['super_admin']) will let internal_admin through.
+  if (!adminRow && !adminByPhone) {
     return null;
   }
 
   // Determine role: phone-based admins are always super_admin; only super_admin can manage team
   let internalRole: InternalRole = 'internal_viewer';
-  if (adminByPhone || adminRow?.role === 'super_admin' || superByUsersRole) {
+  if (adminByPhone || adminRow?.role === 'super_admin') {
     internalRole = 'super_admin';
   } else if (adminRow?.role === 'admin' || adminRow?.role === 'internal_admin') {
     internalRole = 'internal_admin';
