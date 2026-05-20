@@ -319,7 +319,7 @@ function AdminCentersPageInner() {
   };
 
   const displayedCenters = useMemo(() => {
-    let result = [...centers];
+    const result = [...centers];
     if (sortBy === 'plan_high') {
       result.sort(
         (a, b) =>

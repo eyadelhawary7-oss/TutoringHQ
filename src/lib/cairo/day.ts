@@ -23,8 +23,10 @@ function daysInGregorianMonth(y: number, m: number): number {
 
 /** Subtract calendar days in the Gregorian calendar (Cairo uses Gregorian dates). */
 export function cairoYmdMinusDays(cairoYmd: string, deltaDays: number): string {
-  let { y, m, d } = parseCairoYmd(cairoYmd);
-  let day = d - deltaDays;
+  const parsed = parseCairoYmd(cairoYmd);
+  let y = parsed.y;
+  let m = parsed.m;
+  let day = parsed.d - deltaDays;
   while (day < 1) {
     m -= 1;
     if (m < 1) {
@@ -48,8 +50,10 @@ export function cairoYmdMinusDays(cairoYmd: string, deltaDays: number): string {
 export function cairoYmdPlusDays(cairoYmd: string, deltaDays: number): string {
   if (!deltaDays) return cairoYmd;
   if (deltaDays < 0) return cairoYmdMinusDays(cairoYmd, -deltaDays);
-  let { y, m, d } = parseCairoYmd(cairoYmd);
-  let day = d + deltaDays;
+  const parsed = parseCairoYmd(cairoYmd);
+  let y = parsed.y;
+  let m = parsed.m;
+  let day = parsed.d + deltaDays;
   while (day > daysInGregorianMonth(y, m)) {
     day -= daysInGregorianMonth(y, m);
     m += 1;

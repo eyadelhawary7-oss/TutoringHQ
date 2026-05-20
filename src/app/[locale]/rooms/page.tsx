@@ -70,7 +70,7 @@ export default function RoomsPage() {
   }, []);
 
   useEffect(() => {
-    if (searchParams.get('action') === 'add') {
+    if (searchParams?.get('action') === 'add') {
       setShowAddModal(true);
     }
   }, [searchParams]);

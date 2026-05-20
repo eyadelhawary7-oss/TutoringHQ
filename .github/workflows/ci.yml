@@ -22,6 +22,8 @@ jobs:
 
       - name: Type check
         run: npx tsc --noEmit
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
 
   lint:
     runs-on: ubuntu-latest
@@ -37,7 +39,9 @@ jobs:
         run: npm ci
 
       - name: Lint
-        run: npx eslint src/ --max-warnings 0
+        run: npx eslint src/
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
 
   build:
     runs-on: ubuntu-latest

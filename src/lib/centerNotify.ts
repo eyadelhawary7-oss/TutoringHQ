@@ -1430,9 +1430,9 @@ export async function runProcessRenewalWhatsappTemplates(supabase: SupabaseClien
   suspended: number;
   onboardingStep1: number;
 }> {
-  let renewalReminders = 0;
-  let overdueReminders = 0;
-  let suspended = 0;
+  const renewalReminders = 0;
+  const overdueReminders = 0;
+  const suspended = 0;
   let onboardingStep1 = 0;
 
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();

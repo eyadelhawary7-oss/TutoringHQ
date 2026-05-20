@@ -342,7 +342,7 @@ export async function GET(request: Request) {
     let totalCount = 0;
 
     if (isAtRisk) {
-      let query = buildFilteredQuery(false).limit(2500);
+      const query = buildFilteredQuery(false).limit(2500);
       const { data: centersData, error } = await query;
       if (error) {
         console.error('[admin/centers] ❌ Query error:', error);
@@ -353,7 +353,7 @@ export async function GET(request: Request) {
       totalCount = atRiskRows.length;
       rows = atRiskRows.slice(offset, offset + limit);
     } else {
-      let query = buildFilteredQuery(true).range(offset, offset + limit - 1);
+      const query = buildFilteredQuery(true).range(offset, offset + limit - 1);
       const { data: centersData, error, count } = await query;
       if (error) {
         console.error('[admin/centers] ❌ Query error:', error);

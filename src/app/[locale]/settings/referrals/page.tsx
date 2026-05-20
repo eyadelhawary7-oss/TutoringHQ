@@ -132,6 +132,7 @@ export default function SettingsReferralsPage() {
           .order('created_at', { ascending: false });
 
         if (!error && refs) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const normalized = (refs as any[]).map((r) => ({
             ...r,
             referral_code: r.referral_code ?? '',
