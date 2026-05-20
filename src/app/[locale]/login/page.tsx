@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, useTransition } from 'react';
+import { useState, FormEvent, useTransition, useId } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link, useRouter, usePathname } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
@@ -14,6 +14,7 @@ export default function LoginPage() {
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
 
+  const phoneFieldId = useId();
   const [phone, setPhone] = useState('');
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
@@ -370,6 +371,8 @@ export default function LoginPage() {
                 <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81 19.79 19.79 0 01.01 2.21 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z" />
               </svg>
               <input
+                key={phoneFieldId}
+                name={`login-phone-${phoneFieldId}`}
                 type="tel"
                 inputMode="numeric"
                 value={phone}
@@ -386,6 +389,8 @@ export default function LoginPage() {
                 }}
                 placeholder="+20 1XXXXXXXXX"
                 autoComplete="off"
+                data-1p-ignore
+                data-lpignore="true"
                 dir="ltr"
                 required
                 style={{

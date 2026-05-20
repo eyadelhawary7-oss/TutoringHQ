@@ -6,7 +6,7 @@ import { signupStep1Schema } from '@/lib/signup/step1Schema';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link, useRouter, usePathname } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
-import { Globe } from 'lucide-react';
+import { ArrowRight, Globe } from 'lucide-react';
 import {
   PLANS,
   ORDERED_SUBSCRIPTION_PLAN_KEYS,
@@ -21,6 +21,7 @@ import {
   type DynamicPlanPrice,
   type DynamicPlanPriceMap,
 } from '@/hooks/usePublicPlanPrices';
+import { readReferralCode, clearReferralCode } from '@/lib/referralCode';
 
 const PLAYFAIR = {
   fontFamily: "var(--font-playfair), 'Playfair Display', 'Didot', 'Bodoni MT', Georgia, serif",
@@ -359,8 +360,7 @@ export default function SignupForm() {
 
   useEffect(() => {
     const refFromUrl = searchParams?.get('ref')?.trim().toUpperCase() ?? '';
-    const refFromLs =
-      typeof window !== 'undefined' ? localStorage.getItem('referral_code')?.trim().toUpperCase() ?? '' : '';
+    const refFromLs = (readReferralCode() ?? '').trim().toUpperCase();
     let refFromCookie = '';
     if (typeof document !== 'undefined') {
       const m = document.cookie.match(/(?:^|;\s*)chq_referral_code=([^;]+)/);
@@ -514,8 +514,10 @@ export default function SignupForm() {
         return;
       }
       if (data.paymentUrl) {
+        clearReferralCode();
         window.location.href = data.paymentUrl;
       } else if (data.success) {
+        clearReferralCode();
         setStage('success');
       }
     } catch {
@@ -543,8 +545,9 @@ export default function SignupForm() {
   const stageSubtitle =
     stage === 'info' ? t('stageOneSubtitle') : stage === 'plan' ? t('stageTwoSubtitle') : t('stageThreeTitle');
 
-  const progressWidth = stage === 'info' ? '33%' : stage === 'plan' ? '66%' : '100%';
-  const progressNow = stage === 'info' ? 33 : stage === 'plan' ? 66 : 100;
+  const progressWidth = stage === 'info' ? '25%' : stage === 'plan' ? '50%' : '75%';
+  const progressNow = stage === 'info' ? 25 : stage === 'plan' ? 50 : 75;
+  const currentStepNumber = stage === 'info' ? 1 : stage === 'plan' ? 2 : 3;
 
   if (stage === 'success') {
     return (
@@ -677,15 +680,45 @@ export default function SignupForm() {
 
       <div className="relative z-10 mx-auto max-w-md px-6 pt-14 pb-20">
         {(stage === 'info' || stage === 'plan' || stage === 'payment') ? (
-          <p
-            className="mb-6 text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-teal-500/90"
-            style={SANS}
-          >
-            {t('stepProgress', {
-              step: stage === 'info' ? 1 : stage === 'plan' ? 2 : 3,
-              total: 3,
-            })}
-          </p>
+          <div className="mb-6 flex flex-col items-center gap-2">
+            <p
+              className="text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-teal-500/90"
+              style={SANS}
+            >
+              {currentStepNumber === 1
+                ? t('progress.step1Of4')
+                : currentStepNumber === 2
+                  ? t('progress.step2Of4')
+                  : t('progress.step3Of4')}
+            </p>
+            <div className="flex items-center gap-1.5" aria-hidden>
+              {[1, 2, 3, 4].map((step) => {
+                const isCompleted = step < currentStepNumber;
+                const isActive = step === currentStepNumber;
+                const isPayment = step === 4;
+                return (
+                  <span
+                    key={step}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      isActive
+                        ? 'w-6 bg-teal-500'
+                        : isCompleted
+                          ? 'w-1.5 bg-teal-600'
+                          : isPayment
+                            ? 'w-1.5 bg-slate-800'
+                            : 'w-1.5 bg-slate-700'
+                    }`}
+                  />
+                );
+              })}
+            </div>
+            <p
+              className="text-center text-[10px] tracking-[0.1em] text-slate-600"
+              style={SANS}
+            >
+              {t('progress.step4Payment')}
+            </p>
+          </div>
         ) : null}
         <div className="mb-12 flex flex-col items-center">
           <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600 shadow-[0_0_20px_rgba(13,148,136,0.4)]">
@@ -1179,12 +1212,32 @@ export default function SignupForm() {
                 lineHeight: '1.5',
               }}
             >
-              {t('authNote', {
-                amount: selectedPlan
-                  ? formatNumber(getTotalAmount(selectedPlan, form.billingPeriod, dynamicPlanPrices), locale)
-                  : '0',
-                period: tb(`period.${form.billingPeriod}.label` as 'billing.period.monthly.label'),
-              })}
+              {selectedPlan
+                ? (() => {
+                    const recurringAmount = getTotalAmount(
+                      selectedPlan,
+                      form.billingPeriod,
+                      dynamicPlanPrices,
+                    );
+                    const intervalLabel = tb(
+                      `period.${form.billingPeriod}.label` as 'billing.period.monthly.label',
+                    );
+                    if (appliedPromo) {
+                      return t('authSentence.withPromo', {
+                        firstCycle: formatNumber(
+                          appliedPromo.discountedAmountEgp,
+                          locale,
+                        ),
+                        recurring: formatNumber(recurringAmount, locale),
+                        interval: intervalLabel,
+                      });
+                    }
+                    return t('authSentence.standard', {
+                      amount: formatNumber(recurringAmount, locale),
+                      interval: intervalLabel,
+                    });
+                  })()
+                : null}
             </p>
           </div>
         ) : (
@@ -1408,10 +1461,11 @@ export default function SignupForm() {
                     setStage('plan');
                     setStep1Errors({});
                   }}
-                  className="mt-4 w-full rounded-2xl bg-teal-600 py-4 text-[14px] font-semibold text-white shadow-[0_4px_30px_rgba(13,148,136,0.35)] transition-all duration-300 hover:bg-teal-500 hover:shadow-[0_4px_40px_rgba(13,148,136,0.5)] active:scale-[0.98]"
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 py-4 text-[14px] font-semibold text-white shadow-[0_4px_30px_rgba(13,148,136,0.35)] transition-all duration-300 hover:bg-teal-500 hover:shadow-[0_4px_40px_rgba(13,148,136,0.5)] active:scale-[0.98]"
                   style={PLAYFAIR}
                 >
-                  {t('continueToPlans')} →
+                  <span>{t('continueToPlans')}</span>
+                  <ArrowRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
                 </button>
 
                 <p className="mt-6 text-center text-[11px] text-slate-700" style={SANS}>
@@ -1650,10 +1704,11 @@ export default function SignupForm() {
                       setStage('payment');
                     }}
                     disabled={!form.plan || !form.ownerName.trim()}
-                    className="flex-1 rounded-2xl bg-teal-600 py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_30px_rgba(13,148,136,0.35)] transition-all duration-200 hover:bg-teal-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30"
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-teal-600 py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_30px_rgba(13,148,136,0.35)] transition-all duration-200 hover:bg-teal-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30"
                     style={PLAYFAIR}
                   >
-                    {t('reviewOrder')} →
+                    <span>{t('reviewOrder')}</span>
+                    <ArrowRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
                   </button>
                 </div>
               </>

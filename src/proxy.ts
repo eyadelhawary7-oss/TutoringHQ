@@ -67,7 +67,7 @@ function applySecurityHeaders(response: NextResponse, requestId: string): NextRe
 }
 
 // --- Route helpers ---
-const publicRoutes = ['/login', '/signup', '/onboarding', '/suspended', '/auth/callback', '/accept-invite', '/forgot-password', '/status', '/'];
+const publicRoutes = ['/login', '/signup', '/onboarding', '/suspended', '/auth/callback', '/accept-invite', '/forgot-password', '/status', '/pricing', '/demo-request', '/privacy', '/terms', '/session-expired', '/'];
 const apiRoutes = ['/auth/callback'];
 
 function isPublicRoute(pathname: string): boolean {

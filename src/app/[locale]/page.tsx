@@ -25,6 +25,7 @@ const WA_SUPPORT_LABEL = getSupportWhatsAppDisplayLabel();
 export default function LocaleHomePage() {
   const t = useTranslations('landing');
   const m = useTranslations('landing.marketing');
+  const tPricingTile = useTranslations('pricing.tile');
   const footerT = useTranslations('footer');
   const locale = useLocale();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -355,6 +356,10 @@ export default function LocaleHomePage() {
               const p = PLANS[planKey];
               const dyn = dynamicPlanPrices[planKey];
               const priceLine = `${formatCurrency(dyn.quarterlyAllIn, locale)}${m('pricePerMonthSuffix')}`;
+              const quarterlyTotal = dyn.quarterlyAllIn * 3;
+              const quarterlyDisclosure = tPricingTile('quarterlyDisclosure', {
+                amount: formatCurrency(quarterlyTotal, locale),
+              });
               const planTitle = locale === 'ar' ? p.arabicName : p.englishName;
               const cap = dyn.weeklyStudentLimit ?? p.weeklyStudentLimit;
               const studentsLine =
@@ -389,6 +394,7 @@ export default function LocaleHomePage() {
                   </div>
                   <p className="mt-3 text-base font-bold !text-white">{planTitle}</p>
                   <p className="mt-2 text-2xl font-bold !text-white">{priceLine}</p>
+                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">{quarterlyDisclosure}</p>
                   <p className="mt-3 text-xs text-[var(--color-text-muted)]">{studentsLine}</p>
                 </div>
               );
@@ -403,6 +409,10 @@ export default function LocaleHomePage() {
                 const p = PLANS[planKey];
                 const dyn = dynamicPlanPrices[planKey];
                 const priceLine = `${formatCurrency(dyn.quarterlyAllIn, locale)}${m('pricePerMonthSuffix')}`;
+                const quarterlyTotal = dyn.quarterlyAllIn * 3;
+                const quarterlyDisclosure = tPricingTile('quarterlyDisclosure', {
+                  amount: formatCurrency(quarterlyTotal, locale),
+                });
                 const planTitle = locale === 'ar' ? p.arabicName : p.englishName;
                 const cap = dyn.weeklyStudentLimit ?? p.weeklyStudentLimit;
                 const studentsLine =
@@ -419,6 +429,7 @@ export default function LocaleHomePage() {
                   >
                     <p className="text-sm font-semibold !text-white/80">{planTitle}</p>
                     <p className="mt-1.5 text-lg font-bold !text-white/80">{priceLine}</p>
+                    <p className="mt-1 text-xs text-[var(--color-text-muted)]">{quarterlyDisclosure}</p>
                     <p className="mt-2 text-xs text-[var(--color-text-muted)]">{studentsLine}</p>
                   </div>
                 );

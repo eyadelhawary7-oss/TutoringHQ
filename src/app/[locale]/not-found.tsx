@@ -1,67 +1,108 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { Globe } from 'lucide-react';
 import en from '../../../messages/en.json';
 import ar from '../../../messages/ar.json';
-import { getSupportWhatsAppWaMeBase } from '@/lib/supportWhatsApp';
-import { formatNumber } from '@/lib/formatNumber';
 
 type Locale = 'ar' | 'en';
 
-function readLocale(): Locale {
+function readLocaleFromPath(): Locale {
   if (typeof window === 'undefined') return 'ar';
   const path = window.location.pathname;
   if (path === '/en' || path.startsWith('/en/')) return 'en';
-  if (path === '/ar' || path.startsWith('/ar/')) return 'ar';
   return 'ar';
 }
 
 export default function NotFound() {
-  const [locale, setLocale] = useState<Locale>(readLocale);
+  const [locale, setLocale] = useState<Locale>(readLocaleFromPath);
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+  const pathname = usePathname();
+
   useEffect(() => {
-    setLocale(readLocale());
+    setLocale(readLocaleFromPath());
   }, []);
+
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
   const messages = locale === 'en' ? en : ar;
-  const t = (key: keyof typeof messages.errors): string => {
-    const v = messages.errors[key];
+  const t = (key: keyof typeof messages.errors.notFound): string => {
+    const v = messages.errors.notFound[key];
     return typeof v === 'string' ? v : '';
   };
-  const waSupport = getSupportWhatsAppWaMeBase();
+
+  const handleLocaleToggle = () => {
+    const next: Locale = locale === 'ar' ? 'en' : 'ar';
+    const currentPath = pathname || `/${locale}`;
+    const newPath = currentPath.startsWith(`/${locale}`)
+      ? currentPath.replace(`/${locale}`, `/${next}`)
+      : `/${next}${currentPath}`;
+    startTransition(() => router.replace(newPath));
+  };
 
   return (
     <div
-      className="flex min-h-screen items-center justify-center bg-[var(--color-surface-0)] p-6"
+      className="relative flex min-h-screen flex-col items-center justify-center bg-[var(--color-surface-2)] p-6"
       dir={dir}
     >
-      <div className="chq-spring-in w-full max-w-md space-y-6 text-center">
-        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-teal-600 text-sm font-bold text-white">
-          CH
+      <div className="absolute end-4 top-4">
+        <button
+          type="button"
+          onClick={handleLocaleToggle}
+          disabled={isPending}
+          aria-label={locale === 'ar' ? 'Switch to English' : 'التبديل إلى العربية'}
+          className="flex items-center gap-1.5 rounded-lg border border-slate-600 bg-transparent px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:text-white"
+        >
+          <Globe size={13} aria-hidden />
+          <span dir="ltr">{locale === 'ar' ? 'EN' : 'AR'}</span>
+        </button>
+      </div>
+
+      <div className="w-full max-w-md space-y-6 text-center">
+        <a
+          href={`/${locale}`}
+          className="mx-auto inline-flex items-center gap-2 chq-focus rounded-lg"
+          aria-label="CenterHQ"
+        >
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-600 text-sm font-bold text-white">
+            CH
+          </span>
+          <span
+            className="text-base tracking-tight"
+            style={{
+              fontFamily: 'var(--font-bodoni)',
+              fontWeight: 700,
+              letterSpacing: '2px',
+            }}
+          >
+            <span className="text-[#f8fafc]">CENTER</span>
+            <span className="text-[#0D9488]">HQ</span>
+          </span>
+        </a>
+
+        <div className="text-7xl font-bold leading-none text-slate-700" aria-hidden>
+          404
         </div>
-        <div className="text-8xl font-bold leading-none text-slate-800" aria-hidden>
-          {formatNumber(404, locale)}
-        </div>
+
         <div>
-          <h1 className="text-xl font-semibold text-white">{t('notFoundTitle')}</h1>
-          <p className="mt-2 text-sm text-slate-400">{t('notFoundDesc')}</p>
+          <h1 className="text-xl font-semibold text-white">{t('title')}</h1>
+          <p className="mt-2 text-sm text-[var(--color-text-muted)]">{t('message')}</p>
         </div>
+
         <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
           <a
-            href={`/${locale}/dashboard`}
-            className="inline-flex rounded-xl bg-teal-600 px-6 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-teal-500 btn-press chq-focus"
+            href={`/${locale}`}
+            className="inline-flex w-full justify-center rounded-xl bg-teal-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-teal-500 btn-press chq-focus sm:w-auto"
           >
-            {t('goHome')}
+            {t('backToHome')}
           </a>
-          {waSupport ? (
-            <a
-              href={waSupport}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium text-teal-400 underline-offset-2 transition-colors hover:text-teal-300 hover:underline btn-press chq-focus rounded-lg px-2 py-1"
-            >
-              {t('contactSupport')}
-            </a>
-          ) : null}
+          <a
+            href={`/${locale}/pricing`}
+            className="inline-flex w-full justify-center rounded-xl border border-slate-600 bg-transparent px-6 py-3 text-sm font-medium text-slate-300 transition-colors hover:border-slate-500 hover:text-white btn-press chq-focus sm:w-auto"
+          >
+            {t('viewPricing')}
+          </a>
         </div>
       </div>
     </div>

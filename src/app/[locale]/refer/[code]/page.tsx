@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { Gift, Loader2 } from 'lucide-react';
+import { setReferralCode } from '@/lib/referralCode';
 
 export default function ReferPage() {
   const params = useParams();
@@ -23,8 +24,8 @@ export default function ReferPage() {
       setError(true);
       return;
     }
-    localStorage.setItem('referral_code', code);
-    document.cookie = `chq_referral_code=${encodeURIComponent(code)}; Path=/; Max-Age=${60 * 60 * 24 * 90}; SameSite=Lax`;
+    setReferralCode(code);
+    document.cookie = `chq_referral_code=${encodeURIComponent(code)}; Path=/; Max-Age=${60 * 60 * 24 * 7}; SameSite=Lax`;
     const url = new URL(window.location.href);
     url.searchParams.set('ref', code);
     window.history.replaceState({}, '', url.toString());
