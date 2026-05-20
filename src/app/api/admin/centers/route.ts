@@ -14,6 +14,7 @@ import { getAdminPermissions } from '@/lib/admin-roles';
 import { PLANS, type PlanKey } from '@/lib/pricing';
 import { todayISO } from '@/lib/parentPack';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { parseIncludeTestCenters } from '@/lib/adminIncludeTest';
 
 function calendarAddDays(baseYmd: string, delta: number): string {
   const [y, m, d] = baseYmd.split('-').map((x) => parseInt(x, 10));
@@ -308,10 +309,18 @@ export async function GET(request: Request) {
     const isAtRisk = statusParam === 'at_risk';
     const sortOldest = sortParam === 'oldest';
 
+    const includeTestCenters = parseIncludeTestCenters(request);
+
     const buildFilteredQuery = (withCount: boolean) => {
       let q = withCount
         ? adminClient.from('centers').select('*', { count: 'exact' }).neq('status', 'deleted')
         : adminClient.from('centers').select('*').neq('status', 'deleted');
+      // Canonical admin aggregate semantic (CLAUDE.md): exclude is_test rows unless
+      // include_test=1 explicitly requested. Keeps Total Centers / Active Centers KPIs
+      // aligned with /api/admin/overview, /api/admin/billing, /api/admin/health.
+      if (!includeTestCenters) {
+        q = q.eq('is_test', false);
+      }
       q = q.order('created_at', { ascending: sortOldest });
 
       if (!isAtRisk && statusParam && statusParam !== 'all') {

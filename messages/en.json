@@ -3546,7 +3546,16 @@
       "tabCommissions": "Commissions"
     },
     "withdrawals": "Withdrawals",
-    "internalTeam": "Internal Team",
+    "internalTeam": {
+      "title": "Internal Team",
+      "editRole": "Edit role",
+      "deactivate": "Deactivate",
+      "deactivateConfirmTitle": "Deactivate this admin?",
+      "deactivateConfirmMessage": "They will lose access immediately. You can reactivate them later.",
+      "deactivateConfirmCta": "Deactivate",
+      "editRoleTitle": "Edit role",
+      "editRoleSave": "Save changes"
+    },
     "salesPipeline": "Sales Pipeline",
     "analytics": "Analytics",
     "totalCenters": "Total Centers",

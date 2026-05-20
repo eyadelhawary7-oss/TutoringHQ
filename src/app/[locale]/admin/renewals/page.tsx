@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
+import { useSearchParams } from 'next/navigation';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
@@ -80,6 +81,8 @@ export default function AdminRenewalsPage() {
   const tStatus = useTranslations('status');
   const locale = useLocale();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const includeTest = searchParams?.get('include_test') === '1';
   const { closeMainSidebar } = useSidebar() ?? {};
   const { setHideShell } = useLayout();
 
@@ -103,7 +106,9 @@ export default function AdminRenewalsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/renewals?filter=${filter}`, {
+      const qs = new URLSearchParams({ filter });
+      if (includeTest) qs.set('include_test', '1');
+      const res = await fetch(`/api/admin/renewals?${qs.toString()}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (res.status === 403) {
@@ -123,7 +128,7 @@ export default function AdminRenewalsPage() {
     } finally {
       setLoading(false);
     }
-  }, [router, filter]);
+  }, [router, filter, includeTest]);
 
   useEffect(() => {
     setHideShell(true);

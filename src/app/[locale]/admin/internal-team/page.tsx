@@ -68,6 +68,11 @@ export default function AdminInternalTeamPage() {
   const [selectedRole, setSelectedRole] = useState<RoleKey>('internal_viewer');
   const [customPerms, setCustomPerms] = useState<string[]>([]);
 
+  const [editRoleMember, setEditRoleMember] = useState<TeamMember | null>(null);
+  const [editRoleSelection, setEditRoleSelection] = useState<RoleKey>('internal_viewer');
+  const [editRolePassword, setEditRolePassword] = useState('');
+  const [deactivateMember, setDeactivateMember] = useState<TeamMember | null>(null);
+
   const loadData = useCallback(async () => {
     const session = await getAdminSession();
     if (!session) {
@@ -141,8 +146,46 @@ export default function AdminInternalTeamPage() {
     }
   };
 
-  const handleRemove = async (memberId: string) => {
-    if (!confirm(t('confirmRemoveTeamMember'))) return;
+  const openEditRole = (member: TeamMember) => {
+    setEditRoleMember(member);
+    const roleAsKey = (ROLE_OPTIONS as readonly string[]).includes(member.role)
+      ? (member.role as RoleKey)
+      : 'internal_viewer';
+    setEditRoleSelection(roleAsKey);
+    setEditRolePassword('');
+  };
+
+  const handleEditRoleSave = async () => {
+    if (!editRoleMember) return;
+    const headers = await getAdminAuthHeaders();
+    if (!headers) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/admin/team', {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({
+          memberId: editRoleMember.id,
+          role: editRoleSelection,
+          password: editRolePassword,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error || tCommon('errorGeneric'));
+      }
+      setEditRoleMember(null);
+      setEditRolePassword('');
+      loadData();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : tCommon('errorGeneric'));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeactivateConfirm = async () => {
+    if (!deactivateMember) return;
     const headers = await getAdminAuthHeaders();
     if (!headers) return;
     setActionLoading(true);
@@ -150,12 +193,13 @@ export default function AdminInternalTeamPage() {
       const res = await fetch('/api/admin/team', {
         method: 'DELETE',
         headers,
-        body: JSON.stringify({ memberId }),
+        body: JSON.stringify({ memberId: deactivateMember.id }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err?.error || tCommon('errorGeneric'));
       }
+      setDeactivateMember(null);
       loadData();
     } catch (e) {
       setError(e instanceof Error ? e.message : tCommon('errorGeneric'));
@@ -180,7 +224,7 @@ export default function AdminInternalTeamPage() {
               >
                 <DirectionalIcon icon={ArrowLeft} className="h-5 w-5" />
               </button>
-              <h1 className="text-xl font-bold">{t('internalTeam')}</h1>
+              <h1 className="text-xl font-bold">{t('internalTeam.title')}</h1>
             </div>
             <button
               type="button"
@@ -244,14 +288,24 @@ export default function AdminInternalTeamPage() {
                         </td>
                         <td className="py-3.5 px-4">
                           {!['super_admin', 'admin'].includes(m.role) ? (
-                            <button
-                              type="button"
-                              onClick={() => handleRemove(m.id)}
-                              disabled={actionLoading}
-                              className="px-2 py-1 rounded text-xs font-semibold border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50"
-                            >
-                              {t('remove')}
-                            </button>
+                            <div className="flex items-center gap-2 flex-nowrap">
+                              <button
+                                type="button"
+                                onClick={() => openEditRole(m)}
+                                disabled={actionLoading}
+                                className="px-2 py-1 rounded text-xs font-semibold border border-[var(--color-border-default)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)] disabled:opacity-50"
+                              >
+                                {t('internalTeam.editRole')}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeactivateMember(m)}
+                                disabled={actionLoading}
+                                className="px-2 py-1 rounded text-xs font-semibold border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                              >
+                                {t('internalTeam.deactivate')}
+                              </button>
+                            </div>
                           ) : (
                             <span className="text-[var(--color-text-muted)]">{tCommon('notAvailable')}</span>
                           )}
@@ -264,6 +318,104 @@ export default function AdminInternalTeamPage() {
           )}
         </main>
       </div>
+
+      {editRoleMember && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setEditRoleMember(null)}
+        >
+          <div
+            className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 max-w-sm mx-4 w-full bg-[var(--color-surface-1)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-bold text-[var(--color-text-primary)] mb-4">
+              {t('internalTeam.editRoleTitle')}
+            </h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-3">{editRoleMember.name}</p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+                  {t('internalTeamRoleLabel')}
+                </label>
+                <select
+                  value={editRoleSelection}
+                  onChange={(e) => setEditRoleSelection(e.target.value as RoleKey)}
+                  className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-2)] text-[var(--color-text-primary)]"
+                >
+                  {ROLE_OPTIONS.map((role) => (
+                    <option key={role} value={role}>
+                      {t(ROLE_LABEL_KEY[role])}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <input
+                type="password"
+                value={editRolePassword}
+                onChange={(e) => setEditRolePassword(e.target.value)}
+                placeholder={tCommon('passwordPlaceholder')}
+                className="w-full px-3 py-2.5 rounded-lg border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm"
+              />
+            </div>
+            <div className="flex gap-2 justify-end mt-4">
+              <button
+                type="button"
+                onClick={() => setEditRoleMember(null)}
+                className="px-4 py-2 rounded-lg text-sm border border-border"
+              >
+                {tCommon('cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={handleEditRoleSave}
+                disabled={actionLoading || !editRolePassword}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50"
+              >
+                {t('internalTeam.editRoleSave')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deactivateMember && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setDeactivateMember(null)}
+        >
+          <div
+            className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 max-w-sm mx-4 w-full bg-[var(--color-surface-1)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-bold text-[var(--color-text-primary)] mb-3">
+              {t('internalTeam.deactivateConfirmTitle')}
+            </h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+              {t('internalTeam.deactivateConfirmMessage')}
+            </p>
+            <p className="text-sm font-medium text-[var(--color-text-primary)] mb-4">
+              {deactivateMember.name}
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setDeactivateMember(null)}
+                className="px-4 py-2 rounded-lg text-sm border border-border"
+              >
+                {tCommon('cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={handleDeactivateConfirm}
+                disabled={actionLoading}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
+              >
+                {t('internalTeam.deactivateConfirmCta')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showAdd && (
         <div

@@ -46,10 +46,14 @@ interface AdminPackResponse {
 
 export default async function AdminWhatsAppPackPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>
+  searchParams: Promise<{ include_test?: string }>
 }) {
   const { locale } = await params
+  const sp = await searchParams
+  const includeTestQs = sp.include_test === '1' ? '?include_test=1' : ''
   const supabase = await createClient()
 
   const {
@@ -70,7 +74,7 @@ export default async function AdminWhatsAppPackPage({
   }
 
   const origin = await sameDeploymentOrigin()
-  const res = await fetch(`${origin}/api/admin/whatsapp-pack`, {
+  const res = await fetch(`${origin}/api/admin/whatsapp-pack${includeTestQs}`, {
     headers: { Authorization: `Bearer ${session.access_token}` },
     cache: 'no-store',
   })

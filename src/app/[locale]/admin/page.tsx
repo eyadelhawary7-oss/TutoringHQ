@@ -455,8 +455,10 @@ function AdminOverviewPageContent() {
                 {(overview.monthlyRevenue?.length ?? 0) > 0 && overview.monthlyRevenue && (
                   <ChartCard
                     title={tCharts('monthlyRevenue')}
-                    valuePrefix={`${tCommon('egp')} `}
-                    value={Number(overview.monthlyRevenue[overview.monthlyRevenue.length - 1]?.revenue ?? 0)}
+                    value={formatCurrency(
+                      Number(overview.monthlyRevenue[overview.monthlyRevenue.length - 1]?.revenue ?? 0),
+                      locale,
+                    )}
                     trend={monthlyRevTrendPct}
                     trendLabel={tCharts('vsLastMonth')}
                     minHeight={220}
@@ -467,7 +469,6 @@ function AdminOverviewPageContent() {
                       xKey="month"
                       height={200}
                       color="teal"
-                      prefix={`${tCommon('egp')} `}
                       showGrid
                       currencyYAxis={{ locale }}
                       dedupYAxisTicks
