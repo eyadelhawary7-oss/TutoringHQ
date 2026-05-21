@@ -1,7 +1,11 @@
 /**
  * CenterHQ service worker — precache minimal scanner shell; runtime StaleWhileRevalidate via Workbox CDN.
  */
-importScripts('https://storage.googleapis.com/workbox-cdn/releases/7.0.0/workbox-sw.js');
+importScripts('/workbox/workbox-v7.0.0/workbox-sw.js');
+
+if (globalThis.workbox) {
+  globalThis.workbox.setConfig({ modulePathPrefix: '/workbox/workbox-v7.0.0/' });
+}
 
 const WB = globalThis.workbox;
 const CACHE_LEGACY = 'centerhq-v4';
