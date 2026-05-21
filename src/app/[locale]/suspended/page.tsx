@@ -89,7 +89,7 @@ export default function SuspendedPage() {
 
         <div className="flex flex-col gap-3">
           <Link
-            href="/settings/billing"
+            href="/reactivate"
             className="rounded-xl bg-amber-500 px-6 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-amber-400 btn-press chq-focus"
           >
             {t('payNow')}
