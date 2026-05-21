@@ -4513,6 +4513,29 @@
     "desc": "For your security, sessions expire automatically. Please log in again.",
     "loginAgain": "Log in again"
   },
+  "reactivate": {
+    "title": "Reactivate your subscription",
+    "subtitle": "Choose a plan and pay to restore access to CenterHQ.",
+    "loading": "Loading...",
+    "loadError": "Could not load plans. Try again.",
+    "payError": "Could not start payment. Try again.",
+    "centerLabel": "Centre",
+    "tierLabel": "Reactivation tier",
+    "tier": {
+      "tier1": "Within 30 days (small late fee)",
+      "tier2": "30 to 90 days (3% reactivation fee)"
+    },
+    "choosePlan": "Choose your plan",
+    "currentPlan": "Current",
+    "weeklyLimit": "Up to {count} students per week",
+    "reactivationTotal": "Total to pay now",
+    "nextPeriod": "Next period",
+    "fineOrFee": "Late fee",
+    "youWillPay": "You will pay",
+    "payNow": "Pay now",
+    "redirecting": "Redirecting to Paymob...",
+    "logout": "Log out"
+  },
   "suspended": {
     "title": "Account temporarily suspended",
     "suspendedHeading": "Your subscription has been suspended",
