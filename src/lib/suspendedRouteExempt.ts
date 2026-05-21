@@ -1,0 +1,17 @@
+/**
+ * Allowlist of routes a suspended centre owner may still reach. Kept tight: exact
+ * `/reactivate` (standalone pay page) and existing `/suspended` landing, with their
+ * direct sub-trees. No broad string prefix that could accidentally exempt sibling
+ * routes such as `/reactivate-foo` or `/suspended-archive`.
+ *
+ * Re-exported from `src/proxy.ts`; this file is kept dependency-free so it can be
+ * unit-tested without booting next-intl middleware.
+ */
+export function isSuspendedRouteExempt(cleanPath: string): boolean {
+  return (
+    cleanPath === '/suspended' ||
+    cleanPath.startsWith('/suspended/') ||
+    cleanPath === '/reactivate' ||
+    cleanPath.startsWith('/reactivate/')
+  );
+}

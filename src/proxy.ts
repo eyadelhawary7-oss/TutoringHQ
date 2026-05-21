@@ -2,6 +2,9 @@ import createMiddleware from 'next-intl/middleware';
 import { routing } from './i18n/routing';
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { isSuspendedRouteExempt } from './lib/suspendedRouteExempt';
+
+export { isSuspendedRouteExempt as isSuspendedExempt } from './lib/suspendedRouteExempt';
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -100,7 +103,10 @@ const AUTHENTICATED_ROUTE_PREFIXES = [
   '/whatsapp-pack',
   '/whatsapp',
   '/admin',
+  '/reactivate',
 ];
+
+const isSuspendedExempt = isSuspendedRouteExempt;
 
 function pathRequiresAuthentication(cleanPath: string): boolean {
   return AUTHENTICATED_ROUTE_PREFIXES.some(
@@ -239,7 +245,7 @@ export default async function proxy(request: NextRequest) {
           }
         }
 
-        if (!cleanPath.startsWith('/suspended')) {
+        if (!isSuspendedExempt(cleanPath)) {
           let shouldRedirect = false;
           let redirectUrl = '';
 
@@ -278,7 +284,7 @@ export default async function proxy(request: NextRequest) {
             .eq('center_id', userRecord.center_id)
             .single();
 
-          if (subscription?.status === 'suspended' && !cleanPath.startsWith('/suspended')) {
+          if (subscription?.status === 'suspended' && !isSuspendedExempt(cleanPath)) {
             const redirectResp = NextResponse.redirect(new URL(suspendedPath, request.url));
             storedCookies.forEach(({ name, value, options }) =>
               redirectResp.cookies.set(name, value, options ?? {})
