@@ -50,7 +50,6 @@ export default function ReactivatePage() {
   const [selected, setSelected] = useState<PlanKey | null>(null);
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [errorCode, setErrorCode] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,32 +61,25 @@ export default function ReactivatePage() {
       }
       try {
         const res = await fetch('/api/reactivate/info', { headers: hdr });
-        const json = (await res.json()) as
-          | InfoResponse
-          | { error: string; message?: string; code?: string };
+        const json = (await res.json()) as InfoResponse | { error: string; message?: string };
         if (cancelled) return;
         if (!res.ok) {
           const errMsg =
             (json as { message?: string }).message ??
             (json as { error?: string }).error ??
             'Failed to load';
-          const code = (json as { code?: string }).code ?? null;
           if ((json as { error?: string }).error === 'Center is not suspended') {
             window.location.href = `/${locale}/dashboard`;
             return;
           }
           setError(errMsg);
-          setErrorCode(code);
         } else {
           const data = json as InfoResponse;
           setInfo(data);
           setSelected(data.center.plan);
         }
       } catch {
-        if (!cancelled) {
-          setError(t('loadError'));
-          setErrorCode(null);
-        }
+        if (!cancelled) setError(t('loadError'));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -101,7 +93,6 @@ export default function ReactivatePage() {
     if (!selected || paying) return;
     setPaying(true);
     setError(null);
-    setErrorCode(null);
     try {
       const hdr = await authHeader();
       if (!hdr) {
@@ -113,21 +104,14 @@ export default function ReactivatePage() {
         headers: { ...hdr, 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan: selected }),
       });
-      const json = (await res.json()) as {
-        paymobUrl?: string;
-        error?: string;
-        message?: string;
-        code?: string;
-      };
+      const json = (await res.json()) as { paymobUrl?: string; error?: string; message?: string };
       if (!res.ok || !json.paymobUrl) {
         setError(json.message ?? json.error ?? t('payError'));
-        setErrorCode(json.code ?? null);
         return;
       }
       window.location.href = json.paymobUrl;
     } catch {
       setError(t('payError'));
-      setErrorCode(null);
     } finally {
       setPaying(false);
     }
@@ -161,11 +145,6 @@ export default function ReactivatePage() {
         ) : error && !info ? (
           <div className="rounded-2xl border border-red-800/40 bg-red-900/20 p-4 text-sm text-red-300">
             {error}
-            {errorCode ? (
-              <div className="mt-1 font-mono text-xs text-[var(--color-text-muted)]">
-                {errorCode}
-              </div>
-            ) : null}
           </div>
         ) : info ? (
           <>
@@ -244,11 +223,6 @@ export default function ReactivatePage() {
             {error ? (
               <div className="rounded-xl border border-red-800/40 bg-red-900/20 p-3 text-sm text-red-300">
                 {error}
-                {errorCode ? (
-                  <div className="mt-1 font-mono text-xs text-[var(--color-text-muted)]">
-                    {errorCode}
-                  </div>
-                ) : null}
               </div>
             ) : null}
 
