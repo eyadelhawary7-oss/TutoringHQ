@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { z } from 'zod';
 import { NextResponse } from 'next/server';
 import { dbInsertSchemas, studentUpdateSchema } from '@/lib/validations';
@@ -8,17 +8,15 @@ import { scanRatelimit, rateLimitedResponse } from '@/lib/ratelimit';
 import { getShippingFee, getShippingZone } from '@/lib/bostaShipping';
 import { loadBostaShippingRates } from '@/lib/loadBostaShippingRates';
 import { parseBodyWithLimit } from '@/lib/validate';
-
-const ALLOWED_TABLES = [
-  'payments', 'students', 'student_groups', 'attendance_scans', 'attendance_overrides',
-  'rooms', 'schedule_slots', 'centers', 'users', 'subjects',
-  'subscriptions', 'whatsapp_messages', 'whatsapp_incoming',
-  'permissions', 'demo_requests', 'center_invites', 'student_group_members',
-  'wa_templates', 'paid_parents', 'reminder_settings',
-  'card_orders',
-] as const;
+import {
+  TABLE_SCOPE,
+  planScope,
+  applyForcedData,
+  type Filter,
+} from '@/lib/dbProxyScope';
 
 const VALID_OPERATIONS = ['select', 'insert', 'update', 'delete', 'count'] as const;
+type Operation = (typeof VALID_OPERATIONS)[number];
 
 function logError(context: string, err: unknown) {
   console.error(`[api/db] ${context}:`, err);
@@ -29,8 +27,13 @@ function logError(context: string, err: unknown) {
 
 /**
  * Server-side database proxy that bypasses RLS using the service role key.
- * All requests must include a valid Authorization header (Bearer token).
- * The user's identity is verified before executing any operation.
+ *
+ * Tenant isolation is enforced HERE (not by RLS): every request is mapped to a
+ * scoping rule in `dbProxyScope.ts`. Non-super-admin callers cannot operate on
+ * another center's rows; client-supplied `center_id` filters and payload
+ * values are overwritten with the session-derived `actorCenterId`.
+ *
+ * See docs/DB_PROXY_SECURITY.md for the threat model.
  */
 export async function POST(request: Request) {
   try {
@@ -78,38 +81,39 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Field 'table' is required and must be a string", code: 'VALIDATION_ERROR' }, { status: 400 });
     }
 
-    if (!VALID_OPERATIONS.includes(operation as (typeof VALID_OPERATIONS)[number])) {
+    if (!VALID_OPERATIONS.includes(operation as Operation)) {
       return NextResponse.json({
         error: `Field 'operation' must be one of: ${VALID_OPERATIONS.join(', ')}`,
         code: 'VALIDATION_ERROR',
       }, { status: 400 });
     }
+    const op = operation as Operation;
 
-    if (!ALLOWED_TABLES.includes(table as (typeof ALLOWED_TABLES)[number])) {
+    if (!(table in TABLE_SCOPE)) {
       return NextResponse.json({
         error: `Table '${table}' is not allowed`,
         code: 'TABLE_NOT_ALLOWED',
-        allowedTables: [...new Set(ALLOWED_TABLES)],
+        allowedTables: Object.keys(TABLE_SCOPE),
       }, { status: 400 });
     }
 
-    if ((operation === 'insert' || operation === 'update') && data === undefined) {
+    if ((op === 'insert' || op === 'update') && data === undefined) {
       return NextResponse.json({
-        error: `Field 'data' is required for operation '${operation}'`,
+        error: `Field 'data' is required for operation '${op}'`,
         code: 'VALIDATION_ERROR',
       }, { status: 400 });
     }
 
-    if (operation === 'insert' && !(typeof data === 'object' && data !== null && !Array.isArray(data) || Array.isArray(data))) {
+    if (op === 'insert' && !(typeof data === 'object' && data !== null && !Array.isArray(data) || Array.isArray(data))) {
       return NextResponse.json({ error: "Field 'data' must be an object or array", code: 'VALIDATION_ERROR' }, { status: 400 });
     }
 
     // Validate insert/update data for tables with schemas
     let schema: z.ZodType | undefined = dbInsertSchemas[table as keyof typeof dbInsertSchemas];
-    if (table === 'students' && operation === 'update') {
+    if (table === 'students' && op === 'update') {
       schema = studentUpdateSchema;
     }
-    if ((operation === 'insert' || operation === 'update') && schema && data != null) {
+    if ((op === 'insert' || op === 'update') && schema && data != null) {
       const items = Array.isArray(data) ? data : [data];
       for (let i = 0; i < items.length; i++) {
         const result = schema.safeParse(items[i]);
@@ -140,7 +144,7 @@ export async function POST(request: Request) {
       logError('Auth failed', authError);
       return NextResponse.json({ error: 'Not authenticated', code: 'AUTH_FAILED' }, { status: 401 });
     }
-    const isStateChange = ['insert', 'update', 'delete'].includes(operation as string);
+    const isStateChange = ['insert', 'update', 'delete'].includes(op);
     if (isStateChange && !validateCSRFRequest(request, user.id)) {
       return NextResponse.json({ error: 'Invalid CSRF token', code: 'CSRF_INVALID' }, { status: 403 });
     }
@@ -149,32 +153,77 @@ export async function POST(request: Request) {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const { data: actorRow } = await supabaseAdmin
-      .from('users')
-      .select('center_id, role')
-      .eq('id', user.id)
-      .maybeSingle();
-    const actorCenterId = (actorRow as { center_id?: string | null } | null)?.center_id ?? null;
+    // Derive caller identity from session: users row + admin_users membership.
+    // Mirrors centerAuth.ts:74-99 for super-admin detection.
+    const [{ data: userRecord }, { data: adminRecord }] = await Promise.all([
+      supabaseAdmin
+        .from('users')
+        .select('center_id, role')
+        .eq('id', user.id)
+        .maybeSingle(),
+      supabaseAdmin
+        .from('admin_users')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle(),
+    ]);
+    const actorCenterId =
+      (userRecord as { center_id?: string | null } | null)?.center_id ?? null;
+    const actorRoleFromUser = String(
+      (userRecord as { role?: string } | null)?.role ?? '',
+    );
+    const isSuperAdmin = actorRoleFromUser === 'super_admin' || !!adminRecord;
 
+    // Tenant scoping: pure decision based on table + caller identity.
+    const filtersArr: Filter[] | undefined = Array.isArray(filters)
+      ? (filters as Filter[])
+      : undefined;
+    const plan = planScope({
+      table,
+      operation: op,
+      filters: filtersArr,
+      ctx: { isSuperAdmin, actorCenterId },
+    });
+
+    if (plan.kind === 'deny') {
+      return NextResponse.json(
+        { error: plan.message, code: plan.code },
+        { status: plan.status },
+      );
+    }
+
+    // Indirect-scope tables: validate parent rows belong to caller's center.
+    if (plan.kind === 'indirect') {
+      const indirectErr = await validateIndirectScope(
+        supabaseAdmin,
+        table,
+        op,
+        filtersArr,
+        data,
+        plan.centerId,
+        user.id,
+      );
+      if (indirectErr) {
+        return NextResponse.json(
+          { error: indirectErr.message, code: indirectErr.code },
+          { status: indirectErr.status },
+        );
+      }
+    }
+
+    // Preserve the legacy card_orders insert guard for clarity / explicit 403
+    // even though applyForcedData now ensures data.center_id === actorCenterId.
     if (
       table === 'card_orders' &&
-      operation === 'insert' &&
+      op === 'insert' &&
       data &&
       typeof data === 'object' &&
-      !Array.isArray(data)
+      !Array.isArray(data) &&
+      !isSuperAdmin
     ) {
       const row = data as Record<string, unknown>;
       const targetCenterId = typeof row.center_id === 'string' ? row.center_id : '';
-      if (!targetCenterId) {
-        return NextResponse.json({ error: 'center_id required', code: 'VALIDATION_ERROR' }, { status: 400 });
-      }
-      const { data: userRow } = await supabaseAdmin
-        .from('users')
-        .select('center_id')
-        .eq('id', user.id)
-        .maybeSingle();
-      const userCenterId = (userRow as { center_id?: string | null } | null)?.center_id ?? null;
-      if (!userCenterId || userCenterId !== targetCenterId) {
+      if (targetCenterId && actorCenterId && targetCenterId !== actorCenterId) {
         return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
       }
       const deliveryGovRaw = row.delivery_governorate;
@@ -194,10 +243,22 @@ export async function POST(request: Request) {
       delete row.delivery_governorate;
     }
 
+    // Force insert/update payload to caller's center on direct-scope tables.
+    let effectiveData = data;
+    if (plan.kind === 'direct' && (op === 'insert' || op === 'update')) {
+      effectiveData = applyForcedData(
+        data,
+        table,
+        op,
+        plan.column,
+        plan.centerId,
+      );
+    }
+
     let prevStudentPack: { parent_pack_opted_in: boolean | null; parent_phone: string | null } | null = null;
-    if (table === 'students' && operation === 'update' && filters && Array.isArray(filters)) {
-      const idFilter = filters.find(
-        (f: { column: string; op: string; value: unknown }) => f.column === 'id' && f.op === 'eq',
+    if (table === 'students' && op === 'update' && filtersArr) {
+      const idFilter = filtersArr.find(
+        (f) => f.column === 'id' && f.op === 'eq',
       );
       if (idFilter && typeof idFilter.value === 'string') {
         const { data: prevRow } = await supabaseAdmin
@@ -213,16 +274,11 @@ export async function POST(request: Request) {
     if (
       scanRatelimit &&
       isStateChange &&
-      operation === 'insert' &&
+      op === 'insert' &&
       table === 'attendance_scans'
     ) {
-      const { data: userRow } = await supabaseAdmin
-        .from('users')
-        .select('center_id')
-        .eq('id', user.id)
-        .maybeSingle();
-      const centerId = userRow?.center_id ?? user.id;
-      const { success, reset } = await scanRatelimit.limit(centerId);
+      const rlCenterId = actorCenterId ?? user.id;
+      const { success, reset } = await scanRatelimit.limit(rlCenterId);
       if (!success) {
         const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
         return rateLimitedResponse(retryAfter);
@@ -234,20 +290,20 @@ export async function POST(request: Request) {
 
     const selectStr: string = typeof selectColumns === 'string' ? selectColumns : '*';
 
-    switch (operation) {
+    switch (op) {
       case 'select': {
         query = supabaseAdmin.from(table).select(selectStr);
         break;
       }
       case 'insert': {
-        query = supabaseAdmin.from(table).insert(data);
+        query = supabaseAdmin.from(table).insert(effectiveData);
         if (selectColumns !== false) {
           query = query.select(selectStr);
         }
         break;
       }
       case 'update': {
-        query = supabaseAdmin.from(table).update(data);
+        query = supabaseAdmin.from(table).update(effectiveData);
         break;
       }
       case 'delete': {
@@ -258,15 +314,13 @@ export async function POST(request: Request) {
         query = supabaseAdmin.from(table).select(selectStr, { count: 'exact', head: true });
         break;
       }
-      default:
-        return NextResponse.json({ error: `Invalid operation: ${operation}` }, { status: 400 });
     }
 
-    // Apply filters
-    if (filters && Array.isArray(filters)) {
-      for (const filter of filters) {
-        const { column, op, value } = filter;
-        switch (op) {
+    // Apply client-supplied filters (already validated for cross-tenant safety).
+    if (filtersArr) {
+      for (const filter of filtersArr) {
+        const { column, op: fop, value } = filter;
+        switch (fop) {
           case 'eq': query = query.eq(column, value); break;
           case 'neq': query = query.neq(column, value); break;
           case 'gt': query = query.gt(column, value); break;
@@ -280,6 +334,13 @@ export async function POST(request: Request) {
           case 'in': query = query.in(column, value); break;
         }
       }
+    }
+
+    // Forced tenant filter — applied AFTER client filters so it always
+    // constrains SELECT/UPDATE/DELETE/COUNT WHERE clauses for direct-scope
+    // tables. INSERT carries the center_id in the row via applyForcedData.
+    if (plan.kind === 'direct' && op !== 'insert') {
+      query = query.eq(plan.column, plan.centerId);
     }
 
     // Apply ordering
@@ -304,20 +365,21 @@ export async function POST(request: Request) {
 
     if (isStateChange && !result.error) {
       const filterPreview =
-        Array.isArray(filters) && filters.length > 0
-          ? filters.slice(0, 8).map((f: { column?: string; op?: string }) => `${f.column}:${f.op}`)
+        filtersArr && filtersArr.length > 0
+          ? filtersArr.slice(0, 8).map((f) => `${f.column}:${f.op}`)
           : [];
       void supabaseAdmin
         .from('audit_log')
         .insert({
           center_id: actorCenterId,
           user_id: user.id,
-          action: `db_proxy.${String(operation)}.${String(table)}`,
+          action: `db_proxy.${String(op)}.${String(table)}`,
           entity_type: 'db_proxy',
           details: {
             table,
-            operation,
+            operation: op,
             filter_preview: filterPreview,
+            super_admin: isSuperAdmin,
           },
         })
         .then(
@@ -328,7 +390,7 @@ export async function POST(request: Request) {
 
     if (!result.error && table === 'students') {
       try {
-        if (operation === 'insert' && result.data) {
+        if (op === 'insert' && result.data) {
           const rows = Array.isArray(result.data) ? result.data : [result.data];
           for (const row of rows) {
             const r = row as {
@@ -347,9 +409,9 @@ export async function POST(request: Request) {
             }
           }
         }
-        if (operation === 'update' && filters && Array.isArray(filters)) {
-          const idFilter = filters.find(
-            (f: { column: string; op: string; value: unknown }) => f.column === 'id' && f.op === 'eq',
+        if (op === 'update' && filtersArr) {
+          const idFilter = filtersArr.find(
+            (f) => f.column === 'id' && f.op === 'eq',
           );
           if (idFilter && typeof idFilter.value === 'string') {
             const { data: row } = await supabaseAdmin
@@ -362,7 +424,7 @@ export async function POST(request: Request) {
                 kind: 'update',
                 centerId: row.center_id,
                 studentId: row.id,
-                body: (data ?? {}) as Record<string, unknown>,
+                body: (effectiveData ?? {}) as Record<string, unknown>,
                 prev: prevStudentPack,
                 row,
               });
@@ -403,4 +465,176 @@ export async function POST(request: Request) {
         : undefined,
     }, { status: 500 });
   }
+}
+
+type IndirectErr = { status: number; code: string; message: string };
+
+/**
+ * Per-table validation for tables whose center scope is via a parent row.
+ * Returns null on success.
+ */
+async function validateIndirectScope(
+  admin: SupabaseClient,
+  table: string,
+  operation: Operation,
+  filters: Filter[] | undefined,
+  data: unknown,
+  centerId: string,
+  actorUserId: string,
+): Promise<IndirectErr | null> {
+  if (table === 'student_group_members') {
+    return validateStudentGroupMembers(admin, operation, filters, data, centerId);
+  }
+  if (table === 'attendance_overrides') {
+    return validateAttendanceOverrides(admin, operation, data, centerId, actorUserId);
+  }
+  return {
+    status: 500,
+    code: 'INDIRECT_SCOPE_UNHANDLED',
+    message: `No indirect-scope validator for table '${table}'`,
+  };
+}
+
+async function validateStudentGroupMembers(
+  admin: SupabaseClient,
+  operation: Operation,
+  filters: Filter[] | undefined,
+  data: unknown,
+  centerId: string,
+): Promise<IndirectErr | null> {
+  if (operation === 'insert') {
+    const rows = Array.isArray(data) ? data : [data];
+    for (const r of rows) {
+      if (!r || typeof r !== 'object') {
+        return { status: 400, code: 'INVALID_DATA', message: 'insert row must be an object' };
+      }
+      const row = r as Record<string, unknown>;
+      const groupId = typeof row.group_id === 'string' ? row.group_id : null;
+      const studentId = typeof row.student_id === 'string' ? row.student_id : null;
+      if (!groupId || !studentId) {
+        return {
+          status: 400,
+          code: 'INDIRECT_SCOPE_MISSING_PARENT',
+          message: 'student_group_members.insert requires both group_id and student_id',
+        };
+      }
+      const parentErr = await checkParents(admin, [
+        { table: 'student_groups', id: groupId, label: 'group_id' },
+        { table: 'students', id: studentId, label: 'student_id' },
+      ], centerId);
+      if (parentErr) return parentErr;
+    }
+    return null;
+  }
+
+  // select / update / delete / count — require a filter on group_id or student_id.
+  const fs = filters ?? [];
+  const groupFilter = fs.find((f) => f.column === 'group_id' && (f.op === 'eq' || f.op === 'in'));
+  const studentFilter = fs.find((f) => f.column === 'student_id' && (f.op === 'eq' || f.op === 'in'));
+  if (!groupFilter && !studentFilter) {
+    return {
+      status: 403,
+      code: 'INDIRECT_SCOPE_FILTER_REQUIRED',
+      message: 'student_group_members requires a group_id or student_id filter',
+    };
+  }
+  if (groupFilter) {
+    const ids = filterIds(groupFilter);
+    if (!ids) {
+      return { status: 400, code: 'INDIRECT_SCOPE_INVALID_FILTER', message: 'group_id filter must contain string IDs' };
+    }
+    const { data: rows } = await admin
+      .from('student_groups')
+      .select('id, center_id')
+      .in('id', ids);
+    const arr = (rows ?? []) as Array<{ id: string; center_id: string | null }>;
+    if (arr.some((r) => r.center_id !== centerId)) {
+      return { status: 403, code: 'CROSS_TENANT_PARENT_REJECTED', message: 'group_id refers to another center' };
+    }
+  }
+  if (studentFilter) {
+    const ids = filterIds(studentFilter);
+    if (!ids) {
+      return { status: 400, code: 'INDIRECT_SCOPE_INVALID_FILTER', message: 'student_id filter must contain string IDs' };
+    }
+    const { data: rows } = await admin
+      .from('students')
+      .select('id, center_id')
+      .in('id', ids);
+    const arr = (rows ?? []) as Array<{ id: string; center_id: string | null }>;
+    if (arr.some((r) => r.center_id !== centerId)) {
+      return { status: 403, code: 'CROSS_TENANT_PARENT_REJECTED', message: 'student_id refers to another center' };
+    }
+  }
+  return null;
+}
+
+async function validateAttendanceOverrides(
+  admin: SupabaseClient,
+  operation: Operation,
+  data: unknown,
+  centerId: string,
+  actorUserId: string,
+): Promise<IndirectErr | null> {
+  if (operation !== 'insert') {
+    return {
+      status: 403,
+      code: 'OPERATION_NOT_PERMITTED',
+      message: 'attendance_overrides only supports insert via the proxy',
+    };
+  }
+  const rows = Array.isArray(data) ? data : [data];
+  for (const r of rows) {
+    if (!r || typeof r !== 'object') {
+      return { status: 400, code: 'INVALID_DATA', message: 'insert row must be an object' };
+    }
+    const row = r as Record<string, unknown>;
+    const studentId = typeof row.student_id === 'string' ? row.student_id : null;
+    if (!studentId) {
+      return { status: 400, code: 'MISSING_STUDENT_ID', message: 'student_id required' };
+    }
+    const parentErr = await checkParents(
+      admin,
+      [{ table: 'students', id: studentId, label: 'student_id' }],
+      centerId,
+    );
+    if (parentErr) return parentErr;
+    // Force override_by_user_id to caller — payload value is ignored.
+    row.override_by_user_id = actorUserId;
+  }
+  return null;
+}
+
+function filterIds(f: Filter): string[] | null {
+  if (f.op === 'eq') {
+    return typeof f.value === 'string' ? [f.value] : null;
+  }
+  if (f.op === 'in' && Array.isArray(f.value)) {
+    const out = f.value.filter((v): v is string => typeof v === 'string');
+    return out.length > 0 ? out : null;
+  }
+  return null;
+}
+
+async function checkParents(
+  admin: SupabaseClient,
+  parents: Array<{ table: string; id: string; label: string }>,
+  centerId: string,
+): Promise<IndirectErr | null> {
+  for (const p of parents) {
+    const { data: row } = await admin
+      .from(p.table)
+      .select('center_id')
+      .eq('id', p.id)
+      .maybeSingle();
+    const rowCenter = (row as { center_id?: string | null } | null)?.center_id ?? null;
+    if (rowCenter !== centerId) {
+      return {
+        status: 403,
+        code: 'CROSS_TENANT_PARENT_REJECTED',
+        message: `${p.label} does not belong to caller center`,
+      };
+    }
+  }
+  return null;
 }
