@@ -14,12 +14,17 @@ const allFalsePermissions: CenterPermissions = {
   can_request_referral_payouts: false,
 };
 
-function makeAuth(role: string, overrides: Partial<CenterPermissions> = {}): CenterAuthContext {
+function makeAuth(
+  role: string,
+  overrides: Partial<CenterPermissions> = {},
+  isSuperAdmin = false,
+): CenterAuthContext {
   return {
     ok: true,
     userId: 'user-1',
     centerId: 'center-1',
     role,
+    isSuperAdmin,
     permissions: { ...allFalsePermissions, ...overrides },
     supabaseAdmin: {} as SupabaseClient,
   };
@@ -31,9 +36,17 @@ describe('hasPermission', () => {
     expect(hasPermission(auth, 'can_manage_billing')).toBe(true);
   });
 
-  it('returns true for super_admin regardless of flag value', () => {
-    const auth = makeAuth('super_admin', { can_delete_students: false });
+  it('returns true when isSuperAdmin flag is true regardless of role/flag', () => {
+    const auth = makeAuth('internal_viewer', { can_delete_students: false }, true);
     expect(hasPermission(auth, 'can_delete_students')).toBe(true);
+  });
+
+  it('regression: role==="super_admin" without isSuperAdmin must NOT pass', () => {
+    // Simulates a tampered public.users.role; pre-fix this short-circuited
+    // every permission gate. Strict isSuperAdmin flag is the only authority.
+    const auth = makeAuth('super_admin', { can_delete_students: false }, false);
+    expect(hasPermission(auth, 'can_delete_students')).toBe(false);
+    expect(hasPermission(auth, 'can_manage_billing')).toBe(false);
   });
 
   it('returns true for assistant when flag is true', () => {
@@ -51,6 +64,18 @@ describe('requirePermission', () => {
   it('returns null for a permitted user', () => {
     const auth = makeAuth('owner');
     expect(requirePermission(auth, 'can_manage_billing')).toBeNull();
+  });
+
+  it('returns null when isSuperAdmin flag is true', () => {
+    const auth = makeAuth('assistant', {}, true);
+    expect(requirePermission(auth, 'can_manage_billing')).toBeNull();
+  });
+
+  it('returns 403 when role==="super_admin" but isSuperAdmin is false (tamper regression)', () => {
+    const auth = makeAuth('super_admin', {}, false);
+    const result = requirePermission(auth, 'can_manage_billing');
+    expect(result).toBeInstanceOf(Response);
+    expect((result as Response).status).toBe(403);
   });
 
   it('returns null for assistant when flag is true', () => {

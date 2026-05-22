@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { isSuperAdminPhone } from '@/lib/admin-access';
 
 export type CenterPermissions = {
   can_record_payments: boolean;
@@ -24,7 +25,19 @@ export type CenterAuthOk = {
   ok: true;
   userId: string;
   centerId: string;
+  /**
+   * Centre-side role (`owner`/`assistant`/…) OR `'super_admin'` when the caller
+   * is an admin_users-derived super-admin with no users row. Do NOT use this
+   * string for super-admin gating — `public.users.role` is centre-tenant-writable
+   * and not authoritative. Use `isSuperAdmin` instead.
+   */
   role: string;
+  /**
+   * Strict super-admin flag. True ONLY when the caller has an `admin_users` row
+   * OR their phone is in `SUPER_ADMIN_PHONES`. Never derived from
+   * `public.users.role`. This is the authoritative cross-tenant authority check.
+   */
+  isSuperAdmin: boolean;
   permissions: CenterPermissions;
   supabaseAdmin: SupabaseClient;
 };
@@ -113,7 +126,7 @@ export async function requireCenterAuth(request: NextRequest): Promise<CenterAut
   // failure with Sentry exception capture rather than silently coercing to null.
   const { data: userRecord, error: coreErr } = await admin
     .from('users')
-    .select('id, center_id, role')
+    .select('id, center_id, role, phone')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -145,8 +158,14 @@ export async function requireCenterAuth(request: NextRequest): Promise<CenterAut
   }
 
   const roleFromUser = String((userRecord as { role?: string } | null)?.role ?? '');
-  const isSuperAdmin = roleFromUser === 'super_admin' || !!adminRecord;
-  const effectiveRole = adminRecord && !userRecord ? 'super_admin' : roleFromUser;
+  const userPhone = (userRecord as { phone?: string | null } | null)?.phone ?? null;
+  // Authoritative super-admin sources only. NEVER trust `users.role` here:
+  // `public.users.role` is the centre-tenant role (owner/assistant/…) and is
+  // writable by centre admins via /api/db. A prior P0 let `users.role =
+  // 'super_admin'` elevate centerAuth and pivot cross-tenant via
+  // `?center_id=` / `x-center-id`.
+  const isSuperAdmin = !!adminRecord || isSuperAdminPhone(userPhone);
+  const effectiveRole = isSuperAdmin && !userRecord ? 'super_admin' : roleFromUser;
 
   let centerId = (userRecord as { center_id?: string | null } | null)?.center_id ?? null;
   const qp =
@@ -204,6 +223,7 @@ export async function requireCenterAuth(request: NextRequest): Promise<CenterAut
     userId: user.id,
     centerId: centerId as string,
     role: effectiveRole || roleFromUser,
+    isSuperAdmin,
     permissions,
     supabaseAdmin: admin,
   };

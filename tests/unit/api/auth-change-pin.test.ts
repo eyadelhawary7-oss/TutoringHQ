@@ -111,6 +111,7 @@ function makeAuth(admin: SupabaseClient): CenterAuthOk {
     userId: 'user-abc',
     centerId: 'center-xyz',
     role: 'owner',
+    isSuperAdmin: false,
     permissions: ALL_FALSE_PERMS,
     supabaseAdmin: admin,
   };

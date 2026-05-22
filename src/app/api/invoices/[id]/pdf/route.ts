@@ -35,8 +35,10 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     }
 
     const inv = invoice as { id: string; center_id: string; invoice_number: string | null };
-    const isSuperAdmin = auth.role === 'super_admin';
-    if (!isSuperAdmin && (auth.role !== 'owner' || inv.center_id !== auth.centerId)) {
+    // Use the strict `auth.isSuperAdmin` flag (admin_users + SUPER_ADMIN_PHONES);
+    // never compare `auth.role` to `'super_admin'` — that string carries the
+    // centre-tenant role and was the source of a prior privilege-escalation P0.
+    if (!auth.isSuperAdmin && (auth.role !== 'owner' || inv.center_id !== auth.centerId)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

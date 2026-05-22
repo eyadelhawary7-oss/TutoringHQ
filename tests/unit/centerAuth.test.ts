@@ -4,6 +4,7 @@ import type { NextRequest } from 'next/server';
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-key';
+process.env.SUPER_ADMIN_PHONES = '';
 
 const mockGetUser = vi.fn();
 vi.mock('@supabase/supabase-js', () => ({
@@ -239,6 +240,119 @@ describe('requireCenterAuth', () => {
     if (!result.ok) return;
     expect(result.centerId).toBe('center-override');
     expect(result.role).toBe('super_admin');
+    expect(result.isSuperAdmin).toBe(true);
     expect(Object.values(result.permissions).every((v) => v === false)).toBe(true);
+  });
+
+  // Regression for the public.users.role privilege-escalation P0. The prior
+  // implementation treated `users.role === 'super_admin'` as authority, letting
+  // a tampered centre row pivot cross-tenant via `?center_id=` / `x-center-id`.
+  it('regression: users.role="super_admin" without admin_users row does NOT confer super-admin', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: VALID_USER }, error: null });
+    adminQueue.users_core = [
+      {
+        data: {
+          id: 'user-1',
+          center_id: CENTER_ID,
+          role: 'super_admin',
+          phone: '+201000000000',
+        },
+        error: null,
+      },
+    ];
+    adminQueue.admin_users = [{ data: null, error: null }];
+    adminQueue.users_perms = [{ data: null, error: null }];
+
+    const result = await requireCenterAuth(
+      makeRequest({ centerIdHeader: 'center-victim' }),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.isSuperAdmin).toBe(false);
+    // x-center-id MUST be ignored — caller is pinned to their own centre.
+    expect(result.centerId).toBe(CENTER_ID);
+  });
+
+  it('regression: users.role="super_admin" cannot override centerId via ?center_id query', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: VALID_USER }, error: null });
+    adminQueue.users_core = [
+      {
+        data: {
+          id: 'user-1',
+          center_id: CENTER_ID,
+          role: 'super_admin',
+          phone: '+201000000000',
+        },
+        error: null,
+      },
+    ];
+    adminQueue.admin_users = [{ data: null, error: null }];
+    adminQueue.users_perms = [{ data: null, error: null }];
+
+    const result = await requireCenterAuth(
+      makeRequest({ centerIdQuery: 'center-victim' }),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.isSuperAdmin).toBe(false);
+    expect(result.centerId).toBe(CENTER_ID);
+  });
+
+  it('phone-based super-admin (SUPER_ADMIN_PHONES) overrides centerId from x-center-id', async () => {
+    const PREV_PHONES = process.env.SUPER_ADMIN_PHONES;
+    process.env.SUPER_ADMIN_PHONES = '+201234567890';
+    try {
+      mockGetUser.mockResolvedValueOnce({ data: { user: VALID_USER }, error: null });
+      adminQueue.users_core = [
+        {
+          data: {
+            id: 'user-1',
+            center_id: CENTER_ID,
+            role: 'owner',
+            phone: '+201234567890',
+          },
+          error: null,
+        },
+      ];
+      adminQueue.admin_users = [{ data: null, error: null }];
+      adminQueue.users_perms = [{ data: null, error: null }];
+
+      const result = await requireCenterAuth(
+        makeRequest({ centerIdHeader: 'center-override' }),
+      );
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.isSuperAdmin).toBe(true);
+      expect(result.centerId).toBe('center-override');
+    } finally {
+      process.env.SUPER_ADMIN_PHONES = PREV_PHONES;
+    }
+  });
+
+  it('returns isSuperAdmin=false for ordinary owner with no admin_users row', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: VALID_USER }, error: null });
+    adminQueue.users_core = [
+      {
+        data: {
+          id: 'user-1',
+          center_id: CENTER_ID,
+          role: 'owner',
+          phone: '+201000000000',
+        },
+        error: null,
+      },
+    ];
+    adminQueue.admin_users = [{ data: null, error: null }];
+    adminQueue.users_perms = [{ data: null, error: null }];
+
+    const result = await requireCenterAuth(makeRequest());
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.isSuperAdmin).toBe(false);
+    expect(result.role).toBe('owner');
   });
 });

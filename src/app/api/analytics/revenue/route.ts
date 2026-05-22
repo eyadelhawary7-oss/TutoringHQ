@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { isSuperAdminPhone } from '@/lib/admin-access';
 
 const EMPTY_ANALYTICS_PAYLOAD = {
   mrr: 0,
@@ -60,7 +61,7 @@ async function getAnalyticsAuth(request: NextRequest): Promise<AnalyticsAuthCont
 
   const { data: userRecord } = await supabaseAdmin
     .from('users')
-    .select('id, center_id, role')
+    .select('id, center_id, phone')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -68,8 +69,11 @@ async function getAnalyticsAuth(request: NextRequest): Promise<AnalyticsAuthCont
 
   if (!userRecord && !adminRecord) return null;
 
-  const role = String((userRecord as { role?: string } | null)?.role ?? '');
-  const isSuperAdmin = role === 'super_admin' || !!adminRecord;
+  // Super-admin authority comes from admin_users + SUPER_ADMIN_PHONES only.
+  // Never trust `users.role` — it is the centre-tenant role and is writable by
+  // centre admins (was the source of a prior privilege-escalation P0).
+  const phone = (userRecord as { phone?: string | null } | null)?.phone ?? null;
+  const isSuperAdmin = !!adminRecord || isSuperAdminPhone(phone);
 
   let centerId = (userRecord as { center_id?: string | null } | null)?.center_id ?? null;
   const qp = request.nextUrl.searchParams.get('center_id');
