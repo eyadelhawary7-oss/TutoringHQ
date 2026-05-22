@@ -30,6 +30,10 @@ import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { type InactivePeriod, type InactiveStudent } from '@/components/dashboard/InactiveList';
 import { ClientOnly } from '@/components/ClientOnly';
 import {
+  readDashboardCache as readScopedDashboardCache,
+  writeDashboardCache as writeScopedDashboardCache,
+} from '@/lib/dashboardCache';
+import {
   QrCode,
   TrendingUp,
   TrendingDown,
@@ -120,8 +124,6 @@ type AtRiskRow = {
   attendance_rate_pct?: number;
 };
 
-const DASHBOARD_CACHE_KEY = 'chq_dashboard_cache_v5';
-
 const EMPTY_DASHBOARD_DATA: DashboardData = {
   todayAttendance: 0,
   totalStudents: 0,
@@ -164,19 +166,6 @@ function isDashboardCacheValid(p: unknown): p is DashboardData {
     typeof (row as { dayKey: unknown }).dayKey === 'string' &&
     typeof (row as { count: unknown }).count === 'number'
   );
-}
-
-function readDashboardCache(): DashboardData | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = sessionStorage.getItem(DASHBOARD_CACHE_KEY);
-    if (!raw) return null;
-    const p = JSON.parse(raw) as unknown;
-    if (!isDashboardCacheValid(p)) return null;
-    return p;
-  } catch {
-    return null;
-  }
 }
 
 function atRiskAttendanceIndicator(daysSinceLastScan: number): number {
@@ -272,7 +261,7 @@ export default function DashboardPage() {
 
   const [centerBilling, setCenterBilling] = useState<{ payment_due_date?: string; billing_status?: string; name?: string; plan?: string } | null>(null);
   const [planUsage, setPlanUsage] = useState<{ plan: string; weeklyUniqueStudents: number; studentLimit: number } | null>(null);
-  const [data, setData] = useState<DashboardData | null>(() => readDashboardCache());
+  const [data, setData] = useState<DashboardData | null>(null);
   const [dashboardDataFresh, setDashboardDataFresh] = useState(false);
   const [inactivePeriod, setInactivePeriod] = useState<InactivePeriod>('7d');
   const [timeRange, setTimeRange] = useState<'7' | '30'>('7');
@@ -585,16 +574,18 @@ export default function DashboardPage() {
         generatedAt: new Date().toISOString(),
       };
       setData(next);
-      try {
-        sessionStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(next));
-      } catch {
-        /* private mode / quota */
+      if (user?.id) {
+        writeScopedDashboardCache({
+          scope: { userId: user.id, centerId: cId },
+          data: next,
+          storage: typeof window !== 'undefined' ? window.sessionStorage : null,
+        });
       }
       setDashboardDataFresh(true);
     } catch (err) {
       console.error('Dashboard load error:', err);
     }
-  }, [tCommon]);
+  }, [tCommon, user?.id]);
 
   useEffect(() => {
     const init = async () => {
@@ -654,6 +645,20 @@ export default function DashboardPage() {
     };
     init();
   }, []);
+
+  // Rehydrate from the scoped session cache once we know who the caller is.
+  // Cache is scoped by user+center and TTL-bounded — see lib/dashboardCache.ts
+  // for why an unscoped key caused per-session "ghost counts".
+  useEffect(() => {
+    if (!user?.id || !centerId) return;
+    const cached = readScopedDashboardCache<DashboardData>({
+      scope: { userId: user.id, centerId },
+      now: Date.now(),
+      storage: typeof window !== 'undefined' ? window.sessionStorage : null,
+      validate: isDashboardCacheValid,
+    });
+    if (cached) setData(cached);
+  }, [user?.id, centerId]);
 
   useEffect(() => {
     if (centerId) {
