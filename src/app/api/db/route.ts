@@ -14,6 +14,8 @@ import {
   applyForcedData,
   type Filter,
 } from '@/lib/dbProxyScope';
+import { isSuperAdminPhone } from '@/lib/admin-access';
+import { findProtectedUsersWrite } from '@/lib/dbProxyProtectedColumns';
 
 const VALID_OPERATIONS = ['select', 'insert', 'update', 'delete', 'count'] as const;
 type Operation = (typeof VALID_OPERATIONS)[number];
@@ -154,11 +156,13 @@ export async function POST(request: Request) {
     });
 
     // Derive caller identity from session: users row + admin_users membership.
-    // Mirrors centerAuth.ts:74-99 for super-admin detection.
+    // Mirrors centerAuth.ts for super-admin detection — `users.role` is NEVER a
+    // source of super-admin authority (it is centre-tenant-writable). Only
+    // `admin_users` membership and `SUPER_ADMIN_PHONES` confer the bypass.
     const [{ data: userRecord }, { data: adminRecord }] = await Promise.all([
       supabaseAdmin
         .from('users')
-        .select('center_id, role')
+        .select('center_id, phone')
         .eq('id', user.id)
         .maybeSingle(),
       supabaseAdmin
@@ -169,10 +173,29 @@ export async function POST(request: Request) {
     ]);
     const actorCenterId =
       (userRecord as { center_id?: string | null } | null)?.center_id ?? null;
-    const actorRoleFromUser = String(
-      (userRecord as { role?: string } | null)?.role ?? '',
-    );
-    const isSuperAdmin = actorRoleFromUser === 'super_admin' || !!adminRecord;
+    const actorPhone =
+      (userRecord as { phone?: string | null } | null)?.phone ?? null;
+    const isSuperAdmin = !!adminRecord || isSuperAdminPhone(actorPhone);
+
+    // Defense-in-depth: block centre callers from writing authority-conferring
+    // columns on `users` via the legacy proxy. Super-admins (admin_users/phone)
+    // still need this path for tenant management.
+    if (
+      table === 'users' &&
+      (op === 'insert' || op === 'update') &&
+      !isSuperAdmin
+    ) {
+      const protectedKey = findProtectedUsersWrite(data);
+      if (protectedKey) {
+        return NextResponse.json(
+          {
+            error: `Writing column '${protectedKey}' on users is not permitted via the proxy`,
+            code: 'USERS_PROTECTED_COLUMN',
+          },
+          { status: 403 },
+        );
+      }
+    }
 
     // Tenant scoping: pure decision based on table + caller identity.
     const filtersArr: Filter[] | undefined = Array.isArray(filters)

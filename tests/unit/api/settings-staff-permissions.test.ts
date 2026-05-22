@@ -66,6 +66,7 @@ function makeOwnerAuth(supabaseAdmin: SupabaseClient, role = 'owner'): CenterAut
     userId: 'owner-user-id',
     centerId: 'center-1',
     role,
+    isSuperAdmin: false,
     permissions: ALL_FALSE_PERMS,
     supabaseAdmin,
   };
