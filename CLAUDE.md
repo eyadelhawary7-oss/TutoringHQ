@@ -84,7 +84,7 @@ Most business logic lives in **`src/lib/`** as standalone modules. Prefer import
 - **Payments** — `paymob/`, `paymob.ts`, `combinedPaymentFinalize.ts`, `invoicePaymobPayment.ts`, `paymobGuardLogic.ts` (gates live/test mode by `VERCEL_ENV` + `NEXT_PHASE`). HMAC verification via `verifyHmac.ts`.
 - **Shipping** — `bosta.ts`, `bostaShipping.ts`, `autoBookBosta.ts`. Zones and rates from `loadBostaShippingRates`.
 - **WhatsApp** — `whatsapp.ts`, `whatsapp/`, `wa_templates` table, `whatsapp-pack.ts`. Phone-number-id has three env aliases (`WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_PHONE_ID`, `PHONE_NUMBER_ID`); code reads all three.
-- **Scanner / offline** — `scanner/`, `db.ts` (IndexedDB via `idb`), `offlineDb.ts`, `sync.ts`. Scanner inserts use `/api/db` with Upstash rate-limiting.
+- **Scanner / offline** — `scanner/`, `db.ts` (IndexedDB via `idb`), `sync.ts`. Scanner inserts use `/api/db` with Upstash rate-limiting.
 - **Card orders** — `card-order-cart/`, `cardOrderState.ts`, `cardOrderPayment.ts`, `cardOrderNotifications.ts`. Sample students rule: paid card orders with **blank line items only** keep roster students eligible for recommendations.
 - **Auth / admin gating** — `admin-access.ts`, `admin-auth.ts`, `admin-check.ts`, `admin-roles.ts`, `requireOwnerAdminCenter.ts`, `centerAuth.ts`, `centerPermissions.ts`. Super-admin is **phone-based** via `SUPER_ADMIN_PHONES` env + `isSuperAdminPhone()`, NOT solely a DB role.
 
