@@ -1062,7 +1062,9 @@
     "register": "Register your center",
     "localeToggleAria": "Switch language",
     "smsTooMany": "Too many SMS attempts",
-    "otpError": "OTP error"
+    "otpError": "OTP error",
+    "accountLocked": "Too many failed attempts. This account is temporarily locked. Try again in 15 minutes or reset your PIN.",
+    "authSystemError": "We could not reach the sign-in service. Please try again in a moment."
   },
   "forgotPassword": {
     "title": "Reset PIN",

@@ -110,78 +110,92 @@ export default function LoginPage() {
 
       setResumeSignup(null);
 
-      const { data, error: loginError } = await supabase.auth.signInWithPassword({
-        email: lookupData.email,
-        password: pin,
+      const verifyRes = await fetch('/api/auth/login-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, pin }),
       });
+      const verifyData = (await verifyRes.json().catch(() => ({}))) as { error?: string };
 
-      if (loginError) {
-        setError(t('invalidCredentials'));
+      if (!verifyRes.ok) {
+        if (verifyRes.status === 423 || verifyData.error === 'ACCOUNT_LOCKED') {
+          setError(t('accountLocked'));
+        } else if (verifyRes.status >= 500 || verifyData.error === 'auth_system_error') {
+          setError(t('authSystemError'));
+        } else {
+          setError(t('invalidCredentials'));
+        }
         shakePinField();
         setIsLoading(false);
         return;
       }
 
-      if (data.user) {
-        const {
-          data: { session },
-          error: sessionErr,
-        } = await supabase.auth.getSession();
-        if (sessionErr && !isRefreshTokenNotFoundError(sessionErr)) {
-          /* non-public noise only */
-        }
-        if (!session) return;
+      // Server set the @supabase/ssr cookies on its response. The browser
+      // client reads from those same cookies, so getSession() now returns the
+      // freshly-established session.
+      const {
+        data: { session },
+        error: sessionErr,
+      } = await supabase.auth.getSession();
+      if (sessionErr && !isRefreshTokenNotFoundError(sessionErr)) {
+        /* non-public noise only */
+      }
+      if (!session) {
+        setError(t('authSystemError'));
+        shakePinField();
+        setIsLoading(false);
+        return;
+      }
 
-        const checkRes = await fetch('/api/admin/check', {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        const checkData = await checkRes.json();
-        if (checkData.isAdmin) {
-          router.replace('/admin');
-          return;
-        }
+      const checkRes = await fetch('/api/admin/check', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const checkData = await checkRes.json();
+      if (checkData.isAdmin) {
+        router.replace('/admin');
+        return;
+      }
 
-        const res = await fetch('/api/auth/check-invite', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        const result = await res.json();
+      const res = await fetch('/api/auth/check-invite', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const result = await res.json();
 
-        if (result.centerId) {
-          let targetLocale = 'ar';
-          try {
-            const { data: userData } = await supabase
-              .from('users')
-              .select('preferred_locale')
-              .eq('id', data.user.id)
-              .maybeSingle();
-            if (userData?.preferred_locale === 'ar' || userData?.preferred_locale === 'en') {
-              targetLocale = userData.preferred_locale;
-            }
-          } catch {
-            // Fallback silently - never block login
+      if (result.centerId) {
+        let targetLocale = 'ar';
+        try {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('preferred_locale')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          if (userData?.preferred_locale === 'ar' || userData?.preferred_locale === 'en') {
+            targetLocale = userData.preferred_locale;
           }
-          const targetPath = result.needsOnboarding ? '/onboarding' : '/dashboard';
-          router.push(targetPath, { locale: targetLocale as 'en' | 'ar' });
-        } else if (result.contactSales) {
-          setError(t('contactSales'));
-          shakePinField();
-        } else {
-          let targetLocale = 'ar';
-          try {
-            const { data: userData } = await supabase
-              .from('users')
-              .select('preferred_locale')
-              .eq('id', data.user.id)
-              .maybeSingle();
-            if (userData?.preferred_locale === 'ar' || userData?.preferred_locale === 'en') {
-              targetLocale = userData.preferred_locale;
-            }
-          } catch {
-            // Fallback silently - never block login
-          }
-          router.push('/onboarding', { locale: targetLocale as 'en' | 'ar' });
+        } catch {
+          // Fallback silently - never block login
         }
+        const targetPath = result.needsOnboarding ? '/onboarding' : '/dashboard';
+        router.push(targetPath, { locale: targetLocale as 'en' | 'ar' });
+      } else if (result.contactSales) {
+        setError(t('contactSales'));
+        shakePinField();
+      } else {
+        let targetLocale = 'ar';
+        try {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('preferred_locale')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          if (userData?.preferred_locale === 'ar' || userData?.preferred_locale === 'en') {
+            targetLocale = userData.preferred_locale;
+          }
+        } catch {
+          // Fallback silently - never block login
+        }
+        router.push('/onboarding', { locale: targetLocale as 'en' | 'ar' });
       }
     } catch {
       setError(t('invalidCredentials'));
