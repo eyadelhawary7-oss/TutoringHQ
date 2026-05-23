@@ -1,10 +1,12 @@
+import { randomBytes } from 'crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import bcrypt from 'bcryptjs';
+import * as Sentry from '@sentry/nextjs';
 import { createAction } from '@/lib/ceo';
 import { isTemplateApproved, sendWelcomeTemplate } from '@/lib/centerNotify';
 import { generateReferralCode } from '@/lib/referral';
 import { todayISO } from '@/lib/parentPack';
 import { normalizePhone } from '@/lib/utils/phone';
+import { issueForWebhook as issuePinSetupTokenForWebhook } from '@/lib/pinSetupTokens';
 import {
   getChargeFromQuarterlyAllIn,
   isPlanKey,
@@ -396,13 +398,15 @@ export async function processInvoiceSignupAfterPaymobSuccess(
     return;
   }
 
-  const pin = Math.floor(100000 + Math.random() * 900000).toString();
-  const hashedPin = await bcrypt.hash(pin, 10);
+  // Placeholder password — 256 bits of entropy, never told to anyone. Overwritten
+  // by /api/auth/set-initial-pin once the owner chooses their own PIN. Until
+  // then, public.users.pin_code stays NULL, which is the "no PIN yet" gate.
+  const placeholderPassword = randomBytes(32).toString('base64url');
   const authEmail = `${phoneDigits}@centerhq.local`;
 
   const { data: authData, error: createAuthError } = await supabase.auth.admin.createUser({
     email: authEmail,
-    password: pin,
+    password: placeholderPassword,
     email_confirm: true,
   });
 
@@ -434,7 +438,10 @@ export async function processInvoiceSignupAfterPaymobSuccess(
     role: 'owner',
     phone: normalizedPhone,
     name: (c.owner_name as string) ?? c.name ?? null,
-    pin_code: hashedPin,
+    // pin_code stays NULL until the owner sets their PIN via /set-pin. Routes
+    // gate on this column to distinguish "owner has not yet set a PIN" from
+    // "owner has a PIN and wants to change it" (change-pin's job).
+    pin_code: null,
     preferred_locale: 'ar',
     can_scan: true,
     can_view_payments: true,
@@ -455,6 +462,22 @@ export async function processInvoiceSignupAfterPaymobSuccess(
     await supabase.auth.admin.deleteUser(userId);
     await supabase.from('centers').update({ status: 'pending' }).eq('id', centerId);
     return;
+  }
+
+  // Set-PIN grant: webhook-issued row marks the user as eligible for the
+  // owner-chooses-their-own-PIN onboarding flow. Idempotent against webhook
+  // replays via the pin_setup_tokens_one_live_webhook_per_user_idx unique
+  // index. Failure here MUST NOT roll back the user / activation — the owner
+  // can recover via /api/auth/request-pin-setup-link — but it MUST surface to
+  // Sentry so ops sees a degraded onboarding state.
+  try {
+    await issuePinSetupTokenForWebhook(supabase, { userId });
+  } catch (e) {
+    Sentry.captureException(e, {
+      tags: { source: 'signupPaymobAutoApprove', step: 'issuePinSetupToken' },
+      extra: { centerId, userId },
+    });
+    console.error('[signupInvoiceAutoApprove] issuePinSetupToken', e);
   }
 
   const pkTyped = isPlanKey(planKey) ? planKey : 'starter';

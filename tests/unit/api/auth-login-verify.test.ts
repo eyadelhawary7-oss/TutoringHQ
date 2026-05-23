@@ -88,8 +88,12 @@ beforeEach(() => {
   vi.mocked(parseBodyWithLimit).mockImplementation(async (req) =>
     JSON.parse(await (req as Request).text()),
   );
-  // Default: redis is offline (clearLockoutCounter is a no-op).
-  vi.mocked(getUpstashRedis).mockReturnValue(null);
+  // Default: Upstash IS configured (route fails CLOSED at this call site when
+  // Redis is missing; tests that want to assert that behavior override per-case).
+  const fakeRedis = { del: vi.fn().mockResolvedValue(1) };
+  vi.mocked(getUpstashRedis).mockReturnValue(
+    fakeRedis as unknown as ReturnType<typeof getUpstashRedis>,
+  );
   // Default: signInWithPassword fails with wrong-PIN shape unless overridden.
   mockSignInWithPassword.mockResolvedValue({ data: null, error: WRONG_PIN_ERROR });
 });
@@ -218,6 +222,39 @@ describe('POST /api/auth/login-verify — per-phone lockout', () => {
     expect(res.status).toBe(502);
     const body = (await res.json()) as { error: string };
     expect(body.error).toBe('auth_system_error');
+    expect(vi.mocked(Sentry.captureException)).toHaveBeenCalled();
+  });
+
+  it('FAILS CLOSED with 503 + Sentry when Upstash is not configured (cannot evaluate lockout)', async () => {
+    vi.mocked(getUpstashRedis).mockReturnValue(null);
+
+    const res = await POST(makeRequest({ phone: VALID_PHONE, pin: VALID_PIN }));
+    expect(res.status).toBe(503);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe('auth_system_error');
+    expect(res.headers.get('Retry-After')).not.toBeNull();
+
+    // Critical: the route MUST NOT attempt Supabase signin when lockout cannot
+    // be evaluated. Otherwise we would silently allow unlimited attempts.
+    expect(mockSignInWithPassword).not.toHaveBeenCalled();
+
+    // Loud Sentry alert (not a silent pass).
+    expect(vi.mocked(Sentry.captureMessage)).toHaveBeenCalledWith(
+      expect.stringContaining('login-verify: Upstash not configured'),
+      expect.objectContaining({ level: 'error' }),
+    );
+  });
+
+  it('FAILS CLOSED with 503 + Sentry when the rate-limit store throws (transient Redis error)', async () => {
+    vi.mocked(rateLimit).mockRejectedValueOnce(new Error('Upstash REST timeout'));
+
+    const res = await POST(makeRequest({ phone: VALID_PHONE, pin: VALID_PIN }));
+    expect(res.status).toBe(503);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe('auth_system_error');
+    expect(res.headers.get('Retry-After')).not.toBeNull();
+
+    expect(mockSignInWithPassword).not.toHaveBeenCalled();
     expect(vi.mocked(Sentry.captureException)).toHaveBeenCalled();
   });
 
