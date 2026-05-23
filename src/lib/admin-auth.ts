@@ -3,12 +3,21 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { isSuperAdminPhone } from '@/lib/admin-access';
+import { phoneFromCenterhqAuthEmail } from '@/lib/ownerPhone';
 
 export type InternalRole = 'super_admin' | 'internal_admin' | 'internal_viewer';
 
 export interface AdminContext {
   userId: string;
   internalRole: InternalRole;
+  /**
+   * Raw admin_users.role value (or null for SUPER_ADMIN_PHONES super-admins,
+   * who have no admin_users row). Surfaced so role gates can distinguish
+   * roles that collapse to the same internalRole (e.g. accountant vs.
+   * support_agent both map to internal_viewer but only accountant should
+   * see /api/admin/finance).
+   */
+  adminRole: string | null;
   supabaseAdmin: SupabaseClient;
 }
 
@@ -83,7 +92,18 @@ export async function getAdminContext(request: Request): Promise<AdminContext | 
     .eq('id', user.id)
     .maybeSingle();
 
-  const adminByPhone = isSuperAdminPhone(userRecord?.phone ?? null);
+  // Phone source: derive from the auth.users.email local-part. CenterHQ uses
+  // phone+PIN auth where the auth email is `<phonedigits>@centerhq.local`;
+  // `auth.users.phone` is left null. The email is set server-side by
+  // `auth.admin.createUser` and is NOT writable via the /api/db proxy. We
+  // still consult auth.users.phone (future-proofing) and public.users.phone
+  // (defence-in-depth, blocked at the proxy) before giving up.
+  const emailPhone = phoneFromCenterhqAuthEmail(
+    (user as { email?: string | null }).email,
+  );
+  const sessionPhone = (user as { phone?: string | null }).phone ?? null;
+  const effectivePhone = emailPhone ?? sessionPhone ?? userRecord?.phone ?? null;
+  const adminByPhone = isSuperAdminPhone(effectivePhone);
 
   // admin_users (and SUPER_ADMIN_PHONES) are the only source of truth for internal
   // admin roles. public.users.role is the center-side role (owner/assistant/…) and
@@ -111,7 +131,12 @@ export async function getAdminContext(request: Request): Promise<AdminContext | 
     internalRole = 'internal_viewer';
   }
 
-  return { userId: user.id, internalRole, supabaseAdmin };
+  return {
+    userId: user.id,
+    internalRole,
+    adminRole: adminRow?.role ?? null,
+    supabaseAdmin,
+  };
 }
 
 /** Informational hierarchy for future use; gates use explicit role names / internalRole, not numeric comparison. */
@@ -129,8 +154,14 @@ export const ROLE_HIERARCHY: Record<string, number> = {
 function internalRolePermitted(ctx: AdminContext, permitted: ReadonlyArray<string>): boolean {
   const superOnly = permitted.length === 1 && permitted[0] === 'super_admin';
   if (superOnly) return ctx.internalRole === 'super_admin';
+  // super_admin always satisfies any non-super-only gate.
+  if (ctx.internalRole === 'super_admin') return true;
+  // Direct match on raw admin_users.role: lets gates discriminate roles that
+  // collapse to the same internalRole (e.g. 'accountant' vs 'support_agent'
+  // both map to 'internal_viewer' but only 'accountant' should see finance).
+  if (ctx.adminRole && permitted.includes(ctx.adminRole)) return true;
   if (permitted.includes('super_admin') && permitted.includes('admin')) {
-    return ctx.internalRole === 'super_admin' || ctx.internalRole === 'internal_admin';
+    return ctx.internalRole === 'internal_admin';
   }
   return permitted.includes(ctx.internalRole);
 }

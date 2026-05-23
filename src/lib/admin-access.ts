@@ -1,10 +1,33 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { phoneFromCenterhqAuthEmail } from '@/lib/ownerPhone';
 
-/** Env-based phone super-admins (same list as admin-auth). */
+/**
+ * Normalise a phone candidate to digits-only so format differences between
+ * `auth.users.phone` (typically E.164 without `+`) and SUPER_ADMIN_PHONES
+ * entries (often with `+`) do not let one form pass while the other fails.
+ */
+function normalisePhoneForCompare(raw: string | null | undefined): string {
+  if (!raw) return '';
+  return String(raw).replace(/\D/g, '');
+}
+
+/**
+ * Env-based phone super-admins. Compares digit-equivalent values so the
+ * verified-session phone (auth.users.phone) and SUPER_ADMIN_PHONES entries
+ * match regardless of leading `+` / spacing. The caller should prefer the
+ * Supabase-Auth-verified session phone (centerAuth/admin-auth pass user.phone
+ * from getUser()) over public.users.phone, which is centre-tenant data.
+ */
 export function isSuperAdminPhone(phone: string | null): boolean {
+  const candidate = normalisePhoneForCompare(phone);
+  if (!candidate) return false;
   const admins = process.env.SUPER_ADMIN_PHONES || '';
-  return !!phone && admins.split(',').map((p: string) => p.trim()).includes(phone);
+  return admins
+    .split(',')
+    .map((p) => normalisePhoneForCompare(p))
+    .filter(Boolean)
+    .includes(candidate);
 }
 
 /**
@@ -29,12 +52,53 @@ export type AdminAccessFlags = {
   customPermissionKeys: string[];
 };
 
+/**
+ * Resolve the auth-authoritative phone for `userId`.
+ *
+ * CenterHQ uses phone+PIN auth where every account is created with an email
+ * of the form `<phonedigits>@centerhq.local` (see `auth.admin.createUser` in
+ * signupPaymobAutoApprove / admin/centers / accept-invite). `auth.users.phone`
+ * is left null in this flow. The email local-part IS the verified phone
+ * identity , it is set server-side and is NOT writable via the /api/db proxy.
+ *
+ * Order of preference:
+ *   1. auth.users.email local-part (the real CenterHQ identity source).
+ *   2. auth.users.phone (in case Supabase phone-OTP is ever enabled).
+ *   3. public.users.phone (defence-in-depth; dbProxyProtectedColumns blocks
+ *      writes to this column at the proxy, so this is a non-authoritative
+ *      compatibility fallback).
+ */
+async function resolveAuthPhone(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.auth.admin.getUserById(userId);
+    if (!error && data?.user) {
+      const emailPhone = phoneFromCenterhqAuthEmail(data.user.email);
+      if (emailPhone) return emailPhone;
+      if (data.user.phone) return data.user.phone;
+    }
+  } catch {
+    /* fall through to public.users.phone */
+  }
+  const { data: userRow } = await supabase
+    .from('users')
+    .select('phone')
+    .eq('id', userId)
+    .maybeSingle();
+  return (userRow as { phone?: string | null } | null)?.phone ?? null;
+}
+
 export async function fetchAdminAccessFlags(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<AdminAccessFlags> {
-  const { data: userRow } = await supabase.from('users').select('phone').eq('id', userId).maybeSingle();
-  const phoneSuper = isSuperAdminPhone(userRow?.phone ?? null);
+  // Re-sourced (FIX 1b follow-up): use auth.users.phone, not public.users.phone.
+  // public.users.phone is centre-tenant data and was the prior storage path
+  // for super-admin escalation against SUPER_ADMIN_PHONES.
+  const sessionPhone = await resolveAuthPhone(supabase, userId);
+  const phoneSuper = isSuperAdminPhone(sessionPhone);
 
   const { data: adminUser } = await supabase
     .from('admin_users')
@@ -69,9 +133,9 @@ export async function requireSuperAdminRow(
     .eq('id', userId)
     .maybeSingle();
 
-  const { data: userRow } = await supabase.from('users').select('phone').eq('id', userId).maybeSingle();
-
-  const isSuperAdmin = adminUser?.role === 'super_admin' || isSuperAdminPhone(userRow?.phone ?? null);
+  // Re-sourced (FIX 1b follow-up): auth.users.phone, not public.users.phone.
+  const sessionPhone = await resolveAuthPhone(supabase, userId);
+  const isSuperAdmin = adminUser?.role === 'super_admin' || isSuperAdminPhone(sessionPhone);
 
   if (!isSuperAdmin) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

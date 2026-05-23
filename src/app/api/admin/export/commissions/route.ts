@@ -1,70 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-const supabaseAdmin =
-  supabaseUrl && supabaseServiceKey
-    ? createClient(supabaseUrl, supabaseServiceKey, {
-        auth: { persistSession: false, autoRefreshToken: false },
-      })
-    : null;
-
-async function getAdminUser(request: Request) {
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseAdmin) return null;
-
-  const cookieStore = await cookies();
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
-          });
-        } catch {
-          /* read-only cookie context */
-        }
-      },
-    },
-  });
-
-  let userId: string | null = null;
-  const {
-    data: { user: cookieUser },
-  } = await supabase.auth.getUser();
-  if (cookieUser) userId = cookieUser.id;
-  else {
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.slice(7);
-      const {
-        data: { user: bearerUser },
-        error,
-      } = await supabase.auth.getUser(token);
-      if (bearerUser && !error) userId = bearerUser.id;
-    }
-  }
-
-  if (!userId) return null;
-  const { data: adminUser } = await supabaseAdmin.from('admin_users').select('id,role').eq('id', userId).single();
-  if (adminUser) return adminUser;
-  const { data: userRecord } = await supabaseAdmin.from('users').select('phone').eq('id', userId).single();
-  const phones = (process.env.SUPER_ADMIN_PHONES || '')
-    .split(',')
-    .map((p: string) => p.trim())
-    .filter(Boolean);
-  if (userRecord?.phone && phones.includes(String(userRecord.phone))) {
-    return { id: userId, role: 'super_admin' as const };
-  }
-  return null;
-}
+import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
 
 function toCSV(rows: Record<string, unknown>[]): string {
   if (!rows.length) return '';
@@ -78,20 +13,17 @@ function toCSV(rows: Record<string, unknown>[]): string {
 }
 
 export async function GET(request: Request) {
-  if (!supabaseAdmin) {
-    return NextResponse.json({ errorKey: 'admin.export.configError' }, { status: 500 });
-  }
-
-  const admin = await getAdminUser(request);
-  if (!admin) {
+  const ctx = await getAdminContext(request);
+  if (!ctx) {
     return NextResponse.json({ errorKey: 'admin.export.unauthorized' }, { status: 401 });
   }
+  // Pre-launch gate: commission CSV export is super_admin only, matching the
+  // prior restriction (admin.role !== 'super_admin' → 403). The broader
+  // 'accountant'-allowed gate was a regression in the previous round.
+  const denied = requireAdminRole(ctx, ['super_admin']);
+  if (denied) return denied;
 
-  if (admin.role !== 'super_admin') {
-    return NextResponse.json({ errorKey: 'commissions.errors.forbidden' }, { status: 403 });
-  }
-
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await ctx.supabaseAdmin
     .from('commissions')
     .select(
       `

@@ -1,7 +1,7 @@
 import 'server-only';
 import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getAdminContext } from '@/lib/admin-auth';
+import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
 import { parseIncludeTestCenters } from '@/lib/adminIncludeTest';
 import type {
   FinanceAtRiskCenter,
@@ -41,6 +41,12 @@ export async function GET(request: Request) {
   if (!ctx) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  // PDPL: aggregate centre financials are accountant-and-above only. Roles
+  // collapsing to internal_viewer (sales_rep / support_agent / custom) must
+  // not read this data.
+  const denied = requireAdminRole(ctx, ['super_admin', 'admin', 'internal_admin', 'accountant']);
+  if (denied) return denied;
 
   const includeTest = parseIncludeTestCenters(request);
   const data = await getFinanceData(ctx.supabaseAdmin, includeTest);

@@ -1,10 +1,11 @@
 // /api/admin/pricing-config
 //
-// GET  : returns the full pricing config snapshot (any admin role).
+// GET  : returns the full pricing config snapshot (super_admin / admin / internal_admin).
 // PATCH: upserts the supplied subset of keys into platform_config (super_admin only).
 //
 // Audit: one row per save with action = 'pricing_config_updated', user_id = ctx.userId,
-// and details = { changed_keys: [...] }. Key names only — never the values.
+// and details = { changes: [{ key, old, new }, ...], save_source }. Old + new values
+// are recorded so a destructive pricing change is reversible from the audit trail.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
@@ -16,6 +17,7 @@ import {
   type BannerStyle,
 } from '@/lib/pricingConfig';
 import { upsertPlatformConfigRowUpdateInsert } from '@/lib/platformConfigWrite';
+import { buildPricingConfigAuditDetails } from '@/lib/pricingConfigAudit';
 
 type PatchBody = Partial<{
   interval: Partial<{
@@ -65,6 +67,11 @@ function isStr(v: unknown): v is string {
 export async function GET(request: NextRequest) {
   const ctx = await getAdminContext(request);
   if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Tighter than the finance gate: pricing config drives revenue, so only
+  // super_admin / admin / internal_admin can see it. Accountants get
+  // aggregate financials but not the raw multipliers.
+  const denied = requireAdminRole(ctx, ['super_admin', 'admin', 'internal_admin']);
+  if (denied) return denied;
   const snapshot = await getPricingConfigSnapshot();
   return NextResponse.json({ config: snapshot });
 }
@@ -212,6 +219,23 @@ export async function PATCH(request: NextRequest) {
   const saveSource =
     request.headers.get('x-chq-pricing-save-source') ?? request.headers.get('X-CHQ-Pricing-Save-Source') ?? 'unknown';
 
+  // Capture prior values per key BEFORE writing, so the audit row records the
+  // before/after pair. Missing rows (first write of a key) report old=null.
+  const priorByKey = new Map<string, unknown>();
+  {
+    const keysToFetch = updates.map((u) => u.key);
+    const { data: priorRows } = await ctx.supabaseAdmin
+      .from('platform_config')
+      .select('key, value')
+      .in('key', keysToFetch);
+    for (const row of priorRows ?? []) {
+      const r = row as { key?: string; value?: unknown };
+      if (typeof r.key === 'string') {
+        priorByKey.set(r.key, r.value ?? null);
+      }
+    }
+  }
+
   for (const u of updates) {
     const trigger = `[PATCH /api/admin/pricing-config] save_source=${saveSource} platform_config.key=${u.key}`;
     const result = await upsertPlatformConfigRowUpdateInsert(
@@ -233,7 +257,7 @@ export async function PATCH(request: NextRequest) {
     await ctx.supabaseAdmin.from('audit_log').insert({
       user_id: ctx.userId,
       action: 'pricing_config_updated',
-      details: { changed_keys: updates.map((u) => u.key) },
+      details: buildPricingConfigAuditDetails(updates, priorByKey, saveSource),
     });
   } catch (auditErr) {
     console.error('[PATCH /api/admin/pricing-config] audit_log', auditErr);

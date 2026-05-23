@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAdminContext } from '@/lib/admin-auth';
+import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
 import { derivePaymentProofColumns } from '@/lib/paymentProofDisplay';
 import { adminBillingRecordSchema, adminBillingInvoiceSchema } from '@/lib/validations';
 import { validateCSRFRequest } from '@/lib/csrf';
@@ -38,6 +38,15 @@ export async function GET(request: Request) {
   try {
     const ctx = await getAdminContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // PDPL: per-centre billing data is accountant-and-above only.
+    const denied = requireAdminRole(ctx, [
+      'super_admin',
+      'admin',
+      'internal_admin',
+      'accountant',
+    ]);
+    if (denied) return denied;
 
     const { supabaseAdmin } = ctx;
 

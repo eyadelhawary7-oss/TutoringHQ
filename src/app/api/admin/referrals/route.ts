@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
 
 async function ensureAdmin(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -31,8 +32,12 @@ async function ensureAdmin(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const ctx = await ensureAdmin(request);
+    const ctx = await getAdminContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // PDPL: referrals data carries centre names + commission amounts.
+    // accountant-and-above only.
+    const denied = requireAdminRole(ctx, ['super_admin', 'admin', 'internal_admin', 'accountant']);
+    if (denied) return denied;
 
     const { data: referrals } = await ctx.supabaseAdmin
       .from('referrals')
