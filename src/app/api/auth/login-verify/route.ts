@@ -55,6 +55,13 @@ function isSystemAuthError(err: { status?: number; code?: string } | null): bool
  * Public. Performs phone+PIN authentication SERVER-side and writes the
  * @supabase/ssr cookie session onto the response so middleware and subsequent
  * fetches see the same session the old browser-side flow produced.
+ *
+ * Lockout fails CLOSED at this call site (config missing or Redis error → 503,
+ * Sentry alert). The global rateLimit helper fails OPEN by design (acceptable
+ * for scanner / promo limits where availability matters more than the cap).
+ * For an auth credential lockout the inverse is correct: a brief 503 window
+ * during an Upstash outage is a tolerable customer-facing degradation; a
+ * silently disabled brute-force protection is not.
  */
 export async function POST(request: NextRequest) {
   let body: unknown;
@@ -82,12 +89,47 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 });
   }
 
-  // Per-PHONE lockout — counted regardless of source IP.
-  const { success: phoneOk, reset: phoneReset } = await rateLimit(
-    lockoutKey(normalizedPhone),
-    LOGIN_LOCKOUT_MAX,
-    LOGIN_LOCKOUT_WINDOW_SECS,
-  );
+  // Per-PHONE lockout — counted regardless of source IP. The global rateLimit()
+  // helper fails OPEN when Upstash is unavailable (acceptable for scanner /
+  // promo limits). For an auth-credential lockout it is the wrong default:
+  // silently disabling brute-force protection during an Upstash outage gives an
+  // attacker a window to exhaust the 1,000,000-PIN keyspace. We override the
+  // default HERE (only at this call site) to fail CLOSED with a loud Sentry
+  // alert. The tradeoff is documented in the route header comment above.
+  if (getUpstashRedis() === null) {
+    Sentry.captureMessage(
+      'login-verify: Upstash not configured — refusing login, brute-force protection unavailable',
+      {
+        level: 'error',
+        tags: { route: 'login-verify', reason: 'redis_not_configured' },
+      },
+    );
+    return NextResponse.json(
+      { error: 'auth_system_error', retry_after: 10 },
+      { status: 503, headers: { 'Retry-After': '10' } },
+    );
+  }
+
+  let phoneOk: boolean;
+  let phoneReset: number;
+  try {
+    const result = await rateLimit(
+      lockoutKey(normalizedPhone),
+      LOGIN_LOCKOUT_MAX,
+      LOGIN_LOCKOUT_WINDOW_SECS,
+    );
+    phoneOk = result.success;
+    phoneReset = result.reset;
+  } catch (e) {
+    Sentry.captureException(e, {
+      tags: { route: 'login-verify', step: 'lockout_evaluate', reason: 'redis_error' },
+    });
+    return NextResponse.json(
+      { error: 'auth_system_error', retry_after: 10 },
+      { status: 503, headers: { 'Retry-After': '10' } },
+    );
+  }
+
   if (!phoneOk) {
     const retryAfter = Math.max(1, Math.ceil(phoneReset - Date.now() / 1000));
     return NextResponse.json(

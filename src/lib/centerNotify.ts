@@ -70,6 +70,7 @@ const TEMPLATE_PARENT_ANNOUNCEMENT_PROMO = 'chq_parent_announcement_promo';
 const TEMPLATE_PARENT_ANNOUNCEMENT_OPS = 'chq_parent_announcement_ops';
 const TEMPLATE_PARENT_TERM_SUMMARY = 'chq_parent_term_summary';
 const TEMPLATE_PIN_DELIVERY = 'chq_pin_delivery';
+const TEMPLATE_PIN_SETUP_LINK = 'chq_pin_setup_link';
 
 function serviceSupabase(): SupabaseClient | null {
   return supabaseAdmin;
@@ -1399,6 +1400,33 @@ export async function sendParentTermSummary(
 }
 
 /** Sends WhatsApp template `chq_pin_delivery` with the OTP (requires approved template + WA). */
+/**
+ * Set-PIN link for the cross-device / closed-tab fallback (Option B onboarding).
+ * Body parameter is the full URL the owner taps to land on /set-pin?t=<token>.
+ * Distinct Meta template from chq_pin_delivery so the OTP path stays unchanged.
+ */
+export async function sendPinSetupLink(phone: string, setupUrl: string): Promise<boolean> {
+  try {
+    if (shouldSkipWaForTestPhoneId()) return false;
+    const supabase = serviceSupabase();
+    if (!supabase) return false;
+    if (!(await canSendApprovedTemplate(supabase, TEMPLATE_PIN_SETUP_LINK))) return false;
+    const to = digitsOnly(phone);
+    if (!to) return false;
+    const url = setupUrl.trim();
+    if (!url) return false;
+    return await postWhatsappTemplate({
+      templateName: TEMPLATE_PIN_SETUP_LINK,
+      languageCode: 'ar_EG',
+      toDigits: to,
+      bodyParameters: [url],
+    });
+  } catch (err) {
+    console.error('[centerNotify] sendPinSetupLink:', err);
+    return false;
+  }
+}
+
 export async function sendPinDelivery(phone: string, otpCode: string): Promise<boolean> {
   try {
     if (shouldSkipWaForTestPhoneId()) return false;
