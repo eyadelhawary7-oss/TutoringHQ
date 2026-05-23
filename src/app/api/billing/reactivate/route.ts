@@ -17,7 +17,8 @@ import { parseBodyWithLimit } from '@/lib/validate';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
-  const auth = await requireCenterAuth(request);
+  // allowSuspended: suspended owners must be able to pay to reactivate.
+  const auth = await requireCenterAuth(request, { allowSuspended: true });
   if (!auth.ok) return auth.response;
   if (auth.role !== 'owner') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

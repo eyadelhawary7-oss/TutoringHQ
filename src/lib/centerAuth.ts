@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { isSuperAdminPhone } from '@/lib/admin-access';
+import { phoneFromCenterhqAuthEmail } from '@/lib/ownerPhone';
 
 export type CenterPermissions = {
   can_record_payments: boolean;
@@ -19,7 +20,20 @@ export type CenterAuthErrorCode =
   | 'NO_BEARER'
   | 'TOKEN_INVALID'
   | 'NO_USER_ROW'
-  | 'NO_CENTER_ID';
+  | 'NO_CENTER_ID'
+  | 'CENTER_SUSPENDED'
+  | 'CENTER_BLACKLISTED';
+
+export type RequireCenterAuthOptions = {
+  /**
+   * When true, a centre whose `status='suspended'` or `is_blacklisted=true`
+   * may still pass auth. Only the reactivation / pay routes should opt in
+   * (a suspended owner needs to be able to pay to come back online).
+   *
+   * Default: false , the gate is on for every centre-side route by default.
+   */
+  allowSuspended?: boolean;
+};
 
 export type CenterAuthOk = {
   ok: true;
@@ -62,6 +76,10 @@ function unauthorized(code: CenterAuthErrorCode): NextResponse {
   return NextResponse.json({ error: 'Unauthorized', code }, { status: 401 });
 }
 
+function suspended(code: 'CENTER_SUSPENDED' | 'CENTER_BLACKLISTED'): NextResponse {
+  return NextResponse.json({ error: 'Center access blocked', code }, { status: 403 });
+}
+
 /**
  * Center-side API auth (Bearer access token). Returns service-role client for server updates.
  *
@@ -72,7 +90,10 @@ function unauthorized(code: CenterAuthErrorCode): NextResponse {
  * out for nine days. The CORE select carries only the columns auth needs; the
  * PERMISSIONS select is best-effort and warns in Sentry on failure instead of 401ing.
  */
-export async function requireCenterAuth(request: NextRequest): Promise<CenterAuthOk | CenterAuthFail> {
+export async function requireCenterAuth(
+  request: NextRequest,
+  options: RequireCenterAuthOptions = {},
+): Promise<CenterAuthOk | CenterAuthFail> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -158,12 +179,27 @@ export async function requireCenterAuth(request: NextRequest): Promise<CenterAut
   }
 
   const roleFromUser = String((userRecord as { role?: string } | null)?.role ?? '');
-  const userPhone = (userRecord as { phone?: string | null } | null)?.phone ?? null;
   // Authoritative super-admin sources only. NEVER trust `users.role` here:
   // `public.users.role` is the centre-tenant role (owner/assistant/…) and is
   // writable by centre admins via /api/db. A prior P0 let `users.role =
   // 'super_admin'` elevate centerAuth and pivot cross-tenant via
   // `?center_id=` / `x-center-id`.
+  //
+  // Phone source: derive from the auth.users.email local-part. CenterHQ uses
+  // phone+PIN auth where the auth email is `<phonedigits>@centerhq.local`,
+  // set by `auth.admin.createUser({ email })` at signup; `auth.users.phone`
+  // is left null. The email is the structural identity , it is set by us
+  // server-side and is NOT writable via the /api/db proxy. Falling back to
+  // auth.users.phone (in case Supabase phone-OTP is ever enabled) and then
+  // public.users.phone (defence-in-depth, blocked at the proxy by
+  // dbProxyProtectedColumns) preserves backward compatibility, but the email
+  // path engages for every real centre/admin account today.
+  const emailPhone = phoneFromCenterhqAuthEmail(
+    (user as { email?: string | null }).email,
+  );
+  const sessionPhone = (user as { phone?: string | null }).phone ?? null;
+  const userPhone =
+    emailPhone ?? sessionPhone ?? (userRecord as { phone?: string | null } | null)?.phone ?? null;
   const isSuperAdmin = !!adminRecord || isSuperAdminPhone(userPhone);
   const effectiveRole = isSuperAdmin && !userRecord ? 'super_admin' : roleFromUser;
 
@@ -178,6 +214,31 @@ export async function requireCenterAuth(request: NextRequest): Promise<CenterAut
 
   if (!centerId) {
     return { ok: false, response: unauthorized('NO_CENTER_ID') };
+  }
+
+  // Suspension / blacklist gate. Previously enforced only by the middleware,
+  // which skips `/api/*` routes (src/proxy.ts) , so a suspended or blacklisted
+  // centre retained full API access by talking to the API directly. Now the
+  // gate sits in centerAuth so every centre-side route inherits it from one
+  // place. Super-admins (admin_users / SUPER_ADMIN_PHONES) bypass for support
+  // workflows; the reactivation routes opt in via `allowSuspended: true` so a
+  // suspended owner can still pay to come back online.
+  if (!isSuperAdmin && !options.allowSuspended) {
+    const { data: centerStatusRow } = await admin
+      .from('centers')
+      .select('status, is_blacklisted')
+      .eq('id', centerId)
+      .maybeSingle();
+
+    const csr = centerStatusRow as
+      | { status?: string | null; is_blacklisted?: boolean | null }
+      | null;
+    if (csr?.is_blacklisted === true) {
+      return { ok: false, response: suspended('CENTER_BLACKLISTED') };
+    }
+    if (csr && String(csr.status ?? '').toLowerCase() === 'suspended') {
+      return { ok: false, response: suspended('CENTER_SUSPENDED') };
+    }
   }
 
   // PERMISSIONS lookup: best-effort. If a can_* column is missing (schema drift)

@@ -24,7 +24,9 @@ export const dynamic = 'force-dynamic';
  * billing period. Auth-gated to suspended owners — never trusts client input for center_id.
  */
 export async function GET(request: NextRequest) {
-  const auth = await requireCenterAuth(request);
+  // allowSuspended: this route only makes sense for a suspended centre, so it
+  // opts out of the centerAuth suspension gate.
+  const auth = await requireCenterAuth(request, { allowSuspended: true });
   if (!auth.ok) return auth.response;
   if (auth.role !== 'owner') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

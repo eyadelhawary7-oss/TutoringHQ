@@ -15,7 +15,10 @@ import {
   type Filter,
 } from '@/lib/dbProxyScope';
 import { isSuperAdminPhone } from '@/lib/admin-access';
-import { findProtectedUsersWrite } from '@/lib/dbProxyProtectedColumns';
+import {
+  findProtectedCardOrdersWrite,
+  findProtectedUsersWrite,
+} from '@/lib/dbProxyProtectedColumns';
 
 const VALID_OPERATIONS = ['select', 'insert', 'update', 'delete', 'count'] as const;
 type Operation = (typeof VALID_OPERATIONS)[number];
@@ -191,6 +194,30 @@ export async function POST(request: Request) {
           {
             error: `Writing column '${protectedKey}' on users is not permitted via the proxy`,
             code: 'USERS_PROTECTED_COLUMN',
+          },
+          { status: 403 },
+        );
+      }
+    }
+
+    // Defense-in-depth: block centre callers from writing card_orders columns
+    // that drive payment / fulfillment lifecycle. The cardOrderState machine
+    // is advisory and the table is direct-scope, so without this gate a centre
+    // could PATCH status='paid' / payment_status='paid' via /api/db and skip
+    // payment entirely. Legitimate writes (checkout, Paymob webhook, admin
+    // transitions, Bosta webhook) all go through service-role clients on
+    // dedicated routes, never the proxy.
+    if (
+      table === 'card_orders' &&
+      (op === 'insert' || op === 'update') &&
+      !isSuperAdmin
+    ) {
+      const protectedKey = findProtectedCardOrdersWrite(data);
+      if (protectedKey) {
+        return NextResponse.json(
+          {
+            error: `Writing column '${protectedKey}' on card_orders is not permitted via the proxy`,
+            code: 'CARD_ORDERS_PROTECTED_COLUMN',
           },
           { status: 403 },
         );

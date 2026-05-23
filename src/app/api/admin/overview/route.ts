@@ -33,6 +33,9 @@ export async function GET(request: Request) {
     // Try cookie-based auth first (auth-helpers)
     let supabaseAdmin: SupabaseClient | null = null;
     let internalRole = 'internal_viewer';
+    // Raw admin_users.role so we can gate roles that collapse to internal_viewer
+    // (e.g. accountant). null for SUPER_ADMIN_PHONES super-admins.
+    let adminRole: string | null = null;
 
     if (supabaseUrl && supabaseAnonKey) {
       const cookieStore = await cookies();
@@ -60,6 +63,7 @@ export async function GET(request: Request) {
         if (adminUser || isPhoneAdmin) {
           supabaseAdmin = adminClient;
           internalRole = isPhoneAdmin || adminUser?.role === 'super_admin' || adminUser?.role === 'admin' ? 'super_admin' : (adminUser?.role === 'internal_admin' ? 'internal_admin' : 'internal_viewer');
+          adminRole = adminUser?.role ?? null;
         }
       }
     }
@@ -70,12 +74,37 @@ export async function GET(request: Request) {
       if (ctx) {
         supabaseAdmin = ctx.supabaseAdmin;
         internalRole = ctx.internalRole;
+        adminRole = ctx.adminRole;
       }
     }
 
     if (!supabaseAdmin) {
       console.error('[admin/overview] ❌ Unauthorized: no valid session or admin access');
       return NextResponse.json({ error: 'Unauthorized - admin access required' }, { status: 401 });
+    }
+
+    // PDPL gate: aggregate centre data (names, phones, plans, prices) is
+    // accountant-and-above only. Roles collapsing to internal_viewer
+    // (sales_rep / support_agent / custom) must not read this.
+    const FINANCE_GATE: ReadonlyArray<string> = [
+      'super_admin',
+      'admin',
+      'internal_admin',
+      'accountant',
+    ];
+    const isAllowed =
+      internalRole === 'super_admin' ||
+      internalRole === 'internal_admin' ||
+      (adminRole !== null && FINANCE_GATE.includes(adminRole));
+    if (!isAllowed) {
+      return NextResponse.json(
+        {
+          error: 'insufficient_admin_role',
+          required: FINANCE_GATE,
+          current: internalRole,
+        },
+        { status: 403 },
+      );
     }
 
     const includeTestCenters = parseIncludeTestCenters(request);

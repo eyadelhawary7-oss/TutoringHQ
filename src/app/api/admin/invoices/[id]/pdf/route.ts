@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminContext } from '@/lib/admin-auth';
+import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
 import { generateInvoicePdf } from '@/lib/generateInvoicePdf';
 
 export const dynamic = 'force-dynamic';
@@ -14,6 +14,9 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    // PDPL: per-centre invoice PDF is accountant-and-above.
+    const denied = requireAdminRole(ctx, ['super_admin', 'admin', 'internal_admin', 'accountant']);
+    if (denied) return denied;
 
     const { id: invoiceId } = await context.params;
     if (!invoiceId?.trim()) {

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAdminContext } from '@/lib/admin-auth';
+import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
 
 type AuditRow = {
   id: string;
@@ -13,6 +13,10 @@ type AuditRow = {
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const ctx = await getAdminContext(_request);
   if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Per-centre audit log reveals admin actions. Tighter than the finance
+  // gate, no accountant (consistent with the security audit-log dump).
+  const denied = requireAdminRole(ctx, ['super_admin', 'admin', 'internal_admin']);
+  if (denied) return denied;
 
   const { id } = await params;
 

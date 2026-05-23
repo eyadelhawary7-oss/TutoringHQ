@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAdminContext } from '@/lib/admin-auth';
+import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
 
 interface AuditLogRow {
   id: string;
@@ -21,6 +21,10 @@ export async function GET(request: Request) {
     if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized - admin access required' }, { status: 401 });
     }
+    // Audit-log dump exposes admin actions across all centres. Tighter than
+    // the finance gate, no accountant.
+    const denied = requireAdminRole(ctx, ['super_admin', 'admin', 'internal_admin']);
+    if (denied) return denied;
 
     const { supabaseAdmin } = ctx;
     const url = new URL(request.url);
