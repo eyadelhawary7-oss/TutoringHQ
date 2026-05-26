@@ -45,6 +45,13 @@ export async function POST(request: NextRequest) {
     }
     const { name, email, phone, role, custom_permissions } = parsed.data;
 
+    // Defense-in-depth: never allow super_admin to be assigned via the API,
+    // independent of the Zod enum. super_admin is conferred only by seed SQL
+    // and SUPER_ADMIN_PHONES, never by a team-management write.
+    if ((role as string) === 'super_admin') {
+      return NextResponse.json({ error: 'Cannot assign super_admin role', code: 'ROLE_ESCALATION_FORBIDDEN' }, { status: 403 });
+    }
+
     // Format phone: remove non-digits, ensure starts with 20 (Egypt)
     let formattedPhone = phone.replace(/\D/g, '');
     if (formattedPhone.startsWith('0')) formattedPhone = formattedPhone.slice(1);
@@ -138,6 +145,13 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
     const { memberId, role, custom_permissions, password } = parsed.data;
+
+    // Defense-in-depth: never allow promotion to super_admin via the API,
+    // independent of the Zod enum. super_admin is conferred only by seed SQL
+    // and SUPER_ADMIN_PHONES, never by a team-management write.
+    if ((role as string) === 'super_admin') {
+      return NextResponse.json({ error: 'Cannot assign super_admin role', code: 'ROLE_ESCALATION_FORBIDDEN' }, { status: 403 });
+    }
 
     // Password confirmation required for changing another admin's role
     const accessToken = request.headers.get('Authorization')?.replace('Bearer ', '') ?? '';
