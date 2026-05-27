@@ -52,25 +52,68 @@ export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
 
-export const metadata: Metadata = {
-  title: {
-    template: '%s | CenterHQ',
-    default: 'CenterHQ',
-  },
-  description: 'إدارة السناتر التعليمية - حضور QR، مدفوعات، تقارير',
-  manifest: '/manifest.webmanifest',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'black-translucent',
-    title: 'CenterHQ',
-  },
-  icons: {
-    apple: '/icons/icon-192.png',
-  },
-  other: {
-    'mobile-web-app-capable': 'yes',
-  },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const isAr = locale === 'ar';
+  const description = isAr
+    ? 'نظام إدارة السنترات التعليمية في مصر. حضور QR، متابعة الطلاب، فواتير تلقائية وإشعارات واتساب.'
+    : "Egypt's tutoring center operating system. QR attendance, student tracking, automated billing & WhatsApp notifications.";
+
+  return {
+    metadataBase: new URL('https://centerhq.app'),
+    title: {
+      template: '%s | CenterHQ',
+      default: 'CenterHQ – نظام إدارة السنترات التعليمية',
+    },
+    description,
+    keywords: [
+      'سنتر تعليمي',
+      'نظام إدارة سنتر',
+      'حضور QR',
+      'برنامج سنتر مصر',
+      'tutoring center management Egypt',
+      'center management system',
+      'QR system for centers',
+      'CenterHQ',
+    ],
+    alternates: {
+      canonical: '/',
+    },
+    openGraph: {
+      title: 'CenterHQ – نظام إدارة السنترات التعليمية',
+      description,
+      url: 'https://centerhq.app',
+      siteName: 'CenterHQ',
+      locale: isAr ? 'ar_EG' : 'en_US',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'CenterHQ – نظام إدارة السنترات التعليمية',
+      description,
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+    manifest: '/manifest.webmanifest',
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: 'black-translucent',
+      title: 'CenterHQ',
+    },
+    icons: {
+      apple: '/icons/icon-192.png',
+    },
+    other: {
+      'mobile-web-app-capable': 'yes',
+    },
+  };
+}
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -117,6 +160,13 @@ export default async function LocaleLayout({
 })();
 `,
           }}
+        />
+        <link
+          rel="preload"
+          href="/fonts/Cairo-Regular.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
         />
         <link rel="icon" href="/logo-icon-64.png" type="image/png" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
