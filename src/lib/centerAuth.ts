@@ -22,7 +22,10 @@ export type CenterAuthErrorCode =
   | 'NO_USER_ROW'
   | 'NO_CENTER_ID'
   | 'CENTER_SUSPENDED'
-  | 'CENTER_BLACKLISTED';
+  | 'CENTER_BLACKLISTED'
+  | 'TEACHER_NOT_MEMBER'
+  | 'TEACHER_NO_CENTER_CONTEXT'
+  | 'NOT_A_TEACHER';
 
 export type RequireCenterAuthOptions = {
   /**
@@ -78,6 +81,10 @@ function unauthorized(code: CenterAuthErrorCode): NextResponse {
 
 function suspended(code: 'CENTER_SUSPENDED' | 'CENTER_BLACKLISTED'): NextResponse {
   return NextResponse.json({ error: 'Center access blocked', code }, { status: 403 });
+}
+
+function forbidden(code: CenterAuthErrorCode): NextResponse {
+  return NextResponse.json({ error: 'Forbidden', code }, { status: 403 });
 }
 
 /**
@@ -212,6 +219,42 @@ export async function requireCenterAuth(
     centerId = qp;
   }
 
+  // Teacher branch (Model B). Teachers are centre-less on public.users
+  // (center_id is NULL, same branch as super_admin). A teacher reaches a
+  // centre-scoped route only by naming a centre they are an ACTIVE member of,
+  // via ?center_id= or the x-center-id header. Membership lives in
+  // teacher_center.teacher_id, which stores the user id directly
+  // (teacher_center.teacher_id -> teacher_profiles.user_id -> users.id, one uuid).
+  // A teacher naming no centre is in their private context, which this helper
+  // does not serve, so return a distinct code and let the route use
+  // requireTeacherAuth. On success centerId is the named member centre, a
+  // non-null string, so no downstream route sees a nullable centre.
+  if (effectiveRole === 'teacher') {
+    if (!qp) {
+      return { ok: false, response: forbidden('TEACHER_NO_CENTER_CONTEXT') };
+    }
+    const { data: memberships, error: membershipErr } = await admin
+      .from('teacher_center')
+      .select('center_id')
+      .eq('teacher_id', user.id)
+      .eq('status', 'active');
+    if (membershipErr) {
+      Sentry.withScope((scope) => {
+        scope.setTag('route', 'centerAuth');
+        scope.setTag('step', 'teacher_membership_lookup');
+        Sentry.captureException(membershipErr);
+      });
+      return { ok: false, response: unauthorized('TOKEN_INVALID') };
+    }
+    const memberCenterIds = new Set(
+      (memberships ?? []).map((m: { center_id: string }) => m.center_id),
+    );
+    if (!memberCenterIds.has(qp)) {
+      return { ok: false, response: forbidden('TEACHER_NOT_MEMBER') };
+    }
+    centerId = qp;
+  }
+
   if (!centerId) {
     return { ok: false, response: unauthorized('NO_CENTER_ID') };
   }
@@ -288,4 +331,102 @@ export async function requireCenterAuth(
     permissions,
     supabaseAdmin: admin,
   };
+}
+
+export type TeacherAuthOk = {
+  ok: true;
+  userId: string;
+  centerIds: string[];
+  supabaseAdmin: SupabaseClient;
+};
+
+/**
+ * Centre-less teacher auth (Model B). For routes serving a teacher in their
+ * private context where there is no single centre. Returns the teacher user id
+ * and the set of centres they are an active member of (may be empty for a pure
+ * private teacher). Suspension is NOT gated here, SELECT is never
+ * suspension-gated; every teacher WRITE carries NOT is_auth_teacher_suspended()
+ * in RLS and the RPCs.
+ */
+export async function requireTeacherAuth(
+  request: NextRequest,
+): Promise<TeacherAuthOk | CenterAuthFail> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Server misconfigured' }, { status: 500 }),
+    };
+  }
+
+  const authHeader = request.headers.get('Authorization');
+  const accessToken = authHeader?.replace(/^Bearer\s+/i, '')?.trim();
+  if (!accessToken) {
+    return { ok: false, response: unauthorized('NO_BEARER') };
+  }
+
+  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+  });
+
+  const {
+    data: { user },
+    error: authErr,
+  } = await supabaseAuth.auth.getUser();
+  if (authErr || !user) {
+    return { ok: false, response: unauthorized('TOKEN_INVALID') };
+  }
+
+  let admin: SupabaseClient;
+  try {
+    admin = getSupabaseAdmin();
+  } catch {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Server misconfigured' }, { status: 500 }),
+    };
+  }
+
+  const { data: userRecord, error: coreErr } = await admin
+    .from('users')
+    .select('id, role')
+    .eq('id', user.id)
+    .maybeSingle();
+  if (coreErr) {
+    Sentry.withScope((scope) => {
+      scope.setTag('route', 'teacherAuth');
+      scope.setTag('step', 'core_user_lookup');
+      Sentry.captureException(coreErr);
+    });
+    return { ok: false, response: unauthorized('TOKEN_INVALID') };
+  }
+  if (!userRecord) {
+    return { ok: false, response: unauthorized('NO_USER_ROW') };
+  }
+  if (String((userRecord as { role?: string }).role ?? '') !== 'teacher') {
+    return { ok: false, response: forbidden('NOT_A_TEACHER') };
+  }
+
+  const { data: memberships, error: membershipErr } = await admin
+    .from('teacher_center')
+    .select('center_id')
+    .eq('teacher_id', user.id)
+    .eq('status', 'active');
+  if (membershipErr) {
+    Sentry.withScope((scope) => {
+      scope.setTag('route', 'teacherAuth');
+      scope.setTag('step', 'teacher_membership_lookup');
+      Sentry.captureException(membershipErr);
+    });
+    return { ok: false, response: unauthorized('TOKEN_INVALID') };
+  }
+
+  const centerIds = Array.from(
+    new Set((memberships ?? []).map((m: { center_id: string }) => m.center_id)),
+  );
+
+  return { ok: true, userId: user.id, centerIds, supabaseAdmin: admin };
 }
