@@ -47,12 +47,16 @@ export default async function DashboardRouteGroupLayout({
     }
 
     // --- V3 ONBOARDING GATE ---
-    if (user.role !== 'super_admin') {
+    // Centre-less users (Model B teachers, or any null center_id) skip the
+    // funnel entirely; onboarding is a centre concept. Guard removes the old
+    // user.center_id! assertion, which queried centers with id null.
+    if (user.role !== 'super_admin' && user.center_id) {
+      const centerId = user.center_id;
       try {
         const { data: centerData } = await supabaseAdmin
           .from('centers')
           .select('onboarding_step, onboarding_completed_at, status')
-          .eq('id', user.center_id!)
+          .eq('id', centerId)
           .single();
 
         if (centerData) {
