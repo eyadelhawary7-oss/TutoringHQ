@@ -55,6 +55,7 @@ export const TABLE_SCOPE: Record<string, ScopeRule> = {
 export type ScopeCtx = {
   isSuperAdmin: boolean;
   actorCenterId: string | null;
+  role?: string | null;
 };
 
 export type ScopePlan =
@@ -84,6 +85,25 @@ export function planScope(input: ScopeInput): ScopePlan {
       status: 400,
       code: 'TABLE_NOT_ALLOWED',
       message: `Table '${table}' is not allowed`,
+    };
+  }
+
+  // Teachers (Model B, centre-less) are intentionally NOT served by the legacy
+  // /api/db proxy. The proxy's model is a single actorCenterId force-applied as
+  // full read/write over that one centre. That cannot express teacher scope:
+  // teachers span multiple centres, are read-only on a centre's groups, and may
+  // only touch rows in their OWN groups, not the whole centre. Mapping a teacher
+  // onto a centre here would over-share the centre's entire students, payments,
+  // and attendance. Teacher data access is built as dedicated group-scoped routes
+  // on requireTeacherAuth / requireCenterAuth with RLS underneath, never here.
+  // Guarded by !isSuperAdmin so a super-admin always bypasses regardless of role.
+  if (!ctx.isSuperAdmin && ctx.role === 'teacher') {
+    return {
+      kind: 'deny',
+      status: 403,
+      code: 'TEACHER_PROXY_UNSUPPORTED',
+      message:
+        'Teachers are not served by the legacy /api/db proxy; teacher data uses dedicated routes',
     };
   }
 

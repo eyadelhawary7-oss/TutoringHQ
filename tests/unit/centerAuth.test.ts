@@ -18,30 +18,50 @@ type AdminQueryResult = { data: unknown; error: { message: string } | null };
 const adminQueue: Record<string, AdminQueryResult[]> = {
   users_core: [],
   users_perms: [],
+  users_teacher: [],
   admin_users: [],
   centers: [],
+  teacher_center: [],
 };
+
+function resolveQuery(table: string, cols: string): AdminQueryResult {
+  if (table === 'admin_users') {
+    return adminQueue.admin_users.shift() ?? { data: null, error: null };
+  }
+  if (table === 'users') {
+    if (cols.includes('can_record_payments')) {
+      return adminQueue.users_perms.shift() ?? { data: null, error: null };
+    }
+    if (cols.includes('center_id')) {
+      return adminQueue.users_core.shift() ?? { data: null, error: null };
+    }
+    // requireTeacherAuth core lookup selects only `id, role`.
+    return adminQueue.users_teacher.shift() ?? { data: null, error: null };
+  }
+  if (table === 'centers') {
+    return adminQueue.centers.shift() ?? { data: null, error: null };
+  }
+  if (table === 'teacher_center') {
+    return adminQueue.teacher_center.shift() ?? { data: [], error: null };
+  }
+  return { data: null, error: null };
+}
 
 const mockGetSupabaseAdmin = vi.fn(() => ({
   from: (table: string) => ({
-    select: (cols: string) => ({
-      eq: () => ({
-        maybeSingle: async () => {
-          if (table === 'admin_users') {
-            return adminQueue.admin_users.shift() ?? { data: null, error: null };
-          }
-          if (table === 'users') {
-            const isCore = cols.includes('center_id') && !cols.includes('can_record_payments');
-            const queue = isCore ? adminQueue.users_core : adminQueue.users_perms;
-            return queue.shift() ?? { data: null, error: null };
-          }
-          if (table === 'centers') {
-            return adminQueue.centers.shift() ?? { data: null, error: null };
-          }
-          return { data: null, error: null };
-        },
-      }),
-    }),
+    select: (cols: string) => {
+      // Builder supports both `.eq().maybeSingle()` (single-row lookups) and
+      // `.eq().eq()` awaited directly (teacher_center membership list).
+      const builder = {
+        eq: () => builder,
+        maybeSingle: async () => resolveQuery(table, cols),
+        then: (
+          onFulfilled: (v: AdminQueryResult) => unknown,
+          onRejected?: (e: unknown) => unknown,
+        ) => Promise.resolve(resolveQuery(table, cols)).then(onFulfilled, onRejected),
+      };
+      return builder;
+    },
   }),
 }));
 
@@ -77,7 +97,7 @@ function makeRequest(opts: {
   } as unknown as NextRequest;
 }
 
-import { requireCenterAuth } from '@/lib/centerAuth';
+import { requireCenterAuth, requireTeacherAuth } from '@/lib/centerAuth';
 
 const VALID_USER = { id: 'user-1' };
 const CENTER_ID = 'center-1';
@@ -88,8 +108,10 @@ beforeEach(() => {
   mockSentryCaptureMessage.mockReset();
   adminQueue.users_core = [];
   adminQueue.users_perms = [];
+  adminQueue.users_teacher = [];
   adminQueue.admin_users = [];
   adminQueue.centers = [];
+  adminQueue.teacher_center = [];
 });
 
 describe('requireCenterAuth', () => {
@@ -214,6 +236,88 @@ describe('requireCenterAuth', () => {
     expect(result.response.status).toBe(401);
     const body = (await result.response.json()) as { error: string; code: string };
     expect(body.code).toBe('NO_CENTER_ID');
+  });
+
+  // Unchanged behaviour: an owner whose center_id is NULL and who names no
+  // centre still gets 401 NO_CENTER_ID — the teacher branch must not intercept
+  // a non-teacher role.
+  it('returns 401 NO_CENTER_ID for owner with null center_id and no center_id param (unchanged)', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: VALID_USER }, error: null });
+    adminQueue.users_core = [
+      { data: { id: 'user-1', center_id: null, role: 'owner' }, error: null },
+    ];
+    adminQueue.admin_users = [{ data: null, error: null }];
+
+    const result = await requireCenterAuth(makeRequest());
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.response.status).toBe(401);
+    const body = (await result.response.json()) as { error: string; code: string };
+    expect(body.code).toBe('NO_CENTER_ID');
+  });
+
+  // Teacher branch (Model B): a teacher names a centre they are an ACTIVE
+  // member of via ?center_id= → resolves to that centre, role stays 'teacher'.
+  it('teacher with ?center_id of an active teacher_center centre: ok with that centerId', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: VALID_USER }, error: null });
+    adminQueue.users_core = [
+      { data: { id: 'user-1', center_id: null, role: 'teacher', phone: null }, error: null },
+    ];
+    adminQueue.admin_users = [{ data: null, error: null }];
+    adminQueue.teacher_center = [
+      { data: [{ center_id: 'center-A' }, { center_id: 'center-B' }], error: null },
+    ];
+    adminQueue.users_perms = [{ data: null, error: null }];
+
+    const result = await requireCenterAuth(makeRequest({ centerIdQuery: 'center-A' }));
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.centerId).toBe('center-A');
+    expect(result.role).toBe('teacher');
+    expect(result.isSuperAdmin).toBe(false);
+  });
+
+  // Teacher names a centre they are NOT an active member of → 403 TEACHER_NOT_MEMBER.
+  it('teacher with ?center_id of a centre with no active membership: 403 TEACHER_NOT_MEMBER', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: VALID_USER }, error: null });
+    adminQueue.users_core = [
+      { data: { id: 'user-1', center_id: null, role: 'teacher', phone: null }, error: null },
+    ];
+    adminQueue.admin_users = [{ data: null, error: null }];
+    // Active memberships do not include center-victim (status-filtered in query).
+    adminQueue.teacher_center = [
+      { data: [{ center_id: 'center-A' }], error: null },
+    ];
+
+    const result = await requireCenterAuth(makeRequest({ centerIdQuery: 'center-victim' }));
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.response.status).toBe(403);
+    const body = (await result.response.json()) as { error: string; code: string };
+    expect(body.error).toBe('Forbidden');
+    expect(body.code).toBe('TEACHER_NOT_MEMBER');
+  });
+
+  // Teacher with no centre named is in their private context → 403
+  // TEACHER_NO_CENTER_CONTEXT (route should fall back to requireTeacherAuth).
+  it('teacher with no center_id param: 403 TEACHER_NO_CENTER_CONTEXT', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: VALID_USER }, error: null });
+    adminQueue.users_core = [
+      { data: { id: 'user-1', center_id: null, role: 'teacher', phone: null }, error: null },
+    ];
+    adminQueue.admin_users = [{ data: null, error: null }];
+
+    const result = await requireCenterAuth(makeRequest());
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.response.status).toBe(403);
+    const body = (await result.response.json()) as { error: string; code: string };
+    expect(body.error).toBe('Forbidden');
+    expect(body.code).toBe('TEACHER_NO_CENTER_CONTEXT');
   });
 
   it('returns 401 TOKEN_INVALID + Sentry exception when CORE users lookup itself errors', async () => {
@@ -621,5 +725,76 @@ describe('requireCenterAuth', () => {
     } finally {
       process.env.SUPER_ADMIN_PHONES = PREV;
     }
+  });
+});
+
+describe('requireTeacherAuth', () => {
+  it('returns ok with the active membership set for a teacher', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: VALID_USER }, error: null });
+    adminQueue.users_teacher = [
+      { data: { id: 'user-1', role: 'teacher' }, error: null },
+    ];
+    adminQueue.teacher_center = [
+      {
+        data: [
+          { center_id: 'center-A' },
+          { center_id: 'center-B' },
+          // Duplicate must be deduped by the Set.
+          { center_id: 'center-A' },
+        ],
+        error: null,
+      },
+    ];
+
+    const result = await requireTeacherAuth(makeRequest());
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.userId).toBe('user-1');
+    expect(result.centerIds.sort()).toEqual(['center-A', 'center-B']);
+    expect(result.supabaseAdmin).toBeDefined();
+  });
+
+  it('returns 403 NOT_A_TEACHER when the user role is owner', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: VALID_USER }, error: null });
+    adminQueue.users_teacher = [
+      { data: { id: 'user-1', role: 'owner' }, error: null },
+    ];
+
+    const result = await requireTeacherAuth(makeRequest());
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.response.status).toBe(403);
+    const body = (await result.response.json()) as { error: string; code: string };
+    expect(body.error).toBe('Forbidden');
+    expect(body.code).toBe('NOT_A_TEACHER');
+  });
+
+  it('returns ok with an empty membership set for a pure private teacher', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: VALID_USER }, error: null });
+    adminQueue.users_teacher = [
+      { data: { id: 'user-1', role: 'teacher' }, error: null },
+    ];
+    adminQueue.teacher_center = [{ data: [], error: null }];
+
+    const result = await requireTeacherAuth(makeRequest());
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.centerIds).toEqual([]);
+  });
+
+  it('returns 401 NO_USER_ROW when no users row exists', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: VALID_USER }, error: null });
+    adminQueue.users_teacher = [{ data: null, error: null }];
+
+    const result = await requireTeacherAuth(makeRequest());
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.response.status).toBe(401);
+    const body = (await result.response.json()) as { error: string; code: string };
+    expect(body.code).toBe('NO_USER_ROW');
   });
 });
