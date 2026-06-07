@@ -230,11 +230,15 @@ export async function sendAbsenceAlert(
     parent_consent_given?: boolean;
     notify_on_absence?: boolean;
     name?: string | null;
-    center_id?: string;
+    center_id?: string | null;
   } | null;
 
   if (!s?.parent_phone || !s.parent_consent_given || s.notify_on_absence === false) {
     return { success: false, error: 'Parent not consented or absence notifications disabled' };
+  }
+
+  if (!s.center_id) {
+    return { success: false, error: 'Student has no center' };
   }
 
   const { data: center } = await admin
@@ -251,7 +255,7 @@ export async function sendAbsenceAlert(
     '3': centerPhone,
   };
 
-  const result = await sendTemplateMessage(s.center_id!, s.parent_phone, TEMPLATE_ABSENCE, variables);
+  const result = await sendTemplateMessage(s.center_id, s.parent_phone, TEMPLATE_ABSENCE, variables);
   return { success: result.success, error: result.error };
 }
 
@@ -279,11 +283,15 @@ export async function sendBalanceAlert(
     notify_on_balance?: boolean;
     balance_alert_threshold?: number | null;
     name?: string | null;
-    center_id?: string;
+    center_id?: string | null;
   } | null;
 
   if (!s?.parent_phone || !s.parent_consent_given || s.notify_on_balance === false) {
     return { success: false, error: 'Parent not consented or balance notifications disabled' };
+  }
+
+  if (!s.center_id) {
+    return { success: false, error: 'Student has no center' };
   }
 
   const threshold = Number(s.balance_alert_threshold ?? 100);
@@ -296,6 +304,6 @@ export async function sendBalanceAlert(
     '2': formatNumber(params.balanceDue, 'ar'),
   };
 
-  const result = await sendTemplateMessage(s.center_id!, s.parent_phone, TEMPLATE_BALANCE, variables);
+  const result = await sendTemplateMessage(s.center_id, s.parent_phone, TEMPLATE_BALANCE, variables);
   return { success: result.success, error: result.error };
 }
