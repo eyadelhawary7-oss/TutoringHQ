@@ -75,14 +75,25 @@ export async function POST(request: NextRequest) {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    // Verify user belongs to center
+    // Payment-proof upload is a centre-owner billing action (mirrors the
+    // owner-only gate on /api/settings/billing). Teachers (Model B, centre-less)
+    // and assistants have no proof-upload flow and are denied by role here, not
+    // incidentally by the centre match. The teacher subscription is billed via
+    // Paymob recurring on the web, never an InstaPay proof upload.
     const { data: userRecord } = await supabaseAdmin
       .from('users')
-      .select('center_id')
+      .select('center_id, role')
       .eq('id', user.id)
       .single();
 
-    if (!userRecord?.center_id || userRecord.center_id !== centerId) {
+    const role = (userRecord as { role?: string | null } | null)?.role ?? null;
+    const userCenterId =
+      (userRecord as { center_id?: string | null } | null)?.center_id ?? null;
+
+    if (role !== 'owner') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    if (!userCenterId || userCenterId !== centerId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
