@@ -165,7 +165,7 @@ export async function POST(request: Request) {
     const [{ data: userRecord }, { data: adminRecord }] = await Promise.all([
       supabaseAdmin
         .from('users')
-        .select('center_id, phone')
+        .select('center_id, phone, role')
         .eq('id', user.id)
         .maybeSingle(),
       supabaseAdmin
@@ -178,6 +178,8 @@ export async function POST(request: Request) {
       (userRecord as { center_id?: string | null } | null)?.center_id ?? null;
     const actorPhone =
       (userRecord as { phone?: string | null } | null)?.phone ?? null;
+    const actorRole =
+      (userRecord as { role?: string | null } | null)?.role ?? null;
     const isSuperAdmin = !!adminRecord || isSuperAdminPhone(actorPhone);
 
     // Defense-in-depth: block centre callers from writing authority-conferring
@@ -232,7 +234,7 @@ export async function POST(request: Request) {
       table,
       operation: op,
       filters: filtersArr,
-      ctx: { isSuperAdmin, actorCenterId },
+      ctx: { isSuperAdmin, actorCenterId, role: actorRole },
     });
 
     if (plan.kind === 'deny') {

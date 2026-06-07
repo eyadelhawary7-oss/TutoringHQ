@@ -139,6 +139,90 @@ describe('planScope — forbidden tables', () => {
   });
 });
 
+describe('planScope — teacher deny (Model B, centre-less)', () => {
+  const ctxTeacher = { isSuperAdmin: false, actorCenterId: null, role: 'teacher' };
+
+  it('direct table (students) denies with TEACHER_PROXY_UNSUPPORTED', () => {
+    const plan = planScope({
+      table: 'students',
+      operation: 'select',
+      filters: undefined,
+      ctx: ctxTeacher,
+    });
+    expect(plan.kind).toBe('deny');
+    if (plan.kind === 'deny') {
+      expect(plan.status).toBe(403);
+      expect(plan.code).toBe('TEACHER_PROXY_UNSUPPORTED');
+    }
+  });
+
+  it('indirect table (student_group_members) denies with TEACHER_PROXY_UNSUPPORTED', () => {
+    const plan = planScope({
+      table: 'student_group_members',
+      operation: 'select',
+      filters: undefined,
+      ctx: ctxTeacher,
+    });
+    expect(plan.kind).toBe('deny');
+    if (plan.kind === 'deny') {
+      expect(plan.status).toBe(403);
+      expect(plan.code).toBe('TEACHER_PROXY_UNSUPPORTED');
+    }
+  });
+
+  it('forbidden table (demo_requests) denies with TEACHER_PROXY_UNSUPPORTED (precedes forbidden branch)', () => {
+    const plan = planScope({
+      table: 'demo_requests',
+      operation: 'select',
+      filters: undefined,
+      ctx: ctxTeacher,
+    });
+    expect(plan.kind).toBe('deny');
+    if (plan.kind === 'deny') {
+      expect(plan.status).toBe(403);
+      expect(plan.code).toBe('TEACHER_PROXY_UNSUPPORTED');
+    }
+  });
+
+  it('teacher with a stray non-null actorCenterId still denies, never falling through to direct scope', () => {
+    const plan = planScope({
+      table: 'students',
+      operation: 'select',
+      filters: undefined,
+      ctx: { isSuperAdmin: false, actorCenterId: 'some-uuid', role: 'teacher' },
+    });
+    expect(plan.kind).toBe('deny');
+    if (plan.kind === 'deny') {
+      expect(plan.status).toBe(403);
+      expect(plan.code).toBe('TEACHER_PROXY_UNSUPPORTED');
+    }
+  });
+
+  it('super-admin precedence: isSuperAdmin=true with role teacher still bypasses', () => {
+    const plan = planScope({
+      table: 'students',
+      operation: 'select',
+      filters: undefined,
+      ctx: { isSuperAdmin: true, actorCenterId: null, role: 'teacher' },
+    });
+    expect(plan.kind).toBe('super_admin_bypass');
+  });
+
+  it('regression: owner role on a direct table still returns the normal direct plan', () => {
+    const plan = planScope({
+      table: 'students',
+      operation: 'select',
+      filters: undefined,
+      ctx: { isSuperAdmin: false, actorCenterId: ACTOR, role: 'owner' },
+    });
+    expect(plan.kind).toBe('direct');
+    if (plan.kind === 'direct') {
+      expect(plan.column).toBe('center_id');
+      expect(plan.centerId).toBe(ACTOR);
+    }
+  });
+});
+
 describe('planScope — super-admin bypass', () => {
   it('super-admin can target any center on a direct-scope table', () => {
     const plan = planScope({
