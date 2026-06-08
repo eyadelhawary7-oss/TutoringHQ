@@ -3,6 +3,8 @@ import { routing } from './i18n/routing';
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { isSuspendedRouteExempt } from './lib/suspendedRouteExempt';
+import { isSuperAdminPhone } from './lib/admin-access';
+import { phoneFromCenterhqAuthEmail } from './lib/ownerPhone';
 
 export { isSuspendedRouteExempt as isSuspendedExempt } from './lib/suspendedRouteExempt';
 
@@ -115,6 +117,15 @@ function pathRequiresAuthentication(cleanPath: string): boolean {
   );
 }
 
+/**
+ * Reserved teacher namespace convention. No teacher pages exist yet, so this
+ * guard is dormant — but `/<locale>/teacher/*` is reserved for the teacher
+ * platform and center users (owner/assistant) must never reach it.
+ */
+function pathIsTeacherNamespace(cleanPath: string): boolean {
+  return cleanPath === '/teacher' || cleanPath.startsWith('/teacher/');
+}
+
 function isApiRoute(pathname: string): boolean {
   return apiRoutes.some(route => pathname.startsWith(route));
 }
@@ -219,9 +230,42 @@ export default async function proxy(request: NextRequest) {
     if (user) {
       const { data: userRecord } = await supabase
         .from('users')
-        .select('center_id')
+        .select('center_id, role')
         .eq('id', user.id)
         .single();
+
+      // A pure admin_users super-admin has no users row, so userRecord is null
+      // and both walls below are skipped for them anyway.
+      const isSuperAdmin = isSuperAdminPhone(phoneFromCenterhqAuthEmail(user.email));
+
+      // Center half (LIVE): teachers may not reach center routes.
+      if (
+        !isSuperAdmin &&
+        userRecord?.role === 'teacher' &&
+        pathRequiresAuthentication(cleanPathForAuth)
+      ) {
+        const localeSeg = pathname.startsWith('/ar') ? '/ar' : '/en';
+        const redirectResp = NextResponse.redirect(new URL(`${localeSeg}/login`, request.url));
+        storedCookies.forEach(({ name, value, options }) =>
+          redirectResp.cookies.set(name, value, options ?? {})
+        );
+        return applySecurityHeaders(redirectResp, requestId);
+      }
+
+      // Teacher half (DORMANT): center users may not reach /teacher/*.
+      if (
+        !isSuperAdmin &&
+        userRecord &&
+        userRecord.role !== 'teacher' &&
+        pathIsTeacherNamespace(cleanPathForAuth)
+      ) {
+        const localeSeg = pathname.startsWith('/ar') ? '/ar' : '/en';
+        const redirectResp = NextResponse.redirect(new URL(`${localeSeg}/dashboard`, request.url));
+        storedCookies.forEach(({ name, value, options }) =>
+          redirectResp.cookies.set(name, value, options ?? {})
+        );
+        return applySecurityHeaders(redirectResp, requestId);
+      }
 
       if (userRecord?.center_id) {
         const { data: center } = await supabase
