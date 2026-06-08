@@ -1,6 +1,6 @@
 /**
  * Parent communication suite — WhatsApp flows
- * Scan notifications, weekly summaries, absence alerts, balance alerts
+ * Scan notifications, weekly summaries
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -9,8 +9,6 @@ import { cairoYmdParts } from '@/lib/packBilling';
 import { sendTemplateMessage } from '../client';
 
 const TEMPLATE_SCAN = 'chq_scan_notification';
-const TEMPLATE_ABSENCE = 'chq_absence_alert';
-const TEMPLATE_BALANCE = 'chq_balance_alert';
 
 const CAIRO_TZ = 'Africa/Cairo';
 
@@ -205,97 +203,4 @@ export async function sendWeeklyAttendanceSummary(
   }
 
   return { sent, errors };
-}
-
-export interface SendAbsenceAlertParams {
-  studentId: string;
-  sessionTime: string;
-}
-
-/**
- * Send absence alert to parent with center phone for callback.
- */
-export async function sendAbsenceAlert(
-  params: SendAbsenceAlertParams
-): Promise<{ success: boolean; error?: string }> {
-  const admin = getSupabaseAdmin();
-  const { data: row } = await admin
-    .from('students')
-    .select('id, name, parent_phone, parent_consent_given, notify_on_absence, center_id')
-    .eq('id', params.studentId)
-    .single();
-
-  const s = row as {
-    parent_phone?: string | null;
-    parent_consent_given?: boolean;
-    notify_on_absence?: boolean;
-    name?: string | null;
-    center_id?: string;
-  } | null;
-
-  if (!s?.parent_phone || !s.parent_consent_given || s.notify_on_absence === false) {
-    return { success: false, error: 'Parent not consented or absence notifications disabled' };
-  }
-
-  const { data: center } = await admin
-    .from('centers')
-    .select('phone')
-    .eq('id', s.center_id)
-    .single();
-
-  const centerPhone = (center as { phone?: string | null } | null)?.phone ?? '';
-
-  const variables: Record<string, string> = {
-    '1': s.name ?? '',
-    '2': params.sessionTime,
-    '3': centerPhone,
-  };
-
-  const result = await sendTemplateMessage(s.center_id!, s.parent_phone, TEMPLATE_ABSENCE, variables);
-  return { success: result.success, error: result.error };
-}
-
-export interface SendBalanceAlertParams {
-  studentId: string;
-  balanceDue: number;
-}
-
-/**
- * Send balance alert only if balance > threshold.
- */
-export async function sendBalanceAlert(
-  params: SendBalanceAlertParams
-): Promise<{ success: boolean; error?: string }> {
-  const admin = getSupabaseAdmin();
-  const { data: student } = await admin
-    .from('students')
-    .select('id, name, parent_phone, parent_consent_given, notify_on_balance, balance_alert_threshold, center_id')
-    .eq('id', params.studentId)
-    .single();
-
-  const s = student as {
-    parent_phone?: string | null;
-    parent_consent_given?: boolean;
-    notify_on_balance?: boolean;
-    balance_alert_threshold?: number | null;
-    name?: string | null;
-    center_id?: string;
-  } | null;
-
-  if (!s?.parent_phone || !s.parent_consent_given || s.notify_on_balance === false) {
-    return { success: false, error: 'Parent not consented or balance notifications disabled' };
-  }
-
-  const threshold = Number(s.balance_alert_threshold ?? 100);
-  if (params.balanceDue <= threshold) {
-    return { success: false, error: 'Balance below threshold' };
-  }
-
-  const variables: Record<string, string> = {
-    '1': s.name ?? '',
-    '2': formatNumber(params.balanceDue, 'ar'),
-  };
-
-  const result = await sendTemplateMessage(s.center_id!, s.parent_phone, TEMPLATE_BALANCE, variables);
-  return { success: result.success, error: result.error };
 }
