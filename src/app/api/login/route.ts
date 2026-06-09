@@ -69,16 +69,59 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Phone number not registered' },
-        { status: 404 }
-      );
-    }
-
     // Auth email format: phoneDigits@centerhq.local (matches signup/accept-invite)
     const phoneDigits = normalizedPhone.replace(/\D/g, '');
     const emailForAuth = `${phoneDigits}@centerhq.local`;
+
+    if (!user) {
+      // No public.users row. The phone may still belong to an internal/admin-only
+      // account: super-admins and internal team have an admin_users row but NO
+      // public.users row (see getAdminContext and centerAuth, which already treat
+      // such users as super_admin with center_id null). Resolve those here so the
+      // shared login page can proceed to /api/auth/login-verify and then
+      // /api/admin/check, which routes them to /admin.
+      //
+      // admin_users is keyed by auth.users.id and is NOT writable via the /api/db
+      // proxy, so it is a safe source of truth. We match the same phone identity
+      // the rest of the app uses, without an auth-schema lookup (auth is not
+      // exposed to PostgREST and supabase-js has no getUserByEmail):
+      //   - email column: the derived `<digits>@centerhq.local` auth email
+      //     (audit/seed internal accounts store the auth email here), OR
+      //   - phone column: the E.164 phone or its bare digits (production internal
+      //     accounts store a human email but a real phone; the `+` prefix is
+      //     inconsistent across rows, so match both forms).
+      // public.users.role is NEVER consulted for admin status (documented prior P0).
+      // This only gates whether we return the derived email; the actual admin
+      // authorization still happens downstream in /api/admin/check.
+      const { data: adminUser, error: adminError } = await supabase
+        .from('admin_users')
+        .select('id')
+        .or(
+          `email.eq.${emailForAuth},phone.eq.${normalizedPhone},phone.eq.${phoneDigits}`,
+        )
+        .limit(1)
+        .maybeSingle();
+
+      if (adminError) {
+        console.error('[login] admin_users lookup error:', adminError);
+        return NextResponse.json(
+          { error: 'Database error', details: adminError.message },
+          { status: 500 }
+        );
+      }
+
+      if (!adminUser) {
+        return NextResponse.json(
+          { error: 'Phone number not registered' },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({
+        email: emailForAuth,
+        userId: adminUser.id,
+      });
+    }
 
     return NextResponse.json({
       email: emailForAuth,
