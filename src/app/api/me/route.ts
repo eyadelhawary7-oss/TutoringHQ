@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 
 export async function GET(request: Request) {
   try {
@@ -76,26 +77,57 @@ export async function GET(request: Request) {
     };
 
     let userRecord: UserRecordOut | null = null;
+    let usersRowFound = false;
 
-    const { data: usersRow } = await supabaseAdmin
+    // CORE lookup: only the columns required to make the admin/center routing
+    // decision. Mirrors the split centerAuth.ts already does (see its docblock
+    // ~L86-91 about the nine-day outage) — when a permission column is missing
+    // from the deployed schema, PostgREST errors, supabase-js returns
+    // { data: null, error }, and silently discarding that error makes the route
+    // think the users row doesn't exist, falling through to the admin_users
+    // branch and zeroing out center_id. We destructure the error here and treat
+    // a non-null error as a hard failure, never as "no users row".
+    const { data: coreRow, error: coreErr } = await supabaseAdmin
       .from('users')
-      .select(
-        'id, phone, role, center_id, name, preferred_locale, can_scan, can_view_payments, can_record_payments, can_view_dashboard, can_view_revenue, can_manage_students, can_manage_groups, can_allow_late_entry, can_manage_rooms, can_view_schedule, can_view_settings, is_active',
-      )
+      .select('id, center_id, role, name, phone, preferred_locale')
       .eq('id', user.id)
       .maybeSingle();
+
+    if (coreErr) {
+      Sentry.withScope((scope) => {
+        scope.setTag('route', 'api/me');
+        scope.setTag('step', 'core_user_lookup');
+        Sentry.captureException(coreErr);
+      });
+      return NextResponse.json(
+        { error: 'Server configuration error', details: 'User profile lookup failed' },
+        { status: 500 },
+      );
+    }
 
     const metaName =
       typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name.trim() : '';
 
-    if (usersRow) {
-      const ur = usersRow as UserRecordOut & { name?: string | null; preferred_locale?: string | null };
+    if (coreRow) {
+      usersRowFound = true;
+      const cr = coreRow as {
+        id: string;
+        center_id: string | null;
+        role: string | null;
+        name: string | null;
+        phone: string | null;
+        preferred_locale: string | null;
+      };
       userRecord = {
-        ...ur,
-        name: (ur.name && String(ur.name).trim()) || metaName || ur.phone || null,
-        preferred_locale: ur.preferred_locale ?? 'ar',
+        id: cr.id,
+        phone: cr.phone,
+        role: cr.role ?? 'assistant',
+        center_id: cr.center_id,
+        name: (cr.name && String(cr.name).trim()) || metaName || cr.phone || null,
+        preferred_locale: cr.preferred_locale ?? 'ar',
       };
     } else {
+      // Genuine empty users row (not a query error) — fall back to admin_users.
       const { data: adminRow } = await supabaseAdmin
         .from('admin_users')
         .select('id, name, phone')
@@ -112,6 +144,49 @@ export async function GET(request: Request) {
           center_id: null,
         };
       }
+    }
+
+    // PERMISSIONS lookup: best-effort. If a can_* column is missing (schema
+    // drift) or the query fails for any other reason, warn in Sentry and
+    // default all flags to false / is_active to true. The user row + center_id
+    // resolved above remain authoritative — column drift must never invalidate
+    // the routing decision.
+    if (userRecord && usersRowFound) {
+      const { data: permsRow, error: permsErr } = await supabaseAdmin
+        .from('users')
+        .select(
+          'can_scan, can_view_payments, can_record_payments, can_view_dashboard, can_view_revenue, can_manage_students, can_manage_groups, can_allow_late_entry, can_manage_rooms, can_view_schedule, can_view_settings, is_active',
+        )
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (permsErr) {
+        Sentry.withScope((scope) => {
+          scope.setTag('route', 'api/me');
+          scope.setTag('step', 'permission_flags');
+          Sentry.captureMessage(
+            `/api/me permission-column lookup failed: ${permsErr.message}`,
+            'warning',
+          );
+        });
+      }
+
+      const pr = (permsRow ?? {}) as Record<string, unknown>;
+      userRecord = {
+        ...userRecord,
+        can_scan: Boolean(pr.can_scan),
+        can_view_payments: Boolean(pr.can_view_payments),
+        can_record_payments: Boolean(pr.can_record_payments),
+        can_view_dashboard: Boolean(pr.can_view_dashboard),
+        can_view_revenue: Boolean(pr.can_view_revenue),
+        can_manage_students: Boolean(pr.can_manage_students),
+        can_manage_groups: Boolean(pr.can_manage_groups),
+        can_allow_late_entry: Boolean(pr.can_allow_late_entry),
+        can_manage_rooms: Boolean(pr.can_manage_rooms),
+        can_view_schedule: Boolean(pr.can_view_schedule),
+        can_view_settings: Boolean(pr.can_view_settings),
+        is_active: pr.is_active == null ? true : Boolean(pr.is_active),
+      };
     }
 
     if (!userRecord) {

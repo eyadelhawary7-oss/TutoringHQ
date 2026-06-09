@@ -32,11 +32,26 @@ const ALL_FALSE_PERMS: CenterPermissions = {
   can_request_referral_payouts: false,
 };
 
-function makeSupabaseMock(userRecord: Record<string, unknown> | null, updatedRecord?: Record<string, unknown>) {
+type MaybeSingleResult = { data: Record<string, unknown> | null; error: { message: string } | null };
+
+// Rule 151 split: the route makes THREE maybeSingle calls per request in order:
+// 1. CORE  — SELECT id, center_id, role
+// 2. PERMS — SELECT the 8 permission columns
+// 3. UPDATE — .update().eq().eq().select(PERMISSION_COLUMNS).maybeSingle()
+function makeSupabaseMock(opts: {
+  core?: MaybeSingleResult;
+  perms?: MaybeSingleResult;
+  update?: MaybeSingleResult;
+} = {}) {
+  const core: MaybeSingleResult = opts.core ?? { data: null, error: null };
+  const perms: MaybeSingleResult = opts.perms ?? { data: null, error: null };
+  const update: MaybeSingleResult = opts.update ?? { data: null, error: null };
+
   const maybySingleMock = vi
     .fn()
-    .mockResolvedValueOnce({ data: userRecord, error: null })
-    .mockResolvedValueOnce({ data: updatedRecord ?? userRecord, error: null });
+    .mockResolvedValueOnce(core)
+    .mockResolvedValueOnce(perms)
+    .mockResolvedValueOnce(update);
 
   const insertMock = vi.fn().mockResolvedValue({ error: null });
 
@@ -80,10 +95,12 @@ function makeRequest(body: Record<string, unknown>) {
   }) as unknown as import('next/server').NextRequest;
 }
 
-const TARGET_USER = {
+const TARGET_USER_CORE = {
   id: 'target-user',
   center_id: 'center-1',
   role: 'assistant',
+};
+const TARGET_USER_PERMS = {
   can_record_payments: false,
   can_view_payments: false,
   can_manage_billing: false,
@@ -104,7 +121,7 @@ describe('PATCH /api/settings/staff/[userId]/permissions', () => {
   });
 
   it('returns 403 when caller is not owner', async () => {
-    const { admin } = makeSupabaseMock(null);
+    const { admin } = makeSupabaseMock();
     vi.mocked(requireCenterAuth).mockResolvedValue(makeOwnerAuth(admin, 'assistant'));
 
     const res = await PATCH(makeRequest({ can_manage_billing: true }), {
@@ -116,12 +133,12 @@ describe('PATCH /api/settings/staff/[userId]/permissions', () => {
     expect(body.error).toBe('owner_required');
   });
 
-  it('returns 404 when userId does not belong to the same center', async () => {
-    const { admin } = makeSupabaseMock(null);
+  it('returns 404 when CORE returns null (genuine missing row)', async () => {
+    const { admin } = makeSupabaseMock({ core: { data: null, error: null } });
     vi.mocked(requireCenterAuth).mockResolvedValue(makeOwnerAuth(admin));
 
     const res = await PATCH(makeRequest({ can_manage_billing: true }), {
-      params: Promise.resolve({ userId: 'other-center-user' }),
+      params: Promise.resolve({ userId: 'target-user' }),
     });
 
     expect(res.status).toBe(404);
@@ -129,9 +146,74 @@ describe('PATCH /api/settings/staff/[userId]/permissions', () => {
     expect(body.error).toBe('user_not_found');
   });
 
+  it('returns 404 when target row belongs to a different center (cross-center guard)', async () => {
+    const { admin } = makeSupabaseMock({
+      core: {
+        data: { id: 'target-user', center_id: 'OTHER-CENTER', role: 'assistant' },
+        error: null,
+      },
+    });
+    vi.mocked(requireCenterAuth).mockResolvedValue(makeOwnerAuth(admin));
+
+    const res = await PATCH(makeRequest({ can_manage_billing: true }), {
+      params: Promise.resolve({ userId: 'target-user' }),
+    });
+
+    expect(res.status).toBe(404);
+    const body = await res.json();
+    expect(body.error).toBe('user_not_found');
+  });
+
+  it('returns 500 (NOT 404) when the CORE select errors (Rule 151 regression)', async () => {
+    const { admin } = makeSupabaseMock({
+      core: { data: null, error: { message: 'cache stale: column missing' } },
+    });
+    vi.mocked(requireCenterAuth).mockResolvedValue(makeOwnerAuth(admin));
+
+    const res = await PATCH(makeRequest({ can_manage_billing: true }), {
+      params: Promise.resolve({ userId: 'target-user' }),
+    });
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error).toBe('server_error');
+  });
+
+  it('proceeds when PERMISSIONS read errors: update runs, before snapshot defaults to false, 200', async () => {
+    const updatedUser = { ...TARGET_USER_PERMS, can_manage_billing: true };
+    const { admin, insertMock } = makeSupabaseMock({
+      core: { data: TARGET_USER_CORE, error: null },
+      perms: { data: null, error: { message: 'column "can_xyz" does not exist' } },
+      update: { data: updatedUser, error: null },
+    });
+    vi.mocked(requireCenterAuth).mockResolvedValue(makeOwnerAuth(admin));
+
+    const res = await PATCH(makeRequest({ can_manage_billing: true }), {
+      params: Promise.resolve({ userId: 'target-user' }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.permissions.can_manage_billing).toBe(true);
+
+    expect(insertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'update_staff_permissions',
+        details: expect.objectContaining({
+          before: expect.objectContaining({ can_manage_billing: false }),
+          after: expect.objectContaining({ can_manage_billing: true }),
+        }),
+      }),
+    );
+  });
+
   it('returns 200 with updated permission values on valid request', async () => {
-    const updatedUser = { ...TARGET_USER, can_manage_billing: true };
-    const { admin } = makeSupabaseMock(TARGET_USER, updatedUser);
+    const updatedUser = { ...TARGET_USER_PERMS, can_manage_billing: true };
+    const { admin } = makeSupabaseMock({
+      core: { data: TARGET_USER_CORE, error: null },
+      perms: { data: TARGET_USER_PERMS, error: null },
+      update: { data: updatedUser, error: null },
+    });
     vi.mocked(requireCenterAuth).mockResolvedValue(makeOwnerAuth(admin));
 
     const res = await PATCH(makeRequest({ can_manage_billing: true }), {
@@ -145,8 +227,12 @@ describe('PATCH /api/settings/staff/[userId]/permissions', () => {
   });
 
   it('writes an audit_log entry after a successful update', async () => {
-    const updatedUser = { ...TARGET_USER, can_place_card_orders: true };
-    const { admin, insertMock } = makeSupabaseMock(TARGET_USER, updatedUser);
+    const updatedUser = { ...TARGET_USER_PERMS, can_place_card_orders: true };
+    const { admin, insertMock } = makeSupabaseMock({
+      core: { data: TARGET_USER_CORE, error: null },
+      perms: { data: TARGET_USER_PERMS, error: null },
+      update: { data: updatedUser, error: null },
+    });
     vi.mocked(requireCenterAuth).mockResolvedValue(makeOwnerAuth(admin));
 
     await PATCH(makeRequest({ can_place_card_orders: true }), {
