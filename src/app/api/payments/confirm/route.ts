@@ -8,13 +8,16 @@ export async function POST(request: NextRequest) {
     const auth = await requireCenterAuth(request);
     if (!auth.ok) return auth.response;
 
-    const { data: permRow } = await auth.supabaseAdmin
-      .from('users')
-      .select('can_view_payments, can_record_payments')
-      .eq('id', auth.userId)
-      .single();
+    // Use the permissions centerAuth already resolved (best-effort with safe
+    // defaults). The prior single-with-dropped-error read on this route 403'd
+    // legitimate callers during a PostgREST schema-cache blip. Role-based
+    // authorization (owner / super_admin) bypasses the per-flag grant so a
+    // transient permissions read failure cannot lock out a centre owner.
     const canConfirm =
-      permRow?.can_view_payments === true || permRow?.can_record_payments === true;
+      auth.role === 'owner' ||
+      auth.isSuperAdmin === true ||
+      auth.permissions.can_view_payments === true ||
+      auth.permissions.can_record_payments === true;
     if (!canConfirm) {
       return NextResponse.json({ error: 'Forbidden - insufficient permissions' }, { status: 403 });
     }
