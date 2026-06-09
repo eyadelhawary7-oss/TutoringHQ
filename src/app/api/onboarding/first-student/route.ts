@@ -1,17 +1,38 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { parseBodyWithLimit } from '@/lib/validate';
 
-async function getUserCenterContext(request: NextRequest) {
+type CtxOk = {
+  ok: true;
+  userId: string;
+  centerId: string;
+  canManage: boolean;
+  supabaseAdmin: SupabaseClient;
+};
+type CtxFail = { ok: false; status: 401 | 500 };
+type Ctx = CtxOk | CtxFail;
+
+// Two-select identity resolution mirroring centerAuth.ts (see its docblock):
+// the prior single wide SELECT bundled `can_manage_students` with `center_id`
+// and discarded the error, so a missing/renamed permission column made
+// PostgREST error, supabase-js return data:null, and an onboarding owner got
+// 401-locked OUT of onboarding. CORE pulls only identity columns and a query
+// error here is infrastructure failure (500, never null/401). PERMISSIONS is
+// best-effort and defaults canManage=true on error to preserve the prior
+// "missing/unknown is allowed" semantics for this route.
+async function getUserCenterContext(request: NextRequest): Promise<Ctx> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) return null;
+  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
+    return { ok: false, status: 500 };
+  }
 
   const authHeader = request.headers.get('Authorization');
   const accessToken = authHeader?.replace('Bearer ', '');
-  if (!accessToken) return null;
+  if (!accessToken) return { ok: false, status: 401 };
 
   const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
     auth: { persistSession: false },
@@ -22,25 +43,56 @@ async function getUserCenterContext(request: NextRequest) {
     data: { user },
     error,
   } = await supabaseAuth.auth.getUser();
-  if (error || !user) return null;
+  if (error || !user) return { ok: false, status: 401 };
 
   const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const { data: userRecord } = await supabaseAdmin
+  const { data: coreUser, error: coreErr } = await supabaseAdmin
     .from('users')
-    .select('id, center_id, can_manage_students')
+    .select('id, center_id')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
-  const centerId = userRecord?.center_id as string | undefined;
-  if (!centerId) return null;
+  if (coreErr) {
+    Sentry.withScope((scope) => {
+      scope.setTag('route', 'api/onboarding/first-student');
+      scope.setTag('step', 'core_user_lookup');
+      Sentry.captureException(coreErr);
+    });
+    return { ok: false, status: 500 };
+  }
+
+  const centerId = (coreUser as { center_id?: string | null } | null)?.center_id ?? null;
+  if (!centerId) return { ok: false, status: 401 };
+
+  let canManage = true;
+  const { data: permsRow, error: permsErr } = await supabaseAdmin
+    .from('users')
+    .select('can_manage_students')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (permsErr) {
+    Sentry.withScope((scope) => {
+      scope.setTag('route', 'api/onboarding/first-student');
+      scope.setTag('step', 'permission_flags');
+      Sentry.captureMessage(
+        `onboarding/first-student permission-column lookup failed: ${permsErr.message}`,
+        'warning',
+      );
+    });
+  } else if (permsRow) {
+    canManage =
+      (permsRow as { can_manage_students?: boolean | null }).can_manage_students !== false;
+  }
 
   return {
+    ok: true,
     userId: user.id,
     centerId,
-    canManage: (userRecord as { can_manage_students?: boolean }).can_manage_students !== false,
+    canManage,
     supabaseAdmin,
   };
 }
@@ -48,7 +100,10 @@ async function getUserCenterContext(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const ctx = await getUserCenterContext(request);
-    if (!ctx) {
+    if (!ctx.ok) {
+      if (ctx.status === 500) {
+        return NextResponse.json({ error: 'server_error' }, { status: 500 });
+      }
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     if (!ctx.canManage) {
