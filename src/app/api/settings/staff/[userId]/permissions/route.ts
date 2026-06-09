@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { rateLimit, rateLimitExceededResponse } from '@/lib/ratelimit';
 import { parseBodyWithLimit } from '@/lib/validate';
@@ -39,21 +40,56 @@ export async function PATCH(
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { data: targetUser, error: fetchErr } = await auth.supabaseAdmin
+  // CORE lookup: identity only. A DB error here is infrastructure failure, not
+  // "user not found" — bucketing it into 404 would hide cache-staleness errors
+  // from the owner and corrupt the audit "before" snapshot. Mirrors centerAuth's
+  // CORE+best-effort split.
+  const { data: coreUser, error: coreErr } = await auth.supabaseAdmin
     .from('users')
-    .select(`id, center_id, role, ${PERMISSION_COLUMNS.join(', ')}`)
+    .select('id, center_id, role')
     .eq('id', userId)
     .maybeSingle();
 
-  if (fetchErr || !targetUser || (targetUser as { center_id?: string }).center_id !== auth.centerId) {
+  if (coreErr) {
+    Sentry.withScope((scope) => {
+      scope.setTag('route', 'api/settings/staff/permissions');
+      scope.setTag('step', 'core_user_lookup');
+      Sentry.captureException(coreErr);
+    });
+    return NextResponse.json({ error: 'server_error' }, { status: 500 });
+  }
+
+  if (!coreUser || (coreUser as { center_id?: string }).center_id !== auth.centerId) {
     return NextResponse.json({ error: 'user_not_found' }, { status: 404 });
+  }
+
+  // PERMISSIONS lookup: best-effort. On a permission-column read error the
+  // target user provably exists (CORE succeeded) and the owner is already
+  // authorized, so a transient failure must not block recording the change.
+  // before[*] defaults to false; the after snapshot from the UPDATE's
+  // returning select stays authoritative for what the values actually became.
+  const { data: permsRow, error: permsErr } = await auth.supabaseAdmin
+    .from('users')
+    .select(PERMISSION_COLUMNS.join(', '))
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (permsErr) {
+    Sentry.withScope((scope) => {
+      scope.setTag('route', 'api/settings/staff/permissions');
+      scope.setTag('step', 'permission_flags');
+      Sentry.captureMessage(
+        `staff-permissions before-snapshot read failed: ${permsErr.message}`,
+        'warning',
+      );
+    });
   }
 
   const updates: Partial<Record<PermissionColumn, boolean>> = {};
   const before: Record<string, boolean> = {};
-  const targetRecord = targetUser as unknown as Record<string, unknown>;
+  const permsRecord = (permsRow ?? {}) as Record<string, unknown>;
   for (const col of PERMISSION_COLUMNS) {
-    before[col] = Boolean(targetRecord[col]);
+    before[col] = Boolean(permsRecord[col]);
     if (typeof body[col] === 'boolean') {
       updates[col] = body[col] as boolean;
     }
