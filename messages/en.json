@@ -8111,5 +8111,28 @@
       "body": "Online resubscription opens soon. Your private data is safe and will be right where you left it once you resume.",
       "backHome": "Back to home"
     }
+  },
+  "teacherSignup": {
+    "title": "Create your teacher account",
+    "subtitle": "Run your private practice on CenterHQ. No center needed.",
+    "nameLabel": "Your name",
+    "phoneLabel": "Mobile number",
+    "subjectLabel": "Subject (optional)",
+    "subjectPlaceholder": "e.g. Physics",
+    "pinLabel": "PIN (6 digits)",
+    "confirmPinLabel": "Confirm PIN",
+    "submit": "Create account",
+    "submitting": "Creating...",
+    "haveAccount": "Already have an account?",
+    "login": "Log in",
+    "alreadyRegistered": "This number is already registered.",
+    "logInInstead": "Log in instead",
+    "errorName": "Enter your name (at least 2 characters).",
+    "errorPhone": "Enter a valid Egyptian mobile number (01xxxxxxxxx).",
+    "errorPin": "PIN must be 6 digits.",
+    "errorPinMatch": "The two PINs do not match.",
+    "errorWeakPin": "This PIN is too easy to guess. Choose another.",
+    "errorRateLimit": "Too many attempts. Please try again later.",
+    "errorGeneric": "Something went wrong. Please try again."
   }
 }

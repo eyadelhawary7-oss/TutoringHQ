@@ -5,10 +5,10 @@ import { useTranslations } from 'next-intl';
 import { Sparkles, PauseCircle, Wallet } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
-import CenterCutsSection from './CenterCutsSection';
-import IncomeView from './IncomeView';
-import PrivateGroupModal from './PrivateGroupModal';
-import PrivateGroupsSection from './PrivateGroupsSection';
+import CenterCutsSection from '../CenterCutsSection';
+import IncomeView from '../IncomeView';
+import PrivateGroupModal from '../PrivateGroupModal';
+import PrivateGroupsSection from '../PrivateGroupsSection';
 
 type TeacherContext = {
   state: 'center_only' | 'unified' | 'lapsed';

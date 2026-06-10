@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getLocale } from 'next-intl/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createClient } from '@/lib/supabase/server';
-import TeacherShell from './TeacherShell';
+import TeacherShell from '../TeacherShell';
 
 /**
  * Teacher portal subtree layout. /teacher is deliberately NOT in

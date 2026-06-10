@@ -37,6 +37,7 @@ const PUBLIC_PATHS = [
   '/status',
   '/accept-invite',
   '/join',
+  '/teacher/signup',
 ];
 function stripLocale(path: string): string {
   return path.replace(/^\/(ar|en)(\/|$)/, '$2') || '/';
