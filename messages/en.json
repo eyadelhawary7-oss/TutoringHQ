@@ -8062,6 +8062,13 @@
       "toggleError": "Could not save attendance. Try again.",
       "finishError": "Could not finish the class. Try again."
     },
+    "markPaid": {
+      "action": "Mark paid",
+      "cash": "Cash",
+      "instapay": "InstaPay",
+      "hint": "Cash in hand or InstaPay straight to you. CenterHQ does not touch this money and takes no cut.",
+      "error": "Could not mark as paid. Try again."
+    },
     "privateEngine": {
       "title": "Private practice"
     },

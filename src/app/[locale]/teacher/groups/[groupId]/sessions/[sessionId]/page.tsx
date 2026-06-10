@@ -11,7 +11,7 @@ type SessionDetail = {
   session: { id: string; scheduled_at: string; status: string; billed: boolean };
   group: { id: string; name: string | null; fee_per_class: number };
   roster: { studentId: string; name: string | null; payer: string | null; present: boolean }[];
-  charges: { studentId: string; amount: number; status: string }[];
+  charges: { id: string; studentId: string; amount: number; status: string }[];
 };
 
 /**
@@ -39,6 +39,9 @@ export default function SessionPage({
   const [confirming, setConfirming] = useState(false);
   const [finishing, setFinishing] = useState(false);
   const [finishError, setFinishError] = useState(false);
+  const [methodPickerId, setMethodPickerId] = useState<string | null>(null);
+  const [markingId, setMarkingId] = useState<string | null>(null);
+  const [markError, setMarkError] = useState(false);
 
   const getToken = useCallback(async (): Promise<string | null> => {
     const {
@@ -117,6 +120,37 @@ export default function SessionPage({
       await loadDetail();
     } finally {
       setTogglingId(null);
+    }
+  };
+
+  const markPaid = async (transactionId: string, method: 'cash' | 'instapay') => {
+    setMarkingId(transactionId);
+    setMarkError(false);
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const res = await fetch(
+        `/api/teacher/private/transactions/${transactionId}/mark-paid`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ method }),
+        },
+      );
+      // 409 = decided elsewhere (already paid / method conflict) - the
+      // refetch below shows the truth either way.
+      if (!res.ok && res.status !== 409) {
+        setMarkError(true);
+      }
+      setMethodPickerId(null);
+      await loadDetail();
+    } catch {
+      setMarkError(true);
+    } finally {
+      setMarkingId(null);
     }
   };
 
@@ -224,29 +258,73 @@ export default function SessionPage({
         <section className="rounded-xl border border-teal-800 bg-[var(--color-surface-1)] p-6">
           <h2 className="mb-1 text-lg font-bold text-teal-400">{t('billedTitle')}</h2>
           <p className="mb-4 text-sm text-[var(--color-text-secondary)]">{t('pendingNote')}</p>
+          {markError && (
+            <p className="mb-3 rounded-lg border border-red-900 bg-red-900/20 p-3 text-sm text-red-400">
+              {tPortal('markPaid.error')}
+            </p>
+          )}
           <ul className="mb-4 flex flex-col gap-2">
             {data.charges.map((c) => (
               <li
-                key={c.studentId}
-                className="flex items-center justify-between rounded-lg border border-[var(--color-border)] px-4 py-3"
+                key={c.id}
+                className="rounded-lg border border-[var(--color-border)] px-4 py-3"
               >
-                <span className="font-medium text-[var(--color-text-primary)]">
-                  {nameById.get(c.studentId) ?? ''}
-                </span>
-                <span className="flex items-center gap-3">
-                  <span className="font-semibold text-[var(--color-text-primary)]">
-                    {formatCurrency(c.amount, locale)}
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-[var(--color-text-primary)]">
+                    {nameById.get(c.studentId) ?? ''}
                   </span>
-                  <span
-                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      c.status === 'paid'
-                        ? 'bg-teal-900/40 text-teal-400'
-                        : 'bg-amber-900/30 text-amber-400'
-                    }`}
-                  >
-                    {c.status === 'paid' ? t('statusPaid') : t('statusPending')}
+                  <span className="flex items-center gap-3">
+                    <span className="font-semibold text-[var(--color-text-primary)]">
+                      {formatCurrency(c.amount, locale)}
+                    </span>
+                    {c.status === 'paid' ? (
+                      <span className="rounded-full bg-teal-900/40 px-2.5 py-0.5 text-xs font-medium text-teal-400">
+                        {t('statusPaid')}
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-amber-900/30 px-2.5 py-0.5 text-xs font-medium text-amber-400">
+                        {t('statusPending')}
+                      </span>
+                    )}
+                    {c.status === 'pending' && (
+                      <button
+                        onClick={() =>
+                          setMethodPickerId(methodPickerId === c.id ? null : c.id)
+                        }
+                        disabled={markingId !== null}
+                        className="rounded-lg border border-teal-700 px-2.5 py-1 text-xs font-medium text-teal-400 transition-colors hover:bg-teal-900/30"
+                      >
+                        {tPortal('markPaid.action')}
+                      </button>
+                    )}
                   </span>
-                </span>
+                </div>
+                {methodPickerId === c.id && c.status === 'pending' && (
+                  <div className="mt-3 border-t border-[var(--color-border)] pt-3">
+                    <p className="mb-2 text-xs text-[var(--color-text-muted)]">
+                      {tPortal('markPaid.hint')}
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => markPaid(c.id, 'cash')}
+                        disabled={markingId !== null}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-teal-600 px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-teal-700 disabled:opacity-50"
+                      >
+                        {markingId === c.id && (
+                          <Loader2 size={14} className="animate-spin" aria-hidden />
+                        )}
+                        {tPortal('markPaid.cash')}
+                      </button>
+                      <button
+                        onClick={() => markPaid(c.id, 'instapay')}
+                        disabled={markingId !== null}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-teal-700 px-3 py-2 text-sm font-medium text-teal-400 transition-colors hover:bg-teal-900/30 disabled:opacity-50"
+                      >
+                        {tPortal('markPaid.instapay')}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

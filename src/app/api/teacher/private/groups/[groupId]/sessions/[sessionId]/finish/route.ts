@@ -97,11 +97,11 @@ export async function POST(
   // Billed summary: the charges the function just created (or, on an
   // idempotent re-call, the ones that already existed). Display data on top
   // of a successful bill - best-effort, never fails the finish.
-  let charges: { studentId: string; amount: number; status: string }[] = [];
+  let charges: { id: string; studentId: string; amount: number; status: string }[] = [];
   let total = 0;
   const { data: txnRows, error: txnErr } = await auth.supabaseAdmin
     .from('transactions')
-    .select('student_id, amount_billed, status')
+    .select('id, student_id, amount_billed, status')
     .eq('teacher_id', auth.userId)
     .eq('kind', 'lesson')
     .eq('session_id', sessionId);
@@ -115,8 +115,9 @@ export async function POST(
       );
     });
   } else {
-    charges = ((txnRows ?? []) as { student_id: string; amount_billed: number | string | null; status: string }[]).map(
+    charges = ((txnRows ?? []) as { id: string; student_id: string; amount_billed: number | string | null; status: string }[]).map(
       (r) => ({
+        id: r.id,
         studentId: r.student_id,
         amount: Number(r.amount_billed) || 0,
         status: r.status,

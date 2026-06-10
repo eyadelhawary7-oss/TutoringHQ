@@ -83,19 +83,20 @@ export async function GET(
     ((scanRows ?? []) as { student_id: string }[]).map((r) => r.student_id),
   );
 
-  let charges: { studentId: string; amount: number; status: string }[] = [];
+  let charges: { id: string; studentId: string; amount: number; status: string }[] = [];
   if (owned.session.billed) {
     const { data: txnRows, error: txnErr } = await auth.supabaseAdmin
       .from('transactions')
-      .select('student_id, amount_billed, status')
+      .select('id, student_id, amount_billed, status')
       .eq('teacher_id', auth.userId)
       .eq('kind', 'lesson')
       .eq('session_id', sessionId);
     if (txnErr) {
       return serverError('session_charges', txnErr);
     }
-    charges = ((txnRows ?? []) as { student_id: string; amount_billed: number | string | null; status: string }[]).map(
+    charges = ((txnRows ?? []) as { id: string; student_id: string; amount_billed: number | string | null; status: string }[]).map(
       (r) => ({
+        id: r.id,
         studentId: r.student_id,
         amount: Number(r.amount_billed) || 0,
         status: r.status,
