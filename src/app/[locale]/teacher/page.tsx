@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Building2, Sparkles, PauseCircle, Wallet } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
+import IncomeView from './IncomeView';
 
 type TeacherContext = {
   state: 'center_only' | 'unified' | 'lapsed';
@@ -132,16 +133,14 @@ export default function TeacherHomePage() {
       )}
 
       {ctx.state === 'unified' && (
-        <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6">
-          <div className="mb-2 flex items-center gap-2">
+        <section>
+          <div className="mb-4 flex items-center gap-2">
             <Wallet size={18} className="text-teal-400" aria-hidden />
             <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
               {t('privateEngine.title')}
             </h2>
           </div>
-          <p className="text-sm text-[var(--color-text-secondary)]">
-            {t('privateEngine.placeholder')}
-          </p>
+          <IncomeView />
         </section>
       )}
 

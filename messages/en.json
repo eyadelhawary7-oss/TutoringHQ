@@ -7975,8 +7975,17 @@
       "comingSoon": "Coming in this rollout"
     },
     "privateEngine": {
-      "title": "Private practice",
-      "placeholder": "Your income view and private groups land here in the next step of this rollout."
+      "title": "Private practice"
+    },
+    "income": {
+      "collectedThisMonth": "Collected this month",
+      "outstanding": "Outstanding",
+      "collectedShort": "Collected:",
+      "outstandingShort": "Outstanding:",
+      "byGroup": "By group",
+      "recentActivity": "Recent billed classes",
+      "emptyTitle": "No private activity yet",
+      "emptyBody": "Once you create a private group and bill your first classes, your money numbers will show up here as they happen."
     },
     "resume": {
       "title": "Your private practice is paused",
