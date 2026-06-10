@@ -104,7 +104,7 @@ export function AreaChartComponent({
     return (
       <div
         className="flex flex-col items-center justify-center text-center px-4"
-        style={{ height, color: '#334155', fontSize: 13, fontFamily: CHART_STYLE.fontFamily }}
+        style={{ height, color: '#80827a', fontSize: 13, fontFamily: CHART_STYLE.fontFamily }}
       >
         <p>{t('noData')}</p>
         <p className="mt-1 text-xs opacity-80 max-w-xs">{t('noDataSub')}</p>
@@ -153,7 +153,7 @@ export function AreaChartComponent({
         ) : null}
         <Tooltip
           {...RECHARTS_TOOLTIP_WRAPPER_PROPS}
-          cursor={{ stroke: '#334155', strokeWidth: 1, strokeDasharray: '4 4' }}
+          cursor={{ stroke: '#80827a', strokeWidth: 1, strokeDasharray: '4 4' }}
           content={(props) => {
             const pl = props.payload?.map((p) => ({
               name: String(p.name ?? p.dataKey ?? ''),

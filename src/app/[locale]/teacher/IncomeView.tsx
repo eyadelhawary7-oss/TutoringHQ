@@ -113,7 +113,7 @@ export default function IncomeView() {
   if (isEmptyPractice) {
     return (
       <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] p-8 text-center">
-        <Sprout size={28} className="mx-auto mb-3 text-teal-400" aria-hidden />
+        <Sprout size={28} className="mx-auto mb-3 text-[var(--color-teal-deep)]" aria-hidden />
         <h3 className="mb-2 font-bold text-[var(--color-text-primary)]">
           {t('income.emptyTitle')}
         </h3>
@@ -125,21 +125,22 @@ export default function IncomeView() {
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
-          <div className="mb-1 flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-            <Banknote size={16} className="text-teal-400" aria-hidden />
+        {/* ADR 031 signature money surface */}
+        <div className="money-hero rounded-[var(--radius-card)] p-5">
+          <div className="mb-1 flex items-center gap-2 text-sm text-[#dfeeeb]">
+            <Banknote size={16} aria-hidden />
             {t('income.collectedThisMonth')}
           </div>
-          <p className="text-2xl font-bold text-[var(--color-text-primary)]">
+          <p className="num text-3xl font-bold">
             {formatCurrency(data.collectedThisMonth, locale)}
           </p>
         </div>
-        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+        <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 shadow-card">
           <div className="mb-1 flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-            <HandCoins size={16} className="text-amber-400" aria-hidden />
+            <HandCoins size={16} className="text-[var(--color-brass)]" aria-hidden />
             {t('income.outstanding')}
           </div>
-          <p className="text-2xl font-bold text-[var(--color-text-primary)]">
+          <p className="num text-3xl font-bold text-[var(--color-text-primary)]">
             {formatCurrency(data.outstanding, locale)}
           </p>
         </div>
@@ -166,7 +167,7 @@ export default function IncomeView() {
                   </span>
                   <span className="text-[var(--color-text-secondary)]">
                     {t('income.outstandingShort')}{' '}
-                    <span className="font-semibold text-amber-400">
+                    <span className="font-semibold text-[var(--color-warning)]">
                       {formatCurrency(g.outstanding, locale)}
                     </span>
                   </span>

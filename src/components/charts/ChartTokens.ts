@@ -22,11 +22,14 @@ export const CHART_STYLE = {
   fontFamily:
     'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   fontSize: 12,
-  axisColor: '#334155',
-  tickColor: '#64748B',
-  gridColor: '#1E293B',
-  tooltipBg: '#0F172A',
-  tooltipBorder: '#334155',
+  /* Warm neutrals legible on BOTH cream paper and the dark theme (SVG
+     presentation attributes cannot resolve CSS vars, so these stay literal). */
+  axisColor: '#80827a',
+  tickColor: '#80827a',
+  gridColor: 'rgba(128, 130, 122, 0.35)',
+  /* Inline-style consumers (tooltips) CAN resolve vars — follow the theme. */
+  tooltipBg: 'var(--color-surface-2)',
+  tooltipBorder: 'var(--color-border)',
   animDuration: 600,
   animEasing: 'ease-out' as const,
   dotRadius: 4,

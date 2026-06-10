@@ -75,7 +75,7 @@ export default function PrivateGroupsSection({
     <section>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="flex items-center gap-2 text-lg font-bold text-[var(--color-text-primary)]">
-          <Users size={18} className="text-teal-400" aria-hidden />
+          <Users size={18} className="text-[var(--color-teal-deep)]" aria-hidden />
           {t('title')}
         </h2>
         <button
@@ -100,7 +100,7 @@ export default function PrivateGroupsSection({
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4 text-center">
           <button
             onClick={loadGroups}
-            className="text-sm font-medium text-teal-400 hover:text-teal-300"
+            className="text-sm font-medium text-[var(--color-teal-deep)] hover:text-[var(--color-teal-deep)]"
           >
             {tPortal('retry')}
           </button>
@@ -115,14 +115,14 @@ export default function PrivateGroupsSection({
             <li key={g.id}>
               <Link
                 href={`/teacher/groups/${g.id}`}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3 transition-colors hover:border-teal-800"
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3 transition-colors hover:border-[var(--color-teal)]/40"
               >
                 <div>
                   <p className="font-medium text-[var(--color-text-primary)]">{g.name}</p>
                   <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">
                     {t('students', { count: formatNumber(g.activeStudents, locale) })}
                     {g.pendingStudents > 0 && (
-                      <span className="ms-2 text-amber-400">
+                      <span className="ms-2 text-[var(--color-warning)]">
                         {t('pending', { count: formatNumber(g.pendingStudents, locale) })}
                       </span>
                     )}

@@ -17,8 +17,8 @@ interface PdfOrderStudent {
   qr_code: string;
 }
 
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export async function GET(req: Request, { params }: { params: Promise<{ orderId: string }> }) {
+  const { orderId: id } = await params;
 
   const auth = await requireSuperAdminApi(req);
   if (!auth.ok) {

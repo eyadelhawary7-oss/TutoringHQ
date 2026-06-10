@@ -249,17 +249,17 @@ export default function SessionPage({
       </div>
 
       {toggleError && (
-        <p className="rounded-lg border border-red-900 bg-red-900/20 p-3 text-sm text-red-400">
+        <p className="rounded-lg border border-[var(--color-danger-muted)] bg-[var(--color-danger-muted)] p-3 text-sm text-[var(--color-danger)]">
           {t('toggleError')}
         </p>
       )}
 
       {data.session.billed ? (
-        <section className="rounded-xl border border-teal-800 bg-[var(--color-surface-1)] p-6">
-          <h2 className="mb-1 text-lg font-bold text-teal-400">{t('billedTitle')}</h2>
+        <section className="rounded-xl border border-[var(--color-teal)]/40 bg-[var(--color-surface-1)] p-6">
+          <h2 className="mb-1 text-lg font-bold text-[var(--color-teal-deep)]">{t('billedTitle')}</h2>
           <p className="mb-4 text-sm text-[var(--color-text-secondary)]">{t('pendingNote')}</p>
           {markError && (
-            <p className="mb-3 rounded-lg border border-red-900 bg-red-900/20 p-3 text-sm text-red-400">
+            <p className="mb-3 rounded-lg border border-[var(--color-danger-muted)] bg-[var(--color-danger-muted)] p-3 text-sm text-[var(--color-danger)]">
               {tPortal('markPaid.error')}
             </p>
           )}
@@ -278,11 +278,11 @@ export default function SessionPage({
                       {formatCurrency(c.amount, locale)}
                     </span>
                     {c.status === 'paid' ? (
-                      <span className="rounded-full bg-teal-900/40 px-2.5 py-0.5 text-xs font-medium text-teal-400">
+                      <span className="rounded-full bg-[var(--color-teal-soft)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-teal-deep)]">
                         {t('statusPaid')}
                       </span>
                     ) : (
-                      <span className="rounded-full bg-amber-900/30 px-2.5 py-0.5 text-xs font-medium text-amber-400">
+                      <span className="rounded-full bg-[var(--color-warning-muted)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-warning)]">
                         {t('statusPending')}
                       </span>
                     )}
@@ -292,7 +292,7 @@ export default function SessionPage({
                           setMethodPickerId(methodPickerId === c.id ? null : c.id)
                         }
                         disabled={markingId !== null}
-                        className="rounded-lg border border-teal-700 px-2.5 py-1 text-xs font-medium text-teal-400 transition-colors hover:bg-teal-900/30"
+                        className="rounded-lg border border-[var(--color-teal)]/50 px-2.5 py-1 text-xs font-medium text-[var(--color-teal-deep)] transition-colors hover:bg-[var(--color-teal-soft)]"
                       >
                         {tPortal('markPaid.action')}
                       </button>
@@ -318,7 +318,7 @@ export default function SessionPage({
                       <button
                         onClick={() => markPaid(c.id, 'instapay')}
                         disabled={markingId !== null}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-teal-700 px-3 py-2 text-sm font-medium text-teal-400 transition-colors hover:bg-teal-900/30 disabled:opacity-50"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-[var(--color-teal)]/50 px-3 py-2 text-sm font-medium text-[var(--color-teal-deep)] transition-colors hover:bg-[var(--color-teal-soft)] disabled:opacity-50"
                       >
                         {tPortal('markPaid.instapay')}
                       </button>
@@ -354,13 +354,13 @@ export default function SessionPage({
                     disabled={togglingId !== null}
                     className={`flex w-full items-center justify-between rounded-xl border px-4 py-4 text-start transition-colors ${
                       r.present
-                        ? 'border-teal-600 bg-teal-900/30'
+                        ? 'border-[var(--color-teal)] bg-[var(--color-teal-soft)]'
                         : 'border-[var(--color-border)] bg-[var(--color-surface-1)] hover:border-[var(--color-text-muted)]'
                     }`}
                   >
                     <span
                       className={`text-base font-medium ${
-                        r.present ? 'text-teal-300' : 'text-[var(--color-text-primary)]'
+                        r.present ? 'text-[var(--color-teal-deep)]' : 'text-[var(--color-text-primary)]'
                       }`}
                     >
                       {r.name}
@@ -368,7 +368,7 @@ export default function SessionPage({
                     <span
                       className={`flex h-7 w-7 items-center justify-center rounded-full border ${
                         r.present
-                          ? 'border-teal-500 bg-teal-600 text-primary-foreground'
+                          ? 'border-[var(--color-teal)] bg-teal-600 text-primary-foreground'
                           : 'border-[var(--color-border)]'
                       }`}
                       aria-hidden
@@ -386,13 +386,13 @@ export default function SessionPage({
           )}
 
           {finishError && (
-            <p className="rounded-lg border border-red-900 bg-red-900/20 p-3 text-sm text-red-400">
+            <p className="rounded-lg border border-[var(--color-danger-muted)] bg-[var(--color-danger-muted)] p-3 text-sm text-[var(--color-danger)]">
               {t('finishError')}
             </p>
           )}
 
           {confirming ? (
-            <div className="rounded-xl border border-teal-800 bg-[var(--color-surface-1)] p-6">
+            <div className="rounded-xl border border-[var(--color-teal)]/40 bg-[var(--color-surface-1)] p-6">
               <h2 className="mb-2 text-lg font-bold text-[var(--color-text-primary)]">
                 {t('confirmTitle')}
               </h2>

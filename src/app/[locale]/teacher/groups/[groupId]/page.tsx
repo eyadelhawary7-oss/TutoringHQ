@@ -179,19 +179,19 @@ export default function TeacherGroupDetailPage({
       </div>
 
       {actionError && (
-        <p className="rounded-lg border border-red-900 bg-red-900/20 p-3 text-sm text-red-400">
+        <p className="rounded-lg border border-[var(--color-danger-muted)] bg-[var(--color-danger-muted)] p-3 text-sm text-[var(--color-danger)]">
           {t('actionError')}
         </p>
       )}
 
       {pending.length > 0 && (
         <section>
-          <h2 className="mb-3 text-sm font-semibold text-amber-400">{t('pendingTitle')}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-[var(--color-warning)]">{t('pendingTitle')}</h2>
           <ul className="flex flex-col gap-2">
             {pending.map((r) => (
               <li
                 key={r.enrollmentId}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-900/60 bg-[var(--color-surface-1)] px-4 py-3"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--color-warning)]/30 bg-[var(--color-surface-1)] px-4 py-3"
               >
                 <div>
                   <p className="font-medium text-[var(--color-text-primary)]">{r.student.name}</p>

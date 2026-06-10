@@ -3,37 +3,38 @@
 @plugin "tailwindcss-animate";
 
 @theme {
-  --font-sans: Georgia, "Times New Roman", serif;
-  --font-mono: Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-plex), 'Cairo-Arabic', system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-plex), 'Cairo-Arabic', system-ui, -apple-system, sans-serif;
   --font-bodoni-stack: 'Bodoni Moda', Georgia, "Times New Roman", serif;
-  /* Default app chrome is dark (<html> without .light) — text tokens must stay light on dark surfaces */
-  --color-background: hsl(222 47% 3%);
-  --color-foreground: hsl(210 40% 98%);
-  --color-card: hsl(217 33% 10%);
-  --color-card-foreground: hsl(210 40% 98%);
-  --color-popover: hsl(217 33% 10%);
-  --color-popover-foreground: hsl(210 40% 98%);
-  --color-primary: hsl(174 72% 42%);
-  --color-primary-light: hsl(174 72% 42%);
-  --color-primary-foreground: hsl(215 28% 10%);
-  --color-secondary: hsl(215 25% 15%);
-  --color-secondary-foreground: hsl(210 40% 95%);
-  --color-muted: hsl(215 25% 13%);
-  --color-muted-foreground: hsl(215 16% 70%);
-  --color-accent: hsl(174 72% 15%);
-  --color-accent-foreground: hsl(174 72% 60%);
-  --color-destructive: hsl(0 62% 45%);
-  --color-destructive-foreground: hsl(0 0% 100%);
-  --color-border: hsl(215 25% 18%);
-  --color-input: hsl(215 25% 18%);
-  --color-ring: hsl(174 72% 42%);
-  --color-sidebar: hsl(215 28% 17%);
-  --color-sidebar-foreground: hsl(210 40% 90%);
-  --color-sidebar-primary: hsl(174 72% 40%);
+  /* ADR 031: default app chrome is the warm cream system (founder mock).
+     Dark values live under html.dark; the light-white theme is removed. */
+  --color-background: hsl(42 25% 90%);    /* paper  #ece8df */
+  --color-foreground: hsl(144 8% 12%);    /* ink    #1b201d */
+  --color-card: hsl(43 100% 99%);         /* panel  #fffdf8 */
+  --color-card-foreground: hsl(144 8% 12%);
+  --color-popover: hsl(43 100% 99%);
+  --color-popover-foreground: hsl(144 8% 12%);
+  --color-primary: hsl(174 77% 24%);      /* teal   #0e6b61 */
+  --color-primary-light: hsl(174 77% 30%);
+  --color-primary-foreground: hsl(43 100% 99%);
+  --color-secondary: hsl(40 46% 95%);     /* p2     #f8f4ec */
+  --color-secondary-foreground: hsl(144 8% 12%);
+  --color-muted: hsl(84 13% 92%);         /* tile   #eceee9 */
+  --color-muted-foreground: hsl(111 4% 37%);
+  --color-accent: hsl(168 31% 90%);       /* teal soft #dfeeeb */
+  --color-accent-foreground: hsl(174 78% 18%);
+  --color-destructive: hsl(9 53% 37%);    /* danger ink #9c3322 */
+  --color-destructive-foreground: hsl(43 100% 99%);
+  --color-border: hsl(42 23% 85%);        /* warm border #e2ddd1 */
+  --color-input: hsl(84 13% 92%);
+  --color-ring: hsl(174 77% 24%);
+  --color-sidebar: hsl(43 100% 99%);
+  --color-sidebar-foreground: hsl(144 8% 12%);
+  --color-sidebar-primary: hsl(174 77% 24%);
   --color-sidebar-primary-foreground: hsl(0 0% 100%);
-  --color-sidebar-accent: hsl(215 25% 24%);
-  --color-sidebar-accent-foreground: hsl(210 40% 95%);
-  --color-sidebar-border: hsl(215 25% 24%);
+  --color-sidebar-accent: hsl(84 13% 92%);
+  --color-sidebar-accent-foreground: hsl(144 8% 12%);
+  --color-sidebar-border: hsl(42 23% 85%);
   --color-navy: hsl(215 28% 17%);
   --color-navy-light: hsl(215 25% 22%);
   --color-navy-foreground: hsl(210 40% 95%);
@@ -86,41 +87,50 @@
   --color-gold-800: #92400e;
   --color-gold-900: #78350f;
 
-  /* ── Surface Layers ─────────────────────────────────── */
-  --color-surface-0: #080f1a;
-  --color-surface-1: #0f172a;
-  --color-surface-2: #1e293b;
-  --color-surface-3: #334155;
-  --color-surface-4: #475569;
+  /* ── Surface Layers (cream / ADR 031) ───────────────── */
+  --color-surface-0: #ece8df;   /* paper */
+  --color-surface-1: #fffdf8;   /* panel */
+  --color-surface-2: #f8f4ec;   /* p2: inner surfaces, list rows */
+  --color-surface-3: #eceee9;   /* tile: kpi tiles, inputs, segmented */
+  --color-surface-4: #dcd7c9;
 
-  /* ── Semantic States ────────────────────────────────── */
-  --color-success:       #10b981;
-  --color-success-muted: #064e3b;
-  --color-warning:       #F59E0B;
-  --color-warning-muted: #451a03;
-  --color-danger:        #ef4444;
-  --color-danger-muted:  #450a0a;
-  --color-info:          #3b82f6;
-  --color-info-muted:    #1e3a5f;
+  /* ── Cream accents (ADR 031: no existing semantic slot) ── */
+  --color-teal:       #0e6b61;  /* primary action */
+  --color-teal-deep:  #0a514a;
+  --color-teal-soft:  #dfeeeb;  /* teal chip bg */
+  --color-brass:      #9a6b1f;  /* private/personal accent */
+  --color-brass-soft: #f1e8d6;
 
-  /* ── Shadows (dark-UI optimised — intentionally override Tailwind defaults) ── */
-  --shadow-xs:  0 1px 2px 0 rgba(0,0,0,0.40);
-  --shadow-sm:  0 1px 3px 0 rgba(0,0,0,0.50), 0 1px 2px -1px rgba(0,0,0,0.40);
-  --shadow-md:  0 4px 6px -1px rgba(0,0,0,0.55), 0 2px 4px -2px rgba(0,0,0,0.45);
-  --shadow-lg:  0 10px 15px -3px rgba(0,0,0,0.60), 0 4px 6px -4px rgba(0,0,0,0.50);
-  --shadow-xl:  0 20px 25px -5px rgba(0,0,0,0.65), 0 8px 10px -6px rgba(0,0,0,0.55);
-  --shadow-2xl: 0 25px 50px -12px rgba(0,0,0,0.80);
+  /* ── Semantic States (status pairs: bg / text) ──────── */
+  --color-success:       #1a6d4d;
+  --color-success-muted: #e4f0e9;
+  --color-warning:       #8a5e16;
+  --color-warning-muted: #f4ebd7;
+  --color-danger:        #9c3322;
+  --color-danger-muted:  #f4e5e2;
+  --color-info:          #2563eb;
+  --color-info-muted:    #e3ecf6;
+  --color-neutral-muted: #e9ebe7;
+  --color-neutral-ink:   #5a605a;
+
+  /* ── Shadows (cream layered-soft — intentionally override Tailwind defaults) ── */
+  --shadow-xs:  0 1px 2px rgba(28,33,30,0.05);
+  --shadow-sm:  0 1px 2px rgba(28,33,30,0.05), 0 2px 6px rgba(28,33,30,0.04);
+  --shadow-md:  0 2px 6px rgba(28,33,30,0.05), 0 14px 40px rgba(28,33,30,0.07);
+  --shadow-lg:  0 4px 10px rgba(28,33,30,0.06), 0 20px 50px rgba(28,33,30,0.10);
+  --shadow-xl:  0 8px 16px rgba(28,33,30,0.08), 0 28px 64px rgba(28,33,30,0.12);
+  --shadow-2xl: 0 32px 72px rgba(28,33,30,0.18);
 
   /* Teal glow */
-  --shadow-brand-sm: 0 0 0 1px rgba(13,148,136,0.30), 0 4px 12px -2px rgba(13,148,136,0.25);
-  --shadow-brand-md: 0 0 0 1px rgba(13,148,136,0.35), 0 8px 24px -4px rgba(13,148,136,0.35);
-  --shadow-brand-lg: 0 0 0 1px rgba(13,148,136,0.40), 0 16px 40px -6px rgba(13,148,136,0.45);
+  --shadow-brand-sm: 0 0 0 1px rgba(14,107,97,0.25), 0 4px 12px -2px rgba(14,107,97,0.18);
+  --shadow-brand-md: 0 0 0 1px rgba(14,107,97,0.30), 0 8px 24px -4px rgba(14,107,97,0.25);
+  --shadow-brand-lg: 0 0 0 1px rgba(14,107,97,0.35), 0 16px 40px -6px rgba(14,107,97,0.32);
 
   /* Gold glow */
-  --shadow-gold-sm: 0 0 0 1px rgba(245,158,11,0.30), 0 4px 12px -2px rgba(245,158,11,0.20);
+  --shadow-gold-sm: 0 0 0 1px rgba(154,107,31,0.25), 0 4px 12px -2px rgba(154,107,31,0.15);
 
   /* Input focus ring */
-  --shadow-focus: 0 0 0 2px rgba(13,148,136,0.50);
+  --shadow-focus: 0 0 0 2px rgba(14,107,97,0.45);
 
   /* ── Radius (intentionally override Tailwind defaults for dark-UI consistency) ── */
   --radius-xs:     2px;
@@ -132,8 +142,8 @@
   --radius-3xl:    24px;
   --radius-full:   9999px;
 
-  /* Semantic aliases */
-  --radius-card:   16px;
+  /* Semantic aliases (ADR 031: 18px cards, 12px inner) */
+  --radius-card:   18px;
   --radius-panel:  12px;
   --radius-badge:  9999px;
   --radius-button: 8px;
@@ -168,13 +178,14 @@
 }
 
 :root {
-  /* CenterHQ Design Tokens */
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
-  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1), 0 8px 32px rgba(0, 0, 0, 0.06);
-  --shadow-teal: 0 4px 24px rgba(13, 148, 136, 0.15);
+  /* CenterHQ Design Tokens — cream default (ADR 031) */
+  --shadow-card: 0 2px 6px rgba(28, 33, 30, 0.05), 0 14px 40px rgba(28, 33, 30, 0.07);
+  --shadow-hover: 0 4px 10px rgba(28, 33, 30, 0.08), 0 20px 50px rgba(28, 33, 30, 0.10);
+  --shadow-row: 0 1px 2px rgba(28, 33, 30, 0.05);
+  --shadow-teal: 0 4px 24px rgba(14, 107, 97, 0.15);
   --shadow-card-dark: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.2);
-  --radius-card: 16px;
-  --radius-inner: 10px;
+  --radius-card: 18px;
+  --radius-inner: 12px;
   --transition-fast: 150ms ease;
   --transition-normal: 250ms ease;
 
@@ -183,27 +194,35 @@
   --chq-slide-enter-tx: 16px;
 
   /* ── Semantic text colors (var() only) ──────────── */
-  --color-text-primary:   #f8fafc;
-  --color-text-secondary: #94a3b8;
-  --color-text-tertiary:  #64748b;
-  --color-text-disabled:  #475569;
-  --color-text-inverse:   #0f172a;
-  --color-text-brand:     #0D9488;
-  --color-text-amber:     #F59E0B;
+  --color-text-primary:   #1b201d;  /* ink */
+  --color-text-secondary: #5d635c;  /* AA on paper AND panel */
+  --color-text-tertiary:  #80827a;  /* mock muted — captions/small labels */
+  --color-text-muted:     #80827a;
+  --color-text-disabled:  #a6a79d;  /* faint */
+  --color-text-inverse:   #fffdf8;
+  --color-text-brand:     #0e6b61;
+  --color-text-amber:     #8a5e16;
 
-  /* shadcn HSL tokens live in @layer base :root / html.light / .dark — do not duplicate here
-     (unlayered duplicates beat layered rules and broke light-mode --foreground). */
+  /* shadcn HSL tokens live in @layer base :root / .dark — do not duplicate here
+     (unlayered duplicates beat layered rules). */
 
   /* ── Semantic border colors (var() only) ─────────── */
-  --color-border-subtle:  rgba(148, 163, 184, 0.08);
-  --color-border-default: rgba(148, 163, 184, 0.14);
-  --color-border-strong:  rgba(148, 163, 184, 0.24);
-  --color-border-brand:   rgba(13, 148, 136, 0.40);
+  --color-border:         #e2ddd1;
+  --color-border-subtle:  rgba(27, 32, 29, 0.06);
+  --color-border-default: rgba(27, 32, 29, 0.10);
+  --color-border-strong:  rgba(27, 32, 29, 0.16);
+  --color-border-brand:   rgba(14, 107, 97, 0.40);
 
   /* ── Overlay (var() only) ─────────────────────────── */
-  --overlay-light: rgba(248, 250, 252, 0.05);
-  --overlay-mid:   rgba(248, 250, 252, 0.10);
-  --overlay-heavy: rgba(8, 15, 26, 0.75);
+  --overlay-light: rgba(27, 32, 29, 0.04);
+  --overlay-mid:   rgba(27, 32, 29, 0.08);
+  --overlay-heavy: rgba(28, 33, 30, 0.55);
+
+  /* ── Signature gradients (ADR 031) ────────────────── */
+  /* Money surface: income hero, owed card */
+  --grad-money: linear-gradient(150deg, #0f766b, #083f39);
+  /* Deliberate dark accent: live/focus session panels INSIDE the cream app */
+  --grad-live: linear-gradient(165deg, #0c1c19, #0a1513);
 
   /* ── Backdrop blur amounts (bare px values — NO blur() wrapper) ── */
   /* Usage: backdrop-filter: blur(var(--blur-sm))                     */
@@ -222,18 +241,93 @@
   --space-stack-lg:      1rem;
 }
 
-html:not(.light) {
+/* ── Dark theme (user-selectable option; carries the previous dark system) ── */
+html.dark {
+  color-scheme: dark;
+
   --shadow-card: var(--shadow-card-dark);
   --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.45), 0 8px 32px rgba(0, 0, 0, 0.28);
+  --shadow-row: 0 1px 2px rgba(0, 0, 0, 0.35);
+
+  /* Tailwind v4 @theme token overrides — dark chrome */
+  --color-background: hsl(222 47% 3%);
+  --color-foreground: hsl(210 40% 98%);
+  --color-card: hsl(217 33% 10%);
+  --color-card-foreground: hsl(210 40% 98%);
+  --color-popover: hsl(217 33% 10%);
+  --color-popover-foreground: hsl(210 40% 98%);
+  --color-primary: hsl(174 72% 42%);
+  --color-primary-light: hsl(174 72% 42%);
+  --color-primary-foreground: hsl(215 28% 10%);
+  --color-secondary: hsl(215 25% 15%);
+  --color-secondary-foreground: hsl(210 40% 95%);
+  --color-muted: hsl(215 25% 13%);
+  --color-muted-foreground: hsl(215 16% 70%);
+  --color-accent: hsl(174 72% 15%);
+  --color-accent-foreground: hsl(174 72% 60%);
+  --color-destructive: hsl(0 62% 45%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+  --color-input: hsl(215 25% 18%);
+  --color-ring: hsl(174 72% 42%);
+  --color-sidebar: hsl(215 28% 17%);
+  --color-sidebar-foreground: hsl(210 40% 90%);
+  --color-sidebar-accent: hsl(215 25% 24%);
+  --color-sidebar-accent-foreground: hsl(210 40% 95%);
+  --color-sidebar-border: hsl(215 25% 24%);
+
   --color-surface-0: #080f1a;
   --color-surface-1: #0f172a;
   --color-surface-2: #1e293b;
   --color-surface-3: #334155;
+  --color-surface-4: #475569;
+
   --color-text-primary: #f8fafc;
   --color-text-secondary: #cbd5e1;
+  --color-text-tertiary: #64748b;
   --color-text-muted: #64748b;
+  --color-text-disabled: #475569;
+  --color-text-inverse: #0f172a;
+  --color-text-brand: #0d9488;
+  --color-text-amber: #F59E0B;
+
   --color-border: #1e293b;
-  --color-teal: #0d9488;
+  --color-border-subtle:  rgba(148, 163, 184, 0.08);
+  --color-border-default: rgba(148, 163, 184, 0.14);
+  --color-border-strong:  rgba(148, 163, 184, 0.24);
+  --color-border-brand:   rgba(13, 148, 136, 0.40);
+
+  --overlay-light: rgba(248, 250, 252, 0.05);
+  --overlay-mid:   rgba(248, 250, 252, 0.10);
+  --overlay-heavy: rgba(8, 15, 26, 0.75);
+
+  --color-teal:       #0d9488;
+  --color-teal-deep:  #0f766e;
+  --color-teal-soft:  rgba(13, 148, 136, 0.15);
+  --color-brass:      #fbbf24;
+  --color-brass-soft: rgba(245, 158, 11, 0.12);
+
+  --color-success:       #10b981;
+  --color-success-muted: #064e3b;
+  --color-warning:       #F59E0B;
+  --color-warning-muted: #451a03;
+  --color-danger:        #ef4444;
+  --color-danger-muted:  #450a0a;
+  --color-info:          #3b82f6;
+  --color-info-muted:    #1e3a5f;
+  --color-neutral-muted: #1e293b;
+  --color-neutral-ink:   #cbd5e1;
+
+  --shadow-xs:  0 1px 2px 0 rgba(0,0,0,0.40);
+  --shadow-sm:  0 1px 3px 0 rgba(0,0,0,0.50), 0 1px 2px -1px rgba(0,0,0,0.40);
+  --shadow-md:  0 4px 6px -1px rgba(0,0,0,0.55), 0 2px 4px -2px rgba(0,0,0,0.45);
+  --shadow-lg:  0 10px 15px -3px rgba(0,0,0,0.60), 0 4px 6px -4px rgba(0,0,0,0.50);
+  --shadow-xl:  0 20px 25px -5px rgba(0,0,0,0.65), 0 8px 10px -6px rgba(0,0,0,0.55);
+  --shadow-2xl: 0 25px 50px -12px rgba(0,0,0,0.80);
+  --shadow-brand-sm: 0 0 0 1px rgba(13,148,136,0.30), 0 4px 12px -2px rgba(13,148,136,0.25);
+  --shadow-brand-md: 0 0 0 1px rgba(13,148,136,0.35), 0 8px 24px -4px rgba(13,148,136,0.35);
+  --shadow-brand-lg: 0 0 0 1px rgba(13,148,136,0.40), 0 16px 40px -6px rgba(13,148,136,0.45);
+  --shadow-gold-sm: 0 0 0 1px rgba(245,158,11,0.30), 0 4px 12px -2px rgba(245,158,11,0.20);
+  --shadow-focus: 0 0 0 2px rgba(13,148,136,0.50);
 }
 
 .card-shadow {
@@ -261,7 +355,7 @@ html:not(.light) {
 
 /* ── 13C: Design system buttons (unlayered — single source of truth) ── */
 .btn-primary {
-  background-color: #0d9488;
+  background-color: var(--color-teal);
   color: white;
   border-radius: var(--radius-inner);
   padding: 0.5rem 1rem;
@@ -276,7 +370,7 @@ html:not(.light) {
     background-color var(--transition-fast);
 }
 .btn-primary:hover:not(:disabled) {
-  background-color: #0f766e;
+  background-color: var(--color-teal-deep);
   transform: translateY(-1px);
   box-shadow: var(--shadow-hover);
 }
@@ -307,13 +401,13 @@ html:not(.light) {
   background-color: rgba(0, 0, 0, 0.04);
   transform: translateY(-1px);
 }
-html:not(.light) .btn-outline:hover:not(:disabled) {
+html.dark .btn-outline:hover:not(:disabled) {
   background-color: rgba(255, 255, 255, 0.06);
 }
 
 .focus-ring:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.3);
+  box-shadow: 0 0 0 3px rgba(14, 107, 97, 0.3);
 }
 
 /* ── 13C: Page enter ── */
@@ -332,11 +426,11 @@ html:not(.light) .btn-outline:hover:not(:disabled) {
 }
 
 /* CEO / Recharts — grid lines follow theme */
-html.light {
-  --ceo-chart-grid: #e2e8f0;
-  --ceo-chart-total-line: #0f766e;
+:root {
+  --ceo-chart-grid: #ddd8cb;
+  --ceo-chart-total-line: #0e6b61;
 }
-html:not(.light) {
+html.dark {
   --ceo-chart-grid: #334155;
   --ceo-chart-total-line: #99f6e4;
 }
@@ -405,174 +499,136 @@ html:not(.light) {
 }
 
 /* ── Global theme enforcement ───────────────────────────────
-   Forces ALL pages to respect dark/light tokens regardless of
+   Forces ALL pages to respect cream/dark tokens regardless of
    hardcoded Tailwind classes on pages not yet redesigned.
 ──────────────────────────────────────────────────────────── */
 
-/* Dark mode: browser scrollbars + system UI use dark styling */
+/* Cream default: browser scrollbars + system UI use light styling */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
-/* Override hardcoded light backgrounds in dark mode */
-html:not(.light) .bg-white,
-html:not(.light) .bg-gray-50,
-html:not(.light) .bg-gray-100,
-html:not(.light) .bg-slate-50,
-html:not(.light) .bg-slate-100,
-html:not(.light) .bg-background,
-html:not(.light) [class*="bg-white"] {
+/* Cream: hardcoded white/grey utilities warm up to cream surfaces */
+html:not(.dark) .bg-white,
+html:not(.dark) [class*="bg-white"] {
   background-color: var(--color-surface-1) !important;
 }
-
-/* Override hardcoded dark text in dark mode */
-html:not(.light) .text-gray-900,
-html:not(.light) .text-slate-900,
-html:not(.light) .text-gray-800,
-html:not(.light) .text-slate-800,
-html:not(.light) .text-black {
+html:not(.dark) .bg-gray-50,
+html:not(.dark) .bg-gray-100,
+html:not(.dark) .bg-gray-200,
+html:not(.dark) .bg-slate-50,
+html:not(.dark) .bg-slate-100,
+html:not(.dark) .bg-zinc-50,
+html:not(.dark) .bg-zinc-100,
+html:not(.dark) .bg-neutral-50,
+html:not(.dark) .bg-neutral-100 {
+  background-color: var(--color-surface-2) !important;
+}
+html:not(.dark) .text-gray-900,
+html:not(.dark) .text-slate-900,
+html:not(.dark) .text-gray-800,
+html:not(.dark) .text-slate-800,
+html:not(.dark) .text-black {
   color: var(--color-text-primary) !important;
 }
-
-html:not(.light) .text-gray-600,
-html:not(.light) .text-slate-600,
-html:not(.light) .text-gray-500,
-html:not(.light) .text-slate-500 {
+html:not(.dark) .text-gray-600,
+html:not(.dark) .text-slate-600,
+html:not(.dark) .text-gray-500,
+html:not(.dark) .text-slate-500 {
   color: var(--color-text-secondary) !important;
 }
-
-/* Override hardcoded light borders in dark mode */
-html:not(.light) .border-gray-200,
-html:not(.light) .border-slate-200,
-html:not(.light) .border-gray-100,
-html:not(.light) .border-slate-100 {
-  border-color: var(--color-border-subtle) !important;
+html:not(.dark) .border-gray-100,
+html:not(.dark) .border-gray-200,
+html:not(.dark) .border-slate-100,
+html:not(.dark) .border-slate-200,
+html:not(.dark) .border-zinc-100,
+html:not(.dark) .border-zinc-200 {
+  border-color: var(--color-border-default) !important;
 }
 
-html:not(.light) .bg-gray-50,
-html:not(.light) .bg-gray-100,
-html:not(.light) .bg-gray-200 {
+/* Cream: dark-assuming utilities (slate/teal tuned for dark surfaces) */
+html:not(.dark) .text-slate-300,
+html:not(.dark) .text-slate-400 {
+  color: var(--color-text-muted) !important;
+}
+html:not(.dark) .text-teal-400,
+html:not(.dark) .text-teal-300 {
+  color: var(--color-teal-deep) !important;
+}
+html:not(.dark) .bg-teal-600 {
+  background-color: var(--color-teal) !important;
+}
+html:not(.dark) .hover\:bg-teal-700:hover {
+  background-color: var(--color-teal-deep) !important;
+}
+
+/* Cream: input/select/textarea sit on tile */
+html:not(.dark) input:not([type="radio"]):not([type="checkbox"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]),
+html:not(.dark) select,
+html:not(.dark) textarea {
+  background-color: var(--color-surface-3) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border-default) !important;
+}
+
+/* Dark: hardcoded light backgrounds flip to dark surfaces */
+html.dark .bg-white,
+html.dark .bg-gray-50,
+html.dark .bg-gray-100,
+html.dark .bg-slate-50,
+html.dark .bg-slate-100,
+html.dark .bg-background,
+html.dark [class*="bg-white"] {
   background-color: var(--color-surface-1) !important;
 }
-
-html:not(.light) .bg-zinc-50,
-html:not(.light) .bg-zinc-100,
-html:not(.light) .bg-neutral-50,
-html:not(.light) .bg-neutral-100 {
-  background-color: var(--color-surface-1) !important;
-}
-
-html:not(.light) .text-gray-900,
-html:not(.light) .text-gray-800 {
+html.dark .text-gray-900,
+html.dark .text-slate-900,
+html.dark .text-gray-800,
+html.dark .text-slate-800,
+html.dark .text-black {
   color: var(--color-text-primary) !important;
 }
-
-html:not(.light) .text-gray-500,
-html:not(.light) .text-gray-600 {
+html.dark .text-gray-600,
+html.dark .text-slate-600,
+html.dark .text-gray-500,
+html.dark .text-slate-500 {
   color: var(--color-text-secondary) !important;
 }
-
-html:not(.light) .border-gray-100,
-html:not(.light) .border-gray-200,
-html:not(.light) .border-zinc-100,
-html:not(.light) .border-zinc-200 {
+html.dark .border-gray-200,
+html.dark .border-slate-200,
+html.dark .border-gray-100,
+html.dark .border-slate-100,
+html.dark .border-zinc-100,
+html.dark .border-zinc-200 {
   border-color: var(--color-border-subtle) !important;
 }
-
-/* Override hardcoded light input/select/textarea backgrounds in dark mode */
-html:not(.light) input:not([type="radio"]):not([type="checkbox"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]),
-html:not(.light) select,
-html:not(.light) textarea {
+html.dark .bg-gray-200,
+html.dark .bg-zinc-50,
+html.dark .bg-zinc-100,
+html.dark .bg-neutral-50,
+html.dark .bg-neutral-100 {
+  background-color: var(--color-surface-1) !important;
+}
+html.dark input:not([type="radio"]):not([type="checkbox"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]),
+html.dark select,
+html.dark textarea {
   background-color: var(--color-surface-2) !important;
   color: var(--color-text-primary) !important;
   border-color: var(--color-border-default) !important;
 }
 
-/* Light mode: surface-0 tokens flip to light values (already handled
-   by html.light vars above, but ensure S5 dashboard bg classes flip) */
-html.light .bg-\[var\(--color-surface-0\)\] {
-  background-color: #f8fafc !important;
-}
-
-/* Light mode: input/select/textarea */
-html.light input:not([type="radio"]):not([type="checkbox"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]),
-html.light select,
-html.light textarea {
-  background-color: #ffffff !important;
-  color: #0f172a !important;
-  border-color: rgba(15, 23, 42, 0.18) !important;
-}
-
-/* ── Light theme overrides ──────────────────────────────────
-   Applied when <html class="light"> is set by ThemeToggle.
-   Overrides the dark defaults from :root.
+/* ── Marketing / auth dark locks ────────────────────────────
+   Landing, signup, login, forgot-password, session-expired and
+   public pricing are deliberately dark-locked page designs with
+   hardcoded dark component styling. They keep their dark tokens
+   in BOTH themes until their own cream redesign pass (ADR 031
+   follow-up). The teal/muted vars are pinned too so the global
+   utility enforcement resolves correctly inside these surfaces.
 ──────────────────────────────────────────────────────────── */
-html.light {
-  color-scheme: light;
-
-  /* Tailwind v4 @theme token overrides — dark text on light chrome */
-  --color-background: hsl(210 20% 97%);
-  --color-foreground: hsl(222 47% 11%);
-  --color-card: hsl(0 0% 100%);
-  --color-card-foreground: hsl(222 47% 11%);
-  --color-popover: hsl(0 0% 100%);
-  --color-popover-foreground: hsl(222 47% 11%);
-  --color-primary: hsl(174 72% 30%);
-  --color-primary-foreground: hsl(0 0% 100%);
-  --color-secondary: hsl(210 20% 93%);
-  --color-secondary-foreground: hsl(215 28% 17%);
-  --color-muted: hsl(210 20% 94%);
-  --color-muted-foreground: hsl(215 25% 35%);
-  --color-accent: hsl(174 72% 95%);
-  --color-accent-foreground: hsl(174 72% 25%);
-  --color-destructive: hsl(0 72% 51%);
-  --color-destructive-foreground: hsl(0 0% 100%);
-  --color-border: #e2e8f0;
-  --color-input: hsl(214 32% 88%);
-  --color-ring: hsl(174 72% 30%);
-
-  /* Surfaces — white to light grey */
-  --color-surface-0: #f8fafc;
-  --color-surface-1: #ffffff;
-  --color-surface-2: #f1f5f9;
-  --color-surface-3: #e2e8f0;
-  --color-surface-4: #cbd5e1;
-
-  /* Text — dark on light */
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #475569;
-  --color-text-tertiary: #64748b;
-  --color-text-muted: #94a3b8;
-  --color-text-disabled: #94a3b8;
-  --color-text-inverse: #f8fafc;
-  --color-text-brand: #0d9488;
-  --color-teal: #0d9488;
-
-  /* Borders — visible on light backgrounds */
-  --color-border-subtle: rgba(15, 23, 42, 0.08);
-  --color-border-default: rgba(15, 23, 42, 0.14);
-  --color-border-strong: rgba(15, 23, 42, 0.24);
-
-  /* Shadows — lighter for light theme */
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08),
-               0 1px 2px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.10),
-               0 2px 4px rgba(15, 23, 42, 0.06);
-  --shadow-lg: 0 10px 30px rgba(15, 23, 42, 0.12),
-               0 4px 10px rgba(15, 23, 42, 0.08);
-
-  /* Keep brand, success, warning, danger, info unchanged */
-  /* They look correct on both dark and light backgrounds */
-}
-
-html [data-chq-landing],
-html.light [data-chq-landing],
-html [data-chq-signup],
-html.light [data-chq-signup],
-html [data-chq-forgot-password],
-html.light [data-chq-forgot-password],
-html [data-chq-session-expired],
-html.light [data-chq-session-expired] {
+[data-chq-landing],
+[data-chq-signup],
+[data-chq-forgot-password],
+[data-chq-session-expired] {
   --color-surface-0: #080f1a !important;
   --color-surface-1: #0f172a !important;
   --color-surface-2: #1e293b !important;
@@ -581,13 +637,16 @@ html.light [data-chq-session-expired] {
   --color-text-secondary: #cbd5e1 !important;
   --color-text-muted: #64748b !important;
   --color-border: #1e293b !important;
+  --color-border-subtle: rgba(148, 163, 184, 0.08) !important;
+  --color-border-default: rgba(148, 163, 184, 0.14) !important;
+  --color-teal: #0d9488 !important;
+  --color-teal-deep: #14b8a6 !important;
   background-color: #080f1a !important;
   color: #f8fafc !important;
 }
 
-/* Public /pricing — lock dark semantic tokens under html.light (theme uses class on <html>, not Tailwind dark:). */
-html [data-chq-pricing],
-html.light [data-chq-pricing] {
+/* Public /pricing — locked dark tokens (theme uses class on <html>, not Tailwind dark:). */
+[data-chq-pricing] {
   --color-surface-0: #080f1a !important;
   --color-surface-1: #0f172a !important;
   --color-surface-2: #1e293b !important;
@@ -599,64 +658,10 @@ html.light [data-chq-pricing] {
   --color-border-subtle: rgba(148, 163, 184, 0.08) !important;
   --color-border-default: rgba(148, 163, 184, 0.14) !important;
   --color-border-strong: rgba(148, 163, 184, 0.24) !important;
+  --color-teal: #0d9488 !important;
+  --color-teal-deep: #14b8a6 !important;
   background-color: #080f1a !important;
   color: #f8fafc !important;
-}
-
-/* Light theme — component overrides */
-html.light .card {
-  background: #ffffff;
-  border-color: rgba(15, 23, 42, 0.10);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
-}
-
-html.light .card-elevated {
-  background: #ffffff;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.10);
-}
-
-html.light .tab-bar {
-  background: #ffffff;
-  border-top-color: rgba(15, 23, 42, 0.10);
-}
-
-html.light .top-bar {
-  background: rgba(255, 255, 255, 0.92);
-  border-bottom-color: rgba(15, 23, 42, 0.10);
-}
-
-html.light .pull-indicator {
-  background: #f1f5f9;
-  border-bottom-color: rgba(15, 23, 42, 0.10);
-}
-
-html.light .input-base {
-  background: #f8fafc;
-  border-color: rgba(15, 23, 42, 0.18);
-  color: #0f172a;
-}
-
-html.light .btn-ghost {
-  color: #475569;
-}
-
-html.light .btn-ghost:hover {
-  background: rgba(15, 23, 42, 0.06);
-}
-
-html.light .page-bg {
-  background: #f8fafc;
-}
-
-html.light .skeleton {
-  background: linear-gradient(
-    90deg,
-    #f0f0f0 25%,
-    #e0e0e0 50%,
-    #f0f0f0 75%
-  );
-  background-size: 200% 100%;
-  animation: skeleton-wave 1.5s infinite;
 }
 
 @keyframes fade-in {
@@ -728,81 +733,49 @@ html.light .skeleton {
     --scanner-yellow: 48 97% 42%;
     --scanner-purple: 263 70% 50%;
 
-    /* ─── Semantic tokens (shadcn) — default dark UI (<html> has no .dark class) ─── */
-    --background: 222 47% 3%;
-    --foreground: 210 40% 98%;
-    --card: 217 33% 10%;
-    --card-foreground: 210 40% 98%;
-    --popover: 217 33% 10%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 174 72% 42%;
-    --primary-foreground: 215 28% 10%;
-    --secondary: 215 25% 15%;
-    --secondary-foreground: 210 40% 95%;
-    --muted: 215 25% 13%;
-    --muted-foreground: 215 16% 64%;
-    --accent: 174 72% 15%;
-    --accent-foreground: 174 72% 60%;
-    --destructive: 0 62% 40%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 215 25% 18%;
-    --input: 215 25% 18%;
-    --ring: 174 72% 42%;
+    /* ─── Semantic tokens (shadcn) — cream default (ADR 031) ─── */
+    --background: 42 25% 90%;
+    --foreground: 144 8% 12%;
+    --card: 43 100% 99%;
+    --card-foreground: 144 8% 12%;
+    --popover: 43 100% 99%;
+    --popover-foreground: 144 8% 12%;
+    --primary: 174 77% 24%;
+    --primary-foreground: 43 100% 99%;
+    --secondary: 40 46% 95%;
+    --secondary-foreground: 144 8% 12%;
+    --muted: 84 13% 92%;
+    --muted-foreground: 111 4% 37%;
+    --accent: 168 31% 90%;
+    --accent-foreground: 174 78% 18%;
+    --destructive: 9 53% 37%;
+    --destructive-foreground: 43 100% 99%;
+    --border: 42 23% 85%;
+    --input: 84 13% 92%;
+    --ring: 174 77% 24%;
 
     --radius: 0.75rem;
 
-    /* ─── Sidebar ─── */
-    --sidebar-background: 215 28% 17%;
-    --sidebar-foreground: 210 40% 90%;
-    --sidebar-primary: 174 72% 40%;
+    /* ─── Sidebar (cream panel) ─── */
+    --sidebar-background: 43 100% 99%;
+    --sidebar-foreground: 144 8% 12%;
+    --sidebar-primary: 174 77% 24%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 25% 24%;
-    --sidebar-accent-foreground: 210 40% 95%;
-    --sidebar-border: 215 25% 24%;
-    --sidebar-ring: 174 72% 40%;
+    --sidebar-accent: 84 13% 92%;
+    --sidebar-accent-foreground: 144 8% 12%;
+    --sidebar-border: 42 23% 85%;
+    --sidebar-ring: 174 77% 24%;
 
-    /* ─── Shadows (dark UI) ─── */
-    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.3), 0 1px 2px -1px hsl(0 0% 0% / 0.25);
-    --shadow-md: 0 4px 12px -1px hsl(0 0% 0% / 0.4), 0 2px 4px -2px hsl(0 0% 0% / 0.35);
-    --shadow-lg: 0 10px 24px -3px hsl(0 0% 0% / 0.5), 0 4px 8px -4px hsl(0 0% 0% / 0.4);
-    --shadow-card: 0 2px 8px 0 hsl(0 0% 0% / 0.2), 0 0 0 1px hsl(215 25% 18% / 0.8);
+    /* ─── Shadows (cream layered-soft) ─── */
+    --shadow-sm: 0 1px 2px hsl(160 8% 11% / 0.05), 0 2px 6px hsl(160 8% 11% / 0.04);
+    --shadow-md: 0 2px 6px hsl(160 8% 11% / 0.05), 0 14px 40px hsl(160 8% 11% / 0.07);
+    --shadow-lg: 0 4px 10px hsl(160 8% 11% / 0.06), 0 20px 50px hsl(160 8% 11% / 0.10);
+    --shadow-card: 0 2px 6px hsl(160 8% 11% / 0.05), 0 14px 40px hsl(160 8% 11% / 0.07);
 
     /* ─── Gradients ─── */
-    --gradient-primary: linear-gradient(135deg, hsl(174 72% 42%), hsl(174 72% 28%));
-    --gradient-navy: linear-gradient(180deg, hsl(215 28% 12%), hsl(215 28% 8%));
-    --gradient-hero: linear-gradient(135deg, hsl(215 28% 8%) 0%, hsl(215 28% 14%) 50%, hsl(174 40% 16%) 100%);
-  }
-
-  /* Light theme: restore shadcn HSL tokens (Tailwind text-foreground, bg-background, cards) */
-  html.light {
-    --background: 210 20% 97%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 174 72% 30%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 20% 93%;
-    --secondary-foreground: 215 28% 17%;
-    --muted: 210 20% 94%;
-    --muted-foreground: 215 25% 35%;
-    --accent: 174 72% 95%;
-    --accent-foreground: 174 72% 25%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 214 32% 88%;
-    --input: 214 32% 88%;
-    --ring: 174 72% 30%;
-
-    --shadow-sm: 0 1px 3px 0 hsl(215 28% 17% / 0.08), 0 1px 2px -1px hsl(215 28% 17% / 0.08);
-    --shadow-md: 0 4px 12px -1px hsl(215 28% 17% / 0.1), 0 2px 4px -2px hsl(215 28% 17% / 0.06);
-    --shadow-lg: 0 10px 24px -3px hsl(215 28% 17% / 0.12), 0 4px 8px -4px hsl(215 28% 17% / 0.08);
-    --shadow-card: 0 2px 8px 0 hsl(215 28% 17% / 0.06), 0 0 0 1px hsl(214 32% 88% / 0.6);
-
-    --gradient-primary: linear-gradient(135deg, hsl(174 72% 30%), hsl(174 72% 20%));
+    --gradient-primary: linear-gradient(135deg, #0f766b, #0a514a);
     --gradient-navy: linear-gradient(180deg, hsl(215 28% 17%), hsl(215 28% 12%));
-    --gradient-hero: linear-gradient(135deg, hsl(215 28% 12%) 0%, hsl(215 28% 17%) 50%, hsl(174 40% 18%) 100%);
+    --gradient-hero: linear-gradient(150deg, #0f766b, #083f39);
   }
 
   .dark {
@@ -826,10 +799,23 @@ html.light .skeleton {
     --input: 215 25% 18%;
     --ring: 174 72% 42%;
 
+    --sidebar-background: 215 28% 17%;
+    --sidebar-foreground: 210 40% 90%;
+    --sidebar-primary: 174 72% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 25% 24%;
+    --sidebar-accent-foreground: 210 40% 95%;
+    --sidebar-border: 215 25% 24%;
+    --sidebar-ring: 174 72% 40%;
+
     --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.3);
     --shadow-md: 0 4px 12px -1px hsl(0 0% 0% / 0.4);
     --shadow-lg: 0 10px 24px -3px hsl(0 0% 0% / 0.5);
     --shadow-card: 0 2px 8px 0 hsl(0 0% 0% / 0.2), 0 0 0 1px hsl(215 25% 18% / 0.8);
+
+    --gradient-primary: linear-gradient(135deg, hsl(174 72% 42%), hsl(174 72% 28%));
+    --gradient-navy: linear-gradient(180deg, hsl(215 28% 12%), hsl(215 28% 8%));
+    --gradient-hero: linear-gradient(135deg, hsl(215 28% 8%) 0%, hsl(215 28% 14%) 50%, hsl(174 40% 16%) 100%);
   }
 }
 
@@ -1097,16 +1083,31 @@ html[dir="rtl"] {
                  U+200C-U+200F, U+2010-U+2011, U+204F, U+2E41;
 }
 
-/* Single authoritative base font stack.
-   Cairo-Arabic handles Arabic characters via unicode-range.
-   Georgia handles all Latin characters and numbers. */
+/* Single authoritative base font stack (ADR 031).
+   IBM Plex Sans Arabic (next/font, --font-plex) covers Arabic AND Latin.
+   Cairo-Arabic remains as a unicode-range fallback while Plex loads. */
 html,
 body {
-  font-family: 'Cairo-Arabic', Georgia, "Times New Roman", serif;
+  font-family: var(--font-plex), 'Cairo-Arabic', system-ui, -apple-system, 'Segoe UI', sans-serif;
   background-color: var(--color-surface-0);
   color: var(--color-text-primary);
   min-height: 100vh;
   width: 100%;
+}
+
+/* ADR 031 paper wash: two soft radial highlights over the cream paper
+   (teal wash at the top-end, brass wash at the top-start; flipped in RTL). */
+html:not(.dark) body {
+  background-image:
+    radial-gradient(900px 620px at 88% -8%, #dfeeeb66, transparent 60%),
+    radial-gradient(900px 620px at 10% -8%, #f1e8d699, transparent 60%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+html:not(.dark)[dir='rtl'] body {
+  background-image:
+    radial-gradient(900px 620px at 12% -8%, #dfeeeb66, transparent 60%),
+    radial-gradient(900px 620px at 90% -8%, #f1e8d699, transparent 60%);
 }
 
 .chq-page {
@@ -1156,24 +1157,30 @@ body {
   font-feature-settings: normal !important;
 }
 
-/* Belt-and-suspenders for number and code elements.
-   Ensures Georgia even inside Arabic-heavy components. */
+/* Belt-and-suspenders for number and code elements: Plex with tabular
+   numerals so figures align inside Arabic-heavy components. */
 .font-mono,
 .tabular-nums,
 code,
 pre,
 kbd,
 samp {
-  font-family: Georgia, "Times New Roman", serif !important;
+  font-family: var(--font-plex), 'Cairo-Arabic', system-ui, sans-serif !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Numeric display utility (ADR 031): pair with formatNumber output. */
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 /* Tailwind v4 only: override font-cairo utility output.
    In v4, the font-cairo utility generates font-family: var(--font-cairo).
-   next/font sets --font-cairo via a class selector with higher specificity
-   than :root or @theme, making those overrides ineffective at runtime.
-   This class-level !important rule is the correct and only reliable fix. */
+   next/font sets vars via a class selector with higher specificity than
+   :root or @theme. Map the legacy utility onto the Plex stack. */
 .font-cairo {
-  font-family: 'Cairo-Arabic', Georgia, "Times New Roman", serif !important;
+  font-family: var(--font-plex), 'Cairo-Arabic', system-ui, sans-serif !important;
 }
 
 @layer components {
@@ -1251,11 +1258,11 @@ samp {
     font-weight: 600;
     line-height: 1;
   }
-  .badge-brand   { background: rgba(13,148,136,0.15);  color: var(--color-brand-400); }
-  .badge-gold    { background: rgba(245,158,11,0.15);   color: var(--color-gold-400); }
-  .badge-success { background: rgba(16,185,129,0.15);   color: #34d399; }
-  .badge-danger  { background: rgba(239,68,68,0.15);    color: #f87171; }
-  .badge-neutral { background: var(--color-surface-3);  color: var(--color-text-secondary); }
+  .badge-brand   { background: var(--color-teal-soft);    color: var(--color-teal-deep); }
+  .badge-gold    { background: var(--color-brass-soft);   color: var(--color-brass); }
+  .badge-success { background: var(--color-success-muted); color: var(--color-success); }
+  .badge-danger  { background: var(--color-danger-muted);  color: var(--color-danger); }
+  .badge-neutral { background: var(--color-neutral-muted); color: var(--color-neutral-ink); }
 
   /* ── Divider ─────────────────────────────────────── */
   .divider {
@@ -1278,13 +1285,36 @@ samp {
   .skeleton {
     background: linear-gradient(
       90deg,
-      #1e293b 25%,
-      #334155 50%,
-      #1e293b 75%
+      #e7e2d6 25%,
+      #dcd7c9 50%,
+      #e7e2d6 75%
     );
     background-size: 200% 100%;
     animation: skeleton-wave 1.5s infinite;
     border-radius: 6px;
+  }
+  html.dark .skeleton {
+    background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+    background-size: 200% 100%;
+  }
+
+  /* ── ADR 031 signature surfaces ───────────────────────── */
+  /* Money hero: the teal gradient with a soft radial highlight (income
+     headline, owed card). White ink on it in BOTH themes. */
+  .money-hero {
+    background-image:
+      radial-gradient(120% 90% at 85% -20%, rgba(255, 255, 255, 0.14), transparent 55%),
+      var(--grad-money);
+    color: #fffdf8;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 8px 16px rgba(8, 63, 57, 0.18), 0 28px 64px rgba(8, 63, 57, 0.22);
+  }
+  /* Deliberate dark accent: live/focus session panels INSIDE the cream app.
+     Component-level style, not a theme. */
+  .panel-live {
+    background-image: var(--grad-live);
+    color: #f4f6f4;
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   /* ── Page background ─────────────────────────────── */
@@ -1355,31 +1385,37 @@ samp {
   color: var(--color-text-primary);
 }
 
-/* ── Light mode — white text readability fix ────────────────
-   Hardcoded text-white on surfaces must map to theme primary in light mode.
+/* ── Cream — white text readability fix ─────────────────────
+   Hardcoded text-white on token surfaces maps to ink on cream.
+   Dark-locked pages pin --color-text-primary back to #f8fafc, so
+   these var-based remaps stay correct inside the locks.
 ──────────────────────────────────────────────────────────── */
-html.light .text-white {
+html:not(.dark) .text-white {
   color: var(--color-text-primary) !important;
 }
 
-html.light .text-white\/90,
-html.light .text-white\/80,
-html.light .text-white\/70 {
+html:not(.dark) .text-white\/90,
+html:not(.dark) .text-white\/80,
+html:not(.dark) .text-white\/70 {
   color: var(--color-text-secondary) !important;
 }
 
-/* Light mode — slate muted text on white surfaces (Tailwind slate-* utilities) */
-html.light .text-slate-300,
-html.light [class*='text-slate-3'] {
+/* Cream — slate muted text utilities (dark-assuming) */
+html:not(.dark) [class*='text-slate-3'] {
   color: var(--color-text-secondary) !important;
 }
 
-html.light .text-slate-400,
-html.light [class*='text-slate-4'] {
+html:not(.dark) [class*='text-slate-4'] {
   color: var(--color-text-muted) !important;
 }
 
-/* Signup (#080D14) — plan cards stay readable in html.light (text-white remap) */
+/* Money hero / live panels: hardcoded white stays white on the gradient. */
+html:not(.dark) .money-hero .text-white,
+html:not(.dark) .panel-live .text-white {
+  color: #ffffff !important;
+}
+
+/* Signup (#080D14) — plan cards stay readable (text-white remap) */
 [data-chq-signup] .text-white,
 [data-chq-signup] .\!text-white {
   color: #ffffff !important;
@@ -1391,24 +1427,9 @@ html.light [class*='text-slate-4'] {
   color: #64748b !important;
 }
 
-html.light [data-chq-signup] .text-white,
-html.light [data-chq-signup] .\!text-white {
-  color: #ffffff !important;
-}
-html.light [data-chq-signup] .text-slate-400 {
-  color: #94a3b8 !important;
-}
-html.light [data-chq-signup] .text-slate-500 {
-  color: #64748b !important;
-}
-
 [data-chq-signup] {
   background-color: #080D14 !important;
   min-height: 100vh;
-}
-
-html.light [data-chq-signup] {
-  background-color: #080D14 !important;
 }
 
 [data-chq-signup] form,
@@ -1418,9 +1439,7 @@ html.light [data-chq-signup] {
 }
 
 [data-chq-signup] input,
-[data-chq-signup] textarea,
-html.light [data-chq-signup] input,
-html.light [data-chq-signup] textarea {
+[data-chq-signup] textarea {
   background: transparent !important;
   background-color: transparent !important;
   -webkit-box-shadow: 0 0 0px 1000px #080d14 inset !important;
@@ -1430,8 +1449,7 @@ html.light [data-chq-signup] textarea {
   border-radius: 0 !important;
 }
 
-[data-chq-signup] select,
-html.light [data-chq-signup] select {
+[data-chq-signup] select {
   background: #080d14 !important;
   background-color: #080d14 !important;
   -webkit-box-shadow: none !important;
@@ -1439,17 +1457,14 @@ html.light [data-chq-signup] select {
   border-radius: 0 !important;
 }
 
-[data-chq-signup] select option,
-html.light [data-chq-signup] select option {
+[data-chq-signup] select option {
   background: #0f172a !important;
   color: #f8fafc !important;
   -webkit-text-fill-color: #f8fafc !important;
 }
 
 [data-chq-signup] input::placeholder,
-[data-chq-signup] textarea::placeholder,
-html.light [data-chq-signup] input::placeholder,
-html.light [data-chq-signup] textarea::placeholder {
+[data-chq-signup] textarea::placeholder {
   -webkit-text-fill-color: #475569 !important;
   color: #475569 !important;
   opacity: 1 !important;
@@ -1457,8 +1472,7 @@ html.light [data-chq-signup] textarea::placeholder {
 
 [data-chq-signup] [data-chq-underline]:-webkit-autofill,
 [data-chq-signup] [data-chq-underline]:-webkit-autofill:hover,
-[data-chq-signup] [data-chq-underline]:-webkit-autofill:focus,
-html.light [data-chq-signup] [data-chq-underline]:-webkit-autofill {
+[data-chq-signup] [data-chq-underline]:-webkit-autofill:focus {
   -webkit-text-fill-color: #f8fafc !important;
   -webkit-box-shadow: 0 0 0px 1000px #080d14 inset !important;
   background-color: #080d14 !important;
@@ -1474,12 +1488,8 @@ html.light [data-chq-signup] [data-chq-underline]:-webkit-autofill {
   color: #f8fafc !important;
 }
 
-html.light [data-chq-login] {
-  background-color: #080d14 !important;
-}
 
-[data-chq-login] input,
-html.light [data-chq-login] input {
+[data-chq-login] input {
   background: transparent !important;
   background-color: transparent !important;
   -webkit-box-shadow: 0 0 0px 1000px #080d14 inset !important;
@@ -1489,8 +1499,7 @@ html.light [data-chq-login] input {
   border-radius: 0 !important;
 }
 
-[data-chq-login] input::placeholder,
-html.light [data-chq-login] input::placeholder {
+[data-chq-login] input::placeholder {
   -webkit-text-fill-color: #334155 !important;
   color: #334155 !important;
   opacity: 1 !important;
@@ -1498,14 +1507,13 @@ html.light [data-chq-login] input::placeholder {
 
 [data-chq-login] input:-webkit-autofill,
 [data-chq-login] input:-webkit-autofill:hover,
-[data-chq-login] input:-webkit-autofill:focus,
-html.light [data-chq-login] input:-webkit-autofill {
+[data-chq-login] input:-webkit-autofill:focus {
   -webkit-text-fill-color: #f8fafc !important;
   -webkit-box-shadow: 0 0 0px 1000px #080d14 inset !important;
   caret-color: #f8fafc;
 }
 
-/* Session expired — full-page dark surface (same as login/signup) even in html.light */
+/* Session expired — full-page dark surface (same as login/signup) in both themes */
 [data-chq-session-expired] {
   background-color: #080f1a !important;
   min-height: 100vh;
@@ -1513,9 +1521,6 @@ html.light [data-chq-login] input:-webkit-autofill {
   width: 100%;
 }
 
-html.light [data-chq-session-expired] {
-  background-color: #080f1a !important;
-}
 
 [data-chq-session-expired] .text-white,
 [data-chq-session-expired] .\!text-white {
@@ -1525,13 +1530,6 @@ html.light [data-chq-session-expired] {
   color: #94a3b8 !important;
 }
 
-html.light [data-chq-session-expired] .text-white,
-html.light [data-chq-session-expired] .\!text-white {
-  color: #ffffff !important;
-}
-html.light [data-chq-session-expired] .text-slate-400 {
-  color: #94a3b8 !important;
-}
 
 @keyframes breathe {
   0%,
@@ -2129,19 +2127,19 @@ html.light [data-chq-session-expired] .text-slate-400 {
 
 /* ── FINAL TEXT COLOR ENFORCEMENT ───────────────────────── */
 /* Beats Tailwind preflight + any component-level overrides  */
-html:not(.light) {
-  color: #f8fafc !important;
+html:not(.dark) {
+  color: #1b201d !important;
 }
 
-html.light {
-  color: #0f172a !important;
+html.dark {
+  color: #f8fafc !important;
 }
 
 /* ─── Native date input (admin shell only) ─── */
 .dark [data-admin="true"] input[type="date"] {
   color-scheme: dark;
 }
-.light [data-admin="true"] input[type="date"] {
+html:not(.dark) [data-admin="true"] input[type="date"] {
   color-scheme: light;
 }
 .dark [data-admin="true"] input[type="date"]::-webkit-calendar-picker-indicator {
@@ -2177,11 +2175,11 @@ html.light {
   color-scheme: dark !important;
 }
 
-.light [data-admin="true"] .admin-textarea,
-.light [data-admin="true"] textarea.admin-textarea {
-  background-color: #f3f4f6 !important;
-  color: #111827 !important;
-  border-color: #d1d5db !important;
+html:not(.dark) [data-admin="true"] .admin-textarea,
+html:not(.dark) [data-admin="true"] textarea.admin-textarea {
+  background-color: var(--color-surface-3) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border) !important;
   color-scheme: light !important;
 }
 
@@ -2265,10 +2263,14 @@ body:has([data-chq-session-expired]) {
   to   { background-position: 200% 0; }
 }
 .chq-skeleton {
-  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background: linear-gradient(90deg, #e7e2d6 25%, #dcd7c9 50%, #e7e2d6 75%);
   background-size: 200% 100%;
   animation: chq-shimmer 1.5s infinite;
   border-radius: 0.375rem;
+}
+html.dark .chq-skeleton {
+  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background-size: 200% 100%;
 }
 
 .chq-focus:focus-visible {

@@ -13,13 +13,16 @@ export function ThemeToggle() {
     setMounted(true);
   }, []);
 
+  // Two-state toggle (ADR 031): cream default / dark option. A stored
+  // 'light' preference from the removed theme resolves as not-dark and the
+  // next toggle writes a valid value, so it gracefully falls back to cream.
   const isDark = mounted && resolvedTheme === 'dark';
 
   return (
     <button
       type="button"
       disabled={!mounted}
-      onClick={() => mounted && setTheme(isDark ? 'light' : 'dark')}
+      onClick={() => mounted && setTheme(isDark ? 'cream' : 'dark')}
       suppressHydrationWarning
       aria-label={
         !mounted ? t('switchToDarkTheme') : isDark ? t('switchToLightTheme') : t('switchToDarkTheme')

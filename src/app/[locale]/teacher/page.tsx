@@ -95,7 +95,7 @@ export default function TeacherHomePage() {
     <div className="flex flex-col gap-8">
       <section>
         <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-[var(--color-text-primary)]">
-          <Building2 size={18} className="text-teal-400" aria-hidden />
+          <Building2 size={18} className="text-[var(--color-teal-deep)]" aria-hidden />
           {t('myCenters.title')}
         </h2>
         {ctx.centers.length === 0 ? (
@@ -124,7 +124,7 @@ export default function TeacherHomePage() {
       {ctx.state === 'center_only' && (
         <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6">
           <div className="mb-2 flex items-center gap-2">
-            <Sparkles size={18} className="text-teal-400" aria-hidden />
+            <Sparkles size={18} className="text-[var(--color-teal-deep)]" aria-hidden />
             <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
               {t('privateCta.title')}
             </h2>
@@ -147,7 +147,7 @@ export default function TeacherHomePage() {
           />
           <section>
             <div className="mb-4 flex items-center gap-2">
-              <Wallet size={18} className="text-teal-400" aria-hidden />
+              <Wallet size={18} className="text-[var(--color-teal-deep)]" aria-hidden />
               <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
                 {t('privateEngine.title')}
               </h2>
@@ -160,7 +160,7 @@ export default function TeacherHomePage() {
       {ctx.state === 'lapsed' && (
         <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6">
           <div className="mb-2 flex items-center gap-2">
-            <PauseCircle size={18} className="text-amber-400" aria-hidden />
+            <PauseCircle size={18} className="text-[var(--color-warning)]" aria-hidden />
             <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
               {t('resume.title')}
             </h2>

@@ -121,7 +121,7 @@ export default function SessionsSection({ groupId }: { groupId: string }) {
       </div>
 
       {error && (
-        <p className="mb-3 rounded-lg border border-red-900 bg-red-900/20 p-3 text-sm text-red-400">
+        <p className="mb-3 rounded-lg border border-[var(--color-danger-muted)] bg-[var(--color-danger-muted)] p-3 text-sm text-[var(--color-danger)]">
           {t('recordError')}
         </p>
       )}
@@ -145,7 +145,7 @@ export default function SessionsSection({ groupId }: { groupId: string }) {
             <li key={s.id}>
               <Link
                 href={`/teacher/groups/${groupId}/sessions/${s.id}`}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3 transition-colors hover:border-teal-800"
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3 transition-colors hover:border-[var(--color-teal)]/40"
               >
                 <div>
                   <p className="font-medium text-[var(--color-text-primary)]">
@@ -159,7 +159,7 @@ export default function SessionsSection({ groupId }: { groupId: string }) {
                   <span
                     className={`rounded-full px-3 py-1 text-xs font-medium ${
                       s.billed
-                        ? 'bg-teal-900/40 text-teal-400'
+                        ? 'bg-[var(--color-teal-soft)] text-[var(--color-teal-deep)]'
                         : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'
                     }`}
                   >

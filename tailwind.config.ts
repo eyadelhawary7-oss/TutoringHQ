@@ -12,9 +12,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Georgia', '"Times New Roman"', 'serif'],
-        mono: ['Georgia', '"Times New Roman"', 'serif'],
-        cairo: ['"Cairo-Arabic"', 'Georgia', '"Times New Roman"', 'serif'],
+        sans: ['var(--font-plex)', '"Cairo-Arabic"', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-plex)', '"Cairo-Arabic"', 'system-ui', 'sans-serif'],
+        cairo: ['var(--font-plex)', '"Cairo-Arabic"', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",

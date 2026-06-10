@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
-import { Bodoni_Moda, Playfair_Display } from 'next/font/google';
+import { Bodoni_Moda, IBM_Plex_Sans_Arabic, Playfair_Display } from 'next/font/google';
 import { routing } from '@/i18n/routing';
 import { notFound } from 'next/navigation';
 import { getMessages } from 'next-intl/server';
@@ -10,6 +10,16 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import WebVitalsReporter from '@/lib/monitoring/WebVitalsReporter';
 import '../globals.css';
+
+// ADR 031: IBM Plex Sans Arabic is the product font (Arabic + Latin in one
+// face). Cairo stays loaded as a unicode-range fallback while Plex arrives.
+const plex = IBM_Plex_Sans_Arabic({
+  subsets: ['arabic', 'latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-plex',
+  display: 'swap',
+  fallback: ['system-ui', 'sans-serif'],
+});
 
 const cairo = localFont({
   src: [
@@ -148,13 +158,16 @@ export default async function LocaleLayout({
             __html: `
 (function() {
   try {
-    var theme = localStorage.getItem('chq-theme') || 'dark';
+    var stored = localStorage.getItem('chq-theme');
+    /* ADR 031: cream is the default; a stored 'light' preference from the
+       removed theme falls back to cream. */
+    var theme = stored === 'dark' ? 'dark' : 'cream';
     document.documentElement.classList.add(theme);
-    document.documentElement.classList.remove(
-      theme === 'dark' ? 'light' : 'dark'
-    );
+    document.documentElement.classList.remove(theme === 'dark' ? 'cream' : 'dark');
+    document.documentElement.classList.remove('light');
   } catch(e) {
-    document.documentElement.classList.add('dark');
+    document.documentElement.classList.add('cream');
+    document.documentElement.classList.remove('dark');
     document.documentElement.classList.remove('light');
   }
 })();
@@ -172,7 +185,7 @@ export default async function LocaleLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body
-        className={`${cairo.variable} ${playfair.variable} ${bodoniModa.variable} antialiased bg-[var(--color-surface-0)] text-[var(--color-text-primary)] min-h-screen w-full font-cairo`}
+        className={`${plex.variable} ${cairo.variable} ${playfair.variable} ${bodoniModa.variable} antialiased bg-[var(--color-surface-0)] text-[var(--color-text-primary)] min-h-screen w-full font-cairo`}
         suppressHydrationWarning
       >
         <PostHogProvider>

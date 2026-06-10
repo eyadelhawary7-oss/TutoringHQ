@@ -13,7 +13,7 @@ export default function TeacherResubscribePage() {
 
   return (
     <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-8 text-center">
-      <PauseCircle size={32} className="mx-auto mb-4 text-amber-400" aria-hidden />
+      <PauseCircle size={32} className="mx-auto mb-4 text-[var(--color-warning)]" aria-hidden />
       <h1 className="mb-2 text-xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
       <p className="mb-6 text-sm text-[var(--color-text-secondary)]">{t('body')}</p>
       <Link

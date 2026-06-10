@@ -4,9 +4,9 @@ import { NextResponse } from 'next/server';
 
 export async function POST(
   req: Request,
-  context: { params: Promise<{ id: string }> },
+  context: { params: Promise<{ orderId: string }> },
 ) {
-  const { id } = await context.params;
+  const { orderId: id } = await context.params;
   const auth = await requireInternalAdminApi(req);
   if (!auth.ok) {
     return auth.response;
