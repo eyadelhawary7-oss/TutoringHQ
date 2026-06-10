@@ -7960,6 +7960,7 @@
   },
   "teacherPortal": {
     "headerTitle": "Teacher portal",
+    "settings": "Settings",
     "logout": "Log out",
     "errorTitle": "Something went wrong",
     "errorBody": "We could not load your portal. Please try again.",
@@ -8133,6 +8134,21 @@
     "errorPinMatch": "The two PINs do not match.",
     "errorWeakPin": "This PIN is too easy to guess. Choose another.",
     "errorRateLimit": "Too many attempts. Please try again later.",
+    "errorGeneric": "Something went wrong. Please try again."
+  },
+  "teacherSettings": {
+    "title": "Account settings",
+    "subtitle": "Update your name and the subject you teach.",
+    "nameLabel": "Display name",
+    "subjectLabel": "Subject (optional)",
+    "subjectPlaceholder": "e.g. Physics",
+    "save": "Save changes",
+    "saving": "Saving...",
+    "saved": "Saved.",
+    "errorTitle": "Something went wrong",
+    "errorBody": "We could not load your details. Please try again.",
+    "retry": "Try again",
+    "errorName": "Enter your name (at least 2 characters).",
     "errorGeneric": "Something went wrong. Please try again."
   }
 }

@@ -3,6 +3,39 @@ import * as Sentry from '@sentry/nextjs';
 import { requireTeacherAuth } from '@/lib/centerAuth';
 
 /**
+ * GET the authenticated teacher's own profile (display_name / subject) so the
+ * settings form can prefill. Scoped to user_id = auth.userId via service role;
+ * nothing identity-bearing is read from the request body/query. Returns null
+ * fields when no row exists yet (the form then starts empty). Rule 151: a read
+ * error surfaces as 500 + Sentry.
+ */
+export async function GET(request: NextRequest) {
+  const auth = await requireTeacherAuth(request);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
+  const { data, error: readErr } = await auth.supabaseAdmin
+    .from('teacher_profiles')
+    .select('display_name, subject')
+    .eq('user_id', auth.userId)
+    .maybeSingle();
+  if (readErr) {
+    Sentry.withScope((scope) => {
+      scope.setTag('route', 'api/teacher/profile');
+      scope.setTag('step', 'profile_read');
+      Sentry.captureException(readErr);
+    });
+    return NextResponse.json({ error: 'Server error', code: 'server_error' }, { status: 500 });
+  }
+
+  return NextResponse.json({
+    displayName: (data?.display_name as string | null) ?? null,
+    subject: (data?.subject as string | null) ?? null,
+  });
+}
+
+/**
  * PATCH the authenticated teacher's profile (display_name / subject). Scoped
  * to the teacher's own row by user_id = auth.userId - nothing identity-bearing
  * is read from the body. Upserts teacher_profiles on conflict(user_id) so it

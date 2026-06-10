@@ -2,7 +2,8 @@
 
 import { useEffect, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { LogOut } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
+import { Link } from '@/i18n/routing';
 import { useLayout } from '@/contexts/LayoutContext';
 import { signOutToLogin } from '@/lib/auth/sign-out-client';
 
@@ -31,13 +32,23 @@ export default function TeacherShell({ children }: { children: ReactNode }) {
           <span className="font-bold text-[var(--color-text-primary)]">CenterHQ</span>
           <span className="text-sm text-[var(--color-text-muted)]">{t('headerTitle')}</span>
         </div>
-        <button
-          onClick={() => signOutToLogin(locale)}
-          className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border-subtle)] px-3 py-1.5 text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-0)]"
-        >
-          <LogOut size={14} />
-          {t('logout')}
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/teacher/settings"
+            aria-label={t('settings')}
+            className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border-subtle)] px-3 py-1.5 text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-0)]"
+          >
+            <Settings size={14} />
+            <span className="hidden sm:inline">{t('settings')}</span>
+          </Link>
+          <button
+            onClick={() => signOutToLogin(locale)}
+            className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border-subtle)] px-3 py-1.5 text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-0)]"
+          >
+            <LogOut size={14} />
+            {t('logout')}
+          </button>
+        </div>
       </header>
       <main className="mx-auto w-full max-w-3xl p-4 md:p-6">{children}</main>
     </div>
