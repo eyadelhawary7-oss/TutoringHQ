@@ -7974,6 +7974,25 @@
       "body": "Manage your own private groups, income, and parent messages from one place.",
       "start": "Create your first group"
     },
+    "centerCuts": {
+      "title": "What centers owe me",
+      "totalOutstanding": "Owed to you across all centers",
+      "collectedThisMonth": "Collected this month: {amount}",
+      "collectedShort": "Collected this month:",
+      "owedShort": "Owed:",
+      "cutLabel": "your share {pct}",
+      "unknownCenter": "Center",
+      "emptyTitle": "No centers linked yet",
+      "emptyBody": "You are not an active member of any center yet. Ask your center to invite you to CenterHQ and your share will show up here."
+    },
+    "privateUpsell": {
+      "title": "Your own private practice",
+      "body": "Run your private groups outside any center, track your income, and message parents, all in one place.",
+      "trialLine": "14-day free trial of the private tools.",
+      "priceLine": "299 EGP per month after the trial.",
+      "noCardLine": "No card needed now, cancel anytime, and your center work stays free.",
+      "cta": "Create your first group"
+    },
     "groups": {
       "title": "My private groups",
       "add": "Add group",

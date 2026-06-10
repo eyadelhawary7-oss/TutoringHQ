@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Building2, Sparkles, PauseCircle, Wallet } from 'lucide-react';
+import { Sparkles, PauseCircle, Wallet } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
+import CenterCutsSection from './CenterCutsSection';
 import IncomeView from './IncomeView';
 import PrivateGroupModal from './PrivateGroupModal';
 import PrivateGroupsSection from './PrivateGroupsSection';
@@ -93,52 +94,13 @@ export default function TeacherHomePage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <section>
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-[var(--color-text-primary)]">
-          <Building2 size={18} className="text-[var(--color-teal-deep)]" aria-hidden />
-          {t('myCenters.title')}
-        </h2>
-        {ctx.centers.length === 0 ? (
-          <p className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-sm text-[var(--color-text-secondary)]">
-            {t('myCenters.empty')}
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {ctx.centers.map((c) => (
-              <li
-                key={c.id}
-                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4"
-              >
-                <p className="font-medium text-[var(--color-text-primary)]">{c.name}</p>
-                {c.center_code && (
-                  <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-                    {t('myCenters.codeLabel', { code: c.center_code })}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {/* Section 1 (all states): center-cut tracker - what centers owe me. */}
+      <CenterCutsSection />
 
-      {ctx.state === 'center_only' && (
-        <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6">
-          <div className="mb-2 flex items-center gap-2">
-            <Sparkles size={18} className="text-[var(--color-teal-deep)]" aria-hidden />
-            <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
-              {t('privateCta.title')}
-            </h2>
-          </div>
-          <p className="mb-4 text-sm text-[var(--color-text-secondary)]">{t('privateCta.body')}</p>
-          <button
-            onClick={() => setShowCreateGroup(true)}
-            className="rounded-lg bg-teal-600 px-4 py-2 font-medium text-primary-foreground transition-colors hover:bg-teal-700"
-          >
-            {t('privateCta.start')}
-          </button>
-        </section>
-      )}
-
+      {/* Section 2 (Option A): the private engine is ALWAYS present. Subscribed
+          teachers get the live widgets; never-subscribed and lapsed teachers
+          get a locked conversion card that renders NO private data and fetches
+          NO private routes - the gate stays in the API. */}
       {ctx.state === 'unified' && (
         <>
           <PrivateGroupsSection
@@ -147,7 +109,7 @@ export default function TeacherHomePage() {
           />
           <section>
             <div className="mb-4 flex items-center gap-2">
-              <Wallet size={18} className="text-[var(--color-teal-deep)]" aria-hidden />
+              <Wallet size={18} className="text-[var(--color-brass)]" aria-hidden />
               <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
                 {t('privateEngine.title')}
               </h2>
@@ -157,10 +119,33 @@ export default function TeacherHomePage() {
         </>
       )}
 
-      {ctx.state === 'lapsed' && (
-        <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6">
+      {ctx.state === 'center_only' && (
+        <section className="rounded-[var(--radius-card)] border border-[var(--color-brass)]/50 bg-[var(--color-brass-soft)] p-6">
           <div className="mb-2 flex items-center gap-2">
-            <PauseCircle size={18} className="text-[var(--color-warning)]" aria-hidden />
+            <Sparkles size={18} className="text-[var(--color-brass)]" aria-hidden />
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
+              {t('privateUpsell.title')}
+            </h2>
+          </div>
+          <p className="mb-3 text-sm text-[var(--color-text-secondary)]">{t('privateUpsell.body')}</p>
+          <ul className="mb-4 flex list-disc flex-col gap-1 ps-5 text-sm text-[var(--color-text-secondary)]">
+            <li>{t('privateUpsell.trialLine')}</li>
+            <li>{t('privateUpsell.priceLine')}</li>
+            <li>{t('privateUpsell.noCardLine')}</li>
+          </ul>
+          <button
+            onClick={() => setShowCreateGroup(true)}
+            className="rounded-lg bg-[var(--color-brass)] px-4 py-2 font-medium text-white transition-opacity hover:opacity-90"
+          >
+            {t('privateUpsell.cta')}
+          </button>
+        </section>
+      )}
+
+      {ctx.state === 'lapsed' && (
+        <section className="rounded-[var(--radius-card)] border border-[var(--color-teal)]/40 bg-[var(--color-teal-soft)] p-6">
+          <div className="mb-2 flex items-center gap-2">
+            <PauseCircle size={18} className="text-[var(--color-teal-deep)]" aria-hidden />
             <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
               {t('resume.title')}
             </h2>
