@@ -24,8 +24,10 @@
     "metaTitle": "Pricing – CenterHQ",
     "metaDescription": "Compare Solo through Enterprise plans and Top Centers. Transparent monthly, quarterly, and annual pricing for tutoring centers.",
     "navHome": "Home",
-    "title": "Plans for every center size",
+    "title": "Plans for every size",
     "subtitle": "Monthly, quarterly, and annual billing. All amounts include VAT where applicable.",
+    "toggleCenters": "Centers",
+    "toggleTeachers": "Teachers",
     "studentsCapEn": "Up to {count} students/week",
     "studentsCapAr": "حتى {count} طالب/أسبوع",
     "badgeEntry": "Entry level",
@@ -8209,6 +8211,31 @@
     "heroSub": "Whether you teach at a center or have private students, CenterHQ brings all your income into one screen and sends payment links on its own.",
     "ctaPrimary": "Start your free trial",
     "ctaSecondary": "Log in",
+    "nav": {
+      "features": "Features",
+      "pricing": "Pricing",
+      "contact": "Contact us",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu"
+    },
+    "pain": {
+      "heading": "Teaching shouldn't feel like accounting.",
+      "body": "Every day: different centers, private students, and by the end you don't know what you earned. Chasing payments, calculating splits by hand, wondering who paid and who didn't. CenterHQ puts it all in one screen. See every pound you earn, and let the invoices send themselves.",
+      "connector": "CenterHQ solves all of it."
+    },
+    "features": {
+      "f1": { "title": "Center monitoring", "body": "See your cut from every center automatically. No manual math." },
+      "f2": { "title": "Private groups", "body": "Create your own groups, share a join link, students enroll themselves." },
+      "f3": { "title": "One-tap billing", "body": "Finish the class, tap once, every student gets their invoice on WhatsApp." },
+      "f4": { "title": "Unified income", "body": "Your private earnings and center cuts, one total, one screen." },
+      "f5": { "title": "Cash and digital", "body": "Mark cash paid with one tap. Digital via Paymob (coming soon). No commission on cash." },
+      "f6": { "title": "WhatsApp notifications", "body": "Parents get automatic messages for attendance, payment links, and reminders." }
+    },
+    "featuresTitle": "Everything in one place",
+    "pricingPreview": {
+      "heading": "Simple pricing",
+      "seeFullPricing": "See full pricing"
+    },
     "mock": {
       "label": "Your income this month",
       "total": "EGP 138,500",

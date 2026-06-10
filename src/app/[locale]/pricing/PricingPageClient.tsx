@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
@@ -12,20 +13,37 @@ import { usePublicPlanPrices } from '@/hooks/usePublicPlanPrices';
 
 const CONTACT_MAIL = 'mailto:eyad@ehgintelligence.com';
 
+type Audience = 'center' | 'teacher';
+
 export default function PricingPageClient() {
   const t = useTranslations('pricingPage');
+  const tp = useTranslations('pricingPage.teacher');
   const m = useTranslations('landing.marketing');
   const locale = useLocale();
+  const searchParams = useSearchParams();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [audience, setAudience] = useState<Audience>(
+    searchParams?.get('for') === 'teacher' ? 'teacher' : 'center',
+  );
   const dynamicPlanPrices = usePublicPlanPrices();
 
   const teacherFeatures = [
-    t('teacher.feature1'),
-    t('teacher.feature2'),
-    t('teacher.feature3'),
-    t('teacher.feature4'),
+    tp('feature1'),
+    tp('feature2'),
+    tp('feature3'),
+    tp('feature4'),
   ];
+
+  const selectAudience = (next: Audience) => {
+    setAudience(next);
+    // Keep the URL shareable/bookmarkable without a full navigation.
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('for', next);
+      window.history.replaceState(null, '', url.toString());
+    }
+  };
 
   return (
     <main
@@ -117,117 +135,154 @@ export default function PricingPageClient() {
           <h1 className="text-center text-3xl font-bold text-[var(--color-text-primary)] md:text-4xl">{t('title')}</h1>
           <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-[var(--color-text-muted)] md:text-base">{t('subtitle')}</p>
 
-          <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-5">
-            {ORDERED_SUBSCRIPTION_PLAN_KEYS.map((planKey) => {
-              const p = PLANS[planKey as SubscriptionPlanKey];
-              const dyn = dynamicPlanPrices[planKey as SubscriptionPlanKey];
-              const title = locale === 'ar' ? p.arabicName : p.englishName;
-              const cap = dyn.weeklyStudentLimit ?? p.weeklyStudentLimit;
-              const studentsLine =
-                cap != null
-                  ? locale === 'ar'
-                    ? t('studentsCapAr', { count: formatNumber(cap, locale) })
-                    : t('studentsCapEn', { count: formatNumber(cap, locale) })
-                  : '';
-              const isPopular = p.landingBadge === 'popular';
-              const isEntry = p.landingBadge === 'entry';
-
-              return (
-                <div
-                  key={planKey}
-                  className={`flex flex-col rounded-2xl border p-6 text-start ${
-                    isPopular
-                      ? 'border-[var(--color-teal)]/50 bg-[var(--color-surface-1)] ring-1 ring-[var(--color-teal)]/25'
-                      : 'border-[var(--color-border)] bg-[var(--color-surface-1)]'
-                  }`}
-                >
-                  <div className="flex min-h-[28px] flex-wrap items-center gap-2">
-                    {isEntry ? (
-                      <span className="inline-block rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-2 py-0.5 text-xs text-[var(--color-text-muted)]">
-                        {t('badgeEntry')}
-                      </span>
-                    ) : null}
-                    {isPopular ? (
-                      <span className="inline-block rounded-full bg-[var(--color-teal)] px-2 py-0.5 text-xs font-medium text-white">
-                        {t('badgePopular')}
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="mt-3 text-lg font-bold text-[var(--color-text-primary)]">{title}</p>
-                  <dl className="mt-4 space-y-2 text-sm">
-                    <div className="flex justify-between gap-2 border-b border-[var(--color-border-subtle)] pb-2">
-                      <dt className="text-[var(--color-text-secondary)]">{t('colMonthly')}</dt>
-                      <dd className="font-mono font-semibold tabular-nums text-[var(--color-text-primary)]">
-                        {formatCurrency(dyn.monthlyListPrice, locale)}
-                      </dd>
-                    </div>
-                    <div className="flex justify-between gap-2 border-b border-[var(--color-border-subtle)] pb-2">
-                      <dt className="text-[var(--color-text-secondary)]">{t('colQuarterly')}</dt>
-                      <dd className="font-mono font-semibold tabular-nums text-[var(--color-text-primary)]">
-                        {formatCurrency(dyn.quarterlyAllIn, locale)}
-                      </dd>
-                    </div>
-                    <div className="flex justify-between gap-2">
-                      <dt className="text-[var(--color-text-secondary)]">{t('colAnnual')}</dt>
-                      <dd className="font-mono font-semibold tabular-nums text-[var(--color-text-primary)]">
-                        {formatCurrency(dyn.annualEffectiveMonthly, locale)}
-                      </dd>
-                    </div>
-                  </dl>
-                  <p className="mt-4 text-xs text-[var(--color-text-secondary)]">{studentsLine}</p>
-                  <p className="mt-2 text-[11px] text-[var(--color-text-muted)]">{t('priceDisclaimer')}</p>
-                  <Link
-                    href="/signup"
-                    className="mt-6 inline-flex w-full justify-center rounded-xl bg-[var(--color-teal)] py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-[var(--color-teal-deep)] btn-press chq-focus"
-                  >
-                    {t('ctaSignup')}
-                  </Link>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="mt-10 rounded-2xl border border-[var(--color-teal)]/30 bg-[var(--color-teal-soft)] p-6 md:p-8">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-[var(--color-text-primary)] md:text-2xl">{t('topCentersTitle')}</h2>
-                <p className="mt-1 text-sm text-[var(--color-teal-deep)]">{t('topCentersSubtitle')}</p>
-                <p className="mt-2 text-sm text-[var(--color-text-muted)]">{t('topCentersStudents')}</p>
-              </div>
+          {/* Audience toggle: Centers (teal) / Teachers (brass) */}
+          <div className="mt-8 flex justify-center">
+            <div
+              role="tablist"
+              aria-label={t('title')}
+              className="inline-flex rounded-full border border-[var(--color-border)] bg-[var(--color-surface-1)] p-1"
+            >
               <button
                 type="button"
-                onClick={() => setContactOpen(true)}
-                className="shrink-0 rounded-xl border border-[var(--color-teal)]/40 bg-[var(--color-teal)]/10 px-6 py-3 text-sm font-semibold text-[var(--color-teal-deep)] transition-colors hover:bg-[var(--color-teal)]/20 btn-press chq-focus"
+                role="tab"
+                aria-selected={audience === 'center'}
+                onClick={() => selectAudience('center')}
+                className="rounded-full px-5 py-2 text-sm font-semibold transition-colors btn-press chq-focus"
+                style={
+                  audience === 'center'
+                    ? { background: 'var(--color-teal)', color: '#ffffff' }
+                    : { color: 'var(--color-text-secondary)' }
+                }
               >
-                {t('topCentersCta')}
+                {t('toggleCenters')}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={audience === 'teacher'}
+                onClick={() => selectAudience('teacher')}
+                className="rounded-full px-5 py-2 text-sm font-semibold transition-colors btn-press chq-focus"
+                style={
+                  audience === 'teacher'
+                    ? { background: 'var(--color-brass)', color: '#ffffff' }
+                    : { color: 'var(--color-text-secondary)' }
+                }
+              >
+                {t('toggleTeachers')}
               </button>
             </div>
           </div>
 
-          {/* For teachers - clearly separated brass-accented section below the center grid */}
-          <div className="mt-16 border-t border-[var(--color-border)] pt-12">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-[var(--color-text-primary)] md:text-3xl">{t('teacher.heading')}</h2>
-              <p className="mx-auto mt-3 max-w-2xl text-sm text-[var(--color-text-secondary)] md:text-base">
-                {t('teacher.sub')}
-              </p>
-            </div>
-            <div className="mx-auto mt-8 max-w-md">
+          {audience === 'center' ? (
+            <>
+              <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-5">
+                {ORDERED_SUBSCRIPTION_PLAN_KEYS.map((planKey) => {
+                  const p = PLANS[planKey as SubscriptionPlanKey];
+                  const dyn = dynamicPlanPrices[planKey as SubscriptionPlanKey];
+                  const title = locale === 'ar' ? p.arabicName : p.englishName;
+                  const cap = dyn.weeklyStudentLimit ?? p.weeklyStudentLimit;
+                  const studentsLine =
+                    cap != null
+                      ? locale === 'ar'
+                        ? t('studentsCapAr', { count: formatNumber(cap, locale) })
+                        : t('studentsCapEn', { count: formatNumber(cap, locale) })
+                      : '';
+                  const isPopular = p.landingBadge === 'popular';
+                  const isEntry = p.landingBadge === 'entry';
+
+                  return (
+                    <div
+                      key={planKey}
+                      className={`flex flex-col rounded-2xl border p-6 text-start ${
+                        isPopular
+                          ? 'border-[var(--color-teal)]/50 bg-[var(--color-surface-1)] ring-1 ring-[var(--color-teal)]/25'
+                          : 'border-[var(--color-border)] bg-[var(--color-surface-1)]'
+                      }`}
+                    >
+                      <div className="flex min-h-[28px] flex-wrap items-center gap-2">
+                        {isEntry ? (
+                          <span className="inline-block rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-2 py-0.5 text-xs text-[var(--color-text-muted)]">
+                            {t('badgeEntry')}
+                          </span>
+                        ) : null}
+                        {isPopular ? (
+                          <span className="inline-block rounded-full bg-[var(--color-teal)] px-2 py-0.5 text-xs font-medium text-white">
+                            {t('badgePopular')}
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-3 text-lg font-bold text-[var(--color-text-primary)]">{title}</p>
+                      <dl className="mt-4 space-y-2 text-sm">
+                        <div className="flex justify-between gap-2 border-b border-[var(--color-border-subtle)] pb-2">
+                          <dt className="text-[var(--color-text-secondary)]">{t('colMonthly')}</dt>
+                          <dd className="font-mono font-semibold tabular-nums text-[var(--color-text-primary)]">
+                            {formatCurrency(dyn.monthlyListPrice, locale)}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-2 border-b border-[var(--color-border-subtle)] pb-2">
+                          <dt className="text-[var(--color-text-secondary)]">{t('colQuarterly')}</dt>
+                          <dd className="font-mono font-semibold tabular-nums text-[var(--color-text-primary)]">
+                            {formatCurrency(dyn.quarterlyAllIn, locale)}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-[var(--color-text-secondary)]">{t('colAnnual')}</dt>
+                          <dd className="font-mono font-semibold tabular-nums text-[var(--color-text-primary)]">
+                            {formatCurrency(dyn.annualEffectiveMonthly, locale)}
+                          </dd>
+                        </div>
+                      </dl>
+                      <p className="mt-4 text-xs text-[var(--color-text-secondary)]">{studentsLine}</p>
+                      <p className="mt-2 text-[11px] text-[var(--color-text-muted)]">{t('priceDisclaimer')}</p>
+                      <Link
+                        href="/signup"
+                        className="mt-6 inline-flex w-full justify-center rounded-xl bg-[var(--color-teal)] py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-[var(--color-teal-deep)] btn-press chq-focus"
+                      >
+                        {t('ctaSignup')}
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-10 rounded-2xl border border-[var(--color-teal)]/30 bg-[var(--color-teal-soft)] p-6 md:p-8">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold text-[var(--color-text-primary)] md:text-2xl">{t('topCentersTitle')}</h2>
+                    <p className="mt-1 text-sm text-[var(--color-teal-deep)]">{t('topCentersSubtitle')}</p>
+                    <p className="mt-2 text-sm text-[var(--color-text-muted)]">{t('topCentersStudents')}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setContactOpen(true)}
+                    className="shrink-0 rounded-xl border border-[var(--color-teal)]/40 bg-[var(--color-teal)]/10 px-6 py-3 text-sm font-semibold text-[var(--color-teal-deep)] transition-colors hover:bg-[var(--color-teal)]/20 btn-press chq-focus"
+                  >
+                    {t('topCentersCta')}
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="mx-auto mt-12 max-w-md">
+              <div className="text-center">
+                <h2 className="text-xl font-bold text-[var(--color-text-primary)] md:text-2xl">{tp('heading')}</h2>
+                <p className="mx-auto mt-2 max-w-sm text-sm text-[var(--color-text-secondary)]">{tp('sub')}</p>
+              </div>
               <div
-                className="flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-start shadow-[var(--shadow-card)]"
+                className="mt-8 flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-start shadow-[var(--shadow-card)]"
                 style={{ borderTopColor: 'var(--color-brass)', borderTopWidth: '3px' }}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-lg font-bold text-[var(--color-text-primary)]">{t('teacher.planName')}</p>
+                  <p className="text-lg font-bold text-[var(--color-text-primary)]">{tp('planName')}</p>
                   <span
                     className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium"
                     style={{ background: 'var(--color-brass-soft)', color: 'var(--color-brass)' }}
                   >
-                    {t('teacher.trialBadge')}
+                    {tp('trialBadge')}
                   </span>
                 </div>
-                <p className="mt-3 text-2xl font-bold text-[var(--color-text-primary)]">{t('teacher.price')}</p>
-                <p className="mt-1 text-xs text-[var(--color-text-muted)]">{t('teacher.priceNote')}</p>
+                <p className="mt-3 text-2xl font-bold text-[var(--color-text-primary)]">{tp('price')}</p>
+                <p className="mt-1 text-xs text-[var(--color-text-muted)]">{tp('priceNote')}</p>
                 <ul className="mt-5 space-y-2.5">
                   {teacherFeatures.map((feature, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
@@ -240,18 +295,18 @@ export default function PricingPageClient() {
                   className="mt-4 rounded-lg bg-[var(--color-brass-soft)] p-3 text-xs leading-relaxed"
                   style={{ color: 'var(--color-text-amber)' }}
                 >
-                  {t('teacher.freeNote')}
+                  {tp('freeNote')}
                 </p>
                 <Link
                   href="/teacher/signup"
                   className="mt-6 inline-flex w-full justify-center rounded-xl px-6 py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-press chq-focus"
                   style={{ background: 'var(--color-brass)' }}
                 >
-                  {t('teacher.cta')}
+                  {tp('cta')}
                 </Link>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 

@@ -508,9 +508,11 @@ html.dark {
   color-scheme: light;
 }
 
-/* Cream: hardcoded white/grey utilities warm up to cream surfaces */
-html:not(.dark) .bg-white,
-html:not(.dark) [class*="bg-white"] {
+/* Cream: hardcoded white/grey utilities warm up to cream surfaces.
+   Exact class match only (NOT [class*="bg-white"]) so opacity variants like
+   bg-white/10 and bg-white/15 - used as frosted overlays on the teal money-hero
+   card - keep their intended translucent white instead of being remapped. */
+html:not(.dark) .bg-white {
   background-color: var(--color-surface-1) !important;
 }
 html:not(.dark) .bg-gray-50,
