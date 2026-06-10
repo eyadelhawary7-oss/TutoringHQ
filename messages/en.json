@@ -7972,7 +7972,33 @@
     "privateCta": {
       "title": "Start your private practice",
       "body": "Manage your own private groups, income, and parent messages from one place.",
-      "comingSoon": "Coming in this rollout"
+      "start": "Create your first group"
+    },
+    "groups": {
+      "title": "My private groups",
+      "add": "Add group",
+      "students": "{count} enrolled",
+      "pending": "{count} awaiting approval",
+      "feePerClass": "Per-class fee:",
+      "empty": "No groups yet. Add your first group to get going."
+    },
+    "createGroup": {
+      "title": "New private group",
+      "nameLabel": "Group name",
+      "namePlaceholder": "e.g. Physics, 3rd secondary",
+      "feeLabel": "Per-class fee (EGP)",
+      "submit": "Create group",
+      "creating": "Creating...",
+      "cancel": "Cancel",
+      "nameRequired": "Group name is required.",
+      "feeInvalid": "Enter a valid per-class fee above zero.",
+      "genericError": "Something went wrong while saving. Try again.",
+      "lapsedError": "Your subscription is paused, so you cannot add a new group. Resume your subscription first.",
+      "trialTitle": "Your first group starts your free trial",
+      "trialLine1": "Creating your first group starts a 14-day free trial of the private practice tools.",
+      "trialLine2": "After the trial, the subscription is 299 EGP per month.",
+      "trialLine3": "No card needed now, and you can cancel anytime.",
+      "trialLine4": "Your work with centers stays free as it is."
     },
     "privateEngine": {
       "title": "Private practice"

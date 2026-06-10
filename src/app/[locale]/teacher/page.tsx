@@ -6,6 +6,8 @@ import { Building2, Sparkles, PauseCircle, Wallet } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import IncomeView from './IncomeView';
+import PrivateGroupModal from './PrivateGroupModal';
+import PrivateGroupsSection from './PrivateGroupsSection';
 
 type TeacherContext = {
   state: 'center_only' | 'unified' | 'lapsed';
@@ -20,6 +22,8 @@ export default function TeacherHomePage() {
   const [ctx, setCtx] = useState<TeacherContext | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [groupsRefreshKey, setGroupsRefreshKey] = useState(0);
 
   const loadContext = useCallback(async () => {
     setLoading(true);
@@ -118,30 +122,39 @@ export default function TeacherHomePage() {
       </section>
 
       {ctx.state === 'center_only' && (
-        <section className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 opacity-80">
+        <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6">
           <div className="mb-2 flex items-center gap-2">
             <Sparkles size={18} className="text-teal-400" aria-hidden />
             <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
               {t('privateCta.title')}
             </h2>
           </div>
-          <p className="mb-3 text-sm text-[var(--color-text-secondary)]">{t('privateCta.body')}</p>
-          <span className="inline-block rounded-full bg-teal-900/40 px-3 py-1 text-xs font-medium text-teal-400">
-            {t('privateCta.comingSoon')}
-          </span>
+          <p className="mb-4 text-sm text-[var(--color-text-secondary)]">{t('privateCta.body')}</p>
+          <button
+            onClick={() => setShowCreateGroup(true)}
+            className="rounded-lg bg-teal-600 px-4 py-2 font-medium text-primary-foreground transition-colors hover:bg-teal-700"
+          >
+            {t('privateCta.start')}
+          </button>
         </section>
       )}
 
       {ctx.state === 'unified' && (
-        <section>
-          <div className="mb-4 flex items-center gap-2">
-            <Wallet size={18} className="text-teal-400" aria-hidden />
-            <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
-              {t('privateEngine.title')}
-            </h2>
-          </div>
-          <IncomeView />
-        </section>
+        <>
+          <PrivateGroupsSection
+            refreshKey={groupsRefreshKey}
+            onAdd={() => setShowCreateGroup(true)}
+          />
+          <section>
+            <div className="mb-4 flex items-center gap-2">
+              <Wallet size={18} className="text-teal-400" aria-hidden />
+              <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
+                {t('privateEngine.title')}
+              </h2>
+            </div>
+            <IncomeView />
+          </section>
+        </>
       )}
 
       {ctx.state === 'lapsed' && (
@@ -160,6 +173,23 @@ export default function TeacherHomePage() {
             {t('resume.cta')}
           </Link>
         </section>
+      )}
+
+      {/* The create flow is never an escape hatch for a lapsed teacher - no
+          entry point in State C (and the POST route refuses server-side). */}
+      {ctx.state !== 'lapsed' && (
+        <PrivateGroupModal
+          open={showCreateGroup}
+          showTrialTerms={ctx.state === 'center_only'}
+          onClose={() => setShowCreateGroup(false)}
+          onCreated={() => {
+            setShowCreateGroup(false);
+            setGroupsRefreshKey((k) => k + 1);
+            // After the FIRST group the gate flips (trial provisioned by the
+            // DB trigger) - refetch context instead of assuming the state.
+            loadContext();
+          }}
+        />
       )}
     </div>
   );
