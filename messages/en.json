@@ -8172,5 +8172,36 @@
     "rights": "All rights reserved — CenterHQ, a product of EHG Intelligence.",
     "switchLocaleAria": "Switch language",
     "footerNavAria": "Legal links"
+  },
+  "teacherLanding": {
+    "login": "Log in",
+    "badge": "For teachers",
+    "heroTitle": "Get the money stress off your mind",
+    "heroSub": "Whether you teach at a center or have private students, CenterHQ brings all your income into one screen and sends payment links on its own.",
+    "ctaPrimary": "Start your free trial",
+    "ctaSecondary": "Log in",
+    "mock": {
+      "label": "Your income this month",
+      "total": "EGP 54,000",
+      "fromCenters": "From centers",
+      "fromCentersAmount": "32,000",
+      "fromPrivate": "From private",
+      "fromPrivateAmount": "22,000"
+    },
+    "tiles": {
+      "centers": {
+        "title": "Track your centers",
+        "body": "See your cut from every center you teach at, automatically — no manual math."
+      },
+      "private": {
+        "title": "Run your private side",
+        "body": "Create your own groups, record attendance, and send an invoice after every class."
+      },
+      "payments": {
+        "title": "Never chase anyone",
+        "body": "Payment links reach the parent automatically on WhatsApp. Cash? One button."
+      }
+    },
+    "trialTerms": "14-day free trial for the private engine · then EGP 299/month · no card now · center tracking always free"
   }
 }
