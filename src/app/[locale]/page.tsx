@@ -18,56 +18,15 @@ export async function generateMetadata({
   };
 }
 
-const softwareApplicationSchema = {
+// Neutral, persona-spanning schema for the splash root. The center-specific
+// SoftwareApplication + FAQ schema now lives on /center where it belongs.
+const organizationSchema = {
   '@context': 'https://schema.org',
-  '@type': 'SoftwareApplication',
+  '@type': 'Organization',
   name: 'CenterHQ',
-  applicationCategory: 'BusinessApplication',
-  operatingSystem: 'Web, Android PWA, iOS PWA',
   url: 'https://centerhq.app',
-  offers: { '@type': 'Offer', price: '999', priceCurrency: 'EGP' },
-  description: 'نظام إدارة السنترات التعليمية في مصر',
-  inLanguage: ['ar-EG', 'en-US'],
+  description: 'منصة التدريس في مصر — للسناتر والمدرسين',
   publisher: { '@type': 'Organization', name: 'EHG Intelligence Egypt' },
-};
-
-const faqSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: [
-    {
-      '@type': 'Question',
-      name: 'ما هو CenterHQ؟',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'نظام إدارة متكامل للسنترات التعليمية في مصر يشمل حضور QR وإشعارات واتساب وفواتير تلقائية.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: 'كم تكلفة الاشتراك؟',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'تبدأ الأسعار من 999 جنيه شهرياً لخطة Solo.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: 'هل يعمل على الموبايل؟',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'نعم، CenterHQ تطبيق PWA يعمل على Android وiOS بدون تنزيل.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: 'How does QR attendance work?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Each student gets a unique QR code. Staff scan it at the door; parents get instant WhatsApp notifications.',
-      },
-    },
-  ],
 };
 
 export default function LocaleHomePage() {
@@ -75,16 +34,10 @@ export default function LocaleHomePage() {
     <>
       <SplashClient />
       <Script
-        id="ld-software-application"
+        id="ld-organization"
         type="application/ld+json"
         strategy="lazyOnload"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareApplicationSchema) }}
-      />
-      <Script
-        id="ld-faq"
-        type="application/ld+json"
-        strategy="lazyOnload"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
       />
     </>
   );
