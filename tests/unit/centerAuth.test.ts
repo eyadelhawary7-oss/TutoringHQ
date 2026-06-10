@@ -22,6 +22,7 @@ const adminQueue: Record<string, AdminQueryResult[]> = {
   admin_users: [],
   centers: [],
   teacher_center: [],
+  rpc: [],
 };
 
 function resolveQuery(table: string, cols: string): AdminQueryResult {
@@ -47,7 +48,12 @@ function resolveQuery(table: string, cols: string): AdminQueryResult {
   return { data: null, error: null };
 }
 
+const mockRpc = vi.fn(async () => {
+  return adminQueue.rpc.shift() ?? { data: null, error: null };
+});
+
 const mockGetSupabaseAdmin = vi.fn(() => ({
+  rpc: mockRpc,
   from: (table: string) => ({
     select: (cols: string) => {
       // Builder supports both `.eq().maybeSingle()` (single-row lookups) and
@@ -97,13 +103,18 @@ function makeRequest(opts: {
   } as unknown as NextRequest;
 }
 
-import { requireCenterAuth, requireTeacherAuth } from '@/lib/centerAuth';
+import {
+  requireCenterAuth,
+  requireTeacherAuth,
+  requireTeacherPrivateAccess,
+} from '@/lib/centerAuth';
 
 const VALID_USER = { id: 'user-1' };
 const CENTER_ID = 'center-1';
 
 beforeEach(() => {
   mockGetUser.mockReset();
+  mockRpc.mockClear();
   mockSentryCaptureException.mockReset();
   mockSentryCaptureMessage.mockReset();
   adminQueue.users_core = [];
@@ -112,6 +123,7 @@ beforeEach(() => {
   adminQueue.admin_users = [];
   adminQueue.centers = [];
   adminQueue.teacher_center = [];
+  adminQueue.rpc = [];
 });
 
 describe('requireCenterAuth', () => {
@@ -796,5 +808,113 @@ describe('requireTeacherAuth', () => {
     expect(result.response.status).toBe(401);
     const body = (await result.response.json()) as { error: string; code: string };
     expect(body.code).toBe('NO_USER_ROW');
+  });
+});
+
+describe('requireTeacherPrivateAccess', () => {
+  // Helper: queue a successful teacher auth (role teacher, one active centre).
+  function queueTeacherAuthOk() {
+    mockGetUser.mockResolvedValueOnce({ data: { user: VALID_USER }, error: null });
+    adminQueue.users_teacher = [
+      { data: { id: 'user-1', role: 'teacher' }, error: null },
+    ];
+    adminQueue.teacher_center = [
+      { data: [{ center_id: 'center-A' }, { center_id: 'center-B' }], error: null },
+    ];
+  }
+
+  it('pass-through: requireTeacherAuth failure (owner -> NOT_A_TEACHER) is returned unchanged and the gate RPC is never called', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: VALID_USER }, error: null });
+    adminQueue.users_teacher = [
+      { data: { id: 'user-1', role: 'owner' }, error: null },
+    ];
+
+    const result = await requireTeacherPrivateAccess(makeRequest());
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.response.status).toBe(403);
+    const body = (await result.response.json()) as { error: string; code: string };
+    expect(body.error).toBe('Forbidden');
+    expect(body.code).toBe('NOT_A_TEACHER');
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it('granted: subscribed teacher (rpc true) gets ok with the auth result fields', async () => {
+    queueTeacherAuthOk();
+    adminQueue.rpc = [{ data: true, error: null }];
+
+    const result = await requireTeacherPrivateAccess(makeRequest());
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.userId).toBe('user-1');
+    expect(result.centerIds.sort()).toEqual(['center-A', 'center-B']);
+    expect(result.supabaseAdmin).toBeDefined();
+    expect(mockRpc).toHaveBeenCalledWith('teacher_private_access', {
+      p_user_id: 'user-1',
+    });
+  });
+
+  it('denied: lapsed/never-subscribed teacher (rpc false) gets 403 NO_PRIVATE_ACCESS', async () => {
+    queueTeacherAuthOk();
+    adminQueue.rpc = [{ data: false, error: null }];
+
+    const result = await requireTeacherPrivateAccess(makeRequest());
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.response.status).toBe(403);
+    const body = (await result.response.json()) as { error: string; code: string };
+    expect(body.error).toBe('Forbidden');
+    expect(body.code).toBe('NO_PRIVATE_ACCESS');
+  });
+
+  it('denied: null rpc data is treated as no access (strict === true gate)', async () => {
+    queueTeacherAuthOk();
+    adminQueue.rpc = [{ data: null, error: null }];
+
+    const result = await requireTeacherPrivateAccess(makeRequest());
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.response.status).toBe(403);
+    const body = (await result.response.json()) as { error: string; code: string };
+    expect(body.code).toBe('NO_PRIVATE_ACCESS');
+  });
+
+  // THE REGRESSION CASE (Rule 151): an infra error in the gate RPC must never
+  // masquerade as a genuine lapse. 500 GATE_CHECK_FAILED + Sentry, NOT 403
+  // NO_PRIVATE_ACCESS - a DB blip must not show a paying teacher the
+  // "subscription lapsed, resubscribe" state.
+  it('regression: gate RPC error -> 500 GATE_CHECK_FAILED + Sentry, never 403 NO_PRIVATE_ACCESS', async () => {
+    queueTeacherAuthOk();
+    adminQueue.rpc = [{ data: null, error: { message: 'db down' } }];
+
+    const result = await requireTeacherPrivateAccess(makeRequest());
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.response.status).toBe(500);
+    const body = (await result.response.json()) as { error: string; code: string };
+    expect(body.code).toBe('GATE_CHECK_FAILED');
+    expect(body.code).not.toBe('NO_PRIVATE_ACCESS');
+    expect(result.response.status).not.toBe(403);
+    expect(mockSentryCaptureException).toHaveBeenCalled();
+  });
+
+  // Fail-closed sanity: an RPC error DENIES. Error is not a state, but it is
+  // also never a grant.
+  it('fail-closed: gate RPC error never grants access (ok is false)', async () => {
+    queueTeacherAuthOk();
+    adminQueue.rpc = [{ data: true, error: { message: 'db down' } }];
+
+    const result = await requireTeacherPrivateAccess(makeRequest());
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.response.status).toBe(500);
+    const body = (await result.response.json()) as { error: string; code: string };
+    expect(body.code).toBe('GATE_CHECK_FAILED');
   });
 });

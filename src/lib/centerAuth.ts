@@ -25,7 +25,8 @@ export type CenterAuthErrorCode =
   | 'CENTER_BLACKLISTED'
   | 'TEACHER_NOT_MEMBER'
   | 'TEACHER_NO_CENTER_CONTEXT'
-  | 'NOT_A_TEACHER';
+  | 'NOT_A_TEACHER'
+  | 'NO_PRIVATE_ACCESS';
 
 export type RequireCenterAuthOptions = {
   /**
@@ -429,4 +430,60 @@ export async function requireTeacherAuth(
   );
 
   return { ok: true, userId: user.id, centerIds, supabaseAdmin: admin };
+}
+
+export type TeacherPrivateAccessOk = TeacherAuthOk;
+export type TeacherPrivateAccessFail = CenterAuthFail;
+
+/**
+ * Paid private-engine gate. Composes on requireTeacherAuth and additionally
+ * requires an active or trialing teacher_subscriptions row, checked via the
+ * STABLE SQL function teacher_private_access(p_user_id). Lapsed
+ * (past_due/suspended/cancelled) and never-subscribed teachers get 403
+ * NO_PRIVATE_ACCESS. The gate result is never cached, it is re-evaluated on
+ * every call: the check is a single indexed existence test, and staleness
+ * here would mean a lapsed teacher retaining access to paid data.
+ *
+ * Failure-mode rule (Rule 151 / ADR 023): an ERROR is not a STATE. If the
+ * gate RPC itself fails that is infrastructure failure, so DENY (fail closed,
+ * this is a security gate) but surface as 500 GATE_CHECK_FAILED + Sentry,
+ * never as 403 NO_PRIVATE_ACCESS. A DB blip must never show a paying teacher
+ * the "your subscription lapsed" state.
+ */
+export async function requireTeacherPrivateAccess(
+  request: NextRequest,
+): Promise<TeacherPrivateAccessOk | TeacherPrivateAccessFail> {
+  const auth = await requireTeacherAuth(request);
+  if (!auth.ok) {
+    return auth;
+  }
+
+  const { data, error: gateErr } = await auth.supabaseAdmin.rpc(
+    'teacher_private_access',
+    { p_user_id: auth.userId },
+  );
+
+  if (gateErr) {
+    Sentry.withScope((scope) => {
+      scope.setTag('route', 'teacherPrivateAccess');
+      scope.setTag('step', 'gate_rpc');
+      Sentry.captureException(gateErr);
+    });
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: 'Server error', code: 'GATE_CHECK_FAILED' },
+        { status: 500 },
+      ),
+    };
+  }
+
+  // The RPC returns boolean; anything other than strict true (false, null,
+  // unexpected shape) is treated as no access.
+  const hasAccess: unknown = data;
+  if (hasAccess !== true) {
+    return { ok: false, response: forbidden('NO_PRIVATE_ACCESS') };
+  }
+
+  return auth;
 }
