@@ -8150,5 +8150,26 @@
     "retry": "Try again",
     "errorName": "Enter your name (at least 2 characters).",
     "errorGeneric": "Something went wrong. Please try again."
+  },
+  "splash": {
+    "headline": "The operating system for everyone who teaches in Egypt",
+    "context": "From attendance to billing to collecting your income — all in one place.",
+    "center": {
+      "title": "I run a center",
+      "brief": "Manage your staff, attendance, and income — from the first class to the last pound.",
+      "cta": "Learn more"
+    },
+    "teacher": {
+      "title": "I'm a teacher",
+      "brief": "Your private groups, your cut from every center, and all your income on one screen.",
+      "cta": "Learn more"
+    },
+    "login": "Log in",
+    "privacy": "Privacy Policy",
+    "terms": "Terms",
+    "cookies": "Cookie Policy",
+    "rights": "All rights reserved — CenterHQ, a product of EHG Intelligence.",
+    "switchLocaleAria": "Switch language",
+    "footerNavAria": "Legal links"
   }
 }

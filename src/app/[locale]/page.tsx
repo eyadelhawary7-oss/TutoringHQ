@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
-import HomePageClient from './HomePageClient';
+import SplashClient from './SplashClient';
 
 export async function generateMetadata({
   params,
@@ -11,12 +11,10 @@ export async function generateMetadata({
   const isAr = locale === 'ar';
 
   return {
-    title: isAr
-      ? 'CenterHQ – نظام إدارة السنترات التعليمية'
-      : 'CenterHQ – Tutoring Center Management System for Egypt',
+    title: isAr ? 'CenterHQ | منصة التدريس في مصر' : 'CenterHQ | The teaching platform for Egypt',
     description: isAr
-      ? 'نظام إدارة السنترات التعليمية في مصر. حضور QR، متابعة الطلاب، فواتير تلقائية وإشعارات واتساب.'
-      : "Egypt's tutoring center operating system. QR attendance, student tracking, automated billing & WhatsApp notifications.",
+      ? 'منصة واحدة لكل مين بيعلّم في مصر — سواء بتدير سنتر أو بتدرّس خصوصي. حضور، فوترة، ودخلك كله في مكان واحد.'
+      : 'One platform for everyone who teaches in Egypt — whether you run a center or teach privately. Attendance, billing, and your income in one place.',
   };
 }
 
@@ -75,7 +73,7 @@ const faqSchema = {
 export default function LocaleHomePage() {
   return (
     <>
-      <HomePageClient />
+      <SplashClient />
       <Script
         id="ld-software-application"
         type="application/ld+json"
