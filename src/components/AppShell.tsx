@@ -37,6 +37,13 @@ const PUBLIC_PATHS = [
   '/status',
   '/accept-invite',
   '/join',
+  // Public marketing surfaces - these must render their own minimal header only
+  // (CenterHQ wordmark + Log in), never the authenticated app shell (top nav,
+  // sidebar, bottom tab bar), even when a logged-in center owner visits them.
+  // The authenticated teacher portal lives at /teacher/(portal)/* (renders at
+  // /teacher, /teacher/settings, ...) so /teacher/landing does not over-match it.
+  '/center',
+  '/teacher/landing',
   '/teacher/signup',
 ];
 function stripLocale(path: string): string {
