@@ -7957,5 +7957,36 @@
       "message": "Our demo request form is coming soon. For now, please contact us on WhatsApp and we'll arrange a walkthrough within 24 hours.",
       "whatsappCta": "Contact us on WhatsApp"
     }
+  },
+  "teacherPortal": {
+    "headerTitle": "Teacher portal",
+    "logout": "Log out",
+    "errorTitle": "Something went wrong",
+    "errorBody": "We could not load your portal. Please try again.",
+    "retry": "Try again",
+    "myCenters": {
+      "title": "My centers",
+      "empty": "No centers are linked to your account yet. When a center adds you, it will show up here.",
+      "codeLabel": "Center code: {code}"
+    },
+    "privateCta": {
+      "title": "Start your private practice",
+      "body": "Manage your own private groups, income, and parent messages from one place.",
+      "comingSoon": "Coming in this rollout"
+    },
+    "privateEngine": {
+      "title": "Private practice",
+      "placeholder": "Your income view and private groups land here in the next step of this rollout."
+    },
+    "resume": {
+      "title": "Your private practice is paused",
+      "body": "Your subscription is currently inactive. Resume it to regain access to your private data.",
+      "cta": "Resume subscription"
+    },
+    "resubscribe": {
+      "title": "Resume your subscription",
+      "body": "Online resubscription opens soon. Your private data is safe and will be right where you left it once you resume.",
+      "backHome": "Back to home"
+    }
   }
 }
