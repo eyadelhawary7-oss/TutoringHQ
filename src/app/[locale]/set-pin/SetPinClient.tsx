@@ -58,7 +58,7 @@ function FrameWrap({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        background: '#080D14',
+        background: 'var(--color-surface-0)',
         minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
@@ -71,7 +71,7 @@ function FrameWrap({ children }: { children: React.ReactNode }) {
         style={{
           width: '56px',
           height: '56px',
-          border: '2px solid #0D9488',
+          border: '2px solid var(--color-teal)',
           borderRadius: '16px',
           display: 'flex',
           alignItems: 'center',
@@ -79,7 +79,7 @@ function FrameWrap({ children }: { children: React.ReactNode }) {
           marginBottom: '12px',
         }}
       >
-        <span style={{ ...PLAYFAIR, color: '#0D9488', fontWeight: 900, fontSize: '18px' }}>CH</span>
+        <span style={{ ...PLAYFAIR, color: 'var(--color-teal)', fontWeight: 900, fontSize: '18px' }}>CH</span>
       </div>
       <div style={{ marginBottom: '44px' }}>
         <span
@@ -90,8 +90,8 @@ function FrameWrap({ children }: { children: React.ReactNode }) {
             fontSize: '14px',
           }}
         >
-          <span style={{ color: '#f8fafc' }}>CENTER</span>
-          <span style={{ color: '#0D9488' }}>HQ</span>
+          <span style={{ color: 'var(--color-text-primary)' }}>CENTER</span>
+          <span style={{ color: 'var(--color-teal)' }}>HQ</span>
         </span>
       </div>
       <div style={{ width: '100%', maxWidth: '420px' }}>{children}</div>
@@ -259,11 +259,11 @@ function PinForm({ urlToken, labels }: { urlToken?: string; labels: Labels }) {
             textAlign: 'center',
             fontSize: '22px',
             background: 'transparent',
-            border: '1px solid #1e293b',
+            border: '1px solid var(--color-border)',
             borderRadius: '10px',
-            color: '#f8fafc',
+            color: 'var(--color-text-primary)',
             outline: 'none',
-            caretColor: '#0D9488',
+            caretColor: 'var(--color-teal)',
           }}
         />
       ))}
@@ -275,7 +275,7 @@ function PinForm({ urlToken, labels }: { urlToken?: string; labels: Labels }) {
       <h1
         style={{
           ...PLAYFAIR,
-          color: '#f8fafc',
+          color: 'var(--color-text-primary)',
           fontSize: '24px',
           fontWeight: 700,
           textAlign: 'center',
@@ -287,7 +287,7 @@ function PinForm({ urlToken, labels }: { urlToken?: string; labels: Labels }) {
       <p
         style={{
           ...SANS,
-          color: '#94a3b8',
+          color: 'var(--color-text-muted)',
           fontSize: '13px',
           textAlign: 'center',
           marginBottom: '32px',
@@ -301,7 +301,7 @@ function PinForm({ urlToken, labels }: { urlToken?: string; labels: Labels }) {
           style={{
             ...SANS,
             fontSize: '9px',
-            color: '#0D9488',
+            color: 'var(--color-teal)',
             textTransform: 'uppercase',
             letterSpacing: '1.5px',
             fontWeight: 700,
@@ -319,7 +319,7 @@ function PinForm({ urlToken, labels }: { urlToken?: string; labels: Labels }) {
           style={{
             ...SANS,
             fontSize: '9px',
-            color: '#0D9488',
+            color: 'var(--color-teal)',
             textTransform: 'uppercase',
             letterSpacing: '1.5px',
             fontWeight: 700,
@@ -339,7 +339,7 @@ function PinForm({ urlToken, labels }: { urlToken?: string; labels: Labels }) {
           ...SANS,
           background: 'transparent',
           border: 'none',
-          color: '#94a3b8',
+          color: 'var(--color-text-muted)',
           fontSize: '11px',
           cursor: 'pointer',
           marginBottom: '24px',
@@ -357,9 +357,9 @@ function PinForm({ urlToken, labels }: { urlToken?: string; labels: Labels }) {
             marginBottom: '16px',
             padding: '10px 14px',
             borderRadius: '10px',
-            border: '1px solid rgba(239,68,68,0.3)',
-            background: 'rgba(127,29,29,0.2)',
-            color: '#f87171',
+            border: '1px solid rgba(220,38,38,0.35)',
+            background: 'rgba(220,38,38,0.08)',
+            color: '#b91c1c',
             fontSize: '12px',
             ...SANS,
           }}
@@ -377,7 +377,7 @@ function PinForm({ urlToken, labels }: { urlToken?: string; labels: Labels }) {
           width: '100%',
           padding: '15px',
           borderRadius: '12px',
-          background: '#0D9488',
+          background: 'var(--color-teal)',
           color: 'white',
           border: 'none',
           fontSize: '14px',
@@ -427,7 +427,7 @@ function FinalizingPoll({ labels, onReady }: { labels: Labels; onReady: () => vo
       <h1
         style={{
           ...PLAYFAIR,
-          color: '#f8fafc',
+          color: 'var(--color-text-primary)',
           fontSize: '22px',
           fontWeight: 700,
           textAlign: 'center',
@@ -439,7 +439,7 @@ function FinalizingPoll({ labels, onReady }: { labels: Labels; onReady: () => vo
       <p
         style={{
           ...SANS,
-          color: '#94a3b8',
+          color: 'var(--color-text-muted)',
           fontSize: '13px',
           textAlign: 'center',
           marginBottom: '24px',
@@ -453,7 +453,7 @@ function FinalizingPoll({ labels, onReady }: { labels: Labels; onReady: () => vo
           width: '32px',
           height: '32px',
           border: '3px solid rgba(13,148,136,0.25)',
-          borderTopColor: '#0D9488',
+          borderTopColor: 'var(--color-teal)',
           borderRadius: '50%',
           margin: '0 auto',
           animation: 'spin 0.8s linear infinite',
@@ -491,7 +491,7 @@ function FallbackForm({ labels }: { labels: Labels }) {
       <h1
         style={{
           ...PLAYFAIR,
-          color: '#f8fafc',
+          color: 'var(--color-text-primary)',
           fontSize: '22px',
           fontWeight: 700,
           textAlign: 'center',
@@ -503,7 +503,7 @@ function FallbackForm({ labels }: { labels: Labels }) {
       <p
         style={{
           ...SANS,
-          color: '#94a3b8',
+          color: 'var(--color-text-muted)',
           fontSize: '13px',
           textAlign: 'center',
           marginBottom: '24px',
@@ -518,9 +518,9 @@ function FallbackForm({ labels }: { labels: Labels }) {
           style={{
             padding: '12px 14px',
             borderRadius: '10px',
-            border: '1px solid rgba(45,212,191,0.35)',
-            background: 'rgba(13,148,136,0.12)',
-            color: '#99f6e4',
+            border: '1px solid var(--color-border-brand)',
+            background: 'var(--color-teal-soft)',
+            color: 'var(--color-teal-deep)',
             fontSize: '13px',
             textAlign: 'center',
             ...SANS,
@@ -534,7 +534,7 @@ function FallbackForm({ labels }: { labels: Labels }) {
             style={{
               ...SANS,
               fontSize: '9px',
-              color: '#0D9488',
+              color: 'var(--color-teal)',
               textTransform: 'uppercase',
               letterSpacing: '1.5px',
               fontWeight: 700,
@@ -560,8 +560,8 @@ function FallbackForm({ labels }: { labels: Labels }) {
               width: '100%',
               background: 'transparent',
               border: 'none',
-              borderBottom: '1px solid #1e293b',
-              color: '#f8fafc',
+              borderBottom: '1px solid var(--color-border)',
+              color: 'var(--color-text-primary)',
               fontSize: '15px',
               padding: '10px 0',
               marginBottom: '24px',
@@ -577,7 +577,7 @@ function FallbackForm({ labels }: { labels: Labels }) {
               width: '100%',
               padding: '15px',
               borderRadius: '12px',
-              background: '#0D9488',
+              background: 'var(--color-teal)',
               color: 'white',
               border: 'none',
               fontSize: '14px',

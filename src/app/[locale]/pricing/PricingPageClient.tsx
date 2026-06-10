@@ -6,7 +6,7 @@ import { Link } from '@/i18n/routing';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { ORDERED_SUBSCRIPTION_PLAN_KEYS, PLANS } from '@/lib/pricing';
 import type { SubscriptionPlanKey } from '@/lib/pricing';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Check } from 'lucide-react';
 import PricingBannerClient from '@/components/landing/PricingBannerClient';
 import { usePublicPlanPrices } from '@/hooks/usePublicPlanPrices';
 
@@ -20,17 +20,24 @@ export default function PricingPageClient() {
   const [contactOpen, setContactOpen] = useState(false);
   const dynamicPlanPrices = usePublicPlanPrices();
 
+  const teacherFeatures = [
+    t('teacher.feature1'),
+    t('teacher.feature2'),
+    t('teacher.feature3'),
+    t('teacher.feature4'),
+  ];
+
   return (
     <main
       data-chq-pricing
-      className="min-h-screen bg-[#080f1a] text-white [&_h1]:text-white [&_h2]:text-white [&_p]:text-[var(--color-text-secondary)]"
+      className="min-h-screen bg-[var(--color-surface-0)] text-[var(--color-text-primary)]"
     >
       <PricingBannerClient locale={locale} variant="strip" />
-      <header className="sticky top-0 z-50 border-b border-slate-800/60 bg-[#080f1a]/90 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-surface-1)]/90 backdrop-blur-md">
         <div className="relative mx-auto flex h-14 max-w-6xl items-center px-4 md:h-16 md:px-6">
           <button
             type="button"
-            className="absolute start-4 top-1/2 z-10 inline-flex -translate-y-1/2 rounded-lg p-2 text-slate-300 hover:bg-slate-800 hover:text-white md:hidden btn-press chq-focus [&_svg]:text-slate-300"
+            className="absolute start-4 top-1/2 z-10 inline-flex -translate-y-1/2 rounded-lg p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] md:hidden btn-press chq-focus"
             aria-expanded={mobileOpen}
             aria-label={mobileOpen ? m('closeMenuAria') : m('openMenuAria')}
             onClick={() => setMobileOpen((o) => !o)}
@@ -39,7 +46,7 @@ export default function PricingPageClient() {
           </button>
           <div className="mx-auto flex w-full max-w-full items-center justify-center gap-4 md:mx-0 md:justify-between">
             <Link href="/" locale={locale} className="flex items-center gap-2 btn-press chq-focus rounded-lg">
-              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-teal-600 text-xs font-bold text-white">
+              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--color-teal)] text-xs font-bold text-white">
                 CH
               </span>
               <span className="text-lg tracking-tight">
@@ -48,7 +55,7 @@ export default function PricingPageClient() {
                     fontFamily: 'var(--font-bodoni)',
                     fontWeight: 700,
                     letterSpacing: '2px',
-                    color: '#f8fafc',
+                    color: 'var(--color-text-primary)',
                   }}
                 >
                   CENTER
@@ -58,7 +65,7 @@ export default function PricingPageClient() {
                     fontFamily: 'var(--font-bodoni)',
                     fontWeight: 700,
                     letterSpacing: '2px',
-                    color: '#0D9488',
+                    color: 'var(--color-teal)',
                   }}
                 >
                   HQ
@@ -69,13 +76,13 @@ export default function PricingPageClient() {
             <nav className="hidden flex-1 items-center justify-center gap-8 md:flex" aria-label="Main">
               <Link
                 href="/"
-                className="text-sm text-slate-300 transition-colors hover:text-white btn-press chq-focus rounded-lg px-1 py-0.5"
+                className="text-sm text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] btn-press chq-focus rounded-lg px-1 py-0.5"
               >
                 {t('navHome')}
               </Link>
               <Link
                 href="/signup"
-                className="rounded-xl bg-teal-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-500 inline-flex btn-press chq-focus"
+                className="rounded-xl bg-[var(--color-teal)] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-teal-deep)] inline-flex btn-press chq-focus"
               >
                 {m('finalCtaButton')}
               </Link>
@@ -84,18 +91,18 @@ export default function PricingPageClient() {
         </div>
 
         {mobileOpen ? (
-          <div className="border-t border-slate-800/60 bg-[#080f1a]/95 px-4 py-4 md:hidden">
+          <div className="border-t border-[var(--color-border)] bg-[var(--color-surface-1)]/95 px-4 py-4 md:hidden">
             <div className="flex flex-col gap-1">
               <Link
                 href="/"
-                className="rounded-xl px-3 py-3 text-slate-300 btn-press chq-focus"
+                className="rounded-xl px-3 py-3 text-[var(--color-text-secondary)] btn-press chq-focus"
                 onClick={() => setMobileOpen(false)}
               >
                 {t('navHome')}
               </Link>
               <Link
                 href="/signup"
-                className="mt-2 rounded-xl bg-teal-600 py-3 text-center font-semibold text-white btn-press chq-focus"
+                className="mt-2 rounded-xl bg-[var(--color-teal)] py-3 text-center font-semibold text-white btn-press chq-focus"
                 onClick={() => setMobileOpen(false)}
               >
                 {m('finalCtaButton')}
@@ -107,8 +114,8 @@ export default function PricingPageClient() {
 
       <section className="px-4 py-14 md:px-6 md:py-20">
         <div className="mx-auto max-w-6xl">
-          <h1 className="text-center text-3xl font-bold md:text-4xl">{t('title')}</h1>
-          <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-slate-400 md:text-base">{t('subtitle')}</p>
+          <h1 className="text-center text-3xl font-bold text-[var(--color-text-primary)] md:text-4xl">{t('title')}</h1>
+          <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-[var(--color-text-muted)] md:text-base">{t('subtitle')}</p>
 
           <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-5">
             {ORDERED_SUBSCRIPTION_PLAN_KEYS.map((planKey) => {
@@ -130,100 +137,48 @@ export default function PricingPageClient() {
                   key={planKey}
                   className={`flex flex-col rounded-2xl border p-6 text-start ${
                     isPopular
-                      ? 'border-teal-600/60 bg-slate-800 ring-1 ring-teal-600/30'
-                      : 'border-[var(--color-border-default)] bg-[var(--color-surface-2)]'
+                      ? 'border-[var(--color-teal)]/50 bg-[var(--color-surface-1)] ring-1 ring-[var(--color-teal)]/25'
+                      : 'border-[var(--color-border)] bg-[var(--color-surface-1)]'
                   }`}
                 >
                   <div className="flex min-h-[28px] flex-wrap items-center gap-2">
                     {isEntry ? (
-                      <span className="inline-block rounded-full border border-[var(--color-border-strong)] bg-[var(--color-surface-3)] px-2 py-0.5 text-xs text-[var(--color-text-muted)]">
+                      <span className="inline-block rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-2 py-0.5 text-xs text-[var(--color-text-muted)]">
                         {t('badgeEntry')}
                       </span>
                     ) : null}
                     {isPopular ? (
-                      <span className="inline-block rounded-full border border-teal-700/50 bg-teal-900/30 px-2 py-0.5 text-xs font-medium text-teal-400">
+                      <span className="inline-block rounded-full bg-[var(--color-teal)] px-2 py-0.5 text-xs font-medium text-white">
                         {t('badgePopular')}
                       </span>
                     ) : null}
                   </div>
-                  <p
-                    className={
-                      isPopular
-                        ? 'mt-3 text-lg font-bold !text-[#f8fafc]'
-                        : 'mt-3 text-lg font-bold text-[var(--color-text-primary)]'
-                    }
-                  >
-                    {title}
-                  </p>
+                  <p className="mt-3 text-lg font-bold text-[var(--color-text-primary)]">{title}</p>
                   <dl className="mt-4 space-y-2 text-sm">
-                    <div
-                      className={`flex justify-between gap-2 border-b pb-2 ${
-                        isPopular ? 'border-slate-700/80' : 'border-[var(--color-border-subtle)]'
-                      }`}
-                    >
-                      <dt className={isPopular ? 'text-[#cbd5e1]' : 'text-[var(--color-text-secondary)]'}>
-                        {t('colMonthly')}
-                      </dt>
-                      <dd
-                        className={
-                          isPopular
-                            ? 'font-mono font-semibold tabular-nums text-[#f8fafc]'
-                            : 'font-mono font-semibold tabular-nums text-[var(--color-text-primary)]'
-                        }
-                      >
+                    <div className="flex justify-between gap-2 border-b border-[var(--color-border-subtle)] pb-2">
+                      <dt className="text-[var(--color-text-secondary)]">{t('colMonthly')}</dt>
+                      <dd className="font-mono font-semibold tabular-nums text-[var(--color-text-primary)]">
                         {formatCurrency(dyn.monthlyListPrice, locale)}
                       </dd>
                     </div>
-                    <div
-                      className={`flex justify-between gap-2 border-b pb-2 ${
-                        isPopular ? 'border-slate-700/80' : 'border-[var(--color-border-subtle)]'
-                      }`}
-                    >
-                      <dt className={isPopular ? 'text-[#cbd5e1]' : 'text-[var(--color-text-secondary)]'}>
-                        {t('colQuarterly')}
-                      </dt>
-                      <dd
-                        className={
-                          isPopular
-                            ? 'font-mono font-semibold tabular-nums text-[#f8fafc]'
-                            : 'font-mono font-semibold tabular-nums text-[var(--color-text-primary)]'
-                        }
-                      >
+                    <div className="flex justify-between gap-2 border-b border-[var(--color-border-subtle)] pb-2">
+                      <dt className="text-[var(--color-text-secondary)]">{t('colQuarterly')}</dt>
+                      <dd className="font-mono font-semibold tabular-nums text-[var(--color-text-primary)]">
                         {formatCurrency(dyn.quarterlyAllIn, locale)}
                       </dd>
                     </div>
                     <div className="flex justify-between gap-2">
-                      <dt className={isPopular ? 'text-[#cbd5e1]' : 'text-[var(--color-text-secondary)]'}>{t('colAnnual')}</dt>
-                      <dd
-                        className={
-                          isPopular
-                            ? 'font-mono font-semibold tabular-nums text-[#f8fafc]'
-                            : 'font-mono font-semibold tabular-nums text-[var(--color-text-primary)]'
-                        }
-                      >
+                      <dt className="text-[var(--color-text-secondary)]">{t('colAnnual')}</dt>
+                      <dd className="font-mono font-semibold tabular-nums text-[var(--color-text-primary)]">
                         {formatCurrency(dyn.annualEffectiveMonthly, locale)}
                       </dd>
                     </div>
                   </dl>
-                  <p
-                    className={
-                      isPopular ? 'mt-4 text-xs !text-[#94a3b8]' : 'mt-4 text-xs text-[var(--color-text-secondary)]'
-                    }
-                  >
-                    {studentsLine}
-                  </p>
-                  <p
-                    className={
-                      isPopular
-                        ? 'mt-2 text-[11px] !text-[#64748b]'
-                        : 'mt-2 text-[11px] text-[var(--color-text-muted)]'
-                    }
-                  >
-                    {t('priceDisclaimer')}
-                  </p>
+                  <p className="mt-4 text-xs text-[var(--color-text-secondary)]">{studentsLine}</p>
+                  <p className="mt-2 text-[11px] text-[var(--color-text-muted)]">{t('priceDisclaimer')}</p>
                   <Link
                     href="/signup"
-                    className="mt-6 inline-flex w-full justify-center rounded-xl bg-teal-600 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-teal-500 btn-press chq-focus"
+                    className="mt-6 inline-flex w-full justify-center rounded-xl bg-[var(--color-teal)] py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-[var(--color-teal-deep)] btn-press chq-focus"
                   >
                     {t('ctaSignup')}
                   </Link>
@@ -232,27 +187,76 @@ export default function PricingPageClient() {
             })}
           </div>
 
-          <div className="mt-10 rounded-2xl border border-teal-800/50 bg-gradient-to-br from-slate-900/80 to-teal-950/40 p-6 md:p-8">
+          <div className="mt-10 rounded-2xl border border-[var(--color-teal)]/30 bg-[var(--color-teal-soft)] p-6 md:p-8">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <h2 className="text-xl font-bold text-white md:text-2xl">{t('topCentersTitle')}</h2>
-                <p className="mt-1 text-sm text-teal-100/90">{t('topCentersSubtitle')}</p>
-                <p className="mt-2 text-sm text-slate-400">{t('topCentersStudents')}</p>
+                <h2 className="text-xl font-bold text-[var(--color-text-primary)] md:text-2xl">{t('topCentersTitle')}</h2>
+                <p className="mt-1 text-sm text-[var(--color-teal-deep)]">{t('topCentersSubtitle')}</p>
+                <p className="mt-2 text-sm text-[var(--color-text-muted)]">{t('topCentersStudents')}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setContactOpen(true)}
-                className="shrink-0 rounded-xl border border-teal-500/50 bg-teal-600/20 px-6 py-3 text-sm font-semibold text-teal-200 transition-colors hover:bg-teal-600/30 btn-press chq-focus"
+                className="shrink-0 rounded-xl border border-[var(--color-teal)]/40 bg-[var(--color-teal)]/10 px-6 py-3 text-sm font-semibold text-[var(--color-teal-deep)] transition-colors hover:bg-[var(--color-teal)]/20 btn-press chq-focus"
               >
                 {t('topCentersCta')}
               </button>
             </div>
           </div>
+
+          {/* For teachers - clearly separated brass-accented section below the center grid */}
+          <div className="mt-16 border-t border-[var(--color-border)] pt-12">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-[var(--color-text-primary)] md:text-3xl">{t('teacher.heading')}</h2>
+              <p className="mx-auto mt-3 max-w-2xl text-sm text-[var(--color-text-secondary)] md:text-base">
+                {t('teacher.sub')}
+              </p>
+            </div>
+            <div className="mx-auto mt-8 max-w-md">
+              <div
+                className="flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-start shadow-[var(--shadow-card)]"
+                style={{ borderTopColor: 'var(--color-brass)', borderTopWidth: '3px' }}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-lg font-bold text-[var(--color-text-primary)]">{t('teacher.planName')}</p>
+                  <span
+                    className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium"
+                    style={{ background: 'var(--color-brass-soft)', color: 'var(--color-brass)' }}
+                  >
+                    {t('teacher.trialBadge')}
+                  </span>
+                </div>
+                <p className="mt-3 text-2xl font-bold text-[var(--color-text-primary)]">{t('teacher.price')}</p>
+                <p className="mt-1 text-xs text-[var(--color-text-muted)]">{t('teacher.priceNote')}</p>
+                <ul className="mt-5 space-y-2.5">
+                  {teacherFeatures.map((feature, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
+                      <Check size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--color-brass)' }} aria-hidden />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p
+                  className="mt-4 rounded-lg bg-[var(--color-brass-soft)] p-3 text-xs leading-relaxed"
+                  style={{ color: 'var(--color-text-amber)' }}
+                >
+                  {t('teacher.freeNote')}
+                </p>
+                <Link
+                  href="/teacher/signup"
+                  className="mt-6 inline-flex w-full justify-center rounded-xl px-6 py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-press chq-focus"
+                  style={{ background: 'var(--color-brass)' }}
+                >
+                  {t('teacher.cta')}
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <footer className="border-t border-slate-800/60 bg-[#080f1a] px-4 py-8 md:px-6">
-        <p className="mx-auto max-w-4xl text-center text-xs text-slate-600">{t('footerNote')}</p>
+      <footer className="border-t border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-8 md:px-6">
+        <p className="mx-auto max-w-4xl text-center text-xs text-[var(--color-text-muted)]">{t('footerNote')}</p>
       </footer>
 
       {contactOpen ? (
@@ -264,22 +268,22 @@ export default function PricingPageClient() {
           onClick={() => setContactOpen(false)}
         >
           <div
-            className="w-full max-w-md rounded-2xl border border-slate-700 bg-[#0f172a] p-6 shadow-xl"
+            className="w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 id="pricing-contact-title" className="text-lg font-bold text-white">
+            <h2 id="pricing-contact-title" className="text-lg font-bold text-[var(--color-text-primary)]">
               {t('contactModalTitle')}
             </h2>
-            <p className="mt-2 text-sm text-slate-400">{t('contactModalBody')}</p>
+            <p className="mt-2 text-sm text-[var(--color-text-muted)]">{t('contactModalBody')}</p>
             <a
               href={CONTACT_MAIL}
-              className="mt-6 flex w-full justify-center rounded-xl bg-teal-600 py-3 text-sm font-semibold text-white hover:bg-teal-500"
+              className="mt-6 flex w-full justify-center rounded-xl bg-[var(--color-teal)] py-3 text-sm font-semibold text-white hover:bg-[var(--color-teal-deep)]"
             >
               {t('contactModalEmail')}
             </a>
             <button
               type="button"
-              className="mt-3 w-full rounded-xl border border-slate-600 py-2.5 text-sm text-slate-300 hover:bg-slate-800"
+              className="mt-3 w-full rounded-xl border border-[var(--color-border)] py-2.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]"
               onClick={() => setContactOpen(false)}
             >
               {t('contactModalClose')}

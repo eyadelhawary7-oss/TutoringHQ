@@ -43,7 +43,21 @@
     "contactModalTitle": "Contact us about Top Centers",
     "contactModalBody": "Tell us about your scale and we will follow up with a tailored quote.",
     "contactModalEmail": "Email eyad@ehgintelligence.com",
-    "contactModalClose": "Close"
+    "contactModalClose": "Close",
+    "teacher": {
+      "heading": "For teachers",
+      "sub": "Center tracking is always free. The private engine starts with a 14-day trial.",
+      "planName": "Private Engine",
+      "price": "299 EGP / month",
+      "priceNote": "After the 14-day free trial.",
+      "trialBadge": "14-day free trial",
+      "feature1": "Create private groups with join links",
+      "feature2": "Attendance + automatic billing after every class",
+      "feature3": "Payment links sent on WhatsApp automatically",
+      "feature4": "Full income view: private + all centers",
+      "freeNote": "Center tracking (reading your cut from centers you teach at) is always free and requires no subscription.",
+      "cta": "Start free trial"
+    }
   },
   "invoice": {
     "subtotal": "Subtotal",
@@ -1059,7 +1073,7 @@
     "submit": "Log In",
     "title": "Title",
     "welcomeBack": "Welcome back",
-    "headline": "Sign in to your center",
+    "headline": "Sign in",
     "register": "Register your center",
     "localeToggleAria": "Switch language",
     "smsTooMany": "Too many SMS attempts",

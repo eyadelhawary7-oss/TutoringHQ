@@ -179,14 +179,14 @@ export default function ForgotPasswordPage() {
   return (
     <div
       data-chq-forgot-password
-      className="flex min-h-screen w-full flex-col items-center justify-center bg-[#080f1a] px-4 py-12"
+      className="flex min-h-screen w-full flex-col items-center justify-center bg-[var(--color-surface-0)] px-4 py-12"
     >
       <div className="absolute top-4 end-4">
         <button
           type="button"
           onClick={handleLocaleToggle}
           disabled={isPending}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-white/20 text-white/70 hover:text-white transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
         >
           <Globe size={13} />
           <span>{locale === 'ar' ? 'EN' : 'ع'}</span>
@@ -207,7 +207,7 @@ export default function ForgotPasswordPage() {
                 fontFamily: 'var(--font-bodoni), Georgia, serif',
                 fontWeight: 700,
                 letterSpacing: '2px',
-                color: '#f8fafc',
+                color: 'var(--color-text-primary)',
               }}
             >
               CENTER
@@ -217,18 +217,18 @@ export default function ForgotPasswordPage() {
                 fontFamily: 'var(--font-bodoni), Georgia, serif',
                 fontWeight: 700,
                 letterSpacing: '2px',
-                color: '#0D9488',
+                color: 'var(--color-teal)',
               }}
             >
               HQ
             </span>
           </h1>
-          <p className="text-white/50 text-sm mt-1 text-center">{t('subtitle')}</p>
+          <p className="text-[var(--color-text-muted)] text-sm mt-1 text-center">{t('subtitle')}</p>
         </div>
 
         <div
-          className="rounded-2xl border border-white/10 p-6 shadow-xl"
-          style={{ background: 'hsl(var(--card) / 0.95)', backdropFilter: 'blur(20px)' }}
+          className="rounded-2xl border border-[var(--color-border)] p-6 shadow-[var(--shadow-card)]"
+          style={{ background: 'var(--color-surface-1)' }}
         >
           {error && (
             <div

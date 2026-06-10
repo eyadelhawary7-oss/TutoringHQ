@@ -618,19 +618,18 @@ html.dark textarea {
 }
 
 /* ── Marketing / auth dark locks ────────────────────────────
-   Signup, login, forgot-password, session-expired and public
-   pricing are deliberately dark-locked page designs with
-   hardcoded dark component styling. They keep their dark tokens
-   in BOTH themes until their own cream redesign pass (ADR 031
-   follow-up). The teal/muted vars are pinned too so the global
-   utility enforcement resolves correctly inside these surfaces.
+   Signup and session-expired are deliberately dark-locked page
+   designs with hardcoded dark component styling. They keep their
+   dark tokens in BOTH themes until their own cream redesign pass
+   (ADR 031 follow-up). The teal/muted vars are pinned too so the
+   global utility enforcement resolves correctly inside them.
 
-   NOTE: [data-chq-landing] (the /center marketing page) finished
-   its cream redesign pass and was removed from this lock so its
-   cream surface tokens resolve correctly. Do NOT re-add it.
+   NOTE: [data-chq-landing] (/center), [data-chq-login] (/login),
+   [data-chq-forgot-password] and [data-chq-pricing] all finished
+   their cream redesign pass and were removed from these locks so
+   their cream surface tokens resolve correctly. Do NOT re-add them.
 ──────────────────────────────────────────────────────────── */
 [data-chq-signup],
-[data-chq-forgot-password],
 [data-chq-session-expired] {
   --color-surface-0: #080f1a !important;
   --color-surface-1: #0f172a !important;
@@ -642,25 +641,6 @@ html.dark textarea {
   --color-border: #1e293b !important;
   --color-border-subtle: rgba(148, 163, 184, 0.08) !important;
   --color-border-default: rgba(148, 163, 184, 0.14) !important;
-  --color-teal: #0d9488 !important;
-  --color-teal-deep: #14b8a6 !important;
-  background-color: #080f1a !important;
-  color: #f8fafc !important;
-}
-
-/* Public /pricing - locked dark tokens (theme uses class on <html>, not Tailwind dark:). */
-[data-chq-pricing] {
-  --color-surface-0: #080f1a !important;
-  --color-surface-1: #0f172a !important;
-  --color-surface-2: #1e293b !important;
-  --color-surface-3: #334155 !important;
-  --color-text-primary: #f8fafc !important;
-  --color-text-secondary: #cbd5e1 !important;
-  --color-text-muted: #64748b !important;
-  --color-border: #1e293b !important;
-  --color-border-subtle: rgba(148, 163, 184, 0.08) !important;
-  --color-border-default: rgba(148, 163, 184, 0.14) !important;
-  --color-border-strong: rgba(148, 163, 184, 0.24) !important;
   --color-teal: #0d9488 !important;
   --color-teal-deep: #14b8a6 !important;
   background-color: #080f1a !important;
@@ -1482,41 +1462,11 @@ html:not(.dark) .panel-live .text-white {
   caret-color: #f8fafc;
 }
 
-[data-chq-login] {
-  background-color: #080d14 !important;
-  min-height: 100vh;
-}
+/* [data-chq-login] dark lock removed in the ADR 031 cream pass. The /login
+   page now paints cream via the surface tokens, and its inputs handle autofill
+   masking inline (WebkitBoxShadow inset var(--color-surface-0)). Do NOT re-add. */
 
-[data-chq-login] a.chq-login-forgot-link:hover {
-  color: #f8fafc !important;
-}
-
-
-[data-chq-login] input {
-  background: transparent !important;
-  background-color: transparent !important;
-  -webkit-box-shadow: 0 0 0px 1000px #080d14 inset !important;
-  box-shadow: 0 0 0px 1000px #080d14 inset !important;
-  -webkit-text-fill-color: #f8fafc !important;
-  color: #f8fafc !important;
-  border-radius: 0 !important;
-}
-
-[data-chq-login] input::placeholder {
-  -webkit-text-fill-color: #334155 !important;
-  color: #334155 !important;
-  opacity: 1 !important;
-}
-
-[data-chq-login] input:-webkit-autofill,
-[data-chq-login] input:-webkit-autofill:hover,
-[data-chq-login] input:-webkit-autofill:focus {
-  -webkit-text-fill-color: #f8fafc !important;
-  -webkit-box-shadow: 0 0 0px 1000px #080d14 inset !important;
-  caret-color: #f8fafc;
-}
-
-/* Session expired - full-page dark surface (same as login/signup) in both themes */
+/* Session expired - full-page dark surface (same as signup) in both themes */
 [data-chq-session-expired] {
   background-color: #080f1a !important;
   min-height: 100vh;
@@ -2240,18 +2190,16 @@ html:not(.dark) [data-admin="true"] textarea.admin-textarea {
   animation: chq-fade-in 200ms ease forwards;
 }
 
-/* signup / forgot-password / session-expired: dark canvas so fast scroll never shows light body gaps.
-   NOTE: [data-chq-landing] (the cream /center page) is intentionally absent here -
-   it now paints its own cream canvas via the surface tokens. Do NOT re-add it. */
+/* signup / session-expired: dark canvas so fast scroll never shows light body gaps.
+   NOTE: [data-chq-landing] (/center), [data-chq-login] and
+   [data-chq-forgot-password] are intentionally absent here - those cream pages
+   paint their own cream canvas via the surface tokens. Do NOT re-add them. */
 [data-chq-signup],
-[data-chq-forgot-password],
 [data-chq-session-expired] {
   background-color: #080f1a;
 }
 html:has([data-chq-signup]),
 body:has([data-chq-signup]),
-html:has([data-chq-forgot-password]),
-body:has([data-chq-forgot-password]),
 html:has([data-chq-session-expired]),
 body:has([data-chq-session-expired]) {
   background-color: #080f1a;

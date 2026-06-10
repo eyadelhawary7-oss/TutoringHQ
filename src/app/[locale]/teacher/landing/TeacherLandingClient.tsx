@@ -84,12 +84,12 @@ export default function TeacherLandingClient() {
               <p className="text-sm text-white/80">{t('mock.label')}</p>
               <p className="mt-1 text-3xl font-bold text-white">{t('mock.total')}</p>
               <div className="mt-5 grid grid-cols-2 gap-3">
-                <div className="rounded-xl bg-white/10 p-3">
-                  <p className="text-xs text-white/75">{t('mock.fromCenters')}</p>
+                <div className="rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.15)' }}>
+                  <p className="text-xs text-white/70">{t('mock.fromCenters')}</p>
                   <p className="mt-1 text-lg font-bold text-white">{t('mock.fromCentersAmount')}</p>
                 </div>
-                <div className="rounded-xl bg-white/10 p-3">
-                  <p className="text-xs text-white/75">{t('mock.fromPrivate')}</p>
+                <div className="rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.15)' }}>
+                  <p className="text-xs text-white/70">{t('mock.fromPrivate')}</p>
                   <p className="mt-1 text-lg font-bold text-white">{t('mock.fromPrivateAmount')}</p>
                 </div>
               </div>
