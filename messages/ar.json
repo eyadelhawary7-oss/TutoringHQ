@@ -8031,6 +8031,37 @@
       "capacityFull": "المجموعة كملت العدد.",
       "genericError": "حصلت مشكلة وإحنا بنحفظ. جرب تاني."
     },
+    "sessions": {
+      "title": "الحصص",
+      "record": "سجل حصة",
+      "dateLabel": "تاريخ الحصة",
+      "empty": "لسه مفيش حصص متسجلة للمجموعة دي.",
+      "present": "{count} حاضر",
+      "statusBilled": "اتحاسبت",
+      "statusScheduled": "متسجلة",
+      "statusFinished": "خلصت",
+      "statusCancelled": "اتلغت",
+      "recordError": "مقدرناش نسجل الحصة. جرب تاني."
+    },
+    "attendance": {
+      "presentCount": "{present} من {total} حاضر",
+      "emptyRoster": "مفيش طلاب مفعلين في المجموعة. أضف طلاب الأول.",
+      "finish": "إنهاء الحصة والمحاسبة",
+      "confirmTitle": "تأكيد المحاسبة",
+      "confirmLine": "{count} طالب × {fee} = {total}",
+      "confirmGo": "أكد وحاسب",
+      "confirmCancel": "رجوع",
+      "finishing": "ثواني...",
+      "noAttendees": "علّم اللي حضروا الأول.",
+      "billedTitle": "الحصة اتحاسبت",
+      "billedTotal": "الإجمالي",
+      "pendingNote": "المبالغ دي لسه معلقة. حصلها كاش دلوقتي، والدفع الأونلاين جاي مع إطلاق المدفوعات.",
+      "statusPending": "معلقة",
+      "statusPaid": "مدفوعة",
+      "cancelled": "الحصة دي ملغية.",
+      "toggleError": "مقدرناش نحفظ الحضور. جرب تاني.",
+      "finishError": "مقدرناش نقفل الحصة. جرب تاني."
+    },
     "privateEngine": {
       "title": "شغلك الخاص"
     },

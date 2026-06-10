@@ -8031,6 +8031,37 @@
       "capacityFull": "This group is at capacity.",
       "genericError": "Something went wrong while saving. Try again."
     },
+    "sessions": {
+      "title": "Classes",
+      "record": "Record a class",
+      "dateLabel": "Class date",
+      "empty": "No classes recorded for this group yet.",
+      "present": "{count} present",
+      "statusBilled": "Billed",
+      "statusScheduled": "Recorded",
+      "statusFinished": "Finished",
+      "statusCancelled": "Cancelled",
+      "recordError": "Could not record the class. Try again."
+    },
+    "attendance": {
+      "presentCount": "{present} of {total} present",
+      "emptyRoster": "No active students in this group. Add students first.",
+      "finish": "Finish class and bill",
+      "confirmTitle": "Confirm billing",
+      "confirmLine": "{count} students x {fee} = {total}",
+      "confirmGo": "Confirm and bill",
+      "confirmCancel": "Back",
+      "finishing": "Billing...",
+      "noAttendees": "Mark who attended first.",
+      "billedTitle": "Class billed",
+      "billedTotal": "Total",
+      "pendingNote": "These amounts are pending. Collect in cash for now, online payment comes when payments launch.",
+      "statusPending": "Pending",
+      "statusPaid": "Paid",
+      "cancelled": "This class is cancelled.",
+      "toggleError": "Could not save attendance. Try again.",
+      "finishError": "Could not finish the class. Try again."
+    },
     "privateEngine": {
       "title": "Private practice"
     },

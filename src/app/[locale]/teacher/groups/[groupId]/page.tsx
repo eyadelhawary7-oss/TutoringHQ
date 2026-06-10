@@ -7,6 +7,7 @@ import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/formatNumber';
 import AddStudentModal from './AddStudentModal';
+import SessionsSection from './SessionsSection';
 
 type RosterEntry = {
   enrollmentId: string;
@@ -266,6 +267,8 @@ export default function TeacherGroupDetailPage({
           </ul>
         )}
       </section>
+
+      <SessionsSection groupId={groupId} />
 
       <AddStudentModal
         groupId={groupId}
