@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Plus, Users } from 'lucide-react';
-import { useRouter } from '@/i18n/routing';
+import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 
@@ -112,27 +112,29 @@ export default function PrivateGroupsSection({
       ) : (
         <ul className="flex flex-col gap-2">
           {groups.map((g) => (
-            <li
-              key={g.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3"
-            >
-              <div>
-                <p className="font-medium text-[var(--color-text-primary)]">{g.name}</p>
-                <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">
-                  {t('students', { count: formatNumber(g.activeStudents, locale) })}
-                  {g.pendingStudents > 0 && (
-                    <span className="ms-2 text-amber-400">
-                      {t('pending', { count: formatNumber(g.pendingStudents, locale) })}
-                    </span>
-                  )}
-                </p>
-              </div>
-              <span className="text-sm text-[var(--color-text-secondary)]">
-                {t('feePerClass')}{' '}
-                <span className="font-semibold text-[var(--color-text-primary)]">
-                  {formatCurrency(g.fee_per_class, locale)}
+            <li key={g.id}>
+              <Link
+                href={`/teacher/groups/${g.id}`}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3 transition-colors hover:border-teal-800"
+              >
+                <div>
+                  <p className="font-medium text-[var(--color-text-primary)]">{g.name}</p>
+                  <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">
+                    {t('students', { count: formatNumber(g.activeStudents, locale) })}
+                    {g.pendingStudents > 0 && (
+                      <span className="ms-2 text-amber-400">
+                        {t('pending', { count: formatNumber(g.pendingStudents, locale) })}
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <span className="text-sm text-[var(--color-text-secondary)]">
+                  {t('feePerClass')}{' '}
+                  <span className="font-semibold text-[var(--color-text-primary)]">
+                    {formatCurrency(g.fee_per_class, locale)}
+                  </span>
                 </span>
-              </span>
+              </Link>
             </li>
           ))}
         </ul>

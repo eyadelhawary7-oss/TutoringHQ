@@ -8000,6 +8000,37 @@
       "trialLine3": "مش محتاج كارت دلوقتي، وتقدر تلغي في أي وقت.",
       "trialLine4": "شغلك مع السناتر فاضل ببلاش زي ما هو."
     },
+    "roster": {
+      "back": "رجوع",
+      "pendingTitle": "طلبات مستنية موافقتك",
+      "approve": "موافقة",
+      "reject": "رفض",
+      "studentsTitle": "الطلاب",
+      "addStudent": "أضف طالب",
+      "payerStudent": "الطالب بيدفع",
+      "payerParent": "ولي الأمر بيدفع",
+      "empty": "لسه مفيش طلاب في المجموعة دي. أضف أول طالب وابدأ.",
+      "actionError": "حصلت مشكلة. جرب تاني."
+    },
+    "addStudent": {
+      "title": "إضافة طالب",
+      "nameLabel": "اسم الطالب",
+      "phoneLabel": "موبايل الطالب",
+      "payerLabel": "مين اللي بيدفع؟",
+      "payerStudent": "الطالب",
+      "payerParent": "ولي الأمر",
+      "payerHint": "فاتورة الحصص هتتبعت على موبايل اللي بيدفع.",
+      "parentPhoneLabel": "موبايل ولي الأمر",
+      "submit": "إضافة",
+      "adding": "ثواني...",
+      "cancel": "إلغاء",
+      "nameRequired": "اكتب اسم الطالب.",
+      "phoneInvalid": "اكتب رقم موبايل مصري صحيح (01xxxxxxxxx).",
+      "parentPhoneInvalid": "اكتب موبايل ولي الأمر صح (01xxxxxxxxx).",
+      "duplicate": "الطالب ده موجود في المجموعة بالفعل.",
+      "capacityFull": "المجموعة كملت العدد.",
+      "genericError": "حصلت مشكلة وإحنا بنحفظ. جرب تاني."
+    },
     "privateEngine": {
       "title": "شغلك الخاص"
     },

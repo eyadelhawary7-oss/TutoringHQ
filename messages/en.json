@@ -8000,6 +8000,37 @@
       "trialLine3": "No card needed now, and you can cancel anytime.",
       "trialLine4": "Your work with centers stays free as it is."
     },
+    "roster": {
+      "back": "Back",
+      "pendingTitle": "Requests awaiting your approval",
+      "approve": "Approve",
+      "reject": "Reject",
+      "studentsTitle": "Students",
+      "addStudent": "Add student",
+      "payerStudent": "Student pays",
+      "payerParent": "Parent pays",
+      "empty": "No students in this group yet. Add your first student to get going.",
+      "actionError": "Something went wrong. Try again."
+    },
+    "addStudent": {
+      "title": "Add a student",
+      "nameLabel": "Student name",
+      "phoneLabel": "Student mobile",
+      "payerLabel": "Who pays?",
+      "payerStudent": "The student",
+      "payerParent": "The parent",
+      "payerHint": "Class bills will be sent to the payer's mobile number.",
+      "parentPhoneLabel": "Parent mobile",
+      "submit": "Add",
+      "adding": "Adding...",
+      "cancel": "Cancel",
+      "nameRequired": "Student name is required.",
+      "phoneInvalid": "Enter a valid Egyptian mobile (01xxxxxxxxx).",
+      "parentPhoneInvalid": "Enter a valid parent mobile (01xxxxxxxxx).",
+      "duplicate": "This student is already in the group.",
+      "capacityFull": "This group is at capacity.",
+      "genericError": "Something went wrong while saving. Try again."
+    },
     "privateEngine": {
       "title": "Private practice"
     },
