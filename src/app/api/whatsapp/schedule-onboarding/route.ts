@@ -1,6 +1,6 @@
 /**
  * Schedule WhatsApp onboarding Flow 1 for a center
- * POST body: { centerPhone? } — center is always the authenticated user's center.
+ * POST body: { centerPhone? } - center is always the authenticated user's center.
  */
 
 import { NextRequest, NextResponse } from 'next/server';

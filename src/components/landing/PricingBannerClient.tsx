@@ -1,6 +1,6 @@
 'use client';
 
-// Client wrapper for PricingBanner — for use inside 'use client' pages
+// Client wrapper for PricingBanner - for use inside 'use client' pages
 // (the existing landing + pricing pages are client components). Fetches the
 // public banner config from /api/pricing/public-config (60s edge cache).
 

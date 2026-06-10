@@ -117,7 +117,7 @@ export async function getAllStudentsOffline() {
   return await db.getAll('students');
 }
 
-/** Pending scan — written to `pending_scans` first (offline source of truth). */
+/** Pending scan - written to `pending_scans` first (offline source of truth). */
 export async function queueScan(scanData: {
   student_id: string;
   center_id: string;
@@ -129,7 +129,7 @@ export async function queueScan(scanData: {
     isPending?: boolean;
     group_id?: string;
   };
-  /** Offline late-entry path — synced by `syncQueuedScans` */
+  /** Offline late-entry path - synced by `syncQueuedScans` */
   scan_kind?: 'late_entry';
   late_fee?: number;
   late_group_id?: string | null;

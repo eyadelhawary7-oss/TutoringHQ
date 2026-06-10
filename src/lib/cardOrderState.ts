@@ -74,7 +74,7 @@ export function buildCardOrderTransitionPatch(
       if (s === 'paid' && p === 'paid') {
         return {};
       }
-      /* Legacy rows: payment cleared but status still `pending` (pre — state-machine). */
+      /* Legacy rows: payment cleared but status still `pending` (pre - state-machine). */
       if (p === 'paid' && s === 'pending') {
         return { status: 'paid', payment_status: 'paid', refund_status: null };
       }

@@ -164,7 +164,7 @@ async function processInboundMessage(
   );
 
   if (conv?.current_flow) {
-    // Active flow: run flow logic (placeholder — wire to flow engine later)
+    // Active flow: run flow logic (placeholder - wire to flow engine later)
     return;
   }
 

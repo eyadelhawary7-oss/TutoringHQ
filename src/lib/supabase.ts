@@ -12,7 +12,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 /**
- * Browser client — persists session to cookies so middleware (proxy) and
+ * Browser client - persists session to cookies so middleware (proxy) and
  * server-side Supabase clients can read the same session (fixes admin redirect).
  */
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
@@ -23,6 +23,6 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
  * // Client Components (browser client):
  * import { supabase } from '@/lib/supabase';
  *
- * // Service role (API routes, server-only — never import from Client Components):
+ * // Service role (API routes, server-only - never import from Client Components):
  * import { getSupabaseAdmin } from '@/lib/supabase-admin';
  */

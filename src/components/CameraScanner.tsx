@@ -32,7 +32,7 @@ interface CameraScannerProps {
   isActive: boolean;
   /** When true, fills parent container for embedded viewport */
   fillContainer?: boolean;
-  /** Camera tab has focus — controls permission CTA visibility */
+  /** Camera tab has focus - controls permission CTA visibility */
   cameraTabActive: boolean;
   onRequestManual?: () => void;
 }

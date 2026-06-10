@@ -1,7 +1,7 @@
 /**
  * Platform config API (super_admin only for writes).
  *
- * SM onboarding SQL (document only — run when Sales Manager is hired):
+ * SM onboarding SQL (document only - run when Sales Manager is hired):
  * -- Run this when Sales Manager is hired (at center 10):
  * -- INSERT INTO admin_users (id, name, email, role, custom_permissions)
  * -- VALUES (
@@ -18,7 +18,7 @@
  * --   }'::jsonb
  * -- );
  *
- * PATCH is not available on can_approve_signups alone — requires super_admin (see requireSuperAdminRow).
+ * PATCH is not available on can_approve_signups alone - requires super_admin (see requireSuperAdminRow).
  */
 
 import { requireSuperAdminApi } from '@/lib/admin-auth';
@@ -37,7 +37,7 @@ function normalizePatchValue(
   return undefined;
 }
 
-/** GET — all platform_config rows (super_admin). */
+/** GET - all platform_config rows (super_admin). */
 export async function GET(request: NextRequest) {
   const auth = await requireSuperAdminApi(request);
   if (!auth.ok) return auth.response;
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ config: data ?? [] });
 }
 
-/** PATCH — { key, value } where value is boolean | number | string (super_admin). */
+/** PATCH - { key, value } where value is boolean | number | string (super_admin). */
 export async function PATCH(request: NextRequest) {
   const auth = await requireSuperAdminApi(request);
   if (!auth.ok) return auth.response;

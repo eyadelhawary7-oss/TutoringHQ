@@ -133,7 +133,7 @@ export const studentInsertSchema = z.object({
   return rest;
 });
 
-/** Partial update for students (via /api/db) — no required fields. */
+/** Partial update for students (via /api/db) - no required fields. */
 export const studentUpdateSchema = z
   .object({
     name: z.string().min(2, 'Name must be at least 2 characters').max(200).optional(),
@@ -354,7 +354,7 @@ export const dbInsertSchemas: Record<string, z.ZodType> = {
       .default('pending_payment'),
     delivery_address: z.string().optional().nullable(),
     notes: z.string().optional().nullable(),
-    /** Not a DB column — used by /api/db to compute delivery_fee from selected governorate; stripped before insert */
+    /** Not a DB column - used by /api/db to compute delivery_fee from selected governorate; stripped before insert */
     delivery_governorate: z.string().optional().nullable(),
   })
     .refine((row) => row.quantity >= row.students.length, {

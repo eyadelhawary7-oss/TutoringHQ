@@ -26,7 +26,7 @@ export const dynamic = 'force-dynamic';
  * promoted to the new plan before the Paymob session is created (post-payment the
  * webhook reactivates with the new billing_amount already in place).
  *
- * Center id is derived from the session — never from request body.
+ * Center id is derived from the session - never from request body.
  */
 export async function POST(request: NextRequest) {
   // allowSuspended: suspended owners must be able to pay to reactivate.

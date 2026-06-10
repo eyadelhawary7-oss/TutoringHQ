@@ -126,7 +126,7 @@ export default function BenchmarksPage() {
   const isNoDistrict = !districtNorm || d.reason === 'no_district';
   const showLiveBenchmarks = !d.insufficient_data && !isNoDistrict;
 
-  /** API mismatch: metrics without an unlocked district — show sample overlay only. */
+  /** API mismatch: metrics without an unlocked district - show sample overlay only. */
   const sampleOnlyMode = !showLiveBenchmarks && hasAnyMetric(d);
 
   const cards: {

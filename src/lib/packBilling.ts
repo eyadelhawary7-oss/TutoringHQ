@@ -38,7 +38,7 @@ export type PackBillingCenterInput = {
 
 /**
  * Resolves the EGP floor for pack invoicing. For `top_centers`, returns null (and enqueues CEO)
- * when `pack_custom_invoice_minimum` is missing or zero — callers must skip billing for that center.
+ * when `pack_custom_invoice_minimum` is missing or zero - callers must skip billing for that center.
  */
 export async function resolvePackBillingMinimumEgp(
   supabase: SupabaseClient,

@@ -398,7 +398,7 @@ export async function processInvoiceSignupAfterPaymobSuccess(
     return;
   }
 
-  // Placeholder password — 256 bits of entropy, never told to anyone. Overwritten
+  // Placeholder password - 256 bits of entropy, never told to anyone. Overwritten
   // by /api/auth/set-initial-pin once the owner chooses their own PIN. Until
   // then, public.users.pin_code stays NULL, which is the "no PIN yet" gate.
   const placeholderPassword = randomBytes(32).toString('base64url');
@@ -467,8 +467,8 @@ export async function processInvoiceSignupAfterPaymobSuccess(
   // Set-PIN grant: webhook-issued row marks the user as eligible for the
   // owner-chooses-their-own-PIN onboarding flow. Idempotent against webhook
   // replays via the pin_setup_tokens_one_live_webhook_per_user_idx unique
-  // index. Failure here MUST NOT roll back the user / activation — the owner
-  // can recover via /api/auth/request-pin-setup-link — but it MUST surface to
+  // index. Failure here MUST NOT roll back the user / activation - the owner
+  // can recover via /api/auth/request-pin-setup-link - but it MUST surface to
   // Sentry so ops sees a degraded onboarding state.
   try {
     await issuePinSetupTokenForWebhook(supabase, { userId });

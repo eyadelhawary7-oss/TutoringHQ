@@ -113,7 +113,7 @@
   --color-neutral-muted: #e9ebe7;
   --color-neutral-ink:   #5a605a;
 
-  /* ── Shadows (cream layered-soft — intentionally override Tailwind defaults) ── */
+  /* ── Shadows (cream layered-soft - intentionally override Tailwind defaults) ── */
   --shadow-xs:  0 1px 2px rgba(28,33,30,0.05);
   --shadow-sm:  0 1px 2px rgba(28,33,30,0.05), 0 2px 6px rgba(28,33,30,0.04);
   --shadow-md:  0 2px 6px rgba(28,33,30,0.05), 0 14px 40px rgba(28,33,30,0.07);
@@ -178,7 +178,7 @@
 }
 
 :root {
-  /* CenterHQ Design Tokens — cream default (ADR 031) */
+  /* CenterHQ Design Tokens - cream default (ADR 031) */
   --shadow-card: 0 2px 6px rgba(28, 33, 30, 0.05), 0 14px 40px rgba(28, 33, 30, 0.07);
   --shadow-hover: 0 4px 10px rgba(28, 33, 30, 0.08), 0 20px 50px rgba(28, 33, 30, 0.10);
   --shadow-row: 0 1px 2px rgba(28, 33, 30, 0.05);
@@ -189,21 +189,21 @@
   --transition-fast: 150ms ease;
   --transition-normal: 250ms ease;
 
-  /* RTL-aware motion helpers — flipped when <html dir="rtl"> (src/app/[locale]/layout.tsx) */
+  /* RTL-aware motion helpers - flipped when <html dir="rtl"> (src/app/[locale]/layout.tsx) */
   --chq-slide-dir: 1;
   --chq-slide-enter-tx: 16px;
 
   /* ── Semantic text colors (var() only) ──────────── */
   --color-text-primary:   #1b201d;  /* ink */
   --color-text-secondary: #5d635c;  /* AA on paper AND panel */
-  --color-text-tertiary:  #80827a;  /* mock muted — captions/small labels */
+  --color-text-tertiary:  #80827a;  /* mock muted - captions/small labels */
   --color-text-muted:     #80827a;
   --color-text-disabled:  #a6a79d;  /* faint */
   --color-text-inverse:   #fffdf8;
   --color-text-brand:     #0e6b61;
   --color-text-amber:     #8a5e16;
 
-  /* shadcn HSL tokens live in @layer base :root / .dark — do not duplicate here
+  /* shadcn HSL tokens live in @layer base :root / .dark - do not duplicate here
      (unlayered duplicates beat layered rules). */
 
   /* ── Semantic border colors (var() only) ─────────── */
@@ -224,7 +224,7 @@
   /* Deliberate dark accent: live/focus session panels INSIDE the cream app */
   --grad-live: linear-gradient(165deg, #0c1c19, #0a1513);
 
-  /* ── Backdrop blur amounts (bare px values — NO blur() wrapper) ── */
+  /* ── Backdrop blur amounts (bare px values - NO blur() wrapper) ── */
   /* Usage: backdrop-filter: blur(var(--blur-sm))                     */
   --blur-sm:  4px;
   --blur-md:  8px;
@@ -249,7 +249,7 @@ html.dark {
   --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.45), 0 8px 32px rgba(0, 0, 0, 0.28);
   --shadow-row: 0 1px 2px rgba(0, 0, 0, 0.35);
 
-  /* Tailwind v4 @theme token overrides — dark chrome */
+  /* Tailwind v4 @theme token overrides - dark chrome */
   --color-background: hsl(222 47% 3%);
   --color-foreground: hsl(210 40% 98%);
   --color-card: hsl(217 33% 10%);
@@ -353,7 +353,7 @@ html.dark {
   transform: translateY(0);
 }
 
-/* ── 13C: Design system buttons (unlayered — single source of truth) ── */
+/* ── 13C: Design system buttons (unlayered - single source of truth) ── */
 .btn-primary {
   background-color: var(--color-teal);
   color: white;
@@ -425,7 +425,7 @@ html.dark .btn-outline:hover:not(:disabled) {
   animation: page-fade-in 200ms ease forwards;
 }
 
-/* CEO / Recharts — grid lines follow theme */
+/* CEO / Recharts - grid lines follow theme */
 :root {
   --ceo-chart-grid: #ddd8cb;
   --ceo-chart-total-line: #0e6b61;
@@ -645,7 +645,7 @@ html.dark textarea {
   color: #f8fafc !important;
 }
 
-/* Public /pricing — locked dark tokens (theme uses class on <html>, not Tailwind dark:). */
+/* Public /pricing - locked dark tokens (theme uses class on <html>, not Tailwind dark:). */
 [data-chq-pricing] {
   --color-surface-0: #080f1a !important;
   --color-surface-1: #0f172a !important;
@@ -733,7 +733,7 @@ html.dark textarea {
     --scanner-yellow: 48 97% 42%;
     --scanner-purple: 263 70% 50%;
 
-    /* ─── Semantic tokens (shadcn) — cream default (ADR 031) ─── */
+    /* ─── Semantic tokens (shadcn) - cream default (ADR 031) ─── */
     --background: 42 25% 90%;
     --foreground: 144 8% 12%;
     --card: 43 100% 99%;
@@ -1036,7 +1036,7 @@ html[dir="rtl"] {
    Cairo-Arabic: Arabic script characters only (unicode-range restricted)
    Georgia: Latin characters (A-Z a-z) and numbers (0-9)
    Both activate simultaneously on the same element via unicode-range.
-   Cairo's built-in Latin glyphs are excluded — Georgia handles all Latin.
+   Cairo's built-in Latin glyphs are excluded - Georgia handles all Latin.
 ───────────────────────────────────────────────────────────── */
 
 @font-face {
@@ -1385,7 +1385,7 @@ samp {
   color: var(--color-text-primary);
 }
 
-/* ── Cream — white text readability fix ─────────────────────
+/* ── Cream - white text readability fix ─────────────────────
    Hardcoded text-white on token surfaces maps to ink on cream.
    Dark-locked pages pin --color-text-primary back to #f8fafc, so
    these var-based remaps stay correct inside the locks.
@@ -1400,7 +1400,7 @@ html:not(.dark) .text-white\/70 {
   color: var(--color-text-secondary) !important;
 }
 
-/* Cream — slate muted text utilities (dark-assuming) */
+/* Cream - slate muted text utilities (dark-assuming) */
 html:not(.dark) [class*='text-slate-3'] {
   color: var(--color-text-secondary) !important;
 }
@@ -1415,7 +1415,7 @@ html:not(.dark) .panel-live .text-white {
   color: #ffffff !important;
 }
 
-/* Signup (#080D14) — plan cards stay readable (text-white remap) */
+/* Signup (#080D14) - plan cards stay readable (text-white remap) */
 [data-chq-signup] .text-white,
 [data-chq-signup] .\!text-white {
   color: #ffffff !important;
@@ -1513,7 +1513,7 @@ html:not(.dark) .panel-live .text-white {
   caret-color: #f8fafc;
 }
 
-/* Session expired — full-page dark surface (same as login/signup) in both themes */
+/* Session expired - full-page dark surface (same as login/signup) in both themes */
 [data-chq-session-expired] {
   background-color: #080f1a !important;
   min-height: 100vh;
@@ -1586,7 +1586,7 @@ html:not(.dark) .panel-live .text-white {
   100% { transform: translateY(100%); opacity: 0.8; }
 }
 
-/* Landing hero phone mockup — scanner sweep (transform only; animating top caused layout thrash / scroll jank) */
+/* Landing hero phone mockup - scanner sweep (transform only; animating top caused layout thrash / scroll jank) */
 @keyframes chq-landing-scanline {
   0%,
   100% {
@@ -1810,7 +1810,7 @@ html:not(.dark) .panel-live .text-white {
 
 /* ── S9 Micro-interaction System ────────────────────────────
    Global interaction states applied via CSS classes.
-   All classes are additive — safe to add to any element.
+   All classes are additive - safe to add to any element.
 ──────────────────────────────────────────────────────────── */
 
 @keyframes spin {
@@ -2183,7 +2183,7 @@ html:not(.dark) [data-admin="true"] textarea.admin-textarea {
   color-scheme: light !important;
 }
 
-/* S9 — Micro-interactions */
+/* S9 - Micro-interactions */
 .btn-press {
   transition: transform 150ms ease, box-shadow 150ms ease;
 }
@@ -2303,7 +2303,7 @@ html.dark .chq-skeleton {
   border-color: #0D9488;
   border-style: solid;
 }
-/* Scanner frame corners — logical borders so the overlay tracks inline-start/end under RTL */
+/* Scanner frame corners - logical borders so the overlay tracks inline-start/end under RTL */
 .chq-scanner-corner-tl {
   top: -2px;
   inset-inline-end: -2px;

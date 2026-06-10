@@ -12,7 +12,7 @@ import { redeemPromoCodeForPaymobOrder } from '@/lib/redeemPromoCode';
 
 export const dynamic = 'force-dynamic';
 
-const paymentFailedEnabled = true; // chq_payment_failed — set to false if template gets rejected
+const paymentFailedEnabled = true; // chq_payment_failed - set to false if template gets rejected
 
 const BODY_LIMIT = 32 * 1024;
 async function processPaymobEvent(payload: Record<string, unknown>): Promise<void> {
@@ -30,7 +30,7 @@ async function processPaymobEvent(payload: Record<string, unknown>): Promise<voi
 
   const objRec = obj as Record<string, unknown>;
 
-  // IDEMPOTENCY GUARD — Paymob order id is the idempotency key (not transaction_id)
+  // IDEMPOTENCY GUARD - Paymob order id is the idempotency key (not transaction_id)
   const orderForIdem = objRec.order as { id?: unknown } | null | undefined;
   const orderId =
     orderForIdem?.id !== null && orderForIdem?.id !== undefined
@@ -65,7 +65,7 @@ async function processPaymobEvent(payload: Record<string, unknown>): Promise<voi
     const success = objRec.success === true || objRec.success === 'true';
     const transactionId = String(objRec.id ?? '');
 
-    /** Paymob HMAC object includes is_voided / is_refunded — used for chargebacks after capture. */
+    /** Paymob HMAC object includes is_voided / is_refunded - used for chargebacks after capture. */
     const isChargebackLike =
       objRec.is_voided === true ||
       objRec.is_voided === 'true' ||

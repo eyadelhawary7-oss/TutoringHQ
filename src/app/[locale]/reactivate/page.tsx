@@ -27,7 +27,7 @@ type InfoResponse = {
 
 async function authHeader(): Promise<HeadersInit | null> {
   // getUser() validates server-side and forces a token refresh if the cached
-  // access_token is expired — needed because a suspended owner may land here
+  // access_token is expired - needed because a suspended owner may land here
   // after a long idle gap. getSession() alone can return a stale cached token
   // that the API would reject with 401.
   const { data: userData, error: userErr } = await supabase.auth.getUser();

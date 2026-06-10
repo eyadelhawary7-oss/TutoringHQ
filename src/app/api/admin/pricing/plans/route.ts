@@ -1,7 +1,7 @@
 import { requireInternalAdminApi } from '@/lib/admin-auth';
 import { NextResponse } from 'next/server';
 
-/** GET — list all pricing_plans for super-admin pricing panel */
+/** GET - list all pricing_plans for super-admin pricing panel */
 export async function GET(request: Request) {
   const auth = await requireInternalAdminApi(request);
   if (!auth.ok) return auth.response;

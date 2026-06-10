@@ -1,15 +1,15 @@
 /**
- * chq_signup_session — signed, httpOnly, SameSite=Lax cookie set during
+ * chq_signup_session - signed, httpOnly, SameSite=Lax cookie set during
  * POST /api/signup (BEFORE redirecting to the Paymob iframe). Proves that the
  * browser hitting /set-pin is the same browser that initiated this specific
- * signup. The cookie alone is NEVER sufficient authority to set a PIN —
+ * signup. The cookie alone is NEVER sufficient authority to set a PIN - 
  * /api/auth/set-initial-pin AND-s it against webhook-confirmed paid state.
  *
  * Signed with HMAC-SHA256 using the existing CSRF_SECRET (re-used to avoid
  * env-var sprawl; the signature scope is distinct from CSRF token usage and
  * the secret rotation cadence is shared by design).
  *
- * Lazy-init per ADR 018 — module load does NOT touch process.env.
+ * Lazy-init per ADR 018 - module load does NOT touch process.env.
  */
 import { createHmac, timingSafeEqual } from 'crypto';
 
@@ -40,7 +40,7 @@ function b64urlDecode(s: string): Buffer {
 }
 
 /**
- * Sign a payload. Returns null if CSRF_SECRET is missing or malformed — caller
+ * Sign a payload. Returns null if CSRF_SECRET is missing or malformed - caller
  * should fail loudly (Sentry) rather than fall back to an unsigned cookie.
  */
 export function signSignupSession(centerId: string): string | null {

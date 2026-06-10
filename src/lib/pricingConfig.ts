@@ -370,11 +370,11 @@ export async function getPlanPrices(): Promise<Record<SubscriptionPlanKey, numbe
 /**
  * Per-plan display prices for visitor / signup / billing UI surfaces.
  *
- * - `monthlyListPrice` — `pricing_plans.monthly_fee` (fallback `PLANS[k].monthlyListPrice`).
- * - `quarterlyAllIn`  — `pricing_plans.all_in_price` (fallback `PLANS[k].quarterlyAllIn`).
- * - `annualEffectiveMonthly` — derived from quarterlyAllIn × `pricing.interval.annual_multiplier`
+ * - `monthlyListPrice` - `pricing_plans.monthly_fee` (fallback `PLANS[k].monthlyListPrice`).
+ * - `quarterlyAllIn` - `pricing_plans.all_in_price` (fallback `PLANS[k].quarterlyAllIn`).
+ * - `annualEffectiveMonthly` - derived from quarterlyAllIn × `pricing.interval.annual_multiplier`
  *   (rounded to whole EGP, per docs/PRICING_SPEC.md "Display Annual prices ROUNDED to whole EGP").
- * - `weeklyStudentLimit` — `pricing_plans.weekly_student_limit` (fallback `PLANS[k].weeklyStudentLimit`).
+ * - `weeklyStudentLimit` - `pricing_plans.weekly_student_limit` (fallback `PLANS[k].weeklyStudentLimit`).
  *
  * Top Centers is excluded (custom-priced).
  */
@@ -432,7 +432,7 @@ export async function getPublicPlanPrices(): Promise<Record<SubscriptionPlanKey,
   return out;
 }
 
-/** All pricing config in one shot — used by admin GET. */
+/** All pricing config in one shot - used by admin GET. */
 export async function getPricingConfigSnapshot(): Promise<PricingConfigSnapshot> {
   const [interval, addons, promo, banner, popup] = await Promise.all([
     getIntervalConfig(),

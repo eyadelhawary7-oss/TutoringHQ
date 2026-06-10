@@ -21,7 +21,7 @@ export const dynamic = 'force-dynamic';
 /**
  * Info shown on the standalone /reactivate page: current plan, suspended-tier breakdown,
  * and the catalogue of plans with reactivation totals priced against the centre's current
- * billing period. Auth-gated to suspended owners — never trusts client input for center_id.
+ * billing period. Auth-gated to suspended owners - never trusts client input for center_id.
  */
 export async function GET(request: NextRequest) {
   // allowSuspended: this route only makes sense for a suspended centre, so it

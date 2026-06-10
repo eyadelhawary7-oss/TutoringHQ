@@ -90,7 +90,7 @@ export async function GET(request: Request) {
   })
 }
 
-// POST /api/admin/center-assignments — create assignment (super_admin or admin role)
+// POST /api/admin/center-assignments - create assignment (super_admin or admin role)
 export async function POST(request: Request) {
   if (!supabaseAdmin) {
     return NextResponse.json(

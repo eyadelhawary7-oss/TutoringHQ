@@ -81,7 +81,7 @@ export async function GET(request: Request) {
 
     // CORE lookup: only the columns required to make the admin/center routing
     // decision. Mirrors the split centerAuth.ts already does (see its docblock
-    // ~L86-91 about the nine-day outage) — when a permission column is missing
+    // ~L86-91 about the nine-day outage) - when a permission column is missing
     // from the deployed schema, PostgREST errors, supabase-js returns
     // { data: null, error }, and silently discarding that error makes the route
     // think the users row doesn't exist, falling through to the admin_users
@@ -127,7 +127,7 @@ export async function GET(request: Request) {
         preferred_locale: cr.preferred_locale ?? 'ar',
       };
     } else {
-      // Genuine empty users row (not a query error) — fall back to admin_users.
+      // Genuine empty users row (not a query error) - fall back to admin_users.
       const { data: adminRow } = await supabaseAdmin
         .from('admin_users')
         .select('id, name, phone')
@@ -149,7 +149,7 @@ export async function GET(request: Request) {
     // PERMISSIONS lookup: best-effort. If a can_* column is missing (schema
     // drift) or the query fails for any other reason, warn in Sentry and
     // default all flags to false / is_active to true. The user row + center_id
-    // resolved above remain authoritative — column drift must never invalidate
+    // resolved above remain authoritative - column drift must never invalidate
     // the routing decision.
     if (userRecord && usersRowFound) {
       const { data: permsRow, error: permsErr } = await supabaseAdmin

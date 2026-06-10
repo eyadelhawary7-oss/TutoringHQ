@@ -1,5 +1,5 @@
 /**
- * Cascading inclusive pricing per docs/PRICING_SPEC.md — NOT additive-on-base stacking.
+ * Cascading inclusive pricing per docs/PRICING_SPEC.md - NOT additive-on-base stacking.
  * Rates applied in strip order: VAT off inclusive → stamp off remainder → service off remainder → base.
  */
 
@@ -92,7 +92,7 @@ function L(locale: LineLocale) {
   return locale === 'ar' ? LABELS.ar : LABELS.en;
 }
 
-/** Internal/admin — descending “stripping” presentation from inclusive. */
+/** Internal/admin - descending “stripping” presentation from inclusive. */
 export function buildInternalBreakdown(
   inclusive: number,
   locale: LineLocale,
@@ -112,7 +112,7 @@ export interface LegalInvoiceLine {
   isTotal?: boolean;
 }
 
-/** Legal Egyptian invoice — VAT MUST be last tax line before total. */
+/** Legal Egyptian invoice - VAT MUST be last tax line before total. */
 export function buildLegalInvoiceLines(inclusive: number, locale: LineLocale): LegalInvoiceLine[] {
   const b = explodeInclusive(inclusive);
   return [

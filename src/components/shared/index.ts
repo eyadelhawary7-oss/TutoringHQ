@@ -5,7 +5,7 @@ export { default as PaymentStatusBadge } from './PaymentStatusBadge';
 export { default as BalanceBadge } from './BalanceBadge';
 export { default as BillingStatusBadge } from './BillingStatusBadge';
 export { default as KpiCard } from './KpiCard';
-// Canonical alias — KpiCard is the canonical "StatCard" used across admin Overview, Finance, dashboard, students, payments.
+// Canonical alias - KpiCard is the canonical "StatCard" used across admin Overview, Finance, dashboard, students, payments.
 export { default as StatCard } from './KpiCard';
 export { default as SectionHeader } from './SectionHeader';
 export { default as EmptyState } from './EmptyState';

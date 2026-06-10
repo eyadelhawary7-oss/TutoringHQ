@@ -152,7 +152,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
         t += 0.15;
       });
     } catch {
-      // ignore — audio is best-effort
+      // ignore - audio is best-effort
     }
   }, []);
 
@@ -178,7 +178,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
           }),
       );
     } catch {
-      // ignore network errors — realtime will retry
+      // ignore network errors - realtime will retry
     }
   }, []);
 
@@ -205,7 +205,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                 .single();
               centerName = (center as { name?: string } | null)?.name ?? '';
             } catch {
-              // ignore — name lookup is best-effort
+              // ignore - name lookup is best-effort
             }
           }
           playNewOrderChime();

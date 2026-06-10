@@ -4,7 +4,7 @@
 //
 // Why this exists: the synchronous `PLANS` constant in `@/lib/pricing` is the
 // source of truth for billing engines, MRR aggregates, and hundreds of
-// server / client call sites — it must stay synchronous. This endpoint is the
+// server / client call sites - it must stay synchronous. This endpoint is the
 // dynamic DISPLAY-ONLY surface that picks up pricing_plans edits made via
 // /admin/pricing without a redeploy. Hardcoded `PLANS[k].*` values are used
 // as fallbacks when the row is missing or the service-role client cannot be

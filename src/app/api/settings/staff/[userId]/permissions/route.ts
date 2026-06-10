@@ -41,7 +41,7 @@ export async function PATCH(
   }
 
   // CORE lookup: identity only. A DB error here is infrastructure failure, not
-  // "user not found" — bucketing it into 404 would hide cache-staleness errors
+  // "user not found" - bucketing it into 404 would hide cache-staleness errors
   // from the owner and corrupt the audit "before" snapshot. Mirrors centerAuth's
   // CORE+best-effort split.
   const { data: coreUser, error: coreErr } = await auth.supabaseAdmin

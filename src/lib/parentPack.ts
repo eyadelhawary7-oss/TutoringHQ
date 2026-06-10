@@ -1,5 +1,5 @@
 /**
- * Parent WhatsApp Pack — pricing, caps, Cairo dates, WA template names.
+ * Parent WhatsApp Pack - pricing, caps, Cairo dates, WA template names.
  * Use alongside src/lib/parent-pack.ts (billing helpers).
  */
 

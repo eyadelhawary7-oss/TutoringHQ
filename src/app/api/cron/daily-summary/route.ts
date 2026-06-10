@@ -1,5 +1,5 @@
 /**
- * Daily summary API — invoked by daily-summary Edge Function
+ * Daily summary API - invoked by daily-summary Edge Function
  * Queries yesterday's data (Cairo time), sends chq_daily_summary template
  * CEO: daily freeform briefing to ADMIN_WHATSAPP_NUMBER (Automation 9)
  */

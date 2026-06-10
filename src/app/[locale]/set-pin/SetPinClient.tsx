@@ -409,7 +409,7 @@ function FinalizingPoll({ labels, onReady }: { labels: Labels; onReady: () => vo
           return;
         }
       } catch {
-        /* swallow — keep polling */
+        /* swallow - keep polling */
       }
       if (attempts < 15 && !cancelled) {
         setTimeout(tick, 2000);

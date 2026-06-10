@@ -1,6 +1,6 @@
 /**
  * Upstash sliding-window rate limiting (`rateLimit` / `rateLimitExceededResponse`).
- * On Windows, `src/lib/rateLimit.ts` conflicts with `ratelimit.ts` in TypeScript — import from `@/lib/ratelimit` (re-exports this module).
+ * On Windows, `src/lib/rateLimit.ts` conflicts with `ratelimit.ts` in TypeScript - import from `@/lib/ratelimit` (re-exports this module).
  */
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';

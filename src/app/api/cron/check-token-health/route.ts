@@ -1,5 +1,5 @@
 /**
- * Cron: Meta debug_token for WHATSAPP_TOKEN — alert CEO if expiring within 7 days.
+ * Cron: Meta debug_token for WHATSAPP_TOKEN - alert CEO if expiring within 7 days.
  */
 
 import { createClient } from '@supabase/supabase-js';

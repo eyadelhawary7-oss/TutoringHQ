@@ -9,7 +9,7 @@ type Locale = 'ar' | 'en';
 
 function readLocale(): Locale {
   if (typeof window === 'undefined') return 'ar';
-  // URL path is the source of truth — the visited URL carries the locale segment.
+  // URL path is the source of truth - the visited URL carries the locale segment.
   const path = window.location.pathname;
   if (path === '/en' || path.startsWith('/en/')) return 'en';
   if (path === '/ar' || path.startsWith('/ar/')) return 'ar';

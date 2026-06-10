@@ -22,7 +22,7 @@ function phoneDigitsOk(d: string): boolean {
   return true;
 }
 
-/** Step 1 — Egyptian mobile as +20… per regex; referral codes: see signupSchema (8 A–Z0–9). */
+/** Step 1 - Egyptian mobile as +20… per regex; referral codes: see signupSchema (8 A–Z0–9). */
 export const signupStep1Schema = z.object({
   phone: z
     .string()

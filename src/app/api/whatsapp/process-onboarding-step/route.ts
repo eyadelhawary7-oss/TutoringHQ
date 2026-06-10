@@ -1,5 +1,5 @@
 /**
- * Process a single onboarding step — invoked by process-onboarding Edge Function
+ * Process a single onboarding step - invoked by process-onboarding Edge Function
  * POST body: { centerId, toPhone, step }
  * Auth: Bearer service role key or internal
  */

@@ -517,7 +517,7 @@ export async function POST(request: Request) {
   try {
     const rawBody = await readRawBodyWithLimit(request, BODY_LIMIT);
 
-    // BOSTA_WEBHOOK_SECRET — Set in Vercel env vars — get from Bosta dashboard
+    // BOSTA_WEBHOOK_SECRET - Set in Vercel env vars - get from Bosta dashboard
     const secret = process.env.BOSTA_WEBHOOK_SECRET ?? '';
     const sig = (request.headers.get('Bosta-Signature') ?? '').trim();
     const requireSecret =

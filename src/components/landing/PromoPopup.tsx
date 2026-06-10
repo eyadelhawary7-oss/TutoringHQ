@@ -100,13 +100,13 @@ export default function PromoPopup({ locale }: PromoPopupProps) {
       />
 
       {/* Card */}
-      <div className="relative z-10 w-full max-w-sm rounded-2xl border border-slate-700/60 bg-[#0f172a] p-6 shadow-2xl">
+      <div className="relative z-10 w-full max-w-sm rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 shadow-[var(--shadow-xl)]">
         {/* Close button */}
         <button
           type="button"
           onClick={dismiss}
           aria-label={t('closeAria')}
-          className="absolute end-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-800 hover:text-white"
+          className="absolute end-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]"
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
             <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -115,24 +115,24 @@ export default function PromoPopup({ locale }: PromoPopupProps) {
 
         {/* Title */}
         {title ? (
-          <h2 className="me-6 text-base font-bold leading-snug text-white">{title}</h2>
+          <h2 className="me-6 text-base font-bold leading-snug text-[var(--color-text-primary)]">{title}</h2>
         ) : null}
 
         {/* Body */}
         {body ? (
-          <p className="mt-2 text-sm leading-relaxed text-slate-400">{body}</p>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{body}</p>
         ) : null}
 
         {/* Promo code box */}
         {hasCode ? (
-          <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-teal-700/50 bg-teal-950/40 px-4 py-3">
-            <span className="font-mono text-lg font-bold tracking-widest text-teal-300">
+          <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-[var(--color-teal)]/30 bg-[var(--color-teal-soft)] px-4 py-3">
+            <span className="font-mono text-lg font-bold tracking-widest text-[var(--color-teal-deep)]">
               {config.promoCode}
             </span>
             <button
               type="button"
               onClick={() => void copyCode()}
-              className="shrink-0 rounded-lg border border-teal-800/60 bg-teal-900/40 px-3 py-1 text-xs font-semibold text-teal-400 transition-colors hover:bg-teal-800/60 hover:text-teal-200"
+              className="shrink-0 rounded-lg border border-[var(--color-teal)]/40 bg-[var(--color-surface-1)] px-3 py-1 text-xs font-semibold text-[var(--color-teal-deep)] transition-colors hover:bg-[var(--color-surface-2)]"
             >
               {copied ? t('copied') : t('copy')}
             </button>
@@ -144,7 +144,7 @@ export default function PromoPopup({ locale }: PromoPopupProps) {
           <a
             href={config.ctaUrl}
             onClick={dismiss}
-            className="mt-4 block w-full rounded-xl bg-teal-600 px-4 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-teal-500"
+            className="mt-4 block w-full rounded-xl bg-[var(--color-teal)] px-4 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-[var(--color-teal-deep)]"
           >
             {ctaText}
           </a>

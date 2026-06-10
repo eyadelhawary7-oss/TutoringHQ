@@ -962,7 +962,7 @@ export async function generatePayoutReceiptPdf(payoutId: string, supabase: Supab
   return htmlToPdfBuffer(html);
 }
 
-/** PDF for internal `commission_payouts` (staff SR/SM) — not center `payout_requests`. */
+/** PDF for internal `commission_payouts` (staff SR/SM) - not center `payout_requests`. */
 export async function generateStaffCommissionPayoutPdf(
   payoutId: string,
   supabase: SupabaseClient,

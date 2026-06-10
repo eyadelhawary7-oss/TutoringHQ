@@ -9,7 +9,7 @@ import { findLiveTokenForUser } from '@/lib/pinSetupTokens';
 import SetPinClient from './SetPinClient';
 
 /**
- * /set-pin — Owner Set-PIN-on-first-login page.
+ * /set-pin - Owner Set-PIN-on-first-login page.
  *
  * Server component decides which view to render based on three signals:
  *   - URL `?t=<token>`     → Fallback path (chq_pin_setup_link). Render form.
@@ -71,7 +71,7 @@ export default async function SetPinPage({
     );
   }
 
-  // Cookie path — verify center is paid+activated AND a webhook token exists.
+  // Cookie path - verify center is paid+activated AND a webhook token exists.
   let mode: 'form' | 'finalizing' | 'fallback' = 'finalizing';
   try {
     const admin = getSupabaseAdmin();
@@ -100,7 +100,7 @@ export default async function SetPinPage({
       if (!ow?.id) {
         mode = 'finalizing';
       } else if (ow.pin_code) {
-        // Owner already finished — redirect to login on the client.
+        // Owner already finished - redirect to login on the client.
         mode = 'fallback';
       } else {
         const live = await findLiveTokenForUser(admin, ow.id);

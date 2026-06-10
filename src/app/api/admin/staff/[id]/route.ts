@@ -58,7 +58,7 @@ export async function GET(
   })
 }
 
-// PATCH /api/admin/staff/[id] — update or terminate (super_admin or admin role)
+// PATCH /api/admin/staff/[id] - update or terminate (super_admin or admin role)
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -146,7 +146,7 @@ export async function PATCH(
   return NextResponse.json({ staff: data })
 }
 
-// DELETE /api/admin/staff/[id] — remove a staff member (super_admin or admin)
+// DELETE /api/admin/staff/[id] - remove a staff member (super_admin or admin)
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> },

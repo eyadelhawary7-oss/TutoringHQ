@@ -55,7 +55,7 @@ export async function POST(
       afterStudentWriteParentPackEffects(supabaseAdmin, {
         kind: 'insert',
         centerId,
-        // chq_parent_welcome intentionally not wired to approval — send manually when ready
+        // chq_parent_welcome intentionally not wired to approval - send manually when ready
         skipParentWelcome: true,
         row: {
           id: studentRow.id,

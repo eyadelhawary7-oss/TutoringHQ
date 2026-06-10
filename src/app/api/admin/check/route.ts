@@ -4,7 +4,7 @@ import { customPermissionsToKeys } from '@/lib/admin-access';
 
 /**
  * Lightweight admin gate for client-side routing (cookie or Bearer session).
- * Mirrors `getAdminContext` — includes cookie auth so SPA checks work without Bearer headers.
+ * Mirrors `getAdminContext` - includes cookie auth so SPA checks work without Bearer headers.
  */
 export async function GET(request: Request) {
   try {

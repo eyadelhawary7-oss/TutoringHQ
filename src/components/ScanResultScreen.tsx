@@ -26,9 +26,9 @@ interface ScanResultScreenProps {
   canAllowLateEntry?: boolean;
   balanceDue?: number;
   addedAmount?: number;
-  /** Outstanding debt (balance_due) — shown in unpaid debt header */
+  /** Outstanding debt (balance_due) - shown in unpaid debt header */
   outstandingBalance?: number;
-  /** Modal headline for unpaid debt path, e.g. "Pay 100 EGP — Name" */
+  /** Modal headline for unpaid debt path, e.g. "Pay 100 EGP - Name" */
   paymentHeadline?: string | null;
 }
 

@@ -1,9 +1,9 @@
 /**
- * Public / internal WhatsApp routing — no hardcoded numbers in app code.
+ * Public / internal WhatsApp routing - no hardcoded numbers in app code.
  *
  * Env checklist (Vercel + `.env.local`):
- * - NEXT_PUBLIC_SUPPORT_WHATSAPP — digits only (e.g. 201234567890), used for wa.me marketing & support links
- * - ADMIN_WHATSAPP_NUMBER — optional; digits or E.164; server alerts (cron, vendor failure). Falls back to NEXT_PUBLIC_SUPPORT_WHATSAPP if unset
+ * - NEXT_PUBLIC_SUPPORT_WHATSAPP - digits only (e.g. 201234567890), used for wa.me marketing & support links
+ * - ADMIN_WHATSAPP_NUMBER - optional; digits or E.164; server alerts (cron, vendor failure). Falls back to NEXT_PUBLIC_SUPPORT_WHATSAPP if unset
  */
 
 function digitsOnly(raw: string | undefined): string {

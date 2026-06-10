@@ -1,7 +1,7 @@
 // /api/admin/promo-codes/[id]
 //
 // PATCH  : toggle is_active or update expiresAt (super_admin or admin)
-// DELETE : soft-delete — sets is_active = false (super_admin only)
+// DELETE : soft-delete - sets is_active = false (super_admin only)
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';

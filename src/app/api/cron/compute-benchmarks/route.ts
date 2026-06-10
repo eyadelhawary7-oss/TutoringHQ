@@ -1,5 +1,5 @@
 /**
- * Compute benchmarks API — invoked by cron at 1am UTC daily
+ * Compute benchmarks API - invoked by cron at 1am UTC daily
  * Calls compute_benchmark_snapshots RPC
  */
 

@@ -66,7 +66,7 @@ export default async function DashboardRouteGroupLayout({
           }
         }
       } catch {
-        // Fail open — never block dashboard access on DB error
+        // Fail open - never block dashboard access on DB error
       }
     }
     // --- END V3 ONBOARDING GATE ---

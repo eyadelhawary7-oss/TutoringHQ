@@ -17,7 +17,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'analytics',
     'renewals',
   ],
-  /** Sales / ops staff — sidebar + API gates use custom_permissions (e.g. can_approve_signups). */
+  /** Sales / ops staff - sidebar + API gates use custom_permissions (e.g. can_approve_signups). */
   staff: [
     'overview',
     'ceo_dashboard',

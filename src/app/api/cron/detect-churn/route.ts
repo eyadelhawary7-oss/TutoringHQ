@@ -1,5 +1,5 @@
 /**
- * Churn detection API — invoked by detect-churn Edge Function
+ * Churn detection API - invoked by detect-churn Edge Function
  * Executes WhatsApp sends and admin_alerts inserts via churnDetection flows
  */
 

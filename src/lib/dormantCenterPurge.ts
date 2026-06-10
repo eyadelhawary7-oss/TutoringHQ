@@ -107,7 +107,7 @@ export async function exportDormantCenterToDrive(
           if (error) throw error;
           await uploadCsv(drive, folderId, `${table}.csv`, toCSV((data ?? []) as Record<string, unknown>[]));
         } else {
-          // Dynamic table name — not all tables exist in generated types
+          // Dynamic table name - not all tables exist in generated types
           const { data, error } = await (supabase as unknown as { from: (t: string) => ReturnType<SupabaseClient['from']> })
             .from(table)
             .select('*')

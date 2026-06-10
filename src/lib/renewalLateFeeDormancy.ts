@@ -414,7 +414,7 @@ export async function runLateFeeAndDormancyScan(
       }
 
       if (daysLate <= cfg.graceDays) {
-        /* grace — no invoice, no suspend from this block */
+        /* grace - no invoice, no suspend from this block */
       }
     } catch (e) {
       result.errors.push(`${c.id}: ${e instanceof Error ? e.message : String(e)}`);

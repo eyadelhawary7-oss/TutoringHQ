@@ -4,7 +4,7 @@ interface AnimatedPhoneMockupProps {
   locale: 'ar' | 'en';
 }
 
-/** Each slot height in the counter strip — must match the font metrics below. */
+/** Each slot height in the counter strip - must match the font metrics below. */
 const ROW_H = 28;
 
 /** Five values: 247→248→249→250→247 so the loop-back is seamless (same digit). */
@@ -42,7 +42,7 @@ const STATS = {
 
 /**
  * Pure-CSS animated mobile mockup for the landing page hero.
- * All motion is driven by CSS @keyframes — zero JS timers, zero rerenders after mount.
+ * All motion is driven by CSS @keyframes - zero JS timers, zero rerenders after mount.
  * Respects RTL via logical CSS properties; dark-mode aware via CSS variables.
  */
 export function AnimatedPhoneMockup({ locale }: AnimatedPhoneMockupProps) {

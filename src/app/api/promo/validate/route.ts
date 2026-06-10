@@ -1,7 +1,7 @@
 // /api/promo/validate
 //
 // POST  : validate a promo code for a given plan + billing interval.
-// Public — no auth required. Rate-limited: 10 requests / 5 min per IP.
+// Public - no auth required. Rate-limited: 10 requests / 5 min per IP.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';

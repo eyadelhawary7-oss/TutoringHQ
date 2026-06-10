@@ -36,7 +36,7 @@ export function getPeriodDays(period: 'monthly' | 'quarterly' | 'annual'): numbe
 
 /**
  * EGP per day for the current billing period.
- * @param periodChargeAmount — full amount for one billing cycle (e.g. from getChargeFromQuarterlyAllIn).
+ * @param periodChargeAmount - full amount for one billing cycle (e.g. from getChargeFromQuarterlyAllIn).
  * Annual discount is applied in pricing before this call, not inside getDailyRate.
  */
 export function isPaygCenter(center: {
@@ -145,7 +145,7 @@ export function canUpgrade(params: {
   requestedPlanRank: number;
   upgradeCountThisPeriod: number;
   billingPeriod: 'monthly' | 'quarterly' | 'annual';
-  /** When true, fixed-plan upgrades are not allowed — tier follows student count. */
+  /** When true, fixed-plan upgrades are not allowed - tier follows student count. */
   isPaygCenter?: boolean;
 }): { allowed: boolean; reason?: string } {
   if (params.isPaygCenter) {
@@ -178,7 +178,7 @@ export async function getCreditBalance(centerId: string, supabase: SupabaseClien
   return Number(data?.credit_balance ?? 0);
 }
 
-/** FIFO atomic spend — call only after Paymob success or explicit credit-only flows. */
+/** FIFO atomic spend - call only after Paymob success or explicit credit-only flows. */
 export async function spendCredits(params: {
   centerId: string;
   amount: number;

@@ -24,7 +24,7 @@ const supabase =
       })
     : null;
 
-/** Runs at 9am UTC daily — after process-renewals so billing reflects payment state before T2 unlock. */
+/** Runs at 9am UTC daily - after process-renewals so billing reflects payment state before T2 unlock. */
 export async function GET(request: Request) {
   const unauthorized = requireCronSecret(request);
   if (unauthorized) return unauthorized;

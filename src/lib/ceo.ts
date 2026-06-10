@@ -1,5 +1,5 @@
 // src/lib/ceo.ts
-// CEO dashboard data helpers — all take SupabaseClient as first arg
+// CEO dashboard data helpers - all take SupabaseClient as first arg
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type {

@@ -1,5 +1,5 @@
 /**
- * Parent communication suite — WhatsApp flows
+ * Parent communication suite - WhatsApp flows
  * Scan notifications, weekly summaries
  */
 

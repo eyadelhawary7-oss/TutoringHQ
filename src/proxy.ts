@@ -118,11 +118,28 @@ function pathRequiresAuthentication(cleanPath: string): boolean {
 }
 
 /**
- * Reserved teacher namespace convention. No teacher pages exist yet, so this
- * guard is dormant — but `/<locale>/teacher/*` is reserved for the teacher
- * platform and center users (owner/assistant) must never reach it.
+ * Public teacher-namespace pages that anyone may reach, including a logged-in
+ * center owner. The teacher MARKETING and signup pages live under /teacher/*
+ * but are not part of the authenticated portal, so they must be exempt from the
+ * center-user wall below. Without this, a center owner clicking "I'm a teacher"
+ * in the marketing nav gets bounced to /dashboard instead of seeing the page.
+ */
+const PUBLIC_TEACHER_PATHS = ['/teacher/landing', '/teacher/signup'];
+
+function pathIsPublicTeacherPage(cleanPath: string): boolean {
+  return PUBLIC_TEACHER_PATHS.some(
+    (p) => cleanPath === p || cleanPath.startsWith(`${p}/`),
+  );
+}
+
+/**
+ * Reserved teacher namespace convention - the authenticated teacher portal.
+ * `/<locale>/teacher/*` is reserved for the teacher platform and center users
+ * (owner/assistant) must never reach it. The public marketing/signup pages
+ * (see pathIsPublicTeacherPage) are deliberately excluded.
  */
 function pathIsTeacherNamespace(cleanPath: string): boolean {
+  if (pathIsPublicTeacherPage(cleanPath)) return false;
   return cleanPath === '/teacher' || cleanPath.startsWith('/teacher/');
 }
 

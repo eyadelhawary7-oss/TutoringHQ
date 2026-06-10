@@ -44,10 +44,10 @@ export const TABLE_SCOPE: Record<string, ScopeRule> = {
   paid_parents:          { kind: 'direct', column: 'center_id' },
   reminder_settings:     { kind: 'direct', column: 'center_id' },
   card_orders:           { kind: 'direct', column: 'center_id' },
-  // Join tables — center scope is via parent rows; validated in route handler.
+  // Join tables - center scope is via parent rows; validated in route handler.
   student_group_members: { kind: 'indirect' },
   attendance_overrides:  { kind: 'indirect' },
-  // No center column / public intake — never safe via the legacy proxy.
+  // No center column / public intake - never safe via the legacy proxy.
   demo_requests:         { kind: 'forbidden' },
   whatsapp_incoming:     { kind: 'forbidden' },
 };
@@ -180,7 +180,7 @@ function findCrossTenantFilter(
 /**
  * For insert/update on direct-scope tables, force the scope column on the
  * payload so a malicious caller cannot reassign rows to another center.
- * `centers` is excluded — its scope column is the primary key.
+ * `centers` is excluded - its scope column is the primary key.
  */
 export function applyForcedData(
   data: unknown,

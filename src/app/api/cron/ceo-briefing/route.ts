@@ -1,5 +1,5 @@
 /**
- * CEO daily briefing — 7:15am UTC (after renewal cron at 7:00)
+ * CEO daily briefing - 7:15am UTC (after renewal cron at 7:00)
  * Sends chq_ceo_briefing template to CEO_PHONE
  */
 

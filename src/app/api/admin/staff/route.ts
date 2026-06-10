@@ -13,7 +13,7 @@ const supabaseAdmin =
       })
     : null
 
-// GET /api/admin/staff — list all staff with aggregated stats
+// GET /api/admin/staff - list all staff with aggregated stats
 export async function GET(request: Request) {
   if (!supabaseAdmin) {
     return NextResponse.json(
@@ -67,7 +67,7 @@ export async function GET(request: Request) {
   return NextResponse.json({ staff: enriched })
 }
 
-// POST /api/admin/staff — create new staff (super_admin or admin role)
+// POST /api/admin/staff - create new staff (super_admin or admin role)
 export async function POST(request: Request) {
   if (!supabaseAdmin) {
     return NextResponse.json(

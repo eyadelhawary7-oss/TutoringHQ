@@ -41,7 +41,7 @@ interface OverviewData {
 
 /**
  * `?tab=` legacy URLs that map to dedicated admin sub-routes.
- * Permanent — bookmarked URLs must continue to work after the Phase 2 refactor.
+ * Permanent - bookmarked URLs must continue to work after the Phase 2 refactor.
  */
 const ADMIN_TAB_REDIRECTS: Record<string, string> = {
   analytics: '/admin/analytics',

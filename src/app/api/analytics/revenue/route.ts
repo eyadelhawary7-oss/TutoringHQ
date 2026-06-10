@@ -70,7 +70,7 @@ async function getAnalyticsAuth(request: NextRequest): Promise<AnalyticsAuthCont
   if (!userRecord && !adminRecord) return null;
 
   // Super-admin authority comes from admin_users + SUPER_ADMIN_PHONES only.
-  // Never trust `users.role` — it is the centre-tenant role and is writable by
+  // Never trust `users.role` - it is the centre-tenant role and is writable by
   // centre admins (was the source of a prior privilege-escalation P0).
   const phone = (userRecord as { phone?: string | null } | null)?.phone ?? null;
   const isSuperAdmin = !!adminRecord || isSuperAdminPhone(phone);

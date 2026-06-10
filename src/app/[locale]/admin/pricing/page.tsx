@@ -31,10 +31,10 @@ const BANNER_STYLE_PREVIEW: Record<BannerStyle, string> = {
 /**
  * Correlates `platform_config` write logs on the server (`[PATCH /api/admin/pricing-config]` /
  * `[PATCH /api/admin/pricing/pack]`). Writes on this page come from:
- * - Page load `GET /api/admin/pricing/pack` (bootstrap insert if `pack_price_per_parent` missing — no button).
+ * - Page load `GET /api/admin/pricing/pack` (bootstrap insert if `pack_price_per_parent` missing - no button).
  * - WhatsApp Pack section Save → `PATCH /api/admin/pricing/pack` (value below).
  * - "Save all changes" → `PATCH /api/admin/pricing-config` (value below).
- * Per-plan saves use `pricing_plans` only — not `platform_config`.
+ * Per-plan saves use `pricing_plans` only - not `platform_config`.
  */
 const PRICING_PLATFORM_CONFIG_SAVE_SOURCE = 'X-CHQ-Pricing-Save-Source' as const;
 
@@ -232,7 +232,7 @@ export default function AdminPricingPage() {
     }
     const data = (await res.json()) as { config: PricingConfigSnapshot };
     // Deep-clone via JSON round-trip so pricingCfg and pricingCfgDraft are always
-    // separate objects — prevents shared-reference mutation from triggering a spurious
+    // separate objects - prevents shared-reference mutation from triggering a spurious
     // dirty flag on load.
     setPricingCfg(JSON.parse(JSON.stringify(data.config)) as PricingConfigSnapshot);
     setPricingCfgDraft(JSON.parse(JSON.stringify(data.config)) as PricingConfigSnapshot);

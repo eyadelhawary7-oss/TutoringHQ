@@ -1,5 +1,5 @@
 /**
- * WhatsApp onboarding Flow 1 — 8-message automated sequence
+ * WhatsApp onboarding Flow 1 - 8-message automated sequence
  * Schedule: +0min, +2hrs, +1d, +2d, +3d, +5d, +7d, +14d
  */
 

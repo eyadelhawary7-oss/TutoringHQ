@@ -1,10 +1,10 @@
 /**
- * Process renewals API — invoked by process-renewals Edge Function
+ * Process renewals API - invoked by process-renewals Edge Function
  * Sends WhatsApp reminders, updates status, alerts Sales Manager
  *
  * Note: `upgrade_count_this_period` resets when subscription payment is confirmed (see
  * `handleSubscriptionInvoicePaid` in invoicePaymobPayment.ts), not in this reminder cron.
- * No 8-day grace references here — auto-suspend uses a 6-day grace from `next_payment_due` in DB.
+ * No 8-day grace references here - auto-suspend uses a 6-day grace from `next_payment_due` in DB.
  */
 
 import { createClient } from '@supabase/supabase-js';

@@ -1,5 +1,5 @@
 /**
- * Center health score (0-100) — computed in SQL, stored in centers.health_score
+ * Center health score (0-100) - computed in SQL, stored in centers.health_score
  * Recomputed nightly via pg_cron → recompute_all_health_scores()
  *
  * Components:

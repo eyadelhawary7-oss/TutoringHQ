@@ -23,10 +23,10 @@ export function LandingFAQ() {
   }
 
   return (
-    <section className="border-t border-slate-800/40 bg-[#080f1a] px-4 py-16 md:px-6 md:py-24">
+    <section className="border-t border-[var(--color-border)] bg-[var(--color-surface-0)] px-4 py-16 md:px-6 md:py-24">
       <div className="mx-auto max-w-[800px]">
         <div className="mb-10 text-center md:mb-14">
-          <h2 className="text-2xl font-bold !text-white md:text-3xl">
+          <h2 className="text-2xl font-bold text-[var(--color-text-primary)] md:text-3xl">
             {t('heading')}
           </h2>
           <p className="mt-3 text-sm text-[var(--color-text-muted)] md:text-base">
@@ -50,7 +50,7 @@ export function LandingFAQ() {
                   className="flex w-full items-center justify-between gap-4 px-5 py-4 text-start transition-colors hover:bg-[var(--color-surface-2)] chq-focus"
                   onClick={() => toggle(key)}
                 >
-                  <span className="text-sm font-semibold text-white md:text-base">
+                  <span className="text-sm font-semibold text-[var(--color-text-primary)] md:text-base">
                     {t(`${key}.question` as 'q1.question')}
                   </span>
                   <svg

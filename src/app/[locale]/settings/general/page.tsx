@@ -226,7 +226,7 @@ export default function GeneralSettingsPage() {
     load();
   }, []);
 
-  // Load referral (owner-only — revenue share)
+  // Load referral (owner-only - revenue share)
   useEffect(() => {
     const fetchReferral = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -772,7 +772,7 @@ export default function GeneralSettingsPage() {
             </div>
           </div>
 
-          {/* Team Members shortcut — owner-only */}
+          {/* Team Members shortcut - owner-only */}
           {(currentUser?.role === 'owner' || currentUser?.role === 'super_admin') && (
             <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
               <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
@@ -969,7 +969,7 @@ export default function GeneralSettingsPage() {
             </div>
           ) : null}
 
-          {/* Referral Program — owner-only (revenue share) */}
+          {/* Referral Program - owner-only (revenue share) */}
           {(currentUser?.role === 'owner' || currentUser?.role === 'super_admin') && (
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
             <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">

@@ -65,7 +65,7 @@ const SIGNUP_CITIES = [
 ] as const;
 
 /**
- * Static plan metadata — name + key only. Prices are sourced dynamically per
+ * Static plan metadata - name + key only. Prices are sourced dynamically per
  * render via `usePublicPlanPrices()` so admin edits on /admin/pricing reflect
  * in the signup flow without a redeploy. Student limits are also DB-driven
  * with the PLANS hardcoded value as a fallback (see `studentsFor`).
@@ -99,7 +99,7 @@ function getSignupMonthlyDisplay(dyn: DynamicPlanPrice, period: BillingPeriod): 
 
 /**
  * Full cycle amount the customer is billed for the selected period. Same
- * formula used by `getPlanPrice(planKey, period)` in @/lib/pricing — kept here
+ * formula used by `getPlanPrice(planKey, period)` in @/lib/pricing - kept here
  * so DB-edited prices can override the synchronous constant for display only.
  */
 function getSignupCycleTotal(dyn: DynamicPlanPrice, period: BillingPeriod): number {
@@ -472,7 +472,7 @@ export default function SignupForm() {
         else if (!phone.startsWith('20')) phone = '+20' + phone;
         else phone = '+' + phone;
       }
-      // Promo takes priority if both exist (edge case — UI prevents this normally).
+      // Promo takes priority if both exist (edge case - UI prevents this normally).
       let referralEffective = (form.referralCode.trim() || appliedReferralCode || '').trim().toUpperCase();
       if (appliedPromo && referralEffective) {
         referralEffective = '';

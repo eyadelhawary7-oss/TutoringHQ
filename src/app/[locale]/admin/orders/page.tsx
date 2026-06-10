@@ -5,7 +5,7 @@ import AdminOrdersClient from './AdminOrdersClient';
 
 /**
  * Bounce unauthenticated users to /login. Beyond that, leave the data
- * load to AdminOrdersClient — server-to-self bearer fetches against
+ * load to AdminOrdersClient - server-to-self bearer fetches against
  * /api/admin/card-orders were intermittently returning 401/403, which
  * silently sent users to /admin (Overview) instead of the orders page.
  */

@@ -1,8 +1,8 @@
 /**
- * Subscription tier rows — single source for `PLANS` in `@/lib/pricing.ts`.
+ * Subscription tier rows - single source for `PLANS` in `@/lib/pricing.ts`.
  * Order = lowest → highest (excluding `top_centers`, defined only in pricing.ts).
  *
- * `annualEffectiveMonthly` — whole EGP/month when billed annually (docs/PRICING_SPEC.md).
+ * `annualEffectiveMonthly` - whole EGP/month when billed annually (docs/PRICING_SPEC.md).
  */
 export const SUBSCRIPTION_PLAN_DEFINITIONS = [
   {

@@ -210,7 +210,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider closeMainSidebar={closeMainSidebar}>
       {!isAdminRoute ? (
-        // Mount the cart provider regardless of user.center_id readiness — the
+        // Mount the cart provider regardless of user.center_id readiness - the
         // provider already skips its SWR fetch when user?.center_id is null
         // (see useCardOrderCart.tsx: swrKey = user?.id && user?.center_id ? … : null).
         // Without this, a render-phase race (most reliably observable on the

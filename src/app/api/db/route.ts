@@ -159,7 +159,7 @@ export async function POST(request: Request) {
     });
 
     // Derive caller identity from session: users row + admin_users membership.
-    // Mirrors centerAuth.ts for super-admin detection — `users.role` is NEVER a
+    // Mirrors centerAuth.ts for super-admin detection - `users.role` is NEVER a
     // source of super-admin authority (it is centre-tenant-writable). Only
     // `admin_users` membership and `SUPER_ADMIN_PHONES` confer the bypass.
     const [{ data: userRecord }, { data: adminRecord }] = await Promise.all([
@@ -322,7 +322,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // Rate limiting — scanner posts attendance via insert; keyed by center_id
+    // Rate limiting - scanner posts attendance via insert; keyed by center_id
     if (
       scanRatelimit &&
       isStateChange &&
@@ -388,7 +388,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // Forced tenant filter — applied AFTER client filters so it always
+    // Forced tenant filter - applied AFTER client filters so it always
     // constrains SELECT/UPDATE/DELETE/COUNT WHERE clauses for direct-scope
     // tables. INSERT carries the center_id in the row via applyForcedData.
     if (plan.kind === 'direct' && op !== 'insert') {
@@ -579,7 +579,7 @@ async function validateStudentGroupMembers(
     return null;
   }
 
-  // select / update / delete / count — require a filter on group_id or student_id.
+  // select / update / delete / count - require a filter on group_id or student_id.
   const fs = filters ?? [];
   const groupFilter = fs.find((f) => f.column === 'group_id' && (f.op === 'eq' || f.op === 'in'));
   const studentFilter = fs.find((f) => f.column === 'student_id' && (f.op === 'eq' || f.op === 'in'));
@@ -651,7 +651,7 @@ async function validateAttendanceOverrides(
       centerId,
     );
     if (parentErr) return parentErr;
-    // Force override_by_user_id to caller — payload value is ignored.
+    // Force override_by_user_id to caller - payload value is ignored.
     row.override_by_user_id = actorUserId;
   }
   return null;

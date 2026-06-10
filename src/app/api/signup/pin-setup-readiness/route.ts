@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
   }
   if (!owner) return NextResponse.json({ ready: false, reason: 'not_finalized' });
   if ((owner as { pin_code?: string | null }).pin_code) {
-    // Already set — owner should be logging in normally.
+    // Already set - owner should be logging in normally.
     return NextResponse.json({ ready: false, reason: 'pin_already_set' });
   }
 

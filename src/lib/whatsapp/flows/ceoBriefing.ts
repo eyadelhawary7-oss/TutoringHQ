@@ -1,5 +1,5 @@
 /**
- * CEO daily briefing — 7am UTC (9am Cairo)
+ * CEO daily briefing - 7am UTC (9am Cairo)
  * Template: chq_ceo_briefing
  * Variables: 1=date, 2=activeCenters, 3=mrr, 4=newYesterday, 5=churned, 6=atRisk, 7=renewalsThisWeek
  */

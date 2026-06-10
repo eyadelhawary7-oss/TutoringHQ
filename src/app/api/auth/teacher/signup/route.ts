@@ -134,7 +134,7 @@ export async function POST(request: Request) {
 
   const userId = created.user.id;
 
-  // public.users — role and center_id are server-set (never from the body).
+  // public.users - role and center_id are server-set (never from the body).
   // Model B: a teacher is center-less (center_id NULL).
   const { error: userErr } = await admin.from('users').insert({
     id: userId,
@@ -155,7 +155,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Server error', code: 'server_error' }, { status: 500 });
   }
 
-  // teacher_profiles — required: a missing profile makes finish_class_and_bill
+  // teacher_profiles - required: a missing profile makes finish_class_and_bill
   // raise 23503 (the integrity flag from step 6).
   const { error: profErr } = await admin.from('teacher_profiles').insert({
     user_id: userId,

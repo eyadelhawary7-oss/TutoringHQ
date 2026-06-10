@@ -156,7 +156,7 @@ function worksheetToMatrix(ws: ExcelJS.Worksheet): (string | number)[][] {
 
 /**
  * Parse uploaded `.csv` (UTF-8) or `.xlsx` (first worksheet).
- * Legacy `.xls` binary workbooks are not supported — re-save as `.xlsx` or use CSV.
+ * Legacy `.xls` binary workbooks are not supported - re-save as `.xlsx` or use CSV.
  */
 export async function parseFile(file: ArrayBuffer, fileName: string): Promise<ParsedData> {
   const ext = fileName.toLowerCase().split('.').pop() || '';

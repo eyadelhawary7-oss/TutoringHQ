@@ -1,5 +1,5 @@
 /**
- * Subscription billing cron steps (Items 1–4) — run at start of process-renewals.
+ * Subscription billing cron steps (Items 1–4) - run at start of process-renewals.
  * Dates use Cairo calendar via todayISO() to align with next_payment_due storage.
  */
 

@@ -1,5 +1,5 @@
 /**
- * AI natural language query — Arabic/English questions about center data
+ * AI natural language query - Arabic/English questions about center data
  * Uses Claude Haiku to generate SQL, executes via Supabase, returns Arabic summary
  */
 

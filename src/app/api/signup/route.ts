@@ -424,7 +424,7 @@ export async function POST(request: Request) {
 
         const paymentUrl = buildPaymobIframeUrl(paymentToken);
 
-        // chq_signup_session — proves the browser arriving back at /set-pin is
+        // chq_signup_session - proves the browser arriving back at /set-pin is
         // the same browser that initiated THIS signup. The cookie alone is NOT
         // sufficient authority to set a PIN; /api/auth/set-initial-pin AND-s it
         // against webhook-confirmed paid+activated state.
@@ -441,11 +441,11 @@ export async function POST(request: Request) {
             ...SIGNUP_SESSION_COOKIE_OPTIONS,
           });
         } else {
-          // CSRF_SECRET missing / malformed — set-PIN cookie path will silently
+          // CSRF_SECRET missing / malformed - set-PIN cookie path will silently
           // not work. Surface loudly so ops sees the misconfig instead of
           // discovering it via broken onboarding.
           Sentry.captureMessage(
-            'signup: chq_signup_session cookie not signed — CSRF_SECRET unset/malformed; cross-device fallback still works',
+            'signup: chq_signup_session cookie not signed - CSRF_SECRET unset/malformed; cross-device fallback still works',
             {
               level: 'error',
               tags: { route: 'signup', reason: 'signup_session_secret_missing' },

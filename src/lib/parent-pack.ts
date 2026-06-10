@@ -1,5 +1,5 @@
 // src/lib/parent-pack.ts
-// Business logic for Parent WhatsApp Pack — no UI, no i18n
+// Business logic for Parent WhatsApp Pack - no UI, no i18n
 //
 // Pass a Supabase client from route handlers (typically service role for `/api/*`
 // with Bearer auth, matching `/api/me`). Cookie-based routes may use `createClient` from `@/lib/supabase/server`.

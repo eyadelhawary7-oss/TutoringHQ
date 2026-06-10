@@ -70,7 +70,7 @@ const CONTENT = {
       {
         icon: Tablet,
         title: 'Staff scans at the door',
-        body: 'A quick scan from any Android tablet the moment the student walks in — no queues.',
+        body: 'A quick scan from any Android tablet the moment the student walks in - no queues.',
       },
       {
         icon: MessageCircle,

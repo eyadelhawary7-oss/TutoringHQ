@@ -28,7 +28,7 @@ function addMonthsYmd(ymd: string, months: number): string {
   return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
 }
 
-/** Result for all exported WA helpers — never throws to callers. */
+/** Result for all exported WA helpers - never throws to callers. */
 export type CenterNotifyResult = {
   success?: boolean;
   skipped?: boolean;
@@ -483,7 +483,7 @@ export async function sendPaymentRetry(
   }
 }
 
-/** chq_renewal_overdue — used by subscription billing cron (Items 2–3). */
+/** chq_renewal_overdue - used by subscription billing cron (Items 2–3). */
 export async function sendChqRenewalOverdueTemplate(
   supabase: SupabaseClient,
   opts: {
@@ -521,7 +521,7 @@ export async function sendChqRenewalOverdueTemplate(
   }
 }
 
-/** chq_dormancy_notice — variables: center_name, dormancy_date, reactivation_url */
+/** chq_dormancy_notice - variables: center_name, dormancy_date, reactivation_url */
 export async function sendChqDormancyNoticeTemplate(
   supabase: SupabaseClient,
   opts: { name: string; phone: string | null; dormancyDateStr: string; reactivationUrl: string },
@@ -573,7 +573,7 @@ export async function sendDormancyNotice(
   });
 }
 
-/** chq_reactivation_warning_90 — variables: center_name, deletion_date */
+/** chq_reactivation_warning_90 - variables: center_name, deletion_date */
 export async function sendChqReactivationWarning90Template(
   supabase: SupabaseClient,
   opts: { name: string; phone: string | null; deletionDateStr: string },
@@ -626,7 +626,7 @@ export async function sendReactivationWarning90(
   });
 }
 
-/** chq_reactivation_warning_30 — variables: center_name, deletion_date */
+/** chq_reactivation_warning_30 - variables: center_name, deletion_date */
 export async function sendChqReactivationWarning30Template(
   supabase: SupabaseClient,
   opts: { name: string; phone: string | null; deletionDateStr: string },
@@ -678,7 +678,7 @@ export async function sendReactivationWarning30(
   });
 }
 
-/** chq_data_deletion_notice — variables: center_name, deletion_date */
+/** chq_data_deletion_notice - variables: center_name, deletion_date */
 export async function sendChqDataDeletionNoticeTemplate(
   supabase: SupabaseClient,
   opts: { name: string; phone: string | null; deletionDateStr: string },
@@ -746,7 +746,7 @@ export async function sendPaymentConfirmed(
   });
 }
 
-/** chq_payment_confirmed — Paymob subscription / renewal success (Item 7). */
+/** chq_payment_confirmed - Paymob subscription / renewal success (Item 7). */
 export async function sendChqPaymentConfirmedTemplate(
   supabase: SupabaseClient,
   opts: { name: string; phone: string | null; billingPeriodLabel: string; billingAmountStr: string },
@@ -786,7 +786,7 @@ export async function sendChqPaymentConfirmedTemplate(
   }
 }
 
-/** chq_pack_invoice — Parent Pack monthly or partial invoice (Session D). Pass `templateEnabled` from route flag. */
+/** chq_pack_invoice - Parent Pack monthly or partial invoice (Session D). Pass `templateEnabled` from route flag. */
 export async function sendChqPackInvoiceTemplate(
   supabase: SupabaseClient,
   templateEnabled: boolean,
@@ -835,7 +835,7 @@ export async function sendChqPackInvoiceTemplate(
   }
 }
 
-/** chq_credit_expiry — credits expiring within 30 days (billing engine). Enable when template is Active in Meta. */
+/** chq_credit_expiry - credits expiring within 30 days (billing engine). Enable when template is Active in Meta. */
 export async function sendChqCreditExpiryTemplate(
   supabase: SupabaseClient,
   templateEnabled: boolean,
@@ -880,7 +880,7 @@ export async function sendChqCreditExpiryTemplate(
 
 const TEMPLATE_WEEKLY_SUMMARY = 'chq_weekly_summary';
 
-/** chq_weekly_summary — weekly owner stats + rotating tip (Automation 5). Never throws. */
+/** chq_weekly_summary - weekly owner stats + rotating tip (Automation 5). Never throws. */
 export async function sendWeeklyReport(
   supabase: SupabaseClient,
   centerId: string,
@@ -933,7 +933,7 @@ export async function sendWeeklyReport(
   }
 }
 
-/** chq_payment_failed — subscription Paymob failure (Session E). Pass `templateEnabled` from route flag. */
+/** chq_payment_failed - subscription Paymob failure (Session E). Pass `templateEnabled` from route flag. */
 export async function sendChqPaymentFailedTemplate(
   supabase: SupabaseClient,
   templateEnabled: boolean,

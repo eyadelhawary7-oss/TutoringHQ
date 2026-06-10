@@ -14,11 +14,11 @@ export type CenterPermission =
  * Returns true when the authenticated user holds the given permission.
  *
  * Owners and super-admins always pass regardless of individual flag values
- * (defense-in-depth — even if a flag was somehow set false on an owner, the
+ * (defense-in-depth - even if a flag was somehow set false on an owner, the
  * route still works). Assistants pass only when the specific flag is TRUE.
  *
  * Super-admin is tested via the strict `auth.isSuperAdmin` flag (admin_users +
- * `SUPER_ADMIN_PHONES`), NOT via `auth.role === 'super_admin'` — `auth.role`
+ * `SUPER_ADMIN_PHONES`), NOT via `auth.role === 'super_admin'` - `auth.role`
  * carries `public.users.role`, which is centre-tenant-writable and was the
  * source of a prior privilege-escalation P0.
  */

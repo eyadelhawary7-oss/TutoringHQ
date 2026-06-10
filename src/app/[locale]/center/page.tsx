@@ -12,8 +12,8 @@ export async function generateMetadata({
 
   return {
     title: isAr
-      ? 'CenterHQ – نظام إدارة السنترات التعليمية'
-      : 'CenterHQ – Tutoring Center Management System for Egypt',
+      ? 'CenterHQ - نظام إدارة السنترات التعليمية'
+      : 'CenterHQ - Tutoring Center Management System for Egypt',
     description: isAr
       ? 'نظام إدارة السنترات التعليمية في مصر. حضور QR، متابعة الطلاب، فواتير تلقائية وإشعارات واتساب.'
       : "Egypt's tutoring center operating system. QR attendance, student tracking, automated billing & WhatsApp notifications.",

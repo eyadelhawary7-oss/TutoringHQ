@@ -647,7 +647,7 @@ export default function DashboardPage() {
   }, []);
 
   // Rehydrate from the scoped session cache once we know who the caller is.
-  // Cache is scoped by user+center and TTL-bounded — see lib/dashboardCache.ts
+  // Cache is scoped by user+center and TTL-bounded - see lib/dashboardCache.ts
   // for why an unscoped key caused per-session "ghost counts".
   useEffect(() => {
     if (!user?.id || !centerId) return;

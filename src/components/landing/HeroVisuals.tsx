@@ -23,7 +23,7 @@ const DASHBOARD_STATS = {
  * Hero visual composition: laptop admin dashboard (behind) + animated phone
  * (center) + WhatsApp parent notification card (front).
  *
- * On mobile/md the supporting elements are hidden — only the phone is shown,
+ * On mobile/md the supporting elements are hidden - only the phone is shown,
  * matching the original single-phone layout.
  */
 export function HeroVisuals({ locale }: HeroVisualsProps) {

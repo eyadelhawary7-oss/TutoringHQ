@@ -107,7 +107,7 @@ export async function getAdminContext(request: Request): Promise<AdminContext | 
 
   // admin_users (and SUPER_ADMIN_PHONES) are the only source of truth for internal
   // admin roles. public.users.role is the center-side role (owner/assistant/…) and
-  // historically the audit seed populates it as 'super_admin' for internal users —
+  // historically the audit seed populates it as 'super_admin' for internal users - 
   // never let that elevate ctx.internalRole, or routes gated by
   // requireAdminRole(ctx, ['super_admin']) will let internal_admin through.
   if (!adminRow && !adminByPhone) {

@@ -33,7 +33,7 @@ const CONTENT = {
   ar: {
     heroTitle: 'ملف كامل لكل طالب',
     heroSub:
-      'كل ما تحتاج معرفته عن الطالب في مكان واحد: حضوره، مدفوعاته، مجموعاته، وتواصلك مع ولي أمره — بدون أوراق متفرقة أو ملفات ضائعة.',
+      'كل ما تحتاج معرفته عن الطالب في مكان واحد: حضوره، مدفوعاته، مجموعاته، وتواصلك مع ولي أمره - بدون أوراق متفرقة أو ملفات ضائعة.',
     cta: 'ابدأ مجاناً الآن',
     cardsHeading: 'كل بيانات الطالب في لمحة',
     cards: [
@@ -72,7 +72,7 @@ const CONTENT = {
   en: {
     heroTitle: 'Complete Profile for Every Student',
     heroSub:
-      'Everything you need to know about a student in one place: attendance, payments, groups, and parent communication — no scattered papers or lost files.',
+      'Everything you need to know about a student in one place: attendance, payments, groups, and parent communication - no scattered papers or lost files.',
     cta: 'Start free now',
     cardsHeading: 'All student data at a glance',
     cards: [

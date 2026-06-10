@@ -1585,8 +1585,8 @@
     "alreadyInOrder": "Already in an order",
     "addedToOrder": "Added to order",
     "parentConsented": "Parent consented",
-    "packDisabledInactive": "Parent pack disabled — student inactive",
-    "packDisabledNoPhone": "Parent pack disabled — no parent phone",
+    "packDisabledInactive": "Parent pack disabled: student inactive",
+    "packDisabledNoPhone": "Parent pack disabled: no parent phone",
     "statement": {
       "printStatement": "Print statement"
     },
@@ -8155,10 +8155,10 @@
   },
   "splash": {
     "headline": "The operating system for everyone who teaches in Egypt",
-    "context": "From attendance to billing to collecting your income — all in one place.",
+    "context": "From attendance to billing to collecting your income, all in one place.",
     "center": {
       "title": "I run a center",
-      "brief": "Manage your staff, attendance, and income — from the first class to the last pound.",
+      "brief": "Manage your staff, attendance, and income, from the first class to the last pound.",
       "cta": "Learn more"
     },
     "teacher": {
@@ -8170,7 +8170,7 @@
     "privacy": "Privacy Policy",
     "terms": "Terms",
     "cookies": "Cookie Policy",
-    "rights": "All rights reserved — CenterHQ, a product of EHG Intelligence.",
+    "rights": "All rights reserved. CenterHQ, a product of EHG Intelligence.",
     "switchLocaleAria": "Switch language",
     "footerNavAria": "Legal links"
   },
@@ -8192,7 +8192,7 @@
     "tiles": {
       "centers": {
         "title": "Track your centers",
-        "body": "See your cut from every center you teach at, automatically — no manual math."
+        "body": "See your cut from every center you teach at, automatically. No manual math."
       },
       "private": {
         "title": "Run your private side",

@@ -5,7 +5,7 @@ import { Link } from '@/i18n/routing';
 import { useCardOrderCart } from '@/hooks/useCardOrderCart';
 import { formatCurrency } from '@/lib/formatNumber';
 
-/** Fixed checkout bar on small screens — totals mirror cart header. */
+/** Fixed checkout bar on small screens - totals mirror cart header. */
 export function CardOrderMobileStickyFooter() {
   const t = useTranslations('cart');
   const tm = useTranslations('mobile.cart');

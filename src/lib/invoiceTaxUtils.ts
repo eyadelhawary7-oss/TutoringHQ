@@ -1,5 +1,5 @@
 /**
- * Invoice / order tax display helpers — cascading inclusive math via pricing/taxMath.
+ * Invoice / order tax display helpers - cascading inclusive math via pricing/taxMath.
  */
 
 import { explodeInclusive } from '@/lib/pricing/taxMath';

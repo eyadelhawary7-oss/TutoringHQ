@@ -31,7 +31,7 @@ export async function GET(
   if (!(await getAdminContext(request))) {
     return NextResponse.json({ errorKey: 'payouts.errors.unauthorized' }, { status: 401 })
   }
-  // GET stays open to all admin_users members — no role gate per AUDIT_v22.md Phase 3
+  // GET stays open to all admin_users members - no role gate per AUDIT_v22.md Phase 3
 
   const { id } = await params
   const { data, error } = await supabaseAdmin
@@ -194,7 +194,7 @@ export async function PATCH(
   return NextResponse.json({ payout: updated })
 }
 
-// DELETE — void a draft payout (super_admin only)
+// DELETE - void a draft payout (super_admin only)
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> },

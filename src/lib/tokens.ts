@@ -1,7 +1,7 @@
 /**
- * CenterHQ Design System Tokens — TypeScript mirror
+ * CenterHQ Design System Tokens - TypeScript mirror
  * Use ONLY when CSS variables are inaccessible: Recharts, canvas, Three.js etc.
- * Source of truth is always globals.css @theme — keep in sync manually.
+ * Source of truth is always globals.css @theme - keep in sync manually.
  */
 
 export const colors = {
@@ -93,7 +93,7 @@ export const radius = {
   full:    9999,
 } as const;
 
-/** Use for Recharts and canvas — not for CSS */
+/** Use for Recharts and canvas - not for CSS */
 export const chartColors = {
   primary:   colors.brand[500],
   secondary: colors.gold[500],

@@ -146,7 +146,7 @@ export function AdminSidebar({
   const isSalesPipeline = activeRoute?.includes('admin/sales-pipeline');
   const isAnalytics = activeRoute?.includes('admin/analytics');
 
-  /** Sub-routes under admin — main Overview entry must not stay highlighted on these. */
+  /** Sub-routes under admin - main Overview entry must not stay highlighted on these. */
   const onDedicatedAdminSubpage =
     isWithdrawals ||
     isRenewals ||
@@ -394,7 +394,7 @@ export function AdminSidebar({
 
   // ── Section definitions ──────────────────────────────────────────────────────
   // Items are ordered as specified. canShow encodes the same permission rules as
-  // the previous ADMIN_NAV filter + inline super_admin guards — including the
+  // the previous ADMIN_NAV filter + inline super_admin guards - including the
   // SUPER_ONLY_PERMISSION_KEYS set (billing, withdrawals, internal_team).
   const sections: SectionDef[] = [
     {
@@ -635,7 +635,7 @@ export function AdminSidebar({
    * `!isLg && !openMenu` would block all clicks on the desktop rail during
    * SSR + the first client paint (race observed in 190a850). We only ever
    * apply inert after the component is mounted AND we've confirmed we're
-   * below the `lg` breakpoint — never on desktop.
+   * below the `lg` breakpoint - never on desktop.
    */
   const [mounted, setMounted] = useState(false);
   useEffect(() => {

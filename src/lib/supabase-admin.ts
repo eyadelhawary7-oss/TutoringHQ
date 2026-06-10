@@ -7,7 +7,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 /**
  * Server-side Supabase client with elevated privileges.
- * This module is server-only — importing it from a Client Component fails at build time.
+ * This module is server-only - importing it from a Client Component fails at build time.
  */
 export const supabaseAdmin =
   supabaseUrl && supabaseServiceKey

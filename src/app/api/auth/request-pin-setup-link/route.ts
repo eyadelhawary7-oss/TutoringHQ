@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
     try {
       await sendPinSetupLink(normalizedPhone, setupUrl);
     } catch (e) {
-      // Send failure is non-fatal — owner can retry. Log to Sentry.
+      // Send failure is non-fatal - owner can retry. Log to Sentry.
       Sentry.captureException(e, {
         tags: { route: 'request-pin-setup-link', step: 'send' },
       });

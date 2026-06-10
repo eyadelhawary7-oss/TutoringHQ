@@ -69,7 +69,7 @@ export async function GET(request: Request) {
   }
 }
 
-// PATCH /api/admin/demo-requests — update a demo request (mark handled, assign, etc.)
+// PATCH /api/admin/demo-requests - update a demo request (mark handled, assign, etc.)
 export async function PATCH(request: Request) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

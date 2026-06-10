@@ -9,7 +9,7 @@ import { parseBodyWithLimit } from '@/lib/validate';
 /**
  * Per-PHONE login lockout. Brute-force a 6-digit PIN against a derivable
  * `{digits}@centerhq.local` identity is unsafe without an account-bound budget.
- * Attempts are counted per normalized phone (NOT per IP — attackers rotate IPs).
+ * Attempts are counted per normalized phone (NOT per IP - attackers rotate IPs).
  */
 const LOGIN_LOCKOUT_MAX = 5;
 const LOGIN_LOCKOUT_WINDOW_SECS = 900; // 15 minutes
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 });
   }
 
-  // Per-PHONE lockout — counted regardless of source IP. The global rateLimit()
+  // Per-PHONE lockout - counted regardless of source IP. The global rateLimit()
   // helper fails OPEN when Upstash is unavailable (acceptable for scanner /
   // promo limits). For an auth-credential lockout it is the wrong default:
   // silently disabling brute-force protection during an Upstash outage gives an
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
   // alert. The tradeoff is documented in the route header comment above.
   if (getUpstashRedis() === null) {
     Sentry.captureMessage(
-      'login-verify: Upstash not configured — refusing login, brute-force protection unavailable',
+      'login-verify: Upstash not configured - refusing login, brute-force protection unavailable',
       {
         level: 'error',
         tags: { route: 'login-verify', reason: 'redis_not_configured' },
@@ -200,11 +200,11 @@ export async function POST(request: NextRequest) {
       });
       return NextResponse.json({ error: 'auth_system_error' }, { status: 502 });
     }
-    // Wrong PIN — the lockout counter has already been incremented above.
+    // Wrong PIN - the lockout counter has already been incremented above.
     return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 });
   }
 
-  // Success — drop the per-phone counter so legitimate retries do not pile up.
+  // Success - drop the per-phone counter so legitimate retries do not pile up.
   await clearLockoutCounter(normalizedPhone);
 
   return response;

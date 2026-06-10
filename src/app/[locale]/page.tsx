@@ -13,8 +13,8 @@ export async function generateMetadata({
   return {
     title: isAr ? 'CenterHQ | منصة التدريس في مصر' : 'CenterHQ | The teaching platform for Egypt',
     description: isAr
-      ? 'منصة واحدة لكل مين بيعلّم في مصر — سواء بتدير سنتر أو بتدرّس خصوصي. حضور، فوترة، ودخلك كله في مكان واحد.'
-      : 'One platform for everyone who teaches in Egypt — whether you run a center or teach privately. Attendance, billing, and your income in one place.',
+      ? 'منصة واحدة لكل مين بيعلّم في مصر - سواء بتدير سنتر أو بتدرّس خصوصي. حضور، فوترة، ودخلك كله في مكان واحد.'
+      : 'One platform for everyone who teaches in Egypt - whether you run a center or teach privately. Attendance, billing, and your income in one place.',
   };
 }
 
@@ -25,7 +25,7 @@ const organizationSchema = {
   '@type': 'Organization',
   name: 'CenterHQ',
   url: 'https://centerhq.app',
-  description: 'منصة التدريس في مصر — للسناتر والمدرسين',
+  description: 'منصة التدريس في مصر - للسناتر والمدرسين',
   publisher: { '@type': 'Organization', name: 'EHG Intelligence Egypt' },
 };
 

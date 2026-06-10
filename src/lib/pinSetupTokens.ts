@@ -1,5 +1,5 @@
 /**
- * pin_setup_tokens — Set-PIN-on-first-login authority.
+ * pin_setup_tokens - Set-PIN-on-first-login authority.
  *
  * Two issuance sources (rows are NEVER created from a browser redirect):
  *
@@ -15,7 +15,7 @@
  * Consumption: `claimByUser(...)` for the cookie path, `claimByPlaintext(...)`
  * for the fallback URL path. Both perform an atomic single-row UPDATE
  *   ... WHERE id = $1 AND used_at IS NULL AND expires_at > now()
- * — first claim wins; replays land on rowCount = 0.
+ * - first claim wins; replays land on rowCount = 0.
  *
  * Lazy-init per ADR 018: this module accepts an injected admin client; it
  * never reads process.env at import time.
@@ -96,7 +96,7 @@ export async function issueForWebhook(
 /**
  * Mint a fallback grant with a plaintext token. Returns the plaintext for
  * out-of-band delivery; only the hash is stored. Multiple alive fallback rows
- * per user are permitted (older ones age out via TTL) — rate-limit lives at
+ * per user are permitted (older ones age out via TTL) - rate-limit lives at
  * the route layer.
  */
 export async function mintForFallback(
@@ -170,7 +170,7 @@ export async function findLiveTokenByPlaintext(
  * Atomic single-use claim. Returns the user_id on success, null on race
  * (already used / expired between findLive and claim). Caller must verify the
  * row's user_id matches the user_id derived from independent trust input
- * (cookie + payment record) BEFORE invoking claim — claim trusts its rowId arg.
+ * (cookie + payment record) BEFORE invoking claim - claim trusts its rowId arg.
  */
 export async function claimToken(
   admin: SupabaseClient,

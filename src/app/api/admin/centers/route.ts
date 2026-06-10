@@ -113,7 +113,7 @@ async function enrichCentersList(
   }
   // N+1 fix per docs/AUDIT_n_plus_1_hotpath_may13.md
   // Drop per-owner auth.admin.getUserById calls (N round-trips to auth API per page).
-  // users.phone already holds the contact phone — no auth API lookup needed.
+  // users.phone already holds the contact phone - no auth API lookup needed.
   const centerById = new Map(centers.map((c) => [String((c as { id: string }).id), c as Record<string, unknown>]));
   const ownerMap = new Map<string, { name: string; phone: string | null }>();
   for (const [cid, row] of ownerRowByCenter) {
@@ -959,7 +959,7 @@ export async function PUT(request: Request) {
     // Referral rewards are now created only when admin approves the referred center's first payment (in admin billing)
 
     if (center.email) {
-      // Email notifications not implemented — WhatsApp only
+      // Email notifications not implemented - WhatsApp only
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://centerhq.app';

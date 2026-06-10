@@ -4,7 +4,7 @@ export type EgyptGovernorateOption = {
   labelEn: string;
 };
 
-/** All 27 Egyptian governorates — values match `bostaShippingRates` keys / `centers.governorate`. */
+/** All 27 Egyptian governorates - values match `bostaShippingRates` keys / `centers.governorate`. */
 export const EGYPT_GOVERNORATES: EgyptGovernorateOption[] = [
   { value: 'cairo', labelAr: 'القاهرة', labelEn: 'Cairo' },
   { value: 'giza', labelAr: 'الجيزة', labelEn: 'Giza' },

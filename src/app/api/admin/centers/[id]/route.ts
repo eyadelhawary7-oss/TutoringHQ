@@ -688,7 +688,7 @@ export async function PATCH(
   return NextResponse.json({ center: updatedRow });
 }
 
-/** DELETE not supported — authenticate first so unauthenticated callers never see 405. */
+/** DELETE not supported - authenticate first so unauthenticated callers never see 405. */
 export async function DELETE(
   request: NextRequest,
   _ctx: { params: Promise<{ id: string }> },

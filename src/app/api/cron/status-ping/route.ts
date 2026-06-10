@@ -1,5 +1,5 @@
 /**
- * Status ping cron — every 5 minutes
+ * Status ping cron - every 5 minutes
  * Pings API (Supabase), Scanner (Edge Function), Payments → insert status_checks
  */
 

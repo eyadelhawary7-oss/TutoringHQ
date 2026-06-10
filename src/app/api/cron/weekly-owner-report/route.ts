@@ -1,5 +1,5 @@
 /**
- * Weekly owner WhatsApp report (Sunday 06:00 UTC) — chq_weekly_summary
+ * Weekly owner WhatsApp report (Sunday 06:00 UTC) - chq_weekly_summary
  */
 
 import { NextResponse } from 'next/server';

@@ -33,7 +33,7 @@ export interface PlanConfig {
   englishName: string;
   /** Max students/week for this tier (top_centers = custom / unlimited). */
   weeklyStudentLimit: number | null;
-  /** Same as DB all_in_price — monthly rate on quarterly billing. */
+  /** Same as DB all_in_price - monthly rate on quarterly billing. */
   quarterlyAllIn: number;
   /** Listed price if customer pays monthly (+15% tier; nano uses exact list). */
   monthlyListPrice: number;
@@ -92,8 +92,8 @@ const WEEKS_PER_QUARTER = 13;
 
 /**
  * One billing-cycle charge from all_in_price (monthly rate on quarterly plan) and period.
- * @param allInPerMonth — centers.all_in_price or PLANS[].quarterlyAllIn
- * @param planKey — required for correct monthly list price when scaling custom all_in
+ * @param allInPerMonth - centers.all_in_price or PLANS[].quarterlyAllIn
+ * @param planKey - required for correct monthly list price when scaling custom all_in
  */
 export function getChargeFromQuarterlyAllIn(
   allInPerMonth: number,
@@ -127,13 +127,13 @@ export type ImpliedMrrCenterFields = {
   plan?: string | null;
   all_in_price?: number | null;
   billing_period?: string | null;
-  /** Account row status (not billing_status). Excluded when not eligible — see `isCenterEligibleForSubscriptionMrr`. */
+  /** Account row status (not billing_status). Excluded when not eligible - see `isCenterEligibleForSubscriptionMrr`. */
   status?: string | null;
   billing_type?: string | null;
   is_early_adopter?: boolean | null;
   early_adopter_price?: number | null;
   id?: string;
-  /** Seed / audit / fixture centres — never counted toward subscription MRR (see docs/PRICING_SPEC.md). */
+  /** Seed / audit / fixture centres - never counted toward subscription MRR (see docs/PRICING_SPEC.md). */
   is_test?: boolean | null;
 };
 
@@ -159,7 +159,7 @@ function isStatusEligibleForSubscriptionMrr(status: string | null | undefined): 
  * Test centres (`is_test === true`) are excluded before status is considered.
  * PAYG is excluded via `billing_type` in `getImpliedMonthlyMrr`; pending/trial centres still count if paying (unless status excludes).
  *
- * Pass a **string** (status only) for legacy call sites where `is_test` is unknown — unknown is treated as non-test.
+ * Pass a **string** (status only) for legacy call sites where `is_test` is unknown - unknown is treated as non-test.
  * Prefer a **row object** `{ status, is_test }` when available so test centres are excluded.
  */
 export function isCenterEligibleForSubscriptionMrr(
@@ -237,7 +237,7 @@ function getImpliedMonthlyMrrFromCenterFields(row: ImpliedMrrCenterFields): numb
   return computeImpliedMonthlyMrrFromBase(baseQ, mrrPeriod, pk);
 }
 
-/** MRR-style monthly equivalent for dashboards — numeric base path. */
+/** MRR-style monthly equivalent for dashboards - numeric base path. */
 export function getImpliedMonthlyMrr(
   allInPerMonth: number,
   period: BillingPeriod,
@@ -285,7 +285,7 @@ export function getPlanPrice(planKey: PlanKey, period: BillingPeriod): number {
   }
 }
 
-/** Per-month inclusive figure when customer pays annual — spec table in `plans.ts`. */
+/** Per-month inclusive figure when customer pays annual - spec table in `plans.ts`. */
 export function getAnnualMonthlyEquivalent(planKey: PlanKey): number {
   const plan = PLANS[planKey];
   if (!plan || planKey === 'top_centers') return 0;

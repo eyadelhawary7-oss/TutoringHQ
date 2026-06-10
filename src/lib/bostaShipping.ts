@@ -1,7 +1,7 @@
-// Bosta shipping fees — locked May 3, 2026
+// Bosta shipping fees - locked May 3, 2026
 // Includes: Bosta base rate + 14% VAT + 2.6% Paymob fee, rounded up to nearest 5
 export const BOSTA_SHIPPING_FEES: Record<string, number> = {
-  // Cairo zone — 115 EGP
+  // Cairo zone - 115 EGP
   cairo: 115,
   giza: 115,
   sixth_october: 115,
@@ -16,11 +16,11 @@ export const BOSTA_SHIPPING_FEES: Record<string, number> = {
   shubra: 115,
   ain_shams: 115,
 
-  // Alexandria zone — 120 EGP
+  // Alexandria zone - 120 EGP
   alexandria: 120,
   alex: 120,
 
-  // Delta / Canal zone — 130 EGP
+  // Delta / Canal zone - 130 EGP
   mansoura: 130,
   tanta: 130,
   zagazig: 130,
@@ -36,7 +36,7 @@ export const BOSTA_SHIPPING_FEES: Record<string, number> = {
   monufia: 130,
   qalyubia: 130,
 
-  // Upper Egypt / Red Sea zone — 165 EGP
+  // Upper Egypt / Red Sea zone - 165 EGP
   aswan: 165,
   luxor: 165,
   assiut: 165,
@@ -85,7 +85,7 @@ export function parseBostaShippingRatesJson(value: unknown): Record<string, numb
 }
 
 /**
- * @param rateOverrides — merged lookup from `platform_config`; falls back to `BOSTA_SHIPPING_FEES`.
+ * @param rateOverrides - merged lookup from `platform_config`; falls back to `BOSTA_SHIPPING_FEES`.
  */
 export function getShippingFee(
   governorate: string | null | undefined,

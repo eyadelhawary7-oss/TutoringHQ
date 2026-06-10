@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 
 const GENERIC_STATUS_TEMPLATE = 'chq_card_order_status_update';
 
-/** Meta body variables — order must match template registration in Business Manager. */
+/** Meta body variables - order must match template registration in Business Manager. */
 const BODY_ORDER_GENERIC = ['order_id', 'status_label', 'centre_name'] as const;
 const BODY_ORDER_PAIR = ['order_id', 'centre_name'] as const;
 
@@ -160,7 +160,7 @@ export async function sendCardOrderStatusUpdate(
     kind: 'card_order_status_update',
     title: `Order #${shortRef}`,
     body: labelForStatus(normTo),
-    // Centre-owner / staff bell — tenant order detail (not internal admin chrome).
+    // Centre-owner / staff bell - tenant order detail (not internal admin chrome).
     href: `/orders/${orderId}`,
   });
 

@@ -138,7 +138,7 @@ export async function GET(request: Request) {
   }
 }
 
-// POST /api/admin/pending-signups — approve a single pending centre signup
+// POST /api/admin/pending-signups - approve a single pending centre signup
 export async function POST(request: Request) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -215,7 +215,7 @@ export async function POST(request: Request) {
   return NextResponse.json({ success: true, center_id }, { status: 200 });
 }
 
-// DELETE /api/admin/pending-signups?id=<center_id> — reject a pending signup
+// DELETE /api/admin/pending-signups?id=<center_id> - reject a pending signup
 export async function DELETE(request: Request) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

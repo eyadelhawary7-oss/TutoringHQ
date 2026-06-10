@@ -46,7 +46,7 @@ export type CenterAuthOk = {
   /**
    * Centre-side role (`owner`/`assistant`/…) OR `'super_admin'` when the caller
    * is an admin_users-derived super-admin with no users row. Do NOT use this
-   * string for super-admin gating — `public.users.role` is centre-tenant-writable
+   * string for super-admin gating - `public.users.role` is centre-tenant-writable
    * and not authoritative. Use `isSuperAdmin` instead.
    */
   role: string;
@@ -94,7 +94,7 @@ function forbidden(code: CenterAuthErrorCode): NextResponse {
  * Why two SELECTs against `users`: the old single SELECT pulled permission columns
  * alongside id/center_id/role. When a permission column was missing in the deployed
  * schema, PostgREST errored, supabase-js returned data:null, the error was discarded,
- * and the function treated silent column-drift as "no user row" — locking real users
+ * and the function treated silent column-drift as "no user row" - locking real users
  * out for nine days. The CORE select carries only the columns auth needs; the
  * PERMISSIONS select is best-effort and warns in Sentry on failure instead of 401ing.
  */
@@ -151,7 +151,7 @@ export async function requireCenterAuth(
   }
 
   // CORE lookup: only the columns auth absolutely needs. A non-null error here is
-  // real infrastructure failure (DB unreachable, etc.) — surface as a hard auth
+  // real infrastructure failure (DB unreachable, etc.) - surface as a hard auth
   // failure with Sentry exception capture rather than silently coercing to null.
   const { data: userRecord, error: coreErr } = await admin
     .from('users')

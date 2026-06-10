@@ -1,5 +1,5 @@
 /**
- * WhatsApp Cloud API — inbound webhook (Automation 8a + 8b).
+ * WhatsApp Cloud API - inbound webhook (Automation 8a + 8b).
  * Public route: GET verification, POST inbound (HMAC fail-closed; same verification
  * pattern as /api/whatsapp/webhook). POST responds 200 JSON on success so Meta does not retry.
  */

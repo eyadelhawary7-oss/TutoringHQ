@@ -25,7 +25,7 @@ export function getWeeklyDisplayRate(monthlyRate: number): number {
   return Math.round((monthlyRate / 4) * 100) / 100;
 }
 
-/** Weekly display rates (monthly ÷ 4, rounded) — convenience for UI. */
+/** Weekly display rates (monthly ÷ 4, rounded) - convenience for UI. */
 export const PAYG_WEEKLY_DISPLAY_RATES = {
   solo: getWeeklyDisplayRate(PAYG_RATES.solo.ratePerStudent),
   nano: getWeeklyDisplayRate(PAYG_RATES.nano.ratePerStudent),
@@ -53,7 +53,7 @@ export function getPaygTier(studentCount: number) {
   return { plan: 'enterprise' as const, ratePerStudent: PAYG_RATES.enterprise.ratePerStudent, maxStudents: 2000 };
 }
 
-/** Monthly list ceilings (EGP) × 1.10 — same tier keys as PAYG_RATES. */
+/** Monthly list ceilings (EGP) × 1.10 - same tier keys as PAYG_RATES. */
 const MONTHLY_CAPS: Record<PaygTierPlan, number> = {
   solo: PLANS.solo.monthlyListPrice * 1.1,
   nano: PLANS.nano.monthlyListPrice * 1.1,

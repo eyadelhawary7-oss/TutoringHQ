@@ -4,7 +4,7 @@ import { notifyAdminOfVendorFailure } from '@/lib/notifyAdminFailure';
 import { isTemplateApproved, sendVendorNewOrder } from '@/lib/centerNotify';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
-/** Same template as sendVendorNewOrder — used to gate follow-up document send. */
+/** Same template as sendVendorNewOrder - used to gate follow-up document send. */
 const VENDOR_ORDER_TEMPLATE = 'chq_vendor_new_order';
 
 const WHATSAPP_META_TEST_PHONE_NUMBER_ID = '1013787185158313';

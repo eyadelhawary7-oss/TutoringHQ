@@ -15,7 +15,7 @@ const supabaseAdmin =
 
 const PERIOD_RE = /^\d{4}-(0[1-9]|1[0-2])$/
 
-// GET /api/admin/payouts — list all payouts
+// GET /api/admin/payouts - list all payouts
 export async function GET(request: Request) {
   if (!supabaseAdmin) {
     return NextResponse.json({ errorKey: 'payouts.errors.listFailed' }, { status: 500 })
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
   if (!(await getAdminContext(request))) {
     return NextResponse.json({ errorKey: 'payouts.errors.unauthorized' }, { status: 401 })
   }
-  // GET stays open to all admin_users members — no role gate per AUDIT_v22.md Phase 3
+  // GET stays open to all admin_users members - no role gate per AUDIT_v22.md Phase 3
 
   const { data, error } = await supabaseAdmin
     .from('commission_payouts')
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
   return NextResponse.json({ payouts: data ?? [] })
 }
 
-// POST — generate payout for a period (super_admin only)
+// POST - generate payout for a period (super_admin only)
 export async function POST(request: Request) {
   if (!supabaseAdmin) {
     return NextResponse.json({ errorKey: 'payouts.errors.saveFailed' }, { status: 500 })

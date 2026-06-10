@@ -27,7 +27,7 @@ export const CHART_STYLE = {
   axisColor: '#80827a',
   tickColor: '#80827a',
   gridColor: 'rgba(128, 130, 122, 0.35)',
-  /* Inline-style consumers (tooltips) CAN resolve vars — follow the theme. */
+  /* Inline-style consumers (tooltips) CAN resolve vars - follow the theme. */
   tooltipBg: 'var(--color-surface-2)',
   tooltipBorder: 'var(--color-border)',
   animDuration: 600,
@@ -49,7 +49,7 @@ export const CHART_MARGIN = {
   left: 0,
 } as const;
 
-/** Recharts <Tooltip /> wrapper styles — readable in light and dark (custom content still inherits). */
+/** Recharts <Tooltip /> wrapper styles - readable in light and dark (custom content still inherits). */
 export const RECHARTS_TOOLTIP_WRAPPER_PROPS = {
   contentStyle: {
     backgroundColor: 'var(--color-surface-2)',

@@ -60,7 +60,7 @@ function unauthorizedResponse() {
  *      specific centerId issued during /api/signup. Cookie alone is NEVER
  *      sufficient (see (2)). Plus: a live pin_setup_tokens row issued by the
  *      HMAC-verified Paymob webhook must exist for the owner user.
- *  (2) AND-ed with (1): the center's DB state must be "paid+activated" — a
+ *  (2) AND-ed with (1): the center's DB state must be "paid+activated" - a
  *      state ONLY the HMAC-verified /api/paymob/webhook writes. Browser
  *      redirect URL never sets this state.
  *  (3) Fallback path: a plaintext token from the WhatsApp Set-PIN link MUST
@@ -71,7 +71,7 @@ function unauthorizedResponse() {
  * In both paths the user_id ultimately consumed is the row's user_id (the
  * payment record's owner), NOT a value derived from the cookie body. If the
  * cookie-claimed centerId and the row's user.center_id disagreed, trust the
- * payment record — but the lookup chain (cookie→center→owner-user→row) makes
+ * payment record - but the lookup chain (cookie→center→owner-user→row) makes
  * disagreement structurally impossible since we look up the row BY the user
  * we derived from the center.
  */
@@ -103,11 +103,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'mismatch' }, { status: 400 });
   }
 
-  // Rate-limit — fails closed via the explicit getUpstashRedis check (auth
+  // Rate-limit - fails closed via the explicit getUpstashRedis check (auth
   // mutation; same posture as /api/auth/login-verify).
   if (getUpstashRedis() === null) {
     Sentry.captureMessage(
-      'set-initial-pin: Upstash not configured — refusing, cannot rate-limit auth mutation',
+      'set-initial-pin: Upstash not configured - refusing, cannot rate-limit auth mutation',
       {
         level: 'error',
         tags: { route: 'set-initial-pin', reason: 'redis_not_configured' },
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
       !isCenterPaidAndActivated(center as { status?: string | null; billing_status?: string | null; approved_at?: string | null })
     ) {
       // Center exists but webhook hasn't finalized payment, OR center is in
-      // some other state. Refuse — never trust the cookie alone.
+      // some other state. Refuse - never trust the cookie alone.
       return NextResponse.json(
         { error: 'not_finalized' },
         { status: 409 },

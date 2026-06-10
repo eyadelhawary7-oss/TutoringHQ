@@ -44,7 +44,7 @@ const SIDEBAR_EXPANDED = 240;
 const SIDEBAR_COLLAPSED = 64;
 
 interface SidebarProps {
-  /** Mobile hamburger drawer — single sidebar DOM for lg + max-lg */
+  /** Mobile hamburger drawer - single sidebar DOM for lg + max-lg */
   mobileDrawerOpen?: boolean;
   onClose?: () => void;
 }

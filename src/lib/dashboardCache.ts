@@ -8,7 +8,7 @@
  * `dbSelect('students')` keyed only by center_id (locale-independent). The
  * old cache key was a single global string (`chq_dashboard_cache_v5`),
  * which meant a snapshot written in one session was happily rehydrated in
- * another — producing locale-correlated "ghost counts" whenever two tabs
+ * another - producing locale-correlated "ghost counts" whenever two tabs
  * happened to start from different cached states (e.g. /ar opened first
  * when the centre had N students, /en opened later after the count
  * changed, both keep showing their own stale value until a fresh fetch
@@ -92,6 +92,6 @@ export function writeDashboardCache<T>(options: WriteOptions<T>): void {
     const envelope: DashboardCacheEnvelope<T> = { scope, data };
     storage.setItem(dashboardCacheKey(scope), JSON.stringify(envelope));
   } catch {
-    /* private mode / quota — non-fatal */
+    /* private mode / quota - non-fatal */
   }
 }

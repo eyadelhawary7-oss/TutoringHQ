@@ -1,5 +1,5 @@
 /**
- * POST — sync WhatsApp message template names/status from Meta Graph API into wa_meta_templates.
+ * POST - sync WhatsApp message template names/status from Meta Graph API into wa_meta_templates.
  * super_admin only (Bearer session JWT).
  */
 

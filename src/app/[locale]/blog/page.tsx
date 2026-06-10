@@ -21,12 +21,12 @@ export async function generateMetadata({
 const CONTENT = {
   ar: {
     heading: 'المدونة',
-    sub: 'قريباً — نصائح عملية لإدارة السنتر',
+    sub: 'قريباً - نصائح عملية لإدارة السنتر',
     cta: 'ابدأ تجربتك مجاناً',
   },
   en: {
     heading: 'Blog',
-    sub: 'Coming soon — practical tips for running your center',
+    sub: 'Coming soon - practical tips for running your center',
     cta: 'Start your free trial',
   },
 } as const;

@@ -13,7 +13,7 @@ const supabaseAdmin =
       })
     : null
 
-// PATCH — manual T2 unlock, super_admin only (verb is PATCH, not POST).
+// PATCH - manual T2 unlock, super_admin only (verb is PATCH, not POST).
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },

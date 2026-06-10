@@ -268,7 +268,12 @@ export default function HomePageClient() {
           </div>
 
           <div className="flex justify-center md:justify-end">
-            <HeroVisuals locale={locale as 'ar' | 'en'} />
+            {/* The phone mockup is an intentionally dark visual; it sits inside a
+                slightly darker tile so it reads as a deliberate device frame
+                rather than a dark patch floating on the cream page. */}
+            <div className="rounded-[var(--radius-card)] bg-[var(--color-surface-2)] p-5 shadow-[var(--shadow-card)] md:p-6">
+              <HeroVisuals locale={locale as 'ar' | 'en'} />
+            </div>
           </div>
         </div>
       </section>

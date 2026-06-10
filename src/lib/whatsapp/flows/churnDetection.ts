@@ -1,5 +1,5 @@
 /**
- * Churn detection early warning system — WhatsApp flows
+ * Churn detection early warning system - WhatsApp flows
  * Day 3: Inactivity alert to center
  * Day 7: Sales manager alert
  * Day 14: Admin panel flag + sales manager alert

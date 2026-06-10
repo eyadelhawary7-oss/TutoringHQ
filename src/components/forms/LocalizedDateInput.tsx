@@ -24,7 +24,7 @@ function isoDateDisplay(value: string, locale: string): string {
 }
 
 /**
- * Native `type="date"` (ISO value) with a locale-visible label — avoids Western-only
+ * Native `type="date"` (ISO value) with a locale-visible label - avoids Western-only
  * strings like "02-May-2026" on /ar when the browser paints the native field on top.
  * The input sits behind an opaque overlay; clicks pass through (`pointer-events-none`).
  */

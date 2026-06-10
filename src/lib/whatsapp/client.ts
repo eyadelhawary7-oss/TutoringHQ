@@ -1,5 +1,5 @@
 /**
- * WhatsApp Cloud API client (Direct Meta API — no Twilio, no Respond.io)
+ * WhatsApp Cloud API client (Direct Meta API - no Twilio, no Respond.io)
  * Env: WHATSAPP_PHONE_ID, WHATSAPP_TOKEN
  */
 
@@ -9,7 +9,7 @@ import { isTemplateApproved } from '@/lib/centerNotify';
 const API_VERSION = 'v19.0';
 const GRAPH_BASE = `https://graph.facebook.com/${API_VERSION}`;
 
-/** Mirrors centerNotify — Meta test / sandbox phone number ID. */
+/** Mirrors centerNotify - Meta test / sandbox phone number ID. */
 const WHATSAPP_META_TEST_PHONE_NUMBER_ID = '1013787185158313';
 
 function waPhoneNumberId(): string | null {

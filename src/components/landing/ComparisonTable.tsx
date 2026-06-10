@@ -23,24 +23,24 @@ function cellVariant(val: string): 'pos' | 'neg' | 'partial' | 'neutral' {
 }
 
 const VARIANT_COLOR: Record<ReturnType<typeof cellVariant>, string> = {
-  pos:     '#14b8a6',
-  neg:     '#f87171',
-  partial: '#fbbf24',
+  pos:     'var(--color-teal-deep)',
+  neg:     '#b4322a',
+  partial: 'var(--color-text-amber)',
   neutral: 'var(--color-text-secondary)',
 };
 
 const SEP_STYLE = {
-  borderInlineStart: '1px solid rgba(100,116,139,0.25)',
+  borderInlineStart: '1px solid var(--color-border)',
 } as const;
 
 const CHQ_HEADER_STYLE = {
-  borderInlineStart: '2px solid rgba(13,148,136,0.45)',
-  background: 'rgba(13,148,136,0.07)',
+  borderInlineStart: '2px solid rgba(14,107,97,0.45)',
+  background: 'rgba(14,107,97,0.07)',
 } as const;
 
 const CHQ_CELL_STYLE = {
-  borderInlineStart: '2px solid rgba(13,148,136,0.35)',
-  background: 'rgba(13,148,136,0.04)',
+  borderInlineStart: '2px solid rgba(14,107,97,0.30)',
+  background: 'rgba(14,107,97,0.05)',
 } as const;
 
 /**
@@ -52,19 +52,19 @@ export function ComparisonTable() {
   const t = useTranslations('landing.compare');
 
   return (
-    <section className="border-t border-slate-800/40 bg-[#080f1a] px-4 py-16 md:px-6 md:py-24">
+    <section className="border-t border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-16 md:px-6 md:py-24">
       <style>{`
         .chq-cmp-row:hover .chq-cmp-cell {
-          background: rgba(255,255,255,0.018) !important;
+          background: rgba(28,33,30,0.03) !important;
         }
         .chq-cmp-row:hover .chq-cmp-chq {
-          background: rgba(13,148,136,0.09) !important;
+          background: rgba(14,107,97,0.09) !important;
         }
       `}</style>
 
       <div className="mx-auto max-w-5xl">
         <div className="mb-10 text-center md:mb-14">
-          <h2 className="text-2xl font-bold !text-white md:text-3xl">
+          <h2 className="text-2xl font-bold text-[var(--color-text-primary)] md:text-3xl">
             {t('heading')}
           </h2>
           <p className="mt-3 text-sm text-[var(--color-text-muted)] md:text-base">
@@ -103,7 +103,7 @@ export function ComparisonTable() {
                   {t('colPaper')}
                 </th>
                 <th
-                  className="pb-4 px-4 text-start text-xs font-semibold uppercase tracking-wider text-teal-400"
+                  className="pb-4 px-4 text-start text-xs font-semibold uppercase tracking-wider text-[var(--color-teal-deep)]"
                   style={CHQ_HEADER_STYLE}
                 >
                   {t('colCenterhq')}
@@ -120,7 +120,7 @@ export function ComparisonTable() {
                   <tr
                     key={key}
                     className="chq-cmp-row"
-                    style={{ borderTop: '1px solid rgba(30,41,59,0.8)' }}
+                    style={{ borderTop: '1px solid var(--color-border)' }}
                   >
                     <td
                       className="chq-cmp-cell py-4 pe-4 text-sm font-medium text-[var(--color-text-primary)]"
@@ -165,12 +165,12 @@ export function ComparisonTable() {
                 className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)]"
               >
                 {/* Criterion header */}
-                <div className="border-b border-slate-800/50 px-4 py-3">
-                  <p className="text-sm font-semibold text-white">{criterion}</p>
+                <div className="border-b border-[var(--color-border)] px-4 py-3">
+                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">{criterion}</p>
                 </div>
                 {/* Platform rows */}
                 <div>
-                  <div className="flex items-start gap-3 border-b border-slate-800/40 px-4 py-3">
+                  <div className="flex items-start gap-3 border-b border-[var(--color-border)] px-4 py-3">
                     <span className="mt-px w-20 shrink-0 text-xs font-medium text-[var(--color-text-muted)]">
                       {t('colSpreadsheet')}
                     </span>
@@ -181,7 +181,7 @@ export function ComparisonTable() {
                       {spreadsheet}
                     </span>
                   </div>
-                  <div className="flex items-start gap-3 border-b border-slate-800/40 px-4 py-3">
+                  <div className="flex items-start gap-3 border-b border-[var(--color-border)] px-4 py-3">
                     <span className="mt-px w-20 shrink-0 text-xs font-medium text-[var(--color-text-muted)]">
                       {t('colPaper')}
                     </span>
@@ -192,10 +192,10 @@ export function ComparisonTable() {
                       {paper}
                     </span>
                   </div>
-                  <div className="flex items-start gap-3 bg-teal-950/20 px-4 py-3">
+                  <div className="flex items-start gap-3 bg-[var(--color-teal-soft)] px-4 py-3">
                     <span
-                      className="mt-px w-20 shrink-0 text-xs font-semibold text-teal-400"
-                      style={{ borderInlineStart: '2px solid rgba(13,148,136,0.5)', paddingInlineStart: '6px' }}
+                      className="mt-px w-20 shrink-0 text-xs font-semibold text-[var(--color-teal-deep)]"
+                      style={{ borderInlineStart: '2px solid rgba(14,107,97,0.5)', paddingInlineStart: '6px' }}
                     >
                       {t('colCenterhq')}
                     </span>

@@ -1,5 +1,5 @@
 /**
- * Calculate referral rewards — invoked by calculate-rewards Edge Function (1st of month)
+ * Calculate referral rewards - invoked by calculate-rewards Edge Function (1st of month)
  * REWARD RULES: Month 1: 25% (held 1 month); Months 2-12: 10%; Month 13+: 5%
  * All conditional on referred center being active and paid that month.
  * Release held rewards 30+ days old → status=available

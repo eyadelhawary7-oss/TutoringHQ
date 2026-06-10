@@ -30,7 +30,7 @@ type RewardRow = {
   referred?: { id: string; name: string; center_code: string | null; plan: string | null } | null;
 };
 
-// GET — list reward records + per-referrer totals
+// GET - list reward records + per-referrer totals
 export async function GET(request: Request) {
   if (!supabaseAdmin) {
     return NextResponse.json({ errorKey: 'referralRewards.errors.config' }, { status: 500 });
@@ -140,7 +140,7 @@ export async function GET(request: Request) {
   });
 }
 
-// PATCH — mark reward records paid (batch), payable statuses only
+// PATCH - mark reward records paid (batch), payable statuses only
 export async function PATCH(request: Request) {
   if (!supabaseAdmin) {
     return NextResponse.json({ errorKey: 'referralRewards.errors.config' }, { status: 500 });

@@ -14,7 +14,7 @@ const WA_AR_LOCALE = 'ar';
  * Canonical monthly equivalent for a plan, derived from the live pricing_plans
  * table (quarterly all_in_price normalised to monthly). Falls back to compiled
  * PLANS[] only if pricing_plans has no row. The center's own all_in_price is
- * intentionally ignored for the plan-requests delta — using it produced
+ * intentionally ignored for the plan-requests delta - using it produced
  * nonsense deltas like "-1 EGP/mo" when test centers had a placeholder price.
  */
 function monthlyEquivFromPricingPlanRow(
