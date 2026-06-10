@@ -618,14 +618,17 @@ html.dark textarea {
 }
 
 /* ── Marketing / auth dark locks ────────────────────────────
-   Landing, signup, login, forgot-password, session-expired and
-   public pricing are deliberately dark-locked page designs with
+   Signup, login, forgot-password, session-expired and public
+   pricing are deliberately dark-locked page designs with
    hardcoded dark component styling. They keep their dark tokens
    in BOTH themes until their own cream redesign pass (ADR 031
    follow-up). The teal/muted vars are pinned too so the global
    utility enforcement resolves correctly inside these surfaces.
+
+   NOTE: [data-chq-landing] (the /center marketing page) finished
+   its cream redesign pass and was removed from this lock so its
+   cream surface tokens resolve correctly. Do NOT re-add it.
 ──────────────────────────────────────────────────────────── */
-[data-chq-landing],
 [data-chq-signup],
 [data-chq-forgot-password],
 [data-chq-session-expired] {
@@ -2237,15 +2240,14 @@ html:not(.dark) [data-admin="true"] textarea.admin-textarea {
   animation: chq-fade-in 200ms ease forwards;
 }
 
-/* Landing / signup / forgot-password / session-expired: dark canvas so fast scroll never shows light body gaps */
-[data-chq-landing],
+/* signup / forgot-password / session-expired: dark canvas so fast scroll never shows light body gaps.
+   NOTE: [data-chq-landing] (the cream /center page) is intentionally absent here -
+   it now paints its own cream canvas via the surface tokens. Do NOT re-add it. */
 [data-chq-signup],
 [data-chq-forgot-password],
 [data-chq-session-expired] {
   background-color: #080f1a;
 }
-html:has([data-chq-landing]),
-body:has([data-chq-landing]),
 html:has([data-chq-signup]),
 body:has([data-chq-signup]),
 html:has([data-chq-forgot-password]),

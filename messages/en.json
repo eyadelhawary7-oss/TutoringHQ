@@ -8155,7 +8155,21 @@
   },
   "splash": {
     "headline": "The operating system for everyone who teaches in Egypt",
-    "context": "From attendance to billing to collecting your income, all in one place.",
+    "context": "Attendance, billing, and income, whether you run a center or teach privately.",
+    "does": {
+      "attendance": {
+        "title": "Attendance",
+        "body": "QR at the door for centers, tap-to-confirm for teachers. Always know who showed up."
+      },
+      "billing": {
+        "title": "Billing",
+        "body": "Automatic invoices after every class. Payment links on WhatsApp. Cash tracked with one tap."
+      },
+      "income": {
+        "title": "Income",
+        "body": "Every pound you earn, from every center and every private group, in one place."
+      }
+    },
     "center": {
       "title": "I run a center",
       "brief": "Manage your staff, attendance, and income, from the first class to the last pound.",
@@ -8183,11 +8197,11 @@
     "ctaSecondary": "Log in",
     "mock": {
       "label": "Your income this month",
-      "total": "EGP 54,000",
+      "total": "EGP 138,500",
       "fromCenters": "From centers",
-      "fromCentersAmount": "32,000",
-      "fromPrivate": "From private",
-      "fromPrivateAmount": "22,000"
+      "fromCentersAmount": "84,500",
+      "fromPrivate": "Private groups",
+      "fromPrivateAmount": "54,000"
     },
     "tiles": {
       "centers": {
@@ -8202,6 +8216,28 @@
         "title": "Never chase anyone",
         "body": "Payment links reach the parent automatically on WhatsApp. Cash? One button."
       }
+    },
+    "how": {
+      "title": "How it works",
+      "step1": {
+        "title": "Sign up free",
+        "body": "Create your account in 2 minutes, no card needed."
+      },
+      "step2": {
+        "title": "Add your groups and students",
+        "body": "Private groups get a join link; center work links automatically when your center invites you."
+      },
+      "step3": {
+        "title": "Finish a class, get paid",
+        "body": "Mark attendance, tap finish, payment links go out on WhatsApp automatically."
+      }
+    },
+    "social": {
+      "title": "Built for Egyptian teachers. Launching 2026.",
+      "subtext": "Be among the first teachers to run their full practice on CenterHQ."
+    },
+    "finalCta": {
+      "title": "Ready to keep all your income in one place?"
     },
     "trialTerms": "14-day free trial for the private engine · then EGP 299/month · no card now · center tracking always free"
   }

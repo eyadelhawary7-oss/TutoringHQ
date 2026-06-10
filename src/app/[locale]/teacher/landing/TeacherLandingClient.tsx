@@ -137,6 +137,60 @@ export default function TeacherLandingClient() {
         </div>
       </section>
 
+      {/* Section 4: How it works (3 numbered steps) */}
+      <section className="mx-auto w-full max-w-5xl px-5 pb-4 md:px-6">
+        <h2 className="mb-10 text-center text-2xl font-bold text-[var(--color-text-primary)] md:text-3xl">
+          {t('how.title')}
+        </h2>
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+          {[
+            { n: 1, title: t('how.step1.title'), body: t('how.step1.body') },
+            { n: 2, title: t('how.step2.title'), body: t('how.step2.body') },
+            { n: 3, title: t('how.step3.title'), body: t('how.step3.body') },
+          ].map((step) => (
+            <div key={step.n} className="flex flex-col items-center text-center md:items-start md:text-start">
+              <span
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-brass-soft)] text-lg font-bold"
+                style={{ color: 'var(--color-brass)' }}
+                aria-hidden
+              >
+                {step.n}
+              </span>
+              <h3 className="mt-4 text-base font-bold text-[var(--color-text-primary)]">{step.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{step.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Section 5: Social proof placeholder (honest, no fake reviews) */}
+      <section className="mx-auto w-full max-w-3xl px-5 py-12 md:px-6">
+        <div className="rounded-[var(--radius-card)] border border-[var(--color-brass)]/30 bg-[var(--color-brass-soft)] p-8 text-center">
+          <h2 className="text-lg font-bold md:text-xl" style={{ color: 'var(--color-brass)' }}>
+            {t('social.title')}
+          </h2>
+          <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed" style={{ color: 'var(--color-text-amber)' }}>
+            {t('social.subtext')}
+          </p>
+        </div>
+      </section>
+
+      {/* Section 6: Final CTA (repeat free-trial button + trial terms line) */}
+      <section className="mx-auto w-full max-w-3xl px-5 pb-16 text-center md:px-6">
+        <h2 className="text-xl font-bold text-[var(--color-text-primary)] md:text-2xl">{t('finalCta.title')}</h2>
+        <div className="mt-6 flex justify-center">
+          <Link
+            href="/teacher/signup"
+            className="rounded-xl bg-[var(--color-brass)] px-8 py-4 text-center text-base font-semibold text-white transition-opacity hover:opacity-90"
+          >
+            {t('ctaPrimary')}
+          </Link>
+        </div>
+        <p className="mx-auto mt-4 max-w-lg text-xs leading-relaxed text-[var(--color-text-muted)]">
+          {t('trialTerms')}
+        </p>
+      </section>
+
       {/* Footer (shared with splash) */}
       <footer className="mx-auto mt-auto w-full max-w-5xl px-5 py-8 md:px-6">
         <div className="flex flex-col items-center gap-3 border-t border-[var(--color-border)] pt-6 text-center text-xs text-[var(--color-text-muted)]">

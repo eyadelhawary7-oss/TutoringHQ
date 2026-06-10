@@ -1,7 +1,7 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { Building2, GraduationCap, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Building2, GraduationCap, ScanLine, Receipt, Wallet, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 
 /**
@@ -57,6 +57,45 @@ export default function SplashClient() {
         <p className="mt-5 max-w-xl text-base text-[var(--color-text-secondary)] md:text-lg">
           {t('context')}
         </p>
+
+        {/* What CenterHQ does - three concise tiles, so both personas understand
+            the platform before choosing a path. Teal for shared/center, brass for
+            the billing/private accent. */}
+        <div className="mt-10 grid w-full max-w-3xl grid-cols-1 gap-4 text-start sm:grid-cols-3">
+          <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 shadow-[var(--shadow-row)]">
+            <span
+              className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl"
+              style={{ background: 'var(--color-teal-soft)', color: 'var(--color-teal-deep)' }}
+              aria-hidden
+            >
+              <ScanLine size={20} />
+            </span>
+            <h3 className="text-sm font-bold text-[var(--color-text-primary)]">{t('does.attendance.title')}</h3>
+            <p className="mt-1.5 text-xs leading-relaxed text-[var(--color-text-secondary)]">{t('does.attendance.body')}</p>
+          </div>
+          <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 shadow-[var(--shadow-row)]">
+            <span
+              className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl"
+              style={{ background: 'var(--color-brass-soft)', color: 'var(--color-brass)' }}
+              aria-hidden
+            >
+              <Receipt size={20} />
+            </span>
+            <h3 className="text-sm font-bold text-[var(--color-text-primary)]">{t('does.billing.title')}</h3>
+            <p className="mt-1.5 text-xs leading-relaxed text-[var(--color-text-secondary)]">{t('does.billing.body')}</p>
+          </div>
+          <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 shadow-[var(--shadow-row)]">
+            <span
+              className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl"
+              style={{ background: 'var(--color-teal-soft)', color: 'var(--color-teal-deep)' }}
+              aria-hidden
+            >
+              <Wallet size={20} />
+            </span>
+            <h3 className="text-sm font-bold text-[var(--color-text-primary)]">{t('does.income.title')}</h3>
+            <p className="mt-1.5 text-xs leading-relaxed text-[var(--color-text-secondary)]">{t('does.income.body')}</p>
+          </div>
+        </div>
 
         {/* Two co-equal persona cards */}
         <div className="mt-10 grid w-full max-w-3xl grid-cols-1 gap-5 md:mt-12 md:grid-cols-2">
