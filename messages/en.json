@@ -1044,6 +1044,7 @@
     "forgotPin": "Forgot PIN?",
     "invalidCredentials": "Invalid Credentials",
     "noAccount": "Don't have an account? Register your center",
+    "teacherStartHere": "Teacher? Start here",
     "phone": "Phone",
     "phoneHint": "Enter without the leading zero (10 digits)",
     "phoneLabel": "Phone Number",

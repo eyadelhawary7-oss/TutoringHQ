@@ -652,6 +652,18 @@ export default function LoginPage() {
             >
               {t('noAccount')}
             </Link>
+            <Link
+              href="/teacher/landing"
+              style={{
+                ...SANS,
+                fontSize: '11px',
+                color: '#64748b',
+                textDecoration: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              {t('teacherStartHere')}
+            </Link>
           </div>
         </form>
       </div>
