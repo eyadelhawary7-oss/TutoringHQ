@@ -46,6 +46,14 @@ export default async function DashboardRouteGroupLayout({
       redirect(`/${locale}/login`);
     }
 
+    // Teachers (Model B) are center-less on public.users, so the onboarding gate
+    // below would query centers with center_id=NULL, find nothing, fail open and
+    // wrongly show them the centre dashboard. Send them to their own portal.
+    if (user.role === 'teacher') {
+      const locale = await getLocale();
+      redirect(`/${locale}/teacher`);
+    }
+
     // --- V3 ONBOARDING GATE ---
     if (user.role !== 'super_admin') {
       try {

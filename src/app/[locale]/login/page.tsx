@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Link, useRouter, usePathname } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { isRefreshTokenNotFoundError } from '@/lib/supabaseRefreshSilence';
+import { decidePostLoginRoute } from '@/lib/postLoginRoute';
 import { Globe } from 'lucide-react';
 
 export default function LoginPage() {
@@ -147,6 +148,34 @@ export default function LoginPage() {
         return;
       }
 
+      // Resolve role + preferred locale once (the same CORE columns /api/me
+      // returns). Role drives teacher routing; the locale is reused for every
+      // redirect below so we never re-query users per branch.
+      let preferredLocale: 'ar' | 'en' = 'ar';
+      let userRole: string | null = null;
+      try {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role, preferred_locale')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        if (userData?.preferred_locale === 'ar' || userData?.preferred_locale === 'en') {
+          preferredLocale = userData.preferred_locale;
+        }
+        userRole = (userData?.role as string | null) ?? null;
+      } catch {
+        // Fallback silently - never block login
+      }
+
+      // Teacher (Model B: center-less on public.users) owns the /teacher portal.
+      // Checked FIRST - before center_id / onboarding - so a teacher is never
+      // funnelled to the centre dashboard or onboarding (decidePostLoginRoute
+      // rule 1). A NULL center_id is not a "needs onboarding" signal for them.
+      if (userRole === 'teacher') {
+        router.push('/teacher', { locale: preferredLocale });
+        return;
+      }
+
       const checkRes = await fetch('/api/admin/check', {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
@@ -162,40 +191,18 @@ export default function LoginPage() {
       });
       const result = await res.json();
 
-      if (result.centerId) {
-        let targetLocale = 'ar';
-        try {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('preferred_locale')
-            .eq('id', session.user.id)
-            .maybeSingle();
-          if (userData?.preferred_locale === 'ar' || userData?.preferred_locale === 'en') {
-            targetLocale = userData.preferred_locale;
-          }
-        } catch {
-          // Fallback silently - never block login
-        }
-        const targetPath = result.needsOnboarding ? '/onboarding' : '/dashboard';
-        router.push(targetPath, { locale: targetLocale as 'en' | 'ar' });
-      } else if (result.contactSales) {
+      const decision = decidePostLoginRoute({
+        role: userRole,
+        isAdmin: false,
+        centerId: (result.centerId as string | null) ?? null,
+        needsOnboarding: Boolean(result.needsOnboarding),
+        contactSales: Boolean(result.contactSales),
+      });
+      if (decision.kind === 'contactSales') {
         setError(t('contactSales'));
         shakePinField();
       } else {
-        let targetLocale = 'ar';
-        try {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('preferred_locale')
-            .eq('id', session.user.id)
-            .maybeSingle();
-          if (userData?.preferred_locale === 'ar' || userData?.preferred_locale === 'en') {
-            targetLocale = userData.preferred_locale;
-          }
-        } catch {
-          // Fallback silently - never block login
-        }
-        router.push('/onboarding', { locale: targetLocale as 'en' | 'ar' });
+        router.push(decision.path, { locale: preferredLocale });
       }
     } catch {
       setError(t('invalidCredentials'));
