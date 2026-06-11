@@ -15,8 +15,8 @@ Inclusive 12 → base 9.65
 ## Plan price table (monthly INCLUSIVE EGP)
 Plan         Monthly    Quarterly/mo    Annual/mo    Cap
 solo          1,149          999             849       50
-nano          2,499        1,999           1,699       75
-starter       5,199        4,499           3,824      150
+nano          2,499        1,999           1,699      120
+starter       5,199        4,499           3,824      200
 pro           9,199        7,999           6,799      500
 business     14,999       12,999          11,049    1,000
 enterprise   21,299       18,499          15,724    2,000

@@ -24,13 +24,44 @@ App UI uses logical CSS properties only (`margin-inline-start`, `inset-inline-en
 
 Translated copy must use commas (U+002C in English, U+060C `،` in Arabic), periods, or sentence breaks. Em dashes (`—`) are forbidden in `messages/*.json` values and any user-rendered string. Internal docs and code comments are unconstrained.
 
-## Rule 144 — Canonical design system
+## Rule 144 -- Canonical design system (updated: ADR 031 resolved, cream default)
 
-UI surfaces use the canonical token set: bg `#080D14`, accent teal `#0D9488`, off-white `#f8fafc`, slate borders `#1e293b`/`#0f172a`, Playfair Display + Bodoni Moda. New surfaces follow the existing pages (login, set-pin) rather than introducing a parallel style sheet.
+UI surfaces use the cream token set defined in src/app/globals.css:
+  --paper: #ece8df (page background)
+  --panel: #fffdf8 (panel/card background)
+  Accent teal: #0e6b61
+  Accent brass: #9a6b1f
+  Typography: IBM Plex Sans Arabic (body), system-serif fallback
+
+Dark mode is optional (`.dark` class on `<html>`). The light-white theme has been
+removed. New surfaces follow the cream token set. Hardcoded dark hex values
+(#080D14, bg-slate-*, from-slate-*) are forbidden in new UI code outside of
+intentionally dark components (e.g. the HeroVisuals phone mockup). See globals.css
+for the full token list. Design is enforced via TypeScript (ADR 014).
 
 ## Rule 146 — Migration verification via catalog introspection
 
 After applying any schema migration, verify the change by querying the Postgres catalog (`information_schema.tables`, `pg_indexes`, `pg_constraint`) — NOT by reading `supabase_migrations.schema_migrations`. The migrations table is metadata; the catalog is ground truth.
+
+## Rule 152 -- auth.users rows created via admin API require explicit empty-string token fields
+
+Every `auth.users` row created via the Supabase admin API (`supabaseAdmin.auth.admin.createUser`)
+MUST set the following four fields to empty string `''` (never `null`, never omitted):
+  - `confirmation_token`
+  - `recovery_token`
+  - `email_change_token_new`
+  - `email_change`
+
+If any of these fields is `null` in the database row, `supabase.auth.signInWithPassword`
+will return a 500 error for that user, silently blocking all logins.
+
+This applies to every route that creates auth users programmatically:
+currently `/api/auth/teacher/signup` and the admin-seeding path in
+`/api/signup` (center owner creation). Any future route that calls
+`createUser` must include all four fields.
+
+Cross-reference: centerAuth.ts teacher signup implementation. Introduced after
+silent 500 login failures traced to null token fields in GoTrue.
 
 ## ADR 018 — Lazy-init Supabase clients
 

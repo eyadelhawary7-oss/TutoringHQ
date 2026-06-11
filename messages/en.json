@@ -3341,7 +3341,6 @@
       "pipelineFailed": "Failed"
     },
     "actions": "Actions",
-    "backToMyCenter": "Back To My Center",
     "confirmReject": "Confirm Reject",
     "creating": "Creating",
     "daysOverdue": "Days Overdue",
@@ -6102,11 +6101,11 @@
       "nanoName": "Nano",
       "nanoPrice": "EGP 2,000/mo",
       "nanoPeriod": "(quarterly billing)",
-      "nanoStudents": "Up to 75 students",
+      "nanoStudents": "Up to 120 students",
       "nanoBadge": "For growing centers",
       "starterName": "Starter",
       "starterPrice": "EGP 4,500/mo",
-      "starterStudents": "Up to 150 students",
+      "starterStudents": "Up to 200 students",
       "popularBadge": "Most popular",
       "proName": "Pro",
       "proPrice": "EGP 8,000/mo",
@@ -6617,7 +6616,6 @@
   "back": {},
   "backOfCard": {},
   "backToLogin": {},
-  "backToMyCenter": {},
   "backToSettings": {},
   "balance": {},
   "balanceDue": {},
@@ -8290,20 +8288,6 @@
       "fromCentersAmount": "84,500",
       "fromPrivate": "Private groups",
       "fromPrivateAmount": "54,000"
-    },
-    "tiles": {
-      "centers": {
-        "title": "Track your centers",
-        "body": "See your cut from every center you teach at, automatically. No manual math."
-      },
-      "private": {
-        "title": "Run your private side",
-        "body": "Create your own groups, record attendance, and send an invoice after every class."
-      },
-      "payments": {
-        "title": "Never chase anyone",
-        "body": "Payment links reach the parent automatically on WhatsApp. Cash? One button."
-      }
     },
     "how": {
       "title": "How it works",

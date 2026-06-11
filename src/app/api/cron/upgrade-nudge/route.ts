@@ -19,8 +19,8 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 const CAPS: Record<string, number> = {
   solo: PLANS.solo.weeklyStudentLimit ?? 50,
-  nano: PLANS.nano.weeklyStudentLimit ?? 75,
-  starter: PLANS.starter.weeklyStudentLimit ?? 150,
+  nano: PLANS.nano.weeklyStudentLimit ?? 120,
+  starter: PLANS.starter.weeklyStudentLimit ?? 200,
   pro: PLANS.pro.weeklyStudentLimit ?? 500,
   business: PLANS.business.weeklyStudentLimit ?? 1000,
   enterprise: PLANS.enterprise.weeklyStudentLimit ?? 2000,

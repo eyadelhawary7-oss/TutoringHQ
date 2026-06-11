@@ -12,8 +12,9 @@ import { normalizePhone } from '@/lib/utils/phone';
  * persisted to public.privacy_requests as the authoritative, timestamped PDPL
  * record; a Sentry info message is emitted as a redundant ops notification, and
  * an insert failure is captured to Sentry + returned as 500 so a rights request
- * is never silently lost. Rate-limited per IP to prevent abuse of the public
- * form.
+ * is never silently lost. Rate-limited to 5 requests/hour per IP to prevent
+ * abuse of the public form (NOT per-phone: the data subject may have no account
+ * and the phone field is free-text, so IP is the only reliable abuse key).
  */
 const VALID_TYPES = new Set([
   'access',

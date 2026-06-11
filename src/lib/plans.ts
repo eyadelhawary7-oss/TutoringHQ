@@ -15,8 +15,8 @@ export function canonicalPlanId(plan: string | null | undefined): string {
 
 export const PLAN_STUDENT_LIMITS: Record<string, number> = {
   solo: 50,
-  nano: 75,
-  starter: 150,
+  nano: 120,
+  starter: 200,
   pro: 500,
   business: 1000,
   enterprise: 2000,

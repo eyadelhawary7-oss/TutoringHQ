@@ -768,13 +768,6 @@ export function AdminSidebar({
         <div className="p-4 border-b border-[var(--color-border)] shrink-0 lg:bg-[var(--color-surface-2)] flex items-start justify-between gap-2">
           <div>
             <h2 className="font-bold text-[var(--color-text-primary)]">{t('title')}</h2>
-            <Link
-              href="/dashboard"
-              onClick={afterNavigate}
-              className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] mt-1 block"
-            >
-              {t('backToMyCenter')}
-            </Link>
           </div>
           <button
             type="button"

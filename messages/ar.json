@@ -1443,11 +1443,11 @@
       "nanoName": "سنتر نانو",
       "nanoPrice": "٢٬٠٠٠ ج.م/شهر",
       "nanoPeriod": "(ربع سنوي)",
-      "nanoStudents": "حتى ٧٥ طالب",
+      "nanoStudents": "حتى ١٢٠ طالب",
       "nanoBadge": "للمراكز الناشئة",
       "starterName": "أساسي",
       "starterPrice": "٤٬٥٠٠ ج.م/شهر",
-      "starterStudents": "حتى ١٥٠ طالب",
+      "starterStudents": "حتى ٢٠٠ طالب",
       "popularBadge": "الأكثر شيوعاً",
       "proName": "محترف",
       "proPrice": "٨٬٠٠٠ ج.م/شهر",
@@ -1729,7 +1729,6 @@
       "pipelineFailed": "فشل"
     },
     "actions": "إجراءات",
-    "backToMyCenter": "العودة لمركزي",
     "confirmReject": "تأكيد رفض",
     "creating": "Creating",
     "daysOverdue": "أيام متأخر",
@@ -6617,7 +6616,6 @@
   "back": {},
   "backOfCard": {},
   "backToLogin": {},
-  "backToMyCenter": {},
   "backToSettings": {},
   "balance": {},
   "balanceDue": {},
@@ -8290,20 +8288,6 @@
       "fromCentersAmount": "٨٤٬٥٠٠",
       "fromPrivate": "من الخصوصي",
       "fromPrivateAmount": "٥٤٬٠٠٠"
-    },
-    "tiles": {
-      "centers": {
-        "title": "متابعة السناتر",
-        "body": "شوف نصيبك من كل سنتر بتدرّس فيه تلقائي، مفيش حسابات يدوية."
-      },
-      "private": {
-        "title": "إدارة الخصوصي",
-        "body": "أنشئ مجموعاتك الخاصة، سجّل الحضور، وابعت فاتورة بعد كل حصة."
-      },
-      "payments": {
-        "title": "ما تلحقش على حد",
-        "body": "روابط الدفع بتوصل لولي الأمر تلقائي على واتساب. الكاش؟ زرار واحد."
-      }
     },
     "how": {
       "title": "إزاي بتشتغل",

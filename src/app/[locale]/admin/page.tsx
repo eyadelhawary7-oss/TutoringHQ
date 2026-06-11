@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
-import { useRouter, Link } from '@/i18n/routing';
+import { useRouter } from '@/i18n/routing';
 import { ChartCard } from '@/components/charts';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
@@ -290,12 +290,6 @@ function AdminOverviewPageContent() {
                 >
                   {tAdmin('retry')}
                 </button>
-                <Link
-                  href="/dashboard"
-                  className="px-4 py-2 border rounded-lg text-sm border-[var(--color-border-subtle)]"
-                >
-                  {tAdmin('backToMyCenter')}
-                </Link>
               </div>
             </div>
           ) : null}
