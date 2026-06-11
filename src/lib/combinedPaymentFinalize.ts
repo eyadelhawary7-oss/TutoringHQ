@@ -134,7 +134,12 @@ export async function tryFinalizeCombinedPaymentSession(
     if (row.status === 'paid') return true;
     if (row.status !== 'pending') return false;
 
-    const handled = new Set(['upgrade', 'reactivation_tier1', 'reactivation_tier2']);
+    const handled = new Set([
+      'upgrade',
+      'reactivation_tier1',
+      'reactivation_tier2',
+      'teacher_resubscribe',
+    ]);
     if (!handled.has(row.session_type)) return false;
 
     const paymobOrderId = String(row.paymob_order_id ?? '');
@@ -296,6 +301,105 @@ export async function tryFinalizeCombinedPaymentSession(
         await markSessionFailed(supabase, row.id);
         await logFinalizeFailure(supabase, reactErr, { sessionId: row.id, phase: 'reactivate' });
         return false;
+      }
+    }
+
+    // Teacher resubscribe (isolated from the center paths above): these
+    // sessions carry no center_id; the teacher id rides in metadata because
+    // combined_payment_sessions has no teacher_id column. Status moves through
+    // apply_teacher_subscription_transition (the lifecycle guard blocks direct
+    // status UPDATEs); the period/payment columns are plain updates.
+    if (st === 'teacher_resubscribe') {
+      const rawMeta =
+        row.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata)
+          ? (row.metadata as Record<string, unknown>)
+          : {};
+      const teacherId = typeof rawMeta.teacher_id === 'string' ? rawMeta.teacher_id : null;
+      if (!teacherId) {
+        await markSessionFailed(supabase, row.id);
+        await logFinalizeFailure(
+          supabase,
+          new Error('teacher_resubscribe session has no metadata.teacher_id'),
+          { sessionId: row.id, phase: 'teacher_resub_meta' },
+        );
+        return false;
+      }
+
+      const { data: subRow, error: subErr } = await supabase
+        .from('teacher_subscriptions')
+        .select('id, status')
+        .eq('teacher_id', teacherId)
+        .maybeSingle();
+      if (subErr || !subRow) {
+        await markSessionFailed(supabase, row.id);
+        await logFinalizeFailure(
+          supabase,
+          subErr ?? new Error('teacher_subscriptions row not found'),
+          { sessionId: row.id, phase: 'teacher_resub_sub_lookup', teacherId },
+        );
+        return false;
+      }
+      const sub = subRow as { id: string; status: string };
+
+      if (sub.status !== 'active') {
+        const { error: trErr } = await supabase.rpc('apply_teacher_subscription_transition', {
+          p_subscription_id: sub.id,
+          p_new_status: 'active',
+          p_actor_id: teacherId,
+        });
+        if (trErr) {
+          await markSessionFailed(supabase, row.id);
+          await logFinalizeFailure(supabase, trErr, {
+            sessionId: row.id,
+            phase: 'teacher_resub_transition',
+            teacherId,
+          });
+          return false;
+        }
+      }
+
+      const nowIso = new Date().toISOString();
+      const periodEndIso = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      const { error: periodErr } = await supabase
+        .from('teacher_subscriptions')
+        .update({
+          current_period_start: nowIso,
+          current_period_end: periodEndIso,
+          next_billing_at: periodEndIso,
+          last_payment_at: nowIso,
+          grace_until: null,
+          dunning_attempts: 0,
+        })
+        .eq('id', sub.id);
+      if (periodErr) {
+        await markSessionFailed(supabase, row.id);
+        await logFinalizeFailure(supabase, periodErr, {
+          sessionId: row.id,
+          phase: 'teacher_resub_period',
+          teacherId,
+        });
+        return false;
+      }
+
+      const { error: auditErr } = await supabase.from('audit_log').insert({
+        action: 'teacher_subscription_reactivated',
+        entity_type: 'teacher_subscription',
+        entity_id: sub.id,
+        user_id: teacherId,
+        center_id: null,
+        details: {
+          session_id: row.id,
+          paymob_order_id: paymobOrderId || null,
+          paymob_transaction_id: paymobTransactionId || null,
+        },
+      });
+      if (auditErr) {
+        // The reactivation itself succeeded - log, do not fail the finalize.
+        await logFinalizeFailure(supabase, auditErr, {
+          sessionId: row.id,
+          phase: 'teacher_resub_audit',
+          teacherId,
+        });
       }
     }
 

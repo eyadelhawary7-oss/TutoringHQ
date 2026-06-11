@@ -8219,12 +8219,29 @@
       "title": "Your private practice is paused",
       "body": "Your subscription is currently inactive. Resume it to regain access to your private data.",
       "cta": "Resume subscription"
-    },
-    "resubscribe": {
-      "title": "Resume your subscription",
-      "body": "Online resubscription opens soon. Your private data is safe and will be right where you left it once you resume.",
-      "backHome": "Back to home"
     }
+  },
+  "teacherResubscribe": {
+    "title": "Resume your subscription",
+    "resubscribeBody": "Your private data is safe and will be right where you left it once you resume.",
+    "startBody": "Subscribe to unlock the full private teaching engine.",
+    "planName": "CenterHQ Teacher",
+    "priceSuffix": "/ month",
+    "includedTitle": "What is included",
+    "featurePrivateGroups": "Private groups and rosters",
+    "featureBilling": "Per-lesson billing engine",
+    "featureWhatsapp": "WhatsApp notifications",
+    "featureProposals": "Group proposal negotiation with centers",
+    "freeMonths": "You have {count} free months credit",
+    "subscribeCta": "Subscribe now",
+    "subscribing": "Starting...",
+    "paymobSoonTitle": "Online payment coming soon",
+    "paymobSoonBody": "You will be notified as soon as it goes live.",
+    "errorSubscribe": "Could not start the subscription. Try again.",
+    "errorTitle": "Could not load your subscription",
+    "errorBody": "Something went wrong while loading your subscription details.",
+    "retry": "Retry",
+    "backHome": "Back to home"
   },
   "teacherSignup": {
     "title": "Create your teacher account",
