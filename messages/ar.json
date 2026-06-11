@@ -6179,6 +6179,9 @@
     "enterpriseLimit": "ما يصل إلى 2000 طالب/أسبوع",
     "terms": "أوافق على الشروط والأحكام",
     "termsAcceptance": "أوافق على <termsLink>شروط الخدمة وسياسة الخصوصية</termsLink>",
+    "consentTerms": "قرأت ووافقت على <link>الشروط والأحكام</link>",
+    "consentPrivacy": "أوافق على <link>سياسة الخصوصية</link> وأمنح موافقتي على معالجة بياناتي الشخصية كما هو موضح.",
+    "consentRequired": "يجب الموافقة على الشروط والأحكام وسياسة الخصوصية للمتابعة.",
     "submit": "إرسال الطلب",
     "success": "تم تقديم الطلب بنجاح.",
     "successMessage": "Your request will be reviewed within 24 hours",
@@ -8193,7 +8196,10 @@
     "errorPinMatch": "الرقمين السريين مش زي بعض.",
     "errorWeakPin": "الرقم السري ده سهل التخمين. اختار غيره.",
     "errorRateLimit": "محاولات كتير. جرب تاني بعد شوية.",
-    "errorGeneric": "حصلت مشكلة. جرب تاني."
+    "errorGeneric": "حصلت مشكلة. جرب تاني.",
+    "consentTerms": "قرأت ووافقت على <link>الشروط والأحكام</link>",
+    "consentPrivacy": "أوافق على <link>سياسة الخصوصية</link> وأمنح موافقتي على معالجة بياناتي الشخصية كما هو موضح.",
+    "errorConsent": "يجب الموافقة على الشروط والأحكام وسياسة الخصوصية للمتابعة."
   },
   "teacherSettings": {
     "title": "إعدادات الحساب",

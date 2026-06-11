@@ -134,6 +134,7 @@ export async function POST(request: Request) {
       billingPeriod?: unknown;
       billing_period?: unknown;
       termsAccepted?: unknown;
+      privacyAccepted?: unknown;
     };
 
     let body: SignupJson;
@@ -166,13 +167,20 @@ export async function POST(request: Request) {
       email,
       initiatePayment: initiatePaymentRaw,
       termsAccepted: termsAcceptedRaw,
+      privacyAccepted: privacyAcceptedRaw,
     } = body;
 
     const rawPromoCode =
       typeof promoCodeRaw === 'string' ? promoCodeRaw.trim().toUpperCase() : '';
 
-    if (termsAcceptedRaw !== true) {
-      return NextResponse.json({ error: 'Terms of Service must be accepted' }, { status: 400 });
+    // PDPL consent: terms acceptance and data-processing consent are distinct
+    // and both mandatory. Enforced server-side so a bypassed checkbox (direct
+    // API call) is rejected before any center row is created.
+    if (termsAcceptedRaw !== true || privacyAcceptedRaw !== true) {
+      return NextResponse.json(
+        { error: 'Consent required', code: 'CONSENT_REQUIRED' },
+        { status: 400 },
+      );
     }
 
     const billingPeriodRaw =
@@ -298,6 +306,8 @@ export async function POST(request: Request) {
       requested_at: new Date().toISOString(),
       terms_accepted_at: termsAcceptedAt,
       terms_version: 'v1-2026-05',
+      policy_accepted_at: termsAcceptedAt,
+      policy_version: '1.0',
     };
 
     if (initiatePayment) {

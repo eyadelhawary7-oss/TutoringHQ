@@ -3008,6 +3008,9 @@
     "enterpriseLimit": "Up to 2,000 students/week",
     "terms": "I agree to terms and conditions",
     "termsAcceptance": "I agree to the <termsLink>Terms of Service & Privacy Policy</termsLink>",
+    "consentTerms": "I have read and agree to the <link>Terms and Conditions</link>",
+    "consentPrivacy": "I agree to the <link>Privacy Policy</link> and consent to my personal data being processed as described.",
+    "consentRequired": "You must accept both the Terms and Conditions and the Privacy Policy to continue.",
     "submit": "Submit Request",
     "success": "Request submitted successfully",
     "successMessage": "Your request will be reviewed within 24 hours",
@@ -8193,7 +8196,10 @@
     "errorPinMatch": "The two PINs do not match.",
     "errorWeakPin": "This PIN is too easy to guess. Choose another.",
     "errorRateLimit": "Too many attempts. Please try again later.",
-    "errorGeneric": "Something went wrong. Please try again."
+    "errorGeneric": "Something went wrong. Please try again.",
+    "consentTerms": "I have read and agree to the <link>Terms and Conditions</link>",
+    "consentPrivacy": "I agree to the <link>Privacy Policy</link> and consent to my personal data being processed as described.",
+    "errorConsent": "You must accept both the Terms and Conditions and the Privacy Policy to continue."
   },
   "teacherSettings": {
     "title": "Account settings",

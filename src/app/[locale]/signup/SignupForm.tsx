@@ -34,9 +34,6 @@ const TOP_CENTERS_WHATSAPP = getSupportWhatsAppWaMeWithText(
   'I am interested in the TOP CENTERS plan',
 );
 
-const TERMS_OF_SERVICE_DOC_URL =
-  'https://docs.google.com/document/d/1-N6vT2WkqhBgh6QtC7-AyN3OHI2HhHYzky6odZQPYRw/edit?usp=drivesdk';
-
 /** Bilingual labels for payment summary (must match select option values). */
 const CITY_SUMMARY_LABEL: Record<string, string> = {
   cairo: 'القاهرة - Cairo',
@@ -319,6 +316,7 @@ export default function SignupForm() {
     notes: '',
   });
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [paymentSubmitting, setPaymentSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [showReferral, setShowReferral] = useState(false);
@@ -345,6 +343,7 @@ export default function SignupForm() {
   useEffect(() => {
     try {
       if (sessionStorage.getItem('chq_signup_tos') === '1') setTermsAccepted(true);
+      if (sessionStorage.getItem('chq_signup_privacy') === '1') setPrivacyAccepted(true);
     } catch {
       //
     }
@@ -357,6 +356,14 @@ export default function SignupForm() {
       //
     }
   }, [termsAccepted]);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('chq_signup_privacy', privacyAccepted ? '1' : '0');
+    } catch {
+      //
+    }
+  }, [privacyAccepted]);
 
   useEffect(() => {
     const refFromUrl = searchParams?.get('ref')?.trim().toUpperCase() ?? '';
@@ -462,7 +469,11 @@ export default function SignupForm() {
   };
 
   const handleSubmit = async () => {
-    if (!termsAccepted || paymentSubmitting) return;
+    if (paymentSubmitting) return;
+    if (!termsAccepted || !privacyAccepted) {
+      setError(t('consentRequired'));
+      return;
+    }
     setPaymentSubmitting(true);
     setError('');
     try {
@@ -493,6 +504,7 @@ export default function SignupForm() {
           notes: form.notes,
           initiatePayment: true,
           termsAccepted: true,
+          privacyAccepted: true,
         }),
       });
       const data = (await res.json()) as {
@@ -1079,24 +1091,55 @@ export default function SignupForm() {
               </div>
             </div>
 
+            {/* PDPL: two distinct, mandatory consents - terms acceptance and
+                data-processing consent are separate checkboxes, both required. */}
             <div className="mt-4 flex items-start gap-2">
               <input
                 type="checkbox"
-                id="terms"
+                id="consent-terms"
                 checked={termsAccepted}
                 onChange={(e) => setTermsAccepted(e.target.checked)}
                 className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border border-slate-500 accent-[#0D9488]"
                 style={{ minWidth: '16px', minHeight: '16px' }}
               />
               <label
-                htmlFor="terms"
+                htmlFor="consent-terms"
                 className="cursor-pointer text-[11px] leading-relaxed text-slate-500"
                 style={SANS}
               >
-                {t.rich('termsAcceptance', {
-                  termsLink: (chunks) => (
+                {t.rich('consentTerms', {
+                  link: (chunks) => (
                     <a
-                      href={TERMS_OF_SERVICE_DOC_URL}
+                      href={`/${locale}/legal/terms`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#0D9488] underline hover:opacity-80"
+                    >
+                      {chunks}
+                    </a>
+                  ),
+                })}
+              </label>
+            </div>
+
+            <div className="mt-3 flex items-start gap-2">
+              <input
+                type="checkbox"
+                id="consent-privacy"
+                checked={privacyAccepted}
+                onChange={(e) => setPrivacyAccepted(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border border-slate-500 accent-[#0D9488]"
+                style={{ minWidth: '16px', minHeight: '16px' }}
+              />
+              <label
+                htmlFor="consent-privacy"
+                className="cursor-pointer text-[11px] leading-relaxed text-slate-500"
+                style={SANS}
+              >
+                {t.rich('consentPrivacy', {
+                  link: (chunks) => (
+                    <a
+                      href={`/${locale}/legal/privacy`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[#0D9488] underline hover:opacity-80"
@@ -1132,7 +1175,7 @@ export default function SignupForm() {
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={!termsAccepted || paymentSubmitting}
+              disabled={!termsAccepted || !privacyAccepted || paymentSubmitting}
               style={{
                 ...PLAYFAIR,
                 width: '100%',
@@ -1144,7 +1187,7 @@ export default function SignupForm() {
                 fontSize: '14px',
                 fontWeight: 700,
                 cursor: 'pointer',
-                opacity: !termsAccepted || paymentSubmitting ? 0.35 : 1,
+                opacity: !termsAccepted || !privacyAccepted || paymentSubmitting ? 0.35 : 1,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

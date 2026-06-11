@@ -26,6 +26,8 @@ export default function TeacherSignupPage() {
   const [showPin, setShowPin] = useState(false);
   const [showConfirmPin, setShowConfirmPin] = useState(false);
   const [subject, setSubject] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [alreadyRegistered, setAlreadyRegistered] = useState(false);
@@ -49,6 +51,10 @@ export default function TeacherSignupPage() {
       setError(t('errorPinMatch'));
       return;
     }
+    if (!termsAccepted || !privacyAccepted) {
+      setError(t('errorConsent'));
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch('/api/auth/teacher/signup', {
@@ -59,6 +65,8 @@ export default function TeacherSignupPage() {
           phone: phone.trim(),
           pin,
           subject: subject.trim() || undefined,
+          termsAccepted: true,
+          privacyAccepted: true,
         }),
       });
       const data = (await res.json()) as { code?: string };
@@ -78,6 +86,8 @@ export default function TeacherSignupPage() {
         setError(t('errorWeakPin'));
       } else if (data.code === 'INVALID_NAME') {
         setError(t('errorName'));
+      } else if (data.code === 'CONSENT_REQUIRED') {
+        setError(t('errorConsent'));
       } else if (res.status === 429) {
         setError(t('errorRateLimit'));
       } else {
@@ -204,10 +214,66 @@ export default function TeacherSignupPage() {
             </div>
           )}
 
+          {/* PDPL: two distinct, mandatory consents - terms acceptance and
+              data-processing consent are separate checkboxes, both required. */}
+          <div className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              id="consent-terms"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-teal-600"
+            />
+            <label
+              htmlFor="consent-terms"
+              className="cursor-pointer text-sm leading-relaxed text-[var(--color-text-secondary)]"
+            >
+              {t.rich('consentTerms', {
+                link: (chunks) => (
+                  <a
+                    href={`/${locale}/legal/terms`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-[var(--color-teal-deep)] underline"
+                  >
+                    {chunks}
+                  </a>
+                ),
+              })}
+            </label>
+          </div>
+
+          <div className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              id="consent-privacy"
+              checked={privacyAccepted}
+              onChange={(e) => setPrivacyAccepted(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-teal-600"
+            />
+            <label
+              htmlFor="consent-privacy"
+              className="cursor-pointer text-sm leading-relaxed text-[var(--color-text-secondary)]"
+            >
+              {t.rich('consentPrivacy', {
+                link: (chunks) => (
+                  <a
+                    href={`/${locale}/legal/privacy`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-[var(--color-teal-deep)] underline"
+                  >
+                    {chunks}
+                  </a>
+                ),
+              })}
+            </label>
+          </div>
+
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={submitting}
+            disabled={submitting || !termsAccepted || !privacyAccepted}
             className="flex items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 font-medium text-primary-foreground transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}

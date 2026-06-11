@@ -44,7 +44,26 @@ export async function POST(request: Request) {
     pin: rawPin,
     name: rawName,
     subject: rawSubject,
-  } = (body ?? {}) as { phone?: unknown; pin?: unknown; name?: unknown; subject?: unknown };
+    termsAccepted,
+    privacyAccepted,
+  } = (body ?? {}) as {
+    phone?: unknown;
+    pin?: unknown;
+    name?: unknown;
+    subject?: unknown;
+    termsAccepted?: unknown;
+    privacyAccepted?: unknown;
+  };
+
+  // PDPL consent: terms acceptance and data-processing consent are distinct and
+  // both mandatory. Enforced server-side so a bypassed checkbox (direct API
+  // call) is rejected before any account is created.
+  if (termsAccepted !== true || privacyAccepted !== true) {
+    return NextResponse.json(
+      { error: 'Consent required', code: 'CONSENT_REQUIRED' },
+      { status: 400 },
+    );
+  }
 
   const name = typeof rawName === 'string' ? rawName.trim() : '';
   if (name.length < 2 || name.length > 120) {
@@ -156,12 +175,19 @@ export async function POST(request: Request) {
   }
 
   // teacher_profiles - required: a missing profile makes finish_class_and_bill
-  // raise 23503 (the integrity flag from step 6).
+  // raise 23503 (the integrity flag from step 6). RULE 151: the consent
+  // timestamps are CORE for this route - they are written in the same insert
+  // as the profile, so a profErr (handled below: cleanup + 500 + Sentry) means
+  // we never create an account without recording consent.
+  const consentNow = new Date().toISOString();
   const { error: profErr } = await admin.from('teacher_profiles').insert({
     user_id: userId,
     display_name: name,
     subject,
     is_test: false,
+    policy_accepted_at: consentNow,
+    terms_accepted_at: consentNow,
+    policy_version: '1.0',
   });
   if (profErr) {
     // Cleanup both rows created above (best-effort).

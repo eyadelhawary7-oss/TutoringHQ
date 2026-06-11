@@ -70,7 +70,14 @@ function makeRequest(body: unknown): Request {
   });
 }
 
-const VALID_BODY = { phone: '01012345678', pin: '837461', name: 'Ahmed Aly', subject: 'Physics' };
+const VALID_BODY = {
+  phone: '01012345678',
+  pin: '837461',
+  name: 'Ahmed Aly',
+  subject: 'Physics',
+  termsAccepted: true,
+  privacyAccepted: true,
+};
 const NEW_USER = { data: { user: { id: 'new-user-1' } }, error: null };
 
 beforeEach(() => {
@@ -108,6 +115,47 @@ describe('POST /api/auth/teacher/signup', () => {
     expect(attrs.password).toBe('837461');
     expect(attrs.email).toBe('201012345678@centerhq.local');
     expect(attrs.email_confirm).toBe(true);
+
+    // PDPL: consent timestamps written to the teacher_profiles insert.
+    const profilePayload = profilesInsert.mock.calls[0][0] as Record<string, unknown>;
+    expect(profilePayload.policy_version).toBe('1.0');
+    expect(typeof profilePayload.policy_accepted_at).toBe('string');
+    expect(typeof profilePayload.terms_accepted_at).toBe('string');
+  });
+
+  it('termsAccepted missing -> 400 CONSENT_REQUIRED, no account created', async () => {
+    const { termsAccepted: _omit, ...noTerms } = VALID_BODY;
+    void _omit;
+    const res = await POST(makeRequest(noTerms));
+
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { code: string }).code).toBe('CONSENT_REQUIRED');
+    expect(mockCreateUser).not.toHaveBeenCalled();
+    expect(usersInsert).not.toHaveBeenCalled();
+    expect(profilesInsert).not.toHaveBeenCalled();
+  });
+
+  it('privacyAccepted missing -> 400 CONSENT_REQUIRED, no account created', async () => {
+    const { privacyAccepted: _omit, ...noPrivacy } = VALID_BODY;
+    void _omit;
+    const res = await POST(makeRequest(noPrivacy));
+
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { code: string }).code).toBe('CONSENT_REQUIRED');
+    expect(mockCreateUser).not.toHaveBeenCalled();
+    expect(usersInsert).not.toHaveBeenCalled();
+    expect(profilesInsert).not.toHaveBeenCalled();
+  });
+
+  it('both consents false -> 400 CONSENT_REQUIRED, no account created', async () => {
+    const res = await POST(
+      makeRequest({ ...VALID_BODY, termsAccepted: false, privacyAccepted: false }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { code: string }).code).toBe('CONSENT_REQUIRED');
+    expect(mockCreateUser).not.toHaveBeenCalled();
+    expect(usersInsert).not.toHaveBeenCalled();
   });
 
   it('invalid phone -> 400 INVALID_PHONE, nothing created', async () => {

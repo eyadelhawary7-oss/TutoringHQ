@@ -159,15 +159,15 @@ export default function SplashClient() {
       <footer className="mx-auto w-full max-w-5xl px-5 py-8 md:px-6">
         <div className="flex flex-col items-center gap-3 border-t border-[var(--color-border)] pt-6 text-center text-xs text-[var(--color-text-muted)]">
           <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2" aria-label={t('footerNavAria')}>
-            <Link href="/privacy" className="transition-colors hover:text-[var(--color-text-primary)]">
+            <Link href="/legal/privacy" className="transition-colors hover:text-[var(--color-text-primary)]">
               {t('privacy')}
             </Link>
-            <Link href="/terms" className="transition-colors hover:text-[var(--color-text-primary)]">
+            <Link href="/legal/terms" className="transition-colors hover:text-[var(--color-text-primary)]">
               {t('terms')}
             </Link>
-            <a href="#" className="transition-colors hover:text-[var(--color-text-primary)]">
+            <Link href="/legal/cookie" className="transition-colors hover:text-[var(--color-text-primary)]">
               {t('cookies')}
-            </a>
+            </Link>
           </nav>
           <p>{t('rights')}</p>
         </div>

@@ -26,6 +26,7 @@ const PUBLIC_PATHS = [
   '/pricing',
   '/terms',
   '/privacy',
+  '/legal',
   '/login',
   '/signup',
   '/forgot-password',
