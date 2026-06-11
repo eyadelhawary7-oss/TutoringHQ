@@ -7425,6 +7425,11 @@
       "title": "Owner-only section",
       "message": "This section is only available to the center owner.",
       "backToDashboard": "Back to dashboard"
+    },
+    "loadError": {
+      "title": "Could not verify your access",
+      "message": "We could not load your account permissions. Please try again, and contact your administrator if the problem continues.",
+      "backToDashboard": "Back to dashboard"
     }
   },
   "phone": {},
