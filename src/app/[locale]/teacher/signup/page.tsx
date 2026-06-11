@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { normalizePhone } from '@/lib/utils/phone';
@@ -23,6 +23,8 @@ export default function TeacherSignupPage() {
   const [phone, setPhone] = useState('');
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
+  const [showPin, setShowPin] = useState(false);
+  const [showConfirmPin, setShowConfirmPin] = useState(false);
   const [subject, setSubject] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -142,29 +144,49 @@ export default function TeacherSignupPage() {
               <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
                 {t('pinLabel')}
               </label>
-              <input
-                type="password"
-                inputMode="numeric"
-                dir="ltr"
-                maxLength={6}
-                value={pin}
-                onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-3)] px-3 py-2 text-center text-[var(--color-text-primary)] focus:border-teal-500 focus:ring-2 focus:ring-teal-500"
-              />
+              <div className="relative">
+                <input
+                  type={showPin ? 'text' : 'password'}
+                  inputMode="numeric"
+                  dir="ltr"
+                  maxLength={6}
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-3)] px-3 py-2 pe-10 text-center text-[var(--color-text-primary)] focus:border-teal-500 focus:ring-2 focus:ring-teal-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPin((s) => !s)}
+                  aria-label={showPin ? t('hidePin') : t('showPin')}
+                  className="absolute inset-y-0 end-2 flex items-center text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-primary)]"
+                >
+                  {showPin ? <EyeOff size={16} aria-hidden /> : <Eye size={16} aria-hidden />}
+                </button>
+              </div>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
                 {t('confirmPinLabel')}
               </label>
-              <input
-                type="password"
-                inputMode="numeric"
-                dir="ltr"
-                maxLength={6}
-                value={confirmPin}
-                onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
-                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-3)] px-3 py-2 text-center text-[var(--color-text-primary)] focus:border-teal-500 focus:ring-2 focus:ring-teal-500"
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPin ? 'text' : 'password'}
+                  inputMode="numeric"
+                  dir="ltr"
+                  maxLength={6}
+                  value={confirmPin}
+                  onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
+                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-3)] px-3 py-2 pe-10 text-center text-[var(--color-text-primary)] focus:border-teal-500 focus:ring-2 focus:ring-teal-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPin((s) => !s)}
+                  aria-label={showConfirmPin ? t('hidePin') : t('showPin')}
+                  className="absolute inset-y-0 end-2 flex items-center text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-primary)]"
+                >
+                  {showConfirmPin ? <EyeOff size={16} aria-hidden /> : <Eye size={16} aria-hidden />}
+                </button>
+              </div>
             </div>
           </div>
 

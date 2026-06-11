@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent, type ClipboardEvent } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useRouter } from '@/i18n/routing';
 
 const PLAYFAIR = {
@@ -337,6 +338,9 @@ function PinForm({ urlToken, labels }: { urlToken?: string; labels: Labels }) {
         onClick={() => setShow((s) => !s)}
         style={{
           ...SANS,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '6px',
           background: 'transparent',
           border: 'none',
           color: 'var(--color-text-muted)',
@@ -347,6 +351,7 @@ function PinForm({ urlToken, labels }: { urlToken?: string; labels: Labels }) {
           textAlign: 'start',
         }}
       >
+        {show ? <EyeOff size={14} aria-hidden /> : <Eye size={14} aria-hidden />}
         {show ? labels.hide : labels.show}
       </button>
 

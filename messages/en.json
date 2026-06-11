@@ -8140,6 +8140,8 @@
     "subjectPlaceholder": "e.g. Physics",
     "pinLabel": "PIN (6 digits)",
     "confirmPinLabel": "Confirm PIN",
+    "showPin": "Show PIN",
+    "hidePin": "Hide PIN",
     "submit": "Create account",
     "submitting": "Creating...",
     "haveAccount": "Already have an account?",

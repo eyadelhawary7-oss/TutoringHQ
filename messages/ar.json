@@ -8140,6 +8140,8 @@
     "subjectPlaceholder": "مثلاً: فيزيا",
     "pinLabel": "الرقم السري (٦ أرقام)",
     "confirmPinLabel": "أكّد الرقم السري",
+    "showPin": "إظهار الرقم السري",
+    "hidePin": "إخفاء الرقم السري",
     "submit": "اعمل الحساب",
     "submitting": "ثواني...",
     "haveAccount": "عندك حساب بالفعل؟",
