@@ -140,7 +140,12 @@ function pathIsPublicTeacherPage(cleanPath: string): boolean {
  */
 function pathIsTeacherNamespace(cleanPath: string): boolean {
   if (pathIsPublicTeacherPage(cleanPath)) return false;
-  return cleanPath === '/teacher' || cleanPath.startsWith('/teacher/');
+  return (
+    cleanPath === '/teacher' ||
+    cleanPath.startsWith('/teacher/') ||
+    cleanPath === '/teachers' ||
+    cleanPath.startsWith('/teachers/')
+  );
 }
 
 function isApiRoute(pathname: string): boolean {
@@ -269,7 +274,7 @@ export default async function proxy(request: NextRequest) {
         return applySecurityHeaders(redirectResp, requestId);
       }
 
-      // Teacher half (DORMANT): center users may not reach /teacher/*.
+      // Center users may not reach the teacher namespace.
       if (
         !isSuperAdmin &&
         userRecord &&

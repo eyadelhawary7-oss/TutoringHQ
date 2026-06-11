@@ -338,18 +338,6 @@ export default function TeacherLandingClient() {
         </div>
       </section>
 
-      {/* Social proof placeholder (honest, no fake reviews) */}
-      <section className="mx-auto w-full max-w-3xl px-5 py-12 md:px-6">
-        <div className="rounded-[var(--radius-card)] border border-[var(--color-brass)]/30 bg-[var(--color-brass-soft)] p-8 text-center">
-          <h2 className="text-lg font-bold md:text-xl" style={{ color: 'var(--color-brass)' }}>
-            {t('social.title')}
-          </h2>
-          <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed" style={{ color: 'var(--color-text-amber)' }}>
-            {t('social.subtext')}
-          </p>
-        </div>
-      </section>
-
       {/* Final CTA (repeat free-trial button + trial terms line) */}
       <section className="mx-auto w-full max-w-3xl px-5 pb-16 text-center md:px-6">
         <h2 className="text-xl font-bold text-[var(--color-text-primary)] md:text-2xl">{t('finalCta.title')}</h2>

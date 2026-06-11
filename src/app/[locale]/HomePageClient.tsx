@@ -509,7 +509,7 @@ export default function HomePageClient() {
               </a>
             ) : (
               <a
-                href="mailto:eyad@ehgintelligence.com"
+                href="mailto:support@ehgintelligence.com"
                 className="inline-flex rounded-xl bg-[var(--color-teal)] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-teal-deep)] btn-press chq-focus"
               >
                 {m('trustBandContact')}

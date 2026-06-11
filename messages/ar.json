@@ -41,10 +41,10 @@
     "topCentersSubtitle": "كبار السناتر",
     "topCentersStudents": "+٢٬٠٠٠ طالب/أسبوع",
     "topCentersCta": "تسعير حسب الطلب ←",
-    "footerNote": "استفسارات؟ eyad@ehgintelligence.com",
+    "footerNote": "استفسارات؟ support@ehgintelligence.com",
     "contactModalTitle": "تواصل بخصوص كبار السناتر",
     "contactModalBody": "أخبرنا بحجم التشغيل وسنعود إليك بعرض مناسب.",
-    "contactModalEmail": "راسل eyad@ehgintelligence.com",
+    "contactModalEmail": "راسل support@ehgintelligence.com",
     "contactModalClose": "إغلاق",
     "teacher": {
       "heading": "للمدرّسين",
@@ -5196,7 +5196,7 @@
     "submit": "تسجيل الدخول",
     "title": "عنوان",
     "welcomeBack": "مرحباً بعودتك",
-    "headline": "تسجيل الدخول",
+    "headline": "سجّل دخولك في CenterHQ",
     "register": "سجل مركزك",
     "localeToggleAria": "تغيير اللغة",
     "smsTooMany": "محاولات SMS كثيرة جداً",
@@ -8375,10 +8375,6 @@
         "title": "خلّص الحصة، اقبض",
         "body": "سجّل الحضور، دوس إنهاء، وروابط الدفع بتتبعت على واتساب تلقائي."
       }
-    },
-    "social": {
-      "title": "اتعمل مخصوص للمدرسين المصريين. هنطلق ٢٠٢٦.",
-      "subtext": "كن من أوائل المدرسين اللي بيشغّلوا شغلهم كله على CenterHQ."
     },
     "finalCta": {
       "title": "جاهز تجمع دخلك كله في مكان واحد؟"

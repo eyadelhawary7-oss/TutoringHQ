@@ -41,10 +41,10 @@
     "topCentersSubtitle": "كبار السناتر",
     "topCentersStudents": "2,000+ students/week",
     "topCentersCta": "Custom pricing →",
-    "footerNote": "Questions? Email eyad@ehgintelligence.com",
+    "footerNote": "Questions? Email support@ehgintelligence.com",
     "contactModalTitle": "Contact us about Top Centers",
     "contactModalBody": "Tell us about your scale and we will follow up with a tailored quote.",
-    "contactModalEmail": "Email eyad@ehgintelligence.com",
+    "contactModalEmail": "Email support@ehgintelligence.com",
     "contactModalClose": "Close",
     "teacher": {
       "heading": "For teachers",
@@ -1075,7 +1075,7 @@
     "submit": "Log In",
     "title": "Title",
     "welcomeBack": "Welcome back",
-    "headline": "Sign in",
+    "headline": "Sign in to CenterHQ",
     "register": "Register your center",
     "localeToggleAria": "Switch language",
     "smsTooMany": "Too many SMS attempts",
@@ -8375,10 +8375,6 @@
         "title": "Finish a class, get paid",
         "body": "Mark attendance, tap finish, payment links go out on WhatsApp automatically."
       }
-    },
-    "social": {
-      "title": "Built for Egyptian teachers. Launching 2026.",
-      "subtext": "Be among the first teachers to run their full practice on CenterHQ."
     },
     "finalCta": {
       "title": "Ready to keep all your income in one place?"

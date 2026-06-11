@@ -11,7 +11,7 @@ import { Menu, X, Check } from 'lucide-react';
 import PricingBannerClient from '@/components/landing/PricingBannerClient';
 import { usePublicPlanPrices } from '@/hooks/usePublicPlanPrices';
 
-const CONTACT_MAIL = 'mailto:eyad@ehgintelligence.com';
+const CONTACT_MAIL = 'mailto:support@ehgintelligence.com';
 
 type Audience = 'center' | 'teacher';
 
