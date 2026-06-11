@@ -9,6 +9,7 @@ import { useUser } from '@/contexts/UserContext';
 import { PageHeader, RoleBadge } from '@/components/shared';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
 import { StaffMemberCard, SIX_NEW_FLAGS } from '@/components/settings/StaffMemberCard';
+import TeacherJoinRequests from '@/components/settings/TeacherJoinRequests';
 import type { CenterPermission } from '@/lib/centerPermissions';
 import {
   BookOpen,
@@ -443,6 +444,8 @@ export default function TeamSettingsPage() {
             <p className="text-[var(--color-text-secondary)]">{tBilling('onlyOwnersCanManageTeam')}</p>
           ) : (
             <>
+              <TeacherJoinRequests />
+
               <div className="flex items-center justify-between flex-wrap gap-2 mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('teamMembers')}</h2>

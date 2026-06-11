@@ -6,6 +6,7 @@ import { Sparkles, PauseCircle, Wallet } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import CenterCutsSection from '../CenterCutsSection';
+import JoinCenterCard from '../JoinCenterCard';
 import IncomeView from '../IncomeView';
 import PrivateGroupModal from '../PrivateGroupModal';
 import PrivateGroupsSection from '../PrivateGroupsSection';
@@ -96,6 +97,9 @@ export default function TeacherHomePage() {
     <div className="flex flex-col gap-8">
       {/* Section 1 (all states): center-cut tracker - what centers owe me. */}
       <CenterCutsSection />
+
+      {/* Join a center (FREE zone): teacher-initiated join request by code. */}
+      <JoinCenterCard />
 
       {/* Section 2 (Option A): the private engine is ALWAYS present. Subscribed
           teachers get the live widgets; never-subscribed and lapsed teachers
