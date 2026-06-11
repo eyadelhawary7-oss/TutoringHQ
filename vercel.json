@@ -34,7 +34,8 @@
     { "path": "/api/cron/payment-retry", "schedule": "0 7 * * *" },
     { "path": "/api/cron/abandon-stale-carts", "schedule": "0 4 * * *" },
     { "path": "/api/cron/sync-bosta-card-orders", "schedule": "*/15 * * * *" },
-    { "path": "/api/cron/process-outbox", "schedule": "*/2 * * * *" }
+    { "path": "/api/cron/process-outbox", "schedule": "*/2 * * * *" },
+    { "path": "/api/cron/expire-group-proposals", "schedule": "0 2 * * *" }
   ],
   "functions": {
     "src/app/api/login/route.ts": { "maxDuration": 30 },

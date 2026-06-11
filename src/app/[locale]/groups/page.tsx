@@ -8,6 +8,7 @@ import { useUser } from '@/contexts/UserContext';
 import { Link as RouterLink } from '@/i18n/routing';
 import { Plus, BookOpen, X, Users, Search, Link as LinkIcon } from 'lucide-react';
 import { AttendanceHeatmap } from '@/components/AttendanceHeatmap';
+import GroupProposalsTab from './GroupProposalsTab';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { useToast } from '@/components/ui/ToastProvider';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
@@ -45,6 +46,8 @@ export default function GroupsPage() {
   const tCommon = useTranslations('common');
   const tHeatmap = useTranslations('heatmap');
   const tToast = useTranslations('toasts');
+  const tProposals = useTranslations('groupProposals');
+  const tCut = useTranslations('centerCut');
   const { toast } = useToast();
   const locale = useLocale();
   const isRTL = locale === 'ar';
@@ -59,7 +62,8 @@ export default function GroupsPage() {
   const [detailGroup, setDetailGroup] = useState<Group | null>(null);
   const [expandedHeatmapId, setExpandedHeatmapId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [addForm, setAddForm] = useState({ name: '', subjectId: '', fee: '', studentIds: [] as string[], maxCapacity: '' });
+  const [pageTab, setPageTab] = useState<'groups' | 'proposals'>('groups');
+  const [addForm, setAddForm] = useState({ name: '', subjectId: '', fee: '', centerCut: '', studentIds: [] as string[], maxCapacity: '' });
   const [addSearch, setAddSearch] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [members, setMembers] = useState<{ student_id: string; student_name: string; student_number?: string }[]>([]);
@@ -259,6 +263,11 @@ export default function GroupsPage() {
       toast.error(tToast('error'), t('validFeeRequired', { defaultValue: 'Valid fee is required' }));
       return;
     }
+    const centerCut = addForm.centerCut.trim() ? Number(addForm.centerCut) : 0;
+    if (isNaN(centerCut) || centerCut < 0 || centerCut >= fee) {
+      toast.error(tToast('error'), tCut('mustBeLessThanFee'));
+      return;
+    }
     const subjectName = subjects.find(s => s.id === addForm.subjectId)?.name ?? '';
     const memberIds = keepValidUuids(addForm.studentIds);
     setIsAdding(true);
@@ -266,7 +275,7 @@ export default function GroupsPage() {
       const maxCap = addForm.maxCapacity.trim() ? parseInt(addForm.maxCapacity, 10) : null;
       const { data, error } = await dbInsert({
         table: 'student_groups',
-        data: { center_id: centerId, name: addForm.name.trim(), subject: subjectName, fee: fee, max_capacity: maxCap && maxCap > 0 ? maxCap : null },
+        data: { center_id: centerId, name: addForm.name.trim(), subject: subjectName, fee: fee, center_cut_egp: centerCut, max_capacity: maxCap && maxCap > 0 ? maxCap : null },
         single: true,
       });
       if (error) {
@@ -289,7 +298,7 @@ export default function GroupsPage() {
         const addN = memberIds.length;
         setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, subject: subjectName, fee, member_count: addN, student_count: addN, teacher_name: null, max_capacity: maxCap }]);
         setShowAddModal(false);
-        setAddForm({ name: '', subjectId: '', fee: '', studentIds: [], maxCapacity: '' });
+        setAddForm({ name: '', subjectId: '', fee: '', centerCut: '', studentIds: [], maxCapacity: '' });
         toast.success(tToast('saved'));
       } else {
         toast.warning(t('groupCreatedRefresh'));
@@ -404,7 +413,27 @@ export default function GroupsPage() {
         </button>
       </div>
 
-      {isLoading ? (
+      {/* Groups / Group Proposals tabs */}
+      <div className="flex gap-1 p-1 rounded-lg bg-[var(--color-surface-2)] w-fit">
+        <button
+          type="button"
+          onClick={() => setPageTab('groups')}
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${pageTab === 'groups' ? 'bg-[var(--color-surface-1)] shadow text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
+        >
+          {t('title')}
+        </button>
+        <button
+          type="button"
+          onClick={() => setPageTab('proposals')}
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${pageTab === 'proposals' ? 'bg-[var(--color-surface-1)] shadow text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
+        >
+          {tProposals('title')}
+        </button>
+      </div>
+
+      {pageTab === 'proposals' ? (
+        <GroupProposalsTab onAccepted={loadData} />
+      ) : isLoading ? (
         <div className="text-center py-16">
           <svg className="animate-spin h-8 w-8 text-teal-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -519,6 +548,20 @@ export default function GroupsPage() {
                   className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm font-mono text-[var(--color-text-primary)]"
                   required
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{tCut('label')}</label>
+                <input
+                  value={addForm.centerCut}
+                  onChange={e => setAddForm(prev => ({ ...prev, centerCut: e.target.value }))}
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm font-mono text-[var(--color-text-primary)]"
+                />
+                {addForm.centerCut.trim() !== '' && addForm.fee.trim() !== '' && Number(addForm.centerCut) >= Number(addForm.fee) && (
+                  <p className="mt-1 text-xs text-red-600">{tCut('mustBeLessThanFee')}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('maxCapacity', { defaultValue: 'السعة القصوى (اختياري)' })}</label>
