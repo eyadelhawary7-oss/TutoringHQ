@@ -15,7 +15,8 @@ export default function PrivacyRequestPage() {
   const isAr = locale === 'ar' || locale.startsWith('ar-');
 
   const [name, setName] = useState('');
-  const [contact, setContact] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [requestType, setRequestType] = useState<RequestType>('access');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -28,7 +29,8 @@ export default function PrivacyRequestPage() {
       ? 'قدّم طلباً بخصوص بياناتك الشخصية بموجب قانون حماية البيانات المصري.'
       : 'Submit a request regarding your personal data under the Egyptian PDPL.',
     name: isAr ? 'الاسم' : 'Name',
-    contact: isAr ? 'الهاتف أو البريد الإلكتروني' : 'Phone or email',
+    phone: isAr ? 'رقم الهاتف' : 'Phone number',
+    email: isAr ? 'البريد الإلكتروني (اختياري)' : 'Email (optional)',
     type: isAr ? 'نوع الطلب' : 'Request type',
     message: isAr ? 'تفاصيل الطلب' : 'Message',
     submit: isAr ? 'إرسال الطلب' : 'Submit request',
@@ -48,7 +50,7 @@ export default function PrivacyRequestPage() {
 
   const handleSubmit = async () => {
     setError(null);
-    if (name.trim().length < 2 || !contact.trim()) {
+    if (name.trim().length < 2 || !phone.trim()) {
       setError(t.error);
       return;
     }
@@ -59,7 +61,8 @@ export default function PrivacyRequestPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: name.trim(),
-          contact: contact.trim(),
+          phone: phone.trim(),
+          email: email.trim() || undefined,
           requestType,
           message: message.trim(),
         }),
@@ -108,13 +111,29 @@ export default function PrivacyRequestPage() {
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
-            {t.contact}
+            {t.phone}
           </label>
           <input
-            type="text"
-            value={contact}
+            type="tel"
+            inputMode="tel"
+            dir="ltr"
+            value={phone}
+            maxLength={20}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="01xxxxxxxxx"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+            {t.email}
+          </label>
+          <input
+            type="email"
+            dir="ltr"
+            value={email}
             maxLength={160}
-            onChange={(e) => setContact(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)}
             className={inputClass}
           />
         </div>
