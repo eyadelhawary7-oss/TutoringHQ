@@ -88,7 +88,7 @@ currently `/api/auth/teacher/signup` and the admin-seeding path in
 Cross-reference: centerAuth.ts teacher signup implementation. Introduced after
 silent 500 login failures traced to null token fields in GoTrue.
 
-## ADR 018 — Lazy-init Supabase clients
+## Rule 153 — Lazy-init Supabase clients
 
 Modules that need a Supabase admin client expose `getSupabaseAdmin()` and call it INSIDE route handlers, not at module top level. No `process.env.*` reads at import time. This keeps tests cheap and avoids cold-start cost on routes that do not touch the DB.
 
