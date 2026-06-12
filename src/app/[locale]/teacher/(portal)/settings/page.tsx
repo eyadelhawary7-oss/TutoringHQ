@@ -1,10 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
-import { Loader2 } from 'lucide-react';
-import { useRouter } from '@/i18n/routing';
+import { useLocale, useTranslations } from 'next-intl';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
+import { getCsrfHeaders } from '@/lib/csrf-client';
+import { isWeakPin } from '@/lib/weakPins';
+import { formatDate } from '@/lib/formatNumber';
 
 /**
  * Teacher profile settings. A thin form over PATCH /api/teacher/profile (the
@@ -17,8 +20,30 @@ import { supabase } from '@/lib/supabase';
  * and the PATCH route does not accept it. Adding it would need a migration plus
  * an API change; deferred.
  */
+
+type SubscriptionStatus = {
+  has_subscription: boolean;
+  status: string | null;
+  plan_key: string;
+  trial_ends_at: string | null;
+  current_period_end: string | null;
+  next_billing_at: string | null;
+};
+
+const SIX_DIGITS = /^\d{6}$/;
+
+/** "201012345678" (auth-email digits) -> "+20 101 234 5678". */
+function formatRegisteredPhone(digits: string): string {
+  const local = digits.startsWith('20') ? digits.slice(2) : digits.replace(/^0/, '');
+  if (local.length === 10) {
+    return `+20 ${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}`;
+  }
+  return `+${digits}`;
+}
+
 export default function TeacherSettingsPage() {
   const t = useTranslations('teacherSettings');
+  const locale = useLocale();
   const router = useRouter();
 
   const [displayName, setDisplayName] = useState('');
@@ -28,6 +53,24 @@ export default function TeacherSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  // Your account (read-only phone from the auth session).
+  const [phone, setPhone] = useState<string | null>(null);
+
+  // Subscription section.
+  const [sub, setSub] = useState<SubscriptionStatus | null>(null);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState(false);
+
+  // Change PIN form.
+  const [currentPin, setCurrentPin] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [showCurrentPin, setShowCurrentPin] = useState(false);
+  const [pinSubmitting, setPinSubmitting] = useState(false);
+  const [pinError, setPinError] = useState<string | null>(null);
+  const [pinSuccess, setPinSuccess] = useState(false);
 
   const authedFetch = useCallback(async (path: string, init?: RequestInit) => {
     const {
@@ -63,6 +106,23 @@ export default function TeacherSettingsPage() {
       const data = (await res.json()) as { displayName?: string | null; subject?: string | null };
       setDisplayName(data.displayName ?? '');
       setSubject(data.subject ?? '');
+
+      // Registered phone: teachers authenticate as {digits}@centerhq.local.
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const email = session?.user?.email ?? '';
+      const digits = email.endsWith('@centerhq.local')
+        ? email.split('@')[0]
+        : (session?.user?.phone ?? '').replace(/\D/g, '');
+      setPhone(digits ? formatRegisteredPhone(digits) : null);
+
+      // Subscription summary (best-effort: a failure hides the detail, the
+      // page still works).
+      const subRes = await authedFetch('/api/teacher/subscription/status');
+      if (subRes?.ok) {
+        setSub((await subRes.json()) as SubscriptionStatus);
+      }
     } catch {
       setLoadError(true);
     } finally {
@@ -105,6 +165,94 @@ export default function TeacherSettingsPage() {
       setError(t('errorGeneric'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleChangePin = async () => {
+    setPinError(null);
+    setPinSuccess(false);
+    if (!SIX_DIGITS.test(currentPin) || !SIX_DIGITS.test(newPin) || !SIX_DIGITS.test(confirmPin)) {
+      setPinError(t('changePin.errorFormat'));
+      return;
+    }
+    if (newPin !== confirmPin) {
+      setPinError(t('changePin.errorMatch'));
+      return;
+    }
+    if (isWeakPin(newPin)) {
+      setPinError(t('changePin.errorWeak'));
+      return;
+    }
+    setPinSubmitting(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace('/login');
+        return;
+      }
+      const res = await fetch('/api/teacher/settings/change-pin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+          ...(await getCsrfHeaders(session.access_token)),
+        },
+        body: JSON.stringify({ currentPin, newPin }),
+      });
+      if (res.ok) {
+        setPinSuccess(true);
+        setCurrentPin('');
+        setNewPin('');
+        setConfirmPin('');
+        return;
+      }
+      if (res.status === 429) {
+        setPinError(t('changePin.errorRateLimit'));
+        return;
+      }
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (data.error === 'invalid_current_pin') setPinError(t('changePin.errorCurrentWrong'));
+      else if (data.error === 'weak_pin') setPinError(t('changePin.errorWeak'));
+      else if (data.error === 'invalid_format') setPinError(t('changePin.errorFormat'));
+      else setPinError(t('errorGeneric'));
+    } catch {
+      setPinError(t('errorGeneric'));
+    } finally {
+      setPinSubmitting(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    setCancelling(true);
+    setCancelError(false);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace('/login');
+        return;
+      }
+      const res = await fetch('/api/teacher/subscription/cancel', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+          ...(await getCsrfHeaders(session.access_token)),
+        },
+      });
+      if (!res.ok) {
+        setCancelError(true);
+        return;
+      }
+      setSub((prev) => (prev ? { ...prev, status: 'cancelled' } : prev));
+      setCancelOpen(false);
+    } catch {
+      setCancelError(true);
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -195,6 +343,244 @@ export default function TeacherSettingsPage() {
           </button>
         </div>
       </div>
+
+      {/* Change PIN */}
+      <section className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 shadow-card">
+        <h2 className="mb-4 text-lg font-bold text-[var(--color-text-primary)]">
+          {t('changePin.title')}
+        </h2>
+        {pinSuccess ? (
+          <div className="rounded-lg border border-[var(--color-teal)]/30 bg-[var(--color-teal-soft)] p-3 text-sm text-[var(--color-teal-deep)]">
+            {t('changePin.success')}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+                {t('changePin.currentLabel')}
+              </label>
+              <div className="relative">
+                <input
+                  type={showCurrentPin ? 'text' : 'password'}
+                  inputMode="numeric"
+                  autoComplete="current-password"
+                  value={currentPin}
+                  maxLength={6}
+                  dir="ltr"
+                  onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, ''))}
+                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-3)] px-3 py-2 pe-11 text-[var(--color-text-primary)] focus:border-teal-500 focus:ring-2 focus:ring-teal-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPin((v) => !v)}
+                  aria-label={showCurrentPin ? t('changePin.hide') : t('changePin.show')}
+                  className="absolute end-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-2)]"
+                >
+                  {showCurrentPin ? <EyeOff size={16} aria-hidden /> : <Eye size={16} aria-hidden />}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+                {t('changePin.newLabel')}
+              </label>
+              <input
+                type="password"
+                inputMode="numeric"
+                autoComplete="new-password"
+                value={newPin}
+                maxLength={6}
+                dir="ltr"
+                onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-3)] px-3 py-2 text-[var(--color-text-primary)] focus:border-teal-500 focus:ring-2 focus:ring-teal-500"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+                {t('changePin.confirmLabel')}
+              </label>
+              <input
+                type="password"
+                inputMode="numeric"
+                autoComplete="new-password"
+                value={confirmPin}
+                maxLength={6}
+                dir="ltr"
+                onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-3)] px-3 py-2 text-[var(--color-text-primary)] focus:border-teal-500 focus:ring-2 focus:ring-teal-500"
+              />
+            </div>
+
+            {pinError && (
+              <div className="rounded-lg border border-[var(--color-danger-muted)] bg-[var(--color-danger-muted)] p-3 text-sm text-[var(--color-danger)]">
+                {pinError}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={handleChangePin}
+              disabled={pinSubmitting}
+              className="flex items-center justify-center gap-2 self-start rounded-lg bg-teal-600 px-4 py-2.5 font-medium text-primary-foreground transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {pinSubmitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+              {pinSubmitting ? t('changePin.submitting') : t('changePin.submit')}
+            </button>
+          </div>
+        )}
+      </section>
+
+      {/* Your account */}
+      <section className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 shadow-card">
+        <h2 className="mb-4 text-lg font-bold text-[var(--color-text-primary)]">
+          {t('account.title')}
+        </h2>
+        <p className="mb-1 text-sm font-medium text-[var(--color-text-primary)]">
+          {t('account.phoneLabel')}
+        </p>
+        <p className="text-base font-semibold text-[var(--color-text-primary)]" dir="ltr">
+          {phone ?? '-'}
+        </p>
+        <p className="mt-2 text-xs text-[var(--color-text-muted)]">{t('account.phoneNote')}</p>
+      </section>
+
+      {/* Subscription */}
+      <section className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 shadow-card">
+        <h2 className="mb-4 text-lg font-bold text-[var(--color-text-primary)]">
+          {t('subscription.title')}
+        </h2>
+        {!sub || !sub.status ? (
+          <p className="text-sm text-[var(--color-text-secondary)]">{t('subscription.none')}</p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-[var(--color-surface-2)] px-3 py-1 text-xs font-semibold text-[var(--color-text-primary)]">
+                {sub.plan_key === 'teacher_699'
+                  ? t('subscription.planPro')
+                  : t('subscription.planStandard')}
+              </span>
+              <span
+                className={[
+                  'rounded-full px-3 py-1 text-xs font-semibold',
+                  sub.status === 'active' || sub.status === 'trialing'
+                    ? 'bg-[var(--color-teal-soft)] text-[var(--color-teal-deep)]'
+                    : sub.status === 'past_due'
+                      ? 'bg-[var(--color-brass-soft)] text-[var(--color-brass)]'
+                      : sub.status === 'suspended'
+                        ? 'bg-[var(--color-danger-muted)] text-[var(--color-danger)]'
+                        : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]',
+                ].join(' ')}
+              >
+                {sub.status === 'active'
+                  ? t('subscription.statusActive')
+                  : sub.status === 'trialing'
+                    ? t('subscription.statusTrialing')
+                    : sub.status === 'past_due'
+                      ? t('subscription.statusPastDue')
+                      : sub.status === 'suspended'
+                        ? t('subscription.statusSuspended')
+                        : t('subscription.statusCancelled')}
+              </span>
+            </div>
+
+            {sub.status === 'trialing' && sub.trial_ends_at && (
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                {t('subscription.trialEnds', { date: formatDate(sub.trial_ends_at, locale) })}
+              </p>
+            )}
+            {sub.status === 'active' && (sub.current_period_end ?? sub.next_billing_at) && (
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                {t('subscription.renews', {
+                  date: formatDate((sub.current_period_end ?? sub.next_billing_at) as string, locale),
+                })}
+              </p>
+            )}
+            {sub.status === 'past_due' && (
+              <p className="text-sm font-medium text-[var(--color-brass)]">
+                {t('subscription.pastDueNote')}
+              </p>
+            )}
+
+            <div className="mt-1 flex flex-col items-start gap-2">
+              {sub.plan_key !== 'teacher_699' &&
+                (sub.status === 'active' || sub.status === 'trialing') && (
+                  <Link
+                    href="/teacher/subscription/upgrade"
+                    className="text-sm font-medium text-[var(--color-teal-deep)] hover:underline"
+                  >
+                    {t('subscription.upgradeLink')}
+                  </Link>
+                )}
+              <Link
+                href="/teacher/billing"
+                className="text-sm font-medium text-[var(--color-teal-deep)] hover:underline"
+              >
+                {t('subscription.historyLink')}
+              </Link>
+              {(sub.status === 'trialing' ||
+                sub.status === 'active' ||
+                sub.status === 'past_due' ||
+                sub.status === 'suspended') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCancelError(false);
+                    setCancelOpen(true);
+                  }}
+                  className="text-sm font-medium text-[var(--color-danger)]/70 transition-colors hover:text-[var(--color-danger)] hover:underline"
+                >
+                  {t('subscription.cancelLink')}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Cancel confirmation dialog */}
+      {cancelOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setCancelOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6"
+          >
+            <h2 className="mb-2 text-lg font-bold text-[var(--color-text-primary)]">
+              {t('subscription.cancelConfirmTitle')}
+            </h2>
+            <p className="mb-5 text-sm text-[var(--color-text-secondary)]">
+              {t('subscription.cancelConfirmBody')}
+            </p>
+            {cancelError && (
+              <p className="mb-3 text-sm text-[var(--color-danger)]" role="alert">
+                {t('errorGeneric')}
+              </p>
+            )}
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setCancelOpen(false)}
+                className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-2)]"
+              >
+                {t('subscription.cancelConfirmNo')}
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelSubscription}
+                disabled={cancelling}
+                className="flex items-center gap-2 rounded-lg bg-[var(--color-danger)] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {cancelling && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+                {t('subscription.cancelConfirmYes')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

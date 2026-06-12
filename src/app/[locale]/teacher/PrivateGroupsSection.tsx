@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Plus, Users } from 'lucide-react';
+import { Archive, ChevronDown, Loader2, Plus, Users } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
+import { getCsrfHeaders } from '@/lib/csrf-client';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 
 type PrivateGroup = {
@@ -19,6 +20,8 @@ type PrivateGroup = {
 /**
  * Private group list (State B only - the GET route is gated by
  * requireTeacherPrivateAccess). `refreshKey` re-fetches after a create.
+ * Archived groups live in a collapsed section at the bottom with a restore
+ * action; only active groups get the add CTA.
  */
 export default function PrivateGroupsSection({
   refreshKey,
@@ -35,6 +38,9 @@ export default function PrivateGroupsSection({
   const [groups, setGroups] = useState<PrivateGroup[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [archivedOpen, setArchivedOpen] = useState(false);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [restoreError, setRestoreError] = useState(false);
 
   const loadGroups = useCallback(async () => {
     setLoading(true);
@@ -71,6 +77,66 @@ export default function PrivateGroupsSection({
     loadGroups();
   }, [loadGroups, refreshKey]);
 
+  const unarchive = async (groupId: string) => {
+    setRestoringId(groupId);
+    setRestoreError(false);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace('/login');
+        return;
+      }
+      const res = await fetch(`/api/teacher/private/groups/${groupId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+          ...(await getCsrfHeaders(session.access_token)),
+        },
+        body: JSON.stringify({ status: 'active' }),
+      });
+      if (!res.ok) {
+        setRestoreError(true);
+        return;
+      }
+      await loadGroups();
+    } catch {
+      setRestoreError(true);
+    } finally {
+      setRestoringId(null);
+    }
+  };
+
+  const active = (groups ?? []).filter((g) => g.status !== 'archived');
+  const archived = (groups ?? []).filter((g) => g.status === 'archived');
+
+  const groupRow = (g: PrivateGroup) => (
+    <Link
+      href={`/teacher/groups/${g.id}`}
+      className="flex flex-1 flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3 transition-colors hover:border-[var(--color-teal)]/40"
+    >
+      <div>
+        <p className="font-medium text-[var(--color-text-primary)]">{g.name}</p>
+        <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">
+          {t('students', { count: formatNumber(g.activeStudents, locale) })}
+          {g.pendingStudents > 0 && (
+            <span className="ms-2 text-[var(--color-warning)]">
+              {t('pending', { count: formatNumber(g.pendingStudents, locale) })}
+            </span>
+          )}
+        </p>
+      </div>
+      <span className="text-sm text-[var(--color-text-secondary)]">
+        {t('feePerClass')}{' '}
+        <span className="font-semibold text-[var(--color-text-primary)]">
+          {formatCurrency(g.fee_per_class, locale)}
+        </span>
+      </span>
+    </Link>
+  );
+
   return (
     <section>
       <div className="mb-4 flex items-center justify-between">
@@ -105,39 +171,67 @@ export default function PrivateGroupsSection({
             {tPortal('retry')}
           </button>
         </div>
-      ) : groups.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-sm text-[var(--color-text-secondary)]">
-          {t('empty')}
-        </p>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {groups.map((g) => (
-            <li key={g.id}>
-              <Link
-                href={`/teacher/groups/${g.id}`}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3 transition-colors hover:border-[var(--color-teal)]/40"
+        <>
+          {active.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-sm text-[var(--color-text-secondary)]">
+              {t('empty')}
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {active.map((g) => (
+                <li key={g.id}>{groupRow(g)}</li>
+              ))}
+            </ul>
+          )}
+
+          {archived.length > 0 && (
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={() => setArchivedOpen((v) => !v)}
+                aria-expanded={archivedOpen}
+                className="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-secondary)]"
               >
-                <div>
-                  <p className="font-medium text-[var(--color-text-primary)]">{g.name}</p>
-                  <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">
-                    {t('students', { count: formatNumber(g.activeStudents, locale) })}
-                    {g.pendingStudents > 0 && (
-                      <span className="ms-2 text-[var(--color-warning)]">
-                        {t('pending', { count: formatNumber(g.pendingStudents, locale) })}
-                      </span>
-                    )}
-                  </p>
-                </div>
-                <span className="text-sm text-[var(--color-text-secondary)]">
-                  {t('feePerClass')}{' '}
-                  <span className="font-semibold text-[var(--color-text-primary)]">
-                    {formatCurrency(g.fee_per_class, locale)}
-                  </span>
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+                <Archive size={14} aria-hidden />
+                {t('archivedTitle', { count: formatNumber(archived.length, locale) })}
+                <ChevronDown
+                  size={14}
+                  className={archivedOpen ? 'rotate-180 transition-transform' : 'transition-transform'}
+                  aria-hidden
+                />
+              </button>
+
+              {archivedOpen && (
+                <>
+                  {restoreError && (
+                    <p className="mt-3 rounded-lg border border-[var(--color-danger-muted)] bg-[var(--color-danger-muted)] p-3 text-sm text-[var(--color-danger)]">
+                      {t('restoreError')}
+                    </p>
+                  )}
+                  <ul className="mt-3 flex flex-col gap-2">
+                    {archived.map((g) => (
+                      <li key={g.id} className="flex items-center gap-2 opacity-60">
+                        {groupRow(g)}
+                        <button
+                          type="button"
+                          onClick={() => unarchive(g.id)}
+                          disabled={restoringId === g.id}
+                          className="flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-2)] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {restoringId === g.id && (
+                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                          )}
+                          {t('unarchive')}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          )}
+        </>
       )}
     </section>
   );

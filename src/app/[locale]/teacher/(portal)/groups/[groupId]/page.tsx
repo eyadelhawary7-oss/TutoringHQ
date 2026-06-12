@@ -2,11 +2,12 @@
 
 import { use, useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ArrowRight, ArrowLeft, Loader2, Plus, UserRound } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Loader2, Plus, Settings2, UserRound } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/formatNumber';
 import AddStudentModal from './AddStudentModal';
+import EditGroupModal from './EditGroupModal';
 import SessionsSection from './SessionsSection';
 import GroupJoinLinkCard from '../../../GroupJoinLinkCard';
 
@@ -44,6 +45,7 @@ export default function TeacherGroupDetailPage({
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const [decidingId, setDecidingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState(false);
 
@@ -169,7 +171,17 @@ export default function TeacherGroupDetailPage({
           {t('back')}
         </Link>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{data.group.name}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{data.group.name}</h1>
+            <button
+              type="button"
+              onClick={() => setShowEdit(true)}
+              aria-label={tPortal('editGroup.title')}
+              className="rounded-lg border border-[var(--color-border)] p-2 text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-2)]"
+            >
+              <Settings2 size={16} aria-hidden />
+            </button>
+          </div>
           <span className="text-sm text-[var(--color-text-secondary)]">
             {tPortal('groups.feePerClass')}{' '}
             <span className="font-semibold text-[var(--color-text-primary)]">
@@ -280,6 +292,25 @@ export default function TeacherGroupDetailPage({
         onAdded={() => {
           setShowAdd(false);
           loadRoster();
+        }}
+      />
+
+      <EditGroupModal
+        group={{
+          id: data.group.id,
+          name: data.group.name,
+          fee_per_class: data.group.fee_per_class,
+        }}
+        enrolledCount={active.length}
+        open={showEdit}
+        onClose={() => setShowEdit(false)}
+        onSaved={() => {
+          setShowEdit(false);
+          loadRoster();
+        }}
+        onArchived={() => {
+          setShowEdit(false);
+          router.replace('/teacher/groups');
         }}
       />
     </div>

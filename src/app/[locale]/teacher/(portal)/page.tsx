@@ -16,14 +16,25 @@ import { useStartTrial } from '../useStartTrial';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 type Summary = {
+  displayName: string | null;
   centersOutstanding: number;
   income: { collected: number; outstanding: number } | null;
   groups: { count: number; students: number } | null;
-  sub:
-    | { kind: 'trialing'; daysLeft: number }
-    | { kind: 'active'; renewalAt: string | null }
-    | { kind: 'none' };
+  sub: {
+    status: string | null;
+    planKey: string | null;
+    priceGross: number;
+    daysLeft: number | null;
+    renewalAt: string | null;
+  };
 };
+
+/** 05-11 morning, 12-16 afternoon, 17-04 evening (client-local time). */
+function greetingKeyForHour(hour: number): 'greetingMorning' | 'greetingAfternoon' | 'greetingEvening' {
+  if (hour >= 5 && hour < 12) return 'greetingMorning';
+  if (hour >= 12 && hour < 17) return 'greetingAfternoon';
+  return 'greetingEvening';
+}
 
 function TileLink({
   href,
@@ -112,9 +123,10 @@ export default function TeacherDashboardPage() {
       if (!session || cancelled) return;
       const h = { Authorization: `Bearer ${session.access_token}` };
       const priv = ctx.hasPrivateAccess;
-      const [cutsRes, subRes, incomeRes, groupsRes] = await Promise.all([
+      const [cutsRes, subRes, profileRes, incomeRes, groupsRes] = await Promise.all([
         fetch('/api/teacher/center-cuts', { headers: h }).catch(() => null),
         fetch('/api/teacher/subscription/status', { headers: h }).catch(() => null),
+        fetch('/api/teacher/profile', { headers: h }).catch(() => null),
         priv ? fetch('/api/teacher/private/income', { headers: h }).catch(() => null) : null,
         priv ? fetch('/api/teacher/private/groups', { headers: h }).catch(() => null) : null,
       ]);
@@ -124,10 +136,15 @@ export default function TeacherDashboardPage() {
       const subJson = subRes?.ok
         ? ((await subRes.json()) as {
             status?: string | null;
+            plan_key?: string | null;
+            price_gross?: number;
             trial_ends_at?: string | null;
             current_period_end?: string | null;
             next_billing_at?: string | null;
           })
+        : null;
+      const profile = profileRes?.ok
+        ? ((await profileRes.json()) as { displayName?: string | null })
         : null;
       const income = incomeRes?.ok
         ? ((await incomeRes.json()) as { collectedThisMonth?: number; outstanding?: number })
@@ -138,17 +155,24 @@ export default function TeacherDashboardPage() {
           })
         : null;
 
-      let sub: Summary['sub'] = { kind: 'none' };
-      if (subJson?.status === 'trialing' && subJson.trial_ends_at) {
-        const daysLeft = Math.max(0, Math.ceil((Date.parse(subJson.trial_ends_at) - Date.now()) / DAY_MS));
-        sub = { kind: 'trialing', daysLeft };
-      } else if (subJson?.status === 'active') {
-        sub = { kind: 'active', renewalAt: subJson.current_period_end ?? subJson.next_billing_at ?? null };
-      }
+      const sub: Summary['sub'] = {
+        status: subJson?.status ?? null,
+        planKey: subJson?.plan_key ?? null,
+        priceGross: Number(subJson?.price_gross) || 0,
+        daysLeft:
+          subJson?.status === 'trialing' && subJson.trial_ends_at
+            ? Math.max(0, Math.ceil((Date.parse(subJson.trial_ends_at) - Date.now()) / DAY_MS))
+            : null,
+        renewalAt:
+          subJson?.status === 'active'
+            ? (subJson.current_period_end ?? subJson.next_billing_at ?? null)
+            : null,
+      };
 
       const groupList = groupsData?.groups ?? [];
       if (cancelled) return;
       setSummary({
+        displayName: profile?.displayName ?? null,
         centersOutstanding: Number(cuts?.totalOutstanding) || 0,
         income: income ? { collected: Number(income.collectedThisMonth) || 0, outstanding: Number(income.outstanding) || 0 } : null,
         groups: priv
@@ -200,7 +224,15 @@ export default function TeacherDashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
+      {summary === null ? (
+        <div className="h-7 w-56 animate-pulse rounded-lg bg-[var(--color-surface-2)]" />
+      ) : (
+        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
+          {t(greetingKeyForHour(new Date().getHours()), {
+            name: summary.displayName?.trim() || t('greetingFallbackName'),
+          })}
+        </h1>
+      )}
 
       {!hasPrivateAccess && <OnboardingChecklist />}
 
@@ -251,7 +283,9 @@ export default function TeacherDashboardPage() {
             {summary?.groups ? (
               <>
                 <p className="num text-2xl font-bold text-[var(--color-text-primary)]">
-                  {t('groupsCount', { count: formatNumber(summary.groups.count, locale) })}
+                  {summary.groups.count === 1
+                    ? t('groupsCountOne', { count: formatNumber(1, locale) })
+                    : t('groupsCount', { count: formatNumber(summary.groups.count, locale) })}
                 </p>
                 <p className="text-xs text-[var(--color-text-muted)]">
                   {t('studentsCount', { count: formatNumber(summary.groups.students, locale) })}
@@ -273,25 +307,72 @@ export default function TeacherDashboardPage() {
 
         {/* Subscription */}
         {hasPrivateAccess ? (
-          <TileLink href="/teacher/income" icon={Clock} title={t('subscriptionTile')}>
+          <div className="flex flex-col rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 shadow-card">
+            <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--color-text-muted)]">
+              <Clock size={16} aria-hidden />
+              {t('subscriptionTile')}
+            </span>
             {summary ? (
-              summary.sub.kind === 'trialing' ? (
-                <p className="text-base font-semibold text-[var(--color-text-primary)]">
-                  {t('trialDaysLeft', { days: formatNumber(summary.sub.daysLeft, locale) })}
-                </p>
-              ) : summary.sub.kind === 'active' ? (
-                <p className="text-base font-semibold text-[var(--color-text-primary)]">
-                  {summary.sub.renewalAt
-                    ? t('renewsOn', { date: formatDate(summary.sub.renewalAt, locale) })
-                    : t('subscriptionActive')}
-                </p>
-              ) : (
-                <p className="text-sm text-[var(--color-text-secondary)]">{t('subscriptionActive')}</p>
-              )
+              <>
+                {summary.sub.status === 'trialing' ? (
+                  <p className="text-base font-semibold text-[var(--color-text-primary)]">
+                    {t('trialDaysLeft', { days: formatNumber(summary.sub.daysLeft ?? 0, locale) })}
+                  </p>
+                ) : summary.sub.status === 'active' ? (
+                  <p className="text-base font-semibold text-[var(--color-text-primary)]">
+                    {summary.sub.renewalAt
+                      ? t('renewsOn', { date: formatDate(summary.sub.renewalAt, locale) })
+                      : t('subscriptionActive')}
+                  </p>
+                ) : (
+                  <p className="text-sm text-[var(--color-text-secondary)]">
+                    {summary.sub.status === 'past_due'
+                      ? t('subPastDue')
+                      : summary.sub.status === 'suspended'
+                        ? t('subSuspended')
+                        : summary.sub.status === 'cancelled'
+                          ? t('subCancelled')
+                          : t('subscriptionActive')}
+                  </p>
+                )}
+                {summary.sub.status === 'active' && summary.sub.planKey === 'teacher_699' ? (
+                  <span className="mt-2 self-start rounded-full bg-[var(--color-teal-soft)] px-3 py-1 text-xs font-semibold text-[var(--color-teal-deep)]">
+                    {t('proPlan')}
+                  </span>
+                ) : (
+                  (() => {
+                    const cta =
+                      summary.sub.status === 'trialing'
+                        ? {
+                            label: t('ctaContinueTrial', {
+                              price: formatCurrency(summary.sub.priceGross || 299, locale),
+                            }),
+                            href: '/teacher/subscription/upgrade',
+                          }
+                        : summary.sub.status === 'active' && summary.sub.planKey === 'teacher_299'
+                          ? { label: t('ctaUpgradePro'), href: '/teacher/subscription/upgrade' }
+                          : summary.sub.status === 'past_due'
+                            ? { label: t('ctaUpdatePayment'), href: '/teacher/resubscribe' }
+                            : summary.sub.status === 'suspended'
+                              ? { label: t('ctaReactivate'), href: '/teacher/resubscribe' }
+                              : summary.sub.status === 'cancelled'
+                                ? { label: t('ctaResubscribe'), href: '/teacher/resubscribe' }
+                                : null;
+                    return cta ? (
+                      <Link
+                        href={cta.href}
+                        className="mt-3 self-start rounded-[var(--radius-card)] bg-[var(--color-brass)] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                      >
+                        {cta.label}
+                      </Link>
+                    ) : null;
+                  })()
+                )}
+              </>
             ) : (
               placeholder
             )}
-          </TileLink>
+          </div>
         ) : (
           <TileCta
             icon={Sparkles}
