@@ -11,6 +11,11 @@ import JoinCenterCard from '../JoinCenterCard';
 import IncomeView from '../IncomeView';
 import PrivateGroupModal from '../PrivateGroupModal';
 import PrivateGroupsSection from '../PrivateGroupsSection';
+import LockedIncomePreview from '../LockedIncomePreview';
+import IncomeCalculator from '../IncomeCalculator';
+import OnboardingChecklist from '../OnboardingChecklist';
+import ReferralCard from '../ReferralCard';
+import FirstGroupCelebration from '../FirstGroupCelebration';
 
 type TeacherContext = {
   state: 'center_only' | 'unified' | 'lapsed';
@@ -27,6 +32,10 @@ export default function TeacherHomePage() {
   const [loadError, setLoadError] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [groupsRefreshKey, setGroupsRefreshKey] = useState(0);
+  const [celebrationGroup, setCelebrationGroup] = useState<{
+    id: string;
+    name: string | null;
+  } | null>(null);
 
   const loadContext = useCallback(async () => {
     setLoading(true);
@@ -62,6 +71,19 @@ export default function TeacherHomePage() {
     loadContext();
   }, [loadContext]);
 
+  // After the portal content is on screen, honour a #section-… hash so the
+  // sidebar nav can deep-link into a section (e.g. coming back from settings).
+  useEffect(() => {
+    if (loading || !ctx) return;
+    const id = window.location.hash.replace('#', '');
+    if (!id) return;
+    // Defer to the next frame so the target section has rendered.
+    const raf = requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [loading, ctx]);
+
   if (loading && !ctx) {
     return (
       <div>
@@ -96,8 +118,14 @@ export default function TeacherHomePage() {
 
   return (
     <div className="flex flex-col gap-8">
+      {/* Onboarding checklist (FREE zone): guidance card that self-hides once
+          every step is done or the teacher dismisses it. */}
+      {!ctx.hasPrivateAccess && <OnboardingChecklist />}
+
       {/* Section 1 (all states): center-cut tracker - what centers owe me. */}
-      <CenterCutsSection />
+      <div id="section-centers" className="scroll-mt-20">
+        <CenterCutsSection />
+      </div>
 
       {/* Join a center (FREE zone): teacher-initiated join request by code. */}
       <JoinCenterCard />
@@ -112,11 +140,13 @@ export default function TeacherHomePage() {
           NO private routes - the gate stays in the API. */}
       {ctx.state === 'unified' && (
         <>
-          <PrivateGroupsSection
-            refreshKey={groupsRefreshKey}
-            onAdd={() => setShowCreateGroup(true)}
-          />
-          <section>
+          <div id="section-groups" className="scroll-mt-20">
+            <PrivateGroupsSection
+              refreshKey={groupsRefreshKey}
+              onAdd={() => setShowCreateGroup(true)}
+            />
+          </div>
+          <section id="section-income" className="scroll-mt-20">
             <div className="mb-4 flex items-center gap-2">
               <Wallet size={18} className="text-[var(--color-brass)]" aria-hidden />
               <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
@@ -129,7 +159,10 @@ export default function TeacherHomePage() {
       )}
 
       {ctx.state === 'center_only' && (
-        <section className="rounded-[var(--radius-card)] border border-[var(--color-brass)]/50 bg-[var(--color-brass-soft)] p-6">
+        <section
+          id="section-upsell"
+          className="scroll-mt-20 rounded-[var(--radius-card)] border border-[var(--color-brass)]/50 bg-[var(--color-brass-soft)] p-6"
+        >
           <div className="mb-2 flex items-center gap-2">
             <Sparkles size={18} className="text-[var(--color-brass)]" aria-hidden />
             <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
@@ -152,7 +185,10 @@ export default function TeacherHomePage() {
       )}
 
       {ctx.state === 'lapsed' && (
-        <section className="rounded-[var(--radius-card)] border border-[var(--color-teal)]/40 bg-[var(--color-teal-soft)] p-6">
+        <section
+          id="section-upsell"
+          className="scroll-mt-20 rounded-[var(--radius-card)] border border-[var(--color-teal)]/40 bg-[var(--color-teal-soft)] p-6"
+        >
           <div className="mb-2 flex items-center gap-2">
             <PauseCircle size={18} className="text-[var(--color-teal-deep)]" aria-hidden />
             <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
@@ -169,6 +205,32 @@ export default function TeacherHomePage() {
         </section>
       )}
 
+      {/* Free-zone conversion surfaces (private access OFF only): a veiled
+          preview of the real income dashboard and a live income calculator.
+          Both sit below the "Your own private practice" card and start the
+          trial / first-group flow (resubscribe for a lapsed teacher). */}
+      {!ctx.hasPrivateAccess && (
+        <>
+          <LockedIncomePreview
+            onStartTrial={() =>
+              ctx.state === 'lapsed'
+                ? router.push('/teacher/resubscribe')
+                : setShowCreateGroup(true)
+            }
+          />
+          <IncomeCalculator
+            onStartTrial={() =>
+              ctx.state === 'lapsed'
+                ? router.push('/teacher/resubscribe')
+                : setShowCreateGroup(true)
+            }
+          />
+        </>
+      )}
+
+      {/* Referral hook (FREE zone): pinned to the bottom of the home page. */}
+      {!ctx.hasPrivateAccess && <ReferralCard />}
+
       {/* The create flow is never an escape hatch for a lapsed teacher - no
           entry point in State C (and the POST route refuses server-side). */}
       {ctx.state !== 'lapsed' && (
@@ -176,12 +238,31 @@ export default function TeacherHomePage() {
           open={showCreateGroup}
           showTrialTerms={ctx.state === 'center_only'}
           onClose={() => setShowCreateGroup(false)}
-          onCreated={() => {
+          onCreated={(group) => {
+            // A teacher with no subscription row (center_only) creating a group
+            // is creating their FIRST one - the DB trigger provisions the trial.
+            // Celebrate that moment instead of a silent state flip.
+            const wasFirstGroup = ctx.state === 'center_only';
             setShowCreateGroup(false);
             setGroupsRefreshKey((k) => k + 1);
             // After the FIRST group the gate flips (trial provisioned by the
             // DB trigger) - refetch context instead of assuming the state.
             loadContext();
+            if (wasFirstGroup) {
+              setCelebrationGroup({ id: group.id, name: group.name });
+            }
+          }}
+        />
+      )}
+
+      {celebrationGroup && (
+        <FirstGroupCelebration
+          group={celebrationGroup}
+          onClose={() => setCelebrationGroup(null)}
+          onGoToGroup={() => {
+            const id = celebrationGroup.id;
+            setCelebrationGroup(null);
+            router.push(`/teacher/groups/${id}`);
           }}
         />
       )}

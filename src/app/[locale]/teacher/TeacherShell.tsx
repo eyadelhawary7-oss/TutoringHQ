@@ -2,17 +2,25 @@
 
 import { useEffect, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { LogOut, Settings } from 'lucide-react';
-import { Link } from '@/i18n/routing';
+import { LogOut } from 'lucide-react';
 import { useLayout } from '@/contexts/LayoutContext';
 import { signOutToLogin } from '@/lib/auth/sign-out-client';
+import TeacherNav from './TeacherNav';
+import TeacherTrialBanner from './TeacherTrialBanner';
 
 /**
- * Thin portal chrome. Hides the center-app shell (sidebar/topbar) the same way
- * the admin tool pages do, and renders a minimal header instead. Scaffolding
- * only; the portal grows inside <main>.
+ * Teacher portal chrome. Hides the center-app shell (sidebar/topbar) the same
+ * way the admin tool pages do, then renders a teacher-branded sidebar
+ * (TeacherNav) on desktop and a bottom tab bar on mobile. The portal grows
+ * inside <main>.
  */
-export default function TeacherShell({ children }: { children: ReactNode }) {
+export default function TeacherShell({
+  privateAccess,
+  children,
+}: {
+  privateAccess: boolean;
+  children: ReactNode;
+}) {
   const t = useTranslations('teacherPortal');
   const locale = useLocale();
   const { setHideShell } = useLayout();
@@ -27,30 +35,29 @@ export default function TeacherShell({ children }: { children: ReactNode }) {
       className="min-h-screen w-full bg-[var(--color-surface-0)]"
       dir={locale === 'ar' ? 'rtl' : 'ltr'}
     >
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-4 md:px-6">
+      <TeacherNav privateAccess={privateAccess} />
+
+      {/* Mobile-only top header (the desktop brand + logout live in the
+          sidebar). */}
+      <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-4 md:hidden">
         <div className="flex items-baseline gap-2">
           <span className="font-bold text-[var(--color-text-primary)]">CenterHQ</span>
           <span className="text-sm text-[var(--color-text-muted)]">{t('headerTitle')}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/teacher/settings"
-            aria-label={t('settings')}
-            className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border-subtle)] px-3 py-1.5 text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-0)]"
-          >
-            <Settings size={14} />
-            <span className="hidden sm:inline">{t('settings')}</span>
-          </Link>
-          <button
-            onClick={() => signOutToLogin(locale)}
-            className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border-subtle)] px-3 py-1.5 text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-0)]"
-          >
-            <LogOut size={14} />
-            {t('logout')}
-          </button>
-        </div>
+        <button
+          onClick={() => signOutToLogin(locale)}
+          aria-label={t('logout')}
+          className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border-subtle)] px-3 py-1.5 text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-0)]"
+        >
+          <LogOut size={14} aria-hidden />
+          <span className="hidden sm:inline">{t('logout')}</span>
+        </button>
       </header>
-      <main className="mx-auto w-full max-w-3xl p-4 md:p-6">{children}</main>
+
+      <main className="w-full pb-24 md:ps-60 md:pb-6">
+        <TeacherTrialBanner privateAccess={privateAccess} />
+        <div className="mx-auto w-full max-w-3xl p-4 md:p-6">{children}</div>
+      </main>
     </div>
   );
 }

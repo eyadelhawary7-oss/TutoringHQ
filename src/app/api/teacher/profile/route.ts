@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
   const { data, error: readErr } = await auth.supabaseAdmin
     .from('teacher_profiles')
-    .select('display_name, subject')
+    .select('display_name, subject, referral_code')
     .eq('user_id', auth.userId)
     .maybeSingle();
   if (readErr) {
@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     displayName: (data?.display_name as string | null) ?? null,
     subject: (data?.subject as string | null) ?? null,
+    referralCode: (data?.referral_code as string | null) ?? null,
   });
 }
 
@@ -54,14 +55,20 @@ export async function PATCH(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: 'Invalid request', code: 'invalid_body' }, { status: 400 });
   }
-  const { displayName: rawName, subject: rawSubject } = (body ?? {}) as {
+  const {
+    displayName: rawName,
+    subject: rawSubject,
+    checklistDismissed: rawDismissed,
+  } = (body ?? {}) as {
     displayName?: unknown;
     subject?: unknown;
+    checklistDismissed?: unknown;
   };
 
   const hasName = rawName !== undefined;
   const hasSubject = rawSubject !== undefined;
-  if (!hasName && !hasSubject) {
+  const hasDismiss = rawDismissed === true;
+  if (!hasName && !hasSubject && !hasDismiss) {
     return NextResponse.json(
       { error: 'Nothing to update', code: 'no_fields' },
       { status: 400 },
@@ -82,6 +89,11 @@ export async function PATCH(request: NextRequest) {
   if (hasSubject) {
     updates.subject =
       typeof rawSubject === 'string' && rawSubject.trim() ? rawSubject.trim() : null;
+  }
+  // Dismiss is a one-way latch (only ever set to true here); the column lives
+  // on teacher_profiles (migration 20260612000000).
+  if (hasDismiss) {
+    updates.checklist_dismissed = true;
   }
 
   const { error: upsertErr } = await auth.supabaseAdmin

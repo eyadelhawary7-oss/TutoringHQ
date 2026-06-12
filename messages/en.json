@@ -8052,6 +8052,45 @@
     "headerTitle": "Teacher portal",
     "settings": "Settings",
     "logout": "Log out",
+    "nav": {
+      "brandSuffix": "Teacher",
+      "home": "Home",
+      "centers": "Centers",
+      "income": "Income",
+      "groups": "My groups",
+      "students": "Students",
+      "billing": "Billing",
+      "settings": "Settings",
+      "logout": "Log out",
+      "lockedTooltip": "Available with Private Engine — start your free trial."
+    },
+    "lockedIncome": {
+      "heading": "Your income dashboard",
+      "weeklyTrend": "Last 4 weeks",
+      "weekLabel": "W{n}",
+      "studentsCount": "{count} students",
+      "pendingTitle": "Payments pending",
+      "pendingBadge": "Pending",
+      "group1": "Physics — General Secondary",
+      "group2": "Physics — 3rd preparatory",
+      "payer1": "Ahmed Hassan",
+      "payer2": "Sara Mohamed",
+      "payer3": "Youssef Ali",
+      "overlayText": "Your real numbers unlock when you start your trial",
+      "overlayCta": "Start your free trial — 14 days free"
+    },
+    "calculator": {
+      "heading": "How much could you earn?",
+      "subheading": "Drag the sliders to see your estimated monthly income",
+      "studentsLabel": "Number of private students",
+      "studentsValue": "{count} students",
+      "feeLabel": "Fee per session per student (EGP)",
+      "feeValue": "{amount} per session",
+      "resultLabel": "Your estimated monthly income:",
+      "feeNote": "CenterHQ fee: {fee} (5% on digital — zero on cash)",
+      "cta": "Create your first group — start free",
+      "note": "No card needed. Cancel anytime. Center tracking always free."
+    },
     "joinCenter": {
       "title": "Join a center",
       "subtitle": "Enter the center's code and send a join request. They'll review it and you'll be notified.",
@@ -8073,7 +8112,55 @@
       "statusWithdrawn": "Withdrawn",
       "sentOn": "Sent {date}",
       "withdraw": "Withdraw",
-      "withdrawing": "Withdrawing..."
+      "withdrawing": "Withdrawing...",
+      "tabCode": "Enter a code",
+      "tabShare": "Share your profile",
+      "shareExplain": "Share this link with any center owner. They open it, see your profile, and can invite you directly.",
+      "copyLink": "Copy link",
+      "copied": "Copied",
+      "downloadQr": "Download QR",
+      "shareNote": "Your profile shows your name and subject. Nothing else is visible until you accept an invitation."
+    },
+    "requestTracker": {
+      "title": "Your join requests",
+      "statusPending": "Pending review",
+      "statusAccepted": "Accepted",
+      "statusDeclined": "Declined",
+      "sentOn": "Sent {date}",
+      "tryAgain": "Try again"
+    },
+    "trialBanner": {
+      "text": "Day {day} of {total} — your free trial ends on {date}",
+      "dismiss": "Dismiss"
+    },
+    "celebration": {
+      "heading": "Your first group is live!",
+      "subtext": "Share this with your students. When they join, you're ready to take attendance and get paid.",
+      "joinLinkLabel": "Group join link",
+      "copy": "Copy",
+      "copied": "Copied",
+      "downloadQr": "Download QR",
+      "goToGroup": "Go to my group",
+      "shareWhatsapp": "Share on WhatsApp",
+      "whatsappMessage": "Join my group on CenterHQ:"
+    },
+    "checklist": {
+      "title": "Get set up",
+      "progress": "{done} of {total} done",
+      "step1": "Create your account",
+      "step2": "Add your subject",
+      "step3": "Join a center or create your first group",
+      "step4": "Complete your first billing cycle",
+      "step5": "Invite a teacher",
+      "dismiss": "Dismiss",
+      "collapse": "Collapse",
+      "expand": "Expand"
+    },
+    "referral": {
+      "heading": "Get a free month",
+      "body": "Invite a teacher to CenterHQ. When they subscribe, you both get one free month.",
+      "copy": "Copy link",
+      "copied": "Copied"
     },
     "errorTitle": "Something went wrong",
     "errorBody": "We could not load your portal. Please try again.",

@@ -8052,6 +8052,45 @@
     "headerTitle": "بوابة المدرس",
     "settings": "الإعدادات",
     "logout": "تسجيل الخروج",
+    "nav": {
+      "brandSuffix": "مدرس",
+      "home": "الرئيسية",
+      "centers": "السناتر",
+      "income": "الدخل",
+      "groups": "مجموعاتي",
+      "students": "الطلاب",
+      "billing": "الفوترة",
+      "settings": "الإعدادات",
+      "logout": "تسجيل الخروج",
+      "lockedTooltip": "متاح مع المحرك الخاص — ابدأ تجربتك المجانية."
+    },
+    "lockedIncome": {
+      "heading": "لوحة دخلك",
+      "weeklyTrend": "آخر ٤ أسابيع",
+      "weekLabel": "أ{n}",
+      "studentsCount": "{count} طالب",
+      "pendingTitle": "مدفوعات معلّقة",
+      "pendingBadge": "معلّق",
+      "group1": "الفيزياء - الثانوية العامة",
+      "group2": "الفيزياء - الصف الثالث الإعدادي",
+      "payer1": "أحمد حسن",
+      "payer2": "سارة محمد",
+      "payer3": "يوسف علي",
+      "overlayText": "أرقامك الحقيقية بتظهر لما تبدأ التجربة المجانية",
+      "overlayCta": "ابدأ تجربتك المجانية — ١٤ يوم مجانًا"
+    },
+    "calculator": {
+      "heading": "قد إيه ممكن تكسب؟",
+      "subheading": "حرّك الأشرطة علشان تشوف دخلك الشهري المتوقع",
+      "studentsLabel": "عدد الطلاب الخصوصي",
+      "studentsValue": "{count} طالب",
+      "feeLabel": "سعر الحصة لكل طالب (جنيه)",
+      "feeValue": "{amount} للحصة",
+      "resultLabel": "دخلك الشهري المتوقع:",
+      "feeNote": "رسوم CenterHQ: {fee} (٥٪ على الدفع الرقمي — صفر على الكاش)",
+      "cta": "أنشئ أول مجموعة — ابدأ مجانًا",
+      "note": "من غير كارت. تقدر تلغي في أي وقت. متابعة السناتر مجانية دايمًا."
+    },
     "joinCenter": {
       "title": "انضم لسنتر",
       "subtitle": "اكتب كود السنتر وابعت طلب انضمام. هيراجعوه وهنبلغك بالرد.",
@@ -8073,7 +8112,55 @@
       "statusWithdrawn": "اتسحب",
       "sentOn": "اتبعت {date}",
       "withdraw": "اسحب الطلب",
-      "withdrawing": "بنسحب..."
+      "withdrawing": "بنسحب...",
+      "tabCode": "أدخل كود",
+      "tabShare": "اشارك بروفايلك",
+      "shareExplain": "اشارك الرابط ده مع أي مركز. هيشوفوا بروفايلك ويقدروا يدعوك مباشرة.",
+      "copyLink": "نسخ الرابط",
+      "copied": "اتنسخ",
+      "downloadQr": "تنزيل QR",
+      "shareNote": "بروفايلك بيوضح اسمك ومادتك بس. مفيش حاجة تانية بتظهر لحد ما تقبل دعوة."
+    },
+    "requestTracker": {
+      "title": "طلبات الانضمام بتاعتك",
+      "statusPending": "قيد المراجعة",
+      "statusAccepted": "اتقبل",
+      "statusDeclined": "اترفض",
+      "sentOn": "اتبعت {date}",
+      "tryAgain": "حاول تاني"
+    },
+    "trialBanner": {
+      "text": "اليوم {day} من {total} — تجربتك المجانية بتنتهي في {date}",
+      "dismiss": "إغلاق"
+    },
+    "celebration": {
+      "heading": "مجموعتك الأولى شغالة!",
+      "subtext": "اشاركها مع طلابك. لما ينضموا، تبقى جاهز تاخد الحضور وتتقبض.",
+      "joinLinkLabel": "رابط الانضمام للمجموعة",
+      "copy": "نسخ",
+      "copied": "اتنسخ",
+      "downloadQr": "تنزيل QR",
+      "goToGroup": "روح لمجموعتي",
+      "shareWhatsapp": "اشارك على واتساب",
+      "whatsappMessage": "انضم لمجموعتي على CenterHQ:"
+    },
+    "checklist": {
+      "title": "جهّز حسابك",
+      "progress": "{done} من {total} خلصوا",
+      "step1": "إنشاء حسابك",
+      "step2": "أضف مادتك",
+      "step3": "انضم لمركز أو أنشئ أول مجموعة",
+      "step4": "أكمل أول دورة فوترة",
+      "step5": "ادعو مدرس",
+      "dismiss": "إخفاء",
+      "collapse": "طي",
+      "expand": "فتح"
+    },
+    "referral": {
+      "heading": "اكسب شهر مجاني",
+      "body": "ادعو مدرس على CenterHQ. لما يشترك، انتوا الاتنين بتاخدوا شهر مجاني.",
+      "copy": "نسخ الرابط",
+      "copied": "اتنسخ"
     },
     "errorTitle": "حصلت مشكلة",
     "errorBody": "مقدرناش نحمّل البوابة. جرب تاني.",

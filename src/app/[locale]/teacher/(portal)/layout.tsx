@@ -28,6 +28,12 @@ export default async function TeacherLayout({
     redirect(`/${locale}/login`);
   }
 
+  // Private-engine gate, computed once here (the "layout gate") and handed to
+  // the shell so the sidebar can render locked vs unlocked nav items without a
+  // second round-trip. Same source of truth as /api/teacher/context: the
+  // teacher_private_access RPC (trialing|active subscription). On any error we
+  // fail closed to the locked (free-zone) experience - never invent access.
+  let privateAccess = false;
   if (supabaseAdmin) {
     const { data: usersRow } = await supabaseAdmin
       .from('users')
@@ -45,7 +51,12 @@ export default async function TeacherLayout({
       const locale = await getLocale();
       redirect(`/${locale}/dashboard`);
     }
+
+    const { data: gateData } = await supabaseAdmin.rpc('teacher_private_access', {
+      p_user_id: authUser.id,
+    });
+    privateAccess = gateData === true;
   }
 
-  return <TeacherShell>{children}</TeacherShell>;
+  return <TeacherShell privateAccess={privateAccess}>{children}</TeacherShell>;
 }

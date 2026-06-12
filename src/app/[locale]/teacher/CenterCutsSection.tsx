@@ -6,6 +6,7 @@ import { Building2, HandCoins } from 'lucide-react';
 import { useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatPercent } from '@/lib/formatNumber';
+import CenterRequestsTracker from './CenterRequestsTracker';
 
 type GroupCut = {
   id: string;
@@ -116,6 +117,7 @@ export default function CenterCutsSection() {
     return (
       <section>
         {header}
+        <CenterRequestsTracker />
         <div className="rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] p-8 text-center">
           <Building2 size={28} className="mx-auto mb-3 text-[var(--color-text-muted)]" aria-hidden />
           <h3 className="mb-2 font-bold text-[var(--color-text-primary)]">{t('emptyTitle')}</h3>
@@ -128,6 +130,8 @@ export default function CenterCutsSection() {
   return (
     <section>
       {header}
+
+      <CenterRequestsTracker />
 
       {/* Headline: what centers owe me (total outstanding). Teal identity. */}
       <div className="mb-4 rounded-[var(--radius-card)] border border-[var(--color-teal)]/40 bg-[var(--color-teal-soft)] p-5">
