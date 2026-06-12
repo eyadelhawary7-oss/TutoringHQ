@@ -8329,6 +8329,7 @@
       "step4": "Complete your first billing cycle",
       "step5": "Invite a teacher",
       "dismiss": "Dismiss",
+      "dismissError": "Couldn't hide the checklist. Please try again.",
       "collapse": "Collapse",
       "expand": "Expand"
     },

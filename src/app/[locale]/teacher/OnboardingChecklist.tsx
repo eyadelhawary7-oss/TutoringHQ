@@ -7,6 +7,7 @@ import { Link } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { formatNumber } from '@/lib/formatNumber';
+import { useToast } from '@/components/ui/ToastProvider';
 
 type ChecklistData = {
   subjectDone: boolean;
@@ -27,10 +28,12 @@ type Step = { key: string; done: boolean; href?: string };
 export default function OnboardingChecklist() {
   const t = useTranslations('teacherPortal.checklist');
   const locale = useLocale();
+  const { toast } = useToast();
 
   const [data, setData] = useState<ChecklistData | null>(null);
   const [hidden, setHidden] = useState(false);
   const [expanded, setExpanded] = useState(true);
+  const [dismissing, setDismissing] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,24 +58,32 @@ export default function OnboardingChecklist() {
     };
   }, []);
 
+  // One-way latch persisted in teacher_profiles.checklist_dismissed: the card
+  // hides only after the server confirms, so a failed PATCH never leaves the
+  // teacher believing it was dismissed when it will reappear on refresh.
   const handleDismiss = async () => {
-    setHidden(true);
+    if (dismissing) return;
+    setDismissing(true);
     try {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session) return;
-      await fetch('/api/teacher/profile', {
+      if (!session) throw new Error('no session');
+      const res = await fetch('/api/teacher/profile', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
           ...(await getCsrfHeaders(session.access_token)),
         },
-        body: JSON.stringify({ checklistDismissed: true }),
+        body: JSON.stringify({ checklist_dismissed: true }),
       });
+      if (!res.ok) throw new Error(`dismiss failed: ${res.status}`);
+      setHidden(true);
     } catch {
-      // Best-effort: the card is already hidden for this view.
+      toast.error(t('dismissError'));
+    } finally {
+      setDismissing(false);
     }
   };
 
@@ -163,7 +174,8 @@ export default function OnboardingChecklist() {
           <button
             type="button"
             onClick={handleDismiss}
-            className="mt-4 text-xs font-medium text-[var(--color-text-muted)] hover:underline"
+            disabled={dismissing}
+            className="mt-4 text-xs font-medium text-[var(--color-text-muted)] hover:underline disabled:opacity-50"
           >
             {t('dismiss')}
           </button>

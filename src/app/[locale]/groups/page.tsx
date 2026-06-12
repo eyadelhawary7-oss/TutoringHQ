@@ -63,7 +63,7 @@ export default function GroupsPage() {
   const [expandedHeatmapId, setExpandedHeatmapId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [pageTab, setPageTab] = useState<'groups' | 'proposals'>('groups');
-  const [addForm, setAddForm] = useState({ name: '', subjectId: '', fee: '', centerCut: '', studentIds: [] as string[], maxCapacity: '' });
+  const [addForm, setAddForm] = useState({ name: '', subjectId: '', fee_per_class: '', centerCut: '', studentIds: [] as string[], maxCapacity: '' });
   const [addSearch, setAddSearch] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [members, setMembers] = useState<{ student_id: string; student_name: string; student_number?: string }[]>([]);
@@ -258,8 +258,8 @@ export default function GroupsPage() {
       toast.error(tToast('error'), t('subjectRequired', { defaultValue: 'Subject is required' }));
       return;
     }
-    const fee = Number(addForm.fee);
-    if (isNaN(fee) || fee < 0) {
+    const fee = Number(addForm.fee_per_class);
+    if (isNaN(fee) || fee <= 0) {
       toast.error(tToast('error'), t('validFeeRequired', { defaultValue: 'Valid fee is required' }));
       return;
     }
@@ -275,7 +275,7 @@ export default function GroupsPage() {
       const maxCap = addForm.maxCapacity.trim() ? parseInt(addForm.maxCapacity, 10) : null;
       const { data, error } = await dbInsert({
         table: 'student_groups',
-        data: { center_id: centerId, name: addForm.name.trim(), subject: subjectName, fee: fee, center_cut_egp: centerCut, max_capacity: maxCap && maxCap > 0 ? maxCap : null },
+        data: { center_id: centerId, name: addForm.name.trim(), subject: subjectName, fee_per_class: fee, center_cut_egp: centerCut, max_capacity: maxCap && maxCap > 0 ? maxCap : null },
         single: true,
       });
       if (error) {
@@ -298,7 +298,7 @@ export default function GroupsPage() {
         const addN = memberIds.length;
         setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, subject: subjectName, fee, member_count: addN, student_count: addN, teacher_name: null, max_capacity: maxCap }]);
         setShowAddModal(false);
-        setAddForm({ name: '', subjectId: '', fee: '', centerCut: '', studentIds: [], maxCapacity: '' });
+        setAddForm({ name: '', subjectId: '', fee_per_class: '', centerCut: '', studentIds: [], maxCapacity: '' });
         toast.success(tToast('saved'));
       } else {
         toast.warning(t('groupCreatedRefresh'));
@@ -541,8 +541,9 @@ export default function GroupsPage() {
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('feePerLesson')}</label>
                 <input
-                  value={addForm.fee}
-                  onChange={e => setAddForm(prev => ({ ...prev, fee: e.target.value }))}
+                  name="fee_per_class"
+                  value={addForm.fee_per_class}
+                  onChange={e => setAddForm(prev => ({ ...prev, fee_per_class: e.target.value }))}
                   type="number"
                   min={0}
                   className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm font-mono text-[var(--color-text-primary)]"
@@ -559,7 +560,7 @@ export default function GroupsPage() {
                   step={0.01}
                   className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm font-mono text-[var(--color-text-primary)]"
                 />
-                {addForm.centerCut.trim() !== '' && addForm.fee.trim() !== '' && Number(addForm.centerCut) >= Number(addForm.fee) && (
+                {addForm.centerCut.trim() !== '' && addForm.fee_per_class.trim() !== '' && Number(addForm.centerCut) >= Number(addForm.fee_per_class) && (
                   <p className="mt-1 text-xs text-red-600">{tCut('mustBeLessThanFee')}</p>
                 )}
               </div>

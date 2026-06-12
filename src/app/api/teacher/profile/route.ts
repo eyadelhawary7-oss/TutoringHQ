@@ -58,16 +58,19 @@ export async function PATCH(request: NextRequest) {
   const {
     displayName: rawName,
     subject: rawSubject,
-    checklistDismissed: rawDismissed,
+    checklistDismissed: rawDismissedCamel,
+    checklist_dismissed: rawDismissedSnake,
   } = (body ?? {}) as {
     displayName?: unknown;
     subject?: unknown;
     checklistDismissed?: unknown;
+    checklist_dismissed?: unknown;
   };
 
   const hasName = rawName !== undefined;
   const hasSubject = rawSubject !== undefined;
-  const hasDismiss = rawDismissed === true;
+  // Either key spelling is accepted; only `true` latches (no un-dismissing).
+  const hasDismiss = rawDismissedCamel === true || rawDismissedSnake === true;
   if (!hasName && !hasSubject && !hasDismiss) {
     return NextResponse.json(
       { error: 'Nothing to update', code: 'no_fields' },
