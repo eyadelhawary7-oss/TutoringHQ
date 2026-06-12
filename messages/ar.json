@@ -5051,6 +5051,53 @@
       "createSubjectHelper": "أنشئ مادتك الأولى"
     }
   },
+  "joinFlow": {
+    "errorTitle": "رابط المجموعة ده مابقاش شغال.",
+    "comingSoonBanner": "التسجيل الإلكتروني قريبًا. تواصل مع المدرس عشان يضيفك.",
+    "withTeacher": "مع {teacher}",
+    "withTeacherSubject": "{subject} مع {teacher}",
+    "feePerClass": "سعر الحصة",
+    "studentName": "اسم الطالب",
+    "studentNamePlaceholder": "الاسم بالكامل",
+    "studentMobile": "موبايل الطالب",
+    "whoPays": "مين بيدفع؟",
+    "payerStudent": "الطالب",
+    "payerParent": "ولي الأمر",
+    "parentName": "اسم ولي الأمر",
+    "parentNamePlaceholder": "الاسم بالكامل",
+    "parentMobile": "موبايل ولي الأمر",
+    "consent": "بالتسجيل أنت موافق على <privacy>سياسة الخصوصية</privacy> الخاصة بـ CenterHQ.",
+    "sendCode": "ابعت كود التحقق",
+    "sending": "بنبعت...",
+    "verifyTitle": "أكد رقمك",
+    "sentTo": "اتبعت لـ {phone}",
+    "codeBox": "خانة {n}",
+    "expiresIn": "الكود بينتهي خلال {time}",
+    "codeExpired": "الكود انتهى. ابعت كود جديد.",
+    "verifySubmit": "تأكيد وانضمام",
+    "verifying": "بنأكد...",
+    "back": "رجوع",
+    "resend": "ابعت الكود تاني",
+    "resendIn": "إعادة الإرسال خلال {seconds}ث",
+    "successTitle": "انضممت!",
+    "waNote": "مدرسك هيبعتلك واتساب قبل كل حصة برابط الدفع.",
+    "noLogin": "من غير تسجيل دخول، من غير تطبيق.",
+    "errors": {
+      "nameRequired": "اكتب اسم الطالب.",
+      "phoneInvalid": "اكتب رقم موبايل صح (01XXXXXXXXX).",
+      "parentNameRequired": "اكتب اسم ولي الأمر.",
+      "parentPhoneInvalid": "اكتب رقم موبايل ولي الأمر صح (01XXXXXXXXX).",
+      "parentPhoneSame": "موبايل ولي الأمر لازم يكون مختلف عن موبايل الطالب.",
+      "alreadyEnrolled": "الرقم ده متسجل بالفعل في المجموعة.",
+      "rateLimited": "محاولات كتير. جرّب تاني بعدين.",
+      "sendError": "حصلت مشكلة. جرّب تاني.",
+      "expiredCode": "الكود انتهى. ابعت كود جديد.",
+      "invalidCode": "كود غلط. جرّب تاني.",
+      "tooManyAttempts": "أكواد غلط كتير. ابدأ من جديد.",
+      "verificationUnavailable": "التحقق مش متاح دلوقتي. جرّب كمان شوية.",
+      "capacityFull": "المجموعة كاملة العدد."
+    }
+  },
   "join": {
     "eyebrow": "تسجيل الطالب",
     "loading": "جارٍ التحميل...",
@@ -8062,7 +8109,50 @@
       "billing": "الفوترة",
       "settings": "الإعدادات",
       "logout": "تسجيل الخروج",
-      "lockedTooltip": "متاح مع المحرك الخاص — ابدأ تجربتك المجانية."
+      "lockedTooltip": "متاح مع المحرك الخاص. ابدأ تجربتك المجانية.",
+      "collapseSidebar": "طي الشريط الجانبي",
+      "expandSidebar": "فتح الشريط الجانبي"
+    },
+    "dashboard": {
+      "title": "الرئيسية",
+      "centersTile": "اللي السناتر مدينة لك بيه",
+      "centersPending": "مستحق من السناتر",
+      "centersEmpty": "مفيش سناتر مربوطة",
+      "joinCenterCta": "انضم لمركز",
+      "incomeTile": "دخل الشهر",
+      "outstanding": "متبقي",
+      "groupsTile": "مجموعاتي",
+      "groupsCount": "{count} مجموعة نشطة",
+      "studentsCount": "{count} طالب",
+      "groupsCtaBody": "أنشئ أول مجموعة خاصة وابدأ تجربتك المجانية.",
+      "createFirstGroup": "أنشئ أول مجموعة",
+      "subscriptionTile": "الاشتراك",
+      "trialDaysLeft": "باقي {days} يوم في تجربتك",
+      "renewsOn": "بيتجدد {date}",
+      "subscriptionActive": "نشط",
+      "startTrialCta": "ابدأ تجربتك المجانية",
+      "trialCtaBody": "افتح ممارستك الخاصة بتجربة مجانية ١٤ يوم."
+    },
+    "pages": {
+      "centers": "السناتر",
+      "groups": "مجموعاتي",
+      "income": "الدخل",
+      "students": "الطلاب",
+      "billing": "الفوترة",
+      "startTrialCta": "ابدأ تجربتك المجانية",
+      "resumeCta": "تجديد الاشتراك",
+      "groupsLockedBody": "أنشئ أول مجموعة خاصة عشان تدير الطلاب وتتقبض.",
+      "studentsLockedBody": "طلاب مجموعاتك الخاصة بيظهروا هنا لما تبدأ تجربتك.",
+      "billingLockedBody": "سجل الحضور والفوترة بيظهر هنا لما تبدأ تجربتك.",
+      "studentsEmptyTitle": "مفيش طلاب لسه",
+      "studentsEmptyBody": "الطلاب بيظهروا هنا لما ينضموا لإحدى مجموعاتك الخاصة.",
+      "billingEmptyTitle": "مفيش حصص متفوترة لسه",
+      "billingEmptyBody": "أول ما تنهي حصة وتفوترها، هتظهر هنا.",
+      "statusActive": "نشط",
+      "statusPending": "قيد الانتظار",
+      "statusPaid": "مدفوع",
+      "statusPendingBill": "معلّق",
+      "attendees": "{count} حاضر"
     },
     "lockedIncome": {
       "heading": "لوحة دخلك",
@@ -8077,7 +8167,7 @@
       "payer2": "سارة محمد",
       "payer3": "يوسف علي",
       "overlayText": "أرقامك الحقيقية بتظهر لما تبدأ التجربة المجانية",
-      "overlayCta": "ابدأ تجربتك المجانية — ١٤ يوم مجانًا"
+      "overlayCta": "ابدأ تجربتك المجانية، ١٤ يوم مجانًا"
     },
     "calculator": {
       "heading": "قد إيه ممكن تكسب؟",
@@ -8087,8 +8177,8 @@
       "feeLabel": "سعر الحصة لكل طالب (جنيه)",
       "feeValue": "{amount} للحصة",
       "resultLabel": "دخلك الشهري المتوقع:",
-      "feeNote": "رسوم CenterHQ: {fee} (٥٪ على الدفع الرقمي — صفر على الكاش)",
-      "cta": "أنشئ أول مجموعة — ابدأ مجانًا",
+      "feeNote": "رسوم CenterHQ: {fee} (٥٪ على الدفع الرقمي، صفر على الكاش)",
+      "cta": "أنشئ أول مجموعة، ابدأ مجانًا",
       "note": "من غير كارت. تقدر تلغي في أي وقت. متابعة السناتر مجانية دايمًا."
     },
     "joinCenter": {
@@ -8130,7 +8220,7 @@
       "tryAgain": "حاول تاني"
     },
     "trialBanner": {
-      "text": "اليوم {day} من {total} — تجربتك المجانية بتنتهي في {date}",
+      "text": "اليوم {day} من {total}. التجربة المجانية بتنتهي في {date}.",
       "dismiss": "إغلاق"
     },
     "celebration": {
@@ -8200,7 +8290,16 @@
       "students": "{count} طالب مشترك",
       "pending": "{count} مستني الموافقة",
       "feePerClass": "سعر الحصة:",
-      "empty": "لسه مفيش مجموعات. أضف أول مجموعة وابدأ شغلك."
+      "empty": "لسه مفيش مجموعات. أضف أول مجموعة وابدأ شغلك.",
+      "share": {
+        "heading": "شارك مع الطلاب",
+        "copy": "نسخ الرابط",
+        "copied": "اتنسخ",
+        "downloadQr": "تنزيل QR",
+        "shareWhatsapp": "اشارك على واتساب",
+        "waMessage": "انضم لمجموعة {group} على CenterHQ: {url}",
+        "note": "الطالب بيضغط الرابط ويتسجل لوحده."
+      }
     },
     "createGroup": {
       "title": "مجموعة خاصة جديدة",

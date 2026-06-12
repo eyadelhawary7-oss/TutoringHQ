@@ -2859,6 +2859,53 @@
       "createSubjectHelper": "Create your first subject"
     }
   },
+  "joinFlow": {
+    "errorTitle": "This group link is no longer active.",
+    "comingSoonBanner": "Online enrollment opens soon. Contact your teacher to be added manually.",
+    "withTeacher": "with {teacher}",
+    "withTeacherSubject": "{subject} with {teacher}",
+    "feePerClass": "Fee per class",
+    "studentName": "Student name",
+    "studentNamePlaceholder": "Full name",
+    "studentMobile": "Student mobile",
+    "whoPays": "Who pays?",
+    "payerStudent": "The student",
+    "payerParent": "The parent",
+    "parentName": "Parent name",
+    "parentNamePlaceholder": "Full name",
+    "parentMobile": "Parent mobile",
+    "consent": "By enrolling you agree to CenterHQ's <privacy>Privacy Policy</privacy>.",
+    "sendCode": "Send verification code",
+    "sending": "Sending...",
+    "verifyTitle": "Verify your number",
+    "sentTo": "Sent to {phone}",
+    "codeBox": "Digit {n}",
+    "expiresIn": "Code expires in {time}",
+    "codeExpired": "The code expired. Send a new one.",
+    "verifySubmit": "Verify and join",
+    "verifying": "Verifying...",
+    "back": "Back",
+    "resend": "Resend code",
+    "resendIn": "Resend in {seconds}s",
+    "successTitle": "You're in!",
+    "waNote": "Your teacher will send you a WhatsApp message before each class with the payment link.",
+    "noLogin": "No login needed, no app needed.",
+    "errors": {
+      "nameRequired": "Enter the student's name.",
+      "phoneInvalid": "Enter a valid mobile (01XXXXXXXXX).",
+      "parentNameRequired": "Enter the parent's name.",
+      "parentPhoneInvalid": "Enter a valid parent mobile (01XXXXXXXXX).",
+      "parentPhoneSame": "Parent mobile must be different from the student's.",
+      "alreadyEnrolled": "This number is already enrolled in the group.",
+      "rateLimited": "Too many attempts. Try again later.",
+      "sendError": "Something went wrong. Try again.",
+      "expiredCode": "The code expired. Send a new one.",
+      "invalidCode": "Wrong code. Try again.",
+      "tooManyAttempts": "Too many wrong codes. Start again.",
+      "verificationUnavailable": "Verification is unavailable right now. Try again shortly.",
+      "capacityFull": "This group is full."
+    }
+  },
   "join": {
     "eyebrow": "Student Self-Registration",
     "loading": "Loading...",
@@ -8062,7 +8109,50 @@
       "billing": "Billing",
       "settings": "Settings",
       "logout": "Log out",
-      "lockedTooltip": "Available with Private Engine — start your free trial."
+      "lockedTooltip": "Available with Private Engine. Start your free trial.",
+      "collapseSidebar": "Collapse sidebar",
+      "expandSidebar": "Expand sidebar"
+    },
+    "dashboard": {
+      "title": "Home",
+      "centersTile": "What centers owe me",
+      "centersPending": "Pending from centers",
+      "centersEmpty": "No centers linked",
+      "joinCenterCta": "Join a center",
+      "incomeTile": "Income this month",
+      "outstanding": "Outstanding",
+      "groupsTile": "My groups",
+      "groupsCount": "{count} active groups",
+      "studentsCount": "{count} students",
+      "groupsCtaBody": "Create your first private group and start your free trial.",
+      "createFirstGroup": "Create your first group",
+      "subscriptionTile": "Subscription",
+      "trialDaysLeft": "{days} days left in your trial",
+      "renewsOn": "Renews {date}",
+      "subscriptionActive": "Active",
+      "startTrialCta": "Start your free trial",
+      "trialCtaBody": "Unlock your private practice with a 14-day free trial."
+    },
+    "pages": {
+      "centers": "Centers",
+      "groups": "My groups",
+      "income": "Income",
+      "students": "Students",
+      "billing": "Billing",
+      "startTrialCta": "Start your free trial",
+      "resumeCta": "Resume subscription",
+      "groupsLockedBody": "Create your first private group to manage rosters and get paid.",
+      "studentsLockedBody": "Your private group students show up here once you start your trial.",
+      "billingLockedBody": "Your attendance and billing history shows up here once you start your trial.",
+      "studentsEmptyTitle": "No students yet",
+      "studentsEmptyBody": "Students appear here once they join one of your private groups.",
+      "billingEmptyTitle": "No billed classes yet",
+      "billingEmptyBody": "Once you finish and bill a class, it shows up here.",
+      "statusActive": "Active",
+      "statusPending": "Pending",
+      "statusPaid": "Paid",
+      "statusPendingBill": "Pending",
+      "attendees": "{count} present"
     },
     "lockedIncome": {
       "heading": "Your income dashboard",
@@ -8071,13 +8161,13 @@
       "studentsCount": "{count} students",
       "pendingTitle": "Payments pending",
       "pendingBadge": "Pending",
-      "group1": "Physics — General Secondary",
-      "group2": "Physics — 3rd preparatory",
+      "group1": "Physics, General Secondary",
+      "group2": "Physics, 3rd preparatory",
       "payer1": "Ahmed Hassan",
       "payer2": "Sara Mohamed",
       "payer3": "Youssef Ali",
       "overlayText": "Your real numbers unlock when you start your trial",
-      "overlayCta": "Start your free trial — 14 days free"
+      "overlayCta": "Start your free trial, 14 days free"
     },
     "calculator": {
       "heading": "How much could you earn?",
@@ -8087,8 +8177,8 @@
       "feeLabel": "Fee per session per student (EGP)",
       "feeValue": "{amount} per session",
       "resultLabel": "Your estimated monthly income:",
-      "feeNote": "CenterHQ fee: {fee} (5% on digital — zero on cash)",
-      "cta": "Create your first group — start free",
+      "feeNote": "CenterHQ fee: {fee} (5% on digital, zero on cash)",
+      "cta": "Create your first group, start free",
       "note": "No card needed. Cancel anytime. Center tracking always free."
     },
     "joinCenter": {
@@ -8130,7 +8220,7 @@
       "tryAgain": "Try again"
     },
     "trialBanner": {
-      "text": "Day {day} of {total} — your free trial ends on {date}",
+      "text": "Day {day} of {total}. Trial ends {date}.",
       "dismiss": "Dismiss"
     },
     "celebration": {
@@ -8200,7 +8290,16 @@
       "students": "{count} enrolled",
       "pending": "{count} awaiting approval",
       "feePerClass": "Per-class fee:",
-      "empty": "No groups yet. Add your first group to get going."
+      "empty": "No groups yet. Add your first group to get going.",
+      "share": {
+        "heading": "Share with students",
+        "copy": "Copy link",
+        "copied": "Copied",
+        "downloadQr": "Download QR",
+        "shareWhatsapp": "Share on WhatsApp",
+        "waMessage": "Join the {group} group on CenterHQ: {url}",
+        "note": "Students tap the link, verify their number, and they're enrolled automatically."
+      }
     },
     "createGroup": {
       "title": "New private group",

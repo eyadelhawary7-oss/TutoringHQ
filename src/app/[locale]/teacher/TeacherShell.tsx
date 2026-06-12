@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { LogOut } from 'lucide-react';
 import { useLayout } from '@/contexts/LayoutContext';
@@ -25,6 +25,10 @@ export default function TeacherShell({
   const locale = useLocale();
   const { setHideShell } = useLayout();
 
+  // Desktop sidebar collapse. In-memory only - resetting to expanded on a fresh
+  // navigation is fine and avoids any browser storage.
+  const [collapsed, setCollapsed] = useState(false);
+
   useEffect(() => {
     setHideShell(true);
     return () => setHideShell(false);
@@ -35,7 +39,11 @@ export default function TeacherShell({
       className="min-h-screen w-full bg-[var(--color-surface-0)]"
       dir={locale === 'ar' ? 'rtl' : 'ltr'}
     >
-      <TeacherNav privateAccess={privateAccess} />
+      <TeacherNav
+        privateAccess={privateAccess}
+        collapsed={collapsed}
+        onToggleCollapse={() => setCollapsed((v) => !v)}
+      />
 
       {/* Mobile-only top header (the desktop brand + logout live in the
           sidebar). */}
@@ -54,7 +62,12 @@ export default function TeacherShell({
         </button>
       </header>
 
-      <main className="w-full pb-24 md:ps-60 md:pb-6">
+      <main
+        className={[
+          'w-full pb-24 transition-[padding] duration-200 md:pb-6',
+          collapsed ? 'md:ps-12' : 'md:ps-60',
+        ].join(' ')}
+      >
         <TeacherTrialBanner privateAccess={privateAccess} />
         <div className="mx-auto w-full max-w-3xl p-4 md:p-6">{children}</div>
       </main>

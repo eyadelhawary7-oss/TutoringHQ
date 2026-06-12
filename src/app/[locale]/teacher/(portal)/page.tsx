@@ -1,271 +1,318 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
-import { Sparkles, PauseCircle, Wallet } from 'lucide-react';
-import { Link, useRouter } from '@/i18n/routing';
+import { useEffect, useState, type ReactNode } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
+import { Building2, Banknote, Users, Sparkles, Clock, ArrowRight } from 'lucide-react';
+import { Link } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
-import CenterCutsSection from '../CenterCutsSection';
-import GroupProposalsSection from '../GroupProposalsSection';
-import JoinCenterCard from '../JoinCenterCard';
-import IncomeView from '../IncomeView';
-import PrivateGroupModal from '../PrivateGroupModal';
-import PrivateGroupsSection from '../PrivateGroupsSection';
-import LockedIncomePreview from '../LockedIncomePreview';
-import IncomeCalculator from '../IncomeCalculator';
+import { formatCurrency, formatNumber, formatDate } from '@/lib/formatNumber';
 import OnboardingChecklist from '../OnboardingChecklist';
 import ReferralCard from '../ReferralCard';
-import FirstGroupCelebration from '../FirstGroupCelebration';
+import IncomeCalculator from '../IncomeCalculator';
+import LockedIncomePreview from '../LockedIncomePreview';
+import { useTeacherContext } from '../useTeacherContext';
+import { useStartTrial } from '../useStartTrial';
 
-type TeacherContext = {
-  state: 'center_only' | 'unified' | 'lapsed';
-  centers: { id: string; name: string | null; center_code: string | null }[];
-  hasPrivateAccess: boolean;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+type Summary = {
+  centersOutstanding: number;
+  income: { collected: number; outstanding: number } | null;
+  groups: { count: number; students: number } | null;
+  sub:
+    | { kind: 'trialing'; daysLeft: number }
+    | { kind: 'active'; renewalAt: string | null }
+    | { kind: 'none' };
 };
 
-export default function TeacherHomePage() {
-  const t = useTranslations('teacherPortal');
-  const router = useRouter();
+function TileLink({
+  href,
+  icon: Icon,
+  title,
+  children,
+}: {
+  href: string;
+  icon: typeof Building2;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex flex-col rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 shadow-card transition-colors hover:border-[var(--color-teal)]/40"
+    >
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text-muted)]">
+          <Icon size={16} aria-hidden />
+          {title}
+        </span>
+        <ArrowRight size={14} className="text-[var(--color-text-muted)] rtl:-scale-x-100" aria-hidden />
+      </div>
+      {children}
+    </Link>
+  );
+}
 
-  const [ctx, setCtx] = useState<TeacherContext | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const [showCreateGroup, setShowCreateGroup] = useState(false);
-  const [groupsRefreshKey, setGroupsRefreshKey] = useState(0);
-  const [celebrationGroup, setCelebrationGroup] = useState<{
-    id: string;
-    name: string | null;
-  } | null>(null);
+function TileCta({
+  icon: Icon,
+  title,
+  body,
+  ctaLabel,
+  onCta,
+}: {
+  icon: typeof Building2;
+  title: string;
+  body: string;
+  ctaLabel: string;
+  onCta: () => void;
+}) {
+  return (
+    <div className="flex flex-col rounded-[var(--radius-card)] border border-[var(--color-brass)]/40 bg-[var(--color-brass-soft)] p-5">
+      <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--color-text-muted)]">
+        <Icon size={16} aria-hidden />
+        {title}
+      </span>
+      <p className="mb-4 flex-1 text-sm text-[var(--color-text-secondary)]">{body}</p>
+      <button
+        type="button"
+        onClick={onCta}
+        className="self-start rounded-lg bg-[var(--color-brass)] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+      >
+        {ctaLabel}
+      </button>
+    </div>
+  );
+}
 
-  const loadContext = useCallback(async () => {
-    setLoading(true);
-    setLoadError(false);
-    try {
+export default function TeacherDashboardPage() {
+  const t = useTranslations('teacherPortal.dashboard');
+  const tPortal = useTranslations('teacherPortal');
+  const locale = useLocale();
+
+  const { ctx, loading, error, reload } = useTeacherContext();
+  const [summary, setSummary] = useState<Summary | null>(null);
+
+  const state = ctx?.state ?? 'center_only';
+  const hasPrivateAccess = ctx?.hasPrivateAccess ?? false;
+  const noCenters = (ctx?.centers.length ?? 0) === 0;
+
+  const { startTrial, modal } = useStartTrial(state, () => {
+    reload();
+    setSummary(null);
+  });
+
+  // Second-phase summary fetch once the bootstrap context is known.
+  useEffect(() => {
+    if (!ctx) return;
+    let cancelled = false;
+    (async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session) {
-        router.replace('/login');
-        return;
+      if (!session || cancelled) return;
+      const h = { Authorization: `Bearer ${session.access_token}` };
+      const priv = ctx.hasPrivateAccess;
+      const [cutsRes, subRes, incomeRes, groupsRes] = await Promise.all([
+        fetch('/api/teacher/center-cuts', { headers: h }).catch(() => null),
+        fetch('/api/teacher/subscription/status', { headers: h }).catch(() => null),
+        priv ? fetch('/api/teacher/private/income', { headers: h }).catch(() => null) : null,
+        priv ? fetch('/api/teacher/private/groups', { headers: h }).catch(() => null) : null,
+      ]);
+      if (cancelled) return;
+
+      const cuts = cutsRes?.ok ? ((await cutsRes.json()) as { totalOutstanding?: number }) : null;
+      const subJson = subRes?.ok
+        ? ((await subRes.json()) as {
+            status?: string | null;
+            trial_ends_at?: string | null;
+            current_period_end?: string | null;
+            next_billing_at?: string | null;
+          })
+        : null;
+      const income = incomeRes?.ok
+        ? ((await incomeRes.json()) as { collectedThisMonth?: number; outstanding?: number })
+        : null;
+      const groupsData = groupsRes?.ok
+        ? ((await groupsRes.json()) as {
+            groups?: { status: string | null; activeStudents: number }[];
+          })
+        : null;
+
+      let sub: Summary['sub'] = { kind: 'none' };
+      if (subJson?.status === 'trialing' && subJson.trial_ends_at) {
+        const daysLeft = Math.max(0, Math.ceil((Date.parse(subJson.trial_ends_at) - Date.now()) / DAY_MS));
+        sub = { kind: 'trialing', daysLeft };
+      } else if (subJson?.status === 'active') {
+        sub = { kind: 'active', renewalAt: subJson.current_period_end ?? subJson.next_billing_at ?? null };
       }
-      const res = await fetch('/api/teacher/context', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
+
+      const groupList = groupsData?.groups ?? [];
+      if (cancelled) return;
+      setSummary({
+        centersOutstanding: Number(cuts?.totalOutstanding) || 0,
+        income: income ? { collected: Number(income.collectedThisMonth) || 0, outstanding: Number(income.outstanding) || 0 } : null,
+        groups: priv
+          ? {
+              count: groupList.filter((g) => g.status !== 'archived').length,
+              students: groupList.reduce((acc, g) => acc + (g.activeStudents || 0), 0),
+            }
+          : null,
+        sub,
       });
-      if (res.status === 401 || res.status === 403) {
-        router.replace('/login');
-        return;
-      }
-      if (!res.ok) {
-        setLoadError(true);
-        return;
-      }
-      setCtx((await res.json()) as TeacherContext);
-    } catch {
-      setLoadError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, [router]);
-
-  useEffect(() => {
-    loadContext();
-  }, [loadContext]);
-
-  // After the portal content is on screen, honour a #section-… hash so the
-  // sidebar nav can deep-link into a section (e.g. coming back from settings).
-  useEffect(() => {
-    if (loading || !ctx) return;
-    const id = window.location.hash.replace('#', '');
-    if (!id) return;
-    // Defer to the next frame so the target section has rendered.
-    const raf = requestAnimationFrame(() => {
-      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [loading, ctx]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [ctx]);
 
   if (loading && !ctx) {
     return (
-      <div>
-        <div className="mb-6 h-7 w-44 animate-pulse rounded-lg bg-[var(--color-surface-2)]" />
-        {[1, 2].map((i) => (
-          <div
-            key={i}
-            className="mb-4 h-20 animate-pulse rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)]"
-          />
-        ))}
-        <div className="h-32 animate-pulse rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)]" />
+      <div className="flex flex-col gap-4">
+        <div className="h-7 w-40 animate-pulse rounded-lg bg-[var(--color-surface-2)]" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="h-28 animate-pulse rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)]"
+            />
+          ))}
+        </div>
       </div>
     );
   }
 
-  if (loadError || !ctx) {
+  if (error || !ctx) {
     return (
-      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-8 text-center">
-        <h2 className="mb-2 text-lg font-bold text-[var(--color-text-primary)]">
-          {t('errorTitle')}
-        </h2>
-        <p className="mb-6 text-sm text-[var(--color-text-secondary)]">{t('errorBody')}</p>
+      <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-8 text-center">
+        <h2 className="mb-2 text-lg font-bold text-[var(--color-text-primary)]">{tPortal('errorTitle')}</h2>
+        <p className="mb-6 text-sm text-[var(--color-text-secondary)]">{tPortal('errorBody')}</p>
         <button
-          onClick={loadContext}
+          onClick={reload}
           className="rounded-lg bg-teal-600 px-4 py-2 font-medium text-primary-foreground transition-colors hover:bg-teal-700"
         >
-          {t('retry')}
+          {tPortal('retry')}
         </button>
       </div>
     );
   }
 
-  return (
-    <div className="flex flex-col gap-8">
-      {/* Onboarding checklist (FREE zone): guidance card that self-hides once
-          every step is done or the teacher dismisses it. */}
-      {!ctx.hasPrivateAccess && <OnboardingChecklist />}
+  const placeholder = <span className="inline-block h-5 w-20 animate-pulse rounded bg-[var(--color-surface-2)]" />;
 
-      {/* Section 1 (all states): center-cut tracker - what centers owe me. */}
-      <div id="section-centers" className="scroll-mt-20">
-        <CenterCutsSection />
+  return (
+    <div className="flex flex-col gap-6">
+      <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
+
+      {!hasPrivateAccess && <OnboardingChecklist />}
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {/* Centers */}
+        <TileLink href="/teacher/centers" icon={Building2} title={t('centersTile')}>
+          {noCenters ? (
+            <>
+              <p className="text-sm text-[var(--color-text-secondary)]">{t('centersEmpty')}</p>
+              <span className="mt-1 text-sm font-semibold text-[var(--color-teal-deep)]">
+                {t('joinCenterCta')}
+              </span>
+            </>
+          ) : (
+            <>
+              <p className="num text-2xl font-bold text-[var(--color-teal-deep)]">
+                {summary ? formatCurrency(summary.centersOutstanding, locale) : placeholder}
+              </p>
+              <p className="text-xs text-[var(--color-text-muted)]">{t('centersPending')}</p>
+            </>
+          )}
+        </TileLink>
+
+        {/* Income (unlocked only; free-zone gets the locked preview below) */}
+        {hasPrivateAccess && (
+          <TileLink href="/teacher/income" icon={Banknote} title={t('incomeTile')}>
+            {summary?.income ? (
+              <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                <span className="num text-2xl font-bold text-[var(--color-teal-deep)]">
+                  {formatCurrency(summary.income.collected, locale)}
+                </span>
+                <span className="text-xs text-[var(--color-text-muted)]">
+                  {t('outstanding')}{' '}
+                  <span className="num font-semibold text-[var(--color-warning)]">
+                    {formatCurrency(summary.income.outstanding, locale)}
+                  </span>
+                </span>
+              </div>
+            ) : (
+              placeholder
+            )}
+          </TileLink>
+        )}
+
+        {/* Groups */}
+        {hasPrivateAccess ? (
+          <TileLink href="/teacher/groups" icon={Users} title={t('groupsTile')}>
+            {summary?.groups ? (
+              <>
+                <p className="num text-2xl font-bold text-[var(--color-text-primary)]">
+                  {t('groupsCount', { count: formatNumber(summary.groups.count, locale) })}
+                </p>
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  {t('studentsCount', { count: formatNumber(summary.groups.students, locale) })}
+                </p>
+              </>
+            ) : (
+              placeholder
+            )}
+          </TileLink>
+        ) : (
+          <TileCta
+            icon={Users}
+            title={t('groupsTile')}
+            body={t('groupsCtaBody')}
+            ctaLabel={t('createFirstGroup')}
+            onCta={startTrial}
+          />
+        )}
+
+        {/* Subscription */}
+        {hasPrivateAccess ? (
+          <TileLink href="/teacher/income" icon={Clock} title={t('subscriptionTile')}>
+            {summary ? (
+              summary.sub.kind === 'trialing' ? (
+                <p className="text-base font-semibold text-[var(--color-text-primary)]">
+                  {t('trialDaysLeft', { days: formatNumber(summary.sub.daysLeft, locale) })}
+                </p>
+              ) : summary.sub.kind === 'active' ? (
+                <p className="text-base font-semibold text-[var(--color-text-primary)]">
+                  {summary.sub.renewalAt
+                    ? t('renewsOn', { date: formatDate(summary.sub.renewalAt, locale) })
+                    : t('subscriptionActive')}
+                </p>
+              ) : (
+                <p className="text-sm text-[var(--color-text-secondary)]">{t('subscriptionActive')}</p>
+              )
+            ) : (
+              placeholder
+            )}
+          </TileLink>
+        ) : (
+          <TileCta
+            icon={Sparkles}
+            title={t('subscriptionTile')}
+            body={t('trialCtaBody')}
+            ctaLabel={t('startTrialCta')}
+            onCta={startTrial}
+          />
+        )}
       </div>
 
-      {/* Join a center (FREE zone): teacher-initiated join request by code. */}
-      <JoinCenterCard />
-
-      {/* Group proposals (FREE zone): propose a center group to an active
-          membership center and negotiate the center cut. */}
-      <GroupProposalsSection centers={ctx.centers} />
-
-      {/* Section 2 (Option A): the private engine is ALWAYS present. Subscribed
-          teachers get the live widgets; never-subscribed and lapsed teachers
-          get a locked conversion card that renders NO private data and fetches
-          NO private routes - the gate stays in the API. */}
-      {ctx.state === 'unified' && (
+      {/* Free zone: locked income preview, income calculator, referral. */}
+      {!hasPrivateAccess && (
         <>
-          <div id="section-groups" className="scroll-mt-20">
-            <PrivateGroupsSection
-              refreshKey={groupsRefreshKey}
-              onAdd={() => setShowCreateGroup(true)}
-            />
-          </div>
-          <section id="section-income" className="scroll-mt-20">
-            <div className="mb-4 flex items-center gap-2">
-              <Wallet size={18} className="text-[var(--color-brass)]" aria-hidden />
-              <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
-                {t('privateEngine.title')}
-              </h2>
-            </div>
-            <IncomeView />
-          </section>
+          <LockedIncomePreview onStartTrial={startTrial} />
+          <IncomeCalculator onStartTrial={startTrial} />
+          <ReferralCard />
         </>
       )}
 
-      {ctx.state === 'center_only' && (
-        <section
-          id="section-upsell"
-          className="scroll-mt-20 rounded-[var(--radius-card)] border border-[var(--color-brass)]/50 bg-[var(--color-brass-soft)] p-6"
-        >
-          <div className="mb-2 flex items-center gap-2">
-            <Sparkles size={18} className="text-[var(--color-brass)]" aria-hidden />
-            <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
-              {t('privateUpsell.title')}
-            </h2>
-          </div>
-          <p className="mb-3 text-sm text-[var(--color-text-secondary)]">{t('privateUpsell.body')}</p>
-          <ul className="mb-4 flex list-disc flex-col gap-1 ps-5 text-sm text-[var(--color-text-secondary)]">
-            <li>{t('privateUpsell.trialLine')}</li>
-            <li>{t('privateUpsell.priceLine')}</li>
-            <li>{t('privateUpsell.noCardLine')}</li>
-          </ul>
-          <button
-            onClick={() => setShowCreateGroup(true)}
-            className="rounded-lg bg-[var(--color-brass)] px-4 py-2 font-medium text-white transition-opacity hover:opacity-90"
-          >
-            {t('privateUpsell.cta')}
-          </button>
-        </section>
-      )}
-
-      {ctx.state === 'lapsed' && (
-        <section
-          id="section-upsell"
-          className="scroll-mt-20 rounded-[var(--radius-card)] border border-[var(--color-teal)]/40 bg-[var(--color-teal-soft)] p-6"
-        >
-          <div className="mb-2 flex items-center gap-2">
-            <PauseCircle size={18} className="text-[var(--color-teal-deep)]" aria-hidden />
-            <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
-              {t('resume.title')}
-            </h2>
-          </div>
-          <p className="mb-4 text-sm text-[var(--color-text-secondary)]">{t('resume.body')}</p>
-          <Link
-            href="/teacher/resubscribe"
-            className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 font-medium text-primary-foreground transition-colors hover:bg-teal-700"
-          >
-            {t('resume.cta')}
-          </Link>
-        </section>
-      )}
-
-      {/* Free-zone conversion surfaces (private access OFF only): a veiled
-          preview of the real income dashboard and a live income calculator.
-          Both sit below the "Your own private practice" card and start the
-          trial / first-group flow (resubscribe for a lapsed teacher). */}
-      {!ctx.hasPrivateAccess && (
-        <>
-          <LockedIncomePreview
-            onStartTrial={() =>
-              ctx.state === 'lapsed'
-                ? router.push('/teacher/resubscribe')
-                : setShowCreateGroup(true)
-            }
-          />
-          <IncomeCalculator
-            onStartTrial={() =>
-              ctx.state === 'lapsed'
-                ? router.push('/teacher/resubscribe')
-                : setShowCreateGroup(true)
-            }
-          />
-        </>
-      )}
-
-      {/* Referral hook (FREE zone): pinned to the bottom of the home page. */}
-      {!ctx.hasPrivateAccess && <ReferralCard />}
-
-      {/* The create flow is never an escape hatch for a lapsed teacher - no
-          entry point in State C (and the POST route refuses server-side). */}
-      {ctx.state !== 'lapsed' && (
-        <PrivateGroupModal
-          open={showCreateGroup}
-          showTrialTerms={ctx.state === 'center_only'}
-          onClose={() => setShowCreateGroup(false)}
-          onCreated={(group) => {
-            // A teacher with no subscription row (center_only) creating a group
-            // is creating their FIRST one - the DB trigger provisions the trial.
-            // Celebrate that moment instead of a silent state flip.
-            const wasFirstGroup = ctx.state === 'center_only';
-            setShowCreateGroup(false);
-            setGroupsRefreshKey((k) => k + 1);
-            // After the FIRST group the gate flips (trial provisioned by the
-            // DB trigger) - refetch context instead of assuming the state.
-            loadContext();
-            if (wasFirstGroup) {
-              setCelebrationGroup({ id: group.id, name: group.name });
-            }
-          }}
-        />
-      )}
-
-      {celebrationGroup && (
-        <FirstGroupCelebration
-          group={celebrationGroup}
-          onClose={() => setCelebrationGroup(null)}
-          onGoToGroup={() => {
-            const id = celebrationGroup.id;
-            setCelebrationGroup(null);
-            router.push(`/teacher/groups/${id}`);
-          }}
-        />
-      )}
+      {modal}
     </div>
   );
 }

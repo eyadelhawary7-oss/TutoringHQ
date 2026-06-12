@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/formatNumber';
 import AddStudentModal from './AddStudentModal';
 import SessionsSection from './SessionsSection';
+import GroupJoinLinkCard from '../../../GroupJoinLinkCard';
 
 type RosterEntry = {
   enrollmentId: string;
@@ -177,6 +178,8 @@ export default function TeacherGroupDetailPage({
           </span>
         </div>
       </div>
+
+      <GroupJoinLinkCard groupId={groupId} groupName={data.group.name} />
 
       {actionError && (
         <p className="rounded-lg border border-[var(--color-danger-muted)] bg-[var(--color-danger-muted)] p-3 text-sm text-[var(--color-danger)]">
