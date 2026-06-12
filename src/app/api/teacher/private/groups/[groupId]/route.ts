@@ -3,6 +3,8 @@ import * as Sentry from '@sentry/nextjs';
 import { requireTeacherPrivateAccess } from '@/lib/centerAuth';
 import { requireOwnedPrivateGroup } from '@/lib/teacherPrivate';
 import { validateCSRFRequest } from '@/lib/csrf';
+import { parseScheduleSlots, type ScheduleSlotInput } from '@/lib/teacherSchedule';
+import { queueScheduleChangedNotification } from '@/lib/teacherScheduleNotifications';
 
 const ROUTE_TAG = 'api/teacher/private/groups/[groupId]';
 
@@ -48,9 +50,27 @@ export async function PATCH(
     name: rawName,
     fee_per_class: rawFee,
     status: rawStatus,
-  } = (body ?? {}) as { name?: unknown; fee_per_class?: unknown; status?: unknown };
+    schedule: rawSchedule,
+  } = (body ?? {}) as {
+    name?: unknown;
+    fee_per_class?: unknown;
+    status?: unknown;
+    schedule?: unknown;
+  };
 
   const updates: Record<string, unknown> = {};
+
+  let scheduleSlots: ScheduleSlotInput[] | null = null;
+  if (rawSchedule !== undefined && rawSchedule !== null) {
+    const parsed = parseScheduleSlots(rawSchedule);
+    if (!parsed.ok) {
+      return NextResponse.json(
+        { error: 'Invalid request', code: 'invalid_schedule' },
+        { status: 400 },
+      );
+    }
+    scheduleSlots = parsed.slots;
+  }
 
   if (rawName !== undefined) {
     const name = typeof rawName === 'string' ? rawName.trim() : '';
@@ -79,35 +99,80 @@ export async function PATCH(
     updates.status = rawStatus;
   }
 
-  if (Object.keys(updates).length === 0) {
+  if (Object.keys(updates).length === 0 && scheduleSlots === null) {
     return NextResponse.json({ error: 'Nothing to update', code: 'no_fields' }, { status: 400 });
   }
 
-  const { data: updated, error: updateErr } = await auth.supabaseAdmin
-    .from('student_groups')
-    .update(updates)
-    .eq('id', groupId)
-    .eq('teacher_id', auth.userId)
-    .eq('kind', 'private')
-    .select('id, name, fee_per_class, status')
-    .single();
-  if (updateErr) {
-    const pgCode = (updateErr as { code?: string }).code;
-    if (pgCode === '23514' || pgCode === '23502') {
-      return NextResponse.json(
-        { error: 'Invalid request', code: 'invalid_group' },
-        { status: 400 },
-      );
+  let g = {
+    id: owned.group.id,
+    name: owned.group.name,
+    fee_per_class: owned.group.fee_per_class,
+    status: owned.group.status,
+  };
+
+  if (Object.keys(updates).length > 0) {
+    const { data: updated, error: updateErr } = await auth.supabaseAdmin
+      .from('student_groups')
+      .update(updates)
+      .eq('id', groupId)
+      .eq('teacher_id', auth.userId)
+      .eq('kind', 'private')
+      .select('id, name, fee_per_class, status')
+      .single();
+    if (updateErr) {
+      const pgCode = (updateErr as { code?: string }).code;
+      if (pgCode === '23514' || pgCode === '23502') {
+        return NextResponse.json(
+          { error: 'Invalid request', code: 'invalid_group' },
+          { status: 400 },
+        );
+      }
+      return serverError('group_update', updateErr);
     }
-    return serverError('group_update', updateErr);
+    g = updated as typeof g;
   }
 
-  const g = updated as {
-    id: string;
-    name: string | null;
-    fee_per_class: number | string | null;
-    status: string | null;
-  };
+  // Replace-all schedule semantics: an empty array clears the schedule, a
+  // non-empty array becomes the new full set. Delete-then-insert is the
+  // simplest correct shape (slots have no identity the form preserves).
+  if (scheduleSlots !== null) {
+    const { error: deleteErr } = await auth.supabaseAdmin
+      .from('group_schedule')
+      .delete()
+      .eq('group_id', groupId);
+    if (deleteErr) {
+      return serverError('schedule_delete', deleteErr);
+    }
+    if (scheduleSlots.length > 0) {
+      const { error: insertErr } = await auth.supabaseAdmin
+        .from('group_schedule')
+        .insert(
+          scheduleSlots.map((s) => ({
+            group_id: groupId,
+            day_of_week: s.day_of_week,
+            time_start: s.time_start,
+            duration_minutes: s.duration_minutes,
+          })),
+        );
+      if (insertErr) {
+        return serverError('schedule_insert', insertErr);
+      }
+    }
+    // Students see schedule changes over WhatsApp (Phase 4 stub today).
+    // Fail open: a notification failure never fails the save.
+    try {
+      await queueScheduleChangedNotification(groupId, auth.userId, auth.supabaseAdmin);
+    } catch (notifyErr) {
+      Sentry.withScope((scope) => {
+        scope.setTag('route', ROUTE_TAG);
+        scope.setTag('step', 'schedule_changed_notification');
+        Sentry.captureMessage(
+          `queueScheduleChangedNotification failed: ${(notifyErr as Error).message}`,
+          'warning',
+        );
+      });
+    }
+  }
   return NextResponse.json({
     group: {
       id: g.id,

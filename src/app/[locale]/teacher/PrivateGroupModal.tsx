@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { X, Loader2, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import ScheduleSlotsEditor, {
+  type ScheduleSlot,
+} from '@/components/teacher/schedule/ScheduleSlotsEditor';
 
 type CreatedGroup = {
   id: string;
@@ -33,9 +36,11 @@ export default function PrivateGroupModal({
   onCreated: (group: CreatedGroup) => void;
 }) {
   const t = useTranslations('teacherPortal.createGroup');
+  const tGroups = useTranslations('teacherPortal.groups');
 
   const [name, setName] = useState('');
   const [fee, setFee] = useState('');
+  const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlot[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,12 +73,17 @@ export default function PrivateGroupModal({
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ name: trimmed, fee_per_class: feeNum }),
+        body: JSON.stringify({
+          name: trimmed,
+          fee_per_class: feeNum,
+          ...(scheduleSlots.length > 0 ? { schedule: scheduleSlots } : {}),
+        }),
       });
       const data = (await res.json()) as { group?: CreatedGroup; code?: string };
       if (res.ok && data.group) {
         setName('');
         setFee('');
+        setScheduleSlots([]);
         onCreated(data.group);
         return;
       }
@@ -99,7 +109,7 @@ export default function PrivateGroupModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6"
+        className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -156,6 +166,16 @@ export default function PrivateGroupModal({
             onChange={(e) => setFee(e.target.value)}
             className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-teal)] focus:ring-2 focus:ring-teal-500"
           />
+        </div>
+
+        <div className="mb-4">
+          <p className="mb-1 text-sm font-medium text-[var(--color-text-primary)]">
+            {tGroups('addSchedule')}{' '}
+            <span className="font-normal text-[var(--color-text-muted)]">
+              {tGroups('scheduleOptional')}
+            </span>
+          </p>
+          <ScheduleSlotsEditor value={scheduleSlots} onChange={setScheduleSlots} />
         </div>
 
         {error && (

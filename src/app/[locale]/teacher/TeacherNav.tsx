@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import {
   Home,
   Building2,
+  CalendarDays,
   LineChart,
   Users,
   UserRound,
@@ -43,6 +44,9 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'home', icon: Home, route: '/teacher' },
+  // Always unlocked: schedule is a Standard feature; the portal layout gate
+  // already covers lapsed teachers.
+  { key: 'schedule', icon: CalendarDays, route: '/teacher/schedule' },
   { key: 'centers', icon: Building2, route: '/teacher/centers' },
   { key: 'income', icon: LineChart, route: '/teacher/income', lockable: true },
   { key: 'groups', icon: Users, route: '/teacher/groups', lockable: true },
@@ -52,7 +56,7 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 // Compact subset for the mobile bottom tab bar.
-const MOBILE_KEYS = ['home', 'centers', 'income', 'groups', 'settings'];
+const MOBILE_KEYS = ['home', 'schedule', 'centers', 'income', 'groups', 'settings'];
 
 export default function TeacherNav({
   privateAccess,

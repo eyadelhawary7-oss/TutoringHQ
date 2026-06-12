@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherAuth, requireTeacherPrivateAccess } from '@/lib/centerAuth';
+import { parseScheduleSlots, type ScheduleSlotInput } from '@/lib/teacherSchedule';
 
 type GroupRow = {
   id: string;
@@ -125,9 +126,14 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
-  const { name: rawName, fee_per_class: rawFee } = (body ?? {}) as {
+  const {
+    name: rawName,
+    fee_per_class: rawFee,
+    schedule: rawSchedule,
+  } = (body ?? {}) as {
     name?: unknown;
     fee_per_class?: unknown;
+    schedule?: unknown;
   };
 
   const name = typeof rawName === 'string' ? rawName.trim() : '';
@@ -145,6 +151,18 @@ export async function POST(request: NextRequest) {
       { error: 'Invalid request', code: 'invalid_fee' },
       { status: 400 },
     );
+  }
+
+  let scheduleSlots: ScheduleSlotInput[] = [];
+  if (rawSchedule !== undefined && rawSchedule !== null) {
+    const parsed = parseScheduleSlots(rawSchedule);
+    if (!parsed.ok) {
+      return NextResponse.json(
+        { error: 'Invalid request', code: 'invalid_schedule' },
+        { status: 400 },
+      );
+    }
+    scheduleSlots = parsed.slots;
   }
 
   const { data: subRow, error: subErr } = await auth.supabaseAdmin
@@ -199,6 +217,33 @@ export async function POST(request: NextRequest) {
   }
 
   const g = inserted as GroupRow;
+
+  // Schedule slots are best-effort on create: the group itself must always
+  // succeed (it is what provisions the trial). A failed slot insert is a
+  // Sentry warning, never a rollback - the teacher can re-add slots via edit.
+  if (scheduleSlots.length > 0) {
+    const { error: scheduleErr } = await auth.supabaseAdmin
+      .from('group_schedule')
+      .insert(
+        scheduleSlots.map((s) => ({
+          group_id: g.id,
+          day_of_week: s.day_of_week,
+          time_start: s.time_start,
+          duration_minutes: s.duration_minutes,
+        })),
+      );
+    if (scheduleErr) {
+      Sentry.withScope((scope) => {
+        scope.setTag('route', 'api/teacher/private/groups');
+        scope.setTag('step', 'schedule_insert');
+        Sentry.captureMessage(
+          `group schedule insert failed after group create: ${scheduleErr.message}`,
+          'warning',
+        );
+      });
+    }
+  }
+
   return NextResponse.json(
     {
       group: {

@@ -5,6 +5,9 @@ import { useTranslations } from 'next-intl';
 import { Archive, Loader2, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
+import ScheduleSlotsEditor, {
+  type ScheduleSlot,
+} from '@/components/teacher/schedule/ScheduleSlotsEditor';
 
 type UpdatedGroup = {
   id: string;
@@ -36,9 +39,12 @@ export default function EditGroupModal({
   onArchived: () => void;
 }) {
   const t = useTranslations('teacherPortal.editGroup');
+  const tGroups = useTranslations('teacherPortal.groups');
 
   const [name, setName] = useState(group.name ?? '');
   const [fee, setFee] = useState(String(group.fee_per_class || ''));
+  const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlot[]>([]);
+  const [scheduleLoaded, setScheduleLoaded] = useState(false);
   const [confirmingArchive, setConfirmingArchive] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [archiving, setArchiving] = useState(false);
@@ -53,6 +59,44 @@ export default function EditGroupModal({
       setError(null);
     }
   }, [open, group.name, group.fee_per_class]);
+
+  // Existing recurring slots, loaded on open. If the load fails the editor
+  // stays hidden (scheduleLoaded=false) so a save can never silently wipe
+  // slots it failed to display.
+  useEffect(() => {
+    if (!open) return;
+    setScheduleLoaded(false);
+    let stale = false;
+    (async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) return;
+        const res = await fetch(`/api/teacher/private/groups/${group.id}/schedule`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          slots?: { day_of_week: number; time_start: string; duration_minutes: number }[];
+        };
+        if (stale) return;
+        setScheduleSlots(
+          (data.slots ?? []).map((s) => ({
+            day_of_week: s.day_of_week,
+            time_start: s.time_start,
+            duration_minutes: s.duration_minutes,
+          })),
+        );
+        setScheduleLoaded(true);
+      } catch {
+        // Editor stays hidden; name/fee editing still works.
+      }
+    })();
+    return () => {
+      stale = true;
+    };
+  }, [open, group.id]);
 
   if (!open) return null;
 
@@ -86,7 +130,11 @@ export default function EditGroupModal({
     }
     setSubmitting(true);
     try {
-      const res = await patchGroup({ name: trimmed, fee_per_class: feeNum });
+      const res = await patchGroup({
+        name: trimmed,
+        fee_per_class: feeNum,
+        ...(scheduleLoaded ? { schedule: scheduleSlots } : {}),
+      });
       if (!res) {
         setError(t('genericError'));
         return;
@@ -134,7 +182,7 @@ export default function EditGroupModal({
       <div
         role="dialog"
         aria-modal="true"
-        className="w-full max-w-md rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6"
+        className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -207,6 +255,18 @@ export default function EditGroupModal({
                 <p className="mt-1.5 text-xs text-[var(--color-warning)]">{t('feeWarning')}</p>
               )}
             </div>
+
+            {scheduleLoaded && (
+              <div>
+                <div className="mb-2 rounded-lg border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 p-3 text-xs text-[var(--color-warning)]">
+                  {tGroups('scheduleChangedWarning')}
+                </div>
+                <p className="mb-1 text-sm font-medium text-[var(--color-text-primary)]">
+                  {tGroups('editSchedule')}
+                </p>
+                <ScheduleSlotsEditor value={scheduleSlots} onChange={setScheduleSlots} />
+              </div>
+            )}
 
             {error && (
               <p className="text-sm text-[var(--color-danger)]" role="alert">
