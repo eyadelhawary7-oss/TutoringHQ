@@ -24,7 +24,7 @@ App UI uses logical CSS properties only (`margin-inline-start`, `inset-inline-en
 
 Translated copy must use commas (U+002C in English, U+060C `،` in Arabic), periods, or sentence breaks. Em dashes (`—`) are forbidden in `messages/*.json` values and any user-rendered string. Internal docs and code comments are unconstrained.
 
-## Rule 144 -- Canonical design system (updated: ADR 031 resolved, cream default)
+## Rule 144 — Canonical design system (updated: ADR 031 resolved, cream default)
 
 UI surfaces use the cream token set defined in src/app/globals.css:
   --paper: #ece8df (page background)
@@ -43,7 +43,32 @@ for the full token list. Design is enforced via TypeScript (ADR 014).
 
 After applying any schema migration, verify the change by querying the Postgres catalog (`information_schema.tables`, `pg_indexes`, `pg_constraint`) — NOT by reading `supabase_migrations.schema_migrations`. The migrations table is metadata; the catalog is ground truth.
 
-## Rule 152 -- auth.users rows created via admin API require explicit empty-string token fields
+## Rule 147 — Mobile GitHub merge hazard
+
+Never merge PRs or resolve conflicts via the GitHub mobile app or GitHub web editor on mobile. The mobile interface silently drops conflict markers and can corrupt files without warning. All merges must happen via the GitHub desktop web UI or CLI on a device with a full keyboard.
+
+## Rule 148 — Env vars only take effect on new deploy
+
+Environment variable changes in Vercel (adding, updating, or removing vars) do NOT affect the currently running deployment. A new deploy is required for any env var change to take effect. This includes PAYMOB_ENABLED, CSRF_SECRET, UPSTASH_REDIS_REST_URL, and all HMAC secrets. Always trigger a redeploy after changing env vars in production or preview.
+
+## Rule 149 — Fail CLOSED for money and credentials, fail OPEN for availability
+
+Security and payment gates must fail CLOSED: if a dependency (Upstash, Supabase, external API) is unreachable, deny the request rather than allow it through. Availability-only features (e.g. rate limiting on a PIN-change flow, OTP delivery) may fail OPEN so that an outage does not lock legitimate users out of non-money operations. Every new gate must explicitly decide which failure mode applies and document it inline.
+
+## Rule 150 — Set-PIN trust anchor is the webhook token, not the session
+
+The set-PIN flow is deliberately sessionless. The trust anchor is a single-use webhook token issued by the server and delivered via WhatsApp. The token is verified server-side before any PIN is written. No browser session, cookie, or bearer token is trusted for this flow. The token must be short-lived (15 minutes), single-use (consumed on first verification), and scoped to one phone number. See ADR 024.
+
+## Rule 151 — Identity resolution pattern for all protected routes
+
+Every protected API route MUST resolve the actor's identity in this order:
+1. Verify the bearer token via `supabase.auth.getUser()` (never decode JWT client-side).
+2. Look up the actor's row in `public.users` via the admin client using `user.id` as the key.
+3. Derive all authorization decisions (role, center_id, permissions) from the `public.users` row, never from the JWT claims directly.
+
+A route that skips step 2 and reads role/center from JWT claims is a wide-select-dropped-error waiting to happen. The JWT is authentication proof only. Authorization always comes from the database row. This pattern is enforced by `requireCenterAuth` and `requireTeacherAuth` — use those helpers, do not reimplement the pattern inline.
+
+## Rule 152 — auth.users rows created via admin API require explicit empty-string token fields
 
 Every `auth.users` row created via the Supabase admin API (`supabaseAdmin.auth.admin.createUser`)
 MUST set the following four fields to empty string `''` (never `null`, never omitted):
