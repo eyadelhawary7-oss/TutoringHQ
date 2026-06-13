@@ -32,10 +32,18 @@ export type RecordedSessionItem = {
   scheduled_date: string; // YYYY-MM-DD (Cairo)
 };
 
+export type LiveSessionItem = {
+  session_id: string;
+  group_id: string;
+  session_date: string; // YYYY-MM-DD (Cairo)
+  attendee_ids: string[];
+};
+
 type ScheduleResponse = {
   slots: ScheduleSlotItem[];
   exceptions: ScheduleExceptionItem[];
   sessions: RecordedSessionItem[];
+  live_sessions: LiveSessionItem[];
 };
 
 /**
@@ -47,6 +55,7 @@ export function useTeacherSchedule() {
   const [slots, setSlots] = useState<ScheduleSlotItem[]>([]);
   const [exceptions, setExceptions] = useState<ScheduleExceptionItem[]>([]);
   const [sessions, setSessions] = useState<RecordedSessionItem[]>([]);
+  const [liveSessions, setLiveSessions] = useState<LiveSessionItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -71,6 +80,7 @@ export function useTeacherSchedule() {
       setSlots(data.slots ?? []);
       setExceptions(data.exceptions ?? []);
       setSessions(data.sessions ?? []);
+      setLiveSessions(data.live_sessions ?? []);
     } catch {
       setError(true);
     } finally {
@@ -82,5 +92,5 @@ export function useTeacherSchedule() {
     refetch();
   }, [refetch]);
 
-  return { slots, exceptions, sessions, isLoading, error, refetch };
+  return { slots, exceptions, sessions, liveSessions, isLoading, error, refetch };
 }

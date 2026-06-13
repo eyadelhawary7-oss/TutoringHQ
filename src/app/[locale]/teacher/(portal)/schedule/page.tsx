@@ -25,7 +25,13 @@ import SlotActionSheet, {
 
 type View = 'today' | 'week';
 
-type OccurrenceState = 'future' | 'unrecorded' | 'recorded' | 'cancelled' | 'readonly';
+type OccurrenceState =
+  | 'future'
+  | 'unrecorded'
+  | 'live'
+  | 'recorded'
+  | 'cancelled'
+  | 'readonly';
 
 type Occurrence = {
   slot: ScheduleSlotItem;
@@ -34,6 +40,7 @@ type Occurrence = {
   effectiveTime: string; // HH:MM after applying a reschedule
   state: OccurrenceState;
   sessionId: string | null;
+  liveAttendees: string[];
 };
 
 /** 0=Sunday..6=Saturday for a Cairo calendar date (Gregorian). */
@@ -62,7 +69,8 @@ export default function TeacherSchedulePage() {
     router.replace(`/teacher/schedule?view=${v}`, { scroll: false });
   };
 
-  const { slots, exceptions, sessions, isLoading, error, refetch } = useTeacherSchedule();
+  const { slots, exceptions, sessions, liveSessions, isLoading, error, refetch } =
+    useTeacherSchedule();
 
   const [activeOccurrence, setActiveOccurrence] = useState<SlotOccurrence | null>(null);
   // Plan gates the guest-attendee section in the sheet. Fetched once here (not
@@ -89,6 +97,17 @@ export default function TeacherSchedulePage() {
     return map;
   }, [sessions]);
 
+  const liveByGroupDate = useMemo(() => {
+    const map = new Map<string, { sessionId: string; attendeeIds: string[] }>();
+    for (const s of liveSessions) {
+      map.set(`${s.group_id}|${s.session_date}`, {
+        sessionId: s.session_id,
+        attendeeIds: s.attendee_ids,
+      });
+    }
+    return map;
+  }, [liveSessions]);
+
   const exceptionBySlotDate = useMemo(() => {
     const map = new Map<string, ScheduleExceptionItem>();
     for (const e of exceptions) {
@@ -103,11 +122,20 @@ export default function TeacherSchedulePage() {
       exception?.kind === 'rescheduled' && exception.new_time_start
         ? exception.new_time_start
         : slot.time_start;
-    const sessionId = sessionByGroupDate.get(`${slot.group_id}|${date}`) ?? null;
+    const recordedId = sessionByGroupDate.get(`${slot.group_id}|${date}`) ?? null;
+    const live = liveByGroupDate.get(`${slot.group_id}|${date}`) ?? null;
 
     let state: OccurrenceState;
-    if (sessionId) {
+    let sessionId: string | null = recordedId;
+    let liveAttendees: string[] = [];
+    if (recordedId) {
       state = 'recorded';
+    } else if (live) {
+      // A live session is the persistent mid-class state - the slot opens
+      // straight into the live phase, attendees pre-ticked.
+      state = 'live';
+      sessionId = live.sessionId;
+      liveAttendees = live.attendeeIds;
     } else if (exception?.kind === 'cancelled') {
       state = 'cancelled';
     } else if (date > todayKey) {
@@ -118,7 +146,7 @@ export default function TeacherSchedulePage() {
     } else {
       state = 'unrecorded';
     }
-    return { slot, date, exception, effectiveTime, state, sessionId };
+    return { slot, date, exception, effectiveTime, state, sessionId, liveAttendees };
   };
 
   const todayOccurrences = useMemo(() => {
@@ -127,7 +155,7 @@ export default function TeacherSchedulePage() {
       .map((s) => occurrenceFor(s, todayKey))
       .sort((a, b) => a.effectiveTime.localeCompare(b.effectiveTime));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slots, exceptions, sessions, todayKey, todayDow]);
+  }, [slots, exceptions, sessions, liveSessions, todayKey, todayDow]);
 
   const weekDates = useMemo(() => {
     const sunday = cairoYmdMinusDays(todayKey, todayDow);
@@ -146,11 +174,13 @@ export default function TeacherSchedulePage() {
     const sheetState: SlotOccurrence['state'] | null =
       o.state === 'recorded'
         ? 'recorded'
-        : o.state === 'unrecorded'
-          ? 'unrecorded'
-          : o.state === 'future' || o.state === 'readonly'
-            ? 'future'
-            : null;
+        : o.state === 'live'
+          ? 'live'
+          : o.state === 'unrecorded'
+            ? 'unrecorded'
+            : o.state === 'future' || o.state === 'readonly'
+              ? 'future'
+              : null;
     if (!sheetState) return null;
     return {
       groupId: o.slot.group_id,
@@ -163,6 +193,7 @@ export default function TeacherSchedulePage() {
       durationMinutes: o.slot.duration_minutes,
       state: sheetState,
       sessionId: o.sessionId,
+      initialAttendees: o.liveAttendees,
     };
   };
 
@@ -219,6 +250,15 @@ export default function TeacherSchedulePage() {
           {o.exception?.kind === 'rescheduled' && (
             <span className="rounded-full bg-[var(--color-brass)]/15 px-3 py-1 text-xs font-medium text-[var(--color-brass)]">
               {t('rescheduledBadge')}
+            </span>
+          )}
+          {o.state === 'live' && (
+            <span className="flex items-center gap-1.5 rounded-full bg-[var(--color-teal-soft)] px-3 py-1 text-xs font-medium text-[var(--color-teal-deep)]">
+              <span
+                className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--color-teal)]"
+                aria-hidden
+              />
+              {t('classLive')}
             </span>
           )}
           {o.state === 'unrecorded' && (
@@ -285,6 +325,15 @@ export default function TeacherSchedulePage() {
               </p>
               {o.state === 'cancelled' && (
                 <p className="text-[10px] text-[var(--color-text-muted)]">{t('cancelledBadge')}</p>
+              )}
+              {o.state === 'live' && (
+                <p className="flex items-center gap-1 text-[10px] font-medium text-[var(--color-teal-deep)]">
+                  <span
+                    className="h-1 w-1 animate-pulse rounded-full bg-[var(--color-teal)]"
+                    aria-hidden
+                  />
+                  {t('classLive')}
+                </p>
               )}
             </>
           );

@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
   }
   const groups = (groupRows ?? []) as GroupRow[];
   if (groups.length === 0) {
-    return NextResponse.json({ slots: [], exceptions: [], sessions: [] });
+    return NextResponse.json({ slots: [], exceptions: [], sessions: [], live_sessions: [] });
   }
   const groupIds = groups.map((g) => g.id);
   const groupById = new Map(groups.map((g) => [g.id, g]));
@@ -101,24 +101,60 @@ export async function GET(request: NextRequest) {
   }
   const exceptions = (exceptionRows ?? []) as ExceptionRow[];
 
-  // Recorded sessions over the last 30 Cairo days: how the UI tells an
-  // unrecorded past occurrence (actions) from a recorded one (detail link).
+  // Sessions over the last 30 Cairo days. Two surfaces split off the same read:
+  //   finished -> `sessions` (the recorded-slot detail link)
+  //   live     -> `live_sessions` (the slot opens straight into the live phase)
+  // scheduled/cancelled sessions stay unrecorded as far as the schedule grid
+  // is concerned.
   const sessionsSince = startOfUtcInstantForCairoCalendarDay(
     cairoYmdMinusDays(todayKey, 30),
   );
   const { data: sessionRows, error: sessionsErr } = await auth.supabaseAdmin
     .from('sessions')
-    .select('id, group_id, scheduled_at')
+    .select('id, group_id, scheduled_at, status')
     .in('group_id', groupIds)
     .gte('scheduled_at', sessionsSince.toISOString());
   if (sessionsErr) {
     return serverError('session_list', sessionsErr);
   }
-  const sessions = (sessionRows ?? []) as {
+  const allSessions = (sessionRows ?? []) as {
     id: string;
     group_id: string;
     scheduled_at: string;
+    status: string;
   }[];
+  const sessions = allSessions.filter((s) => s.status === 'finished');
+  const liveSessions = allSessions.filter((s) => s.status === 'live');
+
+  // Pre-load each live session's current attendees so the sheet opens with the
+  // right checkboxes ticked.
+  const liveAttendeesBySession = new Map<string, string[]>();
+  if (liveSessions.length > 0) {
+    const liveIds = liveSessions.map((s) => s.id);
+    const { data: liveScanRows, error: liveScanErr } = await auth.supabaseAdmin
+      .from('attendance_scans')
+      .select('session_id, student_id')
+      .in('session_id', liveIds);
+    if (liveScanErr) {
+      Sentry.withScope((scope) => {
+        scope.setTag('route', ROUTE_TAG);
+        scope.setTag('step', 'live_attendees');
+        Sentry.captureMessage(
+          `live-session attendee lookup failed: ${liveScanErr.message}`,
+          'warning',
+        );
+      });
+    } else {
+      for (const r of (liveScanRows ?? []) as {
+        session_id: string;
+        student_id: string;
+      }[]) {
+        const list = liveAttendeesBySession.get(r.session_id) ?? [];
+        list.push(r.student_id);
+        liveAttendeesBySession.set(r.session_id, list);
+      }
+    }
+  }
 
   const enrolledByGroup = new Map<string, number>();
   const { data: enrollmentRows, error: enrollErr } = await auth.supabaseAdmin
@@ -167,6 +203,12 @@ export async function GET(request: NextRequest) {
       id: s.id,
       group_id: s.group_id,
       scheduled_date: cairoDateKey(new Date(s.scheduled_at)),
+    })),
+    live_sessions: liveSessions.map((s) => ({
+      session_id: s.id,
+      group_id: s.group_id,
+      session_date: cairoDateKey(new Date(s.scheduled_at)),
+      attendee_ids: liveAttendeesBySession.get(s.id) ?? [],
     })),
   });
 }

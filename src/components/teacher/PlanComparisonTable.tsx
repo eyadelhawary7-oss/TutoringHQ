@@ -89,12 +89,7 @@ export default function PlanComparisonTable() {
                 <div className="num text-xs text-[var(--color-text-muted)]">{t('standardPrice')}</div>
               </th>
               <th className="p-3 text-center align-top">
-                <div className="flex items-center justify-center gap-1.5">
-                  <span className="font-bold text-[var(--color-text-primary)]">{t('proName')}</span>
-                  <span className="rounded-full bg-[var(--color-brass)] px-2 py-0.5 text-[10px] font-medium text-white">
-                    {t('mostComprehensive')}
-                  </span>
-                </div>
+                <div className="font-bold text-[var(--color-text-primary)]">{t('proName')}</div>
                 <div className="num text-xs text-[var(--color-text-muted)]">{t('proPrice')}</div>
               </th>
             </tr>

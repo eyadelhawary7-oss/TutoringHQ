@@ -6,7 +6,7 @@ import { Banknote, ChevronDown, Loader2, Lock, Plus, Smartphone, X } from 'lucid
 import { Link } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
-import { formatTimeRange } from '@/lib/timeFormat';
+import { formatTime, formatTimeRange } from '@/lib/timeFormat';
 import { useToast } from '@/hooks/useToast';
 import SheetShell from './SheetShell';
 
@@ -19,8 +19,10 @@ export type SlotOccurrence = {
   enrolledCount: number;
   effectiveTime: string; // HH:MM
   durationMinutes: number;
-  state: 'future' | 'unrecorded' | 'recorded';
+  state: 'future' | 'unrecorded' | 'live' | 'recorded';
   sessionId: string | null;
+  /** For a live session: the student ids already scanned present. */
+  initialAttendees?: string[];
 };
 
 type RosterStudent = { id: string; name: string | null };
@@ -43,6 +45,8 @@ type SessionDetail = {
   }[];
 };
 
+type SaveState = 'idle' | 'saving' | 'saved' | 'error';
+
 const STATUS_BADGE: Record<string, string> = {
   paid: 'bg-[var(--color-teal-soft)] text-[var(--color-teal-deep)]',
   pending: 'bg-[var(--color-brass)]/15 text-[var(--color-brass)]',
@@ -54,6 +58,8 @@ const KNOWN_STATUSES = new Set(['paid', 'pending', 'failed', 'cancelled']);
 const GUEST_PHONE_RE = /^01\d{9}$/;
 // Pro guest attendees are capped per session (server enforces the same limit).
 const GUEST_LIMIT = 10;
+// Debounce window before an attendance edit is synced to the live session.
+const SAVE_DEBOUNCE_MS = 800;
 
 async function authHeader(): Promise<Record<string, string> | null> {
   const {
@@ -65,13 +71,13 @@ async function authHeader(): Promise<Record<string, string> | null> {
 
 /**
  * Unified slot bottom sheet. One sheet for everything a teacher can do with a
- * single schedule-slot occurrence, branching on slot state:
+ * single schedule-slot occurrence, branching on phase:
  *   future     -> read-only group info + cancel / reschedule
- *   unrecorded -> record attendance (enrolled + one-time guests) + cancel /
- *                 reschedule
- *   recorded   -> read-only session summary + link into the group
- * Replaces the separate RecordAttendanceSheet / CancelClassDialog /
- * RescheduleDialog / SessionDetailSheet.
+ *   unrecorded -> PHASE 1: "start class" + read-only roster + cancel/reschedule
+ *   live       -> PHASE 2: live attendance (auto-saved), payment, end + bill
+ *   recorded   -> PHASE 3: read-only session summary + link into the group
+ * The live phase is persistent: closing and reopening the slot lands straight
+ * back in PHASE 2 with the recorded attendance pre-ticked.
  */
 export default function SlotActionSheet({
   open,
@@ -94,46 +100,49 @@ export default function SlotActionSheet({
   const timeLabels = { am: tf('am'), pm: tf('pm') };
   const isPro = planKey === 'teacher_699';
 
-  // Roster (future + unrecorded)
+  // Phase + live-session identity. Phase starts from the occurrence state and
+  // advances in place as the teacher starts / finishes the class.
+  const [phase, setPhase] = useState<SlotOccurrence['state']>('future');
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  // Roster (future / unrecorded / live)
   const [roster, setRoster] = useState<RosterStudent[]>([]);
   const [rosterLoading, setRosterLoading] = useState(false);
   const [rosterError, setRosterError] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  // Guests (unrecorded)
-  const [guests, setGuests] = useState<GuestDraft[]>([]);
+  // Guests
+  const [liveGuests, setLiveGuests] = useState<GuestDraft[]>([]); // pending, not yet created
+  const [guestNamesById, setGuestNamesById] = useState<Map<string, string>>(new Map());
   const [showGuestForm, setShowGuestForm] = useState(false);
   const [guestName, setGuestName] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
   const [guestError, setGuestError] = useState<string | null>(null);
 
-  // Payment method (unrecorded). Cash collects on the spot; digital is the
-  // future Paymob payment-link flow (shows a "coming soon" note and records as
-  // cash for now). The server resolves the final outcome.
+  // Payment method (live). Cash collects on the spot; digital is the future
+  // Paymob payment-link flow (records as cash for now). The server resolves it.
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'digital'>('cash');
 
-  // Submit (record)
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const attendanceRef = useRef<HTMLElement | null>(null);
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  // Start (PHASE 1 -> PHASE 2)
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
 
-  // Scroll the (fixed-height) sheet body down to the attendance section. The
-  // sheet body is an overflow-y-auto container, so scrollIntoView on its own
-  // is unreliable here - drive the container's scrollTop off the section's
-  // position relative to the container instead.
-  const scrollToAttendance = () => {
-    const container = scrollContainerRef.current;
-    const target = attendanceRef.current;
-    if (!container || !target) return;
-    const top =
-      target.getBoundingClientRect().top -
-      container.getBoundingClientRect().top +
-      container.scrollTop;
-    container.scrollTo({ top, behavior: 'smooth' });
-  };
+  // Live auto-save
+  const [saveState, setSaveState] = useState<SaveState>('idle');
+  // True only after a real teacher edit, so the prefill / created-guest sync
+  // never triggers a redundant save round-trip.
+  const userEditedRef = useRef(false);
+  // The slot's server state changed (start / save / finish / cancel) so the
+  // schedule must refetch when the sheet closes.
+  const changedRef = useRef(false);
 
-  // Cancel / reschedule accordions
+  // Finish (PHASE 2 -> PHASE 3)
+  const [finishing, setFinishing] = useState(false);
+  const [finishError, setFinishError] = useState<string | null>(null);
+  const [confirmCancelLive, setConfirmCancelLive] = useState(false);
+  const [cancelPending, setCancelPending] = useState(false);
+
+  // Cancel / reschedule accordions (PHASE 1 + future)
   const [openSection, setOpenSection] = useState<'cancel' | 'reschedule' | null>(null);
   const [actionPending, setActionPending] = useState(false);
   const [newDate, setNewDate] = useState('');
@@ -141,36 +150,52 @@ export default function SlotActionSheet({
   const [rescheduleNote, setRescheduleNote] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
 
-  // Recorded detail
+  // Recorded detail (PHASE 3)
   const [detail, setDetail] = useState<SessionDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState(false);
 
   const groupId = occurrence?.groupId ?? '';
-  const sessionId = occurrence?.sessionId ?? null;
-  const state = occurrence?.state ?? 'future';
+  const initialState = occurrence?.state ?? 'future';
 
-  // Reset transient state every time the sheet opens for a new occurrence.
+  // Reset all transient state every time the sheet opens for a new occurrence.
   useEffect(() => {
     if (!open) return;
-    setSelected(new Set());
-    setGuests([]);
+    setPhase(initialState);
+    setSessionId(occurrence?.sessionId ?? null);
+    setSelected(
+      new Set(initialState === 'live' ? (occurrence?.initialAttendees ?? []) : []),
+    );
+    setLiveGuests([]);
+    setGuestNamesById(new Map());
     setShowGuestForm(false);
     setGuestName('');
     setGuestPhone('');
     setGuestError(null);
     setPaymentMethod('cash');
-    setSubmitError(null);
+    setStarting(false);
+    setStartError(null);
+    setSaveState('idle');
+    userEditedRef.current = false;
+    changedRef.current = false;
+    setFinishing(false);
+    setFinishError(null);
+    setConfirmCancelLive(false);
+    setCancelPending(false);
     setOpenSection(null);
     setActionError(null);
     setNewDate('');
     setNewTime(occurrence?.effectiveTime ?? '');
     setRescheduleNote('');
-  }, [open, occurrence?.scheduleId, occurrence?.date, occurrence?.effectiveTime]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, occurrence?.scheduleId, occurrence?.date, occurrence?.effectiveTime, initialState, occurrence?.sessionId]);
 
-  // Load the active roster for future / unrecorded states.
+  // Load the active roster for the states that show one.
   useEffect(() => {
-    if (!open || !groupId || (state !== 'future' && state !== 'unrecorded')) return;
+    if (!open || !groupId) return;
+    if (initialState !== 'future' && initialState !== 'unrecorded' && initialState !== 'live') {
+      return;
+    }
     let stale = false;
     setRosterLoading(true);
     setRosterError(false);
@@ -204,11 +229,11 @@ export default function SlotActionSheet({
     return () => {
       stale = true;
     };
-  }, [open, groupId, state]);
+  }, [open, groupId, initialState]);
 
-  // Load the recorded-session detail.
+  // Load the recorded-session detail (PHASE 3).
   useEffect(() => {
-    if (!open || state !== 'recorded' || !sessionId) return;
+    if (!open || phase !== 'recorded' || !sessionId) return;
     let stale = false;
     setDetail(null);
     setDetailLoading(true);
@@ -235,11 +260,30 @@ export default function SlotActionSheet({
     return () => {
       stale = true;
     };
-  }, [open, state, sessionId]);
+  }, [open, phase, sessionId]);
+
+  // Debounced auto-save of live attendance. Fires only after a real edit.
+  useEffect(() => {
+    if (phase !== 'live' || !sessionId || !userEditedRef.current) return;
+    const handle = setTimeout(() => {
+      void saveLiveAttendance();
+    }, SAVE_DEBOUNCE_MS);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected, liveGuests, phase, sessionId]);
 
   if (!open || !occurrence) return null;
 
-  const toggle = (id: string) => {
+  const handleClose = () => {
+    if (changedRef.current) onChanged();
+    else onClose();
+  };
+
+  // ---- Live attendance ----
+
+  const toggleLive = (id: string) => {
+    userEditedRef.current = true;
+    setSaveState('idle');
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -247,6 +291,212 @@ export default function SlotActionSheet({
       return next;
     });
   };
+
+  const selectAllLive = () => {
+    userEditedRef.current = true;
+    setSaveState('idle');
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const s of roster) next.add(s.id);
+      return next;
+    });
+  };
+
+  const removeCreatedGuest = (id: string) => {
+    userEditedRef.current = true;
+    setSaveState('idle');
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    setGuestNamesById((prev) => {
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
+    });
+  };
+
+  const saveLiveAttendance = async () => {
+    if (!sessionId) return;
+    setSaveState('saving');
+    try {
+      const headers = await authHeader();
+      if (!headers) {
+        setSaveState('error');
+        return;
+      }
+      const res = await fetch(
+        `/api/teacher/private/schedule/sessions/${sessionId}/attendance`,
+        {
+          method: 'PATCH',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            attendee_ids: Array.from(selected),
+            guests: liveGuests.map((g) => ({ name: g.name, phone: g.phone })),
+          }),
+        },
+      );
+      if (!res.ok) {
+        setSaveState('error');
+        return;
+      }
+      changedRef.current = true;
+      const data = (await res.json().catch(() => ({}))) as {
+        created_guests?: { name: string; phone: string; student_id: string }[];
+      };
+      const created = data.created_guests ?? [];
+      if (created.length > 0) {
+        // Fold created guests into local state without re-triggering a save.
+        userEditedRef.current = false;
+        setGuestNamesById((prev) => {
+          const next = new Map(prev);
+          for (const g of created) next.set(g.student_id, g.name);
+          return next;
+        });
+        setSelected((prev) => {
+          const next = new Set(prev);
+          for (const g of created) next.add(g.student_id);
+          return next;
+        });
+        setLiveGuests([]);
+      } else {
+        userEditedRef.current = false;
+      }
+      setSaveState('saved');
+    } catch {
+      setSaveState('error');
+    }
+  };
+
+  // ---- Start / finish / cancel ----
+
+  const startClass = async () => {
+    if (starting) return;
+    setStarting(true);
+    setStartError(null);
+    try {
+      const headers = await authHeader();
+      if (!headers) {
+        setStartError(t('genericError'));
+        return;
+      }
+      const res = await fetch('/api/teacher/private/schedule/sessions/start', {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          group_id: occurrence.groupId,
+          schedule_id: occurrence.scheduleId,
+          session_date: occurrence.date,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        session_id?: string;
+        attendees?: string[];
+        error?: string;
+      };
+      if (res.ok && data.session_id) {
+        changedRef.current = true;
+        setSessionId(data.session_id);
+        setSelected(new Set(data.attendees ?? []));
+        userEditedRef.current = false;
+        setSaveState('idle');
+        setPhase('live');
+        toast.success(t('classStarted'));
+        return;
+      }
+      if (res.status === 409 && data.error === 'SESSION_ALREADY_FINISHED') {
+        setStartError(t('genericError'));
+        changedRef.current = true;
+        return;
+      }
+      if (res.status === 409 && data.error === 'CLASS_CANCELLED') {
+        setStartError(t('classCancelledError'));
+        return;
+      }
+      setStartError(t('genericError'));
+    } catch {
+      setStartError(t('genericError'));
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  const finishClass = async () => {
+    if (!sessionId || finishing || totalPresent === 0) return;
+    setFinishing(true);
+    setFinishError(null);
+    try {
+      const headers = await authHeader();
+      if (!headers) {
+        setFinishError(t('genericError'));
+        return;
+      }
+      const res = await fetch(
+        `/api/teacher/private/schedule/sessions/${sessionId}/finish`,
+        {
+          method: 'POST',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payment_method: paymentMethod }),
+        },
+      );
+      if (res.status === 207) {
+        changedRef.current = true;
+        toast.warning(t('billingErrorWarning'));
+        setPhase('recorded');
+        return;
+      }
+      if (res.ok) {
+        changedRef.current = true;
+        toast.success(t('sessionFinishedSuccess'));
+        setPhase('recorded');
+        return;
+      }
+      setFinishError(t('genericError'));
+    } catch {
+      setFinishError(t('genericError'));
+    } finally {
+      setFinishing(false);
+    }
+  };
+
+  const cancelLiveSession = async () => {
+    if (!sessionId || cancelPending) return;
+    setCancelPending(true);
+    try {
+      const headers = await authHeader();
+      if (!headers) {
+        setFinishError(t('genericError'));
+        return;
+      }
+      const res = await fetch(
+        `/api/teacher/private/schedule/sessions/${sessionId}/cancel`,
+        {
+          method: 'POST',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        },
+      );
+      if (res.ok) {
+        toast.success(t('cancelledToast'));
+        onChanged();
+        return;
+      }
+      setFinishError(t('genericError'));
+    } catch {
+      setFinishError(t('genericError'));
+    } finally {
+      setCancelPending(false);
+      setConfirmCancelLive(false);
+    }
+  };
+
+  // ---- Guests ----
+
+  const createdGuestIds = Array.from(selected).filter((id) => guestNamesById.has(id));
+  const totalGuests = createdGuestIds.length + liveGuests.length;
+  const enrolledPresent = Array.from(selected).filter((id) => !guestNamesById.has(id)).length;
+  const totalPresent = enrolledPresent + createdGuestIds.length + liveGuests.length;
 
   const addGuest = () => {
     const name = guestName.trim();
@@ -258,88 +508,26 @@ export default function SlotActionSheet({
       setGuestError(t('guestPhoneInvalid'));
       return;
     }
-    if (guests.length >= GUEST_LIMIT) {
+    if (totalGuests >= GUEST_LIMIT) {
       setGuestError(t('guestLimitReached'));
       return;
     }
-    setGuests((prev) => [...prev, { name, phone: guestPhone.trim() }]);
+    userEditedRef.current = true;
+    setSaveState('idle');
+    setLiveGuests((prev) => [...prev, { name, phone: guestPhone.trim() }]);
     setGuestName('');
     setGuestPhone('');
     setGuestError(null);
     setShowGuestForm(false);
   };
 
-  const removeGuest = (idx: number) => {
-    setGuests((prev) => prev.filter((_, i) => i !== idx));
+  const removePendingGuest = (idx: number) => {
+    setLiveGuests((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const totalAttendees = selected.size + guests.length;
+  // ---- Cancel + reschedule exceptions (PHASE 1 + future) ----
 
-  const submitRecord = async () => {
-    if (totalAttendees === 0 || submitting) return;
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      const headers = await authHeader();
-      if (!headers) {
-        setSubmitError(t('genericError'));
-        return;
-      }
-      const res = await fetch('/api/teacher/private/schedule/sessions', {
-        method: 'POST',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          group_id: occurrence.groupId,
-          schedule_id: occurrence.scheduleId,
-          session_date: occurrence.date,
-          attendee_ids: Array.from(selected),
-          guests,
-          payment_method: paymentMethod,
-        }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        already_exists?: boolean;
-        payment_method?: 'cash' | 'digital';
-      };
-      if (res.status === 207) {
-        toast.warning(t('billingErrorWarning'));
-        onChanged();
-        return;
-      }
-      if (res.ok) {
-        if (data.already_exists) {
-          toast.success(t('recordedToast'));
-        } else {
-          toast.success(data.payment_method === 'digital' ? t('successDigital') : t('successCash'));
-        }
-        onChanged();
-        return;
-      }
-      if (res.status === 409 && data.error === 'CLASS_CANCELLED') {
-        setSubmitError(t('classCancelledError'));
-        return;
-      }
-      if (res.status === 403 && data.error === 'GUESTS_PRO_ONLY') {
-        setSubmitError(t('guestProOnly'));
-        return;
-      }
-      if (res.status === 400 && data.error === 'GUEST_LIMIT_EXCEEDED') {
-        setSubmitError(t('guestLimitReached'));
-        return;
-      }
-      setSubmitError(t('genericError'));
-    } catch {
-      setSubmitError(t('genericError'));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const postException = async (
-    body: Record<string, unknown>,
-    successMsg: string,
-  ) => {
+  const postException = async (body: Record<string, unknown>, successMsg: string) => {
     if (actionPending) return;
     setActionPending(true);
     setActionError(null);
@@ -535,17 +723,88 @@ export default function SlotActionSheet({
     </div>
   );
 
+  // ---- Guest section (Pro gate), shared by the live phase ----
+  const guestSection = !isPro ? (
+    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] px-4 py-3">
+      <span className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+        <Lock size={14} className="text-[var(--color-brass)]" aria-hidden />
+        {t('guestProOnly')}
+      </span>
+      <Link
+        href="/teacher/subscription/upgrade"
+        className="text-sm font-medium text-[var(--color-brass)] hover:underline"
+      >
+        {t('guestUpgradeCta')}
+      </Link>
+    </div>
+  ) : (
+    <div className="mt-3 flex flex-col gap-2">
+      <p className="text-xs text-[var(--color-text-muted)]">
+        {t('guestCount', {
+          current: formatNumber(totalGuests, locale, { integerOnly: true }),
+        })}
+      </p>
+      {totalGuests >= GUEST_LIMIT ? (
+        <p className="text-xs font-medium text-[var(--color-brass)]" role="status">
+          {t('guestLimitReached')}
+        </p>
+      ) : showGuestForm ? (
+        <div className="flex flex-col gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] p-3">
+          <input
+            type="text"
+            value={guestName}
+            onChange={(e) => setGuestName(e.target.value)}
+            placeholder={t('guestName')}
+            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+          />
+          <input
+            type="tel"
+            inputMode="numeric"
+            dir="ltr"
+            value={guestPhone}
+            onChange={(e) => setGuestPhone(e.target.value)}
+            placeholder={t('guestPhone')}
+            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+          />
+          {guestError && (
+            <p className="text-xs text-[var(--color-danger)]" role="alert">
+              {guestError}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={addGuest}
+            disabled={totalGuests >= GUEST_LIMIT}
+            className="self-start rounded-lg bg-[var(--color-brass)] px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {t('addGuest')}
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowGuestForm(true)}
+          className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-brass)]"
+        >
+          <Plus size={16} aria-hidden />
+          {t('addGuestAttendee')}
+        </button>
+      )}
+    </div>
+  );
+
   const footer =
-    state === 'unrecorded' ? (
+    phase === 'live' ? (
       <button
         type="button"
-        onClick={submitRecord}
-        disabled={totalAttendees === 0 || submitting}
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 font-medium text-primary-foreground transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+        onClick={finishClass}
+        disabled={totalPresent === 0 || finishing}
+        className="flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        style={{ background: 'var(--color-brass)' }}
       >
-        {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-        {t('submitRecord', {
-          count: formatNumber(totalAttendees, locale, { integerOnly: true }),
+        {finishing && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+        {t('endAndBill', {
+          count: formatNumber(totalPresent, locale, { integerOnly: true }),
         })}
       </button>
     ) : undefined;
@@ -556,12 +815,11 @@ export default function SlotActionSheet({
       title={occurrence.groupName ?? ''}
       subtitle={subtitle}
       closeLabel={t('close')}
-      onClose={onClose}
+      onClose={handleClose}
       footer={footer}
-      scrollContainerRef={scrollContainerRef}
     >
       {/* FUTURE */}
-      {state === 'future' && (
+      {phase === 'future' && (
         <div className="flex flex-col gap-5">
           <p className="text-sm text-[var(--color-text-muted)]">{t('classNotStartedDate')}</p>
           {groupInfo}
@@ -592,20 +850,70 @@ export default function SlotActionSheet({
         </div>
       )}
 
-      {/* UNRECORDED */}
-      {state === 'unrecorded' && (
+      {/* PHASE 1: NOT STARTED */}
+      {phase === 'unrecorded' && (
         <div className="flex flex-col gap-5">
-          {/* Anchor CTA: does not submit - scrolls to / focuses the attendance
-              section so the teacher's eye lands on the roster. */}
           <button
             type="button"
-            onClick={scrollToAttendance}
-            className="w-full rounded-lg bg-teal-600 px-4 py-3 text-base font-semibold text-primary-foreground transition-colors hover:bg-teal-700"
+            onClick={startClass}
+            disabled={starting}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-3 text-base font-semibold text-primary-foreground transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {t('startSession')}
+            {starting && <Loader2 className="h-5 w-5 animate-spin" aria-hidden />}
+            {t('startClass')}
           </button>
+          {startError && (
+            <p className="text-sm text-[var(--color-danger)]" role="alert">
+              {startError}
+            </p>
+          )}
+          {groupInfo}
+          <section>
+            <h3 className="mb-2 text-sm font-semibold text-[var(--color-text-muted)]">
+              {t('enrolledStudentsTitle')}
+            </h3>
+            {rosterLoading ? (
+              <div className="h-10 animate-pulse rounded-lg bg-[var(--color-surface-2)]" />
+            ) : rosterError ? (
+              <p className="text-sm text-[var(--color-danger)]">{t('genericError')}</p>
+            ) : roster.length === 0 ? (
+              <p className="text-sm text-[var(--color-text-secondary)]">{t('emptyRoster')}</p>
+            ) : (
+              <ul className="flex flex-col gap-1.5">
+                {roster.map((s) => (
+                  <li
+                    key={s.id}
+                    className="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                  >
+                    {s.name}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+          {accordions}
+        </div>
+      )}
 
-          <section ref={attendanceRef}>
+      {/* PHASE 2: LIVE */}
+      {phase === 'live' && (
+        <div className="flex flex-col gap-5">
+          {/* Live indicator header */}
+          <div className="flex items-center justify-between rounded-lg border border-[var(--color-teal)]/40 bg-[var(--color-teal-soft)] px-4 py-3">
+            <span className="flex items-center gap-2 text-sm font-semibold text-[var(--color-teal-deep)]">
+              <span
+                className="h-2 w-2 animate-pulse rounded-full bg-[var(--color-teal)]"
+                aria-hidden
+              />
+              {t('classLive')}
+            </span>
+            <span className="text-sm text-[var(--color-teal-deep)]" dir="ltr">
+              {formatTime(occurrence.effectiveTime, timeLabels)}
+            </span>
+          </div>
+
+          {/* Attendance */}
+          <section>
             <div className="mb-2 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-[var(--color-text-muted)]">
                 {t('attendanceTitle')}
@@ -613,7 +921,7 @@ export default function SlotActionSheet({
               {roster.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => setSelected(new Set(roster.map((s) => s.id)))}
+                  onClick={selectAllLive}
                   className="rounded-lg border border-[var(--color-border)] px-3 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-2)]"
                 >
                   {t('selectAll')}
@@ -638,15 +946,36 @@ export default function SlotActionSheet({
                       <input
                         type="checkbox"
                         checked={selected.has(s.id)}
-                        onChange={() => toggle(s.id)}
+                        onChange={() => toggleLive(s.id)}
                         className="h-5 w-5 rounded border-[var(--color-border)] accent-teal-600"
                       />
                     </label>
                   </li>
                 ))}
-                {guests.map((g, idx) => (
+                {createdGuestIds.map((id) => (
                   <li
-                    key={`guest-${idx}`}
+                    key={`guest-${id}`}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-brass)]/30 bg-[var(--color-surface-0)] px-4 py-3"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="font-medium text-[var(--color-text-primary)]">
+                        {guestNamesById.get(id)}
+                      </span>
+                      {guestBadge}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeCreatedGuest(id)}
+                      aria-label={t('removeGuest')}
+                      className="rounded-lg p-1 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-2)]"
+                    >
+                      <X size={16} aria-hidden />
+                    </button>
+                  </li>
+                ))}
+                {liveGuests.map((g, idx) => (
+                  <li
+                    key={`pending-${idx}`}
                     className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-brass)]/30 bg-[var(--color-surface-0)] px-4 py-3"
                   >
                     <span className="flex items-center gap-2">
@@ -655,7 +984,7 @@ export default function SlotActionSheet({
                     </span>
                     <button
                       type="button"
-                      onClick={() => removeGuest(idx)}
+                      onClick={() => removePendingGuest(idx)}
                       aria-label={t('removeGuest')}
                       className="rounded-lg p-1 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-2)]"
                     >
@@ -667,91 +996,31 @@ export default function SlotActionSheet({
             )}
 
             {!rosterLoading && !rosterError && (
-              <p className="mt-3 text-xs text-[var(--color-text-secondary)]" role="status">
-                {t('selectedCount', {
-                  count: formatNumber(selected.size, locale, { integerOnly: true }),
-                })}
-              </p>
-            )}
-
-            {/* One-time (guest) attendees - Pro only, capped at 10/session */}
-            {!isPro ? (
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] px-4 py-3">
-                <span className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-                  <Lock size={14} className="text-[var(--color-brass)]" aria-hidden />
-                  {t('guestProOnly')}
-                </span>
-                <Link
-                  href="/teacher/subscription/upgrade"
-                  className="text-sm font-medium text-[var(--color-brass)] hover:underline"
-                >
-                  {t('guestUpgradeCta')}
-                </Link>
-              </div>
-            ) : (
-              <div className="mt-3 flex flex-col gap-2">
-                <p className="text-xs text-[var(--color-text-muted)]">
-                  {t('guestCount', {
-                    current: formatNumber(guests.length, locale, { integerOnly: true }),
+              <div className="mt-3 flex items-center justify-between">
+                <p className="text-xs font-medium text-[var(--color-text-secondary)]" role="status">
+                  {t('presentCount', {
+                    count: formatNumber(totalPresent, locale, { integerOnly: true }),
                   })}
                 </p>
-                {guests.length >= GUEST_LIMIT ? (
-                  <p className="text-xs font-medium text-[var(--color-brass)]" role="status">
-                    {t('guestLimitReached')}
-                  </p>
-                ) : showGuestForm ? (
-                  <div className="flex flex-col gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] p-3">
-                    <input
-                      type="text"
-                      value={guestName}
-                      onChange={(e) => setGuestName(e.target.value)}
-                      placeholder={t('guestName')}
-                      className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
-                    />
-                    <input
-                      type="tel"
-                      inputMode="numeric"
-                      dir="ltr"
-                      value={guestPhone}
-                      onChange={(e) => setGuestPhone(e.target.value)}
-                      placeholder={t('guestPhone')}
-                      className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
-                    />
-                    {guestError && (
-                      <p className="text-xs text-[var(--color-danger)]" role="alert">
-                        {guestError}
-                      </p>
-                    )}
-                    <button
-                      type="button"
-                      onClick={addGuest}
-                      disabled={guests.length >= GUEST_LIMIT}
-                      className="self-start rounded-lg bg-[var(--color-brass)] px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {t('addGuest')}
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setShowGuestForm(true)}
-                    className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-brass)]"
-                  >
-                    <Plus size={16} aria-hidden />
-                    {t('addGuestAttendee')}
-                  </button>
-                )}
+                {saveState === 'saving' ? (
+                  <span className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+                    <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                    {t('saving')}
+                  </span>
+                ) : saveState === 'saved' ? (
+                  <span className="text-xs text-[var(--color-teal-deep)]">{t('saved')}</span>
+                ) : saveState === 'error' ? (
+                  <span className="text-xs text-[var(--color-danger)]" role="alert">
+                    {t('genericError')}
+                  </span>
+                ) : null}
               </div>
             )}
 
-            {submitError && (
-              <p className="mt-3 text-sm text-[var(--color-danger)]" role="alert">
-                {submitError}
-              </p>
-            )}
+            {guestSection}
           </section>
 
-          {/* PAYMENT METHOD */}
+          {/* Payment method */}
           <section>
             <h3 className="mb-2 text-sm font-semibold text-[var(--color-text-muted)]">
               {t('paymentMethodTitle')}
@@ -794,12 +1063,51 @@ export default function SlotActionSheet({
             )}
           </section>
 
-          {accordions}
+          {finishError && (
+            <p className="text-sm text-[var(--color-danger)]" role="alert">
+              {finishError}
+            </p>
+          )}
+
+          {/* Cancel (muted, rare mid-session action) */}
+          {confirmCancelLive ? (
+            <div className="rounded-lg border border-[var(--color-danger)]/30 bg-[var(--color-surface-0)] p-3">
+              <p className="mb-3 text-sm text-[var(--color-text-secondary)]">
+                {t('cancelLiveSessionWarning')}
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={cancelLiveSession}
+                  disabled={cancelPending}
+                  className="flex items-center justify-center gap-2 rounded-lg bg-[var(--color-danger)] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                >
+                  {cancelPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+                  {t('confirmCancelAction')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmCancelLive(false)}
+                  className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-2)]"
+                >
+                  {t('confirmCancelBack')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmCancelLive(true)}
+              className="self-start text-xs text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-danger)]"
+            >
+              {t('cancelLiveSession')}
+            </button>
+          )}
         </div>
       )}
 
-      {/* RECORDED */}
-      {state === 'recorded' && (
+      {/* PHASE 3: RECORDED */}
+      {phase === 'recorded' && (
         <div className="flex flex-col gap-6">
           <p className="text-sm text-[var(--color-text-muted)]">{t('recordedSlotLabel')}</p>
           {detailLoading ? (

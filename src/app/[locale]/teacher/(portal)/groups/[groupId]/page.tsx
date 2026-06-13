@@ -9,10 +9,6 @@ import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { useToast } from '@/hooks/useToast';
-import {
-  fetchTeacherSubscription,
-  type TeacherSubscriptionStatus,
-} from '@/components/teacher/teacherSubscriptionClient';
 import AddStudentModal from './AddStudentModal';
 import EditGroupModal from './EditGroupModal';
 import GroupJoinLinkCard from '../../../GroupJoinLinkCard';
@@ -39,7 +35,6 @@ type RosterData = {
   roster: RosterEntry[];
 };
 
-const STANDARD_STUDENT_CAP = 60;
 const TABS = ['overview', 'students', 'classes', 'schedule'] as const;
 type Tab = (typeof TABS)[number];
 
@@ -73,7 +68,6 @@ export default function TeacherGroupDetailPage({
   const [data, setData] = useState<RosterData | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [isPro, setIsPro] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [decidingId, setDecidingId] = useState<string | null>(null);
@@ -117,16 +111,6 @@ export default function TeacherGroupDetailPage({
   useEffect(() => {
     loadRoster();
   }, [loadRoster]);
-
-  useEffect(() => {
-    let on = true;
-    fetchTeacherSubscription().then((s: TeacherSubscriptionStatus | null) => {
-      if (on && s) setIsPro(s.plan_key === 'teacher_699');
-    });
-    return () => {
-      on = false;
-    };
-  }, []);
 
   const decide = async (enrollmentId: string, action: 'approve' | 'reject' | 'remove') => {
     setDecidingId(enrollmentId);
@@ -319,12 +303,9 @@ export default function TeacherGroupDetailPage({
               <div className="flex items-center justify-between gap-2">
                 <dt className="text-[var(--color-text-secondary)]">{tTabs('enrolledLabel')}</dt>
                 <dd className="font-semibold text-[var(--color-text-primary)]">
-                  {isPro
-                    ? formatNumber(active.length, locale, { integerOnly: true })
-                    : tTabs('enrolledVsCap', {
-                        count: formatNumber(active.length, locale, { integerOnly: true }),
-                        cap: formatNumber(STANDARD_STUDENT_CAP, locale, { integerOnly: true }),
-                      })}
+                  {tGroups('enrolledCount', {
+                    count: formatNumber(active.length, locale, { integerOnly: true }),
+                  })}
                 </dd>
               </div>
             </dl>
