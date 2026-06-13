@@ -123,16 +123,22 @@ export async function GET(
     new Set([...scans.map((s) => s.student_id), ...transactions.map((t) => t.student_id)]),
   );
   const nameById = new Map<string, string | null>();
+  const guestById = new Map<string, boolean>();
   if (studentIds.length > 0) {
     const { data: studentRows, error: studentsErr } = await auth.supabaseAdmin
       .from('students')
-      .select('id, name')
+      .select('id, name, is_guest')
       .in('id', studentIds);
     if (studentsErr) {
       return serverError('students_lookup', studentsErr);
     }
-    for (const s of (studentRows ?? []) as { id: string; name: string | null }[]) {
+    for (const s of (studentRows ?? []) as {
+      id: string;
+      name: string | null;
+      is_guest: boolean | null;
+    }[]) {
       nameById.set(s.id, s.name);
+      guestById.set(s.id, s.is_guest === true);
     }
   }
 
@@ -150,6 +156,7 @@ export async function GET(
       student_id: s.student_id,
       student_name: nameById.get(s.student_id) ?? null,
       billable: s.billable,
+      is_guest: guestById.get(s.student_id) === true,
     })),
     transactions: transactions.map((t) => ({
       id: t.id,
@@ -159,6 +166,7 @@ export async function GET(
       status: t.status,
       payment_method: t.method,
       paid_at: t.paid_at,
+      is_guest: guestById.get(t.student_id) === true,
     })),
   });
 }

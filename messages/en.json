@@ -58,7 +58,21 @@
       "feature3": "Payment links sent on WhatsApp automatically",
       "feature4": "Full income view: private + all centers",
       "freeNote": "Center tracking (reading your cut from centers you teach at) is always free and requires no subscription.",
-      "cta": "Start free trial"
+      "cta": "Start free trial",
+      "proTitle": "Private Engine Pro",
+      "proPrice": "699 EGP / month",
+      "proNoTrial": "No free trial",
+      "mostComprehensive": "Most comprehensive",
+      "proCtaButton": "Start with Pro",
+      "proFeatures": [
+        "Everything in Standard",
+        "Unlimited groups and students",
+        "Full income history (all time)",
+        "Advanced analytics",
+        "100 EGP WhatsApp credit monthly",
+        "Student notes",
+        "CSV export"
+      ]
     }
   },
   "invoice": {
@@ -8112,7 +8126,9 @@
       "logout": "Log out",
       "lockedTooltip": "Available with Private Engine. Start your free trial.",
       "collapseSidebar": "Collapse sidebar",
-      "expandSidebar": "Expand sidebar"
+      "expandSidebar": "Expand sidebar",
+      "switchToEnglish": "English",
+      "switchToArabic": "عربي"
     },
     "schedule": {
       "pageTitle": "Schedule",
@@ -8163,6 +8179,25 @@
       "genericError": "Something went wrong. Try again.",
       "retry": "Retry",
       "close": "Close",
+      "durationMultipleOf15": "Duration must be a multiple of 15 minutes.",
+      "overlapWarning": "Warning: this time overlaps with {group} ({time}). You can proceed but managing both classes may be harder.",
+      "guestAttendee": "One-time attendee",
+      "guestBadge": "One-time",
+      "addGuestAttendee": "Add a one-time attendee",
+      "guestName": "Attendee name",
+      "guestPhone": "WhatsApp number",
+      "addGuest": "Add",
+      "removeGuest": "Remove",
+      "guestNameRequired": "Enter the attendee name.",
+      "guestPhoneInvalid": "Invalid WhatsApp number.",
+      "futureSlotLabel": "This class has not started yet.",
+      "recordedSlotLabel": "This class has been recorded.",
+      "viewInGroup": "View in group",
+      "recordAttendanceTitle": "Record attendance",
+      "enrolledStudentsTitle": "Enrolled students",
+      "feeLabel": "Fee per class",
+      "enrolledLabel": "Enrolled",
+      "submitRecordAttendees": "Record and bill {count}",
       "txnStatus": {
         "paid": "Paid",
         "pending": "Outstanding",
@@ -8394,10 +8429,7 @@
         "5": "Friday",
         "6": "Saturday"
       },
-      "duration45": "45 minutes",
-      "duration60": "60 minutes",
-      "duration90": "90 minutes",
-      "duration120": "2 hours",
+      "durationSuffix": "min",
       "share": {
         "heading": "Share with students",
         "copy": "Copy link",
@@ -8407,6 +8439,33 @@
         "waMessage": "Join the {group} group on CenterHQ: {url}",
         "note": "Students tap the link, verify their number, and they're enrolled automatically."
       }
+    },
+    "groupTabs": {
+      "tabOverview": "Overview",
+      "tabStudents": "Students",
+      "tabClasses": "Classes",
+      "tabSchedule": "Schedule",
+      "statusLabel": "Status",
+      "statusActive": "Active",
+      "statusArchived": "Archived",
+      "restore": "Restore",
+      "enrolledLabel": "Enrolled students",
+      "enrolledVsCap": "{count} / {cap}",
+      "noStudents": "No students in this group yet.",
+      "removeStudent": "Remove",
+      "confirmRemove": "Confirm removal",
+      "cancel": "Cancel",
+      "noClasses": "No classes recorded yet.",
+      "classesError": "Could not load. Try again.",
+      "retry": "Retry",
+      "attendedCount": "{count} attended",
+      "outstandingShort": "{amount} outstanding",
+      "totalCollected": "Collected",
+      "outstanding": "Outstanding",
+      "loadMore": "Load more",
+      "saveSchedule": "Save schedule",
+      "scheduleSaved": "Schedule saved.",
+      "saveError": "Could not save. Try again."
     },
     "createGroup": {
       "title": "New private group",
@@ -8655,9 +8714,12 @@
     }
   },
   "teacherUpgrade": {
-    "title": "Plan upgrades are coming soon",
+    "title": "Upgrade your plan",
     "body": "You will be able to upgrade your plan from here. We will notify you as soon as it is ready.",
-    "back": "Back to home"
+    "back": "Back to home",
+    "alreadyPro": "You are already on the Pro plan",
+    "backToBilling": "Back to billing",
+    "unavailable": "Could not load your subscription."
   },
   "splash": {
     "headline": "The operating system for everyone who teaches in Egypt",
@@ -8812,5 +8874,9 @@
     "currentPlan": "Your current plan",
     "perMonth": "per month",
     "unavailable": "Could not load pricing."
+  },
+  "timeFormat": {
+    "am": "AM",
+    "pm": "PM"
   }
 }

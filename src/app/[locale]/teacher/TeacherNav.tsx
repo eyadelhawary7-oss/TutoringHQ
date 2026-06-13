@@ -1,5 +1,6 @@
 'use client';
 
+import { useTransition } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   Home,
@@ -12,12 +13,14 @@ import {
   Settings,
   Lock,
   LogOut,
+  Globe2,
   Menu,
   ChevronRight,
   ChevronLeft,
   type LucideIcon,
 } from 'lucide-react';
 import { usePathname, useRouter } from '@/i18n/routing';
+import { supabase } from '@/lib/supabase';
 import { signOutToLogin } from '@/lib/auth/sign-out-client';
 
 /**
@@ -71,6 +74,29 @@ export default function TeacherNav({
   const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
+  const [, startTransition] = useTransition();
+
+  // Switch locale while keeping the current route (next-intl rewrites the
+  // prefix). Persist the choice server-side, best-effort, like the center
+  // sidebar - a failure there never blocks the visual switch.
+  const toggleLocale = () => {
+    const newLocale = locale === 'ar' ? 'en' : 'ar';
+    startTransition(() => {
+      router.replace(pathname, { locale: newLocale });
+    });
+    void (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+      fetch('/api/user/locale', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ locale: newLocale }),
+      }).catch(() => undefined);
+    })();
+  };
 
   // Collapsed rail expands toward the inline-end (content) direction; mirror
   // the chevron per locale, the same way the codebase mirrors back arrows.
@@ -168,6 +194,18 @@ export default function TeacherNav({
         </nav>
 
         <div className="border-t border-[var(--color-border-subtle)] p-2">
+          <button
+            type="button"
+            onClick={toggleLocale}
+            aria-label={locale === 'ar' ? t('switchToEnglish') : t('switchToArabic')}
+            className={[
+              'flex w-full items-center rounded-lg py-2.5 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]',
+              collapsed ? 'justify-center px-0' : 'gap-3 px-3',
+            ].join(' ')}
+          >
+            <Globe2 size={18} aria-hidden />
+            {!collapsed && (locale === 'ar' ? t('switchToEnglish') : t('switchToArabic'))}
+          </button>
           <button
             type="button"
             onClick={() => signOutToLogin(locale)}

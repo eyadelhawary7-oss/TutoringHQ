@@ -18,10 +18,10 @@ import {
   type ScheduleExceptionItem,
   type ScheduleSlotItem,
 } from '@/hooks/useTeacherSchedule';
-import RecordAttendanceSheet from '@/components/teacher/schedule/RecordAttendanceSheet';
-import CancelClassDialog from '@/components/teacher/schedule/CancelClassDialog';
-import RescheduleDialog from '@/components/teacher/schedule/RescheduleDialog';
-import SessionDetailSheet from '@/components/teacher/schedule/SessionDetailSheet';
+import { formatTimeRange } from '@/lib/timeFormat';
+import SlotActionSheet, {
+  type SlotOccurrence,
+} from '@/components/teacher/schedule/SlotActionSheet';
 
 type View = 'today' | 'week';
 
@@ -36,20 +36,6 @@ type Occurrence = {
   sessionId: string | null;
 };
 
-type RecordTarget = {
-  groupId: string;
-  groupName: string | null;
-  scheduleId: string;
-  date: string;
-};
-
-type ExceptionTarget = {
-  groupId: string;
-  scheduleId: string;
-  date: string;
-  defaultTime: string;
-};
-
 /** 0=Sunday..6=Saturday for a Cairo calendar date (Gregorian). */
 function dayOfWeekOf(ymd: string): number {
   const { y, m, d } = parseCairoYmd(ymd);
@@ -59,7 +45,9 @@ function dayOfWeekOf(ymd: string): number {
 export default function TeacherSchedulePage() {
   const t = useTranslations('teacherPortal.schedule');
   const tGroups = useTranslations('teacherPortal.groups');
+  const tf = useTranslations('timeFormat');
   const locale = useLocale();
+  const timeLabels = { am: tf('am'), pm: tf('pm') };
   const router = useRouter();
   const searchParams = useSearchParams();
   const viewParam = searchParams?.get('view') ?? null;
@@ -76,10 +64,7 @@ export default function TeacherSchedulePage() {
 
   const { slots, exceptions, sessions, isLoading, error, refetch } = useTeacherSchedule();
 
-  const [recordTarget, setRecordTarget] = useState<RecordTarget | null>(null);
-  const [cancelTarget, setCancelTarget] = useState<ExceptionTarget | null>(null);
-  const [rescheduleTarget, setRescheduleTarget] = useState<ExceptionTarget | null>(null);
-  const [detailSessionId, setDetailSessionId] = useState<string | null>(null);
+  const [activeOccurrence, setActiveOccurrence] = useState<SlotOccurrence | null>(null);
 
   const todayKey = cairoDateKey();
   const todayDow = dayOfWeekOf(todayKey);
@@ -139,27 +124,41 @@ export default function TeacherSchedulePage() {
   }, [todayKey, todayDow]);
 
   const onActionDone = () => {
-    setRecordTarget(null);
-    setCancelTarget(null);
-    setRescheduleTarget(null);
+    setActiveOccurrence(null);
     refetch();
   };
 
-  const openByState = (o: Occurrence) => {
-    if (o.state === 'recorded' && o.sessionId) {
-      setDetailSessionId(o.sessionId);
-    } else if (o.state === 'unrecorded') {
-      setRecordTarget({
-        groupId: o.slot.group_id,
-        groupName: o.slot.group_name,
-        scheduleId: o.slot.schedule_id,
-        date: o.date,
-      });
-    }
+  // Map the page's Occurrence to the sheet's contract. Future-dated
+  // ('readonly') occurrences open in 'future' mode (cancel/reschedule, no
+  // record); 'cancelled' occurrences are not tappable.
+  const toSheetOccurrence = (o: Occurrence): SlotOccurrence | null => {
+    const sheetState: SlotOccurrence['state'] | null =
+      o.state === 'recorded'
+        ? 'recorded'
+        : o.state === 'unrecorded'
+          ? 'unrecorded'
+          : o.state === 'future' || o.state === 'readonly'
+            ? 'future'
+            : null;
+    if (!sheetState) return null;
+    return {
+      groupId: o.slot.group_id,
+      groupName: o.slot.group_name,
+      scheduleId: o.slot.schedule_id,
+      date: o.date,
+      feePerClass: o.slot.fee_per_class,
+      enrolledCount: o.slot.enrolled_count,
+      effectiveTime: o.effectiveTime,
+      durationMinutes: o.slot.duration_minutes,
+      state: sheetState,
+      sessionId: o.sessionId,
+    };
   };
 
-  const durationLabel = (minutes: number) =>
-    t('durationMinutes', { minutes: formatNumber(minutes, locale, { integerOnly: true }) });
+  const openByState = (o: Occurrence) => {
+    const occ = toSheetOccurrence(o);
+    if (occ) setActiveOccurrence(occ);
+  };
 
   const renderEmpty = () => (
     <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] p-8 text-center">
@@ -176,100 +175,59 @@ export default function TeacherSchedulePage() {
 
   const renderTodayCard = (o: Occurrence) => {
     const muted = o.state === 'cancelled';
-    return (
-      <div
-        key={`${o.slot.schedule_id}|${o.date}`}
-        className={[
-          'rounded-xl border bg-[var(--color-surface-1)] p-4',
-          muted
-            ? 'border-[var(--color-border-subtle)] opacity-60'
-            : 'border-[var(--color-border)]',
-        ].join(' ')}
-      >
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <p className="font-bold text-[var(--color-text-primary)]">{o.slot.group_name}</p>
-            <p className="mt-0.5 flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-              <Clock size={14} aria-hidden />
-              <span dir="ltr">{o.effectiveTime}</span>
-              <span>{durationLabel(o.slot.duration_minutes)}</span>
+    const tappable = o.state !== 'cancelled';
+    const cardClass = [
+      'rounded-xl border bg-[var(--color-surface-1)] p-4',
+      muted ? 'border-[var(--color-border-subtle)] opacity-60' : 'border-[var(--color-border)]',
+    ].join(' ');
+    const inner = (
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="text-start">
+          <p className="font-bold text-[var(--color-text-primary)]">{o.slot.group_name}</p>
+          <p className="mt-0.5 flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+            <Clock size={14} aria-hidden />
+            <span dir="ltr">
+              {formatTimeRange(o.effectiveTime, o.slot.duration_minutes, timeLabels)}
+            </span>
+          </p>
+          {o.state !== 'recorded' && !muted && (
+            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-[var(--color-text-muted)]">
+              <Users size={14} aria-hidden />
+              {t('enrolledCount', {
+                count: formatNumber(o.slot.enrolled_count, locale, { integerOnly: true }),
+              })}
             </p>
-            {o.state !== 'recorded' && !muted && (
-              <p className="mt-0.5 flex items-center gap-1.5 text-sm text-[var(--color-text-muted)]">
-                <Users size={14} aria-hidden />
-                {t('enrolledCount', {
-                  count: formatNumber(o.slot.enrolled_count, locale, { integerOnly: true }),
-                })}
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {muted && (
-              <span className="rounded-full bg-[var(--color-surface-2)] px-3 py-1 text-xs font-medium text-[var(--color-text-secondary)]">
-                {t('cancelledBadge')}
-              </span>
-            )}
-            {o.exception?.kind === 'rescheduled' && (
-              <span className="rounded-full bg-[var(--color-brass)]/15 px-3 py-1 text-xs font-medium text-[var(--color-brass)]">
-                {t('rescheduledBadge')}
-              </span>
-            )}
-            {o.state === 'future' && (
-              <span className="text-xs text-[var(--color-text-muted)]">{t('notStartedYet')}</span>
-            )}
-          </div>
+          )}
         </div>
-
-        {o.state === 'unrecorded' && (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => openByState(o)}
-              className="rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-teal-700"
-            >
-              {t('recordAndBill')}
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                setCancelTarget({
-                  groupId: o.slot.group_id,
-                  scheduleId: o.slot.schedule_id,
-                  date: o.date,
-                  defaultTime: o.effectiveTime,
-                })
-              }
-              className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-danger)] transition-colors hover:bg-[var(--color-surface-2)]"
-            >
-              {t('cancelClass')}
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                setRescheduleTarget({
-                  groupId: o.slot.group_id,
-                  scheduleId: o.slot.schedule_id,
-                  date: o.date,
-                  defaultTime: o.effectiveTime,
-                })
-              }
-              className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-2)]"
-            >
-              {t('reschedule')}
-            </button>
-          </div>
-        )}
-        {o.state === 'recorded' && (
-          <div className="mt-3">
-            <button
-              type="button"
-              onClick={() => openByState(o)}
-              className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-2)]"
-            >
-              {t('viewDetails')}
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {muted && (
+            <span className="rounded-full bg-[var(--color-surface-2)] px-3 py-1 text-xs font-medium text-[var(--color-text-secondary)]">
+              {t('cancelledBadge')}
+            </span>
+          )}
+          {o.exception?.kind === 'rescheduled' && (
+            <span className="rounded-full bg-[var(--color-brass)]/15 px-3 py-1 text-xs font-medium text-[var(--color-brass)]">
+              {t('rescheduledBadge')}
+            </span>
+          )}
+          {o.state === 'future' && (
+            <span className="text-xs text-[var(--color-text-muted)]">{t('notStartedYet')}</span>
+          )}
+        </div>
+      </div>
+    );
+    return tappable ? (
+      <button
+        key={`${o.slot.schedule_id}|${o.date}`}
+        type="button"
+        onClick={() => openByState(o)}
+        className={`${cardClass} w-full text-start transition-colors hover:bg-[var(--color-surface-2)]`}
+      >
+        {inner}
+      </button>
+    ) : (
+      <div key={`${o.slot.schedule_id}|${o.date}`} className={cardClass}>
+        {inner}
       </div>
     );
   };
@@ -303,14 +261,14 @@ export default function TeacherSchedulePage() {
           </span>
         </p>
         {occurrences.map((o) => {
-          const tappable = o.state === 'unrecorded' || o.state === 'recorded';
+          const tappable = o.state !== 'cancelled';
           const inner = (
             <>
               <p className="truncate text-xs font-medium text-[var(--color-text-primary)]">
                 {o.slot.group_name}
               </p>
               <p className="text-xs text-[var(--color-text-muted)]" dir="ltr">
-                {o.effectiveTime}
+                {formatTimeRange(o.effectiveTime, o.slot.duration_minutes, timeLabels)}
               </p>
               {o.state === 'cancelled' && (
                 <p className="text-[10px] text-[var(--color-text-muted)]">{t('cancelledBadge')}</p>
@@ -406,42 +364,11 @@ export default function TeacherSchedulePage() {
         </div>
       )}
 
-      {recordTarget && (
-        <RecordAttendanceSheet
-          open
-          groupId={recordTarget.groupId}
-          groupName={recordTarget.groupName}
-          scheduleId={recordTarget.scheduleId}
-          sessionDate={recordTarget.date}
-          onClose={() => setRecordTarget(null)}
-          onRecorded={onActionDone}
-        />
-      )}
-      {cancelTarget && (
-        <CancelClassDialog
-          open
-          groupId={cancelTarget.groupId}
-          scheduleId={cancelTarget.scheduleId}
-          exceptionDate={cancelTarget.date}
-          onClose={() => setCancelTarget(null)}
-          onCancelled={onActionDone}
-        />
-      )}
-      {rescheduleTarget && (
-        <RescheduleDialog
-          open
-          groupId={rescheduleTarget.groupId}
-          scheduleId={rescheduleTarget.scheduleId}
-          exceptionDate={rescheduleTarget.date}
-          defaultTime={rescheduleTarget.defaultTime}
-          onClose={() => setRescheduleTarget(null)}
-          onRescheduled={onActionDone}
-        />
-      )}
-      <SessionDetailSheet
-        open={detailSessionId !== null}
-        sessionId={detailSessionId}
-        onClose={() => setDetailSessionId(null)}
+      <SlotActionSheet
+        open={activeOccurrence !== null}
+        occurrence={activeOccurrence}
+        onClose={() => setActiveOccurrence(null)}
+        onChanged={onActionDone}
       />
     </div>
   );

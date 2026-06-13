@@ -67,12 +67,14 @@ export async function POST(
       { status: 400 },
     );
   }
-  if (rawAction !== 'approve' && rawAction !== 'reject') {
+  if (rawAction !== 'approve' && rawAction !== 'reject' && rawAction !== 'remove') {
     return NextResponse.json(
       { error: 'Invalid request', code: 'invalid_action' },
       { status: 400 },
     );
   }
+  const newStatus =
+    rawAction === 'approve' ? 'active' : rawAction === 'reject' ? 'rejected' : 'removed';
 
   // The enrollment must belong to the verified group - not just any
   // enrollment id the caller happens to know. CORE read: error -> 500.
@@ -96,7 +98,7 @@ export async function POST(
     'apply_enrollment_transition',
     {
       p_enrollment_id: enrollmentId,
-      p_new_status: rawAction === 'approve' ? 'active' : 'rejected',
+      p_new_status: newStatus,
       p_actor_id: auth.userId,
     },
   );
@@ -125,7 +127,7 @@ export async function POST(
   return NextResponse.json({
     enrollment: {
       id: updated?.id ?? enrollmentId,
-      status: updated?.status ?? (rawAction === 'approve' ? 'active' : 'rejected'),
+      status: updated?.status ?? newStatus,
     },
   });
 }

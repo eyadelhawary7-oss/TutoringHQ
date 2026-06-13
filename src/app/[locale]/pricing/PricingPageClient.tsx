@@ -34,6 +34,7 @@ export default function PricingPageClient() {
     tp('feature3'),
     tp('feature4'),
   ];
+  const proFeatures = (tp.raw('proFeatures') as string[]) ?? [];
 
   const selectAudience = (next: Audience) => {
     setAudience(next);
@@ -263,47 +264,83 @@ export default function PricingPageClient() {
               </div>
             </>
           ) : (
-            <div className="mx-auto mt-12 max-w-md">
+            <div className="mx-auto mt-12 max-w-3xl">
               <div className="text-center">
                 <h2 className="text-xl font-bold text-[var(--color-text-primary)] md:text-2xl">{tp('heading')}</h2>
                 <p className="mx-auto mt-2 max-w-sm text-sm text-[var(--color-text-secondary)]">{tp('sub')}</p>
               </div>
-              <div
-                className="mt-8 flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-start shadow-[var(--shadow-card)]"
-                style={{ borderTopColor: 'var(--color-brass)', borderTopWidth: '3px' }}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-lg font-bold text-[var(--color-text-primary)]">{tp('planName')}</p>
-                  <span
-                    className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium"
-                    style={{ background: 'var(--color-brass-soft)', color: 'var(--color-brass)' }}
+              <div className="mt-8 grid gap-4 md:grid-cols-2">
+                {/* Standard (299) */}
+                <div
+                  className="flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-start shadow-[var(--shadow-card)]"
+                  style={{ borderTopColor: 'var(--color-brass)', borderTopWidth: '3px' }}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-lg font-bold text-[var(--color-text-primary)]">{tp('planName')}</p>
+                    <span
+                      className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium"
+                      style={{ background: 'var(--color-brass-soft)', color: 'var(--color-brass)' }}
+                    >
+                      {tp('trialBadge')}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-2xl font-bold text-[var(--color-text-primary)]">{tp('price')}</p>
+                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">{tp('priceNote')}</p>
+                  <ul className="mt-5 space-y-2.5">
+                    {teacherFeatures.map((feature, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
+                        <Check size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--color-brass)' }} aria-hidden />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p
+                    className="mt-4 rounded-lg bg-[var(--color-brass-soft)] p-3 text-xs leading-relaxed"
+                    style={{ color: 'var(--color-text-amber)' }}
                   >
-                    {tp('trialBadge')}
-                  </span>
+                    {tp('freeNote')}
+                  </p>
+                  <Link
+                    href="/teacher/signup"
+                    className="mt-6 inline-flex w-full justify-center rounded-xl px-6 py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-press chq-focus"
+                    style={{ background: 'var(--color-brass)' }}
+                  >
+                    {tp('cta')}
+                  </Link>
                 </div>
-                <p className="mt-3 text-2xl font-bold text-[var(--color-text-primary)]">{tp('price')}</p>
-                <p className="mt-1 text-xs text-[var(--color-text-muted)]">{tp('priceNote')}</p>
-                <ul className="mt-5 space-y-2.5">
-                  {teacherFeatures.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
-                      <Check size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--color-brass)' }} aria-hidden />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                <p
-                  className="mt-4 rounded-lg bg-[var(--color-brass-soft)] p-3 text-xs leading-relaxed"
-                  style={{ color: 'var(--color-text-amber)' }}
+
+                {/* Pro (699) */}
+                <div
+                  className="flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-start shadow-[var(--shadow-card)]"
+                  style={{ borderTopColor: 'var(--color-brass)', borderTopWidth: '3px' }}
                 >
-                  {tp('freeNote')}
-                </p>
-                <Link
-                  href="/teacher/signup"
-                  className="mt-6 inline-flex w-full justify-center rounded-xl px-6 py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-press chq-focus"
-                  style={{ background: 'var(--color-brass)' }}
-                >
-                  {tp('cta')}
-                </Link>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-lg font-bold text-[var(--color-text-primary)]">{tp('proTitle')}</p>
+                    <span
+                      className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
+                      style={{ background: 'var(--color-brass)' }}
+                    >
+                      {tp('mostComprehensive')}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-2xl font-bold text-[var(--color-text-primary)]">{tp('proPrice')}</p>
+                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">{tp('proNoTrial')}</p>
+                  <ul className="mt-5 space-y-2.5">
+                    {proFeatures.map((feature, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
+                        <Check size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--color-brass)' }} aria-hidden />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    href="/teacher/subscription/upgrade"
+                    className="mt-6 inline-flex w-full justify-center rounded-xl px-6 py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-press chq-focus"
+                    style={{ background: 'var(--color-brass)' }}
+                  >
+                    {tp('proCtaButton')}
+                  </Link>
+                </div>
               </div>
             </div>
           )}

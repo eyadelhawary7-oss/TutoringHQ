@@ -58,7 +58,21 @@
       "feature3": "روابط دفع على واتساب تلقائي",
       "feature4": "عرض دخل كامل: خصوصي + كل السناتر",
       "freeNote": "متابعة السناتر (مشاهدة نصيبك من السناتر اللي بتدرّس فيها) مجانية دايماً ومش محتاج اشتراك.",
-      "cta": "ابدأ التجربة المجانية"
+      "cta": "ابدأ التجربة المجانية",
+      "proTitle": "Private Engine Pro",
+      "proPrice": "٦٩٩ ج.م / شهر",
+      "proNoTrial": "بدون تجربة مجانية",
+      "mostComprehensive": "الأكثر شمولاً",
+      "proCtaButton": "ابدأ بخطة Pro",
+      "proFeatures": [
+        "كل مميزات الخطة العادية",
+        "مجموعات وطلاب غير محدودين",
+        "سجل دخل كامل (كل الوقت)",
+        "تحليلات متقدمة",
+        "١٠٠ جنيه رصيد واتساب شهرياً",
+        "ملاحظات الطلاب",
+        "تصدير CSV"
+      ]
     }
   },
   "invoice": {
@@ -8112,7 +8126,9 @@
       "logout": "تسجيل الخروج",
       "lockedTooltip": "متاح مع المحرك الخاص. ابدأ تجربتك المجانية.",
       "collapseSidebar": "طي الشريط الجانبي",
-      "expandSidebar": "فتح الشريط الجانبي"
+      "expandSidebar": "فتح الشريط الجانبي",
+      "switchToEnglish": "English",
+      "switchToArabic": "عربي"
     },
     "schedule": {
       "pageTitle": "الجدول",
@@ -8163,6 +8179,25 @@
       "genericError": "حدث خطأ. جرب تاني.",
       "retry": "إعادة المحاولة",
       "close": "إغلاق",
+      "durationMultipleOf15": "يجب أن تكون المدة مضاعفاً لـ ١٥ دقيقة",
+      "overlapWarning": "تحذير: هذا الوقت يتعارض مع مجموعة {group} ({time}). يمكنك المتابعة لكن قد يصعب إدارة الحصتين.",
+      "guestAttendee": "حاضر مؤقت",
+      "guestBadge": "مؤقت",
+      "addGuestAttendee": "إضافة حضور مؤقت",
+      "guestName": "اسم الحاضر",
+      "guestPhone": "رقم الواتساب",
+      "addGuest": "إضافة",
+      "removeGuest": "إزالة",
+      "guestNameRequired": "اكتب اسم الحاضر.",
+      "guestPhoneInvalid": "رقم واتساب غير صحيح.",
+      "futureSlotLabel": "لم تبدأ الحصة بعد.",
+      "recordedSlotLabel": "تم تسجيل هذه الحصة.",
+      "viewInGroup": "عرض في المجموعة",
+      "recordAttendanceTitle": "تسجيل الحضور",
+      "enrolledStudentsTitle": "الطلاب المسجلون",
+      "feeLabel": "سعر الحصة",
+      "enrolledLabel": "عدد المسجلين",
+      "submitRecordAttendees": "تسجيل وفوترة {count} حضور",
       "txnStatus": {
         "paid": "مدفوع",
         "pending": "مستحق",
@@ -8394,10 +8429,7 @@
         "5": "الجمعة",
         "6": "السبت"
       },
-      "duration45": "٤٥ دقيقة",
-      "duration60": "٦٠ دقيقة",
-      "duration90": "٩٠ دقيقة",
-      "duration120": "ساعتان",
+      "durationSuffix": "دقيقة",
       "share": {
         "heading": "شارك مع الطلاب",
         "copy": "نسخ الرابط",
@@ -8407,6 +8439,33 @@
         "waMessage": "انضم لمجموعة {group} على CenterHQ: {url}",
         "note": "الطالب بيضغط الرابط ويتسجل لوحده."
       }
+    },
+    "groupTabs": {
+      "tabOverview": "نظرة عامة",
+      "tabStudents": "الطلاب",
+      "tabClasses": "الحصص",
+      "tabSchedule": "المواعيد",
+      "statusLabel": "الحالة",
+      "statusActive": "نشطة",
+      "statusArchived": "مؤرشفة",
+      "restore": "استرجاع",
+      "enrolledLabel": "الطلاب المسجلون",
+      "enrolledVsCap": "{count} / {cap}",
+      "noStudents": "لسه مفيش طلاب في المجموعة دي.",
+      "removeStudent": "إزالة",
+      "confirmRemove": "تأكيد الإزالة",
+      "cancel": "إلغاء",
+      "noClasses": "لسه مفيش حصص متسجلة.",
+      "classesError": "حصلت مشكلة في التحميل. جرب تاني.",
+      "retry": "إعادة المحاولة",
+      "attendedCount": "{count} حضور",
+      "outstandingShort": "متبقي {amount}",
+      "totalCollected": "المحصل",
+      "outstanding": "المتبقي",
+      "loadMore": "تحميل المزيد",
+      "saveSchedule": "حفظ المواعيد",
+      "scheduleSaved": "تم حفظ المواعيد.",
+      "saveError": "تعذّر الحفظ. جرب تاني."
     },
     "createGroup": {
       "title": "مجموعة خاصة جديدة",
@@ -8655,9 +8714,12 @@
     }
   },
   "teacherUpgrade": {
-    "title": "ترقية الباقات جاية قريب",
+    "title": "ترقية خطتك",
     "body": "هتقدر تترقّى لباقتك من هنا. هنبلغك أول ما تبقى جاهزة.",
-    "back": "الرجوع للرئيسية"
+    "back": "الرجوع للرئيسية",
+    "alreadyPro": "أنت بالفعل على خطة Pro",
+    "backToBilling": "الرجوع للفوترة",
+    "unavailable": "تعذّر تحميل بيانات الاشتراك."
   },
   "splash": {
     "headline": "نظام التشغيل لكل مين بيعلّم في مصر",
@@ -8812,5 +8874,9 @@
     "currentPlan": "خطتك الحالية",
     "perMonth": "شهرياً",
     "unavailable": "تعذّر تحميل الأسعار."
+  },
+  "timeFormat": {
+    "am": "ص",
+    "pm": "م"
   }
 }

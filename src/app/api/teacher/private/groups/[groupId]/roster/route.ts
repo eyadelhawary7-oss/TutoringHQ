@@ -78,6 +78,36 @@ export async function GET(
     }
   }
 
+  // Per-student outstanding: sum of still-pending lesson charges for this
+  // group. A names-only roster is the core contract, so a balance lookup
+  // failure degrades to zero (logged) rather than 500-ing the whole roster.
+  const outstandingByStudent = new Map<string, number>();
+  if (enrollments.length > 0) {
+    const { data: txnRows, error: txnErr } = await auth.supabaseAdmin
+      .from('transactions')
+      .select('student_id, amount_billed')
+      .eq('group_id', groupId)
+      .eq('kind', 'lesson')
+      .eq('status', 'pending');
+    if (txnErr) {
+      Sentry.withScope((scope) => {
+        scope.setTag('route', ROUTE_TAG);
+        scope.setTag('step', 'roster_outstanding');
+        Sentry.captureMessage(`roster outstanding lookup failed: ${txnErr.message}`, 'warning');
+      });
+    } else {
+      for (const tx of (txnRows ?? []) as {
+        student_id: string;
+        amount_billed: number | string | null;
+      }[]) {
+        outstandingByStudent.set(
+          tx.student_id,
+          (outstandingByStudent.get(tx.student_id) ?? 0) + (Number(tx.amount_billed) || 0),
+        );
+      }
+    }
+  }
+
   // Pending first (they need action), then active, newest first within each.
   const rank = (s: string) => (s === 'pending' ? 0 : 1);
   const roster = enrollments
@@ -87,6 +117,7 @@ export async function GET(
       status: e.status,
       payer: e.payer,
       joinedAt: e.joined_at,
+      outstanding: outstandingByStudent.get(e.student_id) ?? 0,
       student: {
         id: e.student_id,
         name: studentById.get(e.student_id)?.name ?? null,
@@ -162,11 +193,16 @@ export async function POST(
     const groupIds = (groupRows ?? []).map((g) => (g as { id: string }).id);
     let distinctStudents = 0;
     if (groupIds.length > 0) {
+      // Guest (walk-in) students never count toward the Standard cap - only
+      // permanently enrolled, non-guest students do. The !inner join +
+      // students.is_guest=false filter drops any guest that somehow carries an
+      // enrollment row.
       const { data: enrollRows, error: enrollCountErr } = await auth.supabaseAdmin
         .from('enrollments')
-        .select('student_id')
+        .select('student_id, students!inner(is_guest)')
         .in('group_id', groupIds)
-        .eq('status', 'active');
+        .eq('status', 'active')
+        .eq('students.is_guest', false);
       if (enrollCountErr) {
         return serverError('student_cap_count', enrollCountErr);
       }

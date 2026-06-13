@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherAuth } from '@/lib/centerAuth';
 import { isUuid } from '@/lib/teacherPrivate';
+import { normalizePhone, isValidEgyptianMobileE164 } from '@/lib/utils/phone';
 import {
   cairoDateKey,
   cairoPaidAtDayUtcBounds,
@@ -57,11 +58,13 @@ export async function POST(request: NextRequest) {
     schedule_id: rawScheduleId,
     session_date: rawDate,
     attendee_ids: rawAttendees,
+    guests: rawGuests,
   } = (body ?? {}) as {
     group_id?: unknown;
     schedule_id?: unknown;
     session_date?: unknown;
     attendee_ids?: unknown;
+    guests?: unknown;
   };
 
   const groupId = typeof rawGroupId === 'string' ? rawGroupId : '';
@@ -80,16 +83,50 @@ export async function POST(request: NextRequest) {
     );
   }
   if (
-    !Array.isArray(rawAttendees) ||
-    rawAttendees.length === 0 ||
-    rawAttendees.some((a) => typeof a !== 'string' || !isUuid(a))
+    rawAttendees !== undefined &&
+    (!Array.isArray(rawAttendees) ||
+      rawAttendees.some((a) => typeof a !== 'string' || !isUuid(a)))
   ) {
     return NextResponse.json(
       { error: 'Invalid request', code: 'invalid_attendees' },
       { status: 400 },
     );
   }
-  const attendeeIds = Array.from(new Set(rawAttendees as string[]));
+  const attendeeIds = Array.from(new Set((rawAttendees as string[] | undefined) ?? []));
+
+  // One-time (guest) attendees: name + WhatsApp phone. They become is_guest
+  // student rows with NO enrollment, billed at the group fee like any other
+  // billable scan. Optional - the manual record sheet sends none.
+  type GuestInput = { name: string; phone: string };
+  const guests: GuestInput[] = [];
+  if (rawGuests !== undefined) {
+    if (!Array.isArray(rawGuests)) {
+      return NextResponse.json(
+        { error: 'Invalid request', code: 'invalid_guests' },
+        { status: 400 },
+      );
+    }
+    for (const g of rawGuests) {
+      const rawName = (g as { name?: unknown })?.name;
+      const rawPhone = (g as { phone?: unknown })?.phone;
+      const name = typeof rawName === 'string' ? rawName.trim() : '';
+      const phone = normalizePhone(typeof rawPhone === 'string' ? rawPhone : '');
+      if (name.length < 1 || name.length > 120 || !isValidEgyptianMobileE164(phone)) {
+        return NextResponse.json(
+          { error: 'Invalid request', code: 'invalid_guests' },
+          { status: 400 },
+        );
+      }
+      guests.push({ name, phone });
+    }
+  }
+
+  if (attendeeIds.length + guests.length === 0) {
+    return NextResponse.json(
+      { error: 'Invalid request', code: 'invalid_attendees' },
+      { status: 400 },
+    );
+  }
 
   const todayKey = cairoDateKey();
   if (sessionDate > todayKey) {
@@ -167,26 +204,29 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // Every attendee must hold an ACTIVE enrollment in the verified group -
-  // otherwise a stray UUID would mint a billable scan (and a charge) for a
-  // student who was never in this group.
-  const { data: enrollmentRows, error: enrollErr } = await auth.supabaseAdmin
-    .from('enrollments')
-    .select('student_id')
-    .eq('group_id', groupId)
-    .eq('status', 'active')
-    .in('student_id', attendeeIds);
-  if (enrollErr) {
-    return serverError('enrollment_check', enrollErr);
-  }
-  const enrolledIds = new Set(
-    ((enrollmentRows ?? []) as { student_id: string }[]).map((r) => r.student_id),
-  );
-  if (attendeeIds.some((id) => !enrolledIds.has(id))) {
-    return NextResponse.json(
-      { error: 'Invalid request', code: 'invalid_attendees' },
-      { status: 400 },
+  // Every enrolled attendee must hold an ACTIVE enrollment in the verified
+  // group - otherwise a stray UUID would mint a billable scan (and a charge)
+  // for a student who was never in this group. Guests skip this check by
+  // design (they have no enrollment).
+  if (attendeeIds.length > 0) {
+    const { data: enrollmentRows, error: enrollErr } = await auth.supabaseAdmin
+      .from('enrollments')
+      .select('student_id')
+      .eq('group_id', groupId)
+      .eq('status', 'active')
+      .in('student_id', attendeeIds);
+    if (enrollErr) {
+      return serverError('enrollment_check', enrollErr);
+    }
+    const enrolledIds = new Set(
+      ((enrollmentRows ?? []) as { student_id: string }[]).map((r) => r.student_id),
     );
+    if (attendeeIds.some((id) => !enrolledIds.has(id))) {
+      return NextResponse.json(
+        { error: 'Invalid request', code: 'invalid_attendees' },
+        { status: 400 },
+      );
+    }
   }
 
   // sessions has no teacher_id/center_id columns and its schedule_id FK
@@ -213,12 +253,45 @@ export async function POST(request: NextRequest) {
   }
   const sessionId = (insertedSession as { id: string }).id;
 
+  // Create the guest student rows now that the session is committed (so a
+  // failed session insert never leaves orphan guests). is_guest=true,
+  // center-less, all notifications off, unverified - they exist only to carry
+  // attendance + a one-time charge. No enrollment row.
+  const guestIds: string[] = [];
+  if (guests.length > 0) {
+    const { data: guestRows, error: guestErr } = await auth.supabaseAdmin
+      .from('students')
+      .insert(
+        guests.map((g) => ({
+          name: g.name,
+          phone: g.phone,
+          center_id: null,
+          is_guest: true,
+          origin: 'walk_in',
+          phone_verified: false,
+          parent_phone_verified: false,
+          notify_on_scan: false,
+          notify_on_absence: false,
+          notify_on_balance: false,
+        })),
+      )
+      .select('id');
+    if (guestErr) {
+      return serverError('guest_insert', guestErr);
+    }
+    for (const r of (guestRows ?? []) as { id: string }[]) {
+      guestIds.push(r.id);
+    }
+  }
+
+  const scanStudentIds = [...attendeeIds, ...guestIds];
+
   // Same scan shape as the manual attendance toggle route - billable=true is
   // exactly what finish_class_and_bill bills.
   const { error: scansErr } = await auth.supabaseAdmin
     .from('attendance_scans')
     .insert(
-      attendeeIds.map((studentId) => ({
+      scanStudentIds.map((studentId) => ({
         session_id: sessionId,
         student_id: studentId,
         group_id: groupId,
