@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ChevronDown, Loader2, Lock, Plus, X } from 'lucide-react';
+import { Banknote, ChevronDown, Loader2, Lock, Plus, Smartphone, X } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
@@ -107,9 +107,15 @@ export default function SlotActionSheet({
   const [guestPhone, setGuestPhone] = useState('');
   const [guestError, setGuestError] = useState<string | null>(null);
 
+  // Payment method (unrecorded). Cash collects on the spot; digital is the
+  // future Paymob payment-link flow (shows a "coming soon" note and records as
+  // cash for now). The server resolves the final outcome.
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'digital'>('cash');
+
   // Submit (record)
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const attendanceRef = useRef<HTMLElement | null>(null);
 
   // Cancel / reschedule accordions
   const [openSection, setOpenSection] = useState<'cancel' | 'reschedule' | null>(null);
@@ -137,6 +143,7 @@ export default function SlotActionSheet({
     setGuestName('');
     setGuestPhone('');
     setGuestError(null);
+    setPaymentMethod('cash');
     setSubmitError(null);
     setOpenSection(null);
     setActionError(null);
@@ -271,16 +278,25 @@ export default function SlotActionSheet({
           session_date: occurrence.date,
           attendee_ids: Array.from(selected),
           guests,
+          payment_method: paymentMethod,
         }),
       });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        already_exists?: boolean;
+        payment_method?: 'cash' | 'digital';
+      };
       if (res.status === 207) {
         toast.warning(t('billingErrorWarning'));
         onChanged();
         return;
       }
       if (res.ok) {
-        toast.success(t('recordedToast'));
+        if (data.already_exists) {
+          toast.success(t('recordedToast'));
+        } else {
+          toast.success(data.payment_method === 'digital' ? t('successDigital') : t('successCash'));
+        }
         onChanged();
         return;
       }
@@ -512,7 +528,7 @@ export default function SlotActionSheet({
         className="flex w-full items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 font-medium text-primary-foreground transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-        {t('submitRecordAttendees', {
+        {t('submitRecord', {
           count: formatNumber(totalAttendees, locale, { integerOnly: true }),
         })}
       </button>
@@ -562,10 +578,22 @@ export default function SlotActionSheet({
       {/* UNRECORDED */}
       {state === 'unrecorded' && (
         <div className="flex flex-col gap-5">
-          <section>
+          {/* Anchor CTA: does not submit - scrolls to / focuses the attendance
+              section so the teacher's eye lands on the roster. */}
+          <button
+            type="button"
+            onClick={() =>
+              attendanceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }
+            className="w-full rounded-lg bg-teal-600 px-4 py-3 text-base font-semibold text-primary-foreground transition-colors hover:bg-teal-700"
+          >
+            {t('startSession')}
+          </button>
+
+          <section ref={attendanceRef}>
             <div className="mb-2 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-[var(--color-text-muted)]">
-                {t('recordAttendanceTitle')}
+                {t('attendanceTitle')}
               </h3>
               {roster.length > 0 && (
                 <button
@@ -621,6 +649,14 @@ export default function SlotActionSheet({
                   </li>
                 ))}
               </ul>
+            )}
+
+            {!rosterLoading && !rosterError && (
+              <p className="mt-3 text-xs text-[var(--color-text-secondary)]" role="status">
+                {t('selectedCount', {
+                  count: formatNumber(selected.size, locale, { integerOnly: true }),
+                })}
+              </p>
             )}
 
             {/* One-time (guest) attendees - Pro only, capped at 10/session */}
@@ -696,6 +732,49 @@ export default function SlotActionSheet({
             {submitError && (
               <p className="mt-3 text-sm text-[var(--color-danger)]" role="alert">
                 {submitError}
+              </p>
+            )}
+          </section>
+
+          {/* PAYMENT METHOD */}
+          <section>
+            <h3 className="mb-2 text-sm font-semibold text-[var(--color-text-muted)]">
+              {t('paymentMethodTitle')}
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('cash')}
+                aria-pressed={paymentMethod === 'cash'}
+                className={`flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-colors ${
+                  paymentMethod === 'cash'
+                    ? 'border-[var(--color-teal)] bg-[var(--color-teal-soft)] text-[var(--color-teal-deep)]'
+                    : 'border-[var(--color-border)] bg-[var(--color-surface-0)] text-[var(--color-text-secondary)]'
+                }`}
+              >
+                <Banknote size={18} aria-hidden />
+                {t('paymentCash')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('digital')}
+                aria-pressed={paymentMethod === 'digital'}
+                className={`flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-colors ${
+                  paymentMethod === 'digital'
+                    ? 'border-[var(--color-brass)] bg-[var(--color-brass)]/15 text-[var(--color-brass)]'
+                    : 'border-[var(--color-border)] bg-[var(--color-surface-0)] text-[var(--color-text-secondary)]'
+                }`}
+              >
+                <Smartphone size={18} aria-hidden />
+                {t('paymentDigital')}
+              </button>
+            </div>
+            {paymentMethod === 'digital' && (
+              <p
+                className="mt-2 rounded-lg bg-[var(--color-surface-2)] px-3 py-2 text-xs text-[var(--color-text-secondary)]"
+                role="note"
+              >
+                {t('paymentDigitalDisabled')}
               </p>
             )}
           </section>

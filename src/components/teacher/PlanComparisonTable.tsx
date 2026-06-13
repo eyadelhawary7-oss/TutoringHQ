@@ -127,10 +127,17 @@ export default function PlanComparisonTable() {
             ))}
             <tr>
               <td className="px-3 py-4" />
-              <td className="px-3 py-4" />
               <td className="px-3 py-4 text-center align-top">
                 <Link
-                  href="/signup"
+                  href="/teacher/signup"
+                  className="inline-flex w-full justify-center rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface-0)] px-4 py-2.5 text-xs font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+                >
+                  {t('freeColumnCta')}
+                </Link>
+              </td>
+              <td className="px-3 py-4 text-center align-top">
+                <Link
+                  href="/teacher/signup"
                   className="inline-flex w-full justify-center rounded-xl bg-[var(--color-teal)] px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--color-teal-deep)] btn-press chq-focus"
                 >
                   {t('startFreeTrial')}
@@ -138,7 +145,7 @@ export default function PlanComparisonTable() {
               </td>
               <td className="px-3 py-4 text-center align-top">
                 <Link
-                  href="/signup?plan=pro"
+                  href="/teacher/signup?plan=pro"
                   className="inline-flex w-full justify-center rounded-xl px-4 py-2.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 btn-press chq-focus"
                   style={{ background: 'var(--color-brass)' }}
                 >

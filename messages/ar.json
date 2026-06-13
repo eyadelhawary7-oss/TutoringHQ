@@ -7628,6 +7628,8 @@
     "featureUnavailable": "غير متاح",
     "startFreeTrial": "ابدأ التجربة المجانية",
     "startWithPro": "ابدأ بخطة Pro",
+    "startFree": "ابدأ مجاناً",
+    "freeColumnCta": "ابدأ مجاناً",
     "rowViewCenters": "عرض المراكز التي تدرس بها",
     "rowGroupsPerCenter": "مجموعاتك في كل مركز",
     "rowCenterAttendance": "سجل الحضور في المراكز",
@@ -8239,6 +8241,15 @@
       "guestCount": "{current} / ١٠ حضور مؤقت",
       "classNotStartedDate": "هذه الحصة في تاريخ قادم.",
       "recordAttendanceCta": "تسجيل الحضور",
+      "startSession": "بدء الحصة وتسجيل الحضور",
+      "attendanceTitle": "الحضور",
+      "paymentMethodTitle": "طريقة الدفع",
+      "paymentCash": "نقدي",
+      "paymentDigital": "رابط دفع",
+      "paymentDigitalDisabled": "المدفوعات الرقمية قريباً. سيتم التسجيل نقداً.",
+      "successCash": "تم تسجيل الحضور وتحصيل الدفع نقداً",
+      "successDigital": "تم تسجيل الحضور وإرسال رابط الدفع",
+      "selectedCount": "تم تحديد {count} طالب",
       "txnStatus": {
         "paid": "مدفوع",
         "pending": "مستحق",
@@ -8506,7 +8517,12 @@
       "loadMore": "تحميل المزيد",
       "saveSchedule": "حفظ المواعيد",
       "scheduleSaved": "تم حفظ المواعيد.",
-      "saveError": "تعذّر الحفظ. جرب تاني."
+      "saveError": "تعذّر الحفظ. جرب تاني.",
+      "collectButton": "تحصيل",
+      "collectCash": "نقدي",
+      "collectInstapay": "InstaPay",
+      "collectError": "تعذّر التحصيل. جرب تاني.",
+      "collectSuccess": "تم تسجيل الدفع."
     },
     "createGroup": {
       "title": "مجموعة خاصة جديدة",

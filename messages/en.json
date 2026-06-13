@@ -7628,6 +7628,8 @@
     "featureUnavailable": "Not available",
     "startFreeTrial": "Start free trial",
     "startWithPro": "Start with Pro",
+    "startFree": "Start for free",
+    "freeColumnCta": "Start for free",
     "rowViewCenters": "View the centers you teach at",
     "rowGroupsPerCenter": "Your groups at each center",
     "rowCenterAttendance": "Center attendance records",
@@ -8239,6 +8241,15 @@
       "guestCount": "{current} / 10 guest attendees",
       "classNotStartedDate": "This class is on a future date.",
       "recordAttendanceCta": "Record attendance",
+      "startSession": "Start class and record attendance",
+      "attendanceTitle": "Attendance",
+      "paymentMethodTitle": "Payment method",
+      "paymentCash": "Cash",
+      "paymentDigital": "Payment link",
+      "paymentDigitalDisabled": "Digital payments coming soon. This will be recorded as cash.",
+      "successCash": "Attendance recorded and cash collected",
+      "successDigital": "Attendance recorded and payment link sent",
+      "selectedCount": "{count} selected",
       "txnStatus": {
         "paid": "Paid",
         "pending": "Outstanding",
@@ -8506,7 +8517,12 @@
       "loadMore": "Load more",
       "saveSchedule": "Save schedule",
       "scheduleSaved": "Schedule saved.",
-      "saveError": "Could not save. Try again."
+      "saveError": "Could not save. Try again.",
+      "collectButton": "Collect",
+      "collectCash": "Cash",
+      "collectInstapay": "InstaPay",
+      "collectError": "Could not collect. Try again.",
+      "collectSuccess": "Payment recorded."
     },
     "createGroup": {
       "title": "New private group",

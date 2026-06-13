@@ -342,7 +342,7 @@ export default function PricingPageClient() {
                     ))}
                   </ul>
                   <Link
-                    href="/teacher/subscription/upgrade"
+                    href="/teacher/signup?plan=pro"
                     className="mt-6 inline-flex w-full justify-center rounded-xl px-6 py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-press chq-focus"
                     style={{ background: 'var(--color-brass)' }}
                   >

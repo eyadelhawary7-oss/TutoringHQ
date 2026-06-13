@@ -7,15 +7,19 @@ import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
 import { formatTime } from '@/lib/timeFormat';
 import { getCurrentCairoClock } from '@/lib/cairo/day';
+import { useToast } from '@/hooks/useToast';
 
 type ClassStudent = {
   student_id: string;
+  transaction_id: string | null;
   name: string | null;
   is_guest: boolean;
   attended: boolean;
   amount: number;
   status: string | null;
 };
+
+type CollectMethod = 'cash' | 'instapay';
 
 type ClassRow = {
   session_id: string;
@@ -55,6 +59,7 @@ export default function GroupClassesTab({ groupId }: { groupId: string }) {
   const tSchedule = useTranslations('teacherPortal.schedule');
   const tf = useTranslations('timeFormat');
   const locale = useLocale();
+  const toast = useToast();
   const timeLabels = { am: tf('am'), pm: tf('pm') };
 
   const [classes, setClasses] = useState<ClassRow[]>([]);
@@ -64,6 +69,9 @@ export default function GroupClassesTab({ groupId }: { groupId: string }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // Which transaction's collect popover is open, and which is in flight.
+  const [collectOpen, setCollectOpen] = useState<string | null>(null);
+  const [collecting, setCollecting] = useState<string | null>(null);
 
   const load = useCallback(
     async (nextCursor: string | null) => {
@@ -113,6 +121,58 @@ export default function GroupClassesTab({ groupId }: { groupId: string }) {
       else next.add(id);
       return next;
     });
+  };
+
+  // Settle a single outstanding charge from the breakdown. On success we patch
+  // the row's status to paid and move its amount from outstanding to collected
+  // so the rollups stay in sync without a refetch.
+  const collect = async (
+    sessionId: string,
+    transactionId: string,
+    amount: number,
+    method: CollectMethod,
+  ) => {
+    setCollectOpen(null);
+    setCollecting(transactionId);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error(t('collectError'));
+        return;
+      }
+      const res = await fetch(`/api/teacher/private/transactions/${transactionId}/collect`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ method }),
+      });
+      if (!res.ok) {
+        toast.error(t('collectError'));
+        return;
+      }
+      setClasses((prev) =>
+        prev.map((c) => {
+          if (c.session_id !== sessionId) return c;
+          return {
+            ...c,
+            students: c.students.map((s) =>
+              s.transaction_id === transactionId ? { ...s, status: 'paid' } : s,
+            ),
+            total_collected: c.total_collected + amount,
+            outstanding: c.outstanding - amount,
+          };
+        }),
+      );
+      toast.success(t('collectSuccess'));
+    } catch {
+      toast.error(t('collectError'));
+    } finally {
+      setCollecting(null);
+    }
   };
 
   const statusBadge = (status: string | null) => {
@@ -235,6 +295,47 @@ export default function GroupClassesTab({ groupId }: { groupId: string }) {
                             {formatCurrency(s.amount, locale)}
                           </span>
                           {statusBadge(s.status)}
+                          {s.status === 'pending' && s.transaction_id && (
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setCollectOpen((cur) =>
+                                    cur === s.transaction_id ? null : s.transaction_id,
+                                  )
+                                }
+                                disabled={collecting === s.transaction_id}
+                                className="flex items-center gap-1 rounded-lg border border-[var(--color-teal)]/40 px-2.5 py-1 text-xs font-medium text-[var(--color-teal-deep)] transition-colors hover:bg-[var(--color-teal-soft)] disabled:opacity-50"
+                              >
+                                {collecting === s.transaction_id && (
+                                  <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                                )}
+                                {t('collectButton')}
+                              </button>
+                              {collectOpen === s.transaction_id && (
+                                <div className="absolute end-0 z-10 mt-1 flex w-32 flex-col overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] shadow-[var(--shadow-card)]">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      collect(c.session_id, s.transaction_id!, s.amount, 'cash')
+                                    }
+                                    className="px-3 py-2 text-start text-xs text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-2)]"
+                                  >
+                                    {t('collectCash')}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      collect(c.session_id, s.transaction_id!, s.amount, 'instapay')
+                                    }
+                                    className="px-3 py-2 text-start text-xs text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-2)]"
+                                  >
+                                    {t('collectInstapay')}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </span>
                       </li>
                     ))}

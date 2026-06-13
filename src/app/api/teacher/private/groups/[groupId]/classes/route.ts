@@ -10,6 +10,7 @@ const PAGE_SIZE = 20;
 type SessionRow = { id: string; scheduled_at: string };
 type ScanRow = { session_id: string; student_id: string; billable: boolean };
 type TxnRow = {
+  id: string;
   session_id: string;
   student_id: string;
   amount_billed: number | string | null;
@@ -97,7 +98,7 @@ export async function GET(
 
   const { data: txnRows, error: txnErr } = await auth.supabaseAdmin
     .from('transactions')
-    .select('session_id, student_id, amount_billed, status')
+    .select('id, session_id, student_id, amount_billed, status')
     .eq('teacher_id', auth.userId)
     .eq('kind', 'lesson')
     .in('session_id', sessionIds);
@@ -163,6 +164,7 @@ export async function GET(
       const info = studentById.get(sid);
       return {
         student_id: sid,
+        transaction_id: tx?.id ?? null,
         name: info?.name ?? null,
         is_guest: info?.is_guest === true,
         attended: attendedSet.has(sid),

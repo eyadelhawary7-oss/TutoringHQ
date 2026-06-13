@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherAuth } from '@/lib/centerAuth';
 import { isUuid } from '@/lib/teacherPrivate';
+import { isFeatureEnabled } from '@/lib/features';
 import { normalizePhone } from '@/lib/utils/phone';
 import {
   cairoDateKey,
@@ -59,13 +60,21 @@ export async function POST(request: NextRequest) {
     session_date: rawDate,
     attendee_ids: rawAttendees,
     guests: rawGuests,
+    payment_method: rawPaymentMethod,
   } = (body ?? {}) as {
     group_id?: unknown;
     schedule_id?: unknown;
     session_date?: unknown;
     attendee_ids?: unknown;
     guests?: unknown;
+    payment_method?: unknown;
   };
+
+  // Cash is collected on the spot; 'digital' is the future Paymob payment-link
+  // flow. Until PAYMOB_ENABLED is on, digital falls back to cash (the sheet
+  // shows a "coming soon, recorded as cash" note). Default cash.
+  const paymentMethod = rawPaymentMethod === 'digital' ? 'digital' : 'cash';
+  const digitalActive = paymentMethod === 'digital' && isFeatureEnabled('PAYMOB_ENABLED');
 
   const groupId = typeof rawGroupId === 'string' ? rawGroupId : '';
   const scheduleId = typeof rawScheduleId === 'string' ? rawScheduleId : '';
@@ -365,9 +374,50 @@ export async function POST(request: NextRequest) {
     | { session_id: string; billed_now: boolean; charges_created: number }
     | undefined;
 
+  // Cash collection: flip every freshly minted pending charge for this session
+  // to paid via the lifecycle RPC (never a direct UPDATE). Digital with Paymob
+  // live stays pending for the Phase 4 payment-link flow. A per-charge
+  // transition failure here is non-fatal: the session + charges are already
+  // committed, so we report success with the resolved method and let the
+  // teacher settle any stragglers from the group Classes tab.
+  if (!digitalActive) {
+    const { data: pendingTxns, error: pendingErr } = await auth.supabaseAdmin
+      .from('transactions')
+      .select('id')
+      .eq('session_id', sessionId)
+      .eq('status', 'pending');
+    if (pendingErr) {
+      Sentry.withScope((scope) => {
+        scope.setTag('route', ROUTE_TAG);
+        scope.setTag('step', 'collect_pending_lookup');
+        Sentry.captureException(pendingErr);
+      });
+    } else {
+      for (const txn of (pendingTxns ?? []) as { id: string }[]) {
+        const { error: collectErr } = await auth.supabaseAdmin.rpc(
+          'apply_transaction_transition',
+          {
+            p_transaction_id: txn.id,
+            p_new_status: 'paid',
+            p_actor_id: auth.userId,
+            p_method: 'cash',
+          },
+        );
+        if (collectErr) {
+          Sentry.withScope((scope) => {
+            scope.setTag('route', ROUTE_TAG);
+            scope.setTag('step', 'collect_transition');
+            Sentry.captureException(collectErr);
+          });
+        }
+      }
+    }
+  }
+
   return NextResponse.json({
     session_id: sessionId,
     charges_created: result?.charges_created ?? 0,
     already_exists: false,
+    payment_method: digitalActive ? 'digital' : 'cash',
   });
 }
