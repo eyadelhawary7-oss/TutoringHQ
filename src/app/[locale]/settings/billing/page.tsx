@@ -13,7 +13,7 @@ import {
   type PlanKey,
   type BillingPeriod,
 } from '@/lib/pricing';
-import { FEATURES } from '@/lib/features';
+import { isFeatureEnabled } from '@/lib/features';
 import {
   getUpgradeCost,
   getDailyRate,
@@ -1224,8 +1224,8 @@ export default function BillingPage() {
   const upgradeLimitReached = upgradeUsed >= upgradeLimit;
 
   const handleUpgradePay = async () => {
-    if (!selectedPlan || !selectedPeriod || !FEATURES.PAYMOB_ENABLED) {
-      if (!FEATURES.PAYMOB_ENABLED) toast.info(t('history.payDisabled'));
+    if (!selectedPlan || !selectedPeriod || !isFeatureEnabled('PAYMOB_ENABLED')) {
+      if (!isFeatureEnabled('PAYMOB_ENABLED')) toast.info(t('history.payDisabled'));
       return;
     }
     setPaymentLoading(true);
@@ -1299,7 +1299,7 @@ export default function BillingPage() {
     const total = reactivationCalc.total;
     const appliedPreview = useCredits ? Math.min(creditBal, total) : 0;
     const viaPayPreview = Math.max(0, total - appliedPreview);
-    if (viaPayPreview > 0 && !FEATURES.PAYMOB_ENABLED) {
+    if (viaPayPreview > 0 && !isFeatureEnabled('PAYMOB_ENABLED')) {
       toast.info(t('history.payDisabled'));
       return;
     }
@@ -1379,7 +1379,7 @@ export default function BillingPage() {
   };
 
   const handleInvoicePay = async (invoiceId: string) => {
-    if (!ownerOk || !FEATURES.PAYMOB_ENABLED) {
+    if (!ownerOk || !isFeatureEnabled('PAYMOB_ENABLED')) {
       toast.info(t('history.payDisabled'));
       return;
     }
@@ -2154,7 +2154,7 @@ export default function BillingPage() {
                         paymentLoading ||
                         upgradeLimitReached ||
                         costSummary.amountDue <= 0 ||
-                        !FEATURES.PAYMOB_ENABLED
+                        !isFeatureEnabled('PAYMOB_ENABLED')
                       }
                       onClick={() => void handleUpgradePay()}
                       className="mt-4 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm disabled:opacity-50 md:w-full btn-press chq-focus"

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherAuth } from '@/lib/centerAuth';
+import { isFeatureEnabled } from '@/lib/features';
 
 const ROUTE_TAG = 'api/teacher/subscription/status';
 
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
 
   // Whether the upgrade CTA can do anything. The UI swaps the button for a
   // visible "payments unavailable" banner when this is false (no dead buttons).
-  const paymentsEnabled = process.env.PAYMOB_ENABLED === 'true';
+  const paymentsEnabled = isFeatureEnabled('PAYMOB_ENABLED');
 
   const { data: subRow, error: subErr } = await auth.supabaseAdmin
     .from('teacher_subscriptions')

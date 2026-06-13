@@ -9,7 +9,7 @@ import { formatCurrency, formatDate } from '@/lib/formatNumber';
 import { PLANS, normalizeBillingPeriod, type PlanKey } from '@/lib/pricing';
 import { BLAST_PRICE_PER_PARENT, todayISO } from '@/lib/parentPack';
 import { supabase } from '@/lib/supabase';
-import { FEATURES } from '@/lib/features';
+import { isFeatureEnabled } from '@/lib/features';
 import { isSubscriptionPastDueBanner } from '@/lib/subscriptionPastDue';
 import { PaymobInvoiceModal } from '@/components/billing/PaymobInvoiceModal';
 import { useToast } from '@/hooks/useToast';
@@ -162,8 +162,8 @@ export default function BillingPageClient() {
   }, [searchParams, toast, t, fetchDashboard]);
 
   const handlePayNow = async () => {
-    if (!ownerOk || !data?.payNowInvoiceId || !FEATURES.PAYMOB_ENABLED) {
-      if (!FEATURES.PAYMOB_ENABLED) toast.info(t('nextPayment.payDisabled'));
+    if (!ownerOk || !data?.payNowInvoiceId || !isFeatureEnabled('PAYMOB_ENABLED')) {
+      if (!isFeatureEnabled('PAYMOB_ENABLED')) toast.info(t('nextPayment.payDisabled'));
       return;
     }
     setPaying(true);
@@ -410,7 +410,7 @@ export default function BillingPageClient() {
             onClick={() => void handlePayNow()}
             disabled={
               paying ||
-              !FEATURES.PAYMOB_ENABLED ||
+              !isFeatureEnabled('PAYMOB_ENABLED') ||
               !data.payNowInvoiceId ||
               (center.subscription_status ?? '').toLowerCase() === 'cancelled'
             }
@@ -418,7 +418,7 @@ export default function BillingPageClient() {
           >
             {paying ? t('nextPayment.paying') : t('nextPayment.payNow')}
           </button>
-          {!FEATURES.PAYMOB_ENABLED ? (
+          {!isFeatureEnabled('PAYMOB_ENABLED') ? (
             <span className="text-sm text-[var(--color-text-secondary)]">{t('nextPayment.payDisabled')}</span>
           ) : null}
         </div>

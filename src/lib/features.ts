@@ -18,7 +18,7 @@
 //    URL: https://centerhq.app/api/paymob/webhook
 
 export const FEATURES: { PAYMOB_ENABLED: boolean } = {
-  PAYMOB_ENABLED: false, // Set to true to unlock for everyone
+  PAYMOB_ENABLED: process.env.PAYMOB_ENABLED === 'true', // Set PAYMOB_ENABLED=true in the env to unlock
 };
 
 // Helper

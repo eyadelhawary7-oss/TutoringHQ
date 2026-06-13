@@ -1,12 +1,12 @@
 /**
- * Failed / overdue invoice Paymob retry (daily). Gated by FEATURES.PAYMOB_ENABLED.
+ * Failed / overdue invoice Paymob retry (daily). Gated by isFeatureEnabled('PAYMOB_ENABLED').
  */
 
 import { NextResponse } from 'next/server';
 import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { createPaymentLink } from '@/lib/paymob';
 import { sendPaymentRetry } from '@/lib/centerNotify';
-import { FEATURES } from '@/lib/features';
+import { isFeatureEnabled } from '@/lib/features';
 import { ownerContactByCenterId, resolveOwnerWaPhoneCached } from '@/lib/ownerPhone';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { assertIsoDateForOrFilter } from '@/lib/postgrestSafe';
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
 
   const cronStart = Date.now();
 
-  if (!FEATURES.PAYMOB_ENABLED) {
+  if (!isFeatureEnabled('PAYMOB_ENABLED')) {
     if (supabaseAdmin) {
       await insertCronLogSuccess(supabaseAdmin, CRON_NAME, {
         duration_ms: Date.now() - cronStart,

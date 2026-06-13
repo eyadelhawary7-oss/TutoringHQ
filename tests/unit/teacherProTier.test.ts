@@ -101,6 +101,14 @@ vi.mock('@/lib/paymobCenterCheckout', () => ({
   createPaymobCheckoutEgp: vi.fn(async () => ({ paymobOrderId: 'po-1', iframeUrl: 'https://pay/x' })),
 }));
 
+// PAYMOB_ENABLED is now evaluated once at module load (env-backed FEATURES), so
+// it can't be toggled via process.env mid-run. Mock the feature accessor so each
+// test controls the gate directly.
+let mockPaymobEnabled = false;
+vi.mock('@/lib/features', () => ({
+  isFeatureEnabled: (key: string) => (key === 'PAYMOB_ENABLED' ? mockPaymobEnabled : false),
+}));
+
 import { POST as postGroup } from '@/app/api/teacher/private/groups/route';
 import { POST as postRoster } from '@/app/api/teacher/private/groups/[groupId]/roster/route';
 import { POST as postUpgrade } from '@/app/api/teacher/subscription/upgrade/route';
@@ -123,7 +131,7 @@ beforeEach(() => {
   updateCalls.length = 0;
   rpcCalls.length = 0;
   mockAdmin.rpc.mockClear();
-  delete process.env.PAYMOB_ENABLED;
+  mockPaymobEnabled = false;
 });
 
 describe('group create cap (Standard 8-group limit)', () => {
@@ -214,8 +222,8 @@ describe('blast credit deduction order (mirrors deduct_blast_credits RPC)', () =
 });
 
 describe('upgrade route', () => {
-  it('7. PAYMOB_ENABLED!=true -> 503 PAYMENTS_UNAVAILABLE', async () => {
-    delete process.env.PAYMOB_ENABLED;
+  it('7. PAYMOB_ENABLED off -> 503 PAYMENTS_UNAVAILABLE', async () => {
+    mockPaymobEnabled = false;
 
     const res = await postUpgrade(makeRequest());
 
@@ -224,7 +232,7 @@ describe('upgrade route', () => {
   });
 
   it('8. already Pro (teacher_699) -> 400 NOT_ELIGIBLE', async () => {
-    process.env.PAYMOB_ENABLED = 'true';
+    mockPaymobEnabled = true;
     adminQueue.teacher_subscriptions = [
       { data: { id: 's-1', plan_key: 'teacher_699', status: 'active' }, error: null },
     ];

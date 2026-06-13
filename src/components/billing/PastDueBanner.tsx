@@ -6,7 +6,7 @@ import { useUser } from '@/contexts/UserContext';
 import { formatDate } from '@/lib/formatNumber';
 import { isSubscriptionPastDueBanner, autoSuspendDateYmd } from '@/lib/subscriptionPastDue';
 import { supabase } from '@/lib/supabase';
-import { FEATURES } from '@/lib/features';
+import { isFeatureEnabled } from '@/lib/features';
 import { PaymobInvoiceModal } from '@/components/billing/PaymobInvoiceModal';
 import { useToast } from '@/hooks/useToast';
 
@@ -62,8 +62,8 @@ export function PastDueBanner() {
   };
 
   const handlePayNow = useCallback(async () => {
-    if (!ownerOk || !FEATURES.PAYMOB_ENABLED) {
-      if (!FEATURES.PAYMOB_ENABLED) toast.info(t('payDisabled'));
+    if (!ownerOk || !isFeatureEnabled('PAYMOB_ENABLED')) {
+      if (!isFeatureEnabled('PAYMOB_ENABLED')) toast.info(t('payDisabled'));
       return;
     }
     setPaying(true);

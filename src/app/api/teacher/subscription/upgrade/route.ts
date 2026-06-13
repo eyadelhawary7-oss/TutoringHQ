@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherAuth } from '@/lib/centerAuth';
 import { validateCSRFRequest } from '@/lib/csrf';
+import { isFeatureEnabled } from '@/lib/features';
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
 
 const ROUTE_TAG = 'api/teacher/subscription/upgrade';
@@ -23,9 +24,10 @@ function fail(step: string, err: unknown) {
  * (teacher_699). The webhook finalizes the session (combinedPaymentFinalize,
  * session_type='teacher_upgrade') and calls upgrade_teacher_to_pro.
  *
- * PAYMOB gate (Rule, hard): when process.env.PAYMOB_ENABLED !== 'true' this
- * returns 503 { error: 'PAYMENTS_UNAVAILABLE' } - no hidden buttons, the UI
- * shows a visible "payments unavailable" message instead of a checkout.
+ * PAYMOB gate (Rule, hard): when PAYMOB_ENABLED is off this returns 503
+ * { error: 'PAYMENTS_UNAVAILABLE' } - no hidden buttons, the UI shows a visible
+ * "payments unavailable" message instead of a checkout. The single source of
+ * truth is isFeatureEnabled('PAYMOB_ENABLED') (env-backed via src/lib/features).
  */
 export async function POST(request: NextRequest) {
   const auth = await requireTeacherAuth(request);
@@ -36,7 +38,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Hard gate: payments off -> 503, never a silent partial flow.
-  if (process.env.PAYMOB_ENABLED !== 'true') {
+  if (!isFeatureEnabled('PAYMOB_ENABLED')) {
     return NextResponse.json({ error: 'PAYMENTS_UNAVAILABLE' }, { status: 503 });
   }
 

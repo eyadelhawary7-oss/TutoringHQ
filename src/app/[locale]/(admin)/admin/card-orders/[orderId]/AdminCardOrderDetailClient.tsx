@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
 import type { CardOrderLifecycleEvent } from '@/lib/cardOrderState';
-import { FEATURES } from '@/lib/features';
+import { isFeatureEnabled } from '@/lib/features';
 import { buildLegalInvoiceLines } from '@/lib/pricing/taxMath';
 import { formatCurrency, formatDate, formatDateTime, formatRelativeMinutesAgo } from '@/lib/formatNumber';
 import { formatShippingZoneForLocale } from '@/lib/bostaShipping';
@@ -463,7 +463,7 @@ export default function AdminCardOrderDetailClient({
                   <p className="text-xs text-[var(--color-text-secondary)]">
                     {paidAtIso ? formatDateTime(paidAtIso, locale) : ','}
                   </p>
-                  {FEATURES.PAYMOB_ENABLED && paymobId ? (
+                  {isFeatureEnabled('PAYMOB_ENABLED') && paymobId ? (
                     <a
                       href="https://accept.paymob.com"
                       target="_blank"
