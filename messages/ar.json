@@ -7613,7 +7613,38 @@
     "title": "عنوان",
     "tile": {
       "quarterlyDisclosure": "يُدفع كل ٣ أشهر بمبلغ {amount} ج.م"
-    }
+    },
+    "comparisonTitle": "قارن الخطط",
+    "freePlan": "مجاني",
+    "standardName": "العادية",
+    "standardPrice": "٢٩٩ ج.م / شهر",
+    "proName": "Pro",
+    "proPrice": "٦٩٩ ج.م / شهر",
+    "mostComprehensive": "الأكثر شمولاً",
+    "sectionCenterTracking": "تتبع المراكز",
+    "sectionPrivateEngine": "المحرك الخاص",
+    "sectionProOnly": "Pro فقط",
+    "featureAvailable": "متاح",
+    "featureUnavailable": "غير متاح",
+    "startFreeTrial": "ابدأ التجربة المجانية",
+    "startWithPro": "ابدأ بخطة Pro",
+    "rowViewCenters": "عرض المراكز التي تدرس بها",
+    "rowGroupsPerCenter": "مجموعاتك في كل مركز",
+    "rowCenterAttendance": "سجل الحضور في المراكز",
+    "rowCenterEarnings": "أرباحك وحصتك من المراكز",
+    "rowCreateGroups": "إنشاء مجموعات خاصة مع روابط انضمام",
+    "rowAutoBilling": "تسجيل الحضور والفوترة التلقائية",
+    "rowPaymentLinks": "إرسال روابط الدفع عبر واتساب",
+    "rowSchedule": "جدول الحصص",
+    "rowCaps": "حتى ٨ مجموعات و٦٠ طالباً",
+    "rowRegisteredOnly": "طلاب مسجلون فقط (لا حضور مؤقت)",
+    "rowGuestAttendees": "حضور مؤقت (حتى ١٠ لكل حصة)",
+    "rowUnlimited": "مجموعات وطلاب غير محدودين",
+    "rowFullIncome": "سجل دخل كامل (كل الوقت)",
+    "rowAnalytics": "تحليلات متقدمة",
+    "rowWhatsappCredit": "١٠٠ جنيه رصيد واتساب شهرياً",
+    "rowStudentNotes": "ملاحظات الطلاب",
+    "rowCsvExport": "تصدير CSV"
   },
   "pricingActive": {},
   "pricingAnnualDerived": {},
@@ -8206,6 +8237,8 @@
       "guestUpgradeCta": "رقّي خطتك",
       "guestLimitReached": "وصلت للحد الأقصى (١٠ حضور مؤقت لكل حصة)",
       "guestCount": "{current} / ١٠ حضور مؤقت",
+      "classNotStartedDate": "هذه الحصة في تاريخ قادم.",
+      "recordAttendanceCta": "تسجيل الحضور",
       "txnStatus": {
         "paid": "مدفوع",
         "pending": "مستحق",
@@ -8886,5 +8919,21 @@
   "timeFormat": {
     "am": "ص",
     "pm": "م"
+  },
+  "localeToggle": {
+    "toEnglish": "English",
+    "toArabic": "عربي",
+    "aria": "تغيير اللغة"
+  },
+  "freeZone": {
+    "centersBanner": "هذه الميزة مجانية دائماً. الخاصية الخاصة تبدأ بـ ٢٩٩ جنيه/شهر.",
+    "centersTitle": "المراكز",
+    "groupsTitle": "المجموعات",
+    "attendanceTitle": "سجل الحضور في المراكز",
+    "attendanceEmpty": "لا توجد حصص مسجلة بعد.",
+    "attendedCount": "{count} حضور",
+    "earningsTitle": "أرباحك من المراكز",
+    "earnedThisMonth": "هذا الشهر",
+    "earnedAllTime": "كل الوقت"
   }
 }

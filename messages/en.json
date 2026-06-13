@@ -7613,7 +7613,38 @@
     "title": "Title",
     "tile": {
       "quarterlyDisclosure": "billed quarterly at {amount} EGP every 3 months"
-    }
+    },
+    "comparisonTitle": "Compare plans",
+    "freePlan": "Free",
+    "standardName": "Standard",
+    "standardPrice": "299 EGP / month",
+    "proName": "Pro",
+    "proPrice": "699 EGP / month",
+    "mostComprehensive": "Most comprehensive",
+    "sectionCenterTracking": "Center tracking",
+    "sectionPrivateEngine": "Private engine",
+    "sectionProOnly": "Pro only",
+    "featureAvailable": "Available",
+    "featureUnavailable": "Not available",
+    "startFreeTrial": "Start free trial",
+    "startWithPro": "Start with Pro",
+    "rowViewCenters": "View the centers you teach at",
+    "rowGroupsPerCenter": "Your groups at each center",
+    "rowCenterAttendance": "Center attendance records",
+    "rowCenterEarnings": "Your earnings and cut from centers",
+    "rowCreateGroups": "Create private groups with join links",
+    "rowAutoBilling": "Attendance and automatic billing",
+    "rowPaymentLinks": "Payment links sent on WhatsApp",
+    "rowSchedule": "Class schedule",
+    "rowCaps": "Up to 8 groups and 60 students",
+    "rowRegisteredOnly": "Registered students only (no guest attendees)",
+    "rowGuestAttendees": "Guest attendees (up to 10 per session)",
+    "rowUnlimited": "Unlimited groups and students",
+    "rowFullIncome": "Full income history (all time)",
+    "rowAnalytics": "Advanced analytics",
+    "rowWhatsappCredit": "100 EGP WhatsApp credit monthly",
+    "rowStudentNotes": "Student notes",
+    "rowCsvExport": "CSV export"
   },
   "pricingActive": {},
   "pricingAnnualDerived": {},
@@ -8206,6 +8237,8 @@
       "guestUpgradeCta": "Upgrade your plan",
       "guestLimitReached": "Maximum reached (10 guest attendees per session)",
       "guestCount": "{current} / 10 guest attendees",
+      "classNotStartedDate": "This class is on a future date.",
+      "recordAttendanceCta": "Record attendance",
       "txnStatus": {
         "paid": "Paid",
         "pending": "Outstanding",
@@ -8886,5 +8919,21 @@
   "timeFormat": {
     "am": "AM",
     "pm": "PM"
+  },
+  "localeToggle": {
+    "toEnglish": "English",
+    "toArabic": "عربي",
+    "aria": "Change language"
+  },
+  "freeZone": {
+    "centersBanner": "This feature is always free. The private engine starts at 299 EGP/month.",
+    "centersTitle": "Centers",
+    "groupsTitle": "Groups",
+    "attendanceTitle": "Center attendance records",
+    "attendanceEmpty": "No recorded sessions yet.",
+    "attendedCount": "{count} attended",
+    "earningsTitle": "Your center earnings",
+    "earnedThisMonth": "This month",
+    "earnedAllTime": "All time"
   }
 }

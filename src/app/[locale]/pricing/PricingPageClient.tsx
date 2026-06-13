@@ -9,6 +9,8 @@ import { ORDERED_SUBSCRIPTION_PLAN_KEYS, PLANS } from '@/lib/pricing';
 import type { SubscriptionPlanKey } from '@/lib/pricing';
 import { Menu, X, Check } from 'lucide-react';
 import PricingBannerClient from '@/components/landing/PricingBannerClient';
+import PublicLocaleToggle from '@/components/PublicLocaleToggle';
+import PlanComparisonTable from '@/components/teacher/PlanComparisonTable';
 import { usePublicPlanPrices } from '@/hooks/usePublicPlanPrices';
 
 const CONTACT_MAIL = 'mailto:support@ehgintelligence.com';
@@ -101,6 +103,7 @@ export default function PricingPageClient() {
               >
                 {t('navHome')}
               </Link>
+              <PublicLocaleToggle />
               <Link
                 href="/signup"
                 className="rounded-xl bg-[var(--color-teal)] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-teal-deep)] inline-flex btn-press chq-focus"
@@ -121,6 +124,9 @@ export default function PricingPageClient() {
               >
                 {t('navHome')}
               </Link>
+              <div className="px-3 py-2">
+                <PublicLocaleToggle />
+              </div>
               <Link
                 href="/signup"
                 className="mt-2 rounded-xl bg-[var(--color-teal)] py-3 text-center font-semibold text-white btn-press chq-focus"
@@ -344,6 +350,7 @@ export default function PricingPageClient() {
                   </Link>
                 </div>
               </div>
+              <PlanComparisonTable />
             </div>
           )}
         </div>

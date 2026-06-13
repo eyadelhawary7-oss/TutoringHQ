@@ -7,6 +7,7 @@ import { Link } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatNumber, formatDate } from '@/lib/formatNumber';
 import OnboardingChecklist from '../OnboardingChecklist';
+import FreeZoneBanner from '../FreeZoneBanner';
 import ReferralCard from '../ReferralCard';
 import IncomeCalculator from '../IncomeCalculator';
 import LockedIncomePreview from '../LockedIncomePreview';
@@ -224,6 +225,7 @@ export default function TeacherDashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      {!hasPrivateAccess && <FreeZoneBanner />}
       {summary === null ? (
         <div className="h-7 w-56 animate-pulse rounded-lg bg-[var(--color-surface-2)]" />
       ) : (

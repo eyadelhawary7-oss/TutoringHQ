@@ -10,7 +10,6 @@ import {
   cairoDateKey,
   cairoYmdMinusDays,
   cairoYmdPlusDays,
-  getCurrentCairoClock,
   parseCairoYmd,
 } from '@/lib/cairo/day';
 import {
@@ -81,8 +80,6 @@ export default function TeacherSchedulePage() {
 
   const todayKey = cairoDateKey();
   const todayDow = dayOfWeekOf(todayKey);
-  const { hour, minute } = getCurrentCairoClock();
-  const nowHHMM = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 
   const sessionByGroupDate = useMemo(() => {
     const map = new Map<string, string>();
@@ -114,9 +111,10 @@ export default function TeacherSchedulePage() {
     } else if (exception?.kind === 'cancelled') {
       state = 'cancelled';
     } else if (date > todayKey) {
+      // Only slots on a strictly-future Cairo DATE are locked (read-only).
+      // Today and past dates are always actionable regardless of the time of
+      // day - a 4 PM class can have attendance recorded at 2 PM.
       state = 'readonly';
-    } else if (date === todayKey && effectiveTime > nowHHMM) {
-      state = 'future';
     } else {
       state = 'unrecorded';
     }
@@ -129,7 +127,7 @@ export default function TeacherSchedulePage() {
       .map((s) => occurrenceFor(s, todayKey))
       .sort((a, b) => a.effectiveTime.localeCompare(b.effectiveTime));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slots, exceptions, sessions, todayKey, todayDow, nowHHMM]);
+  }, [slots, exceptions, sessions, todayKey, todayDow]);
 
   const weekDates = useMemo(() => {
     const sunday = cairoYmdMinusDays(todayKey, todayDow);
@@ -223,8 +221,10 @@ export default function TeacherSchedulePage() {
               {t('rescheduledBadge')}
             </span>
           )}
-          {o.state === 'future' && (
-            <span className="text-xs text-[var(--color-text-muted)]">{t('notStartedYet')}</span>
+          {o.state === 'unrecorded' && (
+            <span className="text-xs font-medium text-[var(--color-brass)]">
+              {t('recordAttendanceCta')}
+            </span>
           )}
         </div>
       </div>

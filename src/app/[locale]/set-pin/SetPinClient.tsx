@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent, type ClipboardEvent } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useRouter } from '@/i18n/routing';
+import PublicLocaleToggle from '@/components/PublicLocaleToggle';
 
 const PLAYFAIR = {
   fontFamily: "var(--font-playfair), 'Playfair Display', 'Didot', Georgia, serif",
@@ -59,6 +60,7 @@ function FrameWrap({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
+        position: 'relative',
         background: 'var(--color-surface-0)',
         minHeight: '100vh',
         display: 'flex',
@@ -68,6 +70,9 @@ function FrameWrap({ children }: { children: React.ReactNode }) {
         padding: '40px 24px',
       }}
     >
+      <div style={{ position: 'absolute', top: '16px', insetInlineEnd: '16px' }}>
+        <PublicLocaleToggle />
+      </div>
       <div
         style={{
           width: '56px',

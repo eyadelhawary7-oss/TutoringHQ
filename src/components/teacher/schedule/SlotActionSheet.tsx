@@ -530,7 +530,7 @@ export default function SlotActionSheet({
       {/* FUTURE */}
       {state === 'future' && (
         <div className="flex flex-col gap-5">
-          <p className="text-sm text-[var(--color-text-muted)]">{t('futureSlotLabel')}</p>
+          <p className="text-sm text-[var(--color-text-muted)]">{t('classNotStartedDate')}</p>
           {groupInfo}
           <section>
             <h3 className="mb-2 text-sm font-semibold text-[var(--color-text-muted)]">
