@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherAuth } from '@/lib/centerAuth';
 import { isUuid } from '@/lib/teacherPrivate';
-import { normalizePhone, isValidEgyptianMobileE164 } from '@/lib/utils/phone';
+import { normalizePhone } from '@/lib/utils/phone';
 import {
   cairoDateKey,
   cairoPaidAtDayUtcBounds,
@@ -96,32 +96,21 @@ export async function POST(request: NextRequest) {
 
   // One-time (guest) attendees: name + WhatsApp phone. They become is_guest
   // student rows with NO enrollment, billed at the group fee like any other
-  // billable scan. Optional - the manual record sheet sends none.
+  // billable scan. Guests are a Pro-only feature, capped at 10/session - both
+  // gated AFTER the ownership + plan check below. Here we only confirm shape
+  // and count so the "nothing to record" guard can run.
   type GuestInput = { name: string; phone: string };
-  const guests: GuestInput[] = [];
-  if (rawGuests !== undefined) {
-    if (!Array.isArray(rawGuests)) {
-      return NextResponse.json(
-        { error: 'Invalid request', code: 'invalid_guests' },
-        { status: 400 },
-      );
-    }
-    for (const g of rawGuests) {
-      const rawName = (g as { name?: unknown })?.name;
-      const rawPhone = (g as { phone?: unknown })?.phone;
-      const name = typeof rawName === 'string' ? rawName.trim() : '';
-      const phone = normalizePhone(typeof rawPhone === 'string' ? rawPhone : '');
-      if (name.length < 1 || name.length > 120 || !isValidEgyptianMobileE164(phone)) {
-        return NextResponse.json(
-          { error: 'Invalid request', code: 'invalid_guests' },
-          { status: 400 },
-        );
-      }
-      guests.push({ name, phone });
-    }
+  if (rawGuests !== undefined && !Array.isArray(rawGuests)) {
+    return NextResponse.json(
+      { error: 'Invalid request', code: 'invalid_guests' },
+      { status: 400 },
+    );
   }
+  const rawGuestList = (Array.isArray(rawGuests) ? rawGuests : []) as unknown[];
+  const guestCount = rawGuestList.length;
+  let guests: GuestInput[] = [];
 
-  if (attendeeIds.length + guests.length === 0) {
+  if (attendeeIds.length + guestCount === 0) {
     return NextResponse.json(
       { error: 'Invalid request', code: 'invalid_attendees' },
       { status: 400 },
@@ -161,6 +150,52 @@ export async function POST(request: NextRequest) {
       { error: 'Forbidden', code: 'not_your_group' },
       { status: 403 },
     );
+  }
+
+  // Guest attendees are a Pro feature, capped at 10 per session. Plan key
+  // comes from teacher_subscriptions - the same source the status endpoint and
+  // the student cap read - so this server gate matches what the sheet shows
+  // (teacher_profiles.plan_key can drift and is NOT authoritative here).
+  if (guestCount > 0) {
+    const { data: planRow, error: planErr } = await auth.supabaseAdmin
+      .from('teacher_subscriptions')
+      .select('plan_key')
+      .eq('teacher_id', auth.userId)
+      .maybeSingle();
+    if (planErr) {
+      return serverError('plan_lookup', planErr);
+    }
+    const planKey = (planRow as { plan_key?: string } | null)?.plan_key ?? 'teacher_299';
+    if (planKey !== 'teacher_699') {
+      return NextResponse.json(
+        { error: 'GUESTS_PRO_ONLY', upgrade_required: true },
+        { status: 403 },
+      );
+    }
+    if (guestCount > 10) {
+      return NextResponse.json(
+        { error: 'GUEST_LIMIT_EXCEEDED', limit: 10, current: guestCount },
+        { status: 400 },
+      );
+    }
+    // Validate + normalize each guest now that the plan allows them.
+    const validated: GuestInput[] = [];
+    for (let i = 0; i < rawGuestList.length; i++) {
+      const g = rawGuestList[i];
+      const rawName = (g as { name?: unknown })?.name;
+      const rawPhoneVal = (g as { phone?: unknown })?.phone;
+      const name = typeof rawName === 'string' ? rawName.trim() : '';
+      if (name.length < 1 || name.length > 100) {
+        return NextResponse.json({ error: 'INVALID_GUEST_NAME', index: i }, { status: 400 });
+      }
+      const phoneStr = typeof rawPhoneVal === 'string' ? rawPhoneVal.trim() : '';
+      // Egyptian mobile as entered: starts with 01, exactly 11 digits.
+      if (!/^01\d{9}$/.test(phoneStr)) {
+        return NextResponse.json({ error: 'INVALID_GUEST_PHONE', index: i }, { status: 400 });
+      }
+      validated.push({ name, phone: normalizePhone(phoneStr) });
+    }
+    guests = validated;
   }
 
   // A cancelled occurrence cannot be recorded - the teacher must remove the

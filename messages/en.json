@@ -54,9 +54,12 @@
       "priceNote": "After the 14-day free trial.",
       "trialBadge": "14-day free trial",
       "feature1": "Create private groups with join links",
-      "feature2": "Attendance + automatic billing after every class",
+      "feature2": "Attendance and automatic billing after every class",
       "feature3": "Payment links sent on WhatsApp automatically",
-      "feature4": "Full income view: private + all centers",
+      "feature4": "Full income view: private and all centers",
+      "standardCapSummary": "Up to 8 groups and 60 enrolled students",
+      "standardGuestLimit": "Registered students only (no guest attendees)",
+      "guestAttendees": "Guest attendees without enrollment (up to 10 per session)",
       "freeNote": "Center tracking (reading your cut from centers you teach at) is always free and requires no subscription.",
       "cta": "Start free trial",
       "proTitle": "Private Engine Pro",
@@ -67,6 +70,7 @@
       "proFeatures": [
         "Everything in Standard",
         "Unlimited groups and students",
+        "Guest attendees without enrollment (up to 10 per session)",
         "Full income history (all time)",
         "Advanced analytics",
         "100 EGP WhatsApp credit monthly",
@@ -8198,6 +8202,10 @@
       "feeLabel": "Fee per class",
       "enrolledLabel": "Enrolled",
       "submitRecordAttendees": "Record and bill {count}",
+      "guestProOnly": "Guest attendees are available on the Pro plan only",
+      "guestUpgradeCta": "Upgrade your plan",
+      "guestLimitReached": "Maximum reached (10 guest attendees per session)",
+      "guestCount": "{current} / 10 guest attendees",
       "txnStatus": {
         "paid": "Paid",
         "pending": "Outstanding",
@@ -8858,8 +8866,8 @@
     "statusPastDue": "Past due",
     "statusSuspended": "Suspended",
     "statusCancelled": "Cancelled",
-    "standardFeatures": ["8 groups", "60 students", "Automatic billing", "Class schedule"],
-    "proFeatures": ["Unlimited groups", "Unlimited students", "All Standard features", "Full income log", "Advanced analytics", "100 EGP monthly WhatsApp credit", "Student notes", "CSV export"]
+    "standardFeatures": ["Create private groups with join links", "Attendance and automatic billing after every class", "Payment links sent on WhatsApp automatically", "Full income view: private and all centers", "Up to 8 groups and 60 enrolled students", "Registered students only (no guest attendees)"],
+    "proFeatures": ["Everything in Standard", "Unlimited groups and students", "Guest attendees without enrollment (up to 10 per session)", "Full income history (all time)", "Advanced analytics", "100 EGP WhatsApp credit monthly", "Student notes", "CSV export"]
   },
   "caps": {
     "groupLimitReached": "You have reached the group limit on the Standard plan.",

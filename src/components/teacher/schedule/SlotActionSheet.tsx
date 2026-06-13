@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ChevronDown, Loader2, Plus, X } from 'lucide-react';
+import { ChevronDown, Loader2, Lock, Plus, X } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
@@ -52,6 +52,8 @@ const KNOWN_STATUSES = new Set(['paid', 'pending', 'failed', 'cancelled']);
 
 // Egyptian mobile entered by the teacher: 11 digits starting with 01.
 const GUEST_PHONE_RE = /^01\d{9}$/;
+// Pro guest attendees are capped per session (server enforces the same limit).
+const GUEST_LIMIT = 10;
 
 async function authHeader(): Promise<Record<string, string> | null> {
   const {
@@ -74,11 +76,14 @@ async function authHeader(): Promise<Record<string, string> | null> {
 export default function SlotActionSheet({
   open,
   occurrence,
+  planKey,
   onClose,
   onChanged,
 }: {
   open: boolean;
   occurrence: SlotOccurrence | null;
+  /** Teacher's plan; gates the guest-attendee section. Defaults to Standard. */
+  planKey: string;
   onClose: () => void;
   onChanged: () => void;
 }) {
@@ -87,6 +92,7 @@ export default function SlotActionSheet({
   const locale = useLocale();
   const toast = useToast();
   const timeLabels = { am: tf('am'), pm: tf('pm') };
+  const isPro = planKey === 'teacher_699';
 
   // Roster (future + unrecorded)
   const [roster, setRoster] = useState<RosterStudent[]>([]);
@@ -229,6 +235,10 @@ export default function SlotActionSheet({
       setGuestError(t('guestPhoneInvalid'));
       return;
     }
+    if (guests.length >= GUEST_LIMIT) {
+      setGuestError(t('guestLimitReached'));
+      return;
+    }
     setGuests((prev) => [...prev, { name, phone: guestPhone.trim() }]);
     setGuestName('');
     setGuestPhone('');
@@ -276,6 +286,14 @@ export default function SlotActionSheet({
       }
       if (res.status === 409 && data.error === 'CLASS_CANCELLED') {
         setSubmitError(t('classCancelledError'));
+        return;
+      }
+      if (res.status === 403 && data.error === 'GUESTS_PRO_ONLY') {
+        setSubmitError(t('guestProOnly'));
+        return;
+      }
+      if (res.status === 400 && data.error === 'GUEST_LIMIT_EXCEEDED') {
+        setSubmitError(t('guestLimitReached'));
         return;
       }
       setSubmitError(t('genericError'));
@@ -605,47 +623,74 @@ export default function SlotActionSheet({
               </ul>
             )}
 
-            {/* One-time attendee add */}
-            {showGuestForm ? (
-              <div className="mt-3 flex flex-col gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] p-3">
-                <input
-                  type="text"
-                  value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  placeholder={t('guestName')}
-                  className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
-                />
-                <input
-                  type="tel"
-                  inputMode="numeric"
-                  dir="ltr"
-                  value={guestPhone}
-                  onChange={(e) => setGuestPhone(e.target.value)}
-                  placeholder={t('guestPhone')}
-                  className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
-                />
-                {guestError && (
-                  <p className="text-xs text-[var(--color-danger)]" role="alert">
-                    {guestError}
-                  </p>
-                )}
-                <button
-                  type="button"
-                  onClick={addGuest}
-                  className="self-start rounded-lg bg-[var(--color-brass)] px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            {/* One-time (guest) attendees - Pro only, capped at 10/session */}
+            {!isPro ? (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] px-4 py-3">
+                <span className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+                  <Lock size={14} className="text-[var(--color-brass)]" aria-hidden />
+                  {t('guestProOnly')}
+                </span>
+                <Link
+                  href="/teacher/subscription/upgrade"
+                  className="text-sm font-medium text-[var(--color-brass)] hover:underline"
                 >
-                  {t('addGuest')}
-                </button>
+                  {t('guestUpgradeCta')}
+                </Link>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => setShowGuestForm(true)}
-                className="mt-3 flex items-center gap-1.5 text-sm font-medium text-[var(--color-brass)]"
-              >
-                <Plus size={16} aria-hidden />
-                {t('addGuestAttendee')}
-              </button>
+              <div className="mt-3 flex flex-col gap-2">
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  {t('guestCount', {
+                    current: formatNumber(guests.length, locale, { integerOnly: true }),
+                  })}
+                </p>
+                {guests.length >= GUEST_LIMIT ? (
+                  <p className="text-xs font-medium text-[var(--color-brass)]" role="status">
+                    {t('guestLimitReached')}
+                  </p>
+                ) : showGuestForm ? (
+                  <div className="flex flex-col gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] p-3">
+                    <input
+                      type="text"
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      placeholder={t('guestName')}
+                      className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+                    />
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      dir="ltr"
+                      value={guestPhone}
+                      onChange={(e) => setGuestPhone(e.target.value)}
+                      placeholder={t('guestPhone')}
+                      className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+                    />
+                    {guestError && (
+                      <p className="text-xs text-[var(--color-danger)]" role="alert">
+                        {guestError}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={addGuest}
+                      disabled={guests.length >= GUEST_LIMIT}
+                      className="self-start rounded-lg bg-[var(--color-brass)] px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {t('addGuest')}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowGuestForm(true)}
+                    className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-brass)]"
+                  >
+                    <Plus size={16} aria-hidden />
+                    {t('addGuestAttendee')}
+                  </button>
+                )}
+              </div>
             )}
 
             {submitError && (

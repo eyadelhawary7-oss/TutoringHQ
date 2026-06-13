@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { CalendarDays, Clock, Users } from 'lucide-react';
@@ -19,6 +19,7 @@ import {
   type ScheduleSlotItem,
 } from '@/hooks/useTeacherSchedule';
 import { formatTimeRange } from '@/lib/timeFormat';
+import { fetchTeacherSubscription } from '@/components/teacher/teacherSubscriptionClient';
 import SlotActionSheet, {
   type SlotOccurrence,
 } from '@/components/teacher/schedule/SlotActionSheet';
@@ -65,6 +66,18 @@ export default function TeacherSchedulePage() {
   const { slots, exceptions, sessions, isLoading, error, refetch } = useTeacherSchedule();
 
   const [activeOccurrence, setActiveOccurrence] = useState<SlotOccurrence | null>(null);
+  // Plan gates the guest-attendee section in the sheet. Fetched once here (not
+  // per sheet open); defaults to Standard until it loads.
+  const [planKey, setPlanKey] = useState('teacher_299');
+  useEffect(() => {
+    let on = true;
+    fetchTeacherSubscription().then((s) => {
+      if (on && s) setPlanKey(s.plan_key);
+    });
+    return () => {
+      on = false;
+    };
+  }, []);
 
   const todayKey = cairoDateKey();
   const todayDow = dayOfWeekOf(todayKey);
@@ -367,6 +380,7 @@ export default function TeacherSchedulePage() {
       <SlotActionSheet
         open={activeOccurrence !== null}
         occurrence={activeOccurrence}
+        planKey={planKey}
         onClose={() => setActiveOccurrence(null)}
         onChanged={onActionDone}
       />

@@ -151,6 +151,7 @@ describe('formatTimeRange', () => {
 describe('POST /api/teacher/private/schedule/sessions (guests)', () => {
   function queueGuestRecordFlow() {
     adminQueue.student_groups = [OWNED_GROUP];
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_699' }, error: null }]; // Pro
     adminQueue.schedule_exceptions = [{ data: null, error: null }]; // not cancelled
     adminQueue.sessions = [{ data: null, error: null }]; // no existing session
     adminQueue.insert = [
@@ -204,6 +205,33 @@ describe('POST /api/teacher/private/schedule/sessions (guests)', () => {
       makeRequest({ ...body, attendee_ids: [], guests: [] }),
     );
     expect(res.status).toBe(400);
+    expect(insertCalls).toEqual([]);
+  });
+
+  it('403 GUESTS_PRO_ONLY when a Standard teacher sends guests', async () => {
+    adminQueue.student_groups = [OWNED_GROUP];
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_299' }, error: null }];
+
+    const res = await postScheduleSession(makeRequest(body));
+    expect(res.status).toBe(403);
+    expect(((await res.json()) as { error: string }).error).toBe('GUESTS_PRO_ONLY');
+    expect(insertCalls).toEqual([]);
+  });
+
+  it('400 GUEST_LIMIT_EXCEEDED when a Pro teacher sends more than 10 guests', async () => {
+    adminQueue.student_groups = [OWNED_GROUP];
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_699' }, error: null }];
+    const elevenGuests = Array.from({ length: 11 }, (_, i) => ({
+      name: `G${i}`,
+      phone: '01012345678',
+    }));
+
+    const res = await postScheduleSession(makeRequest({ ...body, guests: elevenGuests }));
+    expect(res.status).toBe(400);
+    const json = (await res.json()) as { error: string; limit: number; current: number };
+    expect(json.error).toBe('GUEST_LIMIT_EXCEEDED');
+    expect(json.limit).toBe(10);
+    expect(json.current).toBe(11);
     expect(insertCalls).toEqual([]);
   });
 });

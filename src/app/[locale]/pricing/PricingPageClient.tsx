@@ -33,6 +33,8 @@ export default function PricingPageClient() {
     tp('feature2'),
     tp('feature3'),
     tp('feature4'),
+    tp('standardCapSummary'),
+    tp('standardGuestLimit'),
   ];
   const proFeatures = (tp.raw('proFeatures') as string[]) ?? [];
 
