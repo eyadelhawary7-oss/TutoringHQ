@@ -38,6 +38,7 @@ export default function TeacherGroupDetailPage({
   const { groupId } = use(params);
   const t = useTranslations('teacherPortal.roster');
   const tPortal = useTranslations('teacherPortal');
+  const tCaps = useTranslations('caps');
   const locale = useLocale();
   const router = useRouter();
 
@@ -248,6 +249,7 @@ export default function TeacherGroupDetailPage({
           </h2>
           <button
             onClick={() => setShowAdd(true)}
+            title={tCaps('studentTooltip')}
             className="flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-teal-700"
           >
             <Plus size={16} aria-hidden />

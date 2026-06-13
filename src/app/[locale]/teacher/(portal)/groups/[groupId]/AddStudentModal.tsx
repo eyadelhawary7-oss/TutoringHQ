@@ -23,6 +23,7 @@ export default function AddStudentModal({
   onAdded: () => void;
 }) {
   const t = useTranslations('teacherPortal.addStudent');
+  const tCaps = useTranslations('caps');
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -69,7 +70,7 @@ export default function AddStudentModal({
           parent_phone: payer === 'parent' ? parentPhone.trim() : undefined,
         }),
       });
-      const data = (await res.json()) as { code?: string };
+      const data = (await res.json()) as { code?: string; error?: string };
       if (res.ok) {
         setName('');
         setPhone('');
@@ -78,7 +79,8 @@ export default function AddStudentModal({
         onAdded();
         return;
       }
-      if (data.code === 'duplicate_enrollment') setError(t('duplicate'));
+      if (res.status === 429 && data.error === 'STUDENT_LIMIT_REACHED') setError(tCaps('studentLimitReached'));
+      else if (data.code === 'duplicate_enrollment') setError(t('duplicate'));
       else if (data.code === 'capacity_full') setError(t('capacityFull'));
       else if (data.code === 'invalid_phone') setError(t('phoneInvalid'));
       else if (data.code === 'invalid_parent_phone') setError(t('parentPhoneInvalid'));

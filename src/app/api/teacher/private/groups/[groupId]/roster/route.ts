@@ -137,6 +137,56 @@ export async function POST(
     return owned.response;
   }
 
+  // Pro tier cap: Standard (teacher_299) is limited to 60 active enrolled
+  // students across all of this teacher's active private groups; Pro
+  // (teacher_699) is uncapped.
+  const { data: subRow, error: subErr } = await auth.supabaseAdmin
+    .from('teacher_subscriptions')
+    .select('plan_key')
+    .eq('teacher_id', auth.userId)
+    .maybeSingle();
+  if (subErr) {
+    return serverError('subscription_plan', subErr);
+  }
+  const planKey = (subRow as { plan_key?: string } | null)?.plan_key;
+  if (planKey !== 'teacher_699') {
+    const { data: groupRows, error: groupsErr } = await auth.supabaseAdmin
+      .from('student_groups')
+      .select('id')
+      .eq('teacher_id', auth.userId)
+      .eq('kind', 'private')
+      .eq('status', 'active');
+    if (groupsErr) {
+      return serverError('student_cap_groups', groupsErr);
+    }
+    const groupIds = (groupRows ?? []).map((g) => (g as { id: string }).id);
+    let distinctStudents = 0;
+    if (groupIds.length > 0) {
+      const { data: enrollRows, error: enrollCountErr } = await auth.supabaseAdmin
+        .from('enrollments')
+        .select('student_id')
+        .in('group_id', groupIds)
+        .eq('status', 'active');
+      if (enrollCountErr) {
+        return serverError('student_cap_count', enrollCountErr);
+      }
+      distinctStudents = new Set(
+        (enrollRows ?? []).map((e) => (e as { student_id: string }).student_id),
+      ).size;
+    }
+    if (distinctStudents >= 60) {
+      return NextResponse.json(
+        {
+          error: 'STUDENT_LIMIT_REACHED',
+          limit: 60,
+          current: distinctStudents,
+          upgrade_required: true,
+        },
+        { status: 429 },
+      );
+    }
+  }
+
   let body: unknown;
   try {
     body = await request.json();

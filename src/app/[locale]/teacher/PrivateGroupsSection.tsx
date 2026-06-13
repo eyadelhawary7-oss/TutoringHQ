@@ -7,6 +7,10 @@ import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
+import UpgradeFlow from '@/components/teacher/UpgradeFlow';
+import { fetchTeacherSubscription } from '@/components/teacher/teacherSubscriptionClient';
+
+const STANDARD_GROUP_LIMIT = 8;
 
 type PrivateGroup = {
   id: string;
@@ -32,9 +36,11 @@ export default function PrivateGroupsSection({
 }) {
   const t = useTranslations('teacherPortal.groups');
   const tPortal = useTranslations('teacherPortal');
+  const tCaps = useTranslations('caps');
   const locale = useLocale();
   const router = useRouter();
 
+  const [planKey, setPlanKey] = useState<string | null>(null);
   const [groups, setGroups] = useState<PrivateGroup[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -77,6 +83,16 @@ export default function PrivateGroupsSection({
     loadGroups();
   }, [loadGroups, refreshKey]);
 
+  useEffect(() => {
+    let active = true;
+    fetchTeacherSubscription().then((s) => {
+      if (active) setPlanKey(s?.plan_key ?? null);
+    });
+    return () => {
+      active = false;
+    };
+  }, [refreshKey]);
+
   const unarchive = async (groupId: string) => {
     setRestoringId(groupId);
     setRestoreError(false);
@@ -111,6 +127,9 @@ export default function PrivateGroupsSection({
 
   const active = (groups ?? []).filter((g) => g.status !== 'archived');
   const archived = (groups ?? []).filter((g) => g.status === 'archived');
+  // Standard teachers cap at 8 active private groups; Pro is uncapped. At the
+  // cap the create button is replaced by a brass upgrade CTA.
+  const atGroupCap = planKey === 'teacher_299' && active.length >= STANDARD_GROUP_LIMIT;
 
   const groupRow = (g: PrivateGroup) => (
     <Link
@@ -144,13 +163,17 @@ export default function PrivateGroupsSection({
           <Users size={18} className="text-[var(--color-teal-deep)]" aria-hidden />
           {t('title')}
         </h2>
-        <button
-          onClick={onAdd}
-          className="flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-teal-700"
-        >
-          <Plus size={16} aria-hidden />
-          {t('add')}
-        </button>
+        {atGroupCap ? (
+          <UpgradeFlow label={tCaps('upgradePrompt')} variant="brass" />
+        ) : (
+          <button
+            onClick={onAdd}
+            className="flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-teal-700"
+          >
+            <Plus size={16} aria-hidden />
+            {t('add')}
+          </button>
+        )}
       </div>
 
       {loading && groups === null ? (

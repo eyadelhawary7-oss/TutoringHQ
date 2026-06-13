@@ -5,6 +5,7 @@ import BillingHistory from '../../BillingHistory';
 import PrivateUpsellCard from '../../PrivateUpsellCard';
 import { useTeacherContext } from '../../useTeacherContext';
 import { useStartTrial } from '../../useStartTrial';
+import TeacherPlanSection from '@/components/teacher/TeacherPlanSection';
 
 /**
  * /teacher/billing - attendance and billing history across private groups.
@@ -24,7 +25,10 @@ export default function TeacherBillingPage() {
       {loading && !ctx ? (
         <div className="h-16 animate-pulse rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)]" />
       ) : ctx?.hasPrivateAccess ? (
-        <BillingHistory />
+        <>
+          <TeacherPlanSection />
+          <BillingHistory />
+        </>
       ) : (
         <>
           <PrivateUpsellCard

@@ -37,6 +37,7 @@ export default function PrivateGroupModal({
 }) {
   const t = useTranslations('teacherPortal.createGroup');
   const tGroups = useTranslations('teacherPortal.groups');
+  const tCaps = useTranslations('caps');
 
   const [name, setName] = useState('');
   const [fee, setFee] = useState('');
@@ -79,7 +80,7 @@ export default function PrivateGroupModal({
           ...(scheduleSlots.length > 0 ? { schedule: scheduleSlots } : {}),
         }),
       });
-      const data = (await res.json()) as { group?: CreatedGroup; code?: string };
+      const data = (await res.json()) as { group?: CreatedGroup; code?: string; error?: string };
       if (res.ok && data.group) {
         setName('');
         setFee('');
@@ -87,7 +88,9 @@ export default function PrivateGroupModal({
         onCreated(data.group);
         return;
       }
-      if (res.status === 403 && data.code === 'RESUBSCRIBE_REQUIRED') {
+      if (res.status === 429 && data.error === 'GROUP_LIMIT_REACHED') {
+        setError(tCaps('groupLimitReached'));
+      } else if (res.status === 403 && data.code === 'RESUBSCRIBE_REQUIRED') {
         setError(t('lapsedError'));
       } else if (res.status === 400 && data.code === 'invalid_name') {
         setError(t('nameRequired'));

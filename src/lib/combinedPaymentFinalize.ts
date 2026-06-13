@@ -139,6 +139,7 @@ export async function tryFinalizeCombinedPaymentSession(
       'reactivation_tier1',
       'reactivation_tier2',
       'teacher_resubscribe',
+      'teacher_upgrade',
     ]);
     if (!handled.has(row.session_type)) return false;
 
@@ -398,6 +399,61 @@ export async function tryFinalizeCombinedPaymentSession(
         await logFinalizeFailure(supabase, auditErr, {
           sessionId: row.id,
           phase: 'teacher_resub_audit',
+          teacherId,
+        });
+      }
+    }
+
+    // Teacher upgrade (Standard -> Pro). Like teacher_resubscribe, these
+    // sessions carry no center_id; the teacher id rides in metadata. The
+    // money/status transition is owned entirely by upgrade_teacher_to_pro (a
+    // SECURITY DEFINER RPC, idempotent on replay) - no direct table writes here.
+    if (st === 'teacher_upgrade') {
+      const rawMeta =
+        row.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata)
+          ? (row.metadata as Record<string, unknown>)
+          : {};
+      const teacherId = typeof rawMeta.teacher_id === 'string' ? rawMeta.teacher_id : null;
+      if (!teacherId) {
+        await markSessionFailed(supabase, row.id);
+        await logFinalizeFailure(
+          supabase,
+          new Error('teacher_upgrade session has no metadata.teacher_id'),
+          { sessionId: row.id, phase: 'teacher_upgrade_meta' },
+        );
+        return false;
+      }
+
+      const { error: upErr } = await supabase.rpc('upgrade_teacher_to_pro', {
+        p_user_id: teacherId,
+      });
+      if (upErr) {
+        await markSessionFailed(supabase, row.id);
+        await logFinalizeFailure(supabase, upErr, {
+          sessionId: row.id,
+          phase: 'teacher_upgrade_rpc',
+          teacherId,
+        });
+        return false;
+      }
+
+      const { error: auditErr } = await supabase.from('audit_log').insert({
+        action: 'teacher_upgrade_session_finalized',
+        entity_type: 'teacher_subscription',
+        entity_id: null,
+        user_id: teacherId,
+        center_id: null,
+        details: {
+          session_id: row.id,
+          paymob_order_id: paymobOrderId || null,
+          paymob_transaction_id: paymobTransactionId || null,
+        },
+      });
+      if (auditErr) {
+        // The upgrade itself succeeded (RPC also audits) - log, do not fail.
+        await logFinalizeFailure(supabase, auditErr, {
+          sessionId: row.id,
+          phase: 'teacher_upgrade_audit',
           teacherId,
         });
       }

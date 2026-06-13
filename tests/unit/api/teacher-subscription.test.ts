@@ -128,11 +128,17 @@ describe('GET /api/teacher/subscription/status', () => {
       status: null,
       plan_key: 'teacher_299',
       price_gross: 299,
+      std_price_gross: 299,
+      pro_price_gross: 0,
+      payments_enabled: false,
       trial_ends_at: null,
+      current_period_start: null,
       current_period_end: null,
       next_billing_at: null,
       grace_until: null,
       free_months_credit: 0,
+      blast_credits_purchased: 0,
+      blast_credits_subscription: 0,
     });
   });
 
@@ -145,6 +151,7 @@ describe('GET /api/teacher/subscription/status', () => {
           status: 'active',
           plan_key: 'teacher_299',
           trial_ends_at: '2026-06-01T00:00:00Z',
+          current_period_start: '2026-06-01T00:00:00Z',
           current_period_end: '2026-07-01T00:00:00Z',
           next_billing_at: '2026-07-01T00:00:00Z',
           grace_until: null,
@@ -163,11 +170,17 @@ describe('GET /api/teacher/subscription/status', () => {
       status: 'active',
       plan_key: 'teacher_299',
       price_gross: 299,
+      std_price_gross: 299,
+      pro_price_gross: 0,
+      payments_enabled: false,
       trial_ends_at: '2026-06-01T00:00:00Z',
+      current_period_start: '2026-06-01T00:00:00Z',
       current_period_end: '2026-07-01T00:00:00Z',
       next_billing_at: '2026-07-01T00:00:00Z',
       grace_until: null,
       free_months_credit: 2,
+      blast_credits_purchased: 0,
+      blast_credits_subscription: 0,
     });
   });
 });

@@ -167,19 +167,46 @@ export async function POST(request: NextRequest) {
 
   const { data: subRow, error: subErr } = await auth.supabaseAdmin
     .from('teacher_subscriptions')
-    .select('status')
+    .select('status, plan_key')
     .eq('teacher_id', auth.userId)
     .limit(1)
     .maybeSingle();
   if (subErr) {
     return serverError('subscription_status', subErr);
   }
-  const subStatus = (subRow as { status?: string } | null)?.status;
-  if (subRow && !LAPSED_BLOCK_STATUSES.has(String(subStatus ?? ''))) {
+  const sub = subRow as { status?: string; plan_key?: string } | null;
+  if (subRow && !LAPSED_BLOCK_STATUSES.has(String(sub?.status ?? ''))) {
     return NextResponse.json(
       { error: 'Forbidden', code: 'RESUBSCRIBE_REQUIRED' },
       { status: 403 },
     );
+  }
+
+  // Pro tier cap: Standard (teacher_299) is limited to 8 active private groups;
+  // Pro (teacher_699) is uncapped. A teacher with no subscription row yet is
+  // creating their first group (active count 0), so the cap never blocks them.
+  if (sub?.plan_key !== 'teacher_699') {
+    const { count, error: countErr } = await auth.supabaseAdmin
+      .from('student_groups')
+      .select('id', { count: 'exact', head: true })
+      .eq('teacher_id', auth.userId)
+      .eq('kind', 'private')
+      .eq('status', 'active');
+    if (countErr) {
+      return serverError('group_cap_count', countErr);
+    }
+    const activeGroups = count ?? 0;
+    if (activeGroups >= 8) {
+      return NextResponse.json(
+        {
+          error: 'GROUP_LIMIT_REACHED',
+          limit: 8,
+          current: activeGroups,
+          upgrade_required: true,
+        },
+        { status: 429 },
+      );
+    }
   }
 
   // approval_mode is NOT NULL for private groups (kind_shape CHECK); 'manual'
