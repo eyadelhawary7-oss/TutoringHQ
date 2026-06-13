@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import { X } from 'lucide-react';
 
 /**
@@ -15,6 +15,7 @@ export default function SheetShell({
   onClose,
   children,
   footer,
+  scrollContainerRef,
 }: {
   open: boolean;
   title: string;
@@ -23,6 +24,8 @@ export default function SheetShell({
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
+  /** Optional ref to the scrollable body, so callers can drive scroll-to-anchor. */
+  scrollContainerRef?: RefObject<HTMLDivElement | null>;
 }) {
   if (!open) return null;
 
@@ -50,7 +53,9 @@ export default function SheetShell({
             <X className="h-5 w-5 text-[var(--color-text-secondary)]" aria-hidden />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-5 py-4">
+          {children}
+        </div>
         {footer && (
           <div className="border-t border-[var(--color-border-subtle)] px-5 py-4">{footer}</div>
         )}

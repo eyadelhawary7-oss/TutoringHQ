@@ -116,6 +116,22 @@ export default function SlotActionSheet({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const attendanceRef = useRef<HTMLElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Scroll the (fixed-height) sheet body down to the attendance section. The
+  // sheet body is an overflow-y-auto container, so scrollIntoView on its own
+  // is unreliable here - drive the container's scrollTop off the section's
+  // position relative to the container instead.
+  const scrollToAttendance = () => {
+    const container = scrollContainerRef.current;
+    const target = attendanceRef.current;
+    if (!container || !target) return;
+    const top =
+      target.getBoundingClientRect().top -
+      container.getBoundingClientRect().top +
+      container.scrollTop;
+    container.scrollTo({ top, behavior: 'smooth' });
+  };
 
   // Cancel / reschedule accordions
   const [openSection, setOpenSection] = useState<'cancel' | 'reschedule' | null>(null);
@@ -542,6 +558,7 @@ export default function SlotActionSheet({
       closeLabel={t('close')}
       onClose={onClose}
       footer={footer}
+      scrollContainerRef={scrollContainerRef}
     >
       {/* FUTURE */}
       {state === 'future' && (
@@ -582,9 +599,7 @@ export default function SlotActionSheet({
               section so the teacher's eye lands on the roster. */}
           <button
             type="button"
-            onClick={() =>
-              attendanceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-            }
+            onClick={scrollToAttendance}
             className="w-full rounded-lg bg-teal-600 px-4 py-3 text-base font-semibold text-primary-foreground transition-colors hover:bg-teal-700"
           >
             {t('startSession')}

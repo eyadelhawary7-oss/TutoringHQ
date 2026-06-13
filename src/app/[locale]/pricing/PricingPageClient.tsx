@@ -105,7 +105,7 @@ export default function PricingPageClient() {
               </Link>
               <PublicLocaleToggle />
               <Link
-                href="/signup"
+                href="/teacher/signup"
                 className="rounded-xl bg-[var(--color-teal)] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-teal-deep)] inline-flex btn-press chq-focus"
               >
                 {m('finalCtaButton')}
@@ -128,7 +128,7 @@ export default function PricingPageClient() {
                 <PublicLocaleToggle />
               </div>
               <Link
-                href="/signup"
+                href="/teacher/signup"
                 className="mt-2 rounded-xl bg-[var(--color-teal)] py-3 text-center font-semibold text-white btn-press chq-focus"
                 onClick={() => setMobileOpen(false)}
               >
