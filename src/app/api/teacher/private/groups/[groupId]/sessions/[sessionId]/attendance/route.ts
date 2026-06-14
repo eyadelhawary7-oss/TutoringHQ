@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherPrivateAccess } from '@/lib/centerAuth';
 import { requireOwnedSession, isUuid } from '@/lib/teacherPrivate';
+import { requireTeacherUnderCap } from '@/lib/teacherCap';
 
 const ROUTE_TAG = 'api/teacher/private/attendance';
 
@@ -106,6 +107,13 @@ export async function POST(
       { error: 'Not found', code: 'student_not_in_group' },
       { status: 404 },
     );
+  }
+
+  // Over-cap lock: a Standard teacher past 60 students cannot toggle attendance.
+  // Pro is never capped. After ownership + membership, before the scan write.
+  const cap = await requireTeacherUnderCap(auth.supabaseAdmin, auth.userId, ROUTE_TAG);
+  if (!cap.ok) {
+    return cap.response;
   }
 
   if (rawPresent) {

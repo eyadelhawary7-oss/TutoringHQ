@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherAuth } from '@/lib/centerAuth';
 import { isUuid } from '@/lib/teacherPrivate';
+import { requireTeacherUnderCap } from '@/lib/teacherCap';
 import {
   cairoDateKey,
   cairoPaidAtDayUtcBounds,
@@ -184,6 +185,14 @@ export async function POST(request: NextRequest) {
       already_started: true,
       attendees: ((scanRows ?? []) as { student_id: string }[]).map((r) => r.student_id),
     });
+  }
+
+  // Over-cap lock: a Standard teacher past 60 students cannot open a class.
+  // Pro is never capped. Resume of an existing live session returns above, so
+  // this only gates creating/transitioning into a new live session.
+  const cap = await requireTeacherUnderCap(auth.supabaseAdmin, auth.userId, ROUTE_TAG);
+  if (!cap.ok) {
+    return cap.response;
   }
 
   // Either transition the existing scheduled session, or create a fresh one.

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherAuth } from '@/lib/centerAuth';
 import { isUuid } from '@/lib/teacherPrivate';
+import { requireTeacherUnderCap } from '@/lib/teacherCap';
 import { isFeatureEnabled } from '@/lib/features';
 
 const ROUTE_TAG = 'api/teacher/private/schedule/sessions/[sessionId]/finish';
@@ -105,6 +106,13 @@ export async function POST(
       { error: 'Conflict', code: 'session_not_live' },
       { status: 409 },
     );
+  }
+
+  // Over-cap lock: a Standard teacher past 60 students cannot finish + bill.
+  // Pro is never capped. After ownership + live check, before billing runs.
+  const cap = await requireTeacherUnderCap(auth.supabaseAdmin, auth.userId, ROUTE_TAG);
+  if (!cap.ok) {
+    return cap.response;
   }
 
   const { data: finishData, error: finishErr } = await auth.supabaseAdmin.rpc(

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherPrivateAccess } from '@/lib/centerAuth';
 import { isUuid } from '@/lib/teacherPrivate';
+import { requireTeacherUnderCap } from '@/lib/teacherCap';
 
 const ROUTE_TAG = 'api/teacher/private/mark-paid';
 
@@ -85,6 +86,15 @@ export async function POST(
       { error: 'Not found', code: 'transaction_not_found' },
       { status: 404 },
     );
+  }
+
+  // Over-cap lock: a Standard teacher past the 60-student line cannot settle
+  // charges until they shed students back to <= 60. Pro is never capped. Checked
+  // after ownership (404 a foreign charge before leaking cap state) and before
+  // the state-changing RPC.
+  const cap = await requireTeacherUnderCap(auth.supabaseAdmin, auth.userId, ROUTE_TAG);
+  if (!cap.ok) {
+    return cap.response;
   }
 
   const { data: transData, error: transErr } = await auth.supabaseAdmin.rpc(

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherAuth } from '@/lib/centerAuth';
 import { isUuid } from '@/lib/teacherPrivate';
+import { requireTeacherUnderCap } from '@/lib/teacherCap';
 import { isFeatureEnabled } from '@/lib/features';
 import { normalizePhone } from '@/lib/utils/phone';
 import {
@@ -271,6 +272,14 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
+  }
+
+  // Over-cap lock: a Standard teacher past 60 students cannot record + bill a
+  // class. Pro is never capped. Checked after ownership + enrolled validation
+  // and before any row is written (session/guests/scans/bill).
+  const cap = await requireTeacherUnderCap(auth.supabaseAdmin, auth.userId, ROUTE_TAG);
+  if (!cap.ok) {
+    return cap.response;
   }
 
   // sessions has no teacher_id/center_id columns and its schedule_id FK

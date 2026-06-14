@@ -19,6 +19,9 @@ const adminQueue: Record<string, AdminQueryResult[]> = {
   users_teacher: [],
   teacher_center: [],
   transactions: [],
+  teacher_subscriptions: [],
+  student_groups: [],
+  enrollments: [],
 };
 
 const rpcQueues: Record<string, AdminQueryResult[]> = {
@@ -283,5 +286,38 @@ describe('POST /api/teacher/private/transactions/[transactionId]/mark-paid', () 
 
     expect(res.status).toBe(500);
     expect(mockSentryCaptureException).toHaveBeenCalled();
+  });
+
+  it('over-cap Standard teacher (75 students) -> 403 OVER_CAP_LOCKED, RPC never called', async () => {
+    queueGateGranted();
+    adminQueue.transactions = [OWNED_PENDING_TXN];
+    // Over-cap gate (runs after ownership, before the transition): Standard plan
+    // with 75 distinct non-guest active students across one active group.
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_299' }, error: null }];
+    adminQueue.student_groups = [{ data: [{ id: 'g-1' }], error: null }];
+    adminQueue.enrollments = [
+      { data: Array.from({ length: 75 }, (_, i) => ({ student_id: `s-${i}` })), error: null },
+    ];
+
+    const res = await POST(makeRequest({ method: 'cash' }), ctx());
+
+    expect(res.status).toBe(403);
+    expect(((await res.json()) as { code: string }).code).toBe('OVER_CAP_LOCKED');
+    expect(rpcCalls.filter((c) => c.fn === 'apply_transaction_transition')).toEqual([]);
+  });
+
+  it('Pro teacher is never cap-locked even at 75 students -> 200', async () => {
+    queueGateGranted();
+    adminQueue.transactions = [OWNED_PENDING_TXN];
+    // Gate short-circuits on Pro before counting students.
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_699' }, error: null }];
+    rpcQueues.apply_transaction_transition = [
+      { data: { id: TXN_ID, status: 'paid', method: 'cash', paid_at: '2026-06-10T15:00:00Z' }, error: null },
+    ];
+
+    const res = await POST(makeRequest({ method: 'cash' }), ctx());
+
+    expect(res.status).toBe(200);
+    expect(tableHits).not.toContain('student_groups');
   });
 });

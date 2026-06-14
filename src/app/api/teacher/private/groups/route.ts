@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherAuth, requireTeacherPrivateAccess } from '@/lib/centerAuth';
+import { requireTeacherUnderCap } from '@/lib/teacherCap';
 import { parseScheduleSlots, type ScheduleSlotInput } from '@/lib/teacherSchedule';
 
 type GroupRow = {
@@ -207,6 +208,13 @@ export async function POST(request: NextRequest) {
         { status: 429 },
       );
     }
+  }
+
+  // Over-cap lock: a Standard teacher past 60 students cannot create a group.
+  // Pro is never capped. After the group-cap check, before the insert.
+  const cap = await requireTeacherUnderCap(auth.supabaseAdmin, auth.userId, 'api/teacher/private/groups');
+  if (!cap.ok) {
+    return cap.response;
   }
 
   // approval_mode is NOT NULL for private groups (kind_shape CHECK); 'manual'

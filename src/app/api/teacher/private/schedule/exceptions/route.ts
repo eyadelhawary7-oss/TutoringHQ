@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherAuth } from '@/lib/centerAuth';
 import { isUuid } from '@/lib/teacherPrivate';
+import { requireTeacherUnderCap } from '@/lib/teacherCap';
 import { isValidTimeHHMM } from '@/lib/teacherSchedule';
 import {
   queueClassCancelledNotification,
@@ -163,6 +164,13 @@ export async function POST(request: NextRequest) {
       { error: 'Invalid request', code: 'schedule_not_in_group' },
       { status: 400 },
     );
+  }
+
+  // Over-cap lock: a Standard teacher past 60 students cannot change schedules.
+  // Pro is never capped. After ownership + slot validation, before the insert.
+  const cap = await requireTeacherUnderCap(auth.supabaseAdmin, auth.userId, ROUTE_TAG);
+  if (!cap.ok) {
+    return cap.response;
   }
 
   const { data: inserted, error: insertErr } = await auth.supabaseAdmin

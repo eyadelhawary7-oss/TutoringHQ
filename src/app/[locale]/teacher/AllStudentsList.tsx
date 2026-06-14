@@ -63,6 +63,7 @@ export default function AllStudentsList() {
 
   const [students, setStudents] = useState<StudentRow[] | null>(null);
   const [billing, setBilling] = useState<Record<string, StudentBilling>>({});
+  const [overCap, setOverCap] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState('');
@@ -94,9 +95,11 @@ export default function AllStudentsList() {
       const data = (await res.json()) as {
         students: StudentRow[];
         billingByStudent?: Record<string, StudentBilling>;
+        over_cap?: boolean;
       };
       setStudents(data.students ?? []);
       setBilling(data.billingByStudent ?? {});
+      setOverCap(data.over_cap === true);
     } catch {
       setLoadError(true);
     } finally {
@@ -196,6 +199,17 @@ export default function AllStudentsList() {
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Over-cap lock warning: the students page is the one surface a locked
+          Standard teacher can still reach, so it carries the call to action. */}
+      {overCap && (
+        <div
+          role="alert"
+          className="rounded-[var(--radius-card)] border border-[var(--color-brass)]/40 bg-[var(--color-brass)]/10 px-4 py-3 text-sm font-medium text-[var(--color-brass)]"
+        >
+          {tList('overCapWarning')}
+        </div>
+      )}
+
       {/* Search + group filter */}
       <div className="flex flex-col gap-2 sm:flex-row">
         <div className="relative flex-1">

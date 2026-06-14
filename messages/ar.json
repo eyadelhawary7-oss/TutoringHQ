@@ -5113,7 +5113,8 @@
       "invalidCode": "كود غلط. جرّب تاني.",
       "tooManyAttempts": "أكواد غلط كتير. ابدأ من جديد.",
       "verificationUnavailable": "التحقق مش متاح دلوقتي. جرّب كمان شوية.",
-      "capacityFull": "المجموعة كاملة العدد."
+      "capacityFull": "المجموعة كاملة العدد.",
+      "groupFull": "المجموعة وصلت للحد الأقصى للطلبة، اتواصل مع المدرس."
     }
   },
   "join": {
@@ -8335,7 +8336,8 @@
       "lastPaymentLabel": "آخر دفعة",
       "noPayments": "مفيش مدفوعات لسه",
       "paymentHistory": "سجل المدفوعات",
-      "noTransactions": "مفيش معاملات لسه."
+      "noTransactions": "مفيش معاملات لسه.",
+      "overCapWarning": "عندك أكتر من ٦٠ طالب على باقة ستاندرد. شيل طلبة لحد ما توصل ٦٠ علشان تقدر تكمل شغلك."
     },
     "lockedIncome": {
       "heading": "لوحة دخلك",

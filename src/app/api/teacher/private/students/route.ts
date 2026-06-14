@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherPrivateAccess } from '@/lib/centerAuth';
+import { countActiveNonGuestStudents, STANDARD_STUDENT_CAP } from '@/lib/teacherCap';
 
 const ROUTE_TAG = 'api/teacher/private/students';
 
@@ -167,5 +168,39 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ students, billingByStudent });
+  // Over-cap flag for the students-page warning banner. The students page is
+  // the ONE surface a locked Standard teacher can still reach, so it carries the
+  // "shed students to 60" message. Best-effort (Rule 151: an error is not a
+  // state - a blip must not raise a false over-cap alarm), so default false.
+  let overCap = false;
+  let studentCount = 0;
+  try {
+    const { data: subRow } = await auth.supabaseAdmin
+      .from('teacher_subscriptions')
+      .select('plan_key')
+      .eq('teacher_id', auth.userId)
+      .maybeSingle();
+    const planKey = (subRow as { plan_key?: string } | null)?.plan_key;
+    if (planKey !== 'teacher_699') {
+      studentCount = await countActiveNonGuestStudents(auth.supabaseAdmin, auth.userId);
+      overCap = studentCount > STANDARD_STUDENT_CAP;
+    }
+  } catch (capErr) {
+    Sentry.withScope((scope) => {
+      scope.setTag('route', ROUTE_TAG);
+      scope.setTag('step', 'over_cap_flag');
+      Sentry.captureMessage(
+        `teacher students over-cap flag lookup failed: ${(capErr as Error).message}`,
+        'warning',
+      );
+    });
+  }
+
+  return NextResponse.json({
+    students,
+    billingByStudent,
+    over_cap: overCap,
+    student_count: studentCount,
+    student_limit: STANDARD_STUDENT_CAP,
+  });
 }

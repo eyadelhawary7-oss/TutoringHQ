@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/nextjs';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getUpstashRedis, rateLimit } from '@/lib/ratelimit';
 import { parseEnrollmentInput, hashOtp } from '@/lib/enrollmentOtp';
+import { selfEnrollWouldExceedCap } from '@/lib/teacherCap';
 
 const ROUTE_TAG = 'api/join/verify-otp';
 const MAX_ATTEMPTS = 5;
@@ -122,6 +123,22 @@ export async function POST(
 
   // --- Code matches: enroll. verified_at is set only AFTER a successful
   // enrollment so a transient failure leaves the code usable for retry.
+
+  // Loophole fix: a public self-enroll must not push a Standard teacher past
+  // the 60-student cap (the teacher-add roster route already enforces this; this
+  // closes the self-serve path that used to bypass it). A genuinely new head at
+  // the cap is refused; an already-enrolled student re-submitting is not a new
+  // head and still succeeds. Pro teachers are uncapped. Checked before any
+  // student/enrollment row is written, so there is nothing to roll back.
+  let exceedsCap: boolean;
+  try {
+    exceedsCap = await selfEnrollWouldExceedCap(admin, g.teacher_id ?? '', studentPhone);
+  } catch (capErr) {
+    return fail('cap_check', capErr);
+  }
+  if (exceedsCap) {
+    return NextResponse.json({ error: 'GROUP_FULL' }, { status: 409 });
+  }
 
   // Create-or-link the center-less student by normalized phone.
   const { data: existing, error: lookupErr } = await admin

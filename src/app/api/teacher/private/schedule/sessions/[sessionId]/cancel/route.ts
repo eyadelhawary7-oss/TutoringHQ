@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherAuth } from '@/lib/centerAuth';
 import { isUuid } from '@/lib/teacherPrivate';
+import { requireTeacherUnderCap } from '@/lib/teacherCap';
 
 const ROUTE_TAG = 'api/teacher/private/schedule/sessions/[sessionId]/cancel';
 
@@ -81,6 +82,14 @@ export async function POST(
       { error: 'Conflict', code: 'session_not_cancellable' },
       { status: 409 },
     );
+  }
+
+  // Over-cap lock: a Standard teacher past 60 students cannot manage sessions.
+  // Pro is never capped. After ownership + cancellable check, before the
+  // transition.
+  const cap = await requireTeacherUnderCap(auth.supabaseAdmin, auth.userId, ROUTE_TAG);
+  if (!cap.ok) {
+    return cap.response;
   }
 
   const { error: transitionErr } = await auth.supabaseAdmin.rpc(

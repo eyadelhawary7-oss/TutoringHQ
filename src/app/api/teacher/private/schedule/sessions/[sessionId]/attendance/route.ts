@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherAuth } from '@/lib/centerAuth';
 import { isUuid } from '@/lib/teacherPrivate';
+import { requireTeacherUnderCap } from '@/lib/teacherCap';
 import { normalizePhone } from '@/lib/utils/phone';
 
 const ROUTE_TAG = 'api/teacher/private/schedule/sessions/[sessionId]/attendance';
@@ -124,6 +125,13 @@ export async function PATCH(
       { error: 'Conflict', code: 'session_not_live' },
       { status: 409 },
     );
+  }
+
+  // Over-cap lock: a Standard teacher past 60 students cannot edit attendance.
+  // Pro is never capped. After ownership + live check, before any scan write.
+  const cap = await requireTeacherUnderCap(auth.supabaseAdmin, auth.userId, ROUTE_TAG);
+  if (!cap.ok) {
+    return cap.response;
   }
 
   // Current scans for this session.
