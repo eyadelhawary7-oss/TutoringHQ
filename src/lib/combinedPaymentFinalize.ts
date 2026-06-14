@@ -13,6 +13,7 @@ import {
   billingStepMonths,
   nextAnchorDueStrictlyAfter,
 } from '@/lib/billingSchedule';
+import { grantReferralReward } from '@/lib/teacherReferral';
 
 export type CombinedSessionMetadata = {
   newPlan?: string;
@@ -402,6 +403,20 @@ export async function tryFinalizeCombinedPaymentSession(
           teacherId,
         });
       }
+
+      // ITEM 4 referral grant: this is a cleared charge. grantReferralReward is
+      // idempotent (the referral_rewarded_at marker fires it at most once per
+      // referee, ever), so re-delivered webhooks / later charges never re-grant.
+      // Non-fatal: the payment already succeeded.
+      try {
+        await grantReferralReward(supabase, teacherId);
+      } catch (rewardErr) {
+        await logFinalizeFailure(supabase, rewardErr, {
+          sessionId: row.id,
+          phase: 'teacher_resub_referral_reward',
+          teacherId,
+        });
+      }
     }
 
     // Teacher upgrade (Standard -> Pro). Like teacher_resubscribe, these
@@ -454,6 +469,18 @@ export async function tryFinalizeCombinedPaymentSession(
         await logFinalizeFailure(supabase, auditErr, {
           sessionId: row.id,
           phase: 'teacher_upgrade_audit',
+          teacherId,
+        });
+      }
+
+      // ITEM 4 referral grant: a cleared charge. Idempotent via the
+      // referral_rewarded_at marker (at most once per referee). Non-fatal.
+      try {
+        await grantReferralReward(supabase, teacherId);
+      } catch (rewardErr) {
+        await logFinalizeFailure(supabase, rewardErr, {
+          sessionId: row.id,
+          phase: 'teacher_upgrade_referral_reward',
           teacherId,
         });
       }
