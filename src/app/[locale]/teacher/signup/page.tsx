@@ -27,6 +27,11 @@ function TeacherSignupInner() {
   const searchParams = useSearchParams();
   // ITEM 1: only the literal ?plan=pro counts; anything else is ignored.
   const proIntent = searchParams?.get('plan') === 'pro';
+  // ITEM 4 capture: prefill the optional referral field from ?ref (mirrors the
+  // center signup pattern - field + URL param), sanitized to A-Z0-9 uppercase.
+  const refFromUrl = (searchParams?.get('ref') ?? '')
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toUpperCase();
 
   const [phase, setPhase] = useState<'form' | 'otp'>('form');
   const [name, setName] = useState('');
@@ -36,6 +41,7 @@ function TeacherSignupInner() {
   const [showPin, setShowPin] = useState(false);
   const [showConfirmPin, setShowConfirmPin] = useState(false);
   const [subject, setSubject] = useState('');
+  const [referralCode, setReferralCode] = useState(refFromUrl);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [code, setCode] = useState('');
@@ -129,6 +135,7 @@ function TeacherSignupInner() {
           subject: subject.trim() || undefined,
           code: code.trim(),
           planIntent: proIntent ? 'pro' : undefined,
+          referralCode: referralCode.trim() || undefined,
           termsAccepted: true,
           privacyAccepted: true,
         }),
@@ -221,6 +228,23 @@ function TeacherSignupInner() {
                 placeholder={t('subjectPlaceholder')}
                 className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-3)] px-3 py-2 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-teal-500 focus:ring-2 focus:ring-teal-500"
               />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+                {t('referralLabel')}
+              </label>
+              <input
+                type="text"
+                dir="ltr"
+                value={referralCode}
+                maxLength={16}
+                onChange={(e) =>
+                  setReferralCode(e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase())
+                }
+                placeholder={t('referralPlaceholder')}
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-3)] px-3 py-2 text-start text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-teal-500 focus:ring-2 focus:ring-teal-500"
+              />
+              <p className="mt-1 text-xs text-[var(--color-text-muted)]">{t('referralHint')}</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>

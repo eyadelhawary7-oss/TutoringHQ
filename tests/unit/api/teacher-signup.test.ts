@@ -29,6 +29,12 @@ const usersDeleteEq = vi.fn<(col: string, val: unknown) => Promise<WriteResult>>
 const profilesInsert = vi.fn<(payload: Record<string, unknown>) => Promise<WriteResult>>(
   async () => ({ error: null }),
 );
+// teacher_profiles.select('user_id').eq('referral_code', X).maybeSingle() is hit
+// twice by the referral feature: generation (random candidate -> expect null so
+// it is unique) and resolution (the body's code -> a referrer row, if seeded).
+// referrerByCode maps an exact code to the resolved row; anything else is null.
+const profileSelectLookups: string[] = [];
+let referrerByCode: Record<string, { user_id: string }> = {};
 // teacher_signup_otps spies.
 const otpMaybeSingle = vi.fn<() => Promise<OtpResult>>();
 const otpUpdateEq = vi.fn<() => Promise<WriteResult>>(async () => ({ error: null }));
@@ -47,7 +53,18 @@ const adminClient = {
       };
     }
     if (table === 'teacher_profiles') {
-      return { insert: profilesInsert };
+      return {
+        select: () => ({
+          eq: (_col: string, val: unknown) => ({
+            maybeSingle: async () => {
+              const code = String(val);
+              profileSelectLookups.push(code);
+              return { data: referrerByCode[code] ?? null, error: null };
+            },
+          }),
+        }),
+        insert: profilesInsert,
+      };
     }
     if (table === 'teacher_signup_otps') {
       return {
@@ -136,6 +153,8 @@ beforeEach(() => {
   usersDupMaybeSingle.mockResolvedValue({ data: null, error: null });
   usersInsert.mockResolvedValue({ error: null });
   profilesInsert.mockResolvedValue({ error: null });
+  profileSelectLookups.length = 0;
+  referrerByCode = {};
   otpMaybeSingle.mockResolvedValue(validOtpRow());
   mockRateLimit.mockResolvedValue({ success: true, remaining: 5, reset: 0 });
   mockGetUpstashRedis.mockReturnValue({});
@@ -292,6 +311,55 @@ describe('POST /api/auth/teacher/signup', () => {
     expect(((await res.json()) as { planIntent: string | null }).planIntent).toBeNull();
     const profilePayload = profilesInsert.mock.calls[0][0] as Record<string, unknown>;
     expect(profilePayload.signup_plan_intent).toBeNull();
+  });
+
+  // --- referral capture (ITEM 4b) ---
+
+  it('always assigns a generated uppercase referral_code; no referrer when no code given', async () => {
+    mockCreateUser.mockResolvedValueOnce(NEW_USER);
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(201);
+    const profilePayload = profilesInsert.mock.calls[0][0] as Record<string, unknown>;
+    const code = profilePayload.referral_code as string;
+    expect(typeof code).toBe('string');
+    // Name "Ahmed Aly" -> prefix AHMED + suffix; all uppercase A-Z0-9.
+    expect(code).toMatch(/^AHMED[A-Z0-9]{2,}$/);
+    // No code in the body -> no referral link, resolution never hit the DB.
+    expect(profilePayload.referred_by_teacher_id).toBeNull();
+  });
+
+  it('valid referral code -> referred_by_teacher_id resolves to the referrer', async () => {
+    mockCreateUser.mockResolvedValueOnce(NEW_USER);
+    referrerByCode = { REF12345: { user_id: 'referrer-1' } };
+    const res = await POST(makeRequest({ ...VALID_BODY, referralCode: 'ref12345' }));
+
+    expect(res.status).toBe(201);
+    const profilePayload = profilesInsert.mock.calls[0][0] as Record<string, unknown>;
+    expect(profilePayload.referred_by_teacher_id).toBe('referrer-1');
+    // Resolution looks up the trimmed + uppercased code.
+    expect(profileSelectLookups).toContain('REF12345');
+  });
+
+  it('unknown referral code -> silently ignored (referred_by_teacher_id null), still 201', async () => {
+    mockCreateUser.mockResolvedValueOnce(NEW_USER);
+    const res = await POST(makeRequest({ ...VALID_BODY, referralCode: 'NOPE9999' }));
+
+    expect(res.status).toBe(201);
+    const profilePayload = profilesInsert.mock.calls[0][0] as Record<string, unknown>;
+    expect(profilePayload.referred_by_teacher_id).toBeNull();
+  });
+
+  it('self-referral guard -> code resolving to the new user is dropped', async () => {
+    mockCreateUser.mockResolvedValueOnce(NEW_USER);
+    // The code resolves to the brand-new user's own id (structurally impossible
+    // in prod, but the route must still guard referrerId !== userId).
+    referrerByCode = { SELF0001: { user_id: 'new-user-1' } };
+    const res = await POST(makeRequest({ ...VALID_BODY, referralCode: 'SELF0001' }));
+
+    expect(res.status).toBe(201);
+    const profilePayload = profilesInsert.mock.calls[0][0] as Record<string, unknown>;
+    expect(profilePayload.referred_by_teacher_id).toBeNull();
   });
 
   // --- existing account-creation invariants (now behind a verified OTP) ---

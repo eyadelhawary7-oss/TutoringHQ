@@ -5,6 +5,10 @@ import { normalizePhone, isValidEgyptianMobileE164 } from '@/lib/utils/phone';
 import { isWeakPin } from '@/lib/weakPins';
 import { rateLimit, rateLimitExceededResponse, getUpstashRedis } from '@/lib/ratelimit';
 import { hashOtp, TEACHER_SIGNUP_OTP_MAX_ATTEMPTS } from '@/lib/teacherSignupOtp';
+import {
+  createUniqueTeacherReferralCode,
+  resolveTeacherReferralCode,
+} from '@/lib/teacherReferral';
 
 /**
  * PUBLIC teacher signup (no bearer - the teacher has no account yet). Creates
@@ -58,6 +62,7 @@ export async function POST(request: Request) {
     subject: rawSubject,
     code: rawCode,
     planIntent: rawPlanIntent,
+    referralCode: rawReferralCode,
     termsAccepted,
     privacyAccepted,
   } = (body ?? {}) as {
@@ -67,6 +72,7 @@ export async function POST(request: Request) {
     subject?: unknown;
     code?: unknown;
     planIntent?: unknown;
+    referralCode?: unknown;
     termsAccepted?: unknown;
     privacyAccepted?: unknown;
   };
@@ -259,6 +265,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Server error', code: 'server_error' }, { status: 500 });
   }
 
+  // ITEM 4 referral: every teacher gets their OWN unique, name-derived code,
+  // and (if they arrived with one) we resolve the code they were referred with
+  // to the referrer's user_id. Both are best-effort - createUniqueTeacherReferralCode
+  // never throws (referral_code is nullable; the UNIQUE index is the backstop),
+  // and resolveTeacherReferralCode silently ignores an invalid/empty code
+  // (mirrors center signup). Self-referral is structurally impossible here (the
+  // new teacher has no code yet), but we guard referrerId !== userId defensively.
+  const referralCode = await createUniqueTeacherReferralCode(admin, name);
+  const resolvedReferrer = await resolveTeacherReferralCode(admin, rawReferralCode);
+  const referredByTeacherId =
+    resolvedReferrer && resolvedReferrer !== userId ? resolvedReferrer : null;
+
   // teacher_profiles - required: a missing profile makes finish_class_and_bill
   // raise 23503 (the integrity flag from step 6). RULE 151: the consent
   // timestamps are CORE for this route - they are written in the same insert
@@ -274,6 +292,8 @@ export async function POST(request: Request) {
     terms_accepted_at: consentNow,
     policy_version: '1.0',
     signup_plan_intent: planIntent,
+    referral_code: referralCode,
+    referred_by_teacher_id: referredByTeacherId,
   });
   if (profErr) {
     // Cleanup both rows created above (best-effort).
