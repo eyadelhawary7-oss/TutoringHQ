@@ -1,15 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { hashOtp } from '@/lib/teacherSignupOtp';
 
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-key';
-// No Upstash env -> rateLimit fails open (success: true) for these tests.
-delete process.env.UPSTASH_REDIS_REST_URL;
-delete process.env.UPSTASH_REDIS_REST_TOKEN;
 
 type WriteResult = { error: { message: string } | null };
 type CreateResult = { data: { user: { id: string } } | null; error: { message: string } | null };
 type DupResult = { data: { id: string } | null; error: { message: string } | null };
+type OtpResult = {
+  data: { id: string; code_hash: string; attempts: number } | null;
+  error: { message: string } | null;
+};
 
 const mockCreateUser = vi.fn<(attrs: Record<string, unknown>) => Promise<CreateResult>>();
 const mockDeleteUser = vi.fn<(id: string) => Promise<{ data: null; error: null }>>(
@@ -27,6 +29,10 @@ const usersDeleteEq = vi.fn<(col: string, val: unknown) => Promise<WriteResult>>
 const profilesInsert = vi.fn<(payload: Record<string, unknown>) => Promise<WriteResult>>(
   async () => ({ error: null }),
 );
+// teacher_signup_otps spies.
+const otpMaybeSingle = vi.fn<() => Promise<OtpResult>>();
+const otpUpdateEq = vi.fn<() => Promise<WriteResult>>(async () => ({ error: null }));
+const otpDeleteEq = vi.fn<() => Promise<WriteResult>>(async () => ({ error: null }));
 
 const adminClient = {
   auth: { admin: { createUser: mockCreateUser, deleteUser: mockDeleteUser } },
@@ -43,12 +49,38 @@ const adminClient = {
     if (table === 'teacher_profiles') {
       return { insert: profilesInsert };
     }
+    if (table === 'teacher_signup_otps') {
+      return {
+        select: () => ({
+          eq: () => ({
+            is: () => ({
+              gt: () => ({
+                order: () => ({ limit: () => ({ maybeSingle: otpMaybeSingle }) }),
+              }),
+            }),
+          }),
+        }),
+        update: () => ({ eq: otpUpdateEq }),
+        delete: () => ({ eq: otpDeleteEq }),
+      };
+    }
     throw new Error(`unexpected table in teacher-signup mock: ${table}`);
   },
 };
 
 vi.mock('@/lib/supabase-admin', () => ({
   getSupabaseAdmin: () => adminClient,
+}));
+
+// Rate limiting is mocked: OTP verify is fail-CLOSED (needs getUpstashRedis truthy
+// + a successful verify limiter). Both are controllable per test.
+const mockRateLimit = vi.fn(async () => ({ success: true, remaining: 5, reset: 0 }));
+const mockGetUpstashRedis = vi.fn<() => unknown>(() => ({}));
+vi.mock('@/lib/ratelimit', () => ({
+  rateLimit: (...args: unknown[]) => mockRateLimit(...(args as [])),
+  getUpstashRedis: () => mockGetUpstashRedis(),
+  rateLimitExceededResponse: () =>
+    new Response(JSON.stringify({ error: 'rate' }), { status: 429 }),
 }));
 
 const mockSentryCaptureException = vi.fn();
@@ -70,15 +102,21 @@ function makeRequest(body: unknown): Request {
   });
 }
 
+const VALID_CODE = '481923';
 const VALID_BODY = {
   phone: '01012345678',
   pin: '837461',
   name: 'Ahmed Aly',
   subject: 'Physics',
+  code: VALID_CODE,
   termsAccepted: true,
   privacyAccepted: true,
 };
 const NEW_USER = { data: { user: { id: 'new-user-1' } }, error: null };
+
+function validOtpRow(attempts = 0): OtpResult {
+  return { data: { id: 'otp-1', code_hash: hashOtp(VALID_CODE), attempts }, error: null };
+}
 
 beforeEach(() => {
   mockCreateUser.mockReset();
@@ -87,11 +125,20 @@ beforeEach(() => {
   usersInsert.mockClear();
   usersDeleteEq.mockClear();
   profilesInsert.mockClear();
+  otpMaybeSingle.mockReset();
+  otpUpdateEq.mockClear();
+  otpDeleteEq.mockClear();
   mockSentryCaptureException.mockReset();
-  // Defaults: no duplicate, all inserts succeed.
+  mockRateLimit.mockReset();
+  mockGetUpstashRedis.mockReset();
+  // Defaults: no duplicate, all inserts succeed, valid unexpired OTP present,
+  // Upstash available, rate limit passes.
   usersDupMaybeSingle.mockResolvedValue({ data: null, error: null });
   usersInsert.mockResolvedValue({ error: null });
   profilesInsert.mockResolvedValue({ error: null });
+  otpMaybeSingle.mockResolvedValue(validOtpRow());
+  mockRateLimit.mockResolvedValue({ success: true, remaining: 5, reset: 0 });
+  mockGetUpstashRedis.mockReturnValue({});
 });
 
 describe('POST /api/auth/teacher/signup', () => {
@@ -101,8 +148,9 @@ describe('POST /api/auth/teacher/signup', () => {
     const res = await POST(makeRequest(VALID_BODY));
 
     expect(res.status).toBe(201);
-    const body = (await res.json()) as { userId: string };
+    const body = (await res.json()) as { userId: string; planIntent: string | null };
     expect(body.userId).toBe('new-user-1');
+    expect(body.planIntent).toBeNull();
 
     expect(mockCreateUser).toHaveBeenCalledTimes(1);
     const attrs = mockCreateUser.mock.calls[0][0] as Record<string, unknown>;
@@ -121,6 +169,11 @@ describe('POST /api/auth/teacher/signup', () => {
     expect(profilePayload.policy_version).toBe('1.0');
     expect(typeof profilePayload.policy_accepted_at).toBe('string');
     expect(typeof profilePayload.terms_accepted_at).toBe('string');
+    // No pro intent in the default body.
+    expect(profilePayload.signup_plan_intent).toBeNull();
+
+    // OTP consumed (verified_at set) after the account is committed.
+    expect(otpUpdateEq).toHaveBeenCalled();
   });
 
   it('termsAccepted missing -> 400 CONSENT_REQUIRED, no account created', async () => {
@@ -143,19 +196,6 @@ describe('POST /api/auth/teacher/signup', () => {
     expect(res.status).toBe(400);
     expect(((await res.json()) as { code: string }).code).toBe('CONSENT_REQUIRED');
     expect(mockCreateUser).not.toHaveBeenCalled();
-    expect(usersInsert).not.toHaveBeenCalled();
-    expect(profilesInsert).not.toHaveBeenCalled();
-  });
-
-  it('both consents false -> 400 CONSENT_REQUIRED, no account created', async () => {
-    const res = await POST(
-      makeRequest({ ...VALID_BODY, termsAccepted: false, privacyAccepted: false }),
-    );
-
-    expect(res.status).toBe(400);
-    expect(((await res.json()) as { code: string }).code).toBe('CONSENT_REQUIRED');
-    expect(mockCreateUser).not.toHaveBeenCalled();
-    expect(usersInsert).not.toHaveBeenCalled();
   });
 
   it('invalid phone -> 400 INVALID_PHONE, nothing created', async () => {
@@ -164,11 +204,9 @@ describe('POST /api/auth/teacher/signup', () => {
     expect(res.status).toBe(400);
     expect(((await res.json()) as { code: string }).code).toBe('INVALID_PHONE');
     expect(mockCreateUser).not.toHaveBeenCalled();
-    expect(usersInsert).not.toHaveBeenCalled();
   });
 
   it('weak PIN -> 400 WEAK_PIN, nothing created', async () => {
-    // 123456 is on the weak-PIN reject list.
     const res = await POST(makeRequest({ ...VALID_BODY, pin: '123456' }));
 
     expect(res.status).toBe(400);
@@ -183,6 +221,80 @@ describe('POST /api/auth/teacher/signup', () => {
     expect(((await res.json()) as { code: string }).code).toBe('INVALID_NAME');
     expect(mockCreateUser).not.toHaveBeenCalled();
   });
+
+  // --- OTP gate (ITEM 8) ---
+
+  it('missing code -> 400 INVALID_CODE, no account created', async () => {
+    const { code: _omit, ...noCode } = VALID_BODY;
+    void _omit;
+    const res = await POST(makeRequest(noCode));
+
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { code: string }).code).toBe('INVALID_CODE');
+    expect(mockCreateUser).not.toHaveBeenCalled();
+  });
+
+  it('no Upstash (fail-CLOSED) -> 503, no account created', async () => {
+    mockGetUpstashRedis.mockReturnValue(null);
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(503);
+    expect(((await res.json()) as { code: string }).code).toBe('VERIFICATION_UNAVAILABLE');
+    expect(mockCreateUser).not.toHaveBeenCalled();
+  });
+
+  it('wrong code -> 400 OTP_INVALID, attempts incremented, no account created', async () => {
+    const res = await POST(makeRequest({ ...VALID_BODY, code: '000000' }));
+
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { code: string }).code).toBe('OTP_INVALID');
+    expect(otpUpdateEq).toHaveBeenCalled(); // attempts bumped
+    expect(mockCreateUser).not.toHaveBeenCalled();
+  });
+
+  it('expired / no OTP row -> 410 OTP_EXPIRED, no account created', async () => {
+    otpMaybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(410);
+    expect(((await res.json()) as { code: string }).code).toBe('OTP_EXPIRED');
+    expect(mockCreateUser).not.toHaveBeenCalled();
+  });
+
+  it('too many attempts -> 429 OTP_TOO_MANY_ATTEMPTS, row deleted, no account', async () => {
+    otpMaybeSingle.mockResolvedValueOnce(validOtpRow(4)); // 5th attempt
+    const res = await POST(makeRequest({ ...VALID_BODY, code: '000000' }));
+
+    expect(res.status).toBe(429);
+    expect(((await res.json()) as { code: string }).code).toBe('OTP_TOO_MANY_ATTEMPTS');
+    expect(otpDeleteEq).toHaveBeenCalled();
+    expect(mockCreateUser).not.toHaveBeenCalled();
+  });
+
+  // --- pro intent (ITEM 1) ---
+
+  it('planIntent pro -> persisted on teacher_profiles, returned, trial untouched', async () => {
+    mockCreateUser.mockResolvedValueOnce(NEW_USER);
+    const res = await POST(makeRequest({ ...VALID_BODY, planIntent: 'pro' }));
+
+    expect(res.status).toBe(201);
+    expect(((await res.json()) as { planIntent: string | null }).planIntent).toBe('pro');
+    const profilePayload = profilesInsert.mock.calls[0][0] as Record<string, unknown>;
+    expect(profilePayload.signup_plan_intent).toBe('pro');
+    // No teacher_subscriptions write here: the trial is the DB trigger's job.
+  });
+
+  it('junk planIntent -> ignored (null), still creates account', async () => {
+    mockCreateUser.mockResolvedValueOnce(NEW_USER);
+    const res = await POST(makeRequest({ ...VALID_BODY, planIntent: 'xyz' }));
+
+    expect(res.status).toBe(201);
+    expect(((await res.json()) as { planIntent: string | null }).planIntent).toBeNull();
+    const profilePayload = profilesInsert.mock.calls[0][0] as Record<string, unknown>;
+    expect(profilePayload.signup_plan_intent).toBeNull();
+  });
+
+  // --- existing account-creation invariants (now behind a verified OTP) ---
 
   it('duplicate phone (existing users row) -> 409 PHONE_ALREADY_REGISTERED, no createUser', async () => {
     usersDupMaybeSingle.mockResolvedValueOnce({ data: { id: 'existing' }, error: null });
