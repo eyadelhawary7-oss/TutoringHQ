@@ -8581,6 +8581,16 @@
       "empty": "No students in this group yet. Add your first student to get going.",
       "actionError": "Something went wrong. Try again."
     },
+    "notes": {
+      "toggle": "Private note",
+      "placeholder": "Write your note about this student here, just between you two.",
+      "saving": "Saving...",
+      "saved": "Saved",
+      "lastSaved": "Last edited {date}",
+      "error": "Something went wrong. Try again.",
+      "proOnly": "Private notes are a Pro plan feature.",
+      "upgradeCta": "Upgrade to Pro"
+    },
     "addStudent": {
       "title": "Add a student",
       "nameLabel": "Student name",

@@ -11,9 +11,11 @@ import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { useToast } from '@/hooks/useToast';
 import AddStudentModal from './AddStudentModal';
 import EditGroupModal from './EditGroupModal';
+import StudentNoteRow from './StudentNoteRow';
 import GroupJoinLinkCard from '../../../GroupJoinLinkCard';
 import GroupClassesTab from './GroupClassesTab';
 import GroupScheduleTab from './GroupScheduleTab';
+import { fetchTeacherSubscription } from '@/components/teacher/teacherSubscriptionClient';
 
 type RosterEntry = {
   enrollmentId: string;
@@ -73,6 +75,18 @@ export default function TeacherGroupDetailPage({
   const [decidingId, setDecidingId] = useState<string | null>(null);
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const [actionError, setActionError] = useState(false);
+  // Plan gates the per-student private-note feature. Fetched once; defaults to
+  // Standard until it loads.
+  const [isPro, setIsPro] = useState(false);
+  useEffect(() => {
+    let on = true;
+    fetchTeacherSubscription().then((s) => {
+      if (on && s) setIsPro(s.plan_key === 'teacher_699');
+    });
+    return () => {
+      on = false;
+    };
+  }, []);
 
   const loadRoster = useCallback(async () => {
     setLoading(true);
@@ -386,53 +400,56 @@ export default function TeacherGroupDetailPage({
                 {active.map((r) => (
                   <li
                     key={r.enrollmentId}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3"
+                    className="flex flex-col gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3"
                   >
-                    <div>
-                      <p className="font-medium text-[var(--color-text-primary)]">{r.student.name}</p>
-                      <p className="text-sm text-[var(--color-text-muted)]" dir="ltr">
-                        {r.student.phone}
-                      </p>
-                      {payerLabel(r.payer) && (
-                        <span className="mt-1 inline-block rounded-full bg-[var(--color-surface-2)] px-2.5 py-0.5 text-xs text-[var(--color-text-secondary)]">
-                          {payerLabel(r.payer)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-end gap-1.5">
-                      {r.outstanding > 0 && (
-                        <span className="text-xs font-medium text-[var(--color-brass)]">
-                          {tTabs('outstandingShort', {
-                            amount: formatCurrency(r.outstanding, locale),
-                          })}
-                        </span>
-                      )}
-                      {decidingId === r.enrollmentId ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-[var(--color-text-muted)]" aria-hidden />
-                      ) : confirmRemoveId === r.enrollmentId ? (
-                        <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="font-medium text-[var(--color-text-primary)]">{r.student.name}</p>
+                        <p className="text-sm text-[var(--color-text-muted)]" dir="ltr">
+                          {r.student.phone}
+                        </p>
+                        {payerLabel(r.payer) && (
+                          <span className="mt-1 inline-block rounded-full bg-[var(--color-surface-2)] px-2.5 py-0.5 text-xs text-[var(--color-text-secondary)]">
+                            {payerLabel(r.payer)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-1.5">
+                        {r.outstanding > 0 && (
+                          <span className="text-xs font-medium text-[var(--color-brass)]">
+                            {tTabs('outstandingShort', {
+                              amount: formatCurrency(r.outstanding, locale),
+                            })}
+                          </span>
+                        )}
+                        {decidingId === r.enrollmentId ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-[var(--color-text-muted)]" aria-hidden />
+                        ) : confirmRemoveId === r.enrollmentId ? (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => decide(r.enrollmentId, 'remove')}
+                              className="rounded-lg bg-[var(--color-danger)] px-3 py-1 text-xs font-medium text-white transition-opacity hover:opacity-90"
+                            >
+                              {tTabs('confirmRemove')}
+                            </button>
+                            <button
+                              onClick={() => setConfirmRemoveId(null)}
+                              className="rounded-lg border border-[var(--color-border)] px-3 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-2)]"
+                            >
+                              {tTabs('cancel')}
+                            </button>
+                          </div>
+                        ) : (
                           <button
-                            onClick={() => decide(r.enrollmentId, 'remove')}
-                            className="rounded-lg bg-[var(--color-danger)] px-3 py-1 text-xs font-medium text-white transition-opacity hover:opacity-90"
+                            onClick={() => setConfirmRemoveId(r.enrollmentId)}
+                            className="text-xs text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-danger)]"
                           >
-                            {tTabs('confirmRemove')}
+                            {tTabs('removeStudent')}
                           </button>
-                          <button
-                            onClick={() => setConfirmRemoveId(null)}
-                            className="rounded-lg border border-[var(--color-border)] px-3 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-2)]"
-                          >
-                            {tTabs('cancel')}
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setConfirmRemoveId(r.enrollmentId)}
-                          className="text-xs text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-danger)]"
-                        >
-                          {tTabs('removeStudent')}
-                        </button>
-                      )}
+                        )}
+                      </div>
                     </div>
+                    <StudentNoteRow groupId={groupId} studentId={r.student.id} isPro={isPro} />
                   </li>
                 ))}
               </ul>
