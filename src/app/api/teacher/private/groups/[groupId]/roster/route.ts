@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherPrivateAccess } from '@/lib/centerAuth';
 import { requireOwnedPrivateGroup } from '@/lib/teacherPrivate';
+import { countActiveNonGuestStudents, STANDARD_STUDENT_CAP } from '@/lib/teacherCap';
 import { normalizePhone, isValidEgyptianMobileE164 } from '@/lib/utils/phone';
 
 const ROUTE_TAG = 'api/teacher/private/roster';
@@ -170,7 +171,9 @@ export async function POST(
 
   // Pro tier cap: Standard (teacher_299) is limited to 60 active enrolled
   // students across all of this teacher's active private groups; Pro
-  // (teacher_699) is uncapped.
+  // (teacher_699) is uncapped. Counting is the shared canonical definition
+  // (distinct non-guest active enrollments) so the add gate and the over-cap
+  // lock can never disagree about who is over the line.
   const { data: subRow, error: subErr } = await auth.supabaseAdmin
     .from('teacher_subscriptions')
     .select('plan_key')
@@ -181,40 +184,32 @@ export async function POST(
   }
   const planKey = (subRow as { plan_key?: string } | null)?.plan_key;
   if (planKey !== 'teacher_699') {
-    const { data: groupRows, error: groupsErr } = await auth.supabaseAdmin
-      .from('student_groups')
-      .select('id')
-      .eq('teacher_id', auth.userId)
-      .eq('kind', 'private')
-      .eq('status', 'active');
-    if (groupsErr) {
-      return serverError('student_cap_groups', groupsErr);
+    let distinctStudents: number;
+    try {
+      distinctStudents = await countActiveNonGuestStudents(auth.supabaseAdmin, auth.userId);
+    } catch (countErr) {
+      return serverError('student_cap_count', countErr as { message: string });
     }
-    const groupIds = (groupRows ?? []).map((g) => (g as { id: string }).id);
-    let distinctStudents = 0;
-    if (groupIds.length > 0) {
-      // Guest (walk-in) students never count toward the Standard cap - only
-      // permanently enrolled, non-guest students do. The !inner join +
-      // students.is_guest=false filter drops any guest that somehow carries an
-      // enrollment row.
-      const { data: enrollRows, error: enrollCountErr } = await auth.supabaseAdmin
-        .from('enrollments')
-        .select('student_id, students!inner(is_guest)')
-        .in('group_id', groupIds)
-        .eq('status', 'active')
-        .eq('students.is_guest', false);
-      if (enrollCountErr) {
-        return serverError('student_cap_count', enrollCountErr);
-      }
-      distinctStudents = new Set(
-        (enrollRows ?? []).map((e) => (e as { student_id: string }).student_id),
-      ).size;
+    // Already past the line (61+, e.g. legacy data or the now-closed self-enroll
+    // loophole): the over-cap LOCK applies - block with the same code every
+    // other action uses, telling them to shed students first.
+    if (distinctStudents > STANDARD_STUDENT_CAP) {
+      return NextResponse.json(
+        {
+          error: 'Over student cap',
+          code: 'OVER_CAP_LOCKED',
+          limit: STANDARD_STUDENT_CAP,
+          current: distinctStudents,
+        },
+        { status: 403 },
+      );
     }
-    if (distinctStudents >= 60) {
+    // Exactly at the line (60): adding the 61st is refused at the boundary.
+    if (distinctStudents >= STANDARD_STUDENT_CAP) {
       return NextResponse.json(
         {
           error: 'STUDENT_LIMIT_REACHED',
-          limit: 60,
+          limit: STANDARD_STUDENT_CAP,
           current: distinctStudents,
           upgrade_required: true,
         },

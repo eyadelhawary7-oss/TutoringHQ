@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherPrivateAccess } from '@/lib/centerAuth';
 import { requireOwnedPrivateGroup, isUuid } from '@/lib/teacherPrivate';
+import { requireTeacherUnderCap } from '@/lib/teacherCap';
 
 const ROUTE_TAG = 'api/teacher/private/enrollments';
 
@@ -75,6 +76,16 @@ export async function POST(
   }
   const newStatus =
     rawAction === 'approve' ? 'active' : rawAction === 'reject' ? 'rejected' : 'removed';
+
+  // Over-cap lock: a Standard teacher past 60 students cannot APPROVE a new
+  // active enrollment (that grows the count). reject/remove are escape hatches
+  // that shed students, so they are always allowed. Pro is never capped.
+  if (newStatus === 'active') {
+    const cap = await requireTeacherUnderCap(auth.supabaseAdmin, auth.userId, ROUTE_TAG);
+    if (!cap.ok) {
+      return cap.response;
+    }
+  }
 
   // The enrollment must belong to the verified group - not just any
   // enrollment id the caller happens to know. CORE read: error -> 500.

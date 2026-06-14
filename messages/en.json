@@ -2921,7 +2921,8 @@
       "invalidCode": "Wrong code. Try again.",
       "tooManyAttempts": "Too many wrong codes. Start again.",
       "verificationUnavailable": "Verification is unavailable right now. Try again shortly.",
-      "capacityFull": "This group is full."
+      "capacityFull": "This group is full.",
+      "groupFull": "This group has reached its student limit. Contact the teacher."
     }
   },
   "join": {
@@ -8335,7 +8336,8 @@
       "lastPaymentLabel": "Last payment",
       "noPayments": "No payments yet",
       "paymentHistory": "Payment history",
-      "noTransactions": "No transactions yet."
+      "noTransactions": "No transactions yet.",
+      "overCapWarning": "You have more than 60 students on the Standard plan. Remove students down to 60 to keep working."
     },
     "lockedIncome": {
       "heading": "Your income dashboard",

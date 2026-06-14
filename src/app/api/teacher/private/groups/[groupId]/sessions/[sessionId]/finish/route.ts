@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherPrivateAccess } from '@/lib/centerAuth';
 import { requireOwnedSession } from '@/lib/teacherPrivate';
+import { requireTeacherUnderCap } from '@/lib/teacherCap';
 
 const ROUTE_TAG = 'api/teacher/private/finish-class';
 
@@ -57,6 +58,13 @@ export async function POST(
   );
   if (!owned.ok) {
     return owned.response;
+  }
+
+  // Over-cap lock: a Standard teacher past 60 students cannot finish + bill.
+  // Pro is never capped. After ownership, before billing runs.
+  const cap = await requireTeacherUnderCap(auth.supabaseAdmin, auth.userId, ROUTE_TAG);
+  if (!cap.ok) {
+    return cap.response;
   }
 
   const { data: finishData, error: finishErr } = await auth.supabaseAdmin.rpc(

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherPrivateAccess } from '@/lib/centerAuth';
 import { requireOwnedPrivateGroup } from '@/lib/teacherPrivate';
+import { requireTeacherUnderCap } from '@/lib/teacherCap';
 import {
   cairoDateKey,
   cairoYmdMinusDays,
@@ -168,6 +169,13 @@ export async function POST(
     }
     dateKey = rawDate;
   }
+  // Over-cap lock: a Standard teacher past 60 students cannot record a class.
+  // Pro is never capped. After ownership + date validation, before the insert.
+  const cap = await requireTeacherUnderCap(auth.supabaseAdmin, auth.userId, ROUTE_TAG);
+  if (!cap.ok) {
+    return cap.response;
+  }
+
   const scheduledAt =
     dateKey === todayKey
       ? new Date().toISOString()

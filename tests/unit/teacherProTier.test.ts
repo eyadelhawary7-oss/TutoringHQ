@@ -160,7 +160,12 @@ describe('group create cap (Standard 8-group limit)', () => {
   });
 
   it('3. Pro teacher with 10 active groups -> proceeds, no cap check at all', async () => {
-    adminQueue.teacher_subscriptions = [{ data: { status: 'active', plan_key: 'teacher_699' }, error: null }];
+    // Two Pro reads: one for the route's group-cap branch, one for the over-cap
+    // gate (both short-circuit on Pro before touching student_groups).
+    adminQueue.teacher_subscriptions = [
+      { data: { status: 'active', plan_key: 'teacher_699' }, error: null },
+      { data: { status: 'active', plan_key: 'teacher_699' }, error: null },
+    ];
     adminQueue.insert = [
       { data: { id: 'g-new', name: 'G11', fee_per_class: 100, status: 'active' }, error: null },
     ];
@@ -168,7 +173,7 @@ describe('group create cap (Standard 8-group limit)', () => {
     const res = await postGroup(makeRequest({ name: 'G11', fee_per_class: 100 }));
 
     expect(res.status).toBe(201);
-    // Pro skips the cap-count query entirely: student_groups is never read.
+    // Pro skips both cap-count queries entirely: student_groups is never read.
     expect(tableHits).not.toContain('student_groups');
   });
 });
@@ -189,6 +194,55 @@ describe('enrollment cap (Standard 60-student limit)', () => {
     expect(res.status).toBe(429);
     expect(((await res.json()) as { error: string }).error).toBe('STUDENT_LIMIT_REACHED');
     expect(insertCalls).toEqual([]);
+  });
+});
+
+describe('over-cap lock (Item 7)', () => {
+  it('roster add for a Standard teacher already at 75 -> 403 OVER_CAP_LOCKED (not 429)', async () => {
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_299' }, error: null }];
+    adminQueue.student_groups = [{ data: [{ id: 'g-1' }], error: null }];
+    adminQueue.enrollments = [
+      { data: Array.from({ length: 75 }, (_, i) => ({ student_id: `s-${i}` })), error: null },
+    ];
+
+    const res = await postRoster(makeRequest({ name: 'New', phone: '01000000000', payer: 'student' }), rosterParams);
+
+    expect(res.status).toBe(403);
+    expect(((await res.json()) as { code: string }).code).toBe('OVER_CAP_LOCKED');
+    expect(insertCalls).toEqual([]);
+  });
+
+  it('group create for a Standard teacher over the student cap (75) -> 403 OVER_CAP_LOCKED', async () => {
+    adminQueue.teacher_subscriptions = [
+      { data: { status: 'active', plan_key: 'teacher_299' }, error: null }, // route (resubscribe + 8-cap)
+      { data: { plan_key: 'teacher_299' }, error: null }, // over-cap gate
+    ];
+    adminQueue.student_groups = [
+      { data: null, error: null, count: 3 }, // 8-group head count (under 8)
+      { data: [{ id: 'g-1' }, { id: 'g-2' }, { id: 'g-3' }], error: null }, // gate group list
+    ];
+    adminQueue.enrollments = [
+      { data: Array.from({ length: 75 }, (_, i) => ({ student_id: `s-${i}` })), error: null },
+    ];
+
+    const res = await postGroup(makeRequest({ name: 'G4', fee_per_class: 100 }));
+
+    expect(res.status).toBe(403);
+    expect(((await res.json()) as { code: string }).code).toBe('OVER_CAP_LOCKED');
+    expect(insertCalls).toEqual([]);
+  });
+
+  it('roster add for a Standard teacher exactly at 60 -> 429 STUDENT_LIMIT_REACHED (boundary, not locked)', async () => {
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_299' }, error: null }];
+    adminQueue.student_groups = [{ data: [{ id: 'g-1' }], error: null }];
+    adminQueue.enrollments = [
+      { data: Array.from({ length: 60 }, (_, i) => ({ student_id: `s-${i}` })), error: null },
+    ];
+
+    const res = await postRoster(makeRequest({ name: 'New', phone: '01000000000', payer: 'student' }), rosterParams);
+
+    expect(res.status).toBe(429);
+    expect(((await res.json()) as { error: string }).error).toBe('STUDENT_LIMIT_REACHED');
   });
 });
 

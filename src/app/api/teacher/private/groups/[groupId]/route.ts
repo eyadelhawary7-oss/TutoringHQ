@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherPrivateAccess } from '@/lib/centerAuth';
 import { requireOwnedPrivateGroup } from '@/lib/teacherPrivate';
+import { requireTeacherUnderCap } from '@/lib/teacherCap';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { parseScheduleSlots, type ScheduleSlotInput } from '@/lib/teacherSchedule';
 import { queueScheduleChangedNotification } from '@/lib/teacherScheduleNotifications';
@@ -101,6 +102,20 @@ export async function PATCH(
 
   if (Object.keys(updates).length === 0 && scheduleSlots === null) {
     return NextResponse.json({ error: 'Nothing to update', code: 'no_fields' }, { status: 400 });
+  }
+
+  // Over-cap lock: a Standard teacher past 60 students cannot edit a group
+  // (name/fee/schedule). Archiving is the escape hatch (it sheds an active
+  // group's students from the count), so a PURE archive is always allowed; an
+  // unarchive or any other edit is blocked while over the cap.
+  const isPureArchive =
+    updates.status === 'archived' &&
+    updates.name === undefined &&
+    updates.fee_per_class === undefined &&
+    scheduleSlots === null;
+  if (!isPureArchive) {
+    const cap = await requireTeacherUnderCap(auth.supabaseAdmin, auth.userId, ROUTE_TAG);
+    if (!cap.ok) return cap.response;
   }
 
   let g = {

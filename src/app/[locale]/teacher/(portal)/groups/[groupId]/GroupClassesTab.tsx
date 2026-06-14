@@ -142,7 +142,7 @@ export default function GroupClassesTab({ groupId }: { groupId: string }) {
         toast.error(t('collectError'));
         return;
       }
-      const res = await fetch(`/api/teacher/private/transactions/${transactionId}/collect`, {
+      const res = await fetch(`/api/teacher/private/transactions/${transactionId}/mark-paid`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${session.access_token}`,

@@ -167,6 +167,7 @@ export default function JoinFlowClient({
         verification_unavailable: 'verificationUnavailable',
         already_enrolled: 'alreadyEnrolled',
         capacity_full: 'capacityFull',
+        GROUP_FULL: 'groupFull',
       };
       setOtpError(map[code2] ?? 'sendError');
       setDigits(Array(OTP_LEN).fill(''));
