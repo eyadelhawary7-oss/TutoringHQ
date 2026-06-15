@@ -3535,7 +3535,11 @@
     "resultPaid": "حضور + مدفوع",
     "resultUnpaid": "حضرت دون دفع",
     "resultPending": "الدفع الرقمي معلق",
-    "rangeSummary": "عرض {count} مسحة من {from} – {to}"
+    "rangeSummary": "عرض {count} مسحة من {from} – {to}",
+    "captureTitle": "تسجيل الحضور",
+    "tabScan": "مسح QR",
+    "tabChecklist": "قائمة الأسماء",
+    "takingForGroup": "تسجيل حضور · {group}"
   },
   "benchmarks": {
     "title": "المقارنة المرجعية",
@@ -4179,7 +4183,7 @@
     "subtitle": "اضغط على اسم الطالب لتسجيل حضوره وطريقة الدفع.",
     "offline": "غير متصل",
     "pendingSync": "{count} في انتظار المزامنة",
-    "noChecklistGroups": "لا توجد مجموعات بطريقة القائمة بعد. غيّر طريقة الحضور لأي مجموعة إلى «قائمة الأسماء» من إعداداتها.",
+    "noGroups": "لا توجد مجموعات بعد. أنشئ مجموعة لبدء تسجيل الحضور.",
     "backToGroups": "العودة للمجموعات",
     "presentTally": "{count}/{total} حاضر",
     "needsMethod": "{count} طالب بحاجة لاختيار طريقة الدفع",
@@ -5093,10 +5097,6 @@
     "validFeeRequired": "Valid رسوم مطلوب",
     "waitlist": "قائمة الانتظار",
     "linkCopied": "تم نسخ الرابط",
-    "attendanceMode": "طريقة تسجيل الحضور",
-    "attendanceModeScan": "مسح الكود",
-    "attendanceModeChecklist": "قائمة الأسماء",
-    "attendanceModeHint": "اختر طريقة تسجيل حضور هذه المجموعة. يمكنك التبديل في أي وقت.",
     "errors": {
       "saveFailedGeneric": "تعذّر حفظ المجموعة. يرجى المحاولة مرة أخرى."
     },
@@ -5961,10 +5961,6 @@
     "sectionNotifications": "الإشعارات",
     "sectionMoney": "إعدادات المال",
     "sectionAccount": "الحساب",
-    "attendanceDefaultTitle": "وضع الحضور الافتراضي",
-    "attendanceDefaultDesc": "الوضع المستخدم تلقائيًا عند إنشاء مجموعة جديدة.",
-    "attendanceDefaultScan": "مسح (QR)",
-    "attendanceDefaultChecklist": "قائمة حضور",
     "joinRequests": {
       "title": "طلبات انضمام المدرسين",
       "empty": "مفيش طلبات انضمام معلّقة.",

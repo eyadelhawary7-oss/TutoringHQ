@@ -1593,7 +1593,7 @@ export default function StudentsPage() {
                           label: ts('swipe_scan'),
                           variant: 'default',
                           icon: <QrCode size={16} />,
-                          onClick: () => router.push('/scan'),
+                          onClick: () => router.push('/attendance'),
                         },
                         {
                           label: ts('swipe_delete'),

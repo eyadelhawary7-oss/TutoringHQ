@@ -87,6 +87,7 @@ const AUTHENTICATED_ROUTE_PREFIXES = [
   '/students',
   '/payments',
   '/settings',
+  '/attendance',
   '/scan',
   '/checklist',
   '/groups',

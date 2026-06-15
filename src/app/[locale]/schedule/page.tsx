@@ -84,6 +84,7 @@ export default function SchedulePage() {
   const t = useTranslations('schedule');
   const tCommon = useTranslations('common');
   const tToast = useTranslations('toasts');
+  const tAtt = useTranslations('attendance');
   const { toast } = useToast();
   const locale = useLocale();
   const router = useRouter();
@@ -115,6 +116,13 @@ export default function SchedulePage() {
 
   const formatMemberCount = (n: number) =>
     `${formatNumber(n, locale)} ${n === 1 ? tCommon('student') : tCommon('students')}`;
+
+  // Door-side flow: tapping a session opens the unified Attendance page scoped to
+  // that class (QR scan tab by default, checklist one tap away).
+  const openAttendance = (groupId?: string | null) => {
+    if (!groupId) return;
+    router.push(`/${locale}/attendance?group=${groupId}&date=${cairoDateKey()}&tab=scan`);
+  };
 
   const weekDays = useMemo(() => getCairoWeekDays(new Date(), locale), [locale]);
 
@@ -517,6 +525,16 @@ export default function SchedulePage() {
                               return (
                                 <div
                                   key={slot.id}
+                                  role="button"
+                                  tabIndex={0}
+                                  onClick={() => openAttendance(slot.group_id)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.preventDefault();
+                                      openAttendance(slot.group_id);
+                                    }
+                                  }}
+                                  title={tAtt('captureTitle')}
                                   className={`relative rounded-xl p-2 cursor-pointer transition-colors group border shadow-sm ${
                                     isConflict
                                       ? 'bg-red-500/10 hover:bg-red-500/15 border-red-500/40'
@@ -606,7 +624,17 @@ export default function SchedulePage() {
                 .map((session) => (
                   <div
                     key={session.id}
-                    className="mb-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3 shadow-sm"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openAttendance(session.group_id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openAttendance(session.group_id);
+                      }
+                    }}
+                    title={tAtt('captureTitle')}
+                    className="mb-2 cursor-pointer rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3 shadow-sm transition-colors hover:bg-[var(--color-surface-2)]"
                   >
                     <div className="font-mono text-sm text-teal-600 dark:text-teal-400">
                       <span dir="ltr">
@@ -625,7 +653,8 @@ export default function SchedulePage() {
                         <div className="mt-2 flex items-center gap-3">
                           <button
                             type="button"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setConfirmDeleteId(null);
                               handleDeleteSlot(session.id, true);
                             }}
@@ -635,7 +664,10 @@ export default function SchedulePage() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setConfirmDeleteId(null)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmDeleteId(null);
+                            }}
                             className="flex min-h-[44px] items-center text-xs font-semibold text-[var(--color-text-secondary)] hover:underline"
                           >
                             {tCommon('cancel')}
@@ -644,7 +676,10 @@ export default function SchedulePage() {
                       ) : (
                         <button
                           type="button"
-                          onClick={() => setConfirmDeleteId(session.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmDeleteId(session.id);
+                          }}
                           className="mt-2 flex min-h-[44px] min-w-[44px] items-center text-xs font-semibold text-red-600 hover:underline"
                         >
                           {t('delete')}

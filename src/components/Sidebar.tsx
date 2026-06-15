@@ -13,7 +13,6 @@ import {
   Users,
   QrCode,
   CreditCard,
-  ListChecks,
   BookOpen,
   DoorOpen,
   Calendar,
@@ -118,8 +117,7 @@ export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarPr
       labelKey: 'groupDaily',
       items: [
         { key: 'dashboard', href: '/dashboard', icon: LayoutDashboard, permission: 'can_view_dashboard' },
-        { key: 'scanner', href: '/scan', icon: QrCode, permission: 'can_scan' },
-        { key: 'checklist', href: '/checklist', icon: ListChecks, permission: 'can_scan' },
+        { key: 'attendance', href: '/attendance', icon: QrCode, permission: 'can_scan' },
         { key: 'students', href: '/students', icon: Users, permission: 'can_manage_students' },
         { key: 'payments', href: '/payments', icon: CreditCard, permission: 'can_view_payments' },
         { key: 'schedule', href: '/schedule', icon: Calendar, permission: 'can_view_schedule' },
