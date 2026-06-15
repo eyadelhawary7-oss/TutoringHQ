@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ChevronDown, ChevronUp, Handshake } from 'lucide-react';
+import { ChevronDown, ChevronUp, Handshake, Loader2, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { formatCurrency, formatDate } from '@/lib/formatNumber';
@@ -21,6 +21,7 @@ type Proposal = {
   gradeLevel: string | null;
   feePerClass: number;
   status: 'open' | 'accepted' | 'declined' | 'withdrawn' | 'expired';
+  initiatedBy: 'teacher' | 'center';
   expiresAt: string;
   createdAt: string;
   openingMessage: string | null;
@@ -32,9 +33,13 @@ type Proposal = {
   teacherPhone: string | null;
 };
 
+type Teacher = { id: string; name: string | null; subject: string | null };
+
 const ERROR_KEY: Record<string, string> = {
   NOT_YOUR_TURN: 'errorNotYourTurn',
   CUT_NOT_LESS_THAN_FEE: 'errorCutTooHigh',
+  PROPOSAL_ALREADY_OPEN: 'errorAlreadyOpen',
+  TEACHER_NOT_LINKED: 'errorTeacherNotLinked',
 };
 
 const STATUS_KEY: Record<Proposal['status'], string> = {
@@ -72,6 +77,19 @@ export default function GroupProposalsTab({ onAccepted }: { onAccepted: () => vo
   const [counterCut, setCounterCut] = useState('');
   const [counterNote, setCounterNote] = useState('');
 
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [teachersLoaded, setTeachersLoaded] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    teacherId: '',
+    subject: '',
+    gradeLevel: '',
+    fee: '',
+    cut: '',
+    message: '',
+  });
+  const [submitting, setSubmitting] = useState(false);
+
   const load = useCallback(async () => {
     try {
       const {
@@ -95,9 +113,79 @@ export default function GroupProposalsTab({ onAccepted }: { onAccepted: () => vo
     load();
   }, [load]);
 
+  const loadTeachers = useCallback(async () => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch('/api/center/teachers', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) return;
+      const json = (await res.json()) as { teachers: Teacher[] };
+      setTeachers(json.teachers ?? []);
+    } catch {
+      // Non-fatal: the picker renders empty and the form stays unusable.
+    } finally {
+      setTeachersLoaded(true);
+    }
+  }, []);
+
+  const openForm = () => {
+    setShowForm((v) => !v);
+    if (!teachersLoaded) loadTeachers();
+  };
+
+  const submitProposal = async () => {
+    const fee = Number(form.fee);
+    const cut = Number(form.cut);
+    if (!form.teacherId || !form.subject.trim() || !Number.isFinite(fee) || fee <= 0) return;
+    if (!Number.isFinite(cut) || cut < 0 || cut >= fee) {
+      setErrorKey('errorCutTooHigh');
+      return;
+    }
+    setSubmitting(true);
+    setErrorKey(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch('/api/center/group-proposals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+          ...(await getCsrfHeaders(session.access_token)),
+        },
+        body: JSON.stringify({
+          teacher_id: form.teacherId,
+          subject: form.subject.trim(),
+          grade_level: form.gradeLevel.trim() || undefined,
+          fee_per_class: fee,
+          opening_cut_egp: cut,
+          opening_message: form.message.trim() || undefined,
+        }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { code?: string };
+      if (!res.ok) {
+        setErrorKey(ERROR_KEY[json.code ?? ''] ?? 'errorGeneric');
+        return;
+      }
+      setShowForm(false);
+      setForm({ teacherId: '', subject: '', gradeLevel: '', fee: '', cut: '', message: '' });
+      load();
+    } catch {
+      setErrorKey('errorGeneric');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const respond = async (
     proposalId: string,
-    action: 'accept' | 'counter' | 'decline',
+    action: 'accept' | 'counter' | 'decline' | 'withdraw',
     cutEgp?: number,
     note?: string,
   ) => {
@@ -140,12 +228,130 @@ export default function GroupProposalsTab({ onAccepted }: { onAccepted: () => vo
 
   return (
     <div>
-      <p className="mb-4 text-sm text-[var(--color-text-secondary)]">{t('subtitleCenter')}</p>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <p className="text-sm text-[var(--color-text-secondary)]">{t('subtitleCenter')}</p>
+        <button
+          type="button"
+          onClick={openForm}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-teal-700"
+        >
+          <Plus size={16} aria-hidden /> {t('newProposalCenter')}
+        </button>
+      </div>
 
       {errorKey && (
-        <p className="mb-3 text-sm text-red-600" role="alert">
+        <p className="mt-3 mb-3 text-sm text-red-600" role="alert">
           {t(errorKey)}
         </p>
+      )}
+
+      {showForm && (
+        <div className="mb-5 mt-3 flex flex-col gap-3 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] p-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+              {t('teacherPickerLabel')}
+            </label>
+            {teachers.length === 0 ? (
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                {teachersLoaded ? t('noLinkedTeachers') : t('loadingTeachers')}
+              </p>
+            ) : (
+              <select
+                value={form.teacherId}
+                onChange={(e) => setForm((f) => ({ ...f, teacherId: e.target.value }))}
+                className="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+              >
+                <option value="">{t('selectTeacher')}</option>
+                {teachers.map((tc) => (
+                  <option key={tc.id} value={tc.id}>
+                    {tc.name ?? tc.id}
+                    {tc.subject ? ` - ${tc.subject}` : ''}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+              {t('subjectLabel')}
+            </label>
+            <input
+              value={form.subject}
+              maxLength={120}
+              onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
+              className="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+              {t('gradeLabel')}
+            </label>
+            <input
+              value={form.gradeLevel}
+              maxLength={120}
+              onChange={(e) => setForm((f) => ({ ...f, gradeLevel: e.target.value }))}
+              className="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+                {t('feeLabel')}
+              </label>
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                value={form.fee}
+                onChange={(e) => setForm((f) => ({ ...f, fee: e.target.value }))}
+                className="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 font-mono text-sm text-[var(--color-text-primary)]"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+                {t('cutOfferLabel')}
+              </label>
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                value={form.cut}
+                onChange={(e) => setForm((f) => ({ ...f, cut: e.target.value }))}
+                className="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 font-mono text-sm text-[var(--color-text-primary)]"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+              {t('messageLabel')}
+            </label>
+            <textarea
+              value={form.message}
+              maxLength={500}
+              rows={2}
+              onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
+              className="w-full resize-none rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={submitProposal}
+              disabled={submitting || !form.teacherId || !form.subject.trim() || !form.fee || !form.cut}
+              className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+              {submitting ? t('submitting') : t('submit')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="rounded-lg border border-[var(--color-border-subtle)] px-4 py-2 text-sm text-[var(--color-text-secondary)]"
+            >
+              {t('cancel')}
+            </button>
+          </div>
+        </div>
       )}
 
       {loading ? (
@@ -190,6 +396,9 @@ export default function GroupProposalsTab({ onAccepted }: { onAccepted: () => vo
                   <div className="flex flex-col items-end gap-1">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_CLASS[p.status]}`}>
                       {t(STATUS_KEY[p.status])}
+                    </span>
+                    <span className="text-xs text-[var(--color-text-muted)]">
+                      {t(p.initiatedBy === 'center' ? 'initiatedByCenter' : 'initiatedByTeacher')}
                     </span>
                     {p.status === 'open' && (
                       <span className="text-xs font-medium text-[var(--color-text-secondary)]">
@@ -249,32 +458,47 @@ export default function GroupProposalsTab({ onAccepted }: { onAccepted: () => vo
                   </ul>
                 )}
 
-                {myTurn && p.latestOffer?.madeBy === 'teacher' && (
+                {p.status === 'open' && (
                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => respond(p.id, 'accept')}
-                      className="rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
-                    >
-                      {t('accept')}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => setCounterFor(counterFor === p.id ? null : p.id)}
-                      className="rounded-lg border border-teal-600 px-3 py-1.5 text-xs font-semibold text-teal-700 disabled:opacity-50"
-                    >
-                      {t('counter')}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => respond(p.id, 'decline')}
-                      className="rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 disabled:opacity-50"
-                    >
-                      {t('decline')}
-                    </button>
+                    {myTurn && p.latestOffer?.madeBy === 'teacher' && (
+                      <>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => respond(p.id, 'accept')}
+                          className="rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
+                        >
+                          {t('accept')}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => setCounterFor(counterFor === p.id ? null : p.id)}
+                          className="rounded-lg border border-teal-600 px-3 py-1.5 text-xs font-semibold text-teal-700 disabled:opacity-50"
+                        >
+                          {t('counter')}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => respond(p.id, 'decline')}
+                          className="rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 disabled:opacity-50"
+                        >
+                          {t('decline')}
+                        </button>
+                      </>
+                    )}
+                    {/* The center can pull its OWN standing offer (latest is the center's). */}
+                    {p.latestOffer?.madeBy === 'center' && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => respond(p.id, 'withdraw')}
+                        className="text-xs font-semibold text-[var(--color-text-muted)] hover:underline disabled:opacity-50"
+                      >
+                        {t('withdraw')}
+                      </button>
+                    )}
                   </div>
                 )}
 

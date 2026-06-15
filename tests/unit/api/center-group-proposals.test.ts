@@ -16,6 +16,8 @@ type QueryResult = { data: unknown; error: { message: string; code?: string } | 
 
 const queues: Record<string, QueryResult[]> = {};
 const filterCalls: { table: string; method: string; column: string; value: unknown }[] = [];
+const insertCalls: { table: string; payload: Record<string, unknown> }[] = [];
+const deleteCalls: { table: string }[] = [];
 const rpcCalls: { fn: string; args: Record<string, unknown> }[] = [];
 const rpcQueue: QueryResult[] = [];
 
@@ -61,6 +63,28 @@ const mockAdmin = {
       };
       return builder;
     },
+    insert: (payload: Record<string, unknown>) => {
+      insertCalls.push({ table, payload });
+      const result = () => pop(`${table}_insert`);
+      return {
+        select: () => ({ single: async () => result() }),
+        then: (
+          onFulfilled: (v: QueryResult) => unknown,
+          onRejected?: (e: unknown) => unknown,
+        ) => Promise.resolve(result()).then(onFulfilled, onRejected),
+      };
+    },
+    delete: () => {
+      deleteCalls.push({ table });
+      const del = {
+        eq: () => del,
+        then: (
+          onFulfilled: (v: QueryResult) => unknown,
+          onRejected?: (e: unknown) => unknown,
+        ) => Promise.resolve({ data: null, error: null }).then(onFulfilled, onRejected),
+      };
+      return del;
+    },
   }),
 };
 
@@ -76,8 +100,9 @@ vi.mock('@sentry/nextjs', () => ({
   captureMessage: vi.fn(),
 }));
 
-import { GET } from '@/app/api/center/group-proposals/route';
+import { GET, POST as CREATE } from '@/app/api/center/group-proposals/route';
 import { POST as RESPOND } from '@/app/api/center/group-proposals/[proposalId]/respond/route';
+import { GET as TEACHERS } from '@/app/api/center/teachers/route';
 
 const OWNER_ID = 'owner-1';
 const CENTER_ID = 'center-1';
@@ -123,11 +148,31 @@ function makeRespond(body: Record<string, unknown>): NextRequest {
 }
 const params = { params: Promise.resolve({ proposalId: PROPOSAL_ID }) };
 
+function makeCreate(body: Record<string, unknown>): NextRequest {
+  return withNextUrl(
+    new Request('http://localhost/api/center/group-proposals', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer tok', 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+  );
+}
+
+function makeTeachers(): NextRequest {
+  return withNextUrl(
+    new Request('http://localhost/api/center/teachers', {
+      headers: { Authorization: 'Bearer tok' },
+    }),
+  );
+}
+
 beforeEach(() => {
   mockGetUser.mockReset();
   mockRpc.mockClear();
   for (const k of Object.keys(queues)) delete queues[k];
   filterCalls.length = 0;
+  insertCalls.length = 0;
+  deleteCalls.length = 0;
   rpcCalls.length = 0;
   rpcQueue.length = 0;
 });
@@ -260,14 +305,141 @@ describe('POST /api/center/group-proposals/[proposalId]/respond', () => {
     expect(rpcCalls).toHaveLength(0);
   });
 
-  it('withdraw is teacher-only -> 400 INVALID_ACTION on the center side', async () => {
+  it('withdraw -> RPC side=center (the center pulls its own standing offer)', async () => {
     seedCenterAuth();
+    queues.group_proposals = [
+      { data: { id: PROPOSAL_ID, center_id: CENTER_ID, fee_per_class: 80, status: 'open' }, error: null },
+    ];
+    rpcQueue.push({ data: [{ proposal_status: 'withdrawn', group_id: null }], error: null });
 
     const res = await RESPOND(makeRespond({ action: 'withdraw' }), params);
     const json = await res.json();
 
+    expect(res.status).toBe(200);
+    expect(json.status).toBe('withdrawn');
+    expect(rpcCalls[0].args).toMatchObject({ p_side: 'center', p_action: 'withdraw' });
+  });
+});
+
+describe('POST /api/center/group-proposals (owner-initiated)', () => {
+  const VALID_CREATE = {
+    teacher_id: TEACHER_ID,
+    subject: 'Chemistry',
+    grade_level: 'Grade 10',
+    fee_per_class: 90,
+    opening_cut_egp: 20,
+    opening_message: 'join us',
+  };
+
+  it('happy path: inserts proposal (initiated_by=center) + opening center offer, 201 open', async () => {
+    seedCenterAuth();
+    queues.teacher_center = [{ data: { teacher_id: TEACHER_ID }, error: null }];
+    queues.group_proposals_insert = [{ data: { id: PROPOSAL_ID }, error: null }];
+    queues.group_proposal_offers_insert = [{ data: null, error: null }];
+
+    const res = await CREATE(makeCreate(VALID_CREATE));
+    const json = await res.json();
+
+    expect(res.status).toBe(201);
+    expect(json).toEqual({ proposal_id: PROPOSAL_ID, status: 'open' });
+    expect(insertCalls[0].table).toBe('group_proposals');
+    expect(insertCalls[0].payload).toMatchObject({
+      teacher_id: TEACHER_ID,
+      center_id: CENTER_ID,
+      subject: 'Chemistry',
+      fee_per_class: 90,
+      initiated_by: 'center',
+      status: 'open',
+    });
+    expect(insertCalls[1].table).toBe('group_proposal_offers');
+    expect(insertCalls[1].payload).toMatchObject({
+      proposal_id: PROPOSAL_ID,
+      made_by: 'center',
+      cut_egp: 20,
+    });
+  });
+
+  it('rejects a teacher who is not an active member of the center (403 TEACHER_NOT_LINKED)', async () => {
+    seedCenterAuth();
+    queues.teacher_center = [{ data: null, error: null }];
+
+    const res = await CREATE(makeCreate(VALID_CREATE));
+    const json = await res.json();
+
+    expect(res.status).toBe(403);
+    expect(json.code).toBe('TEACHER_NOT_LINKED');
+    expect(insertCalls).toHaveLength(0);
+  });
+
+  it('rejects opening cut >= fee_per_class (400) before any DB write', async () => {
+    seedCenterAuth();
+
+    const res = await CREATE(makeCreate({ ...VALID_CREATE, opening_cut_egp: 90 }));
+    const json = await res.json();
+
     expect(res.status).toBe(400);
-    expect(json.code).toBe('INVALID_ACTION');
-    expect(rpcCalls).toHaveLength(0);
+    expect(json.code).toBe('CUT_NOT_LESS_THAN_FEE');
+    expect(insertCalls).toHaveLength(0);
+  });
+
+  it('a duplicate open proposal (unique 23505) -> 409 PROPOSAL_ALREADY_OPEN', async () => {
+    seedCenterAuth();
+    queues.teacher_center = [{ data: { teacher_id: TEACHER_ID }, error: null }];
+    queues.group_proposals_insert = [
+      { data: null, error: { message: 'duplicate key', code: '23505' } },
+    ];
+
+    const res = await CREATE(makeCreate(VALID_CREATE));
+    const json = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(json.code).toBe('PROPOSAL_ALREADY_OPEN');
+  });
+
+  it('an assistant without can_manage_students cannot start a proposal (403, fail closed)', async () => {
+    seedCenterAuth('assistant');
+    queues.users_perms = [
+      { data: {}, error: null },
+      { data: { can_manage_students: false }, error: null },
+    ];
+
+    const res = await CREATE(makeCreate(VALID_CREATE));
+    const json = await res.json();
+
+    expect(res.status).toBe(403);
+    expect(json.code).toBe('PERMISSION_REQUIRED');
+    expect(insertCalls).toHaveLength(0);
+  });
+});
+
+describe('GET /api/center/teachers', () => {
+  it('lists active linked teachers for the picker, scoped to the caller center', async () => {
+    seedCenterAuth();
+    queues.teacher_center = [{ data: [{ teacher_id: TEACHER_ID }], error: null }];
+    queues.teacher_profiles = [
+      { data: [{ user_id: TEACHER_ID, display_name: 'Mr. Ahmed', subject: 'Math' }], error: null },
+    ];
+    queues.users_display = [{ data: [{ id: TEACHER_ID, name: 'ahmed' }], error: null }];
+
+    const res = await TEACHERS(makeTeachers());
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    const scope = filterCalls.find(
+      (f) => f.table === 'teacher_center' && f.column === 'center_id',
+    );
+    expect(scope?.value).toBe(CENTER_ID);
+    expect(json.teachers).toEqual([{ id: TEACHER_ID, name: 'Mr. Ahmed', subject: 'Math' }]);
+  });
+
+  it('returns an empty list when the center has no linked teachers', async () => {
+    seedCenterAuth();
+    queues.teacher_center = [{ data: [], error: null }];
+
+    const res = await TEACHERS(makeTeachers());
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.teachers).toEqual([]);
   });
 });

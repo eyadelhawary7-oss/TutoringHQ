@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireCenterAuth } from '@/lib/centerAuth';
-import { PROPOSAL_COLUMNS, buildProposalList, type ProposalRow } from '@/lib/groupProposals';
+import { validateCSRFRequest } from '@/lib/csrf';
+import {
+  PROPOSAL_COLUMNS,
+  buildProposalList,
+  ensureCanManageProposals,
+  isValidEgp,
+  type ProposalRow,
+} from '@/lib/groupProposals';
 
 const ROUTE_TAG = 'api/center/group-proposals';
 
@@ -12,6 +19,126 @@ function fail(step: string, err: unknown) {
     Sentry.captureException(err);
   });
   return NextResponse.json({ error: 'Server error', code: 'server_error' }, { status: 500 });
+}
+
+/**
+ * POST /api/center/group-proposals
+ * The OWNER starts a group negotiation: pick a linked-active teacher, set the
+ * student fee and an opening center-cut offer. Mirrors the teacher-proposes
+ * create exactly, just from the center side - initiated_by='center' and the
+ * opening offer is made_by='center'. The group stays dormant (no
+ * student_groups row) until the teacher accepts; ADR 033 - the cut is only an
+ * offer until accepted.
+ *
+ * Gate: owner/admin (or super-admin), else can_manage_students (shared with
+ * respond via ensureCanManageProposals). The target teacher MUST be an active
+ * member of this center (teacher_center status='active'); membership comes from
+ * the server, never the body alone.
+ */
+export async function POST(request: NextRequest) {
+  const auth = await requireCenterAuth(request);
+  if (!auth.ok) return auth.response;
+
+  if (!validateCSRFRequest(request, auth.userId)) {
+    return NextResponse.json({ error: 'Invalid CSRF token', code: 'CSRF' }, { status: 403 });
+  }
+
+  const denied = await ensureCanManageProposals(auth, ROUTE_TAG);
+  if (denied) return denied;
+
+  const body = (await request.json().catch(() => ({}))) as {
+    teacher_id?: unknown;
+    subject?: unknown;
+    grade_level?: unknown;
+    fee_per_class?: unknown;
+    opening_cut_egp?: unknown;
+    opening_message?: unknown;
+  };
+
+  const teacherId = typeof body.teacher_id === 'string' ? body.teacher_id.trim() : '';
+  const subject = typeof body.subject === 'string' ? body.subject.trim() : '';
+  const gradeLevel =
+    typeof body.grade_level === 'string' && body.grade_level.trim()
+      ? body.grade_level.trim().slice(0, 120)
+      : null;
+  const openingMessage =
+    typeof body.opening_message === 'string' && body.opening_message.trim()
+      ? body.opening_message.trim().slice(0, 500)
+      : null;
+  const fee = body.fee_per_class;
+  const cut = body.opening_cut_egp;
+
+  if (!teacherId || subject.length < 1 || subject.length > 120) {
+    return NextResponse.json({ error: 'Invalid input', code: 'INVALID_INPUT' }, { status: 400 });
+  }
+  if (!isValidEgp(fee, 0) || fee <= 0) {
+    return NextResponse.json({ error: 'Invalid fee', code: 'INVALID_FEE' }, { status: 400 });
+  }
+  if (!isValidEgp(cut, 0)) {
+    return NextResponse.json({ error: 'Invalid cut', code: 'INVALID_CUT' }, { status: 400 });
+  }
+  if (cut >= fee) {
+    return NextResponse.json(
+      { error: 'Cut must be less than the fee per class', code: 'CUT_NOT_LESS_THAN_FEE' },
+      { status: 400 },
+    );
+  }
+
+  // The teacher must be an ACTIVE member of this center. Owner-initiated
+  // proposals only go to teachers the center is already linked with.
+  const { data: membership, error: membershipErr } = await auth.supabaseAdmin
+    .from('teacher_center')
+    .select('teacher_id')
+    .eq('teacher_id', teacherId)
+    .eq('center_id', auth.centerId)
+    .eq('status', 'active')
+    .maybeSingle();
+  if (membershipErr) return fail('membership_lookup', membershipErr);
+  if (!membership) {
+    return NextResponse.json(
+      { error: 'Teacher is not an active member of this center', code: 'TEACHER_NOT_LINKED' },
+      { status: 403 },
+    );
+  }
+
+  const { data: inserted, error: insErr } = await auth.supabaseAdmin
+    .from('group_proposals')
+    .insert({
+      teacher_id: teacherId,
+      center_id: auth.centerId,
+      subject,
+      grade_level: gradeLevel,
+      fee_per_class: fee,
+      opening_message: openingMessage,
+      initiated_by: 'center',
+      status: 'open',
+    })
+    .select('id')
+    .single();
+  if (insErr) {
+    // Partial unique index (teacher, center, subject, grade) WHERE status='open'
+    // - one live negotiation per pairing regardless of who started it.
+    if ((insErr as { code?: string }).code === '23505') {
+      return NextResponse.json(
+        { error: 'Proposal already open', code: 'PROPOSAL_ALREADY_OPEN' },
+        { status: 409 },
+      );
+    }
+    return fail('insert_proposal', insErr);
+  }
+  const proposalId = (inserted as { id: string }).id;
+
+  // Opening offer (made_by='center'). A proposal with no offers can never be
+  // responded to, so clean it up best-effort if this insert fails.
+  const { error: offerErr } = await auth.supabaseAdmin
+    .from('group_proposal_offers')
+    .insert({ proposal_id: proposalId, made_by: 'center', cut_egp: cut, note: null });
+  if (offerErr) {
+    await auth.supabaseAdmin.from('group_proposals').delete().eq('id', proposalId);
+    return fail('insert_opening_offer', offerErr);
+  }
+
+  return NextResponse.json({ proposal_id: proposalId, status: 'open' }, { status: 201 });
 }
 
 /**
