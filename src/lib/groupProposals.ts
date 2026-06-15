@@ -24,6 +24,11 @@ export type ProposalRow = {
   status: string;
   /** Which side opened the negotiation. */
   initiated_by: 'teacher' | 'center';
+  /**
+   * When set, the negotiation targets an EXISTING plain center group (attach)
+   * instead of proposing a brand-new group. NULL = new-group proposal.
+   */
+  target_group_id: string | null;
   accepted_offer_id: string | null;
   opening_message: string | null;
   expires_at: string;
@@ -31,7 +36,7 @@ export type ProposalRow = {
 };
 
 export const PROPOSAL_COLUMNS =
-  'id, teacher_id, center_id, subject, grade_level, fee_per_class, status, initiated_by, accepted_offer_id, opening_message, expires_at, created_at';
+  'id, teacher_id, center_id, subject, grade_level, fee_per_class, status, initiated_by, target_group_id, accepted_offer_id, opening_message, expires_at, created_at';
 
 export type OfferOut = {
   id: string;
@@ -50,6 +55,8 @@ export type ProposalOut = {
   status: string;
   /** Which side opened the negotiation ('teacher' | 'center'). */
   initiatedBy: 'teacher' | 'center';
+  /** Existing-group target id when this is an attach proposal, else null. */
+  targetGroupId: string | null;
   openingMessage: string | null;
   expiresAt: string;
   createdAt: string;
@@ -125,6 +132,7 @@ export async function buildProposalList(
       feePerClass: Number(p.fee_per_class) || 0,
       status: p.status,
       initiatedBy: (p.initiated_by === 'center' ? 'center' : 'teacher') as 'teacher' | 'center',
+      targetGroupId: p.target_group_id ?? null,
       openingMessage: p.opening_message,
       expiresAt: p.expires_at,
       createdAt: p.created_at,
@@ -135,6 +143,26 @@ export async function buildProposalList(
     };
   });
   return { items, error: null };
+}
+
+/**
+ * Best-effort: resolve display names for the existing groups that attach
+ * proposals target. Returns a Map(groupId -> name). A lookup failure yields an
+ * empty map (the label simply falls back to the proposal's subject) - never
+ * throws, since the group name is decoration, not core negotiation data.
+ */
+export async function resolveTargetGroupNames(
+  admin: SupabaseClient,
+  proposals: { targetGroupId: string | null }[],
+): Promise<Map<string, string | null>> {
+  const out = new Map<string, string | null>();
+  const ids = [...new Set(proposals.map((p) => p.targetGroupId).filter((x): x is string => !!x))];
+  if (ids.length === 0) return out;
+  const { data } = await admin.from('student_groups').select('id, name').in('id', ids);
+  for (const g of (data ?? []) as { id: string; name: string | null }[]) {
+    out.set(g.id, g.name);
+  }
+  return out;
 }
 
 /**
@@ -168,6 +196,19 @@ export function mapRespondRpcError(err: {
       return NextResponse.json(
         { error: 'Cut must be less than the fee per class', code: 'CUT_NOT_LESS_THAN_FEE' },
         { status: 400 },
+      );
+    }
+    // Attach-to-existing rejections (target_group_id branch in the RPC).
+    if (msg.includes('already has a teacher')) {
+      return NextResponse.json(
+        { error: 'That group already has a teacher', code: 'GROUP_HAS_TEACHER' },
+        { status: 409 },
+      );
+    }
+    if (msg.includes('is not a center group') || msg.includes('does not belong to center')) {
+      return NextResponse.json(
+        { error: 'That group cannot be attached', code: 'GROUP_NOT_ELIGIBLE' },
+        { status: 409 },
       );
     }
     return NextResponse.json(

@@ -8,7 +8,6 @@ import { useUser } from '@/contexts/UserContext';
 import { Link as RouterLink } from '@/i18n/routing';
 import { Plus, BookOpen, X, Users, Search, Link as LinkIcon, ClipboardList } from 'lucide-react';
 import { AttendanceHeatmap } from '@/components/AttendanceHeatmap';
-import GroupProposalsTab from './GroupProposalsTab';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { useToast } from '@/components/ui/ToastProvider';
 import { formatCurrency, formatNumber, formatDate, formatPercent } from '@/lib/formatNumber';
@@ -47,7 +46,6 @@ export default function GroupsPage() {
   const tHeatmap = useTranslations('heatmap');
   const tAtt = useTranslations('attendance');
   const tToast = useTranslations('toasts');
-  const tProposals = useTranslations('groupProposals');
   const tCut = useTranslations('centerCut');
   const { toast } = useToast();
   const locale = useLocale();
@@ -71,7 +69,6 @@ export default function GroupsPage() {
   const [detailGroup, setDetailGroup] = useState<Group | null>(null);
   const [expandedHeatmapId, setExpandedHeatmapId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [pageTab, setPageTab] = useState<'groups' | 'proposals'>('groups');
   const [addForm, setAddForm] = useState({ name: '', subjectId: '', fee_per_class: '', centerCut: '', studentIds: [] as string[], maxCapacity: '' });
   const [addSearch, setAddSearch] = useState('');
   const [isAdding, setIsAdding] = useState(false);
@@ -463,27 +460,7 @@ export default function GroupsPage() {
         </button>
       </div>
 
-      {/* Groups / Group Proposals tabs */}
-      <div className="flex gap-1 p-1 rounded-lg bg-[var(--color-surface-2)] w-fit">
-        <button
-          type="button"
-          onClick={() => setPageTab('groups')}
-          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${pageTab === 'groups' ? 'bg-[var(--color-surface-1)] shadow text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
-        >
-          {t('title')}
-        </button>
-        <button
-          type="button"
-          onClick={() => setPageTab('proposals')}
-          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${pageTab === 'proposals' ? 'bg-[var(--color-surface-1)] shadow text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
-        >
-          {tProposals('title')}
-        </button>
-      </div>
-
-      {pageTab === 'proposals' ? (
-        <GroupProposalsTab onAccepted={loadData} />
-      ) : isLoading ? (
+      {isLoading ? (
         <div className="text-center py-16">
           <svg className="animate-spin h-8 w-8 text-teal-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />

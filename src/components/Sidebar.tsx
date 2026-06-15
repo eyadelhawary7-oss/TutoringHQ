@@ -14,6 +14,7 @@ import {
   QrCode,
   CreditCard,
   BookOpen,
+  GraduationCap,
   DoorOpen,
   Calendar,
   Settings,
@@ -127,6 +128,7 @@ export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarPr
       labelKey: 'groupTeaching',
       items: [
         { key: 'groups', href: '/groups', icon: BookOpen, permission: 'can_manage_groups' },
+        { key: 'teachers', href: '/my-teachers', icon: GraduationCap, ownerAdminOnly: true },
         { key: 'rooms', href: '/rooms', icon: DoorOpen, ownerAdminOnly: true },
       ],
     },

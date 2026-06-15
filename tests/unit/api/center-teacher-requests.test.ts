@@ -116,7 +116,7 @@ describe('POST /api/center/teacher-requests/[requestId]/respond', () => {
     authOk(
       {
         'teacher_center_requests:select': [
-          { data: { id: 'r1', teacher_id: 't1', center_id: CENTER_ID, status: 'pending' }, error: null },
+          { data: { id: 'r1', teacher_id: 't1', center_id: CENTER_ID, status: 'pending', initiated_by: 'teacher' }, error: null },
         ],
         'centers:select': [{ data: { name: 'Alpha Center' }, error: null }],
         'teacher_profiles:select': [{ data: { display_name: 'Mr Tarek' }, error: null }],
@@ -139,7 +139,7 @@ describe('POST /api/center/teacher-requests/[requestId]/respond', () => {
     authOk(
       {
         'teacher_center_requests:select': [
-          { data: { id: 'r1', teacher_id: 't1', center_id: CENTER_ID, status: 'pending' }, error: null },
+          { data: { id: 'r1', teacher_id: 't1', center_id: CENTER_ID, status: 'pending', initiated_by: 'teacher' }, error: null },
         ],
         'centers:select': [{ data: { name: 'Alpha Center' }, error: null }],
         'teacher_profiles:select': [{ data: { display_name: 'Mr Tarek' }, error: null }],
@@ -170,7 +170,7 @@ describe('POST /api/center/teacher-requests/[requestId]/respond', () => {
     authOk(
       {
         'teacher_center_requests:select': [
-          { data: { id: 'r1', teacher_id: 't1', center_id: CENTER_ID, status: 'accepted' }, error: null },
+          { data: { id: 'r1', teacher_id: 't1', center_id: CENTER_ID, status: 'accepted', initiated_by: 'teacher' }, error: null },
         ],
       },
       [],
