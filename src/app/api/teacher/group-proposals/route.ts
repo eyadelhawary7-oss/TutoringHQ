@@ -6,8 +6,10 @@ import {
   PROPOSAL_COLUMNS,
   buildProposalList,
   isValidEgp,
+  resolveTargetGroupNames,
   type ProposalRow,
 } from '@/lib/groupProposals';
+import { ownerContactByCenterId, resolveOwnerWaPhoneCached } from '@/lib/ownerPhone';
 
 const ROUTE_TAG = 'api/teacher/group-proposals';
 
@@ -144,13 +146,16 @@ export async function GET(request: NextRequest) {
   const built = await buildProposalList(auth.supabaseAdmin, rows);
   if (built.error) return fail('list_offers', built.error);
 
-  // BEST-EFFORT: center display names.
+  // BEST-EFFORT: center display name + the center's contact phone (so the
+  // teacher can reach out about any request). Phone resolves via the canonical
+  // owner-phone chain (auth-email digits -> users.phone -> centers.phone).
   const nameByCenter = new Map<string, string | null>();
+  const phoneByCenter = new Map<string, string | null>();
   const centerIds = [...new Set(rows.map((r) => r.center_id))];
   if (centerIds.length > 0) {
     const { data: centerRows, error: centersErr } = await auth.supabaseAdmin
       .from('centers')
-      .select('id, name')
+      .select('id, name, phone')
       .in('id', centerIds);
     if (centersErr) {
       Sentry.withScope((scope) => {
@@ -162,16 +167,37 @@ export async function GET(request: NextRequest) {
         );
       });
     } else {
-      for (const c of (centerRows ?? []) as { id: string; name: string | null }[]) {
+      const centerPhoneFallback = new Map<string, string | null>();
+      for (const c of (centerRows ?? []) as { id: string; name: string | null; phone: string | null }[]) {
         nameByCenter.set(c.id, c.name);
+        centerPhoneFallback.set(c.id, c.phone ?? null);
+      }
+      // Owner contact per center, then the WhatsApp-ready phone (best-effort).
+      const ownerByCenter = await ownerContactByCenterId(auth.supabaseAdmin, centerIds);
+      const phoneCache = new Map<string, string | null>();
+      for (const cid of centerIds) {
+        const owner = ownerByCenter.get(cid) ?? null;
+        const phone = await resolveOwnerWaPhoneCached(
+          auth.supabaseAdmin,
+          owner?.authId ?? null,
+          owner?.userPhone ?? null,
+          centerPhoneFallback.get(cid) ?? null,
+          phoneCache,
+        );
+        phoneByCenter.set(cid, phone);
       }
     }
   }
+
+  // Attach proposals: label by the existing group's name (best-effort).
+  const groupNameById = await resolveTargetGroupNames(auth.supabaseAdmin, built.items);
 
   return NextResponse.json({
     proposals: built.items.map((item) => ({
       ...item,
       centerName: nameByCenter.get(item.centerId) ?? null,
+      centerPhone: phoneByCenter.get(item.centerId) ?? null,
+      targetGroupName: item.targetGroupId ? groupNameById.get(item.targetGroupId) ?? null : null,
     })),
   });
 }

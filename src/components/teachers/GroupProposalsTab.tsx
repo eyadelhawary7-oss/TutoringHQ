@@ -22,6 +22,8 @@ type Proposal = {
   feePerClass: number;
   status: 'open' | 'accepted' | 'declined' | 'withdrawn' | 'expired';
   initiatedBy: 'teacher' | 'center';
+  targetGroupId: string | null;
+  targetGroupName: string | null;
   expiresAt: string;
   createdAt: string;
   openingMessage: string | null;
@@ -34,12 +36,17 @@ type Proposal = {
 };
 
 type Teacher = { id: string; name: string | null; subject: string | null };
+type AttachGroup = { id: string; name: string | null; subject: string | null; feePerClass: number | null };
 
 const ERROR_KEY: Record<string, string> = {
   NOT_YOUR_TURN: 'errorNotYourTurn',
   CUT_NOT_LESS_THAN_FEE: 'errorCutTooHigh',
   PROPOSAL_ALREADY_OPEN: 'errorAlreadyOpen',
   TEACHER_NOT_LINKED: 'errorTeacherNotLinked',
+  GROUP_HAS_TEACHER: 'errorGroupHasTeacher',
+  GROUP_NOT_ELIGIBLE: 'errorGroupNotEligible',
+  GROUP_NO_FEE: 'errorGroupNoFee',
+  GROUP_NOT_FOUND: 'errorGroupNotFound',
 };
 
 const STATUS_KEY: Record<Proposal['status'], string> = {
@@ -59,12 +66,13 @@ const STATUS_CLASS: Record<Proposal['status'], string> = {
 };
 
 /**
- * Center dashboard "Group Proposals" tab: incoming teacher proposals with the
- * offer/counter negotiation over the center cut. On accept, the group is
- * created server-side - onAccepted() lets the parent reload the groups list
- * so it appears immediately.
+ * Center-side group-proposal negotiation: the two-sided offer/counter over the
+ * center cut. The owner can start a request to a NEW group (subject/grade/fee
+ * entered) or to an EXISTING plain center group (attach - the group supplies
+ * its subject + fee, the owner only proposes the cut). On accept the group is
+ * created or attached server-side; onChanged() lets the parent refresh.
  */
-export default function GroupProposalsTab({ onAccepted }: { onAccepted: () => void }) {
+export default function GroupProposalsTab({ onChanged }: { onChanged?: () => void }) {
   const t = useTranslations('groupProposals');
   const locale = useLocale();
 
@@ -79,7 +87,9 @@ export default function GroupProposalsTab({ onAccepted }: { onAccepted: () => vo
 
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [teachersLoaded, setTeachersLoaded] = useState(false);
+  const [attachGroups, setAttachGroups] = useState<AttachGroup[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [targetMode, setTargetMode] = useState<'new' | 'existing'>('new');
   const [form, setForm] = useState({
     teacherId: '',
     subject: '',
@@ -87,6 +97,7 @@ export default function GroupProposalsTab({ onAccepted }: { onAccepted: () => vo
     fee: '',
     cut: '',
     message: '',
+    targetGroupId: '',
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -113,20 +124,28 @@ export default function GroupProposalsTab({ onAccepted }: { onAccepted: () => vo
     load();
   }, [load]);
 
-  const loadTeachers = useCallback(async () => {
+  const loadFormData = useCallback(async () => {
     try {
       const {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session) return;
-      const res = await fetch('/api/center/teachers', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (!res.ok) return;
-      const json = (await res.json()) as { teachers: Teacher[] };
-      setTeachers(json.teachers ?? []);
+      const [teachersRes, groupsRes] = await Promise.all([
+        fetch('/api/center/teachers', { headers: { Authorization: `Bearer ${session.access_token}` } }),
+        fetch('/api/center/attachable-groups', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        }),
+      ]);
+      if (teachersRes.ok) {
+        const json = (await teachersRes.json()) as { teachers: Teacher[] };
+        setTeachers(json.teachers ?? []);
+      }
+      if (groupsRes.ok) {
+        const json = (await groupsRes.json()) as { groups: AttachGroup[] };
+        setAttachGroups(json.groups ?? []);
+      }
     } catch {
-      // Non-fatal: the picker renders empty and the form stays unusable.
+      // Non-fatal: the pickers render empty.
     } finally {
       setTeachersLoaded(true);
     }
@@ -134,14 +153,24 @@ export default function GroupProposalsTab({ onAccepted }: { onAccepted: () => vo
 
   const openForm = () => {
     setShowForm((v) => !v);
-    if (!teachersLoaded) loadTeachers();
+    if (!teachersLoaded) loadFormData();
   };
 
+  // The fee that bounds the cut: the typed fee for a new group, or the selected
+  // existing group's fee for an attach.
+  const selectedAttachGroup = attachGroups.find((g) => g.id === form.targetGroupId) ?? null;
+  const effectiveFee =
+    targetMode === 'existing' ? selectedAttachGroup?.feePerClass ?? 0 : Number(form.fee);
+
   const submitProposal = async () => {
-    const fee = Number(form.fee);
     const cut = Number(form.cut);
-    if (!form.teacherId || !form.subject.trim() || !Number.isFinite(fee) || fee <= 0) return;
-    if (!Number.isFinite(cut) || cut < 0 || cut >= fee) {
+    if (!form.teacherId) return;
+    if (targetMode === 'existing') {
+      if (!form.targetGroupId) return;
+    } else if (!form.subject.trim() || !Number.isFinite(effectiveFee) || effectiveFee <= 0) {
+      return;
+    }
+    if (!Number.isFinite(cut) || cut < 0 || (effectiveFee > 0 && cut >= effectiveFee)) {
       setErrorKey('errorCutTooHigh');
       return;
     }
@@ -152,6 +181,22 @@ export default function GroupProposalsTab({ onAccepted }: { onAccepted: () => vo
         data: { session },
       } = await supabase.auth.getSession();
       if (!session) return;
+      const body =
+        targetMode === 'existing'
+          ? {
+              teacher_id: form.teacherId,
+              target_group_id: form.targetGroupId,
+              opening_cut_egp: cut,
+              opening_message: form.message.trim() || undefined,
+            }
+          : {
+              teacher_id: form.teacherId,
+              subject: form.subject.trim(),
+              grade_level: form.gradeLevel.trim() || undefined,
+              fee_per_class: Number(form.fee),
+              opening_cut_egp: cut,
+              opening_message: form.message.trim() || undefined,
+            };
       const res = await fetch('/api/center/group-proposals', {
         method: 'POST',
         headers: {
@@ -159,14 +204,7 @@ export default function GroupProposalsTab({ onAccepted }: { onAccepted: () => vo
           Authorization: `Bearer ${session.access_token}`,
           ...(await getCsrfHeaders(session.access_token)),
         },
-        body: JSON.stringify({
-          teacher_id: form.teacherId,
-          subject: form.subject.trim(),
-          grade_level: form.gradeLevel.trim() || undefined,
-          fee_per_class: fee,
-          opening_cut_egp: cut,
-          opening_message: form.message.trim() || undefined,
-        }),
+        body: JSON.stringify(body),
       });
       const json = (await res.json().catch(() => ({}))) as { code?: string };
       if (!res.ok) {
@@ -174,7 +212,8 @@ export default function GroupProposalsTab({ onAccepted }: { onAccepted: () => vo
         return;
       }
       setShowForm(false);
-      setForm({ teacherId: '', subject: '', gradeLevel: '', fee: '', cut: '', message: '' });
+      setTargetMode('new');
+      setForm({ teacherId: '', subject: '', gradeLevel: '', fee: '', cut: '', message: '', targetGroupId: '' });
       load();
     } catch {
       setErrorKey('errorGeneric');
@@ -216,8 +255,8 @@ export default function GroupProposalsTab({ onAccepted }: { onAccepted: () => vo
       setCounterNote('');
       load();
       if (action === 'accept') {
-        // The new center group exists now - refresh the groups list.
-        onAccepted();
+        // A group was created or attached now - let the parent refresh.
+        onChanged?.();
       }
     } catch {
       setErrorKey('errorGeneric');
@@ -247,6 +286,24 @@ export default function GroupProposalsTab({ onAccepted }: { onAccepted: () => vo
 
       {showForm && (
         <div className="mb-5 mt-3 flex flex-col gap-3 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] p-4">
+          {/* Target: new group or attach to an existing teacher-less center group. */}
+          <div className="flex gap-1 rounded-lg bg-[var(--color-surface-1)] p-1 w-fit">
+            <button
+              type="button"
+              onClick={() => setTargetMode('new')}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${targetMode === 'new' ? 'bg-teal-600 text-white' : 'text-[var(--color-text-secondary)]'}`}
+            >
+              {t('targetNew')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setTargetMode('existing')}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${targetMode === 'existing' ? 'bg-teal-600 text-white' : 'text-[var(--color-text-secondary)]'}`}
+            >
+              {t('targetExisting')}
+            </button>
+          </div>
+
           <div>
             <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
               {t('teacherPickerLabel')}
@@ -271,55 +328,92 @@ export default function GroupProposalsTab({ onAccepted }: { onAccepted: () => vo
               </select>
             )}
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
-              {t('subjectLabel')}
-            </label>
-            <input
-              value={form.subject}
-              maxLength={120}
-              onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
-              className="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
-              {t('gradeLabel')}
-            </label>
-            <input
-              value={form.gradeLevel}
-              maxLength={120}
-              onChange={(e) => setForm((f) => ({ ...f, gradeLevel: e.target.value }))}
-              className="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
-            />
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+          {targetMode === 'existing' ? (
             <div>
               <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
-                {t('feeLabel')}
+                {t('existingGroupLabel')}
               </label>
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                value={form.fee}
-                onChange={(e) => setForm((f) => ({ ...f, fee: e.target.value }))}
-                className="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 font-mono text-sm text-[var(--color-text-primary)]"
-              />
+              {attachGroups.length === 0 ? (
+                <p className="text-sm text-[var(--color-text-secondary)]">
+                  {teachersLoaded ? t('noAttachableGroups') : t('loadingTeachers')}
+                </p>
+              ) : (
+                <select
+                  value={form.targetGroupId}
+                  onChange={(e) => setForm((f) => ({ ...f, targetGroupId: e.target.value }))}
+                  className="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                >
+                  <option value="">{t('selectGroup')}</option>
+                  {attachGroups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name ?? g.id}
+                      {g.subject ? ` - ${g.subject}` : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {selectedAttachGroup && selectedAttachGroup.feePerClass != null && (
+                <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                  {t('studentRate')}:{' '}
+                  <span className="font-mono font-semibold">
+                    {formatCurrency(selectedAttachGroup.feePerClass, locale)}
+                  </span>
+                </p>
+              )}
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
-                {t('cutOfferLabel')}
-              </label>
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                value={form.cut}
-                onChange={(e) => setForm((f) => ({ ...f, cut: e.target.value }))}
-                className="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 font-mono text-sm text-[var(--color-text-primary)]"
-              />
-            </div>
+          ) : (
+            <>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+                  {t('subjectLabel')}
+                </label>
+                <input
+                  value={form.subject}
+                  maxLength={120}
+                  onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
+                  className="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+                  {t('gradeLabel')}
+                </label>
+                <input
+                  value={form.gradeLevel}
+                  maxLength={120}
+                  onChange={(e) => setForm((f) => ({ ...f, gradeLevel: e.target.value }))}
+                  className="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+                  {t('feeLabel')}
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={form.fee}
+                  onChange={(e) => setForm((f) => ({ ...f, fee: e.target.value }))}
+                  className="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 font-mono text-sm text-[var(--color-text-primary)]"
+                />
+              </div>
+            </>
+          )}
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+              {t('cutOfferLabel')}
+            </label>
+            <input
+              type="number"
+              min={0}
+              step={0.01}
+              value={form.cut}
+              onChange={(e) => setForm((f) => ({ ...f, cut: e.target.value }))}
+              className="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 font-mono text-sm text-[var(--color-text-primary)]"
+            />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
@@ -337,7 +431,12 @@ export default function GroupProposalsTab({ onAccepted }: { onAccepted: () => vo
             <button
               type="button"
               onClick={submitProposal}
-              disabled={submitting || !form.teacherId || !form.subject.trim() || !form.fee || !form.cut}
+              disabled={
+                submitting ||
+                !form.teacherId ||
+                !form.cut ||
+                (targetMode === 'existing' ? !form.targetGroupId : !form.subject.trim() || !form.fee)
+              }
               className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
@@ -366,6 +465,9 @@ export default function GroupProposalsTab({ onAccepted }: { onAccepted: () => vo
           {proposals.map((p) => {
             const myTurn = p.status === 'open' && p.whoseTurn === 'center';
             const busy = busyId === p.id;
+            const groupLabel = p.targetGroupId
+              ? p.targetGroupName ?? p.subject
+              : `${p.subject}${p.gradeLevel ? ` - ${p.gradeLevel}` : ''}`;
             return (
               <li
                 key={p.id}
@@ -381,10 +483,12 @@ export default function GroupProposalsTab({ onAccepted }: { onAccepted: () => vo
                         </span>
                       ) : null}
                     </p>
-                    <p className="text-sm text-[var(--color-text-secondary)]">
-                      {p.subject}
-                      {p.gradeLevel ? ` - ${p.gradeLevel}` : ''}
-                    </p>
+                    <p className="text-sm text-[var(--color-text-secondary)]">{groupLabel}</p>
+                    {p.targetGroupId && (
+                      <span className="mt-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                        {t('attachBadge')}
+                      </span>
+                    )}
                     <p className="mt-1 text-xs text-[var(--color-text-muted)]">
                       {t('studentRate')}:{' '}
                       <span className="font-mono font-semibold">{formatCurrency(p.feePerClass, locale)}</span>

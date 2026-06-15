@@ -7,6 +7,7 @@ import {
   buildProposalList,
   ensureCanManageProposals,
   isValidEgp,
+  resolveTargetGroupNames,
   type ProposalRow,
 } from '@/lib/groupProposals';
 
@@ -53,30 +54,96 @@ export async function POST(request: NextRequest) {
     fee_per_class?: unknown;
     opening_cut_egp?: unknown;
     opening_message?: unknown;
+    target_group_id?: unknown;
   };
 
   const teacherId = typeof body.teacher_id === 'string' ? body.teacher_id.trim() : '';
-  const subject = typeof body.subject === 'string' ? body.subject.trim() : '';
-  const gradeLevel =
-    typeof body.grade_level === 'string' && body.grade_level.trim()
-      ? body.grade_level.trim().slice(0, 120)
+  const targetGroupId =
+    typeof body.target_group_id === 'string' && body.target_group_id.trim()
+      ? body.target_group_id.trim()
       : null;
   const openingMessage =
     typeof body.opening_message === 'string' && body.opening_message.trim()
       ? body.opening_message.trim().slice(0, 500)
       : null;
-  const fee = body.fee_per_class;
   const cut = body.opening_cut_egp;
 
-  if (!teacherId || subject.length < 1 || subject.length > 120) {
+  if (!teacherId) {
     return NextResponse.json({ error: 'Invalid input', code: 'INVALID_INPUT' }, { status: 400 });
-  }
-  if (!isValidEgp(fee, 0) || fee <= 0) {
-    return NextResponse.json({ error: 'Invalid fee', code: 'INVALID_FEE' }, { status: 400 });
   }
   if (!isValidEgp(cut, 0)) {
     return NextResponse.json({ error: 'Invalid cut', code: 'INVALID_CUT' }, { status: 400 });
   }
+
+  // Subject / grade / fee come from the body for a NEW-group proposal, or are
+  // derived from the existing group for an ATTACH proposal (never trusted from
+  // the body in that case - the group is the source of truth).
+  let subject: string;
+  let gradeLevel: string | null;
+  let fee: number;
+
+  if (targetGroupId) {
+    // Attach-to-existing: the target must be a plain center group of THIS center
+    // with no teacher yet. fee_per_class and subject are read from the group so
+    // the cut validation and the proposal row match what will actually be
+    // attached. Final eligibility is re-checked under a row lock in the accept
+    // RPC; this is the early, friendly rejection.
+    const { data: groupRow, error: groupErr } = await auth.supabaseAdmin
+      .from('student_groups')
+      .select('id, center_id, kind, teacher_id, subject, fee_per_class')
+      .eq('id', targetGroupId)
+      .maybeSingle();
+    if (groupErr) return fail('target_group_lookup', groupErr);
+    const group = groupRow as
+      | {
+          id: string;
+          center_id: string;
+          kind: string | null;
+          teacher_id: string | null;
+          subject: string | null;
+          fee_per_class: number | string | null;
+        }
+      | null;
+    if (!group || group.center_id !== auth.centerId) {
+      return NextResponse.json({ error: 'Group not found', code: 'GROUP_NOT_FOUND' }, { status: 404 });
+    }
+    if (group.kind !== 'center') {
+      return NextResponse.json(
+        { error: 'Only center groups can be attached', code: 'GROUP_NOT_ELIGIBLE' },
+        { status: 409 },
+      );
+    }
+    if (group.teacher_id) {
+      return NextResponse.json(
+        { error: 'That group already has a teacher', code: 'GROUP_HAS_TEACHER' },
+        { status: 409 },
+      );
+    }
+    const groupFee = group.fee_per_class == null ? NaN : Number(group.fee_per_class);
+    if (!Number.isFinite(groupFee) || groupFee <= 0) {
+      return NextResponse.json(
+        { error: 'That group has no per-class fee set', code: 'GROUP_NO_FEE' },
+        { status: 409 },
+      );
+    }
+    subject = (group.subject ?? '').trim().slice(0, 120) || '—';
+    gradeLevel = null;
+    fee = groupFee;
+  } else {
+    subject = typeof body.subject === 'string' ? body.subject.trim() : '';
+    gradeLevel =
+      typeof body.grade_level === 'string' && body.grade_level.trim()
+        ? body.grade_level.trim().slice(0, 120)
+        : null;
+    fee = typeof body.fee_per_class === 'number' ? body.fee_per_class : NaN;
+    if (subject.length < 1 || subject.length > 120) {
+      return NextResponse.json({ error: 'Invalid input', code: 'INVALID_INPUT' }, { status: 400 });
+    }
+    if (!isValidEgp(fee, 0) || fee <= 0) {
+      return NextResponse.json({ error: 'Invalid fee', code: 'INVALID_FEE' }, { status: 400 });
+    }
+  }
+
   if (cut >= fee) {
     return NextResponse.json(
       { error: 'Cut must be less than the fee per class', code: 'CUT_NOT_LESS_THAN_FEE' },
@@ -111,6 +178,7 @@ export async function POST(request: NextRequest) {
       fee_per_class: fee,
       opening_message: openingMessage,
       initiated_by: 'center',
+      target_group_id: targetGroupId,
       status: 'open',
     })
     .select('id')
@@ -198,6 +266,10 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // Attach proposals carry a target_group_id; surface the existing group's name
+  // so the negotiation card can label it (best-effort).
+  const groupNameById = await resolveTargetGroupNames(auth.supabaseAdmin, built.items);
+
   const teacherById = new Map(rows.map((r) => [r.id, r.teacher_id]));
   return NextResponse.json({
     proposals: built.items.map((item) => {
@@ -206,6 +278,7 @@ export async function GET(request: NextRequest) {
         ...item,
         teacherName: nameByTeacher.get(teacherId) ?? null,
         teacherPhone: phoneByTeacher.get(teacherId) ?? null,
+        targetGroupName: item.targetGroupId ? groupNameById.get(item.targetGroupId) ?? null : null,
       };
     }),
   });

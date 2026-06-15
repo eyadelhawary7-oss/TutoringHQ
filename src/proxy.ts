@@ -91,6 +91,7 @@ const AUTHENTICATED_ROUTE_PREFIXES = [
   '/scan',
   '/checklist',
   '/groups',
+  '/my-teachers',
   '/schedule',
   '/rooms',
   '/branches',

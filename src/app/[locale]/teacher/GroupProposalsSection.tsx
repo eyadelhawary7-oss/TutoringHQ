@@ -19,11 +19,14 @@ type Proposal = {
   id: string;
   centerId: string;
   centerName: string | null;
+  centerPhone: string | null;
   subject: string;
   gradeLevel: string | null;
   feePerClass: number;
   status: 'open' | 'accepted' | 'declined' | 'withdrawn' | 'expired';
   initiatedBy: 'teacher' | 'center';
+  targetGroupId: string | null;
+  targetGroupName: string | null;
   expiresAt: string;
   createdAt: string;
   offerCount: number;
@@ -331,6 +334,9 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
           {proposals.map((p) => {
             const myTurn = p.status === 'open' && p.whoseTurn === 'teacher';
             const busy = busyId === p.id;
+            const groupLabel = p.targetGroupId
+              ? p.targetGroupName ?? p.subject
+              : `${p.subject}${p.gradeLevel ? ` - ${p.gradeLevel}` : ''}`;
             return (
               <li key={p.id} className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] p-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
@@ -338,10 +344,17 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
                     <p className="text-sm font-bold text-[var(--color-text-primary)]">
                       {p.centerName ?? '-'}
                     </p>
-                    <p className="text-sm text-[var(--color-text-secondary)]">
-                      {p.subject}
-                      {p.gradeLevel ? ` - ${p.gradeLevel}` : ''}
-                    </p>
+                    {p.centerPhone ? (
+                      <p className="text-xs font-mono text-[var(--color-text-muted)]" dir="ltr">
+                        {p.centerPhone}
+                      </p>
+                    ) : null}
+                    <p className="text-sm text-[var(--color-text-secondary)]">{groupLabel}</p>
+                    {p.targetGroupId && (
+                      <span className="mt-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                        {t('attachBadge')}
+                      </span>
+                    )}
                     <p className="mt-1 text-xs text-[var(--color-text-muted)]">
                       {t('studentRate')}:{' '}
                       <span className="font-mono font-semibold">{formatCurrency(p.feePerClass, locale)}</span>

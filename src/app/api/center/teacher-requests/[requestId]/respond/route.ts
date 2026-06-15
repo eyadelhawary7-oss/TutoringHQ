@@ -45,15 +45,18 @@ export async function POST(
   // Load the request and confirm it belongs to this centre and is still pending.
   const { data: reqRow, error: readErr } = await ctx.supabaseAdmin
     .from('teacher_center_requests')
-    .select('id, teacher_id, center_id, status')
+    .select('id, teacher_id, center_id, status, initiated_by')
     .eq('id', requestId)
     .maybeSingle();
   if (readErr) return fail('read_request', readErr);
 
   const row = reqRow as
-    | { id: string; teacher_id: string; center_id: string; status: string }
+    | { id: string; teacher_id: string; center_id: string; status: string; initiated_by: string }
     | null;
-  if (!row || row.center_id !== ctx.centerId) {
+  // The center only responds to teacher-initiated (incoming) requests. A
+  // center-initiated (outgoing) request is the teacher's to accept/decline; the
+  // owner withdraws it via /api/center/teacher-links/[requestId].
+  if (!row || row.center_id !== ctx.centerId || row.initiated_by !== 'teacher') {
     return NextResponse.json({ error: 'Not found', code: 'NOT_FOUND' }, { status: 404 });
   }
   if (row.status !== 'pending') {

@@ -29,6 +29,10 @@ export async function GET(request: NextRequest) {
     .select('id, message, created_at, teacher_id')
     .eq('center_id', ctx.centerId)
     .eq('status', 'pending')
+    // Only teacher-initiated requests are "incoming" for the owner to accept;
+    // center-initiated (owner-added-by-code) requests are outgoing and listed by
+    // /api/center/teacher-links instead.
+    .eq('initiated_by', 'teacher')
     .order('created_at', { ascending: false });
   if (error) return fail('list_pending', error);
 
