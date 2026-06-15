@@ -5060,7 +5060,16 @@
     "errorNotYourTurn": "مش دورك دلوقتي، استنى رد الطرف التاني.",
     "errorAlreadyOpen": "عندك عرض مفتوح بالفعل للمادة دي مع السنتر ده.",
     "errorCutTooHigh": "الخصم لازم يكون أقل من سعر الطالب.",
-    "errorNotMember": "انت مش عضو نشط في السنتر ده."
+    "errorNotMember": "انت مش عضو نشط في السنتر ده.",
+    "errorTeacherNotLinked": "المدرس ده مش عضو نشط في السنتر بتاعك.",
+    "newProposalCenter": "اعمل عرض جديد",
+    "teacherPickerLabel": "المدرس",
+    "selectTeacher": "اختار المدرس",
+    "noLinkedTeachers": "مفيش مدرسين مرتبطين بالسنتر لسه. لازم المدرس ينضم للسنتر الأول.",
+    "loadingTeachers": "بنحمّل المدرسين...",
+    "initiatedByCenter": "السنتر بدأ العرض",
+    "initiatedByTeacher": "المدرس بدأ العرض",
+    "proposedByCenter": "عرض من السنتر"
   },
   "groups": {
     "title": "المجموعات",

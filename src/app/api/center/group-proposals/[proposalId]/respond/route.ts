@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { validateCSRFRequest } from '@/lib/csrf';
-import { isValidEgp, mapRespondRpcError } from '@/lib/groupProposals';
+import { ensureCanManageProposals, isValidEgp, mapRespondRpcError } from '@/lib/groupProposals';
 
 const ROUTE_TAG = 'api/center/group-proposals/[proposalId]/respond';
 
@@ -15,18 +15,17 @@ function fail(step: string, err: unknown) {
   return NextResponse.json({ error: 'Server error', code: 'server_error' }, { status: 500 });
 }
 
-const CENTER_ACTIONS = new Set(['accept', 'counter', 'decline']);
-const PRIVILEGED_ROLES = new Set(['owner', 'admin', 'super_admin']);
+const CENTER_ACTIONS = new Set(['accept', 'counter', 'decline', 'withdraw']);
 
 /**
  * POST /api/center/group-proposals/[proposalId]/respond
- * Body: { action: 'accept'|'counter'|'decline', cut_egp?, note? }.
- * Withdraw is teacher-only (the DB function also enforces this).
+ * Body: { action: 'accept'|'counter'|'decline'|'withdraw', cut_egp?, note? }.
+ * Withdraw pulls the center's OWN standing offer (the DB function enforces that
+ * the latest offer is the center's); decline rejects the teacher's standing
+ * offer. Both directions share this route now that the owner can initiate.
  *
- * Gate: owner/admin (or super-admin), else users.can_manage_students. The
- * permission lookup is best-effort but a mutation permission gate fails
- * CLOSED on error (Rule 149) - an unverifiable assistant cannot accept a
- * group on the center's behalf.
+ * Gate: owner/admin (or super-admin), else users.can_manage_students - shared
+ * with the create route via ensureCanManageProposals (fails CLOSED, Rule 149).
  */
 export async function POST(
   request: NextRequest,
@@ -39,32 +38,8 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid CSRF token', code: 'CSRF' }, { status: 403 });
   }
 
-  if (!auth.isSuperAdmin && !PRIVILEGED_ROLES.has(auth.role)) {
-    const { data: permsRow, error: permsErr } = await auth.supabaseAdmin
-      .from('users')
-      .select('can_manage_students')
-      .eq('id', auth.userId)
-      .maybeSingle();
-    if (permsErr) {
-      Sentry.withScope((scope) => {
-        scope.setTag('route', ROUTE_TAG);
-        scope.setTag('step', 'permission_flags');
-        Sentry.captureMessage(
-          `group-proposals respond permission lookup failed: ${permsErr.message}`,
-          'warning',
-        );
-      });
-    }
-    const canManage =
-      !permsErr &&
-      (permsRow as { can_manage_students?: boolean | null } | null)?.can_manage_students === true;
-    if (!canManage) {
-      return NextResponse.json(
-        { error: 'Forbidden', code: 'PERMISSION_REQUIRED' },
-        { status: 403 },
-      );
-    }
-  }
+  const denied = await ensureCanManageProposals(auth, ROUTE_TAG);
+  if (denied) return denied;
 
   const { proposalId } = await params;
   const body = (await request.json().catch(() => ({}))) as {
@@ -73,7 +48,7 @@ export async function POST(
     note?: unknown;
   };
   const action = typeof body.action === 'string' && CENTER_ACTIONS.has(body.action)
-    ? (body.action as 'accept' | 'counter' | 'decline')
+    ? (body.action as 'accept' | 'counter' | 'decline' | 'withdraw')
     : null;
   const note =
     typeof body.note === 'string' && body.note.trim() ? body.note.trim().slice(0, 500) : null;

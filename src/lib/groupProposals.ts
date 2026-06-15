@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import * as Sentry from '@sentry/nextjs';
+import type { CenterAuthOk } from '@/lib/centerAuth';
 
 /**
  * Group proposal negotiation (teacher -> center) shared shapes and helpers.
@@ -20,6 +22,8 @@ export type ProposalRow = {
   grade_level: string | null;
   fee_per_class: number | string;
   status: string;
+  /** Which side opened the negotiation. */
+  initiated_by: 'teacher' | 'center';
   accepted_offer_id: string | null;
   opening_message: string | null;
   expires_at: string;
@@ -27,7 +31,7 @@ export type ProposalRow = {
 };
 
 export const PROPOSAL_COLUMNS =
-  'id, teacher_id, center_id, subject, grade_level, fee_per_class, status, accepted_offer_id, opening_message, expires_at, created_at';
+  'id, teacher_id, center_id, subject, grade_level, fee_per_class, status, initiated_by, accepted_offer_id, opening_message, expires_at, created_at';
 
 export type OfferOut = {
   id: string;
@@ -44,6 +48,8 @@ export type ProposalOut = {
   gradeLevel: string | null;
   feePerClass: number;
   status: string;
+  /** Which side opened the negotiation ('teacher' | 'center'). */
+  initiatedBy: 'teacher' | 'center';
   openingMessage: string | null;
   expiresAt: string;
   createdAt: string;
@@ -118,6 +124,7 @@ export async function buildProposalList(
       gradeLevel: p.grade_level,
       feePerClass: Number(p.fee_per_class) || 0,
       status: p.status,
+      initiatedBy: (p.initiated_by === 'center' ? 'center' : 'teacher') as 'teacher' | 'center',
       openingMessage: p.opening_message,
       expiresAt: p.expires_at,
       createdAt: p.created_at,
@@ -167,6 +174,46 @@ export function mapRespondRpcError(err: {
       { error: 'Cannot respond', code: 'CANNOT_RESPOND' },
       { status: 409 },
     );
+  }
+  return null;
+}
+
+const PROPOSAL_PRIVILEGED_ROLES = new Set(['owner', 'admin', 'super_admin']);
+
+/**
+ * Center-side gate shared by every owner/center proposal MUTATION (create a
+ * proposal, respond to one). Owner/admin/super-admin pass; everyone else needs
+ * users.can_manage_students. A mutation permission gate fails CLOSED on a
+ * lookup error (Rule 149) - an unverifiable caller cannot commit the center to
+ * a teacher relationship. Returns a 403 NextResponse to short-circuit, or null
+ * when allowed.
+ */
+export async function ensureCanManageProposals(
+  auth: CenterAuthOk,
+  routeTag: string,
+): Promise<NextResponse | null> {
+  if (auth.isSuperAdmin || PROPOSAL_PRIVILEGED_ROLES.has(auth.role)) return null;
+
+  const { data: permsRow, error: permsErr } = await auth.supabaseAdmin
+    .from('users')
+    .select('can_manage_students')
+    .eq('id', auth.userId)
+    .maybeSingle();
+  if (permsErr) {
+    Sentry.withScope((scope) => {
+      scope.setTag('route', routeTag);
+      scope.setTag('step', 'permission_flags');
+      Sentry.captureMessage(
+        `group-proposals permission lookup failed: ${permsErr.message}`,
+        'warning',
+      );
+    });
+  }
+  const canManage =
+    !permsErr &&
+    (permsRow as { can_manage_students?: boolean | null } | null)?.can_manage_students === true;
+  if (!canManage) {
+    return NextResponse.json({ error: 'Forbidden', code: 'PERMISSION_REQUIRED' }, { status: 403 });
   }
   return null;
 }

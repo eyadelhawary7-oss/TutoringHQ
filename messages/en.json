@@ -2856,7 +2856,16 @@
     "errorNotYourTurn": "It is not your turn, wait for the other side to respond.",
     "errorAlreadyOpen": "You already have an open proposal for this subject with this center.",
     "errorCutTooHigh": "The cut must be less than the student rate.",
-    "errorNotMember": "You are not an active member of this center."
+    "errorNotMember": "You are not an active member of this center.",
+    "errorTeacherNotLinked": "This teacher is not an active member of your center.",
+    "newProposalCenter": "Start a proposal",
+    "teacherPickerLabel": "Teacher",
+    "selectTeacher": "Select a teacher",
+    "noLinkedTeachers": "No linked teachers yet. A teacher must join your center first.",
+    "loadingTeachers": "Loading teachers...",
+    "initiatedByCenter": "Started by the center",
+    "initiatedByTeacher": "Started by the teacher",
+    "proposedByCenter": "Proposed by the center"
   },
   "groups": {
     "title": "Groups",

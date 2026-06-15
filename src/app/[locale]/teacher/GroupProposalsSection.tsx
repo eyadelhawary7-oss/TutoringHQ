@@ -23,6 +23,7 @@ type Proposal = {
   gradeLevel: string | null;
   feePerClass: number;
   status: 'open' | 'accepted' | 'declined' | 'withdrawn' | 'expired';
+  initiatedBy: 'teacher' | 'center';
   expiresAt: string;
   createdAt: string;
   offerCount: number;
@@ -350,6 +351,11 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_CLASS[p.status]}`}>
                       {t(STATUS_KEY[p.status])}
                     </span>
+                    {p.initiatedBy === 'center' && (
+                      <span className="rounded-full bg-[var(--color-teal-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--color-teal-deep)]">
+                        {t('proposedByCenter')}
+                      </span>
+                    )}
                     {p.status === 'open' && (
                       <span className="text-xs font-medium text-[var(--color-text-secondary)]">
                         {myTurn ? t('yourTurn') : t('waitingCenter')}
@@ -438,14 +444,19 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
                         </button>
                       </>
                     )}
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => respond(p.id, 'withdraw')}
-                      className="text-xs font-semibold text-[var(--color-text-muted)] hover:underline disabled:opacity-50"
-                    >
-                      {t('withdraw')}
-                    </button>
+                    {/* Withdraw pulls the teacher's OWN standing offer (latest is
+                        the teacher's). When the center's offer is standing the
+                        teacher declines instead. */}
+                    {p.latestOffer?.madeBy === 'teacher' && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => respond(p.id, 'withdraw')}
+                        className="text-xs font-semibold text-[var(--color-text-muted)] hover:underline disabled:opacity-50"
+                      >
+                        {t('withdraw')}
+                      </button>
+                    )}
                   </div>
                 )}
 
