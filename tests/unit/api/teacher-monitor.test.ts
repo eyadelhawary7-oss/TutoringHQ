@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { NextRequest } from 'next/server';
 
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
@@ -67,10 +68,14 @@ function seedOwner(role = 'owner') {
   queues.users_core = [{ data: { id: OWNER_ID, role, center_id: CENTER_ID }, error: null }];
 }
 
-function makeReq() {
-  return new Request('http://localhost/api/center/teacher-monitor', {
+// The route handler is typed NextRequest; a plain Request lacks
+// cookies/nextUrl/page/ua, so cast (the monitor route never reads them).
+function makeReq(): NextRequest {
+  const req = new Request('http://localhost/api/center/teacher-monitor', {
     headers: { Authorization: 'Bearer tok' },
   });
+  (req as unknown as { nextUrl: URL }).nextUrl = new URL(req.url);
+  return req as unknown as NextRequest;
 }
 
 beforeEach(() => {

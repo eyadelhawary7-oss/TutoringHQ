@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { NextRequest } from 'next/server';
 
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
@@ -86,19 +87,30 @@ function seedTeacher() {
   queues.teacher_center = [{ data: [], error: null }];
 }
 
-function addReq(body: Record<string, unknown>) {
-  return new Request('http://localhost/api/center/teacher-links', {
-    method: 'POST',
-    headers: { Authorization: 'Bearer tok', 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+// Route handlers are typed NextRequest; a plain Request lacks
+// cookies/nextUrl/page/ua. These routes never read them, so attach a nextUrl
+// and cast (matches the convention in center-group-proposals.test.ts).
+function asNextRequest(req: Request): NextRequest {
+  (req as unknown as { nextUrl: URL }).nextUrl = new URL(req.url);
+  return req as unknown as NextRequest;
 }
-function respondReq(body: Record<string, unknown>) {
-  return new Request(`http://localhost/api/teacher/center-requests/${REQ_ID}`, {
-    method: 'POST',
-    headers: { Authorization: 'Bearer tok', 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+function addReq(body: Record<string, unknown>): NextRequest {
+  return asNextRequest(
+    new Request('http://localhost/api/center/teacher-links', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer tok', 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+  );
+}
+function respondReq(body: Record<string, unknown>): NextRequest {
+  return asNextRequest(
+    new Request(`http://localhost/api/teacher/center-requests/${REQ_ID}`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer tok', 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+  );
 }
 const respondParams = { params: Promise.resolve({ requestId: REQ_ID }) };
 
