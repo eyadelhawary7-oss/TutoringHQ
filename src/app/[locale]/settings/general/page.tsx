@@ -12,24 +12,22 @@ import {
   BookOpen,
   Users,
   QrCode,
-  Gift,
   CreditCard,
   MessageCircle,
   Shield,
   Camera,
   ChevronRight,
-  Copy,
   KeyRound,
   LogOut,
   X,
   Loader2,
   Calendar,
-  Package,
   Wallet,
+  ListChecks,
 } from 'lucide-react';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { SettingsSwitch } from '@/components/settings/SettingsSwitch';
-import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
+import { ChangePinModal } from '@/components/admin/ChangePinModal';
 import { signOutToLogin } from '@/lib/auth/sign-out-client';
 import { getSupportWhatsAppDisplayLabel, getSupportWhatsAppWaMeBase } from '@/lib/supportWhatsApp';
 
@@ -51,6 +49,7 @@ interface CenterInfo {
   daily_summary_enabled?: boolean;
   summer_mode?: boolean;
   card_orders_enabled?: boolean;
+  default_attendance_mode?: string | null;
   status?: string | null;
   instapay_number?: string | null;
 }
@@ -96,9 +95,7 @@ const CENTER_GOVERNORATE_VALUES = [
 export default function GeneralSettingsPage() {
   const t = useTranslations('settings');
   const tCommon = useTranslations('common');
-  const tReferral = useTranslations('referral');
   const tBilling = useTranslations('billing');
-  const tCardOrders = useTranslations('cardOrders');
   const router = useRouter();
   const locale = useLocale();
   const { user: currentUser, hasPermission, refreshUser } = useUser();
@@ -124,15 +121,10 @@ export default function GeneralSettingsPage() {
   const [dailySummaryEnabled, setDailySummaryEnabled] = useState(true);
   const [summerModeEnabled, setSummerModeEnabled] = useState(false);
   const [cardOrdersEnabled, setCardOrdersEnabled] = useState(false);
+  const [defaultAttendanceMode, setDefaultAttendanceMode] = useState<'scan' | 'checklist'>('scan');
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
-  const [referralData, setReferralData] = useState<{
-    referralCode: string;
-    rewards: { id: string; referred_center_name: string; referred_center_plan: string; reward_amount: number; reward_status: string; created_at: string }[];
-    pending?: { referred_center_name: string; referred_center_plan: string; reward_status: string }[];
-    totalEarned: number;
-  } | null>(null);
-  const [referralCopied, setReferralCopied] = useState(false);
   const [logoLoadFailed, setLogoLoadFailed] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -208,6 +200,7 @@ export default function GeneralSettingsPage() {
         setDailySummaryEnabled(c.daily_summary_enabled !== false);
         setSummerModeEnabled(c.summer_mode === true);
         setCardOrdersEnabled(c.card_orders_enabled === true);
+        setDefaultAttendanceMode(c.default_attendance_mode === 'checklist' ? 'checklist' : 'scan');
         setLogoUrl(c.logo_url ?? null);
         setLogoLoadFailed(false);
         const ip = typeof c.instapay_number === 'string' ? c.instapay_number.replace(/\D/g, '') : '';
@@ -229,23 +222,6 @@ export default function GeneralSettingsPage() {
     };
     load();
   }, []);
-
-  // Load referral (owner-only - revenue share)
-  useEffect(() => {
-    const fetchReferral = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session || !centerId) return;
-      try {
-        const res = await fetch('/api/referral', { headers: { Authorization: `Bearer ${session.access_token}` } });
-        if (res.ok) setReferralData(await res.json());
-      } catch (err) {
-        console.error('Referral fetch error:', err);
-      }
-    };
-    if (centerId && (currentUser?.role === 'owner' || currentUser?.role === 'super_admin')) {
-      fetchReferral();
-    }
-  }, [centerId, currentUser?.role]);
 
   const showSaved = () => {
     setSavedMessage(t('saved'));
@@ -488,6 +464,25 @@ export default function GeneralSettingsPage() {
     }
   };
 
+  const handleDefaultAttendanceMode = async (mode: 'scan' | 'checklist') => {
+    if (!centerId || !userId) return;
+    const prev = defaultAttendanceMode;
+    if (prev === mode) return;
+    setDefaultAttendanceMode(mode);
+    const { error } = await dbUpdate({
+      table: 'centers',
+      data: { default_attendance_mode: mode },
+      filters: [{ column: 'id', op: 'eq', value: centerId }],
+    });
+    if (!error) {
+      await auditLog({ centerId, userId, action: 'center_update', entityType: 'centers', details: { field: 'default_attendance_mode', value: mode } });
+      setCenter((p) => (p ? { ...p, default_attendance_mode: mode } : null));
+      showSaved();
+    } else {
+      setDefaultAttendanceMode(prev);
+    }
+  };
+
   const handleDailySummaryToggle = async (enabled: boolean) => {
     if (!centerId || !userId) return;
     setDailySummaryEnabled(enabled);
@@ -576,23 +571,8 @@ export default function GeneralSettingsPage() {
         )}
 
         <div className="space-y-4 pb-4">
-          <Link
-            href="/orders"
-            className="btn-lift flex items-center gap-3 w-full px-4 py-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow hover:border-teal-500/30 hover:bg-[var(--color-surface-0)] transition-colors text-[var(--color-text-primary)]"
-          >
-            <Package className="w-5 h-5 text-teal-600 shrink-0" aria-hidden />
-            <span className="font-medium text-sm flex-1 text-start">{tCardOrders('ordersNav')}</span>
-            <DirectionalIcon icon={ChevronRight} className="w-4 h-4 text-[var(--color-text-tertiary)] shrink-0" />
-          </Link>
-
-          <Link
-            href="/whatsapp-pack"
-            className="btn-lift flex items-center gap-3 w-full px-4 py-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow hover:border-teal-500/30 hover:bg-[var(--color-surface-0)] transition-colors text-[var(--color-text-primary)]"
-          >
-            <MessageCircle className="w-5 h-5 text-teal-600 shrink-0" aria-hidden />
-            <span className="font-medium text-sm flex-1 text-start">{t('whatsappPack')}</span>
-            <DirectionalIcon icon={ChevronRight} className="w-4 h-4 text-[var(--color-text-tertiary)] shrink-0" />
-          </Link>
+          {/* ── Center ── */}
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] pt-1 pb-0 px-1">{t('sectionCenter')}</h2>
 
           {/* Center Information */}
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
@@ -800,29 +780,35 @@ export default function GeneralSettingsPage() {
             </div>
           </div>
 
-          {/* Team Members shortcut - owner-only */}
+          {/* ── People ── (owner-only) */}
           {(currentUser?.role === 'owner' || currentUser?.role === 'super_admin') && (
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
-              <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-                <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
-                  <Users className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
+            <>
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] pt-3 pb-0 px-1">{t('sectionPeople')}</h2>
+              <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
+                <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
+                  <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
+                    <Users className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-[var(--color-text-primary)]">{t('teamMembers')}</h3>
+                    <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('manageTeamDesc')}</p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <h3 className="font-semibold text-[var(--color-text-primary)]">{t('teamMembers')}</h3>
-                  <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('manageTeamDesc')}</p>
+                <div className="p-6">
+                  <Link
+                    href="/settings/team"
+                    className="inline-flex items-center gap-2 px-4 py-2 border border-[var(--color-border-default)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors w-fit"
+                  >
+                    <Users className="w-4 h-4" /> {t('manageTeam')}
+                    <DirectionalIcon icon={ChevronRight} className="inline w-4 h-4 ms-1 align-middle" />
+                  </Link>
                 </div>
               </div>
-              <div className="p-6">
-                <Link
-                  href="/settings/team"
-                  className="inline-flex items-center gap-2 px-4 py-2 border border-[var(--color-border-default)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors w-fit"
-                >
-                  <Users className="w-4 h-4" /> {t('manageTeam')}
-                  <DirectionalIcon icon={ChevronRight} className="inline w-4 h-4 ms-1 align-middle" />
-                </Link>
-              </div>
-            </div>
+            </>
           )}
+
+          {/* ── Capture defaults ── */}
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] pt-3 pb-0 px-1">{t('sectionCapture')}</h2>
 
           {/* Scanner Settings */}
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
@@ -861,31 +847,44 @@ export default function GeneralSettingsPage() {
             </div>
           </div>
 
-          {/* Physical QR card ordering (opt-in, off by default) */}
+          {/* Default attendance mode (scan | checklist) used when creating a new group */}
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
             <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
               <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
-                <CreditCard className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
+                <ListChecks className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
               </div>
               <div className="min-w-0">
-                <h3 className="font-semibold text-[var(--color-text-primary)]">{t('cardOrdersTitle')}</h3>
-                <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('cardOrdersDesc')}</p>
+                <h3 className="font-semibold text-[var(--color-text-primary)]">{t('attendanceDefaultTitle')}</h3>
+                <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('attendanceDefaultDesc')}</p>
               </div>
             </div>
             <div className="p-6">
               <div className="flex items-center justify-between gap-4">
-                <div id={cardOrdersSwitchId} className="min-w-0">
-                  <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('cardOrdersToggle')}</p>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{t('cardOrdersHint')}</p>
+                <p className="text-sm font-medium text-[var(--color-text-primary)] min-w-0">{t('attendanceDefaultTitle')}</p>
+                <div className="flex gap-1 bg-[var(--color-surface-2)] p-1 rounded-lg shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleDefaultAttendanceMode('scan')}
+                    aria-pressed={defaultAttendanceMode === 'scan'}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${defaultAttendanceMode === 'scan' ? 'bg-[var(--color-surface-1)] shadow-sm text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
+                  >
+                    {t('attendanceDefaultScan')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDefaultAttendanceMode('checklist')}
+                    aria-pressed={defaultAttendanceMode === 'checklist'}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${defaultAttendanceMode === 'checklist' ? 'bg-[var(--color-surface-1)] shadow-sm text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
+                  >
+                    {t('attendanceDefaultChecklist')}
+                  </button>
                 </div>
-                <SettingsSwitch
-                  checked={cardOrdersEnabled}
-                  onCheckedChange={handleCardOrdersToggle}
-                  aria-labelledby={cardOrdersSwitchId}
-                />
               </div>
             </div>
           </div>
+
+          {/* ── Notifications ── */}
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] pt-3 pb-0 px-1">{t('sectionNotifications')}</h2>
 
           {/* Daily WhatsApp Summary */}
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
@@ -938,6 +937,9 @@ export default function GeneralSettingsPage() {
               </div>
             </div>
           </div>
+
+          {/* ── Money setup ── */}
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] pt-3 pb-0 px-1">{t('sectionMoney')}</h2>
 
           {/* Financial Settings (owner/super_admin) */}
           {currentUser?.role === 'owner' || currentUser?.role === 'super_admin' ? (
@@ -1023,116 +1025,31 @@ export default function GeneralSettingsPage() {
             </div>
           ) : null}
 
-          {/* Referral Program - owner-only (revenue share) */}
-          {(currentUser?.role === 'owner' || currentUser?.role === 'super_admin') && (
+          {/* Physical QR card ordering (opt-in, off by default) */}
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
             <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
               <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
-                <Gift className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
+                <CreditCard className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
               </div>
               <div className="min-w-0">
-                <h3 className="font-semibold text-[var(--color-text-primary)]">{tReferral('title')}</h3>
-                <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
-                  {tReferral('shareText', {
-                    p25: formatNumber(25, locale),
-                    p10: formatNumber(10, locale),
-                    p5: formatNumber(5, locale),
-                  })}
-                </p>
+                <h3 className="font-semibold text-[var(--color-text-primary)]">{t('cardOrdersTitle')}</h3>
+                <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('cardOrdersDesc')}</p>
               </div>
             </div>
             <div className="p-6">
-              {referralData && (
-                <>
-                  <div className="flex flex-wrap items-center gap-3 p-4 bg-[var(--color-surface-0)] rounded-xl border border-[var(--color-border-subtle)] mb-4">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-[var(--color-text-secondary)] mb-1">{tReferral('yourCode')}</p>
-                      <p className="text-2xl font-bold text-teal-600 dark:text-teal-400 font-mono tracking-widest break-all">
-                        {referralData.referralCode || tCommon('notAvailable')}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (referralData.referralCode) {
-                          await navigator.clipboard.writeText(referralData.referralCode);
-                          setReferralCopied(true);
-                          setTimeout(() => setReferralCopied(false), 2000);
-                        }
-                      }}
-                      className="flex items-center gap-2 px-4 py-2 border border-[var(--color-border-default)] hover:bg-[var(--color-surface-1)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors shrink-0"
-                    >
-                      <Copy className="w-4 h-4 shrink-0" aria-hidden />
-                      {referralCopied ? tReferral('copied') : tReferral('copyCode')}
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => router.push('/settings/referrals')}
-                    className="flex items-center gap-2 px-4 py-2 border border-teal-600 text-teal-600 dark:text-teal-400 rounded-lg text-sm hover:bg-teal-50 dark:hover:bg-teal-950/40 transition-colors"
-                  >
-                    {t('manageReferrals')}
-                  </button>
-                  <p className="text-sm text-[var(--color-text-secondary)] mb-2">
-                    {tReferral('referralRateDescription', {
-                      p25: formatNumber(25, locale),
-                      p10: formatNumber(10, locale),
-                      p5: formatNumber(5, locale),
-                    })}
-                  </p>
-                  <p className="text-xs text-[var(--color-text-secondary)] mb-2">
-                    {t('totalReferrals')}: {formatNumber(referralData.rewards?.length ?? 0, locale)} | {t('totalEarned')}:{' '}
-                    <span dir="ltr" className="tabular-nums inline-block">
-                      {formatCurrency(Number(referralData.totalEarned || 0), locale)}
-                    </span>
-                  </p>
-                  <div>
-                    <p className="text-sm font-medium text-[var(--color-text-primary)] mb-2">{tReferral('rewardsTable')}</p>
-                    {(referralData.rewards?.length ?? 0) > 0 ? (
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-border">
-                              <th className="text-start py-2 text-xs font-medium text-[var(--color-text-secondary)]">{tReferral('referredCenter')}</th>
-                              <th className="text-start py-2 text-xs font-medium text-[var(--color-text-secondary)]">{tReferral('plan')}</th>
-                              <th className="text-start py-2 text-xs font-medium text-[var(--color-text-secondary)]">{tReferral('rewardAmount')}</th>
-                              <th className="text-start py-2 text-xs font-medium text-[var(--color-text-secondary)]">{tReferral('status')}</th>
-                              <th className="text-start py-2 text-xs font-medium text-[var(--color-text-secondary)]">{tReferral('date')}</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {(referralData.rewards ?? []).map((r) => (
-                              <tr key={r.id || r.created_at + r.referred_center_name} className="border-b border-border">
-                                <td className="py-2 text-[var(--color-text-primary)]">{r.referred_center_name}</td>
-                                <td className="py-2 text-[var(--color-text-secondary)]">{r.referred_center_plan}</td>
-                                <td className="py-2 font-mono text-[var(--color-text-primary)]" dir="ltr">
-                                  {formatCurrency(Number(r.reward_amount), locale)}
-                                </td>
-                                <td className="py-2">
-                                  <span
-                                    className={`px-2 py-0.5 text-xs font-medium rounded-full ${r.reward_status === 'paid' ? 'badge-confirmed' : r.reward_status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-muted text-[var(--color-text-secondary)]'}`}
-                                  >
-                                    {r.reward_status}
-                                  </span>
-                                </td>
-                                <td className="py-2 text-[var(--color-text-secondary)]">
-                                  {formatDate(r.created_at, locale, { dateStyle: 'medium' })}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-[var(--color-text-secondary)] py-4">{tReferral('noRewards')}</p>
-                    )}
-                  </div>
-                </>
-              )}
-              {!referralData && <p className="text-sm text-[var(--color-text-secondary)]">{tCommon('loading')}</p>}
+              <div className="flex items-center justify-between gap-4">
+                <div id={cardOrdersSwitchId} className="min-w-0">
+                  <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('cardOrdersToggle')}</p>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{t('cardOrdersHint')}</p>
+                </div>
+                <SettingsSwitch
+                  checked={cardOrdersEnabled}
+                  onCheckedChange={handleCardOrdersToggle}
+                  aria-labelledby={cardOrdersSwitchId}
+                />
+              </div>
             </div>
           </div>
-          )}
 
           {/* Billing card */}
           <Link
@@ -1148,6 +1065,9 @@ export default function GeneralSettingsPage() {
             </div>
             <DirectionalIcon icon={ChevronRight} className="w-6 h-6 text-teal-600 dark:text-teal-400 shrink-0" aria-hidden />
           </Link>
+
+          {/* ── Account ── */}
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] pt-3 pb-0 px-1">{t('sectionAccount')}</h2>
 
           {/* WhatsApp Support */}
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
@@ -1193,7 +1113,14 @@ export default function GeneralSettingsPage() {
               </div>
             </div>
             <div className="p-6">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsPinModalOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 border border-[var(--color-border-default)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors"
+                >
+                  <KeyRound className="w-4 h-4" /> {t('changePin')}
+                </button>
                 <Link
                   href="/settings/reset-password"
                   className="flex items-center gap-2 px-4 py-2 border border-[var(--color-border-default)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors"
@@ -1212,6 +1139,7 @@ export default function GeneralSettingsPage() {
           </div>
         </div>
       </div>
+      <ChangePinModal isOpen={isPinModalOpen} onClose={() => setIsPinModalOpen(false)} />
     </div>
   );
 }

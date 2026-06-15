@@ -6,12 +6,12 @@ import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
 import { Link as RouterLink } from '@/i18n/routing';
-import { Plus, BookOpen, X, Users, Search, Link as LinkIcon } from 'lucide-react';
+import { Plus, BookOpen, X, Users, Search, Link as LinkIcon, ClipboardList } from 'lucide-react';
 import { AttendanceHeatmap } from '@/components/AttendanceHeatmap';
 import GroupProposalsTab from './GroupProposalsTab';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { useToast } from '@/components/ui/ToastProvider';
-import { formatCurrency, formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatNumber, formatDate, formatPercent } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { isUuid, keepValidUuids } from '@/lib/uuid';
 import * as Sentry from '@sentry/nextjs';
@@ -49,6 +49,7 @@ export default function GroupsPage() {
   const t = useTranslations('groups');
   const tCommon = useTranslations('common');
   const tHeatmap = useTranslations('heatmap');
+  const tAtt = useTranslations('attendance');
   const tToast = useTranslations('toasts');
   const tProposals = useTranslations('groupProposals');
   const tCut = useTranslations('centerCut');
@@ -61,6 +62,7 @@ export default function GroupsPage() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [centerId, setCenterId] = useState<string | null>(null);
   const [centerCode, setCenterCode] = useState<string | null>(null);
+  const [defaultAttendanceMode, setDefaultAttendanceMode] = useState<AttendanceMode>('scan');
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [detailGroup, setDetailGroup] = useState<Group | null>(null);
@@ -75,6 +77,8 @@ export default function GroupsPage() {
   const [addMemberSearch, setAddMemberSearch] = useState('');
   const [waitlist, setWaitlist] = useState<{ id: string; name: string; student_number?: string | null; parent_phone?: string | null }[]>([]);
   const [activeTab, setActiveTab] = useState<'members' | 'waitlist'>('members');
+  const [sessionBreakdown, setSessionBreakdown] = useState<{ date: string; present: number }[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
 
   const loadData = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -89,13 +93,15 @@ export default function GroupsPage() {
 
     const { data: centerRow } = await dbSelect({
       table: 'centers',
-      select: 'center_code',
+      select: 'center_code, default_attendance_mode',
       filters: [{ column: 'id', op: 'eq', value: cid }],
       single: true,
     });
     const centerInfo = Array.isArray(centerRow) ? centerRow[0] : centerRow;
     const code = (centerInfo as { center_code?: string | null } | null)?.center_code ?? null;
     setCenterCode(code);
+    const dam = (centerInfo as { default_attendance_mode?: string | null } | null)?.default_attendance_mode;
+    setDefaultAttendanceMode(dam === 'checklist' ? 'checklist' : 'scan');
 
     const [groupsRes, studentsRes, subjectsRes, slotsRes] = await Promise.all([
       dbSelect({
@@ -176,6 +182,42 @@ export default function GroupsPage() {
 
   useEffect(() => {
     if (!detailGroup) setExpandedHeatmapId(null);
+  }, [detailGroup]);
+
+  // Per-session attendance breakdown for the open group (relocated here from the
+  // former standalone Attendance "By Group" view — same attendance_scans source).
+  useEffect(() => {
+    if (!detailGroup) {
+      setSessionBreakdown([]);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      setSessionsLoading(true);
+      try {
+        const { data } = await dbSelect({
+          table: 'attendance_scans',
+          select: 'scanned_at, session_date',
+          filters: [{ column: 'group_id', op: 'eq', value: detailGroup.id }],
+        });
+        const rows = (data || []) as { scanned_at: string; session_date?: string | null }[];
+        const counts: Record<string, number> = {};
+        rows.forEach((r) => {
+          const key = r.session_date || (r.scanned_at ? r.scanned_at.slice(0, 10) : '');
+          if (!key) return;
+          counts[key] = (counts[key] || 0) + 1;
+        });
+        const breakdown = Object.entries(counts)
+          .map(([date, present]) => ({ date, present }))
+          .sort((a, b) => (a.date < b.date ? 1 : -1));
+        if (!cancelled) setSessionBreakdown(breakdown);
+      } finally {
+        if (!cancelled) setSessionsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [detailGroup]);
 
   const loadWaitlist = useCallback(async (groupId: string) => {
@@ -280,7 +322,7 @@ export default function GroupsPage() {
       const maxCap = addForm.maxCapacity.trim() ? parseInt(addForm.maxCapacity, 10) : null;
       const { data, error } = await dbInsert({
         table: 'student_groups',
-        data: { center_id: centerId, name: addForm.name.trim(), subject: subjectName, fee_per_class: fee, center_cut_egp: centerCut, max_capacity: maxCap && maxCap > 0 ? maxCap : null },
+        data: { center_id: centerId, name: addForm.name.trim(), subject: subjectName, fee_per_class: fee, center_cut_egp: centerCut, max_capacity: maxCap && maxCap > 0 ? maxCap : null, attendance_mode: defaultAttendanceMode },
         single: true,
       });
       if (error) {
@@ -301,7 +343,7 @@ export default function GroupsPage() {
           await dbInsert({ table: 'student_group_members', data: { group_id: inserted.id, student_id: sid }, select: false });
         }
         const addN = memberIds.length;
-        setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, subject: subjectName, fee, member_count: addN, student_count: addN, teacher_name: null, max_capacity: maxCap, attendance_mode: 'scan' }]);
+        setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, subject: subjectName, fee, member_count: addN, student_count: addN, teacher_name: null, max_capacity: maxCap, attendance_mode: defaultAttendanceMode }]);
         setShowAddModal(false);
         setAddForm({ name: '', subjectId: '', fee_per_class: '', centerCut: '', studentIds: [], maxCapacity: '' });
         toast.success(tToast('saved'));
@@ -716,6 +758,70 @@ export default function GroupsPage() {
                     groupSize={detailGroup.student_count ?? detailGroup.member_count ?? 0}
                     weeks={8}
                   />
+                )}
+              </div>
+
+              {/* Per-session attendance breakdown (relocated from standalone Attendance page) */}
+              <div className="border-t border-border pt-4">
+                <h3 className="font-bold text-[var(--color-text-primary)] mb-3 flex items-center gap-2">
+                  <ClipboardList size={16} /> {tAtt('sessionBreakdown')}
+                </h3>
+                {sessionsLoading ? (
+                  <div className="flex justify-center py-6">
+                    <div className="animate-spin h-5 w-5 border-2 border-teal-500 border-t-transparent rounded-full" />
+                  </div>
+                ) : sessionBreakdown.length === 0 ? (
+                  <p className="text-sm text-[var(--color-text-secondary)] py-2">{tAtt('noDataInPeriod')}</p>
+                ) : (
+                  (() => {
+                    const sessionsCount = sessionBreakdown.length;
+                    const totalPresent = sessionBreakdown.reduce((s, b) => s + b.present, 0);
+                    const avg = sessionsCount > 0 ? totalPresent / sessionsCount : 0;
+                    return (
+                      <>
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                          <div>
+                            <p className="text-xs text-[var(--color-text-secondary)]">{tAtt('sessions')}</p>
+                            <p className="font-semibold text-[var(--color-text-primary)] font-mono tabular-nums">
+                              {formatNumber(sessionsCount, locale)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-[var(--color-text-secondary)]">{tAtt('avgAttendance')}</p>
+                            <p className="font-semibold text-[var(--color-text-primary)] font-mono tabular-nums">
+                              {formatNumber(Math.round(avg * 10) / 10, locale)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="overflow-x-auto rounded-lg border border-border">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-border bg-[var(--color-surface-0)]">
+                                <th className="text-start py-2 px-3 text-xs font-semibold text-[var(--color-text-secondary)]">{tAtt('date')}</th>
+                                <th className="text-start py-2 px-3 text-xs font-semibold text-[var(--color-text-secondary)]">{tAtt('studentsPresent')}</th>
+                                <th className="text-start py-2 px-3 text-xs font-semibold text-[var(--color-text-secondary)]">{tAtt('attendanceRate')}</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {sessionBreakdown.map((sb) => (
+                                <tr key={sb.date} className="border-b border-border last:border-0">
+                                  <td className="py-2 px-3 text-[var(--color-text-secondary)] text-start" dir="ltr">
+                                    {formatDate(sb.date, locale, { dateStyle: 'short' })}
+                                  </td>
+                                  <td className="py-2 px-3 text-[var(--color-text-primary)] font-mono text-start">
+                                    {formatNumber(sb.present, locale)}
+                                  </td>
+                                  <td className="py-2 px-3 text-start">
+                                    {avg > 0 ? formatPercent(Math.round((sb.present / avg) * 100), locale) : tCommon('notSet')}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    );
+                  })()
                 )}
               </div>
               <div className="border-t border-border pt-4">
