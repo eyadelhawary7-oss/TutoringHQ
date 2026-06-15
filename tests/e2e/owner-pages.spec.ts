@@ -146,24 +146,11 @@ test.describe('Center Owner Pages', () => {
     expect(errors).toHaveLength(0)
   })
 
-  test('attendance page loads', async ({ page }) => {
-    const errors: string[] = []
-    page.on('console', (msg) => {
-      if (
-        msg.type() === 'error' &&
-        !msg.text().includes('404') &&
-        !msg.text().includes('Failed to load resource') &&
-        !msg.text().includes('MISSING_MESSAGE') &&
-        !msg.text().includes('Permissions policy violation')
-      ) {
-        errors.push(msg.text())
-      }
-    })
-
-    await gotoWithRetry(page, `${BASE_URL}/ar/attendance`)
-    await page.waitForLoadState('networkidle')
-    await expect(page).toHaveURL(/\/(ar|en)\//)
-    expect(errors).toHaveLength(0)
+  test('attendance route is removed (404)', async ({ page }) => {
+    // Standalone Attendance page was folded into Students (per-student history)
+    // and Groups (per-session breakdown). The route must no longer resolve.
+    const resp = await page.goto(`${BASE_URL}/ar/attendance`)
+    expect(resp?.status()).toBe(404)
   })
 
   test('settings page loads', async ({ page }) => {
@@ -266,24 +253,11 @@ test.describe('Center Owner Pages', () => {
     expect(errors).toHaveLength(0)
   })
 
-  test('academic page loads', async ({ page }) => {
-    const errors: string[] = []
-    page.on('console', (msg) => {
-      if (
-        msg.type() === 'error' &&
-        !msg.text().includes('404') &&
-        !msg.text().includes('Failed to load resource') &&
-        !msg.text().includes('MISSING_MESSAGE') &&
-        !msg.text().includes('Permissions policy violation')
-      ) {
-        errors.push(msg.text())
-      }
-    })
-
-    await gotoWithRetry(page, `${BASE_URL}/ar/academic`)
-    await page.waitForLoadState('networkidle')
-    await expect(page).toHaveURL(/\/(ar|en)\//)
-    expect(errors).toHaveLength(0)
+  test('academic route is removed from owner view (404)', async ({ page }) => {
+    // Academic Year page was removed from the owner portal (data kept for
+    // analytics). The owner-facing route must no longer resolve.
+    const resp = await page.goto(`${BASE_URL}/ar/academic`)
+    expect(resp?.status()).toBe(404)
   })
 
   test('onboarding redirects to dashboard (already completed)', async ({ page }) => {

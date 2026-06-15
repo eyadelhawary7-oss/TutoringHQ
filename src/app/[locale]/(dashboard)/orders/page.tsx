@@ -111,9 +111,34 @@ export default async function OrdersPage({
       if (cid) {
         const { data: center } = await supabaseAdmin
           .from('centers')
-          .select('governorate')
+          .select('governorate, card_orders_enabled')
           .eq('id', cid)
           .maybeSingle();
+
+        // Card ordering is opt-in per center (off by default). Fail CLOSED: any
+        // center that hasn't enabled it gets the disabled state, every role
+        // included (the owner enables it from Settings). Gating lives here in the
+        // route, not just the nav — service-role reads bypass RLS.
+        const cardOrdersEnabled =
+          (center as { card_orders_enabled?: boolean | null } | null)?.card_orders_enabled === true;
+        if (!cardOrdersEnabled) {
+          const tOrders = await getTranslations({ locale, namespace: 'orders' });
+          return (
+            <div className="min-h-screen w-full bg-[var(--color-surface-0)] flex items-center justify-center p-6">
+              <div className="max-w-md w-full text-center space-y-4 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow p-8">
+                <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">{tOrders('disabledTitle')}</h1>
+                <p className="text-sm text-[var(--color-text-secondary)]">{tOrders('disabledMessage')}</p>
+                <Link
+                  href="/settings/general"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                >
+                  {tOrders('disabledCta')}
+                </Link>
+              </div>
+            </div>
+          );
+        }
+
         const govRaw = (center as { governorate?: string | null } | null)?.governorate;
         const gov = govRaw != null ? String(govRaw).trim() : '';
         initialShippingQuote = {

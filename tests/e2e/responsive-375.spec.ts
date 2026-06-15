@@ -90,7 +90,6 @@ test.describe('375px — centre owner (authenticated)', () => {
     await walk(page, 'owner-dashboard', `${BASE}/${LOCALE}/dashboard`);
     await walk(page, 'owner-scan', `${BASE}/${LOCALE}/scan`);
     await walk(page, 'owner-students', `${BASE}/${LOCALE}/students`);
-    await walk(page, 'owner-attendance', `${BASE}/${LOCALE}/attendance`);
     await walk(page, 'owner-schedule', `${BASE}/${LOCALE}/schedule`);
     await walk(page, 'owner-groups', `${BASE}/${LOCALE}/groups`);
     await walk(page, 'owner-branches', `${BASE}/${LOCALE}/branches`);

@@ -13,7 +13,7 @@ import {
   Users,
   QrCode,
   CreditCard,
-  ClipboardList,
+  ListChecks,
   BookOpen,
   DoorOpen,
   Calendar,
@@ -22,11 +22,9 @@ import {
   LogOut,
   KeyRound,
   BarChart3,
-  GraduationCap,
   Building2,
   Gauge,
   MessageCircle,
-  MessagesSquare,
   Gift,
   ShoppingCart,
   Wallet,
@@ -99,7 +97,8 @@ export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarPr
   };
 
   const isArLocale = locale === 'ar' || locale.startsWith('ar-');
-  const allNavItems: {
+
+  type NavItem = {
     key: string;
     href: string;
     icon: React.ElementType;
@@ -108,39 +107,75 @@ export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarPr
     ownerOnly?: boolean;
     showNewBadge?: boolean;
     matchPrefix?: string;
-  }[] = [
-    { key: 'dashboard', href: '/dashboard', icon: LayoutDashboard, permission: 'can_view_dashboard' },
-    { key: 'students', href: '/students', icon: Users, permission: 'can_manage_students' },
-    { key: 'scanner', href: '/scan', icon: QrCode, permission: 'can_scan' },
-    { key: 'payments', href: '/payments', icon: CreditCard, permission: 'can_view_payments' },
-    { key: 'billing', href: '/billing', icon: Wallet, ownerOnly: true },
-    { key: 'analytics', href: '/analytics', icon: BarChart3, permission: 'can_view_revenue' },
-    { key: 'whatsappPack', href: '/whatsapp-pack', icon: MessageCircle, ownerAdminOnly: true },
-    { key: 'whatsappTemplates', href: '/whatsapp', icon: MessagesSquare, ownerAdminOnly: true },
-    { key: 'benchmarks', href: '/benchmarks', icon: Gauge, permission: 'can_view_dashboard', showNewBadge: true },
-    { key: 'orders', href: '/orders', icon: ShoppingCart, permission: 'can_manage_students' },
-    { key: 'attendance', href: '/attendance', icon: ClipboardList, permission: 'can_scan' },
-    { key: 'groups', href: '/groups', icon: BookOpen, permission: 'can_manage_groups' },
-    { key: 'rooms', href: '/rooms', icon: DoorOpen, ownerAdminOnly: true },
-    { key: 'schedule', href: '/schedule', icon: Calendar, permission: 'can_view_schedule' },
-    { key: 'academic', href: '/academic', icon: GraduationCap, ownerAdminOnly: true },
-    { key: 'referrals', href: '/referrals', icon: Gift, ownerOnly: true },
-    { key: 'branches', href: '/branches', icon: Building2, ownerAdminOnly: true },
-    { key: 'settings', href: '/settings/general', icon: Settings, permission: 'can_view_settings', matchPrefix: '/settings' },
+  };
+
+  // Five labeled clusters, owner-readable, in a daily-first order. Group headers
+  // are non-clickable section dividers (see render below). Orders lives in Setup
+  // but is hidden unless the center opted into card ordering. WhatsApp Templates
+  // and Academic Year were removed from the owner sidebar.
+  const navGroups: { labelKey: string; items: NavItem[] }[] = [
+    {
+      labelKey: 'groupDaily',
+      items: [
+        { key: 'dashboard', href: '/dashboard', icon: LayoutDashboard, permission: 'can_view_dashboard' },
+        { key: 'scanner', href: '/scan', icon: QrCode, permission: 'can_scan' },
+        { key: 'checklist', href: '/checklist', icon: ListChecks, permission: 'can_scan' },
+        { key: 'students', href: '/students', icon: Users, permission: 'can_manage_students' },
+        { key: 'payments', href: '/payments', icon: CreditCard, permission: 'can_view_payments' },
+        { key: 'schedule', href: '/schedule', icon: Calendar, permission: 'can_view_schedule' },
+      ],
+    },
+    {
+      labelKey: 'groupTeaching',
+      items: [
+        { key: 'groups', href: '/groups', icon: BookOpen, permission: 'can_manage_groups' },
+        { key: 'rooms', href: '/rooms', icon: DoorOpen, ownerAdminOnly: true },
+      ],
+    },
+    {
+      labelKey: 'groupMoney',
+      items: [
+        { key: 'billing', href: '/billing', icon: Wallet, ownerOnly: true },
+        { key: 'analytics', href: '/analytics', icon: BarChart3, permission: 'can_view_revenue' },
+        { key: 'benchmarks', href: '/benchmarks', icon: Gauge, permission: 'can_view_dashboard', showNewBadge: true },
+      ],
+    },
+    {
+      labelKey: 'groupMessaging',
+      items: [
+        { key: 'whatsappPack', href: '/whatsapp-pack', icon: MessageCircle, ownerAdminOnly: true },
+      ],
+    },
+    {
+      labelKey: 'groupSetup',
+      items: [
+        { key: 'settings', href: '/settings/general', icon: Settings, permission: 'can_view_settings', matchPrefix: '/settings' },
+        { key: 'branches', href: '/branches', icon: Building2, ownerAdminOnly: true },
+        { key: 'referrals', href: '/referrals', icon: Gift, ownerOnly: true },
+        { key: 'orders', href: '/orders', icon: ShoppingCart, permission: 'can_manage_students' },
+      ],
+    },
   ];
 
   const isSuperAdminOnly = isAdmin && !user?.center_id;
-  const navItems = isSuperAdminOnly
+  const isNavItemVisible = (item: NavItem): boolean => {
+    if (!user) return false;
+    // Card ordering is opt-in per center (off by default). Hide the Orders nav
+    // entirely unless the center enabled it — applies to every role, so this
+    // guard runs BEFORE the owner/admin short-circuit below.
+    if (item.key === 'orders' && user.center?.card_orders_enabled !== true) return false;
+    if (item.ownerOnly) return user.role === 'owner' || user.role === 'super_admin';
+    if (item.ownerAdminOnly) return user.role === 'owner' || user.role === 'admin' || user.role === 'super_admin';
+    if (user.role === 'owner' || user.role === 'admin' || user.role === 'super_admin') return true;
+    if (!item.permission) return true;
+    return hasPermission(item.permission);
+  };
+
+  const visibleGroups = isSuperAdminOnly || !user
     ? []
-    : user
-      ? allNavItems.filter((item) => {
-          if (item.ownerOnly) return user.role === 'owner' || user.role === 'super_admin';
-          if (item.ownerAdminOnly) return user.role === 'owner' || user.role === 'admin' || user.role === 'super_admin';
-          if (user.role === 'owner' || user.role === 'admin' || user.role === 'super_admin') return true;
-          if (!item.permission) return true;
-          return hasPermission(item.permission);
-        })
-      : [];
+    : navGroups
+        .map((group) => ({ labelKey: group.labelKey, items: group.items.filter(isNavItemVisible) }))
+        .filter((group) => group.items.length > 0);
 
   const roleLabelText =
     user?.role && ['owner', 'admin', 'assistant', 'teacher', 'super_admin'].includes(user.role)
@@ -207,32 +242,39 @@ export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarPr
               <span>{t('admin')}</span>
             </Link>
           )}
-          {navItems.map(({ key, href, icon: Icon, showNewBadge, matchPrefix }) => {
-            if (key === 'orders') {
-              return (
-                <div key={href} className="flex items-center gap-1 w-full">
-                  {user?.center_id ? <NotificationBell className="shrink-0" /> : null}
-                  <div className="min-w-0 flex-1">
-                    <OrdersNavWithCartPreview navLinkClass={navLinkClass} />
-                  </div>
-                </div>
-              );
-            }
-            const activeMatch = matchPrefix ?? href;
-            const isActive = pathname === activeMatch || pathname.startsWith(activeMatch + '/');
-            const showBadge = showNewBadge && showBenchmarksNewBadge;
-            return (
-              <Link key={href} href={href} className={navLinkClass(isActive)} onClick={() => onClose?.()}>
-                <Icon size={18} className="shrink-0" />
-                <span className={`${isArLocale ? 'whitespace-normal break-words leading-snug' : 'truncate'}`}>{t(key)}</span>
-                {showBadge ? (
-                  <span className="ms-auto px-1.5 py-0.5 text-[10px] font-semibold bg-teal-500/20 text-teal-400 rounded shrink-0">
-                    {t('newBadge')}
-                  </span>
-                ) : null}
-              </Link>
-            );
-          })}
+          {visibleGroups.map((group) => (
+            <div key={group.labelKey} className="space-y-0.5 pt-2 first:pt-0">
+              <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)] select-none">
+                {t(group.labelKey)}
+              </p>
+              {group.items.map(({ key, href, icon: Icon, showNewBadge, matchPrefix }) => {
+                if (key === 'orders') {
+                  return (
+                    <div key={href} className="flex items-center gap-1 w-full">
+                      {user?.center_id ? <NotificationBell className="shrink-0" /> : null}
+                      <div className="min-w-0 flex-1">
+                        <OrdersNavWithCartPreview navLinkClass={navLinkClass} />
+                      </div>
+                    </div>
+                  );
+                }
+                const activeMatch = matchPrefix ?? href;
+                const isActive = pathname === activeMatch || pathname.startsWith(activeMatch + '/');
+                const showBadge = showNewBadge && showBenchmarksNewBadge;
+                return (
+                  <Link key={href} href={href} className={navLinkClass(isActive)} onClick={() => onClose?.()}>
+                    <Icon size={18} className="shrink-0" />
+                    <span className={`${isArLocale ? 'whitespace-normal break-words leading-snug' : 'truncate'}`}>{t(key)}</span>
+                    {showBadge ? (
+                      <span className="ms-auto px-1.5 py-0.5 text-[10px] font-semibold bg-teal-500/20 text-teal-400 rounded shrink-0">
+                        {t('newBadge')}
+                      </span>
+                    ) : null}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
           {isAdmin && !isSuperAdminOnly && (
             <Link
               href="/admin"

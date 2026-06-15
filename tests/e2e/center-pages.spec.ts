@@ -85,10 +85,8 @@ test.describe('Center Platform Pages', () => {
     '/ar/groups',
     '/ar/schedule',
     '/ar/rooms',
-    '/ar/attendance',
     '/ar/analytics',
     '/ar/referrals',
-    '/ar/academic',
   ]
 
   for (const path of NAV_PAGES) {

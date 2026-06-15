@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { cardOrdersDisabledResponse } from '@/lib/card-order-cart/cardOrdersGate';
 import { normalizePhone, isValidEgyptianMobileE164 } from '@/lib/utils/phone';
 import { buildCartPayload, fetchActorName, getCardOrderMinimumQty, purgeStaleCartItemsForCart } from '@/lib/card-order-cart/server';
 
@@ -32,6 +33,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const auth = await requireCenterAuth(request);
   if (!auth.ok) return auth.response;
+  const disabled = await cardOrdersDisabledResponse(auth.supabaseAdmin, auth.centerId);
+  if (disabled) return disabled;
 
   const { supabaseAdmin, centerId, userId } = auth;
 
@@ -71,6 +74,8 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const auth = await requireCenterAuth(request);
   if (!auth.ok) return auth.response;
+  const disabled = await cardOrdersDisabledResponse(auth.supabaseAdmin, auth.centerId);
+  if (disabled) return disabled;
 
   const { supabaseAdmin, centerId, userId } = auth;
 
