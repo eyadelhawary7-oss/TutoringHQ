@@ -14,6 +14,7 @@ import {
   QrCode,
   CreditCard,
   ClipboardList,
+  ListChecks,
   BookOpen,
   DoorOpen,
   Calendar,
@@ -112,6 +113,7 @@ export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarPr
     { key: 'dashboard', href: '/dashboard', icon: LayoutDashboard, permission: 'can_view_dashboard' },
     { key: 'students', href: '/students', icon: Users, permission: 'can_manage_students' },
     { key: 'scanner', href: '/scan', icon: QrCode, permission: 'can_scan' },
+    { key: 'checklist', href: '/checklist', icon: ListChecks, permission: 'can_scan' },
     { key: 'payments', href: '/payments', icon: CreditCard, permission: 'can_view_payments' },
     { key: 'billing', href: '/billing', icon: Wallet, ownerOnly: true },
     { key: 'analytics', href: '/analytics', icon: BarChart3, permission: 'can_view_revenue' },
@@ -134,6 +136,10 @@ export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarPr
     ? []
     : user
       ? allNavItems.filter((item) => {
+          // Card ordering is opt-in per center (off by default). Hide the Orders
+          // nav entirely unless the center enabled it — applies to every role,
+          // so this guard runs BEFORE the owner/admin short-circuit below.
+          if (item.key === 'orders' && user.center?.card_orders_enabled !== true) return false;
           if (item.ownerOnly) return user.role === 'owner' || user.role === 'super_admin';
           if (item.ownerAdminOnly) return user.role === 'owner' || user.role === 'admin' || user.role === 'super_admin';
           if (user.role === 'owner' || user.role === 'admin' || user.role === 'super_admin') return true;

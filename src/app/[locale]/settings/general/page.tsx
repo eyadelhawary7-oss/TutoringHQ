@@ -50,6 +50,7 @@ interface CenterInfo {
   max_teachers?: number;
   daily_summary_enabled?: boolean;
   summer_mode?: boolean;
+  card_orders_enabled?: boolean;
   status?: string | null;
   instapay_number?: string | null;
 }
@@ -104,6 +105,7 @@ export default function GeneralSettingsPage() {
   const isRTL = locale === 'ar';
   const dailySummarySwitchId = useId();
   const summerSwitchId = useId();
+  const cardOrdersSwitchId = useId();
 
   const [center, setCenter] = useState<CenterInfo | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -121,6 +123,7 @@ export default function GeneralSettingsPage() {
   const [scannerMode, setScannerMode] = useState('camera');
   const [dailySummaryEnabled, setDailySummaryEnabled] = useState(true);
   const [summerModeEnabled, setSummerModeEnabled] = useState(false);
+  const [cardOrdersEnabled, setCardOrdersEnabled] = useState(false);
   const [editingSubject, setEditingSubject] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [referralData, setReferralData] = useState<{
@@ -204,6 +207,7 @@ export default function GeneralSettingsPage() {
         setScannerMode(c.scanner_default_mode || 'camera');
         setDailySummaryEnabled(c.daily_summary_enabled !== false);
         setSummerModeEnabled(c.summer_mode === true);
+        setCardOrdersEnabled(c.card_orders_enabled === true);
         setLogoUrl(c.logo_url ?? null);
         setLogoLoadFailed(false);
         const ip = typeof c.instapay_number === 'string' ? c.instapay_number.replace(/\D/g, '') : '';
@@ -457,6 +461,30 @@ export default function GeneralSettingsPage() {
     if (!error) {
       await auditLog({ centerId, userId, action: 'center_update', entityType: 'centers', details: { field: 'scanner_mode', value: mode } });
       showSaved();
+    }
+  };
+
+  const handleCardOrdersToggle = async (enabled: boolean) => {
+    if (!centerId || !userId) return;
+    setCardOrdersEnabled(enabled);
+    const { error } = await dbUpdate({
+      table: 'centers',
+      data: { card_orders_enabled: enabled },
+      filters: [{ column: 'id', op: 'eq', value: centerId }],
+    });
+    if (!error) {
+      setCenter((prev) => (prev ? { ...prev, card_orders_enabled: enabled } : null));
+      await auditLog({
+        centerId,
+        userId,
+        action: 'center_update',
+        entityType: 'centers',
+        details: { field: 'card_orders_enabled', value: enabled },
+      });
+      await refreshUser();
+      showSaved();
+    } else {
+      setCardOrdersEnabled(!enabled);
     }
   };
 
@@ -829,6 +857,32 @@ export default function GeneralSettingsPage() {
                     {t('bluetooth')}
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Physical QR card ordering (opt-in, off by default) */}
+          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
+            <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
+              <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
+                <CreditCard className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-semibold text-[var(--color-text-primary)]">{t('cardOrdersTitle')}</h3>
+                <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('cardOrdersDesc')}</p>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="flex items-center justify-between gap-4">
+                <div id={cardOrdersSwitchId} className="min-w-0">
+                  <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('cardOrdersToggle')}</p>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{t('cardOrdersHint')}</p>
+                </div>
+                <SettingsSwitch
+                  checked={cardOrdersEnabled}
+                  onCheckedChange={handleCardOrdersToggle}
+                  aria-labelledby={cardOrdersSwitchId}
+                />
               </div>
             </div>
           </div>

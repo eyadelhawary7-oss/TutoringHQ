@@ -182,6 +182,7 @@
     "whatsappPack": "WhatsApp Pack",
     "whatsappTemplates": "WhatsApp templates",
     "scanner": "Scanner",
+    "checklist": "Checklist",
     "orders": "Orders",
     "payments": "Payments",
     "attendance": "Attendance",
@@ -2257,6 +2258,9 @@
     "sampleOverlay": "Sample data, set district in settings to see real comparisons"
   },
   "orders": {
+    "disabledTitle": "Card ordering is off",
+    "disabledMessage": "Your center hasn't enabled physical QR card ordering. An owner can turn it on from Settings.",
+    "disabledCta": "Go to Settings",
     "card": "card",
     "cards": "cards",
     "cardStyleDark": "Dark  -  Navy + Teal",
@@ -2521,6 +2525,10 @@
     "invite": "Send Invite",
     "scanner": "Scanner Settings",
     "scannerTitle": "Scanner Settings",
+    "cardOrdersTitle": "Physical QR cards",
+    "cardOrdersDesc": "Order printed QR cards for your students. Off by default.",
+    "cardOrdersToggle": "Enable card ordering",
+    "cardOrdersHint": "When on, the Orders page appears in your menu. The QR scanner works either way.",
     "defaultMode": "Default Mode",
     "dailySummary": "Daily Summary",
     "dailySummaryDesc": "Receive daily operations summary via WhatsApp",
@@ -2869,6 +2877,10 @@
     "validFeeRequired": "Valid Fee Required",
     "waitlist": "Waitlist",
     "linkCopied": "Link copied to clipboard",
+    "attendanceMode": "Attendance method",
+    "attendanceModeScan": "QR scan",
+    "attendanceModeChecklist": "Checklist",
+    "attendanceModeHint": "Choose how this group takes attendance. You can switch anytime.",
     "errors": {
       "saveFailedGeneric": "Couldn't save the group. Please try again."
     },
@@ -5320,6 +5332,28 @@
       "movedToCart": "Moved to cart",
       "removed": "Removed from cart"
     }
+  },
+  "checklist": {
+    "title": "Checklist attendance",
+    "subtitle": "Tap a name to mark attendance and record payment.",
+    "offline": "Offline",
+    "pendingSync": "{count} waiting to sync",
+    "noChecklistGroups": "No groups are set to checklist mode yet. Switch a group to checklist from its settings.",
+    "backToGroups": "Back to groups",
+    "presentTally": "{count}/{total} present",
+    "needsMethod": "{count} students need a payment method",
+    "searchStudents": "Search students",
+    "noStudents": "No students in this group",
+    "present": "Present",
+    "chooseMethod": "Choose method",
+    "tapToMark": "Tap to mark",
+    "method_cash": "Cash",
+    "method_instapay": "InstaPay",
+    "method_exempt": "Exempt",
+    "markedPresent": "{name} marked present",
+    "alreadyPresent": "{name} is already present today",
+    "saveFailed": "Couldn't save attendance. Please try again.",
+    "subscriptionInactive": "Your subscription is inactive. Reactivate to record attendance."
   },
   "checkout": {
     "pageTitle": "Checkout",

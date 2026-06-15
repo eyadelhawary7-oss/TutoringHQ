@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { cardOrdersDisabledResponse } from '@/lib/card-order-cart/cardOrdersGate';
 import {
   buildCartPayload,
   ensureOpenCartId,
@@ -23,6 +24,8 @@ type BatchBody = {
 export async function POST(request: NextRequest) {
   const auth = await requireCenterAuth(request);
   if (!auth.ok) return auth.response;
+  const disabled = await cardOrdersDisabledResponse(auth.supabaseAdmin, auth.centerId);
+  if (disabled) return disabled;
 
   let body: Record<string, unknown>;
   try {

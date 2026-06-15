@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
-import { dbSelect, dbInsert, dbDelete, auditLog } from '@/lib/db-proxy';
+import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
 import { Link as RouterLink } from '@/i18n/routing';
 import { Plus, BookOpen, X, Users, Search, Link as LinkIcon } from 'lucide-react';
@@ -27,7 +27,11 @@ interface Group {
   student_count?: number;
   teacher_name?: string | null;
   max_capacity?: number | null;
+  /** 'scan' (QR scanner, default) or 'checklist' (tap-a-name roster). */
+  attendance_mode?: 'scan' | 'checklist';
 }
+
+type AttendanceMode = 'scan' | 'checklist';
 
 interface Student {
   id: string;
@@ -96,7 +100,7 @@ export default function GroupsPage() {
     const [groupsRes, studentsRes, subjectsRes, slotsRes] = await Promise.all([
       dbSelect({
         table: 'student_groups',
-        select: 'id, name, subject, fee, max_capacity',
+        select: 'id, name, subject, fee, max_capacity, attendance_mode',
         filters: [{ column: 'center_id', op: 'eq', value: cid }],
         order: { column: 'name' },
       }),
@@ -160,6 +164,7 @@ export default function GroupsPage() {
         member_count: n,
         student_count: n,
         teacher_name: groupToTeacher[g.id] ?? null,
+        attendance_mode: g.attendance_mode === 'checklist' ? 'checklist' : 'scan',
       };
     }));
     setStudents(studentsData);
@@ -296,7 +301,7 @@ export default function GroupsPage() {
           await dbInsert({ table: 'student_group_members', data: { group_id: inserted.id, student_id: sid }, select: false });
         }
         const addN = memberIds.length;
-        setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, subject: subjectName, fee, member_count: addN, student_count: addN, teacher_name: null, max_capacity: maxCap }]);
+        setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, subject: subjectName, fee, member_count: addN, student_count: addN, teacher_name: null, max_capacity: maxCap, attendance_mode: 'scan' }]);
         setShowAddModal(false);
         setAddForm({ name: '', subjectId: '', fee_per_class: '', centerCut: '', studentIds: [], maxCapacity: '' });
         toast.success(tToast('saved'));
@@ -321,6 +326,34 @@ export default function GroupsPage() {
     await auditLog({ centerId, userId, action: 'group_delete', entityType: 'student_groups', entityId: id });
     setGroups(prev => prev.filter(g => g.id !== id));
     if (detailGroup?.id === id) setDetailGroup(null);
+  };
+
+  const handleSetAttendanceMode = async (groupId: string, mode: AttendanceMode) => {
+    if (!centerId || !userId) return;
+    const current = groups.find(g => g.id === groupId)?.attendance_mode ?? 'scan';
+    if (current === mode) return;
+    // Optimistic: flip locally, roll back on failure.
+    setGroups(prev => prev.map(g => g.id === groupId ? { ...g, attendance_mode: mode } : g));
+    setDetailGroup(prev => prev && prev.id === groupId ? { ...prev, attendance_mode: mode } : prev);
+    const { error } = await dbUpdate({
+      table: 'student_groups',
+      data: { attendance_mode: mode },
+      filters: [{ column: 'id', op: 'eq', value: groupId }],
+    });
+    if (error) {
+      setGroups(prev => prev.map(g => g.id === groupId ? { ...g, attendance_mode: current } : g));
+      setDetailGroup(prev => prev && prev.id === groupId ? { ...prev, attendance_mode: current } : prev);
+      Sentry.captureException(error, {
+        tags: { feature: 'groups', action: 'set_attendance_mode' },
+        extra: { centerId, groupId, mode },
+      });
+      toast.error(tToast('error'), t('errors.saveFailedGeneric'));
+      return;
+    }
+    try {
+      await auditLog({ centerId, userId, action: 'group_attendance_mode', entityType: 'student_groups', entityId: groupId, details: { attendance_mode: mode } });
+    } catch {}
+    toast.success(tToast('saved'));
   };
 
   const handleAddMember = async (studentId: string) => {
@@ -484,6 +517,11 @@ export default function GroupsPage() {
               </div>
               <h3 className="font-semibold text-[var(--color-text-primary)] mb-1">{g.name}</h3>
               <p className="text-sm text-[var(--color-text-secondary)] mb-3">{g.subject || tCommon('notSet')}</p>
+              {g.attendance_mode === 'checklist' && (
+                <span className="inline-block mb-3 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-700">
+                  {t('attendanceModeChecklist')}
+                </span>
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-[var(--color-text-primary)] font-mono">
                   {g.fee != null ? formatCurrency(g.fee, locale) : tCommon('notSet')}
@@ -636,6 +674,27 @@ export default function GroupsPage() {
                       : ''}
                   </p>
                 </div>
+              </div>
+              {/* Attendance method: scan (QR) or checklist (tap-a-name roster). Freely switchable. */}
+              <div className="border-t border-border pt-4">
+                <p className="text-xs text-[var(--color-text-secondary)] mb-1.5">{t('attendanceMode')}</p>
+                <div className="flex gap-1 p-1 rounded-lg bg-[var(--color-surface-2)]">
+                  {(['scan', 'checklist'] as const).map((m) => {
+                    const active = (detailGroup.attendance_mode ?? 'scan') === m;
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => handleSetAttendanceMode(detailGroup.id, m)}
+                        aria-pressed={active}
+                        className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${active ? 'bg-[var(--color-surface-0)] shadow text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
+                      >
+                        {m === 'scan' ? t('attendanceModeScan') : t('attendanceModeChecklist')}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-1.5 text-xs text-[var(--color-text-tertiary)]">{t('attendanceModeHint')}</p>
               </div>
               {detailGroup.max_capacity != null && detailGroup.max_capacity < 999 && (
                 <div className="flex gap-1 p-1 rounded-lg bg-muted/50">

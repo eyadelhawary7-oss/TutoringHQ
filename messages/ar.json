@@ -182,6 +182,7 @@
     "whatsappPack": "باقة واتساب",
     "whatsappTemplates": "قوالب واتساب",
     "scanner": "الماسح",
+    "checklist": "قائمة الحضور",
     "orders": "الطلبات",
     "payments": "المدفوعات",
     "attendance": "الحضور",
@@ -3559,6 +3560,9 @@
     "sampleOverlay": "بيانات تجريبية، اضبط المنطقة من الإعدادات لعرض مقارنات حقيقية"
   },
   "orders": {
+    "disabledTitle": "طلب الكروت متوقّف",
+    "disabledMessage": "مركزك لم يفعّل طلب كروت QR المطبوعة. يمكن للمالك تفعيله من الإعدادات.",
+    "disabledCta": "الذهاب للإعدادات",
     "card": "بطاقة",
     "cards": "بطاقات",
     "cardStyleDark": "داكن  -  نيفي + تيل",
@@ -4163,6 +4167,28 @@
       "movedToCart": "تم النقل إلى السلة",
       "removed": "تمت الإزالة من السلة"
     }
+  },
+  "checklist": {
+    "title": "تسجيل الحضور بالقائمة",
+    "subtitle": "اضغط على اسم الطالب لتسجيل حضوره وطريقة الدفع.",
+    "offline": "غير متصل",
+    "pendingSync": "{count} في انتظار المزامنة",
+    "noChecklistGroups": "لا توجد مجموعات بطريقة القائمة بعد. غيّر طريقة الحضور لأي مجموعة إلى «قائمة الأسماء» من إعداداتها.",
+    "backToGroups": "العودة للمجموعات",
+    "presentTally": "{count}/{total} حاضر",
+    "needsMethod": "{count} طالب بحاجة لاختيار طريقة الدفع",
+    "searchStudents": "ابحث عن طالب",
+    "noStudents": "لا يوجد طلاب في هذه المجموعة",
+    "present": "حاضر",
+    "chooseMethod": "اختر الطريقة",
+    "tapToMark": "اضغط للتسجيل",
+    "method_cash": "نقدي",
+    "method_instapay": "انستا باي",
+    "method_exempt": "إعفاء",
+    "markedPresent": "تم تسجيل حضور {name}",
+    "alreadyPresent": "{name} مُسجّل حاضر اليوم بالفعل",
+    "saveFailed": "تعذّر حفظ الحضور. يرجى المحاولة مرة أخرى.",
+    "subscriptionInactive": "اشتراكك غير نشط. فعّله لتسجيل الحضور."
   },
   "checkout": {
     "pageTitle": "إتمام الطلب",
@@ -5061,6 +5087,10 @@
     "validFeeRequired": "Valid رسوم مطلوب",
     "waitlist": "قائمة الانتظار",
     "linkCopied": "تم نسخ الرابط",
+    "attendanceMode": "طريقة تسجيل الحضور",
+    "attendanceModeScan": "مسح الكود",
+    "attendanceModeChecklist": "قائمة الأسماء",
+    "attendanceModeHint": "اختر طريقة تسجيل حضور هذه المجموعة. يمكنك التبديل في أي وقت.",
     "errors": {
       "saveFailedGeneric": "تعذّر حفظ المجموعة. يرجى المحاولة مرة أخرى."
     },
@@ -5957,6 +5987,10 @@
     "invite": "أرسل دعوة",
     "scanner": "إعدادات السكانر",
     "scannerTitle": "إعدادات السكانر",
+    "cardOrdersTitle": "كروت QR المطبوعة",
+    "cardOrdersDesc": "اطلب كروت QR مطبوعة لطلابك. متوقّفة افتراضيًا.",
+    "cardOrdersToggle": "تفعيل طلب الكروت",
+    "cardOrdersHint": "عند التفعيل، تظهر صفحة الطلبات في القائمة. السكانر يعمل في الحالتين.",
     "defaultMode": "الوضع الافتراضي",
     "dailySummary": "ملخص يومي",
     "dailySummaryDesc": "استقبل ملخصاً يومياً للعمليات عبر واتساب",

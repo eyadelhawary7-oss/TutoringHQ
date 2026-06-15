@@ -20,6 +20,7 @@ interface UserProfile {
     plan?: string;
     parent_pack_enabled?: boolean;
     parent_pack_active_parents?: number;
+    card_orders_enabled?: boolean;
     announcement_balance?: string | number;
     status?: string;
     subscription_status?: string;

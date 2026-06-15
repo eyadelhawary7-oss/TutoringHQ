@@ -109,7 +109,10 @@ beforeEach(() => {
   vi.mocked(Sentry.captureMessage).mockClear();
 
   mockGetUser.mockResolvedValue({ data: { user: { id: USER_ID } }, error: null });
-  centersMaybeSingle.mockResolvedValue({ data: { governorate: 'Cairo' }, error: null });
+  centersMaybeSingle.mockResolvedValue({
+    data: { governorate: 'Cairo', card_orders_enabled: true },
+    error: null,
+  });
 });
 
 describe('OrdersPage — Rule 151 CORE+best-effort split (fail-open bypass fix)', () => {
@@ -198,5 +201,22 @@ describe('OrdersPage — Rule 151 CORE+best-effort split (fail-open bypass fix)'
 
     expect(result?.type).toBe(OrdersPageClient);
     expect(usersPermsMaybeSingle).not.toHaveBeenCalled();
+  });
+
+  it('card_orders_enabled = false -> disabled state, even for a privileged owner (fail CLOSED)', async () => {
+    usersCoreMaybeSingle.mockResolvedValue({
+      data: { id: USER_ID, center_id: CENTER_ID, role: 'owner' },
+      error: null,
+    });
+    centersMaybeSingle.mockResolvedValue({
+      data: { governorate: 'Cairo', card_orders_enabled: false },
+      error: null,
+    });
+
+    const result = await renderPage();
+    const texts = collectText(result);
+
+    expect(result?.type).not.toBe(OrdersPageClient);
+    expect(texts).toContain('orders.disabledTitle');
   });
 });
