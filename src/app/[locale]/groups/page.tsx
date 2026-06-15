@@ -53,6 +53,14 @@ export default function GroupsPage() {
   const locale = useLocale();
   const isRTL = locale === 'ar';
   const { user } = useUser();
+  // Surface the real DB/validation reason in save toasts instead of a generic
+  // "something went wrong" — a swallowed message is what hid the dropped-column
+  // failure during the attendance rework. Falls back to the generic copy only
+  // when there is genuinely no server message.
+  const errorDetail = (e: unknown): string => {
+    const msg = e instanceof Error ? e.message : typeof e === 'string' ? e : '';
+    return msg && msg !== 'Unknown error' ? msg : t('errors.saveFailedGeneric');
+  };
   const [groups, setGroups] = useState<Group[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -322,7 +330,7 @@ export default function GroupsPage() {
           tags: { feature: 'groups', action: 'create' },
           extra: { centerId, name: addForm.name, memberCount: memberIds.length },
         });
-        toast.error(tToast('error'), t('errors.saveFailedGeneric'));
+        toast.error(tToast('error'), errorDetail(error));
         setIsAdding(false);
         return;
       }
@@ -347,7 +355,7 @@ export default function GroupsPage() {
         tags: { feature: 'groups', action: 'create' },
         extra: { centerId, name: addForm.name },
       });
-      toast.error(tToast('error'), t('errors.saveFailedGeneric'));
+      toast.error(tToast('error'), errorDetail(err));
     } finally {
       setIsAdding(false);
     }
@@ -379,6 +387,9 @@ export default function GroupsPage() {
             : g,
         ),
       );
+    } else {
+      Sentry.captureException(error, { tags: { feature: 'groups', action: 'add_member' }, extra: { groupId: detailGroup.id, studentId } });
+      toast.error(tToast('error'), errorDetail(error));
     }
   };
 
