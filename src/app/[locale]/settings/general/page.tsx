@@ -23,7 +23,6 @@ import {
   Loader2,
   Calendar,
   Wallet,
-  ListChecks,
 } from 'lucide-react';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { SettingsSwitch } from '@/components/settings/SettingsSwitch';
@@ -49,7 +48,6 @@ interface CenterInfo {
   daily_summary_enabled?: boolean;
   summer_mode?: boolean;
   card_orders_enabled?: boolean;
-  default_attendance_mode?: string | null;
   status?: string | null;
   instapay_number?: string | null;
 }
@@ -121,7 +119,6 @@ export default function GeneralSettingsPage() {
   const [dailySummaryEnabled, setDailySummaryEnabled] = useState(true);
   const [summerModeEnabled, setSummerModeEnabled] = useState(false);
   const [cardOrdersEnabled, setCardOrdersEnabled] = useState(false);
-  const [defaultAttendanceMode, setDefaultAttendanceMode] = useState<'scan' | 'checklist'>('scan');
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -200,7 +197,6 @@ export default function GeneralSettingsPage() {
         setDailySummaryEnabled(c.daily_summary_enabled !== false);
         setSummerModeEnabled(c.summer_mode === true);
         setCardOrdersEnabled(c.card_orders_enabled === true);
-        setDefaultAttendanceMode(c.default_attendance_mode === 'checklist' ? 'checklist' : 'scan');
         setLogoUrl(c.logo_url ?? null);
         setLogoLoadFailed(false);
         const ip = typeof c.instapay_number === 'string' ? c.instapay_number.replace(/\D/g, '') : '';
@@ -461,25 +457,6 @@ export default function GeneralSettingsPage() {
       showSaved();
     } else {
       setCardOrdersEnabled(!enabled);
-    }
-  };
-
-  const handleDefaultAttendanceMode = async (mode: 'scan' | 'checklist') => {
-    if (!centerId || !userId) return;
-    const prev = defaultAttendanceMode;
-    if (prev === mode) return;
-    setDefaultAttendanceMode(mode);
-    const { error } = await dbUpdate({
-      table: 'centers',
-      data: { default_attendance_mode: mode },
-      filters: [{ column: 'id', op: 'eq', value: centerId }],
-    });
-    if (!error) {
-      await auditLog({ centerId, userId, action: 'center_update', entityType: 'centers', details: { field: 'default_attendance_mode', value: mode } });
-      setCenter((p) => (p ? { ...p, default_attendance_mode: mode } : null));
-      showSaved();
-    } else {
-      setDefaultAttendanceMode(prev);
     }
   };
 
@@ -841,42 +818,6 @@ export default function GeneralSettingsPage() {
                     className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${scannerMode === 'bluetooth' ? 'bg-[var(--color-surface-1)] shadow-sm text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
                   >
                     {t('bluetooth')}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Default attendance mode (scan | checklist) used when creating a new group */}
-          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
-            <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-              <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
-                <ListChecks className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
-              </div>
-              <div className="min-w-0">
-                <h3 className="font-semibold text-[var(--color-text-primary)]">{t('attendanceDefaultTitle')}</h3>
-                <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('attendanceDefaultDesc')}</p>
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="flex items-center justify-between gap-4">
-                <p className="text-sm font-medium text-[var(--color-text-primary)] min-w-0">{t('attendanceDefaultTitle')}</p>
-                <div className="flex gap-1 bg-[var(--color-surface-2)] p-1 rounded-lg shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => handleDefaultAttendanceMode('scan')}
-                    aria-pressed={defaultAttendanceMode === 'scan'}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${defaultAttendanceMode === 'scan' ? 'bg-[var(--color-surface-1)] shadow-sm text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
-                  >
-                    {t('attendanceDefaultScan')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDefaultAttendanceMode('checklist')}
-                    aria-pressed={defaultAttendanceMode === 'checklist'}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${defaultAttendanceMode === 'checklist' ? 'bg-[var(--color-surface-1)] shadow-sm text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
-                  >
-                    {t('attendanceDefaultChecklist')}
                   </button>
                 </div>
               </div>

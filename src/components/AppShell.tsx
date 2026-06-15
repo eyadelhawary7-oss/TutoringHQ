@@ -63,6 +63,7 @@ const PAGE_TITLE_MAP: Record<string, string> = {
   '/settings': 'nav.settings',
   '/orders': 'cardOrders.ordersTitle',
   '/notifications': 'notifications.pageTitle',
+  '/attendance': 'nav.attendance',
   '/scan': 'nav.scanner',
   '/whatsapp-pack': 'nav.whatsappPack',
   '/whatsapp': 'nav.whatsappTemplates',
@@ -99,7 +100,11 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const [isPending, startTransition] = useTransition();
 
   const cleanPath = stripLocale(pathname);
-  const isScanRoute = cleanPath === '/scan' || cleanPath.startsWith('/scan/');
+  const isScanRoute =
+    cleanPath === '/attendance' ||
+    cleanPath.startsWith('/attendance/') ||
+    cleanPath === '/scan' ||
+    cleanPath.startsWith('/scan/');
   const kioskChromeHidden = isScanRoute && scannerKioskLocked;
   const isPublic = PUBLIC_PATHS.some((p) => cleanPath === p || cleanPath.startsWith(p + '/'));
   const isAdminRoute =

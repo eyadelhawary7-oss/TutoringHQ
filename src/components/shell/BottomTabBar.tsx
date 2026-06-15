@@ -22,7 +22,7 @@ const TABS: TabDef[] = [
     icon: LayoutDashboard,
     permission: 'can_view_dashboard',
   },
-  { navKey: 'scanner', path: '/scan', segment: 'scan', icon: QrCode, permission: 'can_scan' },
+  { navKey: 'attendance', path: '/attendance', segment: 'attendance', icon: QrCode, permission: 'can_scan' },
   {
     navKey: 'students',
     path: '/students',

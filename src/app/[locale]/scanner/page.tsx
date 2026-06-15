@@ -3,13 +3,14 @@
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
+// Legacy route. Scanner is now the QR-scan tab of the unified Attendance page.
 export default function ScannerRedirect() {
   const params = useParams();
   const router = useRouter();
   const locale = (params?.locale as string) || 'ar';
 
   useEffect(() => {
-    router.replace(`/${locale}/scan`);
+    router.replace(`/${locale}/attendance`);
   }, [locale, router]);
 
   return (

@@ -2489,7 +2489,11 @@
     "resultPaid": "Attended + Paid",
     "resultUnpaid": "Attended without payment",
     "resultPending": "Digital payment pending",
-    "rangeSummary": "Showing {count} scans from {from} – {to}"
+    "rangeSummary": "Showing {count} scans from {from} – {to}",
+    "captureTitle": "Take attendance",
+    "tabScan": "QR scan",
+    "tabChecklist": "Checklist",
+    "takingForGroup": "Taking attendance · {group}"
   },
   "settings": {
     "title": "Settings",
@@ -2499,10 +2503,6 @@
     "sectionNotifications": "Notifications",
     "sectionMoney": "Money setup",
     "sectionAccount": "Account",
-    "attendanceDefaultTitle": "Default attendance mode",
-    "attendanceDefaultDesc": "The mode used automatically when a new group is created.",
-    "attendanceDefaultScan": "Scan (QR)",
-    "attendanceDefaultChecklist": "Checklist",
     "joinRequests": {
       "title": "Teacher join requests",
       "empty": "No pending join requests.",
@@ -2893,10 +2893,6 @@
     "validFeeRequired": "Valid Fee Required",
     "waitlist": "Waitlist",
     "linkCopied": "Link copied to clipboard",
-    "attendanceMode": "Attendance method",
-    "attendanceModeScan": "QR scan",
-    "attendanceModeChecklist": "Checklist",
-    "attendanceModeHint": "Choose how this group takes attendance. You can switch anytime.",
     "errors": {
       "saveFailedGeneric": "Couldn't save the group. Please try again."
     },
@@ -5354,7 +5350,7 @@
     "subtitle": "Tap a name to mark attendance and record payment.",
     "offline": "Offline",
     "pendingSync": "{count} waiting to sync",
-    "noChecklistGroups": "No groups are set to checklist mode yet. Switch a group to checklist from its settings.",
+    "noGroups": "No groups yet. Create a group to start taking attendance.",
     "backToGroups": "Back to groups",
     "presentTally": "{count}/{total} present",
     "needsMethod": "{count} students need a payment method",

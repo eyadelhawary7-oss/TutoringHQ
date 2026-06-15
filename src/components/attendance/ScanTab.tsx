@@ -1,0 +1,1674 @@
+'use client';
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
+import { supabase } from '@/lib/supabase';
+import { dbSelect, auditLog, dbInsert } from '@/lib/db-proxy';
+import {
+  syncStudentsToLocal,
+  getAllStudentsOffline,
+  getStudentOffline,
+  queueScan,
+  getUnsyncedCount,
+  hasPaidTodayOffline,
+  markPaidTodayOffline,
+  getDB,
+  appendTodayHistoryRow,
+  getTodayHistoryRecord,
+  pruneStaleTodayHistory,
+  type TodayHistoryRow,
+} from '@/lib/db';
+import { syncQueuedScans } from '@/lib/sync';
+import { useNetworkStatus } from '@/lib/scanner/networkStatus';
+import { normalizeStudentNumber, isValidCanonicalStudentNumber } from '@/lib/scanner/normalize';
+import CameraScanner from '@/components/CameraScanner';
+import BluetoothScanner from '@/components/BluetoothScanner';
+import ScanResultScreen from '@/components/ScanResultScreen';
+import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
+import { Camera, Bluetooth, Hash, BookOpen, ChevronRight, Search, QrCode, X } from 'lucide-react';
+import { useUser } from '@/contexts/UserContext';
+import { useToast } from '@/hooks/useToast';
+import { formatNumber, formatTime } from '@/lib/formatNumber';
+import { cairoDateKey, cairoPaidAtBoundsForScanInstant } from '@/lib/cairo/day';
+import { useLayout } from '@/contexts/LayoutContext';
+import SyncStatusPanel from '@/components/scanner/SyncStatusPanel';
+import PendingSyncSheet from '@/components/scanner/PendingSyncSheet';
+import TodayHistorySheet from '@/components/scanner/TodayHistorySheet';
+import { ScannerPastDueNotice } from '@/components/billing/ScannerPastDueNotice';
+
+type ScanMode = 'camera' | 'bluetooth' | 'manual';
+
+interface Student {
+  id: string;
+  name: string;
+  payment_status: string;
+  fee: number;
+  subject: string;
+  parent_phone?: string | null;
+  student_number?: string | null;
+  last_payment_method?: string | null;
+  balance_due?: number;
+  groups?: { id: string; name: string; fee: number; subject?: string | null }[];
+}
+
+/** Active students row for instant QR lookup (Supabase `students.name`, not full_name). */
+interface RosterRow {
+  id: string;
+  student_number: string | null;
+  name: string | null;
+  is_active: boolean;
+  center_id: string;
+}
+
+/** Fire-and-forget parent notify after server accepts scan (call after successful sync). */
+function notifyParentScan(
+  studentId: string,
+  result: 'attended' | 'absent' | 'pending_payment',
+  scannedAt: string,
+) {
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (!session) return;
+    fetch('/api/parents/notify-scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ student_id: studentId, result, scanned_at: scannedAt }),
+    }).catch(() => {});
+  });
+}
+
+/** Check if student paid TODAY for a specific group (per-session payment logic). payments table is source of truth. */
+async function hasPaidToday(studentId: string, centerId: string, groupId?: string | null): Promise<boolean> {
+  const { startIso, endExclusiveIso } = cairoPaidAtBoundsForScanInstant();
+  const filters: { column: string; op: 'eq' | 'gte' | 'lt' | 'lte'; value: string }[] = [
+    { column: 'student_id', op: 'eq', value: studentId },
+    { column: 'center_id', op: 'eq', value: centerId },
+    { column: 'paid_at', op: 'gte', value: startIso },
+    { column: 'paid_at', op: 'lt', value: endExclusiveIso },
+  ];
+  if (groupId) filters.push({ column: 'group_id', op: 'eq', value: groupId });
+  const { data } = await dbSelect({
+    table: 'payments',
+    select: 'id',
+    filters,
+    limit: 1,
+  });
+  return Array.isArray(data) ? data.length > 0 : !!data;
+}
+
+let persistedMode: ScanMode = 'camera';
+
+export default function ScanTab({ contextGroupName }: { contextGroupName?: string | null }) {
+  const t = useTranslations('scan');
+  const ts = useTranslations('scanner');
+  const tSync = useTranslations('sync');
+  const tCommon = useTranslations('common');
+  const tAtt = useTranslations('attendance');
+  const locale = useLocale();
+  const { user, hasPermission } = useUser();
+  const toast = useToast();
+  const { setScannerKioskLocked } = useLayout();
+
+  const { online: netOnline, probeOk, navOnline } = useNetworkStatus();
+  const reconnecting = Boolean(navOnline && !probeOk);
+
+  const [mode, setMode] = useState<ScanMode>(persistedMode);
+  const [manualIdInput, setManualIdInput] = useState('');
+  const manualInputRef = useRef<HTMLInputElement>(null);
+  const [scannedStudent, setScannedStudent] = useState<Student | null>(null);
+  const [needGroupSelection, setNeedGroupSelection] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<{ id: string; name: string; fee: number; subject?: string | null } | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState('');
+  const [userId, setUserId] = useState<string | null>(null);
+  const [centerId, setCenterId] = useState<string | null>(null);
+  const [centerPlan, setCenterPlan] = useState<string | null>(null);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [rosterLoading, setRosterLoading] = useState(false);
+  const [rosterHydrated, setRosterHydrated] = useState(false);
+  const studentMapByNumberRef = useRef<Map<string, RosterRow>>(new Map());
+  const studentMapByIdRef = useRef<Map<string, RosterRow>>(new Map());
+  const [pendingCount, setPendingCount] = useState(0);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [addedAmountToBalance, setAddedAmountToBalance] = useState(0);
+  const [groupSearchQuery, setGroupSearchQuery] = useState('');
+  const dismissTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isProcessingRef = useRef(false);
+  const modeRef = useRef<ScanMode>('camera');
+  const [mounted, setMounted] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return localStorage.getItem('chq-scanner-sound') !== 'false';
+  });
+  const [scanHistory, setScanHistory] = useState<
+    Array<{
+      id: string;
+      studentName: string;
+      time: Date;
+      status: 'success' | 'error' | 'duplicate';
+    }>
+  >([]);
+  const resultTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [scanFrameState, setScanFrameState] = useState<'idle' | 'success' | 'error'>('idle');
+  const [lastSuccessStudentName, setLastSuccessStudentName] = useState('');
+  const [successFlashTick, setSuccessFlashTick] = useState(0);
+  const [showFlash, setShowFlash] = useState(false);
+  const [scanCount, setScanCount] = useState(0);
+  const [centerSubscriptionStatus, setCenterSubscriptionStatus] = useState<string>('active');
+  const [historyRowsFull, setHistoryRowsFull] = useState<TodayHistoryRow[]>([]);
+  const [historySheetOpen, setHistorySheetOpen] = useState(false);
+  const [pendingSheetOpen, setPendingSheetOpen] = useState(false);
+  const [subscriptionGateOpen, setSubscriptionGateOpen] = useState(false);
+  const [hardwareTipDismissed, setHardwareTipDismissed] = useState(false);
+  const [paymentModalHeadline, setPaymentModalHeadline] = useState<string | null>(null);
+
+  const refreshHistoryFromIdb = useCallback(async () => {
+    const key = cairoDateKey();
+    const rec = await getTodayHistoryRecord(key);
+    const rows = rec?.scans ?? [];
+    setHistoryRowsFull(rows);
+    const ui = [...rows].slice(-10).reverse().map((r) => ({
+      id: r.id,
+      studentName: r.studentName ?? r.normalizedInput,
+      time: new Date(r.timestamp),
+      status: (r.status === 'admitted' ? 'success' : r.status === 'duplicate' ? 'duplicate' : 'error') as 'success' | 'error' | 'duplicate',
+    }));
+    setScanHistory(ui);
+  }, []);
+
+  const appendHistoryRow = useCallback(
+    async (row: Omit<TodayHistoryRow, 'id'> & { id?: string }) => {
+      const id = row.id ?? crypto.randomUUID();
+      await appendTodayHistoryRow(cairoDateKey(), { ...row, id });
+      await refreshHistoryFromIdb();
+    },
+    [refreshHistoryFromIdb],
+  );
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setHardwareTipDismissed(localStorage.getItem('scanner.hardwareTipDismissed') === '1');
+    setScannerKioskLocked(localStorage.getItem('scanner.kioskLocked') === '1');
+  }, [setScannerKioskLocked]);
+
+  useEffect(() => {
+    void pruneStaleTodayHistory();
+    void refreshHistoryFromIdb();
+  }, [refreshHistoryFromIdb]);
+
+  useEffect(() => {
+    if (scanFrameState !== 'success') return;
+    setSuccessFlashTick((n) => n + 1);
+  }, [scanFrameState]);
+  useEffect(() => {
+    if (!lastSuccessStudentName) return;
+    toast.success(`${lastSuccessStudentName}: ${ts('scanSuccess')}`);
+  }, [lastSuccessStudentName, toast, ts]);
+  useEffect(() => { modeRef.current = mode; }, [mode]);
+  useEffect(() => { persistedMode = mode; }, [mode]);
+
+  // Sync students (with groups) to IndexedDB when center is available and online
+  const fetchAndSyncStudents = useCallback(async () => {
+    if (!centerId) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data: studentsRaw } = await dbSelect({
+        table: 'students',
+        select: 'id, name, phone, parent_phone, subject, fee, qr_code, student_number, balance_due',
+        filters: [{ column: 'center_id', op: 'eq', value: centerId }],
+      });
+      const studentsList = (studentsRaw || []) as { id: string; name?: string; phone?: string; subject?: string; fee?: number; student_number?: string | null; balance_due?: number }[];
+
+      if (studentsList.length > 0) {
+        const { data: membersData } = await dbSelect({
+          table: 'student_group_members',
+          select: 'student_id, group_id',
+          filters: [{ column: 'student_id', op: 'in', value: studentsList.map(s => s.id) }],
+        });
+        const members = (membersData || []) as { student_id: string; group_id: string }[];
+
+        const groupIds = [...new Set(members.map(m => m.group_id))];
+        let groupsMap: Record<string, { id: string; name: string; fee: number; subject?: string | null }> = {};
+        if (groupIds.length > 0) {
+          const { data: groupsData } = await dbSelect({
+            table: 'student_groups',
+            select: 'id, name, fee, subject',
+            filters: [{ column: 'id', op: 'in', value: groupIds }],
+          });
+          groupsMap = Object.fromEntries(
+            ((groupsData || []) as { id: string; name?: string; fee?: number; subject?: string | null }[]).map(g => [
+              g.id,
+              { id: g.id, name: g.name ?? '', fee: g.fee ?? 0, subject: g.subject ?? null },
+            ])
+          );
+        }
+
+        const studentsWithGroups = studentsList.map(s => {
+          const studentGroups = members
+            .filter(m => m.student_id === s.id)
+            .map(m => groupsMap[m.group_id])
+            .filter(Boolean);
+          return {
+            ...s,
+            groups: studentGroups,
+          };
+        }) as Student[];
+
+        await syncStudentsToLocal(
+          studentsWithGroups as unknown as (Record<string, unknown> & { id: string; student_number?: string | null })[]
+        );
+        setStudents(studentsWithGroups);
+      } else {
+        setStudents([]);
+      }
+    } catch {
+      try {
+        const cached = await getAllStudentsOffline();
+        setStudents((cached ?? []) as Student[]);
+      } catch {
+        setStudents([]);
+      }
+    }
+  }, [centerId]);
+
+  const canAllowLateEntry =
+    user?.role === 'owner' ||
+    user?.role === 'admin' ||
+    user?.role === 'super_admin' ||
+    hasPermission('can_allow_late_entry');
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      setUserId(session.user.id);
+
+      const meRes = await fetch('/api/me', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      const meData = await meRes.json();
+
+      if (meData?.user?.center_id) {
+        setCenterId(meData.user.center_id);
+      }
+      if (meData?.user?.center?.plan) {
+        setCenterPlan(meData.user.center.plan);
+      }
+      const sub = meData?.user?.center?.subscription_status;
+      if (typeof sub === 'string') setCenterSubscriptionStatus(sub);
+    };
+    loadUser();
+  }, []);
+
+  // Initial load and background sync when device regains connectivity
+  useEffect(() => {
+    if (!centerId) return;
+    fetchAndSyncStudents();
+    window.addEventListener('online', fetchAndSyncStudents);
+    return () => {
+      window.removeEventListener('online', fetchAndSyncStudents);
+    };
+  }, [centerId, fetchAndSyncStudents]);
+
+  // In-memory roster for instant QR lookup (createBrowserClient singleton from @/lib/supabase)
+  useEffect(() => {
+    if (!centerId) return;
+    let cancelled = false;
+    setRosterHydrated(false);
+    studentMapByNumberRef.current = new Map();
+    studentMapByIdRef.current = new Map();
+    setRosterLoading(true);
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('students')
+          .select('id, student_number, name, is_active, center_id')
+          .eq('center_id', centerId)
+          .eq('is_active', true);
+        if (cancelled) return;
+        const byNumber = new Map<string, RosterRow>();
+        const byId = new Map<string, RosterRow>();
+        for (const raw of data ?? []) {
+          const row = raw as RosterRow;
+          byId.set(row.id, row);
+          if (row.student_number)
+            byNumber.set(String(row.student_number).toUpperCase(), row);
+        }
+        studentMapByNumberRef.current = byNumber;
+        studentMapByIdRef.current = byId;
+      } finally {
+        if (!cancelled) {
+          setRosterLoading(false);
+          setRosterHydrated(true);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [centerId]);
+
+  useEffect(() => {
+    void getDB();
+  }, []);
+
+  // Drain scan queue periodically while the health probe says we're online
+  useEffect(() => {
+    const run = async () => {
+      if (!netOnline) return;
+      setIsSyncing(true);
+      try {
+        await syncQueuedScans();
+        const count = await getUnsyncedCount();
+        setPendingCount(count);
+      } catch {
+        //
+      } finally {
+        setIsSyncing(false);
+      }
+    };
+    const id = setInterval(() => void run(), 30000);
+    void run();
+    return () => clearInterval(id);
+  }, [netOnline]);
+
+  // Online/offline and pending count
+  useEffect(() => {
+    const updatePending = async () => {
+      try {
+        const count = await getUnsyncedCount();
+        setPendingCount(count);
+      } catch {
+        //
+      }
+    };
+    updatePending();
+    const interval = setInterval(updatePending, 3000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current);
+    };
+  }, []);
+
+  const playBeep = useCallback((success: boolean) => {
+    if (!soundEnabled) return;
+    if (typeof window === 'undefined') return;
+    try {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = success ? 880 : 440;
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.15);
+    } catch (_) {}
+  }, [soundEnabled]);
+
+  const vibrate = useCallback((pattern: number | number[]) => {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate(pattern);
+    }
+  }, []);
+
+  const triggerAttendanceRecordedFeedback = useCallback(() => {
+    setShowFlash(true);
+    window.setTimeout(() => setShowFlash(false), 300);
+    setScanCount((c) => c + 1);
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+  }, []);
+
+  const normalizeForLookup = (input: string): { byId: boolean; value: string } => {
+    const trimmed = input.trim();
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidRegex.test(trimmed)) return { byId: true, value: trimmed };
+    if (trimmed.startsWith('#')) return { byId: false, value: trimmed };
+    const normalized = normalizeStudentNumber(trimmed);
+    if (normalized.startsWith('STU-')) return { byId: false, value: normalized };
+    if (/^\d+$/.test(trimmed)) return { byId: false, value: '#' + trimmed };
+    return { byId: false, value: normalized || trimmed };
+  };
+
+  const handleScan = useCallback(async (code: string) => {
+    if (isProcessingRef.current) return;
+    if (!centerId || !userId) {
+      setError(t('loadingRetry'));
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+    isProcessingRef.current = true;
+    setError('');
+    const cairoDay = cairoDateKey();
+
+    const { byId, value } = normalizeForLookup(code);
+    let student: Student | null = null;
+    let usedOffline = false;
+
+    try {
+      const looksLikePhone = /^\d{10,11}$/.test(code.trim());
+      const mapsHaveRows =
+        studentMapByNumberRef.current.size > 0 || studentMapByIdRef.current.size > 0;
+
+      if (netOnline && rosterHydrated && mapsHaveRows && !looksLikePhone) {
+        const row = byId
+          ? studentMapByIdRef.current.get(value)
+          : studentMapByNumberRef.current.get(value.toUpperCase());
+        if (row) {
+          const enriched = students.find((s) => s.id === row.id);
+          student = enriched
+            ? { ...enriched }
+            : {
+                id: row.id,
+                name: row.name ?? '',
+                payment_status: '',
+                fee: 0,
+                subject: '',
+                student_number: row.student_number,
+              };
+        }
+      }
+
+      if (!student) {
+        // ONLINE: Try Supabase first (or roster still loading / empty / phone lookup)
+        if (netOnline) {
+          try {
+            const filters = byId
+              ? [{ column: 'id', op: 'eq' as const, value }, { column: 'center_id', op: 'eq' as const, value: centerId }]
+              : [{ column: 'student_number', op: 'eq' as const, value: value.toUpperCase() }, { column: 'center_id', op: 'eq' as const, value: centerId }];
+            const { data, error: lookupError } = await dbSelect({
+              table: 'students',
+              select: 'id, name, phone, parent_phone, subject, fee, student_number, balance_due',
+              filters,
+              single: true,
+            });
+            if (!lookupError && data) student = data as Student;
+
+            if (!student && /^\d{10,11}$/.test(code.trim())) {
+              const normalizedPhone = code.trim().startsWith('0') ? '+2' + code.trim() : '+' + code.trim();
+              const { data: phoneData, error: phoneError } = await dbSelect({
+                table: 'students',
+                select: 'id, name, phone, parent_phone, subject, fee, student_number, balance_due',
+                filters: [
+                  { column: 'phone', op: 'eq', value: normalizedPhone },
+                  { column: 'center_id', op: 'eq', value: centerId },
+                ],
+                single: true,
+              });
+              if (!phoneError && phoneData) student = phoneData as Student;
+            }
+          } catch (networkErr) {
+            // Network error: fall back to IndexedDB
+            usedOffline = true;
+            student = (await getStudentOffline(value) as Student | undefined) || null;
+          }
+        } else {
+          // OFFLINE: Use IndexedDB directly
+          usedOffline = true;
+          student = (await getStudentOffline(value) as Student | undefined) || null;
+        }
+      }
+
+      // When online and not on IndexedDB fallback, ensure groups are loaded if missing
+      if (student && netOnline && !usedOffline) {
+        const needsGroupData = !student.groups || student.groups.length === 0;
+        if (needsGroupData) {
+          try {
+            const { data: membersData } = await dbSelect({
+              table: 'student_group_members',
+              select: 'group_id',
+              filters: [{ column: 'student_id', op: 'eq', value: student.id }],
+            });
+            if (membersData && Array.isArray(membersData) && membersData.length > 0) {
+              const grpIds = (membersData as { group_id: string }[]).map((m) => m.group_id);
+              const { data: groupsData } = await dbSelect({
+                table: 'student_groups',
+                select: 'id, name, fee',
+                filters: [{ column: 'id', op: 'in', value: grpIds }],
+              });
+              if (groupsData && Array.isArray(groupsData)) {
+                student.groups = (groupsData as { id: string; name: string; fee?: number }[]).map((g) => ({
+                  id: g.id,
+                  name: g.name,
+                  fee: g.fee ?? 0,
+                }));
+                const primaryGroup = student.groups[0];
+                if (primaryGroup && !student.fee) {
+                  student.fee = primaryGroup.fee;
+                  student.subject = primaryGroup.name;
+                }
+              }
+            }
+          } catch {
+            // Keep student.groups from IndexedDB if any
+          }
+        }
+      }
+
+      if (!student) {
+        setError(t('studentNotFound'));
+        playBeep(false);
+        vibrate([50, 50, 50]);
+        setScanFrameState('error');
+        if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current);
+        resultTimeoutRef.current = setTimeout(() => {
+          setScanFrameState('idle');
+          resultTimeoutRef.current = null;
+        }, 2000);
+        await appendHistoryRow({
+          rawInput: code.trim(),
+          normalizedInput: value,
+          status: 'failed',
+          errorReason: 'not_found',
+          studentName: ts('scanError'),
+          timestamp: Date.now(),
+        });
+        isProcessingRef.current = false;
+        setTimeout(() => setError(''), 3000);
+        return;
+      }
+
+      const st = student;
+
+      const dupHist = await getTodayHistoryRecord(cairoDay);
+      if (dupHist?.scans.some((s) => s.studentId === st.id && s.status === 'admitted')) {
+        await appendHistoryRow({
+          rawInput: code.trim(),
+          normalizedInput: value,
+          status: 'duplicate',
+          studentName: st.name,
+          studentId: st.id,
+          timestamp: Date.now(),
+        });
+        toast.success(ts('duplicateToast'));
+        playBeep(true);
+        vibrate(50);
+        isProcessingRef.current = false;
+        return;
+      }
+
+      const groups = st.groups ?? [];
+      const hasMultipleGroups = groups.length >= 2;
+
+      // If 2+ groups: show group selector BEFORE checking payment (works offline if groups cached)
+      if (hasMultipleGroups) {
+        setSelectedGroup(null);
+        setNeedGroupSelection(true);
+        setScannedStudent({ ...st, payment_status: '', last_payment_method: null });
+        isProcessingRef.current = false;
+        if (modeRef.current === 'manual') setManualIdInput('');
+        return;
+      }
+
+      // Single group (or offline): use first group or null
+      const grp = groups[0] ?? null;
+      setSelectedGroup(grp);
+      setNeedGroupSelection(false);
+
+      // Per-session payment: check if paid TODAY for THIS GROUP (payments table is source of truth)
+      let paidToday = false;
+      let lastPaymentMethod: string | null = null;
+      if (netOnline) {
+        paidToday = await hasPaidToday(st.id, centerId, grp?.id ?? null);
+        if (paidToday) {
+          const { startIso, endExclusiveIso } = cairoPaidAtBoundsForScanInstant();
+          const payFilters: { column: string; op: 'eq' | 'gte' | 'lt' | 'lte'; value: string }[] = [
+            { column: 'student_id', op: 'eq', value: st.id },
+            { column: 'center_id', op: 'eq', value: centerId },
+            { column: 'paid_at', op: 'gte', value: startIso },
+            { column: 'paid_at', op: 'lt', value: endExclusiveIso },
+          ];
+          if (grp?.id) payFilters.push({ column: 'group_id', op: 'eq', value: grp.id });
+          const { data: todayPay } = await dbSelect({
+            table: 'payments',
+            select: 'method',
+            filters: payFilters,
+            order: { column: 'paid_at', ascending: false },
+            limit: 1,
+          });
+          const pay = Array.isArray(todayPay) ? todayPay[0] : todayPay;
+          lastPaymentMethod = (pay as { method?: string })?.method ?? null;
+        }
+      } else {
+        paidToday = await hasPaidTodayOffline(centerId, st.id);
+      }
+
+      const displayStatus = paidToday ? (lastPaymentMethod && lastPaymentMethod !== 'cash' ? 'pending' : 'paid') : 'unpaid';
+      const studentForDisplay: Student = {
+        ...st,
+        fee: grp?.fee ?? st.fee ?? 0,
+        subject: grp?.name ?? st.subject ?? '',
+        payment_status: displayStatus,
+        last_payment_method: lastPaymentMethod,
+      };
+      const scannedAt = new Date().toISOString();
+      const subActive = centerSubscriptionStatus === 'active';
+      const sessionFee = grp?.fee ?? st.fee ?? 0;
+
+      if (paidToday) {
+        await appendHistoryRow({
+          rawInput: code.trim(),
+          normalizedInput: value,
+          status: 'admitted',
+          studentName: studentForDisplay.name,
+          studentId: st.id,
+          timestamp: Date.now(),
+        });
+        setScannedStudent(studentForDisplay);
+        await queueScan({
+          student_id: st.id,
+          center_id: centerId,
+          scanned_by: userId,
+          scanned_at: scannedAt,
+        });
+        let count = await getUnsyncedCount();
+        setPendingCount(count);
+        if (netOnline) {
+          try {
+            await syncQueuedScans();
+            notifyParentScan(st.id, 'attended', scannedAt);
+          } catch {
+            //
+          }
+          count = await getUnsyncedCount();
+          setPendingCount(count);
+        }
+        setLastSuccessStudentName(studentForDisplay.name);
+        playBeep(true);
+        triggerAttendanceRecordedFeedback();
+        if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current);
+        resultTimeoutRef.current = setTimeout(() => {
+          setScanFrameState('idle');
+          setLastSuccessStudentName('');
+          resultTimeoutRef.current = null;
+        }, 2500);
+        setScanFrameState('success');
+        dismissTimerRef.current = setTimeout(() => {
+          setScannedStudent(null);
+          setSelectedGroup(null);
+          isProcessingRef.current = false;
+          if (modeRef.current === 'manual') {
+            setManualIdInput('');
+            manualInputRef.current?.focus();
+          }
+        }, 3000);
+      } else if (!subActive) {
+        setSubscriptionGateOpen(true);
+        await appendHistoryRow({
+          rawInput: code.trim(),
+          normalizedInput: value,
+          status: 'error',
+          errorReason: 'subscription_inactive',
+          studentName: st.name,
+          studentId: st.id,
+          timestamp: Date.now(),
+        });
+        isProcessingRef.current = false;
+      } else if (sessionFee === 0 && subActive) {
+        await appendHistoryRow({
+          rawInput: code.trim(),
+          normalizedInput: value,
+          status: 'admitted',
+          studentName: st.name,
+          studentId: st.id,
+          timestamp: Date.now(),
+        });
+        await queueScan({
+          student_id: st.id,
+          center_id: centerId,
+          scanned_by: userId,
+          scanned_at: scannedAt,
+          admission_kind: 'fee_exempt',
+          group_id: grp?.id ?? null,
+        });
+        let count = await getUnsyncedCount();
+        setPendingCount(count);
+        if (netOnline) {
+          try {
+            await syncQueuedScans();
+            notifyParentScan(st.id, 'attended', scannedAt);
+          } catch {
+            //
+          }
+          count = await getUnsyncedCount();
+          setPendingCount(count);
+        }
+        toast.success(ts('entryRecordedToast'));
+        playBeep(true);
+        triggerAttendanceRecordedFeedback();
+        setScanFrameState('success');
+        if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current);
+        resultTimeoutRef.current = setTimeout(() => setScanFrameState('idle'), 2500);
+        isProcessingRef.current = false;
+        if (modeRef.current === 'manual') {
+          setManualIdInput('');
+          manualInputRef.current?.focus();
+        }
+      } else {
+        const bal = Number(st.balance_due ?? 0);
+        setPaymentModalHeadline(
+          bal > 0 ? `${t('payPrefix')} ${formatNumber(bal, locale)}\u00A0${tCommon('egp')}, ${st.name}` : null,
+        );
+        setScannedStudent(studentForDisplay);
+        if (modeRef.current === 'manual') {
+          setManualIdInput('');
+          manualInputRef.current?.focus();
+        }
+        isProcessingRef.current = false;
+      }
+    } catch {
+      setError(t('scanError'));
+      playBeep(false);
+      vibrate([50, 50, 50]);
+      setScanFrameState('error');
+      if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current);
+      resultTimeoutRef.current = setTimeout(() => {
+        setScanFrameState('idle');
+        resultTimeoutRef.current = null;
+      }, 2000);
+      void appendHistoryRow({
+        rawInput: code.trim(),
+        normalizedInput: '',
+        status: 'error',
+        errorReason: 'exception',
+        studentName: ts('scanError'),
+        timestamp: Date.now(),
+      });
+      isProcessingRef.current = false;
+    }
+  }, [
+    centerId,
+    userId,
+    rosterHydrated,
+    students,
+    t,
+    ts,
+    tCommon,
+    locale,
+    toast,
+    playBeep,
+    vibrate,
+    triggerAttendanceRecordedFeedback,
+    netOnline,
+    appendHistoryRow,
+    centerSubscriptionStatus,
+  ]);
+
+  const handleGroupSelect = useCallback(async (group: { id: string; name: string; fee: number }) => {
+    if (!scannedStudent || !centerId || !userId) return;
+    setSelectedGroup(group);
+    setNeedGroupSelection(false);
+
+    const student = scannedStudent;
+    let paidToday = false;
+    let lastPaymentMethod: string | null = null;
+
+    if (netOnline) {
+      try {
+        paidToday = await hasPaidToday(student.id, centerId, group.id);
+        if (paidToday) {
+          const { startIso, endExclusiveIso } = cairoPaidAtBoundsForScanInstant();
+          const { data: todayPay } = await dbSelect({
+            table: 'payments',
+            select: 'method',
+            filters: [
+              { column: 'student_id', op: 'eq', value: student.id },
+              { column: 'center_id', op: 'eq', value: centerId },
+              { column: 'group_id', op: 'eq', value: group.id },
+              { column: 'paid_at', op: 'gte', value: startIso },
+              { column: 'paid_at', op: 'lt', value: endExclusiveIso },
+            ],
+            order: { column: 'paid_at', ascending: false },
+            limit: 1,
+          });
+          const pay = Array.isArray(todayPay) ? todayPay[0] : todayPay;
+          lastPaymentMethod = (pay as { method?: string })?.method ?? null;
+        }
+      } catch {
+        paidToday = await hasPaidTodayOffline(centerId, student.id);
+      }
+    } else {
+      paidToday = await hasPaidTodayOffline(centerId, student.id);
+    }
+
+    const displayStatus = paidToday ? (lastPaymentMethod && lastPaymentMethod !== 'cash' ? 'pending' : 'paid') : 'unpaid';
+    const studentForDisplay: Student = {
+      ...student,
+      fee: group.fee,
+      subject: group.name,
+      payment_status: displayStatus,
+      last_payment_method: lastPaymentMethod,
+    };
+    const scannedAt = new Date().toISOString();
+    const cairoDay = cairoDateKey();
+    const dupHist = await getTodayHistoryRecord(cairoDay);
+    if (dupHist?.scans.some((s) => s.studentId === student.id && s.status === 'admitted')) {
+      await appendHistoryRow({
+        rawInput: student.student_number ?? student.id,
+        normalizedInput: student.id,
+        status: 'duplicate',
+        studentName: student.name,
+        studentId: student.id,
+        timestamp: Date.now(),
+      });
+      toast.success(ts('duplicateToast'));
+      playBeep(true);
+      setNeedGroupSelection(false);
+      setScannedStudent(null);
+      setSelectedGroup(null);
+      return;
+    }
+
+    const subActive = centerSubscriptionStatus === 'active';
+    const sessionFee = group.fee ?? 0;
+
+    if (paidToday) {
+      await appendHistoryRow({
+        rawInput: student.student_number ?? student.id,
+        normalizedInput: student.id,
+        status: 'admitted',
+        studentName: studentForDisplay.name,
+        studentId: student.id,
+        timestamp: Date.now(),
+      });
+      setScannedStudent(studentForDisplay);
+      await queueScan({
+        student_id: student.id,
+        center_id: centerId,
+        scanned_by: userId,
+        scanned_at: scannedAt,
+      });
+      let count = await getUnsyncedCount();
+      setPendingCount(count);
+      if (netOnline) {
+        try {
+          await syncQueuedScans();
+          notifyParentScan(student.id, 'attended', scannedAt);
+        } catch {
+          //
+        }
+        count = await getUnsyncedCount();
+        setPendingCount(count);
+      }
+      setLastSuccessStudentName(studentForDisplay.name);
+      playBeep(true);
+      triggerAttendanceRecordedFeedback();
+      if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current);
+      resultTimeoutRef.current = setTimeout(() => {
+        setScanFrameState('idle');
+        setLastSuccessStudentName('');
+        resultTimeoutRef.current = null;
+      }, 2500);
+      setScanFrameState('success');
+      dismissTimerRef.current = setTimeout(() => {
+        setScannedStudent(null);
+        setSelectedGroup(null);
+        isProcessingRef.current = false;
+        if (mode === 'manual') {
+          setManualIdInput('');
+          manualInputRef.current?.focus();
+        }
+      }, 3000);
+    } else if (!subActive) {
+      setSubscriptionGateOpen(true);
+      await appendHistoryRow({
+        rawInput: student.student_number ?? student.id,
+        normalizedInput: student.id,
+        status: 'error',
+        errorReason: 'subscription_inactive',
+        studentName: student.name,
+        studentId: student.id,
+        timestamp: Date.now(),
+      });
+      setScannedStudent(null);
+      setNeedGroupSelection(false);
+    } else if (sessionFee === 0 && subActive) {
+      await appendHistoryRow({
+        rawInput: student.student_number ?? student.id,
+        normalizedInput: student.id,
+        status: 'admitted',
+        studentName: student.name,
+        studentId: student.id,
+        timestamp: Date.now(),
+      });
+      await queueScan({
+        student_id: student.id,
+        center_id: centerId,
+        scanned_by: userId,
+        scanned_at: scannedAt,
+        admission_kind: 'fee_exempt',
+        group_id: group.id,
+      });
+      let count = await getUnsyncedCount();
+      setPendingCount(count);
+      if (netOnline) {
+        try {
+          await syncQueuedScans();
+          notifyParentScan(student.id, 'attended', scannedAt);
+        } catch {
+          //
+        }
+        count = await getUnsyncedCount();
+        setPendingCount(count);
+      }
+      toast.success(ts('entryRecordedToast'));
+      playBeep(true);
+      triggerAttendanceRecordedFeedback();
+      setScanFrameState('success');
+      setScannedStudent(null);
+      setNeedGroupSelection(false);
+      setSelectedGroup(null);
+      if (mode === 'manual') {
+        setManualIdInput('');
+        manualInputRef.current?.focus();
+      }
+    } else {
+      const bal = Number(student.balance_due ?? 0);
+      setPaymentModalHeadline(
+        bal > 0 ? `${t('payPrefix')} ${formatNumber(bal, locale)}\u00A0${tCommon('egp')}, ${student.name}` : null,
+      );
+      setScannedStudent(studentForDisplay);
+      if (mode === 'manual') {
+        setManualIdInput('');
+        manualInputRef.current?.focus();
+      }
+    }
+  }, [
+    scannedStudent,
+    centerId,
+    userId,
+    mode,
+    playBeep,
+    vibrate,
+    triggerAttendanceRecordedFeedback,
+    netOnline,
+    appendHistoryRow,
+    centerSubscriptionStatus,
+    locale,
+    t,
+    tCommon,
+    toast,
+    ts,
+  ]);
+
+  const handleAllowLateEntry = async (reason: string) => {
+    if (!scannedStudent || !centerId || !userId || !canAllowLateEntry) return;
+    setIsProcessing(true);
+    const grp = selectedGroup ?? scannedStudent.groups?.[0];
+    const fee = grp?.fee ?? scannedStudent.fee ?? 0;
+    const scannedAt = new Date().toISOString();
+
+    try {
+      await dbInsert({
+        table: 'attendance_overrides',
+        data: {
+          student_id: scannedStudent.id,
+          override_by_user_id: userId,
+          reason,
+        },
+        select: false,
+      });
+      await queueScan({
+        student_id: scannedStudent.id,
+        center_id: centerId,
+        scanned_by: userId,
+        scanned_at: scannedAt,
+        scan_kind: 'late_entry',
+        late_fee: fee,
+        late_group_id: grp?.id ?? null,
+      });
+      let count = await getUnsyncedCount();
+      setPendingCount(count);
+      if (netOnline) {
+        try {
+          await syncQueuedScans();
+          notifyParentScan(scannedStudent.id, 'pending_payment', scannedAt);
+        } catch {
+          //
+        }
+        count = await getUnsyncedCount();
+        setPendingCount(count);
+      }
+      setAddedAmountToBalance(fee);
+      setScannedStudent({
+        ...scannedStudent,
+        payment_status: 'late_entry_granted',
+        last_payment_method: null,
+      });
+      await appendHistoryRow({
+        rawInput: scannedStudent.student_number ?? scannedStudent.id,
+        normalizedInput: scannedStudent.id,
+        status: 'admitted',
+        studentName: scannedStudent.name,
+        studentId: scannedStudent.id,
+        timestamp: Date.now(),
+      });
+      triggerAttendanceRecordedFeedback();
+    } catch {
+      setError(t('scanError'));
+    } finally {
+      setIsProcessing(false);
+      dismissTimerRef.current = setTimeout(() => {
+        setScannedStudent(null);
+        setSelectedGroup(null);
+        isProcessingRef.current = false;
+        if (mode === 'manual') {
+          setManualIdInput('');
+          setTimeout(() => manualInputRef.current?.focus(), 100);
+        }
+      }, 3000);
+    }
+  };
+
+  const handlePaymentSelect = async (method: string, groupId?: string, amount?: number) => {
+    if (!scannedStudent || !centerId || !userId) return;
+    setIsProcessing(true);
+
+    const scannedAt = new Date().toISOString();
+    const isCash = method === 'cash' || method === 'نقدي';
+    const paymentAmount = amount ?? scannedStudent.fee ?? 0;
+    const effectiveGroupId = groupId ?? selectedGroup?.id ?? scannedStudent.groups?.[0]?.id ?? null;
+
+    try {
+      await queueScan({
+        student_id: scannedStudent.id,
+        center_id: centerId,
+        scanned_by: userId,
+        scanned_at: scannedAt,
+        payment_action: {
+          method,
+          amount: paymentAmount,
+          isPending: !isCash,
+          group_id: effectiveGroupId ?? undefined,
+        },
+      });
+      await markPaidTodayOffline(centerId, scannedStudent.id);
+      let count = await getUnsyncedCount();
+      setPendingCount(count);
+
+      if (netOnline) {
+        try {
+          await syncQueuedScans();
+          notifyParentScan(scannedStudent.id, isCash ? 'attended' : 'pending_payment', scannedAt);
+          await auditLog({
+            centerId,
+            userId,
+            action: 'payment_on_scan',
+            entityType: 'payment',
+            entityId: scannedStudent.id,
+            details: {
+              method,
+              amount: paymentAmount,
+              group_id: effectiveGroupId,
+              status: method === 'cash' ? 'confirmed' : 'pending',
+            },
+          });
+        } catch {
+          //
+        }
+        count = await getUnsyncedCount();
+        setPendingCount(count);
+      }
+
+      setAddedAmountToBalance(isCash ? 0 : paymentAmount);
+      setScannedStudent({ ...scannedStudent, payment_status: isCash ? 'paid' : 'pending', last_payment_method: method });
+      setIsProcessing(false);
+      await appendHistoryRow({
+        rawInput: scannedStudent.student_number ?? scannedStudent.id,
+        normalizedInput: scannedStudent.id,
+        status: 'admitted',
+        studentName: scannedStudent.name,
+        studentId: scannedStudent.id,
+        timestamp: Date.now(),
+      });
+      triggerAttendanceRecordedFeedback();
+
+      dismissTimerRef.current = setTimeout(() => {
+        setScannedStudent(null);
+        isProcessingRef.current = false;
+        if (mode === 'manual') {
+          setManualIdInput('');
+          setTimeout(() => manualInputRef.current?.focus(), 100);
+        }
+      }, 3000);
+    } catch {
+      setError(t('scanError'));
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDismiss = () => {
+    if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+    if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current);
+    resultTimeoutRef.current = null;
+    setScanFrameState('idle');
+    setLastSuccessStudentName('');
+    setScannedStudent(null);
+    setNeedGroupSelection(false);
+    setSelectedGroup(null);
+    setAddedAmountToBalance(0);
+    setPaymentModalHeadline(null);
+    isProcessingRef.current = false;
+    if (mode === 'manual') {
+      setManualIdInput('');
+      setTimeout(() => manualInputRef.current?.focus(), 100);
+    }
+  };
+
+  if (!mounted) return null;
+
+  const scannerFrameTone =
+    scanFrameState === 'success' ? 'success' : scanFrameState === 'error' ? 'error' : 'scanning';
+
+  return (
+    <>
+      {showFlash && <div className="chq-flash-success" aria-hidden />}
+      <div className="bg-[var(--color-surface-0)] min-h-screen w-full flex flex-col animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0 pt-[max(16px,env(safe-area-inset-top,0px))]">
+        {!probeOk && (
+          <div className="chq-fade-in mx-4 mt-2 flex items-center justify-center gap-2 rounded-xl border border-amber-800/50 bg-amber-900/30 px-3 py-2 text-sm text-amber-300 sm:mx-0">
+            <div className="h-2 w-2 animate-pulse rounded-full bg-amber-400" />
+            <span>{ts('offlineBanner')}</span>
+          </div>
+        )}
+        <ScannerPastDueNotice />
+
+        {contextGroupName ? (
+          <div className="mx-4 mt-2 flex items-center justify-center gap-2 rounded-xl border border-teal-700/40 bg-teal-900/20 px-3 py-2 text-sm font-medium text-teal-300 sm:mx-0">
+            <BookOpen className="h-4 w-4 shrink-0" aria-hidden />
+            <span className="truncate">{tAtt('takingForGroup', { group: contextGroupName })}</span>
+          </div>
+        ) : null}
+
+        <div className="flex flex-col gap-3 px-4 pt-4 pb-2 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{ts('title')}</h1>
+              {rosterLoading && (
+                <span
+                  className="inline-flex h-2 w-2 shrink-0 rounded-full bg-teal-400/80 animate-pulse motion-reduce:animate-none"
+                  title={t('loadingRetry')}
+                  aria-label={t('loadingRetry')}
+                  role="status"
+                />
+              )}
+            </div>
+            <p className="text-xs text-[var(--color-text-secondary)]">{ts('subtitle')}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <SyncStatusPanel
+              probeOk={probeOk}
+              onPendingChanged={async () => {
+                try {
+                  setPendingCount(await getUnsyncedCount());
+                } catch {
+                  //
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const next = !soundEnabled;
+                setSoundEnabled(next);
+                localStorage.setItem('chq-scanner-sound', String(next));
+              }}
+              aria-label={soundEnabled ? ts('sound_on') : ts('sound_off')}
+              className="flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[var(--color-text-secondary)] shadow-sm hover:border-teal-500/40 transition-all duration-200 ease-out"
+            >
+              <span className="tabular-nums">{soundEnabled ? ts('sound_on_label') : ts('sound_off_label')}</span>
+            </button>
+            {pendingCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setPendingSheetOpen(true)}
+                className="text-xs font-semibold text-amber-400 hover:text-amber-300 underline-offset-2 hover:underline"
+              >
+                {ts('pendingBadge', { count: formatNumber(Number(pendingCount), locale) })}
+              </button>
+            )}
+            {isSyncing ? (
+              <div
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] shadow-sm"
+                title={tSync('syncing')}
+              >
+                <span className="w-2 h-2 rounded-full bg-[var(--color-warning)] animate-pulse" />
+                <span className="text-xs font-medium text-[var(--color-text-secondary)]">{tSync('syncing')}</span>
+              </div>
+            ) : probeOk ? (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] shadow-sm">
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    reconnecting ? 'bg-[var(--color-warning)] animate-pulse' : 'bg-[var(--color-success)] animate-pulse'
+                  }`}
+                />
+                <span className="text-xs font-medium text-[var(--color-text-secondary)]">
+                  {reconnecting ? ts('reconnecting') : ts('connected')}
+                </span>
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col px-4 gap-4 max-w-lg mx-auto w-full pb-4">
+          <div
+            className="grid grid-cols-3 gap-1 sm:flex sm:flex-row sm:gap-1 bg-[var(--color-surface-2)] p-1 rounded-xl"
+            role="tablist"
+            aria-label={ts('tab_bar_label')}
+          >
+            {[
+              { key: 'camera' as const, label: t('modeCamera'), Icon: Camera },
+              { key: 'bluetooth' as const, label: t('modeBluetooth'), Icon: Bluetooth },
+              { key: 'manual' as const, label: t('modeManual'), Icon: Hash },
+            ].map(({ key, label, Icon }) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={mode === key}
+                onClick={() => {
+                  setMode(key);
+                  if (key === 'manual') {
+                    setManualIdInput('');
+                    setTimeout(() => manualInputRef.current?.focus(), 100);
+                  } else if (key === 'bluetooth') {
+                    setTimeout(() => {
+                      const btInput = document.querySelector('[data-bluetooth-scanner-input]') as HTMLInputElement | null;
+                      btInput?.focus();
+                    }, 100);
+                  }
+                }}
+                className={`min-h-[44px] sm:min-h-0 flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm transition-all ${mode === key ? 'bg-[var(--color-surface-1)] shadow-sm font-semibold text-[var(--color-text-primary)]' : 'font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
+              >
+                <Icon className={mode === key && key === 'camera' ? 'w-4 h-4 text-brand-400' : 'w-4 h-4'} />
+                <span className="truncate">{label}</span>
+              </button>
+            ))}
+          </div>
+
+          {error && (
+            <div className="p-3 rounded-lg text-center text-sm border border-[var(--color-danger)] bg-[rgba(239,68,68,0.08)] text-[var(--color-danger)]">
+              {error}
+            </div>
+          )}
+
+          <div className="flex flex-col items-center gap-4 flex-1">
+            {scanCount > 0 ? (
+              <div className="mb-2 w-full max-w-sm text-center text-xs text-slate-400">
+                <span className="rounded-full border border-teal-800/40 bg-teal-900/40 px-2 py-0.5 text-xs text-teal-400">
+                  {formatNumber(scanCount, locale)} {ts('scansToday')}
+                </span>
+              </div>
+            ) : null}
+            <div
+              className={`scanner-frame chq-scanner-frame w-full max-w-sm aspect-square bg-[var(--color-surface-2)] ${scannerFrameTone} ${mode !== 'camera' ? 'hidden' : ''}`}
+              aria-hidden={mode !== 'camera'}
+            >
+              <div className="absolute inset-0 z-0 min-h-0">
+                <CameraScanner
+                  key={scannedStudent ? 'camera-hidden' : 'camera-active'}
+                  onScan={handleScan}
+                  isActive={mode === 'camera' && !scannedStudent}
+                  cameraTabActive={mode === 'camera'}
+                  onRequestManual={() => setMode('manual')}
+                  fillContainer
+                />
+              </div>
+              <div className="chq-scanner-corner chq-scanner-corner-tl z-10 pointer-events-none" />
+              <div className="chq-scanner-corner chq-scanner-corner-tr z-10 pointer-events-none" />
+              <div className="chq-scanner-corner chq-scanner-corner-bl z-10 pointer-events-none" />
+              <div className="chq-scanner-corner chq-scanner-corner-br z-10 pointer-events-none" />
+              {scanFrameState !== 'success' && scanFrameState !== 'error' && (
+                <div className="chq-scan-line z-20 pointer-events-none" />
+              )}
+              {scanFrameState === 'success' && (
+                <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-[rgba(16,185,129,0.08)] scan-result">
+                  <div
+                    className="w-16 h-16 rounded-full bg-[var(--color-success)] flex items-center justify-center"
+                  >
+                    <svg width="32" height="32" fill="none" stroke="white" strokeWidth="3" viewBox="0 0 24 24">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-semibold text-[var(--color-success)]">{ts('scanSuccess')}</p>
+                  <p className="text-base font-bold text-[var(--color-text-primary)] px-4 text-center truncate max-w-full">
+                    {lastSuccessStudentName}
+                  </p>
+                </div>
+              )}
+              {scanFrameState === 'error' && (
+                <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-[rgba(239,68,68,0.08)] scan-result">
+                  <div
+                    className="w-16 h-16 rounded-full bg-[var(--color-danger)] flex items-center justify-center"
+                  >
+                    <svg width="32" height="32" fill="none" stroke="white" strokeWidth="3" viewBox="0 0 24 24">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-semibold text-[var(--color-danger)]">{ts('scanError')}</p>
+                </div>
+              )}
+            </div>
+
+            {mode === 'bluetooth' && (
+              <div className="w-full max-w-sm">
+                <BluetoothScanner
+                  key={scannedStudent ? 'bt-hidden' : 'bt-active'}
+                  onScan={handleScan}
+                  isActive={!scannedStudent}
+                />
+              </div>
+            )}
+
+            {mode === 'manual' && !scannedStudent && (
+              <div className="space-y-3 w-full max-w-sm">
+                <label htmlFor="scan-manual-student-id" className="block text-xs font-medium text-[var(--color-text-secondary)]">
+                  {ts('manualEntry')}
+                </label>
+                <input
+                  id="scan-manual-student-id"
+                  ref={manualInputRef}
+                  type="text"
+                  inputMode="text"
+                  value={manualIdInput}
+                  onChange={(e) => setManualIdInput(e.target.value)}
+                  placeholder={ts('manualPlaceholder')}
+                  className="w-full px-4 py-3 border border-[var(--color-border-default)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-[var(--color-surface-1)] font-mono text-center text-lg tracking-widest text-[var(--color-text-primary)]"
+                  dir="ltr"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && manualIdInput.trim()) {
+                      e.preventDefault();
+                      handleScan(manualIdInput.trim());
+                    }
+                  }}
+                />
+                <p
+                  className={`text-[11px] text-center leading-snug ${
+                    isValidCanonicalStudentNumber(normalizeStudentNumber(manualIdInput))
+                      ? 'text-emerald-500'
+                      : 'text-[var(--color-text-tertiary)]'
+                  }`}
+                >
+                  {ts('manualEntryHelper')}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const trimmed = manualIdInput.trim();
+                    if (!trimmed) return;
+                    handleScan(trimmed);
+                  }}
+                  disabled={!manualIdInput.trim()}
+                  className="w-full py-3 bg-brand-500 hover:opacity-90 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {ts('manualSubmit')}
+                </button>
+              </div>
+            )}
+
+            <div className="w-full max-w-sm mt-2">
+              <h2
+                className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-2"
+              >
+                {ts('history_title')}
+              </h2>
+              {scanHistory.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+                  <QrCode
+                    className="w-14 h-14 text-slate-300 dark:text-slate-600 mb-3"
+                    strokeWidth={1.25}
+                    aria-hidden
+                  />
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{ts('history_empty')}</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-xs">{ts('history_empty_hint')}</p>
+                </div>
+              ) : (
+                <>
+                  <div className="card overflow-hidden">
+                    {scanHistory.map((scan) => (
+                      <div
+                        key={scan.id}
+                        className="flex items-center gap-3 px-4 py-3 border-b border-[var(--color-border-subtle)] last:border-b-0"
+                      >
+                        <div
+                          className={`w-2 h-2 rounded-full shrink-0 ${
+                            scan.status === 'success'
+                              ? 'bg-[var(--color-success)]'
+                              : scan.status === 'duplicate'
+                                ? 'bg-amber-400'
+                                : 'bg-[var(--color-danger)]'
+                          }`}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">
+                            {scan.studentName}
+                          </p>
+                          <p className="text-xs text-[var(--color-text-tertiary)]">
+                            {formatTime(scan.time, locale)}
+                          </p>
+                        </div>
+                        <span
+                          className={`badge text-xs shrink-0 ${
+                            scan.status === 'success'
+                              ? 'badge-success'
+                              : scan.status === 'duplicate'
+                                ? 'border border-amber-700/50 bg-amber-950/40 text-amber-200'
+                                : 'badge-danger'
+                          }`}
+                        >
+                          {scan.status === 'error' ? '✗' : scan.status === 'duplicate' ? '⋈' : '✓'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setHistorySheetOpen(true)}
+                    className="mt-2 w-full text-center text-xs font-semibold text-teal-600 hover:text-teal-500 py-2"
+                  >
+                    {ts('viewAllToday')}
+                  </button>
+                </>
+              )}
+            </div>
+
+            {centerPlan && !hardwareTipDismissed && (() => {
+              const tier =
+                centerPlan === 'enterprise'
+                  ? 'enterprise'
+                  : centerPlan === 'pro' || centerPlan === 'business'
+                    ? 'pro'
+                    : 'starter';
+              return (
+                <div className="w-full max-w-sm mt-2 relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      localStorage.setItem('scanner.hardwareTipDismissed', '1');
+                      setHardwareTipDismissed(true);
+                    }}
+                    className="absolute top-2 end-2 z-10 rounded-full p-1.5 text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]"
+                    aria-label={tCommon('cancel')}
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                  <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4 pe-10">
+                    <div className="flex items-start gap-3">
+                      <div className="shrink-0 w-8 h-8 rounded-lg bg-teal-900/40 border border-teal-800/40 flex items-center justify-center">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                          stroke="#0D9488" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                          <line x1="12" y1="18" x2="12" y2="18"/>
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-[var(--color-text-primary)] mb-1">{ts('hardwareSpecs.cardTitle')}</p>
+                        {tier === 'starter' && (
+                          <p className="text-xs text-[var(--color-text-muted)] mb-1">
+                            <span className="text-[var(--color-text-secondary)]">{ts('hardwareSpecs.minimum')}: </span>
+                            {ts('hardwareSpecs.ramMin', { spec: '3GB' })} · {ts('hardwareSpecs.storageMin', { spec: '32GB' })} ·{' '}
+                            {ts('hardwareSpecs.cameraMin', { spec: '8MP auto-focus' })}
+                          </p>
+                        )}
+                        {tier === 'pro' && (
+                          <p className="text-xs text-[var(--color-text-muted)] mb-1">
+                            <span className="text-[var(--color-text-secondary)]">{ts('hardwareSpecs.minimum')}: </span>
+                            {ts('hardwareSpecs.ramMin', { spec: '4GB' })} · {ts('hardwareSpecs.storageMin', { spec: '64GB' })}
+                          </p>
+                        )}
+                        <p className="text-xs text-[var(--color-text-muted)]">
+                          <span className="text-[var(--color-text-secondary)]">{ts('hardwareSpecs.recommended')}: </span>
+                          {tier === 'enterprise' ? (
+                            <bdi dir="ltr" className="font-medium text-teal-400">Apple iPad (9th Gen)</bdi>
+                          ) : tier === 'pro' ? (
+                            <bdi dir="ltr" className="font-medium text-teal-400">Samsung Galaxy Tab A9+</bdi>
+                          ) : (
+                            <bdi dir="ltr" className="font-medium text-teal-400">Lenovo Tab M9</bdi>
+                          )}
+                        </p>
+                        {tier === 'enterprise' && (
+                          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                            <span className="text-[var(--color-text-secondary)]">{ts('hardwareSpecs.addon')}: </span>
+                            <bdi dir="ltr">Bluetooth 2D Scanner Gun</bdi>
+                          </p>
+                        )}
+                        {tier === 'enterprise' && (
+                          <p className="text-xs text-[var(--color-text-muted)] mt-1">{ts('hardwareSpecs.enterpriseNote')}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      </div>
+
+      {/* Group Selector sheet */}
+      {needGroupSelection && scannedStudent && scannedStudent.groups && scannedStudent.groups.length >= 2 && (() => {
+        const q = groupSearchQuery.trim().toLowerCase();
+        const filteredGroupsForSheet = q
+          ? scannedStudent.groups.filter((g) =>
+              g.name.toLowerCase().includes(q) ||
+              ((g as { subject?: string | null }).subject ?? '').toLowerCase().includes(q)
+            )
+          : scannedStudent.groups;
+        return (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
+          <div className="bg-[var(--color-surface-1)] rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-sm max-h-[85vh] min-h-[58vh] flex flex-col">
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-1 shrink-0">
+              <div className="w-12 h-1 rounded-full bg-slate-300" aria-hidden />
+            </div>
+            <div className="p-4 pb-2 border-b border-[var(--color-border-subtle)] shrink-0">
+              <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('selectGroupTitle')}</h2>
+              <p className="text-sm text-[var(--color-text-secondary)] mt-1">{t('selectGroupDesc')}</p>
+              {/* Search */}
+              <div className="relative mt-3">
+                <Search size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
+                <input
+                  type="search"
+                  placeholder={tCommon('search')}
+                  value={groupSearchQuery}
+                  onChange={(e) => setGroupSearchQuery(e.target.value)}
+                  className="w-full ps-9 pe-4 py-2.5 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                />
+              </div>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1 divide-y divide-slate-200">
+              {filteredGroupsForSheet.map((g) => (
+                <button
+                  key={g.id}
+                  onClick={() => handleGroupSelect(g)}
+                  className="w-full flex items-center gap-3 min-h-[56px] py-4 px-4 rounded-xl hover:bg-[var(--color-surface-0)] transition-all text-start first:pt-0"
+                >
+                  <div className="p-2 bg-teal-100 rounded-lg flex-shrink-0">
+                    <BookOpen className="w-4 h-4 text-teal-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-[var(--color-text-primary)] text-sm">{g.name}</p>
+                    {(g as { subject?: string | null }).subject && (
+                      <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{(g as { subject?: string | null }).subject}</p>
+                    )}
+                    <p className="text-xs font-medium text-teal-600 mt-1">
+                      {t('perLesson')} ·{' '}
+                      {g.fee != null
+                        ? `${tCommon('egp')} ${formatNumber(g.fee, locale)}`
+                        : `${tCommon('egp')} ${formatNumber(0, locale)}`}
+                    </p>
+                  </div>
+                  <DirectionalIcon icon={ChevronRight} className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        );
+      })()}
+
+      {scannedStudent && !needGroupSelection && (
+        <ScanResultScreen
+          student={scannedStudent}
+          selectedGroup={selectedGroup ?? scannedStudent.groups?.[0]}
+          onPaymentSelect={handlePaymentSelect}
+          onAllowLateEntry={handleAllowLateEntry}
+          onDismiss={handleDismiss}
+          isProcessing={isProcessing}
+          canAllowLateEntry={canAllowLateEntry}
+          balanceDue={addedAmountToBalance}
+          addedAmount={addedAmountToBalance}
+          outstandingBalance={Number(scannedStudent.balance_due ?? 0)}
+          paymentHeadline={paymentModalHeadline}
+        />
+      )}
+
+      <PendingSyncSheet
+        open={pendingSheetOpen}
+        onClose={() => setPendingSheetOpen(false)}
+        probeOk={probeOk}
+        centerId={centerId}
+        onQueueDrained={async () => {
+          try {
+            setPendingCount(await getUnsyncedCount());
+          } catch {
+            //
+          }
+        }}
+      />
+
+      <TodayHistorySheet open={historySheetOpen} onClose={() => setHistorySheetOpen(false)} rows={historyRowsFull} />
+
+      {subscriptionGateOpen && (
+        <div className="fixed inset-0 z-[52] flex items-center justify-center bg-black/45 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-[var(--color-border-subtle)] border-t-amber-500 border-t-4 bg-[var(--color-surface-1)] p-6 shadow-xl">
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-2">{ts('subscriptionGate.title')}</h2>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-6">{ts('subscriptionGate.body')}</p>
+            <button
+              type="button"
+              onClick={() => setSubscriptionGateOpen(false)}
+              className="w-full rounded-xl bg-teal-600 py-3 font-semibold text-white"
+            >
+              {ts('subscriptionGate.dismiss')}
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

@@ -616,7 +616,7 @@ export default function DashboardPage() {
           meData.user.role === 'admin' ||
           meData.user.role === 'super_admin';
         if (!canView) {
-          router.replace('/scan');
+          router.replace('/attendance');
           return;
         }
         setCenterId(meData.user.center_id);
@@ -1029,7 +1029,7 @@ export default function DashboardPage() {
         <h1 className="mb-6 text-xl font-semibold text-[var(--color-text-primary)]">{t('title')}</h1>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Link
-            href="/scan"
+            href="/attendance"
             className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-6 text-center transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
           >
             <QrCode className="mx-auto mb-3 h-14 w-14 text-teal-500" strokeWidth={1.5} />
@@ -1443,7 +1443,7 @@ export default function DashboardPage() {
                   <span className="flex-1">{t('addStudent')}</span>
                 </Link>
                 <Link
-                  href="/scan"
+                  href="/attendance"
                   className="flex min-h-14 items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3 text-end text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
                 >
                   <QrCode className="h-6 w-6 shrink-0 text-teal-500" aria-hidden />
