@@ -9260,6 +9260,22 @@
       "combinedMrr": "الإيراد الشهري المجمّع",
       "teacherBreakdown": "{active} نشط، {trials} تجريبي",
       "totalTeachers": "{count} مدرّس"
+    },
+    "cards": {
+      "totalTeachers": "إجمالي المدرّسين",
+      "freePlan": "بدون باقة",
+      "totalReferrals": "إجمالي الإحالات",
+      "freeMonthsGranted": "شهور مجانية ممنوحة",
+      "totalAttachments": "إجمالي الارتباطات",
+      "currentlyAttached": "مرتبط حالياً",
+      "detached": "منفصل",
+      "teachersWithCredits": "مدرّسون لديهم رصيد"
+    },
+    "filters": {
+      "all": "الكل",
+      "clear": "مسح الفلاتر",
+      "noMatch": "لا توجد صفوف مطابقة",
+      "search": "بحث"
     }
   }
 }
