@@ -59,12 +59,19 @@ export async function POST(
   // The proposal must belong to this center (404, no existence oracle).
   const { data: propRow, error: propErr } = await auth.supabaseAdmin
     .from('group_proposals')
-    .select('id, center_id, fee_per_class, status')
+    .select('id, center_id, teacher_id, fee_per_class, status, carries_link')
     .eq('id', proposalId)
     .maybeSingle();
   if (propErr) return fail('proposal_lookup', propErr);
   const prop = propRow as
-    | { id: string; center_id: string; fee_per_class: number | string; status: string }
+    | {
+        id: string;
+        center_id: string;
+        teacher_id: string;
+        fee_per_class: number | string;
+        status: string;
+        carries_link: boolean;
+      }
     | null;
   if (!prop || prop.center_id !== auth.centerId) {
     return NextResponse.json({ error: 'Not found', code: 'NOT_FOUND' }, { status: 404 });
@@ -112,6 +119,30 @@ export async function POST(
     | undefined;
   if (!result) {
     return fail('respond_shape', { message: 'respond_group_proposal returned no row' });
+  }
+
+  // Combined request closed before the teacher ever acted: the proposal carried
+  // an uncommitted (pending) link, so withdrawing/declining it leaves no group
+  // AND no link. Tear down the still-pending teacher_center row. Best-effort
+  // cleanup - a stranded pending row grants no access and self-heals on the next
+  // combined request to the same teacher.
+  if (
+    prop.carries_link &&
+    (result.proposal_status === 'withdrawn' || result.proposal_status === 'declined')
+  ) {
+    const { error: linkErr } = await auth.supabaseAdmin
+      .from('teacher_center')
+      .delete()
+      .eq('teacher_id', prop.teacher_id)
+      .eq('center_id', auth.centerId)
+      .eq('status', 'pending');
+    if (linkErr) {
+      Sentry.withScope((scope) => {
+        scope.setTag('route', ROUTE_TAG);
+        scope.setTag('step', 'pending_link_cleanup');
+        Sentry.captureMessage(`pending link cleanup failed: ${linkErr.message}`, 'warning');
+      });
+    }
   }
 
   if (action === 'accept') {

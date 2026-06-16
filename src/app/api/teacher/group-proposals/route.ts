@@ -192,12 +192,39 @@ export async function GET(request: NextRequest) {
   // Attach proposals: label by the existing group's name (best-effort).
   const groupNameById = await resolveTargetGroupNames(auth.supabaseAdmin, built.items);
 
+  // Student count for the info page: how many students are in the target group.
+  // Counted from student_group_members - the SAME source the Groups page uses,
+  // so the numbers agree. A privacy choice: the teacher sees the COUNT only,
+  // never the roster. New-group proposals have no group yet, so they count 0.
+  const countByGroup = new Map<string, number>();
+  const attachGroupIds = [
+    ...new Set(built.items.map((i) => i.targetGroupId).filter((x): x is string => !!x)),
+  ];
+  if (attachGroupIds.length > 0) {
+    const { data: memberRows, error: membersErr } = await auth.supabaseAdmin
+      .from('student_group_members')
+      .select('group_id')
+      .in('group_id', attachGroupIds);
+    if (membersErr) {
+      Sentry.withScope((scope) => {
+        scope.setTag('route', ROUTE_TAG);
+        scope.setTag('step', 'student_count');
+        Sentry.captureMessage(`group-proposals student-count failed: ${membersErr.message}`, 'warning');
+      });
+    } else {
+      for (const m of (memberRows ?? []) as { group_id: string }[]) {
+        countByGroup.set(m.group_id, (countByGroup.get(m.group_id) ?? 0) + 1);
+      }
+    }
+  }
+
   return NextResponse.json({
     proposals: built.items.map((item) => ({
       ...item,
       centerName: nameByCenter.get(item.centerId) ?? null,
       centerPhone: phoneByCenter.get(item.centerId) ?? null,
       targetGroupName: item.targetGroupId ? groupNameById.get(item.targetGroupId) ?? null : null,
+      studentCount: item.targetGroupId ? countByGroup.get(item.targetGroupId) ?? 0 : 0,
     })),
   });
 }

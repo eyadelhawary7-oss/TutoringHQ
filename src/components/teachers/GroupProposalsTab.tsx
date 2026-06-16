@@ -24,6 +24,7 @@ type Proposal = {
   initiatedBy: 'teacher' | 'center';
   targetGroupId: string | null;
   targetGroupName: string | null;
+  carriesLink: boolean;
   expiresAt: string;
   createdAt: string;
   openingMessage: string | null;
@@ -43,6 +44,7 @@ const ERROR_KEY: Record<string, string> = {
   CUT_NOT_LESS_THAN_FEE: 'errorCutTooHigh',
   PROPOSAL_ALREADY_OPEN: 'errorAlreadyOpen',
   TEACHER_NOT_LINKED: 'errorTeacherNotLinked',
+  TEACHER_CODE_NOT_FOUND: 'errorCodeNotFound',
   GROUP_HAS_TEACHER: 'errorGroupHasTeacher',
   GROUP_NOT_ELIGIBLE: 'errorGroupNotEligible',
   GROUP_NO_FEE: 'errorGroupNoFee',
@@ -90,8 +92,12 @@ export default function GroupProposalsTab({ onChanged }: { onChanged?: () => voi
   const [attachGroups, setAttachGroups] = useState<AttachGroup[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [targetMode, setTargetMode] = useState<'new' | 'existing'>('new');
+  // Teacher source: pick an already-linked teacher, or name one by their code
+  // (the combined link + group request - the teacher confirms).
+  const [teacherSource, setTeacherSource] = useState<'linked' | 'code'>('linked');
   const [form, setForm] = useState({
     teacherId: '',
+    teacherCode: '',
     subject: '',
     gradeLevel: '',
     fee: '',
@@ -162,9 +168,13 @@ export default function GroupProposalsTab({ onChanged }: { onChanged?: () => voi
   const effectiveFee =
     targetMode === 'existing' ? selectedAttachGroup?.feePerClass ?? 0 : Number(form.fee);
 
+  // Whichever teacher source is active must name a teacher.
+  const teacherChosen =
+    teacherSource === 'code' ? form.teacherCode.trim().length > 0 : form.teacherId.length > 0;
+
   const submitProposal = async () => {
     const cut = Number(form.cut);
-    if (!form.teacherId) return;
+    if (!teacherChosen) return;
     if (targetMode === 'existing') {
       if (!form.targetGroupId) return;
     } else if (!form.subject.trim() || !Number.isFinite(effectiveFee) || effectiveFee <= 0) {
@@ -181,16 +191,23 @@ export default function GroupProposalsTab({ onChanged }: { onChanged?: () => voi
         data: { session },
       } = await supabase.auth.getSession();
       if (!session) return;
+      // teacher_code names a (possibly not-yet-linked) teacher; teacher_id picks
+      // an already-linked one. The server resolves the code and, when the teacher
+      // is not linked, bundles the link into this same request (carries_link).
+      const teacherRef =
+        teacherSource === 'code'
+          ? { teacher_code: form.teacherCode.trim() }
+          : { teacher_id: form.teacherId };
       const body =
         targetMode === 'existing'
           ? {
-              teacher_id: form.teacherId,
+              ...teacherRef,
               target_group_id: form.targetGroupId,
               opening_cut_egp: cut,
               opening_message: form.message.trim() || undefined,
             }
           : {
-              teacher_id: form.teacherId,
+              ...teacherRef,
               subject: form.subject.trim(),
               grade_level: form.gradeLevel.trim() || undefined,
               fee_per_class: Number(form.fee),
@@ -213,8 +230,21 @@ export default function GroupProposalsTab({ onChanged }: { onChanged?: () => voi
       }
       setShowForm(false);
       setTargetMode('new');
-      setForm({ teacherId: '', subject: '', gradeLevel: '', fee: '', cut: '', message: '', targetGroupId: '' });
+      setTeacherSource('linked');
+      setForm({
+        teacherId: '',
+        teacherCode: '',
+        subject: '',
+        gradeLevel: '',
+        fee: '',
+        cut: '',
+        message: '',
+        targetGroupId: '',
+      });
       load();
+      // A pending link may have been created with the proposal - refresh the
+      // monitor so the owner sees the teacher appear.
+      onChanged?.();
     } catch {
       setErrorKey('errorGeneric');
     } finally {
@@ -308,7 +338,37 @@ export default function GroupProposalsTab({ onChanged }: { onChanged?: () => voi
             <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
               {t('teacherPickerLabel')}
             </label>
-            {teachers.length === 0 ? (
+            {/* Source: an already-linked teacher, or add one by their code. */}
+            <div className="mb-2 flex gap-1 rounded-lg bg-[var(--color-surface-1)] p-1 w-fit">
+              <button
+                type="button"
+                onClick={() => setTeacherSource('linked')}
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${teacherSource === 'linked' ? 'bg-teal-600 text-white' : 'text-[var(--color-text-secondary)]'}`}
+              >
+                {t('teacherSourceLinked')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setTeacherSource('code')}
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${teacherSource === 'code' ? 'bg-teal-600 text-white' : 'text-[var(--color-text-secondary)]'}`}
+              >
+                {t('teacherSourceByCode')}
+              </button>
+            </div>
+
+            {teacherSource === 'code' ? (
+              <>
+                <input
+                  value={form.teacherCode}
+                  maxLength={32}
+                  onChange={(e) => setForm((f) => ({ ...f, teacherCode: e.target.value }))}
+                  placeholder={t('teacherCodePlaceholder')}
+                  className="w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 font-mono text-sm uppercase text-[var(--color-text-primary)]"
+                  dir="ltr"
+                />
+                <p className="mt-1 text-xs text-[var(--color-text-muted)]">{t('combinedHint')}</p>
+              </>
+            ) : teachers.length === 0 ? (
               <p className="text-sm text-[var(--color-text-secondary)]">
                 {teachersLoaded ? t('noLinkedTeachers') : t('loadingTeachers')}
               </p>
@@ -433,7 +493,7 @@ export default function GroupProposalsTab({ onChanged }: { onChanged?: () => voi
               onClick={submitProposal}
               disabled={
                 submitting ||
-                !form.teacherId ||
+                !teacherChosen ||
                 !form.cut ||
                 (targetMode === 'existing' ? !form.targetGroupId : !form.subject.trim() || !form.fee)
               }
@@ -487,6 +547,11 @@ export default function GroupProposalsTab({ onChanged }: { onChanged?: () => voi
                     {p.targetGroupId && (
                       <span className="mt-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
                         {t('attachBadge')}
+                      </span>
+                    )}
+                    {p.carriesLink && p.status === 'open' && (
+                      <span className="mt-1 ms-1 inline-block rounded-full bg-[var(--color-surface-2)] px-2 py-0.5 text-xs font-semibold text-[var(--color-text-secondary)]">
+                        {t('linkPendingBadge')}
                       </span>
                     )}
                     <p className="mt-1 text-xs text-[var(--color-text-muted)]">

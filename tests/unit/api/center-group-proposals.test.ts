@@ -17,6 +17,7 @@ type QueryResult = { data: unknown; error: { message: string; code?: string } | 
 const queues: Record<string, QueryResult[]> = {};
 const filterCalls: { table: string; method: string; column: string; value: unknown }[] = [];
 const insertCalls: { table: string; payload: Record<string, unknown> }[] = [];
+const updateCalls: { table: string; payload: Record<string, unknown> }[] = [];
 const deleteCalls: { table: string }[] = [];
 const rpcCalls: { fn: string; args: Record<string, unknown> }[] = [];
 const rpcQueue: QueryResult[] = [];
@@ -73,6 +74,17 @@ const mockAdmin = {
           onRejected?: (e: unknown) => unknown,
         ) => Promise.resolve(result()).then(onFulfilled, onRejected),
       };
+    },
+    update: (payload: Record<string, unknown>) => {
+      updateCalls.push({ table, payload });
+      const upd = {
+        eq: () => upd,
+        then: (
+          onFulfilled: (v: QueryResult) => unknown,
+          onRejected?: (e: unknown) => unknown,
+        ) => Promise.resolve(pop(`${table}_update`)).then(onFulfilled, onRejected),
+      };
+      return upd;
     },
     delete: () => {
       deleteCalls.push({ table });
@@ -172,6 +184,7 @@ beforeEach(() => {
   for (const k of Object.keys(queues)) delete queues[k];
   filterCalls.length = 0;
   insertCalls.length = 0;
+  updateCalls.length = 0;
   deleteCalls.length = 0;
   rpcCalls.length = 0;
   rpcQueue.length = 0;
@@ -331,9 +344,9 @@ describe('POST /api/center/group-proposals (owner-initiated)', () => {
     opening_message: 'join us',
   };
 
-  it('happy path: inserts proposal (initiated_by=center) + opening center offer, 201 open', async () => {
+  it('already-active teacher: plain proposal (initiated_by=center, carries_link=false), no link write', async () => {
     seedCenterAuth();
-    queues.teacher_center = [{ data: { teacher_id: TEACHER_ID }, error: null }];
+    queues.teacher_center = [{ data: { id: 'tc-1', status: 'active' }, error: null }];
     queues.group_proposals_insert = [{ data: { id: PROPOSAL_ID }, error: null }];
     queues.group_proposal_offers_insert = [{ data: null, error: null }];
 
@@ -342,6 +355,9 @@ describe('POST /api/center/group-proposals (owner-initiated)', () => {
 
     expect(res.status).toBe(201);
     expect(json).toEqual({ proposal_id: PROPOSAL_ID, status: 'open' });
+    // No link writes: the teacher is already a member.
+    expect(updateCalls.filter((u) => u.table === 'teacher_center')).toHaveLength(0);
+    expect(insertCalls.filter((i) => i.table === 'teacher_center')).toHaveLength(0);
     expect(insertCalls[0].table).toBe('group_proposals');
     expect(insertCalls[0].payload).toMatchObject({
       teacher_id: TEACHER_ID,
@@ -349,6 +365,7 @@ describe('POST /api/center/group-proposals (owner-initiated)', () => {
       subject: 'Chemistry',
       fee_per_class: 90,
       initiated_by: 'center',
+      carries_link: false,
       status: 'open',
     });
     expect(insertCalls[1].table).toBe('group_proposal_offers');
@@ -359,15 +376,80 @@ describe('POST /api/center/group-proposals (owner-initiated)', () => {
     });
   });
 
-  it('rejects a teacher who is not an active member of the center (403 TEACHER_NOT_LINKED)', async () => {
+  it('COMBINED: not-yet-linked teacher_id creates a PENDING link + carries_link proposal (201)', async () => {
     seedCenterAuth();
-    queues.teacher_center = [{ data: null, error: null }];
+    queues.teacher_center = [{ data: null, error: null }]; // no membership yet
+    queues.teacher_center_insert = [{ data: null, error: null }];
+    queues.group_proposals_insert = [{ data: { id: PROPOSAL_ID }, error: null }];
+    queues.group_proposal_offers_insert = [{ data: null, error: null }];
 
     const res = await CREATE(makeCreate(VALID_CREATE));
     const json = await res.json();
 
-    expect(res.status).toBe(403);
-    expect(json.code).toBe('TEACHER_NOT_LINKED');
+    expect(res.status).toBe(201);
+    // The link half: a pending teacher_center row was created (no UPDATE - there
+    // was no prior row to reactivate).
+    const linkInsert = insertCalls.find((i) => i.table === 'teacher_center');
+    expect(linkInsert?.payload).toMatchObject({
+      teacher_id: TEACHER_ID,
+      center_id: CENTER_ID,
+      status: 'pending',
+      invited_by: OWNER_ID,
+    });
+    // The proposal half carries the link flag.
+    const propInsert = insertCalls.find((i) => i.table === 'group_proposals');
+    expect(propInsert?.payload).toMatchObject({ initiated_by: 'center', carries_link: true });
+  });
+
+  it('COMBINED: an inactive prior membership is reactivated to PENDING (update, not insert)', async () => {
+    seedCenterAuth();
+    queues.teacher_center = [{ data: { id: 'tc-9', status: 'inactive' }, error: null }];
+    queues.teacher_center_update = [{ data: null, error: null }];
+    queues.group_proposals_insert = [{ data: { id: PROPOSAL_ID }, error: null }];
+    queues.group_proposal_offers_insert = [{ data: null, error: null }];
+
+    const res = await CREATE(makeCreate(VALID_CREATE));
+
+    expect(res.status).toBe(201);
+    const linkUpdate = updateCalls.find((u) => u.table === 'teacher_center');
+    expect(linkUpdate?.payload).toMatchObject({ status: 'pending', invited_by: OWNER_ID });
+    expect(insertCalls.find((i) => i.table === 'teacher_center')).toBeUndefined();
+  });
+
+  it('COMBINED: teacher_code resolves an unlinked teacher -> pending link + carries_link proposal', async () => {
+    seedCenterAuth();
+    // resolveTeacherReferralCode: teacher_profiles.user_id by referral_code.
+    queues.teacher_profiles = [{ data: { user_id: TEACHER_ID }, error: null }];
+    queues.teacher_center = [{ data: null, error: null }];
+    queues.teacher_center_insert = [{ data: null, error: null }];
+    queues.group_proposals_insert = [{ data: { id: PROPOSAL_ID }, error: null }];
+    queues.group_proposal_offers_insert = [{ data: null, error: null }];
+
+    const { teacher_id: _omit, ...rest } = VALID_CREATE;
+    void _omit;
+    const res = await CREATE(makeCreate({ ...rest, teacher_code: 'AHMED7X' }));
+
+    expect(res.status).toBe(201);
+    expect(insertCalls.find((i) => i.table === 'teacher_center')?.payload).toMatchObject({
+      status: 'pending',
+    });
+    expect(insertCalls.find((i) => i.table === 'group_proposals')?.payload).toMatchObject({
+      teacher_id: TEACHER_ID,
+      carries_link: true,
+    });
+  });
+
+  it('an unknown teacher_code is a 404 TEACHER_CODE_NOT_FOUND with no writes', async () => {
+    seedCenterAuth();
+    queues.teacher_profiles = [{ data: null, error: null }]; // code resolves to nothing
+
+    const { teacher_id: _omit, ...rest } = VALID_CREATE;
+    void _omit;
+    const res = await CREATE(makeCreate({ ...rest, teacher_code: 'NOPE' }));
+    const json = await res.json();
+
+    expect(res.status).toBe(404);
+    expect(json.code).toBe('TEACHER_CODE_NOT_FOUND');
     expect(insertCalls).toHaveLength(0);
   });
 
@@ -384,7 +466,7 @@ describe('POST /api/center/group-proposals (owner-initiated)', () => {
 
   it('a duplicate open proposal (unique 23505) -> 409 PROPOSAL_ALREADY_OPEN', async () => {
     seedCenterAuth();
-    queues.teacher_center = [{ data: { teacher_id: TEACHER_ID }, error: null }];
+    queues.teacher_center = [{ data: { id: 'tc-1', status: 'active' }, error: null }];
     queues.group_proposals_insert = [
       { data: null, error: { message: 'duplicate key', code: '23505' } },
     ];
