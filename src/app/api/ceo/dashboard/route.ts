@@ -10,6 +10,7 @@ import type {
 } from '@/types/ceo';
 import { NextRequest, NextResponse } from 'next/server';
 import { getImpliedMonthlyMrr, isPlanKey, normalizeBillingPeriod, PLANS, type PlanKey } from '@/lib/pricing';
+import { getTeacherDashboardCombined } from '@/lib/ceoTeachers';
 
 export async function GET(request: NextRequest) {
   const ctx = await getAdminContext(request);
@@ -366,11 +367,12 @@ export async function GET(request: NextRequest) {
       created_at: c.created_at,
     }));
 
-  const [actionQueue, pipeline, redTierRows, amberTierRows] = await Promise.all([
+  const [actionQueue, pipeline, redTierRows, amberTierRows, teacherCombined] = await Promise.all([
     getActionQueue(supabase, 20),
     getPipelineSummary(supabase),
     buildTierRows(pickTierCenters('red')),
     buildTierRows(pickTierCenters('amber')),
+    getTeacherDashboardCombined(supabase, mrr),
   ]);
 
   const center_health_tiers = {
@@ -414,6 +416,7 @@ export async function GET(request: NextRequest) {
           }
         : null,
     },
+    teacher_combined: teacherCombined,
   };
 
   const legacyPayload = {

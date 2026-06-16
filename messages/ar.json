@@ -9192,5 +9192,74 @@
     "earningsTitle": "أرباحك من المراكز",
     "earnedThisMonth": "هذا الشهر",
     "earnedAllTime": "كل الوقت"
+  },
+  "ceoTeachers": {
+    "navLabel": "المدرّسون",
+    "title": "رؤية جانب المدرّسين",
+    "subtitle": "اشتراكات وإحالات وارتباطات المدرّسين بالسناتر، للقراءة فقط",
+    "testBadge": "تجريبي",
+    "noSubscription": "لا يوجد اشتراك",
+    "referralConverted": "تم التحويل",
+    "referralPending": "قيد الانتظار",
+    "attachmentCurrent": "حالي",
+    "attachmentPrivate": "خاص/منفصل",
+    "tabs": {
+      "subscriptions": "الاشتراكات",
+      "referrals": "الإحالات",
+      "teachers": "المدرّسون",
+      "attachments": "الارتباطات",
+      "credits": "الرصيد"
+    },
+    "tiers": {
+      "standard": "ستاندرد",
+      "pro": "برو"
+    },
+    "statuses": {
+      "trialing": "تجريبي",
+      "active": "نشط",
+      "past_due": "متأخر السداد",
+      "suspended": "موقوف",
+      "cancelled": "ملغي"
+    },
+    "cols": {
+      "teacher": "المدرّس",
+      "tier": "الباقة",
+      "status": "الحالة",
+      "trialEnds": "نهاية التجربة",
+      "periodEnd": "نهاية الفترة",
+      "nextBilling": "الفاتورة القادمة",
+      "freeMonths": "شهور مجانية",
+      "referrer": "المُحيل",
+      "referee": "المُحال",
+      "conversion": "حالة التحويل",
+      "rewardedAt": "تاريخ المكافأة",
+      "subject": "المادة",
+      "phone": "الهاتف",
+      "joined": "تاريخ الانضمام",
+      "center": "السنتر",
+      "group": "المجموعة",
+      "cut": "حصة السنتر",
+      "fee": "سعر الحصة",
+      "attachmentState": "حالة الارتباط",
+      "subscriptionCredits": "رصيد الاشتراك",
+      "purchasedCredits": "رصيد مشترى",
+      "totalCredits": "الإجمالي"
+    },
+    "empty": {
+      "subscriptions": "لا توجد اشتراكات للمدرّسين بعد",
+      "referrals": "لا توجد إحالات بين المدرّسين بعد",
+      "teachers": "لا يوجد مدرّسون بعد",
+      "attachments": "لا توجد ارتباطات بين المدرّسين والسناتر بعد",
+      "credits": "لا يوجد رصيد رسائل بعد"
+    },
+    "combined": {
+      "title": "الإيراد المجمّع (سناتر + مدرّسون)",
+      "openSection": "فتح قسم المدرّسين",
+      "centerMrr": "إيراد السناتر الشهري",
+      "teacherMrr": "إيراد المدرّسين الشهري",
+      "combinedMrr": "الإيراد الشهري المجمّع",
+      "teacherBreakdown": "{active} نشط، {trials} تجريبي",
+      "totalTeachers": "{count} مدرّس"
+    }
   }
 }

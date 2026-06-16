@@ -9192,5 +9192,74 @@
     "earningsTitle": "Your center earnings",
     "earnedThisMonth": "This month",
     "earnedAllTime": "All time"
+  },
+  "ceoTeachers": {
+    "navLabel": "Teachers",
+    "title": "Teacher-Side Visibility",
+    "subtitle": "Teacher subscriptions, referrals and center attachments, read-only",
+    "testBadge": "Test",
+    "noSubscription": "No subscription",
+    "referralConverted": "Converted",
+    "referralPending": "Pending",
+    "attachmentCurrent": "Current",
+    "attachmentPrivate": "Private/detached",
+    "tabs": {
+      "subscriptions": "Subscriptions",
+      "referrals": "Referrals",
+      "teachers": "Teachers",
+      "attachments": "Attachments",
+      "credits": "Credits"
+    },
+    "tiers": {
+      "standard": "Standard",
+      "pro": "Pro"
+    },
+    "statuses": {
+      "trialing": "Trial",
+      "active": "Active",
+      "past_due": "Past due",
+      "suspended": "Suspended",
+      "cancelled": "Cancelled"
+    },
+    "cols": {
+      "teacher": "Teacher",
+      "tier": "Tier",
+      "status": "Status",
+      "trialEnds": "Trial ends",
+      "periodEnd": "Period ends",
+      "nextBilling": "Next billing",
+      "freeMonths": "Free months",
+      "referrer": "Referrer",
+      "referee": "Referee",
+      "conversion": "Conversion",
+      "rewardedAt": "Rewarded at",
+      "subject": "Subject",
+      "phone": "Phone",
+      "joined": "Joined",
+      "center": "Center",
+      "group": "Group",
+      "cut": "Center cut",
+      "fee": "Class fee",
+      "attachmentState": "Attachment",
+      "subscriptionCredits": "Subscription credits",
+      "purchasedCredits": "Purchased credits",
+      "totalCredits": "Total"
+    },
+    "empty": {
+      "subscriptions": "No teacher subscriptions yet",
+      "referrals": "No teacher referrals yet",
+      "teachers": "No teachers yet",
+      "attachments": "No teacher-center attachments yet",
+      "credits": "No blast credits yet"
+    },
+    "combined": {
+      "title": "Combined revenue (centers + teachers)",
+      "openSection": "Open teachers section",
+      "centerMrr": "Center MRR",
+      "teacherMrr": "Teacher MRR",
+      "combinedMrr": "Combined MRR",
+      "teacherBreakdown": "{active} active, {trials} trial",
+      "totalTeachers": "{count} teachers"
+    }
   }
 }

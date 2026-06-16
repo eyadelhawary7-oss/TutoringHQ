@@ -171,6 +171,16 @@ export interface CeoOps {
   } | null
 }
 
+/** Combined center + teacher-side top-line (Section A, owner-only). */
+export interface CeoTeacherCombined {
+  center_mrr: number
+  teacher_mrr: number
+  combined_mrr: number
+  teacher_active_subs: number
+  teacher_trials: number
+  total_teachers: number
+}
+
 // ActionQueueSummary and PipelineSummary already exist in this file — reference directly
 export interface CeoDashboardData {
   hero: CeoHero
@@ -181,4 +191,6 @@ export interface CeoDashboardData {
   center_health_tiers: CeoCenterHealthTiers
   cash: CeoCash
   ops: CeoOps
+  /** Optional: present once the dashboard route computes teacher-side aggregates. */
+  teacher_combined?: CeoTeacherCombined
 }
