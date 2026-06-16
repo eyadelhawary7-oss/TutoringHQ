@@ -5,8 +5,9 @@ import { useRef, useState } from 'react';
 import MyTeachersPanel, { type MyTeachersPanelHandle } from '@/components/teachers/MyTeachersPanel';
 import AddTeacherPanel from '@/components/teachers/AddTeacherPanel';
 import GroupProposalsTab from '@/components/teachers/GroupProposalsTab';
+import GroupSlotsTab from '@/components/teachers/GroupSlotsTab';
 
-type Tab = 'myTeachers' | 'addTeacher' | 'requests';
+type Tab = 'myTeachers' | 'addTeacher' | 'requests' | 'slots';
 
 /**
  * Center-side Teachers section (/my-teachers). One home for: My teachers
@@ -16,6 +17,7 @@ type Tab = 'myTeachers' | 'addTeacher' | 'requests';
  */
 export default function MyTeachersPage() {
   const t = useTranslations('teachersSection');
+  const tSlots = useTranslations('slotPicking');
   const locale = useLocale();
   const isRTL = locale === 'ar' || locale.startsWith('ar-');
   const [tab, setTab] = useState<Tab>('myTeachers');
@@ -28,6 +30,7 @@ export default function MyTeachersPage() {
   const tabs: { key: Tab; label: string }[] = [
     { key: 'myTeachers', label: t('tabMyTeachers') },
     { key: 'requests', label: t('tabRequests') },
+    { key: 'slots', label: tSlots('centerTabLabel') },
     { key: 'addTeacher', label: t('tabAddTeacher') },
   ];
 
@@ -60,6 +63,7 @@ export default function MyTeachersPage() {
 
       {tab === 'myTeachers' && <MyTeachersPanel panelRef={monitorRef} />}
       {tab === 'requests' && <GroupProposalsTab onChanged={refreshMonitor} />}
+      {tab === 'slots' && <GroupSlotsTab onChanged={refreshMonitor} />}
       {tab === 'addTeacher' && <AddTeacherPanel />}
     </div>
   );
