@@ -62,6 +62,14 @@ const mockAdmin = {
           Promise.resolve(result()).then(onF, onR),
       };
     },
+    update: () => {
+      const upd = {
+        eq: () => upd,
+        then: (onF: (v: QueryResult) => unknown, onR?: (e: unknown) => unknown) =>
+          Promise.resolve({ data: null, error: null }).then(onF, onR),
+      };
+      return upd;
+    },
     delete: () => {
       const del = {
         eq: () => del,
@@ -142,7 +150,7 @@ describe('POST /api/center/group-proposals (attach to existing group)', () => {
         error: null,
       },
     ];
-    queues.teacher_center = [{ data: { teacher_id: TEACHER_ID }, error: null }];
+    queues.teacher_center = [{ data: { id: 'tc-1', status: 'active' }, error: null }];
     queues.group_proposals_insert = [{ data: { id: PROPOSAL_ID }, error: null }];
     queues.group_proposal_offers_insert = [{ data: null, error: null }];
 

@@ -332,4 +332,109 @@ describe('POST /api/teacher/group-proposals/[proposalId]/respond', () => {
     expect(json.code).toBe('CUT_NOT_LESS_THAN_FEE');
     expect(rpcCalls).toHaveLength(0);
   });
+
+  // --- Combined center-initiated requests (carries_link) -------------------
+  // A carries_link proposal bundles the teacher<->center link with the group
+  // proposal. The teacher's accept/counter/decline must resolve BOTH atomically,
+  // so the route delegates to the single respond_center_group_proposal RPC -
+  // never a separate teacher_center write here (that is what makes a half-state
+  // impossible: link + proposal commit or roll back together inside the RPC).
+  function seedCombinedProposal() {
+    queues.group_proposals = [
+      {
+        data: {
+          id: PROPOSAL_ID,
+          teacher_id: TEACHER_ID,
+          fee_per_class: 100,
+          status: 'open',
+          carries_link: true,
+        },
+        error: null,
+      },
+    ];
+  }
+
+  it('ACCEPT on a carries_link proposal routes to the atomic combined RPC, returns accepted + group_id', async () => {
+    seedTeacherAuth();
+    seedCombinedProposal();
+    rpcQueue.push({ data: [{ proposal_status: 'accepted', group_id: 'group-42' }], error: null });
+
+    const res = await RESPOND(respondRequest({ action: 'accept' }), params);
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json).toEqual({ status: 'accepted', group_id: 'group-42' });
+    // Exactly one transactional RPC; no side-channel link writes in the route.
+    expect(rpcCalls).toHaveLength(1);
+    expect(rpcCalls[0].fn).toBe('respond_center_group_proposal');
+    expect(rpcCalls[0].args).toMatchObject({
+      p_proposal_id: PROPOSAL_ID,
+      p_actor_user_id: TEACHER_ID,
+      p_action: 'accept',
+    });
+    expect(insertCalls.filter((i) => i.table === 'teacher_center')).toHaveLength(0);
+    expect(deleteCalls.filter((d) => d.table === 'teacher_center')).toHaveLength(0);
+  });
+
+  it('COUNTER on a carries_link proposal routes to the combined RPC (link commits, cut keeps moving)', async () => {
+    seedTeacherAuth();
+    seedCombinedProposal();
+    rpcQueue.push({ data: [{ proposal_status: 'open', group_id: null }], error: null });
+    queues.group_proposal_offers = [{ data: { id: 'offer-3' }, error: null }];
+
+    const res = await RESPOND(respondRequest({ action: 'counter', cut_egp: 25 }), params);
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json).toEqual({ status: 'open', offer_id: 'offer-3' });
+    expect(rpcCalls[0].fn).toBe('respond_center_group_proposal');
+    expect(rpcCalls[0].args).toMatchObject({ p_action: 'counter', p_cut_egp: 25 });
+  });
+
+  it('DECLINE on a carries_link proposal routes to the combined RPC (no link, no group)', async () => {
+    seedTeacherAuth();
+    seedCombinedProposal();
+    rpcQueue.push({ data: [{ proposal_status: 'declined', group_id: null }], error: null });
+
+    const res = await RESPOND(respondRequest({ action: 'decline' }), params);
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.status).toBe('declined');
+    expect(rpcCalls[0].fn).toBe('respond_center_group_proposal');
+    expect(rpcCalls[0].args).toMatchObject({ p_action: 'decline' });
+  });
+
+  it('WITHDRAW on a carries_link proposal stays on the plain RPC (no link to commit yet)', async () => {
+    seedTeacherAuth();
+    seedCombinedProposal();
+    rpcQueue.push({ data: [{ proposal_status: 'withdrawn', group_id: null }], error: null });
+
+    const res = await RESPOND(respondRequest({ action: 'withdraw' }), params);
+
+    expect(res.status).toBe(200);
+    expect(rpcCalls[0].fn).toBe('respond_group_proposal');
+    expect(rpcCalls[0].args).toMatchObject({ p_side: 'teacher', p_action: 'withdraw' });
+  });
+
+  it('a non-party cannot act on a carries_link proposal (404, no RPC)', async () => {
+    seedTeacherAuth();
+    queues.group_proposals = [
+      {
+        data: {
+          id: PROPOSAL_ID,
+          teacher_id: 'someone-else',
+          fee_per_class: 100,
+          status: 'open',
+          carries_link: true,
+        },
+        error: null,
+      },
+    ];
+
+    const res = await RESPOND(respondRequest({ action: 'accept' }), params);
+
+    expect(res.status).toBe(404);
+    expect(rpcCalls).toHaveLength(0);
+  });
 });

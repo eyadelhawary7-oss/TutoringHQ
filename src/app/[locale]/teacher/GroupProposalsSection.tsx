@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Handshake, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
-import { formatCurrency, formatDate } from '@/lib/formatNumber';
+import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
 
 type Offer = {
   id: string;
@@ -27,6 +27,8 @@ type Proposal = {
   initiatedBy: 'teacher' | 'center';
   targetGroupId: string | null;
   targetGroupName: string | null;
+  carriesLink: boolean;
+  studentCount: number;
   expiresAt: string;
   createdAt: string;
   offerCount: number;
@@ -359,6 +361,12 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
                       {t('studentRate')}:{' '}
                       <span className="font-mono font-semibold">{formatCurrency(p.feePerClass, locale)}</span>
                     </p>
+                    {p.initiatedBy === 'center' && (
+                      <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                        {t('studentCountLabel')}:{' '}
+                        <span className="font-mono font-semibold">{formatNumber(p.studentCount, locale)}</span>
+                      </p>
+                    )}
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_CLASS[p.status]}`}>
@@ -425,6 +433,14 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
                       </li>
                     ))}
                   </ul>
+                )}
+
+                {/* Combined request: accepting/countering also JOINS the center.
+                    Make the bundled nature explicit before the actions. */}
+                {p.carriesLink && p.status === 'open' && (
+                  <p className="mt-2 rounded-lg bg-[var(--color-teal-soft)] px-3 py-2 text-xs text-[var(--color-teal-deep)]">
+                    {t('combinedJoinNote', { center: p.centerName ?? t('thisCenter') })}
+                  </p>
                 )}
 
                 {p.status === 'open' && (

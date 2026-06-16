@@ -29,6 +29,14 @@ export type ProposalRow = {
    * instead of proposing a brand-new group. NULL = new-group proposal.
    */
   target_group_id: string | null;
+  /**
+   * Center-initiated combined request: when true, this proposal ALSO carries an
+   * uncommitted teacher<->center link (a pending teacher_center row). The
+   * teacher's first accept/counter commits the link (flag flips to false);
+   * decline tears it down. Only ever true on initiated_by='center', status
+   * 'open' rows. Drives the teacher-side combined accept (respond_center_group_proposal).
+   */
+  carries_link: boolean;
   accepted_offer_id: string | null;
   opening_message: string | null;
   expires_at: string;
@@ -36,7 +44,7 @@ export type ProposalRow = {
 };
 
 export const PROPOSAL_COLUMNS =
-  'id, teacher_id, center_id, subject, grade_level, fee_per_class, status, initiated_by, target_group_id, accepted_offer_id, opening_message, expires_at, created_at';
+  'id, teacher_id, center_id, subject, grade_level, fee_per_class, status, initiated_by, target_group_id, carries_link, accepted_offer_id, opening_message, expires_at, created_at';
 
 export type OfferOut = {
   id: string;
@@ -57,6 +65,12 @@ export type ProposalOut = {
   initiatedBy: 'teacher' | 'center';
   /** Existing-group target id when this is an attach proposal, else null. */
   targetGroupId: string | null;
+  /**
+   * True when accepting this center-initiated proposal ALSO joins the teacher to
+   * the center (the link is still pending). The teacher's accept/counter commits
+   * the link; decline closes everything. False for ordinary negotiations.
+   */
+  carriesLink: boolean;
   openingMessage: string | null;
   expiresAt: string;
   createdAt: string;
@@ -133,6 +147,7 @@ export async function buildProposalList(
       status: p.status,
       initiatedBy: (p.initiated_by === 'center' ? 'center' : 'teacher') as 'teacher' | 'center',
       targetGroupId: p.target_group_id ?? null,
+      carriesLink: p.carries_link === true,
       openingMessage: p.opening_message,
       expiresAt: p.expires_at,
       createdAt: p.created_at,

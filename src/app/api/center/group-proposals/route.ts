@@ -10,6 +10,7 @@ import {
   resolveTargetGroupNames,
   type ProposalRow,
 } from '@/lib/groupProposals';
+import { resolveTeacherReferralCode } from '@/lib/teacherReferral';
 
 const ROUTE_TAG = 'api/center/group-proposals';
 
@@ -24,17 +25,24 @@ function fail(step: string, err: unknown) {
 
 /**
  * POST /api/center/group-proposals
- * The OWNER starts a group negotiation: pick a linked-active teacher, set the
- * student fee and an opening center-cut offer. Mirrors the teacher-proposes
- * create exactly, just from the center side - initiated_by='center' and the
- * opening offer is made_by='center'. The group stays dormant (no
- * student_groups row) until the teacher accepts; ADR 033 - the cut is only an
- * offer until accepted.
+ * The OWNER adds a teacher to a group in ONE combined request: pick a group
+ * (NEW or an existing plain center group), name the teacher (by their dedicated
+ * code OR by picking an already-linked teacher), and set an opening center-cut
+ * offer. initiated_by='center', opening offer made_by='center'. The group stays
+ * dormant (no student_groups row created/attached) until the teacher accepts;
+ * ADR 033 - the cut is only an offer until accepted.
+ *
+ * Phase 1 - combined link + proposal: if the named teacher is NOT yet an active
+ * member of this center, the request ALSO carries the teacher<->center link.
+ * We create a pending teacher_center row and mark the proposal carries_link, so
+ * the teacher's single accept/counter commits the link atomically
+ * (respond_center_group_proposal). An already-active teacher behaves exactly as
+ * before (carries_link=false, plain proposal).
  *
  * Gate: owner/admin (or super-admin), else can_manage_students (shared with
- * respond via ensureCanManageProposals). The target teacher MUST be an active
- * member of this center (teacher_center status='active'); membership comes from
- * the server, never the body alone.
+ * respond via ensureCanManageProposals). Teacher identity is resolved
+ * server-side (code -> teacher_profiles.user_id), never trusted from the body
+ * for membership.
  */
 export async function POST(request: NextRequest) {
   const auth = await requireCenterAuth(request);
@@ -49,6 +57,7 @@ export async function POST(request: NextRequest) {
 
   const body = (await request.json().catch(() => ({}))) as {
     teacher_id?: unknown;
+    teacher_code?: unknown;
     subject?: unknown;
     grade_level?: unknown;
     fee_per_class?: unknown;
@@ -57,7 +66,21 @@ export async function POST(request: NextRequest) {
     target_group_id?: unknown;
   };
 
-  const teacherId = typeof body.teacher_id === 'string' ? body.teacher_id.trim() : '';
+  // Teacher identity: an explicit linked-teacher id, or a dedicated code that we
+  // resolve to the teacher's user id. The code path is how the owner adds a
+  // teacher the center is NOT yet linked with (the combined link + proposal).
+  const teacherCode = typeof body.teacher_code === 'string' ? body.teacher_code.trim() : '';
+  let teacherId = typeof body.teacher_id === 'string' ? body.teacher_id.trim() : '';
+  if (!teacherId && teacherCode) {
+    const resolved = await resolveTeacherReferralCode(auth.supabaseAdmin, teacherCode);
+    if (!resolved) {
+      return NextResponse.json(
+        { error: 'No teacher has that code', code: 'TEACHER_CODE_NOT_FOUND' },
+        { status: 404 },
+      );
+    }
+    teacherId = resolved;
+  }
   const targetGroupId =
     typeof body.target_group_id === 'string' && body.target_group_id.trim()
       ? body.target_group_id.trim()
@@ -151,21 +174,57 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // The teacher must be an ACTIVE member of this center. Owner-initiated
-  // proposals only go to teachers the center is already linked with.
+  // Membership decides whether this is a plain proposal (teacher already active)
+  // or a COMBINED link + proposal (teacher not yet linked). Any existing row is
+  // read regardless of status so we can reactivate an inactive/pending one.
   const { data: membership, error: membershipErr } = await auth.supabaseAdmin
     .from('teacher_center')
-    .select('teacher_id')
+    .select('id, status')
     .eq('teacher_id', teacherId)
     .eq('center_id', auth.centerId)
-    .eq('status', 'active')
     .maybeSingle();
   if (membershipErr) return fail('membership_lookup', membershipErr);
-  if (!membership) {
-    return NextResponse.json(
-      { error: 'Teacher is not an active member of this center', code: 'TEACHER_NOT_LINKED' },
-      { status: 403 },
-    );
+  const membershipRow = membership as { id: string; status: string } | null;
+  const alreadyActive = membershipRow?.status === 'active';
+
+  // carries_link is the authoritative flag the teacher's combined accept reads.
+  // When the teacher is NOT active-linked, mark it and best-effort create/refresh
+  // a PENDING teacher_center row for visibility - but the flag, not the row, is
+  // the source of truth: respond_center_group_proposal commits an active
+  // membership on accept even if the pending row is missing, so a failed link
+  // write here can never strand a group without its teacher's membership.
+  const carriesLink = !alreadyActive;
+  if (carriesLink) {
+    if (membershipRow) {
+      const { error: linkErr } = await auth.supabaseAdmin
+        .from('teacher_center')
+        .update({ status: 'pending', invited_by: auth.userId })
+        .eq('id', membershipRow.id);
+      if (linkErr) {
+        Sentry.withScope((scope) => {
+          scope.setTag('route', ROUTE_TAG);
+          scope.setTag('step', 'pending_link_update');
+          Sentry.captureMessage(`combined link reactivate failed: ${linkErr.message}`, 'warning');
+        });
+      }
+    } else {
+      const { error: linkErr } = await auth.supabaseAdmin
+        .from('teacher_center')
+        .insert({
+          teacher_id: teacherId,
+          center_id: auth.centerId,
+          status: 'pending',
+          invited_by: auth.userId,
+        });
+      // 23505 = a row appeared concurrently; harmless, accept still resolves it.
+      if (linkErr && (linkErr as { code?: string }).code !== '23505') {
+        Sentry.withScope((scope) => {
+          scope.setTag('route', ROUTE_TAG);
+          scope.setTag('step', 'pending_link_insert');
+          Sentry.captureMessage(`combined link create failed: ${linkErr.message}`, 'warning');
+        });
+      }
+    }
   }
 
   const { data: inserted, error: insErr } = await auth.supabaseAdmin
@@ -179,6 +238,7 @@ export async function POST(request: NextRequest) {
       opening_message: openingMessage,
       initiated_by: 'center',
       target_group_id: targetGroupId,
+      carries_link: carriesLink,
       status: 'open',
     })
     .select('id')

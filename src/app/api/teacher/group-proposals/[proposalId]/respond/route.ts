@@ -57,12 +57,18 @@ export async function POST(
   // indistinguishable on purpose (404, no existence oracle).
   const { data: propRow, error: propErr } = await auth.supabaseAdmin
     .from('group_proposals')
-    .select('id, teacher_id, fee_per_class, status')
+    .select('id, teacher_id, fee_per_class, status, carries_link')
     .eq('id', proposalId)
     .maybeSingle();
   if (propErr) return fail('proposal_lookup', propErr);
   const prop = propRow as
-    | { id: string; teacher_id: string; fee_per_class: number | string; status: string }
+    | {
+        id: string;
+        teacher_id: string;
+        fee_per_class: number | string;
+        status: string;
+        carries_link: boolean;
+      }
     | null;
   if (!prop || prop.teacher_id !== auth.userId) {
     return NextResponse.json({ error: 'Not found', code: 'NOT_FOUND' }, { status: 404 });
@@ -88,17 +94,33 @@ export async function POST(
     cut = body.cut_egp;
   }
 
-  const { data: rpcData, error: rpcErr } = await auth.supabaseAdmin.rpc(
-    'respond_group_proposal',
-    {
-      p_proposal_id: proposalId,
-      p_actor_user_id: auth.userId,
-      p_side: 'teacher',
-      p_action: action,
-      p_cut_egp: cut,
-      p_note: note,
-    },
-  );
+  // Combined center-initiated request (carries an uncommitted link): the
+  // teacher's accept/counter/decline must ALSO commit or tear down the
+  // teacher<->center link, atomically. respond_center_group_proposal does both
+  // in one transaction (it delegates the proposal mechanics to
+  // respond_group_proposal). Withdraw is never the teacher's first move on a
+  // carries_link proposal - the standing offer is the center's - so it stays on
+  // the plain path and the RPC simply rejects it.
+  const useCombined =
+    prop.carries_link &&
+    (action === 'accept' || action === 'counter' || action === 'decline');
+
+  const { data: rpcData, error: rpcErr } = useCombined
+    ? await auth.supabaseAdmin.rpc('respond_center_group_proposal', {
+        p_proposal_id: proposalId,
+        p_actor_user_id: auth.userId,
+        p_action: action,
+        p_cut_egp: cut,
+        p_note: note,
+      })
+    : await auth.supabaseAdmin.rpc('respond_group_proposal', {
+        p_proposal_id: proposalId,
+        p_actor_user_id: auth.userId,
+        p_side: 'teacher',
+        p_action: action,
+        p_cut_egp: cut,
+        p_note: note,
+      });
   if (rpcErr) {
     const mapped = mapRespondRpcError(rpcErr as { code?: string; message?: string });
     if (mapped) return mapped;

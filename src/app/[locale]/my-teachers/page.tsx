@@ -27,8 +27,8 @@ export default function MyTeachersPage() {
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'myTeachers', label: t('tabMyTeachers') },
-    { key: 'addTeacher', label: t('tabAddTeacher') },
     { key: 'requests', label: t('tabRequests') },
+    { key: 'addTeacher', label: t('tabAddTeacher') },
   ];
 
   return (
@@ -59,8 +59,8 @@ export default function MyTeachersPage() {
       </div>
 
       {tab === 'myTeachers' && <MyTeachersPanel panelRef={monitorRef} />}
-      {tab === 'addTeacher' && <AddTeacherPanel onChanged={refreshMonitor} />}
       {tab === 'requests' && <GroupProposalsTab onChanged={refreshMonitor} />}
+      {tab === 'addTeacher' && <AddTeacherPanel />}
     </div>
   );
 }
