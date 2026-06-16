@@ -24,9 +24,20 @@ function fail(step: string, err: unknown) {
 
 /**
  * POST /api/teacher/group-proposals
- * A teacher proposes a new center group to a center they are an ACTIVE member
- * of, with an opening cut offer. FREE zone (requireTeacherAuth, no private
- * gate). Membership comes from auth.centerIds - never from the body alone.
+ * Teacher-initiated, two flavours, both with an opening cut offer:
+ *  - NEW group: propose a brand-new group to a center (subject/grade/fee in the
+ *    body).
+ *  - EXISTING group (target_group_id): ask to RUN an existing teacher-less
+ *    center group; subject + fee are read FROM the group (never trusted from the
+ *    body), and the proposal targets it (target_group_id).
+ *
+ * FREE zone (requireTeacherAuth, no private gate). Linked-first (Phase 2): the
+ * teacher must already be an ACTIVE member of the center - membership comes from
+ * auth.centerIds, never the body. initiated_by defaults to 'teacher' and
+ * carries_link stays false (no link is ever carried on the teacher side). The
+ * opening offer is bound to 0 <= cut < fee exactly as the center-initiated path,
+ * and the center accepts/counters/declines it through the same direction-agnostic
+ * respond_group_proposal machinery.
  */
 export async function POST(request: NextRequest) {
   const auth = await requireTeacherAuth(request);
@@ -43,46 +54,119 @@ export async function POST(request: NextRequest) {
     fee_per_class?: unknown;
     opening_cut_egp?: unknown;
     opening_message?: unknown;
+    target_group_id?: unknown;
   };
 
-  const centerId = typeof body.center_id === 'string' ? body.center_id.trim() : '';
-  const subject = typeof body.subject === 'string' ? body.subject.trim() : '';
-  const gradeLevel =
-    typeof body.grade_level === 'string' && body.grade_level.trim()
-      ? body.grade_level.trim().slice(0, 120)
+  const targetGroupId =
+    typeof body.target_group_id === 'string' && body.target_group_id.trim()
+      ? body.target_group_id.trim()
       : null;
   const openingMessage =
     typeof body.opening_message === 'string' && body.opening_message.trim()
       ? body.opening_message.trim().slice(0, 500)
       : null;
-  const fee = body.fee_per_class;
   const cut = body.opening_cut_egp;
 
-  if (!centerId || subject.length < 1 || subject.length > 120) {
-    return NextResponse.json(
-      { error: 'Invalid input', code: 'INVALID_INPUT' },
-      { status: 400 },
-    );
-  }
-  if (!isValidEgp(fee, 0) || fee <= 0) {
-    return NextResponse.json({ error: 'Invalid fee', code: 'INVALID_FEE' }, { status: 400 });
-  }
+  // The cut is validated up front for BOTH flavours - the lower bound and the
+  // numeric shape never depend on which path we take (the fee-relative upper
+  // bound is checked once the fee is known below).
   if (!isValidEgp(cut, 0)) {
     return NextResponse.json({ error: 'Invalid cut', code: 'INVALID_CUT' }, { status: 400 });
   }
+
+  // center_id / subject / grade / fee come from the body for a NEW-group
+  // proposal, or are derived from the existing group for an ATTACH request (the
+  // group is the source of truth - never trusted from the body in that case).
+  let centerId: string;
+  let subject: string;
+  let gradeLevel: string | null;
+  let fee: number;
+
+  if (targetGroupId) {
+    // Attach-to-existing: the target must be a plain center group with no teacher
+    // yet, and the teacher must be an active member of THAT group's center. Final
+    // eligibility is re-checked under a row lock in the accept RPC; this is the
+    // early, friendly rejection.
+    const { data: groupRow, error: groupErr } = await auth.supabaseAdmin
+      .from('student_groups')
+      .select('id, center_id, kind, teacher_id, subject, fee_per_class')
+      .eq('id', targetGroupId)
+      .maybeSingle();
+    if (groupErr) return fail('target_group_lookup', groupErr);
+    const group = groupRow as
+      | {
+          id: string;
+          center_id: string;
+          kind: string | null;
+          teacher_id: string | null;
+          subject: string | null;
+          fee_per_class: number | string | null;
+        }
+      | null;
+    if (!group) {
+      return NextResponse.json({ error: 'Group not found', code: 'GROUP_NOT_FOUND' }, { status: 404 });
+    }
+    // Membership decides visibility AND eligibility - an unknown-to-this-teacher
+    // group is a 403, the same answer a foreign center would get.
+    if (!auth.centerIds.includes(group.center_id)) {
+      return NextResponse.json(
+        { error: 'Not a member of this center', code: 'NOT_A_MEMBER' },
+        { status: 403 },
+      );
+    }
+    if (group.kind !== 'center') {
+      return NextResponse.json(
+        { error: 'Only center groups can be attached', code: 'GROUP_NOT_ELIGIBLE' },
+        { status: 409 },
+      );
+    }
+    if (group.teacher_id) {
+      return NextResponse.json(
+        { error: 'That group already has a teacher', code: 'GROUP_HAS_TEACHER' },
+        { status: 409 },
+      );
+    }
+    const groupFee = group.fee_per_class == null ? NaN : Number(group.fee_per_class);
+    if (!Number.isFinite(groupFee) || groupFee <= 0) {
+      return NextResponse.json(
+        { error: 'That group has no per-class fee set', code: 'GROUP_NO_FEE' },
+        { status: 409 },
+      );
+    }
+    centerId = group.center_id;
+    subject = (group.subject ?? '').trim().slice(0, 120) || '—';
+    gradeLevel = null;
+    fee = groupFee;
+  } else {
+    centerId = typeof body.center_id === 'string' ? body.center_id.trim() : '';
+    subject = typeof body.subject === 'string' ? body.subject.trim() : '';
+    gradeLevel =
+      typeof body.grade_level === 'string' && body.grade_level.trim()
+        ? body.grade_level.trim().slice(0, 120)
+        : null;
+    fee = typeof body.fee_per_class === 'number' ? body.fee_per_class : NaN;
+    if (!centerId || subject.length < 1 || subject.length > 120) {
+      return NextResponse.json({ error: 'Invalid input', code: 'INVALID_INPUT' }, { status: 400 });
+    }
+    if (!isValidEgp(fee, 0) || fee <= 0) {
+      return NextResponse.json({ error: 'Invalid fee', code: 'INVALID_FEE' }, { status: 400 });
+    }
+    // Active membership in the named center (auth.centerIds is the membership
+    // list resolved server-side from teacher_center status='active').
+    if (!auth.centerIds.includes(centerId)) {
+      return NextResponse.json(
+        { error: 'Not a member of this center', code: 'NOT_A_MEMBER' },
+        { status: 403 },
+      );
+    }
+  }
+
+  // Same fee-relative bound the center-initiated path enforces - the teacher path
+  // never bypasses it.
   if (cut >= fee) {
     return NextResponse.json(
       { error: 'Cut must be less than the fee per class', code: 'CUT_NOT_LESS_THAN_FEE' },
       { status: 400 },
-    );
-  }
-
-  // Active membership in the named center (auth.centerIds is the membership
-  // list resolved server-side from teacher_center status='active').
-  if (!auth.centerIds.includes(centerId)) {
-    return NextResponse.json(
-      { error: 'Not a member of this center', code: 'NOT_A_MEMBER' },
-      { status: 403 },
     );
   }
 
@@ -95,6 +179,7 @@ export async function POST(request: NextRequest) {
       grade_level: gradeLevel,
       fee_per_class: fee,
       opening_message: openingMessage,
+      target_group_id: targetGroupId,
       status: 'open',
     })
     .select('id')

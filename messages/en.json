@@ -2815,7 +2815,7 @@
   },
   "groupProposals": {
     "title": "Group Proposals",
-    "subtitleTeacher": "Propose a new group to a center you are a member of and agree on the center cut.",
+    "subtitleTeacher": "Propose a new group to a center you belong to, or ask to run one of its existing groups, and agree on the center cut.",
     "subtitleCenter": "Add a teacher to a group, or negotiate the center cut on open requests. Pick a group, name the teacher, and agree on the cut.",
     "newProposal": "New proposal",
     "centerLabel": "Center",
@@ -2885,7 +2885,11 @@
     "linkPendingBadge": "Link pending",
     "studentCountLabel": "Students",
     "thisCenter": "this center",
-    "combinedJoinNote": "Accepting joins {center} and adds you to this group at the agreed cut. Countering keeps you joined while you settle the cut."
+    "combinedJoinNote": "Accepting joins {center} and adds you to this group at the agreed cut. Countering keeps you joined while you settle the cut.",
+    "selectCenterFirst": "Select a center to see its groups.",
+    "loadingGroups": "Loading groups...",
+    "noJoinableGroups": "This center has no open groups to join right now.",
+    "groupCurrentCut": "Current center cut"
   },
   "teachersSection": {
     "title": "Teachers",
