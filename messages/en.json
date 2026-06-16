@@ -2889,7 +2889,16 @@
     "selectCenterFirst": "Select a center to see its groups.",
     "loadingGroups": "Loading groups...",
     "noJoinableGroups": "This center has no open groups to join right now.",
-    "groupCurrentCut": "Current center cut"
+    "groupCurrentCut": "Current center cut",
+    "bringTitle": "Bring a group to a center",
+    "bringSubtitle": "Take one of your own groups to a center for service and a cut. You keep running it, the center handles attendance and collection from now on. Your past money stays yours.",
+    "bringButton": "Bring a group",
+    "myGroupLabel": "Your group",
+    "selectMyGroup": "Select one of your groups",
+    "noSoloGroups": "You have no solo groups to bring. Create one in your private groups first.",
+    "loadingMyGroups": "Loading your groups...",
+    "joinNewCenterHint": "Center not listed? Join it by its code above, then bring your group.",
+    "errorGroupNotSolo": "That group is not a solo group you can bring."
   },
   "teachersSection": {
     "title": "Teachers",
@@ -8589,7 +8598,13 @@
       "cutLabel": "your share {pct}",
       "unknownCenter": "Center",
       "emptyTitle": "No centers linked yet",
-      "emptyBody": "You are not an active member of any center yet. Ask your center to invite you to CenterHQ and your share will show up here."
+      "emptyBody": "You are not an active member of any center yet. Ask your center to invite you to CenterHQ and your share will show up here.",
+      "detachAction": "Make this my private group again",
+      "detachConfirmTitle": "Remove the center from this group?",
+      "detachConfirmBody": "The center cut stops on future sessions, and this group moves back to your private side. Past records and money are not affected.",
+      "detachConfirmYes": "Yes, make it private",
+      "detachCancel": "Cancel",
+      "detachError": "Could not remove the center. Try again."
     },
     "privateUpsell": {
       "title": "Your own private practice",
