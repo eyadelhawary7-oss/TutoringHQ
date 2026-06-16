@@ -330,6 +330,32 @@ export async function GET(request: NextRequest) {
   // so the negotiation card can label it (best-effort).
   const groupNameById = await resolveTargetGroupNames(auth.supabaseAdmin, built.items);
 
+  // Student count for attach proposals (count-only, never the roster) - the same
+  // student_group_members source the Groups page uses, so the numbers agree. The
+  // center needs this to weigh an incoming teacher request against the group's
+  // size. New-group proposals have no group yet, so they count 0.
+  const countByGroup = new Map<string, number>();
+  const attachGroupIds = [
+    ...new Set(built.items.map((i) => i.targetGroupId).filter((x): x is string => !!x)),
+  ];
+  if (attachGroupIds.length > 0) {
+    const { data: memberRows, error: membersErr } = await auth.supabaseAdmin
+      .from('student_group_members')
+      .select('group_id')
+      .in('group_id', attachGroupIds);
+    if (membersErr) {
+      Sentry.withScope((scope) => {
+        scope.setTag('route', ROUTE_TAG);
+        scope.setTag('step', 'student_count');
+        Sentry.captureMessage(`group-proposals student-count failed: ${membersErr.message}`, 'warning');
+      });
+    } else {
+      for (const m of (memberRows ?? []) as { group_id: string }[]) {
+        countByGroup.set(m.group_id, (countByGroup.get(m.group_id) ?? 0) + 1);
+      }
+    }
+  }
+
   const teacherById = new Map(rows.map((r) => [r.id, r.teacher_id]));
   return NextResponse.json({
     proposals: built.items.map((item) => {
@@ -339,6 +365,7 @@ export async function GET(request: NextRequest) {
         teacherName: nameByTeacher.get(teacherId) ?? null,
         teacherPhone: phoneByTeacher.get(teacherId) ?? null,
         targetGroupName: item.targetGroupId ? groupNameById.get(item.targetGroupId) ?? null : null,
+        studentCount: item.targetGroupId ? countByGroup.get(item.targetGroupId) ?? 0 : 0,
       };
     }),
   });

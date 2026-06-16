@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { ChevronDown, ChevronUp, Handshake, Loader2, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
-import { formatCurrency, formatDate } from '@/lib/formatNumber';
+import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
 
 type Offer = {
   id: string;
@@ -25,6 +25,7 @@ type Proposal = {
   targetGroupId: string | null;
   targetGroupName: string | null;
   carriesLink: boolean;
+  studentCount: number;
   expiresAt: string;
   createdAt: string;
   openingMessage: string | null;
@@ -558,6 +559,12 @@ export default function GroupProposalsTab({ onChanged }: { onChanged?: () => voi
                       {t('studentRate')}:{' '}
                       <span className="font-mono font-semibold">{formatCurrency(p.feePerClass, locale)}</span>
                     </p>
+                    {p.targetGroupId && (
+                      <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                        {t('studentCountLabel')}:{' '}
+                        <span className="font-mono font-semibold">{formatNumber(p.studentCount, locale)}</span>
+                      </p>
+                    )}
                     {p.openingMessage && (
                       <p className="mt-1 text-xs text-[var(--color-text-secondary)]">{p.openingMessage}</p>
                     )}

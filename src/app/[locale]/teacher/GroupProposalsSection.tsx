@@ -38,12 +38,24 @@ type Proposal = {
 };
 
 type CenterOption = { id: string; name: string | null };
+type JoinableGroup = {
+  id: string;
+  name: string | null;
+  subject: string | null;
+  feePerClass: number | null;
+  centerCutEgp: number;
+  studentCount: number;
+};
 
 const ERROR_KEY: Record<string, string> = {
   NOT_YOUR_TURN: 'errorNotYourTurn',
   PROPOSAL_ALREADY_OPEN: 'errorAlreadyOpen',
   CUT_NOT_LESS_THAN_FEE: 'errorCutTooHigh',
   NOT_A_MEMBER: 'errorNotMember',
+  GROUP_HAS_TEACHER: 'errorGroupHasTeacher',
+  GROUP_NOT_ELIGIBLE: 'errorGroupNotEligible',
+  GROUP_NO_FEE: 'errorGroupNoFee',
+  GROUP_NOT_FOUND: 'errorGroupNotFound',
 };
 
 const STATUS_KEY: Record<Proposal['status'], string> = {
@@ -63,10 +75,15 @@ const STATUS_CLASS: Record<Proposal['status'], string> = {
 };
 
 /**
- * Teacher portal "Group Proposals" section (FREE zone): propose a new center
- * group to an active-membership center and negotiate the center cut. The
- * student rate (fee_per_class) is fixed at proposal time and immutable; only
- * the cut moves through the offer/counter loop.
+ * Teacher portal "Group Proposals" section (FREE zone). Two teacher-initiated
+ * flavours, both negotiating the center cut with the same offer/counter loop:
+ *  - NEW group: propose a brand-new group to a center the teacher belongs to
+ *    (subject + student rate entered here).
+ *  - EXISTING group: ask to RUN one of the center's teacher-less groups; the
+ *    teacher sees its current cut and student count BEFORE requesting, and the
+ *    student rate is fixed by the group.
+ * The student rate (fee_per_class) is immutable; only the cut moves. The flow
+ * ends when the cut is agreed and the teacher is added to the group.
  */
 export default function GroupProposalsSection({ centers }: { centers: CenterOption[] }) {
   const t = useTranslations('groupProposals');
@@ -82,6 +99,10 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
   const [counterNote, setCounterNote] = useState('');
 
   const [showForm, setShowForm] = useState(false);
+  const [targetMode, setTargetMode] = useState<'new' | 'existing'>('new');
+  const [joinableGroups, setJoinableGroups] = useState<JoinableGroup[]>([]);
+  const [joinableLoading, setJoinableLoading] = useState(false);
+  const [joinableLoadedFor, setJoinableLoadedFor] = useState<string | null>(null);
   const [form, setForm] = useState({
     centerId: '',
     subject: '',
@@ -89,6 +110,7 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
     fee: '',
     cut: '',
     message: '',
+    targetGroupId: '',
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -114,6 +136,47 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
   useEffect(() => {
     load();
   }, [load]);
+
+  // The center's teacher-less groups, with cut + student count, fetched when the
+  // teacher is in "existing group" mode and has named a center. Best-effort: a
+  // failure just leaves an empty picker.
+  const loadJoinable = useCallback(async (centerId: string) => {
+    setJoinableLoading(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch(`/api/teacher/joinable-groups?center_id=${encodeURIComponent(centerId)}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) {
+        const json = (await res.json()) as { groups: JoinableGroup[] };
+        setJoinableGroups(json.groups ?? []);
+      } else {
+        setJoinableGroups([]);
+      }
+      setJoinableLoadedFor(centerId);
+    } catch {
+      setJoinableGroups([]);
+    } finally {
+      setJoinableLoading(false);
+    }
+  }, []);
+
+  // Switching to "existing group" mode (or picking a center while in it) loads
+  // that center's joinable groups once.
+  useEffect(() => {
+    if (showForm && targetMode === 'existing' && form.centerId && joinableLoadedFor !== form.centerId) {
+      loadJoinable(form.centerId);
+    }
+  }, [showForm, targetMode, form.centerId, joinableLoadedFor, loadJoinable]);
+
+  const selectedJoinable = joinableGroups.find((g) => g.id === form.targetGroupId) ?? null;
+  // The fee that bounds the cut: the typed fee for a new group, or the picked
+  // existing group's fee for an attach request.
+  const effectiveFee =
+    targetMode === 'existing' ? selectedJoinable?.feePerClass ?? 0 : Number(form.fee);
 
   const respond = async (
     proposalId: string,
@@ -154,11 +217,22 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
     }
   };
 
+  const resetForm = () => {
+    setForm({ centerId: '', subject: '', gradeLevel: '', fee: '', cut: '', message: '', targetGroupId: '' });
+    setTargetMode('new');
+    setJoinableGroups([]);
+    setJoinableLoadedFor(null);
+  };
+
   const submitProposal = async () => {
-    const fee = Number(form.fee);
     const cut = Number(form.cut);
-    if (!form.centerId || !form.subject.trim() || !Number.isFinite(fee) || fee <= 0) return;
-    if (!Number.isFinite(cut) || cut < 0 || cut >= fee) {
+    if (!form.centerId) return;
+    if (targetMode === 'existing') {
+      if (!form.targetGroupId || !selectedJoinable || selectedJoinable.feePerClass == null) return;
+    } else if (!form.subject.trim() || !Number.isFinite(effectiveFee) || effectiveFee <= 0) {
+      return;
+    }
+    if (!Number.isFinite(cut) || cut < 0 || !(effectiveFee > 0) || cut >= effectiveFee) {
       setErrorKey('errorCutTooHigh');
       return;
     }
@@ -169,6 +243,25 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
         data: { session },
       } = await supabase.auth.getSession();
       if (!session) return;
+      // Existing-group requests send the target_group_id; the server reads the
+      // subject + student rate from the group itself. New-group proposals send
+      // subject/grade/fee.
+      const body =
+        targetMode === 'existing'
+          ? {
+              center_id: form.centerId,
+              target_group_id: form.targetGroupId,
+              opening_cut_egp: cut,
+              opening_message: form.message.trim() || undefined,
+            }
+          : {
+              center_id: form.centerId,
+              subject: form.subject.trim(),
+              grade_level: form.gradeLevel.trim() || undefined,
+              fee_per_class: Number(form.fee),
+              opening_cut_egp: cut,
+              opening_message: form.message.trim() || undefined,
+            };
       const res = await fetch('/api/teacher/group-proposals', {
         method: 'POST',
         headers: {
@@ -176,14 +269,7 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
           Authorization: `Bearer ${session.access_token}`,
           ...(await getCsrfHeaders(session.access_token)),
         },
-        body: JSON.stringify({
-          center_id: form.centerId,
-          subject: form.subject.trim(),
-          grade_level: form.gradeLevel.trim() || undefined,
-          fee_per_class: fee,
-          opening_cut_egp: cut,
-          opening_message: form.message.trim() || undefined,
-        }),
+        body: JSON.stringify(body),
       });
       const json = (await res.json().catch(() => ({}))) as { code?: string };
       if (!res.ok) {
@@ -191,7 +277,7 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
         return;
       }
       setShowForm(false);
-      setForm({ centerId: '', subject: '', gradeLevel: '', fee: '', cut: '', message: '' });
+      resetForm();
       load();
     } catch {
       setErrorKey('errorGeneric');
@@ -199,6 +285,12 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
       setSubmitting(false);
     }
   };
+
+  const submitDisabled =
+    submitting ||
+    !form.centerId ||
+    !form.cut ||
+    (targetMode === 'existing' ? !form.targetGroupId : !form.subject.trim() || !form.fee);
 
   return (
     <section className="rounded-[var(--radius-card)] border border-[var(--color-teal)]/40 bg-[var(--color-surface-1)] p-6">
@@ -227,13 +319,33 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
 
       {showForm && (
         <div className="mb-5 flex flex-col gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] p-4">
+          {/* Target: propose a NEW group or ask to run an EXISTING teacher-less one. */}
+          <div className="flex w-fit gap-1 rounded-lg bg-[var(--color-surface-2)] p-1">
+            <button
+              type="button"
+              onClick={() => setTargetMode('new')}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${targetMode === 'new' ? 'bg-teal-600 text-white' : 'text-[var(--color-text-secondary)]'}`}
+            >
+              {t('targetNew')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setTargetMode('existing')}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${targetMode === 'existing' ? 'bg-teal-600 text-white' : 'text-[var(--color-text-secondary)]'}`}
+            >
+              {t('targetExisting')}
+            </button>
+          </div>
+
           <div>
             <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
               {t('centerLabel')}
             </label>
             <select
               value={form.centerId}
-              onChange={(e) => setForm((f) => ({ ...f, centerId: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, centerId: e.target.value, targetGroupId: '', cut: '' }))
+              }
               className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
             >
               <option value="">{t('selectCenter')}</option>
@@ -244,55 +356,119 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
               ))}
             </select>
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
-              {t('subjectLabel')}
-            </label>
-            <input
-              value={form.subject}
-              maxLength={120}
-              onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
-              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
-              {t('gradeLabel')}
-            </label>
-            <input
-              value={form.gradeLevel}
-              maxLength={120}
-              onChange={(e) => setForm((f) => ({ ...f, gradeLevel: e.target.value }))}
-              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
-            />
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+          {targetMode === 'existing' ? (
             <div>
               <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
-                {t('feeLabel')}
+                {t('existingGroupLabel')}
               </label>
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                value={form.fee}
-                onChange={(e) => setForm((f) => ({ ...f, fee: e.target.value }))}
-                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 font-mono text-sm text-[var(--color-text-primary)]"
-              />
+              {!form.centerId ? (
+                <p className="text-sm text-[var(--color-text-secondary)]">{t('selectCenterFirst')}</p>
+              ) : joinableLoading ? (
+                <p className="text-sm text-[var(--color-text-secondary)]">{t('loadingGroups')}</p>
+              ) : joinableGroups.length === 0 ? (
+                <p className="text-sm text-[var(--color-text-secondary)]">{t('noJoinableGroups')}</p>
+              ) : (
+                <select
+                  value={form.targetGroupId}
+                  onChange={(e) => {
+                    const g = joinableGroups.find((x) => x.id === e.target.value) ?? null;
+                    setForm((f) => ({
+                      ...f,
+                      targetGroupId: e.target.value,
+                      // Prefill the cut with the group's current cut: the natural
+                      // opening offer is "I will run it at the cut you already set".
+                      cut: g ? String(g.centerCutEgp) : '',
+                    }));
+                  }}
+                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                >
+                  <option value="">{t('selectGroup')}</option>
+                  {joinableGroups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name ?? g.id}
+                      {g.subject ? ` - ${g.subject}` : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {selectedJoinable && (
+                <div className="mt-2 flex flex-col gap-0.5 rounded-lg bg-[var(--color-surface-2)] p-3 text-xs text-[var(--color-text-muted)]">
+                  {selectedJoinable.feePerClass != null && (
+                    <p>
+                      {t('studentRate')}:{' '}
+                      <span className="font-mono font-semibold text-[var(--color-text-primary)]">
+                        {formatCurrency(selectedJoinable.feePerClass, locale)}
+                      </span>
+                    </p>
+                  )}
+                  <p>
+                    {t('groupCurrentCut')}:{' '}
+                    <span className="font-mono font-semibold text-[var(--color-text-primary)]">
+                      {formatCurrency(selectedJoinable.centerCutEgp, locale)}
+                    </span>
+                  </p>
+                  <p>
+                    {t('studentCountLabel')}:{' '}
+                    <span className="font-mono font-semibold text-[var(--color-text-primary)]">
+                      {formatNumber(selectedJoinable.studentCount, locale)}
+                    </span>
+                  </p>
+                </div>
+              )}
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
-                {t('cutOfferLabel')}
-              </label>
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                value={form.cut}
-                onChange={(e) => setForm((f) => ({ ...f, cut: e.target.value }))}
-                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 font-mono text-sm text-[var(--color-text-primary)]"
-              />
-            </div>
+          ) : (
+            <>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+                  {t('subjectLabel')}
+                </label>
+                <input
+                  value={form.subject}
+                  maxLength={120}
+                  onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
+                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+                  {t('gradeLabel')}
+                </label>
+                <input
+                  value={form.gradeLevel}
+                  maxLength={120}
+                  onChange={(e) => setForm((f) => ({ ...f, gradeLevel: e.target.value }))}
+                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+                  {t('feeLabel')}
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={form.fee}
+                  onChange={(e) => setForm((f) => ({ ...f, fee: e.target.value }))}
+                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 font-mono text-sm text-[var(--color-text-primary)]"
+                />
+              </div>
+            </>
+          )}
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+              {t('cutOfferLabel')}
+            </label>
+            <input
+              type="number"
+              min={0}
+              step={0.01}
+              value={form.cut}
+              onChange={(e) => setForm((f) => ({ ...f, cut: e.target.value }))}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 font-mono text-sm text-[var(--color-text-primary)]"
+            />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
@@ -310,7 +486,7 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
             <button
               type="button"
               onClick={submitProposal}
-              disabled={submitting || !form.centerId || !form.subject.trim() || !form.fee || !form.cut}
+              disabled={submitDisabled}
               className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
@@ -318,7 +494,10 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
             </button>
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={() => {
+                setShowForm(false);
+                resetForm();
+              }}
               className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm text-[var(--color-text-secondary)]"
             >
               {t('cancel')}
@@ -361,7 +540,7 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
                       {t('studentRate')}:{' '}
                       <span className="font-mono font-semibold">{formatCurrency(p.feePerClass, locale)}</span>
                     </p>
-                    {p.initiatedBy === 'center' && (
+                    {p.targetGroupId && (
                       <p className="mt-1 text-xs text-[var(--color-text-muted)]">
                         {t('studentCountLabel')}:{' '}
                         <span className="font-mono font-semibold">{formatNumber(p.studentCount, locale)}</span>
@@ -372,11 +551,9 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_CLASS[p.status]}`}>
                       {t(STATUS_KEY[p.status])}
                     </span>
-                    {p.initiatedBy === 'center' && (
-                      <span className="rounded-full bg-[var(--color-teal-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--color-teal-deep)]">
-                        {t('proposedByCenter')}
-                      </span>
-                    )}
+                    <span className="rounded-full bg-[var(--color-teal-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--color-teal-deep)]">
+                      {t(p.initiatedBy === 'center' ? 'initiatedByCenter' : 'initiatedByTeacher')}
+                    </span>
                     {p.status === 'open' && (
                       <span className="text-xs font-medium text-[var(--color-text-secondary)]">
                         {myTurn ? t('yourTurn') : t('waitingCenter')}
@@ -435,8 +612,8 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
                   </ul>
                 )}
 
-                {/* Combined request: accepting/countering also JOINS the center.
-                    Make the bundled nature explicit before the actions. */}
+                {/* Combined center-initiated request: accepting/countering also
+                    JOINS the center. Make the bundled nature explicit. */}
                 {p.carriesLink && p.status === 'open' && (
                   <p className="mt-2 rounded-lg bg-[var(--color-teal-soft)] px-3 py-2 text-xs text-[var(--color-teal-deep)]">
                     {t('combinedJoinNote', { center: p.centerName ?? t('thisCenter') })}

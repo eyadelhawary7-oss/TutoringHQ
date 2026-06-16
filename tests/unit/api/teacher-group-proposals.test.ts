@@ -205,6 +205,151 @@ describe('POST /api/teacher/group-proposals', () => {
   });
 });
 
+describe('POST /api/teacher/group-proposals (request an existing group)', () => {
+  const GROUP_ID = 'group-7';
+  const ATTACH_BODY = {
+    target_group_id: GROUP_ID,
+    opening_cut_egp: 20,
+    opening_message: 'I would like to run this group',
+  };
+
+  it('happy path: reads subject + fee FROM the group, inserts proposal with target_group_id and a teacher opening offer', async () => {
+    seedTeacherAuth();
+    queues.student_groups = [
+      {
+        data: {
+          id: GROUP_ID,
+          center_id: CENTER_ID,
+          kind: 'center',
+          teacher_id: null,
+          subject: 'Chemistry',
+          fee_per_class: 120,
+        },
+        error: null,
+      },
+    ];
+    queues.group_proposals_insert = [{ data: { id: PROPOSAL_ID }, error: null }];
+    queues.group_proposal_offers_insert = [{ data: null, error: null }];
+
+    const res = await POST(makeRequest(ATTACH_BODY));
+    const json = await res.json();
+
+    expect(res.status).toBe(201);
+    expect(json).toEqual({ proposal_id: PROPOSAL_ID, status: 'open' });
+    const propInsert = insertCalls.find((i) => i.table === 'group_proposals');
+    expect(propInsert?.payload).toMatchObject({
+      teacher_id: TEACHER_ID,
+      center_id: CENTER_ID,
+      subject: 'Chemistry',
+      fee_per_class: 120,
+      target_group_id: GROUP_ID,
+      status: 'open',
+    });
+    // initiated_by is left to the DB default ('teacher'); no link is ever carried.
+    expect(propInsert?.payload).not.toHaveProperty('carries_link', true);
+    const offerInsert = insertCalls.find((i) => i.table === 'group_proposal_offers');
+    expect(offerInsert?.payload).toMatchObject({ proposal_id: PROPOSAL_ID, made_by: 'teacher', cut_egp: 20 });
+  });
+
+  it('rejects a group that already has a teacher (409 GROUP_HAS_TEACHER)', async () => {
+    seedTeacherAuth();
+    queues.student_groups = [
+      {
+        data: {
+          id: GROUP_ID,
+          center_id: CENTER_ID,
+          kind: 'center',
+          teacher_id: 'other-teacher',
+          subject: 'Chemistry',
+          fee_per_class: 120,
+        },
+        error: null,
+      },
+    ];
+
+    const res = await POST(makeRequest(ATTACH_BODY));
+    const json = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(json.code).toBe('GROUP_HAS_TEACHER');
+    expect(insertCalls).toHaveLength(0);
+  });
+
+  it('rejects a group at a center the teacher is not a member of (403 NOT_A_MEMBER, no existence oracle)', async () => {
+    seedTeacherAuth(['other-center']);
+    queues.student_groups = [
+      {
+        data: {
+          id: GROUP_ID,
+          center_id: CENTER_ID,
+          kind: 'center',
+          teacher_id: null,
+          subject: 'Chemistry',
+          fee_per_class: 120,
+        },
+        error: null,
+      },
+    ];
+
+    const res = await POST(makeRequest(ATTACH_BODY));
+    const json = await res.json();
+
+    expect(res.status).toBe(403);
+    expect(json.code).toBe('NOT_A_MEMBER');
+    expect(insertCalls).toHaveLength(0);
+  });
+
+  it('never bypasses the cut bound: opening cut >= the group fee -> 400 CUT_NOT_LESS_THAN_FEE', async () => {
+    seedTeacherAuth();
+    queues.student_groups = [
+      {
+        data: {
+          id: GROUP_ID,
+          center_id: CENTER_ID,
+          kind: 'center',
+          teacher_id: null,
+          subject: 'Chemistry',
+          fee_per_class: 120,
+        },
+        error: null,
+      },
+    ];
+
+    const res = await POST(makeRequest({ ...ATTACH_BODY, opening_cut_egp: 120 }));
+    const json = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(json.code).toBe('CUT_NOT_LESS_THAN_FEE');
+    expect(insertCalls).toHaveLength(0);
+  });
+
+  it('rejects a duplicate open attach (unique index 23505 -> 409 PROPOSAL_ALREADY_OPEN)', async () => {
+    seedTeacherAuth();
+    queues.student_groups = [
+      {
+        data: {
+          id: GROUP_ID,
+          center_id: CENTER_ID,
+          kind: 'center',
+          teacher_id: null,
+          subject: 'Chemistry',
+          fee_per_class: 120,
+        },
+        error: null,
+      },
+    ];
+    queues.group_proposals_insert = [
+      { data: null, error: { message: 'duplicate key', code: '23505' } },
+    ];
+
+    const res = await POST(makeRequest(ATTACH_BODY));
+    const json = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(json.code).toBe('PROPOSAL_ALREADY_OPEN');
+  });
+});
+
 describe('GET /api/teacher/group-proposals', () => {
   it('returns proposals with latest offer, count and whose_turn', async () => {
     seedTeacherAuth();
