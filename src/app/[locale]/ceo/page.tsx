@@ -9,7 +9,7 @@ import { ChartCard } from '@/components/charts';
 import { MobileWrapper } from '@/components/shell/MobileWrapper';
 import type { CeoCenterHealthTierRow, CeoDashboardData, LeadStage } from '@/types/ceo';
 import { ChevronDown } from 'lucide-react';
-import { formatNumber, formatDateTime } from '@/lib/formatNumber';
+import { formatNumber, formatDateTime, formatCurrency } from '@/lib/formatNumber';
 
 const SECTION_IDS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] as const;
 
@@ -52,6 +52,7 @@ export default function CeoDashboardPage() {
   const tCommon = useTranslations('common');
   const th = useTranslations('health');
   const tPlan = useTranslations('plan');
+  const tT = useTranslations('ceoTeachers');
 
   const formatPlanCell = (plan: string | null | undefined) => {
     const p = String(plan ?? '').trim().toLowerCase();
@@ -375,6 +376,56 @@ export default function CeoDashboardPage() {
                 </div>
               </div>
             </section>
+
+            {data.teacher_combined && (
+              <section id="section-combined" aria-labelledby="combined-heading">
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <h2
+                    id="combined-heading"
+                    className="text-sm font-semibold text-[var(--color-text-primary)]"
+                  >
+                    {tT('combined.title')}
+                  </h2>
+                  <a
+                    href={`/${locale}/ceo/teachers`}
+                    className="text-xs font-medium text-[var(--color-brand-500)] underline ms-auto"
+                  >
+                    {tT('combined.openSection')}
+                  </a>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 border-s-2 border-s-[var(--color-border-default)]">
+                    <p className="text-xs text-[var(--color-text-secondary)]">{tT('combined.centerMrr')}</p>
+                    <p className="text-xl font-mono font-bold text-[var(--color-text-primary)] mt-1">
+                      {formatCurrency(data.teacher_combined.center_mrr, locale)}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 border-s-2 border-s-teal-500">
+                    <p className="text-xs text-[var(--color-text-secondary)]">{tT('combined.teacherMrr')}</p>
+                    <p className="text-xl font-mono font-bold text-[var(--color-text-primary)] mt-1">
+                      {formatCurrency(data.teacher_combined.teacher_mrr, locale)}
+                    </p>
+                    <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1">
+                      {tT('combined.teacherBreakdown', {
+                        active: formatNumber(data.teacher_combined.teacher_active_subs, locale),
+                        trials: formatNumber(data.teacher_combined.teacher_trials, locale),
+                      })}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 border-s-2 border-s-[var(--color-brand-500)]">
+                    <p className="text-xs text-[var(--color-text-secondary)]">{tT('combined.combinedMrr')}</p>
+                    <p className="text-xl font-mono font-bold text-[var(--color-brand-500)] mt-1">
+                      {formatCurrency(data.teacher_combined.combined_mrr, locale)}
+                    </p>
+                    <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1">
+                      {tT('combined.totalTeachers', {
+                        count: formatNumber(data.teacher_combined.total_teachers, locale),
+                      })}
+                    </p>
+                  </div>
+                </div>
+              </section>
+            )}
 
             <section id="section-center-health" aria-labelledby="center-health-heading">
               <h2

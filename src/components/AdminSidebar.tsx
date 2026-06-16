@@ -30,6 +30,7 @@ import {
   MapPin,
   ChevronRight,
   Tag,
+  GraduationCap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { signOutToLogin } from '@/lib/auth/sign-out-client';
@@ -99,6 +100,7 @@ export function AdminSidebar({
 }: AdminSidebarProps) {
   const t = useTranslations('admin');
   const tSettings = useTranslations('settings');
+  const tTeachers = useTranslations('ceoTeachers');
   const router = useRouter();
   const pathname = usePathname();
   const locale = useLocale();
@@ -802,6 +804,21 @@ export function AdminSidebar({
             >
               <BarChart3 size={18} className="shrink-0" />
               <span>{t('ceoDashboard')}</span>
+            </Link>
+          ) : null}
+
+          {adminRole === 'super_admin' ? (
+            <Link
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              href={'/ceo/teachers' as any}
+              onClick={afterNavigate}
+              className={cn(
+                navBtnClass(activeRoute?.includes('/ceo/teachers') ?? false),
+                'no-underline',
+              )}
+            >
+              <GraduationCap size={18} className="shrink-0" />
+              <span>{tTeachers('navLabel')}</span>
             </Link>
           ) : null}
 
