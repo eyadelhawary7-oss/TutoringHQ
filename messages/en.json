@@ -9277,5 +9277,42 @@
       "noMatch": "No rows match",
       "search": "Search"
     }
+  },
+  "slotPicking": {
+    "title": "Class times",
+    "subtitle": "After the cut is agreed, propose a weekly time and the center confirms it",
+    "noCenterGroups": "No center-attached groups yet",
+    "cut": "Center cut",
+    "bookedTitle": "Confirmed times",
+    "noBooked": "No confirmed times yet",
+    "awaiting": "Awaiting center confirmation",
+    "proposeTitle": "Propose a time",
+    "declinedHint": "The center declined your last proposal, propose another time",
+    "day": "Day",
+    "start": "From",
+    "end": "To",
+    "notePlaceholder": "Note (optional)",
+    "submit": "Send proposal",
+    "room": "Room",
+    "roomNone": "No room",
+    "confirm": "Confirm",
+    "decline": "Decline",
+    "teacher": "Teacher",
+    "centerTabLabel": "Times",
+    "centerTitle": "Slot requests",
+    "centerSubtitle": "Confirm or decline the teacher's proposed time",
+    "noPending": "No slot requests right now",
+    "errorGeneric": "Something went wrong, try again",
+    "errorConflict": "That time is already booked",
+    "errorState": "Not allowed in the current state",
+    "days": {
+      "sun": "Sunday",
+      "mon": "Monday",
+      "tue": "Tuesday",
+      "wed": "Wednesday",
+      "thu": "Thursday",
+      "fri": "Friday",
+      "sat": "Saturday"
+    }
   }
 }

@@ -7,6 +7,7 @@ import CenterEarningsSection from '../../CenterEarningsSection';
 import JoinCenterCard from '../../JoinCenterCard';
 import MyCodeCard from '../../MyCodeCard';
 import GroupProposalsSection from '../../GroupProposalsSection';
+import GroupSlotsSection from '../../GroupSlotsSection';
 import BringGroupToCenterSection from '../../BringGroupToCenterSection';
 import FreeZoneBanner from '../../FreeZoneBanner';
 import { useTeacherContext } from '../../useTeacherContext';
@@ -40,6 +41,7 @@ export default function TeacherCentersPage() {
         />
       )}
       <GroupProposalsSection centers={ctx?.centers ?? []} refreshKey={proposalsRefresh} />
+      <GroupSlotsSection refreshKey={proposalsRefresh} />
     </div>
   );
 }
