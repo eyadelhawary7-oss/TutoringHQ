@@ -8544,6 +8544,14 @@
       "copy": "Copy link",
       "copied": "Copied"
     },
+    "myCode": {
+      "heading": "My code",
+      "forCenter": "Give this code to a center so they can add you to their roster.",
+      "hintCenter": "Give this code to a center so they can add you to their roster.",
+      "forReferral": "Want to refer another teacher instead? Send them your referral link from your home page, not this code. You both get a free month when they subscribe.",
+      "copy": "Copy code",
+      "copied": "Copied"
+    },
     "errorTitle": "Something went wrong",
     "errorBody": "We could not load your portal. Please try again.",
     "retry": "Try again",

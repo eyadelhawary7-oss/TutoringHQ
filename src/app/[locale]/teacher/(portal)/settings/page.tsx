@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { isWeakPin } from '@/lib/weakPins';
 import { formatDate } from '@/lib/formatNumber';
+import MyCodeCard from '../../MyCodeCard';
 
 /**
  * Teacher profile settings. A thin form over PATCH /api/teacher/profile (the
@@ -343,6 +344,9 @@ export default function TeacherSettingsPage() {
           </button>
         </div>
       </div>
+
+      {/* My code (give to a center to be added; referral link lives on home) */}
+      <MyCodeCard />
 
       {/* Change PIN */}
       <section className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 shadow-card">

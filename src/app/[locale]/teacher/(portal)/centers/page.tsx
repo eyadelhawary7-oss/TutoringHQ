@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import CenterCutsSection from '../../CenterCutsSection';
 import CenterEarningsSection from '../../CenterEarningsSection';
 import JoinCenterCard from '../../JoinCenterCard';
+import MyCodeCard from '../../MyCodeCard';
 import GroupProposalsSection from '../../GroupProposalsSection';
 import FreeZoneBanner from '../../FreeZoneBanner';
 import { useTeacherContext } from '../../useTeacherContext';
@@ -27,6 +28,7 @@ export default function TeacherCentersPage() {
       <CenterCutsSection />
       <CenterEarningsSection />
       <JoinCenterCard />
+      <MyCodeCard compact />
       <GroupProposalsSection centers={ctx?.centers ?? []} />
     </div>
   );
