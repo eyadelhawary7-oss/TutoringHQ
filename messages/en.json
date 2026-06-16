@@ -9260,6 +9260,22 @@
       "combinedMrr": "Combined MRR",
       "teacherBreakdown": "{active} active, {trials} trial",
       "totalTeachers": "{count} teachers"
+    },
+    "cards": {
+      "totalTeachers": "Total teachers",
+      "freePlan": "No plan",
+      "totalReferrals": "Total referrals",
+      "freeMonthsGranted": "Free months granted",
+      "totalAttachments": "Total attachments",
+      "currentlyAttached": "Currently attached",
+      "detached": "Detached",
+      "teachersWithCredits": "Teachers with credits"
+    },
+    "filters": {
+      "all": "All",
+      "clear": "Clear filters",
+      "noMatch": "No rows match",
+      "search": "Search"
     }
   }
 }
