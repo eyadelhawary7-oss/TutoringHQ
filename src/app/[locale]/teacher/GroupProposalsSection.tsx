@@ -85,7 +85,13 @@ const STATUS_CLASS: Record<Proposal['status'], string> = {
  * The student rate (fee_per_class) is immutable; only the cut moves. The flow
  * ends when the cut is agreed and the teacher is added to the group.
  */
-export default function GroupProposalsSection({ centers }: { centers: CenterOption[] }) {
+export default function GroupProposalsSection({
+  centers,
+  refreshKey = 0,
+}: {
+  centers: CenterOption[];
+  refreshKey?: number;
+}) {
   const t = useTranslations('groupProposals');
   const locale = useLocale();
 
@@ -133,9 +139,11 @@ export default function GroupProposalsSection({ centers }: { centers: CenterOpti
     }
   }, []);
 
+  // Reloads on mount and whenever the parent bumps refreshKey (e.g. after a
+  // group is brought to a center elsewhere on the page).
   useEffect(() => {
     load();
-  }, [load]);
+  }, [load, refreshKey]);
 
   // The center's teacher-less groups, with cut + student count, fetched when the
   // teacher is in "existing group" mode and has named a center. Best-effort: a
