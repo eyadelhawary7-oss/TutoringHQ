@@ -203,6 +203,51 @@ describe('POST /api/teacher/group-proposals', () => {
       cut_egp: 20,
     });
   });
+
+  it('by-code new group: a non-member center reached by code -> pending link + carries_link proposal (201)', async () => {
+    // Teacher is NOT a member of CENTER_ID; the code reaches it anyway.
+    seedTeacherAuth(['other-center']);
+    // prepareTeacherByCodeLink's membership lookup (none) after the auth list.
+    queues.teacher_center?.push({ data: null, error: null });
+    queues.centers = [{ data: { id: CENTER_ID, name: 'Code Center' }, error: null }];
+    queues.group_proposals_insert = [{ data: { id: PROPOSAL_ID }, error: null }];
+    queues.group_proposal_offers_insert = [{ data: null, error: null }];
+
+    const res = await POST(
+      makeRequest({ center_code: 'CTR-2024', subject: 'Physics', fee_per_class: 100, opening_cut_egp: 20 }),
+    );
+    const json = await res.json();
+
+    expect(res.status).toBe(201);
+    expect(json).toEqual({ proposal_id: PROPOSAL_ID, status: 'open' });
+    const linkInsert = insertCalls.find((i) => i.table === 'teacher_center');
+    expect(linkInsert?.payload).toMatchObject({
+      teacher_id: TEACHER_ID,
+      center_id: CENTER_ID,
+      status: 'pending',
+    });
+    const propInsert = insertCalls.find((i) => i.table === 'group_proposals');
+    expect(propInsert?.payload).toMatchObject({
+      teacher_id: TEACHER_ID,
+      center_id: CENTER_ID,
+      carries_link: true,
+      status: 'open',
+    });
+  });
+
+  it('by-code: an unknown center code is a 404 CENTER_CODE_NOT_FOUND (no proposal)', async () => {
+    seedTeacherAuth(['other-center']);
+    queues.centers = [{ data: null, error: null }];
+
+    const res = await POST(
+      makeRequest({ center_code: 'NOPE', subject: 'Physics', fee_per_class: 100, opening_cut_egp: 20 }),
+    );
+    const json = await res.json();
+
+    expect(res.status).toBe(404);
+    expect(json.code).toBe('CENTER_CODE_NOT_FOUND');
+    expect(insertCalls.find((i) => i.table === 'group_proposals')).toBeUndefined();
+  });
 });
 
 describe('POST /api/teacher/group-proposals (request an existing group)', () => {

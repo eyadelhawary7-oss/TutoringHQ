@@ -565,6 +565,13 @@ export default function GroupProposalsTab({ onChanged }: { onChanged?: () => voi
                         <span className="font-mono font-semibold">{formatNumber(p.studentCount, locale)}</span>
                       </p>
                     )}
+                    {/* Teacher-by-code request: accepting JOINS the teacher AND
+                        takes on the group, atomically. Make it explicit. */}
+                    {p.carriesLink && p.initiatedBy === 'teacher' && p.status === 'open' && (
+                      <p className="mt-1 text-xs font-medium text-[var(--color-teal-deep)]">
+                        {t('byCodeIncomingNote')}
+                      </p>
+                    )}
                     {p.openingMessage && (
                       <p className="mt-1 text-xs text-[var(--color-text-secondary)]">{p.openingMessage}</p>
                     )}

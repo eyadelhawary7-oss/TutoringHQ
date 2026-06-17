@@ -12,6 +12,7 @@ type MyGroup = { id: string; name: string | null; feePerClass: number; activeStu
 
 const ERROR_KEY: Record<string, string> = {
   NOT_A_MEMBER: 'errorNotMember',
+  CENTER_CODE_NOT_FOUND: 'errorCenterCodeNotFound',
   PROPOSAL_ALREADY_OPEN: 'errorAlreadyOpen',
   CUT_NOT_LESS_THAN_FEE: 'errorCutTooHigh',
   GROUP_NOT_SOLO: 'errorGroupNotSolo',
@@ -20,14 +21,15 @@ const ERROR_KEY: Record<string, string> = {
 
 /**
  * Teacher portal (FREE zone): bring one of MY solo groups to a center. Picks a
- * private group (the teacher already runs, with its students), a center the
- * teacher is an active member of, and an opening cut. Sends a teacher-initiated
- * attach proposal; on center accept the group flips to center-attached (it then
- * lives on the center side of the portal). The student rate is the group's own;
- * only the cut is negotiated. Ends at cut-agreed - no scheduling.
+ * private group (the teacher already runs, with its students), a center, and an
+ * opening cut. Sends a teacher-initiated attach proposal; on center accept the
+ * group flips to center-attached. The student rate is the group's own; only the
+ * cut is negotiated. Ends at cut-agreed - no scheduling.
  *
- * To bring a group to a center that is NOT listed, the teacher joins it by code
- * first (the JoinCenterCard above), then it appears here (linked-first).
+ * The center is chosen two ways (Ref 2 & 3): a center the teacher is ALREADY a
+ * member of, OR a non-member center reached by its code. By-code sends a REQUEST:
+ * the center joins the teacher AND takes on the group only when it accepts. A
+ * code alone never joins or attaches.
  */
 export default function BringGroupToCenterSection({
   centers,
@@ -45,7 +47,11 @@ export default function BringGroupToCenterSection({
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [errorKey, setErrorKey] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ groupId: '', centerId: '', cut: '', message: '' });
+  // Center source: a center I'm in, or a non-member center by its code.
+  const [centerSource, setCenterSource] = useState<'member' | 'code'>('member');
+  const [form, setForm] = useState({ groupId: '', centerId: '', centerCode: '', cut: '', message: '' });
+
+  const byCode = centerSource === 'code';
 
   const loadGroups = useCallback(async () => {
     setGroupsLoading(true);
@@ -83,12 +89,18 @@ export default function BringGroupToCenterSection({
     if (!groupsLoaded) loadGroups();
   };
 
+  const resetForm = () => {
+    setForm({ groupId: '', centerId: '', centerCode: '', cut: '', message: '' });
+    setCenterSource('member');
+  };
+
   const selected = groups.find((g) => g.id === form.groupId) ?? null;
   const fee = selected?.feePerClass ?? 0;
 
   const submit = async () => {
     const cut = Number(form.cut);
-    if (!form.groupId || !form.centerId) return;
+    if (!form.groupId) return;
+    if (byCode ? !form.centerCode.trim() : !form.centerId) return;
     if (!Number.isFinite(cut) || cut < 0 || !(fee > 0) || cut >= fee) {
       setErrorKey('errorCutTooHigh');
       return;
@@ -100,6 +112,19 @@ export default function BringGroupToCenterSection({
         data: { session },
       } = await supabase.auth.getSession();
       if (!session) return;
+      const body = byCode
+        ? {
+            group_id: form.groupId,
+            center_code: form.centerCode.trim(),
+            opening_cut_egp: cut,
+            opening_message: form.message.trim() || undefined,
+          }
+        : {
+            group_id: form.groupId,
+            center_id: form.centerId,
+            opening_cut_egp: cut,
+            opening_message: form.message.trim() || undefined,
+          };
       const res = await fetch('/api/teacher/group-attach', {
         method: 'POST',
         headers: {
@@ -107,12 +132,7 @@ export default function BringGroupToCenterSection({
           Authorization: `Bearer ${session.access_token}`,
           ...(await getCsrfHeaders(session.access_token)),
         },
-        body: JSON.stringify({
-          group_id: form.groupId,
-          center_id: form.centerId,
-          opening_cut_egp: cut,
-          opening_message: form.message.trim() || undefined,
-        }),
+        body: JSON.stringify(body),
       });
       const json = (await res.json().catch(() => ({}))) as { code?: string };
       if (!res.ok) {
@@ -120,7 +140,7 @@ export default function BringGroupToCenterSection({
         return;
       }
       setOpen(false);
-      setForm({ groupId: '', centerId: '', cut: '', message: '' });
+      resetForm();
       onCreated?.();
     } catch {
       setErrorKey('errorGeneric');
@@ -136,15 +156,13 @@ export default function BringGroupToCenterSection({
           <ArrowRightLeft size={18} className="text-[var(--color-teal-deep)]" aria-hidden />
           {t('bringTitle')}
         </h2>
-        {centers.length > 0 && (
-          <button
-            type="button"
-            onClick={openForm}
-            className="rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-teal-700"
-          >
-            {t('bringButton')}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={openForm}
+          className="rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-teal-700"
+        >
+          {t('bringButton')}
+        </button>
       </div>
       <p className="mb-4 text-sm text-[var(--color-text-secondary)]">{t('bringSubtitle')}</p>
 
@@ -154,9 +172,7 @@ export default function BringGroupToCenterSection({
         </p>
       )}
 
-      {centers.length === 0 ? (
-        <p className="text-sm text-[var(--color-text-secondary)]">{t('joinNewCenterHint')}</p>
-      ) : open ? (
+      {open ? (
         <div className="flex flex-col gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] p-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
@@ -198,24 +214,67 @@ export default function BringGroupToCenterSection({
             )}
           </div>
 
-          <div>
-            <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
-              {t('centerLabel')}
-            </label>
-            <select
-              value={form.centerId}
-              onChange={(e) => setForm((f) => ({ ...f, centerId: e.target.value }))}
-              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+          {/* Center source: a center I'm in, or a non-member center by code. */}
+          <div className="flex w-fit gap-1 rounded-lg bg-[var(--color-surface-2)] p-1">
+            <button
+              type="button"
+              onClick={() => {
+                setCenterSource('member');
+                setForm((f) => ({ ...f, centerCode: '' }));
+              }}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${!byCode ? 'bg-teal-600 text-white' : 'text-[var(--color-text-secondary)]'}`}
             >
-              <option value="">{t('selectCenter')}</option>
-              {centers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name ?? c.id}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-[var(--color-text-muted)]">{t('joinNewCenterHint')}</p>
+              {t('centerSourceMember')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCenterSource('code');
+                setForm((f) => ({ ...f, centerId: '' }));
+              }}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${byCode ? 'bg-teal-600 text-white' : 'text-[var(--color-text-secondary)]'}`}
+            >
+              {t('centerSourceByCode')}
+            </button>
           </div>
+
+          {byCode ? (
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+                {t('centerCodeLabel')}
+              </label>
+              <input
+                value={form.centerCode}
+                maxLength={32}
+                onChange={(e) => setForm((f) => ({ ...f, centerCode: e.target.value }))}
+                placeholder={t('centerCodePlaceholder')}
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 font-mono text-sm uppercase text-[var(--color-text-primary)]"
+                dir="ltr"
+              />
+              <p className="mt-1 text-xs text-[var(--color-text-muted)]">{t('byCodeHint')}</p>
+            </div>
+          ) : (
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+                {t('centerLabel')}
+              </label>
+              <select
+                value={form.centerId}
+                onChange={(e) => setForm((f) => ({ ...f, centerId: e.target.value }))}
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+              >
+                <option value="">{t('selectCenter')}</option>
+                {centers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name ?? c.id}
+                  </option>
+                ))}
+              </select>
+              {centers.length === 0 && (
+                <p className="mt-1 text-xs text-[var(--color-text-muted)]">{t('joinNewCenterHint')}</p>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
@@ -246,17 +305,19 @@ export default function BringGroupToCenterSection({
             <button
               type="button"
               onClick={submit}
-              disabled={submitting || !form.groupId || !form.centerId || !form.cut}
+              disabled={
+                submitting || !form.groupId || (byCode ? !form.centerCode.trim() : !form.centerId) || !form.cut
+              }
               className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-              {submitting ? t('submitting') : t('submit')}
+              {submitting ? t('submitting') : byCode ? t('sendRequest') : t('submit')}
             </button>
             <button
               type="button"
               onClick={() => {
                 setOpen(false);
-                setForm({ groupId: '', centerId: '', cut: '', message: '' });
+                resetForm();
               }}
               className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm text-[var(--color-text-secondary)]"
             >

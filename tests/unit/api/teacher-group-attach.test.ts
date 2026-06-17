@@ -198,6 +198,56 @@ describe('POST /api/teacher/group-attach', () => {
     expect(insertCalls).toHaveLength(0);
   });
 
+  it('by-code: a non-member center reached by code creates a PENDING link + carries_link proposal (201)', async () => {
+    // Teacher is NOT a member of CENTER_ID (member of some other center only).
+    seedTeacherAuth(['other-center']);
+    // prepareTeacherByCodeLink does a second teacher_center membership lookup
+    // (none yet) after requireTeacherAuth consumed the membership list.
+    queues.teacher_center?.push({ data: null, error: null });
+    queues.centers = [{ data: { id: CENTER_ID, name: 'Code Center' }, error: null }];
+    seedSoloGroup();
+    queues.group_proposals_insert = [{ data: { id: PROPOSAL_ID }, error: null }];
+    queues.group_proposal_offers_insert = [{ data: null, error: null }];
+
+    const res = await POST(
+      makeRequest({ group_id: GROUP_ID, center_code: 'CTR-2024', opening_cut_egp: 20 }),
+    );
+    const json = await res.json();
+
+    expect(res.status).toBe(201);
+    expect(json).toEqual({ proposal_id: PROPOSAL_ID, status: 'open' });
+    // A pending membership was created (the center commits it on accept).
+    const linkInsert = insertCalls.find((i) => i.table === 'teacher_center');
+    expect(linkInsert?.payload).toMatchObject({
+      teacher_id: TEACHER_ID,
+      center_id: CENTER_ID,
+      status: 'pending',
+    });
+    // The proposal carries the link so the center's accept joins + attaches atomically.
+    const propInsert = insertCalls.find((i) => i.table === 'group_proposals');
+    expect(propInsert?.payload).toMatchObject({
+      center_id: CENTER_ID,
+      target_group_id: GROUP_ID,
+      carries_link: true,
+      status: 'open',
+    });
+  });
+
+  it('by-code: an unknown center code is a 404 CENTER_CODE_NOT_FOUND (no proposal, no link)', async () => {
+    seedTeacherAuth(['other-center']);
+    queues.centers = [{ data: null, error: null }];
+    seedSoloGroup();
+
+    const res = await POST(
+      makeRequest({ group_id: GROUP_ID, center_code: 'NOPE', opening_cut_egp: 20 }),
+    );
+    const json = await res.json();
+
+    expect(res.status).toBe(404);
+    expect(json.code).toBe('CENTER_CODE_NOT_FOUND');
+    expect(insertCalls.find((i) => i.table === 'group_proposals')).toBeUndefined();
+  });
+
   it('rejects a duplicate open attach (unique index 23505 -> 409 PROPOSAL_ALREADY_OPEN)', async () => {
     seedTeacherAuth();
     seedSoloGroup();

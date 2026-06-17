@@ -52,6 +52,7 @@ const ERROR_KEY: Record<string, string> = {
   PROPOSAL_ALREADY_OPEN: 'errorAlreadyOpen',
   CUT_NOT_LESS_THAN_FEE: 'errorCutTooHigh',
   NOT_A_MEMBER: 'errorNotMember',
+  CENTER_CODE_NOT_FOUND: 'errorCenterCodeNotFound',
   GROUP_HAS_TEACHER: 'errorGroupHasTeacher',
   GROUP_NOT_ELIGIBLE: 'errorGroupNotEligible',
   GROUP_NO_FEE: 'errorGroupNoFee',
@@ -77,13 +78,14 @@ const STATUS_CLASS: Record<Proposal['status'], string> = {
 /**
  * Teacher portal "Group Proposals" section (FREE zone). Two teacher-initiated
  * flavours, both negotiating the center cut with the same offer/counter loop:
- *  - NEW group: propose a brand-new group to a center the teacher belongs to
- *    (subject + student rate entered here).
- *  - EXISTING group: ask to RUN one of the center's teacher-less groups; the
- *    teacher sees its current cut and student count BEFORE requesting, and the
- *    student rate is fixed by the group.
- * The student rate (fee_per_class) is immutable; only the cut moves. The flow
- * ends when the cut is agreed and the teacher is added to the group.
+ *  - NEW group: propose a brand-new group to a center.
+ *  - EXISTING group: ask to RUN one of the center's teacher-less groups.
+ *
+ * The center is chosen two ways (Ref 2 & 3): a center the teacher is ALREADY in,
+ * OR a center reached by its code (a non-member center). The by-code path only
+ * proposes a NEW group (a non-member can't see a center's existing groups) and
+ * sends a REQUEST: the center joins the teacher AND takes on the group only when
+ * it accepts. The student rate (fee_per_class) is immutable; only the cut moves.
  */
 export default function GroupProposalsSection({
   centers,
@@ -105,12 +107,16 @@ export default function GroupProposalsSection({
   const [counterNote, setCounterNote] = useState('');
 
   const [showForm, setShowForm] = useState(false);
+  // Center source: a center the teacher is already in, or a non-member center by
+  // its code. By-code only supports the NEW-group flavour.
+  const [centerSource, setCenterSource] = useState<'member' | 'code'>('member');
   const [targetMode, setTargetMode] = useState<'new' | 'existing'>('new');
   const [joinableGroups, setJoinableGroups] = useState<JoinableGroup[]>([]);
   const [joinableLoading, setJoinableLoading] = useState(false);
   const [joinableLoadedFor, setJoinableLoadedFor] = useState<string | null>(null);
   const [form, setForm] = useState({
     centerId: '',
+    centerCode: '',
     subject: '',
     gradeLevel: '',
     fee: '',
@@ -119,6 +125,8 @@ export default function GroupProposalsSection({
     targetGroupId: '',
   });
   const [submitting, setSubmitting] = useState(false);
+
+  const byCode = centerSource === 'code';
 
   const load = useCallback(async () => {
     try {
@@ -139,15 +147,10 @@ export default function GroupProposalsSection({
     }
   }, []);
 
-  // Reloads on mount and whenever the parent bumps refreshKey (e.g. after a
-  // group is brought to a center elsewhere on the page).
   useEffect(() => {
     load();
   }, [load, refreshKey]);
 
-  // The center's teacher-less groups, with cut + student count, fetched when the
-  // teacher is in "existing group" mode and has named a center. Best-effort: a
-  // failure just leaves an empty picker.
   const loadJoinable = useCallback(async (centerId: string) => {
     setJoinableLoading(true);
     try {
@@ -172,19 +175,19 @@ export default function GroupProposalsSection({
     }
   }, []);
 
-  // Switching to "existing group" mode (or picking a center while in it) loads
-  // that center's joinable groups once.
+  // Joinable groups only exist for a member center (the by-code path is new-group
+  // only, so it never loads them).
   useEffect(() => {
-    if (showForm && targetMode === 'existing' && form.centerId && joinableLoadedFor !== form.centerId) {
+    if (showForm && !byCode && targetMode === 'existing' && form.centerId && joinableLoadedFor !== form.centerId) {
       loadJoinable(form.centerId);
     }
-  }, [showForm, targetMode, form.centerId, joinableLoadedFor, loadJoinable]);
+  }, [showForm, byCode, targetMode, form.centerId, joinableLoadedFor, loadJoinable]);
 
   const selectedJoinable = joinableGroups.find((g) => g.id === form.targetGroupId) ?? null;
-  // The fee that bounds the cut: the typed fee for a new group, or the picked
-  // existing group's fee for an attach request.
+  // The fee that bounds the cut: an existing group's fee for an attach request,
+  // else the typed fee for a new group.
   const effectiveFee =
-    targetMode === 'existing' ? selectedJoinable?.feePerClass ?? 0 : Number(form.fee);
+    !byCode && targetMode === 'existing' ? selectedJoinable?.feePerClass ?? 0 : Number(form.fee);
 
   const respond = async (
     proposalId: string,
@@ -226,7 +229,8 @@ export default function GroupProposalsSection({
   };
 
   const resetForm = () => {
-    setForm({ centerId: '', subject: '', gradeLevel: '', fee: '', cut: '', message: '', targetGroupId: '' });
+    setForm({ centerId: '', centerCode: '', subject: '', gradeLevel: '', fee: '', cut: '', message: '', targetGroupId: '' });
+    setCenterSource('member');
     setTargetMode('new');
     setJoinableGroups([]);
     setJoinableLoadedFor(null);
@@ -234,11 +238,17 @@ export default function GroupProposalsSection({
 
   const submitProposal = async () => {
     const cut = Number(form.cut);
-    if (!form.centerId) return;
-    if (targetMode === 'existing') {
-      if (!form.targetGroupId || !selectedJoinable || selectedJoinable.feePerClass == null) return;
-    } else if (!form.subject.trim() || !Number.isFinite(effectiveFee) || effectiveFee <= 0) {
-      return;
+    if (byCode) {
+      if (!form.centerCode.trim() || !form.subject.trim() || !Number.isFinite(effectiveFee) || effectiveFee <= 0) {
+        return;
+      }
+    } else {
+      if (!form.centerId) return;
+      if (targetMode === 'existing') {
+        if (!form.targetGroupId || !selectedJoinable || selectedJoinable.feePerClass == null) return;
+      } else if (!form.subject.trim() || !Number.isFinite(effectiveFee) || effectiveFee <= 0) {
+        return;
+      }
     }
     if (!Number.isFinite(cut) || cut < 0 || !(effectiveFee > 0) || cut >= effectiveFee) {
       setErrorKey('errorCutTooHigh');
@@ -251,11 +261,18 @@ export default function GroupProposalsSection({
         data: { session },
       } = await supabase.auth.getSession();
       if (!session) return;
-      // Existing-group requests send the target_group_id; the server reads the
-      // subject + student rate from the group itself. New-group proposals send
-      // subject/grade/fee.
-      const body =
-        targetMode === 'existing'
+      // By-code: reach a non-member center by code (new group only). Member:
+      // existing-group sends target_group_id; new-group sends subject/grade/fee.
+      const body = byCode
+        ? {
+            center_code: form.centerCode.trim(),
+            subject: form.subject.trim(),
+            grade_level: form.gradeLevel.trim() || undefined,
+            fee_per_class: Number(form.fee),
+            opening_cut_egp: cut,
+            opening_message: form.message.trim() || undefined,
+          }
+        : targetMode === 'existing'
           ? {
               center_id: form.centerId,
               target_group_id: form.targetGroupId,
@@ -296,9 +313,11 @@ export default function GroupProposalsSection({
 
   const submitDisabled =
     submitting ||
-    !form.centerId ||
     !form.cut ||
-    (targetMode === 'existing' ? !form.targetGroupId : !form.subject.trim() || !form.fee);
+    (byCode
+      ? !form.centerCode.trim() || !form.subject.trim() || !form.fee
+      : !form.centerId ||
+        (targetMode === 'existing' ? !form.targetGroupId : !form.subject.trim() || !form.fee));
 
   return (
     <section className="rounded-[var(--radius-card)] border border-[var(--color-teal)]/40 bg-[var(--color-surface-1)] p-6">
@@ -307,15 +326,13 @@ export default function GroupProposalsSection({
           <Handshake size={18} className="text-[var(--color-teal-deep)]" aria-hidden />
           {t('title')}
         </h2>
-        {centers.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setShowForm((v) => !v)}
-            className="rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-teal-700"
-          >
-            {t('newProposal')}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => setShowForm((v) => !v)}
+          className="rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-teal-700"
+        >
+          {t('newProposal')}
+        </button>
       </div>
       <p className="mb-4 text-sm text-[var(--color-text-secondary)]">{t('subtitleTeacher')}</p>
 
@@ -327,45 +344,92 @@ export default function GroupProposalsSection({
 
       {showForm && (
         <div className="mb-5 flex flex-col gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] p-4">
-          {/* Target: propose a NEW group or ask to run an EXISTING teacher-less one. */}
+          {/* Center source: a center I'm in, or a non-member center by code. */}
           <div className="flex w-fit gap-1 rounded-lg bg-[var(--color-surface-2)] p-1">
             <button
               type="button"
-              onClick={() => setTargetMode('new')}
-              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${targetMode === 'new' ? 'bg-teal-600 text-white' : 'text-[var(--color-text-secondary)]'}`}
+              onClick={() => {
+                setCenterSource('member');
+                setForm((f) => ({ ...f, centerCode: '' }));
+              }}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${!byCode ? 'bg-teal-600 text-white' : 'text-[var(--color-text-secondary)]'}`}
             >
-              {t('targetNew')}
+              {t('centerSourceMember')}
             </button>
             <button
               type="button"
-              onClick={() => setTargetMode('existing')}
-              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${targetMode === 'existing' ? 'bg-teal-600 text-white' : 'text-[var(--color-text-secondary)]'}`}
+              onClick={() => {
+                setCenterSource('code');
+                setTargetMode('new');
+                setForm((f) => ({ ...f, centerId: '', targetGroupId: '' }));
+              }}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${byCode ? 'bg-teal-600 text-white' : 'text-[var(--color-text-secondary)]'}`}
             >
-              {t('targetExisting')}
+              {t('centerSourceByCode')}
             </button>
           </div>
 
-          <div>
-            <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
-              {t('centerLabel')}
-            </label>
-            <select
-              value={form.centerId}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, centerId: e.target.value, targetGroupId: '', cut: '' }))
-              }
-              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
-            >
-              <option value="">{t('selectCenter')}</option>
-              {centers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name ?? c.id}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Target toggle: only for member centers (by-code is new-group only). */}
+          {!byCode && (
+            <div className="flex w-fit gap-1 rounded-lg bg-[var(--color-surface-2)] p-1">
+              <button
+                type="button"
+                onClick={() => setTargetMode('new')}
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${targetMode === 'new' ? 'bg-teal-600 text-white' : 'text-[var(--color-text-secondary)]'}`}
+              >
+                {t('targetNew')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setTargetMode('existing')}
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${targetMode === 'existing' ? 'bg-teal-600 text-white' : 'text-[var(--color-text-secondary)]'}`}
+              >
+                {t('targetExisting')}
+              </button>
+            </div>
+          )}
 
-          {targetMode === 'existing' ? (
+          {byCode ? (
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+                {t('centerCodeLabel')}
+              </label>
+              <input
+                value={form.centerCode}
+                maxLength={32}
+                onChange={(e) => setForm((f) => ({ ...f, centerCode: e.target.value }))}
+                placeholder={t('centerCodePlaceholder')}
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 font-mono text-sm uppercase text-[var(--color-text-primary)]"
+                dir="ltr"
+              />
+              <p className="mt-1 text-xs text-[var(--color-text-muted)]">{t('byCodeHint')}</p>
+            </div>
+          ) : (
+            <div>
+              <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+                {t('centerLabel')}
+              </label>
+              <select
+                value={form.centerId}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, centerId: e.target.value, targetGroupId: '', cut: '' }))
+                }
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+              >
+                <option value="">{t('selectCenter')}</option>
+                {centers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name ?? c.id}
+                  </option>
+                ))}
+              </select>
+              {centers.length === 0 && (
+                <p className="mt-1 text-xs text-[var(--color-text-muted)]">{t('noMemberCentersHint')}</p>
+              )}
+            </div>
+          )}
+
+          {!byCode && targetMode === 'existing' ? (
             <div>
               <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
                 {t('existingGroupLabel')}
@@ -384,8 +448,6 @@ export default function GroupProposalsSection({
                     setForm((f) => ({
                       ...f,
                       targetGroupId: e.target.value,
-                      // Prefill the cut with the group's current cut: the natural
-                      // opening offer is "I will run it at the cut you already set".
                       cut: g ? String(g.centerCutEgp) : '',
                     }));
                   }}
@@ -498,7 +560,7 @@ export default function GroupProposalsSection({
               className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-              {submitting ? t('submitting') : t('submit')}
+              {submitting ? t('submitting') : byCode ? t('sendRequest') : t('submit')}
             </button>
             <button
               type="button"
@@ -621,10 +683,17 @@ export default function GroupProposalsSection({
                 )}
 
                 {/* Combined center-initiated request: accepting/countering also
-                    JOINS the center. Make the bundled nature explicit. */}
-                {p.carriesLink && p.status === 'open' && (
+                    JOINS the center. */}
+                {p.carriesLink && p.initiatedBy === 'center' && p.status === 'open' && (
                   <p className="mt-2 rounded-lg bg-[var(--color-teal-soft)] px-3 py-2 text-xs text-[var(--color-teal-deep)]">
                     {t('combinedJoinNote', { center: p.centerName ?? t('thisCenter') })}
+                  </p>
+                )}
+                {/* Teacher-by-code request: pending the center's approval to join +
+                    take on the group. */}
+                {p.carriesLink && p.initiatedBy === 'teacher' && p.status === 'open' && (
+                  <p className="mt-2 rounded-lg bg-[var(--color-surface-2)] px-3 py-2 text-xs text-[var(--color-text-secondary)]">
+                    {t('byCodePendingNote', { center: p.centerName ?? t('thisCenter') })}
                   </p>
                 )}
 
@@ -658,9 +727,6 @@ export default function GroupProposalsSection({
                         </button>
                       </>
                     )}
-                    {/* Withdraw pulls the teacher's OWN standing offer (latest is
-                        the teacher's). When the center's offer is standing the
-                        teacher declines instead. */}
                     {p.latestOffer?.madeBy === 'teacher' && (
                       <button
                         type="button"

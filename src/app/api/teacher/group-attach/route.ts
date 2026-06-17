@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherAuth } from '@/lib/centerAuth';
 import { validateCSRFRequest } from '@/lib/csrf';
-import { isValidEgp } from '@/lib/groupProposals';
+import { isValidEgp, prepareTeacherByCodeLink, resolveCenterByCode } from '@/lib/groupProposals';
 
 const ROUTE_TAG = 'api/teacher/group-attach';
 
@@ -40,32 +40,62 @@ export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => ({}))) as {
     group_id?: unknown;
     center_id?: unknown;
+    center_code?: unknown;
     opening_cut_egp?: unknown;
     opening_message?: unknown;
   };
 
   const groupId = typeof body.group_id === 'string' ? body.group_id.trim() : '';
-  const centerId = typeof body.center_id === 'string' ? body.center_id.trim() : '';
+  const centerCode = typeof body.center_code === 'string' ? body.center_code.trim() : '';
   const openingMessage =
     typeof body.opening_message === 'string' && body.opening_message.trim()
       ? body.opening_message.trim().slice(0, 500)
       : null;
   const cut = body.opening_cut_egp;
 
-  if (!groupId || !centerId) {
+  if (!groupId) {
     return NextResponse.json({ error: 'Invalid input', code: 'INVALID_INPUT' }, { status: 400 });
   }
   if (!isValidEgp(cut, 0)) {
     return NextResponse.json({ error: 'Invalid cut', code: 'INVALID_CUT' }, { status: 400 });
   }
 
-  // Active membership in the target center (resolved server-side). Without it the
-  // teacher must join the center by code first, then attach.
-  if (!auth.centerIds.includes(centerId)) {
-    return NextResponse.json(
-      { error: 'Not a member of this center', code: 'NOT_A_MEMBER' },
-      { status: 403 },
+  // Resolve the target center. By-code (Ref 2 & 3): reach a center the teacher is
+  // NOT yet a member of by its code; a pending link is prepared and the center's
+  // accept commits the membership AND flips the group atomically. Member path:
+  // the teacher must already be an active member (auth.centerIds).
+  let centerId: string;
+  let carriesLink = false;
+  if (centerCode) {
+    const center = await resolveCenterByCode(auth.supabaseAdmin, centerCode);
+    if (!center) {
+      return NextResponse.json(
+        { error: 'No center has that code', code: 'CENTER_CODE_NOT_FOUND' },
+        { status: 404 },
+      );
+    }
+    centerId = center.id;
+    const prepared = await prepareTeacherByCodeLink(
+      auth.supabaseAdmin,
+      auth.userId,
+      centerId,
+      auth.userId,
+      ROUTE_TAG,
     );
+    carriesLink = prepared.carriesLink;
+  } else {
+    centerId = typeof body.center_id === 'string' ? body.center_id.trim() : '';
+    if (!centerId) {
+      return NextResponse.json({ error: 'Invalid input', code: 'INVALID_INPUT' }, { status: 400 });
+    }
+    // Active membership in the target center (resolved server-side). Without it the
+    // teacher must reach the center by code instead.
+    if (!auth.centerIds.includes(centerId)) {
+      return NextResponse.json(
+        { error: 'Not a member of this center', code: 'NOT_A_MEMBER' },
+        { status: 403 },
+      );
+    }
   }
 
   // The group must be the caller's OWN solo private group. A foreign or unknown
@@ -122,6 +152,7 @@ export async function POST(request: NextRequest) {
       fee_per_class: fee,
       opening_message: openingMessage,
       target_group_id: groupId,
+      carries_link: carriesLink,
       status: 'open',
     })
     .select('id')

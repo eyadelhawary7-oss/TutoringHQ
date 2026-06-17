@@ -332,6 +332,90 @@ describe('POST /api/center/group-proposals/[proposalId]/respond', () => {
     expect(json.status).toBe('withdrawn');
     expect(rpcCalls[0].args).toMatchObject({ p_side: 'center', p_action: 'withdraw' });
   });
+
+  // Ref 2 & 3: a teacher reached this center by its code, so the proposal carries
+  // a pending membership (carries_link=true, initiated_by='teacher'). accept must
+  // go through the atomic center-acceptor RPC (commit link + attach together).
+  it('teacher-by-code accept -> atomic center-acceptor RPC with p_center_id', async () => {
+    seedCenterAuth();
+    queues.group_proposals = [
+      {
+        data: {
+          id: PROPOSAL_ID,
+          center_id: CENTER_ID,
+          teacher_id: TEACHER_ID,
+          fee_per_class: 80,
+          status: 'open',
+          carries_link: true,
+          initiated_by: 'teacher',
+        },
+        error: null,
+      },
+    ];
+    rpcQueue.push({ data: [{ proposal_status: 'accepted', group_id: 'group-9' }], error: null });
+
+    const res = await RESPOND(makeRespond({ action: 'accept' }), params);
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json).toEqual({ status: 'accepted', group_id: 'group-9' });
+    expect(rpcCalls[0].fn).toBe('respond_teacher_code_group_proposal');
+    expect(rpcCalls[0].args).toMatchObject({
+      p_proposal_id: PROPOSAL_ID,
+      p_center_id: CENTER_ID,
+      p_actor_user_id: OWNER_ID,
+      p_action: 'accept',
+    });
+  });
+
+  it('teacher-by-code decline -> atomic center-acceptor RPC (tears the pending join down)', async () => {
+    seedCenterAuth();
+    queues.group_proposals = [
+      {
+        data: {
+          id: PROPOSAL_ID,
+          center_id: CENTER_ID,
+          teacher_id: TEACHER_ID,
+          fee_per_class: 80,
+          status: 'open',
+          carries_link: true,
+          initiated_by: 'teacher',
+        },
+        error: null,
+      },
+    ];
+    rpcQueue.push({ data: [{ proposal_status: 'declined', group_id: null }], error: null });
+
+    const res = await RESPOND(makeRespond({ action: 'decline' }), params);
+
+    expect(res.status).toBe(200);
+    expect(rpcCalls[0].fn).toBe('respond_teacher_code_group_proposal');
+    expect(rpcCalls[0].args).toMatchObject({ p_center_id: CENTER_ID, p_action: 'decline' });
+  });
+
+  it('center-initiated carries_link proposal still uses the canonical RPC (not the by-code one)', async () => {
+    seedCenterAuth();
+    queues.group_proposals = [
+      {
+        data: {
+          id: PROPOSAL_ID,
+          center_id: CENTER_ID,
+          teacher_id: TEACHER_ID,
+          fee_per_class: 80,
+          status: 'open',
+          carries_link: true,
+          initiated_by: 'center',
+        },
+        error: null,
+      },
+    ];
+    rpcQueue.push({ data: [{ proposal_status: 'withdrawn', group_id: null }], error: null });
+
+    const res = await RESPOND(makeRespond({ action: 'withdraw' }), params);
+
+    expect(res.status).toBe(200);
+    expect(rpcCalls[0].fn).toBe('respond_group_proposal');
+  });
 });
 
 describe('POST /api/center/group-proposals (owner-initiated)', () => {

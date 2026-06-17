@@ -6,6 +6,8 @@ import {
   PROPOSAL_COLUMNS,
   buildProposalList,
   isValidEgp,
+  prepareTeacherByCodeLink,
+  resolveCenterByCode,
   resolveTargetGroupNames,
   type ProposalRow,
 } from '@/lib/groupProposals';
@@ -49,6 +51,7 @@ export async function POST(request: NextRequest) {
 
   const body = (await request.json().catch(() => ({}))) as {
     center_id?: unknown;
+    center_code?: unknown;
     subject?: unknown;
     grade_level?: unknown;
     fee_per_class?: unknown;
@@ -56,6 +59,12 @@ export async function POST(request: NextRequest) {
     opening_message?: unknown;
     target_group_id?: unknown;
   };
+
+  // By-code path (Ref 2 & 3): a center_code reaches a center the teacher is NOT
+  // yet a member of. It only applies to NEW-group proposals - a non-member can't
+  // see a center's existing teacher-less groups to attach to one. The acceptance
+  // is the center's; entering a code never joins or attaches by itself.
+  const centerCode = typeof body.center_code === 'string' ? body.center_code.trim() : '';
 
   const targetGroupId =
     typeof body.target_group_id === 'string' && body.target_group_id.trim()
@@ -81,6 +90,9 @@ export async function POST(request: NextRequest) {
   let subject: string;
   let gradeLevel: string | null;
   let fee: number;
+  // True when this proposal also carries an uncommitted teacher<->center link
+  // (the by-code path to a non-member center). The center's accept commits it.
+  let carriesLink = false;
 
   if (targetGroupId) {
     // Attach-to-existing: the target must be a plain center group with no teacher
@@ -138,26 +150,52 @@ export async function POST(request: NextRequest) {
     gradeLevel = null;
     fee = groupFee;
   } else {
-    centerId = typeof body.center_id === 'string' ? body.center_id.trim() : '';
     subject = typeof body.subject === 'string' ? body.subject.trim() : '';
     gradeLevel =
       typeof body.grade_level === 'string' && body.grade_level.trim()
         ? body.grade_level.trim().slice(0, 120)
         : null;
     fee = typeof body.fee_per_class === 'number' ? body.fee_per_class : NaN;
-    if (!centerId || subject.length < 1 || subject.length > 120) {
+    if (subject.length < 1 || subject.length > 120) {
       return NextResponse.json({ error: 'Invalid input', code: 'INVALID_INPUT' }, { status: 400 });
     }
     if (!isValidEgp(fee, 0) || fee <= 0) {
       return NextResponse.json({ error: 'Invalid fee', code: 'INVALID_FEE' }, { status: 400 });
     }
-    // Active membership in the named center (auth.centerIds is the membership
-    // list resolved server-side from teacher_center status='active').
-    if (!auth.centerIds.includes(centerId)) {
-      return NextResponse.json(
-        { error: 'Not a member of this center', code: 'NOT_A_MEMBER' },
-        { status: 403 },
+
+    if (centerCode) {
+      // By-code: resolve the center, then prepare a pending link (unless the
+      // teacher is already an active member, in which case it's an ordinary
+      // member proposal). The center's accept commits both atomically.
+      const center = await resolveCenterByCode(auth.supabaseAdmin, centerCode);
+      if (!center) {
+        return NextResponse.json(
+          { error: 'No center has that code', code: 'CENTER_CODE_NOT_FOUND' },
+          { status: 404 },
+        );
+      }
+      centerId = center.id;
+      const prepared = await prepareTeacherByCodeLink(
+        auth.supabaseAdmin,
+        auth.userId,
+        centerId,
+        auth.userId,
+        ROUTE_TAG,
       );
+      carriesLink = prepared.carriesLink;
+    } else {
+      centerId = typeof body.center_id === 'string' ? body.center_id.trim() : '';
+      if (!centerId) {
+        return NextResponse.json({ error: 'Invalid input', code: 'INVALID_INPUT' }, { status: 400 });
+      }
+      // Active membership in the named center (auth.centerIds is the membership
+      // list resolved server-side from teacher_center status='active').
+      if (!auth.centerIds.includes(centerId)) {
+        return NextResponse.json(
+          { error: 'Not a member of this center', code: 'NOT_A_MEMBER' },
+          { status: 403 },
+        );
+      }
     }
   }
 
@@ -180,6 +218,7 @@ export async function POST(request: NextRequest) {
       fee_per_class: fee,
       opening_message: openingMessage,
       target_group_id: targetGroupId,
+      carries_link: carriesLink,
       status: 'open',
     })
     .select('id')

@@ -234,6 +234,99 @@ export function mapRespondRpcError(err: {
   return null;
 }
 
+/**
+ * Resolve a center by its public join code (centers.center_code). Returns the
+ * center id + name, or null when no center has that code. Used by the
+ * teacher-by-code request flows (Ref 2 & 3): a teacher reaches a center they are
+ * NOT yet a member of by typing its code. center_code is displayed/entered as-is
+ * (a display id), never localized.
+ */
+export async function resolveCenterByCode(
+  admin: SupabaseClient,
+  centerCode: string,
+): Promise<{ id: string; name: string | null } | null> {
+  const code = centerCode.trim();
+  if (!code) return null;
+  const { data, error } = await admin
+    .from('centers')
+    .select('id, name')
+    .eq('center_code', code)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data as { id: string; name: string | null };
+}
+
+/**
+ * Teacher-by-code link preparation (mirror of the owner-initiated combined
+ * request, but the TEACHER is the initiator). Given the resolved center, decide
+ * whether the proposal must CARRY a link and, when so, best-effort create/refresh
+ * a PENDING teacher_center row for visibility.
+ *
+ * - Already an ACTIVE member -> carriesLink=false, no link write (an ordinary
+ *   member proposal; the code was just a convenient way to name the center).
+ * - Otherwise -> carriesLink=true and a pending teacher_center row, so the
+ *   center's single accept commits the membership atomically
+ *   (respond_teacher_code_group_proposal). The carries_link FLAG on the proposal,
+ *   not this row, is authoritative: the accept RPC activates an active membership
+ *   even if this pending row is missing, so a failed write here can never strand
+ *   a group without its teacher's membership. A code alone never joins or
+ *   attaches anything - only the center's acceptance does.
+ */
+export async function prepareTeacherByCodeLink(
+  admin: SupabaseClient,
+  teacherId: string,
+  centerId: string,
+  invitedBy: string,
+  routeTag: string,
+): Promise<{ carriesLink: boolean }> {
+  const { data: membership, error: membershipErr } = await admin
+    .from('teacher_center')
+    .select('id, status')
+    .eq('teacher_id', teacherId)
+    .eq('center_id', centerId)
+    .maybeSingle();
+  if (membershipErr) {
+    Sentry.withScope((scope) => {
+      scope.setTag('route', routeTag);
+      scope.setTag('step', 'bycode_membership_lookup');
+      Sentry.captureMessage(`by-code membership lookup failed: ${membershipErr.message}`, 'warning');
+    });
+  }
+  const membershipRow = membership as { id: string; status: string } | null;
+  const alreadyActive = membershipRow?.status === 'active';
+  if (alreadyActive) return { carriesLink: false };
+
+  if (membershipRow) {
+    const { error: linkErr } = await admin
+      .from('teacher_center')
+      .update({ status: 'pending', invited_by: invitedBy })
+      .eq('id', membershipRow.id);
+    if (linkErr) {
+      Sentry.withScope((scope) => {
+        scope.setTag('route', routeTag);
+        scope.setTag('step', 'bycode_pending_link_update');
+        Sentry.captureMessage(`by-code link reactivate failed: ${linkErr.message}`, 'warning');
+      });
+    }
+  } else {
+    const { error: linkErr } = await admin.from('teacher_center').insert({
+      teacher_id: teacherId,
+      center_id: centerId,
+      status: 'pending',
+      invited_by: invitedBy,
+    });
+    // 23505 = a row appeared concurrently; harmless, accept still resolves it.
+    if (linkErr && (linkErr as { code?: string }).code !== '23505') {
+      Sentry.withScope((scope) => {
+        scope.setTag('route', routeTag);
+        scope.setTag('step', 'bycode_pending_link_insert');
+        Sentry.captureMessage(`by-code link create failed: ${linkErr.message}`, 'warning');
+      });
+    }
+  }
+  return { carriesLink: true };
+}
+
 const PROPOSAL_PRIVILEGED_ROLES = new Set(['owner', 'admin', 'super_admin']);
 
 /**

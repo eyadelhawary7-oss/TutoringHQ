@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { CalendarClock, Loader2 } from 'lucide-react';
+import { CalendarClock, CalendarDays, Loader2, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { formatCurrency, formatTime } from '@/lib/formatNumber';
@@ -35,6 +35,14 @@ type GroupRow = {
   last_response: { status: string; responded_at: string | null } | null;
 };
 
+type CenterScheduleSlot = {
+  id: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  room_name: string | null;
+};
+
 const ERROR_KEY: Record<string, string> = {
   SLOT_CONFLICT: 'errorConflict',
   ALREADY_PENDING: 'errorState',
@@ -42,6 +50,100 @@ const ERROR_KEY: Record<string, string> = {
   INVALID_INPUT: 'errorGeneric',
   NOT_FOUND: 'errorGeneric',
 };
+
+/**
+ * Read-only weekly view (Ref 1) of a center's EXISTING schedule, so the teacher
+ * can see what is already booked before proposing a time. Groups slots by the
+ * Cairo week order (Sat -> Fri). Self-fetches from /api/teacher/center-schedule
+ * (server-gated to centers the teacher relates to). Not an availability system -
+ * it just shows the existing bookings (day/time + room).
+ */
+function CenterScheduleView({ centerId, onClose }: { centerId: string; onClose: () => void }) {
+  const t = useTranslations('slotPicking');
+  const locale = useLocale();
+  const [slots, setSlots] = useState<CenterScheduleSlot[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) return;
+        const res = await fetch(
+          `/api/teacher/center-schedule?center_id=${encodeURIComponent(centerId)}`,
+          { headers: { Authorization: `Bearer ${session.access_token}` } },
+        );
+        if (!res.ok) return;
+        const json = (await res.json()) as { slots: CenterScheduleSlot[] };
+        if (!cancelled) setSlots(json.slots ?? []);
+      } catch {
+        /* non-fatal: renders empty */
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [centerId]);
+
+  const dayLabel = (n: number) =>
+    t(`days.${DAY_KEYS[(n as DayOfWeek)] ?? 'sat'}` as Parameters<typeof t>[0]);
+  const byDay = (d: DayOfWeek) =>
+    slots
+      .filter((s) => s.day_of_week === d)
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+  return (
+    <div className="mt-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] p-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold text-[var(--color-text-secondary)]">{t('scheduleTitle')}</p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex items-center gap-1 text-xs text-[var(--color-text-muted)] hover:underline"
+        >
+          <X size={12} aria-hidden /> {t('scheduleClose')}
+        </button>
+      </div>
+      {loading ? (
+        <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
+          <Loader2 size={14} className="animate-spin" /> {t('scheduleLoading')}
+        </div>
+      ) : slots.length === 0 ? (
+        <p className="text-xs text-[var(--color-text-muted)]">{t('scheduleEmpty')}</p>
+      ) : (
+        <ul className="space-y-2">
+          {CAIRO_WEEK_ORDER.map((d) => {
+            const daySlots = byDay(d);
+            return (
+              <li key={d}>
+                <p className="text-xs font-semibold text-[var(--color-text-primary)]">{dayLabel(d)}</p>
+                {daySlots.length === 0 ? (
+                  <p className="text-xs text-[var(--color-text-muted)]">{t('scheduleDayEmpty')}</p>
+                ) : (
+                  <ul className="mt-0.5 space-y-0.5 ps-3">
+                    {daySlots.map((s) => (
+                      <li key={s.id} className="text-xs text-[var(--color-text-secondary)]">
+                        <span dir="ltr">
+                          {formatTime(s.start_time, locale)} - {formatTime(s.end_time, locale)}
+                        </span>
+                        {s.room_name ? ` · ${s.room_name}` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 function GroupSlotCard({ group, onChanged }: { group: GroupRow; onChanged: () => void }) {
   const t = useTranslations('slotPicking');
@@ -52,6 +154,7 @@ function GroupSlotCard({ group, onChanged }: { group: GroupRow; onChanged: () =>
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [errorKey, setErrorKey] = useState<string | null>(null);
+  const [showSchedule, setShowSchedule] = useState(false);
 
   const dayLabel = (n: number) => t(`days.${DAY_KEYS[(n as DayOfWeek)] ?? 'sat'}` as Parameters<typeof t>[0]);
 
@@ -101,7 +204,20 @@ function GroupSlotCard({ group, onChanged }: { group: GroupRow; onChanged: () =>
             {group.center_name ?? '-'} · {t('cut')}: {formatCurrency(group.center_cut_egp, locale)}
           </p>
         </div>
+        {group.center_id && (
+          <button
+            type="button"
+            onClick={() => setShowSchedule((v) => !v)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-xs font-semibold text-[var(--color-teal-deep)] hover:bg-[var(--color-teal-soft)]"
+          >
+            <CalendarDays size={14} aria-hidden /> {t('viewSchedule')}
+          </button>
+        )}
       </div>
+
+      {showSchedule && group.center_id && (
+        <CenterScheduleView centerId={group.center_id} onClose={() => setShowSchedule(false)} />
+      )}
 
       {/* Booked (confirmed) times */}
       <div>
@@ -195,7 +311,9 @@ function GroupSlotCard({ group, onChanged }: { group: GroupRow; onChanged: () =>
 /**
  * Teacher slot-picking section (Phase 3): for each center-attached group (cut
  * already agreed), the teacher proposes a weekly time; the center confirms it.
- * Read/propose only — booking happens center-side. Self-fetches.
+ * Read/propose only — booking happens center-side. Self-fetches. A read-only
+ * "view center schedule" panel (Ref 1) lets the teacher see existing bookings
+ * before proposing; a clashing proposal is rejected with a clean message.
  */
 export default function GroupSlotsSection({ refreshKey = 0 }: { refreshKey?: number }) {
   const t = useTranslations('slotPicking');
