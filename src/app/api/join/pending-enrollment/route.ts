@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { getClientIp, rateLimit, rateLimitExceededResponse } from '@/lib/ratelimit';
 
 /**
  * Public: create inactive student + pending_enrollment (v3 join flow).
  */
 export async function POST(request: NextRequest) {
+  // This is a public, unauthenticated write path for child-safety / PDPL-sensitive
+  // personal data (student_name, student_phone, parent_phone, incl. minors). Cap
+  // anonymous writes per IP, sharing the `join:` budget with the sibling join route.
+  const joinWindowSec = 3600;
+  const ip = getClientIp(request);
+  const { success } = await rateLimit(`join:${ip}`, 10, joinWindowSec);
+  if (!success) {
+    return rateLimitExceededResponse(joinWindowSec);
+  }
+
   let body: {
     center_id?: string;
     group_id?: string;
