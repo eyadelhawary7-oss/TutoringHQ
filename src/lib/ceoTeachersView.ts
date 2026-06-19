@@ -16,8 +16,9 @@ import type {
 /** Sentinel select value for a null/empty cell (e.g. teacher with no plan/subscription). */
 export const NONE = '__none__';
 
-const TIER_STANDARD = 'teacher_299';
-const TIER_PRO = 'teacher_699';
+const TIER_STANDARD = 'teacher_standard';
+const TIER_PRO = 'teacher_pro';
+const TIER_SCALE = 'teacher_scale';
 
 // ── Generic matchers ─────────────────────────────────────────────────────────
 
@@ -68,13 +69,17 @@ export interface TeacherSummary {
   notSet: number;
   standard: number;
   pro: number;
+  scale: number;
 }
 export function teacherSummary(rows: CeoTeacherRow[]): TeacherSummary {
   return {
     total: rows.length,
-    notSet: rows.filter((r) => r.plan_key !== TIER_STANDARD && r.plan_key !== TIER_PRO).length,
+    notSet: rows.filter(
+      (r) => r.plan_key !== TIER_STANDARD && r.plan_key !== TIER_PRO && r.plan_key !== TIER_SCALE,
+    ).length,
     standard: rows.filter((r) => r.plan_key === TIER_STANDARD).length,
     pro: rows.filter((r) => r.plan_key === TIER_PRO).length,
+    scale: rows.filter((r) => r.plan_key === TIER_SCALE).length,
   };
 }
 

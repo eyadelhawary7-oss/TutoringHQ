@@ -1,4 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { studentCapForPlan } from '@/lib/teacherCap';
+
+// Standard active-student cap (20) — cap-relative so it tracks teacherPlans.ts.
+const STD_CAP = studentCapForPlan('teacher_standard');
 import type { NextRequest } from 'next/server';
 
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
@@ -353,7 +357,7 @@ describe('over-cap lock (Item 7)', () => {
   // student_groups read is the SECOND queued entry (the first is the ownership
   // lookup). enrollments[0] feeds the distinct-student count.
   function queueOverCapStandard(count: number) {
-    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_299' }, error: null }];
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_standard' }, error: null }];
     adminQueue.enrollments = [
       { data: Array.from({ length: count }, (_, i) => ({ student_id: `s-${i}` })), error: null },
     ];
@@ -374,12 +378,12 @@ describe('over-cap lock (Item 7)', () => {
     expect(rpcCalls.filter((c) => c.fn === 'apply_session_transition')).toEqual([]);
   });
 
-  it('session start: Standard back down to 60 -> allowed (creates + goes live)', async () => {
+  it('session start: Standard back down to the cap -> allowed (creates + goes live)', async () => {
     queueTeacherAuthOk();
     adminQueue.student_groups = [OWNED_GROUP, { data: [{ id: GROUP_ID }], error: null }];
     adminQueue.schedule_exceptions = [{ data: null, error: null }];
     adminQueue.sessions = [{ data: [], error: null }];
-    queueOverCapStandard(60); // exactly at the line -> not locked
+    queueOverCapStandard(STD_CAP); // exactly at the line -> not locked
     adminQueue.insert = [{ data: { id: SESSION_ID }, error: null }];
     rpcQueues.apply_session_transition = [{ data: null, error: null }];
 
@@ -392,12 +396,12 @@ describe('over-cap lock (Item 7)', () => {
     expect(rpcCalls.filter((c) => c.fn === 'apply_session_transition')).toHaveLength(1);
   });
 
-  it('session start: Pro at 75 -> unaffected (gate short-circuits, no count)', async () => {
+  it('session start: Scale at 75 -> unaffected (gate short-circuits, no count)', async () => {
     queueTeacherAuthOk();
-    adminQueue.student_groups = [OWNED_GROUP]; // gate short-circuits on Pro, no 2nd read
+    adminQueue.student_groups = [OWNED_GROUP]; // gate short-circuits on Scale (no hard cap), no 2nd read
     adminQueue.schedule_exceptions = [{ data: null, error: null }];
     adminQueue.sessions = [{ data: [], error: null }];
-    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_699' }, error: null }];
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_scale' }, error: null }];
     adminQueue.insert = [{ data: { id: SESSION_ID }, error: null }];
     rpcQueues.apply_session_transition = [{ data: null, error: null }];
 

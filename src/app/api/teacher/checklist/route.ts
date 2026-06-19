@@ -76,16 +76,26 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Step 4: any (non-test) transaction exists for this teacher.
-  let billingDone = false;
+  // Step 4: the teacher has set a weekly schedule slot on a private group.
+  // (No payment-collection setup step: the funnel is account -> students/groups
+  // -> schedule -> done.)
+  let scheduleDone = false;
   {
-    const { count, error } = await supabaseAdmin
-      .from('transactions')
-      .select('*', { count: 'exact', head: true })
+    const { data: groupRows, error: gErr } = await supabaseAdmin
+      .from('student_groups')
+      .select('id')
       .eq('teacher_id', userId)
-      .eq('is_test', false);
-    if (error) warn('billing_count', error.message);
-    billingDone = (count ?? 0) > 0;
+      .eq('kind', 'private');
+    if (gErr) warn('schedule_groups', gErr.message);
+    const groupIds = ((groupRows ?? []) as { id: string }[]).map((g) => g.id);
+    if (groupIds.length > 0) {
+      const { count, error } = await supabaseAdmin
+        .from('group_schedule')
+        .select('*', { count: 'exact', head: true })
+        .in('group_id', groupIds);
+      if (error) warn('schedule_count', error.message);
+      scheduleDone = (count ?? 0) > 0;
+    }
   }
 
   // Step 5: this teacher referred at least one other teacher.
@@ -102,7 +112,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     subjectDone,
     centerOrGroupDone,
-    billingDone,
+    scheduleDone,
     referralDone,
     dismissed,
   });

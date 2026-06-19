@@ -87,6 +87,10 @@ export async function GET(request: NextRequest) {
   const slots = (slotRows ?? []) as SlotRow[];
 
   const todayKey = cairoDateKey();
+  // Symmetric window so the grid can page to previous AND future weeks: the
+  // schedule view navigates ~4 weeks either side, and cancellations/reschedules
+  // in past weeks must still render.
+  const pastHorizonKey = cairoYmdMinusDays(todayKey, 30);
   const horizonKey = cairoYmdPlusDays(todayKey, 30);
   const { data: exceptionRows, error: exceptionsErr } = await auth.supabaseAdmin
     .from('schedule_exceptions')
@@ -94,7 +98,7 @@ export async function GET(request: NextRequest) {
       'id, group_id, schedule_id, exception_date, kind, new_date, new_time_start, new_duration_minutes, note',
     )
     .in('group_id', groupIds)
-    .gte('exception_date', todayKey)
+    .gte('exception_date', pastHorizonKey)
     .lte('exception_date', horizonKey);
   if (exceptionsErr) {
     return serverError('exception_list', exceptionsErr);

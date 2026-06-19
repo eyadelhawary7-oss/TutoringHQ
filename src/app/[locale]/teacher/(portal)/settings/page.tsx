@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { isWeakPin } from '@/lib/weakPins';
 import { formatDate } from '@/lib/formatNumber';
+import { isProOrAbove } from '@/lib/teacherPlans';
 import MyCodeCard from '../../MyCodeCard';
 
 /**
@@ -33,6 +34,17 @@ type SubscriptionStatus = {
 
 const SIX_DIGITS = /^\d{6}$/;
 
+const PAYMENT_METHODS = ['cash', 'instapay', 'vodafone_cash', 'other'] as const;
+type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+type PaymentDetails = {
+  instapayAddress: string | null;
+  walletPhone: string | null;
+  paymentPhone: string | null;
+  acceptedMethods: PaymentMethod[];
+  defaultPaymentMethod: PaymentMethod | null;
+};
+
 /** "201012345678" (auth-email digits) -> "+20 101 234 5678". */
 function formatRegisteredPhone(digits: string): string {
   const local = digits.startsWith('20') ? digits.slice(2) : digits.replace(/^0/, '');
@@ -54,6 +66,16 @@ export default function TeacherSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  // Payment details (parent pays the teacher directly).
+  const [instapayAddress, setInstapayAddress] = useState('');
+  const [walletPhone, setWalletPhone] = useState('');
+  const [paymentPhone, setPaymentPhone] = useState('');
+  const [acceptedMethods, setAcceptedMethods] = useState<PaymentMethod[]>([]);
+  const [defaultMethod, setDefaultMethod] = useState<PaymentMethod | ''>('');
+  const [paySaving, setPaySaving] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
+  const [paySaved, setPaySaved] = useState(false);
 
   // Your account (read-only phone from the auth session).
   const [phone, setPhone] = useState<string | null>(null);
@@ -104,9 +126,20 @@ export default function TeacherSettingsPage() {
         setLoadError(true);
         return;
       }
-      const data = (await res.json()) as { displayName?: string | null; subject?: string | null };
+      const data = (await res.json()) as {
+        displayName?: string | null;
+        subject?: string | null;
+        paymentDetails?: PaymentDetails | null;
+      };
       setDisplayName(data.displayName ?? '');
       setSubject(data.subject ?? '');
+
+      const pd = data.paymentDetails;
+      setInstapayAddress(pd?.instapayAddress ?? '');
+      setWalletPhone(pd?.walletPhone ?? '');
+      setPaymentPhone(pd?.paymentPhone ?? '');
+      setAcceptedMethods(Array.isArray(pd?.acceptedMethods) ? pd.acceptedMethods : []);
+      setDefaultMethod(pd?.defaultPaymentMethod ?? '');
 
       // Registered phone: teachers authenticate as {digits}@centerhq.local.
       const {
@@ -166,6 +199,63 @@ export default function TeacherSettingsPage() {
       setError(t('errorGeneric'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const toggleMethod = (m: PaymentMethod) => {
+    setPaySaved(false);
+    setAcceptedMethods((prev) => {
+      const next = prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m];
+      // Clear the default if it is no longer an accepted method.
+      if (!next.includes(m) && defaultMethod === m) {
+        setDefaultMethod('');
+      }
+      return next;
+    });
+  };
+
+  const handleSavePayment = async () => {
+    setPayError(null);
+    setPaySaved(false);
+    // Guard: the default must be among the accepted methods (mirrors the API).
+    if (defaultMethod && !acceptedMethods.includes(defaultMethod)) {
+      setPayError(t('payment.errorDefaultNotAccepted'));
+      return;
+    }
+    setPaySaving(true);
+    try {
+      const res = await authedFetch('/api/teacher/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paymentDetails: {
+            instapayAddress: instapayAddress.trim() || null,
+            walletPhone: walletPhone.trim() || null,
+            paymentPhone: paymentPhone.trim() || null,
+            acceptedMethods,
+            defaultPaymentMethod: defaultMethod || null,
+          },
+        }),
+      });
+      if (!res) return;
+      if (res.status === 401 || res.status === 403) {
+        router.replace('/login');
+        return;
+      }
+      if (!res.ok) {
+        const d = (await res.json().catch(() => ({}))) as { code?: string };
+        if (d.code === 'default_not_accepted') {
+          setPayError(t('payment.errorDefaultNotAccepted'));
+        } else {
+          setPayError(t('errorGeneric'));
+        }
+        return;
+      }
+      setPaySaved(true);
+    } catch {
+      setPayError(t('errorGeneric'));
+    } finally {
+      setPaySaving(false);
     }
   };
 
@@ -345,6 +435,133 @@ export default function TeacherSettingsPage() {
         </div>
       </div>
 
+      {/* Payment details (parent pays the teacher directly; relayed in reminders) */}
+      <section className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 shadow-card">
+        <h2 className="mb-1 text-lg font-bold text-[var(--color-text-primary)]">
+          {t('payment.title')}
+        </h2>
+        <p className="mb-4 text-sm text-[var(--color-text-secondary)]">{t('payment.subtitle')}</p>
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+              {t('payment.instapayLabel')}
+            </label>
+            <input
+              type="text"
+              value={instapayAddress}
+              maxLength={200}
+              dir="ltr"
+              onChange={(e) => {
+                setInstapayAddress(e.target.value);
+                setPaySaved(false);
+              }}
+              placeholder={t('payment.instapayPlaceholder')}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-3)] px-3 py-2 text-start text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-teal-500 focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+              {t('payment.walletLabel')}
+            </label>
+            <input
+              type="tel"
+              inputMode="numeric"
+              value={walletPhone}
+              maxLength={20}
+              dir="ltr"
+              onChange={(e) => {
+                setWalletPhone(e.target.value);
+                setPaySaved(false);
+              }}
+              placeholder={t('payment.walletPlaceholder')}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-3)] px-3 py-2 text-start text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-teal-500 focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+              {t('payment.paymentPhoneLabel')}
+            </label>
+            <input
+              type="tel"
+              inputMode="numeric"
+              value={paymentPhone}
+              maxLength={20}
+              dir="ltr"
+              onChange={(e) => {
+                setPaymentPhone(e.target.value);
+                setPaySaved(false);
+              }}
+              placeholder={t('payment.paymentPhonePlaceholder')}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-3)] px-3 py-2 text-start text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-teal-500 focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
+
+          <div>
+            <span className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]">
+              {t('payment.acceptedLabel')}
+            </span>
+            <div className="flex flex-col gap-2">
+              {PAYMENT_METHODS.map((m) => (
+                <label
+                  key={m}
+                  className="flex cursor-pointer items-center gap-2 text-sm text-[var(--color-text-primary)]"
+                >
+                  <input
+                    type="checkbox"
+                    checked={acceptedMethods.includes(m)}
+                    onChange={() => toggleMethod(m)}
+                    className="h-4 w-4 rounded border-[var(--color-border)] text-teal-600 focus:ring-teal-500"
+                  />
+                  {t(`payment.method.${m}`)}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+              {t('payment.defaultLabel')}
+            </label>
+            <select
+              value={defaultMethod}
+              onChange={(e) => {
+                setDefaultMethod(e.target.value as PaymentMethod | '');
+                setPaySaved(false);
+              }}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-3)] px-3 py-2 text-[var(--color-text-primary)] focus:border-teal-500 focus:ring-2 focus:ring-teal-500"
+            >
+              <option value="">{t('payment.defaultNone')}</option>
+              {acceptedMethods.map((m) => (
+                <option key={m} value={m}>
+                  {t(`payment.method.${m}`)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {payError && (
+            <div className="rounded-lg border border-[var(--color-danger-muted)] bg-[var(--color-danger-muted)] p-3 text-sm text-[var(--color-danger)]">
+              {payError}
+            </div>
+          )}
+          {paySaved && (
+            <div className="rounded-lg border border-[var(--color-teal)]/30 bg-[var(--color-teal-soft)] p-3 text-sm text-[var(--color-teal-deep)]">
+              {t('saved')}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleSavePayment}
+            disabled={paySaving}
+            className="flex items-center justify-center gap-2 self-start rounded-lg bg-teal-600 px-4 py-2.5 font-medium text-primary-foreground transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {paySaving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+            {paySaving ? t('saving') : t('save')}
+          </button>
+        </div>
+      </section>
+
       {/* My code (give to a center to be added; referral link lives on home) */}
       <MyCodeCard />
 
@@ -459,7 +676,7 @@ export default function TeacherSettingsPage() {
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-[var(--color-surface-2)] px-3 py-1 text-xs font-semibold text-[var(--color-text-primary)]">
-                {sub.plan_key === 'teacher_699'
+                {isProOrAbove(sub.plan_key)
                   ? t('subscription.planPro')
                   : t('subscription.planStandard')}
               </span>
@@ -506,7 +723,7 @@ export default function TeacherSettingsPage() {
             )}
 
             <div className="mt-1 flex flex-col items-start gap-2">
-              {sub.plan_key !== 'teacher_699' &&
+              {!isProOrAbove(sub.plan_key) &&
                 (sub.status === 'active' || sub.status === 'trialing') && (
                   <Link
                     href="/teacher/subscription/upgrade"

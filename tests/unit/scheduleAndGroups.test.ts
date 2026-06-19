@@ -6,6 +6,10 @@ process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-key';
 
 import { formatTimeRange } from '@/lib/timeFormat';
+import { studentCapForPlan } from '@/lib/teacherCap';
+
+// Standard active-student cap (20) — cap-relative so it tracks teacherPlans.ts.
+const STD_CAP = studentCapForPlan('teacher_standard');
 
 // ---- Shared mock state ----
 type Result = { data: unknown; error: { message: string; code?: string } | null };
@@ -151,7 +155,7 @@ describe('formatTimeRange', () => {
 describe('POST /api/teacher/private/schedule/sessions (guests)', () => {
   function queueGuestRecordFlow() {
     adminQueue.student_groups = [OWNED_GROUP];
-    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_699' }, error: null }]; // Pro
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_pro' }, error: null }]; // Pro
     adminQueue.schedule_exceptions = [{ data: null, error: null }]; // not cancelled
     adminQueue.sessions = [{ data: null, error: null }]; // no existing session
     adminQueue.insert = [
@@ -210,7 +214,7 @@ describe('POST /api/teacher/private/schedule/sessions (guests)', () => {
 
   it('403 GUESTS_PRO_ONLY when a Standard teacher sends guests', async () => {
     adminQueue.student_groups = [OWNED_GROUP];
-    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_299' }, error: null }];
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_standard' }, error: null }];
 
     const res = await postScheduleSession(makeRequest(body));
     expect(res.status).toBe(403);
@@ -220,7 +224,7 @@ describe('POST /api/teacher/private/schedule/sessions (guests)', () => {
 
   it('400 GUEST_LIMIT_EXCEEDED when a Pro teacher sends more than 10 guests', async () => {
     adminQueue.student_groups = [OWNED_GROUP];
-    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_699' }, error: null }];
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_pro' }, error: null }];
     const elevenGuests = Array.from({ length: 11 }, (_, i) => ({
       name: `G${i}`,
       phone: '01012345678',
@@ -263,10 +267,10 @@ describe('GET /api/teacher/private/groups/[groupId]/classes', () => {
 
 describe('Standard student cap excludes guests', () => {
   it('counts only non-guest active enrollments and 429s at the cap', async () => {
-    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_299' }, error: null }];
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_standard' }, error: null }];
     adminQueue.student_groups = [{ data: [{ id: GROUP_ID }], error: null }];
     adminQueue.enrollments = [
-      { data: Array.from({ length: 60 }, (_, i) => ({ student_id: `s${i}` })), error: null },
+      { data: Array.from({ length: STD_CAP }, (_, i) => ({ student_id: `s${i}` })), error: null },
     ];
 
     const res = await postRosterAdd(makeRequest({ name: 'X', phone: '01012345678', payer: 'student' }), {

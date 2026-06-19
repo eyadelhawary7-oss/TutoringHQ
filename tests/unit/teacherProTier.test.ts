@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { NextRequest } from 'next/server';
+import { studentCapForPlan } from '@/lib/teacherCap';
+
+// Standard active-student cap (20). Cap-relative assertions key off this so they
+// track src/lib/teacherPlans.ts rather than a hardcoded legacy number.
+const STD_CAP = studentCapForPlan('teacher_standard');
 
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
@@ -136,7 +141,7 @@ beforeEach(() => {
 
 describe('group create cap (Standard 8-group limit)', () => {
   it('1. Standard teacher at 8 active groups -> 429 GROUP_LIMIT_REACHED', async () => {
-    adminQueue.teacher_subscriptions = [{ data: { status: 'active', plan_key: 'teacher_299' }, error: null }];
+    adminQueue.teacher_subscriptions = [{ data: { status: 'active', plan_key: 'teacher_standard' }, error: null }];
     adminQueue.student_groups = [{ data: null, error: null, count: 8 }];
 
     const res = await postGroup(makeRequest({ name: 'G9', fee_per_class: 100 }));
@@ -147,7 +152,7 @@ describe('group create cap (Standard 8-group limit)', () => {
   });
 
   it('2. Standard teacher at 7 active groups -> proceeds (201, no cap error)', async () => {
-    adminQueue.teacher_subscriptions = [{ data: { status: 'active', plan_key: 'teacher_299' }, error: null }];
+    adminQueue.teacher_subscriptions = [{ data: { status: 'active', plan_key: 'teacher_standard' }, error: null }];
     adminQueue.student_groups = [{ data: null, error: null, count: 7 }];
     adminQueue.insert = [
       { data: { id: 'g-new', name: 'G8', fee_per_class: 100, status: 'active' }, error: null },
@@ -159,12 +164,13 @@ describe('group create cap (Standard 8-group limit)', () => {
     expect(insertCalls.map((c) => c.table)).toContain('student_groups');
   });
 
-  it('3. Pro teacher with 10 active groups -> proceeds, no cap check at all', async () => {
-    // Two Pro reads: one for the route's group-cap branch, one for the over-cap
-    // gate (both short-circuit on Pro before touching student_groups).
+  it('3. Scale teacher with 10 active groups -> proceeds, no cap check at all', async () => {
+    // Two Scale reads: one for the route's group-cap branch (uncapped for
+    // pro-or-above), one for the over-cap gate (Scale has no hard cap, so it
+    // short-circuits before touching student_groups).
     adminQueue.teacher_subscriptions = [
-      { data: { status: 'active', plan_key: 'teacher_699' }, error: null },
-      { data: { status: 'active', plan_key: 'teacher_699' }, error: null },
+      { data: { status: 'active', plan_key: 'teacher_scale' }, error: null },
+      { data: { status: 'active', plan_key: 'teacher_scale' }, error: null },
     ];
     adminQueue.insert = [
       { data: { id: 'g-new', name: 'G11', fee_per_class: 100, status: 'active' }, error: null },
@@ -173,18 +179,18 @@ describe('group create cap (Standard 8-group limit)', () => {
     const res = await postGroup(makeRequest({ name: 'G11', fee_per_class: 100 }));
 
     expect(res.status).toBe(201);
-    // Pro skips both cap-count queries entirely: student_groups is never read.
+    // Scale skips both cap-count queries entirely: student_groups is never read.
     expect(tableHits).not.toContain('student_groups');
   });
 });
 
-describe('enrollment cap (Standard 60-student limit)', () => {
-  it('4. Standard teacher with 60 active students -> 429 STUDENT_LIMIT_REACHED', async () => {
-    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_299' }, error: null }];
+describe('enrollment cap (Standard student limit)', () => {
+  it('4. Standard teacher exactly at the student cap -> 429 STUDENT_LIMIT_REACHED', async () => {
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_standard' }, error: null }];
     adminQueue.student_groups = [{ data: [{ id: 'g-1' }], error: null }];
     adminQueue.enrollments = [
       {
-        data: Array.from({ length: 60 }, (_, i) => ({ student_id: `s-${i}`, group_id: 'g-1' })),
+        data: Array.from({ length: STD_CAP }, (_, i) => ({ student_id: `s-${i}`, group_id: 'g-1' })),
         error: null,
       },
     ];
@@ -198,11 +204,11 @@ describe('enrollment cap (Standard 60-student limit)', () => {
 });
 
 describe('over-cap lock (Item 7)', () => {
-  it('roster add for a Standard teacher already at 75 -> 403 OVER_CAP_LOCKED (not 429)', async () => {
-    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_299' }, error: null }];
+  it('roster add for a Standard teacher already well over the cap -> 403 OVER_CAP_LOCKED (not 429)', async () => {
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_standard' }, error: null }];
     adminQueue.student_groups = [{ data: [{ id: 'g-1' }], error: null }];
     adminQueue.enrollments = [
-      { data: Array.from({ length: 75 }, (_, i) => ({ student_id: `s-${i}` })), error: null },
+      { data: Array.from({ length: STD_CAP * 3 }, (_, i) => ({ student_id: `s-${i}` })), error: null },
     ];
 
     const res = await postRoster(makeRequest({ name: 'New', phone: '01000000000', payer: 'student' }), rosterParams);
@@ -212,17 +218,17 @@ describe('over-cap lock (Item 7)', () => {
     expect(insertCalls).toEqual([]);
   });
 
-  it('group create for a Standard teacher over the student cap (75) -> 403 OVER_CAP_LOCKED', async () => {
+  it('group create for a Standard teacher over the student cap -> 403 OVER_CAP_LOCKED', async () => {
     adminQueue.teacher_subscriptions = [
-      { data: { status: 'active', plan_key: 'teacher_299' }, error: null }, // route (resubscribe + 8-cap)
-      { data: { plan_key: 'teacher_299' }, error: null }, // over-cap gate
+      { data: { status: 'active', plan_key: 'teacher_standard' }, error: null }, // route (resubscribe + 8-cap)
+      { data: { plan_key: 'teacher_standard' }, error: null }, // over-cap gate
     ];
     adminQueue.student_groups = [
       { data: null, error: null, count: 3 }, // 8-group head count (under 8)
       { data: [{ id: 'g-1' }, { id: 'g-2' }, { id: 'g-3' }], error: null }, // gate group list
     ];
     adminQueue.enrollments = [
-      { data: Array.from({ length: 75 }, (_, i) => ({ student_id: `s-${i}` })), error: null },
+      { data: Array.from({ length: STD_CAP * 3 }, (_, i) => ({ student_id: `s-${i}` })), error: null },
     ];
 
     const res = await postGroup(makeRequest({ name: 'G4', fee_per_class: 100 }));
@@ -232,11 +238,11 @@ describe('over-cap lock (Item 7)', () => {
     expect(insertCalls).toEqual([]);
   });
 
-  it('roster add for a Standard teacher exactly at 60 -> 429 STUDENT_LIMIT_REACHED (boundary, not locked)', async () => {
-    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_299' }, error: null }];
+  it('roster add for a Standard teacher exactly at the cap -> 429 STUDENT_LIMIT_REACHED (boundary, not locked)', async () => {
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_standard' }, error: null }];
     adminQueue.student_groups = [{ data: [{ id: 'g-1' }], error: null }];
     adminQueue.enrollments = [
-      { data: Array.from({ length: 60 }, (_, i) => ({ student_id: `s-${i}` })), error: null },
+      { data: Array.from({ length: STD_CAP }, (_, i) => ({ student_id: `s-${i}` })), error: null },
     ];
 
     const res = await postRoster(makeRequest({ name: 'New', phone: '01000000000', payer: 'student' }), rosterParams);
@@ -285,10 +291,10 @@ describe('upgrade route', () => {
     expect(((await res.json()) as { error: string }).error).toBe('PAYMENTS_UNAVAILABLE');
   });
 
-  it('8. already Pro (teacher_699) -> 400 NOT_ELIGIBLE', async () => {
+  it('8. already Pro (teacher_pro) -> 400 NOT_ELIGIBLE', async () => {
     mockPaymobEnabled = true;
     adminQueue.teacher_subscriptions = [
-      { data: { id: 's-1', plan_key: 'teacher_699', status: 'active' }, error: null },
+      { data: { id: 's-1', plan_key: 'teacher_pro', status: 'active' }, error: null },
     ];
 
     const res = await postUpgrade(makeRequest());
@@ -299,8 +305,8 @@ describe('upgrade route', () => {
 });
 
 describe('downgrade route', () => {
-  it('9. not Pro (teacher_299) -> 400 NOT_PRO', async () => {
-    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_299' }, error: null }];
+  it('9. not Pro (teacher_standard) -> 400 NOT_PRO', async () => {
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_standard' }, error: null }];
 
     const res = await postDowngrade(makeRequest({}));
 
@@ -309,7 +315,7 @@ describe('downgrade route', () => {
   });
 
   it('10. Pro with 10 groups -> needs_cap_resolution with the group list', async () => {
-    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_699' }, error: null }];
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_pro' }, error: null }];
     adminQueue.student_groups = [
       { data: Array.from({ length: 10 }, (_, i) => ({ id: `g-${i}`, name: `G${i}` })), error: null },
     ];
@@ -325,7 +331,7 @@ describe('downgrade route', () => {
   });
 
   it('6. under caps -> delegates to downgrade_teacher_to_standard RPC (zeroes sub credits, keeps purchased)', async () => {
-    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_699' }, error: null }];
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_pro' }, error: null }];
     adminQueue.student_groups = [{ data: [{ id: 'g-0', name: 'G0' }], error: null }];
     adminQueue.enrollments = [{ data: [{ student_id: 's-0', group_id: 'g-0' }], error: null }];
     rpcQueues.downgrade_teacher_to_standard = [{ data: null, error: null }];

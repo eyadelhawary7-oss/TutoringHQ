@@ -22,6 +22,10 @@ vi.mock('@/lib/supabase-admin', () => ({
         filterCalls.push({ col, val });
         return builder;
       },
+      in: (col: string, val: unknown) => {
+        filterCalls.push({ col, val });
+        return builder;
+      },
       order: () => builder,
       range: async () => listResult,
     };
@@ -68,7 +72,7 @@ describe('GET /api/cron/reset-teacher-blast-credits', () => {
     expect(rpcCalls).toHaveLength(0);
   });
 
-  it('filters to active Pro teachers and calls reset RPC for each', async () => {
+  it('filters to active paid teachers and calls reset RPC for each', async () => {
     listResult = { data: [{ teacher_id: 't1' }, { teacher_id: 't2' }], error: null };
 
     const res = await GET(makeRequest(`Bearer ${process.env.CRON_SECRET}`));
@@ -76,9 +80,9 @@ describe('GET /api/cron/reset-teacher-blast-credits', () => {
 
     expect(res.status).toBe(200);
     expect(json).toEqual({ processed: 2, reset: 2, skipped: 0 });
-    // Query restricts to plan_key='teacher_699' AND status='active' (never events).
+    // Query restricts to paid tiers (Pro + Scale) AND status='active' (never events).
     expect(filterCalls).toEqual([
-      { col: 'plan_key', val: 'teacher_699' },
+      { col: 'plan_key', val: ['teacher_pro', 'teacher_scale'] },
       { col: 'status', val: 'active' },
     ]);
     expect(rpcCalls).toEqual([

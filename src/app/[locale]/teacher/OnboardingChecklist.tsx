@@ -12,7 +12,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 type ChecklistData = {
   subjectDone: boolean;
   centerOrGroupDone: boolean;
-  billingDone: boolean;
+  scheduleDone: boolean;
   referralDone: boolean;
   dismissed: boolean;
 };
@@ -93,7 +93,7 @@ export default function OnboardingChecklist() {
     { key: 'step1', done: true },
     { key: 'step2', done: data.subjectDone, href: '/teacher/settings' },
     { key: 'step3', done: data.centerOrGroupDone },
-    { key: 'step4', done: data.billingDone },
+    { key: 'step4', done: data.scheduleDone, href: '/teacher/schedule' },
     { key: 'step5', done: data.referralDone },
   ];
 

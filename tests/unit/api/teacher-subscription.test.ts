@@ -81,7 +81,7 @@ const TEACHER_ID = 'teacher-1';
 const PLAN_CONFIG = {
   data: {
     value: {
-      plan_key: 'teacher_299',
+      plan_key: 'teacher_standard',
       price_gross: 299,
       price_net: 262.28,
       vat_amount: 36.72,
@@ -126,7 +126,7 @@ describe('GET /api/teacher/subscription/status', () => {
     expect(json).toEqual({
       has_subscription: false,
       status: null,
-      plan_key: 'teacher_299',
+      plan_key: 'teacher_standard',
       price_gross: 299,
       std_price_gross: 299,
       pro_price_gross: 0,
@@ -149,7 +149,7 @@ describe('GET /api/teacher/subscription/status', () => {
       {
         data: {
           status: 'active',
-          plan_key: 'teacher_299',
+          plan_key: 'teacher_standard',
           trial_ends_at: '2026-06-01T00:00:00Z',
           current_period_start: '2026-06-01T00:00:00Z',
           current_period_end: '2026-07-01T00:00:00Z',
@@ -168,7 +168,7 @@ describe('GET /api/teacher/subscription/status', () => {
     expect(json).toEqual({
       has_subscription: true,
       status: 'active',
-      plan_key: 'teacher_299',
+      plan_key: 'teacher_standard',
       price_gross: 299,
       std_price_gross: 299,
       pro_price_gross: 0,

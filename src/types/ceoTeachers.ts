@@ -6,7 +6,7 @@
 // The "T-number" the brief mentions does not exist in the schema — teachers are
 // identified by referral_code + display name + the is_test flag.
 
-export const TEACHER_TIER_KEYS = ['teacher_299', 'teacher_699'] as const;
+export const TEACHER_TIER_KEYS = ['teacher_standard', 'teacher_pro', 'teacher_scale'] as const;
 export type TeacherTierKey = (typeof TEACHER_TIER_KEYS)[number];
 
 export const TEACHER_SUB_STATUSES = [

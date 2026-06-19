@@ -16,6 +16,7 @@ import GroupJoinLinkCard from '../../../GroupJoinLinkCard';
 import GroupClassesTab from './GroupClassesTab';
 import GroupScheduleTab from './GroupScheduleTab';
 import { fetchTeacherSubscription } from '@/components/teacher/teacherSubscriptionClient';
+import { isProOrAbove } from '@/lib/teacherPlans';
 
 type RosterEntry = {
   enrollmentId: string;
@@ -81,7 +82,7 @@ export default function TeacherGroupDetailPage({
   useEffect(() => {
     let on = true;
     fetchTeacherSubscription().then((s) => {
-      if (on && s) setIsPro(s.plan_key === 'teacher_699');
+      if (on && s) setIsPro(isProOrAbove(s.plan_key));
     });
     return () => {
       on = false;

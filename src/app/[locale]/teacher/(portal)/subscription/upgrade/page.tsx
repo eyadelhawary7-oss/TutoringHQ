@@ -9,6 +9,7 @@ import {
   type TeacherSubscriptionStatus,
 } from '@/components/teacher/teacherSubscriptionClient';
 import PlanComparison from '@/components/teacher/PlanComparison';
+import { isProOrAbove } from '@/lib/teacherPlans';
 
 /**
  * /teacher/subscription/upgrade - the Standard -> Pro upgrade surface.
@@ -36,7 +37,7 @@ export default function TeacherUpgradePage() {
     };
   }, []);
 
-  const isPro = sub?.plan_key === 'teacher_699';
+  const isPro = isProOrAbove(sub?.plan_key);
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">

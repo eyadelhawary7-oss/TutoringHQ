@@ -1,22 +1,26 @@
 import { NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { teacherStudentCap, teacherHasHardCap } from '@/lib/teacherPlans';
 
 /**
- * Standard (teacher_299) student cap. Pro (teacher_699) is uncapped.
+ * Per-tier active-student caps (see src/lib/teacherPlans.ts):
+ *   Standard -> 20 (hard cap), Pro -> 50 (hard cap), Scale -> 100 (overage above).
  *
- * Two thresholds share ONE count definition:
- *   - ADD is refused at the boundary: enrolling the 61st student is blocked
- *     (count >= CAP), so a Standard teacher can never cross 60.
+ * Two thresholds share ONE count definition for the hard-capped tiers:
+ *   - ADD is refused at the boundary: enrolling beyond the cap is blocked
+ *     (count >= CAP), so a hard-capped teacher can never cross it.
  *   - The over-cap LOCK fires only when a teacher is genuinely past the line
- *     (count > CAP). A teacher who somehow reached 61+ (legacy data, the
- *     now-closed self-enroll loophole) is locked out of every billable action
- *     until they shed students back to <= 60.
+ *     (count > CAP), locking every billable action until they shed students.
  *
- * The "61st add" and the "lock" use the same canonical count so the two gates
- * can never disagree about who is over the line.
+ * Scale is never hard-blocked — extra active students are billed as a month-end
+ * overage true-up, so its gate always passes.
  */
-export const STANDARD_STUDENT_CAP = 60;
+
+/** Cap value a route can surface to the client for the given plan. */
+export function studentCapForPlan(planKey: string | null | undefined): number {
+  return teacherStudentCap(planKey);
+}
 
 /** Service-role plan_key is the source of truth (teacher_profiles.plan_key can drift). */
 async function fetchPlanKey(
@@ -94,17 +98,19 @@ export async function requireTeacherUnderCap(
 ): Promise<CapGateResult> {
   try {
     const planKey = await fetchPlanKey(admin, teacherId);
-    if (planKey === 'teacher_699') return { ok: true };
+    // Scale never hard-blocks: students above the cap are billed as overage.
+    if (!teacherHasHardCap(planKey)) return { ok: true };
+    const cap = teacherStudentCap(planKey);
 
     const count = await countActiveNonGuestStudents(admin, teacherId);
-    if (count > STANDARD_STUDENT_CAP) {
+    if (count > cap) {
       return {
         ok: false,
         response: NextResponse.json(
           {
             error: 'Over student cap',
             code: 'OVER_CAP_LOCKED',
-            limit: STANDARD_STUDENT_CAP,
+            limit: cap,
             current: count,
           },
           { status: 403 },
@@ -144,7 +150,9 @@ export async function selfEnrollWouldExceedCap(
   studentPhone: string,
 ): Promise<boolean> {
   const planKey = await fetchPlanKey(admin, teacherId);
-  if (planKey === 'teacher_699') return false;
+  // Scale has no hard cap (overage instead), so a self-enroll never exceeds it.
+  if (!teacherHasHardCap(planKey)) return false;
+  const cap = teacherStudentCap(planKey);
 
   const { data: groupRows, error: groupsErr } = await admin
     .from('student_groups')
@@ -172,7 +180,7 @@ export async function selfEnrollWouldExceedCap(
     students: StudentEmbed | StudentEmbed[] | null;
   }[];
   const distinct = new Set(rows.map((r) => r.student_id));
-  if (distinct.size < STANDARD_STUDENT_CAP) return false;
+  if (distinct.size < cap) return false;
 
   // At/over the cap: only a brand-new head is refused. An existing center-less
   // student with this phone is already in the count -> idempotent, allow.

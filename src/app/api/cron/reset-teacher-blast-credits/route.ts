@@ -5,13 +5,14 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
 /**
  * GET /api/cron/reset-teacher-blast-credits (monthly, 01:00 on the 1st)
- * Resets the subscription blast-credit bucket to 100 for every ACTIVE Pro
- * teacher (plan_key='teacher_699', status='active'). Standard / trialing /
- * non-Pro teachers are skipped by the RPC itself (it no-ops unless the profile
- * plan_key is 'teacher_699'), so a row that has just downgraded is safe.
+ * Resets the subscription blast-credit bucket to 100 for every ACTIVE paid
+ * teacher (plan_key in ['teacher_pro','teacher_scale'], status='active').
+ * Standard / trialing / free teachers are skipped by the RPC itself (it no-ops
+ * unless the profile plan_key is a paid tier), so a row that has just
+ * downgraded is safe.
  *
  * Operates off teacher_subscriptions directly (small table) - never scans raw
- * events. Paginated so it stays correct as the Pro cohort grows. Idempotent:
+ * events. Paginated so it stays correct as the paid cohort grows. Idempotent:
  * reset_subscription_blast_credits just sets the bucket to 100, so a same-day
  * re-run is a no-op. Secured exactly like the other crons via requireCronSecret.
  */
@@ -36,14 +37,14 @@ export async function GET(request: Request) {
     const { data, error } = await admin
       .from('teacher_subscriptions')
       .select('teacher_id')
-      .eq('plan_key', 'teacher_699')
+      .in('plan_key', ['teacher_pro', 'teacher_scale'])
       .eq('status', 'active')
       .order('teacher_id', { ascending: true })
       .range(offset, offset + PAGE_SIZE - 1);
     if (error) {
       Sentry.withScope((scope) => {
         scope.setTag('route', 'api/cron/reset-teacher-blast-credits');
-        scope.setTag('step', 'list_pro_teachers');
+        scope.setTag('step', 'list_paid_teachers');
         Sentry.captureException(error);
       });
       return NextResponse.json({ error: 'Server error', code: 'server_error' }, { status: 500 });

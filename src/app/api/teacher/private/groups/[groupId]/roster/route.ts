@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherPrivateAccess } from '@/lib/centerAuth';
 import { requireOwnedPrivateGroup } from '@/lib/teacherPrivate';
-import { countActiveNonGuestStudents, STANDARD_STUDENT_CAP } from '@/lib/teacherCap';
+import { countActiveNonGuestStudents, studentCapForPlan } from '@/lib/teacherCap';
+import { teacherHasHardCap } from '@/lib/teacherPlans';
 import { normalizePhone, isValidEgyptianMobileE164 } from '@/lib/utils/phone';
 
 const ROUTE_TAG = 'api/teacher/private/roster';
@@ -169,11 +170,11 @@ export async function POST(
     return owned.response;
   }
 
-  // Pro tier cap: Standard (teacher_299) is limited to 60 active enrolled
-  // students across all of this teacher's active private groups; Pro
-  // (teacher_699) is uncapped. Counting is the shared canonical definition
-  // (distinct non-guest active enrollments) so the add gate and the over-cap
-  // lock can never disagree about who is over the line.
+  // Tiered cap: the hard-capped tiers (Standard -> 20, Pro -> 50) limit active
+  // enrolled students across all of this teacher's active private groups; Scale
+  // (and any pro-or-above tier) is not hard-blocked here. Counting is the shared
+  // canonical definition (distinct non-guest active enrollments) so the add gate
+  // and the over-cap lock can never disagree about who is over the line.
   const { data: subRow, error: subErr } = await auth.supabaseAdmin
     .from('teacher_subscriptions')
     .select('plan_key')
@@ -183,33 +184,34 @@ export async function POST(
     return serverError('subscription_plan', subErr);
   }
   const planKey = (subRow as { plan_key?: string } | null)?.plan_key;
-  if (planKey !== 'teacher_699') {
+  if (teacherHasHardCap(planKey)) {
+    const cap = studentCapForPlan(planKey);
     let distinctStudents: number;
     try {
       distinctStudents = await countActiveNonGuestStudents(auth.supabaseAdmin, auth.userId);
     } catch (countErr) {
       return serverError('student_cap_count', countErr as { message: string });
     }
-    // Already past the line (61+, e.g. legacy data or the now-closed self-enroll
+    // Already past the line (cap+1, e.g. legacy data or the now-closed self-enroll
     // loophole): the over-cap LOCK applies - block with the same code every
     // other action uses, telling them to shed students first.
-    if (distinctStudents > STANDARD_STUDENT_CAP) {
+    if (distinctStudents > cap) {
       return NextResponse.json(
         {
           error: 'Over student cap',
           code: 'OVER_CAP_LOCKED',
-          limit: STANDARD_STUDENT_CAP,
+          limit: cap,
           current: distinctStudents,
         },
         { status: 403 },
       );
     }
-    // Exactly at the line (60): adding the 61st is refused at the boundary.
-    if (distinctStudents >= STANDARD_STUDENT_CAP) {
+    // Exactly at the line (cap): adding the next student is refused at the boundary.
+    if (distinctStudents >= cap) {
       return NextResponse.json(
         {
           error: 'STUDENT_LIMIT_REACHED',
-          limit: STANDARD_STUDENT_CAP,
+          limit: cap,
           current: distinctStudents,
           upgrade_required: true,
         },

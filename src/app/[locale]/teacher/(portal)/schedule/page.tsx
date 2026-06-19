@@ -19,6 +19,7 @@ import {
 } from '@/hooks/useTeacherSchedule';
 import { formatTimeRange } from '@/lib/timeFormat';
 import { fetchTeacherSubscription } from '@/components/teacher/teacherSubscriptionClient';
+import { DEFAULT_TEACHER_PLAN_KEY } from '@/lib/teacherPlans';
 import SlotActionSheet, {
   type SlotOccurrence,
 } from '@/components/teacher/schedule/SlotActionSheet';
@@ -69,13 +70,16 @@ export default function TeacherSchedulePage() {
     router.replace(`/teacher/schedule?view=${v}`, { scroll: false });
   };
 
+  // Week paging: 0 = the current Cairo week, -1 = last week, +1 = next week.
+  const [weekOffset, setWeekOffset] = useState(0);
+
   const { slots, exceptions, sessions, liveSessions, isLoading, error, refetch } =
     useTeacherSchedule();
 
   const [activeOccurrence, setActiveOccurrence] = useState<SlotOccurrence | null>(null);
   // Plan gates the guest-attendee section in the sheet. Fetched once here (not
   // per sheet open); defaults to Standard until it loads.
-  const [planKey, setPlanKey] = useState('teacher_299');
+  const [planKey, setPlanKey] = useState<string>(DEFAULT_TEACHER_PLAN_KEY);
   useEffect(() => {
     let on = true;
     fetchTeacherSubscription().then((s) => {
@@ -158,9 +162,13 @@ export default function TeacherSchedulePage() {
   }, [slots, exceptions, sessions, liveSessions, todayKey, todayDow]);
 
   const weekDates = useMemo(() => {
-    const sunday = cairoYmdMinusDays(todayKey, todayDow);
+    // Start from this week's Sunday, then page by whole weeks.
+    const sunday = cairoYmdPlusDays(
+      cairoYmdMinusDays(todayKey, todayDow),
+      weekOffset * 7,
+    );
     return Array.from({ length: 7 }, (_, i) => cairoYmdPlusDays(sunday, i));
-  }, [todayKey, todayDow]);
+  }, [todayKey, todayDow, weekOffset]);
 
   const onActionDone = () => {
     setActiveOccurrence(null);
@@ -419,9 +427,43 @@ export default function TeacherSchedulePage() {
           )}
         </div>
       ) : (
-        <div className="overflow-x-auto pb-2">
-          <div className="grid min-w-[840px] grid-cols-7 gap-2 md:min-w-0">
-            {weekDates.map(renderWeekCell)}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setWeekOffset((w) => w - 1)}
+              className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-2)]"
+            >
+              {t('prevWeek')}
+            </button>
+            <div className="flex flex-col items-center">
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                {formatDate(weekDates[0], locale, { day: 'numeric', month: 'short' })}
+                {' – '}
+                {formatDate(weekDates[6], locale, { day: 'numeric', month: 'short' })}
+              </span>
+              {weekOffset !== 0 && (
+                <button
+                  type="button"
+                  onClick={() => setWeekOffset(0)}
+                  className="text-xs font-medium text-[var(--color-teal-deep)] hover:underline"
+                >
+                  {t('thisWeek')}
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setWeekOffset((w) => w + 1)}
+              className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-2)]"
+            >
+              {t('nextWeek')}
+            </button>
+          </div>
+          <div className="overflow-x-auto pb-2">
+            <div className="grid min-w-[840px] grid-cols-7 gap-2 md:min-w-0">
+              {weekDates.map(renderWeekCell)}
+            </div>
           </div>
         </div>
       )}

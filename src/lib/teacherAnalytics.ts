@@ -23,6 +23,7 @@ import * as Sentry from '@sentry/nextjs';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { cairoDateKey, parseCairoYmd } from '@/lib/cairo/day';
 import { cairoYmdToJsWeekday, getCairoWeekColumnOrder } from '@/lib/cairo/week';
+import { isProOrAbove } from '@/lib/teacherPlans';
 
 /** Days that the Standard "not seen" flag fires after (3+ weeks). */
 export const NOT_SEEN_DAYS = 21;
@@ -443,11 +444,12 @@ export function paymentRisk(
 export type ProGateResult = { ok: true } | { ok: false; response: NextResponse };
 
 /**
- * Analytics is a Pro (teacher_699) surface. Mirrors the GUESTS/NOTES_PRO_ONLY
- * gate: plan_key comes from teacher_subscriptions (the authoritative source the
- * cap + status surfaces read; teacher_profiles.plan_key can drift), default
- * teacher_299. A DB error is a 500 (Rule 151: an error is not a state — never
- * mint a false "upgrade required" for a paying Pro teacher on a transient blip).
+ * Analytics is a Pro-or-above surface (Pro + Scale). Mirrors the
+ * GUESTS/NOTES_PRO_ONLY gate: plan_key comes from teacher_subscriptions (the
+ * authoritative source the cap + status surfaces read; teacher_profiles.plan_key
+ * can drift), default Standard. A DB error is a 500 (Rule 151: an error is not a
+ * state — never mint a false "upgrade required" for a paying Pro teacher on a
+ * transient blip).
  */
 export async function requireTeacherPro(
   admin: SupabaseClient,
@@ -473,8 +475,8 @@ export async function requireTeacherPro(
       ),
     };
   }
-  const planKey = (data as { plan_key?: string } | null)?.plan_key ?? 'teacher_299';
-  if (planKey !== 'teacher_699') {
+  const planKey = (data as { plan_key?: string } | null)?.plan_key;
+  if (!isProOrAbove(planKey)) {
     return {
       ok: false,
       response: NextResponse.json(

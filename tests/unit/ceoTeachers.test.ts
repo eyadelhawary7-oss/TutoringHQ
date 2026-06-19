@@ -40,11 +40,12 @@ function mockSupabase(tables: Record<string, unknown[]>): SupabaseClient {
 
 describe('teacherMonthlyGross', () => {
   it('prefers snapshotted price_gross when positive', () => {
-    expect(teacherMonthlyGross('teacher_299', 350)).toBe(350);
+    expect(teacherMonthlyGross('teacher_standard', 350)).toBe(350);
   });
   it('falls back to the tier default when price_gross is missing/zero', () => {
-    expect(teacherMonthlyGross('teacher_299', null)).toBe(299);
-    expect(teacherMonthlyGross('teacher_699', 0)).toBe(699);
+    expect(teacherMonthlyGross('teacher_standard', null)).toBe(499);
+    expect(teacherMonthlyGross('teacher_pro', 0)).toBe(999);
+    expect(teacherMonthlyGross('teacher_scale', 0)).toBe(2499);
   });
   it('returns 0 for an unknown tier with no price', () => {
     expect(teacherMonthlyGross('teacher_999', null)).toBe(0);
@@ -65,12 +66,12 @@ describe('isBillableTeacherStatus', () => {
 describe('computeTeacherMrr', () => {
   it('sums only billable subscriptions', () => {
     const mrr = computeTeacherMrr([
-      { plan_key: 'teacher_699', status: 'active', price_gross: 699 },
-      { plan_key: 'teacher_299', status: 'trialing', price_gross: 299 },
-      { plan_key: 'teacher_299', status: 'past_due', price_gross: 299 },
-      { plan_key: 'teacher_299', status: 'cancelled', price_gross: 299 },
+      { plan_key: 'teacher_pro', status: 'active', price_gross: 999 },
+      { plan_key: 'teacher_standard', status: 'trialing', price_gross: 499 },
+      { plan_key: 'teacher_standard', status: 'past_due', price_gross: 499 },
+      { plan_key: 'teacher_standard', status: 'cancelled', price_gross: 499 },
     ]);
-    expect(mrr).toBe(699 + 299);
+    expect(mrr).toBe(999 + 499);
   });
   it('is zero for an empty set', () => {
     expect(computeTeacherMrr([])).toBe(0);
@@ -108,7 +109,7 @@ function fixture() {
         referral_code: 'AHMED7X',
         is_test: false,
         subject: 'Math',
-        plan_key: 'teacher_699',
+        plan_key: 'teacher_pro',
         created_at: '2026-01-01T00:00:00Z',
         blast_credits_subscription: 100,
         blast_credits_purchased: 50,
@@ -120,7 +121,7 @@ function fixture() {
         referral_code: 'SARA22',
         is_test: false,
         subject: 'Physics',
-        plan_key: 'teacher_299',
+        plan_key: 'teacher_standard',
         created_at: '2026-02-01T00:00:00Z',
         blast_credits_subscription: 0,
         blast_credits_purchased: 0,
@@ -132,7 +133,7 @@ function fixture() {
         referral_code: 'TEST1',
         is_test: true,
         subject: null,
-        plan_key: 'teacher_299',
+        plan_key: 'teacher_standard',
         created_at: '2026-03-01T00:00:00Z',
         blast_credits_subscription: 0,
         blast_credits_purchased: 0,
@@ -142,35 +143,35 @@ function fixture() {
     teacher_subscriptions: [
       {
         teacher_id: 't1',
-        plan_key: 'teacher_699',
+        plan_key: 'teacher_pro',
         status: 'active',
         trial_ends_at: '2026-01-15T00:00:00Z',
         current_period_end: '2026-07-01T00:00:00Z',
         next_billing_at: '2026-07-01T00:00:00Z',
         free_months_credit: 1,
-        price_gross: 699,
+        price_gross: 999,
         referral_rewarded_at: '2026-06-01T00:00:00Z',
       },
       {
         teacher_id: 't2',
-        plan_key: 'teacher_299',
+        plan_key: 'teacher_standard',
         status: 'trialing',
         trial_ends_at: '2026-06-20T00:00:00Z',
         current_period_end: '2026-06-20T00:00:00Z',
         next_billing_at: '2026-06-20T00:00:00Z',
         free_months_credit: 0,
-        price_gross: 299,
+        price_gross: 499,
         referral_rewarded_at: null,
       },
       {
         teacher_id: 't3',
-        plan_key: 'teacher_299',
+        plan_key: 'teacher_standard',
         status: 'active',
         trial_ends_at: null,
         current_period_end: '2026-07-01T00:00:00Z',
         next_billing_at: '2026-07-01T00:00:00Z',
         free_months_credit: 0,
-        price_gross: 299,
+        price_gross: 499,
         referral_rewarded_at: null,
       },
     ],
@@ -211,8 +212,8 @@ describe('getCeoTeacherData', () => {
   it('shapes all five tabs and excludes test teachers from MRR', async () => {
     const data = await getCeoTeacherData(mockSupabase(fixture()));
 
-    // MRR: only billable, non-test → t1 active (699). t2 trialing, t3 test.
-    expect(data.teacher_mrr).toBe(699);
+    // MRR: only billable, non-test → t1 active (999). t2 trialing, t3 test.
+    expect(data.teacher_mrr).toBe(999);
 
     // Summary across ALL subs (incl. test): active=2 (t1,t3), trialing=1 (t2).
     expect(data.subscriptions_summary).toEqual({
@@ -284,10 +285,10 @@ describe('getCeoTeacherData', () => {
 describe('getTeacherDashboardCombined', () => {
   it('combined total = center MRR + teacher MRR, excluding test teachers', async () => {
     const combined = await getTeacherDashboardCombined(mockSupabase(fixture()), 1000);
-    // Teacher MRR: t1 active (699). t2 trial, t3 test → excluded.
-    expect(combined.teacher_mrr).toBe(699);
+    // Teacher MRR: t1 active (999). t2 trial, t3 test → excluded.
+    expect(combined.teacher_mrr).toBe(999);
     expect(combined.center_mrr).toBe(1000);
-    expect(combined.combined_mrr).toBe(1699);
+    expect(combined.combined_mrr).toBe(1999);
     expect(combined.teacher_active_subs).toBe(1); // t1 only (t3 is test)
     expect(combined.teacher_trials).toBe(1); // t2
     expect(combined.total_teachers).toBe(2); // t1, t2 (t3 is test)

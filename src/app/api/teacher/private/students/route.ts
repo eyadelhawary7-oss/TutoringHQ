@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherPrivateAccess } from '@/lib/centerAuth';
-import { countActiveNonGuestStudents, STANDARD_STUDENT_CAP } from '@/lib/teacherCap';
+import { countActiveNonGuestStudents, studentCapForPlan } from '@/lib/teacherCap';
+import { isProOrAbove } from '@/lib/teacherPlans';
 
 const ROUTE_TAG = 'api/teacher/private/students';
 
@@ -174,16 +175,17 @@ export async function GET(request: NextRequest) {
   // state - a blip must not raise a false over-cap alarm), so default false.
   let overCap = false;
   let studentCount = 0;
+  let planKey: string | undefined;
   try {
     const { data: subRow } = await auth.supabaseAdmin
       .from('teacher_subscriptions')
       .select('plan_key')
       .eq('teacher_id', auth.userId)
       .maybeSingle();
-    const planKey = (subRow as { plan_key?: string } | null)?.plan_key;
-    if (planKey !== 'teacher_699') {
+    planKey = (subRow as { plan_key?: string } | null)?.plan_key;
+    if (!isProOrAbove(planKey)) {
       studentCount = await countActiveNonGuestStudents(auth.supabaseAdmin, auth.userId);
-      overCap = studentCount > STANDARD_STUDENT_CAP;
+      overCap = studentCount > studentCapForPlan(planKey);
     }
   } catch (capErr) {
     Sentry.withScope((scope) => {
@@ -201,6 +203,6 @@ export async function GET(request: NextRequest) {
     billingByStudent,
     over_cap: overCap,
     student_count: studentCount,
-    student_limit: STANDARD_STUDENT_CAP,
+    student_limit: studentCapForPlan(planKey),
   });
 }

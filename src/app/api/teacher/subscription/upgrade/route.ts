@@ -6,6 +6,7 @@ import { requireTeacherAuth } from '@/lib/centerAuth';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { isFeatureEnabled } from '@/lib/features';
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
+import { getTeacherPlan } from '@/lib/teacherPlans';
 
 const ROUTE_TAG = 'api/teacher/subscription/upgrade';
 
@@ -20,8 +21,8 @@ function fail(step: string, err: unknown) {
 
 /**
  * POST /api/teacher/subscription/upgrade
- * Starts a Paymob checkout to move a Standard (teacher_299) teacher to Pro
- * (teacher_699). The webhook finalizes the session (combinedPaymentFinalize,
+ * Starts a Paymob checkout to move a Standard (teacher_standard) teacher to Pro
+ * (teacher_pro). The webhook finalizes the session (combinedPaymentFinalize,
  * session_type='teacher_upgrade') and calls upgrade_teacher_to_pro.
  *
  * PAYMOB gate (Rule, hard): when PAYMOB_ENABLED is off this returns 503
@@ -52,7 +53,11 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
   if (subErr) return fail('subscription_lookup', subErr);
   const sub = subRow as { id: string; plan_key: string; status: string } | null;
-  if (!sub || sub.plan_key !== 'teacher_299' || !['trialing', 'active'].includes(sub.status)) {
+  if (
+    !sub ||
+    getTeacherPlan(sub.plan_key).rank !== 1 ||
+    !['trialing', 'active'].includes(sub.status)
+  ) {
     return NextResponse.json({ error: 'NOT_ELIGIBLE' }, { status: 400 });
   }
 
@@ -92,7 +97,7 @@ export async function POST(request: NextRequest) {
       total_amount: priceGross,
       status: 'pending',
       session_type: 'teacher_upgrade',
-      metadata: { teacher_id: auth.userId, plan_key: 'teacher_699' },
+      metadata: { teacher_id: auth.userId, plan_key: 'teacher_pro' },
     })
     .select('id')
     .single();
@@ -116,7 +121,7 @@ export async function POST(request: NextRequest) {
         paymob_order_id: checkout.paymobOrderId,
         metadata: {
           teacher_id: auth.userId,
-          plan_key: 'teacher_699',
+          plan_key: 'teacher_pro',
           paymob_iframe_url: checkout.iframeUrl,
         } as never,
       })

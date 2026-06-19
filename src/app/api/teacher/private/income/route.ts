@@ -30,6 +30,34 @@ type TxnRow = {
   amount_billed: number | string | null;
 };
 
+type MethodRow = TxnRow & { method: string | null };
+
+/** Collected-by-method totals for the manual payment record. */
+type MethodBreakdown = {
+  cash: number;
+  instapay: number;
+  vodafone_cash: number;
+  other: number;
+};
+
+/**
+ * Bucket paid charges by the recorded method. Anything that is not one of the
+ * three named manual methods (incl. NULL or a legacy digital method) folds into
+ * 'other', so the buckets always sum to the collected total.
+ */
+function methodBreakdown(rows: MethodRow[]): MethodBreakdown {
+  const out: MethodBreakdown = { cash: 0, instapay: 0, vodafone_cash: 0, other: 0 };
+  for (const r of rows) {
+    const amt = Number(r.amount_billed) || 0;
+    const key =
+      r.method === 'cash' || r.method === 'instapay' || r.method === 'vodafone_cash'
+        ? r.method
+        : 'other';
+    out[key] = round2(out[key] + amt);
+  }
+  return out;
+}
+
 type ActivityRow = TxnRow & {
   id: string;
   session_id: string | null;
@@ -200,7 +228,7 @@ export async function GET(request: NextRequest) {
   const monthStartIso = startOfCairoMonthIso(curY, curM);
   const { data: paidRows, error: paidErr } = await auth.supabaseAdmin
     .from('transactions')
-    .select('group_id, amount_billed')
+    .select('group_id, amount_billed, method')
     .eq('teacher_id', auth.userId)
     .eq('kind', 'lesson')
     .eq('status', 'paid')
@@ -209,7 +237,7 @@ export async function GET(request: NextRequest) {
   if (paidErr) {
     return serverError('collected_month', paidErr);
   }
-  const paid = (paidRows ?? []) as TxnRow[];
+  const paid = (paidRows ?? []) as MethodRow[];
 
   // CORE: still-pending lesson charges (raw billed-not-paid, per group).
   const { data: pendingRows, error: pendingErr } = await auth.supabaseAdmin
@@ -308,6 +336,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     collectedThisMonth,
     outstanding,
+    methodBreakdown: methodBreakdown(paid),
     groups: groupIncomes,
     recentActivity,
   });
@@ -342,7 +371,7 @@ async function monthWindowResponse(
 
   const { data: paidRows, error: paidErr } = await admin
     .from('transactions')
-    .select('group_id, amount_billed')
+    .select('group_id, amount_billed, method')
     .eq('teacher_id', userId)
     .eq('kind', 'lesson')
     .eq('status', 'paid')
@@ -352,7 +381,7 @@ async function monthWindowResponse(
   if (paidErr) {
     return serverError('window_collected', paidErr);
   }
-  const paid = (paidRows ?? []) as TxnRow[];
+  const paid = (paidRows ?? []) as MethodRow[];
 
   const { data: pendingRows, error: pendingErr } = await admin
     .from('transactions')
@@ -382,6 +411,7 @@ async function monthWindowResponse(
   return NextResponse.json({
     collectedThisMonth: sumBilled(paid),
     outstanding: sumBilled(pending),
+    methodBreakdown: methodBreakdown(paid),
     groups: groups.map((g) => ({
       id: g.id,
       name: g.name,

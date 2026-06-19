@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherAuth, requireTeacherPrivateAccess } from '@/lib/centerAuth';
 import { requireTeacherUnderCap } from '@/lib/teacherCap';
+import { isProOrAbove } from '@/lib/teacherPlans';
 import { parseScheduleSlots, type ScheduleSlotInput } from '@/lib/teacherSchedule';
 
 type GroupRow = {
@@ -183,10 +184,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Pro tier cap: Standard (teacher_299) is limited to 8 active private groups;
-  // Pro (teacher_699) is uncapped. A teacher with no subscription row yet is
-  // creating their first group (active count 0), so the cap never blocks them.
-  if (sub?.plan_key !== 'teacher_699') {
+  // Pro tier cap: Standard (teacher_standard) is limited to 8 active private
+  // groups; pro-or-above tiers (Pro + Scale) are uncapped. A teacher with no
+  // subscription row yet is creating their first group (active count 0), so the
+  // cap never blocks them.
+  if (!isProOrAbove(sub?.plan_key)) {
     const { count, error: countErr } = await auth.supabaseAdmin
       .from('student_groups')
       .select('id', { count: 'exact', head: true })

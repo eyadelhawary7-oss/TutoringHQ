@@ -23,8 +23,9 @@ import type { CeoTeacherCombined } from '@/types/ceo';
 
 /** Monthly gross price per teacher tier (matches platform_config; price_gross is preferred when present). */
 const TIER_MONTHLY_GROSS: Record<string, number> = {
-  teacher_299: 299,
-  teacher_699: 699,
+  teacher_standard: 499,
+  teacher_pro: 999,
+  teacher_scale: 2499,
 };
 
 /** A teacher subscription contributes to MRR while it is being billed. Mirrors the center rule (['active','overdue']). */

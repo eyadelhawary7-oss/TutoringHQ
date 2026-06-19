@@ -90,7 +90,7 @@ function seedPassingGuard() {
   adminQueue.student_groups = [
     { data: { id: GROUP_ID, teacher_id: TEACHER_ID, kind: 'private' }, error: null },
   ];
-  adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_699' }, error: null }];
+  adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_pro' }, error: null }];
   adminQueue.students = [{ data: { id: STUDENT_ID, is_guest: false }, error: null }];
   adminQueue.enrollments = [{ data: { id: 'enr-1' }, error: null }];
 }
@@ -144,7 +144,7 @@ describe('student-group notes route', () => {
     adminQueue.student_groups = [
       { data: { id: GROUP_ID, teacher_id: TEACHER_ID, kind: 'private' }, error: null },
     ];
-    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_299' }, error: null }];
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_standard' }, error: null }];
 
     const res = await PUT(makeRequest({ note: 'x' }), params);
     expect(res.status).toBe(403);
@@ -166,7 +166,7 @@ describe('student-group notes route', () => {
     adminQueue.student_groups = [
       { data: { id: GROUP_ID, teacher_id: TEACHER_ID, kind: 'private' }, error: null },
     ];
-    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_699' }, error: null }];
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_pro' }, error: null }];
     adminQueue.students = [{ data: { id: STUDENT_ID, is_guest: false }, error: null }];
     adminQueue.enrollments = [{ data: null, error: null }];
 
@@ -179,7 +179,7 @@ describe('student-group notes route', () => {
     adminQueue.student_groups = [
       { data: { id: GROUP_ID, teacher_id: TEACHER_ID, kind: 'private' }, error: null },
     ];
-    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_699' }, error: null }];
+    adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_pro' }, error: null }];
     adminQueue.students = [{ data: { id: STUDENT_ID, is_guest: true }, error: null }];
 
     const res = await PUT(makeRequest({ note: 'x' }), params);
