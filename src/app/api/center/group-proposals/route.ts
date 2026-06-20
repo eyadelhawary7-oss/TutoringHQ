@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
         { status: 409 },
       );
     }
-    subject = (group.subject ?? '').trim().slice(0, 120) || '—';
+    subject = (group.subject ?? '').trim().slice(0, 120);
     gradeLevel = null;
     fee = groupFee;
   } else {

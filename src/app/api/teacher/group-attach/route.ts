@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const subject = (group.subject ?? '').trim().slice(0, 120) || '—';
+  const subject = (group.subject ?? '').trim().slice(0, 120);
 
   const { data: inserted, error: insErr } = await auth.supabaseAdmin
     .from('group_proposals')
