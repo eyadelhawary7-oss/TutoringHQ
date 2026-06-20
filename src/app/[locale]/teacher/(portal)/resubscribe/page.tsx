@@ -21,7 +21,7 @@ type SubscriptionStatus = {
 };
 
 /**
- * Teacher resubscribe page. One fixed plan (teacher_299, price from
+ * Teacher resubscribe page. One fixed plan (teacher_standard, price from
  * platform_config via the status route - never hardcoded here). While Paymob
  * is sandbox-gated (PAYMOB_ENABLED=false) the CTA resolves to a calm
  * "online payment coming soon" card - that is the expected state, not an

@@ -123,7 +123,10 @@ export default function SessionPage({
     }
   };
 
-  const markPaid = async (transactionId: string, method: 'cash' | 'instapay') => {
+  const markPaid = async (
+    transactionId: string,
+    method: 'cash' | 'instapay' | 'vodafone_cash' | 'other',
+  ) => {
     setMarkingId(transactionId);
     setMarkError(false);
     try {
@@ -304,11 +307,11 @@ export default function SessionPage({
                     <p className="mb-2 text-xs text-[var(--color-text-muted)]">
                       {tPortal('markPaid.hint')}
                     </p>
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => markPaid(c.id, 'cash')}
                         disabled={markingId !== null}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-teal-600 px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-teal-700 disabled:opacity-50"
+                        className="flex items-center justify-center gap-2 rounded-lg bg-teal-600 px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-teal-700 disabled:opacity-50"
                       >
                         {markingId === c.id && (
                           <Loader2 size={14} className="animate-spin" aria-hidden />
@@ -318,9 +321,23 @@ export default function SessionPage({
                       <button
                         onClick={() => markPaid(c.id, 'instapay')}
                         disabled={markingId !== null}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-[var(--color-teal)]/50 px-3 py-2 text-sm font-medium text-[var(--color-teal-deep)] transition-colors hover:bg-[var(--color-teal-soft)] disabled:opacity-50"
+                        className="flex items-center justify-center gap-2 rounded-lg border border-[var(--color-teal)]/50 px-3 py-2 text-sm font-medium text-[var(--color-teal-deep)] transition-colors hover:bg-[var(--color-teal-soft)] disabled:opacity-50"
                       >
                         {tPortal('markPaid.instapay')}
+                      </button>
+                      <button
+                        onClick={() => markPaid(c.id, 'vodafone_cash')}
+                        disabled={markingId !== null}
+                        className="flex items-center justify-center gap-2 rounded-lg border border-[var(--color-teal)]/50 px-3 py-2 text-sm font-medium text-[var(--color-teal-deep)] transition-colors hover:bg-[var(--color-teal-soft)] disabled:opacity-50"
+                      >
+                        {tPortal('markPaid.vodafoneCash')}
+                      </button>
+                      <button
+                        onClick={() => markPaid(c.id, 'other')}
+                        disabled={markingId !== null}
+                        className="flex items-center justify-center gap-2 rounded-lg border border-[var(--color-teal)]/50 px-3 py-2 text-sm font-medium text-[var(--color-teal-deep)] transition-colors hover:bg-[var(--color-teal-soft)] disabled:opacity-50"
+                      >
+                        {tPortal('markPaid.other')}
                       </button>
                     </div>
                   </div>

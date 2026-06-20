@@ -313,6 +313,7 @@ describe('GET /api/teacher/private/income', () => {
     expect(body).toEqual({
       collectedThisMonth: 0,
       outstanding: 0,
+      methodBreakdown: { cash: 0, instapay: 0, vodafone_cash: 0, other: 0 },
       groups: [],
       recentActivity: [],
     });

@@ -6,9 +6,10 @@ import { requireTeacherUnderCap } from '@/lib/teacherCap';
 
 const ROUTE_TAG = 'api/teacher/private/mark-paid';
 
-// Manual zero-commission methods ONLY. card/wallet/apple_pay/google_pay are
-// the future Paymob flow and are never offered manually.
-const MANUAL_METHODS = new Set(['cash', 'instapay']);
+// Manual, parent-pays-teacher-directly methods ONLY. The platform never touches
+// the money, so none of these carry a cut. card/wallet/apple_pay/google_pay are
+// the dormant Paymob flow and are never offered manually.
+const MANUAL_METHODS = new Set(['cash', 'instapay', 'vodafone_cash', 'other']);
 
 function serverError(step: string, err: { message: string }): NextResponse {
   Sentry.withScope((scope) => {

@@ -47,6 +47,9 @@ export const WA_TEMPLATE_PREVIEW_SAMPLES: Record<string, string> = {
   tip: 'راجع تقرير الغياب لهذا الأسبوع.',
   payment_link: 'https://centerhq.app/ar/settings/billing',
   login_link: 'https://centerhq.app/ar/login',
+  session_fee: '150 ج.م',
+  payment_details: 'إنستا باي: ahmed@instapay',
+  next_class_date: 'الأحد 22 يونيو',
 }
 
 /** Renders `{{var}}` placeholders; unknown keys stay as-is. */
@@ -86,6 +89,8 @@ export const WA_TEMPLATE_PREVIEW_BODIES: Record<string, string> = {
     'أهلًا {{owner_name}}، {{center_name}}\nالمستحق {{amount_str}}\nادفع من الرابط:\n{{payment_link}}',
   chq_weekly_summary:
     'ملخص الأسبوع, {{center_name}}\nطلاب نشطون: {{active_students}}\nجلسات: {{sessions_week}}\nإيراد تقريبي: {{revenue}}\nجدد: {{new_students}}\n{{tip}}',
+  chq_fee_reminder:
+    'تذكير بسيط بخصوص {{student_name}}.\nرسوم الحصة: {{session_fee}}\nطريقة الدفع: {{payment_details}}\nموعد الحصة الجاية: {{next_class_date}}\nشكرًا لتعاونك.',
 }
 
 export function previewBodyForTemplate(templateName: string): string {

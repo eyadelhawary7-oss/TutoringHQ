@@ -30,7 +30,8 @@ export default function PricingPageClient() {
   );
   const dynamicPlanPrices = usePublicPlanPrices();
 
-  const teacherFeatures = [
+  const freeFeatures = [tp('freeFeature1'), tp('freeFeature2')];
+  const standardFeatures = [
     tp('feature1'),
     tp('feature2'),
     tp('feature3'),
@@ -39,6 +40,7 @@ export default function PricingPageClient() {
     tp('standardGuestLimit'),
   ];
   const proFeatures = (tp.raw('proFeatures') as string[]) ?? [];
+  const scaleFeatures = (tp.raw('scaleFeatures') as string[]) ?? [];
 
   const selectAudience = (next: Audience) => {
     setAudience(next);
@@ -272,13 +274,37 @@ export default function PricingPageClient() {
               </div>
             </>
           ) : (
-            <div className="mx-auto mt-12 max-w-3xl">
+            <div className="mx-auto mt-12 max-w-6xl">
               <div className="text-center">
                 <h2 className="text-xl font-bold text-[var(--color-text-primary)] md:text-2xl">{tp('heading')}</h2>
                 <p className="mx-auto mt-2 max-w-sm text-sm text-[var(--color-text-secondary)]">{tp('sub')}</p>
               </div>
-              <div className="mt-8 grid gap-4 md:grid-cols-2">
-                {/* Standard (299) */}
+              <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {/* Free — the hook */}
+                <div
+                  className="flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-start shadow-[var(--shadow-card)]"
+                  style={{ borderTopColor: 'var(--color-brass)', borderTopWidth: '3px' }}
+                >
+                  <p className="text-lg font-bold text-[var(--color-text-primary)]">{tp('freeName')}</p>
+                  <p className="mt-3 text-2xl font-bold text-[var(--color-text-primary)]">{tp('freePrice')}</p>
+                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">{tp('freeNote')}</p>
+                  <ul className="mt-5 space-y-2.5">
+                    {freeFeatures.map((feature, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
+                        <Check size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--color-brass)' }} aria-hidden />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    href="/teacher/signup"
+                    className="mt-6 inline-flex w-full justify-center rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface-0)] px-6 py-3 text-center text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+                  >
+                    {tp('freeCta')}
+                  </Link>
+                </div>
+
+                {/* Standard (499) */}
                 <div
                   className="flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-start shadow-[var(--shadow-card)]"
                   style={{ borderTopColor: 'var(--color-brass)', borderTopWidth: '3px' }}
@@ -294,20 +320,15 @@ export default function PricingPageClient() {
                   </div>
                   <p className="mt-3 text-2xl font-bold text-[var(--color-text-primary)]">{tp('price')}</p>
                   <p className="mt-1 text-xs text-[var(--color-text-muted)]">{tp('priceNote')}</p>
+                  <p className="mt-1 text-xs font-medium" style={{ color: 'var(--color-brass)' }}>{tp('perStudent')}</p>
                   <ul className="mt-5 space-y-2.5">
-                    {teacherFeatures.map((feature, i) => (
+                    {standardFeatures.map((feature, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
                         <Check size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--color-brass)' }} aria-hidden />
                         <span>{feature}</span>
                       </li>
                     ))}
                   </ul>
-                  <p
-                    className="mt-4 rounded-lg bg-[var(--color-brass-soft)] p-3 text-xs leading-relaxed"
-                    style={{ color: 'var(--color-text-amber)' }}
-                  >
-                    {tp('freeNote')}
-                  </p>
                   <Link
                     href="/teacher/signup"
                     className="mt-6 inline-flex w-full justify-center rounded-xl px-6 py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-press chq-focus"
@@ -317,7 +338,7 @@ export default function PricingPageClient() {
                   </Link>
                 </div>
 
-                {/* Pro (699) */}
+                {/* Pro (999) — Best for Part-Time */}
                 <div
                   className="flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-start shadow-[var(--shadow-card)]"
                   style={{ borderTopColor: 'var(--color-brass)', borderTopWidth: '3px' }}
@@ -328,11 +349,12 @@ export default function PricingPageClient() {
                       className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
                       style={{ background: 'var(--color-brass)' }}
                     >
-                      {tp('mostComprehensive')}
+                      {tp('bestForPartTime')}
                     </span>
                   </div>
                   <p className="mt-3 text-2xl font-bold text-[var(--color-text-primary)]">{tp('proPrice')}</p>
-                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">{tp('proNoTrial')}</p>
+                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">{tp('proPriceNote')}</p>
+                  <p className="mt-1 text-xs font-medium" style={{ color: 'var(--color-brass)' }}>{tp('proPerStudent')}</p>
                   <ul className="mt-5 space-y-2.5">
                     {proFeatures.map((feature, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
@@ -349,7 +371,39 @@ export default function PricingPageClient() {
                     {tp('proCtaButton')}
                   </Link>
                 </div>
+
+                {/* Scale (2499) */}
+                <div
+                  className="flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-start shadow-[var(--shadow-card)]"
+                  style={{ borderTopColor: 'var(--color-brass)', borderTopWidth: '3px' }}
+                >
+                  <p className="text-lg font-bold text-[var(--color-text-primary)]">{tp('scaleTitle')}</p>
+                  <p className="mt-3 text-2xl font-bold text-[var(--color-text-primary)]">{tp('scalePrice')}</p>
+                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">{tp('scalePriceNote')}</p>
+                  <p className="mt-1 text-xs font-medium" style={{ color: 'var(--color-brass)' }}>{tp('scalePerStudent')}</p>
+                  <ul className="mt-5 space-y-2.5">
+                    {scaleFeatures.map((feature, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
+                        <Check size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--color-brass)' }} aria-hidden />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    href="/teacher/signup?plan=scale"
+                    className="mt-6 inline-flex w-full justify-center rounded-xl px-6 py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-press chq-focus"
+                    style={{ background: 'var(--color-brass)' }}
+                  >
+                    {tp('scaleCtaButton')}
+                  </Link>
+                </div>
               </div>
+              <p className="mx-auto mt-6 max-w-2xl text-center text-xs text-[var(--color-text-muted)]">
+                {tp('justification')}
+              </p>
+              <p className="mx-auto mt-2 max-w-2xl text-center text-xs text-[var(--color-text-muted)]">
+                {tp('activeStudentNote')}
+              </p>
               <PlanComparisonTable />
             </div>
           )}

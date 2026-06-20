@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
+import { isProOrAbove } from '@/lib/teacherPlans';
 import { useToast } from '@/hooks/useToast';
 import {
   fetchTeacherSubscription,
@@ -67,7 +68,7 @@ export default function TeacherPlanSection() {
   }
   if (!sub) return null;
 
-  const isPro = sub.plan_key === 'teacher_699';
+  const isPro = isProOrAbove(sub.plan_key);
   const statusKey = sub.status ? STATUS_KEY[sub.status] ?? 'statusActive' : 'statusActive';
 
   return (

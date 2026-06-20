@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/nextjs';
 import { requireTeacherAuth } from '@/lib/centerAuth';
 import { isUuid } from '@/lib/teacherPrivate';
 import { requireTeacherUnderCap } from '@/lib/teacherCap';
+import { isProOrAbove } from '@/lib/teacherPlans';
 import { isFeatureEnabled } from '@/lib/features';
 import { normalizePhone } from '@/lib/utils/phone';
 import {
@@ -175,8 +176,8 @@ export async function POST(request: NextRequest) {
     if (planErr) {
       return serverError('plan_lookup', planErr);
     }
-    const planKey = (planRow as { plan_key?: string } | null)?.plan_key ?? 'teacher_299';
-    if (planKey !== 'teacher_699') {
+    const planKey = (planRow as { plan_key?: string } | null)?.plan_key;
+    if (!isProOrAbove(planKey)) {
       return NextResponse.json(
         { error: 'GUESTS_PRO_ONLY', upgrade_required: true },
         { status: 403 },

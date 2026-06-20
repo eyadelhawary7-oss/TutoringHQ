@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherAuth } from '@/lib/centerAuth';
 import { validateCSRFRequest } from '@/lib/csrf';
+import { isProOrAbove } from '@/lib/teacherPlans';
 
 const ROUTE_TAG = 'api/teacher/subscription/downgrade';
 const GROUP_LIMIT = 8;
@@ -31,7 +32,7 @@ function withPhase(phase: string, err: unknown): Error & { _phase: string } {
 
 /**
  * POST /api/teacher/subscription/downgrade
- * Pro (teacher_699) -> Standard (teacher_299). Standard caps at 8 active
+ * Pro (teacher_pro) -> Standard (teacher_standard). Standard caps at 8 active
  * private groups and 60 active enrolled students, so a Pro teacher who is over
  * either cap must shed groups/students before the downgrade lands.
  *
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
   if (subErr) return fail('subscription_lookup', subErr);
   const planKey = (subRow as { plan_key?: string } | null)?.plan_key;
-  if (planKey !== 'teacher_699') {
+  if (!isProOrAbove(planKey)) {
     return NextResponse.json({ error: 'NOT_PRO' }, { status: 400 });
   }
 

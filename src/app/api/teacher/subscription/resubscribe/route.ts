@@ -6,6 +6,7 @@ import { requireTeacherAuth } from '@/lib/centerAuth';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { isFeatureEnabled } from '@/lib/features';
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
+import { DEFAULT_TEACHER_PLAN_KEY } from '@/lib/teacherPlans';
 
 const ROUTE_TAG = 'api/teacher/subscription/resubscribe';
 
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
       total_amount: priceGross,
       status: 'pending',
       session_type: 'teacher_resubscribe',
-      metadata: { teacher_id: auth.userId, plan_key: plan.plan_key ?? 'teacher_299' },
+      metadata: { teacher_id: auth.userId, plan_key: plan.plan_key ?? DEFAULT_TEACHER_PLAN_KEY },
     })
     .select('id')
     .single();
@@ -131,7 +132,7 @@ export async function POST(request: NextRequest) {
         paymob_order_id: checkout.paymobOrderId,
         metadata: {
           teacher_id: auth.userId,
-          plan_key: plan.plan_key ?? 'teacher_299',
+          plan_key: plan.plan_key ?? DEFAULT_TEACHER_PLAN_KEY,
           paymob_iframe_url: checkout.iframeUrl,
         } as never,
       })

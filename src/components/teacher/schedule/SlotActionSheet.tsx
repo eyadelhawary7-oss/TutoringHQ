@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Banknote, ChevronDown, Loader2, Lock, Plus, Smartphone, X } from 'lucide-react';
+import { Banknote, ChevronDown, Loader2, Lock, Plus, X } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
 import { formatTime, formatTimeRange } from '@/lib/timeFormat';
 import { useToast } from '@/hooks/useToast';
 import SheetShell from './SheetShell';
+import { isProOrAbove } from '@/lib/teacherPlans';
 
 export type SlotOccurrence = {
   groupId: string;
@@ -98,7 +99,7 @@ export default function SlotActionSheet({
   const locale = useLocale();
   const toast = useToast();
   const timeLabels = { am: tf('am'), pm: tf('pm') };
-  const isPro = planKey === 'teacher_699';
+  const isPro = isProOrAbove(planKey);
 
   // Phase + live-session identity. Phase starts from the occurrence state and
   // advances in place as the teacher starts / finishes the class.
@@ -119,9 +120,10 @@ export default function SlotActionSheet({
   const [guestPhone, setGuestPhone] = useState('');
   const [guestError, setGuestError] = useState<string | null>(null);
 
-  // Payment method (live). Cash collects on the spot; digital is the future
-  // Paymob payment-link flow (records as cash for now). The server resolves it.
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'digital'>('cash');
+  // Digital student-fee collection (Paymob payment links) is dormant behind its
+  // single switch, so there is no class-level payment method to pick: fees are
+  // recorded per student in the living payment record. Finishing just completes
+  // the session; the server defaults to the manual (cash) path.
 
   // Start (PHASE 1 -> PHASE 2)
   const [starting, setStarting] = useState(false);
@@ -172,7 +174,6 @@ export default function SlotActionSheet({
     setGuestName('');
     setGuestPhone('');
     setGuestError(null);
-    setPaymentMethod('cash');
     setStarting(false);
     setStartError(null);
     setSaveState('idle');
@@ -437,7 +438,7 @@ export default function SlotActionSheet({
         {
           method: 'POST',
           headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ payment_method: paymentMethod }),
+          body: JSON.stringify({}),
         },
       );
       if (res.status === 207) {
@@ -1025,42 +1026,16 @@ export default function SlotActionSheet({
             <h3 className="mb-2 text-sm font-semibold text-[var(--color-text-muted)]">
               {t('paymentMethodTitle')}
             </h3>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('cash')}
-                aria-pressed={paymentMethod === 'cash'}
-                className={`flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-colors ${
-                  paymentMethod === 'cash'
-                    ? 'border-[var(--color-teal)] bg-[var(--color-teal-soft)] text-[var(--color-teal-deep)]'
-                    : 'border-[var(--color-border)] bg-[var(--color-surface-0)] text-[var(--color-text-secondary)]'
-                }`}
-              >
-                <Banknote size={18} aria-hidden />
-                {t('paymentCash')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('digital')}
-                aria-pressed={paymentMethod === 'digital'}
-                className={`flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-colors ${
-                  paymentMethod === 'digital'
-                    ? 'border-[var(--color-brass)] bg-[var(--color-brass)]/15 text-[var(--color-brass)]'
-                    : 'border-[var(--color-border)] bg-[var(--color-surface-0)] text-[var(--color-text-secondary)]'
-                }`}
-              >
-                <Smartphone size={18} aria-hidden />
-                {t('paymentDigital')}
-              </button>
+            <div
+              className="flex items-center justify-center gap-2 rounded-lg border border-[var(--color-teal)] bg-[var(--color-teal-soft)] px-4 py-3 text-sm font-medium text-[var(--color-teal-deep)]"
+              role="note"
+            >
+              <Banknote size={18} aria-hidden />
+              {t('paymentCash')}
             </div>
-            {paymentMethod === 'digital' && (
-              <p
-                className="mt-2 rounded-lg bg-[var(--color-surface-2)] px-3 py-2 text-xs text-[var(--color-text-secondary)]"
-                role="note"
-              >
-                {t('paymentDigitalDisabled')}
-              </p>
-            )}
+            <p className="mt-2 text-xs text-[var(--color-text-secondary)]">
+              {t('paymentRecordHint')}
+            </p>
           </section>
 
           {finishError && (

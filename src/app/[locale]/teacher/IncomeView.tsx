@@ -17,9 +17,17 @@ type AllTimeData = {
   monthly_series: IncomeMonth[];
 };
 
+type MethodBreakdown = {
+  cash: number;
+  instapay: number;
+  vodafone_cash: number;
+  other: number;
+};
+
 type MonthData = {
   collectedThisMonth: number;
   outstanding: number;
+  methodBreakdown?: MethodBreakdown;
   groups: {
     id: string;
     name: string | null;
@@ -27,6 +35,14 @@ type MonthData = {
     outstanding: number;
   }[];
 };
+
+/** Method buckets in display order, paired with their markPaid.* label key. */
+const METHOD_ROWS: { key: keyof MethodBreakdown; labelKey: string }[] = [
+  { key: 'cash', labelKey: 'markPaid.cash' },
+  { key: 'instapay', labelKey: 'markPaid.instapay' },
+  { key: 'vodafone_cash', labelKey: 'markPaid.vodafoneCash' },
+  { key: 'other', labelKey: 'markPaid.other' },
+];
 
 function ymKey(ym: YearMonth): string {
   return `${ym.year}-${ym.month}`;
@@ -468,6 +484,27 @@ export default function IncomeView() {
               </div>
             </div>
           </div>
+
+          {monthData.methodBreakdown && monthData.collectedThisMonth > 0 && (
+            <div>
+              <h3 className="mb-3 text-sm font-semibold text-[var(--color-text-muted)]">
+                {t('income.byMethod')}
+              </h3>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {METHOD_ROWS.map(({ key, labelKey }) => (
+                  <div
+                    key={key}
+                    className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3"
+                  >
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t(labelKey)}</p>
+                    <p className="num mt-0.5 font-semibold text-[var(--color-text-primary)]">
+                      {formatCurrency(monthData.methodBreakdown![key], locale)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {monthData.groups.length > 0 && (
             <div>

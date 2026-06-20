@@ -4,6 +4,7 @@ import { requireTeacherAuth } from '@/lib/centerAuth';
 import { isUuid } from '@/lib/teacherPrivate';
 import { requireTeacherUnderCap } from '@/lib/teacherCap';
 import { isFeatureEnabled } from '@/lib/features';
+import { isDigitalStudentFeeCollectionEnabled } from '@/lib/digitalStudentFeeCollection';
 
 const ROUTE_TAG = 'api/teacher/private/schedule/sessions/[sessionId]/finish';
 
@@ -20,18 +21,23 @@ function serverError(step: string, err: { message: string }): NextResponse {
 }
 
 /**
- * POST: end a LIVE session and bill it. finish_class_and_bill handles the
- * live -> finished transition internally and bills every billable scan at the
- * group's fee snapshot (idempotent: per-session+student idempotency keys). For
- * cash (or while Paymob is off), the freshly minted pending charges are flipped
- * to paid via apply_transaction_transition (never a direct UPDATE). Digital
- * with Paymob live stays pending for the payment-link flow.
+ * POST: end a LIVE session and record it. finish_class_and_bill handles the
+ * live -> finished transition internally and creates one PENDING charge per
+ * billable scan at the group's fee snapshot (idempotent: per-session+student
+ * idempotency keys).
+ *
+ * Default (digital student-fee collection DORMANT): charges land Unpaid. This is
+ * the living payment record — the teacher marks each student Paid (with a
+ * method) whenever the money actually arrives, often days later. No money is
+ * processed and no Paymob link is ever generated; the request body is ignored.
+ *
+ * When the single switch (digital_student_fee_collection.enabled) is flipped ON,
+ * the original collection flow is restored: cash auto-confirms the pending
+ * charges on the spot, while 'digital' leaves them pending for the Paymob
+ * payment-link flow. This branch is the dormant feature's restoration seam.
  *
  * Only a LIVE session can be finished here (409 otherwise). Ownership flows
- * session -> group -> teacher_id (403 on mismatch). If the bill lands but a
- * cash transition fails afterward, the charges are already committed - respond
- * 207 with billing_error so the UI can say "billed, settle the rest" rather
- * than silently dropping it.
+ * session -> group -> teacher_id (403 on mismatch).
  */
 export async function POST(
   request: NextRequest,
@@ -48,21 +54,6 @@ export async function POST(
       { status: 404 },
     );
   }
-
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json(
-      { error: 'Invalid request', code: 'invalid_body' },
-      { status: 400 },
-    );
-  }
-  const { payment_method: rawPaymentMethod } = (body ?? {}) as {
-    payment_method?: unknown;
-  };
-  const paymentMethod = rawPaymentMethod === 'digital' ? 'digital' : 'cash';
-  const digitalActive = paymentMethod === 'digital' && isFeatureEnabled('PAYMOB_ENABLED');
 
   // Session + ownership chain.
   const { data: sessionRow, error: sessionErr } = await auth.supabaseAdmin
@@ -148,9 +139,31 @@ export async function POST(
     | undefined;
   const chargesCreated = result?.charges_created ?? 0;
 
-  // Cash collection: flip every pending charge for this session to paid via
-  // the lifecycle RPC. A per-charge failure is non-fatal but surfaces as 207
-  // so the teacher knows to settle the stragglers.
+  // DEFAULT: digital student-fee collection is dormant, so charges stay PENDING
+  // (Unpaid) for the living payment record. The teacher records who paid — and
+  // how — anytime after the class.
+  if (!(await isDigitalStudentFeeCollectionEnabled())) {
+    return NextResponse.json({
+      session_id: sessionId,
+      charges_created: chargesCreated,
+    });
+  }
+
+  // RESTORED (single switch ON): the original collection flow. 'digital' (with
+  // Paymob live) leaves charges pending for the payment-link flow; everything
+  // else auto-confirms the pending charges as cash via the lifecycle RPC. A
+  // per-charge failure is non-fatal but surfaces as 207 so the teacher knows to
+  // settle the stragglers.
+  let body: unknown = {};
+  try {
+    body = await request.json();
+  } catch {
+    body = {};
+  }
+  const rawPaymentMethod = (body as { payment_method?: unknown })?.payment_method;
+  const digitalActive =
+    rawPaymentMethod === 'digital' && isFeatureEnabled('PAYMOB_ENABLED');
+
   let collectionFailed = false;
   if (!digitalActive) {
     const { data: pendingTxns, error: pendingErr } = await auth.supabaseAdmin

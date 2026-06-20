@@ -1,11 +1,15 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 
 import {
-  STANDARD_STUDENT_CAP,
+  studentCapForPlan,
   countActiveNonGuestStudents,
   requireTeacherUnderCap,
   selfEnrollWouldExceedCap,
 } from '@/lib/teacherCap';
+
+// The Standard tier active-student cap (20). All cap-relative assertions key off
+// this so they track src/lib/teacherPlans.ts rather than a hardcoded number.
+const STANDARD_CAP = studentCapForPlan('teacher_standard');
 
 // Per-table result queues + a tiny chainable builder. Every filter returns the
 // builder; awaiting (then) or maybeSingle resolves the next queued result for
@@ -89,8 +93,22 @@ describe('countActiveNonGuestStudents', () => {
 });
 
 describe('requireTeacherUnderCap', () => {
-  it('Pro (teacher_699) is never capped, even at 75 students (no count query)', async () => {
-    queues.teacher_subscriptions = [{ data: { plan_key: 'teacher_699' }, error: null }];
+  it('Pro (teacher_pro) is hard-capped at its own cap; over it -> locked', async () => {
+    // Pro now carries a hard cap of its own (50); well past it is locked.
+    queues.teacher_subscriptions = [{ data: { plan_key: 'teacher_pro' }, error: null }];
+    queues.student_groups = [{ data: [{ id: 'g-1' }], error: null }];
+    queues.enrollments = [
+      { data: enrollments(studentCapForPlan('teacher_pro') + 5), error: null },
+    ];
+
+    const res = await requireTeacherUnderCap(admin, TEACHER, 'test');
+
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.response.status).toBe(403);
+  });
+
+  it('Scale (teacher_scale) is never hard-capped (no count query)', async () => {
+    queues.teacher_subscriptions = [{ data: { plan_key: 'teacher_scale' }, error: null }];
 
     const res = await requireTeacherUnderCap(admin, TEACHER, 'test');
 
@@ -99,20 +117,20 @@ describe('requireTeacherUnderCap', () => {
     expect(eqCalls.some((c) => c.table === 'student_groups')).toBe(false);
   });
 
-  it('Standard at exactly 60 is NOT locked (at the line, not over it)', async () => {
-    queues.teacher_subscriptions = [{ data: { plan_key: 'teacher_299' }, error: null }];
+  it('Standard at exactly the cap is NOT locked (at the line, not over it)', async () => {
+    queues.teacher_subscriptions = [{ data: { plan_key: 'teacher_standard' }, error: null }];
     queues.student_groups = [{ data: [{ id: 'g-1' }], error: null }];
-    queues.enrollments = [{ data: enrollments(STANDARD_STUDENT_CAP), error: null }];
+    queues.enrollments = [{ data: enrollments(STANDARD_CAP), error: null }];
 
     const res = await requireTeacherUnderCap(admin, TEACHER, 'test');
 
     expect(res.ok).toBe(true);
   });
 
-  it('Standard at 61 is locked -> 403 OVER_CAP_LOCKED', async () => {
-    queues.teacher_subscriptions = [{ data: { plan_key: 'teacher_299' }, error: null }];
+  it('Standard at cap+1 is locked -> 403 OVER_CAP_LOCKED', async () => {
+    queues.teacher_subscriptions = [{ data: { plan_key: 'teacher_standard' }, error: null }];
     queues.student_groups = [{ data: [{ id: 'g-1' }], error: null }];
-    queues.enrollments = [{ data: enrollments(STANDARD_STUDENT_CAP + 1), error: null }];
+    queues.enrollments = [{ data: enrollments(STANDARD_CAP + 1), error: null }];
 
     const res = await requireTeacherUnderCap(admin, TEACHER, 'test');
 
@@ -123,10 +141,10 @@ describe('requireTeacherUnderCap', () => {
     }
   });
 
-  it('Standard at 75 is locked -> 403 OVER_CAP_LOCKED', async () => {
-    queues.teacher_subscriptions = [{ data: { plan_key: 'teacher_299' }, error: null }];
+  it('Standard well over the cap is locked -> 403 OVER_CAP_LOCKED', async () => {
+    queues.teacher_subscriptions = [{ data: { plan_key: 'teacher_standard' }, error: null }];
     queues.student_groups = [{ data: [{ id: 'g-1' }], error: null }];
-    queues.enrollments = [{ data: enrollments(75), error: null }];
+    queues.enrollments = [{ data: enrollments(STANDARD_CAP * 3), error: null }];
 
     const res = await requireTeacherUnderCap(admin, TEACHER, 'test');
 
@@ -148,33 +166,33 @@ describe('requireTeacherUnderCap', () => {
 });
 
 describe('selfEnrollWouldExceedCap (loophole fix)', () => {
-  it('Pro teacher is never blocked', async () => {
-    queues.teacher_subscriptions = [{ data: { plan_key: 'teacher_699' }, error: null }];
+  it('Scale teacher is never blocked (no hard cap)', async () => {
+    queues.teacher_subscriptions = [{ data: { plan_key: 'teacher_scale' }, error: null }];
 
     expect(await selfEnrollWouldExceedCap(admin, TEACHER, '01099999999')).toBe(false);
   });
 
-  it('Standard under the cap (59) allows a brand-new head', async () => {
-    queues.teacher_subscriptions = [{ data: { plan_key: 'teacher_299' }, error: null }];
+  it('Standard under the cap allows a brand-new head', async () => {
+    queues.teacher_subscriptions = [{ data: { plan_key: 'teacher_standard' }, error: null }];
     queues.student_groups = [{ data: [{ id: 'g-1' }], error: null }];
-    queues.enrollments = [{ data: enrollments(59), error: null }];
+    queues.enrollments = [{ data: enrollments(STANDARD_CAP - 1), error: null }];
 
     expect(await selfEnrollWouldExceedCap(admin, TEACHER, '01099999999')).toBe(false);
   });
 
-  it('Standard at the cap (60) BLOCKS a brand-new head', async () => {
-    queues.teacher_subscriptions = [{ data: { plan_key: 'teacher_299' }, error: null }];
+  it('Standard at the cap BLOCKS a brand-new head', async () => {
+    queues.teacher_subscriptions = [{ data: { plan_key: 'teacher_standard' }, error: null }];
     queues.student_groups = [{ data: [{ id: 'g-1' }], error: null }];
-    queues.enrollments = [{ data: enrollments(60), error: null }];
+    queues.enrollments = [{ data: enrollments(STANDARD_CAP), error: null }];
 
     expect(await selfEnrollWouldExceedCap(admin, TEACHER, '01099999999')).toBe(true);
   });
 
-  it('Standard at the cap (60) ALLOWS an already-enrolled student re-submitting', async () => {
-    queues.teacher_subscriptions = [{ data: { plan_key: 'teacher_299' }, error: null }];
+  it('Standard at the cap ALLOWS an already-enrolled student re-submitting', async () => {
+    queues.teacher_subscriptions = [{ data: { plan_key: 'teacher_standard' }, error: null }];
     queues.student_groups = [{ data: [{ id: 'g-1' }], error: null }];
-    // 60 heads, one of which carries the re-submitting phone -> already counted.
-    const rows = enrollments(60);
+    // Cap heads, one of which carries the re-submitting phone -> already counted.
+    const rows = enrollments(STANDARD_CAP);
     (rows[0].students as { phone: string }).phone = '01055550000';
     queues.enrollments = [{ data: rows, error: null }];
 

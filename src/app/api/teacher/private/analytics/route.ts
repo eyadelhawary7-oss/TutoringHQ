@@ -11,8 +11,8 @@ const ROUTE_TAG = 'api/teacher/private/analytics';
  * Two gates, in order:
  *   1. requireTeacherPrivateAccess — same access gate as the income surface
  *      (trialing|active subscription). Free/lapsed → 403 NO_PRIVATE_ACCESS.
- *   2. requireTeacherPro — Standard (teacher_299) → 403 ANALYTICS_PRO_ONLY so
- *      the client can render the brass upgrade row; Pro (teacher_699) passes.
+ *   2. requireTeacherPro — Standard (teacher_standard) → 403 ANALYTICS_PRO_ONLY
+ *      so the client can render the brass upgrade row; Pro + Scale pass.
  *
  * Everything is computed LIVE and scoped to the authenticated teacher (no
  * teacher metrics table exists, and one teacher's data is small). A query

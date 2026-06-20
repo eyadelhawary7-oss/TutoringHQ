@@ -9,6 +9,7 @@ import { getCsrfHeaders } from '@/lib/csrf-client';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import UpgradeFlow from '@/components/teacher/UpgradeFlow';
 import { fetchTeacherSubscription } from '@/components/teacher/teacherSubscriptionClient';
+import { getTeacherPlan } from '@/lib/teacherPlans';
 
 const STANDARD_GROUP_LIMIT = 8;
 
@@ -127,9 +128,10 @@ export default function PrivateGroupsSection({
 
   const active = (groups ?? []).filter((g) => g.status !== 'archived');
   const archived = (groups ?? []).filter((g) => g.status === 'archived');
-  // Standard teachers cap at 8 active private groups; Pro is uncapped. At the
-  // cap the create button is replaced by a brass upgrade CTA.
-  const atGroupCap = planKey === 'teacher_299' && active.length >= STANDARD_GROUP_LIMIT;
+  // Standard teachers cap at 8 active private groups; pro-or-above is uncapped.
+  // At the cap the create button is replaced by a brass upgrade CTA.
+  const atGroupCap =
+    getTeacherPlan(planKey).rank === 1 && active.length >= STANDARD_GROUP_LIMIT;
 
   const groupRow = (g: PrivateGroup) => (
     <Link

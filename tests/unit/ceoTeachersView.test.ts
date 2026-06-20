@@ -41,8 +41,8 @@ import type {
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 const teachers: CeoTeacherRow[] = [
-  { teacher_id: 't1', display_name: 'Ahmed', referral_code: 'AHMED7X', subject: 'Math', phone: '+201000000001', is_test: false, plan_key: 'teacher_699', status: 'active', created_at: '2026-01-01T00:00:00Z' },
-  { teacher_id: 't2', display_name: 'Sara', referral_code: 'SARA22', subject: 'Physics', phone: '+201000000002', is_test: false, plan_key: 'teacher_299', status: 'trialing', created_at: '2026-02-01T00:00:00Z' },
+  { teacher_id: 't1', display_name: 'Ahmed', referral_code: 'AHMED7X', subject: 'Math', phone: '+201000000001', is_test: false, plan_key: 'teacher_pro', status: 'active', created_at: '2026-01-01T00:00:00Z' },
+  { teacher_id: 't2', display_name: 'Sara', referral_code: 'SARA22', subject: 'Physics', phone: '+201000000002', is_test: false, plan_key: 'teacher_standard', status: 'trialing', created_at: '2026-02-01T00:00:00Z' },
   { teacher_id: 't3', display_name: 'Omar', referral_code: 'OMAR9', subject: null, phone: null, is_test: true, plan_key: null, status: null, created_at: '2026-03-01T00:00:00Z' },
 ];
 
@@ -62,8 +62,8 @@ const credits: CeoTeacherCreditRow[] = [
 ];
 
 const subscriptions: CeoTeacherSubscriptionRow[] = [
-  { teacher_id: 't1', display_name: 'Ahmed', referral_code: 'AHMED7X', is_test: false, phone: null, plan_key: 'teacher_699', status: 'active', trial_ends_at: null, current_period_end: '2026-07-01T00:00:00Z', next_billing_at: '2026-07-01T00:00:00Z', free_months_credit: 1, price_gross: 699, referral_rewarded_at: '2026-06-01T00:00:00Z' },
-  { teacher_id: 't2', display_name: 'Sara', referral_code: 'SARA22', is_test: false, phone: null, plan_key: 'teacher_299', status: 'trialing', trial_ends_at: '2026-06-20T00:00:00Z', current_period_end: '2026-06-20T00:00:00Z', next_billing_at: '2026-06-20T00:00:00Z', free_months_credit: 0, price_gross: 299, referral_rewarded_at: null },
+  { teacher_id: 't1', display_name: 'Ahmed', referral_code: 'AHMED7X', is_test: false, phone: null, plan_key: 'teacher_pro', status: 'active', trial_ends_at: null, current_period_end: '2026-07-01T00:00:00Z', next_billing_at: '2026-07-01T00:00:00Z', free_months_credit: 1, price_gross: 999, referral_rewarded_at: '2026-06-01T00:00:00Z' },
+  { teacher_id: 't2', display_name: 'Sara', referral_code: 'SARA22', is_test: false, phone: null, plan_key: 'teacher_standard', status: 'trialing', trial_ends_at: '2026-06-20T00:00:00Z', current_period_end: '2026-06-20T00:00:00Z', next_billing_at: '2026-06-20T00:00:00Z', free_months_credit: 0, price_gross: 499, referral_rewarded_at: null },
 ];
 
 // ── Generic matchers ─────────────────────────────────────────────────────────
@@ -83,10 +83,10 @@ describe('matchers', () => {
     expect(matchSelect('active', 'active')).toBe(true);
     expect(matchSelect('active', 'trialing')).toBe(false);
     expect(matchSelect(null, NONE)).toBe(true);
-    expect(matchSelect('teacher_299', NONE)).toBe(false);
+    expect(matchSelect('teacher_standard', NONE)).toBe(false);
   });
   it('presentValues collapses null/empty to NONE, de-dups, preserves order', () => {
-    expect(presentValues(teachers, (r) => r.plan_key)).toEqual(['teacher_699', 'teacher_299', NONE]);
+    expect(presentValues(teachers, (r) => r.plan_key)).toEqual(['teacher_pro', 'teacher_standard', NONE]);
   });
   it('hasActiveFilter detects any non-empty field', () => {
     expect(hasActiveFilter(EMPTY_TEACHER_FILTERS)).toBe(false);
@@ -96,8 +96,8 @@ describe('matchers', () => {
 
 // ── Summary cards ────────────────────────────────────────────────────────────
 describe('summary cards', () => {
-  it('teacherSummary: total / not-set / standard / pro', () => {
-    expect(teacherSummary(teachers)).toEqual({ total: 3, notSet: 1, standard: 1, pro: 1 });
+  it('teacherSummary: total / not-set / standard / pro / scale', () => {
+    expect(teacherSummary(teachers)).toEqual({ total: 3, notSet: 1, standard: 1, pro: 1, scale: 0 });
   });
   it('referralSummary: total / converted / pending / free months sum', () => {
     expect(referralSummary(referrals)).toEqual({ total: 2, converted: 1, pending: 1, freeMonths: 1 });
@@ -126,14 +126,14 @@ describe('filters', () => {
   });
 
   it('teacher tier select narrows by fixed value (incl. NONE for no plan)', () => {
-    expect(filterTeachers(teachers, { ...EMPTY_TEACHER_FILTERS, tier: 'teacher_299' }).map((r) => r.teacher_id)).toEqual(['t2']);
+    expect(filterTeachers(teachers, { ...EMPTY_TEACHER_FILTERS, tier: 'teacher_standard' }).map((r) => r.teacher_id)).toEqual(['t2']);
     expect(filterTeachers(teachers, { ...EMPTY_TEACHER_FILTERS, tier: NONE }).map((r) => r.teacher_id)).toEqual(['t3']);
   });
 
   it('combined filters AND together', () => {
     // subject "math" + tier Pro → only Ahmed; subject "math" + tier Standard → none.
-    expect(filterTeachers(teachers, { ...EMPTY_TEACHER_FILTERS, subject: 'math', tier: 'teacher_699' }).map((r) => r.teacher_id)).toEqual(['t1']);
-    expect(filterTeachers(teachers, { ...EMPTY_TEACHER_FILTERS, subject: 'math', tier: 'teacher_299' })).toHaveLength(0);
+    expect(filterTeachers(teachers, { ...EMPTY_TEACHER_FILTERS, subject: 'math', tier: 'teacher_pro' }).map((r) => r.teacher_id)).toEqual(['t1']);
+    expect(filterTeachers(teachers, { ...EMPTY_TEACHER_FILTERS, subject: 'math', tier: 'teacher_standard' })).toHaveLength(0);
   });
 
   it('over-narrow filter yields zero rows (no-match state)', () => {

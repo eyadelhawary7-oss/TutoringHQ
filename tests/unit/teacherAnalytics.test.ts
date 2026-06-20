@@ -296,13 +296,13 @@ describe('requireTeacherPro (gate)', () => {
     selectCalls = [];
   });
 
-  it('Pro (teacher_699) passes', async () => {
-    const admin = makeAdmin({ teacher_subscriptions: [{ data: { plan_key: 'teacher_699' }, error: null }] }, selectCalls);
+  it('Pro (teacher_pro) passes', async () => {
+    const admin = makeAdmin({ teacher_subscriptions: [{ data: { plan_key: 'teacher_pro' }, error: null }] }, selectCalls);
     expect((await requireTeacherPro(admin, 'u1', 'test')).ok).toBe(true);
   });
 
-  it('Standard (teacher_299) → 403 ANALYTICS_PRO_ONLY', async () => {
-    const admin = makeAdmin({ teacher_subscriptions: [{ data: { plan_key: 'teacher_299' }, error: null }] }, selectCalls);
+  it('Standard (teacher_standard) → 403 ANALYTICS_PRO_ONLY', async () => {
+    const admin = makeAdmin({ teacher_subscriptions: [{ data: { plan_key: 'teacher_standard' }, error: null }] }, selectCalls);
     const res = await requireTeacherPro(admin, 'u1', 'test');
     expect(res.ok).toBe(false);
     if (!res.ok) {

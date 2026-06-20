@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/nextjs';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { requireTeacherPrivateAccess } from '@/lib/centerAuth';
 import { isUuid } from '@/lib/teacherPrivate';
+import { isProOrAbove } from '@/lib/teacherPlans';
 
 const ROUTE_TAG = 'api/teacher/private/note';
 const MAX_NOTE_LEN = 2000;
@@ -79,7 +80,7 @@ async function guard(request: NextRequest, groupId: string, studentId: string): 
   }
 
   // Pro gate -- mirrors the GUESTS_PRO_ONLY gate exactly (plan_key read from
-  // teacher_subscriptions, default teacher_299, Pro is teacher_699).
+  // teacher_subscriptions, default Standard, pro features unlock on Pro + Scale).
   const { data: planRow, error: planErr } = await admin
     .from('teacher_subscriptions')
     .select('plan_key')
@@ -88,8 +89,8 @@ async function guard(request: NextRequest, groupId: string, studentId: string): 
   if (planErr) {
     return { ok: false, response: serverError('plan_lookup', planErr) };
   }
-  const planKey = (planRow as { plan_key?: string } | null)?.plan_key ?? 'teacher_299';
-  if (planKey !== 'teacher_699') {
+  const planKey = (planRow as { plan_key?: string } | null)?.plan_key;
+  if (!isProOrAbove(planKey)) {
     return {
       ok: false,
       response: NextResponse.json({ error: 'NOTES_PRO_ONLY', upgrade_required: true }, { status: 403 }),

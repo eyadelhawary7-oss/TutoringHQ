@@ -13,6 +13,7 @@ import IncomeCalculator from '../IncomeCalculator';
 import LockedIncomePreview from '../LockedIncomePreview';
 import { useTeacherContext } from '../useTeacherContext';
 import { useStartTrial } from '../useStartTrial';
+import { getTeacherPlan, isProOrAbove } from '@/lib/teacherPlans';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -337,7 +338,7 @@ export default function TeacherDashboardPage() {
                           : t('subscriptionActive')}
                   </p>
                 )}
-                {summary.sub.status === 'active' && summary.sub.planKey === 'teacher_699' ? (
+                {summary.sub.status === 'active' && isProOrAbove(summary.sub.planKey) ? (
                   <span className="mt-2 self-start rounded-full bg-[var(--color-teal-soft)] px-3 py-1 text-xs font-semibold text-[var(--color-teal-deep)]">
                     {t('proPlan')}
                   </span>
@@ -347,11 +348,16 @@ export default function TeacherDashboardPage() {
                       summary.sub.status === 'trialing'
                         ? {
                             label: t('ctaContinueTrial', {
-                              price: formatCurrency(summary.sub.priceGross || 299, locale),
+                              price: formatCurrency(
+                                summary.sub.priceGross ||
+                                  getTeacherPlan(summary.sub.planKey).priceGross,
+                                locale,
+                              ),
                             }),
                             href: '/teacher/subscription/upgrade',
                           }
-                        : summary.sub.status === 'active' && summary.sub.planKey === 'teacher_299'
+                        : summary.sub.status === 'active' &&
+                            getTeacherPlan(summary.sub.planKey).rank === 1
                           ? { label: t('ctaUpgradePro'), href: '/teacher/subscription/upgrade' }
                           : summary.sub.status === 'past_due'
                             ? { label: t('ctaUpdatePayment'), href: '/teacher/resubscribe' }

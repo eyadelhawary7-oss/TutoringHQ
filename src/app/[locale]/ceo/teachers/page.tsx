@@ -188,8 +188,9 @@ export default function CeoTeachersPage() {
   }, [fetchData]);
 
   const tierLabel = (planKey: string | null): string => {
-    if (planKey === 'teacher_299') return t('tiers.standard');
-    if (planKey === 'teacher_699') return t('tiers.pro');
+    if (planKey === 'teacher_standard') return t('tiers.standard');
+    if (planKey === 'teacher_pro') return t('tiers.pro');
+    if (planKey === 'teacher_scale') return t('tiers.scale');
     return tCommon('notSet');
   };
 
@@ -453,6 +454,7 @@ export default function CeoTeachersPage() {
             { label: t('cards.freePlan'), value: formatNumber(sum.notSet, locale) },
             { label: t('tiers.standard'), value: formatNumber(sum.standard, locale) },
             { label: t('tiers.pro'), value: formatNumber(sum.pro, locale) },
+            { label: t('tiers.scale'), value: formatNumber(sum.scale, locale) },
           ]}
         />
         <FilterBar

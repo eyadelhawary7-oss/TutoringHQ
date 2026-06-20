@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherAuth } from '@/lib/centerAuth';
 import { isFeatureEnabled } from '@/lib/features';
+import { DEFAULT_TEACHER_PLAN_KEY, getTeacherPlan } from '@/lib/teacherPlans';
 
 const ROUTE_TAG = 'api/teacher/subscription/status';
 
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
   const proPlan = ((proRow as { value?: PlanConfig } | null)?.value ?? {}) as PlanConfig;
   const stdPrice = Number(stdPlan.price_gross ?? 0);
   const proPrice = Number(proPlan.price_gross ?? 0);
-  const defaultPlanKey = String(stdPlan.plan_key ?? 'teacher_299');
+  const defaultPlanKey = String(stdPlan.plan_key ?? DEFAULT_TEACHER_PLAN_KEY);
 
   const { data: profileRow, error: profileErr } = await auth.supabaseAdmin
     .from('teacher_profiles')
@@ -108,7 +109,14 @@ export async function GET(request: NextRequest) {
     free_months_credit: number | null;
   };
 
-  const priceGross = sub.plan_key === 'teacher_699' ? proPrice : stdPrice;
+  // Std/Pro prices come from platform_config; any other tier (e.g. Scale) reads
+  // the source-of-truth module price.
+  const priceGross =
+    getTeacherPlan(sub.plan_key).rank === 1
+      ? stdPrice
+      : sub.plan_key === 'teacher_pro'
+        ? proPrice
+        : getTeacherPlan(sub.plan_key).priceGross;
 
   return NextResponse.json({
     has_subscription: true,
