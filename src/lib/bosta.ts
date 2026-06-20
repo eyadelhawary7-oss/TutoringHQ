@@ -96,7 +96,7 @@ export async function createBostaDelivery(payload: BostaCreatePayload): Promise<
           itemsCount: payload.quantity,
         },
         receiver: {
-          name: 'CenterHQ Customer',
+          name: 'TutoringHQ Customer',
           phone: payload.centerPhone.replace(/[^0-9]/g, ''),
           address: {
             firstLine: payload.centerAddress,

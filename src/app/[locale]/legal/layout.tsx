@@ -3,7 +3,7 @@ import { Link } from '@/i18n/routing';
 import { getLocale } from 'next-intl/server';
 
 /**
- * Minimal public chrome for /legal/* documents: CenterHQ wordmark (links home)
+ * Minimal public chrome for /legal/* documents: TutoringHQ wordmark (links home)
  * and a footer linking the four legal pages. No full app nav. Cream surface to
  * match the rest of the public marketing surfaces.
  */
@@ -17,8 +17,8 @@ export default async function LegalLayout({ children }: { children: ReactNode })
     cookie: isAr ? 'سياسة الكوكيز' : 'Cookie Policy',
     dpa: isAr ? 'اتفاقية معالجة البيانات' : 'Data Processing Agreement',
     rights: isAr
-      ? '© CenterHQ. جميع الحقوق محفوظة.'
-      : '© CenterHQ. All rights reserved.',
+      ? '© TutoringHQ. جميع الحقوق محفوظة.'
+      : '© TutoringHQ. All rights reserved.',
   };
 
   return (

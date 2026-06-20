@@ -76,8 +76,8 @@ export async function generateMetadata({
   return {
     metadataBase: new URL('https://centerhq.app'),
     title: {
-      template: '%s | CenterHQ',
-      default: 'CenterHQ – نظام إدارة السنترات التعليمية',
+      template: '%s | TutoringHQ',
+      default: 'TutoringHQ – نظام إدارة السنترات التعليمية',
     },
     description,
     keywords: [
@@ -88,22 +88,22 @@ export async function generateMetadata({
       'tutoring center management Egypt',
       'center management system',
       'QR system for centers',
-      'CenterHQ',
+      'TutoringHQ',
     ],
     alternates: {
       canonical: '/',
     },
     openGraph: {
-      title: 'CenterHQ – نظام إدارة السنترات التعليمية',
+      title: 'TutoringHQ – نظام إدارة السنترات التعليمية',
       description,
       url: 'https://centerhq.app',
-      siteName: 'CenterHQ',
+      siteName: 'TutoringHQ',
       locale: isAr ? 'ar_EG' : 'en_US',
       type: 'website',
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'CenterHQ – نظام إدارة السنترات التعليمية',
+      title: 'TutoringHQ – نظام إدارة السنترات التعليمية',
       description,
     },
     robots: {
@@ -114,7 +114,7 @@ export async function generateMetadata({
     appleWebApp: {
       capable: true,
       statusBarStyle: 'black-translucent',
-      title: 'CenterHQ',
+      title: 'TutoringHQ',
     },
     icons: {
       apple: '/icons/icon-192.png',

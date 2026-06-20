@@ -21,7 +21,7 @@ const ar = JSON.parse(readFileSync(join(root, 'messages/ar.json'), 'utf8'));
 forceSet(en, {
   charts: {
     noData: 'No data yet',
-    noDataSub: 'Data will appear here once centers start using CenterHQ',
+    noDataSub: 'Data will appear here once centers start using TutoringHQ',
     vsLastMonth: 'vs last month',
     vsLastWeek: 'vs last week',
     mrrOverTime: 'Revenue Over Time',
@@ -51,7 +51,7 @@ forceSet(en, {
 forceSet(ar, {
   charts: {
     noData: 'لا توجد بيانات بعد',
-    noDataSub: 'ستظهر البيانات هنا عندما تبدأ السناتر باستخدام CenterHQ',
+    noDataSub: 'ستظهر البيانات هنا عندما تبدأ السناتر باستخدام TutoringHQ',
     vsLastMonth: 'مقارنة بالشهر الماضي',
     vsLastWeek: 'مقارنة بالأسبوع الماضي',
     mrrOverTime: 'الإيرادات عبر الزمن',

@@ -667,7 +667,7 @@ export function AdminSidebar({
         <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
           <Image
             src="/logo-icon.png"
-            alt="CenterHQ"
+            alt="TutoringHQ"
             width={28}
             height={28}
             className="w-7 h-7 rounded-lg shrink-0 object-contain"

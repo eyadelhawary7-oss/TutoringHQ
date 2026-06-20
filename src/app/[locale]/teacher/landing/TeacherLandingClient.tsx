@@ -58,7 +58,7 @@ export default function TeacherLandingClient() {
             <Link
               href="/"
               className="text-lg tracking-tight btn-press chq-focus rounded-lg"
-              aria-label="CenterHQ"
+              aria-label="TutoringHQ"
               style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}
             >
               <span style={{ color: 'var(--color-text-primary)' }}>CENTER</span>

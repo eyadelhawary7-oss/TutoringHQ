@@ -158,7 +158,7 @@ export async function POST(request: Request) {
     .join(', ');
 
   const message =
-    `[CenterHQ PAYMENT ALERT] ` +
+    `[TutoringHQ PAYMENT ALERT] ` +
     `${formatNumber(alertList.length, 'ar')} فاتورة متأخرة بدون دفع. ` +
     `المراكز: ${centerList}. ` +
     `تحقق من Paymob dashboard.`;

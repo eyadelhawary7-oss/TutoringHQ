@@ -63,7 +63,7 @@ export default function NotFound() {
         <a
           href={`/${locale}`}
           className="mx-auto inline-flex items-center gap-2 chq-focus rounded-lg"
-          aria-label="CenterHQ"
+          aria-label="TutoringHQ"
         >
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-600 text-sm font-bold text-white">
             CH

@@ -56,13 +56,13 @@ export async function notifyCheckoutSuccessOwnerOnce(
   const shortId = String(orderId).replace(/-/g, '').slice(0, 8).toUpperCase();
 
   const lines = [
-    `✅ CenterHQ, تم تأكيد دفع طلب البطاقات`,
+    `✅ TutoringHQ, تم تأكيد دفع طلب البطاقات`,
     `المركز: ${centerName}`,
     `رقم الطلب: ${shortId}`,
     `الكمية: ${qty} بطاقة`,
     `الإجمالي: ${Number.isFinite(total) ? total.toFixed(2) : ','} ج.م`,
     '',
-    `✅ CenterHQ, Card order payment confirmed`,
+    `✅ TutoringHQ, Card order payment confirmed`,
     `Centre: ${centerName}`,
     `Order ref: ${shortId}`,
     `Qty: ${qty} cards`,

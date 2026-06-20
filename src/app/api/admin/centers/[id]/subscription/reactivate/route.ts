@@ -75,7 +75,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       await sendFreeformMessage(
         centerId,
         phone,
-        `أخبار سارة${name ? ` ${name}` : ''}: تم تفعيل اشتراككم على CenterHQ من قبل الدعم. يمكنكم المتابعة استخدام المنصة.`,
+        `أخبار سارة${name ? ` ${name}` : ''}: تم تفعيل اشتراككم على TutoringHQ من قبل الدعم. يمكنكم المتابعة استخدام المنصة.`,
       );
     } catch {
       /* non-fatal */

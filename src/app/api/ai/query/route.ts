@@ -8,7 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { parseBodyWithLimit } from '@/lib/validate';
 
-const SYSTEM_PROMPT = `You are a data assistant for an Egyptian tutoring center management platform called CenterHQ.
+const SYSTEM_PROMPT = `You are a data assistant for an Egyptian tutoring center management platform called TutoringHQ.
 The user asks questions in Arabic or English about their center's data.
 You must respond ONLY with valid JSON (no markdown, no explanation outside JSON):
 { "sql": "SELECT ...", "explanation_ar": "Arabic explanation of what you searched" }

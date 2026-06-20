@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     const checkout = await createPaymobCheckoutEgp({
       amountEgp: priceGross,
       merchantOrderId: `teacher-upgrade-${sessionRowId}`,
-      itemName: 'CenterHQ Teacher Pro',
+      itemName: 'TutoringHQ Teacher Pro',
       phoneDigits,
       displayName,
     });

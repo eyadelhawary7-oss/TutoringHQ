@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
   const levelEmoji = level === 'FATAL' ? '🔴' : level === 'ERROR' ? '🟠' : '🟡';
 
   const lines: string[] = [
-    `${levelEmoji} *CenterHQ Alert*`,
+    `${levelEmoji} *TutoringHQ Alert*`,
     '',
     `*${level}*, ${title}`,
   ];

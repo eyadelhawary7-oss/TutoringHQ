@@ -55,7 +55,7 @@ export default function SuspendedPage() {
   };
 
   const waMessage = isPaymentOverdue
-    ? t('paymentOverdueWhatsapp', { defaultValue: 'I would like to pay my CenterHQ subscription' })
+    ? t('paymentOverdueWhatsapp', { defaultValue: 'I would like to pay my TutoringHQ subscription' })
     : isCenterSuspended
       ? t('centerSuspendedWhatsappMessage')
       : t('whatsappMessage');

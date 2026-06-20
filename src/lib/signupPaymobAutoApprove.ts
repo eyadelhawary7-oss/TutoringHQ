@@ -63,9 +63,9 @@ function inferPendingSignupWaLocale(c: {
 function pendingPaymentConfirmationBody(ownerName: string, locale: 'ar' | 'en'): string {
   const name = ownerName.trim() || (locale === 'ar' ? 'عميلنا العزيز' : 'there');
   if (locale === 'ar') {
-    return `مرحباً ${name}! تلقينا طلبك وتم استلام الدفع بنجاح. سيتم مراجعة طلبك وتفعيل حسابك خلال ساعات قليلة. شكراً لاختيارك CenterHQ.`;
+    return `مرحباً ${name}! تلقينا طلبك وتم استلام الدفع بنجاح. سيتم مراجعة طلبك وتفعيل حسابك خلال ساعات قليلة. شكراً لاختيارك TutoringHQ.`;
   }
-  return `Hi ${name}! We received your application and payment. Your account will be reviewed and activated within a few hours. Thank you for choosing CenterHQ.`;
+  return `Hi ${name}! We received your application and payment. Your account will be reviewed and activated within a few hours. Thank you for choosing TutoringHQ.`;
 }
 
 /**

@@ -763,13 +763,13 @@ export default function StudentsPage() {
       </head>
       <body>
         <div class="card">
-          <div class="top-bar">${logoHtml}<span class="center-name">${esc(centerInfo?.name || 'CenterHQ')}</span></div>
+          <div class="top-bar">${logoHtml}<span class="center-name">${esc(centerInfo?.name || 'TutoringHQ')}</span></div>
           <div class="center">
             <div class="qr-wrap"><img src="${qrDataUrl}" alt="QR" /></div>
             <div class="name">${esc(qrModalStudent.name)}</div>
             <div class="num">${esc(formatStudentNumberForDisplay(qrModalStudent.student_number))}</div>
           </div>
-          <div class="bottom">CenterHQ</div>
+          <div class="bottom">TutoringHQ</div>
         </div>
       </body></html>
     `);
@@ -2115,7 +2115,7 @@ export default function StudentsPage() {
                   student={qrModalStudent}
                   qrDataUrl={qrDataUrl}
                   centerLogo={centerInfo?.logo_url ?? null}
-                  centerName={centerInfo?.name ?? 'CenterHQ'}
+                  centerName={centerInfo?.name ?? 'TutoringHQ'}
                   scale={1.2}
                   variant="preview"
                 />

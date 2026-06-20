@@ -11,8 +11,8 @@ export async function generateMetadata({
   const isAr = locale === 'ar';
   return {
     title: isAr
-      ? 'إشعارات واتساب لأولياء الأمور | CenterHQ'
-      : 'WhatsApp Notifications for Parents | CenterHQ',
+      ? 'إشعارات واتساب لأولياء الأمور | TutoringHQ'
+      : 'WhatsApp Notifications for Parents | TutoringHQ',
     description: isAr
       ? 'أرسل إشعارات واتساب تلقائية لأولياء الأمور عند حضور أو غياب أبنائهم.'
       : 'Send automatic WhatsApp messages to parents when students attend or miss class.',

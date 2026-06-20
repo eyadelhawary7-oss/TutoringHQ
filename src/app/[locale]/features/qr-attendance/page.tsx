@@ -11,8 +11,8 @@ export async function generateMetadata({
   const isAr = locale === 'ar';
   return {
     title: isAr
-      ? 'نظام حضور QR للسنترات التعليمية | CenterHQ'
-      : 'QR Attendance System for Tutoring Centers | CenterHQ',
+      ? 'نظام حضور QR للسنترات التعليمية | TutoringHQ'
+      : 'QR Attendance System for Tutoring Centers | TutoringHQ',
     description: isAr
       ? 'سجّل حضور الطلاب بمسح QR في ثوانٍ. إشعارات واتساب فورية لأولياء الأمور.'
       : 'Scan student QR codes in seconds. Instant WhatsApp notifications to parents.',

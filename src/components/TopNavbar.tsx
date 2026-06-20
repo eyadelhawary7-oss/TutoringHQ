@@ -127,10 +127,10 @@ export default function TopNavbar() {
         {user?.center?.logo_url ? (
           <img src={user.center.logo_url} alt={centerName} className="h-8 w-8 rounded-lg object-contain" />
         ) : (
-          <Image src="/logo-icon.png" alt="CenterHQ" width={32} height={32} className="w-8 h-8 rounded-lg shrink-0 object-contain" />
+          <Image src="/logo-icon.png" alt="TutoringHQ" width={32} height={32} className="w-8 h-8 rounded-lg shrink-0 object-contain" />
         )}
         <Link href={isSuperAdminOnly ? '/admin' : '/dashboard'} className="text-base font-bold text-[var(--text-primary)] truncate hidden sm:inline">
-          CenterHQ
+          TutoringHQ
         </Link>
       </div>
 

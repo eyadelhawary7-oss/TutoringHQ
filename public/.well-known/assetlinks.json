@@ -3,7 +3,7 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "app.centerhq",
+      "package_name": "app.tutoringhq",
       "sha256_cert_fingerprints": [
         "REPLACE_ME__PUT_THE_RELEASE_SIGNING_SHA256_FINGERPRINT_HERE__SEE_README_IN_THIS_FOLDER"
       ]

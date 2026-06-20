@@ -1089,7 +1089,7 @@ export default function DashboardPage() {
               {t(greetingKey)}
               {greetingComma}
               <span className="whitespace-nowrap">
-                <bdi dir="auto">{centerBilling?.name ?? 'CenterHQ'}</bdi>
+                <bdi dir="auto">{centerBilling?.name ?? 'TutoringHQ'}</bdi>
               </span>
             </h1>
             <span

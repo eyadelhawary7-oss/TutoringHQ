@@ -113,10 +113,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
         merchant_order_id: row.id,
         items: [
           {
-            name: 'CenterHQ Subscription',
+            name: 'TutoringHQ Subscription',
             amount_cents: amountCents,
             quantity: 1,
-            description: 'CenterHQ Subscription',
+            description: 'TutoringHQ Subscription',
           },
         ],
       }),

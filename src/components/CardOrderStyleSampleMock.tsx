@@ -99,7 +99,7 @@ export function CardOrderStyleSampleMock({
         </g>
       </g>
       <text x="135" y="162" textAnchor="middle" fill={subtext} fontSize="8" fontFamily="system-ui, sans-serif">
-        Powered by CenterHQ
+        Powered by TutoringHQ
       </text>
       <SampleWatermark textColor={wmColor} />
     </svg>

@@ -1,6 +1,6 @@
 import LegalDoc from '../LegalDoc';
 
-export const metadata = { title: 'Terms and Conditions - CenterHQ' };
+export const metadata = { title: 'Terms and Conditions - TutoringHQ' };
 
 export default function LegalTermsPage() {
   return (

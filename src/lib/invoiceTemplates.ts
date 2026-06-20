@@ -544,7 +544,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
   } else if (invoiceType === 'signup_first_payment') {
     const renew = inv.billing_period_end ? fmtDateAr(String(inv.billing_period_end)) : ',';
     contextBanner = `<div style="background:#042f2e;border-right:3px solid #0D9488;padding:10px 12px;margin-bottom:16px;border-radius:4px;">
-      <div style="color:#f8fafc;font-weight:700;font-size:13px;">مرحباً بك في CenterHQ.</div>
+      <div style="color:#f8fafc;font-weight:700;font-size:13px;">مرحباً بك في TutoringHQ.</div>
       <div style="color:#cbd5e1;font-size:12px;">حسابك نشط الآن. التجديد القادم: ${esc(renew)}. ستصلك رسالة تذكير قبل 7 أيام.</div>
     </div>`;
   } else if (invoiceType === 'late_payment_fee') {
@@ -993,7 +993,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     )}
     ${dividerSolid()}
     ${totalsRowBold('صافي المدفوع', `${fmtMoney(total)} EGP`)}
-    ${taxNoteRow('لا ضريبة قيمة مضافة او رسوم خدمة - هذا دفع عمولات من CenterHQ.')}`;
+    ${taxNoteRow('لا ضريبة قيمة مضافة او رسوم خدمة - هذا دفع عمولات من TutoringHQ.')}`;
   } else if (invoiceType === 'payment_proof') {
     showTaxBox = false;
     const refInv = String(meta.reference_invoice_number ?? payRef ?? ',');
@@ -1076,7 +1076,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
   ${typeSpecificSidebar}
   <div style="border-top:1px solid #1e293b;margin:16px 0;"></div>
   <div class="meta-label" style="color:#64748b;font-size:11px;margin-top:10px;">من</div>
-  <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">CenterHQ</div>
+  <div class="meta-value" style="color:#f8fafc;font-size:13px;font-weight:600;">TutoringHQ</div>
   <div class="meta-value" style="color:#64748b;font-size:11px;">منتج EHG Intelligence</div>
   ${paymentMethodBlock}
   ${stamp}
@@ -1101,7 +1101,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
   ${totalsSection}
   ${taxBoxFinal}
   <div class="footer" style="border-top:1px solid #1e293b;padding-top:12px;margin-top:16px;display:flex;justify-content:space-between;color:#64748b;font-size:11px;flex-wrap:wrap;gap:8px;">
-    <span>CenterHQ · centerhq.app · An EHG Intelligence Product</span>
+    <span>TutoringHQ · centerhq.app · An EHG Intelligence Product</span>
     <span>${esc(pageLabel)}</span>
   </div>
   ${referralHtml}

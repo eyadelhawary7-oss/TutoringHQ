@@ -87,7 +87,7 @@ export async function exportToExcel(students: StudentExport[], filename?: string
   }
 
   const buf = await wb.xlsx.writeBuffer();
-  triggerBrowserDownload(buf, filename || `CenterHQ_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  triggerBrowserDownload(buf, filename || `TutoringHQ_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
 
 export interface DashboardExportData {
@@ -177,7 +177,7 @@ export async function buildDashboardExcelBuffer(data: DashboardExportData): Prom
 }
 
 export async function exportDashboardToExcel(data: DashboardExportData): Promise<void> {
-  const filename = `CenterHQ_Export_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  const filename = `TutoringHQ_Export_${new Date().toISOString().slice(0, 10)}.xlsx`;
   const buf = await buildDashboardExcelBuffer(data);
   triggerBrowserDownload(buf, filename);
 }
@@ -217,5 +217,5 @@ export async function exportPaymentsToExcel(records: PaymentExportRecord[], file
   if (amt > 0) ws.getColumn(amt).numFmt = '#,##0';
 
   const buf = await wb.xlsx.writeBuffer();
-  triggerBrowserDownload(buf, filename || `CenterHQ_Payments_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  triggerBrowserDownload(buf, filename || `TutoringHQ_Payments_${new Date().toISOString().slice(0, 10)}.xlsx`);
 }

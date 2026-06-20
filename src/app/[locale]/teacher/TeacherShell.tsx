@@ -49,7 +49,7 @@ export default function TeacherShell({
           sidebar). */}
       <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-4 md:hidden">
         <div className="flex items-baseline gap-2">
-          <span className="font-bold text-[var(--color-text-primary)]">CenterHQ</span>
+          <span className="font-bold text-[var(--color-text-primary)]">TutoringHQ</span>
           <span className="text-sm text-[var(--color-text-muted)]">{t('headerTitle')}</span>
         </div>
         <button
