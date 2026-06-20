@@ -741,7 +741,7 @@ export default function StudentsPage() {
     const esc = (s: string) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     const logoHtml = centerInfo?.logo_url
       ? `<img src="${esc(centerInfo.logo_url)}" alt="" style="height:7mm;width:auto;max-width:12mm;object-fit:contain" />`
-      : '<div style="height:7mm;width:7mm;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:4px;font-weight:800">CH</div>';
+      : '';
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
     printWindow.document.write(`

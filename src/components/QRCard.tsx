@@ -60,15 +60,7 @@ export function QRCard({
       >
         {centerLogo ? (
           <img src={centerLogo} alt="" className="h-8 w-8 object-contain rounded shrink-0" />
-        ) : (
-          <div
-            className={`h-8 w-8 rounded flex items-center justify-center shrink-0 ${
-              isPreview ? 'bg-teal-600' : 'bg-[var(--color-surface-1)]/20'
-            }`}
-          >
-            <span className={`text-xs font-bold ${isPreview ? 'text-white' : 'text-white'}`}>CH</span>
-          </div>
-        )}
+        ) : null}
         <span
           className={`text-[11px] font-medium truncate max-w-[45mm] ${
             isPreview ? 'text-[var(--color-text-primary)]' : 'text-white'

@@ -61,7 +61,7 @@ export default function TeacherLandingClient() {
               aria-label="TutoringHQ"
               style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}
             >
-              <span style={{ color: 'var(--color-text-primary)' }}>CENTER</span>
+              <span style={{ color: 'var(--color-text-primary)' }}>Tutoring</span>
               <span style={{ color: 'var(--color-teal)' }}>HQ</span>
             </Link>
 

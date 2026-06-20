@@ -1062,7 +1062,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
 
   const sidebar = `<div class="sidebar" style="width:260px;flex-shrink:0;background:#08101e;padding:24px;display:flex;flex-direction:column;min-height:297mm;box-sizing:border-box;">
   <div class="wordmark">
-    <span style="color:#f8fafc;font-family:'Bodoni Moda',serif;font-size:22px;font-weight:700;">CENTER</span><span style="color:#0D9488;font-family:'Bodoni Moda',serif;font-size:22px;font-weight:700;">HQ</span>
+    <span style="color:#f8fafc;font-family:'Bodoni Moda',serif;font-size:22px;font-weight:700;">Tutoring</span><span style="color:#0D9488;font-family:'Bodoni Moda',serif;font-size:22px;font-weight:700;">HQ</span>
   </div>
   <div class="wordmark-sub" style="color:#64748b;font-size:11px;margin-top:2px;">إدارة ذكية للسناتر التعليمية</div>
   <div style="border-top:1px solid #1e293b;margin:16px 0;"></div>

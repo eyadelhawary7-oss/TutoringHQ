@@ -29,7 +29,7 @@ export default function SplashClient() {
       {/* Top bar: wordmark + locale toggle */}
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 py-5 md:px-6">
         <span className="text-lg tracking-tight" style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}>
-          <span style={{ color: 'var(--color-text-primary)' }}>CENTER</span>
+          <span style={{ color: 'var(--color-text-primary)' }}>Tutoring</span>
           <span style={{ color: 'var(--color-teal)' }}>HQ</span>
         </span>
         <Link

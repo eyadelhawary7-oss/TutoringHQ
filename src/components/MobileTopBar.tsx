@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useLocale } from 'next-intl';
 import { useTransition } from 'react';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
@@ -63,10 +62,8 @@ export default function MobileTopBar({ openMenu, setOpenMenu }: MobileTopBarProp
       >
         {user?.center?.logo_url ? (
           <img src={user.center.logo_url} alt={centerName} className="w-7 h-7 rounded-lg object-contain shrink-0" />
-        ) : (
-          <Image src="/logo-icon.png" alt="TutoringHQ" width={28} height={28} className="w-7 h-7 rounded-lg shrink-0 object-contain" />
-        )}
-        <span className="font-bold text-sm text-[var(--color-text-primary)]">CENTER</span>
+        ) : null}
+        <span className="font-bold text-sm text-[var(--color-text-primary)]">Tutoring</span>
         <span className="font-bold text-sm text-[var(--color-teal)]">HQ</span>
       </Link>
 

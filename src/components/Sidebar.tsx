@@ -210,16 +210,12 @@ export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarPr
           >
             {user?.center?.logo_url ? (
               <img src={user.center.logo_url} alt={centerName} className="w-9 h-9 rounded-lg shrink-0 object-contain" />
-            ) : (
-              <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center shrink-0">
-                <span className="text-primary-foreground font-bold text-sm">CH</span>
-              </div>
-            )}
+            ) : null}
             <span
               className="text-lg tracking-tight truncate"
               style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}
             >
-              <span className="text-[var(--color-text-primary)]">CENTER</span>
+              <span className="text-[var(--color-text-primary)]">Tutoring</span>
               <span className="text-teal-600">HQ</span>
             </span>
           </Link>

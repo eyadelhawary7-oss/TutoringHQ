@@ -73,20 +73,6 @@ function FrameWrap({ children }: { children: React.ReactNode }) {
       <div style={{ position: 'absolute', top: '16px', insetInlineEnd: '16px' }}>
         <PublicLocaleToggle />
       </div>
-      <div
-        style={{
-          width: '56px',
-          height: '56px',
-          border: '2px solid var(--color-teal)',
-          borderRadius: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: '12px',
-        }}
-      >
-        <span style={{ ...PLAYFAIR, color: 'var(--color-teal)', fontWeight: 900, fontSize: '18px' }}>CH</span>
-      </div>
       <div style={{ marginBottom: '44px' }}>
         <span
           style={{
@@ -96,7 +82,7 @@ function FrameWrap({ children }: { children: React.ReactNode }) {
             fontSize: '14px',
           }}
         >
-          <span style={{ color: 'var(--color-text-primary)' }}>CENTER</span>
+          <span style={{ color: 'var(--color-text-primary)' }}>Tutoring</span>
           <span style={{ color: 'var(--color-teal)' }}>HQ</span>
         </span>
       </div>

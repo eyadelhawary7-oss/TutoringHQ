@@ -53,9 +53,6 @@ export function PWAInstallBanner() {
       className="chq-slide-up fixed bottom-20 sm:bottom-4 start-4 end-4 sm:start-auto sm:end-4 sm:w-80 z-50 bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-2xl p-4 shadow-2xl"
     >
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 bg-teal-600 rounded-xl flex items-center justify-center shrink-0">
-          <span className="text-white font-bold text-sm">CH</span>
-        </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-[var(--color-text-primary)]">{t('installTitle')}</p>
           <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{t('installSubtitle')}</p>

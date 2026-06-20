@@ -33,7 +33,7 @@ export default async function LegalLayout({ children }: { children: ReactNode })
             className="text-lg font-bold tracking-wide"
             style={{ fontFamily: 'var(--font-bodoni)', letterSpacing: '1.5px' }}
           >
-            <span className="text-[var(--color-text-primary)]">CENTER</span>
+            <span className="text-[var(--color-text-primary)]">Tutoring</span>
             <span className="text-[var(--color-teal-deep)]">HQ</span>
           </Link>
         </div>

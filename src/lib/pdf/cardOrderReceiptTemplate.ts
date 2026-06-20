@@ -86,7 +86,7 @@ export function buildCardOrderReceiptInnerHtml(model: CardOrderReceiptModel): st
   const legal = buildLegalInvoiceLines(model.productInclusive, 'ar');
   const logo = model.logoUrl
     ? `<img src="${esc(model.logoUrl)}" alt="TutoringHQ" style="height:40px;margin-bottom:12px;display:block;" />`
-    : `<div style="font-family:'Bodoni Moda',serif;font-size:22px;font-weight:600;color:${NAVY};">CENTER<span style="color:${TEAL};font-style:italic;">HQ</span></div>`;
+    : `<div style="font-family:'Bodoni Moda',serif;font-size:22px;font-weight:600;color:${NAVY};">Tutoring<span style="color:${TEAL};font-style:italic;">HQ</span></div>`;
 
   const refundBlock =
     model.refundStatus != null && model.refundStatus !== ''

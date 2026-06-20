@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -107,9 +106,7 @@ export default function Navbar() {
           <div className="flex-shrink-0 flex items-center gap-2">
             {user?.center?.logo_url ? (
               <img src={user.center.logo_url} alt={centerName} className="h-10 w-auto object-contain" />
-            ) : (
-              <Image src="/logo-icon.png" alt="TutoringHQ" width={40} height={40} className="w-10 h-10 rounded-xl shrink-0 object-contain" />
-            )}
+            ) : null}
             <Link href={isSuperAdminOnly ? '/admin' : '/dashboard'} className="text-lg font-bold text-text-primary truncate" onClick={() => setMenuOpen(false)}>
               TutoringHQ
             </Link>

@@ -27,7 +27,7 @@ function Chrome({ locale, children }: { locale: string; children: React.ReactNod
     >
       <header className="flex items-center justify-center border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-4 py-3">
         <span className="text-base font-bold tracking-wide">
-          <span className="text-[var(--color-text-primary)]">Center</span>
+          <span className="text-[var(--color-text-primary)]">Tutoring</span>
           <span className="text-[var(--color-teal)]">HQ</span>
         </span>
       </header>
