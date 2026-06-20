@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
       );
     }
     centerId = group.center_id;
-    subject = (group.subject ?? '').trim().slice(0, 120) || '—';
+    subject = (group.subject ?? '').trim().slice(0, 120);
     gradeLevel = null;
     fee = groupFee;
   } else {

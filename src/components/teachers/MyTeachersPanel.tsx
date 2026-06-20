@@ -115,7 +115,7 @@ export default function MyTeachersPanel({
               >
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-bold text-[var(--color-text-primary)]">
-                    {tc.name ?? '—'}
+                    {tc.name ?? t('noValue')}
                   </span>
                   {tc.subject && (
                     <span className="block truncate text-xs text-[var(--color-text-muted)]">
@@ -156,16 +156,16 @@ export default function MyTeachersPanel({
                         >
                           <span className="min-w-0">
                             <span className="block truncate text-sm font-medium text-[var(--color-text-primary)]">
-                              {g.name ?? '—'}
+                              {g.name ?? t('noValue')}
                             </span>
                             <span className="block truncate text-xs text-[var(--color-text-muted)]">
-                              {g.subject ?? '—'} · {t('students')}:{' '}
+                              {g.subject ?? t('noValue')} · {t('students')}:{' '}
                               {formatNumber(g.studentCount, locale)}
                             </span>
                           </span>
                           <span className="shrink-0 text-end">
                             <span className="block font-mono text-xs text-[var(--color-text-primary)]">
-                              {g.feePerClass != null ? formatCurrency(g.feePerClass, locale) : '—'}{' '}
+                              {g.feePerClass != null ? formatCurrency(g.feePerClass, locale) : t('noValue')}{' '}
                               <span className="text-[var(--color-text-muted)]">/ {t('perLesson')}</span>
                             </span>
                             <span className="block font-mono text-xs text-[var(--color-text-muted)]">
