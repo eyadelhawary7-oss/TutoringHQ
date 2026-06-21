@@ -57,7 +57,7 @@ export async function createPaymobCheckoutEgp(params: {
           name: params.itemName.slice(0, 120),
           amount_cents: amountCents,
           quantity: 1,
-          description: 'CenterHQ',
+          description: 'TutoringHQ',
         },
       ],
     }),

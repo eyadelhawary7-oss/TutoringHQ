@@ -10,7 +10,7 @@ export async function generateMetadata({
   const { locale } = await params;
   const isAr = locale === 'ar';
   return {
-    title: isAr ? 'المدونة | CenterHQ' : 'Blog | CenterHQ',
+    title: isAr ? 'المدونة | TutoringHQ' : 'Blog | TutoringHQ',
     description: isAr
       ? 'نصائح وأدوات لإدارة السنترات التعليمية في مصر.'
       : 'Tips and tools for running tutoring centers in Egypt.',

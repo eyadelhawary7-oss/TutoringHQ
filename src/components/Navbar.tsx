@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -107,11 +106,9 @@ export default function Navbar() {
           <div className="flex-shrink-0 flex items-center gap-2">
             {user?.center?.logo_url ? (
               <img src={user.center.logo_url} alt={centerName} className="h-10 w-auto object-contain" />
-            ) : (
-              <Image src="/logo-icon.png" alt="CenterHQ" width={40} height={40} className="w-10 h-10 rounded-xl shrink-0 object-contain" />
-            )}
+            ) : null}
             <Link href={isSuperAdminOnly ? '/admin' : '/dashboard'} className="text-lg font-bold text-text-primary truncate" onClick={() => setMenuOpen(false)}>
-              CenterHQ
+              TutoringHQ
             </Link>
           </div>
 
@@ -201,7 +198,7 @@ export default function Navbar() {
           />
           <div className="fixed start-0 end-0 top-0 z-50 md:hidden bg-bg-primary border-b border-[var(--color-border-subtle)] shadow-lg max-h-screen overflow-y-auto">
             <div className="flex justify-between items-center h-14 px-4 border-b border-[var(--color-border-subtle)]">
-              <span className="text-lg font-bold text-text-primary">CenterHQ</span>
+              <span className="text-lg font-bold text-text-primary">TutoringHQ</span>
               <button
                 type="button"
                 onClick={() => setMenuOpen(false)}

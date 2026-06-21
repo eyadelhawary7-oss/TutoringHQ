@@ -103,7 +103,7 @@ export function AdminHeader() {
           className="text-lg"
           style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}
         >
-          <span className="text-[var(--color-text-primary)]">CENTER</span>
+          <span className="text-[var(--color-text-primary)]">Tutoring</span>
           <span className="text-teal-600">HQ</span>
         </span>
         <div className="flex items-center gap-3">

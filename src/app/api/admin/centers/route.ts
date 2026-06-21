@@ -963,7 +963,7 @@ export async function PUT(request: Request) {
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://centerhq.app';
-    const credentialsMessage = `تم تفعيل حسابك في CenterHQ! 🎉
+    const credentialsMessage = `تم تفعيل حسابك في TutoringHQ! 🎉
 
 🔐 بيانات الدخول:
 📱 رقم الهاتف: ${phone}
@@ -972,7 +972,7 @@ export async function PUT(request: Request) {
 🌐 رابط الدخول:
 ${appUrl}/login
 
-مرحباً بك في CenterHQ! 💙`;
+مرحباً بك في TutoringHQ! 💙`;
 
     return NextResponse.json({
       success: true,

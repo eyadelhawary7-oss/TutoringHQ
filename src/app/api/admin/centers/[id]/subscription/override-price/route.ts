@@ -91,7 +91,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       await sendFreeformMessage(
         centerId,
         phone,
-        `تم تحديث تسعيرة اشتراككم على CenterHQ من قبل الإدارة${name ? ` (${name})` : ''}. للاستفسار تواصلوا مع الدعم.`,
+        `تم تحديث تسعيرة اشتراككم على TutoringHQ من قبل الإدارة${name ? ` (${name})` : ''}. للاستفسار تواصلوا مع الدعم.`,
       );
     } catch {
       /* non-fatal */

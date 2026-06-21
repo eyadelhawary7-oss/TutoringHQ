@@ -10,11 +10,11 @@ export async function generateMetadata({
   const isAr = locale === 'ar';
   return {
     title: isAr
-      ? 'بديل الإكسيل لإدارة السنتر | CenterHQ'
-      : 'Spreadsheet Alternative for Tutoring Centers | CenterHQ',
+      ? 'بديل الإكسيل لإدارة السنتر | TutoringHQ'
+      : 'Spreadsheet Alternative for Tutoring Centers | TutoringHQ',
     description: isAr
-      ? 'لماذا السنترات الناجحة تتخلى عن الإكسيل وتستخدم CenterHQ.'
-      : 'Why successful tutoring centers ditch spreadsheets for CenterHQ.',
+      ? 'لماذا السنترات الناجحة تتخلى عن الإكسيل وتستخدم TutoringHQ.'
+      : 'Why successful tutoring centers ditch spreadsheets for TutoringHQ.',
     alternates: { canonical: '/compare/spreadsheets' },
   };
 }
@@ -23,11 +23,11 @@ type Row = { feature: string; sheets: string; chq: string };
 
 const CONTENT = {
   ar: {
-    pageTitle: 'CenterHQ مقابل الإكسيل والورق',
+    pageTitle: 'TutoringHQ مقابل الإكسيل والورق',
     heroSub:
-      'الإكسيل والورق يكفيان في البداية، لكن مع نمو السنتر تتحول إلى فوضى: بيانات متفرقة، أخطاء يدوية، وأهالي بلا متابعة. CenterHQ بُني خصيصاً للسنترات التعليمية في مصر.',
+      'الإكسيل والورق يكفيان في البداية، لكن مع نمو السنتر تتحول إلى فوضى: بيانات متفرقة، أخطاء يدوية، وأهالي بلا متابعة. TutoringHQ بُني خصيصاً للسنترات التعليمية في مصر.',
     colSheets: 'الإكسيل / الورق',
-    colChq: 'CenterHQ',
+    colChq: 'TutoringHQ',
     cta: 'ابدأ مجاناً الآن',
     tableHeading: 'المقارنة بالتفصيل',
     rows: [
@@ -64,11 +64,11 @@ const CONTENT = {
     ] as Row[],
   },
   en: {
-    pageTitle: 'CenterHQ vs. Spreadsheets & Paper',
+    pageTitle: 'TutoringHQ vs. Spreadsheets & Paper',
     heroSub:
-      'Spreadsheets and paper work at first, but as your center grows they turn into chaos: scattered data, manual mistakes, and parents left in the dark. CenterHQ is built specifically for tutoring centers in Egypt.',
+      'Spreadsheets and paper work at first, but as your center grows they turn into chaos: scattered data, manual mistakes, and parents left in the dark. TutoringHQ is built specifically for tutoring centers in Egypt.',
     colSheets: 'Spreadsheet / Paper',
-    colChq: 'CenterHQ',
+    colChq: 'TutoringHQ',
     cta: 'Start free now',
     tableHeading: 'Detailed comparison',
     rows: [

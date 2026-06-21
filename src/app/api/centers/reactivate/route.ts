@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
     const checkout = await createPaymobCheckoutEgp({
       amountEgp: finalFee,
       merchantOrderId: invoiceId,
-      itemName: 'CenterHQ reactivation',
+      itemName: 'TutoringHQ reactivation',
       phoneDigits: rawPhone,
       displayName: centerName,
     });

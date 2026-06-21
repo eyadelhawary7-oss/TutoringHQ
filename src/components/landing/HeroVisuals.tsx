@@ -330,7 +330,7 @@ export function HeroVisuals({ locale }: HeroVisualsProps) {
                     margin: 0,
                   }}
                 >
-                  CenterHQ
+                  TutoringHQ
                 </p>
                 <p style={{ fontSize: 6, color: '#b2dfdb', margin: 0 }}>
                   WhatsApp Business

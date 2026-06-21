@@ -163,7 +163,7 @@ export default function AcceptInvitePage() {
                   fontSize: '14px',
                 }}
               >
-                <span style={{ color: '#f8fafc' }}>CENTER</span>
+                <span style={{ color: '#f8fafc' }}>Tutoring</span>
                 <span style={{ color: '#0D9488' }}>HQ</span>
               </span>
               <p

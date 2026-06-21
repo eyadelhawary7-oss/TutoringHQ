@@ -195,7 +195,7 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
                 type: 'document',
                 document: {
                   link: signedUrl,
-                  filename: `CenterHQ-${ref}.pdf`,
+                  filename: `TutoringHQ-${ref}.pdf`,
                   caption: `ملف البطاقات | ${ref}`,
                 },
               }),

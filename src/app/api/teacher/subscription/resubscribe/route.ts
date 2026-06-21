@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     const checkout = await createPaymobCheckoutEgp({
       amountEgp: priceGross,
       merchantOrderId: `teacher-resub-${sessionRowId}`,
-      itemName: 'CenterHQ Teacher Subscription',
+      itemName: 'TutoringHQ Teacher Subscription',
       phoneDigits,
       displayName,
     });

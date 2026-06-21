@@ -81,7 +81,7 @@ export default async function PrintStudentsPage({
   return (
     <PrintClient
       students={studentList}
-      centerName={center?.name ?? 'CenterHQ'}
+      centerName={center?.name ?? 'TutoringHQ'}
       centerPhone={center?.phone ?? ''}
       academicYear={academicYear}
       studentGroupMap={studentGroupMap}

@@ -60,22 +60,14 @@ export function QRCard({
       >
         {centerLogo ? (
           <img src={centerLogo} alt="" className="h-8 w-8 object-contain rounded shrink-0" />
-        ) : (
-          <div
-            className={`h-8 w-8 rounded flex items-center justify-center shrink-0 ${
-              isPreview ? 'bg-teal-600' : 'bg-[var(--color-surface-1)]/20'
-            }`}
-          >
-            <span className={`text-xs font-bold ${isPreview ? 'text-white' : 'text-white'}`}>CH</span>
-          </div>
-        )}
+        ) : null}
         <span
           className={`text-[11px] font-medium truncate max-w-[45mm] ${
             isPreview ? 'text-[var(--color-text-primary)]' : 'text-white'
           }`}
           style={{ fontSize: '11px' }}
         >
-          {centerName || 'CenterHQ'}
+          {centerName || 'TutoringHQ'}
         </span>
       </div>
 
@@ -137,7 +129,7 @@ export function QRCard({
         </div>
       </div>
 
-      {/* Bottom: thin white line + CenterHQ */}
+      {/* Bottom: thin white line + TutoringHQ */}
       <div
         className={`absolute bottom-0 start-0 end-0 flex items-center justify-center py-[1.5mm] ${
           isPreview
@@ -153,7 +145,7 @@ export function QRCard({
             fontFamily: 'Georgia, "Times New Roman", serif',
           }}
         >
-          CenterHQ
+          TutoringHQ
         </span>
       </div>
     </div>

@@ -257,7 +257,7 @@ async function runCeoDailyBriefing(admin: SupabaseClient): Promise<void> {
     });
 
     const message =
-      `CenterHQ Daily Briefing - ${today}\n\n` +
+      `TutoringHQ Daily Briefing - ${today}\n\n` +
       `REVENUE\n` +
       `MRR: ${formatNumber(mrr, CEO_LOCALE)} EGP\n` +
       `Active centers: ${formatNumber(activeCount, CEO_LOCALE)}\n` +

@@ -52,22 +52,22 @@ function formatRenewalDate(dateStr: string | null): string {
 
 const STAGE_MESSAGES: Record<RenewalStage, (c: CenterForRenewal) => string> = {
   T_MINUS_7: (c) =>
-    `مرحباً ${c.name} 👋\n\nتذكير: تجديد اشتراك CenterHQ خلال 7 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatMonthlyFee(c.subscription_monthly_fee)}\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nشكراً لثقتكم!`,
+    `مرحباً ${c.name} 👋\n\nتذكير: تجديد اشتراك TutoringHQ خلال 7 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatMonthlyFee(c.subscription_monthly_fee)}\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nشكراً لثقتكم!`,
 
   T_MINUS_3: (c) =>
-    `مرحباً ${c.name} 👋\n\nتذكير: تجديد اشتراك CenterHQ خلال 3 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatMonthlyFee(c.subscription_monthly_fee)}\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع لتجنب انقطاع الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
+    `مرحباً ${c.name} 👋\n\nتذكير: تجديد اشتراك TutoringHQ خلال 3 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatMonthlyFee(c.subscription_monthly_fee)}\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع لتجنب انقطاع الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
 
   T_ZERO: (c) =>
-    `مرحباً ${c.name} 👋\n\nموعد تجديد اشتراك CenterHQ اليوم.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatMonthlyFee(c.subscription_monthly_fee)}\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع اليوم لتجنب انقطاع الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
+    `مرحباً ${c.name} 👋\n\nموعد تجديد اشتراك TutoringHQ اليوم.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatMonthlyFee(c.subscription_monthly_fee)}\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع اليوم لتجنب انقطاع الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
 
   T_PLUS_3: (c) =>
-    `مرحباً ${c.name} 👋\n\nتذكير: اشتراك CenterHQ متأخر 3 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatMonthlyFee(c.subscription_monthly_fee)}\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع في أقرب وقت لتجنب إيقاف الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
+    `مرحباً ${c.name} 👋\n\nتذكير: اشتراك TutoringHQ متأخر 3 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatMonthlyFee(c.subscription_monthly_fee)}\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع في أقرب وقت لتجنب إيقاف الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
 
   T_PLUS_7: (c) =>
-    `مرحباً ${c.name} 👋\n\nتذكير عاجل: اشتراك CenterHQ متأخر 7 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatMonthlyFee(c.subscription_monthly_fee)}\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع فوراً لتجنب إيقاف الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
+    `مرحباً ${c.name} 👋\n\nتذكير عاجل: اشتراك TutoringHQ متأخر 7 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatMonthlyFee(c.subscription_monthly_fee)}\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nيرجى الدفع فوراً لتجنب إيقاف الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
 
   T_PLUS_9: (c) =>
-    `مرحباً ${c.name} 👋\n\nتذكير نهائي: اشتراك CenterHQ متأخر 9 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatMonthlyFee(c.subscription_monthly_fee)}\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nسيتم إيقاف الخدمة قريباً. يرجى الدفع فوراً لتجنب إيقاف الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
+    `مرحباً ${c.name} 👋\n\nتذكير نهائي: اشتراك TutoringHQ متأخر 9 أيام.\n📅 موعد التجديد: ${formatRenewalDate(c.subscription_renewal_date)}\n💰 المبلغ: ${formatMonthlyFee(c.subscription_monthly_fee)}\n\nالتحويل البنكي:\nرقم الحساب (IBAN): ${BANK_IBAN}\n\nسيتم إيقاف الخدمة قريباً. يرجى الدفع فوراً لتجنب إيقاف الخدمة.${c.summer_mode ? SUMMER_NOTE : ''}`,
 };
 
 export interface SendRenewalReminderParams {

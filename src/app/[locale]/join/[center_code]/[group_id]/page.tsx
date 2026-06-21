@@ -147,7 +147,7 @@ export default function JoinPage({ params }: PageProps) {
           className="select-none text-base tracking-[2px]"
           style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700 }}
         >
-          <span className="text-[var(--color-text-primary)]">CENTER</span>
+          <span className="text-[var(--color-text-primary)]">Tutoring</span>
           <span className="text-[var(--color-teal)]">HQ</span>
         </span>
         <div className="flex items-center gap-1.5">

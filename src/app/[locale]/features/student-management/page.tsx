@@ -18,8 +18,8 @@ export async function generateMetadata({
   const isAr = locale === 'ar';
   return {
     title: isAr
-      ? 'إدارة بيانات الطلاب | CenterHQ'
-      : 'Student Management for Tutoring Centers | CenterHQ',
+      ? 'إدارة بيانات الطلاب | TutoringHQ'
+      : 'Student Management for Tutoring Centers | TutoringHQ',
     description: isAr
       ? 'ملف كامل لكل طالب: الحضور، المدفوعات، المجموعات، والتواصل مع ولي الأمر.'
       : 'Complete student profiles: attendance history, payments, groups, and parent communication.',

@@ -130,7 +130,7 @@ export default function TeacherNav({
         >
           {!collapsed && (
             <div className="flex items-baseline gap-2">
-              <span className="font-bold text-[var(--color-text-primary)]">CenterHQ</span>
+              <span className="font-bold text-[var(--color-text-primary)]">TutoringHQ</span>
               <span className="text-sm text-[var(--color-text-muted)]">{t('brandSuffix')}</span>
             </div>
           )}

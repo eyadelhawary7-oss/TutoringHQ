@@ -2,12 +2,12 @@
   "legal": {
     "terms": {
       "title": "شروط الخدمة",
-      "placeholderBody": "هذه الشروط وثيقة مؤقتة أثناء اكتمال المراجعة القانونية. الصيغة النهائية قيد المراجعة من Adsero · النسخة المؤقتة سارية حتى ٩ مايو ٢٠٢٦.\n\nباستخدام CenterHQ فإنك توافق على العمل بحسن نية والالتزام بالقوانين المعمول بها وتوقعات الاستخدام المقبول.\n\nقد نقوم بتحديث هذه الشروط وسننشر التغييرات هنا مع تاريخ \"آخر تحديث\".",
+      "placeholderBody": "هذه الشروط وثيقة مؤقتة أثناء اكتمال المراجعة القانونية. الصيغة النهائية قيد المراجعة من Adsero · النسخة المؤقتة سارية حتى ٩ مايو ٢٠٢٦.\n\nباستخدام TutoringHQ فإنك توافق على العمل بحسن نية والالتزام بالقوانين المعمول بها وتوقعات الاستخدام المقبول.\n\nقد نقوم بتحديث هذه الشروط وسننشر التغييرات هنا مع تاريخ \"آخر تحديث\".",
       "lastUpdated": "آخر تحديث: ٩ مايو ٢٠٢٦"
     },
     "privacy": {
       "title": "سياسة الخصوصية",
-      "placeholderBody": "هذه السياسة وثيقة مؤقتة أثناء اكتمال المراجعة القانونية. الصيغة النهائية قيد المراجعة من Adsero · النسخة المؤقتة سارية حتى ٩ مايو ٢٠٢٦.\n\nنعالج البيانات الشخصية لتقديم خدمات CenterHQ وتحسين الموثوقية والأمان.\n\nقد نقوم بتحديث هذه السياسة وسننشر التغييرات هنا مع تاريخ \"آخر تحديث\".",
+      "placeholderBody": "هذه السياسة وثيقة مؤقتة أثناء اكتمال المراجعة القانونية. الصيغة النهائية قيد المراجعة من Adsero · النسخة المؤقتة سارية حتى ٩ مايو ٢٠٢٦.\n\nنعالج البيانات الشخصية لتقديم خدمات TutoringHQ وتحسين الموثوقية والأمان.\n\nقد نقوم بتحديث هذه السياسة وسننشر التغييرات هنا مع تاريخ \"آخر تحديث\".",
       "lastUpdated": "آخر تحديث: ٩ مايو ٢٠٢٦"
     }
   },
@@ -21,7 +21,7 @@
     "top_centers": "كبار السناتر"
   },
   "pricingPage": {
-    "metaTitle": "الأسعار – CenterHQ",
+    "metaTitle": "الأسعار – TutoringHQ",
     "metaDescription": "قارِن خطط Solo إلى Enterprise وخطة كبار السناتر. أسعار شهرية وربع سنوية وسنوية شفافة لسناتر الدروس.",
     "navHome": "الرئيسية",
     "title": "خطط لكل حجم",
@@ -117,7 +117,7 @@
     "taxNote": "ضريبة القيمة المضافة 14٪ | رسوم الخدمة 6٪ | ضريبة الدمغة 0.5٪",
     "taxNoteSetupFee": "ضريبة القيمة المضافة 14٪ | رسوم الخدمة 6٪ | ضريبة الدمغة 0.5٪ - على المنتج فقط. رسوم الشحن منفصلة.",
     "taxNoteLatePayment": "ضريبة القيمة المضافة 14٪ | رسوم الخدمة 6٪ | ضريبة الدمغة 0.5٪ - تطبق على قيمة الاشتراك فقط.",
-    "taxNotePayoutOnly": "لا ضريبة قيمة مضافة او رسوم خدمة - هذا دفع عمولات من CenterHQ.",
+    "taxNotePayoutOnly": "لا ضريبة قيمة مضافة او رسوم خدمة - هذا دفع عمولات من TutoringHQ.",
     "taxNoteProofOnly": "المبالغ تعكس اجمالي الفاتورة المرجعية."
   },
   "paymentStatus": {
@@ -189,7 +189,7 @@
   },
   "pwa": {
     "installTitle": "ثبّت التطبيق",
-    "installSubtitle": "أضف CenterHQ للشاشة الرئيسية للوصول السريع",
+    "installSubtitle": "أضف TutoringHQ للشاشة الرئيسية للوصول السريع",
     "install": "تثبيت",
     "later": "لاحقاً",
     "dismissAria": "إغلاق"
@@ -1059,7 +1059,7 @@
     "shippingZone": "منطقة الشحن"
   },
   "vendorNotify": {
-    "header": "🆕 طلب طباعة جديد - CenterHQ",
+    "header": "🆕 طلب طباعة جديد - TutoringHQ",
     "ref": "📋 المرجع: {ref}",
     "qty": "👥 عدد البطاقات: {quantity}",
     "center": "🏫 للطباعة: {centerName}",
@@ -1067,7 +1067,7 @@
     "footer1": "📎 ملف PDF قيد الإعداد - سيصلك قريباً",
     "footer2": "🚚 سيتواصل معك المندوب لاستلام الطلب",
     "interactiveCta": "🚚 اضغط الزر عند جاهزية الطلب للاستلام",
-    "platformFooter": "CenterHQ Platform",
+    "platformFooter": "TutoringHQ Platform",
     "buttonTitle": "✅ جاهز للاستلام",
     "fallbackConfirm": "✅ للتأكيد أرسل: {readyToken}"
   },
@@ -1120,7 +1120,7 @@
     "studentLimitLabel": "حد الطلاب",
     "studentsShort": "طالب/أسبوع",
     "egpSetup": "ج.م رسوم تفعيل",
-    "copyright": "© ٢٠٢٦ CenterHQ، EHG Intelligence",
+    "copyright": "© ٢٠٢٦ TutoringHQ، EHG Intelligence",
     "contactWhatsapp": "تواصل عبر واتساب",
     "heroTitle1": "أدِر سنترك",
     "heroTitle2": "بشكل أذكى وأسهل",
@@ -1267,7 +1267,7 @@
     "pricingTopCenters7": "تدريب في الموقع ودعم تطوير مخصص",
     "footer": {
       "tagline": "مصنوع في مصر 🇪🇬 لسناتر مصر",
-      "rights": "© 2026 CenterHQ، EHG Intelligence. جميع الحقوق محفوظة."
+      "rights": "© 2026 TutoringHQ، EHG Intelligence. جميع الحقوق محفوظة."
     },
     "backToHome": "العودة للرئيسية",
     "annualPriceMo": "{amount} ج.م/شهر",
@@ -1368,7 +1368,7 @@
       "colCriterion": "المعيار",
       "colSpreadsheet": "جدول بيانات",
       "colPaper": "دفتر ورقي",
-      "colCenterhq": "سنتر إتش كيو",
+      "colCenterhq": "TutoringHQ",
       "row1": {
         "criterion": "تتبع من حضر كل حصة",
         "spreadsheet": "إدخال يدوي، أخطاء شائعة",
@@ -1504,7 +1504,7 @@
       "enterpriseStudents": "حتى ٢٬٠٠٠ طالب",
       "pricingCta": "عرض جميع الخطط والمقارنة",
       "finalCtaButton": "ابدأ الآن",
-      "footerTagline": "CenterHQ، منصة إدارة السناتر التعليمية",
+      "footerTagline": "TutoringHQ، منصة إدارة السناتر التعليمية",
       "footerSupportLabel": "دعم واتساب",
       "footerRights": "© ٢٠٢٦ EHG Intelligence. جميع الحقوق محفوظة.",
       "openMenuAria": "فتح القائمة",
@@ -1967,7 +1967,7 @@
     "blacklistMenu": "قائمة سوداء",
     "viewProof": "عرض الإثبات",
     "noImage": "لا توجد صورة",
-    "poweredByCenterHQ": "مدعوم من CenterHQ",
+    "poweredByCenterHQ": "مدعوم من TutoringHQ",
     "suspendConfirmBody": "هل أنت متأكد من تعليق {name}؟",
     "rejectReasonPlaceholder": "سبب اختياري...",
     "contactPerson": "الشخص المسؤول",
@@ -2956,7 +2956,7 @@
     "deleteCenterPermanent": "سيؤدي هذا إلى حذف السنتر وجميع بياناته نهائياً.",
     "inviteTeamMember": "دعوة عضو فريق",
     "internalTeamRoleLabel": "الدور",
-    "internalTeamUserMustSignUp": "يجب أن يكون المستخدم مسجلاً في CenterHQ أولاً.",
+    "internalTeamUserMustSignUp": "يجب أن يكون المستخدم مسجلاً في TutoringHQ أولاً.",
     "internalTeamPermissionsHeading": "الصلاحيات المسموح بها",
     "internalTeamEmptyState": "لم يتم تحميل أعضاء الفريق.",
     "internalTeamRoleViewer": "مشاهد",
@@ -2977,7 +2977,7 @@
     }
   },
   "ceo": {
-    "brandTitle": "CenterHQ",
+    "brandTitle": "TutoringHQ",
     "title": "لوحة تحكم المؤسس",
     "lastSync": "آخر تحديث",
     "lastSyncMinutes": "منذ {minutes} دقيقة",
@@ -3610,7 +3610,7 @@
     "cardPreviewLockedSub": "يحصل كل طالب على رمز QR خاص بعد الدفع؛ نتولى الطباعة والإرسال.",
     "cardOrderTermsLabel": "أوافق على",
     "cardOrderTermsLink": "شروط طلب البطاقات",
-    "cardOrderTermsBody": "طلبات بطاقات QR نهائية وغير قابلة للاسترداد. البطاقات مطبوعة خصيصاً لكل طالب ولا يمكن إرجاعها أو استبدالها. CenterHQ غير مسؤولة عن التأخير الناجم عن معلومات التسليم غير الصحيحة. بالمتابعة، تؤكد أن جميع بيانات الطلاب وتفاصيل التسليم صحيحة.",
+    "cardOrderTermsBody": "طلبات بطاقات QR نهائية وغير قابلة للاسترداد. البطاقات مطبوعة خصيصاً لكل طالب ولا يمكن إرجاعها أو استبدالها. TutoringHQ غير مسؤولة عن التأخير الناجم عن معلومات التسليم غير الصحيحة. بالمتابعة، تؤكد أن جميع بيانات الطلاب وتفاصيل التسليم صحيحة.",
     "cardOrderTermsRequired": "يجب قبول الشروط للمتابعة."
   },
   "billing": {
@@ -4568,7 +4568,7 @@
     "orderSuccess": "Order submitted! We'll contact you on WhatsApp to confirm.",
     "frontOfCard": "الأمامية",
     "backOfCard": "الوجه الخلفي",
-    "poweredBy": "مدعوم من CenterHQ",
+    "poweredBy": "مدعوم من TutoringHQ",
     "cardOrders": "الطلبيات بالبطاقات",
     "selectAll": "تحديد الكل",
     "clear": "واضح",
@@ -5234,7 +5234,7 @@
     "parentName": "اسم ولي الأمر",
     "parentNamePlaceholder": "الاسم بالكامل",
     "parentMobile": "موبايل ولي الأمر",
-    "consent": "بالتسجيل أنت موافق على <privacy>سياسة الخصوصية</privacy> الخاصة بـ CenterHQ.",
+    "consent": "بالتسجيل أنت موافق على <privacy>سياسة الخصوصية</privacy> الخاصة بـ TutoringHQ.",
     "sendCode": "ابعت كود التحقق",
     "sending": "بنبعت...",
     "verifyTitle": "أكد رقمك",
@@ -5353,9 +5353,9 @@
     "studentNumberPending": "يُعيَّن عند الاستيراد (تسلسل المركز)",
     "group": "مجموعة",
     "groupResolution": "تطابق المجموعات",
-    "groupResolutionHint": "طابق كل مجموعة في ملفك مع مجموعة في CenterHQ",
+    "groupResolutionHint": "طابق كل مجموعة في ملفك مع مجموعة في TutoringHQ",
     "csvGroup": "من ملفك",
-    "dbGroup": "مجموعة CenterHQ",
+    "dbGroup": "مجموعة TutoringHQ",
     "skipGroup": "بدون تعيين مجموعة",
     "noGroupsFound": "لا توجد مجموعات. أنشئ مجموعات أولاً ثم استورد.",
     "noCsvGroupValues": "لا توجد قيم مجموعات في ملفك للعمود المعيّن كمجموعة. يمكنك المتابعة إلى المعاينة.",
@@ -5412,7 +5412,7 @@
     "submit": "تسجيل الدخول",
     "title": "عنوان",
     "welcomeBack": "مرحباً بعودتك",
-    "headline": "سجّل دخولك في CenterHQ",
+    "headline": "سجّل دخولك في TutoringHQ",
     "register": "سجل مركزك",
     "localeToggleAria": "تغيير اللغة",
     "smsTooMany": "محاولات SMS كثيرة جداً",
@@ -5421,8 +5421,8 @@
     "authSystemError": "تعذر الوصول إلى خدمة تسجيل الدخول، يرجى المحاولة بعد قليل."
   },
   "onboarding": {
-    "title": "مرحبًا بك في CenterHQ",
-    "titleAr": "مرحباً بك في CenterHQ!",
+    "title": "مرحبًا بك في TutoringHQ",
+    "titleAr": "مرحباً بك في TutoringHQ!",
     "subtitle": "اختر كيفية المتابعة",
     "step1Label": "طالب",
     "step2Label": "مجموعة",
@@ -5504,7 +5504,7 @@
     "whatsapp_sent": "تم الإرسال",
     "whatsapp_pending": "بانتظار التأكيد",
     "whatsapp_preview_label": "معاينة الرسالة",
-    "completion_title": "مرحبًا بك في CenterHQ!",
+    "completion_title": "مرحبًا بك في TutoringHQ!",
     "completion_subtitle": "تم إعداد مركزك بنجاح",
     "completion_students": "المتدربين المسجلين",
     "go_to_dashboard": "الانتقال إلى لوحة المعلومات",
@@ -5539,7 +5539,7 @@
     "firstStudentEncourage": "أضف أول طالب لتجربة النظام كاملاً",
     "addingStudent": "جارٍ الإضافة...",
     "addFirstStudentBtn": "إضافة الطالب",
-    "waPreviewBody": "مرحباً بك في CenterHQ! رابط تسجيل الدخول: [رابط]",
+    "waPreviewBody": "مرحباً بك في TutoringHQ! رابط تسجيل الدخول: [رابط]",
     "statStudents": "طالب",
     "statGroups": "مجموعة",
     "statComplete": "مكتمل",
@@ -5769,7 +5769,7 @@
   },
   "refer": {
     "welcomeTitle": "مرحباً بك!",
-    "invitedBy": "تمت دعوتك من قبل {centerName} لتجربة CenterHQ",
+    "invitedBy": "تمت دعوتك من قبل {centerName} لتجربة TutoringHQ",
     "fallbackCenterName": "سنتر",
     "ctaButton": "احجز عرضك التجريبي",
     "autoApplyNote": "سيتم تطبيق الإحالة تلقائياً",
@@ -5822,7 +5822,7 @@
     "payoutInvalidAmount": "أدخل مبلغاً صحيحاً",
     "payoutExceedsBalance": "المبلغ يتجاوز الرصيد المتاح ({max})",
     "payoutGenericError": "حدث خطأ",
-    "whatsappShareText": "جرّب CenterHQ لإدارة سنترك بسهولة 🎓\nاحجز عرضك التجريبي:\n{link}",
+    "whatsappShareText": "جرّب TutoringHQ لإدارة سنترك بسهولة 🎓\nاحجز عرضك التجريبي:\n{link}",
     "step1Title": "شارك كودك",
     "step1Desc": "أرسل الرابط لأصحاب السناتر.",
     "step2Title": "صديقك يسجّل",
@@ -6405,7 +6405,7 @@
   },
   "signup": {
     "title": "سجّل مركزك",
-    "subtitle": "Join CenterHQ and modernize your tutoring center management",
+    "subtitle": "Join TutoringHQ and modernize your tutoring center management",
     "centerName": "اسم المركز",
     "centerNamePlaceholder": "مثال: سنتر النخبة للغات",
     "ownerName": "اسم المالك",
@@ -6524,7 +6524,7 @@
     "allTaxesIncluded": "شامل جميع الضرائب",
     "periodLabel": "الفترة",
     "studentsLabel": "الطلاب",
-    "authNote": "بالتأكيد تفوّض CenterHQ بخصم {amount} ج.م {period} تلقائياً",
+    "authNote": "بالتأكيد تفوّض TutoringHQ بخصم {amount} ج.م {period} تلقائياً",
     "renewsMonthly": "يتجدد شهرياً بـ {amount} ج.م",
     "renewsQuarterly": "يتجدد ربع سنوياً بـ {amount} ج.م",
     "renewsAnnually": "يتجدد سنوياً بـ {amount} ج.م",
@@ -6559,8 +6559,8 @@
       "step4Payment": "الخطوة ٤: الدفع"
     },
     "authSentence": {
-      "standard": "بالتأكيد، أنت تفوّض CenterHQ بسحب {amount} ج.م {interval}.",
-      "withPromo": "بالتأكيد، أنت تفوّض CenterHQ بسحب {firstCycle} ج.م اليوم و{recurring} ج.م {interval} بعد ذلك."
+      "standard": "بالتأكيد، أنت تفوّض TutoringHQ بسحب {amount} ج.م {interval}.",
+      "withPromo": "بالتأكيد، أنت تفوّض TutoringHQ بسحب {firstCycle} ج.م اليوم و{recurring} ج.م {interval} بعد ذلك."
     }
   },
   "students": {
@@ -6734,7 +6734,7 @@
   },
   "reactivate": {
     "title": "إعادة تفعيل اشتراكك",
-    "subtitle": "اختر باقة وادفع لاستعادة الوصول إلى CenterHQ.",
+    "subtitle": "اختر باقة وادفع لاستعادة الوصول إلى TutoringHQ.",
     "loading": "جارٍ التحميل...",
     "loadError": "تعذّر تحميل الباقات. حاول مرة أخرى.",
     "payError": "تعذّر بدء عملية الدفع. حاول مرة أخرى.",
@@ -6766,7 +6766,7 @@
     "centerSuspendedWhatsappMessage": "تم إيقاف حسابي، أود التواصل معكم",
     "overdue": "تم تعليق الحساب",
     "overdueMessage": "تم إيقاف حسابك بسبب تأخر السداد. يرجى سداد المبلغ المستحق لإعادة تفعيل حسابك.",
-    "paymentOverdueWhatsapp": "أرغب في سداد اشتراك CenterHQ",
+    "paymentOverdueWhatsapp": "أرغب في سداد اشتراك TutoringHQ",
     "fawryCode": "رمز فوري: {code}",
     "whatsapp": "للحصول على الدعم: اتصل عبر WhatsApp",
     "whatsappMessage": "أرغب في تجديد اشتراكي",
@@ -8254,8 +8254,8 @@
     "errorMissingDriveFolder": "لم يتم تعيين BACKUP_DRIVE_FOLDER_ID",
     "errorMissingGoogleCredentials": "لم يتم تعيين GOOGLE_SERVICE_ACCOUNT_JSON",
     "logWaFailed": "[نسخ احتياطي] فشل إشعار واتساب",
-    "waTitleSuccess": "✅ *اكتمل النسخ الاحتياطي لـ CenterHQ*",
-    "waTitlePartial": "⚠️ *اكتمل النسخ الاحتياطي لـ CenterHQ*",
+    "waTitleSuccess": "✅ *اكتمل النسخ الاحتياطي لـ TutoringHQ*",
+    "waTitlePartial": "⚠️ *اكتمل النسخ الاحتياطي لـ TutoringHQ*",
     "waTypeWeekly": "أسبوعي",
     "waTypeMonthly": "شهري",
     "waLineType": "النوع: {type}",
@@ -8272,7 +8272,7 @@
   },
   "charts": {
     "noData": "لا توجد بيانات بعد",
-    "noDataSub": "ستظهر البيانات هنا عندما تبدأ السناتر باستخدام CenterHQ",
+    "noDataSub": "ستظهر البيانات هنا عندما تبدأ السناتر باستخدام TutoringHQ",
     "vsLastMonth": "مقارنة بالشهر الماضي",
     "vsLastWeek": "مقارنة بالأسبوع الماضي",
     "mrrOverTime": "الإيرادات عبر الزمن",
@@ -8541,7 +8541,7 @@
       "feeLabel": "سعر الحصة لكل طالب (جنيه)",
       "feeValue": "{amount} للحصة",
       "resultLabel": "دخلك الشهري المتوقع:",
-      "feeNote": "رسوم CenterHQ: {fee} (٥٪ على الدفع الرقمي، صفر على الكاش)",
+      "feeNote": "رسوم TutoringHQ: {fee} (٥٪ على الدفع الرقمي، صفر على الكاش)",
       "cta": "أنشئ أول مجموعة، ابدأ مجانًا",
       "note": "من غير كارت. تقدر تلغي في أي وقت. متابعة السناتر مجانية دايمًا."
     },
@@ -8596,7 +8596,7 @@
       "downloadQr": "تنزيل QR",
       "goToGroup": "روح لمجموعتي",
       "shareWhatsapp": "اشارك على واتساب",
-      "whatsappMessage": "انضم لمجموعتي على CenterHQ:"
+      "whatsappMessage": "انضم لمجموعتي على TutoringHQ:"
     },
     "checklist": {
       "title": "جهّز حسابك",
@@ -8613,7 +8613,7 @@
     },
     "referral": {
       "heading": "اكسب شهر مجاني",
-      "body": "ادعو مدرس على CenterHQ. لما يشترك، انتوا الاتنين بتاخدوا شهر مجاني.",
+      "body": "ادعو مدرس على TutoringHQ. لما يشترك، انتوا الاتنين بتاخدوا شهر مجاني.",
       "copy": "نسخ الرابط",
       "copied": "اتنسخ"
     },
@@ -8647,7 +8647,7 @@
       "cutLabel": "نصيبك {pct}",
       "unknownCenter": "سنتر",
       "emptyTitle": "لسه مفيش سناتر مرتبطة",
-      "emptyBody": "لسه مش عضو فعّال في أي سنتر. اطلب من السنتر يضيفك على CenterHQ وهيبان نصيبك هنا.",
+      "emptyBody": "لسه مش عضو فعّال في أي سنتر. اطلب من السنتر يضيفك على TutoringHQ وهيبان نصيبك هنا.",
       "detachAction": "رجّع المجموعة دي خاصة بيك",
       "detachConfirmTitle": "تشيل السنتر من المجموعة دي؟",
       "detachConfirmBody": "خصم السنتر هيقف على الحصص الجاية، والمجموعة هترجع لجهتك الخاصة. السجلات والفلوس القديمة مش هتتأثر.",
@@ -8694,7 +8694,7 @@
         "copied": "اتنسخ",
         "downloadQr": "تنزيل QR",
         "shareWhatsapp": "اشارك على واتساب",
-        "waMessage": "انضم لمجموعة {group} على CenterHQ: {url}",
+        "waMessage": "انضم لمجموعة {group} على TutoringHQ: {url}",
         "note": "الطالب بيضغط الرابط ويتسجل لوحده."
       }
     },
@@ -8842,7 +8842,7 @@
       "instapay": "إنستاباي",
       "vodafoneCash": "فودافون كاش",
       "other": "أخرى",
-      "hint": "فلوس ولي الأمر بعتهالك على طول، اختار وصلت إزاي. CenterHQ مش بتلمس الفلوس دي ومفيش عليها أي عمولة.",
+      "hint": "فلوس ولي الأمر بعتهالك على طول، اختار وصلت إزاي. TutoringHQ مش بتلمس الفلوس دي ومفيش عليها أي عمولة.",
       "error": "مقدرناش نسجل الدفع. جرب تاني."
     },
     "privateEngine": {
@@ -8947,7 +8947,7 @@
     "title": "جدد اشتراكك",
     "resubscribeBody": "بياناتك الخاصة محفوظة زي ما هي وهترجعلك أول ما تجدد.",
     "startBody": "اشترك عشان تفتح كل أدوات التدريس الخاص.",
-    "planName": "CenterHQ للمدرسين",
+    "planName": "TutoringHQ للمدرسين",
     "priceSuffix": "/ شهر",
     "includedTitle": "اللي هتاخده",
     "featurePrivateGroups": "مجموعات خاصة وكشوف طلبة",
@@ -8967,7 +8967,7 @@
   },
   "teacherSignup": {
     "title": "اعمل حساب مدرس",
-    "subtitle": "اشتغل بشغلك الخاص على CenterHQ. من غير ما تحتاج سنتر.",
+    "subtitle": "اشتغل بشغلك الخاص على TutoringHQ. من غير ما تحتاج سنتر.",
     "nameLabel": "اسمك",
     "phoneLabel": "رقم الموبايل",
     "subjectLabel": "المادة (اختياري)",
@@ -9122,7 +9122,7 @@
     "privacy": "سياسة الخصوصية",
     "terms": "الشروط والأحكام",
     "cookies": "سياسة الكوكيز",
-    "rights": "كل الحقوق محفوظة. CenterHQ، منتج EHG Intelligence.",
+    "rights": "كل الحقوق محفوظة. TutoringHQ، منتج EHG Intelligence.",
     "switchLocaleAria": "تغيير اللغة",
     "footerNavAria": "روابط قانونية"
   },
@@ -9130,7 +9130,7 @@
     "login": "تسجيل الدخول",
     "badge": "للمدرسين",
     "heroTitle": "شيّل همّ المصاري من على دماغك",
-    "heroSub": "سواء بتدرّس في سنتر أو عندك طلاب خصوصي، CenterHQ بيجمع كل دخلك في شاشة واحدة، ويبعت روابط الدفع لوحده.",
+    "heroSub": "سواء بتدرّس في سنتر أو عندك طلاب خصوصي، TutoringHQ بيجمع كل دخلك في شاشة واحدة، ويبعت روابط الدفع لوحده.",
     "ctaPrimary": "ابدأ تجربتك المجانية",
     "ctaSecondary": "تسجيل الدخول",
     "nav": {
@@ -9142,8 +9142,8 @@
     },
     "pain": {
       "heading": "التدريس ما المفروضش يحسسك إنك محاسب",
-      "body": "كل يوم: سناتر مختلفة، طلاب خصوصي، وفي الآخر مش عارف جبت قد إيه. تلاحق على الفلوس، تحسب النسب يدوياً، وتفضل تتساءل: مين دفع ومين لأ؟ CenterHQ بيجمع كل ده في شاشة واحدة. شوف كل دخلك، وابعت الفواتير لوحدها.",
-      "connector": "CenterHQ بيحل ده كله."
+      "body": "كل يوم: سناتر مختلفة، طلاب خصوصي، وفي الآخر مش عارف جبت قد إيه. تلاحق على الفلوس، تحسب النسب يدوياً، وتفضل تتساءل: مين دفع ومين لأ؟ TutoringHQ بيجمع كل ده في شاشة واحدة. شوف كل دخلك، وابعت الفواتير لوحدها.",
+      "connector": "TutoringHQ بيحل ده كله."
     },
     "features": {
       "f1": { "title": "متابعة السناتر", "body": "شوف نصيبك من كل سنتر تلقائي. مفيش حسابات يدوية." },

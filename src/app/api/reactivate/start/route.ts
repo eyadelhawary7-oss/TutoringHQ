@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
     const checkout = await createPaymobCheckoutEgp({
       amountEgp: paymobAmount,
       merchantOrderId: `react-${sessionRowId}`,
-      itemName: `CenterHQ reactivation (${sessionType})`,
+      itemName: `TutoringHQ reactivation (${sessionType})`,
       phoneDigits: phone,
       displayName: String(c.name ?? 'Center'),
     });

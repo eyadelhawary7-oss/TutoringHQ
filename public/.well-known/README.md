@@ -9,11 +9,11 @@ owns this domain, so the app opens URLs without the browser address bar.
 
 ## Permanent application ID
 
-The Android `package_name` is **`app.centerhq`**.
+The Android `package_name` is **`app.tutoringhq`**.
 
 > ⚠️ This application ID is **permanent once the app is published to Google
 > Play**. It can never be changed for this listing — a different ID means a
-> brand-new, separate app. Use exactly `app.centerhq` in the TWA / Bubblewrap
+> brand-new, separate app. Use exactly `app.tutoringhq` in the TWA / Bubblewrap
 > build (`packageId` / `applicationId`).
 
 ## Filling in the fingerprint (the one remaining manual step)

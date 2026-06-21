@@ -107,7 +107,7 @@ export default function StatusPage() {
       >
         <header className="bg-[var(--color-surface-1)] border-b border-[var(--color-border-subtle)] px-6 py-4 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
-            CenterHQ - {pickLocale('حالة المنصة', 'Platform Status')}
+            TutoringHQ - {pickLocale('حالة المنصة', 'Platform Status')}
           </h1>
           <ThemeToggle />
         </header>
@@ -134,7 +134,7 @@ export default function StatusPage() {
     >
       <header className="bg-[var(--color-surface-1)] border-b border-[var(--color-border-subtle)] px-6 py-4">
         <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
-          CenterHQ - {pickLocale('حالة المنصة', 'Platform Status')}
+          TutoringHQ - {pickLocale('حالة المنصة', 'Platform Status')}
         </h1>
         <div className="flex flex-wrap items-center gap-3 mt-2">
           <StatusIcon status={d.overall as Status} />

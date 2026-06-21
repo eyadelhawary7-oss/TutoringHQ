@@ -77,7 +77,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       await sendFreeformMessage(
         centerId,
         phone,
-        `تنبيه${name ? ` ${name}` : ''}: تم تعليق اشتراككم على CenterHQ وفق إجراء من الدعم. للمساعدة راسلوا الفريق.`,
+        `تنبيه${name ? ` ${name}` : ''}: تم تعليق اشتراككم على TutoringHQ وفق إجراء من الدعم. للمساعدة راسلوا الفريق.`,
       );
     } catch {
       /* non-fatal */

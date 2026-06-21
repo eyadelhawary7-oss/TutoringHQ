@@ -31,7 +31,7 @@ function contactViaWhatsApp(phone: string, centerName: string) {
   if (!normalized.startsWith('20')) normalized = '20' + normalized;
   const message = encodeURIComponent(
     `السلام عليكم 👋\n\n` +
-      `شكراً لتسجيلكم في CenterHQ!\n\n` +
+      `شكراً لتسجيلكم في TutoringHQ!\n\n` +
       `نود التواصل معكم لإتمام إعداد حساب "${centerName}" والتعرف على احتياجاتكم.\n\n` +
       `متى يناسبكم التحدث؟ 🙏`,
   );

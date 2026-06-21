@@ -273,7 +273,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
         }
         const blob = await res.blob();
         const cd = res.headers.get('Content-Disposition');
-        let filename = `CenterHQ-${orderId}.pdf`;
+        let filename = `TutoringHQ-${orderId}.pdf`;
         const m = cd?.match(/filename="([^"]+)"/);
         if (m?.[1]) filename = m[1];
         const url = URL.createObjectURL(blob);

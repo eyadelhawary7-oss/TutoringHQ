@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import Image from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
 import { useTransition } from 'react';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
@@ -665,18 +664,11 @@ export function AdminSidebar({
         </button>
 
         <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
-          <Image
-            src="/logo-icon.png"
-            alt="CenterHQ"
-            width={28}
-            height={28}
-            className="w-7 h-7 rounded-lg shrink-0 object-contain"
-          />
           <span
             className="text-sm"
             style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}
           >
-            <span className="text-[var(--color-text-primary)]">CENTER</span>
+            <span className="text-[var(--color-text-primary)]">Tutoring</span>
             <span className="text-teal-600">HQ</span>
           </span>
         </Link>

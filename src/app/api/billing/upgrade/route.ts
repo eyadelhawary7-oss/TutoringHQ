@@ -267,7 +267,7 @@ export async function POST(request: NextRequest) {
     const checkout = await createPaymobCheckoutEgp({
       amountEgp: amountDue,
       merchantOrderId: `upg-${sessionId}`,
-      itemName: 'CenterHQ plan upgrade',
+      itemName: 'TutoringHQ plan upgrade',
       phoneDigits: phone,
       displayName: String(c.name ?? 'Center'),
     });

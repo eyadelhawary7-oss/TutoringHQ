@@ -114,7 +114,7 @@ async function runWatchdog(): Promise<{ overdue: number; alerted: number }> {
     .join('\n');
 
   const message =
-    `[CenterHQ ALERT] ` +
+    `[TutoringHQ ALERT] ` +
     `${formatNumber(toAlert.length, OP_LOCALE)} cron(s) overdue:\n${overdueList}\n` +
     `Check Vercel logs immediately.`;
 

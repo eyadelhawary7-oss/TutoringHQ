@@ -38,7 +38,7 @@ export async function createPaymobOrder({
       merchant_order_id: `${centerId}-${Date.now()}`,
       items: [
         {
-          name: `CenterHQ Subscription - ${centerName}`,
+          name: `TutoringHQ Subscription - ${centerName}`,
           amount_cents: amountCents,
           description: 'Monthly subscription',
           quantity: 1,

@@ -2,12 +2,12 @@
   "legal": {
     "terms": {
       "title": "Terms of Service",
-      "placeholderBody": "These Terms of Service are interim documentation while legal review is completed. Final terms pending review by Adsero · interim copy applies until 9 May 2026.\n\nBy using CenterHQ you agree to operate in good faith and comply with applicable laws and our acceptable use expectations.\n\nWe may update these terms and will publish changes here with an updated \"Last updated\" date.",
+      "placeholderBody": "These Terms of Service are interim documentation while legal review is completed. Final terms pending review by Adsero · interim copy applies until 9 May 2026.\n\nBy using TutoringHQ you agree to operate in good faith and comply with applicable laws and our acceptable use expectations.\n\nWe may update these terms and will publish changes here with an updated \"Last updated\" date.",
       "lastUpdated": "Last updated: 9 May 2026"
     },
     "privacy": {
       "title": "Privacy Policy",
-      "placeholderBody": "This Privacy Policy is interim documentation while legal review is completed. Final policy pending review by Adsero · interim copy applies until 9 May 2026.\n\nWe process personal data to deliver CenterHQ services and improve reliability and security.\n\nWe may update this policy and will publish changes here with an updated \"Last updated\" date.",
+      "placeholderBody": "This Privacy Policy is interim documentation while legal review is completed. Final policy pending review by Adsero · interim copy applies until 9 May 2026.\n\nWe process personal data to deliver TutoringHQ services and improve reliability and security.\n\nWe may update this policy and will publish changes here with an updated \"Last updated\" date.",
       "lastUpdated": "Last updated: 9 May 2026"
     }
   },
@@ -21,7 +21,7 @@
     "top_centers": "Top Centers"
   },
   "pricingPage": {
-    "metaTitle": "Pricing – CenterHQ",
+    "metaTitle": "Pricing – TutoringHQ",
     "metaDescription": "Compare Solo through Enterprise plans and Top Centers. Transparent monthly, quarterly, and annual pricing for tutoring centers.",
     "navHome": "Home",
     "title": "Plans for every size",
@@ -117,7 +117,7 @@
     "taxNote": "VAT 14% | Service Fee 6% | Stamp Duty 0.5%",
     "taxNoteSetupFee": "VAT 14% | Service Fee 6% | Stamp Duty 0.5% - applied to product only. Shipping shown separately.",
     "taxNoteLatePayment": "VAT 14% | Service Fee 6% | Stamp Duty 0.5% - applied to subscription base only. Penalty added after tax.",
-    "taxNotePayoutOnly": "No VAT or service fees - this is a commission payout from CenterHQ.",
+    "taxNotePayoutOnly": "No VAT or service fees - this is a commission payout from TutoringHQ.",
     "taxNoteProofOnly": "Amounts reflect the referenced invoice total."
   },
   "paymentStatus": {
@@ -189,7 +189,7 @@
   },
   "pwa": {
     "installTitle": "Install the app",
-    "installSubtitle": "Add CenterHQ to your home screen for quick access",
+    "installSubtitle": "Add TutoringHQ to your home screen for quick access",
     "install": "Install",
     "later": "Later",
     "dismissAria": "Dismiss"
@@ -1059,7 +1059,7 @@
     "shippingZone": "Shipping zone"
   },
   "vendorNotify": {
-    "header": "🆕 New print order - CenterHQ",
+    "header": "🆕 New print order - TutoringHQ",
     "ref": "📋 Ref: {ref}",
     "qty": "👥 Cards: {quantity}",
     "center": "🏫 Print for: {centerName}",
@@ -1067,7 +1067,7 @@
     "footer1": "📎 PDF is being prepared - you will receive it shortly",
     "footer2": "🚚 A courier will contact you for pickup",
     "interactiveCta": "🚚 Tap the button when the order is ready for pickup",
-    "platformFooter": "CenterHQ Platform",
+    "platformFooter": "TutoringHQ Platform",
     "buttonTitle": "✅ Ready for pickup",
     "fallbackConfirm": "✅ To confirm, send: {readyToken}"
   },
@@ -1121,7 +1121,7 @@
     "submit": "Log In",
     "title": "Title",
     "welcomeBack": "Welcome back",
-    "headline": "Sign in to CenterHQ",
+    "headline": "Sign in to TutoringHQ",
     "register": "Register your center",
     "localeToggleAria": "Switch language",
     "smsTooMany": "Too many SMS attempts",
@@ -1159,8 +1159,8 @@
     "weakPin": "PIN is too common. Please choose a less obvious 6-digit code."
   },
   "onboarding": {
-    "title": "Welcome to CenterHQ",
-    "titleAr": "مرحباً بك في CenterHQ!",
+    "title": "Welcome to TutoringHQ",
+    "titleAr": "مرحباً بك في TutoringHQ!",
     "subtitle": "Choose how to continue",
     "step1Label": "Student",
     "step2Label": "Group",
@@ -1242,7 +1242,7 @@
     "whatsapp_sent": "Sent",
     "whatsapp_pending": "Pending confirmation",
     "whatsapp_preview_label": "Message preview",
-    "completion_title": "Welcome to CenterHQ!",
+    "completion_title": "Welcome to TutoringHQ!",
     "completion_subtitle": "Your center has been set up successfully",
     "completion_students": "students enrolled",
     "go_to_dashboard": "Go to Dashboard",
@@ -1277,7 +1277,7 @@
     "firstStudentEncourage": "Add your first student to experience the full system",
     "addingStudent": "Adding...",
     "addFirstStudentBtn": "Add student",
-    "waPreviewBody": "Welcome to CenterHQ! Your login link: [link]",
+    "waPreviewBody": "Welcome to TutoringHQ! Your login link: [link]",
     "statStudents": "Students",
     "statGroups": "Groups",
     "statComplete": "Complete",
@@ -1290,7 +1290,7 @@
   },
   "refer": {
     "welcomeTitle": "Welcome!",
-    "invitedBy": "You've been invited by {centerName} to try CenterHQ",
+    "invitedBy": "You've been invited by {centerName} to try TutoringHQ",
     "fallbackCenterName": "a center",
     "ctaButton": "Book your demo",
     "autoApplyNote": "Your referral will be automatically applied",
@@ -1343,7 +1343,7 @@
     "payoutInvalidAmount": "Enter a valid amount",
     "payoutExceedsBalance": "Amount exceeds available balance ({max})",
     "payoutGenericError": "Something went wrong",
-    "whatsappShareText": "Try CenterHQ to run your center easily 🎓\nBook your demo:\n{link}",
+    "whatsappShareText": "Try TutoringHQ to run your center easily 🎓\nBook your demo:\n{link}",
     "step1Title": "Share your code",
     "step1Desc": "Send your link to other center owners.",
     "step2Title": "Friend signs up",
@@ -1516,9 +1516,9 @@
     "studentNumberPending": "Assigned when you import (from your center sequence)",
     "group": "Group",
     "groupResolution": "Match Groups",
-    "groupResolutionHint": "Match each group from your file to a group in CenterHQ",
+    "groupResolutionHint": "Match each group from your file to a group in TutoringHQ",
     "csvGroup": "From your file",
-    "dbGroup": "CenterHQ group",
+    "dbGroup": "TutoringHQ group",
     "skipGroup": "Don't assign a group",
     "noGroupsFound": "No groups found. Create groups first, then import.",
     "noCsvGroupValues": "No group values in your file for the mapped group column. You can continue to the preview.",
@@ -2303,7 +2303,7 @@
     "cardPreviewLockedSub": "Each student gets their own QR after payment; we handle printing and dispatch.",
     "cardOrderTermsLabel": "I agree to the QR card order",
     "cardOrderTermsLink": "terms",
-    "cardOrderTermsBody": "QR card orders are final and non-refundable. Cards are custom-printed per student and cannot be returned or exchanged. CenterHQ is not responsible for delays caused by incorrect delivery information. By proceeding, you confirm all student data and delivery details are correct.",
+    "cardOrderTermsBody": "QR card orders are final and non-refundable. Cards are custom-printed per student and cannot be returned or exchanged. TutoringHQ is not responsible for delays caused by incorrect delivery information. By proceeding, you confirm all student data and delivery details are correct.",
     "cardOrderTermsRequired": "You must accept the terms to continue."
   },
   "branches": {
@@ -3030,7 +3030,7 @@
     "parentName": "Parent name",
     "parentNamePlaceholder": "Full name",
     "parentMobile": "Parent mobile",
-    "consent": "By enrolling you agree to CenterHQ's <privacy>Privacy Policy</privacy>.",
+    "consent": "By enrolling you agree to TutoringHQ's <privacy>Privacy Policy</privacy>.",
     "sendCode": "Send verification code",
     "sending": "Sending...",
     "verifyTitle": "Verify your number",
@@ -3213,7 +3213,7 @@
   },
   "signup": {
     "title": "Register Your Center",
-    "subtitle": "Join CenterHQ and modernize your tutoring center management",
+    "subtitle": "Join TutoringHQ and modernize your tutoring center management",
     "centerName": "Center Name",
     "centerNamePlaceholder": "e.g. Excellence Center",
     "ownerName": "Owner Name",
@@ -3332,7 +3332,7 @@
     "allTaxesIncluded": "All taxes included",
     "periodLabel": "Period",
     "studentsLabel": "Students",
-    "authNote": "By confirming, you authorize CenterHQ to charge {amount} EGP {period}.",
+    "authNote": "By confirming, you authorize TutoringHQ to charge {amount} EGP {period}.",
     "renewsMonthly": "Renews monthly at {amount} EGP",
     "renewsQuarterly": "Renews quarterly at {amount} EGP",
     "renewsAnnually": "Renews annually at {amount} EGP",
@@ -3367,8 +3367,8 @@
       "step4Payment": "Step 4: Payment"
     },
     "authSentence": {
-      "standard": "By confirming, you authorize CenterHQ to charge {amount} EGP {interval}.",
-      "withPromo": "By confirming, you authorize CenterHQ to charge {firstCycle} EGP today and {recurring} EGP {interval} thereafter."
+      "standard": "By confirming, you authorize TutoringHQ to charge {amount} EGP {interval}.",
+      "withPromo": "By confirming, you authorize TutoringHQ to charge {firstCycle} EGP today and {recurring} EGP {interval} thereafter."
     }
   },
   "acceptInvite": {
@@ -3787,7 +3787,7 @@
     "blacklistMenu": "Blacklist",
     "viewProof": "View Proof",
     "noImage": "No image",
-    "poweredByCenterHQ": "Powered by CenterHQ",
+    "poweredByCenterHQ": "Powered by TutoringHQ",
     "suspendConfirmBody": "Are you sure you want to suspend {name}?",
     "rejectReasonPlaceholder": "Optional reason...",
     "contactPerson": "Contact Person",
@@ -4776,7 +4776,7 @@
     "deleteCenterPermanent": "This will permanently delete the center and all its data.",
     "inviteTeamMember": "Invite team member",
     "internalTeamRoleLabel": "Role",
-    "internalTeamUserMustSignUp": "User must have signed up at CenterHQ first.",
+    "internalTeamUserMustSignUp": "User must have signed up at TutoringHQ first.",
     "internalTeamPermissionsHeading": "Permissions",
     "internalTeamEmptyState": "No team members loaded.",
     "internalTeamRoleViewer": "Viewer",
@@ -4829,7 +4829,7 @@
   },
   "reactivate": {
     "title": "Reactivate your subscription",
-    "subtitle": "Choose a plan and pay to restore access to CenterHQ.",
+    "subtitle": "Choose a plan and pay to restore access to TutoringHQ.",
     "loading": "Loading...",
     "loadError": "Could not load plans. Try again.",
     "payError": "Could not start payment. Try again.",
@@ -4861,7 +4861,7 @@
     "centerSuspendedWhatsappMessage": "My account has been suspended, I would like to get in touch",
     "overdue": "Account Suspended",
     "overdueMessage": "Your account has been suspended due to payment overdue. Contact us to renew.",
-    "paymentOverdueWhatsapp": "I would like to pay my CenterHQ subscription",
+    "paymentOverdueWhatsapp": "I would like to pay my TutoringHQ subscription",
     "fawryCode": "Fawry Code: {code}",
     "whatsapp": "For support: Contact via WhatsApp",
     "whatsappMessage": "I would like to renew my subscription",
@@ -5827,7 +5827,7 @@
     "orderSuccess": "Order submitted! We'll contact you on WhatsApp to confirm.",
     "frontOfCard": "Front",
     "backOfCard": "Back",
-    "poweredBy": "Powered by CenterHQ",
+    "poweredBy": "Powered by TutoringHQ",
     "cardOrders": "Card Orders",
     "selectAll": "Select All",
     "clear": "Clear",
@@ -6010,7 +6010,7 @@
     "studentLimitLabel": "Student limit",
     "studentsShort": "students",
     "egpSetup": "EGP setup",
-    "copyright": "© 2026 CenterHQ, EHG Intelligence",
+    "copyright": "© 2026 TutoringHQ, EHG Intelligence",
     "contactWhatsapp": "Contact via WhatsApp",
     "ctaStartNow": "Start Now",
     "ctaExploreDashboard": "Explore Dashboard",
@@ -6155,7 +6155,7 @@
     "pricingTopCenters7": "On-site training & dedicated development support",
     "footer": {
       "tagline": "Made in Egypt 🇪🇬 for Egypt's centers",
-      "rights": "© 2026 CenterHQ, EHG Intelligence. All rights reserved."
+      "rights": "© 2026 TutoringHQ, EHG Intelligence. All rights reserved."
     },
     "backToHome": "Back to Home",
     "annualPriceMo": "{amount} EGP/mo",
@@ -6228,7 +6228,7 @@
     "problem": {
       "heading": "Running a center shouldn't feel like firefighting.",
       "body": "Every day: spreadsheets that don't match, notebooks with missing pages, WhatsApp groups full of parent questions, a cash box no one wants to count. A student attends but the invoice never gets sent. A parent asks for proof of payment, no one can find it. You can't even tell which groups are profitable.",
-      "connector": "CenterHQ replaces all of it. One platform. Built for Egyptian tutoring centers."
+      "connector": "TutoringHQ replaces all of it. One platform. Built for Egyptian tutoring centers."
     },
     "trust": {
       "heading": "Your data isn't held hostage.",
@@ -6256,7 +6256,7 @@
       "colCriterion": "Criterion",
       "colSpreadsheet": "Spreadsheet",
       "colPaper": "Paper book",
-      "colCenterhq": "CenterHQ",
+      "colCenterhq": "TutoringHQ",
       "row1": {
         "criterion": "Tracks who attended each session",
         "spreadsheet": "Manual data entry, mistakes common",
@@ -6310,7 +6310,7 @@
       "heading": "Common questions",
       "subheading": "Center owners ask these first.",
       "q1": {
-        "question": "Who owns the data I put into CenterHQ?",
+        "question": "Who owns the data I put into TutoringHQ?",
         "answer": "You do. Always. Your students, parents, payments, and history belong to your center. If you ever leave, we export everything as Excel + CSV in one click. No lock-in."
       },
       "q2": {
@@ -6319,7 +6319,7 @@
       },
       "q3": {
         "question": "I already use a spreadsheet / paper book / WhatsApp. Why switch?",
-        "answer": "Because at scale, those break down. A single spreadsheet can't tell you which group is profitable. A paper book can't send a parent a payment reminder. A WhatsApp group can't track who's paid and who hasn't. CenterHQ does all of it in one place, and the data is searchable, exportable, and accurate."
+        "answer": "Because at scale, those break down. A single spreadsheet can't tell you which group is profitable. A paper book can't send a parent a payment reminder. A WhatsApp group can't track who's paid and who hasn't. TutoringHQ does all of it in one place, and the data is searchable, exportable, and accurate."
       },
       "q4": {
         "question": "What if my center's internet is unreliable?",
@@ -6331,7 +6331,7 @@
       },
       "q6": {
         "question": "How do I pay for my subscription?",
-        "answer": "Pay your CenterHQ subscription and any invoices (like card orders) through Paymob. We accept Visa, Mastercard, Meeza, mobile wallets like Vodafone Cash, and cash at 100,000+ kiosks across Egypt (Aman, Masary). Pay how it suits you."
+        "answer": "Pay your TutoringHQ subscription and any invoices (like card orders) through Paymob. We accept Visa, Mastercard, Meeza, mobile wallets like Vodafone Cash, and cash at 100,000+ kiosks across Egypt (Aman, Masary). Pay how it suits you."
       },
       "q7": {
         "question": "Who do I talk to if something breaks?",
@@ -6392,7 +6392,7 @@
       "enterpriseStudents": "Up to 2,000 students",
       "pricingCta": "View all plans & comparison",
       "finalCtaButton": "Get started",
-      "footerTagline": "CenterHQ, tutoring center management platform",
+      "footerTagline": "TutoringHQ, tutoring center management platform",
       "footerSupportLabel": "WhatsApp support",
       "footerRights": "© 2026 EHG Intelligence. All rights reserved.",
       "openMenuAria": "Open menu",
@@ -6407,7 +6407,7 @@
     "title": "Title"
   },
   "ceo": {
-    "brandTitle": "CenterHQ",
+    "brandTitle": "TutoringHQ",
     "title": "Founder dashboard",
     "lastSync": "Last updated",
     "lastSyncMinutes": "{minutes} min ago",
@@ -8254,8 +8254,8 @@
     "errorMissingDriveFolder": "BACKUP_DRIVE_FOLDER_ID not set",
     "errorMissingGoogleCredentials": "GOOGLE_SERVICE_ACCOUNT_JSON not set",
     "logWaFailed": "[Backup] WA notification failed",
-    "waTitleSuccess": "✅ *CenterHQ Backup Complete*",
-    "waTitlePartial": "⚠️ *CenterHQ Backup Complete*",
+    "waTitleSuccess": "✅ *TutoringHQ Backup Complete*",
+    "waTitlePartial": "⚠️ *TutoringHQ Backup Complete*",
     "waTypeWeekly": "Weekly",
     "waTypeMonthly": "Monthly",
     "waLineType": "Type: {type}",
@@ -8272,7 +8272,7 @@
   },
   "charts": {
     "noData": "No data yet",
-    "noDataSub": "Data will appear here once centers start using CenterHQ",
+    "noDataSub": "Data will appear here once centers start using TutoringHQ",
     "vsLastMonth": "vs last month",
     "vsLastWeek": "vs last week",
     "mrrOverTime": "Revenue over time",
@@ -8541,7 +8541,7 @@
       "feeLabel": "Fee per session per student (EGP)",
       "feeValue": "{amount} per session",
       "resultLabel": "Your estimated monthly income:",
-      "feeNote": "CenterHQ fee: {fee} (5% on digital, zero on cash)",
+      "feeNote": "TutoringHQ fee: {fee} (5% on digital, zero on cash)",
       "cta": "Create your first group, start free",
       "note": "No card needed. Cancel anytime. Center tracking always free."
     },
@@ -8596,7 +8596,7 @@
       "downloadQr": "Download QR",
       "goToGroup": "Go to my group",
       "shareWhatsapp": "Share on WhatsApp",
-      "whatsappMessage": "Join my group on CenterHQ:"
+      "whatsappMessage": "Join my group on TutoringHQ:"
     },
     "checklist": {
       "title": "Get set up",
@@ -8613,7 +8613,7 @@
     },
     "referral": {
       "heading": "Get a free month",
-      "body": "Invite a teacher to CenterHQ. When they subscribe, you both get one free month.",
+      "body": "Invite a teacher to TutoringHQ. When they subscribe, you both get one free month.",
       "copy": "Copy link",
       "copied": "Copied"
     },
@@ -8647,7 +8647,7 @@
       "cutLabel": "your share {pct}",
       "unknownCenter": "Center",
       "emptyTitle": "No centers linked yet",
-      "emptyBody": "You are not an active member of any center yet. Ask your center to invite you to CenterHQ and your share will show up here.",
+      "emptyBody": "You are not an active member of any center yet. Ask your center to invite you to TutoringHQ and your share will show up here.",
       "detachAction": "Make this my private group again",
       "detachConfirmTitle": "Remove the center from this group?",
       "detachConfirmBody": "The center cut stops on future sessions, and this group moves back to your private side. Past records and money are not affected.",
@@ -8694,7 +8694,7 @@
         "copied": "Copied",
         "downloadQr": "Download QR",
         "shareWhatsapp": "Share on WhatsApp",
-        "waMessage": "Join the {group} group on CenterHQ: {url}",
+        "waMessage": "Join the {group} group on TutoringHQ: {url}",
         "note": "Students tap the link, verify their number, and they're enrolled automatically."
       }
     },
@@ -8842,7 +8842,7 @@
       "instapay": "InstaPay",
       "vodafoneCash": "Vodafone Cash",
       "other": "Other",
-      "hint": "Money the parent sent you directly, so pick how it arrived. CenterHQ does not touch this money and takes no cut.",
+      "hint": "Money the parent sent you directly, so pick how it arrived. TutoringHQ does not touch this money and takes no cut.",
       "error": "Could not mark as paid. Try again."
     },
     "privateEngine": {
@@ -8947,7 +8947,7 @@
     "title": "Resume your subscription",
     "resubscribeBody": "Your private data is safe and will be right where you left it once you resume.",
     "startBody": "Subscribe to unlock the full private teaching engine.",
-    "planName": "CenterHQ Teacher",
+    "planName": "TutoringHQ Teacher",
     "priceSuffix": "/ month",
     "includedTitle": "What is included",
     "featurePrivateGroups": "Private groups and rosters",
@@ -8967,7 +8967,7 @@
   },
   "teacherSignup": {
     "title": "Create your teacher account",
-    "subtitle": "Run your private practice on CenterHQ. No center needed.",
+    "subtitle": "Run your private practice on TutoringHQ. No center needed.",
     "nameLabel": "Your name",
     "phoneLabel": "Mobile number",
     "subjectLabel": "Subject (optional)",
@@ -9122,7 +9122,7 @@
     "privacy": "Privacy Policy",
     "terms": "Terms",
     "cookies": "Cookie Policy",
-    "rights": "All rights reserved. CenterHQ, a product of EHG Intelligence.",
+    "rights": "All rights reserved. TutoringHQ, a product of EHG Intelligence.",
     "switchLocaleAria": "Switch language",
     "footerNavAria": "Legal links"
   },
@@ -9130,7 +9130,7 @@
     "login": "Log in",
     "badge": "For teachers",
     "heroTitle": "Get the money stress off your mind",
-    "heroSub": "Whether you teach at a center or have private students, CenterHQ brings all your income into one screen and sends payment links on its own.",
+    "heroSub": "Whether you teach at a center or have private students, TutoringHQ brings all your income into one screen and sends payment links on its own.",
     "ctaPrimary": "Start your free trial",
     "ctaSecondary": "Log in",
     "nav": {
@@ -9142,8 +9142,8 @@
     },
     "pain": {
       "heading": "Teaching shouldn't feel like accounting.",
-      "body": "Every day: different centers, private students, and by the end you don't know what you earned. Chasing payments, calculating splits by hand, wondering who paid and who didn't. CenterHQ puts it all in one screen. See every pound you earn, and let the invoices send themselves.",
-      "connector": "CenterHQ solves all of it."
+      "body": "Every day: different centers, private students, and by the end you don't know what you earned. Chasing payments, calculating splits by hand, wondering who paid and who didn't. TutoringHQ puts it all in one screen. See every pound you earn, and let the invoices send themselves.",
+      "connector": "TutoringHQ solves all of it."
     },
     "features": {
       "f1": { "title": "Center monitoring", "body": "See your cut from every center automatically. No manual math." },

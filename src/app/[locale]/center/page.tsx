@@ -12,8 +12,8 @@ export async function generateMetadata({
 
   return {
     title: isAr
-      ? 'CenterHQ - نظام إدارة السنترات التعليمية'
-      : 'CenterHQ - Tutoring Center Management System for Egypt',
+      ? 'TutoringHQ - نظام إدارة السنترات التعليمية'
+      : 'TutoringHQ - Tutoring Center Management System for Egypt',
     description: isAr
       ? 'نظام إدارة السنترات التعليمية في مصر. حضور QR، متابعة الطلاب، فواتير تلقائية وإشعارات واتساب.'
       : "Egypt's tutoring center operating system. QR attendance, student tracking, automated billing & WhatsApp notifications.",
@@ -23,7 +23,7 @@ export async function generateMetadata({
 const softwareApplicationSchema = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
-  name: 'CenterHQ',
+  name: 'TutoringHQ',
   applicationCategory: 'BusinessApplication',
   operatingSystem: 'Web, Android PWA, iOS PWA',
   url: 'https://centerhq.app',
@@ -39,7 +39,7 @@ const faqSchema = {
   mainEntity: [
     {
       '@type': 'Question',
-      name: 'ما هو CenterHQ؟',
+      name: 'ما هو TutoringHQ؟',
       acceptedAnswer: {
         '@type': 'Answer',
         text: 'نظام إدارة متكامل للسنترات التعليمية في مصر يشمل حضور QR وإشعارات واتساب وفواتير تلقائية.',
@@ -58,7 +58,7 @@ const faqSchema = {
       name: 'هل يعمل على الموبايل؟',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'نعم، CenterHQ تطبيق PWA يعمل على Android وiOS بدون تنزيل.',
+        text: 'نعم، TutoringHQ تطبيق PWA يعمل على Android وiOS بدون تنزيل.',
       },
     },
     {

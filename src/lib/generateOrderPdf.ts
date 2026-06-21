@@ -87,7 +87,7 @@ function buildCardHtml(input: GeneratePdfInput): string {
           </div>
           <div class="back-name" style="color:${presetNameOnBody}">${centerName}</div>
           <div class="back-phone">${centerPhone || ''}</div>
-          <div class="powered">Powered by CenterHQ</div>
+          <div class="powered">Powered by TutoringHQ</div>
         </div>
         <div class="label">الوجه الخلفي</div>
       </div>
@@ -117,7 +117,7 @@ function buildCardHtml(input: GeneratePdfInput): string {
           </div>
           <div class="back-name">${centerName}</div>
           <div class="back-phone">${centerPhone || ''}</div>
-          <div class="powered">Powered by CenterHQ</div>
+          <div class="powered">Powered by TutoringHQ</div>
         </div>
         <div class="label">الوجه الخلفي</div>
       </div>
@@ -186,7 +186,7 @@ body{font-family:Arial,sans-serif;background:#fff;color:#0F172A}
 <body>
 
 <div class="cover">
-  <div class="platform">CenterHQ Platform</div>
+  <div class="platform">TutoringHQ Platform</div>
   <div class="title">طلب طباعة بطاقات</div>
   <div class="ref-num">${ref}</div>
   <table class="info-table">
@@ -195,7 +195,7 @@ body{font-family:Arial,sans-serif;background:#fff;color:#0F172A}
     <tr><td>ملاحظات</td><td>${displayNotes}</td></tr>
   </table>
   <div class="warning">⚠️ هذا المستند سري, للاستخدام الداخلي فقط</div>
-  <div class="footer">Powered by CenterHQ</div>
+  <div class="footer">Powered by TutoringHQ</div>
 </div>
 
 <div class="cards">

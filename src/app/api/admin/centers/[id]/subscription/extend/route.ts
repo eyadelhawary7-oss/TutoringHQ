@@ -95,7 +95,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       await sendFreeformMessage(
         centerId,
         phone,
-        `مرحباً${name ? ` ${name}` : ''}، تم تمديد موعد استحقاق اشتراككم على CenterHQ بمقدار ${Math.round(days)} يوماً حسب تنسيق مع الدعم. المستحق التالي: ${newDue}. شكراً لثقتكم.`,
+        `مرحباً${name ? ` ${name}` : ''}، تم تمديد موعد استحقاق اشتراككم على TutoringHQ بمقدار ${Math.round(days)} يوماً حسب تنسيق مع الدعم. المستحق التالي: ${newDue}. شكراً لثقتكم.`,
       );
     } catch {
       /* non-fatal */

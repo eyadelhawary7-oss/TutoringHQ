@@ -56,14 +56,14 @@ function buildReminderMessage(
   if (daysUntilDue === 7) {
     return `مرحباً ${ownerName} 👋
 
-تذكير ودي: اشتراك ${centerName} على CenterHQ سيتجدد خلال *7 أيام*.
+تذكير ودي: اشتراك ${centerName} على TutoringHQ سيتجدد خلال *7 أيام*.
 
 📋 الباقة: ${planArabic}
 💰 المبلغ: ${formatAmount(amount)} ج.م
 
 للاستفسار أو تغيير الباقة، تواصل معنا على هذا الرقم.
 
-شكراً لثقتك في CenterHQ 🎓`;
+شكراً لثقتك في TutoringHQ 🎓`;
   }
 
   return `تنبيه عاجل ⚠️

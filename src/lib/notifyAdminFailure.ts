@@ -44,7 +44,7 @@ export async function notifyAdminOfVendorFailure(opts: AdminFailureOpts): Promis
     }
 
     const messageBody = [
-      '⚠️ تنبيه, CenterHQ',
+      '⚠️ تنبيه, TutoringHQ',
       '',
       'فشل إرسال طلب الطباعة للمورد تلقائياً',
       `رقم الطلب: ${opts.ref}`,

@@ -317,7 +317,7 @@ export default function LoginPage() {
             fontSize: '14px',
           }}
         >
-          <span style={{ color: 'var(--color-text-primary)' }}>CENTER</span>
+          <span style={{ color: 'var(--color-text-primary)' }}>Tutoring</span>
           <span style={{ color: 'var(--color-teal)' }}>HQ</span>
         </span>
       </div>

@@ -70,7 +70,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ orderId:
   return new Response(new Uint8Array(pdfBuffer), {
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="CenterHQ-${ref}.pdf"`,
+      'Content-Disposition': `attachment; filename="TutoringHQ-${ref}.pdf"`,
     },
   });
 }

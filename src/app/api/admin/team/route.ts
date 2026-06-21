@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json({
-        error: 'User not found. The person must sign up at CenterHQ first, then you can add them to the team.',
+        error: 'User not found. The person must sign up at TutoringHQ first, then you can add them to the team.',
       }, { status: 400 });
     }
 

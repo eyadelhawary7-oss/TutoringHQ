@@ -292,7 +292,7 @@ function buildSidebar(params: {
   paymentMethodLine: string;
   paymentTs: string;
 }): string {
-  const wordmark = `<div style="font-family:'Bodoni Moda',serif;font-size:22px;font-weight:600;color:${WHITE};line-height:1.2;">CENTER<span style="color:${TEAL};font-style:italic;">HQ</span></div>
+  const wordmark = `<div style="font-family:'Bodoni Moda',serif;font-size:22px;font-weight:600;color:${WHITE};line-height:1.2;">Tutoring<span style="color:${TEAL};font-style:italic;">HQ</span></div>
   <div style="font-size:11px;color:${MUTED};margin-top:6px;font-family:Cairo,sans-serif;">إدارة ذكية للسناتر التعليمية</div>`;
 
   return `<aside style="width:56mm;min-width:56mm;background:${NAVY};color:${WHITE};padding:16mm 14px 14px;display:flex;flex-direction:column;">
@@ -312,7 +312,7 @@ function buildSidebar(params: {
   ${sidebarMetaBlock(params.metaRows)}
   ${sidebarDivider()}
   <div style="font-size:10px;color:${MUTED};font-family:Cairo,sans-serif;">من</div>
-  <div style="font-size:14px;font-weight:700;color:${WHITE};margin-top:4px;font-family:system-ui,sans-serif;">CenterHQ</div>
+  <div style="font-size:14px;font-weight:700;color:${WHITE};margin-top:4px;font-family:system-ui,sans-serif;">TutoringHQ</div>
   <div style="font-size:11px;color:${MUTED};margin-top:4px;font-family:Cairo,sans-serif;">منتج EHG Intelligence</div>
   <div style="margin-top:14px;">
     <div style="font-size:10px;color:${MUTED};font-family:Cairo,sans-serif;">طريقة الدفع</div>
@@ -956,7 +956,7 @@ export async function generatePayoutReceiptPdf(payoutId: string, supabase: Supab
 
   const html = wrapDocument(
     `${sidebar}${main}`,
-    'CenterHQ · centerhq.app · An EHG Intelligence Product',
+    'TutoringHQ · centerhq.app · An EHG Intelligence Product',
     `13 OF ${DOC_TOTAL}: REFERRAL PAYOUT`,
   );
   return htmlToPdfBuffer(html);
@@ -1057,7 +1057,7 @@ export async function generateStaffCommissionPayoutPdf(
 
   const html = wrapDocument(
     inner,
-    'CenterHQ · centerhq.app · An EHG Intelligence Product',
+    'TutoringHQ · centerhq.app · An EHG Intelligence Product',
     `STAFF COMMISSION PAYOUT · ${esc(period)}`,
   );
   return htmlToPdfBuffer(html);
@@ -1108,8 +1108,6 @@ export async function generateCardOrderReceiptPdf(
 
   const oid = String(o.id ?? orderId);
   const shortRef = oid.replace(/-/g, '').slice(-8).toUpperCase();
-  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://centerhq.app').replace(/\/$/, '');
-  const logoUrl = `${baseUrl}/logo.png`;
 
   const refundStatusStr = o.refund_status != null ? String(o.refund_status) : null;
 
@@ -1131,13 +1129,13 @@ export async function generateCardOrderReceiptPdf(
     refundPaidAtLabel: o.refund_paid_at ? fmtDateTime(String(o.refund_paid_at)) : null,
     refundAmount: refundStatusStr ? total : null,
     taxRegistration: typeof o.ehg_tax_registration === 'string' ? o.ehg_tax_registration : null,
-    logoUrl,
+    logoUrl: null,
   };
 
   const inner = buildCardOrderReceiptInnerHtml(model);
   const html = wrapDocument(
     inner,
-    'EHG Intelligence Egypt · CenterHQ',
+    'EHG Intelligence Egypt · TutoringHQ',
     `Receipt · ${esc(shortRef)}`,
   );
   const buf = await htmlToPdfBuffer(html);
