@@ -700,7 +700,7 @@ export function AdminSidebar({
               {(userName || userPhone || 'U').charAt(0).toUpperCase()}
             </button>
             {isUserMenuOpen ? (
-              <div className="absolute top-12 start-0 bg-[var(--color-surface-1)] rounded-xl shadow-lg border border-[var(--color-border-subtle)] py-1 z-50 min-w-[200px]">
+              <div className="absolute top-12 end-0 w-[220px] max-w-[calc(100vw-1.5rem)] max-h-[calc(100vh-5rem)] overflow-y-auto overscroll-contain bg-[var(--color-surface-1)] rounded-xl shadow-lg border border-[var(--color-border-subtle)] py-1 z-50">
                 <div className="px-4 py-3 border-b border-[var(--color-border-subtle)]">
                   <p className="text-sm font-semibold text-[var(--color-text-primary)]">{userName || '-'}</p>
                   <p className="text-xs text-[var(--color-text-secondary)]" dir="ltr">

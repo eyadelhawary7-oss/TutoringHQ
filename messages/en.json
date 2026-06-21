@@ -9362,7 +9362,9 @@
     }
   },
   "supportFab": {
-    "ariaLabel": "Contact support on WhatsApp"
+    "ariaLabel": "Contact support on WhatsApp",
+    "dismiss": "Hide support button",
+    "reopen": "Reopen WhatsApp support"
   },
   "slotPicking": {
     "title": "Class times",
