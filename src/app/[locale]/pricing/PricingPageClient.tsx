@@ -12,8 +12,9 @@ import PricingBannerClient from '@/components/landing/PricingBannerClient';
 import PublicLocaleToggle from '@/components/PublicLocaleToggle';
 import PlanComparisonTable from '@/components/teacher/PlanComparisonTable';
 import { usePublicPlanPrices } from '@/hooks/usePublicPlanPrices';
+import { SITE } from '@/config/site';
 
-const CONTACT_MAIL = 'mailto:support@ehgintelligence.com';
+const CONTACT_MAIL = `mailto:${SITE.supportEmail}`;
 
 type Audience = 'center' | 'teacher';
 

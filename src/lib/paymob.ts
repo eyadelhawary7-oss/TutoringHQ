@@ -2,6 +2,7 @@ import '@/lib/paymobProductionGuard';
 import crypto from 'crypto';
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
 import { timingSafeEqualHex } from '@/lib/verifyHmac';
+import { SITE } from '@/config/site';
 
 const PAYMOB_BASE = 'https://accept.paymob.com/api';
 
@@ -77,7 +78,7 @@ export async function createPaymentKey({
       order_id: orderId,
       billing_data: {
         apartment: 'NA',
-        email: 'support@ehgintelligence.com',
+        email: SITE.supportEmail,
         floor: 'NA',
         first_name: name.split(' ')[0] || name,
         street: 'NA',

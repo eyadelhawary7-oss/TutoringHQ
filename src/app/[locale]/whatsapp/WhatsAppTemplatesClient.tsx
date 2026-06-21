@@ -10,8 +10,9 @@ import {
   renderWaTemplatePreviewBody,
 } from '@/lib/waTemplatePreviewSamples';
 import type { WaMetaTemplateOwnerRow } from '@/types/wa-meta-owner';
+import { SITE } from '@/config/site';
 
-const SUPPORT_MAIL = 'support@ehgintelligence.com';
+const SUPPORT_MAIL = SITE.supportEmail;
 
 function formatTemplateName(raw: string): string {
   if (!raw) return '';
