@@ -9361,6 +9361,9 @@
       "search": "Search"
     }
   },
+  "supportFab": {
+    "ariaLabel": "Contact support on WhatsApp"
+  },
   "slotPicking": {
     "title": "Class times",
     "subtitle": "After the cut is agreed, propose a weekly time and the center confirms it",

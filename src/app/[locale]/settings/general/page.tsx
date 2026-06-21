@@ -29,6 +29,7 @@ import { SettingsSwitch } from '@/components/settings/SettingsSwitch';
 import { ChangePinModal } from '@/components/admin/ChangePinModal';
 import { signOutToLogin } from '@/lib/auth/sign-out-client';
 import { getSupportWhatsAppDisplayLabel, getSupportWhatsAppWaMeBase } from '@/lib/supportWhatsApp';
+import { SITE } from '@/config/site';
 
 interface Subject {
   id: string;
@@ -1024,7 +1025,7 @@ export default function GeneralSettingsPage() {
             <div className="p-6">
               <p className="text-sm text-[var(--color-text-secondary)] mb-3" dir="ltr">
                 {t('supportContact', {
-                  email: 'support@ehgintelligence.com',
+                  email: SITE.supportEmail,
                   phone: getSupportWhatsAppDisplayLabel() || ',',
                 })}
               </p>

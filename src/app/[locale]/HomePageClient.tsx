@@ -17,6 +17,7 @@ import { Menu, X } from 'lucide-react';
 import PricingBannerClient from '@/components/landing/PricingBannerClient';
 import PromoPopup from '@/components/landing/PromoPopup';
 import { usePublicPlanPrices } from '@/hooks/usePublicPlanPrices';
+import { SITE } from '@/config/site';
 
 const WA_SUPPORT = getSupportWhatsAppWaMeBase();
 const WA_SUPPORT_LABEL = getSupportWhatsAppDisplayLabel();
@@ -506,7 +507,7 @@ export default function HomePageClient() {
               </a>
             ) : (
               <a
-                href="mailto:support@ehgintelligence.com"
+                href={`mailto:${SITE.supportEmail}`}
                 className="inline-flex rounded-xl bg-[var(--color-teal)] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-teal-deep)] btn-press chq-focus"
               >
                 {m('trustBandContact')}

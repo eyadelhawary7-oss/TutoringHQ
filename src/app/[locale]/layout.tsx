@@ -57,6 +57,7 @@ import { ToastProvider, PWAInstallBanner } from '@/components/ui';
 import { SwUpdateBanner } from '@/components/ui/SwUpdateBanner';
 import { PostHogProvider } from '@/components/PostHogProvider';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import FloatingWhatsAppButton from '@/components/support/FloatingWhatsAppButton';
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -197,6 +198,7 @@ export default async function LocaleLayout({
                 <AppShell>
                   {children}
                 </AppShell>
+                <FloatingWhatsAppButton />
               </LayoutProvider>
             </UserProvider>
             <PWAInstallBanner />
