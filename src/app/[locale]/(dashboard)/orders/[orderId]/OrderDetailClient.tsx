@@ -122,7 +122,7 @@ export default function OrderDetailClient({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `centerhq-order-${shortRef}.pdf`;
+    a.download = `tutoringhq-order-${shortRef}.pdf`;
     a.click();
     URL.revokeObjectURL(url);
   }

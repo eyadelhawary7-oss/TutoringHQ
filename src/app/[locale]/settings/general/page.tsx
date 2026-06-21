@@ -1024,7 +1024,7 @@ export default function GeneralSettingsPage() {
             <div className="p-6">
               <p className="text-sm text-[var(--color-text-secondary)] mb-3" dir="ltr">
                 {t('supportContact', {
-                  email: 'support@centerhq.com',
+                  email: 'support@ehgintelligence.com',
                   phone: getSupportWhatsAppDisplayLabel() || ',',
                 })}
               </p>

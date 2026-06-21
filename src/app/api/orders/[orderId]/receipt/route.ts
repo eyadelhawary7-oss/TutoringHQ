@@ -26,7 +26,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ orderId
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="centerhq-order-${short}.pdf"`,
+        'Content-Disposition': `attachment; filename="tutoringhq-order-${short}.pdf"`,
       },
     });
   }
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ orderId
     status: 200,
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="centerhq-order-${short}.pdf"`,
+      'Content-Disposition': `attachment; filename="tutoringhq-order-${short}.pdf"`,
     },
   });
 }
