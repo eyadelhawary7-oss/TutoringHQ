@@ -77,7 +77,7 @@ export async function createPaymentKey({
       order_id: orderId,
       billing_data: {
         apartment: 'NA',
-        email: 'billing@centerhq.com',
+        email: 'support@ehgintelligence.com',
         floor: 'NA',
         first_name: name.split(' ')[0] || name,
         street: 'NA',

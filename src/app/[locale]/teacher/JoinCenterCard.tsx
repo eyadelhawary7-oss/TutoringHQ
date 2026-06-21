@@ -323,7 +323,7 @@ export default function JoinCenterCard() {
                 <QrCodeBlock
                   value={profileUrl}
                   downloadLabel={t('downloadQr')}
-                  fileName="centerhq-teacher-profile.png"
+                  fileName="tutoringhq-teacher-profile.png"
                 />
               </div>
             </>

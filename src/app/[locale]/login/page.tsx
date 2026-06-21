@@ -284,30 +284,6 @@ export default function LoginPage() {
         </button>
       </div>
 
-      <div
-        style={{
-          width: '56px',
-          height: '56px',
-          border: '2px solid var(--color-teal)',
-          borderRadius: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: '12px',
-        }}
-      >
-        <span
-          style={{
-            ...PLAYFAIR,
-            color: 'var(--color-teal)',
-            fontWeight: 900,
-            fontSize: '18px',
-          }}
-        >
-          CH
-        </span>
-      </div>
-
       <div style={{ marginBottom: '44px' }}>
         <span
           style={{

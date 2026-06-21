@@ -11,7 +11,7 @@ import {
 } from '@/lib/waTemplatePreviewSamples';
 import type { WaMetaTemplateOwnerRow } from '@/types/wa-meta-owner';
 
-const SUPPORT_MAIL = 'support@centerhq.com';
+const SUPPORT_MAIL = 'support@ehgintelligence.com';
 
 function formatTemplateName(raw: string): string {
   if (!raw) return '';

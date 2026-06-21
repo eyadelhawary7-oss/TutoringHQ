@@ -1,5 +1,11 @@
 /**
- * CenterHQ service worker — precache minimal scanner shell; runtime StaleWhileRevalidate via Workbox CDN.
+ * TutoringHQ service worker — precache minimal scanner shell; runtime StaleWhileRevalidate via Workbox CDN.
+ *
+ * Bump SW_VERSION on every release that changes precached assets or branding.
+ * A new version takes over immediately (skipWaiting + clientsClaim) and the
+ * activate handler purges every cache from previous versions, so the first
+ * normal page load after a deploy is served fresh (no stale branding) while
+ * offline support keeps working off the freshly-populated current-version caches.
  */
 importScripts('/workbox/workbox-v7.0.0/workbox-sw.js');
 
@@ -8,7 +14,12 @@ if (globalThis.workbox) {
 }
 
 const WB = globalThis.workbox;
-const CACHE_LEGACY = 'centerhq-v4';
+const SW_VERSION = 'v6';
+const PRECACHE_NAME = `centerhq-precache-${SW_VERSION}`;
+const RUNTIME_NAME = `centerhq-${SW_VERSION}-runtime`;
+// Cache-Storage names belonging to the CURRENT version — everything else under
+// the `centerhq-` prefix is treated as stale and deleted on activate.
+const KEEP_CACHES = [PRECACHE_NAME, RUNTIME_NAME];
 
 const PRECACHE_ENTRIES = [
   { url: '/manifest.webmanifest', revision: null },
@@ -23,7 +34,7 @@ const PRECACHE_ENTRIES = [
 if (WB) {
   WB.core.setCacheNameDetails({
     prefix: 'centerhq',
-    suffix: 'v5',
+    suffix: SW_VERSION,
     precache: 'precache',
     runtime: 'runtime',
   });
@@ -59,7 +70,7 @@ if (WB) {
   );
 
   const runtimeSWR = new WB.strategies.StaleWhileRevalidate({
-    cacheName: 'centerhq-v5-runtime',
+    cacheName: RUNTIME_NAME,
   });
 
   WB.routing.registerRoute(
@@ -100,9 +111,16 @@ if (WB) {
 }
 
 self.addEventListener('activate', (event) => {
+  // Purge every Cache-Storage entry from previous SW versions so a new deploy
+  // can never serve old precached/runtime assets (e.g. stale branding).
+  // Only Cache Storage is touched; the offline scan IndexedDB is left intact.
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k === CACHE_LEGACY || k.startsWith('centerhq-v4')).map((k) => caches.delete(k))),
+      Promise.all(
+        keys
+          .filter((k) => k.startsWith('centerhq-') && !KEEP_CACHES.includes(k))
+          .map((k) => caches.delete(k)),
+      ),
     ),
   );
 });

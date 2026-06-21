@@ -223,7 +223,7 @@ export async function GET(request: NextRequest) {
 
   // BOM so Excel detects UTF-8 and renders Arabic correctly.
   const csv = '\uFEFF' + lines.join('\r\n') + '\r\n';
-  const filename = `centerhq-income-${windowLabel}-${cairoDateKey()}.csv`;
+  const filename = `tutoringhq-income-${windowLabel}-${cairoDateKey()}.csv`;
 
   return new NextResponse(csv, {
     status: 200,

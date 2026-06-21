@@ -49,7 +49,7 @@ export default function GroupJoinLinkCard({
           <QrCodeBlock
             value={joinUrl}
             downloadLabel={t('downloadQr')}
-            fileName="centerhq-group-join.png"
+            fileName="tutoringhq-group-join.png"
           />
         </div>
 

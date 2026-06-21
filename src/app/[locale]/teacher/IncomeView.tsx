@@ -203,7 +203,7 @@ export default function IncomeView() {
       }
       const disposition = res.headers.get('Content-Disposition') ?? '';
       const filename =
-        /filename="([^"]+)"/.exec(disposition)?.[1] ?? 'centerhq-income.csv';
+        /filename="([^"]+)"/.exec(disposition)?.[1] ?? 'tutoringhq-income.csv';
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

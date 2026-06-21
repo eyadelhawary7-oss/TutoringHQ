@@ -132,29 +132,6 @@ export default function AcceptInvitePage() {
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
             <Link href="/" className="inline-flex flex-col items-center">
-              <div
-                style={{
-                  width: '56px',
-                  height: '56px',
-                  border: '2px solid #0D9488',
-                  borderRadius: '16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '12px',
-                }}
-              >
-                <span
-                  style={{
-                    ...PLAYFAIR,
-                    color: '#0D9488',
-                    fontWeight: 900,
-                    fontSize: '18px',
-                  }}
-                >
-                  CH
-                </span>
-              </div>
               <span
                 style={{
                   fontFamily: "var(--font-bodoni), 'Bodoni Moda', Georgia, serif",
