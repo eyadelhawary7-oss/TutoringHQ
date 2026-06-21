@@ -104,11 +104,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: { publicUrl } } = supabaseAdmin.storage
+    // payment-proofs is a private bucket; return a time-limited signed URL so the
+    // proof stays readable the way the app needs it without exposing files publicly.
+    const { data: signed, error: signErr } = await supabaseAdmin.storage
       .from('payment-proofs')
-      .getPublicUrl(fileName);
+      .createSignedUrl(fileName, 60 * 60 * 24 * 7); // 7-day link
 
-    return NextResponse.json({ url: publicUrl });
+    if (signErr || !signed?.signedUrl) {
+      console.error('[upload/payment-proof] sign', signErr);
+      return NextResponse.json({ error: 'Could not generate proof link' }, { status: 500 });
+    }
+
+    return NextResponse.json({ url: signed.signedUrl, key: fileName });
   } catch (err) {
     console.error('[upload/payment-proof]', err);
     return NextResponse.json(
