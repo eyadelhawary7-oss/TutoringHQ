@@ -94,9 +94,6 @@ export default function HomePageClient() {
               locale={locale}
               className="flex items-center gap-2 btn-press chq-focus rounded-lg"
             >
-              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--color-teal)] text-xs font-bold text-white">
-                CH
-              </span>
               <span className="text-lg tracking-tight">
                 <span
                   style={{
@@ -106,7 +103,7 @@ export default function HomePageClient() {
                     color: 'var(--color-text-primary)',
                   }}
                 >
-                  CENTER
+                  Tutoring
                 </span>
                 <span
                   style={{

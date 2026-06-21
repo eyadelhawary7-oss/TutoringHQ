@@ -122,7 +122,7 @@ export function HeroVisuals({ locale }: HeroVisualsProps) {
                     letterSpacing: '0.04em',
                   }}
                 >
-                  CENTERHQ
+                  TutoringHQ
                 </span>
                 <span style={{ fontSize: 6, color: '#475569' }}>
                   {isAr ? '· لوحة التحكم' : '· Admin'}

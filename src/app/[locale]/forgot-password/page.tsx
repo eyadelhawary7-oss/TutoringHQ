@@ -195,12 +195,6 @@ export default function ForgotPasswordPage() {
 
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
-          <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-black text-2xl mb-4 shadow-lg"
-            style={{ background: 'hsl(var(--primary))' }}
-          >
-            CH
-          </div>
           <h1 className="text-2xl font-black flex items-center justify-center gap-0">
             <span
               style={{
@@ -210,7 +204,7 @@ export default function ForgotPasswordPage() {
                 color: 'var(--color-text-primary)',
               }}
             >
-              CENTER
+              Tutoring
             </span>
             <span
               style={{

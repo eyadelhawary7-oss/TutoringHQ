@@ -71,9 +71,6 @@ export default function PricingPageClient() {
           </button>
           <div className="mx-auto flex w-full max-w-full items-center justify-center gap-4 md:mx-0 md:justify-between">
             <Link href="/" locale={locale} className="flex items-center gap-2 btn-press chq-focus rounded-lg">
-              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--color-teal)] text-xs font-bold text-white">
-                CH
-              </span>
               <span className="text-lg tracking-tight">
                 <span
                   style={{
@@ -83,7 +80,7 @@ export default function PricingPageClient() {
                     color: 'var(--color-text-primary)',
                   }}
                 >
-                  CENTER
+                  Tutoring
                 </span>
                 <span
                   style={{

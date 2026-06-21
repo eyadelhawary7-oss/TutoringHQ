@@ -44,13 +44,6 @@ export default function SplashClient() {
 
       {/* Hero */}
       <section className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center px-5 pb-10 pt-8 text-center md:px-6 md:pt-16">
-        <span
-          className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-2xl text-sm font-bold text-white"
-          style={{ background: 'var(--color-teal)', fontFamily: 'var(--font-bodoni)', letterSpacing: '1px' }}
-          aria-hidden
-        >
-          CH
-        </span>
         <h1 className="max-w-2xl text-3xl font-bold leading-tight text-[var(--color-text-primary)] md:text-5xl">
           {t('headline')}
         </h1>

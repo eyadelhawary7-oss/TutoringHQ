@@ -3787,7 +3787,7 @@
     "blacklistMenu": "Blacklist",
     "viewProof": "View Proof",
     "noImage": "No image",
-    "poweredByCenterHQ": "Powered by TutoringHQ",
+    "poweredByTutoringHQ": "Powered by TutoringHQ",
     "suspendConfirmBody": "Are you sure you want to suspend {name}?",
     "rejectReasonPlaceholder": "Optional reason...",
     "contactPerson": "Contact Person",
