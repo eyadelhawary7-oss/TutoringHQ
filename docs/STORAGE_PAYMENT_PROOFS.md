@@ -6,6 +6,13 @@ Secure the `payment-proofs` Supabase Storage bucket with the following settings 
 
 In **Supabase Dashboard** → **Storage** → **payment-proofs** bucket → **Settings**:
 
+### 0. Visibility (security)
+- The bucket is **private** (`public = false`). Payment proofs are financial documents and
+  must never be fetchable or enumerable by an unauthenticated URL.
+- Reads go through **service-role signed URLs** (`createSignedUrl`), e.g. the upload route
+  (`/api/upload/payment-proof`) returns a 7-day signed link. Do **not** re-enable public access
+  or add a broad `SELECT` policy for `anon`/`public` on `storage.objects` for this bucket.
+
 ### 1. File Size Limit
 - **Max file size:** `5 MB` (5,242,880 bytes)
 - Prevents large file uploads that could exhaust storage or cause DoS.
