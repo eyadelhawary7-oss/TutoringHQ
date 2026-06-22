@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
+import { SITE_URL } from '@/config/site';
 import HomePageClient from '../HomePageClient';
 
 export async function generateMetadata({
@@ -26,7 +27,7 @@ const softwareApplicationSchema = {
   name: 'TutoringHQ',
   applicationCategory: 'BusinessApplication',
   operatingSystem: 'Web, Android PWA, iOS PWA',
-  url: 'https://centerhq.app',
+  url: SITE_URL,
   offers: { '@type': 'Offer', price: '999', priceCurrency: 'EGP' },
   description: 'نظام إدارة السنترات التعليمية في مصر',
   inLanguage: ['ar-EG', 'en-US'],

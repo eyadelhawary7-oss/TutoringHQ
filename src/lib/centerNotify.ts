@@ -4,7 +4,7 @@ import { formatDate, formatNumber, formatCurrency } from '@/lib/formatNumber';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getCourierDisplayName } from '@/lib/courierDisplayName';
 
-const PLATFORM_URL = 'https://centerhq.app';
+const PLATFORM_URL = 'https://tutoringhq.app';
 
 function publicAppBase(): string {
   return (process.env.NEXT_PUBLIC_APP_URL ?? PLATFORM_URL).replace(/\/$/, '');

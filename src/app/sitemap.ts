@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
+import { SITE_URL } from '@/config/site';
 
-const BASE_URL = 'https://centerhq.app';
+const BASE_URL = SITE_URL;
 const LOCALES = ['ar', 'en'] as const;
 
 type Route = {
