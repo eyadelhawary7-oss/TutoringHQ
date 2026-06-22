@@ -69,7 +69,7 @@ function sendWhatsAppReminder(
     `السلام عليكم ${centerName} 👋\n\n` +
       `نود تذكيركم بأن دفعة اشتراككم في TutoringHQ بقيمة *${formattedAmount} ${locale === 'ar' ? 'ج.م' : 'EGP'}* مستحقة بتاريخ *${formattedDue}*.\n\n` +
       `يمكنكم تسوية الدفع ورفع إثبات الدفع من خلال:\n` +
-      `🔗 https://centerhq.app/settings/billing\n\n` +
+      `🔗 https://tutoringhq.app/settings/billing\n\n` +
       `شكراً لثقتكم بـ TutoringHQ 🙏`,
   );
   window.open(`https://wa.me/${phone}?text=${message}`, '_blank', 'noopener,noreferrer');

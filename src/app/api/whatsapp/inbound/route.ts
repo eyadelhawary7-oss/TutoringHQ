@@ -33,7 +33,7 @@ const FAQ_PATTERNS = [
   {
     triggers: ['نسيت رمز', 'forgot pin', 'PIN', 'كلمة السر'],
     response:
-      'لإعادة تعيين الرمز: centerhq.app/ar/forgot-password, ستصلك رسالة على رقمك.',
+      'لإعادة تعيين الرمز: tutoringhq.app/ar/forgot-password, ستصلك رسالة على رقمك.',
     key: 'forgot_pin',
   },
   {
@@ -54,7 +54,7 @@ const FAQ_PATTERNS = [
   },
   {
     triggers: ['السعر', 'price', 'اشتراك', 'باقات'],
-    response: `باقاتنا تبدأ من ${formatCurrency(1999, 'ar')}/شهر. زور centerhq.app لتفاصيل كل باقة.`,
+    response: `باقاتنا تبدأ من ${formatCurrency(1999, 'ar')}/شهر. زور tutoringhq.app لتفاصيل كل باقة.`,
     key: 'pricing',
   },
   {

@@ -128,7 +128,7 @@ export function StudentBalanceStatement(props: StudentBalanceStatementProps) {
 
       {/* Footer */}
       <div className="mt-8 text-center text-xs text-[var(--color-text-tertiary)]">
-        <div>TutoringHQ - centerhq.app</div>
+        <div>TutoringHQ - tutoringhq.app</div>
         <div>
           تاريخ الإصدار:{' '}
           {formatDate(new Date(), locale, {

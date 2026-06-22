@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
 عدد البطاقات: ${quantity}
 الإجمالي: ${totalAmount} جنيه
 العنوان: ${deliveryAddress}
-🔗 https://centerhq.app/admin/orders`;
+🔗 https://tutoringhq.app/admin/orders`;
 
     const whatsappToken = Deno.env.get('WHATSAPP_TOKEN');
     const phoneNumberId = Deno.env.get('PHONE_NUMBER_ID');

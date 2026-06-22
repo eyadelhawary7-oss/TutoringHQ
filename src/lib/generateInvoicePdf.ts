@@ -320,7 +320,7 @@ function buildSidebar(params: {
     <div style="font-size:10px;color:${MUTED};margin-top:4px;font-family:system-ui,sans-serif;">${esc(params.paymentTs)}</div>
   </div>
   <div style="margin-top:auto;padding-top:20px;font-size:11px;color:${MUTED};font-family:system-ui,sans-serif;line-height:1.5;">
-    +20 122 060 1410<br/><span style="color:${TEAL};">centerhq.app</span>
+    +20 122 060 1410<br/><span style="color:${TEAL};">tutoringhq.app</span>
   </div>
 </aside>`;
 }
@@ -685,7 +685,7 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
 
   const invNoResolved = resolveInvoiceNumber(inv, center, invoiceType);
 
-  const appBase = (process.env.NEXT_PUBLIC_APP_URL ?? "https://centerhq.app").replace(/\/$/, "");
+  const appBase = (process.env.NEXT_PUBLIC_APP_URL ?? "https://tutoringhq.app").replace(/\/$/, "");
   const refCode = String(center.referral_code ?? "CODE").replace(/\s+/g, "") || "CODE";
   const referUrl = `${appBase}/refer/${encodeURIComponent(refCode)}`;
   let referralQrDataUrl: string | null = null;
@@ -956,7 +956,7 @@ export async function generatePayoutReceiptPdf(payoutId: string, supabase: Supab
 
   const html = wrapDocument(
     `${sidebar}${main}`,
-    'TutoringHQ · centerhq.app · An EHG Intelligence Product',
+    'TutoringHQ · tutoringhq.app · An EHG Intelligence Product',
     `13 OF ${DOC_TOTAL}: REFERRAL PAYOUT`,
   );
   return htmlToPdfBuffer(html);
@@ -1057,7 +1057,7 @@ export async function generateStaffCommissionPayoutPdf(
 
   const html = wrapDocument(
     inner,
-    'TutoringHQ · centerhq.app · An EHG Intelligence Product',
+    'TutoringHQ · tutoringhq.app · An EHG Intelligence Product',
     `STAFF COMMISSION PAYOUT · ${esc(period)}`,
   );
   return htmlToPdfBuffer(html);

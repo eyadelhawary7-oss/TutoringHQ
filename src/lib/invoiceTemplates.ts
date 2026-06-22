@@ -436,7 +436,7 @@ function referralSectionHtml(referralCode: string, qrDataUrl: string | null | un
       <div style="border:1px dashed #0D9488;padding:8px 16px;letter-spacing:6px;font-size:20px;font-weight:700;color:#f8fafc;font-family:'Playfair Display',serif;">
         ${esc(code.toUpperCase())}
       </div>
-      <div style="color:#64748b;font-size:10px;margin-top:4px;">centerhq.app/refer/${esc(code)}</div>
+      <div style="color:#64748b;font-size:10px;margin-top:4px;">tutoringhq.app/refer/${esc(code)}</div>
     </div>
     <div style="text-align:center;">
       <div style="color:#64748b;font-size:11px;margin-bottom:4px;">امسح للإحالة</div>
@@ -1082,7 +1082,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
   ${stamp}
   <div style="margin-top:auto;padding-top:16px;border-top:1px solid #1e293b;">
     <div style="color:#64748b;font-size:11px;">+20 122 060 1410</div>
-    <div style="color:#64748b;font-size:11px;">centerhq.app</div>
+    <div style="color:#64748b;font-size:11px;">tutoringhq.app</div>
   </div>
 </div>`;
 
@@ -1101,7 +1101,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
   ${totalsSection}
   ${taxBoxFinal}
   <div class="footer" style="border-top:1px solid #1e293b;padding-top:12px;margin-top:16px;display:flex;justify-content:space-between;color:#64748b;font-size:11px;flex-wrap:wrap;gap:8px;">
-    <span>TutoringHQ · centerhq.app · An EHG Intelligence Product</span>
+    <span>TutoringHQ · tutoringhq.app · An EHG Intelligence Product</span>
     <span>${esc(pageLabel)}</span>
   </div>
   ${referralHtml}

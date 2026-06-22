@@ -6,7 +6,7 @@ import { Gift } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import CopyButton from './CopyButton';
 
-const REFERRAL_BASE = 'https://centerhq.app/teacher/landing';
+const REFERRAL_BASE = 'https://tutoringhq.app/teacher/landing';
 
 /**
  * Lightweight referral hook (free zone home). Reads the teacher's referral_code

@@ -5,7 +5,7 @@ import { CheckCircle2, MessageCircle } from 'lucide-react';
 import CopyButton from './CopyButton';
 import QrCodeBlock from './QrCodeBlock';
 
-const JOIN_BASE = 'https://centerhq.app/join/g';
+const JOIN_BASE = 'https://tutoringhq.app/join/g';
 
 /**
  * Full-screen celebration shown once, right after a teacher creates their very

@@ -24,7 +24,7 @@ const ERROR_KEY: Record<string, string> = {
   REQUEST_ALREADY_PENDING: 'errorPending',
 };
 
-const PROFILE_BASE = 'https://centerhq.app/teacher/profile';
+const PROFILE_BASE = 'https://tutoringhq.app/teacher/profile';
 
 /**
  * Center discovery card (FREE zone). Two ways to connect with a center:

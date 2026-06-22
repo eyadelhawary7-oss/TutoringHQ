@@ -7,7 +7,7 @@ import QrCodeBlock from './QrCodeBlock';
 
 // Arabic-first: the product default locale is ar, so the shared link points at
 // the Arabic public join page.
-const JOIN_BASE = 'https://centerhq.app/ar/join/g';
+const JOIN_BASE = 'https://tutoringhq.app/ar/join/g';
 
 /**
  * "Share with students" card at the top of a teacher's group detail page. The

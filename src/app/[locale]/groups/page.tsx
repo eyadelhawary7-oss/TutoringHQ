@@ -426,7 +426,7 @@ export default function GroupsPage() {
       toast.error(tToast('error'));
       return;
     }
-    const url = `https://centerhq.app/${locale}/join/${code}/${groupId}`;
+    const url = `https://tutoringhq.app/${locale}/join/${code}/${groupId}`;
     try {
       await navigator.clipboard.writeText(url);
       toast.success(t('linkCopied'));
