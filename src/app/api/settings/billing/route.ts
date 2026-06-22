@@ -269,7 +269,7 @@ export async function PUT(request: NextRequest) {
       const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
       return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
-    const { action, new_plan, new_billing_type, reference, amount, proof_url } = parsed.data;
+    const { action, new_plan, new_billing_type, reference, amount } = parsed.data;
 
     if (action === 'request_change') {
       if (!new_plan && !new_billing_type) {
@@ -318,7 +318,6 @@ export async function PUT(request: NextRequest) {
         base_amount: numAmount,
         payment_method: 'instapay',
         payment_reference: String(reference!).trim(),
-        payment_proof_url: (proof_url && proof_url !== '') ? proof_url : null,
         status: 'pending',
         billing_period_start: today,
         billing_period_end: today,
@@ -380,16 +379,13 @@ export async function POST(request: NextRequest) {
     const parsed = (await import('@/lib/validations')).settingsBillingPostSchema.safeParse({
       amount: body.amount,
       reference: body.reference,
-      proofUrl: body.proofUrl ?? body.proof_url,
-      proof_url: body.proof_url,
       paymentMethod: body.paymentMethod,
     });
     if (!parsed.success) {
       const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
       return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
-    const { amount, reference, proofUrl, proof_url, paymentMethod } = parsed.data;
-    const proofUrlResolved = proofUrl ?? proof_url;
+    const { amount, reference, paymentMethod } = parsed.data;
 
     const today = new Date().toISOString().split('T')[0];
     const invoiceNumber = `PAYPROOF-${today}-${Date.now().toString(36)}`;
@@ -402,7 +398,6 @@ export async function POST(request: NextRequest) {
       base_amount: amount,
       payment_method: paymentMethod ?? 'instapay',
       payment_reference: reference,
-      payment_proof_url: proofUrlResolved || null,
       status: 'pending',
       billing_period_start: today,
       billing_period_end: today,

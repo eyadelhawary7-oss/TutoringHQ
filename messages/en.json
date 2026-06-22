@@ -3785,8 +3785,6 @@
     "trial": "Trial",
     "blacklisted": "Blacklisted",
     "blacklistMenu": "Blacklist",
-    "viewProof": "View Proof",
-    "noImage": "No image",
     "poweredByTutoringHQ": "Powered by TutoringHQ",
     "suspendConfirmBody": "Are you sure you want to suspend {name}?",
     "rejectReasonPlaceholder": "Optional reason...",

@@ -16,7 +16,6 @@ import {
   RefreshCw,
   BadgeCheck,
   Bell,
-  Eye,
   CheckCircle,
   XCircle,
   ExternalLink,
@@ -45,7 +44,6 @@ interface PaymentRow {
   recorded_by?: string;
   proof_type?: string;
   proof_reference?: string;
-  payment_proof_url?: string | null;
 }
 
 interface PendingInvoice {
@@ -53,7 +51,6 @@ interface PendingInvoice {
   centerName: string;
   payment_amount?: number;
   center_id: string;
-  payment_proof_url?: string | null;
 }
 
 function sendWhatsAppReminder(
@@ -381,17 +378,6 @@ export default function AdminBillingPage() {
                               </td>
                               <td className="py-3.5 px-4 min-w-[360px]">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  {inv.payment_proof_url ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => setViewingProof(inv.payment_proof_url || null)}
-                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors border border-blue-200"
-                                    >
-                                      <Eye className="w-3.5 h-3.5" /> {t('viewProof')}
-                                    </button>
-                                  ) : (
-                                    <span className="inline-flex items-center text-xs text-[var(--color-text-tertiary)] px-3 py-1.5 whitespace-nowrap">{t('noImage')}</span>
-                                  )}
                                   <button
                                     type="button"
                                     onClick={() => {
@@ -452,7 +438,7 @@ export default function AdminBillingPage() {
                       {paymentHistory.map((p, i) => {
                         const proofUrl =
                           p.proof_type === 'paymob'
-                            ? (p.payment_proof_url || p.proof_reference || '').trim()
+                            ? (p.proof_reference || '').trim()
                             : '';
                         const proofRefDisplay =
                           proofUrl.length > 48
