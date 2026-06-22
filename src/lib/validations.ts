@@ -256,15 +256,12 @@ export const settingsBillingPutSchema = z.object({
   new_billing_type: z.string().max(50).optional(),
   reference: z.string().min(1).max(200).optional(),
   amount: z.number().positive().max(1000000).optional(),
-  proof_url: z.union([z.string().url(), z.literal(''), z.null()]).optional(),
 });
 
 /** Settings billing POST */
 export const settingsBillingPostSchema = z.object({
   amount: z.number().positive().max(1000000),
   reference: z.string().min(1, 'Reference required').max(200),
-  proofUrl: z.union([z.string().url(), z.literal(''), z.null()]).optional(),
-  proof_url: z.union([z.string().url(), z.literal(''), z.null()]).optional(),
   paymentMethod: z.string().max(50).optional(),
 });
 

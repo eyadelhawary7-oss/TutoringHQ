@@ -186,7 +186,7 @@ export async function GET(request: Request) {
 
     const { data: allInvoices } = await supabaseAdmin
       .from('invoices')
-      .select('id, center_id, payment_amount, payment_reference, payment_proof_url, status, paid_at, updated_at')
+      .select('id, center_id, payment_amount, payment_reference, status, paid_at, updated_at')
       .in('status', ['approved', 'rejected'])
       .order('updated_at', { ascending: false })
       .limit(50);
@@ -216,7 +216,6 @@ export async function GET(request: Request) {
     const paymentRows = (payments || []).map((p: { center_id: string; notes?: string | null; [k: string]: unknown }) => {
       const notes = p.notes != null ? String(p.notes) : '';
       const proof = derivePaymentProofColumns({
-        payment_proof_url: null,
         payment_reference: notes || null,
         source: 'admin_payment',
       });
@@ -231,7 +230,6 @@ export async function GET(request: Request) {
 
     const invoiceRows = (allInvoices || []).map((inv: { center_id: string; [k: string]: unknown }) => {
       const proof = derivePaymentProofColumns({
-        payment_proof_url: inv.payment_proof_url as string | null | undefined,
         payment_reference: inv.payment_reference as string | null | undefined,
         source: 'invoice',
       });
@@ -245,7 +243,6 @@ export async function GET(request: Request) {
         notes: `Invoice ${inv.payment_reference ?? inv.id}`,
         source: 'invoice' as const,
         invoiceStatus: inv.status,
-        payment_proof_url: inv.payment_proof_url ?? null,
         payment_reference: inv.payment_reference ?? null,
         proof_type: proof.proofType,
         proof_reference: proof.proofReference,
@@ -254,7 +251,7 @@ export async function GET(request: Request) {
 
     const { data: pendingInvoices } = await supabaseAdmin
       .from('invoices')
-      .select('id, center_id, payment_amount, payment_reference, payment_proof_url, payment_method, created_at, invoice_number')
+      .select('id, center_id, payment_amount, payment_reference, payment_method, created_at, invoice_number')
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
 
