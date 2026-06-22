@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
+import { SITE_URL } from '@/config/site';
 import SplashClient from './SplashClient';
 
 export async function generateMetadata({
@@ -24,7 +25,7 @@ const organizationSchema = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
   name: 'TutoringHQ',
-  url: 'https://centerhq.app',
+  url: SITE_URL,
   description: 'منصة التدريس في مصر - للسناتر والمدرسين',
   publisher: { '@type': 'Organization', name: 'EHG Intelligence Egypt' },
 };

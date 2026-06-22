@@ -9,6 +9,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import WebVitalsReporter from '@/lib/monitoring/WebVitalsReporter';
+import { SITE_URL } from '@/config/site';
 import '../globals.css';
 
 // ADR 031: IBM Plex Sans Arabic is the product font (Arabic + Latin in one
@@ -75,7 +76,7 @@ export async function generateMetadata({
     : "Egypt's tutoring center operating system. QR attendance, student tracking, automated billing & WhatsApp notifications.";
 
   return {
-    metadataBase: new URL('https://centerhq.app'),
+    metadataBase: new URL(SITE_URL),
     title: {
       template: '%s | TutoringHQ',
       default: 'TutoringHQ – نظام إدارة السنترات التعليمية',
@@ -97,7 +98,7 @@ export async function generateMetadata({
     openGraph: {
       title: 'TutoringHQ – نظام إدارة السنترات التعليمية',
       description,
-      url: 'https://centerhq.app',
+      url: SITE_URL,
       siteName: 'TutoringHQ',
       locale: isAr ? 'ar_EG' : 'en_US',
       type: 'website',

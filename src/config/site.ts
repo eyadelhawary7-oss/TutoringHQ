@@ -28,10 +28,10 @@ export const SITE = {
   companyName: 'EHG Intelligence Egypt',
 
   /**
-   * Primary domain. Will become `tutoringhq.app` later — keep it here so the
-   * cutover is a one-line change rather than a codebase-wide find/replace.
+   * Primary/canonical public domain. Keep the cutover to a one-line change
+   * here — canonical/og/sitemap/robots all derive from `SITE_URL` below.
    */
-  domain: 'centerhq.app',
+  domain: 'tutoringhq.app',
 
   /** Social profiles — empty placeholders to fill in later. */
   socials: {
@@ -40,6 +40,12 @@ export const SITE = {
     tiktok: '',
   },
 } as const;
+
+/**
+ * Canonical public site origin (`https://<domain>`) — the single source for
+ * SEO metadata (metadataBase, og:url, sitemap, robots, structured data).
+ */
+export const SITE_URL = `https://${SITE.domain}` as const;
 
 /** `https://wa.me/<digits>?text=<greeting>` deep link from the public config. */
 export function supportWhatsAppLink(): string {

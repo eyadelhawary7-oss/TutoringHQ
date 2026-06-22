@@ -16,6 +16,9 @@ function stripLocalePrefix(pathname: string): string {
 }
 
 const ALLOWED_API_ORIGINS = new Set([
+  'https://tutoringhq.app',
+  'https://www.tutoringhq.app',
+  // Legacy domain kept during the tutoringhq.app cutover (redirects/transition).
   'https://centerhq.app',
   'https://www.centerhq.app',
   'http://localhost:3000',
