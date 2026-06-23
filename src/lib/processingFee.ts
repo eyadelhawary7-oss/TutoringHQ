@@ -85,7 +85,7 @@ export type RedesignedInvoiceLineKey =
   | 'vat_included';
 
 export interface RedesignedInvoiceLine {
-  key: RedesignedInvoiceLineKey;
+  key: string;
   label: string;
   amount: number;
   /** The bold grand-total row. */
@@ -94,6 +94,13 @@ export interface RedesignedInvoiceLine {
   isVatNote?: boolean;
   /** Processing-fee row carries the ⓘ info affordance. */
   hasInfo?: boolean;
+}
+
+/** A charge line that appears BEFORE the processing fee (subscription, late fee, reactivation fee, …). */
+export interface InvoiceChargeLine {
+  key: string;
+  label: string;
+  amount: number;
 }
 
 type LineLocale = 'ar' | 'en';
@@ -114,10 +121,53 @@ const LINE_LABELS: Record<LineLocale, Record<RedesignedInvoiceLineKey, string>> 
 };
 
 /**
- * Customer-facing invoice lines in the legally-required order (Section 5):
- *   1. قيمة الاشتراك      — subscription price (VAT-inclusive)
+ * Generic customer-facing invoice lines in the legal order (Section 5):
+ *   ...charge lines → رسوم المعالجة (ⓘ) → الإجمالي → ضريبة القيمة المضافة (مشمولة).
+ * VAT is the LAST line, a breakdown already inside the total (does not add to it).
+ * The flat processing fee is its OWN line on top of the charges — it is never
+ * folded into any charge (so e.g. a late-fee % is never applied to it).
+ *
+ * @param charges Ordered charge lines (subscription, late fee, reactivation fee, …).
+ * @param fee     Flat processing fee; the line is omitted when 0.
+ * @param total   Charged total. Defaults to sum(charges) + fee.
+ */
+export function buildCombinedInvoiceLines(opts: {
+  charges: InvoiceChargeLine[];
+  fee: number;
+  total?: number;
+  locale?: LineLocale;
+}): RedesignedInvoiceLine[] {
+  const locale: LineLocale = opts.locale === 'en' ? 'en' : 'ar';
+  const labels = LINE_LABELS[locale];
+  const fee = Math.max(0, round2(Number(opts.fee) || 0));
+  const charges = (opts.charges ?? []).map((c) => ({
+    key: c.key,
+    label: c.label,
+    amount: round2(Number(c.amount) || 0),
+  }));
+  const chargesSum = charges.reduce((s, c) => s + c.amount, 0);
+  const rawTotal = opts.total != null ? round2(Number(opts.total)) : round2(chargesSum + fee);
+  const total = Number.isFinite(rawTotal) && rawTotal > 0 ? rawTotal : 0;
+  const vat = vatInsideInclusive(total);
+
+  const lines: RedesignedInvoiceLine[] = charges.map((c) => ({
+    key: c.key,
+    label: c.label,
+    amount: c.amount,
+  }));
+  if (fee > 0) {
+    lines.push({ key: 'processing_fee', label: labels.processing_fee, amount: fee, hasInfo: true });
+  }
+  lines.push({ key: 'total', label: labels.total, amount: total, isTotal: true });
+  lines.push({ key: 'vat_included', label: labels.vat_included, amount: vat, isVatNote: true });
+  return lines;
+}
+
+/**
+ * Customer-facing invoice lines for a single subscription / pack charge (Section 5):
+ *   1. قيمة الاشتراك      — subscription price (VAT-inclusive, = total − fee)
  *   2. رسوم المعالجة (ⓘ)  — processing fee (omitted when 0)
- *   3. الإجمالي           — total (= subscription + fee)
+ *   3. الإجمالي           — total
  *   4. ضريبة القيمة المضافة (مشمولة) — VAT, LAST line, breakdown inside the total
  *
  * @param total The charged total (subscription + fee) — i.e. invoices.total_amount.
@@ -134,17 +184,12 @@ export function buildRedesignedInvoiceLines(opts: {
   const safeTotal = Number.isFinite(total) && total > 0 ? total : 0;
   const fee = Math.max(0, round2(Number(opts.fee) || 0));
   const subscription = round2(safeTotal - fee);
-  const vat = vatInsideInclusive(safeTotal);
-
-  const lines: RedesignedInvoiceLine[] = [
-    { key: 'subscription', label: labels.subscription, amount: subscription },
-  ];
-  if (fee > 0) {
-    lines.push({ key: 'processing_fee', label: labels.processing_fee, amount: fee, hasInfo: true });
-  }
-  lines.push({ key: 'total', label: labels.total, amount: safeTotal, isTotal: true });
-  lines.push({ key: 'vat_included', label: labels.vat_included, amount: vat, isVatNote: true });
-  return lines;
+  return buildCombinedInvoiceLines({
+    charges: [{ key: 'subscription', label: labels.subscription, amount: subscription }],
+    fee,
+    total: safeTotal,
+    locale,
+  });
 }
 
 // ── ⓘ info-sheet copy (Arabic) ──────────────────────────────────────────────

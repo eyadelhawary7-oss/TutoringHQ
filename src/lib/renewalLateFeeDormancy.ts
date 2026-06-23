@@ -8,6 +8,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { addMonthsToDateStr } from '@/lib/subscriptionAnchor';
 import { getPeriodMultiplier, isPaygCenter } from '@/lib/billingEngine';
 import { sendChqRenewalOverdueTemplate, sendDormancyNotice } from '@/lib/centerNotify';
+import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import { resolveProcessingFeeAmount } from '@/lib/processingFee';
 
 const SYSTEM_AUDIT_USER_ID = '00000000-0000-0000-0000-000000000000';
 
@@ -135,6 +137,7 @@ type LateFeeMeta = {
   days_overdue: number;
   tier: 1 | 2;
   grace_period_end?: string;
+  processing_fee?: number;
 };
 
 async function fetchPendingLateFeesForCycle(
@@ -205,6 +208,11 @@ export async function runLateFeeAndDormancyScan(
   todayCairoYmd: string,
 ): Promise<LateFeeDormancyRunResult> {
   const cfg = await loadLateFeeDormancyConfig(supabase);
+  // Flat processing fee (Section 5) added to each combined late-fee invoice — a
+  // separate line on top of (subscription + late fee). NEVER part of the base the
+  // late-fee percentage is computed on.
+  const feeCfg = await getProcessingFeeConfig();
+  const processingFee = resolveProcessingFeeAmount(feeCfg);
   const result: LateFeeDormancyRunResult = {
     scanned: 0,
     dormantMarked: 0,
@@ -322,7 +330,7 @@ export async function runLateFeeAndDormancyScan(
 
         const rate = cfg.tier2Percent / 100;
         const feeAmt = Math.round(base * rate * 100) / 100;
-        const total = Math.round((base + feeAmt) * 100) / 100;
+        const total = Math.round((base + feeAmt + processingFee) * 100) / 100;
 
         const invNoTier2 = `${invNo}-10`;
 
@@ -344,6 +352,7 @@ export async function runLateFeeAndDormancyScan(
             days_overdue: daysLate,
             tier: 2,
             grace_period_end: addDaysToYmd(npd, cfg.graceDays),
+            processing_fee: processingFee,
           } as LateFeeMeta,
         });
 
@@ -372,7 +381,7 @@ export async function runLateFeeAndDormancyScan(
 
         const rate = cfg.tier1Percent / 100;
         const feeAmt = Math.round(base * rate * 100) / 100;
-        const total = Math.round((base + feeAmt) * 100) / 100;
+        const total = Math.round((base + feeAmt + processingFee) * 100) / 100;
 
         const { error: insErr } = await supabase.from('invoices').insert({
           center_id: c.id,
@@ -392,6 +401,7 @@ export async function runLateFeeAndDormancyScan(
             days_overdue: daysLate,
             tier: 1,
             grace_period_end: addDaysToYmd(npd, cfg.graceDays),
+            processing_fee: processingFee,
           } as LateFeeMeta,
         });
 

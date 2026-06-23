@@ -77,8 +77,19 @@ Source of truth: `src/lib/processingFee.ts` (pure helpers — `applyProcessingFe
 
 The fee applied to each invoice is snapshotted into **`invoices.metadata.processing_fee`** at creation, so rendered breakdowns are deterministic even if config later changes. For session-based charges (teacher subscriptions) it rides in `combined_payment_sessions.metadata.processing_fee` and is added to `paymob_amount` / `total_amount`.
 
-**In scope this session (fee charged + redesigned display):** center subscription renewals, signup first payment, PAYG, parent-pack (`pack_billing`) + WhatsApp add-on (`whatsapp_addon`), teacher resubscribe + teacher upgrade.
-**Deferred (no fee yet — follow-up):** center plan upgrades (`plan_upgrade_difference`), card-order `setup_fee`, `late_payment_fee`, `reactivation_fee`, Scale overage (overage billing not yet built).
+**In scope (fee charged + redesigned display):** center subscription renewals, signup first payment, PAYG, parent-pack (`pack_billing`) + WhatsApp add-on (`whatsapp_addon`), teacher resubscribe + teacher upgrade, **`late_payment_fee`** (tier 1 + tier 2), and **`reactivation_fee`** (`centers/reactivate`).
+**Deferred (no fee yet — follow-up):** center plan upgrades (`plan_upgrade_difference`), card-order `setup_fee`, session-based reactivation (`reactivation_tier1/2` combined sessions), Scale overage (overage billing not yet built).
+
+### Late-fee / reactivation invoices (combined, single invoice)
+
+A late-fee invoice is **one combined invoice** (subscription + late fee on the same bill), so it carries exactly **one** 20 EGP fee. CRITICAL math rule:
+
+```
+late fee  = late_fee_rate × subscription      (percentage on the SUBSCRIPTION only)
+total     = subscription + late fee + 20 flat (processing fee never inside the % base)
+```
+
+The processing fee is a separate flat line; the late-fee percentage is **never** applied to it. Redesigned line order (Arabic, RTL): `قيمة الاشتراك → غرامة التأخر في السداد → رسوم المعالجة (ⓘ) → الإجمالي → ضريبة القيمة المضافة (مشمولة)`. Reactivation invoices: `رسوم إعادة التفعيل → رسوم المعالجة (ⓘ) → الإجمالي → ضريبة (مشمولة)`. Both drop the old stamp-duty / service-fee lines. Built via `buildCombinedInvoiceLines` (covered by `tests/unit/processingFee.test.ts`).
 
 Referral commission base is **unaffected** — it derives from `centers.all_in_price` via `netReferralBaseFromAllInPrice`, never the invoice total (the fee is excluded, per brief Section 7).
 

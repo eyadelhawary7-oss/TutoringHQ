@@ -4,6 +4,7 @@ import {
   resolveProcessingFeeAmount,
   vatInsideInclusive,
   buildRedesignedInvoiceLines,
+  buildCombinedInvoiceLines,
   processingFeeInfoBodyAr,
   PROCESSING_FEE_DEFAULTS,
 } from '@/lib/processingFee';
@@ -96,6 +97,112 @@ describe('buildRedesignedInvoiceLines', () => {
     expect(lines.map((l) => l.key)).toEqual(['subscription', 'total', 'vat_included']);
     expect(lines[0].amount).toBe(999);
     expect(lines[1].amount).toBe(999);
+  });
+});
+
+describe('buildCombinedInvoiceLines — late-fee invoice math', () => {
+  // CRITICAL money rule: late fee = percentage × SUBSCRIPTION only. The flat
+  // processing fee is a separate line, never inside the base the % is taken on.
+  const SUBSCRIPTION = 10000;
+  const LATE_RATE = 0.05;
+  const lateFee = Math.round(SUBSCRIPTION * LATE_RATE * 100) / 100; // 500, NOT 5% of (sub + 20)
+  const PROCESSING_FEE = 20;
+  const total = Math.round((SUBSCRIPTION + lateFee + PROCESSING_FEE) * 100) / 100; // 10520
+
+  it('late fee is 5% of the subscription, not of (subscription + processing fee)', () => {
+    expect(lateFee).toBe(500);
+    // Guard: 5% of (subscription + fee) would be 501 — the fee must be excluded.
+    expect(lateFee).not.toBe(Math.round((SUBSCRIPTION + PROCESSING_FEE) * LATE_RATE * 100) / 100);
+  });
+
+  it('total = subscription + (rate × subscription) + 20 flat', () => {
+    expect(total).toBe(10520);
+  });
+
+  it('emits subscription → late fee → processing fee → total → VAT(included) in order', () => {
+    const lines = buildCombinedInvoiceLines({
+      charges: [
+        { key: 'subscription', label: 'قيمة الاشتراك', amount: SUBSCRIPTION },
+        { key: 'late_fee', label: 'غرامة التأخر في السداد', amount: lateFee },
+      ],
+      fee: PROCESSING_FEE,
+      total,
+      locale: 'ar',
+    });
+    expect(lines.map((l) => l.key)).toEqual([
+      'subscription',
+      'late_fee',
+      'processing_fee',
+      'total',
+      'vat_included',
+    ]);
+    expect(lines[0].amount).toBe(10000);
+    expect(lines[1].amount).toBe(500);
+    expect(lines[2]).toMatchObject({ amount: 20, hasInfo: true });
+    expect(lines[3]).toMatchObject({ amount: 10520, isTotal: true });
+  });
+
+  it('VAT is shown as included in the total, never added on top', () => {
+    const lines = buildCombinedInvoiceLines({
+      charges: [
+        { key: 'subscription', label: 'قيمة الاشتراك', amount: SUBSCRIPTION },
+        { key: 'late_fee', label: 'غرامة التأخر في السداد', amount: lateFee },
+      ],
+      fee: PROCESSING_FEE,
+      total,
+      locale: 'ar',
+    });
+    const totalLine = lines.find((l) => l.isTotal)!;
+    const vat = lines.find((l) => l.isVatNote)!;
+    expect(totalLine.amount).toBe(10520);
+    expect(vat.isVatNote).toBe(true);
+    expect(vat.amount).toBe(vatInsideInclusive(10520)); // 14% slice already inside
+    expect(vat.amount).toBeLessThan(totalLine.amount); // not an addition
+    // Sum of the charge lines + fee equals the total; VAT is not part of that sum.
+    const charged = lines
+      .filter((l) => !l.isTotal && !l.isVatNote)
+      .reduce((s, l) => s + l.amount, 0);
+    expect(Math.round(charged * 100) / 100).toBe(totalLine.amount);
+  });
+
+  it('drops the processing-fee line when the fee is 0 (toggle off)', () => {
+    const lines = buildCombinedInvoiceLines({
+      charges: [
+        { key: 'subscription', label: 'قيمة الاشتراك', amount: SUBSCRIPTION },
+        { key: 'late_fee', label: 'غرامة التأخر في السداد', amount: lateFee },
+      ],
+      fee: 0,
+      total: SUBSCRIPTION + lateFee,
+      locale: 'ar',
+    });
+    expect(lines.map((l) => l.key)).toEqual(['subscription', 'late_fee', 'total', 'vat_included']);
+    expect(lines.find((l) => l.isTotal)!.amount).toBe(10500);
+  });
+});
+
+describe('buildCombinedInvoiceLines — reactivation invoice', () => {
+  it('reactivation fee → processing fee (ⓘ) → total → VAT(included)', () => {
+    const lines = buildCombinedInvoiceLines({
+      charges: [{ key: 'reactivation_fee', label: 'رسوم إعادة التفعيل', amount: 1000 }],
+      fee: 20,
+      total: 1020,
+      locale: 'ar',
+    });
+    expect(lines.map((l) => l.key)).toEqual([
+      'reactivation_fee',
+      'processing_fee',
+      'total',
+      'vat_included',
+    ]);
+    expect(lines.find((l) => l.isTotal)!.amount).toBe(1020);
+  });
+
+  it('defaults total to sum(charges) + fee when not provided', () => {
+    const lines = buildCombinedInvoiceLines({
+      charges: [{ key: 'reactivation_fee', label: 'x', amount: 1000 }],
+      fee: 20,
+    });
+    expect(lines.find((l) => l.isTotal)!.amount).toBe(1020);
   });
 });
 

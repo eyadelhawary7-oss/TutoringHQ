@@ -3,6 +3,8 @@ import { getPeriodMultiplier } from '@/lib/billingEngine';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
 import { calculateReactivationFee, sumSubscriptionInvoiceTotals } from '@/lib/reactivationFee';
+import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import { resolveProcessingFeeAmount } from '@/lib/processingFee';
 
 function billingPeriodKey(sub: string | null | undefined): 'monthly' | 'quarterly' | 'annual' {
   const p = (sub ?? 'quarterly').toLowerCase();
@@ -88,6 +90,12 @@ export async function POST(request: NextRequest) {
   const { baseFee, discountRate, finalFee } = calculateReactivationFee(activeMonths, avgMonthly);
   const discountAmt = Math.round(baseFee * discountRate * 100) / 100;
 
+  // Flat processing fee (Section 5) added on top of the reactivation fee as its
+  // own line; charged total = reactivation fee + processing fee.
+  const feeCfg = await getProcessingFeeConfig();
+  const processingFee = resolveProcessingFeeAmount(feeCfg);
+  const chargedTotal = Math.round((finalFee + processingFee) * 100) / 100;
+
   const codeRaw = String((c.center_code || c.referral_code || '') as string).trim().replace(/\s+/g, '');
   const code = codeRaw || 'UNK';
   const ym = new Date().toISOString().slice(0, 7).replace('-', '');
@@ -114,7 +122,7 @@ export async function POST(request: NextRequest) {
       invoice_number: invNo,
       invoice_type: 'reactivation_fee',
       base_amount: baseFee,
-      total_amount: finalFee,
+      total_amount: chargedTotal,
       discount_amount: discountAmt,
       billing_period_start: dormancyYmd,
       billing_period_end: todayYmd,
@@ -128,6 +136,7 @@ export async function POST(request: NextRequest) {
         final_fee: finalFee,
         suspension_started: dormancyYmd,
         suspension_days: suspensionDays,
+        processing_fee: processingFee,
       },
     })
     .select('id')
@@ -144,7 +153,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const checkout = await createPaymobCheckoutEgp({
-      amountEgp: finalFee,
+      amountEgp: chargedTotal,
       merchantOrderId: invoiceId,
       itemName: 'TutoringHQ reactivation',
       phoneDigits: rawPhone,
@@ -175,6 +184,8 @@ export async function POST(request: NextRequest) {
         discountRate,
         discountAmount: discountAmt,
         finalFee,
+        processingFee,
+        total: chargedTotal,
         avgMonthly,
         activeMonths,
       },
