@@ -1,5 +1,6 @@
 import { formatDate, formatDateTime, formatNumber, formatPercent, formatTime } from '@/lib/formatNumber';
 import { calcExclusive, calcExclusiveProduct, type ExclusivePricing } from '@/lib/invoiceTaxUtils';
+import { buildRedesignedInvoiceLines, processingFeeInfoBodyAr } from '@/lib/processingFee';
 
 /** HTML for PDF/email previews. RTL-EXEMPT: email clients + tax PDFs use physical box model for predictable rendering. */
 
@@ -349,6 +350,39 @@ function exclusiveTotalsStandard(p: ExclusivePricing, totalLabel: string, taxNot
   ${dividerSolid()}
   ${totalsRowBold(totalLabel, `${fmtMoney(p.total)} EGP`)}
   ${taxNoteRow(taxNoteAr)}`;
+}
+
+/** ⓘ footnote with the processing-fee explanation (PDF is non-interactive). */
+function processingFeeNoteRow(amount: number): string {
+  return `<div style="margin-top:10px;font-size:11px;color:#94a3b8;line-height:1.55;font-family:Cairo,sans-serif;">ⓘ ${esc(processingFeeInfoBodyAr(amount))}</div>`;
+}
+
+/**
+ * Redesigned customer-facing subscription / pack totals (Section 5):
+ *   قيمة الاشتراك → رسوم المعالجة (ⓘ) → الإجمالي → ضريبة القيمة المضافة (مشمولة).
+ * VAT is the LAST line, a breakdown already inside the total (does not add to it).
+ * The old stamp-duty and service-fee lines are removed.
+ *
+ * @param total The charged total (subscription + fee) — invoices.total_amount.
+ * @param fee   The fee snapshotted on the invoice (metadata.processing_fee); 0 = none.
+ */
+function redesignedSubscriptionTotals(total: number, fee: number, totalLabel: string): string {
+  const lines = buildRedesignedInvoiceLines({ total, fee, locale: 'ar' });
+  const sub = lines.find((l) => l.key === 'subscription');
+  const vat = lines.find((l) => l.key === 'vat_included');
+  const feeLine = lines.find((l) => l.key === 'processing_fee');
+  const subRow = sub ? totalsRow(sub.label, `${fmtMoney(sub.amount)} EGP`) : '';
+  const feeRow = feeLine
+    ? totalsRow(`${esc(feeLine.label)} ⓘ`, `${fmtMoney(feeLine.amount)} EGP`)
+    : '';
+  const vatRow = vat ? totalsRow(vat.label, `${fmtMoney(vat.amount)} EGP`) : '';
+  const note = feeLine ? processingFeeNoteRow(feeLine.amount) : '';
+  return `${subRow}
+  ${feeRow}
+  ${dividerSolid()}
+  ${totalsRowBold(totalLabel, `${fmtMoney(total)} EGP`)}
+  ${vatRow}
+  ${note}`;
 }
 
 function lineRowHtml(opts: {
@@ -713,6 +747,9 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
   let showTaxBox = true;
   let txnLine = '';
   const txnId = r.transactionId ?? payRef;
+  // Flat processing fee snapshotted on the invoice (Section 5). 0 = none / legacy.
+  const feeAmt = num(meta.processing_fee);
+  const subscriptionValue = round2(total - feeAmt);
 
   const discountRowHtml =
     discount > 0
@@ -720,42 +757,34 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       : '';
 
   if (['subscription', 'base_subscription'].includes(invoiceType)) {
-    const p = calcExclusive(total);
-    const subPre = discount > 0 ? total + discount : total;
     lineRowsHtml = lineRowHtml({
-      amount: total,
+      amount: subscriptionValue,
       detail: periodRange,
       title: `${planAr}, ${billingCycle}`,
       subtitle: `حتى ${studentCap > 0 ? studentCap : ','} طالب`,
     });
-    totalsInner = `${totalsRow(`${planAr} × ${billingCycle}`, `${fmtMoney(subPre)} EGP`)}
-    ${discountRowHtml}
-    ${exclusiveTotalsStandard(p, totalLabel, TAX_NOTE_STANDARD_AR)}`;
+    totalsInner = `${discountRowHtml}
+    ${redesignedSubscriptionTotals(total, feeAmt, totalLabel)}`;
   } else if (invoiceType === 'signup_first_payment') {
-    const p = calcExclusive(total);
     lineRowsHtml = lineRowHtml({
-      amount: total,
+      amount: subscriptionValue,
       detail: periodRange,
       title: `${planAr}, ${billingCycle} (أول دفعة)`,
       subtitle: `حتى ${studentCap > 0 ? studentCap : ','} طالب`,
     });
-    const subPreSu = discount > 0 ? total + discount : total;
-    totalsInner = `${totalsRow(`${planAr} × ${billingCycle}`, `${fmtMoney(subPreSu)} EGP`)}
-    ${discountRowHtml}
-    ${exclusiveTotalsStandard(p, totalLabel, TAX_NOTE_STANDARD_AR)}`;
+    totalsInner = `${discountRowHtml}
+    ${redesignedSubscriptionTotals(total, feeAmt, totalLabel)}`;
   } else if (invoiceType === 'pack_billing') {
-    const p = calcExclusive(total);
     const active = packActivePre;
     const activeCount = num(meta.active_count ?? meta.active_parent_count ?? active) || active;
-    const exclusivePerParent = activeCount > 0 ? (p.base / activeCount).toFixed(2) : '0.00';
+    const perParent = activeCount > 0 ? (subscriptionValue / activeCount).toFixed(2) : '0.00';
     const inactive = num(meta.inactive_parent_count ?? 0);
-    const lineActiveAmount = round2(activeCount * parseFloat(exclusivePerParent));
     lineRowsHtml =
       lineRowHtml({
-        amount: lineActiveAmount,
+        amount: subscriptionValue,
         detail: periodRange,
         title: 'باقة واتساب أولياء الأمور, شهري',
-        subtitle: `${activeCount} ولي أمر × ${exclusivePerParent} ج.م/ولي`,
+        subtitle: `${activeCount} ولي أمر × ${perParent} ج.م/ولي`,
       }) +
       lineRowHtml({
         amount: 0,
@@ -764,9 +793,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
         subtitle: `${inactive} أولياء`,
         amountMuted: true,
       });
-    totalsInner = `${totalsRow(`${activeCount} ولي أمر × ${exclusivePerParent} ج.م`, `${fmtMoney(p.base)} EGP`)}
-    ${totalsRow(`${inactive} غير نشطين (مُعفى)`, `0 EGP`)}
-    ${exclusiveTotalsStandard(p, totalLabel, TAX_NOTE_STANDARD_AR)}`;
+    totalsInner = redesignedSubscriptionTotals(total, feeAmt, totalLabel);
   } else if (invoiceType === 'announcement_settlement') {
     const p = calcExclusive(total);
     const blasts = r.settlementBlasts ?? [];
@@ -1006,18 +1033,15 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     totalsInner = `${totalsRowBold('المبلغ المُقدَّم', `${fmtMoney(total)} EGP`)}
     ${taxNoteRow('المبالغ تعكس اجمالي الفاتورة المرجعية.')}`;
   } else if (invoiceType === 'whatsapp_addon') {
-    const p = calcExclusive(total);
     const desc = String(meta.description ?? inv.notes ?? ',');
     lineRowsHtml = lineRowHtml({
-      amount: total,
+      amount: subscriptionValue,
       detail: periodRange,
       title: 'إضافة واتساب',
       subtitle: desc,
     });
-    const subPreWa = discount > 0 ? total + discount : total;
-    totalsInner = `${totalsRow(`إضافة واتساب × ${billingCycle}`, `${fmtMoney(subPreWa)} EGP`)}
-    ${discountRowHtml}
-    ${exclusiveTotalsStandard(p, totalLabel, TAX_NOTE_STANDARD_AR)}`;
+    totalsInner = `${discountRowHtml}
+    ${redesignedSubscriptionTotals(total, feeAmt, totalLabel)}`;
   } else if (invoiceType === 'reactivation_fee') {
     const p = calcExclusive(total);
     lineRowsHtml = lineRowHtml({

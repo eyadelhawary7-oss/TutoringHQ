@@ -11,6 +11,8 @@ import {
   getPackPlanMinimumEgp,
 } from '@/lib/packBilling'
 import { parseBodyWithLimit } from '@/lib/validate';
+import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import { applyProcessingFee } from '@/lib/processingFee';
 
 // TODO: set to true when chq_pack_invoice is approved by Meta
 const packInvoiceEnabled = true
@@ -116,10 +118,14 @@ export async function PATCH(request: NextRequest) {
       const pending = Number((centerRow as { pack_pending_balance?: number }).pack_pending_balance ?? 0)
       const proratedTotal = Math.ceil(proratedBase) + (pending > 0 ? pending : 0)
 
+      // Flat processing fee (Section 5) added to the prorated pack invoice.
+      const feeCfg = await getProcessingFeeConfig()
+      const { fee: processingFee, total: chargedTotal } = applyProcessingFee(proratedTotal, feeCfg)
+
       if (body.confirmed !== true) {
         return NextResponse.json({
           requires_confirmation: true,
-          prorated_amount: proratedTotal,
+          prorated_amount: chargedTotal,
         })
       }
 
@@ -133,12 +139,13 @@ export async function PATCH(request: NextRequest) {
         invoice_number: invoiceNumber,
         invoice_type: 'pack_billing',
         base_amount: proratedTotal,
-        total_amount: proratedTotal,
+        total_amount: chargedTotal,
         billing_period_start: periodStart,
         billing_period_end: periodEnd,
         due_date: dateInNDays(7),
         status: 'pending',
         payment_reference: `Parent Pack, partial ${ym} (through ${periodEnd})`,
+        metadata: { processing_fee: processingFee },
       })
 
       if (invErr) {
@@ -166,7 +173,7 @@ export async function PATCH(request: NextRequest) {
           phone: (centerRow as { phone?: string | null }).phone ?? null,
           monthArabic: billingPeriodArabicMonthYear(ym),
           parentCountStr: String(rolling),
-          amountStr: String(proratedTotal),
+          amountStr: String(chargedTotal),
         })
       } catch (waErr) {
         console.error('[parent-pack/toggle] WA send error:', waErr)

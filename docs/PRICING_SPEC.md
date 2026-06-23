@@ -61,6 +61,42 @@ Display Annual prices ROUNDED to whole EGP. "849.917 EGP/month" is a bug.
 3. Stamp hard-coded 0.4% in places. Spec: 0.5%.
 4. Some invoices may not show VAT as last line — must fix for legal compliance.
 
+## Processing fee (Summer-2026 brief, Section 5)
+
+A flat **processing fee** is added on top of the VAT-inclusive subscription / pack price on every invoice charged via Paymob:
+
+```
+total charged = subscription (VAT-inclusive) + processing fee
+```
+
+**Two controls in `platform_config`, editable from `/admin/platform-config` (no rebuild):**
+- `processing_fee_enabled` — bool, default **true**. Hides/shows the fee everywhere at once (invoice line + checkout display + legal disclosure).
+- `processing_fee_amount` — number EGP, default **20**. Flat, never scales with cadence/amount (can change to e.g. 9).
+
+Source of truth: `src/lib/processingFee.ts` (pure helpers — `applyProcessingFee`, `buildRedesignedInvoiceLines`, `vatInsideInclusive`, Arabic ⓘ copy) + `getProcessingFeeConfig()` in `src/lib/pricingConfig.ts` (reader, defaults to enabled @ 20 even before migration).
+
+The fee applied to each invoice is snapshotted into **`invoices.metadata.processing_fee`** at creation, so rendered breakdowns are deterministic even if config later changes. For session-based charges (teacher subscriptions) it rides in `combined_payment_sessions.metadata.processing_fee` and is added to `paymob_amount` / `total_amount`.
+
+**In scope this session (fee charged + redesigned display):** center subscription renewals, signup first payment, PAYG, parent-pack (`pack_billing`) + WhatsApp add-on (`whatsapp_addon`), teacher resubscribe + teacher upgrade.
+**Deferred (no fee yet — follow-up):** center plan upgrades (`plan_upgrade_difference`), card-order `setup_fee`, `late_payment_fee`, `reactivation_fee`, Scale overage (overage billing not yet built).
+
+Referral commission base is **unaffected** — it derives from `centers.all_in_price` via `netReferralBaseFromAllInPrice`, never the invoice total (the fee is excluded, per brief Section 7).
+
+### Redesigned customer invoice — subscription / pack types (Section 5)
+
+Replaces the stamp-duty and service-fee lines for these invoice types. Order (Arabic, RTL):
+
+```
+قيمة الاشتراك                       999.00 EGP   (subscription, VAT-inclusive)
+رسوم المعالجة (ⓘ)                    20.00 EGP   (processing fee; omitted when 0)
+الإجمالي                          1,019.00 EGP   (total = subscription + fee)
+ضريبة القيمة المضافة (مشمولة)        125.16 EGP   (VAT, LAST line — already inside the total, does NOT add)
+```
+
+VAT here is the simple VAT-inclusive 14% slice (`total × 0.14 / 1.14`); the legacy cascade (service 6% + stamp 0.5%) is **not** shown on these customer invoices. **Card-order (`setup_fee`) invoices keep the legacy cascade** in `buildLegalInvoiceLines` / `exclusiveTotalsStandard`.
+
+The ⓘ on the processing-fee line opens an Arabic info sheet (`ProcessingFeeInfoButton`, `src/components/billing/ProcessingFeeInfo.tsx`) with a `تمام` dismiss; the PDF renders the same copy as a footnote.
+
 ## MRR computation (admin dashboards)
 
 **Canonical API:** `getImpliedMonthlyMrr` in `src/lib/pricing.ts`.

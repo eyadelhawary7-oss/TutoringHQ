@@ -7,7 +7,7 @@
 // once, regardless of how many sessions (see countActiveStudentsThisMonth).
 //
 //   Free   — center monitoring only, no subscription row. The hook tier.
-//   Standard (499)  — up to 20 active students. 7-day free trial. No label.
+//   Standard (499)  — up to 20 active students. 14-day free trial. No label.
 //   Pro      (999)  — up to 50 active students. Label: "Best for Part-Time".
 //   Scale   (2499)  — up to 100 active students, then +20 EGP per active student
 //                     above 100, trued up at month end.
@@ -54,7 +54,7 @@ export const TEACHER_PLANS: Record<TeacherPlanKey, TeacherPlanDef> = {
     vatAmount: 61.28,
     studentCap: 20,
     overagePerStudent: 0,
-    trialDays: 7,
+    trialDays: 14,
     blastCreditsMonthly: 0,
     proFeatures: false,
     perStudentFloor: 25,

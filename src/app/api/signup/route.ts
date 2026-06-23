@@ -28,6 +28,8 @@ import { todayISO } from '@/lib/parentPack';
 import { formatNumber } from '@/lib/formatNumber';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { validatePromoCodeServerSide } from '@/lib/promoCode';
+import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import { applyProcessingFee } from '@/lib/processingFee';
 
 function getTotalSignupAmount(planKey: PlanKey, period: BillingPeriod): number {
   return getPlanPrice(planKey, period);
@@ -362,10 +364,18 @@ export async function POST(request: Request) {
         }
       }
 
-      const amountEgp =
+      const subscriptionEgp =
         promoResult?.valid ? promoResult.discountedAmountEgp : baseAmountEgp;
       const invoiceDiscountAmount =
         promoResult?.valid ? promoResult.savingsEgp : 0;
+
+      // Flat processing fee (Section 5) added on top of the (possibly discounted)
+      // subscription. amountEgp is what the customer is actually charged.
+      const feeCfg = await getProcessingFeeConfig();
+      const { fee: processingFee, total: amountEgp } = applyProcessingFee(
+        subscriptionEgp,
+        feeCfg,
+      );
 
       const startYmd = todayISO();
       const endYmd = billingEndForPeriod(startYmd, periodResolved);
@@ -407,6 +417,7 @@ export async function POST(request: Request) {
           status: 'pending',
           discount_amount: invoiceDiscountAmount,
           paymob_order_id: orderId,
+          metadata: { processing_fee: processingFee },
         };
         if (promoResult?.valid) {
           invoiceInsert.promo_code = promoResult.code;

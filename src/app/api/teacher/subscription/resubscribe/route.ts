@@ -7,6 +7,8 @@ import { validateCSRFRequest } from '@/lib/csrf';
 import { isFeatureEnabled } from '@/lib/features';
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
 import { DEFAULT_TEACHER_PLAN_KEY } from '@/lib/teacherPlans';
+import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import { applyProcessingFee } from '@/lib/processingFee';
 
 const ROUTE_TAG = 'api/teacher/subscription/resubscribe';
 
@@ -86,6 +88,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Flat processing fee (Section 5) added on top of the teacher plan price.
+  const feeCfg = await getProcessingFeeConfig();
+  const { fee: processingFee, total: chargedTotal } = applyProcessingFee(priceGross, feeCfg);
+
   // Display info for the Paymob order (best-effort, falls back to defaults).
   const { data: userRow } = await auth.supabaseAdmin
     .from('users')
@@ -104,11 +110,16 @@ export async function POST(request: NextRequest) {
       center_id: null,
       invoice_ids: [],
       credit_amount: 0,
-      paymob_amount: priceGross,
-      total_amount: priceGross,
+      paymob_amount: chargedTotal,
+      total_amount: chargedTotal,
       status: 'pending',
       session_type: 'teacher_resubscribe',
-      metadata: { teacher_id: auth.userId, plan_key: plan.plan_key ?? DEFAULT_TEACHER_PLAN_KEY },
+      metadata: {
+        teacher_id: auth.userId,
+        plan_key: plan.plan_key ?? DEFAULT_TEACHER_PLAN_KEY,
+        subscription_amount: priceGross,
+        processing_fee: processingFee,
+      },
     })
     .select('id')
     .single();
@@ -119,7 +130,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const checkout = await createPaymobCheckoutEgp({
-      amountEgp: priceGross,
+      amountEgp: chargedTotal,
       merchantOrderId: `teacher-resub-${sessionRowId}`,
       itemName: 'TutoringHQ Teacher Subscription',
       phoneDigits,
@@ -133,6 +144,8 @@ export async function POST(request: NextRequest) {
         metadata: {
           teacher_id: auth.userId,
           plan_key: plan.plan_key ?? DEFAULT_TEACHER_PLAN_KEY,
+          subscription_amount: priceGross,
+          processing_fee: processingFee,
           paymob_iframe_url: checkout.iframeUrl,
         } as never,
       })
@@ -145,7 +158,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       paymob_url: checkout.iframeUrl,
       session_id: sessionRowId,
-      amount: priceGross,
+      amount: chargedTotal,
     });
   } catch (e) {
     await auth.supabaseAdmin.from('combined_payment_sessions').delete().eq('id', sessionRowId);
