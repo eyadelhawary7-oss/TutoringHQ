@@ -108,6 +108,56 @@ VAT here is the simple VAT-inclusive 14% slice (`total × 0.14 / 1.14`); the leg
 
 The ⓘ on the processing-fee line opens an Arabic info sheet (`ProcessingFeeInfoButton`, `src/components/billing/ProcessingFeeInfo.tsx`) with a `تمام` dismiss; the PDF renders the same copy as a footnote.
 
+## Billing lifecycle — single-day lock model ("Claude model")
+
+Identical for centers and teachers. Source of truth: `src/lib/billingLifecycle.ts`
+(pure + tested, `tests/unit/billingLifecycle.test.ts`).
+
+1. Billing is anchored to **00:00 Africa/Cairo on the billing day** (calendar date
+   only — never the signup hour).
+2. If the charge fails / goes unpaid, the customer keeps **full access for the rest
+   of that Cairo calendar day** (until 23:59:59), with a "pay today or lose access
+   at midnight" banner.
+3. At the **next 00:00 Cairo**, access **locks to the summary screen** (headline
+   numbers — total students, total groups — plus a pay button). No individual
+   records until paid.
+4. **No late fee. No reactivation fee.** Coming back from a lock charges the
+   **plain subscription price** only (`reactivationChargeAmount`). The flat 20 EGP
+   processing fee remains on the normal subscription/renewal/pack/signup paths.
+5. **Manual cancellation keeps full access until the end of the current paid
+   cycle**, then lapses (no immediate lock). Centers already did this via
+   `pending_cancellation`.
+6. **No mechanism to move a billing date** — let the subscription lapse and
+   resubscribe on the desired day.
+
+**Enforcement:** `centers.auto_suspend_at` is set to **00:00 Cairo on the day after
+`next_payment_due`** (`autoSuspendAtFromDue` → `lockAtFromBillingDay`, DST-safe);
+`src/proxy.ts` redirects to `/suspended` when `now >= auto_suspend_at` and
+`billing_status != 'paid'`. Teacher private access is gated by the
+`teacher_private_access` RPC (`status in ('trialing','active')`).
+
+### Removed with this model (verify-then-delete)
+- **5% late-payment fee + day-30 dormancy scan** — `runLateFeeAndDormancyScan`
+  deleted from `renewalLateFeeDormancy.ts` and its `process-renewals` invocation
+  removed (the file keeps only `incrementActiveMonthsOnFirstOfMonth`).
+- **Reactivation fee (surcharge)** — `src/lib/reactivationFee.ts` deleted;
+  `getReactivationAmount` (`billingEngine.ts`) zeroed to the plain next-period
+  amount (covers `reactivate/start`, `billing/reactivate`); `centers/reactivate`
+  now charges the plain subscription as a normal `subscription` invoice.
+- **7-day grace** — `auto_suspend_at` retimed from `due + 7d` to the next Cairo
+  midnight (`SUBSCRIPTION_GRACE_CALENDAR_DAYS = 1`).
+- **`late_payment_fee` / `reactivation_fee` invoice template blocks** — removed;
+  those types now render via the generic block (legacy invoices only).
+
+### Pending / blocked (saved-card epic — Paymob Section 0)
+- The **midnight auto-charge** itself needs the saved-card MIT ("no customer
+  present") mechanism, which is unbuilt (no card token is stored). The lock model
+  above is in place and activates once auto-charge lands.
+- The **early card-expiry warning** needs the saved-card token's `expiry_month` /
+  `expiry_year` stored (Paymob exposes them on the token, but we store no token
+  today). **Paymob sends no documented pre-charge expiry signal** — the own-expiry
+  check is the only path, and it depends on first storing the token.
+
 ## MRR computation (admin dashboards)
 
 **Canonical API:** `getImpliedMonthlyMrr` in `src/lib/pricing.ts`.

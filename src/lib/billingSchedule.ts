@@ -1,5 +1,6 @@
 import { addMonthsToDateStr } from '@/lib/subscriptionAnchor';
 import { normalizeBillingPeriod, type BillingPeriod } from '@/lib/pricing';
+import { lockAtFromBillingDay } from '@/lib/billingLifecycle';
 
 /** Whole months per billing step from anchor (quarterly = 3). */
 export function billingStepMonths(periodRaw: string | null | undefined): number {
@@ -46,10 +47,19 @@ export function calendarAddDaysYmd(baseYmd: string, delta: number): string {
   return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
 }
 
-/** Calendar days after due date before suspension; aligns with platform_config.subscription_grace_period_days (default 7). */
-export const SUBSCRIPTION_GRACE_CALENDAR_DAYS = 7;
+/**
+ * Single-day lock model (src/lib/billingLifecycle.ts): an unpaid center keeps full
+ * access for its billing day (next_payment_due) and locks at the NEXT Cairo
+ * midnight. The old multi-day grace (7 days) and the late-fee/dormancy tiers are
+ * gone. Kept at 1 for any caller that still reads it.
+ */
+export const SUBSCRIPTION_GRACE_CALENDAR_DAYS = 1;
 
-export function autoSuspendAtFromDue(nextPaymentDueYmd: string, graceCalendarDays = SUBSCRIPTION_GRACE_CALENDAR_DAYS): string {
-  const day = calendarAddDaysYmd(nextPaymentDueYmd, graceCalendarDays);
-  return `${day}T12:00:00.000Z`;
+/**
+ * auto_suspend_at = 00:00 Africa/Cairo on the day AFTER `nextPaymentDueYmd`
+ * (DST-safe). The legacy grace argument is ignored — the lock is always the next
+ * Cairo midnight. The proxy/cron lock when now >= auto_suspend_at and unpaid.
+ */
+export function autoSuspendAtFromDue(nextPaymentDueYmd: string): string {
+  return lockAtFromBillingDay(nextPaymentDueYmd.slice(0, 10));
 }

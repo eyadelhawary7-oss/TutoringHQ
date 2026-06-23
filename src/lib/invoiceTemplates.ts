@@ -2,7 +2,6 @@ import { formatDate, formatDateTime, formatNumber, formatPercent, formatTime } f
 import { calcExclusive, calcExclusiveProduct, type ExclusivePricing } from '@/lib/invoiceTaxUtils';
 import {
   buildRedesignedInvoiceLines,
-  buildCombinedInvoiceLines,
   processingFeeInfoBodyAr,
   type RedesignedInvoiceLine,
 } from '@/lib/processingFee';
@@ -952,40 +951,6 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     ${dividerSolid()}
     ${totalsRowBold('إجمالي المدفوع', `${fmtMoney(p.total)} EGP`)}
     ${taxNoteRow('ضريبة القيمة المضافة 14٪ | رسوم الخدمة 6٪ | ضريبة الدمغة 0.5٪ - على المنتج فقط. رسوم الشحن منفصلة.')}`;
-  } else if (invoiceType === 'late_payment_fee') {
-    const lf = meta as { late_fee_rate?: number; late_fee_amount?: number; penalty_amount?: number };
-    const pct = Math.round(num(lf.late_fee_rate) * 100);
-    const penaltyAmount = num(lf.penalty_amount ?? lf.late_fee_amount ?? total - base - processingFeeAmt);
-    const lateFee = num(lf.late_fee_amount ?? penaltyAmount);
-    lineRowsHtml =
-      lineRowHtml({
-        amount: base,
-        detail: periodRange,
-        title: `${planAr}, ${billingCycle}`,
-        subtitle: `حتى ${studentCap > 0 ? studentCap : ','} طالب`,
-      }) +
-      lineRowHtml({
-        amount: lateFee,
-        detail: `استحق ${dueYmd ? fmtDateAr(dueYmd) : ','} · صدر ${issueDate}`,
-        title: `غرامة التأخر في السداد (${formatPercent(pct, PDF_LOCALE)})`,
-        subtitle: `${formatPercent(pct, PDF_LOCALE)} من قيمة الاشتراك`,
-        amountAmber: true,
-      });
-    // Redesigned (Section 5): subscription → late fee → processing fee (ⓘ) →
-    // total → VAT (included, last). The late-fee % is computed on the subscription
-    // only; the processing fee is a separate flat line never inside that base.
-    totalsInner = renderRedesignedTotals(
-      buildCombinedInvoiceLines({
-        charges: [
-          { key: 'subscription', label: 'قيمة الاشتراك', amount: base },
-          { key: 'late_fee', label: 'غرامة التأخر في السداد', amount: lateFee },
-        ],
-        fee: processingFeeAmt,
-        total,
-        locale: 'ar',
-      }),
-      totalLabel,
-    );
   } else if (invoiceType === 'referral_payout') {
     showTaxBox = false;
     const metaComm = meta.commissions as { amount: number }[] | undefined;
@@ -1050,27 +1015,6 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     });
     totalsInner = `${discountRowHtml}
     ${redesignedSubscriptionTotals(total, processingFeeAmt, totalLabel)}`;
-  } else if (invoiceType === 'reactivation_fee') {
-    // Redesigned (Section 5): reactivation fee → processing fee (ⓘ) → total →
-    // VAT (included, last). subscriptionValue = total − processing fee = the
-    // reactivation fee itself.
-    lineRowsHtml = lineRowHtml({
-      amount: subscriptionValue,
-      detail: periodRange,
-      title: 'رسوم إعادة تفعيل',
-      subtitle: planAr,
-    });
-    totalsInner = renderRedesignedTotals(
-      buildCombinedInvoiceLines({
-        charges: [
-          { key: 'reactivation_fee', label: 'رسوم إعادة التفعيل', amount: subscriptionValue },
-        ],
-        fee: processingFeeAmt,
-        total,
-        locale: 'ar',
-      }),
-      totalLabel,
-    );
   } else {
     const p = calcExclusive(total);
     lineRowsHtml = lineRowHtml({

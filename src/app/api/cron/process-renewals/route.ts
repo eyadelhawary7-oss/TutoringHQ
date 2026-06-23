@@ -22,11 +22,7 @@ import {
 import { runProcessRenewalWhatsappTemplates } from '@/lib/centerNotify';
 import { runSubscriptionBillingCron } from '@/lib/subscriptionBillingCron';
 import { tCronBackup } from '@/lib/cronBackupI18n';
-import {
-  incrementActiveMonthsOnFirstOfMonth,
-  runLateFeeAndDormancyScan,
-  type LateFeeDormancyRunResult,
-} from '@/lib/renewalLateFeeDormancy';
+import { incrementActiveMonthsOnFirstOfMonth } from '@/lib/renewalLateFeeDormancy';
 import { parseBodyWithLimit } from '@/lib/validate';
 
 export const dynamic = 'force-dynamic';
@@ -105,13 +101,6 @@ export async function POST(request: Request) {
       console.error('[process-renewals] incrementActiveMonthsOnFirstOfMonth:', err);
     }
 
-    let lateFeeDormancy: LateFeeDormancyRunResult | null = null;
-    try {
-      lateFeeDormancy = await runLateFeeAndDormancyScan(supabase, todayStr);
-    } catch (err) {
-      console.error('[process-renewals] runLateFeeAndDormancyScan:', err);
-    }
-
     if (actions.length === 0) {
       await insertCronLogSuccess(supabase, CRON_NAME, {
         duration_ms: Date.now() - cronStart,
@@ -120,7 +109,6 @@ export async function POST(request: Request) {
           waTemplates: !!waTemplates,
           billingCron: !!billingCron,
           activeMonthsIncremented,
-          lateFeeDormancy,
         },
       });
       try {
@@ -143,7 +131,6 @@ export async function POST(request: Request) {
         waTemplates,
         billingCron,
         activeMonthsIncremented,
-        lateFeeDormancy,
       });
     }
 
@@ -309,7 +296,6 @@ export async function POST(request: Request) {
       metadata: {
         actionCount: actions.length,
         activeMonthsIncremented,
-        lateFeeDormancy,
       },
     });
 
@@ -334,7 +320,6 @@ export async function POST(request: Request) {
       waTemplates,
       billingCron,
       activeMonthsIncremented,
-      lateFeeDormancy,
     });
   } catch (error) {
     console.error(`[${CRON_NAME}] Error:`, error);

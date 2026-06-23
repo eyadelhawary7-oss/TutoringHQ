@@ -79,28 +79,17 @@ export function getReactivationAmount(params: {
   total: number;
   breakdown: string;
 } {
-  const { tier, nextPeriodAmount, dailyRate } = params;
-  const GRACE_DAYS = 6;
-  const REACTIVATION_FEE_RATE = 0.03;
-
-  if (tier === 'tier1') {
-    const fine = dailyRate * GRACE_DAYS;
-    return {
-      fine,
-      reactivationFee: 0,
-      nextPeriod: nextPeriodAmount,
-      total: fine + nextPeriodAmount,
-      breakdown: `Fine (${GRACE_DAYS} days × ${dailyRate.toFixed(2)} EGP/day) + Next period`,
-    };
-  }
-
-  const reactivationFee = nextPeriodAmount * REACTIVATION_FEE_RATE;
+  // Single-day lock model (src/lib/billingLifecycle.ts, rule 4): coming back from a
+  // lock charges the PLAIN subscription only — no fine, no reactivation fee, no
+  // surcharge. tier/dailyRate are retained in the signature for callers but no
+  // longer affect the amount.
+  const nextPeriodAmount = Number(params.nextPeriodAmount) || 0;
   return {
     fine: 0,
-    reactivationFee,
+    reactivationFee: 0,
     nextPeriod: nextPeriodAmount,
-    total: reactivationFee + nextPeriodAmount,
-    breakdown: `3% reactivation fee + Next period`,
+    total: nextPeriodAmount,
+    breakdown: 'Plain subscription (no reactivation fee)',
   };
 }
 
