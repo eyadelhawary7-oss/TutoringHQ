@@ -8486,6 +8486,13 @@
       "startTrialCta": "Start your free trial",
       "trialCtaBody": "Unlock your private practice with a 14-day free trial."
     },
+    "lockSummary": {
+      "title": "Private practice locked",
+      "body": "Your subscription has ended. Here is your private practice at a glance — subscribe to unlock the full records.",
+      "students": "Total students",
+      "groups": "Total groups",
+      "hint": "Individual records are locked until you subscribe."
+    },
     "pages": {
       "centers": "Centers",
       "groups": "My groups",

@@ -11,9 +11,11 @@ import FreeZoneBanner from '../FreeZoneBanner';
 import ReferralCard from '../ReferralCard';
 import IncomeCalculator from '../IncomeCalculator';
 import LockedIncomePreview from '../LockedIncomePreview';
+import PrivateLockSummary from '../PrivateLockSummary';
 import { useTeacherContext } from '../useTeacherContext';
 import { useStartTrial } from '../useStartTrial';
 import { getTeacherPlan, isProOrAbove } from '@/lib/teacherPlans';
+import { resolveTeacherPrivateView } from '@/lib/teacherPrivateView';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -108,6 +110,11 @@ export default function TeacherDashboardPage() {
   const state = ctx?.state ?? 'center_only';
   const hasPrivateAccess = ctx?.hasPrivateAccess ?? false;
   const noCenters = (ctx?.centers.length ?? 0) === 0;
+  // 'records' (full), 'lock_summary' (lapsed → headline numbers + pay), 'upsell'
+  // (never subscribed → free-zone trial CTAs). The free zone (Centers) always shows.
+  const view = resolveTeacherPrivateView({ hasPrivateAccess, state });
+  const isLockSummary = view === 'lock_summary';
+  const isUpsell = view === 'upsell';
 
   const { startTrial, modal } = useStartTrial(state, () => {
     reload();
@@ -226,7 +233,7 @@ export default function TeacherDashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {!hasPrivateAccess && <FreeZoneBanner />}
+      {isUpsell && <FreeZoneBanner />}
       {summary === null ? (
         <div className="h-7 w-56 animate-pulse rounded-lg bg-[var(--color-surface-2)]" />
       ) : (
@@ -237,7 +244,17 @@ export default function TeacherDashboardPage() {
         </h1>
       )}
 
-      {!hasPrivateAccess && <OnboardingChecklist />}
+      {isUpsell && <OnboardingChecklist />}
+
+      {/* Lapsed teacher: private engine locks to the summary (headline numbers +
+          pay). The free-zone Centers tile below stays available. */}
+      {isLockSummary && (
+        <PrivateLockSummary
+          title={tPortal('lockSummary.title')}
+          payLabel={tPortal('pages.resumeCta')}
+          onPay={startTrial}
+        />
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {/* Centers */}
@@ -298,7 +315,7 @@ export default function TeacherDashboardPage() {
               placeholder
             )}
           </TileLink>
-        ) : (
+        ) : isUpsell ? (
           <TileCta
             icon={Users}
             title={t('groupsTile')}
@@ -306,7 +323,7 @@ export default function TeacherDashboardPage() {
             ctaLabel={t('createFirstGroup')}
             onCta={startTrial}
           />
-        )}
+        ) : null}
 
         {/* Subscription */}
         {hasPrivateAccess ? (
@@ -381,7 +398,7 @@ export default function TeacherDashboardPage() {
               placeholder
             )}
           </div>
-        ) : (
+        ) : isUpsell ? (
           <TileCta
             icon={Sparkles}
             title={t('subscriptionTile')}
@@ -389,11 +406,12 @@ export default function TeacherDashboardPage() {
             ctaLabel={t('startTrialCta')}
             onCta={startTrial}
           />
-        )}
+        ) : null}
       </div>
 
-      {/* Free zone: locked income preview, income calculator, referral. */}
-      {!hasPrivateAccess && (
+      {/* Free-zone trial upsell (never-subscribed only). A lapsed teacher sees the
+          lock summary above instead; her free-zone Centers tile stays available. */}
+      {isUpsell && (
         <>
           <LockedIncomePreview onStartTrial={startTrial} />
           <IncomeCalculator onStartTrial={startTrial} />

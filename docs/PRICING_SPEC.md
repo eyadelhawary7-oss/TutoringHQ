@@ -130,11 +130,21 @@ Identical for centers and teachers. Source of truth: `src/lib/billingLifecycle.t
 6. **No mechanism to move a billing date** — let the subscription lapse and
    resubscribe on the desired day.
 
-**Enforcement:** `centers.auto_suspend_at` is set to **00:00 Cairo on the day after
-`next_payment_due`** (`autoSuspendAtFromDue` → `lockAtFromBillingDay`, DST-safe);
-`src/proxy.ts` redirects to `/suspended` when `now >= auto_suspend_at` and
-`billing_status != 'paid'`. Teacher private access is gated by the
-`teacher_private_access` RPC (`status in ('trialing','active')`).
+**Enforcement (centers):** `centers.auto_suspend_at` is set to **00:00 Cairo on the
+day after `next_payment_due`** (`autoSuspendAtFromDue` → `lockAtFromBillingDay`,
+DST-safe); `src/proxy.ts` redirects to `/suspended` when `now >= auto_suspend_at`
+and `billing_status != 'paid'`. The `/suspended` screen shows headline numbers
+(total students, total groups) + a pay button.
+
+**Enforcement (teachers):** the `teacher_private_access` RPC gates the private
+engine. A **lapsed** teacher (had a subscription, now locked) sees the
+**private-engine lock summary** — headline numbers (total private students, total
+private groups) + a pay button (`PrivateLockSummary`, fed by
+`GET /api/teacher/private-summary`), with the records gated by
+`requireTeacherPrivateAccess`. The decision is `resolveTeacherPrivateView`
+(`records` / `lock_summary` / `upsell`). The **free zone (center monitoring) is
+never locked** — only the paid private engine. A never-subscribed teacher keeps the
+free-zone trial upsell unchanged.
 
 ### Removed with this model (verify-then-delete)
 - **5% late-payment fee + day-30 dormancy scan** — `runLateFeeAndDormancyScan`

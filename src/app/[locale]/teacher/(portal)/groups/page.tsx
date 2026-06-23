@@ -4,15 +4,19 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import PrivateGroupsSection from '../../PrivateGroupsSection';
 import PrivateUpsellCard from '../../PrivateUpsellCard';
+import PrivateLockSummary from '../../PrivateLockSummary';
 import { useTeacherContext } from '../../useTeacherContext';
 import { useStartTrial } from '../../useStartTrial';
+import { resolveTeacherPrivateView } from '@/lib/teacherPrivateView';
 
 /**
  * /teacher/groups - the teacher's private group list. Free-zone teachers see a
- * locked upsell; the URL still resolves here so it is bookmarkable.
+ * locked upsell; a lapsed teacher sees the lock summary (headline numbers + pay);
+ * the URL still resolves here so it is bookmarkable.
  */
 export default function TeacherGroupsPage() {
   const t = useTranslations('teacherPortal.pages');
+  const tp = useTranslations('teacherPortal');
   const { ctx, loading, reload } = useTeacherContext();
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -21,6 +25,7 @@ export default function TeacherGroupsPage() {
     reload();
     setRefreshKey((k) => k + 1);
   });
+  const view = resolveTeacherPrivateView({ hasPrivateAccess: ctx?.hasPrivateAccess ?? false, state });
 
   return (
     <div className="flex flex-col gap-6">
@@ -28,14 +33,16 @@ export default function TeacherGroupsPage() {
 
       {loading && !ctx ? (
         <div className="h-16 animate-pulse rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)]" />
-      ) : ctx?.hasPrivateAccess ? (
+      ) : view === 'records' ? (
         <PrivateGroupsSection refreshKey={refreshKey} onAdd={startTrial} />
+      ) : view === 'lock_summary' ? (
+        <PrivateLockSummary title={tp('lockSummary.title')} payLabel={t('resumeCta')} onPay={startTrial} />
       ) : (
         <PrivateUpsellCard
-          tone={state === 'lapsed' ? 'resume' : 'trial'}
+          tone="trial"
           title={t('groups')}
           body={t('groupsLockedBody')}
-          ctaLabel={state === 'lapsed' ? t('resumeCta') : t('startTrialCta')}
+          ctaLabel={t('startTrialCta')}
           onCta={startTrial}
         />
       )}
