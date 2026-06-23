@@ -136,15 +136,18 @@ DST-safe); `src/proxy.ts` redirects to `/suspended` when `now >= auto_suspend_at
 and `billing_status != 'paid'`. The `/suspended` screen shows headline numbers
 (total students, total groups) + a pay button.
 
-**Enforcement (teachers):** the `teacher_private_access` RPC gates the private
-engine. A **lapsed** teacher (had a subscription, now locked) sees the
-**private-engine lock summary** — headline numbers (total private students, total
-private groups) + a pay button (`PrivateLockSummary`, fed by
-`GET /api/teacher/private-summary`), with the records gated by
-`requireTeacherPrivateAccess`. The decision is `resolveTeacherPrivateView`
-(`records` / `lock_summary` / `upsell`). The **free zone (center monitoring) is
-never locked** — only the paid private engine. A never-subscribed teacher keeps the
-free-zone trial upsell unchanged.
+**Enforcement (teachers) — deliberately DIFFERENT from centers:** the
+`teacher_private_access` RPC gates the private engine. A **lapsed** teacher (had a
+subscription, now locked) takes a **full drop to the free tier** — exactly like a
+never-subscribed teacher — with NO summary screen and no headline-numbers view. Her
+private surfaces show a "resubscribe to access your saved data" message + a
+resubscribe action (`resolveTeacherPrivateView` → `records` / `resubscribe` /
+`upsell`; the `resubscribe` and `upsell` views are both gated to the free tier, the
+copy is the only difference). Private records stay gated by
+`requireTeacherPrivateAccess`; **private data is preserved in the DB (never deleted
+on lapse)** and resubscribing restores access exactly as it was. The **free zone
+(center monitoring) is never locked**. Centers, by contrast, keep their `/suspended`
+summary lock screen.
 
 ### Removed with this model (verify-then-delete)
 - **5% late-payment fee + day-30 dormancy scan** — `runLateFeeAndDormancyScan`

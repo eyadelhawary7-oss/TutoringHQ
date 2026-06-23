@@ -4,19 +4,18 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import PrivateGroupsSection from '../../PrivateGroupsSection';
 import PrivateUpsellCard from '../../PrivateUpsellCard';
-import PrivateLockSummary from '../../PrivateLockSummary';
 import { useTeacherContext } from '../../useTeacherContext';
 import { useStartTrial } from '../../useStartTrial';
 import { resolveTeacherPrivateView } from '@/lib/teacherPrivateView';
 
 /**
  * /teacher/groups - the teacher's private group list. Free-zone teachers see a
- * locked upsell; a lapsed teacher sees the lock summary (headline numbers + pay);
- * the URL still resolves here so it is bookmarkable.
+ * trial upsell; a lapsed teacher drops to the free tier and sees a "resubscribe
+ * to access your saved data" message (records gated, data preserved). The URL
+ * still resolves here so it is bookmarkable.
  */
 export default function TeacherGroupsPage() {
   const t = useTranslations('teacherPortal.pages');
-  const tp = useTranslations('teacherPortal');
   const { ctx, loading, reload } = useTeacherContext();
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -35,8 +34,14 @@ export default function TeacherGroupsPage() {
         <div className="h-16 animate-pulse rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)]" />
       ) : view === 'records' ? (
         <PrivateGroupsSection refreshKey={refreshKey} onAdd={startTrial} />
-      ) : view === 'lock_summary' ? (
-        <PrivateLockSummary title={tp('lockSummary.title')} payLabel={t('resumeCta')} onPay={startTrial} />
+      ) : view === 'resubscribe' ? (
+        <PrivateUpsellCard
+          tone="resume"
+          title={t('groups')}
+          body={t('resubscribeLockedBody')}
+          ctaLabel={t('resumeCta')}
+          onCta={startTrial}
+        />
       ) : (
         <PrivateUpsellCard
           tone="trial"
