@@ -26,6 +26,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { cairoDateKey, cairoYmdPlusDays, startOfUtcInstantForCairoCalendarDay } from '@/lib/cairo/day';
 import { round2 } from '@/lib/invoiceBalance';
+import { logBillingEvent } from '@/lib/billingAudit';
 
 type Row = Record<string, unknown>;
 
@@ -115,7 +116,14 @@ export async function ensureTeacherSubscriptionInvoice(
     return null;
   }
 
-  return { invoiceId: String((ins as Row).id), total };
+  const newInvoiceId = String((ins as Row).id);
+  await logBillingEvent(supabase, 'invoice_created', { ownerType: 'teacher', ownerId: teacherId }, {
+    invoiceId: newInvoiceId,
+    invoiceType: 'subscription',
+    total,
+    billingDayCairo,
+  });
+  return { invoiceId: newInvoiceId, total };
 }
 
 /**

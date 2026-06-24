@@ -39,6 +39,7 @@ import { resolveProcessingFeeAmount } from '@/lib/processingFee';
 import { round2 } from '@/lib/invoiceBalance';
 import { MAX_CHARGE_ATTEMPTS, type DueChargeable, type ManualReason, type MidnightBillingAdapter } from '@/lib/midnightBilling';
 import type { OwnerRef } from '@/lib/savedCard/types';
+import { classifyPaymobDecline } from '@/lib/savedCard/declineClassification';
 
 type Row = Record<string, unknown>;
 
@@ -371,6 +372,51 @@ export function createSupabaseMidnightBillingAdapter(
         status: result.ok ? result.status : result.status,
         intentId: 'intentId' in result ? result.intentId : null,
       });
+    },
+
+    async recordDecline(item, result) {
+      if (result.ok || result.status !== 'declined') return;
+      const declineCode = result.declineCode ?? null;
+      const errorMessage = result.errorMessage ?? null;
+      const classification = classifyPaymobDecline({ code: declineCode, message: errorMessage });
+
+      // Best-effort card metadata (weak issuer proxy: brand + last4).
+      let cardBrand: string | null = null;
+      let cardLast4: string | null = null;
+      try {
+        const { data: card } = await supabase
+          .from('saved_cards')
+          .select('card_brand, card_last4')
+          .eq('owner_type', item.owner.ownerType)
+          .eq('owner_id', item.owner.ownerId)
+          .eq('status', 'active')
+          .maybeSingle();
+        const cr = card as Row | null;
+        cardBrand = (cr?.card_brand as string) ?? null;
+        cardLast4 = (cr?.card_last4 as string) ?? null;
+      } catch {
+        // metadata is non-essential — record the decline regardless.
+      }
+
+      try {
+        await supabase.from('recurring_charge_declines').insert({
+          owner_type: item.owner.ownerType,
+          owner_id: item.owner.ownerId,
+          invoice_id: item.invoiceId,
+          billing_period: item.periodKey,
+          attempt_index: item.attemptIndex,
+          decline_code: declineCode,
+          decline_classification: classification,
+          error_message: errorMessage,
+          card_brand: cardBrand,
+          card_last4: cardLast4,
+          // issuer_bank left null: Paymob does not expose the issuing bank on the
+          // recurring-charge response we parse today.
+          issuer_bank: null,
+        });
+      } catch (e) {
+        console.error('[midnightBilling] recordDecline insert failed', item.key, e);
+      }
     },
   };
 }

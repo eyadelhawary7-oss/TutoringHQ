@@ -6,6 +6,7 @@ import { sendChqPaymentConfirmedTemplate, sendChqPaymentFailedTemplate } from '@
 import { autoSuspendAtFromDue } from '@/lib/billingSchedule';
 import { applyPaymentToInvoice, readAppliedTxns, remainingBalance } from '@/lib/invoiceBalance';
 import { advanceTeacherSubscriptionPaid } from '@/lib/teacherBilling';
+import { logBillingEvent, invoiceOwner } from '@/lib/billingAudit';
 
 const PERIOD_MONTHS: Record<string, number> = {
   monthly: 1,
@@ -272,6 +273,16 @@ export async function finalizeInvoicePaymentSuccess(
       console.error('[finalizeInvoicePaymentSuccess] partial credit', partialErr);
       return null;
     }
+    const partialOwner = invoiceOwner(row);
+    if (partialOwner) {
+      await logBillingEvent(supabaseAdmin, 'invoice_payment_applied', partialOwner, {
+        invoiceId: row.id,
+        amountReceived: application.newReceived,
+        amountApplied: amountPaid,
+        transactionId: paymobTransactionId,
+        settled: false,
+      });
+    }
     return { invoiceId: row.id, settled: false };
   }
 
@@ -291,6 +302,19 @@ export async function finalizeInvoicePaymentSuccess(
   if (invErr) {
     console.error('[finalizeInvoicePaymentSuccess] invoice', invErr);
     return null;
+  }
+
+  // Append-only audit: the invoice is now paid (centers AND teachers). This is the
+  // money-critical "payment applied + invoice marked paid" event the webhook, cron
+  // and on-demand pay all funnel through.
+  const paidOwner = invoiceOwner(row);
+  if (paidOwner) {
+    await logBillingEvent(supabaseAdmin, 'invoice_paid', paidOwner, {
+      invoiceId: row.id,
+      amount: application.newReceived,
+      invoiceType: row.invoice_type,
+      transactionId: paymobTransactionId,
+    });
   }
 
   // Teacher invoices (owner_type='teacher'): advance the subscription one month
@@ -403,11 +427,28 @@ export async function finalizeInvoicePaymentFailure(
   supabaseAdmin: SupabaseClient,
   paymobOrderId: string,
 ): Promise<void> {
+  const { data: inv } = await supabaseAdmin
+    .from('invoices')
+    .select('id, owner_type, center_id, teacher_id, status')
+    .eq('paymob_order_id', paymobOrderId)
+    .maybeSingle();
+  const row = inv as Record<string, unknown> | null;
+
   await supabaseAdmin
     .from('invoices')
     .update({ status: 'failed' })
     .eq('paymob_order_id', paymobOrderId)
     .neq('status', 'paid');
+
+  // Append-only audit (centers AND teachers); skip if it was already paid.
+  if (row && row.status !== 'paid') {
+    const owner = invoiceOwner(row);
+    if (owner) {
+      await logBillingEvent(supabaseAdmin, 'invoice_payment_failed', owner, {
+        invoiceId: String(row.id),
+      });
+    }
+  }
 }
 
 /**
@@ -461,14 +502,34 @@ export async function finalizeInvoiceChargeback(
 ): Promise<void> {
   const { data: inv } = await supabaseAdmin
     .from('invoices')
-    .select('id, center_id, status, total_amount')
+    .select('id, owner_type, center_id, teacher_id, status, total_amount')
     .eq('paymob_order_id', paymobOrderId)
     .maybeSingle();
 
-  const row = inv as { id: string; center_id: string; status: string; total_amount?: number | string } | null;
+  const row = inv as {
+    id: string;
+    owner_type?: string | null;
+    center_id: string;
+    teacher_id?: string | null;
+    status: string;
+    total_amount?: number | string;
+  } | null;
   if (!row || row.status !== 'paid') return;
 
   await supabaseAdmin.from('invoices').update({ status: 'chargeback' }).eq('id', row.id);
+
+  // Append-only audit (centers AND teachers): money reversed by the issuer.
+  const cbOwner = invoiceOwner(row);
+  if (cbOwner) {
+    await logBillingEvent(supabaseAdmin, 'invoice_chargeback', cbOwner, {
+      invoiceId: row.id,
+      amount: row.total_amount ?? null,
+      transactionId: paymobTransactionId,
+    });
+  }
+  // Teacher chargeback has no center-suspension side effect; the audit + status
+  // flip above still apply. Center side effects below run only for center owners.
+  if (!row.center_id) return;
 
   await supabaseAdmin
     .from('centers')
