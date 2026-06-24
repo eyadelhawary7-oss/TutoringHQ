@@ -9,10 +9,12 @@ where the customer sees and pays it.
 > midnight engine routes teacher dunning through `teacher_subscriptions.grace_until`,
 > not an invoice — so the invoice/underpayment flow applies to center owners.
 
-## The page — `/{locale}/billing`
+## The page — `/{locale}/pay`
 
-`src/app/[locale]/billing/page.tsx` (client, Arabic-first, RTL, mobile-first),
-fed by `GET /api/billing/customer-invoices`. Three clearly separated buckets:
+`src/app/[locale]/pay/page.tsx` (client, Arabic-first, RTL, mobile-first), a
+**standalone** page outside the `(dashboard)` route group (so it has no dashboard
+chrome and stays reachable while locked — note `(dashboard)/billing` already owns
+`/billing`). Fed by `GET /api/billing/customer-invoices`. Three separated buckets:
 
 - **3a. Unpaid (action required)** — outstanding invoices at the top, amber. Each
   shows the full breakdown via the existing redesigned layout
@@ -34,7 +36,7 @@ fed by `GET /api/billing/customer-invoices`. Three clearly separated buckets:
 ### Reachability when locked
 
 A locked center is redirected to `/suspended`; only `isSuspendedRouteExempt`
-paths escape. `/billing` is therefore added to **both**
+paths escape. `/pay` is therefore added to **both**
 `AUTHENTICATED_ROUTE_PREFIXES` and `isSuspendedRouteExempt` (`src/proxy.ts`,
 `src/lib/suspendedRouteExempt.ts`) so a locked customer can reach it and pay to
 unlock.
