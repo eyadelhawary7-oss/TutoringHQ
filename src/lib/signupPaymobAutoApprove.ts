@@ -5,6 +5,7 @@ import { createAction } from '@/lib/ceo';
 import { isTemplateApproved, sendWelcomeTemplate } from '@/lib/centerNotify';
 import { generateReferralCode } from '@/lib/referral';
 import { todayISO } from '@/lib/parentPack';
+import { autoSuspendAtFromDue } from '@/lib/billingSchedule';
 import { normalizePhone } from '@/lib/utils/phone';
 import { issueForWebhook as issuePinSetupTokenForWebhook } from '@/lib/pinSetupTokens';
 import {
@@ -243,7 +244,8 @@ async function resolveBillingForAutoApprove(
   const startYmd = todayISO();
   const dueDays = nextPaymentDueDaysForPeriod(period);
   const nextPaymentDue = addDaysToYmd(startYmd, dueDays);
-  const autoSuspendYmd = addDaysToYmd(nextPaymentDue, 8);
+  // Single-day lock (2e): Cairo-midnight after the due date (ISO), not the old +8d grace.
+  const autoSuspendYmd = autoSuspendAtFromDue(nextPaymentDue);
 
   return { billingAmount, allIn, period, planKey, nextPaymentDue, autoSuspendYmd };
 }
@@ -493,7 +495,7 @@ export async function processInvoiceSignupAfterPaymobSuccess(
     subscription_billing_period: period,
     next_payment_due: nextPaymentDue,
     subscription_start_date: todayISO(),
-    auto_suspend_at: `${autoSuspendYmd}T12:00:00.000Z`,
+    auto_suspend_at: autoSuspendYmd,
   };
   if (weeklyLimit != null) centerUpdates.weekly_student_limit = weeklyLimit;
 
@@ -761,7 +763,8 @@ export async function processSignupAutoApprovalAfterPaymobSuccess(
 
   const dueDays = nextPaymentDueDaysForPeriod(period);
   const nextPaymentDue = addCalendarDaysFromToday(dueDays);
-  const autoSuspendYmd = addCalendarDaysFromToday(dueDays + 6);
+  // Single-day lock (2e): Cairo-midnight after the due date (ISO), not +6d grace.
+  const autoSuspendYmd = autoSuspendAtFromDue(nextPaymentDue);
 
   const { error: actErr } = await supabase
     .from('centers')
@@ -773,7 +776,7 @@ export async function processSignupAutoApprovalAfterPaymobSuccess(
       billing_amount: billingAmount,
       all_in_price: allIn,
       next_payment_due: nextPaymentDue,
-      auto_suspend_at: `${autoSuspendYmd}T12:00:00.000Z`,
+      auto_suspend_at: autoSuspendYmd,
     })
     .eq('id', centerId);
 

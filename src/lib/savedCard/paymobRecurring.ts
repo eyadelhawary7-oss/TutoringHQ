@@ -112,7 +112,8 @@ type PayResponse = {
   pending?: boolean | string;
   is_voided?: boolean | string;
   order?: { id?: number | string } | null;
-  data?: { message?: string } | null;
+  data?: { message?: string; txn_response_code?: string | number } | null;
+  txn_response_code?: string | number;
   message?: string;
 };
 
@@ -174,8 +175,10 @@ export const paymobRecurringClient: PaymobRecurringClient = {
     const transactionId = resp.id != null ? String(resp.id) : null;
     const respOrderId = resp.order?.id != null ? String(resp.order.id) : orderId;
     const errorMessage = success ? null : resp.data?.message ?? resp.message ?? 'declined';
+    const codeRaw = resp.data?.txn_response_code ?? resp.txn_response_code ?? null;
+    const declineCode = success || codeRaw == null ? null : String(codeRaw);
 
-    return { success, pending, transactionId, orderId: respOrderId, errorMessage };
+    return { success, pending, transactionId, orderId: respOrderId, errorMessage, declineCode };
   },
 
   async authorizeAndVoid(params): Promise<CardValidityResult> {

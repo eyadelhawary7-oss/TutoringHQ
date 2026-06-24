@@ -56,12 +56,12 @@ export interface ChargeSavedCardDeps {
 }
 
 export type ChargeSavedCardResult =
-  | { ok: true; status: 'charged'; intentId: string; transactionId: string | null }
-  | { ok: true; status: 'already_charged'; intentId: string; transactionId: string | null }
+  | { ok: true; status: 'charged'; intentId: string; transactionId: string | null; paymobOrderId: string | null }
+  | { ok: true; status: 'already_charged'; intentId: string; transactionId: string | null; paymobOrderId: string | null }
   | { ok: false; status: 'no_saved_card' }
   | { ok: false; status: 'invalid_amount' }
   | { ok: false; status: 'idempotency_conflict'; intentId: string }
-  | { ok: false; status: 'declined'; intentId: string; errorMessage: string | null }
+  | { ok: false; status: 'declined'; intentId: string; errorMessage: string | null; declineCode: string | null }
   | { ok: false; status: 'recurring_integration_not_configured'; intentId: string }
   | { ok: false; status: 'needs_reconciliation'; intentId: string; errorMessage?: string | null };
 
@@ -110,6 +110,7 @@ export async function chargeSavedCard(
           status: 'already_charged',
           intentId: intent.id,
           transactionId: intent.paymobTransactionId ?? null,
+          paymobOrderId: intent.paymobOrderId ?? null,
         };
       case 'submitted':
         // We told Paymob to charge but never recorded a definitive outcome.
@@ -122,12 +123,14 @@ export async function chargeSavedCard(
         };
       case 'failed':
       case 'voided':
-        // A definitive prior decline for this exact charge.
+        // A definitive prior decline for this exact charge. The issuer code is
+        // not persisted on the intent; classification falls back to the message.
         return {
           ok: false,
           status: 'declined',
           intentId: intent.id,
           errorMessage: intent.lastError ?? null,
+          declineCode: null,
         };
       case 'error':
         // Pre-submit error previously; safe to retry from a clean 'created' state.
@@ -162,7 +165,7 @@ export async function chargeSavedCard(
         return { ok: false, status: 'idempotency_conflict', intentId: raced.id };
       }
       if (raced.status === 'succeeded') {
-        return { ok: true, status: 'already_charged', intentId: raced.id, transactionId: raced.paymobTransactionId ?? null };
+        return { ok: true, status: 'already_charged', intentId: raced.id, transactionId: raced.paymobTransactionId ?? null, paymobOrderId: raced.paymobOrderId ?? null };
       }
       return { ok: false, status: 'needs_reconciliation', intentId: raced.id };
     }
@@ -230,7 +233,7 @@ export async function chargeSavedCard(
       chargeIntentId: intent.id,
       details: { transactionId: outcome.transactionId, orderId: outcome.orderId, amount: input.amount },
     });
-    return { ok: true, status: 'charged', intentId: updated.id, transactionId: outcome.transactionId };
+    return { ok: true, status: 'charged', intentId: updated.id, transactionId: outcome.transactionId, paymobOrderId: outcome.orderId };
   }
 
   if (outcome.pending) {
@@ -258,7 +261,7 @@ export async function chargeSavedCard(
     chargeIntentId: intent.id,
     details: { reason: outcome.errorMessage ?? 'declined', transactionId: outcome.transactionId },
   });
-  return { ok: false, status: 'declined', intentId: updated.id, errorMessage: outcome.errorMessage ?? null };
+  return { ok: false, status: 'declined', intentId: updated.id, errorMessage: outcome.errorMessage ?? null, declineCode: outcome.declineCode ?? null };
 }
 
 export type { ChargeIntentRecord };

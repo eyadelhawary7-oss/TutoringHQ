@@ -5,6 +5,7 @@ import { createServerClient } from '@supabase/ssr';
 import { isSuspendedRouteExempt } from './lib/suspendedRouteExempt';
 import { isSuperAdminPhone } from './lib/admin-access';
 import { phoneFromCenterhqAuthEmail } from './lib/ownerPhone';
+import { centerIsLockedNow } from './lib/billingAccessGate';
 
 export { isSuspendedRouteExempt as isSuspendedExempt } from './lib/suspendedRouteExempt';
 
@@ -296,7 +297,7 @@ export default async function proxy(request: NextRequest) {
       if (userRecord?.center_id) {
         const { data: center } = await supabase
           .from('centers')
-          .select('status, billing_status, auto_suspend_at, is_blacklisted')
+          .select('status, billing_status, auto_suspend_at, next_payment_due, is_blacklisted')
           .eq('id', userRecord.center_id)
           .single();
 
@@ -323,16 +324,19 @@ export default async function proxy(request: NextRequest) {
           if (center?.status === 'suspended') {
             shouldRedirect = true;
             redirectUrl = `${suspendedPath}?reason=center_suspended`;
-          } else {
-            const billingStatus = (center as { billing_status?: string })?.billing_status;
-            const autoSuspendAt = (center as { auto_suspend_at?: string })?.auto_suspend_at;
-            if (autoSuspendAt && billingStatus !== 'paid') {
-              const suspendDate = new Date(autoSuspendAt);
-              if (new Date() >= suspendDate) {
-                shouldRedirect = true;
-                redirectUrl = `${suspendedPath}?reason=payment_overdue`;
-              }
-            }
+          } else if (
+            center &&
+            centerIsLockedNow(
+              center as {
+                billing_status?: string | null;
+                next_payment_due?: string | null;
+                auto_suspend_at?: string | null;
+              },
+            )
+          ) {
+            // Single-day lock model (resolveBillingAccess), wired in via the gate.
+            shouldRedirect = true;
+            redirectUrl = `${suspendedPath}?reason=payment_overdue`;
           }
 
           if (shouldRedirect && redirectUrl) {

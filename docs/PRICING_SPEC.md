@@ -214,6 +214,19 @@ Without this, the finance dashboard falls back to live subscription MRR for the 
   dedicated Paymob **recurring integration id**
   (`PAYMOB_RECURRING_INTEGRATION_ID`, not yet issued) and Paymob LIVE credentials.
 - Full detail: `docs/SAVED_CARD_ENGINE.md`. Schema migration:
-  `supabase/migrations/20260624120000_saved_card_engine.sql` (apply on review).
+  `supabase/migrations/20260624120000_saved_card_engine.sql` (applied live).
+
+## Midnight billing engine (Phase 2 — wired, inert pending recurring id)
+
+- The midnight cron (`/api/cron/subscription-autocharge`, `0 22 * * *` =
+  midnight Cairo) auto-charges due saved-card customers (centers + teachers),
+  leaves wallet/no-card customers on an unpaid invoice + pay link, routes bank
+  declines to the OTP fallback (no silent retry), and retries soft declines on a
+  capped day 0/+3/+7 schedule. The single-day lock model now drives access
+  enforcement (`resolveBillingAccess` via the proxy) and all side paths
+  (signup/PAYG/admin) lock uniformly the next Cairo midnight.
+- **Still inert**: with no `PAYMOB_RECURRING_INTEGRATION_ID` the engine charges
+  nothing — every due customer is left on the manual surface. Phase 2 finishing
+  does NOT make auto-charge live. Detail: `docs/SAVED_CARD_ENGINE.md`.
 
 (End of spec doc.)

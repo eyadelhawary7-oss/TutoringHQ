@@ -5,6 +5,7 @@ import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
 import { createCommissionsForCenter } from '@/lib/commissions';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { autoSuspendAtFromDue } from '@/lib/billingSchedule';
 
 /** Gate admin bulk freeform WA on ops announcement template in Meta registry. */
 const BULK_CENTER_WA_TEMPLATE = 'chq_parent_announcement_ops';
@@ -93,8 +94,10 @@ export async function POST(request: Request) {
   if (action === 'approve') {
     const nextPaymentDue = new Date();
     nextPaymentDue.setDate(nextPaymentDue.getDate() + 30);
-    const autoSuspendAt = new Date();
-    autoSuspendAt.setDate(autoSuspendAt.getDate() + 38);
+    const nextPaymentDueYmd = nextPaymentDue.toISOString().split('T')[0];
+    // Single-day lock (2e): Cairo-midnight after the due date (proper ISO instant),
+    // replacing the old +38d grace and the YMD-stored auto_suspend_at bug.
+    const autoSuspendAtIso = autoSuspendAtFromDue(nextPaymentDueYmd);
 
     const { data: pendingCenters, error: fetchPendingError } = await supabaseAdmin
       .from('centers')
@@ -121,8 +124,8 @@ export async function POST(request: Request) {
         approved_at: new Date().toISOString(),
         approved_by: ctx.userId,
         subscription_start_date: today,
-        next_payment_due: nextPaymentDue.toISOString().split('T')[0],
-        auto_suspend_at: autoSuspendAt.toISOString().split('T')[0],
+        next_payment_due: nextPaymentDueYmd,
+        auto_suspend_at: autoSuspendAtIso,
       })
       .in('id', pendingIds);
 

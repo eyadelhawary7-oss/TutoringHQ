@@ -106,6 +106,8 @@ export interface PaymobChargeOutcome {
   transactionId: string | null;
   orderId: string | null;
   errorMessage?: string | null;
+  /** Paymob/issuer decline code (txn_response_code) — used to classify declines. */
+  declineCode?: string | null;
 }
 
 /** Result of a save-time validity check (small auth that is then voided). */

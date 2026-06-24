@@ -96,3 +96,78 @@ The midnight cron, the fallback/iframe flow, retries/dunning, and wiring the
 Paymob **TOKEN callback** into the webhook (plus requesting tokenization on the
 first-payment payment key) — all Phase 2. `parsePaymobTokenCallback()` +
 `saveCardFromFirstPayment()` are the ready capture mechanism for that wiring.
+
+---
+
+# Phase 2 — The Midnight Billing Engine
+
+Wires the Phase 1 engine into automatic billing. **Built + tested but INERT**
+until `PAYMOB_RECURRING_INTEGRATION_ID` is set (and Paymob live credentials
+exist): with no recurring id every due customer simply lands on the manual
+surface — nothing is charged.
+
+## 2a — Midnight cron
+
+`src/app/api/cron/subscription-autocharge/route.ts` — registered in `vercel.json`
+at `0 22 * * *` (the repo's "midnight Cairo" convention; the engine is
+Cairo-date-driven via `cairoDateKey`). Core: `src/lib/midnightBilling.ts`
+(`runMidnightBilling` + the pure `decideAfterCharge`) over a Supabase adapter
+(`src/lib/midnightBillingAdapter.ts`). Centers bill off the `invoices` table,
+teachers off `teacher_subscriptions`. A card customer with a saved card is
+auto-charged via `chargeSavedCard`; a wallet / no-card customer is left on an
+unpaid invoice with a pay link. **Idempotent**: every charge uses Phase 1's
+unique key (`owner:invoice:period:aN`), and due-date filtering means a same-day
+re-run never double-charges or double-invoices. The successful-charge path links
+the MIT order to the invoice and calls the same idempotent
+`finalizeInvoicePaymentSuccess` the webhook uses (no double-advance).
+
+> ⚠️ The cron is registered in `vercel.json` only. If the existing pg_cron mirror
+> pattern is desired, add a `cron.job` calling
+> `/api/cron/subscription-autocharge` with the `CRON_SECRET` bearer. Double-firing
+> is safe (idempotent).
+
+## 2b — Rule-engine wired into enforcement
+
+`src/lib/billingAccessGate.ts` (`centerIsLockedNow`) wraps the tested
+`resolveBillingAccess` and is called from `src/proxy.ts`, replacing the inline
+`now >= auto_suspend_at` check. One definition of "locked" for the whole app.
+
+## 2c — Bank-decline fallback
+
+`src/lib/savedCard/declineClassification.ts` maps a Paymob decline to
+`auth_required` (bank refuses the unauthenticated MIT / wants OTP) → manual OTP
+fallback, **no retry**; `hard_final` (dead card) → manual, **no retry**;
+`soft_retryable` (transient) → retry schedule. Unknown defaults to the safe
+manual fallback. A declined customer is **not locked** — they get an unpaid
+invoice + pay link and keep full access through the single-day grace; the lock
+fires at the next Cairo midnight only if ignored. An `audit_log`
+`autocharge_*` event is emitted as the trigger anchor Phase 4 sends on.
+
+## 2d — Soft-decline retry schedule (card cohort)
+
+3 attempts on day 0, +3, +7 (`RETRY_GAP_DAYS = [3, 4]`, `MAX_CHARGE_ATTEMPTS = 3`)
+— far under the scheme caps. Hard / auth declines never retry. During the retry
+window the lock is deferred to just after the next retry day; on final failure it
+is set to the next Cairo midnight.
+
+## 2e — Uniform single-day lock
+
+The side paths now use `autoSuspendAtFromDue` (single-day) instead of legacy
+graces: signup-approve (was +8d, `signupPaymobAutoApprove.ts`), PAYG (was +6d,
+`payg-billing`), admin bulk onboarding (was +38d, and a YMD-vs-ISO bug,
+`admin/centers/bulk`).
+
+## 2f — Token capture on first payment
+
+`createPaymentKey({ requestToken: true })` on the signup first payment asks Paymob
+to tokenize; the webhook detects the Paymob **TOKEN callback**
+(`isPaymobTokenCallback`, header-HMAC-verified) and routes it to
+`handlePaymobTokenCallback` → the consent-gated Phase 1 save path. No consent →
+nothing stored.
+
+## Still inert / founder actions
+
+Same as Phase 1: needs `PAYMOB_RECURRING_INTEGRATION_ID` + Paymob live
+credentials. **Phase 2 finishing does NOT mean auto-charge is live** — with no
+recurring id, the cron charges nothing and every due customer is left on the
+manual surface.
