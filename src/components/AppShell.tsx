@@ -16,7 +16,7 @@ import { CardOrderCartProvider } from '@/hooks/useCardOrderCart';
 import { Globe } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useRouter } from '@/i18n/routing';
-import { PastDueBanner } from '@/components/billing/PastDueBanner';
+import { NudgeBanner } from '@/components/billing/NudgeBanner';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
 import { isRefreshTokenNotFoundError } from '@/lib/supabaseRefreshSilence';
@@ -205,7 +205,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         )}
         {/* Page content - scroll + safe-area padding on inner wrapper (MobileWrapper) */}
         <main className="flex-1 flex flex-col min-h-0">
-          {!isAdminRoute && !kioskChromeHidden ? <PastDueBanner /> : null}
+          {!isAdminRoute && !kioskChromeHidden ? <NudgeBanner /> : null}
           <MobileWrapper fullWidth={isAdminRoute}>{children}</MobileWrapper>
         </main>
       </div>

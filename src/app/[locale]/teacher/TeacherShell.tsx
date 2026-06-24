@@ -7,6 +7,7 @@ import { useLayout } from '@/contexts/LayoutContext';
 import { signOutToLogin } from '@/lib/auth/sign-out-client';
 import TeacherNav from './TeacherNav';
 import TeacherTrialBanner from './TeacherTrialBanner';
+import { NudgeBanner } from '@/components/billing/NudgeBanner';
 
 /**
  * Teacher portal chrome. Hides the center-app shell (sidebar/topbar) the same
@@ -68,6 +69,7 @@ export default function TeacherShell({
           collapsed ? 'md:ps-12' : 'md:ps-60',
         ].join(' ')}
       >
+        <NudgeBanner />
         <TeacherTrialBanner privateAccess={privateAccess} />
         <div className="mx-auto w-full max-w-3xl p-4 md:p-6">{children}</div>
       </main>

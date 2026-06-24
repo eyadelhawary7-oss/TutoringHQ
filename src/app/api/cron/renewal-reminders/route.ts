@@ -1,198 +1,20 @@
 /**
- * Freeform renewal reminders (7d / 1d before `next_payment_due`).
- * Meta template–based nudges (T-7, T-3, overdue streaks) are not wired here; see
- * `docs/WA_TEMPLATES.md` and `runSubscriptionBillingCron` + `centerNotify` for template paths.
+ * RETIRED. The freeform 7-day / 1-day renewal reminders this route used to send
+ * are superseded by the unified billing-nudges engine (src/lib/nudges →
+ * /api/cron/billing-nudges), which is the single source of center + teacher
+ * dunning (pre-billing T-3/T-1, due-today/grace, post-lock) plus the in-app
+ * banner. This route is no longer scheduled in vercel.json; the handler remains
+ * only so any stale trigger no-ops instead of double-nudging.
  */
-import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { requireCronSecret } from '@/lib/cron/requireCronSecret';
-import { insertCronLogSuccess, insertCronLogFailure } from '@/lib/cron/cronLog';
-import { supabaseAdmin as supabaseAdminHealth } from '@/lib/supabase-admin';
-import { sendWhatsAppMessage } from '@/lib/whatsapp';
-import { formatNumber } from '@/lib/formatNumber';
 
 export const dynamic = 'force-dynamic';
 
-export const maxDuration = 60;
-
-function getSupabaseAdmin() {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
-
-function addDays(date: Date, days: number): string {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result.toISOString().split('T')[0];
-}
-
-function normalizePhoneForMeta(phone: string): string {
-  return phone
-    .replace(/^\+/, '')
-    .replace(/^0(\d{10})$/, '20$1');
-}
-
-function formatAmount(amount: number): string {
-  return formatNumber(amount, 'ar');
-}
-
-function buildReminderMessage(
-  ownerName: string,
-  centerName: string,
-  plan: string,
-  amount: number,
-  daysUntilDue: number
-): string {
-  const planMap: Record<string, string> = {
-    starter: 'سنتر صغير',
-    pro: 'سنتر متوسط',
-    business: 'سنتر كبير',
-    enterprise: 'سنتر ضخم',
-    top_centers: 'ميجا سنتر',
-  };
-  const planArabic = planMap[plan] || plan;
-
-  if (daysUntilDue === 7) {
-    return `مرحباً ${ownerName} 👋
-
-تذكير ودي: اشتراك ${centerName} على TutoringHQ سيتجدد خلال *7 أيام*.
-
-📋 الباقة: ${planArabic}
-💰 المبلغ: ${formatAmount(amount)} ج.م
-
-للاستفسار أو تغيير الباقة، تواصل معنا على هذا الرقم.
-
-شكراً لثقتك في TutoringHQ 🎓`;
-  }
-
-  return `تنبيه عاجل ⚠️
-
-${ownerName}، اشتراك *${centerName}* سيتجدد *غداً*.
-
-💰 المبلغ المستحق: ${formatAmount(amount)} ج.م
-📋 الباقة: ${planArabic}
-
-يرجى التأكد من جاهزية طريقة الدفع لضمان استمرارية الخدمة.
-
-للمساعدة تواصل معنا فوراً 🙏`;
-}
-
 export async function POST(request: Request) {
-  const cronStart = Date.now();
-  const CRON_NAME = 'renewal-reminders';
-
   const unauthorized = requireCronSecret(request);
   if (unauthorized) return unauthorized;
-
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    return NextResponse.json({ success: false }, { status: 200 });
-  }
-
-  const supabase = getSupabaseAdmin();
-
-  const { data: pausedRow } = await supabase
-    .from('platform_config')
-    .select('value')
-    .eq('key', 'cron_paused')
-    .maybeSingle();
-  if (pausedRow?.value === true) {
-    return NextResponse.json({ skipped: 'cron_paused' }, { status: 200 });
-  }
-
-  try {
-    const today = new Date();
-    const in7Days = addDays(today, 7);
-    const tomorrow = addDays(today, 1);
-
-    const { data: centers, error } = await supabase
-      .from('centers')
-      .select('id, name, phone, owner_name, plan, billing_amount, next_payment_due, subscription_status')
-      .in('next_payment_due', [in7Days, tomorrow])
-      .eq('subscription_status', 'active')
-      .not('phone', 'is', null);
-
-    if (error) {
-      throw new Error(error.message || 'DB error');
-    }
-
-    if (!centers || centers.length === 0) {
-      await insertCronLogSuccess(supabase, CRON_NAME, {
-        duration_ms: Date.now() - cronStart,
-        records_processed: 0,
-      });
-      try {
-        if (supabaseAdminHealth) {
-          await supabaseAdminHealth.from('cron_health_log').upsert(
-            {
-              cron_name: 'renewal-reminders',
-              last_success_at: new Date().toISOString(),
-              failure_count: 0,
-            },
-            { onConflict: 'cron_name' },
-          );
-        }
-      } catch (healthLogErr) {
-        console.error('[renewal-reminders] cron_health_log:', healthLogErr);
-      }
-      return NextResponse.json({ success: true, sent: 0, message: 'No centers due today' });
-    }
-
-    let sent = 0;
-    let failed = 0;
-
-    for (const center of centers) {
-      const daysUntilDue = center.next_payment_due === in7Days ? 7 : 1;
-      const phone = normalizePhoneForMeta(center.phone as string);
-      const ownerName = (center.owner_name || center.name) as string;
-      const amount = Number(center.billing_amount) || 0;
-
-      const message = buildReminderMessage(
-        ownerName,
-        center.name as string,
-        center.plan as string,
-        amount,
-        daysUntilDue
-      );
-
-      const success = await sendWhatsAppMessage(phone, message);
-      if (success) sent++;
-      else failed++;
-
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-
-    await insertCronLogSuccess(supabase, CRON_NAME, {
-      duration_ms: Date.now() - cronStart,
-      records_processed: sent + failed,
-      metadata: { sent, failed, total: centers.length },
-    });
-
-    try {
-      if (supabaseAdminHealth) {
-        await supabaseAdminHealth.from('cron_health_log').upsert(
-          {
-            cron_name: 'renewal-reminders',
-            last_success_at: new Date().toISOString(),
-            failure_count: 0,
-          },
-          { onConflict: 'cron_name' },
-        );
-      }
-    } catch (healthLogErr) {
-      console.error('[renewal-reminders] cron_health_log:', healthLogErr);
-    }
-
-    return NextResponse.json({ success: true, sent, failed, total: centers.length });
-  } catch (error) {
-    console.error(`[${CRON_NAME}] Error:`, error);
-    await insertCronLogFailure(supabase, CRON_NAME, error, {
-      duration_ms: Date.now() - cronStart,
-    });
-    return NextResponse.json({ success: false }, { status: 200 });
-  }
+  return NextResponse.json({ skipped: 'retired_use_billing_nudges' }, { status: 200 });
 }
 
 export async function GET(request: Request) {

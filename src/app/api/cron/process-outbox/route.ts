@@ -3,6 +3,7 @@ import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendPaymentConfirmed } from '@/lib/centerNotify';
 import { processCardOrderStatusWaOutboxJob } from '@/lib/cardOrderNotifications';
+import { processBillingNudgeWaOutboxJob } from '@/lib/nudges/outboxHandler';
 import { insertCronLogFailure, insertCronLogSuccess } from '@/lib/cron/cronLog';
 
 const CRON_NAME = 'process-outbox';
@@ -93,6 +94,8 @@ export async function GET(request: Request) {
         success = result.success === true || result.skipped === true;
       } else if (job.job_type === 'send_card_order_status_wa') {
         success = await processCardOrderStatusWaOutboxJob(job.payload);
+      } else if (job.job_type === 'send_billing_nudge_wa') {
+        success = await processBillingNudgeWaOutboxJob(job.payload, admin);
       } else {
         console.warn('[process-outbox] unknown job_type', job.job_type);
       }

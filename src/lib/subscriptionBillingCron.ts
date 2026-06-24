@@ -12,6 +12,12 @@ import { isPaygCenter } from '@/lib/billingEngine';
 import { getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { applyProcessingFee } from '@/lib/processingFee';
 
+// RETIRED: the legacy day+3 / day+7 overdue WhatsApp reminders below. The unified
+// billing-nudges engine (src/lib/nudges) is now the single source of center +
+// teacher dunning (pre-billing, due-today/grace, post-lock). Invoice creation and
+// auto-suspend in this cron are unaffected — only the reminder SENDS are gated off.
+const LEGACY_CENTER_OVERDUE_REMINDERS = false;
+
 function calendarAddDays(baseYmd: string, delta: number): string {
   const [y, m, d] = baseYmd.split('-').map((x) => parseInt(x, 10));
   const t = Date.UTC(y, m - 1, d + delta);
@@ -239,12 +245,14 @@ export async function runSubscriptionBillingCron(
         .maybeSingle();
       if (dup) continue;
 
-      const waRes = await sendChqRenewalOverdueTemplate(supabase, {
-        name: c.name,
-        phone: c.phone,
-        daysLate: '3',
-        amountStr: String(c.billing_amount ?? 0),
-      });
+      const waRes = LEGACY_CENTER_OVERDUE_REMINDERS
+        ? await sendChqRenewalOverdueTemplate(supabase, {
+            name: c.name,
+            phone: c.phone,
+            daysLate: '3',
+            amountStr: String(c.billing_amount ?? 0),
+          })
+        : { success: false };
       if (!waRes.success) continue;
 
       await supabase.from('renewal_reminders_sent').upsert(
@@ -315,12 +323,14 @@ export async function runSubscriptionBillingCron(
         .maybeSingle();
       if (dup7) continue;
 
-      const waRes = await sendChqRenewalOverdueTemplate(supabase, {
-        name: c.name,
-        phone: c.phone,
-        daysLate: '7',
-        amountStr: String(c.billing_amount ?? 0),
-      });
+      const waRes = LEGACY_CENTER_OVERDUE_REMINDERS
+        ? await sendChqRenewalOverdueTemplate(supabase, {
+            name: c.name,
+            phone: c.phone,
+            daysLate: '7',
+            amountStr: String(c.billing_amount ?? 0),
+          })
+        : { success: false };
       if (!waRes.success) continue;
 
       await supabase.from('renewal_reminders_sent').upsert(
