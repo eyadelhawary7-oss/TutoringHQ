@@ -8,6 +8,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { readRawBodyWithLimit, ValidationError } from '@/lib/validate';
 import { hmacSha512Hex, timingSafeEqualHex } from '@/lib/verifyHmac';
+import { getPaymobHmacSecret } from '@/lib/paymobConfig';
 import { redeemPromoCodeForPaymobOrder } from '@/lib/redeemPromoCode';
 
 export const dynamic = 'force-dynamic';
@@ -228,7 +229,7 @@ export async function POST(request: NextRequest) {
   try {
     const rawBody = await readRawBodyWithLimit(request, BODY_LIMIT);
 
-    const hmacSecret = process.env.PAYMOB_HMAC_SECRET;
+    const hmacSecret = getPaymobHmacSecret();
     if (!hmacSecret) {
       Sentry.captureMessage('paymob webhook missing PAYMOB_HMAC_SECRET', {
         level: 'warning',

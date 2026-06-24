@@ -2,6 +2,8 @@
  * Paymob production guard + health display: shared rules for API key / integration shape.
  */
 
+import { getPaymobApiKey, getPaymobIntegrationId } from '@/lib/paymobConfig';
+
 /** True on Vercel production, or on non-Vercel hosts when NODE_ENV is production. */
 export function isProductionDeployEnv(): boolean {
   if (process.env.VERCEL_ENV === 'production') return true;
@@ -11,8 +13,8 @@ export function isProductionDeployEnv(): boolean {
 
 /** True when credentials look like sandbox / test keys (must not ship on production). */
 export function paymobCredentialsLookSandbox(): boolean {
-  const key = process.env.PAYMOB_API_KEY ?? '';
-  const iid = String(process.env.PAYMOB_INTEGRATION_ID ?? '').trim();
+  const key = getPaymobApiKey() ?? '';
+  const iid = getPaymobIntegrationId() ?? '';
   if (key.toLowerCase().includes('sandbox')) return true;
   if (key.length > 0 && key.length < 30) return true;
   if (iid.length > 0 && iid.length < 6) return true;

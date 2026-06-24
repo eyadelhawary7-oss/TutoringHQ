@@ -158,6 +158,7 @@ COMMENT ON TABLE public.saved_card_events IS
 CREATE OR REPLACE FUNCTION public.set_saved_card_updated_at()
 RETURNS trigger
 LANGUAGE plpgsql
+SET search_path = public, pg_temp
 AS $$
 BEGIN
   NEW.updated_at := now();

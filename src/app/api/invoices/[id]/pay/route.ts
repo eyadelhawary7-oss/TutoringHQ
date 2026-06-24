@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import {
+  getPaymobApiKey,
+  getPaymobIntegrationId,
+  getPaymobIframeId,
+} from '@/lib/paymobConfig';
 
 const PAYMOB_BASE = 'https://accept.paymob.com/api';
 
@@ -16,9 +21,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const apiKey = process.env.PAYMOB_API_KEY;
-    const integrationId = process.env.PAYMOB_INTEGRATION_ID;
-    const iframeId = process.env.PAYMOB_IFRAME_ID;
+    const apiKey = getPaymobApiKey();
+    const integrationId = getPaymobIntegrationId();
+    const iframeId = getPaymobIframeId();
     if (!apiKey || !integrationId || !iframeId) {
       return NextResponse.json({ error: 'Paymob is not configured' }, { status: 500 });
     }

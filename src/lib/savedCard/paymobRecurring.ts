@@ -23,6 +23,7 @@
  */
 
 import '@/lib/paymobProductionGuard';
+import { getPaymobApiKey, paymobUseIntention } from '@/lib/paymobConfig';
 import type {
   PaymobRecurringClient,
   PaymobChargeOutcome,
@@ -35,7 +36,7 @@ const PAYMOB_BASE = 'https://accept.paymob.com/api';
 class PaymobInfraError extends Error {}
 
 async function authToken(): Promise<string> {
-  const apiKey = process.env.PAYMOB_API_KEY;
+  const apiKey = getPaymobApiKey();
   if (!apiKey) throw new PaymobInfraError('PAYMOB_API_KEY not configured');
   const res = await fetch(`${PAYMOB_BASE}/auth/tokens`, {
     method: 'POST',
@@ -133,7 +134,7 @@ async function payWithToken(
   // The classic MOTO integration replays the credential-on-file via the token
   // itself; the explicit field is only sent on the modern Intention path (set
   // PAYMOB_USE_INTENTION=true once that integration is confirmed with Paymob).
-  if (storedCredentialRef && process.env.PAYMOB_USE_INTENTION === 'true') {
+  if (storedCredentialRef && paymobUseIntention()) {
     body.previous_transaction_reference = storedCredentialRef;
   }
   const res = await fetch(`${PAYMOB_BASE}/acceptance/payments/pay`, {

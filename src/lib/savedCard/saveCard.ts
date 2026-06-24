@@ -13,6 +13,7 @@
  *    prove the card is live. A dead card is rejected at save time.
  */
 
+import { getPaymobRecurringIntegrationId } from '@/lib/paymobConfig';
 import { consentIsSufficient } from './consent';
 import type {
   OwnerRef,
@@ -47,11 +48,6 @@ export type SaveCardResult =
   | { ok: false; reason: 'recurring_integration_not_configured' }
   | { ok: false; reason: 'card_invalid'; errorMessage?: string | null };
 
-function defaultIntegrationIdResolver(): string | undefined {
-  const v = (process.env.PAYMOB_RECURRING_INTEGRATION_ID ?? '').trim();
-  return v.length > 0 ? v : undefined;
-}
-
 function cardDataIsValid(c: CardTokenData): boolean {
   if (!c.token || typeof c.token !== 'string') return false;
   if (!/^[0-9]{4}$/.test(c.last4 ?? '')) return false;
@@ -84,7 +80,7 @@ export async function saveCardFromFirstPayment(
   }
 
   // --- Gate 2: validity check (small auth, then void). ---
-  const integrationId = (deps.getRecurringIntegrationId ?? defaultIntegrationIdResolver)();
+  const integrationId = (deps.getRecurringIntegrationId ?? getPaymobRecurringIntegrationId)();
   if (!integrationId) {
     return { ok: false, reason: 'recurring_integration_not_configured' };
   }

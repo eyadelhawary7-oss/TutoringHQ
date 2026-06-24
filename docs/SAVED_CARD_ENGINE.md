@@ -66,6 +66,11 @@ revoked from `anon`/`authenticated`). Customers are polymorphic: `owner_type`
   fake (no network).
 - `store.ts` — service-role Supabase persistence adapter.
 
+**Paymob config — one source of truth:** `src/lib/paymobConfig.ts` is the single
+module the whole platform reads every Paymob credential/id from (API key,
+integration id, iframe id, HMAC secret, recurring integration id). No file reads
+`process.env.PAYMOB_*` for these directly. Secret values stay in env.
+
 API: `POST /api/billing/saved-card/consent` (owner-only, CSRF) records center
 consent. i18n: `savedCard.consent.*` in `messages/{ar,en}.json`.
 
@@ -78,8 +83,9 @@ consent required before storage, validity check rejects a dead card.
 1. **Recurring integration id** — `PAYMOB_RECURRING_INTEGRATION_ID`. A dedicated
    RECURRING / MOTO integration credential Eyad must request from his Paymob
    account manager. **It does not exist yet.** Until set, the engine returns
-   `recurring_integration_not_configured` and never charges. Slotted in via the
-   env var (read in `autoCharge.ts` / `saveCard.ts` / `paymobRecurring.ts`).
+   `recurring_integration_not_configured` and never charges. **One-place change:**
+   set the env var and the whole platform picks it up — the only code that reads
+   it is `getPaymobRecurringIntegrationId()` in `src/lib/paymobConfig.ts`.
 2. **Live credentials** — live auto-charging also waits on Paymob LIVE
    credentials (company registration). Phase 1 builds + tests the mechanism; it
    does not make auto-charge live in production.

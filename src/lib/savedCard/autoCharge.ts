@@ -20,6 +20,7 @@
  * or schedule in Phase 1 — Phase 2 calls it from the midnight billing run.
  */
 
+import { getPaymobRecurringIntegrationId } from '@/lib/paymobConfig';
 import {
   buildIdempotencyKey,
   buildRequestFingerprint,
@@ -48,8 +49,8 @@ export interface ChargeSavedCardDeps {
   /**
    * Resolver for the Paymob RECURRING integration id. This is the credential
    * Eyad must request from Paymob — until it exists, charging returns
-   * 'recurring_integration_not_configured'. Defaults to reading the env var
-   * PAYMOB_RECURRING_INTEGRATION_ID.
+   * 'recurring_integration_not_configured'. Defaults to the central Paymob
+   * config accessor (the one definition point), overridable in tests.
    */
   getRecurringIntegrationId?: () => string | undefined;
 }
@@ -64,11 +65,6 @@ export type ChargeSavedCardResult =
   | { ok: false; status: 'recurring_integration_not_configured'; intentId: string }
   | { ok: false; status: 'needs_reconciliation'; intentId: string; errorMessage?: string | null };
 
-function defaultIntegrationIdResolver(): string | undefined {
-  const v = (process.env.PAYMOB_RECURRING_INTEGRATION_ID ?? '').trim();
-  return v.length > 0 ? v : undefined;
-}
-
 export async function chargeSavedCard(
   input: ChargeSavedCardInput,
   deps: ChargeSavedCardDeps,
@@ -76,7 +72,7 @@ export async function chargeSavedCard(
   const { store, paymob } = deps;
   const currency = input.currency ?? 'EGP';
   const resolveIntegrationId =
-    deps.getRecurringIntegrationId ?? defaultIntegrationIdResolver;
+    deps.getRecurringIntegrationId ?? getPaymobRecurringIntegrationId;
 
   if (!Number.isFinite(input.amount) || input.amount <= 0) {
     return { ok: false, status: 'invalid_amount' };
