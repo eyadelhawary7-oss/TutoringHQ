@@ -92,6 +92,12 @@ export interface MidnightBillingAdapter {
   applyRetryScheduled(item: DueChargeable, nextRetryYmd: string, attempt: number): Promise<void>;
   applyFinalFailed(item: DueChargeable): Promise<void>;
   applyReconcile(item: DueChargeable, result: ChargeSavedCardResult): Promise<void>;
+  /**
+   * Optional: record a definitive decline (code/classification/issuer) into the
+   * append-only decline log, for learning which issuers reject MIT. Called by the
+   * orchestrator for every `declined` result, regardless of the routed outcome.
+   */
+  recordDecline?(item: DueChargeable, result: ChargeSavedCardResult): Promise<void>;
 }
 
 export interface MidnightBillingDeps {
@@ -190,6 +196,12 @@ export async function runMidnightBilling(
         // idempotent unit (same-day cron re-runs reuse the key → no double charge).
         billingPeriod: `${item.periodKey}:a${item.attemptIndex}`,
       });
+
+      // Record every definitive decline (decline code / issuer) before routing the
+      // outcome — independent of whether it becomes a retry, manual, or final fail.
+      if (!result.ok && result.status === 'declined' && adapter.recordDecline) {
+        await adapter.recordDecline(item, result);
+      }
 
       const outcome = decideAfterCharge({
         result,

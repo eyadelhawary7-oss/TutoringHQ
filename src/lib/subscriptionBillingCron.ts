@@ -11,6 +11,7 @@ import { sendChqRenewalOverdueTemplate } from '@/lib/centerNotify';
 import { isPaygCenter } from '@/lib/billingEngine';
 import { getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { applyProcessingFee } from '@/lib/processingFee';
+import { logBillingEvent } from '@/lib/billingAudit';
 
 // RETIRED: the legacy day+3 / day+7 overdue WhatsApp reminders below. The unified
 // billing-nudges engine (src/lib/nudges) is now the single source of center +
@@ -185,6 +186,13 @@ export async function runSubscriptionBillingCron(
         console.error('[subscriptionBillingCron] invoice insert:', invErr);
         continue;
       }
+
+      await logBillingEvent(supabase, 'invoice_created', { ownerType: 'center', ownerId: c.id }, {
+        invoiceNumber,
+        invoiceType: 'subscription',
+        total,
+        dueDate: npd,
+      });
 
       await supabase.from('renewal_reminders_sent').upsert(
         {
