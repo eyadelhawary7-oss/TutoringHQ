@@ -15,6 +15,7 @@
     { "path": "/api/cron/loyalty-bonus-check", "schedule": "0 9 * * *" },
     { "path": "/api/cron/process-renewals", "schedule": "0 7 * * *" },
     { "path": "/api/cron/subscription-autocharge", "schedule": "0 22 * * *" },
+    { "path": "/api/cron/billing-nudges", "schedule": "0 8 * * *" },
     { "path": "/api/cron/detect-churn", "schedule": "0 2 * * *" },
     { "path": "/api/cron/daily-summary", "schedule": "55 5 * * *" },
     { "path": "/api/cron/compute-benchmarks", "schedule": "0 1 * * *" },
@@ -22,7 +23,6 @@
     { "path": "/api/cron/status-ping", "schedule": "*/5 * * * *" },
     { "path": "/api/cron/snapshot-mrr", "schedule": "0 22 * * *" },
     { "path": "/api/cron/check-token-health", "schedule": "0 8 * * 1" },
-    { "path": "/api/cron/renewal-reminders", "schedule": "0 7 * * *" },
     { "path": "/api/cron/weekly-backup", "schedule": "0 3 * * 0" },
     { "path": "/api/cron/monthly-backup", "schedule": "0 2 1 * *" },
     { "path": "/api/cron/cleanup-status-checks", "schedule": "0 1 * * 1" },
@@ -61,6 +61,9 @@
       "maxDuration": 300
     },
     "src/app/api/cron/subscription-autocharge/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/cron/billing-nudges/route.ts": {
       "maxDuration": 300
     },
     "src/app/api/cron/daily-summary/route.ts": {

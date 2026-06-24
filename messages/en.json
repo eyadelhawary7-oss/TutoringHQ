@@ -4930,6 +4930,16 @@
     "updating": "Saving…"
   },
   "billing": {
+    "nudge": {
+      "prebill": "Your subscription renews in {days} days — {amount} due. Pay now before {date} to stay active.",
+      "dueToday": "Payment is due today — {amount}. Pay now before access is limited tomorrow.",
+      "lockedCenter": "Your account is limited to the summary screen — {amount} unpaid. Pay now to restore full access.",
+      "lockedTeacher": "Your account dropped to the free tier — {amount} unpaid. Pay now to restore your private student engine.",
+      "cardExpiry": "Your saved card ending {last4} expires {expiry}. Update it to avoid an interruption.",
+      "payNow": "Pay now",
+      "updateCard": "Update card",
+      "dismiss": "Dismiss"
+    },
     "account": "Account",
     "activate": "Activate",
     "activeStatus": "Active Status",

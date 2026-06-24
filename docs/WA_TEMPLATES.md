@@ -100,3 +100,43 @@ Templates seeded as **PENDING** in `wa_meta_templates` that need Meta-side regis
 6. Re-test by changing status on a **test** `card_order` — `webhook_outbox` should drain successfully.
 
 Until templates are **APPROVED** in the database, `sendCardOrderStatusUpdate` falls back gracefully (logs to Sentry but does not throw).
+
+## Billing nudges / dunning (unified center + teacher)
+
+The unified nudge engine (`src/lib/nudges/`, cron `/api/cron/billing-nudges`, banner
+`/api/billing/nudge-status` + `src/components/billing/NudgeBanner.tsx`) drives both the
+in-app banner and the WhatsApp reminders for centers AND teachers off the shared
+`invoices` + subscription tables. See `docs/BILLING_NUDGES.md` for the full design.
+
+**Template config is one place:** `src/lib/nudges/config.ts` (`NUDGE_TEMPLATES`). The
+WhatsApp channel is gated by `NUDGE_WHATSAPP_ENABLED` (env) **and** Meta approval
+(`wa_meta_templates.status === 'APPROVED'`, checked via `isTemplateApproved`). Until both
+are true every due nudge is recorded `disabled` and only the in-app banner shows — the
+banner never depends on WhatsApp.
+
+### New templates to submit to Meta — **category UTILITY** (NOT Marketing)
+
+All Arabic (EGY), Arabic comma U+060C where punctuation is needed. Body parameters are
+positional `{{1}}…`, sent in the order shown (see `src/lib/nudges/messages.ts`).
+
+| Template name | Category | Params (in order) | Used for |
+|---------------|----------|-------------------|----------|
+| `chq_nudge_prebill` | **UTILITY** | `{{1}}` name, `{{2}}` amount, `{{3}}` days, `{{4}}` pay link | Pre-billing reminder T-3 and T-1 (manual-pay owners) |
+| `chq_nudge_due_today` | **UTILITY** | `{{1}}` name, `{{2}}` amount, `{{3}}` pay link | Billing day, still unpaid — due today / one-day grace |
+| `chq_nudge_locked` | **UTILITY** | `{{1}}` name, `{{2}}` amount, `{{3}}` pay link | After lock — pay to restore (center summary / teacher free-tier) |
+| `chq_nudge_card_expiry` | **UTILITY** | `{{1}}` name, `{{2}}` last4, `{{3}}` MM/YY, `{{4}}` update link | Saved card expires before next billing (T-30, T-7) |
+
+Suggested Arabic bodies (final wording is set on Meta; keep variable order):
+
+- **`chq_nudge_prebill`** — `مرحبًا {{1}}، اشتراكك هيتجدد خلال {{3}} يوم والمبلغ المستحق {{2}}. ادفع دلوقتي للحفاظ على استمرارية الخدمة: {{4}}`
+- **`chq_nudge_due_today`** — `{{1}}، النهارده آخر يوم لدفع {{2}}. ادفع دلوقتي قبل ما يتقيّد الوصول بكره: {{3}}`
+- **`chq_nudge_locked`** — `{{1}}، تم تقييد الوصول لعدم سداد {{2}}. ادفع دلوقتي لاستعادة الوصول الكامل: {{3}}`
+- **`chq_nudge_card_expiry`** — `{{1}}، الكارت المحفوظ المنتهي بـ {{2}} هينتهي {{3}}. حدّث الكارت لتجنّب أي انقطاع: {{4}}`
+
+### Recategorize (Marketing → Utility)
+
+⚠️ **`chq_renewal_reminder`** is currently **MARKETING** in `wa_meta_templates`. It is a
+billing/transactional message — Marketing category risks silent non-delivery. Recategorize
+to **Utility** on Meta (the legacy freeform renewal-reminders cron that used it is retired,
+but the registry row should still be corrected). Audit any other billing-related templates
+for the same issue.
