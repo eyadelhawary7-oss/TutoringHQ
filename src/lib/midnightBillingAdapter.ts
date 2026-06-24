@@ -1,28 +1,42 @@
 /**
  * Phase 2 — Supabase adapter for the midnight billing engine.
  *
- * Thin DB layer behind MidnightBillingAdapter: finds due charges (centers via the
- * `invoices` table, teachers via `teacher_subscriptions`), and persists each
+ * Thin DB layer behind MidnightBillingAdapter: finds due charges and persists each
  * outcome. The decision logic lives in midnightBilling.ts; this only does I/O.
+ *
+ * Centers AND teachers now flow through the SAME `invoices` machinery:
+ *  - Centers: their subscription invoice already exists (subscriptionBillingCron /
+ *    signup) — due rows are read from `invoices`.
+ *  - Teachers: due rows are read from `teacher_subscriptions` (next_billing_at),
+ *    and the engine CREATES the teacher's invoice on the billing day
+ *    (ensureTeacherSubscriptionInvoice) before charging — mirroring centers.
  *
  * Money-safety notes:
  *  - On a successful card charge we link the MIT Paymob order to the invoice and
  *    call the SAME idempotent finalizer the webhook uses
- *    (`finalizeInvoicePaymentSuccess`, which no-ops if already paid), so cron and
- *    webhook can both run without double-advancing the subscription.
+ *    (`finalizeInvoicePaymentSuccess`, which no-ops if already paid + advances the
+ *    teacher subscription / center on settle), so cron and webhook can both run
+ *    without double-advancing.
+ *  - One invoice, one processing fee: a teacher dunning retry REUSES the same open
+ *    invoice (ensureTeacherSubscriptionInvoice), so the flat fee is never doubled.
  *  - Pay-link creation is best-effort: if Paymob isn't configured the invoice is
  *    still left in the unpaid bucket and the owner's on-demand pay flow makes the
  *    link later.
- *  - Lock timing is the single-day rule (autoSuspendAtFromDue); during the soft
+ *  - Lock timing is the single-day rule (autoSuspendAtFromDue for centers,
+ *    grace_until for teachers — the free-tier drop is preserved); during the soft
  *    retry window the lock is deferred to just after the next retry day.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { cairoDateKey, cairoYmdPlusDays, cairoPaidAtDayUtcBounds, startOfUtcInstantForCairoCalendarDay } from '@/lib/cairo/day';
+import { cairoDateKey, cairoPaidAtDayUtcBounds, startOfUtcInstantForCairoCalendarDay } from '@/lib/cairo/day';
 import { autoSuspendAtFromDue } from '@/lib/billingSchedule';
 import { lockAtFromBillingDay } from '@/lib/billingLifecycle';
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
 import { finalizeInvoicePaymentSuccess } from '@/lib/invoicePaymobPayment';
+import { ensureTeacherSubscriptionInvoice, advanceTeacherSubscriptionPaid } from '@/lib/teacherBilling';
+import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import { resolveProcessingFeeAmount } from '@/lib/processingFee';
+import { round2 } from '@/lib/invoiceBalance';
 import { MAX_CHARGE_ATTEMPTS, type DueChargeable, type ManualReason, type MidnightBillingAdapter } from '@/lib/midnightBilling';
 import type { OwnerRef } from '@/lib/savedCard/types';
 
@@ -58,32 +72,50 @@ async function emitEvent(
   });
 }
 
-async function ensureCenterInvoicePayLink(
-  supabase: SupabaseClient,
-  invoiceId: string,
-): Promise<void> {
+/**
+ * Best-effort Paymob pay-link for an unpaid invoice (center OR teacher). The
+ * billing display name/phone is read from the right owner table. Idempotent: it
+ * no-ops once a link exists, and the update guards on a null paymob_order_id.
+ */
+async function ensureInvoicePayLink(supabase: SupabaseClient, invoiceId: string): Promise<void> {
   const { data } = await supabase
     .from('invoices')
-    .select('id, center_id, invoice_number, total_amount, paymob_order_id, paymob_iframe_url')
+    .select('id, owner_type, center_id, teacher_id, invoice_number, total_amount, paymob_order_id, paymob_iframe_url')
     .eq('id', invoiceId)
     .maybeSingle();
   const inv = data as Row | null;
   if (!inv) return;
   if (inv.paymob_order_id && inv.paymob_iframe_url) return; // link already present
 
-  const { data: center } = await supabase
-    .from('centers')
-    .select('name, phone')
-    .eq('id', String(inv.center_id))
-    .maybeSingle();
-  const c = (center as Row | null) ?? {};
+  let displayName = 'Customer';
+  let phoneDigits = '0';
+  if (inv.owner_type === 'teacher' && inv.teacher_id) {
+    const { data: u } = await supabase
+      .from('users')
+      .select('name, phone')
+      .eq('id', String(inv.teacher_id))
+      .maybeSingle();
+    const ur = (u as Row | null) ?? {};
+    displayName = (String(ur.name ?? '').trim() || 'Teacher').slice(0, 50);
+    phoneDigits = String(ur.phone ?? '').replace(/\D/g, '') || '0';
+  } else if (inv.center_id) {
+    const { data: center } = await supabase
+      .from('centers')
+      .select('name, phone')
+      .eq('id', String(inv.center_id))
+      .maybeSingle();
+    const c = (center as Row | null) ?? {};
+    displayName = (String(c.name ?? '').trim() || 'Center').slice(0, 50);
+    phoneDigits = String(c.phone ?? '').replace(/\D/g, '') || '0';
+  }
+
   try {
     const { paymobOrderId, iframeUrl } = await createPaymobCheckoutEgp({
       amountEgp: Number(inv.total_amount ?? 0),
       merchantOrderId: `inv-${invoiceId}-${Date.now()}`,
       itemName: `Invoice ${String(inv.invoice_number ?? '')}`.slice(0, 120),
-      phoneDigits: String(c.phone ?? '').replace(/\D/g, '') || '0',
-      displayName: String(c.name ?? 'Center').slice(0, 50),
+      phoneDigits,
+      displayName,
     });
     await supabase
       .from('invoices')
@@ -94,25 +126,6 @@ async function ensureCenterInvoicePayLink(
     // Best-effort: leave unpaid; the owner's on-demand pay flow creates the link.
     console.warn('[midnightBilling] pay-link creation skipped', invoiceId, (e as Error).message);
   }
-}
-
-/** Advance a teacher subscription by one paid month (Cairo-anchored). */
-async function advanceTeacher(supabase: SupabaseClient, teacherId: string, todayCairo: string): Promise<void> {
-  const nextYmd = cairoYmdPlusDays(todayCairo, 30);
-  const nowIso = new Date().toISOString();
-  const nextIso = startOfUtcInstantForCairoCalendarDay(nextYmd).toISOString();
-  await supabase
-    .from('teacher_subscriptions')
-    .update({
-      status: 'active',
-      current_period_start: nowIso,
-      current_period_end: nextIso,
-      next_billing_at: nextIso,
-      last_payment_at: nowIso,
-      grace_until: null,
-      dunning_attempts: 0,
-    })
-    .eq('teacher_id', teacherId);
 }
 
 export function createSupabaseMidnightBillingAdapter(
@@ -133,6 +146,7 @@ export function createSupabaseMidnightBillingAdapter(
       const { data: dueInv } = await supabase
         .from('invoices')
         .select('id, center_id, total_amount, billing_period_start, status, retry_count')
+        .eq('owner_type', 'center')
         .eq('invoice_type', 'subscription')
         .in('status', ['pending', 'overdue'])
         .eq('due_date', todayCairo);
@@ -141,6 +155,7 @@ export function createSupabaseMidnightBillingAdapter(
       const { data: retryInv } = await supabase
         .from('invoices')
         .select('id, center_id, total_amount, billing_period_start, status, retry_count')
+        .eq('owner_type', 'center')
         .eq('invoice_type', 'subscription')
         .eq('status', 'failed')
         .eq('next_retry_at', todayCairo)
@@ -179,16 +194,35 @@ export function createSupabaseMidnightBillingAdapter(
       const teacherIds = teachRows.map((r) => String(r.teacher_id));
       const teacherCarded = await ownersWithActiveCard(supabase, 'teacher', teacherIds);
 
+      // Flat processing fee (snapshotted onto each new teacher invoice).
+      let fee = 0;
+      try {
+        fee = resolveProcessingFeeAmount(await getProcessingFeeConfig());
+      } catch {
+        fee = 0;
+      }
+
       for (const r of teachRows) {
         const attempt = Number(r.dunning_attempts ?? 0);
         if (attempt >= MAX_CHARGE_ATTEMPTS) continue;
         const ownerId = String(r.teacher_id);
+        const priceGross = Number(r.price_gross ?? 0);
+
+        // Create (or reuse, on retry) the teacher's invoice on the billing day —
+        // this is the teacher equivalent of the center subscription invoice.
+        const ensured = await ensureTeacherSubscriptionInvoice(supabase, {
+          teacherId: ownerId,
+          billingDayCairo: todayCairo,
+          priceGross,
+          fee,
+        });
+
         items.push({
           key: `teacher:${String(r.id)}`,
           customerType: 'teacher',
           owner: { ownerType: 'teacher', ownerId },
-          amount: Number(r.price_gross ?? 0),
-          invoiceId: null,
+          amount: ensured ? ensured.total : round2(priceGross + fee),
+          invoiceId: ensured ? ensured.invoiceId : null,
           periodKey: todayCairo.slice(0, 7),
           billingDayCairo: todayCairo,
           hasSavedCard: teacherCarded.has(ownerId),
@@ -201,7 +235,9 @@ export function createSupabaseMidnightBillingAdapter(
 
     async applyCharged(item, result) {
       if (!result.ok) return; // only called for a successful charge
-      if (item.customerType === 'center' && item.invoiceId && result.paymobOrderId) {
+      if (item.invoiceId && result.paymobOrderId) {
+        // Unified center + teacher path: link the MIT order and finalize. The
+        // finalizer advances the center OR teacher subscription on settle.
         await supabase
           .from('invoices')
           .update({
@@ -212,7 +248,8 @@ export function createSupabaseMidnightBillingAdapter(
           .neq('status', 'paid');
         await finalizeInvoicePaymentSuccess(supabase, result.paymobOrderId, result.transactionId ?? '');
       } else if (item.customerType === 'teacher') {
-        await advanceTeacher(supabase, item.owner.ownerId, today);
+        // Defensive fallback (invoice creation failed): advance directly.
+        await advanceTeacherSubscriptionPaid(supabase, item.owner.ownerId, today);
       }
       await emitEvent(supabase, 'autocharge_succeeded', item.owner, {
         invoiceId: item.invoiceId,
@@ -224,7 +261,7 @@ export function createSupabaseMidnightBillingAdapter(
       if (!result.ok) return;
       // Same finalize path; both sides are idempotent (finalize no-ops if paid;
       // teacher advance is skipped when next_billing_at is already in the future).
-      if (item.customerType === 'center' && item.invoiceId && result.paymobOrderId) {
+      if (item.invoiceId && result.paymobOrderId) {
         await finalizeInvoicePaymentSuccess(supabase, result.paymobOrderId, result.transactionId ?? '');
       } else if (item.customerType === 'teacher') {
         const { data } = await supabase
@@ -234,19 +271,25 @@ export function createSupabaseMidnightBillingAdapter(
           .maybeSingle();
         const nb = (data as Row | null)?.next_billing_at;
         const alreadyAdvanced = nb && cairoDateKey(new Date(String(nb))) > today;
-        if (!alreadyAdvanced) await advanceTeacher(supabase, item.owner.ownerId, today);
+        if (!alreadyAdvanced) await advanceTeacherSubscriptionPaid(supabase, item.owner.ownerId, today);
       }
     },
 
     async applyManualUnpaid(item, reason: ManualReason) {
-      if (item.customerType === 'center' && item.invoiceId) {
-        await ensureCenterInvoicePayLink(supabase, item.invoiceId);
+      // Both owners get a pay-link on the unpaid invoice so the on-demand pay
+      // surface (center /pay, teacher /teacher/pay) can settle it.
+      if (item.invoiceId) {
+        await ensureInvoicePayLink(supabase, item.invoiceId);
+      }
+      if (item.customerType === 'center') {
         await supabase
           .from('centers')
           .update({ auto_suspend_at: autoSuspendAtFromDue(item.billingDayCairo) })
           .eq('id', item.owner.ownerId)
           .neq('billing_status', 'paid');
-      } else if (item.customerType === 'teacher') {
+      } else {
+        // Teacher free-tier drop preserved: lock the private engine at the next
+        // Cairo midnight. The invoice stays unpaid; she pays it to restore access.
         await supabase
           .from('teacher_subscriptions')
           .update({ grace_until: lockAtFromBillingDay(item.billingDayCairo) })
@@ -263,7 +306,9 @@ export function createSupabaseMidnightBillingAdapter(
       // Defer the lock to just after the next retry day so the customer is not
       // locked mid-retry-window.
       const deferLock = lockAtFromBillingDay(nextRetryYmd);
-      if (item.customerType === 'center' && item.invoiceId) {
+      if (item.invoiceId) {
+        // Mark the invoice failed + schedule the retry (one invoice, reused on the
+        // retry day). Applies to both centers and teachers.
         await supabase
           .from('invoices')
           .update({
@@ -273,12 +318,16 @@ export function createSupabaseMidnightBillingAdapter(
             next_retry_at: nextRetryYmd,
           })
           .eq('id', item.invoiceId);
+      }
+      if (item.customerType === 'center') {
         await supabase
           .from('centers')
           .update({ auto_suspend_at: deferLock })
           .eq('id', item.owner.ownerId)
           .neq('billing_status', 'paid');
-      } else if (item.customerType === 'teacher') {
+      } else {
+        // Teacher re-detection on the retry day is driven by next_billing_at, so
+        // move it forward and record the attempt; defer the free-tier lock.
         await supabase
           .from('teacher_subscriptions')
           .update({
@@ -298,14 +347,16 @@ export function createSupabaseMidnightBillingAdapter(
     async applyFinalFailed(item) {
       // Retries exhausted → lock fires at the next Cairo midnight.
       const lockTomorrow = lockAtFromBillingDay(today);
-      if (item.customerType === 'center' && item.invoiceId) {
-        await ensureCenterInvoicePayLink(supabase, item.invoiceId);
+      if (item.invoiceId) {
+        await ensureInvoicePayLink(supabase, item.invoiceId);
+      }
+      if (item.customerType === 'center') {
         await supabase
           .from('centers')
           .update({ auto_suspend_at: lockTomorrow })
           .eq('id', item.owner.ownerId)
           .neq('billing_status', 'paid');
-      } else if (item.customerType === 'teacher') {
+      } else {
         await supabase
           .from('teacher_subscriptions')
           .update({ grace_until: lockTomorrow, dunning_attempts: MAX_CHARGE_ATTEMPTS })

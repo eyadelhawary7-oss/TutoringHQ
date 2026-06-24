@@ -7,6 +7,7 @@ export function PaymobInvoiceModal({
   iframeUrl,
   sessionId,
   invoicePollId,
+  statusEndpoint = '/api/paymob/invoice-status',
   title,
   iframeTitle,
   closeLabel,
@@ -17,6 +18,8 @@ export function PaymobInvoiceModal({
   iframeUrl: string;
   sessionId: string | null;
   invoicePollId: string | null;
+  /** Paymob poll endpoint. Teachers pass their teacher-scoped route. */
+  statusEndpoint?: string;
   title: string;
   iframeTitle: string;
   closeLabel: string;
@@ -38,7 +41,7 @@ export function PaymobInvoiceModal({
         : `invoiceId=${encodeURIComponent(invoicePollId!)}`;
       const { data: sessionWrap } = await supabase.auth.getSession();
       const token = sessionWrap?.session?.access_token;
-      const res = await fetch(`/api/paymob/invoice-status?${qs}`, {
+      const res = await fetch(`${statusEndpoint}?${qs}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       const data = (await res.json()) as { status?: string; paid?: boolean; failed?: boolean };
@@ -52,7 +55,7 @@ export function PaymobInvoiceModal({
       }
     }, 3000);
     return () => clearInterval(interval);
-  }, [sessionId, invoicePollId]);
+  }, [sessionId, invoicePollId, statusEndpoint]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">

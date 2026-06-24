@@ -5,9 +5,13 @@ customers whose bank declined the auto-charge** see and pay what they owe. The
 Phase 2 midnight engine already routes both to an unpaid `invoices` row; this is
 where the customer sees and pays it.
 
-> Scope: this is **center-scoped**. Teachers have no rows in `invoices` — the
-> midnight engine routes teacher dunning through `teacher_subscriptions.grace_until`,
-> not an invoice — so the invoice/underpayment flow applies to center owners.
+> Scope: centers AND teachers. The `invoices` table is **owner-polymorphic**
+> (`owner_type ∈ {center, teacher}`, see migration
+> `20260625000000_teacher_invoices_parity.sql`); teachers now get full invoice
+> parity through the **same** table, finalizer, Paymob pay flow, forecast and
+> underpayment machinery. The only differences are the data model (a teacher has
+> no center row; access is gated by `teacher_subscriptions`) and the teacher-scoped
+> routes/page. See **Teacher invoice parity** at the end of this doc.
 
 ## The page — `/{locale}/pay`
 
@@ -101,3 +105,88 @@ rules:
 - `tests/unit/invoiceUnderpaymentFinalize.test.ts` — finalizer: partial leaves
   invoice unpaid + locked; top-up settles + unlocks with exact total (no extra
   fee); idempotent replay; already-paid no-op; no-amount = full.
+
+## Teacher invoice parity
+
+Teachers reach **full parity** with centers: real invoice records (owed / paid /
+unpaid / upcoming), created on the billing date by the Phase 2 midnight engine,
+with the same statuses, the same idempotent finalizer, the same Paymob pay flow,
+the same forecast and the same underpayment handling. The teacher and center
+surfaces share the same machinery and the same redesigned invoice templates, so a
+future invoice redesign applies to **both at once**.
+
+### Data model (verified live before building)
+
+The existing `invoices` table was extended to be **owner-polymorphic** rather than
+forking a parallel `teacher_invoices` table — the entire downstream charge stack
+(`card_charge_intents.invoice_id → invoices`, `saved_cards` / `card_charge_intents`
+already keyed by `owner_type ∈ {center, teacher}`, `combined_payment_sessions`
+with `teacher_*` session types) was already built expecting teachers to flow
+through `invoices`. Migration `20260625000000_teacher_invoices_parity.sql` (additive,
+applied to an empty table; before/after fingerprint verified; ends `NOTIFY pgrst`):
+
+- `owner_type text NOT NULL DEFAULT 'center'` (CHECK `center|teacher`), `teacher_id
+  uuid` FK → `teacher_profiles(user_id)` ON DELETE CASCADE, `center_id` relaxed to
+  nullable, XOR CHECK (exactly one owner matching `owner_type`).
+- Teacher RLS `invoices_select_own_teacher` (`teacher_id = auth.uid()`), mirroring
+  `teacher_subscriptions_select_own`. Existing center policy never matches teacher
+  rows (`center_id IS NULL`). Service-role writes bypass RLS.
+- Teacher partial indexes on `teacher_id` and `(teacher_id, status)`.
+
+### Creation + finalize (shared)
+
+- **Creation** — `ensureTeacherSubscriptionInvoice` (`src/lib/teacherBilling.ts`):
+  on the billing day the engine creates the teacher's `subscription` invoice
+  (`owner_type='teacher'`, `total = price_gross + flat fee`, fee snapshotted in
+  `metadata.processing_fee`). Idempotent + retry-safe: it **reuses an existing open
+  invoice** (a dunning retry never mints a second invoice or a second fee — one
+  invoice, one fee, exactly like centers).
+- **Finalize** — `finalizeInvoicePaymentSuccess` is owner-aware: when
+  `owner_type='teacher'` it advances `teacher_subscriptions` one month and restores
+  private-engine access (`advanceTeacherSubscriptionPaid`: status `active`,
+  `grace_until` cleared, `next_billing_at` +30 Cairo days) instead of touching
+  `centers`. Underpayment/idempotency core is unchanged and shared.
+
+### Midnight engine wiring
+
+`src/lib/midnightBillingAdapter.ts` reads due teachers from
+`teacher_subscriptions.next_billing_at` (within the Cairo day), creates/reuses the
+invoice, and routes them through the **same** invoice path as centers:
+
+- **card teacher** → `chargeSavedCard` (MIT) → finalize → invoice `paid` +
+  subscription advanced.
+- **wallet / no-card teacher** → unpaid invoice + Paymob pay link + `grace_until`
+  set (the **free-tier drop is preserved** — she pays the invoice to restore the
+  engine).
+- **bank decline** → the same fallback as centers: soft → retry (day 0 → +3 → +7,
+  reusing the same invoice); hard / auth-required → manual unpaid (no retry);
+  retries exhausted → lock at next Cairo midnight.
+
+Still **inert** until `PAYMOB_RECURRING_INTEGRATION_ID` + live Paymob credentials
+arrive (`chargeSavedCard` returns `recurring_integration_not_configured` → manual
+surface). This readies teacher auto-charge; it does not make it live.
+
+### Teacher surface (shared template)
+
+- **Page** — `src/app/[locale]/teacher/pay/page.tsx`, a thin wrapper over the
+  shared `src/components/billing/CustomerInvoicesView.tsx` (extracted from the
+  center `/pay` page — both are now wrappers, so a redesign lands on both).
+  Distinct path from center `/pay` (no collision, the `/billing` vs `/pay` lesson).
+  Reachable while locked/free-tier (endpoints use `requireTeacherAuth`, **not** the
+  private-access gate), so a lapsed teacher can pay to restore access.
+- **APIs** (teacher-scoped, `requireTeacherAuth`): `GET
+  /api/teacher/billing/customer-invoices` (buckets; forecast from
+  `teacher_subscriptions.next_billing_at` + `price_gross` + fee), `POST
+  /api/teacher/invoices/[id]/pay` (charges `remaining` only, no second fee), `GET
+  /api/teacher/paymob/invoice-status` (poll → shared finalizer), `GET
+  /api/teacher/invoices/[id]/pdf` (receipt; `generateInvoicePdf` renders the
+  teacher document via its `owner_type='teacher'` branch).
+
+### Tests
+
+- `tests/unit/teacherInvoiceParity.test.ts` — invoice creation + retry reuse (one
+  fee); finalizer teacher branch (full pay → paid + access restored; partial →
+  unpaid + still locked; pay-difference → settled, no second fee); engine adapter
+  (listDue creates the invoice; wallet → unpaid + pay link + `grace_until`; card →
+  finalize + advance); engine routing parity (card → charged, wallet →
+  manual_unpaid, hard decline → manual no-retry, soft → retry).

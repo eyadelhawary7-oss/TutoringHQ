@@ -5,6 +5,7 @@ import { computeNextQuarterlyPaymentDue } from '@/lib/subscriptionAnchor';
 import { sendChqPaymentConfirmedTemplate, sendChqPaymentFailedTemplate } from '@/lib/centerNotify';
 import { autoSuspendAtFromDue } from '@/lib/billingSchedule';
 import { applyPaymentToInvoice, readAppliedTxns, remainingBalance } from '@/lib/invoiceBalance';
+import { advanceTeacherSubscriptionPaid } from '@/lib/teacherBilling';
 
 const PERIOD_MONTHS: Record<string, number> = {
   monthly: 1,
@@ -208,7 +209,7 @@ export async function finalizeInvoicePaymentSuccess(
 ): Promise<{ invoiceId: string; settled: boolean } | null> {
   const { data: inv } = await supabaseAdmin
     .from('invoices')
-    .select('id, center_id, status, invoice_type, total_amount, amount_received, metadata')
+    .select('id, owner_type, center_id, teacher_id, status, invoice_type, total_amount, amount_received, metadata')
     .eq('paymob_order_id', paymobOrderId)
     .maybeSingle();
 
@@ -216,7 +217,9 @@ export async function finalizeInvoicePaymentSuccess(
 
   const row = inv as {
     id: string;
-    center_id: string;
+    owner_type: string | null;
+    center_id: string | null;
+    teacher_id: string | null;
     status: string;
     invoice_type: string | null;
     total_amount: number | string | null;
@@ -290,23 +293,37 @@ export async function finalizeInvoicePaymentSuccess(
     return null;
   }
 
+  // Teacher invoices (owner_type='teacher'): advance the subscription one month
+  // and restore private-engine access. No center side-effects. This is the
+  // teacher equivalent of handleSubscriptionInvoicePaid and runs through the SAME
+  // idempotent finalizer the webhook + cron + on-demand pay all use.
+  if (row.owner_type === 'teacher') {
+    if (row.teacher_id) {
+      await advanceTeacherSubscriptionPaid(supabaseAdmin, row.teacher_id);
+    }
+    return { invoiceId: row.id, settled: true };
+  }
+
+  // From here the invoice is center-owned, so center_id is present.
+  const centerRow = { id: row.id, center_id: String(row.center_id), total_amount: row.total_amount };
+
   if (row.invoice_type === 'plan_upgrade_difference') {
-    await handlePlanUpgradeInvoicePaid(supabaseAdmin, row, paymobTransactionId);
+    await handlePlanUpgradeInvoicePaid(supabaseAdmin, centerRow, paymobTransactionId);
     return { invoiceId: row.id, settled: true };
   }
 
   if (row.invoice_type === 'signup_first_payment') {
-    await processInvoiceSignupAfterPaymobSuccess(supabaseAdmin, row.center_id, paymobTransactionId);
+    await processInvoiceSignupAfterPaymobSuccess(supabaseAdmin, centerRow.center_id, paymobTransactionId);
     return { invoiceId: row.id, settled: true };
   }
 
   if (row.invoice_type === 'subscription') {
-    await handleSubscriptionInvoicePaid(supabaseAdmin, row, paymobTransactionId);
+    await handleSubscriptionInvoicePaid(supabaseAdmin, centerRow, paymobTransactionId);
     return { invoiceId: row.id, settled: true };
   }
 
   if (row.invoice_type === 'pack_billing') {
-    await handlePackBillingInvoicePaid(supabaseAdmin, row, paymobTransactionId);
+    await handlePackBillingInvoicePaid(supabaseAdmin, centerRow, paymobTransactionId);
     return { invoiceId: row.id, settled: true };
   }
 
@@ -318,7 +335,7 @@ export async function finalizeInvoicePaymentSuccess(
         billing_status: 'paid',
         last_payment_date: paidDay,
       })
-      .eq('id', row.center_id);
+      .eq('id', centerRow.center_id);
     if (cErr) {
       console.error('[finalizeInvoicePaymentSuccess] late_payment_fee center', cErr);
     }
@@ -337,7 +354,7 @@ export async function finalizeInvoicePaymentSuccess(
         subscription_status: 'active',
         last_payment_date: paidDay,
       })
-      .eq('id', row.center_id);
+      .eq('id', centerRow.center_id);
     if (cErr) {
       console.error('[finalizeInvoicePaymentSuccess] reactivation_fee center', cErr);
     }
@@ -347,7 +364,7 @@ export async function finalizeInvoicePaymentSuccess(
   const { data: center } = await supabaseAdmin
     .from('centers')
     .select('billing_period, status, subscription_status, next_payment_due')
-    .eq('id', row.center_id)
+    .eq('id', centerRow.center_id)
     .maybeSingle();
 
   if (center) {
