@@ -3,6 +3,7 @@ import { todayISO } from '@/lib/parentPack';
 import { processInvoiceSignupAfterPaymobSuccess } from '@/lib/signupPaymobAutoApprove';
 import { computeNextQuarterlyPaymentDue } from '@/lib/subscriptionAnchor';
 import { sendChqPaymentConfirmedTemplate, sendChqPaymentFailedTemplate } from '@/lib/centerNotify';
+import { autoSuspendAtFromDue } from '@/lib/billingSchedule';
 
 const PERIOD_MONTHS: Record<string, number> = {
   monthly: 1,
@@ -12,13 +13,6 @@ const PERIOD_MONTHS: Record<string, number> = {
   semi_annual: 6,
   annual: 12,
 };
-
-function calendarAddDays(baseYmd: string, delta: number): string {
-  const [y, m, d] = baseYmd.split('-').map((x) => parseInt(x, 10));
-  const t = Date.UTC(y, m - 1, d + delta);
-  const dt = new Date(t);
-  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
-}
 
 const QUARTERLY_LABEL_AR = 'ربع سنوي';
 
@@ -126,7 +120,8 @@ async function handleSubscriptionInvoicePaid(
     billing_cycle_start: c.billing_cycle_start,
     approved_at: c.approved_at,
   });
-  const autoSus = calendarAddDays(newDue, 6);
+  // Single-day lock: auto_suspend_at = next Cairo midnight after the new due date.
+  const autoSus = autoSuspendAtFromDue(newDue);
   const totalAmt = Number(inv.total_amount ?? 0);
   const today = todayISO();
 
@@ -141,7 +136,7 @@ async function handleSubscriptionInvoicePaid(
   const centerUpdates: Record<string, unknown> = {
     billing_status: 'paid',
     next_payment_due: newDue,
-    auto_suspend_at: `${autoSus}T12:00:00.000Z`,
+    auto_suspend_at: autoSus,
     last_payment_date: today,
     upgrade_count_this_period: 0,
   };
@@ -298,13 +293,13 @@ export async function finalizeInvoicePaymentSuccess(
     base.setMonth(base.getMonth() + months);
     const nextDueStr = base.toISOString().slice(0, 10);
 
-    const autoSusLegacy = calendarAddDays(nextDueStr, 6);
+    const autoSusLegacy = autoSuspendAtFromDue(nextDueStr);
     const centerUpdates: Record<string, unknown> = {
       billing_status: 'paid',
       last_payment_date: new Date().toISOString().slice(0, 10),
       next_payment_due: nextDueStr,
       payment_due_date: nextDueStr,
-      auto_suspend_at: `${autoSusLegacy}T12:00:00.000Z`,
+      auto_suspend_at: autoSusLegacy,
       upgrade_count_this_period: 0,
     };
     const st = (center as { status?: string | null }).status;

@@ -10,6 +10,8 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { todayISO, dateInNDays } from '@/lib/parentPack';
 import { calculatePaygBill, isLastDayOfMonthCairo } from '@/lib/paygBilling';
 import { isPaygCenter } from '@/lib/billingEngine';
+import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import { applyProcessingFee } from '@/lib/processingFee';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -117,6 +119,9 @@ export async function POST(request: Request) {
     let skipped = 0;
     let errors = 0;
 
+    // Flat processing fee (Section 5) added to each PAYG month-end invoice.
+    const feeCfg = await getProcessingFeeConfig();
+
     for (const center of list) {
       const c = center as {
         id: string;
@@ -147,6 +152,7 @@ export async function POST(request: Request) {
         }
 
         const { cappedAmount, tier, rawAmount, isCapped, capAmount } = calculatePaygBill(studentCount);
+        const { fee: processingFee, total: chargedTotal } = applyProcessingFee(cappedAmount, feeCfg);
         const code = centerCodeForPayg(c);
         const invoiceNumber = `PAYG-${code}-${billingMonth}`;
 
@@ -168,7 +174,7 @@ export async function POST(request: Request) {
           invoice_number: invoiceNumber,
           invoice_type: 'subscription',
           base_amount: cappedAmount,
-          total_amount: cappedAmount,
+          total_amount: chargedTotal,
           billing_period_start: periodStart,
           billing_period_end: periodEnd,
           due_date: dueYmd,
@@ -181,6 +187,7 @@ export async function POST(request: Request) {
             is_capped: isCapped,
             cap_amount: capAmount,
             billing_month: billingMonth,
+            processing_fee: processingFee,
           },
         });
 

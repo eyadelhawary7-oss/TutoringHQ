@@ -14,6 +14,7 @@ import LockedIncomePreview from '../LockedIncomePreview';
 import { useTeacherContext } from '../useTeacherContext';
 import { useStartTrial } from '../useStartTrial';
 import { getTeacherPlan, isProOrAbove } from '@/lib/teacherPlans';
+import { resolveTeacherPrivateView } from '@/lib/teacherPrivateView';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -108,6 +109,11 @@ export default function TeacherDashboardPage() {
   const state = ctx?.state ?? 'center_only';
   const hasPrivateAccess = ctx?.hasPrivateAccess ?? false;
   const noCenters = (ctx?.centers.length ?? 0) === 0;
+  // 'records' (full access), 'resubscribe' (lapsed → free tier + resubscribe
+  // message on the private tiles), 'upsell' (never subscribed → free-zone trial
+  // CTAs). A lapsed teacher drops fully to the free tier; the Centers tile / center
+  // monitoring is always available.
+  const view = resolveTeacherPrivateView({ hasPrivateAccess, state });
 
   const { startTrial, modal } = useStartTrial(state, () => {
     reload();
@@ -298,6 +304,14 @@ export default function TeacherDashboardPage() {
               placeholder
             )}
           </TileLink>
+        ) : view === 'resubscribe' ? (
+          <TileCta
+            icon={Users}
+            title={t('groupsTile')}
+            body={t('resubscribeLockedBody')}
+            ctaLabel={t('ctaResubscribe')}
+            onCta={startTrial}
+          />
         ) : (
           <TileCta
             icon={Users}
@@ -381,6 +395,14 @@ export default function TeacherDashboardPage() {
               placeholder
             )}
           </div>
+        ) : view === 'resubscribe' ? (
+          <TileCta
+            icon={Sparkles}
+            title={t('subscriptionTile')}
+            body={t('resubscribeLockedBody')}
+            ctaLabel={t('ctaResubscribe')}
+            onCta={startTrial}
+          />
         ) : (
           <TileCta
             icon={Sparkles}
@@ -392,7 +414,9 @@ export default function TeacherDashboardPage() {
         )}
       </div>
 
-      {/* Free zone: locked income preview, income calculator, referral. */}
+      {/* Free zone: a lapsed teacher takes a full drop to the free tier exactly
+          like a never-subscribed teacher; only the private tiles above carry the
+          resubscribe message. Her Centers tile / center monitoring stays normal. */}
       {!hasPrivateAccess && (
         <>
           <LockedIncomePreview onStartTrial={startTrial} />

@@ -14,6 +14,13 @@ import {
   type PlanKey,
   type SubscriptionPlanKey,
 } from '@/lib/pricing';
+import {
+  PROCESSING_FEE_AMOUNT_KEY,
+  PROCESSING_FEE_DEFAULT_AMOUNT,
+  PROCESSING_FEE_DEFAULT_ENABLED,
+  PROCESSING_FEE_ENABLED_KEY,
+  type ProcessingFeeConfig,
+} from '@/lib/processingFee';
 
 /** Read-only service-role client. */
 function svc() {
@@ -430,6 +437,23 @@ export async function getPublicPlanPrices(): Promise<Record<SubscriptionPlanKey,
     };
   }
   return out;
+}
+
+/**
+ * Flat processing-fee config (Section 5). Read from platform_config:
+ *   - processing_fee_enabled (bool, default true)
+ *   - processing_fee_amount  (number EGP, default 20)
+ * Falls back to the brief defaults (enabled @ 20) when missing / DB unreachable,
+ * so the fee is ON by default even before the migration runs.
+ */
+export async function getProcessingFeeConfig(): Promise<ProcessingFeeConfig> {
+  const rows = await readKeys([PROCESSING_FEE_ENABLED_KEY, PROCESSING_FEE_AMOUNT_KEY]);
+  const enabled = bool(rows[PROCESSING_FEE_ENABLED_KEY], PROCESSING_FEE_DEFAULT_ENABLED);
+  const amount = num(rows[PROCESSING_FEE_AMOUNT_KEY], PROCESSING_FEE_DEFAULT_AMOUNT);
+  return {
+    enabled,
+    amount: Number.isFinite(amount) && amount >= 0 ? amount : PROCESSING_FEE_DEFAULT_AMOUNT,
+  };
 }
 
 /** All pricing config in one shot - used by admin GET. */

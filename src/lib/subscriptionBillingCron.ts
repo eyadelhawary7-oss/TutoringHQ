@@ -9,6 +9,8 @@ import { todayISO } from '@/lib/parentPack';
 import { addMonthsToDateStr } from '@/lib/subscriptionAnchor';
 import { sendChqRenewalOverdueTemplate } from '@/lib/centerNotify';
 import { isPaygCenter } from '@/lib/billingEngine';
+import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import { applyProcessingFee } from '@/lib/processingFee';
 
 function calendarAddDays(baseYmd: string, delta: number): string {
   const [y, m, d] = baseYmd.split('-').map((x) => parseInt(x, 10));
@@ -76,6 +78,8 @@ export async function runSubscriptionBillingCron(
   };
 
   const today = todayISO();
+  // Flat processing fee (Section 5) added to each subscription renewal invoice.
+  const feeCfg = await getProcessingFeeConfig();
 
   // Centers with pending_cancellation: finalize cancel after current_period_end (Cairo YMD vs DATE column).
   const { error: periodEndCancelErr } = await supabase
@@ -153,6 +157,7 @@ export async function runSubscriptionBillingCron(
       if (existingInv) continue;
 
       const ba = Number(c.billing_amount ?? 0);
+      const { fee, total } = applyProcessingFee(ba, feeCfg);
       const billingEnd = addMonthsToDateStr(npd, 3);
       const code = centerCodeForInvoice(c);
       const yyyymm = npd.slice(0, 7);
@@ -163,11 +168,12 @@ export async function runSubscriptionBillingCron(
         invoice_number: invoiceNumber,
         invoice_type: 'subscription',
         status: 'pending',
-        total_amount: ba,
+        total_amount: total,
         base_amount: ba,
         billing_period_start: npd,
         billing_period_end: billingEnd,
         due_date: npd,
+        metadata: { processing_fee: fee },
       });
       if (invErr) {
         console.error('[subscriptionBillingCron] invoice insert:', invErr);

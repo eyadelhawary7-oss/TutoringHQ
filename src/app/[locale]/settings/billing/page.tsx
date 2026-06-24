@@ -38,8 +38,16 @@ import {
   formatDate as formatDateLocale,
   formatNumber,
 } from '@/lib/formatNumber';
+import { ProcessingFeeInfoButton } from '@/components/billing/ProcessingFeeInfo';
 
 const SUGGESTED_RESALE_EGP = 25;
+
+/** The processing fee snapshotted on an invoice (Section 5), 0 when none. */
+function invoiceProcessingFee(inv: { metadata?: { processing_fee?: number | string | null } | null }): number {
+  const raw = inv.metadata?.processing_fee;
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
 
 const CANCEL_REASON_KEYS = [
   'moving_competitor',
@@ -144,6 +152,7 @@ type InvoiceRow = {
   billing_period_end?: string | null;
   status?: string | null;
   created_at?: string | null;
+  metadata?: { processing_fee?: number | string | null } | null;
 };
 
 type PlanRequestRow = {
@@ -2835,8 +2844,11 @@ export default function BillingPage() {
                       </div>
                       <div className="mt-2 flex justify-between gap-2 text-sm">
                         <span className="text-slate-500">{t('history.amount')}</span>
-                        <span className="tabular-nums" style={numFont}>
+                        <span className="inline-flex items-center tabular-nums" style={numFont}>
                           {formatNum(Number(inv.total_amount ?? 0))} {t('egp')}
+                          {invoiceProcessingFee(inv) > 0 ? (
+                            <ProcessingFeeInfoButton amount={invoiceProcessingFee(inv)} />
+                          ) : null}
                         </span>
                       </div>
                       <div className="mt-2 text-xs text-slate-500">{periodStr}</div>
@@ -2888,7 +2900,12 @@ export default function BillingPage() {
                           </td>
                           <td className="py-3 pe-4 font-mono text-slate-800 dark:text-slate-200">{ref}</td>
                           <td className="py-3 pe-4 tabular-nums text-slate-900 dark:text-white" style={numFont}>
-                            {formatNum(Number(inv.total_amount ?? 0))} {t('egp')}
+                            <span className="inline-flex items-center">
+                              {formatNum(Number(inv.total_amount ?? 0))} {t('egp')}
+                              {invoiceProcessingFee(inv) > 0 ? (
+                                <ProcessingFeeInfoButton amount={invoiceProcessingFee(inv)} />
+                              ) : null}
+                            </span>
                           </td>
                           <td className="py-3 pe-4 text-xs text-slate-500 dark:text-slate-400">{periodStr}</td>
                           <td className="py-3 pe-4">{renderInvoiceStatusBadge(st)}</td>

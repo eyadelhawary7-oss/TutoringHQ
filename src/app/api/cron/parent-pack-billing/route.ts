@@ -17,6 +17,8 @@ import {
 import { sendChqPackInvoiceTemplate } from '@/lib/centerNotify';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
 import { tCronBackup, tCronWaAr } from '@/lib/cronBackupI18n';
+import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import { applyProcessingFee } from '@/lib/processingFee';
 
 // TODO: set to true when chq_pack_invoice is approved by Meta
 const packInvoiceEnabled = true;
@@ -95,6 +97,9 @@ export async function POST(request: Request) {
 
     const list = centers ?? [];
     let skippedTopCentersPack = 0;
+
+    // Flat processing fee (Section 5) added to each pack / WhatsApp-addon invoice.
+    const feeCfg = await getProcessingFeeConfig();
 
     for (let offset = 0; offset < list.length; offset += CENTER_CHUNK_SIZE) {
       const chunk = list.slice(offset, offset + CENTER_CHUNK_SIZE);
@@ -195,6 +200,7 @@ export async function POST(request: Request) {
             const baseLine = Math.max(rolling * pricePer, packBillingMin);
             const pending = Number((center as { pack_pending_balance?: number }).pack_pending_balance ?? 0);
             const totalAmount = baseLine + (pending > 0 ? pending : 0);
+            const { fee: packFee, total: packChargedTotal } = applyProcessingFee(totalAmount, feeCfg);
 
             const periodStart = `${prevPeriod}-01`;
             const periodEnd = billingMonthEndYmd(prevPeriod);
@@ -204,12 +210,13 @@ export async function POST(request: Request) {
               invoice_number: invoiceNumber,
               invoice_type: 'pack_billing',
               base_amount: totalAmount,
-              total_amount: totalAmount,
+              total_amount: packChargedTotal,
               billing_period_start: periodStart,
               billing_period_end: periodEnd,
               due_date: dateInNDays(7),
               status: 'pending',
               payment_reference: `Parent Pack, ${prevPeriod} (${rolling} parents)`,
+              metadata: { processing_fee: packFee },
             });
 
             if (packInvErr) {
@@ -227,7 +234,7 @@ export async function POST(request: Request) {
                 phone: (center as { phone?: string | null }).phone ?? null,
                 monthArabic: billingPeriodArabicMonthYear(prevPeriod),
                 parentCountStr: String(rolling),
-                amountStr: String(totalAmount),
+                amountStr: String(packChargedTotal),
               }).catch((waErr) => console.error('[cron/parent-pack-billing] WA send error:', waErr));
             }
           }
@@ -257,18 +264,20 @@ export async function POST(request: Request) {
             const periodEnd = billingMonthEndYmd(prevPeriod);
             const descCount = billedStudents;
             const invoiceNumber = `WAPACK-${prevPeriod}-${descCount}st-${Date.now()}`;
+            const { fee: waFee, total: waChargedTotal } = applyProcessingFee(newPendingBalance, feeCfg);
 
             const { error: invErr } = await supabaseAdmin.from('invoices').insert({
               center_id: centerId,
               invoice_number: invoiceNumber,
               invoice_type: 'whatsapp_addon',
               base_amount: newPendingBalance,
-              total_amount: newPendingBalance,
+              total_amount: waChargedTotal,
               billing_period_start: periodStart,
               billing_period_end: periodEnd,
               due_date: dateInNDays(7),
               status: 'pending',
               payment_reference: `WhatsApp Pack, ${prevPeriod} (${descCount} students)`,
+              metadata: { processing_fee: waFee },
             });
 
             if (invErr) {

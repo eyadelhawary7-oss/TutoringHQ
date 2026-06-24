@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   const { data, error } = await auth.supabaseAdmin
     .from('invoices')
     .select(
-      'id, invoice_number, invoice_type, total_amount, billing_period_start, billing_period_end, status, created_at, due_date',
+      'id, invoice_number, invoice_type, total_amount, billing_period_start, billing_period_end, status, created_at, due_date, metadata',
     )
     .eq('center_id', auth.centerId)
     .order('created_at', { ascending: false })

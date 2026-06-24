@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPeriodMultiplier } from '@/lib/billingEngine';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
-import { calculateReactivationFee, sumSubscriptionInvoiceTotals } from '@/lib/reactivationFee';
+import { reactivationChargeAmount } from '@/lib/billingLifecycle';
 
 function billingPeriodKey(sub: string | null | undefined): 'monthly' | 'quarterly' | 'annual' {
   const p = (sub ?? 'quarterly').toLowerCase();
@@ -11,8 +11,14 @@ function billingPeriodKey(sub: string | null | undefined): 'monthly' | 'quarterl
   return 'quarterly';
 }
 
+/**
+ * Reactivation (single-day lock model): a locked center pays its PLAIN subscription
+ * price to come back — no late fee, no reactivation fee, no surcharge
+ * (src/lib/billingLifecycle.ts, rule 4). Charges the period subscription as a normal
+ * `subscription` invoice; the webhook (handleSubscriptionInvoicePaid) reactivates.
+ */
 export async function POST(request: NextRequest) {
-  const auth = await requireCenterAuth(request);
+  const auth = await requireCenterAuth(request, { allowSuspended: true });
   if (!auth.ok) return auth.response;
   if (auth.role !== 'owner') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -23,7 +29,7 @@ export async function POST(request: NextRequest) {
   const { data: center, error: cErr } = await supabaseAdmin
     .from('centers')
     .select(
-      'id, status, name, phone, dormancy_date, active_months_count, billing_amount, all_in_price, subscription_billing_period, billing_period, center_code, referral_code',
+      'id, status, name, phone, billing_amount, all_in_price, subscription_billing_period, billing_period, center_code, referral_code',
     )
     .eq('id', centerId)
     .maybeSingle();
@@ -33,102 +39,47 @@ export async function POST(request: NextRequest) {
   }
 
   const c = center as Record<string, unknown>;
-  if (String(c.status) !== 'dormant') {
-    return NextResponse.json({ error: 'Center is not dormant' }, { status: 400 });
+  // Locked states under the new model: 'suspended' (and legacy 'dormant').
+  if (!['suspended', 'dormant'].includes(String(c.status))) {
+    return NextResponse.json({ error: 'Center is not locked' }, { status: 400 });
   }
 
-  const { data: pendingRow } = await supabaseAdmin
-    .from('invoices')
-    .select('id, paymob_iframe_url, paymob_order_id')
-    .eq('center_id', centerId)
-    .eq('invoice_type', 'reactivation_fee')
-    .in('status', ['pending', 'overdue'])
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const pending = pendingRow as {
-    id: string;
-    paymob_iframe_url?: string | null;
-    paymob_order_id?: string | null;
-  } | null;
-
-  if (pending?.paymob_iframe_url?.trim() && pending?.paymob_order_id?.trim()) {
-    return NextResponse.json({
-      invoiceId: pending.id,
-      paymobUrl: pending.paymob_iframe_url,
-      paymobOrderId: pending.paymob_order_id,
-      existing: true,
-    });
+  // Plain subscription period charge — billing_amount, else all_in × period multiplier.
+  const mult = getPeriodMultiplier(
+    billingPeriodKey(
+      c.subscription_billing_period != null
+        ? String(c.subscription_billing_period)
+        : (c.billing_period as string | null | undefined),
+    ),
+  );
+  const ba = Number(c.billing_amount ?? 0);
+  const allIn = Number(c.all_in_price ?? 0);
+  const subscription = ba > 0 ? ba : allIn > 0 ? Math.round(allIn * mult) : 0;
+  const chargedTotal = reactivationChargeAmount(subscription);
+  if (chargedTotal <= 0) {
+    return NextResponse.json({ error: 'Invalid subscription amount' }, { status: 400 });
   }
-
-  if (pending?.id) {
-    await supabaseAdmin.from('invoices').delete().eq('id', pending.id);
-  }
-
-  const activeMonths = Math.max(0, Math.floor(Number(c.active_months_count ?? 0)));
-  const sumInv = await sumSubscriptionInvoiceTotals(supabaseAdmin, centerId);
-  const divisor = Math.max(1, activeMonths);
-  let avgMonthly = sumInv > 0 ? sumInv / divisor : 0;
-  if (avgMonthly <= 0) {
-    const mult = getPeriodMultiplier(
-      billingPeriodKey(
-        c.subscription_billing_period != null
-          ? String(c.subscription_billing_period)
-          : (c.billing_period as string | null | undefined),
-      ),
-    );
-    const ba = Number(c.billing_amount ?? 0);
-    const allIn = Number(c.all_in_price ?? 0);
-    const perPeriod = ba > 0 ? ba : allIn * mult;
-    avgMonthly = mult > 0 ? perPeriod / mult : perPeriod;
-  }
-  if (!Number.isFinite(avgMonthly) || avgMonthly < 0) avgMonthly = 1999;
-
-  const { baseFee, discountRate, finalFee } = calculateReactivationFee(activeMonths, avgMonthly);
-  const discountAmt = Math.round(baseFee * discountRate * 100) / 100;
 
   const codeRaw = String((c.center_code || c.referral_code || '') as string).trim().replace(/\s+/g, '');
   const code = codeRaw || 'UNK';
   const ym = new Date().toISOString().slice(0, 7).replace('-', '');
   const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
   const invNo = `REACT-${code}-${ym}-${rand}`;
-
-  const dormancyYmd = c.dormancy_date ? String(c.dormancy_date).slice(0, 10) : null;
   const todayYmd = new Date().toISOString().slice(0, 10);
-  let suspensionDays = 0;
-  if (dormancyYmd) {
-    suspensionDays = Math.max(
-      0,
-      Math.floor(
-        (new Date(`${todayYmd}T12:00:00`).getTime() - new Date(`${dormancyYmd}T12:00:00`).getTime()) /
-          86400000,
-      ),
-    );
-  }
 
   const { data: inserted, error: insErr } = await supabaseAdmin
     .from('invoices')
     .insert({
       center_id: centerId,
       invoice_number: invNo,
-      invoice_type: 'reactivation_fee',
-      base_amount: baseFee,
-      total_amount: finalFee,
-      discount_amount: discountAmt,
-      billing_period_start: dormancyYmd,
+      invoice_type: 'subscription',
+      base_amount: subscription,
+      total_amount: chargedTotal,
+      billing_period_start: todayYmd,
       billing_period_end: todayYmd,
       due_date: todayYmd,
       status: 'pending',
-      metadata: {
-        active_months_count: activeMonths,
-        avg_monthly_price: avgMonthly,
-        base_fee: baseFee,
-        discount_rate: discountRate,
-        final_fee: finalFee,
-        suspension_started: dormancyYmd,
-        suspension_days: suspensionDays,
-      },
+      metadata: { reactivation: true, processing_fee: 0 },
     })
     .select('id')
     .single();
@@ -144,9 +95,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const checkout = await createPaymobCheckoutEgp({
-      amountEgp: finalFee,
+      amountEgp: chargedTotal,
       merchantOrderId: invoiceId,
-      itemName: 'TutoringHQ reactivation',
+      itemName: 'TutoringHQ subscription',
       phoneDigits: rawPhone,
       displayName: centerName,
     });
@@ -170,14 +121,7 @@ export async function POST(request: NextRequest) {
       invoiceId,
       paymobUrl: checkout.iframeUrl,
       paymobOrderId: checkout.paymobOrderId,
-      breakdown: {
-        baseFee,
-        discountRate,
-        discountAmount: discountAmt,
-        finalFee,
-        avgMonthly,
-        activeMonths,
-      },
+      total: chargedTotal,
     });
   } catch (e) {
     await supabaseAdmin.from('invoices').delete().eq('id', invoiceId);

@@ -8,6 +8,7 @@ import { dbSelect } from '@/lib/db-proxy';
 import { Link } from '@/i18n/routing';
 import LanguageToggle from '@/components/LanguageToggle';
 import { getSupportWhatsAppWaMeWithText } from '@/lib/supportWhatsApp';
+import { formatNumber } from '@/lib/formatNumber';
 
 export default function SuspendedPage() {
   const t = useTranslations('suspended');
@@ -15,6 +16,29 @@ export default function SuspendedPage() {
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
 
   const [fawryCode, setFawryCode] = useState('');
+  // Read-only summary screen (single-day lock model): headline numbers only.
+  const [summary, setSummary] = useState<{ students: number; groups: number } | null>(null);
+
+  useEffect(() => {
+    const loadSummary = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) return;
+      const meRes = await fetch('/api/me', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const meData = await meRes.json();
+      const centerId = meData?.user?.center_id as string | undefined;
+      if (!centerId) return;
+      const [studentsRes, groupsRes] = await Promise.all([
+        supabase.from('students').select('id', { count: 'exact', head: true }).eq('center_id', centerId),
+        supabase.from('student_groups').select('id', { count: 'exact', head: true }).eq('center_id', centerId),
+      ]);
+      setSummary({ students: studentsRes.count ?? 0, groups: groupsRes.count ?? 0 });
+    };
+    void loadSummary();
+  }, []);
   const reason = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('reason') : null;
   const isCenterSuspended = reason === 'center_suspended';
   const isPaymentOverdue = reason === 'payment_overdue';
@@ -80,6 +104,29 @@ export default function SuspendedPage() {
           <h1 className="text-xl font-bold text-white">{t('title')}</h1>
           <p className="mt-2 text-sm text-slate-400">{t('desc')}</p>
         </div>
+
+        {summary ? (
+          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+            <p className="mb-3 text-xs font-semibold tracking-widest text-slate-400 uppercase">
+              {t('summaryTitle')}
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg bg-[var(--color-surface-2)] p-3">
+                <div className="text-2xl font-bold tabular-nums text-white">
+                  {formatNumber(summary.students, locale)}
+                </div>
+                <div className="mt-0.5 text-xs text-slate-400">{t('summaryStudents')}</div>
+              </div>
+              <div className="rounded-lg bg-[var(--color-surface-2)] p-3">
+                <div className="text-2xl font-bold tabular-nums text-white">
+                  {formatNumber(summary.groups, locale)}
+                </div>
+                <div className="mt-0.5 text-xs text-slate-400">{t('summaryGroups')}</div>
+              </div>
+            </div>
+            <p className="mt-3 text-xs text-slate-500">{t('summaryHint')}</p>
+          </div>
+        ) : null}
 
         {fawryCode && !isPaymentOverdue && !isCenterSuspended ? (
           <div className="rounded-xl border border-amber-800/40 bg-amber-900/20 p-3 text-start">
