@@ -18,6 +18,17 @@ describe('proxy isSuspendedExempt', () => {
     expect(isSuspendedExempt('/suspended/details')).toBe(true);
   });
 
+  it('exempts the standalone /pay invoices page so a locked customer can pay', () => {
+    expect(isSuspendedExempt('/pay')).toBe(true);
+    expect(isSuspendedExempt('/pay/return')).toBe(true);
+  });
+
+  it('does NOT exempt /payments — a string-prefix look-alike of /pay', () => {
+    expect(isSuspendedExempt('/payments')).toBe(false);
+    expect(isSuspendedExempt('/pay-foo')).toBe(false);
+    expect(isSuspendedExempt('/payx')).toBe(false);
+  });
+
   it('does NOT exempt the dashboard, students, payments, or settings billing routes', () => {
     expect(isSuspendedExempt('/dashboard')).toBe(false);
     expect(isSuspendedExempt('/students')).toBe(false);

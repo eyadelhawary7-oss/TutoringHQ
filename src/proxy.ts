@@ -112,6 +112,7 @@ const AUTHENTICATED_ROUTE_PREFIXES = [
   '/whatsapp',
   '/admin',
   '/reactivate',
+  '/pay',
 ];
 
 const isSuspendedExempt = isSuspendedRouteExempt;
