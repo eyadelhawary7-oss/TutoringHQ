@@ -204,4 +204,16 @@ Without this, the finance dashboard falls back to live subscription MRR for the 
 - **`centers.auto_suspend_at`** is computed when invoices/payments run using `autoSuspendAtFromDue(next_payment_due)` in `src/lib/billingSchedule.ts`, which defaults to **`SUBSCRIPTION_GRACE_CALENDAR_DAYS` (7)** unless callers pass a different grace length.
 - **`process-renewals`** cron (`runSubscriptionBillingCron`) suspends centres when **`auto_suspend_at`** falls on the Cairo calendar **today** (not by recomputing grace inside the cron).
 
+## Saved-card auto-charge (Phase 1 — built, not yet wired)
+
+- A card-on-file + auto-charge capability now exists: store a Paymob card
+  **token** once (with explicit consent + a save-time validity check) and charge
+  it later, idempotently, with no customer present. **Never stores the PAN.**
+- It is **built and unit-tested but NOT wired to any cron** — Phase 2 calls
+  `chargeSavedCard()` from the midnight billing run. Live charging also waits on a
+  dedicated Paymob **recurring integration id**
+  (`PAYMOB_RECURRING_INTEGRATION_ID`, not yet issued) and Paymob LIVE credentials.
+- Full detail: `docs/SAVED_CARD_ENGINE.md`. Schema migration:
+  `supabase/migrations/20260624120000_saved_card_engine.sql` (apply on review).
+
 (End of spec doc.)
