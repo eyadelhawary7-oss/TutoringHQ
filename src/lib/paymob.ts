@@ -1,6 +1,12 @@
 import '@/lib/paymobProductionGuard';
 import crypto from 'crypto';
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
+import {
+  getPaymobApiKey,
+  getPaymobIntegrationId,
+  getPaymobIframeId,
+  getPaymobHmacSecret,
+} from '@/lib/paymobConfig';
 import { timingSafeEqualHex } from '@/lib/verifyHmac';
 import { SITE } from '@/config/site';
 
@@ -10,7 +16,7 @@ export async function getPaymobAuthToken(): Promise<string> {
   const res = await fetch(`${PAYMOB_BASE}/auth/tokens`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ api_key: process.env.PAYMOB_API_KEY }),
+    body: JSON.stringify({ api_key: getPaymobApiKey() }),
   });
   const data = (await res.json()) as { token?: string };
   if (!data.token) throw new Error('Paymob auth failed');
@@ -58,42 +64,58 @@ export async function createPaymentKey({
   amountCents,
   phone,
   name,
+  requestToken = false,
 }: {
   authToken: string;
   orderId: string;
   amountCents: number;
   phone: string;
   name: string;
+  /**
+   * Phase 2 (2f): on a customer's FIRST payment, ask Paymob to tokenize the card
+   * so it returns a saved-card TOKEN (via a separate TOKEN callback) for later
+   * merchant-initiated auto-charges. The token is only STORED if the customer
+   * recorded consent (the Phase 1 save path enforces that gate); requesting it
+   * here is benign otherwise.
+   */
+  requestToken?: boolean;
 }): Promise<string> {
-  const integrationId = process.env.PAYMOB_INTEGRATION_ID;
+  const integrationId = getPaymobIntegrationId();
   if (!integrationId) throw new Error('PAYMOB_INTEGRATION_ID not configured');
+
+  const body: Record<string, unknown> = {
+    auth_token: authToken,
+    amount_cents: amountCents,
+    expiration: 3600,
+    order_id: orderId,
+    billing_data: {
+      apartment: 'NA',
+      email: SITE.supportEmail,
+      floor: 'NA',
+      first_name: name.split(' ')[0] || name,
+      street: 'NA',
+      building: 'NA',
+      phone_number: phone,
+      shipping_method: 'NA',
+      postal_code: 'NA',
+      city: 'Cairo',
+      country: 'EG',
+      last_name: name.split(' ')[1] || 'NA',
+      state: 'Cairo',
+    },
+    currency: 'EGP',
+    integration_id: integrationId,
+  };
+  if (requestToken) {
+    // Paymob save-card request: emit a TOKEN callback after a successful auth.
+    body.request_token = true;
+    body.token_agreement = 'recurring';
+  }
 
   const res = await fetch(`${PAYMOB_BASE}/acceptance/payment_keys`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      auth_token: authToken,
-      amount_cents: amountCents,
-      expiration: 3600,
-      order_id: orderId,
-      billing_data: {
-        apartment: 'NA',
-        email: SITE.supportEmail,
-        floor: 'NA',
-        first_name: name.split(' ')[0] || name,
-        street: 'NA',
-        building: 'NA',
-        phone_number: phone,
-        shipping_method: 'NA',
-        postal_code: 'NA',
-        city: 'Cairo',
-        country: 'EG',
-        last_name: name.split(' ')[1] || 'NA',
-        state: 'Cairo',
-      },
-      currency: 'EGP',
-      integration_id: integrationId,
-    }),
+    body: JSON.stringify(body),
   });
   const data = (await res.json()) as { token?: string };
   if (!data.token) throw new Error('Paymob payment key creation failed');
@@ -132,14 +154,14 @@ export function verifyPaymobHmac(
     'success',
   ];
   const str = keys.map((k) => getNestedValue(params, k)).join('');
-  const secret = process.env.PAYMOB_HMAC_SECRET;
+  const secret = getPaymobHmacSecret();
   if (!secret) return false;
   const hash = crypto.createHmac('sha512', secret).update(str).digest('hex');
   return timingSafeEqualHex(hash, receivedHmac);
 }
 
 export function buildPaymobIframeUrl(paymentToken: string): string {
-  const iframeId = process.env.PAYMOB_IFRAME_ID;
+  const iframeId = getPaymobIframeId();
   if (!iframeId) throw new Error('PAYMOB_IFRAME_ID not configured');
   return `https://accept.paymob.com/api/acceptance/iframes/${iframeId}?payment_token=${paymentToken}`;
 }
@@ -196,7 +218,7 @@ export function verifyCardOrderPaymobHmac(
     toStr(obj.success),
   ];
   const str = parts.join('');
-  const secret = process.env.PAYMOB_HMAC_SECRET;
+  const secret = getPaymobHmacSecret();
   if (!secret) return false;
   const hash = crypto.createHmac('sha512', secret).update(str).digest('hex');
   return timingSafeEqualHex(hash, receivedHmac);

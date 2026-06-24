@@ -9416,5 +9416,17 @@
       "fri": "Friday",
       "sat": "Saturday"
     }
+  },
+  "savedCard": {
+    "consent": {
+      "title": "Save card for automatic renewal",
+      "body": "I agree to securely store my card with the payment provider (Paymob) and to have my subscription automatically charged to this card on each renewal date. I can remove the saved card at any time from settings.",
+      "storeLabel": "Securely store my card with the payment provider",
+      "autoChargeLabel": "Automatically charge this card on each renewal date",
+      "agree": "Agree and continue",
+      "cancel": "Not now",
+      "cardEnding": "Card ending {last4}",
+      "removeCard": "Remove saved card"
+    }
   }
 }

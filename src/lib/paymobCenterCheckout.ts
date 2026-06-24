@@ -1,4 +1,5 @@
 import '@/lib/paymobProductionGuard';
+import { requirePaymobCore } from '@/lib/paymobConfig';
 
 const PAYMOB_BASE = 'https://accept.paymob.com/api';
 
@@ -17,12 +18,7 @@ export async function createPaymobCheckoutEgp(params: {
   phoneDigits: string;
   displayName: string;
 }): Promise<PaymobCheckoutResult> {
-  const apiKey = process.env.PAYMOB_API_KEY;
-  const integrationId = process.env.PAYMOB_INTEGRATION_ID;
-  const iframeId = process.env.PAYMOB_IFRAME_ID;
-  if (!apiKey || !integrationId || !iframeId) {
-    throw new Error('Paymob is not configured');
-  }
+  const { apiKey, integrationId, iframeId } = requirePaymobCore();
 
   const amountCents = Math.round(params.amountEgp * 100);
   if (!Number.isFinite(amountCents) || amountCents <= 0) {
@@ -116,12 +112,7 @@ export async function createPaymobIframeForExistingOrder(params: {
   phoneDigits: string;
   displayName: string;
 }): Promise<{ iframeUrl: string }> {
-  const apiKey = process.env.PAYMOB_API_KEY;
-  const integrationId = process.env.PAYMOB_INTEGRATION_ID;
-  const iframeId = process.env.PAYMOB_IFRAME_ID;
-  if (!apiKey || !integrationId || !iframeId) {
-    throw new Error('Paymob is not configured');
-  }
+  const { apiKey, integrationId, iframeId } = requirePaymobCore();
 
   const amountCents = Math.round(params.amountEgp * 100);
   if (!Number.isFinite(amountCents) || amountCents <= 0) {

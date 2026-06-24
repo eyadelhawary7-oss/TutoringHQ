@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getPaymobApiKey } from '@/lib/paymobConfig';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,7 @@ export async function GET() {
         t: Date.now(),
         status: 'ok',
         timestamp: new Date().toISOString(),
-        paymob_mode: process.env.PAYMOB_API_KEY?.startsWith('Key_') ? 'live' : 'sandbox',
+        paymob_mode: getPaymobApiKey()?.startsWith('Key_') ? 'live' : 'sandbox',
         wa_mode:
           process.env.WHATSAPP_PHONE_NUMBER_ID === '1013787185158313' ? 'test' : 'live',
         wa_secret_configured: !!process.env.WHATSAPP_APP_SECRET,

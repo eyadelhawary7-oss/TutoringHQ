@@ -441,6 +441,9 @@ export async function POST(request: Request) {
           amountCents,
           phone: formattedPhone.replace(/^\+/, '') || formattedPhone,
           name: payName,
+          // Phase 2 (2f): first payment — ask Paymob to tokenize the card so it can
+          // be saved (consent-gated) for future auto-charges.
+          requestToken: true,
         });
 
         const paymentUrl = buildPaymobIframeUrl(paymentToken);

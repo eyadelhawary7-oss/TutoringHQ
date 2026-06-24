@@ -1,4 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import {
+  getPaymobApiKey,
+  getPaymobIntegrationId,
+  getPaymobIframeId,
+} from '@/lib/paymobConfig';
 
 const PAYMOB_BASE = 'https://accept.paymob.com/api';
 
@@ -23,9 +28,9 @@ export async function issueCardOrderIframePayment(opts: {
   centerName: string;
   billingPhoneDigits: string;
 }): Promise<IssueCardOrderIframeOk | IssueCardOrderIframeErr> {
-  const apiKey = process.env.PAYMOB_API_KEY;
-  const integrationId = process.env.PAYMOB_INTEGRATION_ID;
-  const iframeId = process.env.PAYMOB_IFRAME_ID;
+  const apiKey = getPaymobApiKey();
+  const integrationId = getPaymobIntegrationId();
+  const iframeId = getPaymobIframeId();
   if (!apiKey || !integrationId || !iframeId) {
     return { error: 'Paymob is not configured', status: 500 };
   }

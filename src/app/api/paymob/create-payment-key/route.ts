@@ -2,6 +2,11 @@ import '@/lib/paymobProductionGuard';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { requirePermission } from '@/lib/centerPermissions';
+import {
+  getPaymobApiKey,
+  getPaymobIntegrationId,
+  getPaymobIframeId,
+} from '@/lib/paymobConfig';
 import { parseBodyWithLimit } from '@/lib/validate';
 
 export async function POST(request: NextRequest) {
@@ -12,9 +17,9 @@ export async function POST(request: NextRequest) {
     const permErr = requirePermission(auth, 'can_place_card_orders');
     if (permErr) return permErr;
 
-    const apiKey = process.env.PAYMOB_API_KEY;
-    const integrationId = process.env.PAYMOB_INTEGRATION_ID;
-    const iframeId = process.env.PAYMOB_IFRAME_ID;
+    const apiKey = getPaymobApiKey();
+    const integrationId = getPaymobIntegrationId();
+    const iframeId = getPaymobIframeId();
     if (!apiKey || !integrationId || !iframeId) {
       return NextResponse.json(
         { error: 'Paymob is not configured' },

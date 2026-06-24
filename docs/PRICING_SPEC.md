@@ -204,4 +204,29 @@ Without this, the finance dashboard falls back to live subscription MRR for the 
 - **`centers.auto_suspend_at`** is computed when invoices/payments run using `autoSuspendAtFromDue(next_payment_due)` in `src/lib/billingSchedule.ts`, which defaults to **`SUBSCRIPTION_GRACE_CALENDAR_DAYS` (7)** unless callers pass a different grace length.
 - **`process-renewals`** cron (`runSubscriptionBillingCron`) suspends centres when **`auto_suspend_at`** falls on the Cairo calendar **today** (not by recomputing grace inside the cron).
 
+## Saved-card auto-charge (Phase 1 — built, not yet wired)
+
+- A card-on-file + auto-charge capability now exists: store a Paymob card
+  **token** once (with explicit consent + a save-time validity check) and charge
+  it later, idempotently, with no customer present. **Never stores the PAN.**
+- It is **built and unit-tested but NOT wired to any cron** — Phase 2 calls
+  `chargeSavedCard()` from the midnight billing run. Live charging also waits on a
+  dedicated Paymob **recurring integration id**
+  (`PAYMOB_RECURRING_INTEGRATION_ID`, not yet issued) and Paymob LIVE credentials.
+- Full detail: `docs/SAVED_CARD_ENGINE.md`. Schema migration:
+  `supabase/migrations/20260624120000_saved_card_engine.sql` (applied live).
+
+## Midnight billing engine (Phase 2 — wired, inert pending recurring id)
+
+- The midnight cron (`/api/cron/subscription-autocharge`, `0 22 * * *` =
+  midnight Cairo) auto-charges due saved-card customers (centers + teachers),
+  leaves wallet/no-card customers on an unpaid invoice + pay link, routes bank
+  declines to the OTP fallback (no silent retry), and retries soft declines on a
+  capped day 0/+3/+7 schedule. The single-day lock model now drives access
+  enforcement (`resolveBillingAccess` via the proxy) and all side paths
+  (signup/PAYG/admin) lock uniformly the next Cairo midnight.
+- **Still inert**: with no `PAYMOB_RECURRING_INTEGRATION_ID` the engine charges
+  nothing — every due customer is left on the manual surface. Phase 2 finishing
+  does NOT make auto-charge live. Detail: `docs/SAVED_CARD_ENGINE.md`.
+
 (End of spec doc.)

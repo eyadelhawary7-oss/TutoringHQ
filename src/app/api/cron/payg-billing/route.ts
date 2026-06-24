@@ -12,6 +12,7 @@ import { calculatePaygBill, isLastDayOfMonthCairo } from '@/lib/paygBilling';
 import { isPaygCenter } from '@/lib/billingEngine';
 import { getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { applyProcessingFee } from '@/lib/processingFee';
+import { autoSuspendAtFromDue } from '@/lib/billingSchedule';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -198,7 +199,8 @@ export async function POST(request: Request) {
         }
 
         const nextPaymentDue = lastDayOfNextMonthFromYmd(today);
-        const autoSuspendAt = ymdAddDays(nextPaymentDue, 6);
+        // Single-day lock (2e): Cairo-midnight after the due date, not +6d grace.
+        const autoSuspendAt = autoSuspendAtFromDue(nextPaymentDue);
 
         const { error: upErr } = await supabase
           .from('centers')
@@ -206,7 +208,7 @@ export async function POST(request: Request) {
             billing_amount: cappedAmount,
             billing_status: 'due_soon',
             next_payment_due: nextPaymentDue,
-            auto_suspend_at: `${autoSuspendAt}T00:00:00.000Z`,
+            auto_suspend_at: autoSuspendAt,
             plan: tier.plan,
           })
           .eq('id', c.id);

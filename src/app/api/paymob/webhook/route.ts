@@ -8,7 +8,9 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { readRawBodyWithLimit, ValidationError } from '@/lib/validate';
 import { hmacSha512Hex, timingSafeEqualHex } from '@/lib/verifyHmac';
+import { getPaymobHmacSecret } from '@/lib/paymobConfig';
 import { redeemPromoCodeForPaymobOrder } from '@/lib/redeemPromoCode';
+import { isPaymobTokenCallback, handlePaymobTokenCallback } from '@/lib/savedCard/handleTokenCallback';
 
 export const dynamic = 'force-dynamic';
 
@@ -228,7 +230,7 @@ export async function POST(request: NextRequest) {
   try {
     const rawBody = await readRawBodyWithLimit(request, BODY_LIMIT);
 
-    const hmacSecret = process.env.PAYMOB_HMAC_SECRET;
+    const hmacSecret = getPaymobHmacSecret();
     if (!hmacSecret) {
       Sentry.captureMessage('paymob webhook missing PAYMOB_HMAC_SECRET', {
         level: 'warning',
@@ -250,6 +252,24 @@ export async function POST(request: NextRequest) {
       payload = JSON.parse(rawBody) as Record<string, unknown>;
     } catch {
       return new Response(null, { status: 401 });
+    }
+
+    // Phase 2 (2f): a Paymob card-token callback (saved-card token after a first
+    // payment). Its HMAC field set differs from the transaction callback, so it is
+    // accepted via a validated header signature only, then routed to the consent-
+    // gated Phase 1 save path. It is not a transaction — handle and return.
+    if (isPaymobTokenCallback(payload)) {
+      if (!receivedHeaderHmac) {
+        return new Response(null, { status: 401 });
+      }
+      if (supabaseAdmin) {
+        try {
+          await handlePaymobTokenCallback(supabaseAdmin, payload);
+        } catch (e) {
+          console.error('[paymob/webhook] token callback', e);
+        }
+      }
+      return NextResponse.json({ received: true });
     }
 
     if (!receivedHeaderHmac) {
