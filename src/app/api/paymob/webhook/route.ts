@@ -67,6 +67,13 @@ async function processPaymobEvent(payload: Record<string, unknown>): Promise<voi
     const success = objRec.success === true || objRec.success === 'true';
     const transactionId = String(objRec.id ?? '');
 
+    // Amount actually captured in THIS transaction (Paymob reports amount_cents on
+    // the transaction object). Used for underpayment handling — a partial capture
+    // is held as credit toward the same invoice rather than satisfying it.
+    const amountCentsRaw = Number(objRec.amount_cents);
+    const amountPaidEgp =
+      Number.isFinite(amountCentsRaw) && amountCentsRaw > 0 ? amountCentsRaw / 100 : undefined;
+
     /** Paymob HMAC object includes is_voided / is_refunded - used for chargebacks after capture. */
     const isChargebackLike =
       objRec.is_voided === true ||
@@ -98,7 +105,9 @@ async function processPaymobEvent(payload: Record<string, unknown>): Promise<voi
         );
         if (!cardResult) {
           const { finalizeInvoicePaymentSuccess } = await import('@/lib/invoicePaymobPayment');
-          await finalizeInvoicePaymentSuccess(supabaseAdminLocal, orderId, transactionId);
+          await finalizeInvoicePaymentSuccess(supabaseAdminLocal, orderId, transactionId, {
+            amountPaidEgp,
+          });
         }
       }
       const { processSignupAutoApprovalAfterPaymobSuccess } = await import('@/lib/signupPaymobAutoApprove');

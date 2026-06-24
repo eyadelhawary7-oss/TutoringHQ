@@ -6734,6 +6734,36 @@
     "desc": "لأمان حسابك، تنتهي الجلسة تلقائياً. سجّل الدخول مجدداً.",
     "loginAgain": "تسجيل الدخول مجدداً"
   },
+  "customerInvoices": {
+    "title": "الفواتير والمدفوعات",
+    "subtitle": "اعرض فواتيرك وادفع المستحق عليك.",
+    "loading": "جارٍ التحميل...",
+    "loadError": "تعذّر تحميل الفواتير. حاول مرة أخرى.",
+    "payError": "تعذّر بدء عملية الدفع. حاول مرة أخرى.",
+    "unpaidHeading": "مطلوب الدفع",
+    "badgeDue": "مستحقة",
+    "allClear": "لا توجد فواتير مستحقة. كل شيء على ما يرام.",
+    "partialPaid": "تم دفع {paid} من {total} ويُحتفظ به في رصيد هذه الفاتورة.",
+    "remainingToUnlock": "المتبقي لفتح الحساب: {amount}",
+    "payNow": "ادفع الآن {amount}",
+    "payRemaining": "ادفع المتبقي {amount}",
+    "upcomingHeading": "الشحنة القادمة (تقديري)",
+    "nextChargeOn": "الشحنة القادمة في {date}",
+    "forecastNote": "هذه معاينة تقديرية وليست فاتورة. ستصبح فاتورة فعلية عند حلول موعد التحصيل، وقد تتغير القيمة عند تغيير الباقة.",
+    "paidHeading": "المدفوعة",
+    "receipt": "الإيصال",
+    "payTitle": "إتمام الدفع",
+    "close": "إغلاق",
+    "type": {
+      "subscription": "اشتراك",
+      "plan_upgrade_difference": "فرق ترقية الباقة",
+      "pack_billing": "باقة رسائل واتساب",
+      "announcement_settlement": "تسوية إعلانات",
+      "late_payment_fee": "رسوم تأخير",
+      "reactivation_fee": "رسوم إعادة تفعيل",
+      "other": "فاتورة"
+    }
+  },
   "reactivate": {
     "title": "إعادة تفعيل اشتراكك",
     "subtitle": "اختر باقة وادفع لاستعادة الوصول إلى TutoringHQ.",

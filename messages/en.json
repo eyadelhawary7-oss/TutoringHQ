@@ -4829,6 +4829,36 @@
     "desc": "For your security, sessions expire automatically. Please log in again.",
     "loginAgain": "Log in again"
   },
+  "customerInvoices": {
+    "title": "Invoices & payments",
+    "subtitle": "See your invoices and pay what you owe.",
+    "loading": "Loading...",
+    "loadError": "Couldn't load invoices. Please try again.",
+    "payError": "Couldn't start the payment. Please try again.",
+    "unpaidHeading": "Action required",
+    "badgeDue": "Due",
+    "allClear": "No outstanding invoices. You're all set.",
+    "partialPaid": "Paid {paid} of {total}, held as credit toward this invoice.",
+    "remainingToUnlock": "Remaining to unlock: {amount}",
+    "payNow": "Pay now {amount}",
+    "payRemaining": "Pay remaining {amount}",
+    "upcomingHeading": "Next charge (estimate)",
+    "nextChargeOn": "Next charge on {date}",
+    "forecastNote": "This is an estimated preview, not an invoice. It becomes a real invoice when the billing date arrives, and the amount may change if you change plan.",
+    "paidHeading": "Paid",
+    "receipt": "Receipt",
+    "payTitle": "Complete payment",
+    "close": "Close",
+    "type": {
+      "subscription": "Subscription",
+      "plan_upgrade_difference": "Plan upgrade difference",
+      "pack_billing": "WhatsApp pack",
+      "announcement_settlement": "Announcement settlement",
+      "late_payment_fee": "Late fee",
+      "reactivation_fee": "Reactivation fee",
+      "other": "Invoice"
+    }
+  },
   "reactivate": {
     "title": "Reactivate your subscription",
     "subtitle": "Choose a plan and pay to restore access to TutoringHQ.",

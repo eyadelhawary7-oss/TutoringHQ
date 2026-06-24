@@ -5,6 +5,7 @@ import {
   getPaymobIntegrationId,
   getPaymobIframeId,
 } from '@/lib/paymobConfig';
+import { remainingBalance } from '@/lib/invoiceBalance';
 
 const PAYMOB_BASE = 'https://accept.paymob.com/api';
 
@@ -30,7 +31,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
 
     const { data: invoice, error: invErr } = await auth.supabaseAdmin
       .from('invoices')
-      .select('id, center_id, status, invoice_type, total_amount, paymob_order_id, paymob_iframe_url')
+      .select(
+        'id, center_id, status, invoice_type, total_amount, amount_received, paymob_order_id, paymob_iframe_url',
+      )
       .eq('id', invoiceId.trim())
       .maybeSingle();
 
@@ -44,6 +47,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       status: string;
       invoice_type: string | null;
       total_amount: number | string | null;
+      amount_received: number | string | null;
       paymob_order_id: string | null;
       paymob_iframe_url: string | null;
     };
@@ -65,20 +69,33 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       return NextResponse.json({ error: 'This invoice cannot be paid online' }, { status: 400 });
     }
 
-    if (row.status !== 'pending' && row.status !== 'overdue') {
+    // A failed/retried attempt leaves the invoice payable too — the customer can
+    // re-pay (and, after a partial, top up) the same invoice on demand.
+    if (row.status !== 'pending' && row.status !== 'overdue' && row.status !== 'failed') {
       return NextResponse.json({ error: 'Invoice is not payable' }, { status: 400 });
     }
 
-    if (row.paymob_order_id && row.paymob_iframe_url) {
+    // Underpayment (Phase 5): charge only the REMAINING balance. The flat
+    // processing fee already lives inside total_amount, so a top-up of the
+    // remainder never adds a second fee — one invoice, one fee.
+    const total = Number(row.total_amount);
+    const received = Number(row.amount_received ?? 0);
+    if (!Number.isFinite(total) || total <= 0) {
+      return NextResponse.json({ error: 'Invalid invoice amount' }, { status: 400 });
+    }
+    const remaining = remainingBalance(total, received);
+    if (remaining <= 0) {
+      return NextResponse.json({ error: 'Invoice is already paid' }, { status: 400 });
+    }
+
+    // Reuse the cached iframe only when nothing has been received yet (the cached
+    // order is for the full total). Once a partial credit exists, the cached order
+    // is for the wrong amount — fall through and mint a fresh order for `remaining`.
+    if (received <= 0 && row.paymob_order_id && row.paymob_iframe_url) {
       return NextResponse.json({
         iframeUrl: row.paymob_iframe_url,
         orderId: row.paymob_order_id,
       });
-    }
-
-    const total = Number(row.total_amount);
-    if (!Number.isFinite(total) || total <= 0) {
-      return NextResponse.json({ error: 'Invalid invoice amount' }, { status: 400 });
     }
 
     const { data: center } = await auth.supabaseAdmin
@@ -91,7 +108,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     const rawPhone = String((center as { phone?: string | null } | null)?.phone ?? '').replace(/\D/g, '');
     const centerPhone = rawPhone || '0';
 
-    const amountCents = Math.round(total * 100);
+    const amountCents = Math.round(remaining * 100);
 
     const authRes = await fetch(`${PAYMOB_BASE}/auth/tokens`, {
       method: 'POST',
@@ -115,7 +132,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
         amount_cents: amountCents,
         currency: 'EGP',
         delivery_needed: false,
-        merchant_order_id: row.id,
+        // Unique per attempt — a top-up after a partial mints a second Paymob
+        // order, and Paymob rejects a reused merchant_order_id. The invoice is
+        // still located by paymob_order_id at finalize time, not this field.
+        merchant_order_id: `${row.id}-${Date.now()}`,
         items: [
           {
             name: 'TutoringHQ Subscription',
@@ -182,7 +202,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       })
       .eq('id', row.id)
       .eq('center_id', auth.centerId)
-      .in('status', ['pending', 'overdue']);
+      .in('status', ['pending', 'overdue', 'failed']);
 
     if (updateErr) {
       console.error('[invoices/pay] Failed to save Paymob fields:', updateErr);

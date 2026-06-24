@@ -4,6 +4,7 @@ import { processInvoiceSignupAfterPaymobSuccess } from '@/lib/signupPaymobAutoAp
 import { computeNextQuarterlyPaymentDue } from '@/lib/subscriptionAnchor';
 import { sendChqPaymentConfirmedTemplate, sendChqPaymentFailedTemplate } from '@/lib/centerNotify';
 import { autoSuspendAtFromDue } from '@/lib/billingSchedule';
+import { applyPaymentToInvoice, readAppliedTxns, remainingBalance } from '@/lib/invoiceBalance';
 
 const PERIOD_MONTHS: Record<string, number> = {
   monthly: 1,
@@ -183,15 +184,31 @@ async function handlePackBillingInvoicePaid(
 
 /**
  * Mark invoice paid and extend center billing (subscription / plan upgrade / legacy).
+ *
+ * Underpayment-aware (Phase 5): when `opts.amountPaidEgp` is supplied (the amount
+ * actually confirmed received in THIS transaction, e.g. from the Paymob webhook),
+ * a payment that does not cover the full total is held as credit toward the SAME
+ * invoice — the invoice stays unpaid (account stays locked), `amount_received` is
+ * incremented, and only the remaining difference is left due. The invoice is
+ * marked paid and the account unlocked ONLY once the cumulative received reaches
+ * the total. When `amountPaidEgp` is omitted (MIT card charge / poll fallback,
+ * which always charge the full amount), the payment is treated as covering the
+ * full remaining balance — preserving prior behaviour.
+ *
+ * Idempotent at two layers: a transaction id already credited (tracked in
+ * metadata.applied_txns) is never counted twice, and an already-paid invoice is a
+ * no-op. Returns `settled` so callers (the status poll) can distinguish a
+ * completing payment from a partial one.
  */
 export async function finalizeInvoicePaymentSuccess(
   supabaseAdmin: SupabaseClient,
   paymobOrderId: string,
   paymobTransactionId: string,
-): Promise<{ invoiceId: string } | null> {
+  opts?: { amountPaidEgp?: number },
+): Promise<{ invoiceId: string; settled: boolean } | null> {
   const { data: inv } = await supabaseAdmin
     .from('invoices')
-    .select('id, center_id, status, invoice_type, total_amount')
+    .select('id, center_id, status, invoice_type, total_amount, amount_received, metadata')
     .eq('paymob_order_id', paymobOrderId)
     .maybeSingle();
 
@@ -203,20 +220,68 @@ export async function finalizeInvoicePaymentSuccess(
     status: string;
     invoice_type: string | null;
     total_amount: number | string | null;
+    amount_received: number | string | null;
+    metadata: Record<string, unknown> | null;
   };
 
   if (row.status === 'paid') {
-    return { invoiceId: row.id };
+    return { invoiceId: row.id, settled: true };
+  }
+
+  const total = Number(row.total_amount ?? 0);
+  const received = Number(row.amount_received ?? 0);
+  const appliedTxns = readAppliedTxns(row.metadata);
+  // No explicit amount → MIT charge / poll fallback paid the full remaining.
+  const amountPaid =
+    opts?.amountPaidEgp != null && Number.isFinite(opts.amountPaidEgp)
+      ? Number(opts.amountPaidEgp)
+      : remainingBalance(total, received);
+
+  const application = applyPaymentToInvoice({
+    total,
+    received,
+    appliedTxns,
+    txnId: paymobTransactionId,
+    amountPaid,
+  });
+
+  // Duplicate transaction (e.g. webhook re-delivered) — nothing to do.
+  if (application.alreadyApplied) {
+    return { invoiceId: row.id, settled: application.settled };
+  }
+
+  const mergedMetadata = { ...(row.metadata ?? {}), applied_txns: application.appliedTxns };
+
+  // Partial payment: hold the amount as credit toward THIS invoice. The invoice
+  // stays unpaid, no second processing fee is ever added (the fee lives inside
+  // total_amount), and the account stays locked until the remainder is paid.
+  if (!application.settled) {
+    const { error: partialErr } = await supabaseAdmin
+      .from('invoices')
+      .update({
+        amount_received: application.newReceived,
+        paymob_transaction_id: paymobTransactionId,
+        metadata: mergedMetadata,
+      })
+      .eq('id', row.id)
+      .neq('status', 'paid');
+    if (partialErr) {
+      console.error('[finalizeInvoicePaymentSuccess] partial credit', partialErr);
+      return null;
+    }
+    return { invoiceId: row.id, settled: false };
   }
 
   const { error: invErr } = await supabaseAdmin
     .from('invoices')
     .update({
       status: 'paid',
+      amount_received: application.newReceived,
       payment_method: 'paymob',
       payment_reference: paymobTransactionId,
       paymob_transaction_id: paymobTransactionId,
       paid_at: new Date().toISOString(),
+      metadata: mergedMetadata,
     })
     .eq('id', row.id);
 
@@ -227,22 +292,22 @@ export async function finalizeInvoicePaymentSuccess(
 
   if (row.invoice_type === 'plan_upgrade_difference') {
     await handlePlanUpgradeInvoicePaid(supabaseAdmin, row, paymobTransactionId);
-    return { invoiceId: row.id };
+    return { invoiceId: row.id, settled: true };
   }
 
   if (row.invoice_type === 'signup_first_payment') {
     await processInvoiceSignupAfterPaymobSuccess(supabaseAdmin, row.center_id, paymobTransactionId);
-    return { invoiceId: row.id };
+    return { invoiceId: row.id, settled: true };
   }
 
   if (row.invoice_type === 'subscription') {
     await handleSubscriptionInvoicePaid(supabaseAdmin, row, paymobTransactionId);
-    return { invoiceId: row.id };
+    return { invoiceId: row.id, settled: true };
   }
 
   if (row.invoice_type === 'pack_billing') {
     await handlePackBillingInvoicePaid(supabaseAdmin, row, paymobTransactionId);
-    return { invoiceId: row.id };
+    return { invoiceId: row.id, settled: true };
   }
 
   if (row.invoice_type === 'late_payment_fee' || row.invoice_type === 'late_fee') {
@@ -257,7 +322,7 @@ export async function finalizeInvoicePaymentSuccess(
     if (cErr) {
       console.error('[finalizeInvoicePaymentSuccess] late_payment_fee center', cErr);
     }
-    return { invoiceId: row.id };
+    return { invoiceId: row.id, settled: true };
   }
 
   if (row.invoice_type === 'reactivation_fee') {
@@ -276,7 +341,7 @@ export async function finalizeInvoicePaymentSuccess(
     if (cErr) {
       console.error('[finalizeInvoicePaymentSuccess] reactivation_fee center', cErr);
     }
-    return { invoiceId: row.id };
+    return { invoiceId: row.id, settled: true };
   }
 
   const { data: center } = await supabaseAdmin
@@ -314,7 +379,7 @@ export async function finalizeInvoicePaymentSuccess(
     }
   }
 
-  return { invoiceId: row.id };
+  return { invoiceId: row.id, settled: true };
 }
 
 export async function finalizeInvoicePaymentFailure(

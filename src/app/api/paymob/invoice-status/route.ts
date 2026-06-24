@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
       if (inquiry.state === 'paid') {
         const txId = inquiry.transactionId ?? '';
         const finalized = await finalizeInvoicePaymentSuccess(supabaseAdmin, paymobOrderId, txId);
-        if (!finalized) {
+        if (!finalized || !finalized.settled) {
           return NextResponse.json(pollBody({ paid: false, failed: false }, 'pending'));
         }
         return NextResponse.json(pollBody({ paid: true }, 'paid'));
@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
       if (inquiryInv.state === 'paid') {
         const txId = inquiryInv.transactionId ?? '';
         const finalized = await finalizeInvoicePaymentSuccess(supabaseAdmin, paymobOrderIdParam, txId);
-        if (finalized) {
+        if (finalized && finalized.settled) {
           return NextResponse.json(pollBody({ paid: true }, 'paid'));
         }
       }
