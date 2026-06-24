@@ -408,13 +408,112 @@ function monthArabicFromDate(iso: string): string {
   return d.toLocaleDateString("ar-EG", { month: "long", year: "numeric" });
 }
 
+const TEACHER_PLAN_LABEL_AR: Record<string, string> = {
+  teacher_standard: 'باقة المدرس — أساسي',
+  teacher_pro: 'باقة المدرس — برو',
+  teacher_scale: 'باقة المدرس — سكيل',
+};
+
+/**
+ * Teacher subscription invoice/receipt. Mirrors the center subscription document
+ * (same sidebar + main-column helpers, same processing-fee breakdown) but draws
+ * its identity from the teacher (no center row). Used for both the "due" invoice
+ * and the paid receipt — the status block flips on `status`.
+ */
+async function generateTeacherInvoicePdf(
+  supabase: SupabaseClient,
+  inv: InvoiceRow,
+): Promise<Buffer> {
+  const invoiceId = String(inv.id ?? '');
+  const teacherId = String(inv.teacher_id ?? '');
+  const total = Number(inv.total_amount ?? 0);
+  const meta = (inv.metadata ?? {}) as Record<string, unknown>;
+  const fee = Math.max(0, Math.round(Number(meta.processing_fee ?? 0) * 100) / 100);
+  const subscription = Math.max(0, Math.round((total - fee) * 100) / 100);
+
+  const [{ data: u }, { data: prof }, { data: sub }] = await Promise.all([
+    supabase.from('users').select('name, phone').eq('id', teacherId).maybeSingle(),
+    supabase.from('teacher_profiles').select('display_name').eq('user_id', teacherId).maybeSingle(),
+    supabase.from('teacher_subscriptions').select('plan_key').eq('teacher_id', teacherId).maybeSingle(),
+  ]);
+  const ur = (u as Record<string, unknown> | null) ?? {};
+  const profile = (prof as Record<string, unknown> | null) ?? {};
+  const subscriptionRow = (sub as Record<string, unknown> | null) ?? {};
+  const name =
+    (String(profile.display_name ?? '').trim() || String(ur.name ?? '').trim() || 'مدرس');
+  const phone = String(ur.phone ?? '').trim();
+  const planKey = String(subscriptionRow.plan_key ?? 'teacher_standard');
+  const planAr = TEACHER_PLAN_LABEL_AR[planKey] ?? 'باقة المدرس';
+
+  const status = String(inv.status ?? 'pending');
+  const isPaid = status === 'paid';
+  const invNo = String(inv.invoice_number ?? `TINV-${invoiceId}`);
+  const issueDate = fmtDate(inv.created_at != null ? String(inv.created_at) : undefined);
+  const paidTs = inv.paid_at ? fmtDateTime(String(inv.paid_at)) : ',';
+
+  const statusHtml = isPaid
+    ? `<span style="display:inline-block;padding:6px 14px;border-radius:9999px;font-size:11px;font-weight:700;font-family:Cairo,sans-serif;background:${TEAL};color:${WHITE};">مدفوعة</span>`
+    : `<span style="display:inline-block;padding:6px 14px;border-radius:9999px;font-size:11px;font-weight:700;font-family:Cairo,sans-serif;border:2px solid ${AMBER};color:${AMBER};">مستحقة</span>`;
+
+  const monthLabel = monthArabicFromDate(
+    inv.billing_period_start != null ? String(inv.billing_period_start) : String(inv.created_at ?? ''),
+  );
+
+  const lineRows: LineRow[] = [
+    { titleAr: planAr, subAr: 'اشتراك شهري', mid: monthLabel, amount: subscription },
+  ];
+  if (fee > 0) {
+    lineRows.push({ titleAr: 'رسوم المعالجة', mid: 'N/A', amount: fee });
+  }
+
+  const sidebar = buildSidebar({
+    docTypeAr: 'فاتورة اشتراك',
+    invoiceNumber: invNo,
+    issueDate,
+    statusHtml,
+    metaRows: [
+      { label: 'الباقة', value: esc(planAr) },
+      { label: 'الحالة', value: isPaid ? 'مدفوعة' : 'مستحقة' },
+    ],
+    paymentMethodLine: isPaid ? 'Paymob' : 'بانتظار الدفع',
+    paymentTs: paidTs,
+  });
+
+  const main = buildMainColumn({
+    headerLabel: 'فاتورة إلى',
+    centerName: name,
+    centerPhone: phone,
+    centerCity: '',
+    amountLabel: 'الإجمالي',
+    totalAmount: total,
+    lineRows,
+    leftBreak: [
+      { labelAr: 'قيمة الاشتراك', value: fmtEgp(subscription) },
+      ...(fee > 0 ? [{ labelAr: 'رسوم المعالجة', value: fmtEgp(fee) }] : []),
+    ],
+    rightBreak: [{ labelAr: 'الإجمالي', value: fmtEgp(total), teal: true }],
+    showTax: false,
+  });
+
+  const html = wrapDocument(
+    `${sidebar}${main}`,
+    'TutoringHQ · tutoringhq.app · An EHG Intelligence Product',
+    `TEACHER SUBSCRIPTION`,
+  );
+  const pdf = await htmlToPdfBuffer(html, { waitUntil: 'networkidle0' });
+  if (!pdf) {
+    throw new Error('PDF generation failed');
+  }
+  return pdf;
+}
+
 export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
   const supabase = getSupabaseAdmin();
   const { data: invoice, error: invErr } = await supabase
     .from("invoices")
     .select(
       `
-      id, center_id, invoice_number, invoice_type, total_amount, subtotal,
+      id, owner_type, teacher_id, center_id, invoice_number, invoice_type, total_amount, subtotal,
       tax_amount, discount_amount, billing_period_start,
       billing_period_end, due_date, status, notes, created_at, metadata,
       base_amount, payment_method, payment_reference, paymob_transaction_id,
@@ -434,6 +533,14 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
   }
 
   const inv = invoice as InvoiceRow & { centers?: CenterRow | CenterRow[] };
+
+  // Teacher invoices (owner_type='teacher') have no center join — render the
+  // teacher receipt from teacher data, reusing the SAME document helpers so the
+  // layout matches centers (one design surface for a future redesign).
+  if (String(inv.owner_type ?? "center") === "teacher") {
+    return generateTeacherInvoicePdf(supabase, inv);
+  }
+
   const centerJoined = inv.centers;
   const center = (Array.isArray(centerJoined) ? centerJoined[0] : centerJoined) as CenterRow | undefined;
   if (!center) {

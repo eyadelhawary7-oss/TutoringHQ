@@ -59,7 +59,7 @@ export interface DueChargeable {
   customerType: 'center' | 'teacher';
   owner: OwnerRef;
   amount: number;
-  /** Center invoice id this settles; null for teachers (no center invoice). */
+  /** Invoice id this settles (center OR teacher). Null only if invoice creation failed. */
   invoiceId: string | null;
   /** Period key, e.g. '2026-07'. Part of the idempotency key. */
   periodKey: string;
