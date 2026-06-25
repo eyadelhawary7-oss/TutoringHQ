@@ -10,13 +10,18 @@ name: Schema Drift Gate
 on:
   push:
     branches: [main, master]
+    paths:
+      - 'supabase/migrations/**'
+      - 'db/schema.snapshot'
+      - 'scripts/schema/**'
+      - '.github/workflows/schema-drift.yml'
   pull_request:
     branches: [main, master]
-  paths:
-    - 'supabase/migrations/**'
-    - 'db/schema.snapshot'
-    - 'scripts/schema/**'
-    - '.github/workflows/schema-drift.yml'
+    paths:
+      - 'supabase/migrations/**'
+      - 'db/schema.snapshot'
+      - 'scripts/schema/**'
+      - '.github/workflows/schema-drift.yml'
 
 jobs:
   schema-drift:
