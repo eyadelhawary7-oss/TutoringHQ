@@ -2915,7 +2915,6 @@ TRIGGER trg_guard_teacher_subscriptions_lifecycle ON teacher_subscriptions def=C
 TRIGGER trg_guard_transactions_lifecycle ON transactions def=CREATE TRIGGER trg_guard_transactions_lifecycle BEFORE UPDATE ON public.transactions FOR EACH ROW EXECUTE FUNCTION guard_transactions_lifecycle()
 TRIGGER trg_chq_prevent_user_escalation ON users def=CREATE TRIGGER trg_chq_prevent_user_escalation BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION chq_prevent_user_escalation()
 FUNCTION accept_teacher_center_invite(p_teacher_user_id uuid, p_center_id uuid) returns=teacher_center lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=a41f063a1760e2c70352f100f31cb830
-FUNCTION ai_execute_query(p_sql text, p_center_id uuid) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=9c957970c6352da16e0e656a1dd56bf9
 FUNCTION append_commission_pause(p_center_id uuid) returns=void lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=3f31892e9a385e707e0ec32c2e71a8e1
 FUNCTION apply_center_subscription_transition(p_subscription_id uuid, p_new_status text, p_actor_id uuid) returns=subscriptions lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=ab2efb0ed1da59ebc9bc232301bedd0b
 FUNCTION apply_chargeback_transition(p_chargeback_id uuid, p_new_status text, p_actor_id uuid) returns=chargebacks lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=0b419fc1fb70651a18b0ede89513ee05
@@ -2925,6 +2924,7 @@ FUNCTION apply_student_credits(p_student_id uuid, p_teacher_id uuid, p_actor_id 
 FUNCTION apply_teacher_subscription_transition(p_subscription_id uuid, p_new_status text, p_actor_id uuid) returns=teacher_subscriptions lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=6c8f14adf7bb682f065d7431eea3acc5
 FUNCTION apply_transaction_transition(p_transaction_id uuid, p_new_status text, p_actor_id uuid, p_method text) returns=transactions lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=ea0b3aad61c049e7f1d6d24315dddd0f
 FUNCTION approve_student_rpc(p_student_id uuid, p_center_id uuid, p_group_ids uuid[], p_approved_by uuid) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=0928fd2e4cc00cae1895c883ee592131
+FUNCTION assert_caller_center_access(p_center_id uuid) returns=void lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=526f59558e976b6d6c1c44a214510d5a
 FUNCTION assign_center_code() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=662ed863e87116cc2b347e49b649061a
 FUNCTION assign_student_number() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=09876e8b64f8972be291f42ce5062d25
 FUNCTION assign_teacher_to_group(p_group_id uuid, p_teacher_user_id uuid, p_split_pct numeric, p_actor_id uuid) returns=student_groups lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=f2236640414cd8558670a1d7abeff2bc
@@ -2935,7 +2935,7 @@ FUNCTION calculate_billing_amount(plan_type text, billing_period text) returns=n
 FUNCTION calculate_next_billing_date(cycle_start date, period text) returns=date lang=plpgsql kind=f volatility=i strict=false secdef=false cfg=search_path=public bodymd5=5de8ee6257f24d7dd34857b98a79c8e8
 FUNCTION can_manage_students_fn() returns=boolean lang=sql kind=f volatility=s strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=b6226ce929f193b4c2c489df224ed25a
 FUNCTION can_record_payments_fn() returns=boolean lang=sql kind=f volatility=s strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=f897f2c9dd38682cae43964d797b7e75
-FUNCTION cancel_reservation_atomic(p_center_id uuid, p_amount numeric) returns=void lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=2c0287719ca6955be305aac7e89da653
+FUNCTION cancel_reservation_atomic(p_center_id uuid, p_amount numeric) returns=void lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=3d7a4610ba33301d1e5fbddef9341b5b
 FUNCTION chq_block_pack_billing_write() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=43d87432fc0e8e4db8b7ba3e95f7297f
 FUNCTION chq_prevent_blast_tampering() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=24863a7bb019727a30b00b995d1c835d
 FUNCTION chq_prevent_card_order_tampering() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=091461d8f42451646a7006bad74ba344
@@ -2953,12 +2953,13 @@ FUNCTION confirm_group_slot(p_slot_proposal_id uuid, p_center_id uuid, p_actor_u
 FUNCTION create_enrollment(p_group_id uuid, p_student_id uuid, p_payer text, p_actor_id uuid, p_source text) returns=TABLE(enrollment_id uuid, status text) lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=2f63e39352d36385278126eb250db35b
 FUNCTION create_referral_reward() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public bodymd5=d9b82a36e0923d6af148d4a96b2adb8b
 FUNCTION decline_group_slot(p_slot_proposal_id uuid, p_center_id uuid, p_actor_user_id uuid) returns=group_slot_proposals lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=84b7635c91410fe7c00b6608a95070b8
-FUNCTION deduct_blast_balance_rpc(p_center_id uuid, p_blast_type text, p_parent_count integer, p_message_body text) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=d666c888c624bf172604ff0d9072df10
+FUNCTION deduct_blast_balance_rpc(p_center_id uuid, p_blast_type text, p_parent_count integer, p_message_body text) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=1d429db7588a9f19ce53b6a151409d3b
 FUNCTION deduct_blast_credits(p_user_id uuid, p_amount numeric) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=7008c1017c5488d3ad15e4b25b58c8b6
 FUNCTION detach_center_from_group(p_group_id uuid, p_actor_user_id uuid) returns=TABLE(group_id uuid, group_kind text) lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=e80e3b30f13d1628fef326a91746fc5b
 FUNCTION downgrade_teacher_to_standard(p_user_id uuid) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=31fc81cd3875be41d1761ce92d041064
-FUNCTION earn_credits_atomic(p_center_id uuid, p_amount numeric, p_reference_id uuid, p_reference_type text) returns=numeric lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=c13be8959eb152b63b2b019b3996e3d6
+FUNCTION earn_credits_atomic(p_center_id uuid, p_amount numeric, p_reference_id uuid, p_reference_type text) returns=numeric lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=a56158970e07a8d0325ef72ccd9e7aa6
 FUNCTION enforce_payout_status_transition() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public bodymd5=f2dcb09ecd696ede1c5eaeeafbb02a0d
+FUNCTION finalize_combined_session_paid(p_session_id uuid, p_credit_amount numeric, p_finalized_by text) returns=text lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=abb0fc2336f1e2192f3a452ad8175a6a
 FUNCTION finish_center_class_and_bill(p_session_id uuid, p_actor_id uuid) returns=TABLE(session_id uuid, billed_now boolean, charges_created integer) lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=889fd8f510a54409a12ce0b1a3c47e24
 FUNCTION finish_class_and_bill(p_session_id uuid, p_actor_id uuid) returns=TABLE(session_id uuid, billed_now boolean, charges_created integer) lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=183c17b31ece80cf9942f56d87c10134
 FUNCTION generate_invoice_number() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public bodymd5=9d4e8706eac2475c84f41ca366c3a561
@@ -2984,7 +2985,7 @@ FUNCTION issue_student_credit(p_student_id uuid, p_teacher_id uuid, p_amount num
 FUNCTION log_card_order_status_transition() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=f24a2533518c4f6f1ff7781d84bda500
 FUNCTION payments_auto_confirm_cash() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public bodymd5=cfae3b3cc1557c105ef1428aae489214
 FUNCTION process_due_subscriptions(p_as_of timestamp with time zone) returns=TABLE(action_taken text, subscription_id uuid) lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=ba35dbd6d2429c734a146a083083dc88
-FUNCTION process_payment_rpc(p_center_id uuid, p_invoice_id uuid, p_amount numeric, p_payment_method text, p_recorded_by uuid) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=366cd8c78a07559bd246e7631a018007
+FUNCTION process_payment_rpc(p_center_id uuid, p_invoice_id uuid, p_amount numeric, p_payment_method text, p_recorded_by uuid) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=16a88f099f5af175d83da7df4fc22411
 FUNCTION propose_group_slot(p_group_id uuid, p_actor_user_id uuid, p_day_of_week smallint, p_start_time time without time zone, p_end_time time without time zone, p_room_id uuid, p_note text) returns=group_slot_proposals lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=3bdc198d1a7766b49eeccdc43ae909e4
 FUNCTION provision_teacher_subscription_on_first_private_group() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=39cba70e38e848830170d52fab99214f
 FUNCTION recalc_all_lifecycle_status() returns=void lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=e7c79684847e5216a49a9d2b51089c18
@@ -2993,7 +2994,7 @@ FUNCTION recompute_all_health_scores() returns=integer lang=plpgsql kind=f volat
 FUNCTION record_subscription_payment(p_subscription_id uuid, p_provider_ref text, p_actor_id uuid) returns=teacher_subscriptions lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=50214077a600d7e2782cdca9d79cdfab
 FUNCTION redeem_promo_code(p_code_id uuid, p_user_id uuid, p_center_id uuid, p_paymob_order_id text, p_original_amount_egp integer, p_discount_amount_egp integer) returns=TABLE(redemption_id uuid, discount_pct integer, uses_count integer) lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=05e8fb627742e51b1d92228f1f41fe36
 FUNCTION remove_teacher_from_center(p_teacher_user_id uuid, p_center_id uuid, p_actor_id uuid) returns=teacher_center lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=e0a21dd451d09ba8f2e8fb966c1d9e02
-FUNCTION reserve_credits_atomic(p_center_id uuid, p_amount numeric) returns=boolean lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=441e054604b245dd9dff22c8add875a7
+FUNCTION reserve_credits_atomic(p_center_id uuid, p_amount numeric) returns=boolean lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=236f3a4e222495b02b2c22a2e37a6e83
 FUNCTION reset_subscription_blast_credits(p_user_id uuid) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=098144766127b46c0dcabf5e762d10df
 FUNCTION resolve_inactivity_alerts_on_scan() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=a6beba17d67bf49c1456a0358abaa9c9
 FUNCTION resolve_or_create_student(p_name text, p_phone text, p_center_id uuid, p_parent_phone text, p_grade_level text, p_origin text) returns=uuid lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=b83b3d320a3323d334e6462e23ef6bff
@@ -3009,11 +3010,11 @@ FUNCTION set_teacher_commission_override(p_teacher_user_id uuid, p_override_pct 
 FUNCTION set_teacher_plan_key(p_user_id uuid, p_plan_key text, p_actor_id uuid) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=73813044c664db213e1e36f6045688c3
 FUNCTION set_updated_at() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=301a884953d37769916294bb60562e05
 FUNCTION set_updated_at_now() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=301a884953d37769916294bb60562e05
-FUNCTION spend_credits_atomic(p_center_id uuid, p_amount numeric, p_reference_id uuid, p_reference_type text) returns=boolean lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=50d9ed8620a4aa702bceffe2dd428b5b
+FUNCTION spend_credits_atomic(p_center_id uuid, p_amount numeric, p_reference_id uuid, p_reference_type text) returns=boolean lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=e511c949ee4507fedf808e80ec321ad9
 FUNCTION teacher_private_access(p_user_id uuid) returns=boolean lang=sql kind=f volatility=s strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=b9492f8d7982c3a9466eced6aa72c63a
 FUNCTION touch_pack_requests_updated_at() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=da5ac28a58c8b4bb30209bf0d3d7082c
 FUNCTION trigger_recalc_lifecycle_on_scan() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=9e483b7071ae7ed8b9222abeecbc5a30
-FUNCTION try_finalize_payment_session(p_session_id uuid, p_finalized_by text) returns=boolean lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=ccbb6270954e2d21e2737e01d0c142d6
+FUNCTION try_finalize_payment_session(p_session_id uuid, p_finalized_by text) returns=boolean lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=17bc1f648ba7f7b2359b65d9d23e85f3
 FUNCTION update_billing_amount() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public bodymd5=69f67dddbe9d5af3a1649da356269f37
 FUNCTION update_updated_at_column() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public bodymd5=301a884953d37769916294bb60562e05
 FUNCTION upgrade_teacher_to_pro(p_user_id uuid) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=298e514994106fbecb474d9d20ece8ca
@@ -5874,7 +5875,6 @@ TABLE_GRANT withdrawal_requests grantee=service_role priv=TRIGGER grantable=NO
 TABLE_GRANT withdrawal_requests grantee=service_role priv=TRUNCATE grantable=NO
 TABLE_GRANT withdrawal_requests grantee=service_role priv=UPDATE grantable=NO
 ROUTINE_GRANT accept_teacher_center_invite grantee=service_role priv=EXECUTE grantable=NO
-ROUTINE_GRANT ai_execute_query grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT append_commission_pause grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT append_commission_pause grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT apply_center_subscription_transition grantee=service_role priv=EXECUTE grantable=NO
@@ -5889,6 +5889,7 @@ ROUTINE_GRANT apply_transaction_transition grantee=authenticated priv=EXECUTE gr
 ROUTINE_GRANT apply_transaction_transition grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT approve_student_rpc grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT approve_student_rpc grantee=service_role priv=EXECUTE grantable=NO
+ROUTINE_GRANT assert_caller_center_access grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT assign_center_code grantee=PUBLIC priv=EXECUTE grantable=NO
 ROUTINE_GRANT assign_center_code grantee=anon priv=EXECUTE grantable=NO
 ROUTINE_GRANT assign_center_code grantee=authenticated priv=EXECUTE grantable=NO
@@ -5926,7 +5927,6 @@ ROUTINE_GRANT can_record_payments_fn grantee=PUBLIC priv=EXECUTE grantable=NO
 ROUTINE_GRANT can_record_payments_fn grantee=anon priv=EXECUTE grantable=NO
 ROUTINE_GRANT can_record_payments_fn grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT can_record_payments_fn grantee=service_role priv=EXECUTE grantable=NO
-ROUTINE_GRANT cancel_reservation_atomic grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT cancel_reservation_atomic grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT chq_block_pack_billing_write grantee=PUBLIC priv=EXECUTE grantable=NO
 ROUTINE_GRANT chq_block_pack_billing_write grantee=anon priv=EXECUTE grantable=NO
@@ -5974,17 +5974,16 @@ ROUTINE_GRANT create_referral_reward grantee=anon priv=EXECUTE grantable=NO
 ROUTINE_GRANT create_referral_reward grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT create_referral_reward grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT decline_group_slot grantee=service_role priv=EXECUTE grantable=NO
-ROUTINE_GRANT deduct_blast_balance_rpc grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT deduct_blast_balance_rpc grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT deduct_blast_credits grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT detach_center_from_group grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT downgrade_teacher_to_standard grantee=service_role priv=EXECUTE grantable=NO
-ROUTINE_GRANT earn_credits_atomic grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT earn_credits_atomic grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT enforce_payout_status_transition grantee=PUBLIC priv=EXECUTE grantable=NO
 ROUTINE_GRANT enforce_payout_status_transition grantee=anon priv=EXECUTE grantable=NO
 ROUTINE_GRANT enforce_payout_status_transition grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT enforce_payout_status_transition grantee=service_role priv=EXECUTE grantable=NO
+ROUTINE_GRANT finalize_combined_session_paid grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT finish_center_class_and_bill grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT finish_class_and_bill grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT generate_invoice_number grantee=PUBLIC priv=EXECUTE grantable=NO
@@ -6045,7 +6044,6 @@ ROUTINE_GRANT has_center_role grantee=PUBLIC priv=EXECUTE grantable=NO
 ROUTINE_GRANT has_center_role grantee=anon priv=EXECUTE grantable=NO
 ROUTINE_GRANT has_center_role grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT has_center_role grantee=service_role priv=EXECUTE grantable=NO
-ROUTINE_GRANT increment_promo_uses grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT increment_promo_uses grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT invite_teacher_to_center grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT is_auth_teacher_suspended grantee=PUBLIC priv=EXECUTE grantable=NO
@@ -6066,7 +6064,6 @@ ROUTINE_GRANT payments_auto_confirm_cash grantee=anon priv=EXECUTE grantable=NO
 ROUTINE_GRANT payments_auto_confirm_cash grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT payments_auto_confirm_cash grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT process_due_subscriptions grantee=service_role priv=EXECUTE grantable=NO
-ROUTINE_GRANT process_payment_rpc grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT process_payment_rpc grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT propose_group_slot grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT provision_teacher_subscription_on_first_private_group grantee=PUBLIC priv=EXECUTE grantable=NO
@@ -6080,10 +6077,8 @@ ROUTINE_GRANT recalc_student_lifecycle grantee=service_role priv=EXECUTE grantab
 ROUTINE_GRANT recompute_all_health_scores grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT recompute_all_health_scores grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT record_subscription_payment grantee=service_role priv=EXECUTE grantable=NO
-ROUTINE_GRANT redeem_promo_code grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT redeem_promo_code grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT remove_teacher_from_center grantee=service_role priv=EXECUTE grantable=NO
-ROUTINE_GRANT reserve_credits_atomic grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT reserve_credits_atomic grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT reset_subscription_blast_credits grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT resolve_inactivity_alerts_on_scan grantee=PUBLIC priv=EXECUTE grantable=NO
@@ -6127,7 +6122,6 @@ ROUTINE_GRANT set_updated_at_now grantee=PUBLIC priv=EXECUTE grantable=NO
 ROUTINE_GRANT set_updated_at_now grantee=anon priv=EXECUTE grantable=NO
 ROUTINE_GRANT set_updated_at_now grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT set_updated_at_now grantee=service_role priv=EXECUTE grantable=NO
-ROUTINE_GRANT spend_credits_atomic grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT spend_credits_atomic grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT teacher_private_access grantee=PUBLIC priv=EXECUTE grantable=NO
 ROUTINE_GRANT teacher_private_access grantee=anon priv=EXECUTE grantable=NO
@@ -6141,7 +6135,6 @@ ROUTINE_GRANT trigger_recalc_lifecycle_on_scan grantee=PUBLIC priv=EXECUTE grant
 ROUTINE_GRANT trigger_recalc_lifecycle_on_scan grantee=anon priv=EXECUTE grantable=NO
 ROUTINE_GRANT trigger_recalc_lifecycle_on_scan grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT trigger_recalc_lifecycle_on_scan grantee=service_role priv=EXECUTE grantable=NO
-ROUTINE_GRANT try_finalize_payment_session grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT try_finalize_payment_session grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT update_billing_amount grantee=PUBLIC priv=EXECUTE grantable=NO
 ROUTINE_GRANT update_billing_amount grantee=anon priv=EXECUTE grantable=NO
