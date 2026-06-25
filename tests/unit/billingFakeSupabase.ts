@@ -169,6 +169,33 @@ export function makeFakeSupabase(tables: Record<string, Row[]>) {
         else filters.push((r) => r[col] === val);
         return api;
       },
+      or(expr: string) {
+        // PostgREST or-string: `col.op.val,col.op.val` — OR of the clauses,
+        // AND-ed with the rest of the chain. Supports gte/lte/eq (enough for
+        // the reconciliation window filter).
+        const clauses = String(expr)
+          .split(',')
+          .map((c) => {
+            const firstDot = c.indexOf('.');
+            const secondDot = c.indexOf('.', firstDot + 1);
+            return {
+              col: c.slice(0, firstDot),
+              op: c.slice(firstDot + 1, secondDot),
+              val: c.slice(secondDot + 1),
+            };
+          });
+        filters.push((r) =>
+          clauses.some(({ col, op, val }) => {
+            const cell = r[col];
+            if (cell == null) return false;
+            if (op === 'gte') return String(cell) >= val;
+            if (op === 'lte') return String(cell) <= val;
+            if (op === 'eq') return String(cell) === val;
+            return false;
+          }),
+        );
+        return api;
+      },
       order() {
         return api;
       },

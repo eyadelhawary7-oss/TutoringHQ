@@ -216,7 +216,7 @@ export function CartRecommendations({
               <li key={o.id} className="flex flex-wrap items-center gap-2 justify-between">
                 <div>
                   <p className="text-xs font-mono text-[var(--color-text-secondary)]">
-                    #{o.id.replace(/-/g, '').slice(-8).toUpperCase()}
+                    <bdi>#{o.id.replace(/-/g, '').slice(-8).toUpperCase()}</bdi>
                   </p>
                   <p className="text-sm text-[var(--color-text-primary)]">
                     {o.quantity} · {formatCurrency(o.total_amount, locale)}

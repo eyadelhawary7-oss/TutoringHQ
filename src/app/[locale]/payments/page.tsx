@@ -16,6 +16,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import { LocalizedDateInput } from '@/components/forms/LocalizedDateInput';
 import { formatCurrency, formatDateTime } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
+import { memoryCacheGet, memoryCacheSet } from '@/lib/clientMemoryCache';
 
 interface PaymentRecord {
   id: string;
@@ -106,18 +107,13 @@ function isPaymentPendingAction(p: PaymentRecord): boolean {
   return !isPaymentConfirmed(p) && (p.confirmed === false || p.status === 'pending');
 }
 
+// In-memory only (tab-scoped). Payment rows carry PII (student + staff names)
+// and must never be written to sessionStorage/localStorage.
 const PAYMENTS_CACHE_KEY = 'chq_payments_cache';
 
 function readPaymentsCache(): PaymentRecord[] | null {
   if (typeof window === 'undefined') return null;
-  try {
-    const raw = sessionStorage.getItem(PAYMENTS_CACHE_KEY);
-    if (!raw) return null;
-    const p = JSON.parse(raw) as unknown;
-    return Array.isArray(p) ? (p as PaymentRecord[]) : null;
-  } catch {
-    return null;
-  }
+  return memoryCacheGet<PaymentRecord[]>(PAYMENTS_CACHE_KEY);
 }
 
 export default function PaymentsPage() {
@@ -254,11 +250,7 @@ export default function PaymentsPage() {
         recorded_by_name: p.recorded_by ? (userMap[p.recorded_by] ?? tCommon('notSet')) : null,
       }));
       setRecords(mapped);
-      try {
-        sessionStorage.setItem(PAYMENTS_CACHE_KEY, JSON.stringify(mapped));
-      } catch {
-        /* private mode / quota */
-      }
+      memoryCacheSet(PAYMENTS_CACHE_KEY, mapped);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error(tToast('error'), msg);

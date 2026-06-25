@@ -23,7 +23,13 @@ export function getUpstashRedis(): Redis | null {
 const redis = getUpstashRedis();
 
 /**
- * Sliding-window rate limit (sorted set). Fails open when Upstash env is missing.
+ * Sliding-window rate limit (sorted set).
+ *
+ * Fails CLOSED when Upstash env is missing: a request we cannot rate-limit is
+ * rejected (`success: false`) rather than waved through, in every environment.
+ * Several callers here gate abuse-prone auth/scanner paths, so a deploy with
+ * Upstash unconfigured must not silently disable the limiter. `UPSTASH_REDIS_REST_URL`
+ * and `UPSTASH_REDIS_REST_TOKEN` are required in every environment (see .env.example).
  */
 export async function rateLimit(
   identifier: string,
@@ -33,7 +39,7 @@ export async function rateLimit(
   const r = getUpstashRedis();
   if (!r) {
     const now = Math.floor(Date.now() / 1000);
-    return { success: true, remaining: maxRequests, reset: now + windowSeconds };
+    return { success: false, remaining: 0, reset: now + windowSeconds };
   }
 
   const key = `rate_limit:${identifier}`;
@@ -65,32 +71,59 @@ export function rateLimitExceededResponse(retryAfterSeconds: number): NextRespon
   );
 }
 
-export const scanRatelimit = redis
+/**
+ * Minimal sliding-window limiter surface the named limiters expose. The real
+ * `@upstash/ratelimit` `Ratelimit` is structurally assignable to this.
+ */
+export type SlidingLimiter = {
+  limit(identifier: string): Promise<{
+    success: boolean;
+    reset: number;
+    limit?: number;
+    remaining?: number;
+  }>;
+};
+
+/**
+ * Fail-CLOSED stand-in used when Upstash is not configured. `.limit()` always
+ * reports "limited" so the guarded path is denied (429) rather than running
+ * unprotected. Previously these limiters were `null`, which made every caller's
+ * `if (limiter) { ... }` skip the check entirely — a silent fail-open.
+ */
+function failClosedLimiter(windowMs: number): SlidingLimiter {
+  return {
+    async limit() {
+      return { success: false, reset: Date.now() + windowMs, limit: 0, remaining: 0 };
+    },
+  };
+}
+
+export const scanRatelimit: SlidingLimiter = redis
   ? new Ratelimit({
       redis,
       limiter: Ratelimit.slidingWindow(120, '1 m'),
       prefix: 'rl:scan',
       analytics: false,
     })
-  : null;
+  : failClosedLimiter(60_000);
 
-export const resetPinPhoneRatelimit = redis
+export const resetPinPhoneRatelimit: SlidingLimiter = redis
   ? new Ratelimit({
       redis,
       limiter: Ratelimit.slidingWindow(3, '15 m'),
       prefix: 'rl:reset-pin:phone',
       analytics: false,
     })
-  : null;
+  : failClosedLimiter(15 * 60_000);
 
-export const verifyPinResetPhoneRatelimit = redis
+export const verifyPinResetPhoneRatelimit: SlidingLimiter = redis
   ? new Ratelimit({
       redis,
       limiter: Ratelimit.slidingWindow(5, '15 m'),
       prefix: 'rl:verify-pin-reset:phone',
       analytics: false,
     })
-  : null;
+  : failClosedLimiter(15 * 60_000);
 
 export function getClientIp(request: Request): string {
   return (

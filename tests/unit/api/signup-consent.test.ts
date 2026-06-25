@@ -3,9 +3,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-key';
-// No Upstash env -> rateLimit fails open (success: true).
+// Rate limiting now fails CLOSED without Upstash; mock it to pass so these specs
+// exercise the consent/signup logic, not the limiter (covered separately in
+// rateLimitFailClosed.test.ts).
 delete process.env.UPSTASH_REDIS_REST_URL;
 delete process.env.UPSTASH_REDIS_REST_TOKEN;
+vi.mock('@/lib/ratelimit', () => ({
+  getClientIp: () => '127.0.0.1',
+  rateLimit: vi.fn().mockResolvedValue({ success: true, remaining: 3, reset: 0 }),
+  rateLimitExceededResponse: vi.fn(),
+}));
 
 // Capture the centers insert payload to assert consent columns are written.
 const centerInsertSpy = vi.fn<(payload: Record<string, unknown>) => void>();

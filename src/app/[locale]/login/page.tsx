@@ -6,6 +6,8 @@ import { Link, useRouter, usePathname } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { isRefreshTokenNotFoundError } from '@/lib/supabaseRefreshSilence';
 import { decidePostLoginRoute } from '@/lib/postLoginRoute';
+import { memoryCacheSet } from '@/lib/clientMemoryCache';
+import { PENDING_SIGNUP_KEY } from '@/lib/signup/usePendingSignup';
 import { Globe } from 'lucide-react';
 
 export default function LoginPage() {
@@ -221,25 +223,22 @@ export default function LoginPage() {
         : resumeSignup.last_step_completed >= 1
           ? 'plan'
           : 'info';
-    try {
-      sessionStorage.setItem(
-        'chq_pending_signup_v1',
-        JSON.stringify({
-          centerName: p.center_name,
-          ownerName: p.owner_name,
-          phone,
-          email: p.email,
-          city: p.city,
-          plan: p.plan_key,
-          billingPeriod: p.billing_period,
-          referralCode: p.referral_code ?? '',
-          notes: '',
-          stage,
-        }),
-      );
-    } catch {
-      //
-    }
+    // Hand the resumed signup to the form in-memory (tab-scoped) instead of
+    // sessionStorage — it carries PII (owner name, phone, email, city). The
+    // server already holds the canonical pending-signup row; this is just a
+    // soft-nav handoff that the signup form reads via usePendingSignup.
+    memoryCacheSet(PENDING_SIGNUP_KEY, {
+      centerName: p.center_name,
+      ownerName: p.owner_name,
+      phone,
+      email: p.email,
+      city: p.city,
+      plan: p.plan_key,
+      billingPeriod: p.billing_period,
+      referralCode: p.referral_code ?? '',
+      notes: '',
+      stage,
+    });
     router.push('/signup');
   };
 

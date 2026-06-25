@@ -48,9 +48,19 @@ export function isCSRFEnabled(): boolean {
   return !!secret && secret.length === 64 && /^[0-9a-fA-F]+$/.test(secret);
 }
 
-/** Validate CSRF from request headers. Returns true if valid. When CSRF is disabled, returns true. */
+/**
+ * Validate CSRF from request headers. Returns true only if a valid token is
+ * presented.
+ *
+ * Fail CLOSED: when CSRF cannot be enforced because `CSRF_SECRET` is missing or
+ * malformed, we REJECT (return false) in every environment rather than wave the
+ * request through. A state-changing request we cannot verify is never accepted
+ * — the same fail-closed rule the Paymob/WhatsApp/Bosta webhooks already apply.
+ * `CSRF_SECRET` must therefore be set in every environment (it is required in
+ * production per docs/CSRF_SETUP.md; set it locally too — see .env.example).
+ */
 export function validateCSRFRequest(request: Request, userId: string): boolean {
-  if (!isCSRFEnabled()) return true;
+  if (!isCSRFEnabled()) return false;
   const csrfToken = request.headers.get('X-CSRF-Token');
   const sessionId = request.headers.get('X-Session-ID');
   if (!csrfToken || !sessionId) return false;

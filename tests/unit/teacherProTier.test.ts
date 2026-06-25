@@ -10,6 +10,14 @@ process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-key';
 delete process.env.CSRF_SECRET; // CSRF validation skipped when unset (dev/test)
+// CSRF now fails closed when CSRF_SECRET is unset (see csrfFailClosed.test.ts).
+// These specs exercise route logic, not CSRF, so mock it to pass.
+vi.mock('@/lib/csrf', () => ({
+  validateCSRFRequest: () => true,
+  isCSRFEnabled: () => true,
+  generateCSRFToken: () => 'test-token',
+  validateCSRFToken: () => true,
+}));
 
 type QueryResult = { data?: unknown; error?: { message: string; code?: string } | null; count?: number };
 

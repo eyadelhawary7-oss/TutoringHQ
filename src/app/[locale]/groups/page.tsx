@@ -758,7 +758,7 @@ export default function GroupsPage() {
                       {waitlist.map((w, i) => (
                         <div key={w.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                           <div>
-                            <div className="text-sm font-medium text-[var(--color-text-primary)]">#{i + 1} {w.name}</div>
+                            <div className="text-sm font-medium text-[var(--color-text-primary)]"><bdi>#{i + 1}</bdi> {w.name}</div>
                             {w.student_number ? (
                               <div className="text-xs text-slate-400 mt-0.5" dir="ltr">{formatStudentNumberForDisplay(w.student_number)}</div>
                             ) : w.parent_phone ? (

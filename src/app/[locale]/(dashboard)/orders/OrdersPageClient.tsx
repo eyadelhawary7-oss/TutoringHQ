@@ -474,7 +474,7 @@ export default function OrdersPageClient({
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
                           <span className="font-mono text-sm font-semibold text-[var(--color-text-primary)]">
-                            #{shortId}
+                            <bdi>#{shortId}</bdi>
                           </span>
                           <span
                             className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusBadgeClass(order.status)}`}
