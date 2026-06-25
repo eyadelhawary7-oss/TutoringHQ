@@ -9,9 +9,14 @@ import { join } from 'node:path';
  * can't silently regress: a paid invoice's money fields are immutable for centers
  * AND teachers, finalization still works, and only chargeback / the audited
  * correction bypass may touch a paid invoice.
+ *
+ * The migration source now lives under supabase/migrations_archive/ — Phase 0
+ * collapsed the applied migrations into 00000000000000_baseline.sql and archived
+ * the originals. This contract pins the original migration text, so it reads
+ * from the archive.
  */
 const sql = readFileSync(
-  join(process.cwd(), 'supabase/migrations/20260626000000_billing_reliability_hardening.sql'),
+  join(process.cwd(), 'supabase/migrations_archive/20260626000000_billing_reliability_hardening.sql'),
   'utf8',
 );
 

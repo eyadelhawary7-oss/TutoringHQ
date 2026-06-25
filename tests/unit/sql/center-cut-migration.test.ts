@@ -10,12 +10,17 @@ import { join } from 'path';
  * gate) cannot execute here - they are pinned at the SQL-text level instead,
  * so a repo edit that drops one of the guarantees fails CI. The live function
  * was applied to prod and verified via catalog introspection (Rule 146).
+ *
+ * The migration source now lives under supabase/migrations_archive/ — Phase 0
+ * collapsed the applied migrations into 00000000000000_baseline.sql and archived
+ * the originals. This contract pins the original migration text, so it reads
+ * from the archive.
  */
 
 const sql = readFileSync(
   join(
     process.cwd(),
-    'supabase/migrations/20260611000002_center_cut_and_group_proposals.sql',
+    'supabase/migrations_archive/20260611000002_center_cut_and_group_proposals.sql',
   ),
   'utf8',
 );
