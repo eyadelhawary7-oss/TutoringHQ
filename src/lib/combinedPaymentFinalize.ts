@@ -199,100 +199,112 @@ export async function tryFinalizeCombinedPaymentSession(
       }
     }
 
+    // Fix C: the wallet credit is NO LONGER spent here. It is consumed
+    // atomically with the session being marked paid, in
+    // finalize_combined_session_paid (the final step below). That way a failure
+    // in any of the non-money mutations that follow cannot leave the credit
+    // consumed against a session that never finalized (the old "stuck with
+    // credit gone" failure mode).
     const creditToSpend = Number(row.credit_amount ?? 0);
-    if (creditToSpend > 0) {
-      const { error: spendErr } = await supabase.rpc('spend_credits_atomic', {
-        p_center_id: row.center_id,
-        p_amount: creditToSpend,
-        p_reference_id: row.id,
-        p_reference_type: 'subscription',
-      });
-      if (spendErr) {
-        await markSessionFailed(supabase, row.id);
-        await logFinalizeFailure(supabase, spendErr, { sessionId: row.id, phase: 'spend_credits' });
-        return false;
-      }
-    }
 
     if (st === 'upgrade' && newBp && pk && newPlan) {
       const billingAmount = getChargeFromQuarterlyAllIn(allIn, newBp, pk);
 
-      const { data: centerBefore, error: cbErr } = await supabase
-        .from('centers')
-        .select('upgrade_count_this_period, next_payment_due')
-        .eq('id', row.center_id)
-        .maybeSingle();
-
-      if (cbErr) {
-        await markSessionFailed(supabase, row.id);
-        await logFinalizeFailure(supabase, cbErr, { sessionId: row.id, phase: 'center_before' });
-        return false;
+      // Fix C idempotency: if a prior attempt already applied this upgrade
+      // (center mutated + upgrade_log written) and then failed at the final
+      // money step, do NOT re-apply it on retry — that would double-count the
+      // upgrade and duplicate the log row. Re-detect via the upgrade_log row
+      // keyed by this Paymob order.
+      let upgradeAlreadyApplied = false;
+      if (paymobOrderId) {
+        const { data: priorLog } = await supabase
+          .from('upgrade_log')
+          .select('id')
+          .eq('center_id', row.center_id)
+          .eq('paymob_order_id', paymobOrderId)
+          .limit(1)
+          .maybeSingle();
+        upgradeAlreadyApplied = !!priorLog;
       }
 
-      const prevCount = Number(
-        (centerBefore as { upgrade_count_this_period?: number } | null)?.upgrade_count_this_period ?? 0,
-      );
-      const anchorYmd =
-        meta.billingAnchorYmd ??
-        (centerBefore as { next_payment_due?: string | null } | null)?.next_payment_due?.slice(0, 10) ??
-        todayISO();
+      if (!upgradeAlreadyApplied) {
+        const { data: centerBefore, error: cbErr } = await supabase
+          .from('centers')
+          .select('upgrade_count_this_period, next_payment_due')
+          .eq('id', row.center_id)
+          .maybeSingle();
 
-      const { error: centerErr } = await supabase
-        .from('centers')
-        .update({
-          plan: newPlan,
-          subscription_billing_period: newBp,
-          billing_period: newBp,
-          all_in_price: allIn,
-          billing_amount: billingAmount,
-          billing_status: 'paid',
-          upgrade_count_this_period: prevCount + 1,
-        })
-        .eq('id', row.center_id);
-
-      if (centerErr) {
-        await markSessionFailed(supabase, row.id);
-        await logFinalizeFailure(supabase, centerErr, { sessionId: row.id, phase: 'center_update' });
-        return false;
-      }
-
-      const invIds = Array.isArray(row.invoice_ids) ? row.invoice_ids : [];
-      for (const invId of invIds) {
-        const { error: invErr } = await supabase
-          .from('invoices')
-          .update({
-            status: 'paid',
-            payment_method: 'paymob',
-            payment_reference: paymobTransactionId,
-            paymob_transaction_id: paymobTransactionId,
-            paid_at: new Date().toISOString(),
-          })
-          .eq('id', invId)
-          .eq('center_id', row.center_id);
-        if (invErr) {
+        if (cbErr) {
           await markSessionFailed(supabase, row.id);
-          await logFinalizeFailure(supabase, invErr, { sessionId: row.id, phase: 'invoice_paid', invId });
+          await logFinalizeFailure(supabase, cbErr, { sessionId: row.id, phase: 'center_before' });
           return false;
         }
-      }
 
-      const { error: logErr } = await supabase.from('upgrade_log').insert({
-        center_id: row.center_id,
-        previous_plan: meta.previousPlan ?? ',',
-        new_plan: newPlan,
-        previous_period: meta.previousBillingPeriod ?? 'quarterly',
-        new_period: newBp,
-        days_remaining: Math.max(0, Math.floor(Number(meta.daysRemaining ?? 0))),
-        daily_rate_difference: Number(meta.dailyRateDifference ?? 0),
-        amount_charged: Number(meta.amountCharged ?? 0),
-        paymob_order_id: paymobOrderId || null,
-        billing_anchor_unchanged: anchorYmd,
-        upgrade_count_this_cycle: prevCount + 1,
-      });
-      if (logErr) {
-        await markSessionFailed(supabase, row.id);
-        await logFinalizeFailure(supabase, logErr, { sessionId: row.id, phase: 'upgrade_log' });
-        return false;
+        const prevCount = Number(
+          (centerBefore as { upgrade_count_this_period?: number } | null)?.upgrade_count_this_period ?? 0,
+        );
+        const anchorYmd =
+          meta.billingAnchorYmd ??
+          (centerBefore as { next_payment_due?: string | null } | null)?.next_payment_due?.slice(0, 10) ??
+          todayISO();
+
+        const { error: centerErr } = await supabase
+          .from('centers')
+          .update({
+            plan: newPlan,
+            subscription_billing_period: newBp,
+            billing_period: newBp,
+            all_in_price: allIn,
+            billing_amount: billingAmount,
+            billing_status: 'paid',
+            upgrade_count_this_period: prevCount + 1,
+          })
+          .eq('id', row.center_id);
+
+        if (centerErr) {
+          await markSessionFailed(supabase, row.id);
+          await logFinalizeFailure(supabase, centerErr, { sessionId: row.id, phase: 'center_update' });
+          return false;
+        }
+
+        const invIds = Array.isArray(row.invoice_ids) ? row.invoice_ids : [];
+        for (const invId of invIds) {
+          const { error: invErr } = await supabase
+            .from('invoices')
+            .update({
+              status: 'paid',
+              payment_method: 'paymob',
+              payment_reference: paymobTransactionId,
+              paymob_transaction_id: paymobTransactionId,
+              paid_at: new Date().toISOString(),
+            })
+            .eq('id', invId)
+            .eq('center_id', row.center_id);
+          if (invErr) {
+            await markSessionFailed(supabase, row.id);
+            await logFinalizeFailure(supabase, invErr, { sessionId: row.id, phase: 'invoice_paid', invId });
+            return false;
+          }
+        }
+
+        const { error: logErr } = await supabase.from('upgrade_log').insert({
+          center_id: row.center_id,
+          previous_plan: meta.previousPlan ?? ',',
+          new_plan: newPlan,
+          previous_period: meta.previousBillingPeriod ?? 'quarterly',
+          new_period: newBp,
+          days_remaining: Math.max(0, Math.floor(Number(meta.daysRemaining ?? 0))),
+          daily_rate_difference: Number(meta.dailyRateDifference ?? 0),
+          amount_charged: Number(meta.amountCharged ?? 0),
+          paymob_order_id: paymobOrderId || null,
+          billing_anchor_unchanged: anchorYmd,
+          upgrade_count_this_cycle: prevCount + 1,
+        });
+        if (logErr) {
+          await markSessionFailed(supabase, row.id);
+          await logFinalizeFailure(supabase, logErr, { sessionId: row.id, phase: 'upgrade_log' });
+          return false;
+        }
       }
     }
 
@@ -486,13 +498,35 @@ export async function tryFinalizeCombinedPaymentSession(
       }
     }
 
-    const { error: paidErr } = await supabase
-      .from('combined_payment_sessions')
-      .update({ status: 'paid' })
-      .eq('id', row.id);
+    // Fix C: final atomic money step — spend the wallet credit (if any) AND mark
+    // the session paid + finalized in ONE transaction. If the credit spend
+    // raises (e.g. insufficient credit), the DB rolls it all back: no credit
+    // consumed, status unchanged, finalized_at still NULL, so the stuck-payment
+    // cron can recover it. This is the ONLY place finalized_at is ever set.
+    const { data: finalizeResult, error: finalizeErr } = await supabase.rpc(
+      'finalize_combined_session_paid',
+      {
+        p_session_id: row.id,
+        p_credit_amount: creditToSpend,
+        p_finalized_by: source,
+      },
+    );
 
-    if (paidErr) {
-      await logFinalizeFailure(supabase, paidErr, { sessionId: row.id, phase: 'mark_paid' });
+    if (finalizeErr) {
+      await markSessionFailed(supabase, row.id);
+      await logFinalizeFailure(supabase, finalizeErr, { sessionId: row.id, phase: 'finalize_atomic' });
+      return false;
+    }
+
+    const finalizeStatus =
+      typeof finalizeResult === 'string' ? finalizeResult : String(finalizeResult ?? '');
+    if (finalizeStatus !== 'completed' && finalizeStatus !== 'already_done') {
+      await markSessionFailed(supabase, row.id);
+      await logFinalizeFailure(
+        supabase,
+        new Error(`finalize_combined_session_paid returned ${finalizeStatus}`),
+        { sessionId: row.id, phase: 'finalize_atomic_status' },
+      );
       return false;
     }
 

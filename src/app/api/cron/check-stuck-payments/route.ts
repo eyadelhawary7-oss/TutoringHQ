@@ -43,12 +43,17 @@ export async function POST(request: Request) {
     const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
     const now = new Date().toISOString();
 
+    // Fix C: recover both 'pending' sessions AND 'failed' sessions whose card
+    // actually went through but whose finalize hit a transient error. Because
+    // finalized_at is now set ONLY on genuine completion (never on a failed
+    // attempt), `finalized_at IS NULL` no longer hides a half-finalized session
+    // — re-inquiring Paymob and re-running the idempotent finalize recovers it.
     const { data: stuckSessions, error: fetchErr } = await supabase
       .from('combined_payment_sessions')
       .select(
         'id, paymob_order_id, center_id, total_amount, session_type, created_at, credit_amount',
       )
-      .eq('status', 'pending')
+      .in('status', ['pending', 'failed'])
       .lt('created_at', cutoff)
       .gt('expires_at', now)
       .is('finalized_at', null);
@@ -131,11 +136,49 @@ export async function POST(request: Request) {
       }
     }
 
+    // Fix C — defensive recovery: detect any "half-finalized" session, i.e.
+    // finalized_at set but the session never reached a terminal-good state. The
+    // new finalize never produces this (finalized_at is set atomically with
+    // status='paid'), but a legacy row could exist where credit was consumed and
+    // the session then froze. Surface each for safe manual unwind rather than
+    // auto-clearing finalized_at (which could double-spend if credit was already
+    // consumed). The session is otherwise invisible to the recovery query above.
+    let halfFinalized = 0;
+    const { data: corruptSessions } = await supabase
+      .from('combined_payment_sessions')
+      .select('id, center_id, credit_amount, status, finalized_at, total_amount, session_type')
+      .not('finalized_at', 'is', null)
+      .not('status', 'in', '("paid","expired")');
+
+    for (const cs of corruptSessions ?? []) {
+      const c = cs as {
+        id: string;
+        center_id: string | null;
+        status?: string;
+        total_amount?: number | string;
+        session_type?: string;
+      };
+      try {
+        await createAction(supabase, {
+          type: 'ops',
+          priority: 'red',
+          center_id: c.center_id ?? null,
+          title: `Half-finalized payment session needs unwind, ${c.id}`,
+          subtitle: `status=${c.status ?? '?'} finalized but not paid · ${c.session_type ?? ''}`,
+          revenue_at_risk: Number(c.total_amount) || 0,
+          auto_generated: true,
+        });
+      } catch (ceoErr) {
+        console.error('[check-stuck-payments] half-finalized ceo_action_queue', ceoErr);
+      }
+      halfFinalized++;
+    }
+
     const recordsProcessed = sessions.length;
     await insertCronLogSuccess(supabase, CRON_NAME, {
       duration_ms: Date.now() - cronStart,
       records_processed: recordsProcessed,
-      metadata: { resolved, flagged },
+      metadata: { resolved, flagged, halfFinalized },
     });
 
     try {
@@ -158,6 +201,7 @@ export async function POST(request: Request) {
       found: sessions.length,
       resolved,
       flagged,
+      halfFinalized,
     });
   } catch (error) {
     console.error(`[${CRON_NAME}] Error:`, error);

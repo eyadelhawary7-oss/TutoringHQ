@@ -8,7 +8,6 @@ import { useUser } from '@/contexts/UserContext';
 import { useBranchStore } from '@/stores/branchStore';
 import AgingReport from '@/components/analytics/AgingReport';
 import PnLCard from '@/components/analytics/PnLCard';
-import AnalyticsAiChatWidget from '@/components/analytics/AnalyticsAiChatWidget';
 import { chartColors, colors } from '@/lib/tokens';
 import { TrendingUp, Percent, Users, Wallet } from 'lucide-react';
 import { ChartCard, ChartLegend } from '@/components/charts';
@@ -426,8 +425,6 @@ export default function AnalyticsPage() {
         <h2 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">{ta('agingReport')}</h2>
         <AgingReport data={d.aging_report} onRefresh={loadData} />
       </section>
-
-      <AnalyticsAiChatWidget />
     </div>
   );
 }
