@@ -103,6 +103,25 @@ migration ledger as **already-applied** (a reversible one-row "repair", not a
 run) — it must never execute against prod. See the Phase 0 report for the exact,
 reversible ledger operation.
 
+## Phase 0 verification (recorded)
+
+- A database rebuilt **from the migrations alone** (baseline + the test shim) was
+  introspected and diffed against the live production schema: **6169 objects, an
+  EMPTY diff** — byte-identical across tables, columns, types, defaults,
+  constraints, indexes, RLS policies, triggers, function signatures+bodies,
+  grants and storage policies.
+- Snapshot coverage: 139 tables · 1597 columns · 613 constraints · 300 indexes ·
+  221 RLS policies · 41 triggers · 106 functions · 2 views · 2851 table grants ·
+  289 routine grants · 5 storage policies · 5 (non-managed) extensions.
+- CI drift gate self-test: a one-column out-of-band change makes the gate exit 1
+  with the exact drift line; reverting restores exit 0.
+- Production was unchanged throughout (read-only introspection only): same 139
+  tables / 137 functions / 41 triggers / 221 policies / 211 ledger rows.
+
+> The `MAINTAIN` privilege (Postgres 17) is captured in `baseline.sql` for
+> fidelity but does not appear in the snapshot — `information_schema` does not
+> expose it — so it cannot trip the gate either way.
+
 ## Known faithful-capture caveats (intentional, AS-IS)
 - Object **ownership** is not reproduced by the baseline: a rebuild owns objects
   as the applying role. Prod ownership is untouched (the baseline never runs
