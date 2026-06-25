@@ -1,0 +1,59 @@
+name: Schema Drift Gate
+
+# Rebuilds a fresh database from the committed migrations (baseline + any future
+# migrations), introspects it, and diffs the result against db/schema.snapshot.
+# Fails if a migration changed the schema without updating the snapshot, or the
+# snapshot was edited without a matching migration. Covers tables, columns,
+# types, defaults, constraints, indexes, RLS policies, triggers, functions, and
+# grants — the dimensions the historical ghost objects hid in.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  paths:
+    - 'supabase/migrations/**'
+    - 'db/schema.snapshot'
+    - 'scripts/schema/**'
+    - '.github/workflows/schema-drift.yml'
+
+jobs:
+  schema-drift:
+    runs-on: ubuntu-latest
+    # Postgres 17 to match the production engine, so constraint/index/view
+    # deparsing is byte-identical to the committed (prod-generated) snapshot.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install psql client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Rebuild schema from migrations
+        run: |
+          chmod +x scripts/schema/rebuild.sh scripts/schema/check-drift.sh
+          scripts/schema/rebuild.sh /tmp/fresh.snapshot
+
+      - name: Diff rebuilt schema against committed snapshot
+        run: scripts/schema/check-drift.sh db/schema.snapshot /tmp/fresh.snapshot
