@@ -100,8 +100,20 @@ rebuilds from **baseline + future migrations only**, with no double-apply.
 
 Production already matches the baseline, so the baseline is recorded in prod's
 migration ledger as **already-applied** (a reversible one-row "repair", not a
-run) — it must never execute against prod. See the Phase 0 report for the exact,
-reversible ledger operation.
+run) — it must never execute against prod. This was done with a single insert of
+an empty-statement row (so invoking it is a no-op):
+
+```sql
+-- applied once against prod (the only prod write in Phase 0):
+INSERT INTO supabase_migrations.schema_migrations (version, name, statements)
+VALUES ('00000000000000', 'baseline', ARRAY[]::text[]);
+
+-- reversal, if ever needed:
+DELETE FROM supabase_migrations.schema_migrations WHERE version = '00000000000000';
+```
+
+The 211 pre-existing ledger rows are kept as historical record (their files now
+live in `migrations_archive/`).
 
 ## Phase 0 verification (recorded)
 
