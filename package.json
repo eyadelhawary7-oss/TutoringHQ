@@ -29,6 +29,8 @@
   "check-secrets": "node scripts/check-secret-rotation.js",
   "verify-backup": "node scripts/verify-backup.js",
   "setup-fonts": "node scripts/setup-fonts.mjs",
+  "schema:snapshot": "bash scripts/schema/rebuild.sh db/schema.snapshot",
+  "schema:check": "bash scripts/schema/rebuild.sh /tmp/fresh.snapshot && bash scripts/schema/check-drift.sh db/schema.snapshot /tmp/fresh.snapshot",
   "test:unit": "vitest run",
   "test:unit:watch": "vitest",
   "test:e2e": "playwright test",
