@@ -7,15 +7,37 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
 
+/** Constant-time Bearer comparison; a missing/blank secret can never match. */
+function timingSafeBearer(req: NextRequest, secret: string | undefined): boolean {
+  if (!secret) return false;
+  const raw = req.headers.get('authorization') ?? req.headers.get('Authorization') ?? '';
+  const expected = `Bearer ${secret}`;
+  const a = Buffer.from(raw, 'utf8');
+  const b = Buffer.from(expected, 'utf8');
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+/**
+ * Authorize the monthly reward run.
+ *
+ * Correct caller = the cron secret (CRON_SECRET), the same dedicated token every
+ * other scheduled job uses. The legacy Supabase Edge Function still presents the
+ * service-role key; that path is accepted transitionally via a CONSTANT-TIME
+ * compare (the previous `===` leaked timing) until the function is redeployed to
+ * send CRON_SECRET — see supabase/functions/calculate-rewards/index.ts. Using the
+ * master DB key as an API token is the weakness being retired; fail closed when
+ * neither secret is configured.
+ */
 function isAuthorized(req: NextRequest): boolean {
-  const auth = req.headers.get('authorization');
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!key) return false;
-  return auth === `Bearer ${key}`;
+  return (
+    timingSafeBearer(req, process.env.CRON_SECRET) ||
+    timingSafeBearer(req, process.env.SUPABASE_SERVICE_ROLE_KEY)
+  );
 }
 
 function getRewardPercentage(monthNumber: number): number {

@@ -6,6 +6,14 @@ process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-key';
 process.env.SUPER_ADMIN_PHONES = '';
 delete process.env.CSRF_SECRET;
+// CSRF now fails closed when CSRF_SECRET is unset (see csrfFailClosed.test.ts).
+// These specs exercise route logic, not CSRF, so mock it to pass.
+vi.mock('@/lib/csrf', () => ({
+  validateCSRFRequest: () => true,
+  isCSRFEnabled: () => true,
+  generateCSRFToken: () => 'test-token',
+  validateCSRFToken: () => true,
+}));
 
 const mockGetUser = vi.fn();
 vi.mock('@supabase/supabase-js', () => ({

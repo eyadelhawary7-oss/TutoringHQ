@@ -3,8 +3,15 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { BillingPeriod } from '@/lib/pricing';
 import { toSignupIntlPhone } from '@/lib/signup/phoneIntl';
+import { memoryCacheGet, memoryCacheSet } from '@/lib/clientMemoryCache';
 
-const SESSION_KEY = 'chq_pending_signup_v1';
+/**
+ * In-memory (tab-scoped) handoff key for partially-entered signup data. This
+ * snapshot carries PII (owner name, phone, email, city) so it is NEVER written
+ * to sessionStorage/localStorage; the durable copy lives server-side via
+ * /api/signup/persist. Exported so the login "resume signup" path can seed it.
+ */
+export const PENDING_SIGNUP_KEY = 'chq_pending_signup_v1';
 
 export type PendingSignupFormState = {
   centerName: string;
@@ -29,28 +36,21 @@ export function usePendingSignup(
   useEffect(() => {
     if (typeof window === 'undefined' || doneHydrate.current) return;
     doneHydrate.current = true;
-    try {
-      const raw = sessionStorage.getItem(SESSION_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as Partial<PendingSignupFormState> & { stage?: SignupStage };
-      const { stage, ...rest } = parsed;
-      if (Object.keys(rest).length) {
-        setForm((prev) => ({ ...prev, ...rest }));
-      }
-      if (stage === 'info' || stage === 'plan' || stage === 'payment') {
-        setStage(stage);
-      }
-    } catch {
-      //
+    const parsed = memoryCacheGet<Partial<PendingSignupFormState> & { stage?: SignupStage }>(
+      PENDING_SIGNUP_KEY,
+    );
+    if (!parsed) return;
+    const { stage, ...rest } = parsed;
+    if (Object.keys(rest).length) {
+      setForm((prev) => ({ ...prev, ...rest }));
+    }
+    if (stage === 'info' || stage === 'plan' || stage === 'payment') {
+      setStage(stage);
     }
   }, [setForm, setStage]);
 
   const persist = useCallback(async (snapshot: PendingSignupFormState, stage: SignupStage, lastStep: number) => {
-    try {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ ...snapshot, stage }));
-    } catch {
-      //
-    }
+    memoryCacheSet(PENDING_SIGNUP_KEY, { ...snapshot, stage });
     try {
       const phone = toSignupIntlPhone(snapshot.phone);
       await fetch('/api/signup/persist', {

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { netReferralBaseFromAllInPrice } from '@/lib/referralNetBase';
 import { sendReferralCommission } from '@/lib/centerNotify';
 import { ownerContactByCenterId, resolveOwnerWaPhone } from '@/lib/ownerPhone';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { requireSuperAdminApi } from '@/lib/admin-auth';
 
 function differenceInMonths(d1: Date, d2: Date): number {
   const y1 = d1.getFullYear();
@@ -32,24 +32,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
-    const authHeader = request.headers.get('Authorization');
-    const accessToken = authHeader?.replace('Bearer ', '');
-    if (!accessToken) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Auth: super-admin only, via the canonical Bearer-JWT admin gate (mirrors
+    // every other privileged admin API, e.g. /api/admin/referrals/commissions).
+    // The previous inline check accepted ANY admin_users row OR a phone match
+    // with no internal-role gate; this enforces the `super_admin` internal role
+    // and denies (+ logs) every other caller — writes referral commissions and
+    // sends owner WhatsApp, so it must be tightly held.
+    const auth = await requireSuperAdminApi(request);
+    if (!auth.ok) {
+      console.warn('[process-commission] denied: caller is not super_admin');
+      return auth.response;
     }
-
-    const supabaseAuth = createClient(supabaseUrl, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-      auth: { persistSession: false },
-      global: { headers: { Authorization: `Bearer ${accessToken}` } },
-    });
-    const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser();
-    if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const { data: adminUser } = await supabaseAdmin.from('admin_users').select('id').eq('id', user.id).single();
-    const { data: userRecord } = await supabaseAdmin.from('users').select('phone').eq('id', user.id).single();
-    const superAdminPhones = (process.env.SUPER_ADMIN_PHONES || '').split(',').map((p: string) => p.trim()).filter(Boolean);
-    const isPhoneAdmin = !!userRecord?.phone && superAdminPhones.includes(userRecord.phone);
-    if (!adminUser && !isPhoneAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     let body: unknown;
     try {

@@ -25,7 +25,10 @@ import {
 } from '@/lib/parentPack';
 import { formatCurrency, formatNumber, formatPlainInteger } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
+import { memoryCacheGet, memoryCacheSet } from '@/lib/clientMemoryCache';
 
+// In-memory only (tab-scoped). The roster carries PII (names, phones, parent
+// phones) and must never be written to sessionStorage/localStorage.
 const STUDENTS_CACHE_KEY = 'chq_students_cache';
 const STUDENTS_PAGE_SIZE = 20;
 
@@ -64,14 +67,7 @@ type LifecycleFilter = 'all' | 'active' | 'at_risk' | 'inactive' | 'enrolled' | 
 
 function readStudentsCache(): Student[] | null {
   if (typeof window === 'undefined') return null;
-  try {
-    const raw = sessionStorage.getItem(STUDENTS_CACHE_KEY);
-    if (!raw) return null;
-    const p = JSON.parse(raw) as unknown;
-    return Array.isArray(p) ? (p as Student[]) : null;
-  } catch {
-    return null;
-  }
+  return memoryCacheGet<Student[]>(STUDENTS_CACHE_KEY);
 }
 
 function matchesLifecycle(
@@ -334,11 +330,7 @@ export default function StudentsPage() {
 
         const list = Array.isArray(data) ? (data as Student[]) : [];
         setStudents(list);
-        try {
-          sessionStorage.setItem(STUDENTS_CACHE_KEY, JSON.stringify(list));
-        } catch {
-          /* private mode / quota */
-        }
+        memoryCacheSet(STUDENTS_CACHE_KEY, list);
         setStudentsListFresh(true);
       } catch (err) {
         console.error('[students] loadStudents failed', err);

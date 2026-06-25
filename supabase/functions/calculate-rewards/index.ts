@@ -15,9 +15,15 @@ Deno.serve(async (req) => {
   }
 
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  // Prefer the dedicated cron secret (the route's correct caller token). Falls
+  // back to the service-role key only until CRON_SECRET is added to this
+  // function's env and it is redeployed. Set CRON_SECRET in the Edge Function
+  // env (Supabase dashboard) to retire the master-key-as-token path.
+  const cronSecret = Deno.env.get('CRON_SECRET');
   const appUrl = Deno.env.get('APP_URL') || 'https://tutoringhq.app';
+  const bearer = cronSecret || supabaseServiceKey;
 
-  if (!supabaseServiceKey) {
+  if (!bearer) {
     return new Response(
       JSON.stringify({ error: 'Missing config' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -29,7 +35,7 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${supabaseServiceKey}`,
+        Authorization: `Bearer ${bearer}`,
       },
       body: JSON.stringify({}),
     });

@@ -2940,7 +2940,7 @@ FUNCTION chq_block_pack_billing_write() returns=trigger lang=plpgsql kind=f vola
 FUNCTION chq_prevent_blast_tampering() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=24863a7bb019727a30b00b995d1c835d
 FUNCTION chq_prevent_card_order_tampering() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=091461d8f42451646a7006bad74ba344
 FUNCTION chq_prevent_center_escalation() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=3703bc2948868b42f54fd542be31812a
-FUNCTION chq_prevent_invoice_tampering() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=986919063d6390a6f62d58193b5f5462
+FUNCTION chq_prevent_invoice_tampering() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=b76657c4b6caf0ae9830369b9b334c89
 FUNCTION chq_prevent_user_escalation() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=53b73cf4818db40056979310cde58cca
 FUNCTION close_commission_pause(p_center_id uuid) returns=void lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=8d4aa64e45821deda2d747ffa1ff0240
 FUNCTION complete_onboarding_step_rpc(p_center_id uuid, p_step integer) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=ab6cbba75f3402dfeb1dda810267a08c

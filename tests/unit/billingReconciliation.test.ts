@@ -65,6 +65,8 @@ describe('reconcileRecentBilling', () => {
       paymob_order_id: 'order-paid',
       paymob_transaction_id: null,
       billing_period_start: recent,
+      due_date: recent,
+      created_at: recentIso,
     });
     const db = makeFakeSupabase(tables);
 
@@ -101,6 +103,8 @@ describe('reconcileRecentBilling', () => {
       paymob_order_id: 'order-teacher',
       paymob_transaction_id: null,
       billing_period_start: recent,
+      due_date: recent,
+      created_at: recentIso,
     });
     const db = makeFakeSupabase(tables);
 
@@ -129,6 +133,8 @@ describe('reconcileRecentBilling', () => {
       payment_method: 'paymob',
       paymob_order_id: 'order-unpaid',
       billing_period_start: recent,
+      due_date: recent,
+      created_at: recentIso,
     });
     const db = makeFakeSupabase(tables);
 
@@ -159,6 +165,8 @@ describe('reconcileRecentBilling', () => {
       payment_method: 'paymob',
       paymob_order_id: 'order-x',
       billing_period_start: recent,
+      due_date: recent,
+      created_at: recentIso,
     });
     const db = makeFakeSupabase(tables);
 
@@ -172,6 +180,47 @@ describe('reconcileRecentBilling', () => {
     expect(summary.mismatchesFlagged).toBe(1);
     expect(tables.billing_reconciliation_reports[0].kind).toBe('paymob_paid_unfinalized');
     expect(tables.billing_reconciliation_reports[0].status).toBe('open');
+  });
+
+  it('catches a boundary-edge mismatch: invoice DUE in-window but period started long ago', async () => {
+    // The webhook-missed case for a monthly invoice: billing_period_start is ~a
+    // month old (far outside the 7-day window) but the invoice fell DUE — and was
+    // Paymob-paid — within the window. The old `billing_period_start >= cutoff`
+    // filter dropped this row entirely (the boundary gap); the corrected
+    // created_at/due_date window picks it up and self-heals it.
+    const tables = baseTables();
+    tables.invoices.push({
+      id: 'inv-boundary',
+      owner_type: 'center',
+      center_id: 'c-b',
+      teacher_id: null,
+      status: 'overdue',
+      total_amount: 1000,
+      payment_method: 'paymob',
+      paymob_order_id: 'order-boundary',
+      paymob_transaction_id: null,
+      // Period started 35 days ago — OUTSIDE the 7-day window. Old filter missed it.
+      billing_period_start: '2026-05-20',
+      created_at: '2026-05-20T08:00:00Z',
+      // …but it fell due (and was paid at Paymob) yesterday — INSIDE the window.
+      due_date: recent,
+    });
+    const db = makeFakeSupabase(tables);
+
+    let finalized = false;
+    const summary = await reconcileRecentBilling(db, {
+      inquireOrder: async (): Promise<PaymobOrderInquiryResult> => ({ state: 'paid', transactionId: 'txn-b' }),
+      finalize: async () => {
+        finalized = true;
+        return { invoiceId: 'inv-boundary', settled: true };
+      },
+      now: () => NOW,
+    });
+
+    expect(summary.unpaidChecked).toBe(1); // would be 0 under the old period-start filter
+    expect(summary.selfHealed).toBe(1);
+    expect(finalized).toBe(true);
+    expect(tables.billing_reconciliation_reports[0].status).toBe('self_healed');
   });
 
   it('is idempotent: re-running does not pile up duplicate open mismatch rows', async () => {

@@ -432,7 +432,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                         className="border-t border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-0)] transition-colors cursor-pointer"
                       >
                         <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] font-mono">
-                          #{idLast8}
+                          <bdi>#{idLast8}</bdi>
                         </td>
                         <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] font-medium">
                           {order.center_name}

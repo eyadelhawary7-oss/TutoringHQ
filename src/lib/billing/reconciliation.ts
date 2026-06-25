@@ -146,7 +146,13 @@ export async function reconcileRecentBilling(
   const now = deps.now?.() ?? new Date();
   const windowDays = deps.windowDays ?? 7;
   const cutoffIso = new Date(now.getTime() - windowDays * 86400_000).toISOString();
-  const cutoffDate = cutoffIso.slice(0, 10);
+  // Date-only cutoff for the `date` columns, widened by ONE extra day. A bare
+  // `cutoffIso.slice(0,10)` is a UTC calendar date; Cairo (UTC+2/+3) midnight
+  // lands a few hours earlier, so the trailing edge of the window could drop a
+  // boundary invoice. The +1 day margin guarantees full Cairo-day coverage.
+  const cutoffDate = new Date(now.getTime() - (windowDays + 1) * 86400_000)
+    .toISOString()
+    .slice(0, 10);
 
   // --- Scan A: paid Paymob invoices — confirm Paymob agrees (no mutation) ---
   const { data: paidRows } = await supabase
@@ -193,7 +199,13 @@ export async function reconcileRecentBilling(
     )
     .in('status', UNPAID_STATUSES_TO_HEAL)
     .not('paymob_order_id', 'is', null)
-    .gte('billing_period_start', cutoffDate);
+    // Bound the window to ACTIONABLE recency, not the period START. A monthly
+    // invoice's billing_period_start is ~a month before it falls due/gets paid,
+    // so the old `billing_period_start >= cutoff` filter silently skipped
+    // invoices that were actually due — and possibly Paymob-paid-but-unfinalized
+    // — inside the window (the boundary gap). Catch anything recently CREATED or
+    // recently DUE. Self-heal direction is unchanged: unpaid -> paid only.
+    .or(`created_at.gte.${cutoffIso},due_date.gte.${cutoffDate}`);
 
   for (const raw of (unpaidRows as Row[]) ?? []) {
     const orderId = String(raw.paymob_order_id ?? '').trim();
