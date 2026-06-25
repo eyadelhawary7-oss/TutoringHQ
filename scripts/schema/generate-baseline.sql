@@ -191,15 +191,30 @@ ddl AS (
          'GRANT ' || string_agg(g.priv, ', ' ORDER BY g.priv)
          || format(' ON public.%I TO %s;', t.relname,
                    CASE WHEN g.grantee = 'PUBLIC' THEN 'PUBLIC' ELSE quote_ident(g.grantee) END)
-  FROM pubtab t
+  FROM pubrel t   -- tables, partitioned tables AND views (views carry grants too)
   CROSS JOIN LATERAL (
     SELECT CASE WHEN ae.grantee = 0 THEN 'PUBLIC' ELSE pg_get_userbyid(ae.grantee) END AS grantee,
            ae.privilege_type AS priv
-    FROM aclexplode(COALESCE(t_acl.relacl, acldefault('r', t_acl.relowner))) ae
-    JOIN pg_class t_acl ON t_acl.oid = t.oid
+    FROM pg_class t_acl
+    CROSS JOIN aclexplode(COALESCE(t_acl.relacl, acldefault('r', t_acl.relowner))) ae
+    WHERE t_acl.oid = t.oid
   ) g
-  WHERE g.grantee IN ('anon','authenticated','service_role','PUBLIC')
+  WHERE t.relkind IN ('r','p','v')
+    AND g.grantee IN ('anon','authenticated','service_role','PUBLIC')
   GROUP BY t.relname, g.grantee
+
+  ----------------------------------------------------------------------------
+  -- 94 — revoke the DEFAULT public EXECUTE from every function. Postgres grants
+  --      EXECUTE to PUBLIC on creation; prod has revoked it on the locked-down
+  --      RPCs (e.g. ai_execute_query). Revoking here, then re-granting PUBLIC in
+  --      95 only where prod still has it, reproduces the exact ACL as-is.
+  ----------------------------------------------------------------------------
+  UNION ALL SELECT '94_000', E'\n-- ---------- revoke default public EXECUTE (reproduce lockdowns) ----------'
+  UNION ALL
+  SELECT '94_' || p.proname || '_' || substr(md5(pg_get_function_identity_arguments(p.oid)),1,8),
+         format('REVOKE EXECUTE ON FUNCTION public.%I(%s) FROM PUBLIC;',
+                p.proname, pg_get_function_identity_arguments(p.oid))
+  FROM pubproc p
 
   ----------------------------------------------------------------------------
   -- 95 — routine (EXECUTE) grants frozen as-is

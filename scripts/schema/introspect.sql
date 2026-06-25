@@ -50,6 +50,10 @@ lines AS (
   SELECT '00_ext::' || e.extname AS sk,
          'EXTENSION ' || e.extname || ' schema=' || n.nspname AS line
   FROM pg_extension e JOIN pg_namespace n ON n.oid = e.extnamespace
+  -- Supabase-managed extensions are provisioned out of band and are absent on a
+  -- plain-Postgres rebuild (CI/local); exclude them so they don't false-trip the
+  -- gate. They are watched by the live-drift check instead.
+  WHERE e.extname NOT IN ('pg_cron','pg_net','supabase_vault','pg_graphql','pgsodium','pgjwt')
 
   -- 10 TABLES (relkind r/p)
   UNION ALL
@@ -63,7 +67,10 @@ lines AS (
   UNION ALL
   SELECT '20_col::' || r.relname || '::' || lpad(a.attnum::text, 4, '0'),
          'COLUMN ' || r.relname || '.' || a.attname
-           || ' ord=' || a.attnum
+           -- dense relative position, not raw attnum: historically dropped
+           -- columns leave attnum gaps in prod that a fresh rebuild repacks; the
+           -- relative column ORDER is what matters and is preserved either way.
+           || ' ord=' || row_number() OVER (PARTITION BY a.attrelid ORDER BY a.attnum)
            || ' type=' || format_type(a.atttypid, a.atttypmod)
            || ' notnull=' || a.attnotnull
            || ' default=' || COALESCE(pg_get_expr(ad.adbin, ad.adrelid), '∅')
@@ -76,7 +83,7 @@ lines AS (
   UNION ALL
   SELECT '30_con::' || r.relname || '::' || c.conname,
          'CONSTRAINT ' || r.relname || '.' || c.conname
-           || ' type=' || c.contype
+           || ' type=' || c.contype::text
            || ' def=' || regexp_replace(pg_get_constraintdef(c.oid), '\s+', ' ', 'g')
   FROM pg_constraint c JOIN pubrel r ON r.oid = c.conrelid
 
@@ -121,12 +128,14 @@ lines AS (
            || '(' || pg_get_function_identity_arguments(pp.oid) || ')'
            || ' returns=' || pg_get_function_result(pp.oid)
            || ' lang=' || l.lanname
-           || ' kind=' || pp.prokind
-           || ' volatility=' || pp.provolatile
+           || ' kind=' || pp.prokind::text
+           || ' volatility=' || pp.provolatile::text
            || ' strict=' || pp.proisstrict
            || ' secdef=' || pp.prosecdef
            || ' cfg=' || COALESCE(array_to_string(pp.proconfig, ','), '∅')
-           || ' bodymd5=' || md5(COALESCE(pp.prosrc, ''))
+           -- normalize CRLF->LF: some prod bodies were authored with CRLF; the
+           -- line ending is behaviorally irrelevant and must not trip the gate.
+           || ' bodymd5=' || md5(replace(COALESCE(pp.prosrc, ''), E'\r', ''))
   FROM pubproc p
   JOIN pg_proc pp ON pp.oid = p.oid
   JOIN pg_language l ON l.oid = pp.prolang

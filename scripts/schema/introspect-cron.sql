@@ -11,6 +11,11 @@
 SELECT 'CRON_JOB ' || j.jobname
        || ' schedule=' || j.schedule
        || ' active=' || j.active
-       || ' command=' || regexp_replace(j.command, '\s+', ' ', 'g') AS line
+       -- redact bearer tokens (the CRON_SECRET): never persist secrets in the
+       -- committed snapshot. Secret rotation is not schema drift; schedule/URL
+       -- changes still surface.
+       || ' command=' || regexp_replace(
+            regexp_replace(j.command, 'Bearer\s+[A-Za-z0-9._-]+', 'Bearer ***', 'g'),
+            '\s+', ' ', 'g') AS line
 FROM cron.job j
 ORDER BY j.jobid;

@@ -36,6 +36,13 @@ CREATE SCHEMA IF NOT EXISTS storage;
 -- Make function/default resolution match production (which searches extensions).
 ALTER DATABASE :"DBNAME" SET search_path = public, extensions;
 
+-- ---------- auth.users (FK target for 19 public FKs; minimal stand-in) ----------
+-- Production's auth.users is provisioned by Supabase Auth. Rebuilds only need
+-- the id primary key so the foreign keys resolve.
+CREATE TABLE IF NOT EXISTS auth.users (
+  id uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid()
+);
+
 -- ---------- auth.* helpers used inside RLS policy expressions ----------
 -- Signatures must match production; bodies are irrelevant (policies are only
 -- parsed, never executed, during a schema rebuild).
