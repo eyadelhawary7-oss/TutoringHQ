@@ -517,27 +517,28 @@ export async function POST(request: Request) {
   try {
     const rawBody = await readRawBodyWithLimit(request, BODY_LIMIT);
 
-    // BOSTA_WEBHOOK_SECRET - Set in Vercel env vars - get from Bosta dashboard
+    // BOSTA_WEBHOOK_SECRET - Set in Vercel env vars - get from Bosta dashboard.
+    // Fail CLOSED: an unverified courier callback is NEVER accepted, in ANY
+    // environment (including preview). A missing secret means we cannot verify
+    // the payload, so we reject — the same fail-closed rule the Paymob and
+    // WhatsApp webhooks already apply. This prevents a forged shipment callback
+    // (which mutates order state and triggers customer WhatsApp) on any deploy
+    // where the secret was not configured.
     const secret = process.env.BOSTA_WEBHOOK_SECRET ?? '';
     const sig = (request.headers.get('Bosta-Signature') ?? '').trim();
-    const requireSecret =
-      process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
-    if (requireSecret && !secret) {
+    if (!secret) {
       Sentry.captureMessage('bosta webhook missing BOSTA_WEBHOOK_SECRET', {
         level: 'warning',
         tags: { provider: 'bosta' },
       });
       return new Response(null, { status: 401 });
     }
-    if (secret) {
-      const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
-      if (!timingSafeEqualHex(expected, sig)) {
-        return new Response(null, { status: 401 });
-      }
-    } else {
-      console.warn(
-        '[bosta-webhook] BOSTA_WEBHOOK_SECRET is not set; webhook HMAC verification skipped (non-production only)',
-      );
+    if (!sig) {
+      return new Response(null, { status: 401 });
+    }
+    const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
+    if (!timingSafeEqualHex(expected, sig)) {
+      return new Response(null, { status: 401 });
     }
 
     let payload: Record<string, unknown>;

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
-import { auditLog, dbInsert, dbSelect, type Filter } from '@/lib/db-proxy';
+import { dbSelect, type Filter } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { Download, Search } from 'lucide-react';
@@ -385,37 +385,38 @@ export default function PaymentsPage() {
       toast.error(tToast('error'), tCommon('error'));
       return;
     }
-    const paidAt = new Date().toISOString();
     const isCash = collectMethod === 'cash';
     const method = collectMethod;
     setCollectSubmitting(true);
     try {
-      const { error: payErr } = await dbInsert({
-        table: 'payments',
-        data: {
+      // Route through the server-gated collect endpoint. The server re-checks the
+      // caller's permission (owner / super-admin / can_record_payments) before
+      // writing, forces center_id to the authenticated centre, and audits the
+      // collection — so a bypass of the hidden button cannot record a payment.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error(tToast('error'), tCommon('error'));
+        return;
+      }
+      const headers = await getCsrfHeaders(session.access_token);
+      const res = await fetch('/api/payments/collect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+          ...headers,
+        },
+        body: JSON.stringify({
           student_id: collectStudentId,
-          center_id: centerId,
           amount,
           method,
-          recorded_by: user.id,
-          paid_at: paidAt,
-          status: isCash ? 'confirmed' : 'pending',
-          confirmed: isCash,
-          ...(isCash ? { confirmed_at: paidAt } : {}),
           group_id: null,
-        },
-        select: false,
+        }),
       });
-      if (payErr) throw payErr;
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || tCommon('error'));
+      const paidAt: string = typeof data?.paidAt === 'string' ? data.paidAt : new Date().toISOString();
       const st = centerStudents.find((s) => s.id === collectStudentId);
-      void auditLog({
-        centerId,
-        userId: user.id,
-        action: 'payment_collect',
-        entityType: 'payments',
-        entityId: collectStudentId,
-        details: { amount, method },
-      });
       toast.success(tToast('saved'));
       setShowCollectModal(false);
       setCollectStudentId('');

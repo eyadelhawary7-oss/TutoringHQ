@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
 import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { supabaseAdmin } from '@/lib/supabase-admin';
@@ -5,6 +6,7 @@ import { sendPaymentConfirmed } from '@/lib/centerNotify';
 import { processCardOrderStatusWaOutboxJob } from '@/lib/cardOrderNotifications';
 import { processBillingNudgeWaOutboxJob } from '@/lib/nudges/outboxHandler';
 import { insertCronLogFailure, insertCronLogSuccess } from '@/lib/cron/cronLog';
+import { createAction } from '@/lib/ceo';
 
 const CRON_NAME = 'process-outbox';
 
@@ -142,6 +144,29 @@ export async function GET(request: Request) {
           console.error('[process-outbox] dead update:', job.id, deadErr.message);
         }
         dead += 1;
+
+        // Surface the dropped message so it is never silently lost: a CEO action
+        // (visible self-serve in the console + on /admin/health) and a Sentry
+        // alert. Recovery is a safe one-click retry from the admin dead-letter
+        // view. Non-fatal — a surfacing failure must not break the cron.
+        Sentry.captureMessage('outbox job dead-lettered', {
+          level: 'warning',
+          tags: { area: 'outbox', job_type: job.job_type },
+          extra: { job_id: job.id, attempts: newAttemptCount, error: errMsg },
+        });
+        try {
+          await createAction(admin, {
+            type: 'ops',
+            priority: 'amber',
+            title: `Notification failed after ${newAttemptCount} retries (${job.job_type})`,
+            subtitle: errMsg.slice(0, 240),
+            action_label: 'Review & retry',
+            action_url: '/admin/health',
+            auto_generated: true,
+          });
+        } catch (alertErr) {
+          console.error('[process-outbox] dead-letter alert:', alertErr);
+        }
       } else {
         const backoffMs = Math.pow(2, newAttemptCount) * 60 * 1000;
         const nextAttempt = new Date(Date.now() + backoffMs).toISOString();

@@ -2960,6 +2960,8 @@ FUNCTION downgrade_teacher_to_standard(p_user_id uuid) returns=jsonb lang=plpgsq
 FUNCTION earn_credits_atomic(p_center_id uuid, p_amount numeric, p_reference_id uuid, p_reference_type text) returns=numeric lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=a56158970e07a8d0325ef72ccd9e7aa6
 FUNCTION enforce_payout_status_transition() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public bodymd5=f2dcb09ecd696ede1c5eaeeafbb02a0d
 FUNCTION finalize_combined_session_paid(p_session_id uuid, p_credit_amount numeric, p_finalized_by text) returns=text lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=abb0fc2336f1e2192f3a452ad8175a6a
+FUNCTION finalize_subscription_invoice_paid(p_invoice_id uuid, p_center_id uuid, p_amount_received numeric, p_txn_id text, p_metadata jsonb, p_total_amount numeric, p_renewal_date text, p_next_payment_due text, p_auto_suspend_at text, p_last_payment_date text, p_was_suspended boolean) returns=text lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=e033888e7e368a2a20dd14b1c2b7b6ee
+FUNCTION finalize_teacher_invoice_paid(p_invoice_id uuid, p_teacher_id uuid, p_amount_received numeric, p_txn_id text, p_metadata jsonb, p_period_start timestamp with time zone, p_period_end timestamp with time zone) returns=text lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=03019b6e81ed74ca52bfc36452163865
 FUNCTION finish_center_class_and_bill(p_session_id uuid, p_actor_id uuid) returns=TABLE(session_id uuid, billed_now boolean, charges_created integer) lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=889fd8f510a54409a12ce0b1a3c47e24
 FUNCTION finish_class_and_bill(p_session_id uuid, p_actor_id uuid) returns=TABLE(session_id uuid, billed_now boolean, charges_created integer) lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=183c17b31ece80cf9942f56d87c10134
 FUNCTION generate_invoice_number() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public bodymd5=9d4e8706eac2475c84f41ca366c3a561
@@ -5984,6 +5986,8 @@ ROUTINE_GRANT enforce_payout_status_transition grantee=anon priv=EXECUTE grantab
 ROUTINE_GRANT enforce_payout_status_transition grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT enforce_payout_status_transition grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT finalize_combined_session_paid grantee=service_role priv=EXECUTE grantable=NO
+ROUTINE_GRANT finalize_subscription_invoice_paid grantee=service_role priv=EXECUTE grantable=NO
+ROUTINE_GRANT finalize_teacher_invoice_paid grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT finish_center_class_and_bill grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT finish_class_and_bill grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT generate_invoice_number grantee=PUBLIC priv=EXECUTE grantable=NO

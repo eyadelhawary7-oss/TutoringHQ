@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
+import { getCsrfHeaders } from '@/lib/csrf-client';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
@@ -31,6 +32,14 @@ type CronStatus = {
   recent_failures: CronRecentFailure[];
 };
 
+type DeadLetterRow = {
+  id: string;
+  job_type: string;
+  error_message: string | null;
+  attempt_count: number | null;
+  created_at: string;
+};
+
 type HealthPayload = {
   paymob_mode: 'live' | 'sandbox';
   wa_mode: 'live' | 'test';
@@ -40,6 +49,8 @@ type HealthPayload = {
   pending_cancellations: number;
   pending_withdrawals: number;
   zero_billing_centers: number;
+  dead_letter_count: number;
+  dead_letters: DeadLetterRow[];
   cron_status: CronStatus[];
 };
 
@@ -86,6 +97,8 @@ export default function AdminHealthPage() {
   const [error, setError] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [cronDetailRow, setCronDetailRow] = useState<CronStatus | null>(null);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
+  const [retryError, setRetryError] = useState<string | null>(null);
 
   const getSession = useCallback(async () => {
     const {
@@ -111,6 +124,35 @@ export default function AdminHealthPage() {
       if (!opts?.silent) setError(null);
     },
     [getSession, t],
+  );
+
+  const retryDeadLetter = useCallback(
+    async (id: string) => {
+      setRetryingId(id);
+      setRetryError(null);
+      try {
+        const session = await getSession();
+        if (!session?.access_token) return;
+        const headers = await getCsrfHeaders(session.access_token);
+        const res = await fetch('/api/admin/dead-letter', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+            ...headers,
+          },
+          body: JSON.stringify({ id }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(json?.error || t('healthDeadLetterRetryError'));
+        await fetchHealth({ silent: true });
+      } catch (e) {
+        setRetryError(e instanceof Error ? e.message : t('healthDeadLetterRetryError'));
+      } finally {
+        setRetryingId(null);
+      }
+    },
+    [getSession, fetchHealth, t],
   );
 
   useEffect(() => {
@@ -269,6 +311,11 @@ export default function AdminHealthPage() {
                       value: data.zero_billing_centers,
                       tone: 'alert' as const,
                     },
+                    {
+                      label: t('healthDeadLetters'),
+                      value: data.dead_letter_count ?? 0,
+                      tone: 'alert' as const,
+                    },
                   ] as const
                 ).map((c) => {
                   const bad = c.tone === 'alert' && c.value > 0;
@@ -300,6 +347,69 @@ export default function AdminHealthPage() {
                   );
                 })}
               </div>
+            </section>
+
+            <section>
+              <div className="mb-3">
+                <SectionHeader title={t('healthDeadLetters')} />
+                <p className="text-xs text-[var(--color-text-muted)] mt-1">{t('healthDeadLettersDesc')}</p>
+              </div>
+              {retryError ? (
+                <p className="text-xs text-red-600 dark:text-red-400 mb-2">{retryError}</p>
+              ) : null}
+              {data.dead_letters && data.dead_letters.length > 0 ? (
+                <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] overflow-x-auto">
+                  <table className="w-full text-sm text-start">
+                    <thead>
+                      <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                        <th className="p-3 text-xs font-medium text-[var(--color-text-muted)] text-start">
+                          {t('healthDeadLetterColType')}
+                        </th>
+                        <th className="p-3 text-xs font-medium text-[var(--color-text-muted)] text-start">
+                          {t('healthDeadLetterColError')}
+                        </th>
+                        <th className="p-3 text-xs font-medium text-[var(--color-text-muted)] text-start">
+                          {t('healthDeadLetterColAttempts')}
+                        </th>
+                        <th className="p-3 text-xs font-medium text-[var(--color-text-muted)] text-start">
+                          {t('healthDeadLetterColCreated')}
+                        </th>
+                        <th className="p-3" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.dead_letters.map((d) => (
+                        <tr key={d.id} className="border-b border-[var(--color-border-subtle)] last:border-0">
+                          <td className="p-3 font-mono text-xs text-[var(--color-text-primary)]">{d.job_type}</td>
+                          <td className="p-3 text-xs text-[var(--color-text-muted)] max-w-xs truncate" title={d.error_message ?? ''}>
+                            {d.error_message ?? '-'}
+                          </td>
+                          <td className="p-3 text-xs font-mono text-[var(--color-text-primary)]">
+                            {formatNumber(Number(d.attempt_count ?? 0), locale)}
+                          </td>
+                          <td className="p-3 text-xs text-[var(--color-text-muted)]" suppressHydrationWarning>
+                            {formatDate(d.created_at, locale, ADMIN_RAN_AT_OPTS)}
+                          </td>
+                          <td className="p-3 text-end">
+                            <button
+                              type="button"
+                              onClick={() => retryDeadLetter(d.id)}
+                              disabled={retryingId === d.id}
+                              className="inline-flex items-center rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-60 btn-press chq-focus"
+                            >
+                              {retryingId === d.id ? t('healthDeadLetterRetrying') : t('healthDeadLetterRetry')}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-green-200 dark:border-emerald-500/40 bg-green-50 dark:bg-emerald-950/20 p-4">
+                  <p className="text-sm text-green-700 dark:text-green-400">{t('healthDeadLetterEmpty')}</p>
+                </div>
+              )}
             </section>
 
             <section>

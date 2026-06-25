@@ -26,6 +26,7 @@ import {
   type MidnightBillingAdapter,
 } from '@/lib/midnightBilling';
 import { cairoYmdPlusDays, startOfUtcInstantForCairoCalendarDay } from '@/lib/cairo/day';
+import { applyFinalizeInvoiceRpc } from './billingFakeSupabase';
 import type { ChargeSavedCardResult } from '@/lib/savedCard/autoCharge';
 
 type Row = Record<string, unknown>;
@@ -138,7 +139,11 @@ function makeFakeSupabase(tables: Record<string, Row[]>) {
     };
     return api;
   }
-  return { from: (t: string) => builder(t) } as never;
+  return {
+    from: (t: string) => builder(t),
+    rpc: async (name: string, params: Record<string, unknown>) =>
+      applyFinalizeInvoiceRpc(tables, name, params),
+  } as never;
 }
 
 const TEACHER = 'teacher-1';
