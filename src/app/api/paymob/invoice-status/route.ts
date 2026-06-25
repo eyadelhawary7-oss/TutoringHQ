@@ -154,8 +154,24 @@ export async function GET(request: NextRequest) {
         const txId = inquiry.transactionId ?? '';
         const { tryFinalizeCombinedPaymentSession } = await import('@/lib/combinedPaymentFinalize');
         const sid = sessRow.id;
-        await tryFinalizeCombinedPaymentSession(sid, supabaseAdmin, 'cron', txId);
-        return NextResponse.json(pollBody({ paid: true }, 'paid'));
+        // Only ever report "paid" once the session is GENUINELY finalized. The
+        // finalizer flips status to 'paid' atomically with finalized_at inside
+        // finalize_combined_session_paid; a finalize that rolls back (e.g. the
+        // wallet-credit spend failed) leaves the session pending. Re-read the
+        // authoritative status after finalizing and never tell the customer
+        // "paid" optimistically off the gateway inquiry alone.
+        const finalized = await tryFinalizeCombinedPaymentSession(sid, supabaseAdmin, 'cron', txId);
+        if (finalized) {
+          const { data: after } = await supabaseAdmin
+            .from('combined_payment_sessions')
+            .select('status')
+            .eq('id', sid)
+            .maybeSingle();
+          if ((after as { status?: string } | null)?.status === 'paid') {
+            return NextResponse.json(pollBody({ paid: true }, 'paid'));
+          }
+        }
+        return NextResponse.json(pollBody({ paid: false, failed: false }, 'pending'));
       }
     }
 

@@ -5,6 +5,7 @@ import { parseIncludeTestCenters } from '@/lib/adminIncludeTest';
 import { getPaymobHealthMode } from '@/lib/paymobGuardLogic';
 import { cronPathToLogName } from '@/lib/cron/cronLog';
 import { VERCEL_CRON_DEFINITIONS } from '@/lib/vercelCronDefinitions';
+import { listUnresolvedDeadLetters } from '@/lib/deadLetterQueue';
 
 export const dynamic = 'force-dynamic';
 
@@ -189,6 +190,10 @@ export async function GET(request: NextRequest) {
     const stuck_sessions = stuckRes.count ?? 0;
     const zero_billing_centers = zeroBillRes.count ?? 0;
 
+    // Dead-lettered outbox jobs (notifications that exhausted their retries).
+    // Surfaced so a dropped message is visible and recoverable, not silently lost.
+    const { entries: deadLetters } = await listUnresolvedDeadLetters(supabase, 100);
+
     return NextResponse.json({
       paymob_mode: getPaymobHealthMode(),
       wa_mode: waMode(),
@@ -198,6 +203,8 @@ export async function GET(request: NextRequest) {
       pending_cancellations: pendingCancelRes.count ?? 0,
       pending_withdrawals: pendingWdRes.count ?? 0,
       zero_billing_centers,
+      dead_letters: deadLetters,
+      dead_letter_count: deadLetters.length,
       cron_status,
     });
   } catch (e) {

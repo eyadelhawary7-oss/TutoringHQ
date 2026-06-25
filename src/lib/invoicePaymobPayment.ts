@@ -5,7 +5,7 @@ import { computeNextQuarterlyPaymentDue } from '@/lib/subscriptionAnchor';
 import { sendChqPaymentConfirmedTemplate, sendChqPaymentFailedTemplate } from '@/lib/centerNotify';
 import { autoSuspendAtFromDue } from '@/lib/billingSchedule';
 import { applyPaymentToInvoice, readAppliedTxns, remainingBalance } from '@/lib/invoiceBalance';
-import { advanceTeacherSubscriptionPaid } from '@/lib/teacherBilling';
+import { cairoDateKey, cairoYmdPlusDays, startOfUtcInstantForCairoCalendarDay } from '@/lib/cairo/day';
 import { logBillingEvent, invoiceOwner } from '@/lib/billingAudit';
 
 const PERIOD_MONTHS: Record<string, number> = {
@@ -88,11 +88,24 @@ async function handlePlanUpgradeInvoicePaid(
   }
 }
 
+/**
+ * Centre subscription invoice paid. The invoice mark-paid, the renewal_history
+ * insert and the centers billing extension are committed together by
+ * finalize_subscription_invoice_paid (one transaction) — a partial failure can
+ * no longer leave the centre paid-but-not-extended. The WhatsApp confirmation is
+ * sent only AFTER the atomic finalize succeeds.
+ *
+ * Returns 'completed' (this call finalized it), 'already_paid' (a concurrent
+ * finalize won the race — no side-effects re-applied) or null (failure; the
+ * invoice stays unpaid and the caller retries).
+ */
 async function handleSubscriptionInvoicePaid(
   supabaseAdmin: SupabaseClient,
   inv: { id: string; center_id: string; total_amount: number | string | null },
   paymobTransactionId: string,
-): Promise<void> {
+  amountReceived: number,
+  metadata: Record<string, unknown>,
+): Promise<'completed' | 'already_paid' | null> {
   const { data: center } = await supabaseAdmin
     .from('centers')
     .select(
@@ -114,7 +127,7 @@ async function handleSubscriptionInvoicePaid(
     billing_amount?: number | null;
   } | null;
 
-  if (!c) return;
+  if (!c) return null;
 
   const wasSuspendedBilling = c.billing_status === 'suspended';
   const newDue = computeNextQuarterlyPaymentDue({
@@ -128,31 +141,24 @@ async function handleSubscriptionInvoicePaid(
   const totalAmt = Number(inv.total_amount ?? 0);
   const today = todayISO();
 
-  await supabaseAdmin.from('renewal_history').insert({
-    center_id: inv.center_id,
-    renewal_date: today,
-    amount_paid: totalAmt,
-    payment_method: 'paymob',
-    recorded_by: null,
+  const { data: res, error: rpcErr } = await supabaseAdmin.rpc('finalize_subscription_invoice_paid', {
+    p_invoice_id: inv.id,
+    p_center_id: inv.center_id,
+    p_amount_received: amountReceived,
+    p_txn_id: paymobTransactionId,
+    p_metadata: metadata,
+    p_total_amount: totalAmt,
+    p_renewal_date: today,
+    p_next_payment_due: newDue,
+    p_auto_suspend_at: autoSus,
+    p_last_payment_date: today,
+    p_was_suspended: wasSuspendedBilling,
   });
-
-  const centerUpdates: Record<string, unknown> = {
-    billing_status: 'paid',
-    next_payment_due: newDue,
-    auto_suspend_at: autoSus,
-    last_payment_date: today,
-    upgrade_count_this_period: 0,
-  };
-
-  if (wasSuspendedBilling) {
-    centerUpdates.status = 'active';
-    centerUpdates.subscription_status = 'active';
+  if (rpcErr) {
+    console.error('[invoicePaymob] finalize_subscription_invoice_paid', rpcErr);
+    return null;
   }
-
-  const { error: cErr } = await supabaseAdmin.from('centers').update(centerUpdates).eq('id', inv.center_id);
-  if (cErr) {
-    console.error('[invoicePaymob] center update subscription paid', cErr);
-  }
+  const status = typeof res === 'string' ? res : String(res ?? '');
 
   try {
     await sendChqPaymentConfirmedTemplate(supabaseAdmin, {
@@ -164,6 +170,8 @@ async function handleSubscriptionInvoicePaid(
   } catch (waErr) {
     console.error('[invoicePaymob] WA send error:', waErr);
   }
+
+  return status === 'already_paid' ? 'already_paid' : 'completed';
 }
 
 async function handlePackBillingInvoicePaid(
@@ -286,50 +294,96 @@ export async function finalizeInvoicePaymentSuccess(
     return { invoiceId: row.id, settled: false };
   }
 
-  const { error: invErr } = await supabaseAdmin
-    .from('invoices')
-    .update({
-      status: 'paid',
-      amount_received: application.newReceived,
-      payment_method: 'paymob',
-      payment_reference: paymobTransactionId,
-      paymob_transaction_id: paymobTransactionId,
-      paid_at: new Date().toISOString(),
-      metadata: mergedMetadata,
-    })
-    .eq('id', row.id);
+  const paidColumns = {
+    status: 'paid' as const,
+    amount_received: application.newReceived,
+    payment_method: 'paymob',
+    payment_reference: paymobTransactionId,
+    paymob_transaction_id: paymobTransactionId,
+    paid_at: new Date().toISOString(),
+    metadata: mergedMetadata,
+  };
 
-  if (invErr) {
-    console.error('[finalizeInvoicePaymentSuccess] invoice', invErr);
-    return null;
-  }
-
-  // Append-only audit: the invoice is now paid (centers AND teachers). This is the
-  // money-critical "payment applied + invoice marked paid" event the webhook, cron
-  // and on-demand pay all funnel through.
+  // Append-only audit: the invoice is now paid (centers AND teachers). The
+  // money-critical "payment applied + invoice marked paid" event the webhook,
+  // cron and on-demand pay all funnel through. Emitted only on a fresh finalize,
+  // never on an idempotent already-paid race.
   const paidOwner = invoiceOwner(row);
-  if (paidOwner) {
-    await logBillingEvent(supabaseAdmin, 'invoice_paid', paidOwner, {
-      invoiceId: row.id,
-      amount: application.newReceived,
-      invoiceType: row.invoice_type,
-      transactionId: paymobTransactionId,
-    });
-  }
+  const auditInvoicePaid = async () => {
+    if (paidOwner) {
+      await logBillingEvent(supabaseAdmin, 'invoice_paid', paidOwner, {
+        invoiceId: row.id,
+        amount: application.newReceived,
+        invoiceType: row.invoice_type,
+        transactionId: paymobTransactionId,
+      });
+    }
+  };
 
-  // Teacher invoices (owner_type='teacher'): advance the subscription one month
-  // and restore private-engine access. No center side-effects. This is the
-  // teacher equivalent of handleSubscriptionInvoicePaid and runs through the SAME
-  // idempotent finalizer the webhook + cron + on-demand pay all use.
+  // Teacher invoices (owner_type='teacher'): mark paid AND advance the
+  // subscription one month in ONE transaction (finalize_teacher_invoice_paid),
+  // restoring private-engine access. Previously the invoice mark-paid and the
+  // teacher_subscriptions advance were separate writes — a failure between them
+  // left the teacher paid but without restored access, never retried.
   if (row.owner_type === 'teacher') {
-    if (row.teacher_id) {
-      await advanceTeacherSubscriptionPaid(supabaseAdmin, row.teacher_id);
+    if (!row.teacher_id) {
+      const { error: tInvErr } = await supabaseAdmin.from('invoices').update(paidColumns).eq('id', row.id);
+      if (tInvErr) {
+        console.error('[finalizeInvoicePaymentSuccess] teacher invoice', tInvErr);
+        return null;
+      }
+      await auditInvoicePaid();
+      return { invoiceId: row.id, settled: true };
+    }
+    const todayCairo = cairoDateKey(new Date());
+    const periodStart = new Date().toISOString();
+    const periodEnd = startOfUtcInstantForCairoCalendarDay(cairoYmdPlusDays(todayCairo, 30)).toISOString();
+    const { data: tRes, error: tErr } = await supabaseAdmin.rpc('finalize_teacher_invoice_paid', {
+      p_invoice_id: row.id,
+      p_teacher_id: row.teacher_id,
+      p_amount_received: application.newReceived,
+      p_txn_id: paymobTransactionId,
+      p_metadata: mergedMetadata,
+      p_period_start: periodStart,
+      p_period_end: periodEnd,
+    });
+    if (tErr) {
+      console.error('[finalizeInvoicePaymentSuccess] finalize_teacher_invoice_paid', tErr);
+      return null;
+    }
+    if ((typeof tRes === 'string' ? tRes : String(tRes ?? '')) !== 'already_paid') {
+      await auditInvoicePaid();
     }
     return { invoiceId: row.id, settled: true };
   }
 
   // From here the invoice is center-owned, so center_id is present.
   const centerRow = { id: row.id, center_id: String(row.center_id), total_amount: row.total_amount };
+
+  // Centre subscription invoice: mark paid + renewal_history + centers billing in
+  // ONE transaction (finalize_subscription_invoice_paid).
+  if (row.invoice_type === 'subscription') {
+    const subStatus = await handleSubscriptionInvoicePaid(
+      supabaseAdmin,
+      centerRow,
+      paymobTransactionId,
+      application.newReceived,
+      mergedMetadata,
+    );
+    if (subStatus === null) return null;
+    if (subStatus !== 'already_paid') await auditInvoicePaid();
+    return { invoiceId: row.id, settled: true };
+  }
+
+  // ---- Remaining invoice types: mark the invoice paid (standalone), audit, then
+  // apply the type-specific side-effect. Each side-effect here is a single centre
+  // write, independently idempotent on replay. ----
+  const { error: invErr } = await supabaseAdmin.from('invoices').update(paidColumns).eq('id', row.id);
+  if (invErr) {
+    console.error('[finalizeInvoicePaymentSuccess] invoice', invErr);
+    return null;
+  }
+  await auditInvoicePaid();
 
   if (row.invoice_type === 'plan_upgrade_difference') {
     await handlePlanUpgradeInvoicePaid(supabaseAdmin, centerRow, paymobTransactionId);
@@ -338,11 +392,6 @@ export async function finalizeInvoicePaymentSuccess(
 
   if (row.invoice_type === 'signup_first_payment') {
     await processInvoiceSignupAfterPaymobSuccess(supabaseAdmin, centerRow.center_id, paymobTransactionId);
-    return { invoiceId: row.id, settled: true };
-  }
-
-  if (row.invoice_type === 'subscription') {
-    await handleSubscriptionInvoicePaid(supabaseAdmin, centerRow, paymobTransactionId);
     return { invoiceId: row.id, settled: true };
   }
 
