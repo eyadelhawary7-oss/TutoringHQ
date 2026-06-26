@@ -8,14 +8,21 @@
 -- directly on prod. Run only against an environment that has the pg_cron
 -- extension installed (i.e. production).
 -- ============================================================================
-SELECT 'CRON_JOB ' || j.jobname
-       || ' schedule=' || j.schedule
-       || ' active=' || j.active
-       -- redact bearer tokens (the CRON_SECRET): never persist secrets in the
-       -- committed snapshot. Secret rotation is not schema drift; schedule/URL
-       -- changes still surface.
-       || ' command=' || regexp_replace(
-            regexp_replace(j.command, 'Bearer\s+[A-Za-z0-9._-]+', 'Bearer ***', 'g'),
-            '\s+', ' ', 'g') AS line
+-- rtrim() strips trailing whitespace: a job command that ends in a newline (e.g.
+-- a heredoc-style multi-line INSERT) would otherwise collapse to a trailing
+-- space via the '\s+' -> ' ' rule and register as spurious one-byte drift.
+SELECT rtrim(
+         'CRON_JOB ' || j.jobname
+         || ' schedule=' || j.schedule
+         || ' active=' || j.active
+         -- redact bearer tokens (the CRON_SECRET): never persist secrets in the
+         -- committed snapshot. Secret rotation is not schema drift; schedule/URL
+         -- changes still surface. (As of 2026-06 the secret is no longer embedded
+         -- in job SQL at all — jobs read it from Supabase Vault at runtime — so
+         -- this redaction is now defence-in-depth.)
+         || ' command=' || regexp_replace(
+              regexp_replace(j.command, 'Bearer\s+[A-Za-z0-9._-]+', 'Bearer ***', 'g'),
+              '\s+', ' ', 'g')
+       ) AS line
 FROM cron.job j
 ORDER BY j.jobid;
