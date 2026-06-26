@@ -275,6 +275,30 @@ export async function getPendingScanRows(): Promise<PendingScanRow[]> {
   return [...pending, ...legacy];
 }
 
+/**
+ * Wipe the offline roster PII from IndexedDB. Call ONLY on an EXPLICIT user
+ * logout (the "Log out" action), never on token/session expiry — an expiry can
+ * fire while a scanner is working offline mid-session, and wiping the roster
+ * then would break attendance until the device is back online.
+ *
+ * Clears the stores that hold student PII and per-session caches
+ * (`students` = name/phone/balance roster, `today_history` = scanned names,
+ * `todayPayments`, `scanner_meta`). DELIBERATELY preserves `pending_scans` /
+ * `syncQueue` so an explicit logout never silently drops attendance that has not
+ * yet synced — those carry only ids (student_id/center_id), not roster PII, and
+ * are flushed to the server on the next sync.
+ */
+export async function clearOfflineData(): Promise<void> {
+  const db = await getDB();
+  const piiStores = ['students', 'today_history', 'todayPayments', 'scanner_meta'];
+  for (const store of piiStores) {
+    if (!db.objectStoreNames.contains(store)) continue;
+    const tx = db.transaction(store, 'readwrite');
+    await tx.store.clear();
+    await tx.done;
+  }
+}
+
 export async function lookupStudentNumberOffline(studentId: string): Promise<string | null> {
   const db = await getDB();
   const row = await db.get('students', studentId);

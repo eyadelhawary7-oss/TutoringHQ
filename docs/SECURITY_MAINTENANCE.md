@@ -135,3 +135,68 @@ Use this for each rotation:
 - [ ] Monitor for 24 hours
 - [ ] Update rotation tracking table
 - [ ] Document any issues encountered
+
+---
+
+## Phase 6 re-audit — conscious decisions & known caveats (2026-06-26)
+
+This section records decisions from the 2026-06-26 re-audit cleanup so each is
+on the record as deliberate, not an oversight.
+
+### SECURITY DEFINER RPC grants (Fix A / B / F — fixed)
+
+The over-granted business RPCs and global-recompute RPCs were locked down to
+`service_role` only (tracked migrations `20260626000001`/`20260626000002`), and
+the trigger functions had EXECUTE revoked from all roles (triggers fire as table
+owner and never need it). See `supabase/migrations/2026062600000{1,2,3}_phase6*`.
+
+**Intentionally still flagged by the Supabase linter** (`anon_/authenticated_security_definer_function_executable`):
+the RLS-helper functions `get_auth_center_id`, `get_auth_center_group_ids`,
+`get_auth_teacher_group_ids`, `has_center_role`, `is_auth_teacher_suspended`
+(anon + authenticated), and `can_manage_students_fn`, `can_record_payments_fn`,
+`is_super_admin`, `get_my_center_id` (authenticated only). These are referenced
+inside RLS policies and MUST remain executable by the roles those policies serve,
+or RLS evaluation errors. The first five are referenced by PUBLIC policies so
+they keep `anon`; the rest had `anon`/PUBLIC revoked in Phase 6. These linter
+warnings are therefore expected and accepted.
+
+### Advisory items — acknowledged, NOT changed
+
+- **Leaked-password protection is OFF in Supabase Auth — left OFF on purpose.**
+  Authentication is a 6-digit numeric PIN, not a free-form password. HaveIBeenPwned
+  leaked-password checking would flag essentially every 6-digit value as
+  "compromised" and break PIN signup/reset for normal users. The control is
+  designed for high-entropy passwords and does not fit a 6-digit PIN scheme.
+  Re-evaluate only if auth ever moves to real passwords.
+- **`pg_net` and `pg_trgm` live in the `public` schema** (linter `extension_in_public`).
+  Moving an installed extension to another schema is risky (it can break objects
+  that reference it by unqualified name, and Supabase provisions some of these out
+  of band) and the security upside is low. Left in place by decision; watched by
+  the live-drift gate.
+
+### Offline scanner IndexedDB holds roster PII — by design (Fix H)
+
+Correcting the record: the "no PII in browser storage" guarantee is accurate ONLY
+for **localStorage / sessionStorage** (enforced by `src/lib/clientMemoryCache.ts`
+and `tests/unit/clientMemoryCache.test.ts`). The **offline attendance scanner
+deliberately caches roster data — student name, phone, balance_due, groups — in
+IndexedDB** (`src/lib/db.ts`, DB `centerhq-offline`, store `students`) so scanning
+keeps working with no network. This is required for the offline feature and is not
+a leak.
+
+- The cache is **wiped on EXPLICIT logout** via `clearOfflineData()` (wired into
+  `signOutToLogin` in `src/lib/auth/sign-out-client.ts`), so a shared device does
+  not retain a roster after a user signs out.
+- It is **NOT** wiped on token/session expiry — that path does not call
+  `signOutToLogin`, by design, so an expiry mid-session never destroys the roster
+  out from under a scanner that is working offline.
+- `clearOfflineData()` clears the PII/per-session stores (`students`,
+  `today_history`, `todayPayments`, `scanner_meta`) but **preserves**
+  `pending_scans`/`syncQueue` so an explicit logout never silently drops attendance
+  that has not yet synced (those rows carry only ids, not roster PII).
+- **Field minimization considered, deferred.** The cached fields (`name` for the
+  scan display, `balance_due` for the offline payment check, `groups`/`fee` for the
+  per-session fee, `phone`/`parent_phone` for offline parent notification,
+  `qr_code`, `student_number`) all back offline behaviours. Dropping any is not
+  clearly safe without risking an offline feature, so per the re-audit's "pause if
+  minimization would break a feature" rule the field set is retained as-is.

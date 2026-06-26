@@ -160,15 +160,24 @@ async function handleSubscriptionInvoicePaid(
   }
   const status = typeof res === 'string' ? res : String(res ?? '');
 
-  try {
-    await sendChqPaymentConfirmedTemplate(supabaseAdmin, {
-      name: c.name ?? ',',
-      phone: c.phone ?? null,
-      billingPeriodLabel: QUARTERLY_LABEL_AR,
-      billingAmountStr: String(c.billing_amount ?? totalAmt),
-    });
-  } catch (waErr) {
-    console.error('[invoicePaymob] WA send error:', waErr);
+  // Exactly-once paid confirmation. finalize_subscription_invoice_paid performs
+  // the mark-paid transition atomically and returns 'already_paid' to every
+  // caller that did NOT win that transition (concurrent webhook + status-poll, or
+  // a retry). Sending the WhatsApp confirmation ONLY on the winning ('completed')
+  // call ties the send to the single DB state-change — so exactly one confirm is
+  // sent per invoice, backed by the atomic finalize rather than a soft time-window
+  // dedupe. (Matches how auditInvoicePaid is gated in the sibling handlers below.)
+  if (status !== 'already_paid') {
+    try {
+      await sendChqPaymentConfirmedTemplate(supabaseAdmin, {
+        name: c.name ?? ',',
+        phone: c.phone ?? null,
+        billingPeriodLabel: QUARTERLY_LABEL_AR,
+        billingAmountStr: String(c.billing_amount ?? totalAmt),
+      });
+    } catch (waErr) {
+      console.error('[invoicePaymob] WA send error:', waErr);
+    }
   }
 
   return status === 'already_paid' ? 'already_paid' : 'completed';

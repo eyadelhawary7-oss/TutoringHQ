@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
+import { getClientIp, rateLimit, rateLimitExceededResponse } from '@/lib/ratelimit';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { normalizePhone } from '@/lib/utils/phone';
 import { parseBodyWithLimit, ValidationError } from '@/lib/validate';
@@ -18,6 +19,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'phone required' }, { status: 400 });
     }
     const phone = normalizePhone(phoneRaw);
+
+    // Rate limit: this is a public, unauthenticated autosave (no session, so
+    // token-CSRF does not apply — proxy.ts Origin allowlist guards cross-origin).
+    // The row is upserted on the phone, so a single signer re-hitting it is bounded;
+    // the abuse vector is many distinct phones from one IP. Key by phone-or-IP,
+    // 30 / 10 min — comfortably above the handful of step-saves a real signup makes.
+    const ip = getClientIp(request);
+    const rlKey = phone ? `signup-persist:${phone}` : `signup-persist:${ip}`;
+    const rlWindowSec = 600;
+    const { success: rlOk } = await rateLimit(rlKey, 30, rlWindowSec);
+    if (!rlOk) {
+      return rateLimitExceededResponse(rlWindowSec);
+    }
 
     const centerName = typeof body.center_name === 'string' ? body.center_name.trim() : '';
     const ownerName = typeof body.owner_name === 'string' ? body.owner_name.trim() : '';
