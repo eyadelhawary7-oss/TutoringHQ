@@ -30,12 +30,23 @@ describe('getSummerCopy — two phases, per-portal CTA, both locales', () => {
     );
   });
 
-  it('phase1 sub mentions the floor date in both locales; body says "free"', () => {
+  it('phase1 sub + body carry the floor date in both locales', () => {
     const en = getSummerCopy('combined', 'phase1', 'en', opts);
     expect(en.ribbonSub).toContain('Aug 30');
-    expect(en.popupBody.toLowerCase()).toContain('free');
+    expect(en.popupBody).toContain('Aug 30');
     const ar = getSummerCopy('combined', 'phase1', 'ar', opts);
     expect(ar.ribbonSub).toContain('Aug 30');
+    expect(ar.popupBody).toContain('Aug 30');
+  });
+
+  it('customer-facing copy uses TutoringHQ, never the internal "CenterHQ"', () => {
+    for (const portal of ['combined', 'centers', 'teachers'] as const) {
+      for (const loc of ['en', 'ar'] as const) {
+        const c = getSummerCopy(portal, 'phase1', loc, opts);
+        const blob = `${c.ribbon} ${c.ribbonSub} ${c.popupTitle} ${c.popupBody} ${c.ribbonCta} ${c.popupCta}`;
+        expect(blob).not.toContain('CenterHQ');
+      }
+    }
   });
 
   it('phase2 is the evergreen trial message (mentions the trial length)', () => {

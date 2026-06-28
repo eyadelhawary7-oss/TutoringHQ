@@ -13,6 +13,14 @@ import type { SummerBannerPhase } from '@/lib/summer/phase';
 export type SummerPortal = 'centers' | 'teachers' | 'combined';
 export type SummerLocale = 'ar' | 'en';
 
+/**
+ * Shared summer marketing code shown on the ribbon chip. Display/marketing only —
+ * summer mode is fully automatic and nothing is gated behind typing it. Used as
+ * the fallback when no code is set in `platform_config.landing.popup.promo_code`,
+ * so the chip renders even before that key is populated.
+ */
+export const SUMMER_PROMO_CODE = 'SUMMER26';
+
 export interface SummerCopy {
   /** Sticky-ribbon headline (serif). */
   ribbon: string;
@@ -43,7 +51,12 @@ export function countdownLabel(locale: SummerLocale): string {
   return locale === 'ar' ? 'يبدأ الدفع خلال' : 'Billing starts in';
 }
 
-/** Phase-1 per-portal headline + sub + popup H2. Exact mock copy (EN) mirrored in AR. */
+/**
+ * Phase-1 per-portal headline + sub + popup H2 + popup body. Exact approved-mock
+ * copy (EN) mirrored in AR. Customer-facing text uses the public brand name
+ * **TutoringHQ** only — never the internal "CenterHQ". The first-invoice date is
+ * interpolated from config (`floorLabel`) so it stays a single source of truth.
+ */
 function phase1Copy(
   portal: SummerPortal,
   locale: SummerLocale,
@@ -56,13 +69,13 @@ function phase1Copy(
           ribbon: 'شغّل سنترك مجانًا طوال الصيف',
           ribbonSub: `جهّز كل شيء الآن، أول فاتورة ${floorLabel}، بدون دفع`,
           popupTitle: 'سنترك، مجانًا طوال الصيف',
-          popupBody: `استخدم CenterHQ مجانًا بالكامل طوال الصيف. حسابك يعمل الآن دون أي دفع، وأول فاتورة لن تصدر قبل ${floorLabel}. دون بطاقة ودون أي إعداد.`,
+          popupBody: `سجّل وشغّل سنترك بالكامل اليوم. بدون دفع الآن، وأول فاتورة تصدر في ${floorLabel}.`,
         }
       : {
           ribbon: 'Run your center free all summer',
           ribbonSub: `Set everything up now, first invoice ${floorLabel}, no payment`,
           popupTitle: 'Your center, free all summer',
-          popupBody: `Use CenterHQ completely free all summer. Your account is active now with nothing to pay, and your first invoice won't land before ${floorLabel}. No card, nothing to set up.`,
+          popupBody: `Register and run your whole center today. No payment now, and your first invoice lands ${floorLabel}.`,
         };
   }
   if (portal === 'teachers') {
@@ -71,13 +84,13 @@ function phase1Copy(
           ribbon: 'ابدأ مجانًا طوال الصيف',
           ribbonSub: `جرّب كل المميزات الآن، أول فاتورة ${floorLabel}، بدون دفع`,
           popupTitle: 'مجموعاتك، مجانًا طوال الصيف',
-          popupBody: `استخدم CenterHQ مجانًا بالكامل طوال الصيف. مجموعاتك تعمل الآن دون أي دفع، وأول فاتورة لن تصدر قبل ${floorLabel}. دون بطاقة ودون أي إعداد.`,
+          popupBody: `ابدأ بتنظيم مجموعاتك الخاصة اليوم. بدون دفع الآن، وأول فاتورة تصدر في ${floorLabel}.`,
         }
       : {
           ribbon: 'Start free all summer',
           ribbonSub: `Try every feature now, first invoice ${floorLabel}, no payment`,
           popupTitle: 'Your groups, free all summer',
-          popupBody: `Use CenterHQ completely free all summer. Your groups are active now with nothing to pay, and your first invoice won't land before ${floorLabel}. No card, nothing to set up.`,
+          popupBody: `Start organizing your private groups today. No payment now, and your first invoice lands ${floorLabel}.`,
         };
   }
   // combined
@@ -86,13 +99,13 @@ function phase1Copy(
         ribbon: 'مجانًا طوال الصيف للسناتر والمدرّسين',
         ribbonSub: `ابدأ اليوم، أول فاتورة ${floorLabel}، لا تدفع شيئًا الآن`,
         popupTitle: 'مجانًا طوال الصيف',
-        popupBody: `استخدم CenterHQ مجانًا بالكامل طوال الصيف. حسابك يعمل الآن دون أي دفع، وأول فاتورة لن تصدر قبل ${floorLabel}. دون بطاقة ودون أي إعداد.`,
+        popupBody: `ابدأ اليوم بكل مميزات TutoringHQ. لا تدفع شيئًا الآن، وأول فاتورة تصدر في ${floorLabel}.`,
       }
     : {
         ribbon: 'Free all summer for centers and teachers',
         ribbonSub: `Start today, first invoice ${floorLabel}, nothing to pay now`,
         popupTitle: 'Free all summer',
-        popupBody: `Use CenterHQ completely free all summer. Your account is active now with nothing to pay, and your first invoice won't land before ${floorLabel}. No card, nothing to set up.`,
+        popupBody: `Start today with every TutoringHQ feature. Nothing to pay now, and your first invoice lands ${floorLabel}.`,
       };
 }
 

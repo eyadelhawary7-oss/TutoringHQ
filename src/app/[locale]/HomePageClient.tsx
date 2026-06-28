@@ -78,11 +78,13 @@ export default function HomePageClient() {
       data-chq-landing
       className="min-h-screen bg-[var(--color-surface-0)] text-[var(--color-text-primary)]"
     >
-      <SummerRibbon locale={locale} portal="combined" ctaHref="/signup" />
-      <SummerPopup locale={locale} portal="combined" ctaHref="/signup" />
+      <SummerRibbon locale={locale} portal="centers" ctaHref="/signup" />
+      <SummerPopup locale={locale} portal="centers" ctaHref="/signup" />
       <PricingBannerClient locale={locale} variant="strip" />
       <PromoPopup locale={locale} />
-      <header className="fixed start-0 end-0 top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-surface-1)]/90 backdrop-blur-md">
+      {/* Sticky (not fixed) so the summer ribbon above it is never overlapped —
+          same stacking the combined/teacher pages already use. */}
+      <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-surface-1)]/90 backdrop-blur-md">
         <div className="relative mx-auto flex h-14 max-w-6xl items-center px-4 md:h-16 md:px-6">
           <button
             type="button"
@@ -238,7 +240,7 @@ export default function HomePageClient() {
       </header>
 
       <section
-        className="px-4 pb-16 pt-24 md:px-6 md:pb-24 md:pt-28"
+        className="px-4 pb-16 pt-8 md:px-6 md:pb-24 md:pt-14"
         style={{
           backgroundImage:
             'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(14,107,97,0.07), transparent 70%)',

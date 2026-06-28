@@ -127,5 +127,29 @@ founder approves screenshots.
 The brief lists the popup CTA as a "cream button," but the popup card is itself cream. I render the
 popup CTA as a **solid accent (forest-green / gold) button with cream text** — legible, in-brand,
 and the mirror of the ribbon's cream-on-green CTA. Flag for confirmation against the mock screenshot.
+
+---
+
+## 7. Follow-up fix note (round 2)
+
+Three small corrections on the same branch — front-end only, no DB/migration, switch still OFF.
+
+1. **Name leak removed + popup copy matched verbatim.** The popup body said "Use CenterHQ …".
+   CenterHQ is the internal name; only **TutoringHQ** is ever customer-facing. All summer popup
+   bodies (EN + AR, every portal) are replaced with the approved mock copy. A safety sweep across
+   landing pages, ribbon, popup, `messages/*.json`, emails (`invoiceTemplates.ts`), and metadata
+   found **no other customer-visible "CenterHQ"** — the remaining hits are code comments, console/
+   Sentry log labels, internal identifiers (`@centerhq.local`, repo/Vercel names), and tests, all
+   correctly left untouched. A unit test now guards that summer copy never contains "CenterHQ".
+2. **Code chip now appears.** The seeded `landing.popup.promo_code` is empty on live, so the chip
+   was hidden. Added `SUMMER_PROMO_CODE = 'SUMMER26'` as the front-end fallback (a config value
+   still wins if set later). The ribbon now shows `Code SUMMER26` on all three portals; copy works.
+   Display-only — it does not gate signup.
+3. **Centers ribbon no longer clipped.** `/center` renders `HomePageClient`, whose header was
+   `fixed top-0 z-50` — it overlaid the `sticky top-0` ribbon, leaving only the CTA visible. Changed
+   the header to `sticky top-0` (exactly what the combined/teacher pages use) so the full ribbon
+   sits above it, and trimmed the hero's now-redundant top padding (`pt-24 md:pt-28` → `pt-8 md:pt-14`).
+   Also corrected this page's ribbon/popup `portal` from `combined` → `centers`, so it shows the
+   centers copy ("Run your center free all summer") as the mock intends.
 </content>
 </invoke>

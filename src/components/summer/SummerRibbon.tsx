@@ -16,6 +16,7 @@ import {
   summerRibbonGradient,
   summerCtaColors,
   summerChipLabel,
+  SUMMER_PROMO_CODE,
   type SummerPortal,
 } from '@/lib/summer/copy';
 import { useSummerPublicConfig, formatFloorLabel } from '@/components/summer/useSummerPublicConfig';
@@ -41,7 +42,9 @@ export default function SummerRibbon({ locale, portal, ctaHref = '/pricing' }: P
     trialDays: state.summer.trialDays,
   });
   const cta = summerCtaColors(portal);
-  const code = state.promoCode;
+  // Prefer a code set in config; fall back to the shared summer code so the chip
+  // always renders (display/marketing only — it never gates the signup flow).
+  const code = state.promoCode || SUMMER_PROMO_CODE;
 
   const copyCode = async () => {
     if (!code) return;
