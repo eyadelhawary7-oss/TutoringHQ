@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { createBrowserClient } from '@supabase/ssr';
 import { formatNumber, formatCurrency } from '@/lib/formatNumber';
+import SummerFirstInvoiceCard from '@/components/summer/SummerFirstInvoiceCard';
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -273,6 +274,11 @@ export default function OnboardingPage() {
   return (
     <div className="chq-page flex min-h-screen items-center justify-center p-4">
       <div className="chq-card p-6 w-full max-w-md">
+        {/* Summer 2026: payment-step explainer — active now for free, first invoice
+            on the computed date via Paymob, no card captured. Renders only when on. */}
+        <div className="mb-6">
+          <SummerFirstInvoiceCard locale={locale} portal="combined" explainer />
+        </div>
         <div
           className="flex gap-2 mb-6"
           role="progressbar"

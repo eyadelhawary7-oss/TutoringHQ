@@ -10,6 +10,7 @@ import { PLANS, normalizeBillingPeriod, type PlanKey } from '@/lib/pricing';
 import { BLAST_PRICE_PER_PARENT, todayISO } from '@/lib/parentPack';
 import { supabase } from '@/lib/supabase';
 import { isFeatureEnabled } from '@/lib/features';
+import SummerFirstInvoiceCard from '@/components/summer/SummerFirstInvoiceCard';
 import { isSubscriptionPastDueBanner } from '@/lib/subscriptionPastDue';
 import { PaymobInvoiceModal } from '@/components/billing/PaymobInvoiceModal';
 import { useToast } from '@/hooks/useToast';
@@ -322,6 +323,9 @@ export default function BillingPageClient() {
       <header>
         <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
       </header>
+
+      {/* Summer 2026: live first-invoice projection (renders only when summer mode is on). */}
+      <SummerFirstInvoiceCard locale={locale} portal="centers" />
 
       <section className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-5 shadow-sm">
         <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
