@@ -21,6 +21,7 @@ import {
   PROCESSING_FEE_ENABLED_KEY,
   type ProcessingFeeConfig,
 } from '@/lib/processingFee';
+import { getSummerConfig, type SummerConfig } from '@/lib/summer/config';
 
 /** Read-only service-role client. */
 function svc() {
@@ -91,6 +92,7 @@ export interface PricingConfigSnapshot {
   promo: PromoConfig;
   banner: BannerConfig;
   popup: PopupConfig;
+  summer: SummerConfig;
 }
 
 const INTERVAL_DEFAULTS: IntervalConfig = {
@@ -458,14 +460,15 @@ export async function getProcessingFeeConfig(): Promise<ProcessingFeeConfig> {
 
 /** All pricing config in one shot - used by admin GET. */
 export async function getPricingConfigSnapshot(): Promise<PricingConfigSnapshot> {
-  const [interval, addons, promo, banner, popup] = await Promise.all([
+  const [interval, addons, promo, banner, popup, summer] = await Promise.all([
     getIntervalConfig(),
     getAddonPrices(),
     getPromoConfig(),
     getBannerConfig(),
     getPopupConfig(),
+    getSummerConfig(),
   ]);
-  return { interval, addons, promo, banner, popup };
+  return { interval, addons, promo, banner, popup, summer };
 }
 
 export type { PlanKey, SubscriptionPlanKey };
