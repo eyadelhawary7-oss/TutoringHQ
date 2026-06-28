@@ -122,7 +122,7 @@ async function runCenters(
     return;
   }
 
-  for (const raw of (data ?? []) as Row[]) {
+  for (const raw of (data ?? []) as unknown as Row[]) {
     try {
       const id = String(raw.id);
       const signup = raw.created_at ? cairoDateKey(new Date(String(raw.created_at))) : today;
@@ -262,7 +262,7 @@ async function runTeachers(
     return;
   }
 
-  for (const raw of (data ?? []) as Row[]) {
+  for (const raw of (data ?? []) as unknown as Row[]) {
     try {
       const subId = String(raw.id);
       const teacherId = String(raw.teacher_id);
