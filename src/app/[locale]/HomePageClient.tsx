@@ -16,6 +16,8 @@ import {
 import { Menu, X } from 'lucide-react';
 import PricingBannerClient from '@/components/landing/PricingBannerClient';
 import PromoPopup from '@/components/landing/PromoPopup';
+import SummerRibbon from '@/components/summer/SummerRibbon';
+import SummerPopup from '@/components/summer/SummerPopup';
 import { usePublicPlanPrices } from '@/hooks/usePublicPlanPrices';
 import { SITE } from '@/config/site';
 
@@ -76,6 +78,8 @@ export default function HomePageClient() {
       data-chq-landing
       className="min-h-screen bg-[var(--color-surface-0)] text-[var(--color-text-primary)]"
     >
+      <SummerRibbon locale={locale} portal="combined" ctaHref="/signup" />
+      <SummerPopup locale={locale} portal="combined" ctaHref="/signup" />
       <PricingBannerClient locale={locale} variant="strip" />
       <PromoPopup locale={locale} />
       <header className="fixed start-0 end-0 top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-surface-1)]/90 backdrop-blur-md">

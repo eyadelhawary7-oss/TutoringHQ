@@ -3,6 +3,8 @@
 import { useLocale, useTranslations } from 'next-intl';
 import { Building2, GraduationCap, ScanLine, Receipt, Wallet, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Link } from '@/i18n/routing';
+import SummerRibbon from '@/components/summer/SummerRibbon';
+import SummerPopup from '@/components/summer/SummerPopup';
 
 /**
  * Neutral front-door splash. Persona-neutral promise, then two co-equal cards
@@ -26,6 +28,8 @@ export default function SplashClient() {
           'radial-gradient(ellipse 70% 40% at 50% 0%, rgba(14,107,97,0.06), transparent 70%)',
       }}
     >
+      <SummerRibbon locale={locale} portal="combined" ctaHref="/signup" />
+      <SummerPopup locale={locale} portal="combined" ctaHref="/signup" />
       {/* Top bar: wordmark + locale toggle */}
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 py-5 md:px-6">
         <span className="text-lg tracking-tight" style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}>

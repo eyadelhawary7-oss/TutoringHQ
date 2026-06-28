@@ -5,6 +5,8 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Building2, Users, Zap, Wallet, Banknote, MessageCircle, Check, Menu, X } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { getSupportWhatsAppWaMeBase } from '@/lib/supportWhatsApp';
+import SummerRibbon from '@/components/summer/SummerRibbon';
+import SummerPopup from '@/components/summer/SummerPopup';
 
 const WA_SUPPORT = getSupportWhatsAppWaMeBase();
 
@@ -42,6 +44,8 @@ export default function TeacherLandingClient() {
           'radial-gradient(ellipse 70% 40% at 50% 0%, rgba(154,107,31,0.06), transparent 70%)',
       }}
     >
+      <SummerRibbon locale={locale} portal="teachers" ctaHref="/teacher/signup" />
+      <SummerPopup locale={locale} portal="teachers" ctaHref="/teacher/signup" />
       {/* Full nav */}
       <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-surface-1)]/90 backdrop-blur-md">
         <div className="relative mx-auto flex h-14 max-w-6xl items-center px-4 md:h-16 md:px-6">
