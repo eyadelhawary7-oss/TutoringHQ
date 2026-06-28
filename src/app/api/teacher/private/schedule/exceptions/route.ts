@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { requireTeacherAuth } from '@/lib/centerAuth';
+import { requireTeacherPrivateAccess } from '@/lib/centerAuth';
 import { isUuid } from '@/lib/teacherPrivate';
 import { requireTeacherUnderCap } from '@/lib/teacherCap';
 import { isValidTimeHHMM } from '@/lib/teacherSchedule';
@@ -32,7 +32,7 @@ function serverError(step: string, err: { message: string }): NextResponse {
  * Student notifications are Phase 4 stubs and always fail open.
  */
 export async function POST(request: NextRequest) {
-  const auth = await requireTeacherAuth(request);
+  const auth = await requireTeacherPrivateAccess(request);
   if (!auth.ok) {
     return auth.response;
   }

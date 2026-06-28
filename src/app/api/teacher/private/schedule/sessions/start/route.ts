@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { requireTeacherAuth } from '@/lib/centerAuth';
+import { requireTeacherPrivateAccess } from '@/lib/centerAuth';
 import { isUuid } from '@/lib/teacherPrivate';
 import { requireTeacherUnderCap } from '@/lib/teacherCap';
 import {
@@ -38,7 +38,7 @@ function serverError(step: string, err: { message: string }): NextResponse {
  * already-finished one is a hard 409 so a stale tab can never re-open billing.
  */
 export async function POST(request: NextRequest) {
-  const auth = await requireTeacherAuth(request);
+  const auth = await requireTeacherPrivateAccess(request);
   if (!auth.ok) {
     return auth.response;
   }

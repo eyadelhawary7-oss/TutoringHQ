@@ -8546,7 +8546,7 @@
       "ctaUpdatePayment": "Update payment",
       "ctaReactivate": "Reactivate",
       "ctaResubscribe": "Resubscribe",
-      "resubscribeLockedBody": "Your private students, groups, and records are saved. Resubscribe to the private engine to access them again.",
+      "resubscribeLockedBody": "You're on the free baseline — your center monitoring and center cut stay active. Your private students, groups, history, and records are safe and nothing is deleted. Return to a paid plan anytime and pick up exactly where you left off.",
       "startTrialCta": "Start your free trial",
       "trialCtaBody": "Unlock your private practice with a 14-day free trial."
     },
@@ -8559,7 +8559,7 @@
       "billing": "Billing",
       "startTrialCta": "Start your free trial",
       "resumeCta": "Resume subscription",
-      "resubscribeLockedBody": "Your private students, groups, and records are saved. Resubscribe to the private engine to access them again.",
+      "resubscribeLockedBody": "You're on the free baseline — your center monitoring and center cut stay active. Your private students, groups, history, and records are safe and nothing is deleted. Return to a paid plan anytime and pick up exactly where you left off.",
       "groupsLockedBody": "Create your first private group to manage rosters and get paid.",
       "studentsLockedBody": "Your private group students show up here once you start your trial.",
       "billingLockedBody": "Your attendance and billing history shows up here once you start your trial.",

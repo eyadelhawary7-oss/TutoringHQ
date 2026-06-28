@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { requireTeacherAuth } from '@/lib/centerAuth';
+import { requireTeacherPrivateAccess } from '@/lib/centerAuth';
 import { isUuid } from '@/lib/teacherPrivate';
 import { cairoDateKey } from '@/lib/cairo/day';
 
@@ -53,7 +53,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ sessionId: string }> },
 ) {
-  const auth = await requireTeacherAuth(request);
+  const auth = await requireTeacherPrivateAccess(request);
   if (!auth.ok) {
     return auth.response;
   }

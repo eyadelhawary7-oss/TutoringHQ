@@ -32,6 +32,7 @@ const adminQueue: Record<string, AdminQueryResult[]> = {
 
 const rpcQueues: Record<string, AdminQueryResult[]> = {
   finish_class_and_bill: [],
+  teacher_private_access: [],
 };
 const rpcCalls: { fn: string; args: Record<string, unknown> }[] = [];
 
@@ -144,6 +145,8 @@ function queueTeacherAuthOk() {
   mockGetUser.mockResolvedValueOnce({ data: { user: VALID_USER }, error: null });
   adminQueue.users_teacher = [{ data: { id: 'user-1', role: 'teacher' }, error: null }];
   adminQueue.teacher_center = [{ data: [], error: null }];
+  // Private-engine routes are gated by requireTeacherPrivateAccess (teacher_private_access RPC).
+  rpcQueues.teacher_private_access.push({ data: true, error: null });
 }
 
 const OWNED_GROUP = {

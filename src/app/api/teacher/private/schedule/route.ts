@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { requireTeacherAuth } from '@/lib/centerAuth';
+import { requireTeacherPrivateAccess } from '@/lib/centerAuth';
 import { toHHMM } from '@/lib/teacherSchedule';
 import {
   cairoDateKey,
@@ -56,7 +56,7 @@ function serverError(step: string, err: { message: string }): NextResponse {
  * display extras (best-effort: zeros + Sentry warning on error).
  */
 export async function GET(request: NextRequest) {
-  const auth = await requireTeacherAuth(request);
+  const auth = await requireTeacherPrivateAccess(request);
   if (!auth.ok) {
     return auth.response;
   }
