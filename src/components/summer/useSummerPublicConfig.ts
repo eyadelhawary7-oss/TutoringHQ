@@ -19,6 +19,8 @@ export interface PublicSummerConfig {
 export interface SummerPublicState {
   summer: PublicSummerConfig;
   phase: SummerBannerPhase;
+  /** Shared marketing code seeded in `landing.popup.promo_code` (display only). */
+  promoCode: string;
 }
 
 export function useSummerPublicConfig(): SummerPublicState | null {
@@ -32,8 +34,10 @@ export function useSummerPublicConfig(): SummerPublicState | null {
         if (cancelled) return;
         const summer = data?.summer as PublicSummerConfig | undefined;
         if (!summer || !summer.enabled) return;
+        const promoCode =
+          typeof data?.popup?.promoCode === 'string' ? data.popup.promoCode.trim() : '';
         const today = cairoDateKey(new Date());
-        setState({ summer, phase: summerBannerPhase(summer.freeUntil, today) });
+        setState({ summer, phase: summerBannerPhase(summer.freeUntil, today), promoCode });
       })
       .catch(() => undefined);
     return () => {

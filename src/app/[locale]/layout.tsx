@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
-import { Bodoni_Moda, IBM_Plex_Sans_Arabic, Playfair_Display } from 'next/font/google';
+import { Bodoni_Moda, Fraunces, IBM_Plex_Sans_Arabic, Playfair_Display } from 'next/font/google';
 import { routing } from '@/i18n/routing';
 import { notFound } from 'next/navigation';
 import { getMessages } from 'next-intl/server';
@@ -48,6 +48,15 @@ const bodoniModa = Bodoni_Moda({
   preload: false,
   variable: '--font-bodoni',
   weight: ['400', '700', '900'],
+});
+
+// Serif display face for the summer ribbon + popup (matches the approved mock).
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  display: 'swap',
+  preload: false,
+  variable: '--font-fraunces',
+  weight: ['400', '600', '700'],
 });
 
 import { UserProvider } from '@/contexts/UserContext';
@@ -187,7 +196,7 @@ export default async function LocaleLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body
-        className={`${plex.variable} ${cairo.variable} ${playfair.variable} ${bodoniModa.variable} antialiased bg-[var(--color-surface-0)] text-[var(--color-text-primary)] min-h-screen w-full font-cairo`}
+        className={`${plex.variable} ${cairo.variable} ${playfair.variable} ${bodoniModa.variable} ${fraunces.variable} antialiased bg-[var(--color-surface-0)] text-[var(--color-text-primary)] min-h-screen w-full font-cairo`}
         suppressHydrationWarning
       >
         <PostHogProvider>
