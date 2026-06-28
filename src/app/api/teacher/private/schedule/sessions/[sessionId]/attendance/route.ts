@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { requireTeacherAuth } from '@/lib/centerAuth';
+import { requireTeacherPrivateAccess } from '@/lib/centerAuth';
 import { isUuid } from '@/lib/teacherPrivate';
 import { requireTeacherUnderCap } from '@/lib/teacherCap';
 import { isProOrAbove } from '@/lib/teacherPlans';
@@ -38,7 +38,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ sessionId: string }> },
 ) {
-  const auth = await requireTeacherAuth(request);
+  const auth = await requireTeacherPrivateAccess(request);
   if (!auth.ok) {
     return auth.response;
   }

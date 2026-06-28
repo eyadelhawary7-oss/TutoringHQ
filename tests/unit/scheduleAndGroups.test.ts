@@ -242,7 +242,8 @@ describe('POST /api/teacher/private/schedule/sessions (guests)', () => {
 
 describe('GET /api/teacher/private/groups/[groupId]/classes', () => {
   it('401 when unauthenticated', async () => {
-    mockRequireAuth.mockResolvedValueOnce({
+    // classes is a private-engine route → gated by requireTeacherPrivateAccess.
+    mockRequirePrivate.mockResolvedValueOnce({
       ok: false,
       response: NextResponse.json({ error: 'unauth' }, { status: 401 }),
     });

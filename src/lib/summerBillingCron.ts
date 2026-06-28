@@ -36,6 +36,7 @@ import { applyProcessingFee } from '@/lib/processingFee';
 import { PLANS, isPlanKey, type PlanKey } from '@/lib/pricing';
 import { TEACHER_PLANS, getTeacherPlan } from '@/lib/teacherPlans';
 import { ensureTeacherSubscriptionInvoice } from '@/lib/teacherBilling';
+import { dropTeacherToFreeBaseline } from '@/lib/teacherFreeBaseline';
 import { logBillingEvent } from '@/lib/billingAudit';
 
 type Row = Record<string, unknown>;
@@ -313,18 +314,11 @@ async function runTeachers(
           out.teachersInvoiced += 1;
         }
       } else if (action.kind === 'lock') {
-        // Best-effort hard lock via the guarded status transition. The unpaid invoice
-        // + pay link already exist, so the teacher can pay to restore access either way.
-        try {
-          await supabase.rpc('apply_teacher_subscription_transition', {
-            p_subscription_id: subId,
-            p_new_status: 'past_due',
-            p_actor_id: null,
-          });
-          out.teachersLocked += 1;
-        } catch (e) {
-          console.error('[summerBillingCron] teacher lock transition failed', subId, e);
-        }
+        // Drop the non-paying teacher to the FREE BASELINE (reliable + idempotent):
+        // they keep center monitoring + center cut and lose the private engine until
+        // they pay. The unpaid invoice + pay link already exist for them to return.
+        const dropped = await dropTeacherToFreeBaseline(supabase, subId, null);
+        if (dropped.ok) out.teachersLocked += 1;
       } else if (action.kind === 'mark_paid') {
         await supabase.from('teacher_subscriptions').update({ summer_status: 'paid' }).eq('id', subId);
         out.teachersRolled += 1;

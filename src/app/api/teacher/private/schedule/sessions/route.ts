@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { requireTeacherAuth } from '@/lib/centerAuth';
+import { requireTeacherPrivateAccess } from '@/lib/centerAuth';
 import { isUuid } from '@/lib/teacherPrivate';
 import { requireTeacherUnderCap } from '@/lib/teacherCap';
 import { isProOrAbove } from '@/lib/teacherPlans';
@@ -42,7 +42,7 @@ function serverError(step: string, err: { message: string }): NextResponse {
  * say "saved, billing failed" instead of silently double-creating later.
  */
 export async function POST(request: NextRequest) {
-  const auth = await requireTeacherAuth(request);
+  const auth = await requireTeacherPrivateAccess(request);
   if (!auth.ok) {
     return auth.response;
   }
