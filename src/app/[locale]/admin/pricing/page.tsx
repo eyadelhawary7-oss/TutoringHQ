@@ -108,6 +108,7 @@ export default function AdminPricingPage() {
     addons: false,
     banner: false,
     popup: false,
+    summer: false,
   });
   const toggleSection = useCallback((key: string) => {
     setOpenSections((s) => ({ ...s, [key]: !s[key] }));
@@ -280,6 +281,9 @@ export default function AdminPricingPage() {
     }
     if (JSON.stringify(pricingCfg.popup) !== JSON.stringify(pricingCfgDraft.popup)) {
       body.popup = pricingCfgDraft.popup;
+    }
+    if (JSON.stringify(pricingCfg.summer) !== JSON.stringify(pricingCfgDraft.summer)) {
+      body.summer = pricingCfgDraft.summer;
     }
     if (Object.keys(body).length === 0) return;
 
@@ -1192,6 +1196,136 @@ export default function AdminPricingPage() {
                         <PopupPreview cfg={pricingCfgDraft.popup} locale="ar" />
                       </div>
                     ) : null}
+                  </CollapsibleSection>
+
+                  {/* SECTION: Summer 2026 promo */}
+                  <CollapsibleSection
+                    title={t('pricingSectionSummer')}
+                    open={openSections.summer}
+                    onToggle={() => toggleSection('summer')}
+                  >
+                    <label className="inline-flex items-center gap-2 cursor-pointer mb-2">
+                      <input
+                        type="checkbox"
+                        checked={pricingCfgDraft.summer.enabled}
+                        onChange={(e) =>
+                          setPricingCfgDraft((d) =>
+                            d ? { ...d, summer: { ...d.summer, enabled: e.target.checked } } : d,
+                          )
+                        }
+                        className="rounded border-[var(--color-border-default)]"
+                      />
+                      <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                        {t('pricingSummerEnabled')}
+                      </span>
+                    </label>
+                    <p className="text-xs text-[var(--color-text-secondary)] mb-4">
+                      {t('pricingSummerEnabledDesc')}
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+                          {t('pricingSummerFreeUntil')}
+                        </label>
+                        <input
+                          type="date"
+                          dir="ltr"
+                          className="w-full max-w-xs rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2"
+                          value={pricingCfgDraft.summer.freeUntil}
+                          onChange={(e) =>
+                            setPricingCfgDraft((d) =>
+                              d ? { ...d, summer: { ...d.summer, freeUntil: e.target.value } } : d,
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+                          {t('pricingSummerFirstChargeFloor')}
+                        </label>
+                        <input
+                          type="date"
+                          dir="ltr"
+                          className="w-full max-w-xs rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2"
+                          value={pricingCfgDraft.summer.firstChargeFloor}
+                          onChange={(e) =>
+                            setPricingCfgDraft((d) =>
+                              d ? { ...d, summer: { ...d.summer, firstChargeFloor: e.target.value } } : d,
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+                          {t('pricingSummerTrialDays')}
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={365}
+                          step={1}
+                          className="w-full max-w-xs rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2"
+                          value={pricingCfgDraft.summer.trialDays}
+                          onChange={(e) => {
+                            const n = parseInt(e.target.value, 10);
+                            setPricingCfgDraft((d) =>
+                              d ? { ...d, summer: { ...d.summer, trialDays: Number.isFinite(n) ? n : 0 } } : d,
+                            );
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+                          {t('pricingSummerPayWindowDays')}
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={30}
+                          step={1}
+                          className="w-full max-w-xs rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2"
+                          value={pricingCfgDraft.summer.payWindowDays}
+                          onChange={(e) => {
+                            const n = parseInt(e.target.value, 10);
+                            setPricingCfgDraft((d) =>
+                              d ? { ...d, summer: { ...d.summer, payWindowDays: Number.isFinite(n) ? n : 1 } } : d,
+                            );
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <p className="mt-3 text-xs text-[var(--color-text-secondary)]">
+                      {t('pricingSummerDatesHint')}
+                    </p>
+
+                    <div className="mt-5">
+                      <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+                        {t('pricingSummerFirstChargeRelease')}
+                      </label>
+                      <select
+                        className="w-full max-w-md rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2"
+                        value={pricingCfgDraft.summer.firstChargeRelease}
+                        onChange={(e) =>
+                          setPricingCfgDraft((d) =>
+                            d
+                              ? {
+                                  ...d,
+                                  summer: {
+                                    ...d.summer,
+                                    firstChargeRelease: e.target.value === 'RELEASED' ? 'RELEASED' : 'HELD',
+                                  },
+                                }
+                              : d,
+                          )
+                        }
+                      >
+                        <option value="HELD">{t('pricingSummerHeld')}</option>
+                        <option value="RELEASED">{t('pricingSummerReleased')}</option>
+                      </select>
+                      <p className="mt-2 text-xs text-amber-500">{t('pricingSummerReleaseWarning')}</p>
+                    </div>
                   </CollapsibleSection>
 
                   {/* Global save bar */}

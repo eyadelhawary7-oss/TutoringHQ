@@ -1,11 +1,12 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import BillingHistory from '../../BillingHistory';
 import PrivateUpsellCard from '../../PrivateUpsellCard';
 import { useTeacherContext } from '../../useTeacherContext';
 import { useStartTrial } from '../../useStartTrial';
 import TeacherPlanSection from '@/components/teacher/TeacherPlanSection';
+import SummerFirstInvoiceCard from '@/components/summer/SummerFirstInvoiceCard';
 
 /**
  * /teacher/billing - attendance and billing history across private groups.
@@ -13,6 +14,7 @@ import TeacherPlanSection from '@/components/teacher/TeacherPlanSection';
  */
 export default function TeacherBillingPage() {
   const t = useTranslations('teacherPortal.pages');
+  const locale = useLocale();
   const { ctx, loading, reload } = useTeacherContext();
 
   const state = ctx?.state ?? 'center_only';
@@ -21,6 +23,9 @@ export default function TeacherBillingPage() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('billing')}</h1>
+
+      {/* Summer 2026: live first-invoice projection (renders only when summer mode is on). */}
+      <SummerFirstInvoiceCard locale={locale} portal="teachers" />
 
       {loading && !ctx ? (
         <div className="h-16 animate-pulse rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)]" />

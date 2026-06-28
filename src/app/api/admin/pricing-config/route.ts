@@ -18,6 +18,14 @@ import {
 } from '@/lib/pricingConfig';
 import { upsertPlatformConfigRowUpdateInsert } from '@/lib/platformConfigWrite';
 import { buildPricingConfigAuditDetails } from '@/lib/pricingConfigAudit';
+import {
+  SUMMER_ENABLED_KEY,
+  SUMMER_FREE_UNTIL_KEY,
+  SUMMER_FIRST_CHARGE_FLOOR_KEY,
+  SUMMER_TRIAL_DAYS_KEY,
+  SUMMER_PAY_WINDOW_DAYS_KEY,
+  SUMMER_FIRST_CHARGE_RELEASE_KEY,
+} from '@/lib/summer/config';
 
 type PatchBody = Partial<{
   interval: Partial<{
@@ -54,7 +62,17 @@ type PatchBody = Partial<{
     ctaUrl: string;
     delaySeconds: number;
   }>;
+  summer: Partial<{
+    enabled: boolean;
+    freeUntil: string;
+    firstChargeFloor: string;
+    trialDays: number;
+    payWindowDays: number;
+    firstChargeRelease: 'HELD' | 'RELEASED';
+  }>;
 }>;
+
+const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function isNum(v: unknown): v is number {
   return typeof v === 'number' && Number.isFinite(v);
@@ -204,6 +222,39 @@ export async function PATCH(request: NextRequest) {
       if (!isNum(p.delaySeconds) || p.delaySeconds < 0 || p.delaySeconds > 60) {
         errors.push('popup.delaySeconds must be a number between 0 and 60');
       } else updates.push({ key: 'landing.popup.delay_seconds', value: p.delaySeconds });
+    }
+  }
+
+  // ── Summer 2026 (master switch, dates, counts, HELD/RELEASED hold) ─────────
+  if (body.summer) {
+    const s = body.summer;
+    if (s.enabled !== undefined) {
+      if (typeof s.enabled !== 'boolean') errors.push('summer.enabled must be boolean');
+      else updates.push({ key: SUMMER_ENABLED_KEY, value: s.enabled });
+    }
+    if (s.freeUntil !== undefined) {
+      if (!isStr(s.freeUntil) || !YMD_RE.test(s.freeUntil)) errors.push('summer.freeUntil must be YYYY-MM-DD');
+      else updates.push({ key: SUMMER_FREE_UNTIL_KEY, value: s.freeUntil });
+    }
+    if (s.firstChargeFloor !== undefined) {
+      if (!isStr(s.firstChargeFloor) || !YMD_RE.test(s.firstChargeFloor)) {
+        errors.push('summer.firstChargeFloor must be YYYY-MM-DD');
+      } else updates.push({ key: SUMMER_FIRST_CHARGE_FLOOR_KEY, value: s.firstChargeFloor });
+    }
+    if (s.trialDays !== undefined) {
+      if (!isNum(s.trialDays) || s.trialDays < 0 || s.trialDays > 365) {
+        errors.push('summer.trialDays must be a number between 0 and 365');
+      } else updates.push({ key: SUMMER_TRIAL_DAYS_KEY, value: Math.floor(s.trialDays) });
+    }
+    if (s.payWindowDays !== undefined) {
+      if (!isNum(s.payWindowDays) || s.payWindowDays < 1 || s.payWindowDays > 30) {
+        errors.push('summer.payWindowDays must be a number between 1 and 30');
+      } else updates.push({ key: SUMMER_PAY_WINDOW_DAYS_KEY, value: Math.floor(s.payWindowDays) });
+    }
+    if (s.firstChargeRelease !== undefined) {
+      if (s.firstChargeRelease !== 'HELD' && s.firstChargeRelease !== 'RELEASED') {
+        errors.push('summer.firstChargeRelease must be HELD or RELEASED');
+      } else updates.push({ key: SUMMER_FIRST_CHARGE_RELEASE_KEY, value: s.firstChargeRelease });
     }
   }
 
