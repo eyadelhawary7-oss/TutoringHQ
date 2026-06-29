@@ -64,7 +64,7 @@ export default function SplashClient() {
       }}
     >
       <SummerRibbon locale={locale} portal="combined" ctaHref="/signup" onCtaClick={openChooser} />
-      <SummerPopup locale={locale} portal="combined" ctaHref="/signup" />
+      <SummerPopup locale={locale} portal="combined" ctaHref="/signup" onCtaClick={openChooser} />
 
       {/* Top bar: wordmark + locale toggle */}
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 py-5 md:px-6">
