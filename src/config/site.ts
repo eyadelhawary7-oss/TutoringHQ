@@ -15,9 +15,9 @@ export const SITE = {
   brandName: 'TutoringHQ',
 
   /** WhatsApp number in wa.me format — digits only, no '+' and no leading zero. */
-  supportWhatsAppIntl: '201039646403',
+  supportWhatsAppIntl: '201064668885',
   /** Human-readable WhatsApp number for display in UI. */
-  supportWhatsAppDisplay: '+20 10 3964 6403',
+  supportWhatsAppDisplay: '+20 106 4668885',
   /** Pre-filled greeting used when opening the WhatsApp support deep link. */
   supportWhatsAppGreeting: 'السلام عليكم، حابب أعرف أكتر عن TutoringHQ',
 
