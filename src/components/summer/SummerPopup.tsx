@@ -54,11 +54,18 @@ interface Props {
   locale: string;
   portal: SummerPortal;
   ctaHref?: string;
+  /**
+   * When provided, the CTA becomes a button that calls this (after dismissing)
+   * instead of navigating to `ctaHref` — used on the combined landing page so the
+   * popup's "start free" opens the center/teacher chooser like every other
+   * Start-free trigger. Centers/teachers pages omit it and keep the direct link.
+   */
+  onCtaClick?: () => void;
   /** Delay before showing (ms). */
   delayMs?: number;
 }
 
-export default function SummerPopup({ locale, portal, ctaHref = '/pricing', delayMs = 3000 }: Props) {
+export default function SummerPopup({ locale, portal, ctaHref = '/pricing', onCtaClick, delayMs = 3000 }: Props) {
   const state = useSummerPublicConfig();
   const [open, setOpen] = useState(false);
   const [shown, setShown] = useState(false); // drives the slide-up transition
@@ -166,14 +173,28 @@ export default function SummerPopup({ locale, portal, ctaHref = '/pricing', dela
           {copy.popupBody}
         </p>
 
-        <a
-          href={ctaHref}
-          onClick={dismiss}
-          className="inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-sm font-bold hover:opacity-90"
-          style={{ backgroundColor: accent, color: '#fbf9f4' }}
-        >
-          {copy.popupCta}
-        </a>
+        {onCtaClick ? (
+          <button
+            type="button"
+            onClick={() => {
+              dismiss();
+              onCtaClick();
+            }}
+            className="inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-sm font-bold hover:opacity-90"
+            style={{ backgroundColor: accent, color: '#fbf9f4' }}
+          >
+            {copy.popupCta}
+          </button>
+        ) : (
+          <a
+            href={ctaHref}
+            onClick={dismiss}
+            className="inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-sm font-bold hover:opacity-90"
+            style={{ backgroundColor: accent, color: '#fbf9f4' }}
+          >
+            {copy.popupCta}
+          </a>
+        )}
 
         <p className="mt-3 text-center text-xs" style={{ color: '#6b5d3a' }}>
           {summerPopupFooter(loc, floorLabel)}

@@ -28,9 +28,15 @@ interface Props {
   portal: SummerPortal;
   /** Where "start free" points (defaults to the plan picker / signup). */
   ctaHref?: string;
+  /**
+   * When provided, the CTA becomes a button that calls this instead of
+   * navigating to `ctaHref` — used on the combined landing page so the ribbon's
+   * "start free" opens the center/teacher chooser like every other Start-free.
+   */
+  onCtaClick?: () => void;
 }
 
-export default function SummerRibbon({ locale, portal, ctaHref = '/pricing' }: Props) {
+export default function SummerRibbon({ locale, portal, ctaHref = '/pricing', onCtaClick }: Props) {
   const state = useSummerPublicConfig();
   const [copied, setCopied] = useState(false);
   if (!state) return null;
@@ -102,13 +108,24 @@ export default function SummerRibbon({ locale, portal, ctaHref = '/pricing' }: P
             </button>
           ) : null}
 
-          <a
-            href={ctaHref}
-            className="inline-flex items-center px-4 py-1.5 text-sm hover:opacity-90"
-            style={{ backgroundColor: cta.bg, color: cta.text, borderRadius: '9px', fontWeight: 700 }}
-          >
-            {copy.ribbonCta}
-          </a>
+          {onCtaClick ? (
+            <button
+              type="button"
+              onClick={onCtaClick}
+              className="inline-flex items-center px-4 py-1.5 text-sm hover:opacity-90"
+              style={{ backgroundColor: cta.bg, color: cta.text, borderRadius: '9px', fontWeight: 700 }}
+            >
+              {copy.ribbonCta}
+            </button>
+          ) : (
+            <a
+              href={ctaHref}
+              className="inline-flex items-center px-4 py-1.5 text-sm hover:opacity-90"
+              style={{ backgroundColor: cta.bg, color: cta.text, borderRadius: '9px', fontWeight: 700 }}
+            >
+              {copy.ribbonCta}
+            </a>
+          )}
         </div>
       </div>
     </div>

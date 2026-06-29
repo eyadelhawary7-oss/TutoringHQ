@@ -9195,7 +9195,103 @@
     "cookies": "Cookie Policy",
     "rights": "All rights reserved. TutoringHQ, a product of EHG Intelligence.",
     "switchLocaleAria": "Switch language",
-    "footerNavAria": "Legal links"
+    "footerNavAria": "Legal links",
+    "hero": {
+      "startFree": "Start free",
+      "seeHow": "See how it works"
+    },
+    "preview": {
+      "regionLabel": "Sample center dashboard",
+      "greeting": "Good evening",
+      "name": "Mohamed Ahmed",
+      "statLabel": "Students attended today",
+      "expected": "expected",
+      "in": "✓ in",
+      "caption": "Your whole center on one screen, live.",
+      "rows": [
+        {
+          "name": "Sara Mahmoud",
+          "group": "Math · Grade 3 Sec",
+          "time": "5:02 PM"
+        },
+        {
+          "name": "Omar Khaled",
+          "group": "Physics · Grade 2 Sec",
+          "time": "5:04 PM"
+        },
+        {
+          "name": "Nour Ali",
+          "group": "Chemistry · Grade 3 Sec",
+          "time": "5:07 PM"
+        }
+      ]
+    },
+    "how": {
+      "eyebrow": "Up and running today",
+      "header": "Three steps to your first class",
+      "steps": [
+        {
+          "title": "Create your account",
+          "body": "A phone number and a PIN. No card needed to start."
+        },
+        {
+          "title": "Add your students",
+          "body": "Bring in your center or your private groups. Import a list or add them by hand."
+        },
+        {
+          "title": "Start running it",
+          "body": "QR at the door, invoices on their own, WhatsApp reminders, and every pound on one screen."
+        }
+      ]
+    },
+    "faq": {
+      "eyebrow": "Before you start",
+      "header": "Questions, answered",
+      "items": [
+        {
+          "q": "Is it in Arabic?",
+          "a": "Yes, fully Arabic and built right to left, the way you actually work."
+        },
+        {
+          "q": "Do I need a card to start?",
+          "a": "No. Start free with no card. Your first invoice comes later, and you see it before anything is charged."
+        },
+        {
+          "q": "Does it work on a cheap tablet?",
+          "a": "Yes. It is built to run on low-cost Android tablets, even on weak Wi-Fi at the door."
+        },
+        {
+          "q": "Is my data safe?",
+          "a": "Your students and your money data stay private to you. TutoringHQ is run by a registered Egyptian company."
+        },
+        {
+          "q": "What happens after summer?",
+          "a": "You pick the plan that fits your size. You always see the exact amount before anything is charged."
+        },
+        {
+          "q": "Can centers and teachers both use it?",
+          "a": "Yes. Centers run staff and attendance. Teachers track private groups and their cut from each center."
+        }
+      ]
+    },
+    "trust": {
+      "title": "Your data stays private to you.",
+      "sub": "TutoringHQ is a product of EHG Intelligence, a registered Egyptian company."
+    },
+    "chooser": {
+      "title": "Start free",
+      "subtitle": "Pick what fits you. No card needed to start.",
+      "close": "Close",
+      "center": {
+        "title": "I run a center",
+        "brief": "Staff, attendance, and billing for your whole center."
+      },
+      "teacher": {
+        "title": "I'm a teacher",
+        "brief": "Your private groups and your cut from every center."
+      }
+    },
+    "contact": "Reach us at"
   },
   "teacherLanding": {
     "login": "Log in",
@@ -9217,12 +9313,30 @@
       "connector": "TutoringHQ solves all of it."
     },
     "features": {
-      "f1": { "title": "Center monitoring", "body": "See your cut from every center automatically. No manual math." },
-      "f2": { "title": "Private groups", "body": "Create your own groups, share a join link, students enroll themselves." },
-      "f3": { "title": "One-tap billing", "body": "Finish the class, tap once, every student gets their invoice on WhatsApp." },
-      "f4": { "title": "Unified income", "body": "Your private earnings and center cuts, one total, one screen." },
-      "f5": { "title": "Cash and digital", "body": "Mark cash paid with one tap. Digital via Paymob (coming soon). No commission on cash." },
-      "f6": { "title": "WhatsApp notifications", "body": "Parents get automatic messages for attendance, payment links, and reminders." }
+      "f1": {
+        "title": "Center monitoring",
+        "body": "See your cut from every center automatically. No manual math."
+      },
+      "f2": {
+        "title": "Private groups",
+        "body": "Create your own groups, share a join link, students enroll themselves."
+      },
+      "f3": {
+        "title": "One-tap billing",
+        "body": "Finish the class, tap once, every student gets their invoice on WhatsApp."
+      },
+      "f4": {
+        "title": "Unified income",
+        "body": "Your private earnings and center cuts, one total, one screen."
+      },
+      "f5": {
+        "title": "Cash and digital",
+        "body": "Mark cash paid with one tap. Digital via Paymob (coming soon). No commission on cash."
+      },
+      "f6": {
+        "title": "WhatsApp notifications",
+        "body": "Parents get automatic messages for attendance, payment links, and reminders."
+      }
     },
     "featuresTitle": "Everything in one place",
     "pricingPreview": {
@@ -9308,9 +9422,28 @@
     "statusPastDue": "Past due",
     "statusSuspended": "Suspended",
     "statusCancelled": "Cancelled",
-    "standardFeatures": ["Create private groups with join links", "Record student payments (cash / InstaPay / Vodafone Cash)", "Class schedule", "Full income view: private and all centers", "Registered students only (no guest attendees)"],
-    "proFeatures": ["Everything in Standard", "Guest attendees without enrollment (up to 10 per session)", "Full income history (all time)", "Advanced analytics", "100 EGP WhatsApp credit monthly", "Student notes", "CSV export"],
-    "scaleFeatures": ["Everything in Pro", "Up to 100 active students", "+20 EGP per active student above 100", "Trued up at the end of the month"]
+    "standardFeatures": [
+      "Create private groups with join links",
+      "Record student payments (cash / InstaPay / Vodafone Cash)",
+      "Class schedule",
+      "Full income view: private and all centers",
+      "Registered students only (no guest attendees)"
+    ],
+    "proFeatures": [
+      "Everything in Standard",
+      "Guest attendees without enrollment (up to 10 per session)",
+      "Full income history (all time)",
+      "Advanced analytics",
+      "100 EGP WhatsApp credit monthly",
+      "Student notes",
+      "CSV export"
+    ],
+    "scaleFeatures": [
+      "Everything in Pro",
+      "Up to 100 active students",
+      "+20 EGP per active student above 100",
+      "Trued up at the end of the month"
+    ]
   },
   "caps": {
     "groupLimitReached": "You have reached the group limit on the Standard plan.",
