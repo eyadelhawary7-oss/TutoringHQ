@@ -372,11 +372,17 @@ export async function tryFinalizeCombinedPaymentSession(
         }
       }
 
+      // Annual term covers 12 months; monthly covers one. The interval rides in
+      // the session metadata (set by the resubscribe checkout) and is persisted
+      // on the subscription so the recurring engine renews on the same cadence.
+      const billingInterval = rawMeta.billing_interval === 'annual' ? 'annual' : 'monthly';
+      const periodDays = billingInterval === 'annual' ? 365 : 30;
       const nowIso = new Date().toISOString();
-      const periodEndIso = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      const periodEndIso = new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000).toISOString();
       const { error: periodErr } = await supabase
         .from('teacher_subscriptions')
         .update({
+          billing_interval: billingInterval,
           current_period_start: nowIso,
           current_period_end: periodEndIso,
           next_billing_at: periodEndIso,

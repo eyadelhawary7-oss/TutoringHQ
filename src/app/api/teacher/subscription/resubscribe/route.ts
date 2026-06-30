@@ -6,11 +6,17 @@ import { requireTeacherAuth } from '@/lib/centerAuth';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { isFeatureEnabled } from '@/lib/features';
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
-import { DEFAULT_TEACHER_PLAN_KEY } from '@/lib/teacherPlans';
-import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import { DEFAULT_TEACHER_PLAN_KEY, teacherPlanConfigKey } from '@/lib/teacherPlans';
+import { getIntervalConfig, getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { applyProcessingFee } from '@/lib/processingFee';
+import { getAnnualChargeRounded } from '@/lib/pricing';
 
 const ROUTE_TAG = 'api/teacher/subscription/resubscribe';
+
+/** Body interval → canonical billing interval (default monthly). */
+function parseInterval(raw: unknown): 'monthly' | 'annual' {
+  return raw === 'annual' ? 'annual' : 'monthly';
+}
 
 function fail(step: string, err: unknown) {
   Sentry.withScope((scope) => {
@@ -44,15 +50,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid CSRF token', code: 'CSRF' }, { status: 403 });
   }
 
+  // Billing interval (monthly | annual). Annual = monthly × the SHARED
+  // pricing.interval.annual_multiplier (=10) — same source as centers.
+  let interval: 'monthly' | 'annual' = 'monthly';
+  try {
+    const body = (await request.json().catch(() => ({}))) as { interval?: unknown };
+    interval = parseInterval(body.interval);
+  } catch {
+    interval = 'monthly';
+  }
+
   // CORE: current subscription state. Only a lapsed subscription may
   // resubscribe; trialing/active is a no-op rejected up front.
   const { data: subRow, error: subErr } = await auth.supabaseAdmin
     .from('teacher_subscriptions')
-    .select('id, status')
+    .select('id, status, plan_key')
     .eq('teacher_id', auth.userId)
     .maybeSingle();
   if (subErr) return fail('subscription_lookup', subErr);
-  const sub = subRow as { id: string; status: string } | null;
+  const sub = subRow as { id: string; status: string; plan_key: string | null } | null;
   if (sub && (sub.status === 'trialing' || sub.status === 'active')) {
     return NextResponse.json(
       { error: 'Subscription already active', code: 'ALREADY_ACTIVE' },
@@ -60,23 +76,31 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // CORE: the plan price. Never hardcoded.
+  // CORE: the plan price for the teacher's OWN plan (Standard/Pro/Scale), never
+  // hardcoded. price_gross is always the MONTHLY base; annual is derived from it.
+  const planConfigKey = teacherPlanConfigKey(sub?.plan_key ?? DEFAULT_TEACHER_PLAN_KEY);
   const { data: configRow, error: configErr } = await auth.supabaseAdmin
     .from('platform_config')
     .select('value')
-    .eq('key', 'teacher_subscription_plan')
+    .eq('key', planConfigKey)
     .maybeSingle();
   if (configErr) return fail('plan_config', configErr);
   const plan = ((configRow as { value?: { plan_key?: string; price_gross?: number } } | null)
     ?.value ?? {});
-  const priceGross = Number(plan.price_gross ?? 0);
-  if (!Number.isFinite(priceGross) || priceGross <= 0) {
-    return fail('plan_price', { message: 'teacher_subscription_plan price_gross missing/invalid' });
+  const monthlyGross = Number(plan.price_gross ?? 0);
+  if (!Number.isFinite(monthlyGross) || monthlyGross <= 0) {
+    return fail('plan_price', { message: `${planConfigKey} price_gross missing/invalid` });
   }
+
+  // Annual base = monthly × annual_multiplier (one shared source). The number
+  // SHOWN to the teacher (status route, same multiplier) equals what is charged.
+  const { annualMultiplier } = await getIntervalConfig();
+  const subscriptionAmount =
+    interval === 'annual' ? getAnnualChargeRounded(monthlyGross, annualMultiplier) : monthlyGross;
 
   // Sandbox: Paymob is not live yet. Expected state, not an error.
   if (!isFeatureEnabled('PAYMOB_ENABLED')) {
-    return NextResponse.json({ paymob_disabled: true, amount: priceGross });
+    return NextResponse.json({ paymob_disabled: true, amount: subscriptionAmount, interval });
   }
 
   // A teacher with no subscription row has nothing to reactivate - their
@@ -88,9 +112,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Flat processing fee (Section 5) added on top of the teacher plan price.
+  // Flat processing fee (Section 5) added on top of the teacher plan price
+  // (monthly base, or the annual ×10 base when annual was chosen).
   const feeCfg = await getProcessingFeeConfig();
-  const { fee: processingFee, total: chargedTotal } = applyProcessingFee(priceGross, feeCfg);
+  const { fee: processingFee, total: chargedTotal } = applyProcessingFee(subscriptionAmount, feeCfg);
 
   // Display info for the Paymob order (best-effort, falls back to defaults).
   const { data: userRow } = await auth.supabaseAdmin
@@ -116,8 +141,9 @@ export async function POST(request: NextRequest) {
       session_type: 'teacher_resubscribe',
       metadata: {
         teacher_id: auth.userId,
-        plan_key: plan.plan_key ?? DEFAULT_TEACHER_PLAN_KEY,
-        subscription_amount: priceGross,
+        plan_key: plan.plan_key ?? sub.plan_key ?? DEFAULT_TEACHER_PLAN_KEY,
+        billing_interval: interval,
+        subscription_amount: subscriptionAmount,
         processing_fee: processingFee,
       },
     })
@@ -143,8 +169,9 @@ export async function POST(request: NextRequest) {
         paymob_order_id: checkout.paymobOrderId,
         metadata: {
           teacher_id: auth.userId,
-          plan_key: plan.plan_key ?? DEFAULT_TEACHER_PLAN_KEY,
-          subscription_amount: priceGross,
+          plan_key: plan.plan_key ?? sub.plan_key ?? DEFAULT_TEACHER_PLAN_KEY,
+          billing_interval: interval,
+          subscription_amount: subscriptionAmount,
           processing_fee: processingFee,
           paymob_iframe_url: checkout.iframeUrl,
         } as never,
@@ -159,6 +186,7 @@ export async function POST(request: NextRequest) {
       paymob_url: checkout.iframeUrl,
       session_id: sessionRowId,
       amount: chargedTotal,
+      interval,
     });
   } catch (e) {
     await auth.supabaseAdmin.from('combined_payment_sessions').delete().eq('id', sessionRowId);

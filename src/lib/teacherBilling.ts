@@ -27,8 +27,16 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { cairoDateKey, cairoYmdPlusDays, startOfUtcInstantForCairoCalendarDay } from '@/lib/cairo/day';
 import { round2 } from '@/lib/invoiceBalance';
 import { logBillingEvent } from '@/lib/billingAudit';
+import { getAnnualChargeRounded, ANNUAL_BILLED_MONTHS_DEFAULT } from '@/lib/pricing';
 
 type Row = Record<string, unknown>;
+
+export type TeacherBillingInterval = 'monthly' | 'annual';
+
+/** Calendar days in one billing cycle: 365 for annual, 30 for monthly. */
+export function teacherCyclePeriodDays(interval: TeacherBillingInterval): number {
+  return interval === 'annual' ? 365 : 30;
+}
 
 /** Statuses that mean "still owed" — an open invoice eligible for reuse on retry. */
 const OPEN_STATUSES = ['pending', 'overdue', 'failed'] as const;
@@ -54,9 +62,23 @@ export interface EnsuredTeacherInvoice {
  */
 export async function ensureTeacherSubscriptionInvoice(
   supabase: SupabaseClient,
-  opts: { teacherId: string; billingDayCairo: string; priceGross: number; fee: number },
+  opts: {
+    teacherId: string;
+    billingDayCairo: string;
+    priceGross: number;
+    fee: number;
+    /** Billing cadence; 'annual' charges priceGross × annualMultiplier over a 12-month period. */
+    interval?: TeacherBillingInterval;
+    /** Shared pricing.interval.annual_multiplier (=10). Only used when interval='annual'. */
+    annualMultiplier?: number;
+  },
 ): Promise<EnsuredTeacherInvoice | null> {
   const { teacherId, billingDayCairo } = opts;
+  const interval: TeacherBillingInterval = opts.interval === 'annual' ? 'annual' : 'monthly';
+  const annualMultiplier =
+    Number.isFinite(opts.annualMultiplier) && (opts.annualMultiplier as number) > 0
+      ? (opts.annualMultiplier as number)
+      : ANNUAL_BILLED_MONTHS_DEFAULT;
 
   // Reuse an existing open invoice (covers dunning retries within the same cycle).
   const { data: open } = await supabase
@@ -74,14 +96,17 @@ export async function ensureTeacherSubscriptionInvoice(
   }
 
   const fee = Math.max(0, round2(Number(opts.fee) || 0));
-  const priceGross = round2(Number(opts.priceGross) || 0);
-  const total = round2(priceGross + fee);
+  const monthlyGross = round2(Number(opts.priceGross) || 0);
+  // Annual cycle bills monthly × annualMultiplier (=10) up-front; monthly bills the base.
+  const cycleBase =
+    interval === 'annual' ? getAnnualChargeRounded(monthlyGross, annualMultiplier) : monthlyGross;
+  const total = round2(cycleBase + fee);
   if (!Number.isFinite(total) || total <= 0) return null;
 
   // Deterministic, globally-unique number keyed to the billing day + teacher, so a
   // same-day cron re-run cannot create a duplicate (unique invoice_number).
   const invoiceNumber = `TINV-${billingDayCairo}-${teacherId}`;
-  const periodEnd = cairoYmdPlusDays(billingDayCairo, 30);
+  const periodEnd = cairoYmdPlusDays(billingDayCairo, teacherCyclePeriodDays(interval));
 
   const { data: ins, error } = await supabase
     .from('invoices')
@@ -92,7 +117,7 @@ export async function ensureTeacherSubscriptionInvoice(
       invoice_number: invoiceNumber,
       invoice_type: 'subscription',
       status: 'pending',
-      base_amount: priceGross,
+      base_amount: cycleBase,
       total_amount: total,
       billing_period_start: billingDayCairo,
       billing_period_end: periodEnd,
@@ -140,8 +165,9 @@ export async function advanceTeacherSubscriptionPaid(
   supabase: SupabaseClient,
   teacherId: string,
   todayCairo: string = cairoDateKey(new Date()),
+  interval: TeacherBillingInterval = 'monthly',
 ): Promise<void> {
-  const nextYmd = cairoYmdPlusDays(todayCairo, 30);
+  const nextYmd = cairoYmdPlusDays(todayCairo, teacherCyclePeriodDays(interval));
   const nowIso = new Date().toISOString();
   const nextIso = startOfUtcInstantForCairoCalendarDay(nextYmd).toISOString();
   await supabase

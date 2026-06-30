@@ -346,7 +346,18 @@ export async function finalizeInvoicePaymentSuccess(
     }
     const todayCairo = cairoDateKey(new Date());
     const periodStart = new Date().toISOString();
-    const periodEnd = startOfUtcInstantForCairoCalendarDay(cairoYmdPlusDays(todayCairo, 30)).toISOString();
+    // Annual subscriptions advance a full year; monthly advance 30 days. Reading
+    // billing_interval keeps monthly behavior byte-identical (no annual rows yet).
+    const { data: tSub } = await supabaseAdmin
+      .from('teacher_subscriptions')
+      .select('billing_interval')
+      .eq('teacher_id', row.teacher_id)
+      .maybeSingle();
+    const periodDays =
+      (tSub as { billing_interval?: string } | null)?.billing_interval === 'annual' ? 365 : 30;
+    const periodEnd = startOfUtcInstantForCairoCalendarDay(
+      cairoYmdPlusDays(todayCairo, periodDays),
+    ).toISOString();
     const { data: tRes, error: tErr } = await supabaseAdmin.rpc('finalize_teacher_invoice_paid', {
       p_invoice_id: row.id,
       p_teacher_id: row.teacher_id,

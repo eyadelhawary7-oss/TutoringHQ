@@ -1486,6 +1486,7 @@ COLUMN teacher_subscriptions.summer_lock_at ord=23 type=timestamp with time zone
 COLUMN teacher_subscriptions.summer_enrolled_at ord=24 type=timestamp with time zone notnull=false default=∅
 COLUMN teacher_subscriptions.summer_first_invoice_id ord=25 type=uuid notnull=false default=∅
 COLUMN teacher_subscriptions.summer_status ord=26 type=text notnull=false default=∅
+COLUMN teacher_subscriptions.billing_interval ord=27 type=text notnull=true default='monthly'::text
 COLUMN transactions.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN transactions.kind ord=2 type=text notnull=true default=∅
 COLUMN transactions.session_id ord=3 type=uuid notnull=false default=∅
@@ -2271,6 +2272,7 @@ CONSTRAINT teacher_profiles.teacher_profiles_referral_code_key type=u def=UNIQUE
 CONSTRAINT teacher_profiles.teacher_profiles_referred_by_teacher_id_fkey type=f def=FOREIGN KEY (referred_by_teacher_id) REFERENCES teacher_profiles(user_id) ON DELETE SET NULL
 CONSTRAINT teacher_profiles.teacher_profiles_user_id_fkey type=f def=FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 CONSTRAINT teacher_signup_otps.teacher_signup_otps_pkey type=p def=PRIMARY KEY (id)
+CONSTRAINT teacher_subscriptions.teacher_subscriptions_billing_interval_check type=c def=CHECK ((billing_interval = ANY (ARRAY['monthly'::text, 'annual'::text])))
 CONSTRAINT teacher_subscriptions.teacher_subscriptions_ereceipt_status_chk type=c def=CHECK (((last_charge_e_receipt_status IS NULL) OR (last_charge_e_receipt_status = ANY (ARRAY['pending'::text, 'issued'::text, 'failed'::text]))))
 CONSTRAINT teacher_subscriptions.teacher_subscriptions_nonneg_chk type=c def=CHECK (((free_months_credit >= 0) AND (dunning_attempts >= 0) AND (price_gross >= (0)::numeric) AND (snap_vat_amount >= (0)::numeric) AND (price_net >= (0)::numeric)))
 CONSTRAINT teacher_subscriptions.teacher_subscriptions_pkey type=p def=PRIMARY KEY (id)

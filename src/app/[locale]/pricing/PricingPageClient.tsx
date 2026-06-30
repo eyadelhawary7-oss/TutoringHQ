@@ -494,7 +494,7 @@ export default function PricingPageClient() {
               <p className="mx-auto mt-2 max-w-2xl text-center text-xs text-[var(--color-text-muted)]">
                 {tp('activeStudentNote')}
               </p>
-              <PlanComparisonTable />
+              <PlanComparisonTable interval={interval} />
             </div>
           )}
         </div>

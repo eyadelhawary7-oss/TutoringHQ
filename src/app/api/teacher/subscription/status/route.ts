@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/nextjs';
 import { requireTeacherAuth } from '@/lib/centerAuth';
 import { isFeatureEnabled } from '@/lib/features';
 import { DEFAULT_TEACHER_PLAN_KEY, getTeacherPlan } from '@/lib/teacherPlans';
+import { getIntervalConfig } from '@/lib/pricingConfig';
 
 const ROUTE_TAG = 'api/teacher/subscription/status';
 
@@ -69,10 +70,19 @@ export async function GET(request: NextRequest) {
   // visible "payments unavailable" banner when this is false (no dead buttons).
   const paymentsEnabled = isFeatureEnabled('PAYMOB_ENABLED');
 
+  // Shared annual multiplier (=10). The UI derives annual = price_gross × this,
+  // and the resubscribe checkout charges with the SAME value, so shown == charged.
+  let annualMultiplier = 10;
+  try {
+    annualMultiplier = (await getIntervalConfig()).annualMultiplier;
+  } catch {
+    annualMultiplier = 10;
+  }
+
   const { data: subRow, error: subErr } = await auth.supabaseAdmin
     .from('teacher_subscriptions')
     .select(
-      'status, plan_key, trial_ends_at, current_period_start, current_period_end, next_billing_at, grace_until, free_months_credit',
+      'status, plan_key, trial_ends_at, current_period_start, current_period_end, next_billing_at, grace_until, free_months_credit, billing_interval',
     )
     .eq('teacher_id', auth.userId)
     .maybeSingle();
@@ -95,6 +105,8 @@ export async function GET(request: NextRequest) {
       free_months_credit: 0,
       blast_credits_purchased: blastPurchased,
       blast_credits_subscription: blastSubscription,
+      annual_multiplier: annualMultiplier,
+      billing_interval: 'monthly',
     });
   }
 
@@ -107,6 +119,7 @@ export async function GET(request: NextRequest) {
     next_billing_at: string | null;
     grace_until: string | null;
     free_months_credit: number | null;
+    billing_interval: string | null;
   };
 
   // Std/Pro prices come from platform_config; any other tier (e.g. Scale) reads
@@ -134,5 +147,7 @@ export async function GET(request: NextRequest) {
     free_months_credit: Number(sub.free_months_credit ?? 0),
     blast_credits_purchased: blastPurchased,
     blast_credits_subscription: blastSubscription,
+    annual_multiplier: annualMultiplier,
+    billing_interval: sub.billing_interval === 'annual' ? 'annual' : 'monthly',
   });
 }

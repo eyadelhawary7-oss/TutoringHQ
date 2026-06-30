@@ -34,7 +34,7 @@ import { lockAtFromBillingDay } from '@/lib/billingLifecycle';
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
 import { finalizeInvoicePaymentSuccess } from '@/lib/invoicePaymobPayment';
 import { ensureTeacherSubscriptionInvoice, advanceTeacherSubscriptionPaid } from '@/lib/teacherBilling';
-import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import { getIntervalConfig, getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { resolveProcessingFeeAmount } from '@/lib/processingFee';
 import { round2 } from '@/lib/invoiceBalance';
 import { MAX_CHARGE_ATTEMPTS, type DueChargeable, type ManualReason, type MidnightBillingAdapter } from '@/lib/midnightBilling';
@@ -186,7 +186,7 @@ export function createSupabaseMidnightBillingAdapter(
       const { start, endExclusive } = cairoPaidAtDayUtcBounds(todayCairo);
       const { data: dueTeach } = await supabase
         .from('teacher_subscriptions')
-        .select('id, teacher_id, price_gross, dunning_attempts, status, next_billing_at')
+        .select('id, teacher_id, price_gross, billing_interval, dunning_attempts, status, next_billing_at')
         .in('status', ['active', 'trialing', 'past_due'])
         .gte('next_billing_at', start.toISOString())
         .lt('next_billing_at', endExclusive.toISOString());
@@ -202,12 +202,23 @@ export function createSupabaseMidnightBillingAdapter(
       } catch {
         fee = 0;
       }
+      // Shared annual multiplier (=10) — only applied to billing_interval='annual' rows.
+      let annualMultiplier: number | undefined;
+      try {
+        annualMultiplier = (await getIntervalConfig()).annualMultiplier;
+      } catch {
+        annualMultiplier = undefined;
+      }
 
       for (const r of teachRows) {
         const attempt = Number(r.dunning_attempts ?? 0);
         if (attempt >= MAX_CHARGE_ATTEMPTS) continue;
         const ownerId = String(r.teacher_id);
         const priceGross = Number(r.price_gross ?? 0);
+        const interval: 'monthly' | 'annual' =
+          r.billing_interval === 'annual' ? 'annual' : 'monthly';
+        const monthlyFallbackBase =
+          interval === 'annual' ? priceGross * (annualMultiplier ?? 10) : priceGross;
 
         // Create (or reuse, on retry) the teacher's invoice on the billing day —
         // this is the teacher equivalent of the center subscription invoice.
@@ -216,18 +227,21 @@ export function createSupabaseMidnightBillingAdapter(
           billingDayCairo: todayCairo,
           priceGross,
           fee,
+          interval,
+          annualMultiplier,
         });
 
         items.push({
           key: `teacher:${String(r.id)}`,
           customerType: 'teacher',
           owner: { ownerType: 'teacher', ownerId },
-          amount: ensured ? ensured.total : round2(priceGross + fee),
+          amount: ensured ? ensured.total : round2(monthlyFallbackBase + fee),
           invoiceId: ensured ? ensured.invoiceId : null,
           periodKey: todayCairo.slice(0, 7),
           billingDayCairo: todayCairo,
           hasSavedCard: teacherCarded.has(ownerId),
           attemptIndex: attempt,
+          billingInterval: interval,
         });
       }
 
@@ -250,7 +264,7 @@ export function createSupabaseMidnightBillingAdapter(
         await finalizeInvoicePaymentSuccess(supabase, result.paymobOrderId, result.transactionId ?? '');
       } else if (item.customerType === 'teacher') {
         // Defensive fallback (invoice creation failed): advance directly.
-        await advanceTeacherSubscriptionPaid(supabase, item.owner.ownerId, today);
+        await advanceTeacherSubscriptionPaid(supabase, item.owner.ownerId, today, item.billingInterval);
       }
       await emitEvent(supabase, 'autocharge_succeeded', item.owner, {
         invoiceId: item.invoiceId,
@@ -272,7 +286,8 @@ export function createSupabaseMidnightBillingAdapter(
           .maybeSingle();
         const nb = (data as Row | null)?.next_billing_at;
         const alreadyAdvanced = nb && cairoDateKey(new Date(String(nb))) > today;
-        if (!alreadyAdvanced) await advanceTeacherSubscriptionPaid(supabase, item.owner.ownerId, today);
+        if (!alreadyAdvanced)
+          await advanceTeacherSubscriptionPaid(supabase, item.owner.ownerId, today, item.billingInterval);
       }
     },
 

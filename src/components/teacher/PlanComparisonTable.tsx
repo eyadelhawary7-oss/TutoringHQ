@@ -1,9 +1,12 @@
 'use client';
 
 import { Fragment } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Check, X } from 'lucide-react';
 import { Link } from '@/i18n/routing';
+import { formatCurrency } from '@/lib/formatNumber';
+import { getAnnualMonthlyFromBase } from '@/lib/pricing';
+import { TEACHER_PLANS } from '@/lib/teacherPlans';
 
 /** [free, standard, pro, scale] availability of a feature row. */
 type Avail = [boolean, boolean, boolean, boolean];
@@ -19,8 +22,20 @@ type Row = TextRow | IconRow;
  * tracking is free on every tier; the private engine unlocks at Standard;
  * guest attendees + analytics + automated WhatsApp are Pro and Scale only.
  */
-export default function PlanComparisonTable() {
+export default function PlanComparisonTable({
+  interval = 'monthly',
+}: {
+  interval?: 'monthly' | 'annual';
+}) {
   const t = useTranslations('pricing');
+  const locale = useLocale();
+
+  // Annual header price = monthly × 10 ÷ 12 (the per-month equivalent of "2
+  // months free"), formatted; monthly keeps the published string.
+  const priceLabel = (monthlyString: string, gross: number) =>
+    interval === 'annual'
+      ? `${formatCurrency(getAnnualMonthlyFromBase(gross), locale)}${t('perMonthSuffix')}`
+      : monthlyString;
 
   const sections: { title: string; rows: Row[] }[] = [
     {
@@ -109,18 +124,34 @@ export default function PlanComparisonTable() {
               </th>
               <th className="p-3 text-center align-top">
                 <div className="font-bold text-[var(--color-text-primary)]">{t('standardName')}</div>
-                <div className="num text-xs text-[var(--color-text-muted)]">{t('standardPrice')}</div>
+                <div className="num text-xs text-[var(--color-text-muted)]">
+                  {priceLabel(t('standardPrice'), TEACHER_PLANS.teacher_standard.priceGross)}
+                </div>
+                {interval === 'annual' ? (
+                  <div className="mt-1 text-[10px] font-medium" style={{ color: 'var(--color-brass)' }}>
+                    {t('annualBadge')}
+                  </div>
+                ) : null}
               </th>
               <th className="p-3 text-center align-top">
                 <div className="font-bold text-[var(--color-text-primary)]">{t('proName')}</div>
-                <div className="num text-xs text-[var(--color-text-muted)]">{t('proPrice')}</div>
+                <div className="num text-xs text-[var(--color-text-muted)]">
+                  {priceLabel(t('proPrice'), TEACHER_PLANS.teacher_pro.priceGross)}
+                </div>
                 <div className="mt-1 inline-block rounded-full bg-[var(--color-brass)] px-2 py-0.5 text-[10px] font-medium text-white">
                   {t('bestForPartTime')}
                 </div>
               </th>
               <th className="p-3 text-center align-top">
                 <div className="font-bold text-[var(--color-text-primary)]">{t('scaleName')}</div>
-                <div className="num text-xs text-[var(--color-text-muted)]">{t('scalePrice')}</div>
+                <div className="num text-xs text-[var(--color-text-muted)]">
+                  {priceLabel(t('scalePrice'), TEACHER_PLANS.teacher_scale.priceGross)}
+                </div>
+                {interval === 'annual' ? (
+                  <div className="mt-1 text-[10px] font-medium" style={{ color: 'var(--color-brass)' }}>
+                    {t('annualBadge')}
+                  </div>
+                ) : null}
               </th>
             </tr>
           </thead>
