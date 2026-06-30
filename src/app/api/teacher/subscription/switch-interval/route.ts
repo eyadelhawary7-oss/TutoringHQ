@@ -10,6 +10,8 @@ import { DEFAULT_TEACHER_PLAN_KEY, teacherPlanConfigKey } from '@/lib/teacherPla
 import { getIntervalConfig, getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { applyProcessingFee } from '@/lib/processingFee';
 import { getAnnualChargeRounded } from '@/lib/pricing';
+import { getSwitchToAnnualCharge } from '@/lib/billingEngine';
+import { getSummerConfig, summerHoldsCharges } from '@/lib/summer/config';
 
 const ROUTE_TAG = 'api/teacher/subscription/switch-interval';
 
@@ -60,12 +62,18 @@ export async function POST(request: NextRequest) {
 
   const { data: subRow, error: subErr } = await auth.supabaseAdmin
     .from('teacher_subscriptions')
-    .select('id, status, plan_key, billing_interval')
+    .select('id, status, plan_key, billing_interval, current_period_end')
     .eq('teacher_id', auth.userId)
     .maybeSingle();
   if (subErr) return fail('subscription_lookup', subErr);
   const sub = subRow as
-    | { id: string; status: string; plan_key: string | null; billing_interval: string | null }
+    | {
+        id: string;
+        status: string;
+        plan_key: string | null;
+        billing_interval: string | null;
+        current_period_end: string | null;
+      }
     | null;
   if (!sub) {
     return NextResponse.json({ error: 'No subscription', code: 'NO_SUBSCRIPTION' }, { status: 400 });
@@ -111,7 +119,22 @@ export async function POST(request: NextRequest) {
   }
 
   const { annualMultiplier } = await getIntervalConfig();
-  const subscriptionAmount = getAnnualChargeRounded(monthlyGross, annualMultiplier);
+  // Prorated pay-now (rule 2): annual full price minus credit for the unused part of
+  // the current monthly period; a fresh 12-month term starts now. G9: no credit while
+  // summer holds charges. The credit only reduces the charge, never a balance (G3/G4).
+  const annualFullPrice = getAnnualChargeRounded(monthlyGross, annualMultiplier);
+  const summerCfg = await getSummerConfig();
+  const periodEndDate = sub.current_period_end
+    ? new Date(sub.current_period_end)
+    : new Date(); // no current period → 0 days remaining → no credit
+  const sw = getSwitchToAnnualCharge({
+    annualFullPrice,
+    currentPeriodPrice: monthlyGross,
+    currentBillingPeriod: 'monthly',
+    nextPaymentDue: periodEndDate,
+    summerHoldsCharges: summerHoldsCharges(summerCfg),
+  });
+  const subscriptionAmount = sw.charge;
   const feeCfg = await getProcessingFeeConfig();
   const { fee: processingFee, total: chargedTotal } = applyProcessingFee(subscriptionAmount, feeCfg);
 

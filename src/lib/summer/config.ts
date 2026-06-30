@@ -138,3 +138,12 @@ export function summerModeActive(cfg: SummerConfig): boolean {
 export function firstChargeAllowed(cfg: SummerConfig): boolean {
   return cfg.enabled === true && cfg.firstChargeRelease === 'RELEASED';
 }
+
+/**
+ * True while summer is actively HOLDING charges (master switch on, first charge not
+ * yet released). G9: a plan switch during this window gives ZERO proration credit —
+ * no real money is being paid, so there is no paid time to credit.
+ */
+export function summerHoldsCharges(cfg: SummerConfig): boolean {
+  return cfg.enabled === true && cfg.firstChargeRelease === 'HELD';
+}

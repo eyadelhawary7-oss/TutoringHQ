@@ -23,7 +23,11 @@ export type CombinedSessionMetadata = {
   daysRemaining?: number;
   dailyRateDifference?: number;
   amountCharged?: number;
+  switchCredit?: number;
   billingAnchorYmd?: string;
+  /** Monthly→annual interval switch: resets the renewal clock to a fresh 12-month term. */
+  intervalSwitchToAnnual?: boolean;
+  freshTermEndYmd?: string | null;
 };
 
 function asMeta(raw: unknown): CombinedSessionMetadata {
@@ -248,17 +252,25 @@ export async function tryFinalizeCombinedPaymentSession(
           (centerBefore as { next_payment_due?: string | null } | null)?.next_payment_due?.slice(0, 10) ??
           todayISO();
 
+        // Monthly→annual starts a FRESH 12-month term, so it resets next_payment_due
+        // (rule 2 / G7 exception). A tier upgrade keeps the existing renewal date (G7),
+        // so next_payment_due is left untouched in that case.
+        const intervalSwitchToAnnual = meta.intervalSwitchToAnnual === true;
+        const centerUpdate: Record<string, unknown> = {
+          plan: newPlan,
+          subscription_billing_period: newBp,
+          billing_period: newBp,
+          all_in_price: allIn,
+          billing_amount: billingAmount,
+          billing_status: 'paid',
+          upgrade_count_this_period: prevCount + 1,
+        };
+        if (intervalSwitchToAnnual && typeof meta.freshTermEndYmd === 'string') {
+          centerUpdate.next_payment_due = meta.freshTermEndYmd;
+        }
         const { error: centerErr } = await supabase
           .from('centers')
-          .update({
-            plan: newPlan,
-            subscription_billing_period: newBp,
-            billing_period: newBp,
-            all_in_price: allIn,
-            billing_amount: billingAmount,
-            billing_status: 'paid',
-            upgrade_count_this_period: prevCount + 1,
-          })
+          .update(centerUpdate)
           .eq('id', row.center_id);
 
         if (centerErr) {
