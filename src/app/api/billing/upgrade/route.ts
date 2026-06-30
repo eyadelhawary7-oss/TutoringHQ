@@ -268,6 +268,15 @@ export async function POST(request: NextRequest) {
       due_date: today,
       status: 'pending',
       discount_amount: 0,
+      // Renders the prorated credit line on the invoice (annual − returned-credit).
+      metadata: isSwitchToAnnual
+        ? {
+            interval_switch_to_annual: true,
+            new_plan_amount: newPlanFullPeriodPrice,
+            old_plan_credit: switchCredit,
+            days_remaining: daysRemaining,
+          }
+        : null,
     })
     .select('id')
     .single();
