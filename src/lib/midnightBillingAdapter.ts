@@ -33,7 +33,14 @@ import { autoSuspendAtFromDue } from '@/lib/billingSchedule';
 import { lockAtFromBillingDay } from '@/lib/billingLifecycle';
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
 import { finalizeInvoicePaymentSuccess } from '@/lib/invoicePaymobPayment';
-import { ensureTeacherSubscriptionInvoice, advanceTeacherSubscriptionPaid } from '@/lib/teacherBilling';
+import {
+  ensureTeacherSubscriptionInvoice,
+  ensureTeacherOverageInvoice,
+  advanceTeacherSubscriptionPaid,
+  advanceTeacherOverageTick,
+} from '@/lib/teacherBilling';
+import { countActiveNonGuestStudents } from '@/lib/teacherCap';
+import { teacherOverageAmount } from '@/lib/teacherPlans';
 import { getIntervalConfig, getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { resolveProcessingFeeAmount } from '@/lib/processingFee';
 import { round2 } from '@/lib/invoiceBalance';
@@ -245,6 +252,73 @@ export function createSupabaseMidnightBillingAdapter(
         });
       }
 
+      // --- Teachers: Scale monthly OVERAGE tick (independent of the base cycle) ---
+      // Driven by overage_next_at, NOT next_billing_at, so an annual Scale base
+      // (next_billing +12m) still gets a monthly overage true-up. Summer-safe: the
+      // tick is only ever set/advanced for active Scale subs, never the held path.
+      const { data: dueOverage } = await supabase
+        .from('teacher_subscriptions')
+        .select('id, teacher_id, plan_key, status, overage_next_at')
+        .eq('plan_key', 'teacher_scale')
+        .in('status', ['active', 'past_due'])
+        .not('overage_next_at', 'is', null)
+        .gte('overage_next_at', start.toISOString())
+        .lt('overage_next_at', endExclusive.toISOString());
+
+      const overageRows = (dueOverage as Row[]) ?? [];
+      const overageTeacherIds = overageRows.map((r) => String(r.teacher_id));
+      const overageCarded = await ownersWithActiveCard(supabase, 'teacher', overageTeacherIds);
+
+      for (const r of overageRows) {
+        const ownerId = String(r.teacher_id);
+        let activeCount = 0;
+        try {
+          activeCount = await countActiveNonGuestStudents(supabase, ownerId);
+        } catch {
+          // Cannot count reliably → skip this tick (do NOT advance; reassess next run).
+          continue;
+        }
+        const overageAmount = teacherOverageAmount('teacher_scale', activeCount);
+
+        if (overageAmount <= 0) {
+          // Nothing over the cap this month — keep the cadence moving, no invoice.
+          await advanceTeacherOverageTick(supabase, ownerId, todayCairo);
+          continue;
+        }
+
+        const ensured = await ensureTeacherOverageInvoice(supabase, {
+          teacherId: ownerId,
+          billingDayCairo: todayCairo,
+          overageAmount,
+          fee,
+          overageStudents: Math.max(0, activeCount - 100),
+        });
+        if (!ensured) {
+          await advanceTeacherOverageTick(supabase, ownerId, todayCairo);
+          continue;
+        }
+
+        // Read the overage invoice's own retry_count so overage dunning is tracked
+        // on the invoice, never on the subscription's base dunning_attempts.
+        const { data: ovInv } = await supabase
+          .from('invoices')
+          .select('retry_count')
+          .eq('id', ensured.invoiceId)
+          .maybeSingle();
+        items.push({
+          key: `teacher-overage:${String(r.id)}`,
+          customerType: 'teacher',
+          owner: { ownerType: 'teacher', ownerId },
+          amount: ensured.total,
+          invoiceId: ensured.invoiceId,
+          periodKey: todayCairo.slice(0, 7),
+          billingDayCairo: todayCairo,
+          hasSavedCard: overageCarded.has(ownerId),
+          attemptIndex: Number((ovInv as Row | null)?.retry_count ?? 0),
+          overage: true,
+        });
+      }
+
       return items;
     },
 
@@ -303,6 +377,9 @@ export function createSupabaseMidnightBillingAdapter(
           .update({ auto_suspend_at: autoSuspendAtFromDue(item.billingDayCairo) })
           .eq('id', item.owner.ownerId)
           .neq('billing_status', 'paid');
+      } else if (item.overage) {
+        // Overage is a month-end true-up, not the base subscription — an unpaid
+        // overage invoice never locks the private engine. Pay-link only (above).
       } else {
         // Teacher free-tier drop preserved: lock the private engine at the next
         // Cairo midnight. The invoice stays unpaid; she pays it to restore access.
@@ -341,6 +418,13 @@ export function createSupabaseMidnightBillingAdapter(
           .update({ auto_suspend_at: deferLock })
           .eq('id', item.owner.ownerId)
           .neq('billing_status', 'paid');
+      } else if (item.overage) {
+        // Overage retries re-detect off overage_next_at (NOT next_billing_at), and
+        // never touch the base dunning_attempts/grace — the base cycle is separate.
+        await supabase
+          .from('teacher_subscriptions')
+          .update({ overage_next_at: startOfUtcInstantForCairoCalendarDay(nextRetryYmd).toISOString() })
+          .eq('teacher_id', item.owner.ownerId);
       } else {
         // Teacher re-detection on the retry day is driven by next_billing_at, so
         // move it forward and record the attempt; defer the free-tier lock.
@@ -372,6 +456,10 @@ export function createSupabaseMidnightBillingAdapter(
           .update({ auto_suspend_at: lockTomorrow })
           .eq('id', item.owner.ownerId)
           .neq('billing_status', 'paid');
+      } else if (item.overage) {
+        // Give up on this month's overage and move the tick on; never lock the
+        // engine for an unpaid true-up (the open invoice remains payable on demand).
+        await advanceTeacherOverageTick(supabase, item.owner.ownerId, today);
       } else {
         await supabase
           .from('teacher_subscriptions')

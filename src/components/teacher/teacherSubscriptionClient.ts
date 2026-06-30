@@ -19,6 +19,8 @@ export type TeacherSubscriptionStatus = {
   free_months_credit: number;
   blast_credits_purchased: number;
   blast_credits_subscription: number;
+  annual_multiplier?: number;
+  billing_interval?: 'monthly' | 'annual';
 };
 
 /** Fetch the teacher's subscription + credits state. Returns null if signed out or on error. */

@@ -335,6 +335,27 @@ export async function finalizeInvoicePaymentSuccess(
   // teacher_subscriptions advance were separate writes — a failure between them
   // left the teacher paid but without restored access, never retried.
   if (row.owner_type === 'teacher') {
+    // Scale OVERAGE invoice: mark paid and advance the monthly overage tick ONLY.
+    // It must never advance the base subscription period (the cycles are separate),
+    // so it goes through a plain mark-paid, NOT finalize_teacher_invoice_paid.
+    if (row.invoice_type === 'teacher_overage') {
+      const { error: ovErr } = await supabaseAdmin.from('invoices').update(paidColumns).eq('id', row.id);
+      if (ovErr) {
+        console.error('[finalizeInvoicePaymentSuccess] overage invoice', ovErr);
+        return null;
+      }
+      if (row.teacher_id) {
+        const tomorrowTick = startOfUtcInstantForCairoCalendarDay(
+          cairoYmdPlusDays(cairoDateKey(new Date()), 30),
+        ).toISOString();
+        await supabaseAdmin
+          .from('teacher_subscriptions')
+          .update({ overage_next_at: tomorrowTick })
+          .eq('teacher_id', row.teacher_id);
+      }
+      await auditInvoicePaid();
+      return { invoiceId: row.id, settled: true };
+    }
     if (!row.teacher_id) {
       const { error: tInvErr } = await supabaseAdmin.from('invoices').update(paidColumns).eq('id', row.id);
       if (tInvErr) {
@@ -350,11 +371,13 @@ export async function finalizeInvoicePaymentSuccess(
     // billing_interval keeps monthly behavior byte-identical (no annual rows yet).
     const { data: tSub } = await supabaseAdmin
       .from('teacher_subscriptions')
-      .select('billing_interval')
+      .select('billing_interval, plan_key, overage_next_at')
       .eq('teacher_id', row.teacher_id)
       .maybeSingle();
-    const periodDays =
-      (tSub as { billing_interval?: string } | null)?.billing_interval === 'annual' ? 365 : 30;
+    const subInfo = tSub as
+      | { billing_interval?: string; plan_key?: string; overage_next_at?: string | null }
+      | null;
+    const periodDays = subInfo?.billing_interval === 'annual' ? 365 : 30;
     const periodEnd = startOfUtcInstantForCairoCalendarDay(
       cairoYmdPlusDays(todayCairo, periodDays),
     ).toISOString();
@@ -370,6 +393,17 @@ export async function finalizeInvoicePaymentSuccess(
     if (tErr) {
       console.error('[finalizeInvoicePaymentSuccess] finalize_teacher_invoice_paid', tErr);
       return null;
+    }
+    // Scale: start the monthly overage tick on first paid base if not already set.
+    // The tick runs every 30 days regardless of the base cadence (monthly or annual).
+    if (subInfo?.plan_key === 'teacher_scale' && !subInfo.overage_next_at) {
+      const firstTick = startOfUtcInstantForCairoCalendarDay(
+        cairoYmdPlusDays(todayCairo, 30),
+      ).toISOString();
+      await supabaseAdmin
+        .from('teacher_subscriptions')
+        .update({ overage_next_at: firstTick })
+        .eq('teacher_id', row.teacher_id);
     }
     if ((typeof tRes === 'string' ? tRes : String(tRes ?? '')) !== 'already_paid') {
       await auditInvoicePaid();

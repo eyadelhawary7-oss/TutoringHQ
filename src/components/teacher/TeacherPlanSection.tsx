@@ -6,8 +6,10 @@ import { useSearchParams } from 'next/navigation';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
 import { isProOrAbove } from '@/lib/teacherPlans';
 import { useToast } from '@/hooks/useToast';
+import { formatCurrency } from '@/lib/formatNumber';
 import {
   fetchTeacherSubscription,
+  teacherSubscriptionPost,
   type TeacherSubscriptionStatus,
 } from './teacherSubscriptionClient';
 import UpgradeFlow from './UpgradeFlow';
@@ -36,6 +38,7 @@ export default function TeacherPlanSection() {
 
   const [sub, setSub] = useState<TeacherSubscriptionStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [switching, setSwitching] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -43,6 +46,43 @@ export default function TeacherPlanSection() {
     setSub(data);
     setLoading(false);
   }, []);
+
+  const switchInterval = useCallback(
+    async (next: 'monthly' | 'annual') => {
+      if (switching) return;
+      setSwitching(true);
+      try {
+        const res = await teacherSubscriptionPost('/api/teacher/subscription/switch-interval', {
+          interval: next,
+        });
+        const json = (await res?.json().catch(() => ({}))) as {
+          ok?: boolean;
+          paymob_disabled?: boolean;
+          paymob_url?: string;
+        };
+        if (res?.ok && json.paymob_url) {
+          window.location.href = json.paymob_url;
+          return;
+        }
+        if (res?.ok && json.paymob_disabled) {
+          toast.success(t('intervalSaved'));
+          await load();
+          return;
+        }
+        if (res?.ok && json.ok) {
+          toast.success(t('intervalSaved'));
+          await load();
+          return;
+        }
+        toast.error(t('upgradeError'));
+      } catch {
+        toast.error(t('upgradeError'));
+      } finally {
+        setSwitching(false);
+      }
+    },
+    [switching, toast, t, load],
+  );
 
   useEffect(() => {
     load();
@@ -126,6 +166,54 @@ export default function TeacherPlanSection() {
             </>
           )}
         </dl>
+
+        {/* Billing interval: Monthly | Annual (annual = monthly × 10, "2 months free") */}
+        {(sub.status === 'active' || sub.status === 'trialing') &&
+          (() => {
+            const mult = sub.annual_multiplier && sub.annual_multiplier > 0 ? sub.annual_multiplier : 10;
+            const current = sub.billing_interval === 'annual' ? 'annual' : 'monthly';
+            const annualTotal = Math.round((sub.price_gross || 0) * mult);
+            const annualPerMonth = Math.round(annualTotal / 12);
+            return (
+              <div className="mt-4 border-t border-[var(--color-border-subtle)] pt-4">
+                <p className="mb-2 text-sm font-medium text-[var(--color-text-primary)]">
+                  {t('billingIntervalLabel')}
+                </p>
+                <div className="inline-flex rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] p-1">
+                  {(['monthly', 'annual'] as const).map((iv) => (
+                    <button
+                      key={iv}
+                      type="button"
+                      disabled={switching}
+                      onClick={() => current !== iv && switchInterval(iv)}
+                      className="rounded-full px-4 py-1 text-sm font-semibold transition-colors disabled:opacity-60"
+                      style={
+                        current === iv
+                          ? { background: 'var(--color-brass)', color: '#ffffff' }
+                          : { color: 'var(--color-text-secondary)' }
+                      }
+                    >
+                      {iv === 'monthly' ? t('billMonthly') : t('billAnnual')}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--color-text-muted)]">
+                  <span>
+                    {t('annualPriceHint', {
+                      perMonth: formatCurrency(annualPerMonth, locale),
+                      total: formatCurrency(annualTotal, locale),
+                    })}
+                  </span>
+                  <span
+                    className="inline-block rounded-full px-2 py-0.5 font-medium"
+                    style={{ background: 'var(--color-brass-soft)', color: 'var(--color-brass)' }}
+                  >
+                    {t('annualBadge')}
+                  </span>
+                </p>
+              </div>
+            );
+          })()}
 
         <div className="mt-4">
           {isPro ? (

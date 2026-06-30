@@ -9392,6 +9392,12 @@
   },
   "teacherBilling": {
     "pageTitle": "Billing and plan",
+    "billingIntervalLabel": "Billing cycle",
+    "billMonthly": "Monthly",
+    "billAnnual": "Annual",
+    "annualBadge": "2 months free",
+    "annualPriceHint": "Annual: {perMonth}/mo, billed {total}/year",
+    "intervalSaved": "Billing cycle updated",
     "currentPlan": "Your current plan",
     "planStandard": "Standard",
     "planPro": "Pro",

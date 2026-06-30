@@ -1487,6 +1487,7 @@ COLUMN teacher_subscriptions.summer_enrolled_at ord=24 type=timestamp with time 
 COLUMN teacher_subscriptions.summer_first_invoice_id ord=25 type=uuid notnull=false default=∅
 COLUMN teacher_subscriptions.summer_status ord=26 type=text notnull=false default=∅
 COLUMN teacher_subscriptions.billing_interval ord=27 type=text notnull=true default='monthly'::text
+COLUMN teacher_subscriptions.overage_next_at ord=28 type=timestamp with time zone notnull=false default=∅
 COLUMN transactions.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN transactions.kind ord=2 type=text notnull=true default=∅
 COLUMN transactions.session_id ord=3 type=uuid notnull=false default=∅
@@ -2040,7 +2041,7 @@ CONSTRAINT in_app_notifications.in_app_notifications_pkey type=p def=PRIMARY KEY
 CONSTRAINT in_app_notifications.in_app_notifications_user_id_fkey type=f def=FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 CONSTRAINT invoices.invoices_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT invoices.invoices_invoice_number_key type=u def=UNIQUE (invoice_number)
-CONSTRAINT invoices.invoices_invoice_type_check type=c def=CHECK ((invoice_type = ANY (ARRAY['base_subscription'::text, 'subscription'::text, 'whatsapp_addon'::text, 'setup_fee'::text, 'payment_proof'::text, 'announcement_settlement'::text, 'announcement_cap'::text, 'plan_upgrade_difference'::text, 'pack_billing'::text, 'signup_first_payment'::text, 'late_payment_fee'::text, 'referral_payout'::text])))
+CONSTRAINT invoices.invoices_invoice_type_check type=c def=CHECK ((invoice_type = ANY (ARRAY['base_subscription'::text, 'subscription'::text, 'whatsapp_addon'::text, 'setup_fee'::text, 'payment_proof'::text, 'announcement_settlement'::text, 'announcement_cap'::text, 'plan_upgrade_difference'::text, 'pack_billing'::text, 'signup_first_payment'::text, 'late_payment_fee'::text, 'referral_payout'::text, 'teacher_overage'::text])))
 CONSTRAINT invoices.invoices_owner_type_check type=c def=CHECK ((owner_type = ANY (ARRAY['center'::text, 'teacher'::text])))
 CONSTRAINT invoices.invoices_owner_xor_check type=c def=CHECK ((((owner_type = 'center'::text) AND (center_id IS NOT NULL) AND (teacher_id IS NULL)) OR ((owner_type = 'teacher'::text) AND (teacher_id IS NOT NULL) AND (center_id IS NULL))))
 CONSTRAINT invoices.invoices_pkey type=p def=PRIMARY KEY (id)

@@ -152,6 +152,112 @@ export async function ensureTeacherSubscriptionInvoice(
 }
 
 /**
+ * Ensure the Scale teacher has an OPEN overage invoice for the current monthly
+ * overage tick, creating it if absent. Mirrors ensureTeacherSubscriptionInvoice
+ * (reuse-open-then-create, race-safe) but for the `teacher_overage` type:
+ *
+ *   total = (active students over 100) × 20 + processing fee.
+ *
+ * The overage cadence is MONTHLY and independent of the base cycle — annual Scale
+ * subscribers still get one of these every month. Returns null when there is
+ * nothing to bill (≤ 100 active → overage 0), so the caller just advances the tick.
+ */
+export async function ensureTeacherOverageInvoice(
+  supabase: SupabaseClient,
+  opts: {
+    teacherId: string;
+    billingDayCairo: string;
+    overageAmount: number;
+    fee: number;
+    /** Students above the cap (for the invoice line + audit). Optional. */
+    overageStudents?: number;
+  },
+): Promise<EnsuredTeacherInvoice | null> {
+  const { teacherId, billingDayCairo } = opts;
+
+  const { data: open } = await supabase
+    .from('invoices')
+    .select('id, total_amount')
+    .eq('owner_type', 'teacher')
+    .eq('teacher_id', teacherId)
+    .eq('invoice_type', 'teacher_overage')
+    .in('status', OPEN_STATUSES as unknown as string[])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const openRow = open as Row | null;
+  if (openRow?.id) {
+    return { invoiceId: String(openRow.id), total: Number(openRow.total_amount ?? 0) };
+  }
+
+  const fee = Math.max(0, round2(Number(opts.fee) || 0));
+  const overage = round2(Math.max(0, Number(opts.overageAmount) || 0));
+  if (overage <= 0) return null; // nothing over the cap this month
+  const total = round2(overage + fee);
+
+  const invoiceNumber = `TOVG-${billingDayCairo}-${teacherId}`;
+  const periodEnd = cairoYmdPlusDays(billingDayCairo, 30);
+
+  const { data: ins, error } = await supabase
+    .from('invoices')
+    .insert({
+      owner_type: 'teacher',
+      teacher_id: teacherId,
+      center_id: null,
+      invoice_number: invoiceNumber,
+      invoice_type: 'teacher_overage',
+      status: 'pending',
+      base_amount: overage,
+      total_amount: total,
+      billing_period_start: billingDayCairo,
+      billing_period_end: periodEnd,
+      due_date: billingDayCairo,
+      metadata: {
+        processing_fee: fee,
+        overage: true,
+        overage_students: Math.max(0, Math.floor(Number(opts.overageStudents ?? 0))),
+      },
+    })
+    .select('id')
+    .single();
+
+  if (error || !(ins as Row | null)?.id) {
+    const { data: again } = await supabase
+      .from('invoices')
+      .select('id, total_amount')
+      .eq('invoice_number', invoiceNumber)
+      .maybeSingle();
+    const againRow = again as Row | null;
+    if (againRow?.id) {
+      return { invoiceId: String(againRow.id), total: Number(againRow.total_amount ?? total) };
+    }
+    return null;
+  }
+
+  const newInvoiceId = String((ins as Row).id);
+  await logBillingEvent(supabase, 'invoice_created', { ownerType: 'teacher', ownerId: teacherId }, {
+    invoiceId: newInvoiceId,
+    invoiceType: 'teacher_overage',
+    total,
+    billingDayCairo,
+  });
+  return { invoiceId: newInvoiceId, total };
+}
+
+/** Advance only the monthly overage tick (Scale), leaving the base cycle untouched. */
+export async function advanceTeacherOverageTick(
+  supabase: SupabaseClient,
+  teacherId: string,
+  fromCairo: string,
+): Promise<void> {
+  const nextYmd = cairoYmdPlusDays(fromCairo, 30);
+  await supabase
+    .from('teacher_subscriptions')
+    .update({ overage_next_at: startOfUtcInstantForCairoCalendarDay(nextYmd).toISOString() })
+    .eq('teacher_id', teacherId);
+}
+
+/**
  * Advance a teacher's subscription by one paid month and restore private-engine
  * access. Called from the shared finalizer when a teacher invoice is settled —
  * the teacher equivalent of the center "subscription paid" side-effect.

@@ -106,6 +106,11 @@ function makeFakeSupabase(tables: Record<string, Row[]>) {
         filters.push((r) => (r[c] ?? null) === v);
         return api;
       },
+      not(c: string, op2: string, v: unknown) {
+        // Supports the overage query's `.not('overage_next_at', 'is', null)`.
+        filters.push((r) => !(op2 === 'is' ? (r[c] ?? null) === v : r[c] === v));
+        return api;
+      },
       gte(c: string, v: unknown) {
         filters.push((r) => (r[c] as never) >= (v as never));
         return api;

@@ -782,6 +782,15 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     });
     totalsInner = `${discountRowHtml}
     ${redesignedSubscriptionTotals(total, processingFeeAmt, totalLabel)}`;
+  } else if (invoiceType === 'teacher_overage') {
+    const overStudents = num(meta.overage_students ?? 0);
+    lineRowsHtml = lineRowHtml({
+      amount: subscriptionValue,
+      detail: periodRange,
+      title: 'رسوم طلاب فوق الحد (Scale)',
+      subtitle: overStudents > 0 ? `${overStudents} طالب × 20 ج.م` : 'تسوية شهرية',
+    });
+    totalsInner = redesignedSubscriptionTotals(total, processingFeeAmt, totalLabel);
   } else if (invoiceType === 'pack_billing') {
     const active = packActivePre;
     const activeCount = num(meta.active_count ?? meta.active_parent_count ?? active) || active;

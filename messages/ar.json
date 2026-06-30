@@ -9392,6 +9392,12 @@
   },
   "teacherBilling": {
     "pageTitle": "الفوترة والخطة",
+    "billingIntervalLabel": "دورة الفوترة",
+    "billMonthly": "شهري",
+    "billAnnual": "سنوي",
+    "annualBadge": "شهران مجانًا",
+    "annualPriceHint": "السنوي: {perMonth}/شهر، يُدفع {total}/سنة",
+    "intervalSaved": "تم تحديث دورة الفوترة",
     "currentPlan": "خطتك الحالية",
     "planStandard": "العادية",
     "planPro": "Pro",

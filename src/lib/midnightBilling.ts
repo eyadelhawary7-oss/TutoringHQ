@@ -70,6 +70,8 @@ export interface DueChargeable {
   attemptIndex: number;
   /** Teacher billing cadence; 'annual' advances 12 months on settle. Centers: always 'monthly'. */
   billingInterval?: 'monthly' | 'annual';
+  /** True for a Scale monthly-overage invoice — settles/dunns on its OWN tick, never the base cycle. */
+  overage?: boolean;
 }
 
 export interface MidnightBillingSummary {
