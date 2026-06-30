@@ -482,6 +482,29 @@ export async function tryFinalizeCombinedPaymentSession(
         return false;
       }
 
+      // Trialing→Pro paid the FULL Pro price, so it starts a fresh paid Pro month.
+      // An ACTIVE upgrade paid only the prorated difference and KEEPS its renewal
+      // date (G7) — the RPC no longer resets the period, so there is nothing to do.
+      if (rawMeta.freshProPeriod === true) {
+        const nowIso = new Date().toISOString();
+        const periodEndIso = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        const { error: periodErr } = await supabase
+          .from('teacher_subscriptions')
+          .update({
+            current_period_start: nowIso,
+            current_period_end: periodEndIso,
+            next_billing_at: periodEndIso,
+          })
+          .eq('teacher_id', teacherId);
+        if (periodErr) {
+          await logFinalizeFailure(supabase, periodErr, {
+            sessionId: row.id,
+            phase: 'teacher_upgrade_fresh_period',
+            teacherId,
+          });
+        }
+      }
+
       const { error: auditErr } = await supabase.from('audit_log').insert({
         action: 'teacher_upgrade_session_finalized',
         entity_type: 'teacher_subscription',

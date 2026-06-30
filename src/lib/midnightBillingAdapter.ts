@@ -40,7 +40,7 @@ import {
   advanceTeacherOverageTick,
 } from '@/lib/teacherBilling';
 import { countActiveNonGuestStudents } from '@/lib/teacherCap';
-import { teacherOverageAmount } from '@/lib/teacherPlans';
+import { teacherOverageAmount, getTeacherPlan } from '@/lib/teacherPlans';
 import { getIntervalConfig, getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { resolveProcessingFeeAmount } from '@/lib/processingFee';
 import { round2 } from '@/lib/invoiceBalance';
@@ -193,7 +193,7 @@ export function createSupabaseMidnightBillingAdapter(
       const { start, endExclusive } = cairoPaidAtDayUtcBounds(todayCairo);
       const { data: dueTeach } = await supabase
         .from('teacher_subscriptions')
-        .select('id, teacher_id, price_gross, billing_interval, dunning_attempts, status, next_billing_at')
+        .select('id, teacher_id, plan_key, price_gross, billing_interval, dunning_attempts, status, next_billing_at, scheduled_plan_key')
         .in('status', ['active', 'trialing', 'past_due'])
         .gte('next_billing_at', start.toISOString())
         .lt('next_billing_at', endExclusive.toISOString());
@@ -221,7 +221,26 @@ export function createSupabaseMidnightBillingAdapter(
         const attempt = Number(r.dunning_attempts ?? 0);
         if (attempt >= MAX_CHARGE_ATTEMPTS) continue;
         const ownerId = String(r.teacher_id);
-        const priceGross = Number(r.price_gross ?? 0);
+
+        // G1/G5: a scheduled downgrade LANDS exactly here, at the renewal boundary —
+        // the new (lower) plan + its price take effect for the period now starting,
+        // never sooner. set_teacher_plan_key keeps the renewal cadence; the recurring
+        // engine advances the period on payment.
+        let priceGross = Number(r.price_gross ?? 0);
+        const scheduledPlan = r.scheduled_plan_key ? String(r.scheduled_plan_key) : null;
+        if (scheduledPlan && scheduledPlan !== r.plan_key) {
+          await supabase.rpc('set_teacher_plan_key', {
+            p_user_id: ownerId,
+            p_plan_key: scheduledPlan,
+            p_actor_id: ownerId,
+          });
+          await supabase
+            .from('teacher_subscriptions')
+            .update({ scheduled_plan_key: null, scheduled_billing_interval: null })
+            .eq('id', r.id);
+          priceGross = getTeacherPlan(scheduledPlan).priceGross;
+        }
+
         const interval: 'monthly' | 'annual' =
           r.billing_interval === 'annual' ? 'annual' : 'monthly';
         const monthlyFallbackBase =

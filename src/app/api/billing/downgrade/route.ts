@@ -1,16 +1,13 @@
-import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
-import { earnCredits, getCreditBalance, getDailyRate, isPaygCenter } from '@/lib/billingEngine';
+import { isPaygCenter } from '@/lib/billingEngine';
 import {
-  getChargeFromQuarterlyAllIn,
   isPlanKey,
   normalizeBillingPeriod,
   PLANS,
   type BillingPeriod,
   type PlanKey,
 } from '@/lib/pricing';
-import { todayISO } from '@/lib/parentPack';
 import { parseBodyWithLimit } from '@/lib/validate';
 
 export const dynamic = 'force-dynamic';
@@ -112,92 +109,46 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Use upgrade flow for higher plans' }, { status: 400 });
   }
 
-  const currentBp = normalizeBillingPeriod(
-    c.subscription_billing_period ?? c.billing_period,
-  ) as BillingPeriod;
-
   const npd = c.next_payment_due?.slice(0, 10);
   if (!npd) {
     return NextResponse.json({ error: 'Missing next payment due' }, { status: 400 });
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const due = new Date(`${npd}T12:00:00`);
-  due.setHours(0, 0, 0, 0);
-  const remainingDays = Math.max(
-    0,
-    Math.floor((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)),
-  );
-
-  const currentPk = isPlanKey(currentPlan) ? currentPlan : 'starter';
-  const currentAllIn =
-    Number(c.all_in_price ?? 0) ||
-    (PLANS[currentPk as PlanKey]?.quarterlyAllIn ?? PLANS.starter.quarterlyAllIn);
-
+  // Validate the target plan exists (price sanity), but DO NOT change anything now.
   const { data: newPriceRow } = await supabaseAdmin
     .from('pricing_plans')
     .select('all_in_price')
     .eq('plan_key', newPlan)
     .eq('is_active', true)
     .maybeSingle();
-
   const newAllInFromDb = Number(newPriceRow?.all_in_price ?? 0);
   const newAllIn =
     (Number.isFinite(newAllInFromDb) && newAllInFromDb > 0
       ? newAllInFromDb
       : PLANS[newPlan as PlanKey]?.quarterlyAllIn) ?? 0;
-
   if (!Number.isFinite(newAllIn) || newAllIn <= 0) {
     return NextResponse.json({ error: 'Plan pricing unavailable' }, { status: 400 });
   }
 
-  const currentPeriodPrice = getChargeFromQuarterlyAllIn(
-    currentAllIn,
-    currentBp,
-    currentPk as PlanKey,
-  );
-  const newPeriodPrice = getChargeFromQuarterlyAllIn(newAllIn, newBp, newPlan as PlanKey);
-
-  const rateCtx = { billing_type: c.billing_type, pricing_type: c.pricing_type };
-  const currentDailyRate = getDailyRate(currentPeriodPrice, currentBp, rateCtx);
-  const newDailyRate = getDailyRate(newPeriodPrice, newBp, rateCtx);
-  const creditAmount = Math.max(0, (currentDailyRate - newDailyRate) * remainingDays);
-  const creditRounded = Math.round(creditAmount * 100) / 100;
-
-  const newBillingAmount = getChargeFromQuarterlyAllIn(newAllIn, newBp, newPlan as PlanKey);
-
+  // Unified rule 3 (G1/G3/G4): a downgrade is SCHEDULED for the next renewal — no
+  // charge, no refund, and NO credit (we no longer mint wallet credit on downgrade,
+  // which was the worst bypass). The current plan, its limits, its price and its
+  // overage stay fully in force until the recurring engine applies this at npd.
   const { error: upErr } = await supabaseAdmin
     .from('centers')
-    .update({
-      plan: newPlan,
-      subscription_billing_period: newBp,
-      billing_period: newBp,
-      all_in_price: newAllIn,
-      billing_amount: newBillingAmount,
-    })
+    .update({ scheduled_plan: newPlan, scheduled_billing_period: newBp })
     .eq('id', centerId);
 
   if (upErr) {
-    console.error('[billing/downgrade] center update', upErr);
-    return NextResponse.json({ error: 'Failed to apply downgrade' }, { status: 500 });
+    console.error('[billing/downgrade] schedule', upErr);
+    return NextResponse.json({ error: 'Failed to schedule downgrade' }, { status: 500 });
   }
-
-  if (creditRounded > 0) {
-    await earnCredits({
-      centerId,
-      amount: creditRounded,
-      referenceId: randomUUID(),
-      referenceType: 'downgrade',
-      supabase: supabaseAdmin,
-    });
-  }
-
-  const newBalance = await getCreditBalance(centerId, supabaseAdmin);
 
   return NextResponse.json({
-    creditEarned: creditRounded,
-    newBalance,
-    effectiveDate: todayISO(),
+    scheduled: true,
+    creditEarned: 0,
+    newPlan,
+    newBillingPeriod: newBp,
+    effectiveDate: npd, // takes effect at the next renewal, not now
   });
 }

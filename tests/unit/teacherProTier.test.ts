@@ -338,18 +338,18 @@ describe('downgrade route', () => {
     expect(rpcCalls.find((c) => c.fn === 'downgrade_teacher_to_standard')).toBeUndefined();
   });
 
-  it('6. under caps -> delegates to downgrade_teacher_to_standard RPC (zeroes sub credits, keeps purchased)', async () => {
+  it('6. under caps -> SCHEDULES the downgrade for next renewal (no immediate RPC, no credit)', async () => {
     adminQueue.teacher_subscriptions = [{ data: { plan_key: 'teacher_pro' }, error: null }];
     adminQueue.student_groups = [{ data: [{ id: 'g-0', name: 'G0' }], error: null }];
     adminQueue.enrollments = [{ data: [{ student_id: 's-0', group_id: 'g-0' }], error: null }];
-    rpcQueues.downgrade_teacher_to_standard = [{ data: null, error: null }];
 
     const res = await postDowngrade(makeRequest({}));
 
     expect(res.status).toBe(200);
-    expect(((await res.json()) as { downgraded?: boolean }).downgraded).toBe(true);
-    const call = rpcCalls.find((c) => c.fn === 'downgrade_teacher_to_standard');
-    expect(call).toBeDefined();
-    expect(call?.args).toEqual({ p_user_id: 'user-1' });
+    const body = (await res.json()) as { downgraded?: boolean; scheduled?: boolean };
+    expect(body.downgraded).toBe(true);
+    expect(body.scheduled).toBe(true);
+    // G1/G3: the immediate plan-change RPC is NOT called — it lands at next renewal.
+    expect(rpcCalls.find((c) => c.fn === 'downgrade_teacher_to_standard')).toBeUndefined();
   });
 });
