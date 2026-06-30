@@ -7,6 +7,10 @@ import { autoSuspendAtFromDue } from '@/lib/billingSchedule';
 import { applyPaymentToInvoice, readAppliedTxns, remainingBalance } from '@/lib/invoiceBalance';
 import { cairoDateKey, cairoYmdPlusDays, startOfUtcInstantForCairoCalendarDay } from '@/lib/cairo/day';
 import { logBillingEvent, invoiceOwner } from '@/lib/billingAudit';
+import {
+  resolveScheduledCenterDowngrade,
+  applyScheduledCenterDowngrade,
+} from '@/lib/scheduledDowngrade';
 
 const PERIOD_MONTHS: Record<string, number> = {
   monthly: 1,
@@ -109,7 +113,7 @@ async function handleSubscriptionInvoicePaid(
   const { data: center } = await supabaseAdmin
     .from('centers')
     .select(
-      'billing_status, status, subscription_status, next_payment_due, subscription_start_date, billing_cycle_start, approved_at, name, phone, billing_amount',
+      'billing_status, status, subscription_status, next_payment_due, subscription_start_date, billing_cycle_start, approved_at, name, phone, billing_amount, scheduled_plan, scheduled_billing_period',
     )
     .eq('id', inv.center_id)
     .maybeSingle();
@@ -125,6 +129,8 @@ async function handleSubscriptionInvoicePaid(
     name?: string | null;
     phone?: string | null;
     billing_amount?: number | null;
+    scheduled_plan?: string | null;
+    scheduled_billing_period?: string | null;
   } | null;
 
   if (!c) return null;
@@ -159,6 +165,19 @@ async function handleSubscriptionInvoicePaid(
     return null;
   }
   const status = typeof res === 'string' ? res : String(res ?? '');
+
+  // G1/G5: a scheduled downgrade LANDS exactly here — the renewal just rolled the
+  // period, so the center flips to the lower plan now (never sooner) and the schedule
+  // clears. The just-paid renewal invoice already billed the scheduled (lower) amount.
+  // No credit, ever (G3/G4). Skipped on an idempotent already_paid replay.
+  if (status !== 'already_paid' && c.scheduled_plan) {
+    const sched = await resolveScheduledCenterDowngrade(
+      supabaseAdmin,
+      c.scheduled_plan,
+      c.scheduled_billing_period,
+    );
+    if (sched) await applyScheduledCenterDowngrade(supabaseAdmin, inv.center_id, sched);
+  }
 
   // Exactly-once paid confirmation. finalize_subscription_invoice_paid performs
   // the mark-paid transition atomically and returns 'already_paid' to every

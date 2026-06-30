@@ -14,6 +14,8 @@ import {
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
 import { isPaygCenter } from '@/lib/billingEngine';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import { applyProcessingFee } from '@/lib/processingFee';
 
 export const dynamic = 'force-dynamic';
 
@@ -242,6 +244,13 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Processing-fee layout (Section 5): the prorated charge is the subscription value;
+  // add the flat fee (0 when disabled) to get the amount actually charged via Paymob.
+  // No 6% service / 0.5% stamp line — VAT is inside the prorated amount.
+  const feeCfg = await getProcessingFeeConfig();
+  const { subscription: subscriptionValue, fee: processingFee, total: chargedTotal } =
+    applyProcessingFee(amountDue, feeCfg);
+
   const today = new Date().toISOString().slice(0, 10);
   // Monthly→annual starts a FRESH 12-month term (rule 2 / G7 exception); a tier
   // upgrade keeps the current renewal date (G7), so its invoice period ends at npd.
@@ -261,22 +270,24 @@ export async function POST(request: NextRequest) {
       center_id: centerId,
       invoice_number: invoiceNumber,
       invoice_type: 'plan_upgrade_difference',
-      total_amount: amountDue,
-      base_amount: amountDue,
+      total_amount: chargedTotal,
+      base_amount: subscriptionValue,
       billing_period_start: today,
       billing_period_end: invoicePeriodEnd,
       due_date: today,
       status: 'pending',
       discount_amount: 0,
-      // Renders the prorated credit line on the invoice (annual − returned-credit).
+      // processing_fee drives the redesigned totals (charge → fee → total, VAT shown
+      // as included). For monthly→annual we also render the prorated credit line.
       metadata: isSwitchToAnnual
         ? {
+            processing_fee: processingFee,
             interval_switch_to_annual: true,
             new_plan_amount: newPlanFullPeriodPrice,
             old_plan_credit: switchCredit,
             days_remaining: daysRemaining,
           }
-        : null,
+        : { processing_fee: processingFee },
     })
     .select('id')
     .single();
@@ -294,8 +305,8 @@ export async function POST(request: NextRequest) {
       center_id: centerId,
       invoice_ids: [invoiceId],
       credit_amount: 0,
-      paymob_amount: amountDue,
-      total_amount: amountDue,
+      paymob_amount: chargedTotal,
+      total_amount: chargedTotal,
       status: 'pending',
       session_type: 'upgrade',
       metadata: {
@@ -305,7 +316,8 @@ export async function POST(request: NextRequest) {
         previousBillingPeriod: periodForLimit,
         daysRemaining,
         dailyRateDifference,
-        amountCharged: amountDue,
+        amountCharged: chargedTotal,
+        processingFee,
         switchCredit,
         newPlanFullPeriodPrice,
         // Monthly→annual resets the renewal clock to a fresh 12-month term; a tier
@@ -329,7 +341,7 @@ export async function POST(request: NextRequest) {
   try {
     const phone = String(c.phone ?? '').replace(/\D/g, '') || '0';
     const checkout = await createPaymobCheckoutEgp({
-      amountEgp: amountDue,
+      amountEgp: chargedTotal,
       merchantOrderId: `upg-${sessionId}`,
       itemName: 'TutoringHQ plan upgrade',
       phoneDigits: phone,
@@ -359,7 +371,9 @@ export async function POST(request: NextRequest) {
         daysRemaining,
         dailyRateDifference,
         switchCredit,
-        amountDue,
+        amountDue: subscriptionValue,
+        processingFee,
+        chargedTotal,
       },
       newNextPaymentDue: isSwitchToAnnual ? freshTermEndYmd : npd,
       upgrade_count_this_period: Number(c.upgrade_count_this_period ?? 0),
