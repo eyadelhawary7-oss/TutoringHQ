@@ -3,6 +3,9 @@
     "terms": {
       "title": "شروط الخدمة",
       "placeholderBody": "هذه الشروط وثيقة مؤقتة أثناء اكتمال المراجعة القانونية. الصيغة النهائية قيد المراجعة من Adsero · النسخة المؤقتة سارية حتى ٩ مايو ٢٠٢٦.\n\nباستخدام TutoringHQ فإنك توافق على العمل بحسن نية والالتزام بالقوانين المعمول بها وتوقعات الاستخدام المقبول.\n\nقد نقوم بتحديث هذه الشروط وسننشر التغييرات هنا مع تاريخ \"آخر تحديث\".",
+      "processingFeeHeading": "رسوم المعالجة",
+      "processingFeeBody": "تُضاف رسوم معالجة ثابتة قدرها {amount} على كل فاتورة اشتراك تُحصَّل عبر Paymob، وتظهر عند الدفع وعلى كل فاتورة. ضريبة القيمة المضافة مشمولة في الإجماليات المعروضة.",
+      "processingFeePlaceholderNote": "[نص مؤقت — الصياغة النهائية لرسوم المعالجة قيد المراجعة القانونية من Adsero.]",
       "lastUpdated": "آخر تحديث: ٩ مايو ٢٠٢٦"
     },
     "privacy": {
@@ -25,16 +28,25 @@
     "metaDescription": "قارِن خطط Solo إلى Enterprise وخطة كبار السناتر. أسعار شهرية وربع سنوية وسنوية شفافة لسناتر الدروس.",
     "navHome": "الرئيسية",
     "title": "خطط لكل حجم",
-    "subtitle": "فوترة شهرية أو ربع سنوية أو سنوية. المبالغ تشمل ضريبة القيمة المضافة حيثما تنطبق.",
+    "subtitle": "فوترة شهرية أو سنوية. المبالغ تشمل ضريبة القيمة المضافة حيثما تنطبق.",
     "toggleCenters": "للسناتر",
     "toggleTeachers": "للمدرّسين",
     "studentsCapEn": "Up to {count} students/week",
     "studentsCapAr": "حتى {count} طالب/أسبوع",
     "badgeEntry": "مستوى البداية",
     "badgePopular": "الأكثر شيوعاً",
-    "colMonthly": "السعر الشهري المعلن",
-    "colQuarterly": "ربع سنوي (شهرياً)",
-    "colAnnual": "سنوي (فعّال / شهر)",
+    "billMonthly": "شهري",
+    "billAnnual": "سنوي",
+    "annualBadge": "شهران مجانًا",
+    "perMonthSuffix": "/شهر",
+    "billedAnnually": "يُدفع سنويًا بمبلغ {amount}",
+    "centerFeatures": [
+      "حضور ودرجات ومدفوعات كاملة",
+      "مجموعات وحصص وقاعات بلا حدود",
+      "ماسح QR وتسجيل أوفلاين",
+      "واتساب تلقائي لأولياء الأمور",
+      "تقارير مالية ومرتبات"
+    ],
     "priceDisclaimer": "الأرقام وفق قائمة الأسعار المعتمدة؛ يُعتد بالفاتورة الصادرة.",
     "ctaSignup": "ابدأ الآن",
     "topCentersTitle": "Top Centers",
@@ -1864,7 +1876,8 @@
     "pricingSectionPromo": "عرض الإطلاق",
     "pricingSectionBanner": "شريط الصفحة الرئيسية",
     "pricingMonthlyPremiumPct": "علاوة الشهري (٪)",
-    "pricingAnnualDiscountPct": "خصم السنوي (٪)",
+    "pricingAnnualMonths": "السنوي: عدد الشهور المحسوبة / السنة",
+    "pricingAnnualMonthsHint": "إجمالي السنوي = الشهري × ده. {free} شهر مجانًا.",
     "pricingAnnualLabelEn": "نص علامة السنوي (إنجليزي)",
     "pricingAnnualLabelAr": "نص علامة السنوي (عربي)",
     "pricingAddonWhatsappPack": "باقة واتساب للأولياء (ج.م / ولي / شهر)",
@@ -7842,7 +7855,7 @@
     "subtitle": "وصف",
     "title": "عنوان",
     "tile": {
-      "quarterlyDisclosure": "يُدفع كل ٣ أشهر بمبلغ {amount} ج.م"
+      "annualDisclosure": "يُدفع سنويًا · شهران مجانًا"
     },
     "comparisonTitle": "قارن الخطط",
     "freePlan": "مجاني",

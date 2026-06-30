@@ -2,7 +2,9 @@
  * Subscription tier rows - single source for `PLANS` in `@/lib/pricing.ts`.
  * Order = lowest → highest (excluding `top_centers`, defined only in pricing.ts).
  *
- * `annualEffectiveMonthly` - whole EGP/month when billed annually (docs/PRICING_SPEC.md).
+ * `annualEffectiveMonthly` - whole EGP/month when billed annually = annual total ÷ 12,
+ *   where annual total = `quarterlyAllIn` × 10 ("true 2 months free"). Mirrors the
+ *   `pricing.interval.annual_multiplier` (=10) default; the live admin value wins at runtime.
  */
 export const SUBSCRIPTION_PLAN_DEFINITIONS = [
   {
@@ -12,7 +14,7 @@ export const SUBSCRIPTION_PLAN_DEFINITIONS = [
     weeklyStudentLimit: 50,
     quarterlyAllIn: 999,
     monthlyListPrice: 1149,
-    annualEffectiveMonthly: 849,
+    annualEffectiveMonthly: 833,
     landingBadge: 'entry' as const,
   },
   {
@@ -22,7 +24,7 @@ export const SUBSCRIPTION_PLAN_DEFINITIONS = [
     weeklyStudentLimit: 120,
     quarterlyAllIn: 1999,
     monthlyListPrice: 2499,
-    annualEffectiveMonthly: 1699,
+    annualEffectiveMonthly: 1666,
   },
   {
     key: 'starter',
@@ -31,7 +33,7 @@ export const SUBSCRIPTION_PLAN_DEFINITIONS = [
     weeklyStudentLimit: 200,
     quarterlyAllIn: 4499,
     monthlyListPrice: 5199,
-    annualEffectiveMonthly: 3824,
+    annualEffectiveMonthly: 3749,
     landingBadge: 'popular' as const,
   },
   {
@@ -41,7 +43,7 @@ export const SUBSCRIPTION_PLAN_DEFINITIONS = [
     weeklyStudentLimit: 500,
     quarterlyAllIn: 7999,
     monthlyListPrice: 9199,
-    annualEffectiveMonthly: 6799,
+    annualEffectiveMonthly: 6666,
   },
   {
     key: 'business',
@@ -50,7 +52,7 @@ export const SUBSCRIPTION_PLAN_DEFINITIONS = [
     weeklyStudentLimit: 1000,
     quarterlyAllIn: 12999,
     monthlyListPrice: 14999,
-    annualEffectiveMonthly: 11049,
+    annualEffectiveMonthly: 10833,
   },
   {
     key: 'enterprise',
@@ -59,7 +61,7 @@ export const SUBSCRIPTION_PLAN_DEFINITIONS = [
     weeklyStudentLimit: 2000,
     quarterlyAllIn: 18499,
     monthlyListPrice: 21299,
-    annualEffectiveMonthly: 15724,
+    annualEffectiveMonthly: 15416,
     isMegaCenter: true,
   },
 ] as const;

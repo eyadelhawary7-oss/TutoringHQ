@@ -126,8 +126,10 @@ export async function PATCH(request: NextRequest) {
       } else updates.push({ key: 'pricing.interval.monthly_multiplier', value: i.monthlyMultiplier });
     }
     if (i.annualMultiplier !== undefined) {
-      if (!isNum(i.annualMultiplier) || i.annualMultiplier <= 0 || i.annualMultiplier > 5) {
-        errors.push('interval.annualMultiplier must be a number between 0 and 5');
+      // Annual multiplier = months charged per year (annual total = monthly × this).
+      // 10 → "true 2 months free". Allow 1..12.
+      if (!isNum(i.annualMultiplier) || i.annualMultiplier <= 0 || i.annualMultiplier > 12) {
+        errors.push('interval.annualMultiplier must be a number between 0 and 12 (months charged per year)');
       } else updates.push({ key: 'pricing.interval.annual_multiplier', value: i.annualMultiplier });
     }
     if (i.annualLabelEn !== undefined) {

@@ -80,12 +80,32 @@ export function isPlanKey(id: string | null | undefined): id is PlanKey {
 }
 
 /**
- * Full annual cycle inclusive total: quarterly monthly equivalent × 0.85 × 12, whole EGP.
- * Per docs/PRICING_SPEC.md (marketing annual vs quarterly).
+ * Annual billing = "true 2 months free": annual total = monthly all-in × 10
+ * (pay for 10 months, get 12). `annualMultiplier` is the admin-editable
+ * `pricing.interval.annual_multiplier` value — the number of months charged per
+ * year (default 10). Display and charge paths both route through this so the
+ * price SHOWN equals the price CHARGED. Per-month figure = annual total ÷ 12.
  */
-export function getAnnualChargeRounded(allInPerMonth: number): number {
+export const ANNUAL_BILLED_MONTHS_DEFAULT = 10;
+
+export function getAnnualChargeRounded(
+  allInPerMonth: number,
+  annualMultiplier: number = ANNUAL_BILLED_MONTHS_DEFAULT,
+): number {
   if (!Number.isFinite(allInPerMonth) || allInPerMonth <= 0) return 0;
-  return Math.round(allInPerMonth * 0.85 * 12);
+  const mult =
+    Number.isFinite(annualMultiplier) && annualMultiplier > 0
+      ? annualMultiplier
+      : ANNUAL_BILLED_MONTHS_DEFAULT;
+  return Math.round(allInPerMonth * mult);
+}
+
+/** Whole EGP/month equivalent when billed annually = annual total ÷ 12. */
+export function getAnnualMonthlyFromBase(
+  allInPerMonth: number,
+  annualMultiplier: number = ANNUAL_BILLED_MONTHS_DEFAULT,
+): number {
+  return Math.round(getAnnualChargeRounded(allInPerMonth, annualMultiplier) / 12);
 }
 
 const WEEKS_PER_QUARTER = 13;
@@ -99,6 +119,7 @@ export function getChargeFromQuarterlyAllIn(
   allInPerMonth: number,
   period: BillingPeriod,
   planKey?: PlanKey,
+  annualMultiplier: number = ANNUAL_BILLED_MONTHS_DEFAULT,
 ): number {
   if (allInPerMonth <= 0) return 0;
   const p = normalizeBillingPeriod(period);
@@ -116,7 +137,7 @@ export function getChargeFromQuarterlyAllIn(
       return Math.max(1, list * scale);
     }
     case 'annual':
-      return getAnnualChargeRounded(allInPerMonth);
+      return getAnnualChargeRounded(allInPerMonth, annualMultiplier);
     default:
       return allInPerMonth * 3;
   }
@@ -259,17 +280,25 @@ export function getImpliedMonthlyMrr(
 /**
  * Signup UI headline: EGP/month figure (quarterly = all-in monthly equivalent, not ×3).
  */
-export function getSignupDisplayMonthlyPrice(planKey: PlanKey, period: BillingPeriod): number {
+export function getSignupDisplayMonthlyPrice(
+  planKey: PlanKey,
+  period: BillingPeriod,
+  annualMultiplier: number = ANNUAL_BILLED_MONTHS_DEFAULT,
+): number {
   const plan = PLANS[planKey];
   if (!plan || planKey === 'top_centers') return 0;
   const p = normalizeBillingPeriod(period);
   if (p === 'quarterly') return plan.quarterlyAllIn;
   if (p === 'monthly') return plan.monthlyListPrice;
-  return getAnnualMonthlyEquivalent(planKey);
+  return getAnnualMonthlyEquivalent(planKey, annualMultiplier);
 }
 
 /** Display price for plan picker / landing (full cycle amount for the selected period). */
-export function getPlanPrice(planKey: PlanKey, period: BillingPeriod): number {
+export function getPlanPrice(
+  planKey: PlanKey,
+  period: BillingPeriod,
+  annualMultiplier: number = ANNUAL_BILLED_MONTHS_DEFAULT,
+): number {
   const plan = PLANS[planKey];
   if (!plan || planKey === 'top_centers') return 0;
   const p = normalizeBillingPeriod(period);
@@ -279,17 +308,20 @@ export function getPlanPrice(planKey: PlanKey, period: BillingPeriod): number {
     case 'monthly':
       return plan.monthlyListPrice;
     case 'annual':
-      return getAnnualChargeRounded(plan.quarterlyAllIn);
+      return getAnnualChargeRounded(plan.quarterlyAllIn, annualMultiplier);
     default:
       return plan.quarterlyAllIn * 3;
   }
 }
 
-/** Per-month inclusive figure when customer pays annual - spec table in `plans.ts`. */
-export function getAnnualMonthlyEquivalent(planKey: PlanKey): number {
+/** Per-month inclusive figure when customer pays annual = annual total ÷ 12. */
+export function getAnnualMonthlyEquivalent(
+  planKey: PlanKey,
+  annualMultiplier: number = ANNUAL_BILLED_MONTHS_DEFAULT,
+): number {
   const plan = PLANS[planKey];
   if (!plan || planKey === 'top_centers') return 0;
-  return plan.annualEffectiveMonthly;
+  return getAnnualMonthlyFromBase(plan.quarterlyAllIn, annualMultiplier);
 }
 
 export function getQuarterlyCharge(planKey: PlanKey, period: BillingPeriod): number {

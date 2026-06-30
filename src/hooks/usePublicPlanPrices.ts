@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import {
+  getAnnualChargeRounded,
   ORDERED_SUBSCRIPTION_PLAN_KEYS,
   PLANS,
   type SubscriptionPlanKey,
@@ -20,6 +21,7 @@ import {
 export interface DynamicPlanPrice {
   monthlyListPrice: number;
   quarterlyAllIn: number;
+  annualTotal: number;
   annualEffectiveMonthly: number;
   weeklyStudentLimit: number | null;
 }
@@ -33,6 +35,7 @@ function buildFallback(): DynamicPlanPriceMap {
       {
         monthlyListPrice: PLANS[k].monthlyListPrice,
         quarterlyAllIn: PLANS[k].quarterlyAllIn,
+        annualTotal: getAnnualChargeRounded(PLANS[k].quarterlyAllIn),
         annualEffectiveMonthly: PLANS[k].annualEffectiveMonthly,
         weeklyStudentLimit: PLANS[k].weeklyStudentLimit,
       } satisfies DynamicPlanPrice,
@@ -70,6 +73,10 @@ export function usePublicPlanPrices(): DynamicPlanPriceMap {
                 typeof incoming.quarterlyAllIn === 'number' && incoming.quarterlyAllIn > 0
                   ? incoming.quarterlyAllIn
                   : base.quarterlyAllIn,
+              annualTotal:
+                typeof incoming.annualTotal === 'number' && incoming.annualTotal > 0
+                  ? incoming.annualTotal
+                  : base.annualTotal,
               annualEffectiveMonthly:
                 typeof incoming.annualEffectiveMonthly === 'number' &&
                 incoming.annualEffectiveMonthly > 0

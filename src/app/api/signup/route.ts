@@ -28,11 +28,15 @@ import { todayISO } from '@/lib/parentPack';
 import { formatNumber } from '@/lib/formatNumber';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { validatePromoCodeServerSide } from '@/lib/promoCode';
-import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import { getIntervalConfig, getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { applyProcessingFee } from '@/lib/processingFee';
 
-function getTotalSignupAmount(planKey: PlanKey, period: BillingPeriod): number {
-  return getPlanPrice(planKey, period);
+function getTotalSignupAmount(
+  planKey: PlanKey,
+  period: BillingPeriod,
+  annualMultiplier?: number,
+): number {
+  return getPlanPrice(planKey, period, annualMultiplier);
 }
 
 const CITY_ID_TO_DB: Record<string, string> = {
@@ -264,7 +268,10 @@ export async function POST(request: Request) {
 
     const allInPerMonth = PLANS[planKey].quarterlyAllIn;
     const defaultQuarterlyInvoice = allInPerMonth * 3;
-    const periodAmount = getPlanPrice(planKey, periodResolved);
+    // Annual = monthly × annualMultiplier from the live admin config, so the price
+    // CHARGED here matches the price SHOWN on /pricing (same source of truth).
+    const intervalCfg = await getIntervalConfig();
+    const periodAmount = getPlanPrice(planKey, periodResolved, intervalCfg.annualMultiplier);
 
     const cityDb = mapCityToDb(city);
 
@@ -343,7 +350,11 @@ export async function POST(request: Request) {
     }
 
     if (initiatePayment && center?.id) {
-      const baseAmountEgp = getTotalSignupAmount(planKey, periodResolved);
+      const baseAmountEgp = getTotalSignupAmount(
+        planKey,
+        periodResolved,
+        intervalCfg.annualMultiplier,
+      );
       if (!Number.isFinite(baseAmountEgp) || baseAmountEgp <= 0) {
         return NextResponse.json({ error: 'Invalid payment amount' }, { status: 400 });
       }
