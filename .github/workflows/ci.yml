@@ -4,7 +4,17 @@ on:
   push:
     branches: [main, master]
   pull_request:
+    # `labeled` lets the informational Playwright job be requested on a PR by
+    # adding the `run-e2e` label (see the playwright-e2e job below).
     branches: [main, master]
+    types: [opened, synchronize, reopened, labeled]
+  workflow_dispatch: {}
+
+# Cancel an older in-flight run on the same branch when a newer push arrives,
+# instead of letting both finish.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   type-check:
@@ -67,6 +77,12 @@ jobs:
   playwright-e2e:
     name: Playwright E2E (informational)
     runs-on: ubuntu-latest
+    # Informational only (blocks nothing) and ~4 min per run, so it no longer
+    # runs on ordinary pushes. It runs on demand: manually via workflow_dispatch,
+    # or on a PR labelled `run-e2e` (add the label before merging to master).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.pull_request.labels.*.name, 'run-e2e')
     steps:
       - uses: actions/checkout@v4
 
