@@ -1136,7 +1136,7 @@ COLUMN referral_codes.created_at ord=4 type=timestamp with time zone notnull=fal
 COLUMN referral_commissions.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN referral_commissions.referral_id ord=2 type=uuid notnull=false default=∅
 COLUMN referral_commissions.referrer_center_id ord=3 type=uuid notnull=false default=∅
-COLUMN referral_commissions.period_month ord=4 type=date notnull=true default=∅
+COLUMN referral_commissions.period_month ord=4 type=text notnull=true default=∅
 COLUMN referral_commissions.months_since_activation ord=5 type=integer notnull=true default=∅
 COLUMN referral_commissions.referred_plan_fee ord=6 type=numeric notnull=true default=∅
 COLUMN referral_commissions.commission_rate ord=7 type=numeric notnull=true default=∅
@@ -1146,6 +1146,7 @@ COLUMN referral_commissions.status ord=10 type=text notnull=false default='hold'
 COLUMN referral_commissions.hold_until ord=11 type=timestamp with time zone notnull=false default=∅
 COLUMN referral_commissions.paid_at ord=12 type=timestamp with time zone notnull=false default=∅
 COLUMN referral_commissions.created_at ord=13 type=timestamp with time zone notnull=false default=now()
+COLUMN referral_commissions.referred_center_id ord=14 type=uuid notnull=false default=∅
 COLUMN referral_reward_records.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN referral_reward_records.referral_id ord=2 type=uuid notnull=true default=∅
 COLUMN referral_reward_records.referrer_center_id ord=3 type=uuid notnull=true default=∅
@@ -2130,6 +2131,7 @@ CONSTRAINT referral_codes.referral_codes_code_key type=u def=UNIQUE (code)
 CONSTRAINT referral_codes.referral_codes_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT referral_commissions.referral_commissions_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT referral_commissions.referral_commissions_referral_id_fkey type=f def=FOREIGN KEY (referral_id) REFERENCES referrals(id)
+CONSTRAINT referral_commissions.referral_commissions_referred_center_id_fkey type=f def=FOREIGN KEY (referred_center_id) REFERENCES centers(id)
 CONSTRAINT referral_commissions.referral_commissions_referrer_center_id_fkey type=f def=FOREIGN KEY (referrer_center_id) REFERENCES centers(id)
 CONSTRAINT referral_commissions.referral_commissions_status_check type=c def=CHECK ((status = ANY (ARRAY['hold'::text, 'withdrawable'::text, 'paid'::text, 'forfeited'::text])))
 CONSTRAINT referral_reward_records.referral_reward_records_pkey type=p def=PRIMARY KEY (id)
@@ -2567,6 +2569,7 @@ INDEX idx_promo_codes_is_active ON promo_codes def=CREATE INDEX idx_promo_codes_
 INDEX recurring_charge_declines_code_idx ON recurring_charge_declines def=CREATE INDEX recurring_charge_declines_code_idx ON public.recurring_charge_declines USING btree (decline_code, created_at)
 INDEX recurring_charge_declines_owner_idx ON recurring_charge_declines def=CREATE INDEX recurring_charge_declines_owner_idx ON public.recurring_charge_declines USING btree (owner_type, owner_id, created_at)
 INDEX idx_referral_commissions_referral ON referral_commissions def=CREATE INDEX idx_referral_commissions_referral ON public.referral_commissions USING btree (referral_id)
+INDEX idx_referral_commissions_referred ON referral_commissions def=CREATE INDEX idx_referral_commissions_referred ON public.referral_commissions USING btree (referred_center_id)
 INDEX idx_referral_commissions_referrer ON referral_commissions def=CREATE INDEX idx_referral_commissions_referrer ON public.referral_commissions USING btree (referrer_center_id)
 INDEX idx_referral_reward_records_referrer ON referral_reward_records def=CREATE INDEX idx_referral_reward_records_referrer ON public.referral_reward_records USING btree (referrer_center_id)
 INDEX idx_referral_reward_records_status ON referral_reward_records def=CREATE INDEX idx_referral_reward_records_status ON public.referral_reward_records USING btree (status)

@@ -35,7 +35,9 @@ function phoneLookupVariants(raw: string): string[] {
   return [...s];
 }
 
-type SeedAdmin = SupabaseClient<any, 'public', any>;
+// SupabaseClient's own generic defaults are <any, 'public', any>; use the bare
+// type so we get the same client surface without an explicit `any`.
+type SeedAdmin = SupabaseClient;
 
 async function resolveCenterAndOwner(admin: SeedAdmin): Promise<{ centerId: string; ownerUserId: string | null } | null> {
   const explicit = process.env.TEST_CENTER_ID?.trim();

@@ -178,6 +178,7 @@ export async function GET(request: Request) {
         referrer_center_id: row.referrer_center_id,
         referred_center_id: row.referred_center_id,
         period_month: periodMonth,
+        months_since_activation: monthNumber,
         referred_plan_fee,
         commission_rate: rate,
         commission_amount,

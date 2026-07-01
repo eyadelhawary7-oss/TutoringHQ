@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored, generated third-party Workbox runtime shipped as static assets.
+    // Not our source; linting it only produces noise (this@alias, ban-types, …).
+    "public/workbox/**",
   ]),
   {
     rules: {

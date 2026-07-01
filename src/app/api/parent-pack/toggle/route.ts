@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { requireCenterAuth } from '@/lib/centerAuth'
 import { sendChqPackInvoiceTemplate } from '@/lib/centerNotify'
 import { syncPackParentCount } from '@/lib/parent-pack'
 import { dateInNDays } from '@/lib/parentPack'
@@ -23,49 +23,13 @@ function centerCodeForPack(c: { center_code?: string | null; referral_code?: str
   return 'UNK'
 }
 
-async function getCenterUserContext(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) return null
-
-  const authHeader = request.headers.get('Authorization')
-  const accessToken = authHeader?.replace('Bearer ', '')
-  if (!accessToken) return null
-
-  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-  })
-
-  const { data: { user }, error } = await supabaseAuth.auth.getUser()
-  if (error || !user) return null
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  })
-
-  const { data: userRecord } = await supabaseAdmin
-    .from('users')
-    .select('id, center_id, role')
-    .eq('id', user.id)
-    .single()
-
-  if (!userRecord?.center_id) return null
-
-  return { userRecord, supabaseAdmin, centerId: userRecord.center_id as string }
-}
-
 export async function PATCH(request: NextRequest) {
   try {
-    const ctx = await getCenterUserContext(request)
-    if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const auth = await requireCenterAuth(request)
+    if (!auth.ok) return auth.response
+    const ctx = { supabaseAdmin: auth.supabaseAdmin, centerId: auth.centerId }
 
-    const role = ctx.userRecord.role as string
-    if (role !== 'owner' && role !== 'admin') {
+    if (auth.role !== 'owner' && auth.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
