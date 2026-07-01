@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 import { createClient } from '@supabase/supabase-js';
 import { requireTeacherAuth } from '@/lib/centerAuth';
 import { validateCSRFRequest } from '@/lib/csrf';
@@ -19,7 +18,7 @@ const RATE_LIMIT_WINDOW_SECS = 900;
  * session a teacher does not have). Verifies the current PIN by
  * re-authenticating with the auth email server-side, enforces the shared
  * weak-PIN reject list, then updates the Supabase Auth password via the
- * service-role admin client and syncs users.pin_code.
+ * service-role admin client and stamps users.pin_set_at.
  */
 export async function POST(request: NextRequest) {
   const auth = await requireTeacherAuth(request);
@@ -109,15 +108,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'server_error' }, { status: 500 });
   }
 
-  // Sync pin_code in public.users (bcrypt, consistent with /api/auth/change-pin)
-  const newPinHash = await bcrypt.hash(newPin, 10);
+  // Refresh the authoritative "PIN is set" stamp (the Auth password above is the
+  // credential). Non-fatal: the password was already updated; log and continue.
   const { error: dbErr } = await admin
     .from('users')
-    .update({ pin_code: newPinHash })
+    .update({ pin_set_at: new Date().toISOString() })
     .eq('id', auth.userId);
   if (dbErr) {
-    console.error('[teacher-change-pin] pin_code sync failed', dbErr);
-    // Non-fatal: Auth password was already updated; log and continue
+    console.error('[teacher-change-pin] pin_set_at stamp failed', dbErr);
   }
 
   const nowIso = new Date().toISOString();

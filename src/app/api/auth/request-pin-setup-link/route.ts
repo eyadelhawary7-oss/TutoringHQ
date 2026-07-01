@@ -12,7 +12,7 @@ import { sendPinSetupLink } from '@/lib/centerNotify';
  *
  * Cross-device / closed-tab fallback for the Set-PIN onboarding flow.
  * Looks up the owner user by phone; if and only if the user exists, has no
- * PIN yet (pin_code IS NULL), and the center is paid+activated, issues a
+ * PIN yet (pin_set_at IS NULL), and the center is paid+activated, issues a
  * fresh fallback pin_setup_tokens row and sends a Set-PIN link via the new
  * chq_pin_setup_link WhatsApp template.
  *
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     // doing further work.
     const { data: user, error: userErr } = await admin
       .from('users')
-      .select('id, pin_code, center_id, is_active')
+      .select('id, pin_set_at, center_id, is_active')
       .eq('phone', normalizedPhone)
       .eq('role', 'owner')
       .maybeSingle();
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
 
     // Already has a PIN → silently no-op. The fallback is ONLY for owners who
     // never finished initial setup. Owners with a PIN use forgot-PIN.
-    if ((user as { pin_code?: string | null }).pin_code) {
+    if ((user as { pin_set_at?: string | null }).pin_set_at) {
       return NextResponse.json({ success: true });
     }
 

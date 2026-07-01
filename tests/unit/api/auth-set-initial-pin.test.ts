@@ -120,14 +120,14 @@ type CenterShape = {
 };
 type UserShape = {
   id: string;
-  pin_code: string | null;
+  pin_set_at: string | null;
   center_id: string;
 };
 
 function makeAdmin(opts?: {
   center?: CenterShape | null;
   user?: UserShape | null;
-  ownerLookup?: { id: string; pin_code: string | null } | null;
+  ownerLookup?: { id: string; pin_set_at: string | null } | null;
   updateUserByIdError?: boolean;
   getUserByIdEmail?: string | null;
 }): SupabaseClient {
@@ -141,12 +141,12 @@ function makeAdmin(opts?: {
   const user: UserShape | null =
     opts?.user ?? {
       id: VALID_USER_ID,
-      pin_code: null,
+      pin_set_at: null,
       center_id: VALID_CENTER_ID,
     };
   const ownerLookup =
     opts?.ownerLookup === undefined
-      ? { id: VALID_USER_ID, pin_code: null }
+      ? { id: VALID_USER_ID, pin_set_at: null }
       : opts.ownerLookup;
 
   const from = vi.fn((table: string) => {
@@ -338,7 +338,7 @@ describe('POST /api/auth/set-initial-pin', () => {
   it('REFUSES an account that already has a PIN (must use change-pin)', async () => {
     vi.mocked(getSupabaseAdmin).mockReturnValue(
       makeAdmin({
-        ownerLookup: { id: VALID_USER_ID, pin_code: '$2b$10$existing' },
+        ownerLookup: { id: VALID_USER_ID, pin_set_at: '2026-06-01T00:00:00Z' },
       }),
     );
     const res = await POST(makeRequest({ pin: VALID_PIN, pinConfirm: VALID_PIN }));

@@ -14,9 +14,9 @@ const SIX_DIGITS = /^\d{6}$/;
 /**
  * POST /api/auth/verify-pin-reset
  * Public. No requireCenterAuth.
- * 1) Bcrypt-hash new PIN into public.users.pin_code (cost 10). This is the stored PIN hash.
- * 2) Sets the same digits on the Supabase Auth user so /login signInWithPassword still works.
- *    (Calling updateUserById updates auth password only, not pin_code; it does not replace step 1.)
+ * 1) Sets the new PIN as the Supabase Auth user's password (updateUserById) so
+ *    /login signInWithPassword works. This is the real, authoritative credential.
+ * 2) Stamps public.users.pin_set_at so the "PIN is set" gates stay correct.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -100,24 +100,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'user_not_found' }, { status: 404 });
     }
 
-    const newPinHash = await bcrypt.hash(newPin, 10);
-
-    const { error: updateError } = await admin
-      .from('users')
-      .update({ pin_code: newPinHash })
-      .eq('id', user.id);
-
-    if (updateError) {
-      console.error('[verify-pin-reset] failed to update pin_code:', updateError);
-      return NextResponse.json({ error: 'update_failed' }, { status: 500 });
-    }
-
+    // Set the real credential first (server-authoritative).
     const { error: authErr } = await admin.auth.admin.updateUserById(user.id, {
       password: newPin,
     });
     if (authErr) {
-      console.error('[verify-pin-reset] Supabase Auth password sync failed:', authErr);
+      console.error('[verify-pin-reset] Supabase Auth password reset failed:', authErr);
       return NextResponse.json({ error: 'update_failed' }, { status: 500 });
+    }
+
+    // Refresh the authoritative "PIN is set" stamp. Non-fatal: the password (the
+    // real credential) is already reset, so a stamp failure is only logged.
+    const { error: stampError } = await admin
+      .from('users')
+      .update({ pin_set_at: new Date().toISOString() })
+      .eq('id', user.id);
+    if (stampError) {
+      console.error('[verify-pin-reset] pin_set_at stamp failed:', stampError);
     }
 
     return NextResponse.json({ success: true });

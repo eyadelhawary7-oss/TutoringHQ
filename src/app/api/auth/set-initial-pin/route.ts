@@ -2,7 +2,6 @@ import * as Sentry from '@sentry/nextjs';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
-import bcrypt from 'bcryptjs';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import {
   getClientIp,
@@ -200,7 +199,7 @@ export async function POST(request: NextRequest) {
 
     const { data: owner, error: ownerErr } = await admin
       .from('users')
-      .select('id, pin_code')
+      .select('id, pin_set_at')
       .eq('center_id', session.centerId)
       .eq('role', 'owner')
       .limit(1)
@@ -215,7 +214,7 @@ export async function POST(request: NextRequest) {
       // Owner row not created yet (race with webhook). Tell the client to retry.
       return NextResponse.json({ error: 'not_finalized' }, { status: 409 });
     }
-    if ((owner as { pin_code?: string | null }).pin_code) {
+    if ((owner as { pin_set_at?: string | null }).pin_set_at) {
       return NextResponse.json({ error: 'pin_already_set' }, { status: 409 });
     }
 
@@ -244,7 +243,7 @@ export async function POST(request: NextRequest) {
   // -------- Pre-claim: verify user has NO existing PIN. --------
   const { data: userRow, error: userErr } = await admin
     .from('users')
-    .select('id, pin_code, center_id')
+    .select('id, pin_set_at, center_id')
     .eq('id', userId)
     .maybeSingle();
   if (userErr) {
@@ -254,7 +253,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'auth_system_error' }, { status: 500 });
   }
   if (!userRow) return unauthorizedResponse();
-  if ((userRow as { pin_code?: string | null }).pin_code) {
+  if ((userRow as { pin_set_at?: string | null }).pin_set_at) {
     return NextResponse.json({ error: 'pin_already_set' }, { status: 409 });
   }
 
@@ -324,22 +323,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'update_failed' }, { status: 500 });
   }
 
-  // Mirror pin_code (non-authoritative; see change-pin route's note).
-  try {
-    const pinHash = await bcrypt.hash(pin, 10);
-    const { error: pinSyncErr } = await admin
+  // Stamp the authoritative "PIN has been set" signal. The Auth password above
+  // is the credential; pin_set_at is what the double-set guard / set-PIN link /
+  // readiness checks read. Best-effort: the password is already committed, so a
+  // failure here must not 500 the request — it is logged for follow-up.
+  {
+    const { error: pinSetErr } = await admin
       .from('users')
-      .update({ pin_code: pinHash })
+      .update({ pin_set_at: new Date().toISOString() })
       .eq('id', userId);
-    if (pinSyncErr) {
-      Sentry.captureException(pinSyncErr, {
-        tags: { route: 'set-initial-pin', step: 'pin_code_sync' },
+    if (pinSetErr) {
+      Sentry.captureException(pinSetErr, {
+        tags: { route: 'set-initial-pin', step: 'pin_set_at_stamp' },
       });
     }
-  } catch (e) {
-    Sentry.captureException(e, {
-      tags: { route: 'set-initial-pin', step: 'pin_code_sync' },
-    });
   }
 
   // Invalidate any sibling live tokens (e.g. a leaked fallback link from before).

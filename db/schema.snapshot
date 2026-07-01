@@ -1563,18 +1563,18 @@ COLUMN users.is_active ord=15 type=boolean notnull=false default=true
 COLUMN users.can_manage_rooms ord=16 type=boolean notnull=false default=false
 COLUMN users.can_view_schedule ord=17 type=boolean notnull=false default=false
 COLUMN users.can_view_settings ord=18 type=boolean notnull=false default=false
-COLUMN users.pin_code ord=19 type=character varying(6) notnull=false default=∅
-COLUMN users.preferred_locale ord=20 type=text notnull=false default='ar'::text
-COLUMN users.organization_id ord=21 type=uuid notnull=false default=∅
-COLUMN users.teacher_group_ids ord=22 type=uuid[] notnull=false default=∅
-COLUMN users.can_manage_billing ord=23 type=boolean notnull=true default=false
-COLUMN users.can_edit_center_profile ord=24 type=boolean notnull=true default=false
-COLUMN users.can_delete_students ord=25 type=boolean notnull=true default=false
-COLUMN users.can_manage_academic_calendar ord=26 type=boolean notnull=true default=false
-COLUMN users.can_place_card_orders ord=27 type=boolean notnull=true default=false
-COLUMN users.can_request_referral_payouts ord=28 type=boolean notnull=true default=false
-COLUMN users.pin_attempts ord=29 type=integer notnull=true default=0
-COLUMN users.pin_locked_until ord=30 type=timestamp with time zone notnull=false default=∅
+COLUMN users.preferred_locale ord=19 type=text notnull=false default='ar'::text
+COLUMN users.organization_id ord=20 type=uuid notnull=false default=∅
+COLUMN users.teacher_group_ids ord=21 type=uuid[] notnull=false default=∅
+COLUMN users.can_manage_billing ord=22 type=boolean notnull=true default=false
+COLUMN users.can_edit_center_profile ord=23 type=boolean notnull=true default=false
+COLUMN users.can_delete_students ord=24 type=boolean notnull=true default=false
+COLUMN users.can_manage_academic_calendar ord=25 type=boolean notnull=true default=false
+COLUMN users.can_place_card_orders ord=26 type=boolean notnull=true default=false
+COLUMN users.can_request_referral_payouts ord=27 type=boolean notnull=true default=false
+COLUMN users.pin_attempts ord=28 type=integer notnull=true default=0
+COLUMN users.pin_locked_until ord=29 type=timestamp with time zone notnull=false default=∅
+COLUMN users.pin_set_at ord=30 type=timestamp with time zone notnull=false default=∅
 COLUMN vendors.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN vendors.name ord=2 type=text notnull=true default=∅
 COLUMN vendors.whatsapp_number ord=3 type=text notnull=true default=∅
