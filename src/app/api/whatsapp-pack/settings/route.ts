@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireCenterAuth } from '@/lib/centerAuth'
 import { currentMonthStr, deriveBillingSummary } from '@/lib/whatsapp-pack'
 import type { NotificationTypes, WaPackBillingSummary, WaPackStudent } from '@/types/whatsapp-pack'
 
@@ -21,59 +21,16 @@ interface StudentRow {
   parent_consent_given: boolean | null
 }
 
-async function getCenterOwnerAdminContext(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) return null
-
-  const authHeader = request.headers.get('Authorization')
-  const accessToken = authHeader?.replace('Bearer ', '')
-  if (!accessToken) return null
-
-  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-  })
-
-  const { data: { user }, error } = await supabaseAuth.auth.getUser()
-  if (error || !user) return null
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  })
-
-  const { data: userRecord } = await supabaseAdmin
-    .from('users')
-    .select('id, center_id, role')
-    .eq('id', user.id)
-    .single()
-
-  if (!userRecord?.center_id) return null
-
-  const role = String(userRecord.role ?? '').toLowerCase()
-  if (role !== 'owner' && role !== 'admin') {
-    return { forbidden: true as const }
-  }
-
-  return {
-    centerId: userRecord.center_id as string,
-    supabaseAdmin,
-  }
-}
-
 export async function GET(request: NextRequest) {
   try {
-    const ctx = await getCenterOwnerAdminContext(request)
-    if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    if ('forbidden' in ctx) {
+    const auth = await requireCenterAuth(request)
+    if (!auth.ok) return auth.response
+    const role = String(auth.role ?? '').toLowerCase()
+    if (role !== 'owner' && role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const { centerId, supabaseAdmin } = ctx
+    const { centerId, supabaseAdmin } = auth
     const month = currentMonthStr()
 
     const [centerRes, configRes, studentsRes, billingRes] = await Promise.all([

@@ -1,6 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
+import { requireCenterAuth } from '@/lib/centerAuth';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { verifyPasswordForSensitiveAction } from '@/lib/verify-password';
 import { parseBodyWithLimit } from '@/lib/validate';
@@ -20,33 +20,28 @@ const permissionsBodySchema = z
   })
   .refine((d) => d.targetUserId || d.userId, { message: 'targetUserId or userId required' });
 
-async function getCallerContext(request: Request) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !anon || !service) return null;
-  const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-  if (!token) return null;
-  const authClient = createClient(url, anon, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${token}` } } });
-  const { data: { user }, error } = await authClient.auth.getUser();
-  if (error || !user) return null;
-  const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data: caller } = await admin.from('users').select('id, role, center_id').eq('id', user.id).single();
-  if (!caller?.center_id) return null;
-  return { caller, admin, url, anon, token };
-}
+export async function POST(request: NextRequest) { return PUT(request); }
 
-export async function POST(request: Request) { return PUT(request); }
-
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
   try {
-    const ctx = await getCallerContext(request);
-    if (!ctx) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    // The raw bearer token is still needed to re-verify the caller's password
+    // for the sensitive action below (the shared gate doesn't expose it).
+    const token = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '')?.trim();
+
+    const auth = await requireCenterAuth(request);
+    if (!auth.ok) return auth.response;
+    const ctx = { caller: { id: auth.userId, role: auth.role, center_id: auth.centerId }, admin: auth.supabaseAdmin };
+
     if (ctx.caller.role !== 'owner' && ctx.caller.role !== 'admin') {
       return NextResponse.json({ error: 'Only owner/admin can change permissions' }, { status: 403 });
     }
     if (!validateCSRFRequest(request, ctx.caller.id)) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+    }
+    if (!url || !anon || !token) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
     const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     const parsed = permissionsBodySchema.safeParse(body);
@@ -63,9 +58,9 @@ export async function PUT(request: Request) {
 
     // Password confirmation required for changing another admin's permissions
     const verify = await verifyPasswordForSensitiveAction(
-      ctx.url,
-      ctx.anon,
-      ctx.token,
+      url,
+      anon,
+      token,
       parsed.data.password || ''
     );
     if (!verify.ok) {

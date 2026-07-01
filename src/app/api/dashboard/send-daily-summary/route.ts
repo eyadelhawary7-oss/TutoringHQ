@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { requireCenterAuth } from '@/lib/centerAuth';
 import {
   sendDailySummary,
   getYesterdayCairo,
@@ -7,44 +7,6 @@ import {
   type DailySummaryData,
 } from '@/lib/whatsapp/flows/dailySummary';
 import { assertIsoDateForOrFilter, orClauseDayOfWeekEgypt } from '@/lib/postgrestSafe';
-
-async function getUserCenter(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) return null;
-
-  const authHeader = request.headers.get('Authorization');
-  const accessToken = authHeader?.replace('Bearer ', '');
-  if (!accessToken) return null;
-
-  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-  });
-
-  const {
-    data: { user },
-    error,
-  } = await supabaseAuth.auth.getUser();
-  if (error || !user) return null;
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false },
-  });
-
-  const { data: userRecord } = await supabaseAdmin
-    .from('users')
-    .select('id, center_id, role')
-    .eq('id', user.id)
-    .single();
-
-  const centerId = (userRecord as { center_id?: string | null } | null)?.center_id;
-  if (!centerId) return null;
-
-  return { centerId, supabaseAdmin, role: String((userRecord as { role?: string })?.role ?? '') };
-}
 
 /** Egypt week: Sat=0..Fri=6 from Y-M-D in local calendar. */
 function getEgyptDayOfWeek(dateStr: string): number {
@@ -55,12 +17,10 @@ function getEgyptDayOfWeek(dateStr: string): number {
 
 export async function POST(request: NextRequest) {
   try {
-    const ctx = await getUserCenter(request);
-    if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const auth = await requireCenterAuth(request);
+    if (!auth.ok) return auth.response;
 
-    const { centerId, supabaseAdmin, role } = ctx;
+    const { centerId, supabaseAdmin, role } = auth;
     if (role !== 'owner' && role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

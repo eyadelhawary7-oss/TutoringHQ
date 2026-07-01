@@ -5,7 +5,7 @@ import { getUpstashRedis, rateLimit } from '@/lib/ratelimit';
 import { parseEnrollmentInput, hashOtp } from '@/lib/enrollmentOtp';
 import { selfEnrollWouldExceedCap } from '@/lib/teacherCap';
 
-const ROUTE_TAG = 'api/join/verify-otp';
+const ROUTE_TAG = 'api/join/g/verify-otp';
 const MAX_ATTEMPTS = 5;
 
 function fail(step: string, err: unknown) {
@@ -18,7 +18,7 @@ function fail(step: string, err: unknown) {
 }
 
 /**
- * POST /api/join/[groupId]/verify-otp  - PUBLIC, no auth.
+ * POST /api/join/g/[groupId]/verify-otp  - PUBLIC, no auth.
  *
  * Verifies the code and, on success, enrolls the student. Rate limiting is
  * fail-CLOSED: if Upstash is unavailable we deny, because this endpoint mutates

@@ -97,7 +97,7 @@ export default function JoinFlowClient({
     setOtpError(null);
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/join/${groupId}/send-otp`, {
+      const res = await fetch(`/api/join/g/${groupId}/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(buildBody()),
@@ -137,7 +137,7 @@ export default function JoinFlowClient({
     setOtpError(null);
     setVerifying(true);
     try {
-      const res = await fetch(`/api/join/${groupId}/verify-otp`, {
+      const res = await fetch(`/api/join/g/${groupId}/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...buildBody(), code }),

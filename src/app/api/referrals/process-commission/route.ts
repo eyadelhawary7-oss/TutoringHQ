@@ -113,6 +113,7 @@ export async function POST(request: NextRequest) {
       const { error: insErr } = await supabaseAdmin.from('referral_commissions').insert({
         referral_id: referralId,
         period_month: periodMonth.slice(0, 7),
+        months_since_activation: months,
         referred_plan_fee,
         commission_rate: rate,
         commission_amount: 0,
@@ -130,6 +131,7 @@ export async function POST(request: NextRequest) {
     const insertData: Record<string, unknown> = {
       referral_id: referralId,
       period_month: periodMonth.slice(0, 7),
+      months_since_activation: months,
       referred_plan_fee,
       commission_rate: rate,
       commission_amount: commission,

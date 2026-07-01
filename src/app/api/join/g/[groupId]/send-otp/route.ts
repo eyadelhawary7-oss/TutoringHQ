@@ -9,7 +9,7 @@ import {
   maskPhone,
 } from '@/lib/enrollmentOtp';
 
-const ROUTE_TAG = 'api/join/send-otp';
+const ROUTE_TAG = 'api/join/g/send-otp';
 const OTP_TTL_MS = 10 * 60 * 1000;
 
 function fail(step: string, err: unknown) {
@@ -22,7 +22,7 @@ function fail(step: string, err: unknown) {
 }
 
 /**
- * POST /api/join/[groupId]/send-otp  - PUBLIC, no auth.
+ * POST /api/join/g/[groupId]/send-otp  - PUBLIC, no auth.
  *
  * Sends a verification code to the payer's phone for public student
  * self-enrollment. Rate limited to 3 sends per phone per hour (fail-OPEN on

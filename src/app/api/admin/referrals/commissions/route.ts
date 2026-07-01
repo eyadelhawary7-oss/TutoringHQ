@@ -6,8 +6,11 @@ export const dynamic = 'force-dynamic';
 function quarterMonthRange(year: number, quarter: number): { from: string; to: string } {
   const startMonth = (quarter - 1) * 3;
   const endMonth = startMonth + 2;
-  const from = `${year}-${String(startMonth + 1).padStart(2, '0')}-01`;
-  const to = `${year}-${String(endMonth + 1).padStart(2, '0')}-01`;
+  // period_month is 'YYYY-MM' text, so the boundaries must be month-precision too:
+  // a 'YYYY-MM-01' upper/lower bound would lexically exclude the boundary month
+  // (e.g. '2026-01' < '2026-01-01', dropping January from Q1).
+  const from = `${year}-${String(startMonth + 1).padStart(2, '0')}`;
+  const to = `${year}-${String(endMonth + 1).padStart(2, '0')}`;
   return { from, to };
 }
 

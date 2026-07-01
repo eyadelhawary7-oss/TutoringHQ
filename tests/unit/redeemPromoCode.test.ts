@@ -51,7 +51,9 @@ function makeFakeSupa(opts: {
     ownerRow: { data: opts.owner ?? null, error: null },
     rpcResult: opts.rpcResult,
     from(table: string) {
-      const self = this;
+      // Reference the enclosing fake directly rather than aliasing `this`
+      // (method-shorthand closures below would otherwise rebind `this`).
+      const self = fake;
       self.fromCalls.push({ table, op: 'from' });
       const builder = {
         select() { return builder; },
