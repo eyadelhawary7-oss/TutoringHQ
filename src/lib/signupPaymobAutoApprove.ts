@@ -402,7 +402,7 @@ export async function processInvoiceSignupAfterPaymobSuccess(
 
   // Placeholder password - 256 bits of entropy, never told to anyone. Overwritten
   // by /api/auth/set-initial-pin once the owner chooses their own PIN. Until
-  // then, public.users.pin_code stays NULL, which is the "no PIN yet" gate.
+  // then, public.users.pin_set_at stays NULL, which is the "no PIN yet" gate.
   const placeholderPassword = randomBytes(32).toString('base64url');
   const authEmail = `${phoneDigits}@centerhq.local`;
 
@@ -440,10 +440,9 @@ export async function processInvoiceSignupAfterPaymobSuccess(
     role: 'owner',
     phone: normalizedPhone,
     name: (c.owner_name as string) ?? c.name ?? null,
-    // pin_code stays NULL until the owner sets their PIN via /set-pin. Routes
-    // gate on this column to distinguish "owner has not yet set a PIN" from
-    // "owner has a PIN and wants to change it" (change-pin's job).
-    pin_code: null,
+    // pin_set_at is left NULL (column default) until the owner sets their PIN via
+    // /set-pin. Routes gate on it to distinguish "owner has not yet set a PIN"
+    // from "owner has a PIN and wants to change it" (change-pin's job).
     preferred_locale: 'ar',
     can_scan: true,
     can_view_payments: true,

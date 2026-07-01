@@ -1,6 +1,5 @@
 import { createServerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import bcrypt from 'bcryptjs';
 import { verifyPasswordForSensitiveAction } from '@/lib/verify-password';
 import { logAdminAction } from '@/lib/audit';
 import { validateCSRFRequest } from '@/lib/csrf';
@@ -829,7 +828,6 @@ export async function PUT(request: Request) {
 
     // Approve - create auth user and owner profile
     const pin = Math.floor(100000 + Math.random() * 900000).toString();
-    const hashedPin = await bcrypt.hash(pin, 10);
     const normalizedPhone = normalizePhone(center.phone as string);
     const phoneDigits = normalizedPhone.replace(/\D/g, '');
     const authEmail = `${phoneDigits}@centerhq.local`;
@@ -863,7 +861,8 @@ export async function PUT(request: Request) {
       role: 'owner',
       phone: normalizedPhone,
       name: (center.owner_name as string) ?? null,
-      pin_code: hashedPin,
+      // Real PIN was set on the auth user via createUser above.
+      pin_set_at: new Date().toISOString(),
       preferred_locale: 'ar',
       can_scan: true,
       can_view_payments: true,

@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
 
   const { data: owner, error: ownerErr } = await admin
     .from('users')
-    .select('id, pin_code')
+    .select('id, pin_set_at')
     .eq('center_id', session.centerId)
     .eq('role', 'owner')
     .limit(1)
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ready: false, reason: 'system_error' });
   }
   if (!owner) return NextResponse.json({ ready: false, reason: 'not_finalized' });
-  if ((owner as { pin_code?: string | null }).pin_code) {
+  if ((owner as { pin_set_at?: string | null }).pin_set_at) {
     // Already set - owner should be logging in normally.
     return NextResponse.json({ ready: false, reason: 'pin_already_set' });
   }

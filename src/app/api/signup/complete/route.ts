@@ -1,5 +1,4 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { createHash } from 'crypto';
 import { NextResponse } from 'next/server';
 import { normalizePhone } from '@/lib/utils/phone';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
@@ -142,14 +141,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const hashedPin = createHash('sha256').update(pin).digest('hex');
     const { error: userInsertError } = await supabaseAdmin.from('users').insert({
       id: user.id,
       center_id: centerId,
       role: 'owner',
       phone: normalizedPhone,
       name: center.name || null,
-      pin_code: hashedPin,
+      // Real PIN was set on the auth user via updateUserById above.
+      pin_set_at: new Date().toISOString(),
       preferred_locale: 'ar',
       can_scan: true,
       can_view_payments: true,

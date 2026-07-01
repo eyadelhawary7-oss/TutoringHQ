@@ -91,15 +91,15 @@ export default async function SetPinPage({
     } else {
       const { data: owner } = await admin
         .from('users')
-        .select('id, pin_code')
+        .select('id, pin_set_at')
         .eq('center_id', session.centerId)
         .eq('role', 'owner')
         .limit(1)
         .maybeSingle();
-      const ow = owner as { id?: string | null; pin_code?: string | null } | null;
+      const ow = owner as { id?: string | null; pin_set_at?: string | null } | null;
       if (!ow?.id) {
         mode = 'finalizing';
-      } else if (ow.pin_code) {
+      } else if (ow.pin_set_at) {
         // Owner already finished - redirect to login on the client.
         mode = 'fallback';
       } else {

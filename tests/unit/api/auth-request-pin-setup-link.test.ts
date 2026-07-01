@@ -45,7 +45,7 @@ const VALID_PHONE = '+201012345678';
 
 type UserShape = {
   id: string;
-  pin_code: string | null;
+  pin_set_at: string | null;
   center_id: string | null;
   is_active: boolean;
 };
@@ -132,7 +132,7 @@ describe('POST /api/auth/request-pin-setup-link', () => {
       makeAdmin({
         user: {
           id: 'u-1',
-          pin_code: '$2b$10$existing',
+          pin_set_at: '2026-06-01T00:00:00Z',
           center_id: 'center-1',
           is_active: true,
         },
@@ -148,7 +148,7 @@ describe('POST /api/auth/request-pin-setup-link', () => {
   it('REGISTERED phone with NO PIN + center pending_payment: returns { success: true } and does NOT mint', async () => {
     vi.mocked(getSupabaseAdmin).mockReturnValue(
       makeAdmin({
-        user: { id: 'u-1', pin_code: null, center_id: 'center-1', is_active: true },
+        user: { id: 'u-1', pin_set_at: null, center_id: 'center-1', is_active: true },
         center: {
           id: 'center-1',
           status: 'pending_payment',
@@ -166,7 +166,7 @@ describe('POST /api/auth/request-pin-setup-link', () => {
   it('REGISTERED phone with NO PIN + paid+activated center: mints a fallback token + sends chq_pin_setup_link', async () => {
     vi.mocked(getSupabaseAdmin).mockReturnValue(
       makeAdmin({
-        user: { id: 'u-1', pin_code: null, center_id: 'center-1', is_active: true },
+        user: { id: 'u-1', pin_set_at: null, center_id: 'center-1', is_active: true },
       }),
     );
     const res = await POST(makeRequest({ phone: VALID_PHONE }));
@@ -187,7 +187,7 @@ describe('POST /api/auth/request-pin-setup-link', () => {
     // Registered + paid.
     vi.mocked(getSupabaseAdmin).mockReturnValue(
       makeAdmin({
-        user: { id: 'u-1', pin_code: null, center_id: 'center-1', is_active: true },
+        user: { id: 'u-1', pin_set_at: null, center_id: 'center-1', is_active: true },
       }),
     );
     const r2 = await POST(makeRequest({ phone: VALID_PHONE }));

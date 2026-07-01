@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { createHash } from 'crypto';
 import { NextResponse } from 'next/server';
 import { normalizePhone } from '@/lib/utils/phone';
 import { isWeakPin } from '@/lib/weakPins';
@@ -105,14 +104,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const hashedPin = createHash('sha256').update(pin).digest('hex');
     const userPayload: Record<string, unknown> = {
       id: user.id,
       center_id: invite.center_id,
       role: invite.role || 'assistant',
       phone: storedPhone,
       name: invite.invited_name || null,
-      pin_code: hashedPin,
+      // Real PIN was set on the auth user via updateUserById above.
+      pin_set_at: new Date().toISOString(),
       preferred_locale: 'ar',
       is_active: true,
     };

@@ -11,10 +11,11 @@
  *    WHERE phone = '+20XXXXXXXXXX'
  *    ORDER BY created_at DESC LIMIT 1;
  * 3. Admin reads OTP hash - bcrypt compare externally to find the 6-digit code
- *    OR: Admin directly resets PIN:
- *    UPDATE users SET pin_code = '$2a$10$[hash_of_new_pin]'
+ *    OR: Admin directly resets the PIN. The PIN *is* the Supabase Auth password,
+ *    so reset it on the auth user (Dashboard - Authentication - the user -
+ *    "Reset password", or auth.admin.updateUserById), then mark the profile as
+ *    having a PIN: UPDATE public.users SET pin_set_at = now()
  *    WHERE phone = '+20XXXXXXXXXX';
- * 4. Generate a bcrypt hash for any 6-digit PIN at: https://bcrypt-generator.com (cost 10)
  */
 
 import { NextRequest, NextResponse } from 'next/server';

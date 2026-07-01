@@ -37,10 +37,12 @@ CREATE SCHEMA IF NOT EXISTS storage;
 ALTER DATABASE :"DBNAME" SET search_path = public, extensions;
 
 -- ---------- auth.users (FK target for 19 public FKs; minimal stand-in) ----------
--- Production's auth.users is provisioned by Supabase Auth. Rebuilds only need
--- the id primary key so the foreign keys resolve.
+-- Production's auth.users is provisioned by Supabase Auth. Rebuilds need the id
+-- primary key so the foreign keys resolve, plus any auth.users columns that data
+-- migrations reference (e.g. last_sign_in_at, read by the pin_set_at backfill).
 CREATE TABLE IF NOT EXISTS auth.users (
-  id uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid()
+  id uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+  last_sign_in_at timestamptz
 );
 
 -- ---------- auth.* helpers used inside RLS policy expressions ----------

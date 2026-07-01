@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { requireCenterAuth } from '@/lib/centerAuth';
@@ -105,15 +104,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'update_failed' }, { status: 500 });
   }
 
-  // Sync pin_code in public.users (bcrypt, consistent with verify-pin-reset)
-  const newPinHash = await bcrypt.hash(newPin, 10);
+  // Refresh the authoritative "PIN is set" stamp (the Auth password above is the
+  // credential). Non-fatal: the password was already updated; log and continue.
   const { error: dbErr } = await admin
     .from('users')
-    .update({ pin_code: newPinHash })
+    .update({ pin_set_at: new Date().toISOString() })
     .eq('id', auth.userId);
   if (dbErr) {
-    console.error('[change-pin] pin_code sync failed', dbErr);
-    // Non-fatal: Auth password was already updated; log and continue
+    console.error('[change-pin] pin_set_at stamp failed', dbErr);
   }
 
   const nowIso = new Date().toISOString();
