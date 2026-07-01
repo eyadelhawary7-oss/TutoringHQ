@@ -9,6 +9,8 @@
 
 import { createClient } from '@supabase/supabase-js';
 import {
+  getAnnualChargeRounded,
+  getAnnualMonthlyFromBase,
   ORDERED_SUBSCRIPTION_PLAN_KEYS,
   PLANS,
   type PlanKey,
@@ -33,7 +35,7 @@ function svc() {
   });
 }
 
-const PRICING_PROMO_DEFAULT_INTERVALS = ['quarterly'] as const;
+const PRICING_PROMO_DEFAULT_INTERVALS = ['annual'] as const;
 
 export type BannerStyle = 'promo' | 'info' | 'warning' | 'success';
 export const BANNER_STYLES: readonly BannerStyle[] = ['promo', 'info', 'warning', 'success'];
@@ -97,7 +99,9 @@ export interface PricingConfigSnapshot {
 
 const INTERVAL_DEFAULTS: IntervalConfig = {
   monthlyMultiplier: 1.15,
-  annualMultiplier: 0.85,
+  // Annual = "true 2 months free": annual total = monthly all-in × annualMultiplier.
+  // 10 means pay for 10 months, get 12. Per-month figure = annual total ÷ 12.
+  annualMultiplier: 10,
   annualLabelEn: '2 months free',
   annualLabelAr: 'شهران مجانًا',
 };
@@ -237,12 +241,18 @@ async function readKeys(keys: readonly string[]): Promise<Record<string, unknown
   const client = svc();
   const out: Record<string, unknown> = {};
   if (!client) return out;
-  const { data } = await client
-    .from('platform_config')
-    .select('key, value')
-    .in('key', keys as unknown as string[]);
-  for (const row of data ?? []) {
-    out[row.key as string] = (row as { value: unknown }).value;
+  // A failed/unavailable config read must never bubble up to callers (signup,
+  // pricing display). Fall back to the hardcoded defaults instead of throwing.
+  try {
+    const { data } = await client
+      .from('platform_config')
+      .select('key, value')
+      .in('key', keys as unknown as string[]);
+    for (const row of data ?? []) {
+      out[row.key as string] = (row as { value: unknown }).value;
+    }
+  } catch {
+    /* swallow: callers apply their own defaults */
   }
   return out;
 }
@@ -381,8 +391,10 @@ export async function getPlanPrices(): Promise<Record<SubscriptionPlanKey, numbe
  *
  * - `monthlyListPrice` - `pricing_plans.monthly_fee` (fallback `PLANS[k].monthlyListPrice`).
  * - `quarterlyAllIn` - `pricing_plans.all_in_price` (fallback `PLANS[k].quarterlyAllIn`).
- * - `annualEffectiveMonthly` - derived from quarterlyAllIn × `pricing.interval.annual_multiplier`
- *   (rounded to whole EGP, per docs/PRICING_SPEC.md "Display Annual prices ROUNDED to whole EGP").
+ * - `annualTotal` - full-year charge = quarterlyAllIn × `pricing.interval.annual_multiplier`
+ *   (=10 → "true 2 months free"). This is the number CHARGED at signup, so display and
+ *   charge stay identical.
+ * - `annualEffectiveMonthly` - per-month figure shown on the page = annualTotal ÷ 12.
  * - `weeklyStudentLimit` - `pricing_plans.weekly_student_limit` (fallback `PLANS[k].weeklyStudentLimit`).
  *
  * Top Centers is excluded (custom-priced).
@@ -390,6 +402,7 @@ export async function getPlanPrices(): Promise<Record<SubscriptionPlanKey, numbe
 export interface PublicPlanPrice {
   monthlyListPrice: number;
   quarterlyAllIn: number;
+  annualTotal: number;
   annualEffectiveMonthly: number;
   weeklyStudentLimit: number | null;
 }
@@ -401,7 +414,11 @@ export async function getPublicPlanPrices(): Promise<Record<SubscriptionPlanKey,
   const fallbackFor = (k: SubscriptionPlanKey): PublicPlanPrice => ({
     monthlyListPrice: PLANS[k].monthlyListPrice,
     quarterlyAllIn: PLANS[k].quarterlyAllIn,
-    annualEffectiveMonthly: PLANS[k].annualEffectiveMonthly,
+    annualTotal: getAnnualChargeRounded(PLANS[k].quarterlyAllIn, interval.annualMultiplier),
+    annualEffectiveMonthly: getAnnualMonthlyFromBase(
+      PLANS[k].quarterlyAllIn,
+      interval.annualMultiplier,
+    ),
     weeklyStudentLimit: PLANS[k].weeklyStudentLimit,
   });
   const fallback = Object.fromEntries(
@@ -427,12 +444,16 @@ export async function getPublicPlanPrices(): Promise<Record<SubscriptionPlanKey,
       typeof limitRaw === 'number' && Number.isFinite(limitRaw) && limitRaw > 0
         ? Math.round(limitRaw)
         : fb.weeklyStudentLimit;
-    const annualEffectiveMonthly = Math.round(
-      Math.max(0, quarterlyAllIn) * interval.annualMultiplier,
+    const baseForAnnual = quarterlyAllIn > 0 ? quarterlyAllIn : fb.quarterlyAllIn;
+    const annualTotal = getAnnualChargeRounded(baseForAnnual, interval.annualMultiplier);
+    const annualEffectiveMonthly = getAnnualMonthlyFromBase(
+      baseForAnnual,
+      interval.annualMultiplier,
     );
     out[key] = {
       monthlyListPrice: monthlyListPrice > 0 ? monthlyListPrice : fb.monthlyListPrice,
       quarterlyAllIn: quarterlyAllIn > 0 ? quarterlyAllIn : fb.quarterlyAllIn,
+      annualTotal: annualTotal > 0 ? annualTotal : fb.annualTotal,
       annualEffectiveMonthly:
         annualEffectiveMonthly > 0 ? annualEffectiveMonthly : fb.annualEffectiveMonthly,
       weeklyStudentLimit,

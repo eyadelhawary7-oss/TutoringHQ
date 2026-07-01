@@ -68,6 +68,10 @@ export interface DueChargeable {
   hasSavedCard: boolean;
   /** 0 = initial day-0 charge, 1.. = retries (from invoice.retry_count / dunning). */
   attemptIndex: number;
+  /** Teacher billing cadence; 'annual' advances 12 months on settle. Centers: always 'monthly'. */
+  billingInterval?: 'monthly' | 'annual';
+  /** True for a Scale monthly-overage invoice — settles/dunns on its OWN tick, never the base cycle. */
+  overage?: boolean;
 }
 
 export interface MidnightBillingSummary {

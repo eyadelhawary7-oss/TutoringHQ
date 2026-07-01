@@ -6,6 +6,8 @@ import { tCronBackup } from '@/lib/cronBackupI18n';
 import { netReferralBaseFromAllInPrice } from '@/lib/referralNetBase';
 import { sendReferralCommission } from '@/lib/centerNotify';
 import { ownerContactByCenterId, resolveOwnerWaPhone } from '@/lib/ownerPhone';
+import { normalizeBillingPeriod } from '@/lib/pricing';
+import { getIntervalConfig } from '@/lib/pricingConfig';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -62,6 +64,7 @@ export async function GET(request: Request) {
         name,
         plan,
         all_in_price,
+        billing_period,
         billing_status,
         next_payment_due,
         subscription_status,
@@ -81,6 +84,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ success: false, error: refErr.message }, { status: 500 });
   }
 
+  // Annual subscribers pay once a year for 12 months. We accrue monthly (one row per
+  // calendar month, same as monthly subscribers), but the per-month net base is the
+  // annual total ÷ 12 (= all_in × annualMultiplier ÷ 12), so an upfront annual payment
+  // never overpays vs. its actual per-month revenue.
+  const intervalCfg = await getIntervalConfig();
+
   for (const referral of referrals ?? []) {
     const row = referral as Record<string, unknown>;
     const refId = String(row.id ?? '');
@@ -90,6 +99,7 @@ export async function GET(request: Request) {
         name: string | null;
         plan: string;
         all_in_price: number | string | null;
+        billing_period: string | null;
         billing_status: string | null;
         next_payment_due: string | null;
         subscription_status: string | null;
@@ -145,8 +155,13 @@ export async function GET(request: Request) {
         continue;
       }
 
+      // all_in_price is the monthly all-in base regardless of billing period.
+      // For annual subscribers the per-month revenue is the annual total ÷ 12.
       const allIn = Number(referred.all_in_price) || 0;
-      const referred_plan_fee = netReferralBaseFromAllInPrice(allIn);
+      const period = normalizeBillingPeriod(referred.billing_period);
+      const perMonthBase =
+        period === 'annual' ? (allIn * intervalCfg.annualMultiplier) / 12 : allIn;
+      const referred_plan_fee = netReferralBaseFromAllInPrice(perMonthBase);
       if (referred_plan_fee <= 0) {
         skipped++;
         continue;

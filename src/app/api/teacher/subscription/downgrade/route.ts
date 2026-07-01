@@ -213,12 +213,16 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 6. Under both caps -> perform the downgrade via the lifecycle RPC.
-    const { error: dErr } = await auth.supabaseAdmin.rpc('downgrade_teacher_to_standard', {
-      p_user_id: auth.userId,
-    });
-    if (dErr) throw withPhase('downgrade_rpc', dErr);
-    return NextResponse.json({ downgraded: true });
+    // 6. Under both caps -> SCHEDULE the downgrade for the next renewal (G1/G3):
+    // no charge, no refund, no credit, and the plan/limits do NOT change now. The
+    // recurring engine applies it at next_billing_at. The cap-shed gate above (G2)
+    // still blocks scheduling until the teacher is under the Standard limits.
+    const { error: dErr } = await auth.supabaseAdmin
+      .from('teacher_subscriptions')
+      .update({ scheduled_plan_key: 'teacher_standard' })
+      .eq('teacher_id', auth.userId);
+    if (dErr) throw withPhase('schedule_downgrade', dErr);
+    return NextResponse.json({ downgraded: true, scheduled: true });
   } catch (e) {
     const phase = (e as { _phase?: string })._phase ?? 'downgrade';
     return fail(phase, e);

@@ -147,6 +147,8 @@ describe('GET /api/teacher/subscription/status', () => {
       free_months_credit: 0,
       blast_credits_purchased: 0,
       blast_credits_subscription: 0,
+      annual_multiplier: 10,
+      billing_interval: 'monthly',
     });
   });
 
@@ -189,6 +191,8 @@ describe('GET /api/teacher/subscription/status', () => {
       free_months_credit: 2,
       blast_credits_purchased: 0,
       blast_credits_subscription: 0,
+      annual_multiplier: 10,
+      billing_interval: 'monthly',
     });
   });
 });

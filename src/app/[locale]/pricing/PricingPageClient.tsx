@@ -5,8 +5,14 @@ import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
-import { ORDERED_SUBSCRIPTION_PLAN_KEYS, PLANS } from '@/lib/pricing';
+import {
+  getAnnualChargeRounded,
+  getAnnualMonthlyFromBase,
+  ORDERED_SUBSCRIPTION_PLAN_KEYS,
+  PLANS,
+} from '@/lib/pricing';
 import type { SubscriptionPlanKey } from '@/lib/pricing';
+import { TEACHER_PLANS } from '@/lib/teacherPlans';
 import { Menu, X, Check } from 'lucide-react';
 import PricingBannerClient from '@/components/landing/PricingBannerClient';
 import PublicLocaleToggle from '@/components/PublicLocaleToggle';
@@ -29,7 +35,20 @@ export default function PricingPageClient() {
   const [audience, setAudience] = useState<Audience>(
     searchParams?.get('for') === 'teacher' ? 'teacher' : 'center',
   );
+  const [interval, setInterval] = useState<'monthly' | 'annual'>('monthly');
   const dynamicPlanPrices = usePublicPlanPrices();
+  const centerFeatures = (t.raw('centerFeatures') as string[]) ?? [];
+
+  // Teacher prices are monthly-billed today; annual is display-only (×10 = "2 months
+  // free"), computed from TEACHER_PLANS until teacher annual checkout is wired.
+  const teacherPriceLine = (gross: number) => {
+    const perMonth = interval === 'annual' ? getAnnualMonthlyFromBase(gross) : gross;
+    return `${formatCurrency(perMonth, locale)}${t('perMonthSuffix')}`;
+  };
+  const teacherAnnualNote = (gross: number) =>
+    interval === 'annual'
+      ? t('billedAnnually', { amount: formatCurrency(getAnnualChargeRounded(gross), locale) })
+      : '';
 
   const freeFeatures = [tp('freeFeature1'), tp('freeFeature2')];
   const standardFeatures = [
@@ -182,6 +201,41 @@ export default function PricingPageClient() {
             </div>
           </div>
 
+          {/* Billing interval toggle: Monthly | Annual (both tabs) */}
+          <div className="mt-5 flex flex-col items-center gap-2">
+            <div
+              role="tablist"
+              aria-label={t('billMonthly') + ' / ' + t('billAnnual')}
+              className="inline-flex rounded-full border border-[var(--color-border)] bg-[var(--color-surface-1)] p-1"
+            >
+              {(['monthly', 'annual'] as const).map((iv) => (
+                <button
+                  key={iv}
+                  type="button"
+                  role="tab"
+                  aria-selected={interval === iv}
+                  onClick={() => setInterval(iv)}
+                  className="rounded-full px-5 py-1.5 text-sm font-semibold transition-colors btn-press chq-focus"
+                  style={
+                    interval === iv
+                      ? { background: 'var(--color-brass)', color: '#ffffff' }
+                      : { color: 'var(--color-text-secondary)' }
+                  }
+                >
+                  {iv === 'monthly' ? t('billMonthly') : t('billAnnual')}
+                </button>
+              ))}
+            </div>
+            {interval === 'annual' ? (
+              <span
+                className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium"
+                style={{ background: 'var(--color-brass-soft)', color: 'var(--color-brass)' }}
+              >
+                {t('annualBadge')}
+              </span>
+            ) : null}
+          </div>
+
           {audience === 'center' ? (
             <>
               <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-5">
@@ -198,15 +252,18 @@ export default function PricingPageClient() {
                       : '';
                   const isPopular = p.landingBadge === 'popular';
                   const isEntry = p.landingBadge === 'entry';
+                  const perMonth =
+                    interval === 'annual' ? dyn.annualEffectiveMonthly : dyn.monthlyListPrice;
 
                   return (
                     <div
                       key={planKey}
                       className={`flex flex-col rounded-2xl border p-6 text-start ${
                         isPopular
-                          ? 'border-[var(--color-teal)]/50 bg-[var(--color-surface-1)] ring-1 ring-[var(--color-teal)]/25'
+                          ? 'border-[var(--color-brass)]/50 bg-[var(--color-surface-1)] ring-1 ring-[var(--color-brass)]/25'
                           : 'border-[var(--color-border)] bg-[var(--color-surface-1)]'
                       }`}
+                      style={{ borderTopColor: 'var(--color-brass)', borderTopWidth: '3px' }}
                     >
                       <div className="flex min-h-[28px] flex-wrap items-center gap-2">
                         {isEntry ? (
@@ -215,37 +272,50 @@ export default function PricingPageClient() {
                           </span>
                         ) : null}
                         {isPopular ? (
-                          <span className="inline-block rounded-full bg-[var(--color-teal)] px-2 py-0.5 text-xs font-medium text-white">
+                          <span
+                            className="inline-block rounded-full px-2 py-0.5 text-xs font-medium text-white"
+                            style={{ background: 'var(--color-brass)' }}
+                          >
                             {t('badgePopular')}
                           </span>
                         ) : null}
                       </div>
                       <p className="mt-3 text-lg font-bold text-[var(--color-text-primary)]">{title}</p>
-                      <dl className="mt-4 space-y-2 text-sm">
-                        <div className="flex justify-between gap-2 border-b border-[var(--color-border-subtle)] pb-2">
-                          <dt className="text-[var(--color-text-secondary)]">{t('colMonthly')}</dt>
-                          <dd className="font-mono font-semibold tabular-nums text-[var(--color-text-primary)]">
-                            {formatCurrency(dyn.monthlyListPrice, locale)}
-                          </dd>
-                        </div>
-                        <div className="flex justify-between gap-2 border-b border-[var(--color-border-subtle)] pb-2">
-                          <dt className="text-[var(--color-text-secondary)]">{t('colQuarterly')}</dt>
-                          <dd className="font-mono font-semibold tabular-nums text-[var(--color-text-primary)]">
-                            {formatCurrency(dyn.quarterlyAllIn, locale)}
-                          </dd>
-                        </div>
-                        <div className="flex justify-between gap-2">
-                          <dt className="text-[var(--color-text-secondary)]">{t('colAnnual')}</dt>
-                          <dd className="font-mono font-semibold tabular-nums text-[var(--color-text-primary)]">
-                            {formatCurrency(dyn.annualEffectiveMonthly, locale)}
-                          </dd>
-                        </div>
-                      </dl>
-                      <p className="mt-4 text-xs text-[var(--color-text-secondary)]">{studentsLine}</p>
+                      <p className="mt-3 flex items-baseline gap-1">
+                        <span className="font-mono text-2xl font-bold tabular-nums text-[var(--color-text-primary)]">
+                          {formatCurrency(perMonth, locale)}
+                        </span>
+                        <span className="text-sm text-[var(--color-text-muted)]">{t('perMonthSuffix')}</span>
+                      </p>
+                      <p className="mt-1 min-h-[16px] text-xs text-[var(--color-text-muted)]">
+                        {interval === 'annual'
+                          ? t('billedAnnually', { amount: formatCurrency(dyn.annualTotal, locale) })
+                          : ''}
+                      </p>
+                      <ul className="mt-5 space-y-2.5">
+                        {centerFeatures.map((feature, i) => (
+                          <li
+                            key={i}
+                            className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]"
+                          >
+                            <Check
+                              size={16}
+                              className="mt-0.5 shrink-0"
+                              style={{ color: 'var(--color-brass)' }}
+                              aria-hidden
+                            />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="mt-4 text-xs font-medium" style={{ color: 'var(--color-brass)' }}>
+                        {studentsLine}
+                      </p>
                       <p className="mt-2 text-[11px] text-[var(--color-text-muted)]">{t('priceDisclaimer')}</p>
                       <Link
                         href="/signup"
-                        className="mt-6 inline-flex w-full justify-center rounded-xl bg-[var(--color-teal)] py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-[var(--color-teal-deep)] btn-press chq-focus"
+                        className="mt-6 inline-flex w-full justify-center rounded-xl py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-press chq-focus"
+                        style={{ background: 'var(--color-brass)' }}
                       >
                         {t('ctaSignup')}
                       </Link>
@@ -254,17 +324,18 @@ export default function PricingPageClient() {
                 })}
               </div>
 
-              <div className="mt-10 rounded-2xl border border-[var(--color-teal)]/30 bg-[var(--color-teal-soft)] p-6 md:p-8">
+              <div className="mt-10 rounded-2xl border border-[var(--color-brass)]/30 bg-[var(--color-brass-soft)] p-6 md:p-8">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div>
                     <h2 className="text-xl font-bold text-[var(--color-text-primary)] md:text-2xl">{t('topCentersTitle')}</h2>
-                    <p className="mt-1 text-sm text-[var(--color-teal-deep)]">{t('topCentersSubtitle')}</p>
+                    <p className="mt-1 text-sm font-medium" style={{ color: 'var(--color-brass)' }}>{t('topCentersSubtitle')}</p>
                     <p className="mt-2 text-sm text-[var(--color-text-muted)]">{t('topCentersStudents')}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setContactOpen(true)}
-                    className="shrink-0 rounded-xl border border-[var(--color-teal)]/40 bg-[var(--color-teal)]/10 px-6 py-3 text-sm font-semibold text-[var(--color-teal-deep)] transition-colors hover:bg-[var(--color-teal)]/20 btn-press chq-focus"
+                    className="shrink-0 rounded-xl border border-[var(--color-brass)]/40 px-6 py-3 text-sm font-semibold transition-opacity hover:opacity-90 btn-press chq-focus"
+                    style={{ background: 'var(--color-brass-soft)', color: 'var(--color-brass)' }}
                   >
                     {t('topCentersCta')}
                   </button>
@@ -316,7 +387,14 @@ export default function PricingPageClient() {
                       {tp('trialBadge')}
                     </span>
                   </div>
-                  <p className="mt-3 text-2xl font-bold text-[var(--color-text-primary)]">{tp('price')}</p>
+                  <p className="mt-3 text-2xl font-bold text-[var(--color-text-primary)]">
+                    {teacherPriceLine(TEACHER_PLANS.teacher_standard.priceGross)}
+                  </p>
+                  {interval === 'annual' ? (
+                    <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                      {teacherAnnualNote(TEACHER_PLANS.teacher_standard.priceGross)}
+                    </p>
+                  ) : null}
                   <p className="mt-1 text-xs text-[var(--color-text-muted)]">{tp('priceNote')}</p>
                   <p className="mt-1 text-xs font-medium" style={{ color: 'var(--color-brass)' }}>{tp('perStudent')}</p>
                   <ul className="mt-5 space-y-2.5">
@@ -350,7 +428,14 @@ export default function PricingPageClient() {
                       {tp('bestForPartTime')}
                     </span>
                   </div>
-                  <p className="mt-3 text-2xl font-bold text-[var(--color-text-primary)]">{tp('proPrice')}</p>
+                  <p className="mt-3 text-2xl font-bold text-[var(--color-text-primary)]">
+                    {teacherPriceLine(TEACHER_PLANS.teacher_pro.priceGross)}
+                  </p>
+                  {interval === 'annual' ? (
+                    <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                      {teacherAnnualNote(TEACHER_PLANS.teacher_pro.priceGross)}
+                    </p>
+                  ) : null}
                   <p className="mt-1 text-xs text-[var(--color-text-muted)]">{tp('proPriceNote')}</p>
                   <p className="mt-1 text-xs font-medium" style={{ color: 'var(--color-brass)' }}>{tp('proPerStudent')}</p>
                   <ul className="mt-5 space-y-2.5">
@@ -376,7 +461,14 @@ export default function PricingPageClient() {
                   style={{ borderTopColor: 'var(--color-brass)', borderTopWidth: '3px' }}
                 >
                   <p className="text-lg font-bold text-[var(--color-text-primary)]">{tp('scaleTitle')}</p>
-                  <p className="mt-3 text-2xl font-bold text-[var(--color-text-primary)]">{tp('scalePrice')}</p>
+                  <p className="mt-3 text-2xl font-bold text-[var(--color-text-primary)]">
+                    {teacherPriceLine(TEACHER_PLANS.teacher_scale.priceGross)}
+                  </p>
+                  {interval === 'annual' ? (
+                    <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                      {teacherAnnualNote(TEACHER_PLANS.teacher_scale.priceGross)}
+                    </p>
+                  ) : null}
                   <p className="mt-1 text-xs text-[var(--color-text-muted)]">{tp('scalePriceNote')}</p>
                   <p className="mt-1 text-xs font-medium" style={{ color: 'var(--color-brass)' }}>{tp('scalePerStudent')}</p>
                   <ul className="mt-5 space-y-2.5">
@@ -402,7 +494,7 @@ export default function PricingPageClient() {
               <p className="mx-auto mt-2 max-w-2xl text-center text-xs text-[var(--color-text-muted)]">
                 {tp('activeStudentNote')}
               </p>
-              <PlanComparisonTable />
+              <PlanComparisonTable interval={interval} />
             </div>
           )}
         </div>
@@ -430,7 +522,8 @@ export default function PricingPageClient() {
             <p className="mt-2 text-sm text-[var(--color-text-muted)]">{t('contactModalBody')}</p>
             <a
               href={CONTACT_MAIL}
-              className="mt-6 flex w-full justify-center rounded-xl bg-[var(--color-teal)] py-3 text-sm font-semibold text-white hover:bg-[var(--color-teal-deep)]"
+              className="mt-6 flex w-full justify-center rounded-xl py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              style={{ background: 'var(--color-brass)' }}
             >
               {t('contactModalEmail')}
             </a>

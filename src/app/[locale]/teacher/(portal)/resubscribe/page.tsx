@@ -18,6 +18,7 @@ type SubscriptionStatus = {
   next_billing_at: string | null;
   grace_until: string | null;
   free_months_credit: number;
+  annual_multiplier?: number;
 };
 
 /**
@@ -38,6 +39,7 @@ export default function TeacherResubscribePage() {
   const [submitting, setSubmitting] = useState(false);
   const [paymobSoon, setPaymobSoon] = useState(false);
   const [submitError, setSubmitError] = useState(false);
+  const [interval, setInterval] = useState<'monthly' | 'annual'>('monthly');
 
   const loadStatus = useCallback(async () => {
     setLoading(true);
@@ -98,6 +100,7 @@ export default function TeacherResubscribePage() {
           Authorization: `Bearer ${session.access_token}`,
           ...(await getCsrfHeaders(session.access_token)),
         },
+        body: JSON.stringify({ interval }),
       });
       const json = (await res.json().catch(() => ({}))) as {
         paymob_disabled?: boolean;
@@ -165,14 +168,54 @@ export default function TeacherResubscribePage() {
           <Sparkles size={18} className="text-[var(--color-brass)]" aria-hidden />
           <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('planName')}</h2>
         </div>
-        <p className="mb-4">
-          <span className="font-mono text-2xl font-bold text-[var(--color-teal-deep)]">
-            {formatCurrency(status.price_gross, locale)}
-          </span>
-          <span className="ms-1 text-sm text-[var(--color-text-secondary)]">
-            {t('priceSuffix')}
-          </span>
-        </p>
+
+        {/* Billing interval: Monthly | Annual (annual = monthly × 10, "2 months free") */}
+        {(() => {
+          const mult = status.annual_multiplier && status.annual_multiplier > 0 ? status.annual_multiplier : 10;
+          const annualTotal = Math.round(status.price_gross * mult);
+          const annualPerMonth = Math.round(annualTotal / 12);
+          const perMonth = interval === 'annual' ? annualPerMonth : status.price_gross;
+          return (
+            <>
+              <div className="mb-3 inline-flex rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] p-1">
+                {(['monthly', 'annual'] as const).map((iv) => (
+                  <button
+                    key={iv}
+                    type="button"
+                    onClick={() => setInterval(iv)}
+                    className="rounded-full px-4 py-1 text-sm font-semibold transition-colors"
+                    style={
+                      interval === iv
+                        ? { background: 'var(--color-brass)', color: '#ffffff' }
+                        : { color: 'var(--color-text-secondary)' }
+                    }
+                  >
+                    {iv === 'monthly' ? t('billMonthly') : t('billAnnual')}
+                  </button>
+                ))}
+              </div>
+              <p className="mb-1">
+                <span className="font-mono text-2xl font-bold text-[var(--color-teal-deep)]">
+                  {formatCurrency(perMonth, locale)}
+                </span>
+                <span className="ms-1 text-sm text-[var(--color-text-secondary)]">{t('priceSuffix')}</span>
+              </p>
+              {interval === 'annual' ? (
+                <p className="mb-4 flex flex-wrap items-center gap-2 text-xs text-[var(--color-text-muted)]">
+                  <span>{t('billedAnnually', { amount: formatCurrency(annualTotal, locale) })}</span>
+                  <span
+                    className="inline-block rounded-full px-2 py-0.5 font-medium"
+                    style={{ background: 'var(--color-brass-soft)', color: 'var(--color-brass)' }}
+                  >
+                    {t('annualBadge')}
+                  </span>
+                </p>
+              ) : (
+                <p className="mb-4" />
+              )}
+            </>
+          );
+        })()}
 
         <p className="mb-2 text-sm font-semibold text-[var(--color-text-primary)]">
           {t('includedTitle')}

@@ -661,27 +661,36 @@ export default function AdminPricingPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-                          {t('pricingAnnualDiscountPct')}
+                          {t('pricingAnnualMonths')}
                         </label>
                         <input
                           type="number"
-                          min={0}
-                          step="0.5"
+                          min={1}
+                          max={12}
+                          step="1"
                           className="w-full max-w-xs rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2"
-                          value={Math.round((1 - pricingCfgDraft.interval.annualMultiplier) * 1000) / 10}
+                          value={pricingCfgDraft.interval.annualMultiplier}
                           onChange={(e) => {
-                            const pct = parseFloat(e.target.value);
-                            if (!Number.isFinite(pct)) return;
+                            const months = parseFloat(e.target.value);
+                            if (!Number.isFinite(months)) return;
                             setPricingCfgDraft((d) =>
                               d
                                 ? {
                                     ...d,
-                                    interval: { ...d.interval, annualMultiplier: 1 - pct / 100 },
+                                    interval: { ...d.interval, annualMultiplier: months },
                                   }
                                 : d,
                             );
                           }}
                         />
+                        <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                          {t('pricingAnnualMonthsHint', {
+                            free: formatNumber(
+                              Math.max(0, 12 - pricingCfgDraft.interval.annualMultiplier),
+                              locale,
+                            ),
+                          })}
+                        </p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">

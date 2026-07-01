@@ -9,6 +9,7 @@ import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
 import { getTeacherPlan } from '@/lib/teacherPlans';
 import { getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { applyProcessingFee } from '@/lib/processingFee';
+import { getUpgradeCost } from '@/lib/billingEngine';
 
 const ROUTE_TAG = 'api/teacher/subscription/upgrade';
 
@@ -50,11 +51,13 @@ export async function POST(request: NextRequest) {
   // teacher_subscriptions (NOT teacher_profiles).
   const { data: subRow, error: subErr } = await auth.supabaseAdmin
     .from('teacher_subscriptions')
-    .select('id, plan_key, status')
+    .select('id, plan_key, status, current_period_end')
     .eq('teacher_id', auth.userId)
     .maybeSingle();
   if (subErr) return fail('subscription_lookup', subErr);
-  const sub = subRow as { id: string; plan_key: string; status: string } | null;
+  const sub = subRow as
+    | { id: string; plan_key: string; status: string; current_period_end: string | null }
+    | null;
   if (
     !sub ||
     getTeacherPlan(sub.plan_key).rank !== 1 ||
@@ -63,21 +66,49 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'NOT_ELIGIBLE' }, { status: 400 });
   }
 
-  // Pro price from platform_config (never hardcoded).
-  const { data: configRow, error: configErr } = await auth.supabaseAdmin
+  // Std + Pro prices from platform_config (never hardcoded).
+  const { data: cfgRows, error: configErr } = await auth.supabaseAdmin
     .from('platform_config')
-    .select('value')
-    .eq('key', 'teacher_subscription_plan_pro')
-    .maybeSingle();
+    .select('key, value')
+    .in('key', ['teacher_subscription_plan', 'teacher_subscription_plan_pro']);
   if (configErr) return fail('plan_config', configErr);
-  const plan = ((configRow as { value?: { plan_key?: string; price_gross?: number } } | null)
-    ?.value ?? {});
-  const priceGross = Number(plan.price_gross ?? 0);
-  if (!Number.isFinite(priceGross) || priceGross <= 0) {
+  const cfgMap = new Map(
+    ((cfgRows as { key: string; value?: { price_gross?: number } }[] | null) ?? []).map((r) => [
+      r.key,
+      Number(r.value?.price_gross ?? 0),
+    ]),
+  );
+  const proGross = cfgMap.get('teacher_subscription_plan_pro') ?? 0;
+  const stdGross = cfgMap.get('teacher_subscription_plan') ?? 0;
+  if (!Number.isFinite(proGross) || proGross <= 0) {
     return fail('plan_price', { message: 'teacher_subscription_plan_pro price_gross missing/invalid' });
   }
 
-  // Flat processing fee (Section 5) added on top of the Pro plan price.
+  // Unified rule 1: an ACTIVE teacher pays only the prorated difference for the days
+  // left in the current paid month (Std→Pro), and the renewal date is kept (G7 — the
+  // RPC no longer resets the period). A TRIALING teacher has no paid time to credit
+  // (G3), so they start a fresh paid Pro month at the full Pro price.
+  const isTrialing = sub.status === 'trialing';
+  let subscriptionAmount: number;
+  if (isTrialing) {
+    subscriptionAmount = proGross;
+  } else {
+    const periodEnd = sub.current_period_end ? new Date(sub.current_period_end) : new Date();
+    const { amountDue } = getUpgradeCost({
+      newPlanPrice: proGross,
+      currentPlanPrice: stdGross,
+      newBillingPeriod: 'monthly',
+      currentBillingPeriod: 'monthly',
+      nextPaymentDue: periodEnd,
+    });
+    subscriptionAmount = Math.round(Math.max(0, amountDue) * 100) / 100;
+    if (subscriptionAmount <= 0) {
+      return NextResponse.json({ error: 'NO_CHARGE', code: 'NO_CHARGE' }, { status: 400 });
+    }
+  }
+  const priceGross = subscriptionAmount;
+
+  // Flat processing fee (Section 5) added on top of the (prorated) upgrade charge.
   const feeCfg = await getProcessingFeeConfig();
   const { fee: processingFee, total: chargedTotal } = applyProcessingFee(priceGross, feeCfg);
 
@@ -108,6 +139,7 @@ export async function POST(request: NextRequest) {
         plan_key: 'teacher_pro',
         subscription_amount: priceGross,
         processing_fee: processingFee,
+        freshProPeriod: isTrialing,
       },
     })
     .select('id')
@@ -135,6 +167,7 @@ export async function POST(request: NextRequest) {
           plan_key: 'teacher_pro',
           subscription_amount: priceGross,
           processing_fee: processingFee,
+          freshProPeriod: isTrialing,
           paymob_iframe_url: checkout.iframeUrl,
         } as never,
       })

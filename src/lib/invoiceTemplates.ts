@@ -782,6 +782,15 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     });
     totalsInner = `${discountRowHtml}
     ${redesignedSubscriptionTotals(total, processingFeeAmt, totalLabel)}`;
+  } else if (invoiceType === 'teacher_overage') {
+    const overStudents = num(meta.overage_students ?? 0);
+    lineRowsHtml = lineRowHtml({
+      amount: subscriptionValue,
+      detail: periodRange,
+      title: 'رسوم طلاب فوق الحد (Scale)',
+      subtitle: overStudents > 0 ? `${overStudents} طالب × 20 ج.م` : 'تسوية شهرية',
+    });
+    totalsInner = redesignedSubscriptionTotals(total, processingFeeAmt, totalLabel);
   } else if (invoiceType === 'pack_billing') {
     const active = packActivePre;
     const activeCount = num(meta.active_count ?? meta.active_parent_count ?? active) || active;
@@ -881,10 +890,6 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     const newAmt = u?.newPlanAmount ?? total + (u?.oldPlanCredit ?? 0);
     const credit = u?.oldPlanCredit ?? 0;
     const newCap = u?.newCap ?? studentCap;
-    const newPlanAmtMeta = num(meta.new_plan_amount ?? newAmt);
-    const oldCreditAmtMeta = num(meta.old_plan_credit ?? credit);
-    const pNew = calcExclusive(newPlanAmtMeta);
-    const pOld = calcExclusive(oldCreditAmtMeta);
     lineRowsHtml =
       lineRowHtml({
         amount: newAmt,
@@ -899,18 +904,9 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
         subtitle: 'الأيام المتبقية من الفترة الحالية',
         amountRed: true,
       });
-    const netBase = pNew.base - pOld.base;
-    const netSvc = pNew.service - pOld.service;
-    const netStamp = pNew.stamp - pOld.stamp;
-    const netVat = pNew.vat - pOld.vat;
-    totalsInner = `${totalsRow('المجموع الجزئي (الصافي)', `${fmtMoney(netBase)} EGP`)}
-    ${dividerDashed()}
-    ${totalsRow('رسوم الخدمة (6%)', `${fmtMoney(netSvc)} EGP`)}
-    ${totalsRow('رسوم الدمغة (0.5%)', `${fmtMoney(netStamp)} EGP`)}
-    ${totalsRow('ضريبة القيمة المضافة (14%)', `${fmtMoney(netVat)} EGP`)}
-    ${dividerSolid()}
-    ${totalsRowBold('فرق الترقية', `${fmtMoney(total)} EGP`)}
-    ${taxNoteRow(TAX_NOTE_STANDARD_AR)}`;
+    // Processing-fee layout (Section 5): the charge, an optional flat fee, then the
+    // total. No 6% service line, no 0.5% stamp line — VAT is shown as included.
+    totalsInner = redesignedSubscriptionTotals(total, processingFeeAmt, totalLabel);
   } else if (invoiceType === 'setup_fee') {
     showTaxBox = false;
     const productName = String(meta.product_name_ar ?? 'ماسح البطاقات الذكية');

@@ -87,6 +87,19 @@ export const TEACHER_PLANS: Record<TeacherPlanKey, TeacherPlanDef> = {
   },
 };
 
+/**
+ * platform_config key holding a teacher plan's price/config.
+ *   teacher_standard → 'teacher_subscription_plan'
+ *   teacher_pro      → 'teacher_subscription_plan_pro'
+ *   teacher_scale    → 'teacher_subscription_plan_scale'
+ * Unknown/legacy keys fall back to Standard's key.
+ */
+export function teacherPlanConfigKey(planKey: string | null | undefined): string {
+  if (planKey === 'teacher_pro') return 'teacher_subscription_plan_pro';
+  if (planKey === 'teacher_scale') return 'teacher_subscription_plan_scale';
+  return 'teacher_subscription_plan';
+}
+
 /** Resolve a (possibly null/legacy) plan_key to a plan def, defaulting to Standard. */
 export function getTeacherPlan(planKey: string | null | undefined): TeacherPlanDef {
   if (planKey && planKey in TEACHER_PLANS) {

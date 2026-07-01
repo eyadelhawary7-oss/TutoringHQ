@@ -382,11 +382,8 @@ export default function HomePageClient() {
             {primaryPlanKeys.map((planKey) => {
               const p = PLANS[planKey];
               const dyn = dynamicPlanPrices[planKey];
-              const priceLine = `${formatCurrency(dyn.quarterlyAllIn, locale)}${m('pricePerMonthSuffix')}`;
-              const quarterlyTotal = dyn.quarterlyAllIn * 3;
-              const quarterlyDisclosure = tPricingTile('quarterlyDisclosure', {
-                amount: formatCurrency(quarterlyTotal, locale),
-              });
+              const priceLine = `${formatCurrency(dyn.annualEffectiveMonthly, locale)}${m('pricePerMonthSuffix')}`;
+              const annualDisclosure = tPricingTile('annualDisclosure');
               const planTitle = locale === 'ar' ? p.arabicName : p.englishName;
               const cap = dyn.weeklyStudentLimit ?? p.weeklyStudentLimit;
               const studentsLine =
@@ -420,7 +417,7 @@ export default function HomePageClient() {
                   </div>
                   <p className="mt-3 text-base font-bold text-[var(--color-text-primary)]">{planTitle}</p>
                   <p className="mt-2 text-2xl font-bold text-[var(--color-text-primary)]">{priceLine}</p>
-                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">{quarterlyDisclosure}</p>
+                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">{annualDisclosure}</p>
                   <p className="mt-3 text-xs text-[var(--color-text-muted)]">{studentsLine}</p>
                 </div>
               );
@@ -434,11 +431,8 @@ export default function HomePageClient() {
               {secondaryPlanKeys.map((planKey) => {
                 const p = PLANS[planKey];
                 const dyn = dynamicPlanPrices[planKey];
-                const priceLine = `${formatCurrency(dyn.quarterlyAllIn, locale)}${m('pricePerMonthSuffix')}`;
-                const quarterlyTotal = dyn.quarterlyAllIn * 3;
-                const quarterlyDisclosure = tPricingTile('quarterlyDisclosure', {
-                  amount: formatCurrency(quarterlyTotal, locale),
-                });
+                const priceLine = `${formatCurrency(dyn.annualEffectiveMonthly, locale)}${m('pricePerMonthSuffix')}`;
+                const annualDisclosure = tPricingTile('annualDisclosure');
                 const planTitle = locale === 'ar' ? p.arabicName : p.englishName;
                 const cap = dyn.weeklyStudentLimit ?? p.weeklyStudentLimit;
                 const studentsLine =
@@ -454,7 +448,7 @@ export default function HomePageClient() {
                   >
                     <p className="text-sm font-semibold text-[var(--color-text-primary)]">{planTitle}</p>
                     <p className="mt-1.5 text-lg font-bold text-[var(--color-text-primary)]">{priceLine}</p>
-                    <p className="mt-1 text-xs text-[var(--color-text-muted)]">{quarterlyDisclosure}</p>
+                    <p className="mt-1 text-xs text-[var(--color-text-muted)]">{annualDisclosure}</p>
                     <p className="mt-2 text-xs text-[var(--color-text-muted)]">{studentsLine}</p>
                   </div>
                 );

@@ -7,6 +7,10 @@ import { autoSuspendAtFromDue } from '@/lib/billingSchedule';
 import { applyPaymentToInvoice, readAppliedTxns, remainingBalance } from '@/lib/invoiceBalance';
 import { cairoDateKey, cairoYmdPlusDays, startOfUtcInstantForCairoCalendarDay } from '@/lib/cairo/day';
 import { logBillingEvent, invoiceOwner } from '@/lib/billingAudit';
+import {
+  resolveScheduledCenterDowngrade,
+  applyScheduledCenterDowngrade,
+} from '@/lib/scheduledDowngrade';
 
 const PERIOD_MONTHS: Record<string, number> = {
   monthly: 1,
@@ -109,7 +113,7 @@ async function handleSubscriptionInvoicePaid(
   const { data: center } = await supabaseAdmin
     .from('centers')
     .select(
-      'billing_status, status, subscription_status, next_payment_due, subscription_start_date, billing_cycle_start, approved_at, name, phone, billing_amount',
+      'billing_status, status, subscription_status, next_payment_due, subscription_start_date, billing_cycle_start, approved_at, name, phone, billing_amount, scheduled_plan, scheduled_billing_period',
     )
     .eq('id', inv.center_id)
     .maybeSingle();
@@ -125,6 +129,8 @@ async function handleSubscriptionInvoicePaid(
     name?: string | null;
     phone?: string | null;
     billing_amount?: number | null;
+    scheduled_plan?: string | null;
+    scheduled_billing_period?: string | null;
   } | null;
 
   if (!c) return null;
@@ -159,6 +165,19 @@ async function handleSubscriptionInvoicePaid(
     return null;
   }
   const status = typeof res === 'string' ? res : String(res ?? '');
+
+  // G1/G5: a scheduled downgrade LANDS exactly here — the renewal just rolled the
+  // period, so the center flips to the lower plan now (never sooner) and the schedule
+  // clears. The just-paid renewal invoice already billed the scheduled (lower) amount.
+  // No credit, ever (G3/G4). Skipped on an idempotent already_paid replay.
+  if (status !== 'already_paid' && c.scheduled_plan) {
+    const sched = await resolveScheduledCenterDowngrade(
+      supabaseAdmin,
+      c.scheduled_plan,
+      c.scheduled_billing_period,
+    );
+    if (sched) await applyScheduledCenterDowngrade(supabaseAdmin, inv.center_id, sched);
+  }
 
   // Exactly-once paid confirmation. finalize_subscription_invoice_paid performs
   // the mark-paid transition atomically and returns 'already_paid' to every
@@ -335,6 +354,27 @@ export async function finalizeInvoicePaymentSuccess(
   // teacher_subscriptions advance were separate writes — a failure between them
   // left the teacher paid but without restored access, never retried.
   if (row.owner_type === 'teacher') {
+    // Scale OVERAGE invoice: mark paid and advance the monthly overage tick ONLY.
+    // It must never advance the base subscription period (the cycles are separate),
+    // so it goes through a plain mark-paid, NOT finalize_teacher_invoice_paid.
+    if (row.invoice_type === 'teacher_overage') {
+      const { error: ovErr } = await supabaseAdmin.from('invoices').update(paidColumns).eq('id', row.id);
+      if (ovErr) {
+        console.error('[finalizeInvoicePaymentSuccess] overage invoice', ovErr);
+        return null;
+      }
+      if (row.teacher_id) {
+        const tomorrowTick = startOfUtcInstantForCairoCalendarDay(
+          cairoYmdPlusDays(cairoDateKey(new Date()), 30),
+        ).toISOString();
+        await supabaseAdmin
+          .from('teacher_subscriptions')
+          .update({ overage_next_at: tomorrowTick })
+          .eq('teacher_id', row.teacher_id);
+      }
+      await auditInvoicePaid();
+      return { invoiceId: row.id, settled: true };
+    }
     if (!row.teacher_id) {
       const { error: tInvErr } = await supabaseAdmin.from('invoices').update(paidColumns).eq('id', row.id);
       if (tInvErr) {
@@ -346,7 +386,20 @@ export async function finalizeInvoicePaymentSuccess(
     }
     const todayCairo = cairoDateKey(new Date());
     const periodStart = new Date().toISOString();
-    const periodEnd = startOfUtcInstantForCairoCalendarDay(cairoYmdPlusDays(todayCairo, 30)).toISOString();
+    // Annual subscriptions advance a full year; monthly advance 30 days. Reading
+    // billing_interval keeps monthly behavior byte-identical (no annual rows yet).
+    const { data: tSub } = await supabaseAdmin
+      .from('teacher_subscriptions')
+      .select('billing_interval, plan_key, overage_next_at')
+      .eq('teacher_id', row.teacher_id)
+      .maybeSingle();
+    const subInfo = tSub as
+      | { billing_interval?: string; plan_key?: string; overage_next_at?: string | null }
+      | null;
+    const periodDays = subInfo?.billing_interval === 'annual' ? 365 : 30;
+    const periodEnd = startOfUtcInstantForCairoCalendarDay(
+      cairoYmdPlusDays(todayCairo, periodDays),
+    ).toISOString();
     const { data: tRes, error: tErr } = await supabaseAdmin.rpc('finalize_teacher_invoice_paid', {
       p_invoice_id: row.id,
       p_teacher_id: row.teacher_id,
@@ -359,6 +412,17 @@ export async function finalizeInvoicePaymentSuccess(
     if (tErr) {
       console.error('[finalizeInvoicePaymentSuccess] finalize_teacher_invoice_paid', tErr);
       return null;
+    }
+    // Scale: start the monthly overage tick on first paid base if not already set.
+    // The tick runs every 30 days regardless of the base cadence (monthly or annual).
+    if (subInfo?.plan_key === 'teacher_scale' && !subInfo.overage_next_at) {
+      const firstTick = startOfUtcInstantForCairoCalendarDay(
+        cairoYmdPlusDays(todayCairo, 30),
+      ).toISOString();
+      await supabaseAdmin
+        .from('teacher_subscriptions')
+        .update({ overage_next_at: firstTick })
+        .eq('teacher_id', row.teacher_id);
     }
     if ((typeof tRes === 'string' ? tRes : String(tRes ?? '')) !== 'already_paid') {
       await auditInvoicePaid();

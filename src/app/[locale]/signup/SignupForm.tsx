@@ -106,9 +106,11 @@ function getSignupCycleTotal(dyn: DynamicPlanPrice, period: BillingPeriod): numb
     case 'monthly':
       return dyn.monthlyListPrice;
     case 'annual':
-      return Math.round(dyn.quarterlyAllIn * 0.85 * 12);
+      // Annual total = monthly × 10 ("2 months free"); annualTotal is computed
+      // server-side with the live admin multiplier so display == the amount charged.
+      return dyn.annualTotal;
     default:
-      return dyn.quarterlyAllIn * 3;
+      return dyn.monthlyListPrice;
   }
 }
 
@@ -311,7 +313,7 @@ export default function SignupForm() {
     email: '',
     city: '',
     plan: 'starter',
-    billingPeriod: 'quarterly' as BillingPeriod,
+    billingPeriod: 'monthly' as BillingPeriod,
     referralCode: '',
     notes: '',
   });
@@ -1532,7 +1534,7 @@ export default function SignupForm() {
                 </div>
 
                 <div className="mb-8 flex gap-6 border-b border-slate-800 pb-0">
-                  {(['monthly', 'quarterly', 'annual'] as const).map((p) => (
+                  {(['monthly', 'annual'] as const).map((p) => (
                     <button
                       key={p}
                       type="button"

@@ -23,7 +23,11 @@ export type CombinedSessionMetadata = {
   daysRemaining?: number;
   dailyRateDifference?: number;
   amountCharged?: number;
+  switchCredit?: number;
   billingAnchorYmd?: string;
+  /** Monthly→annual interval switch: resets the renewal clock to a fresh 12-month term. */
+  intervalSwitchToAnnual?: boolean;
+  freshTermEndYmd?: string | null;
 };
 
 function asMeta(raw: unknown): CombinedSessionMetadata {
@@ -248,17 +252,25 @@ export async function tryFinalizeCombinedPaymentSession(
           (centerBefore as { next_payment_due?: string | null } | null)?.next_payment_due?.slice(0, 10) ??
           todayISO();
 
+        // Monthly→annual starts a FRESH 12-month term, so it resets next_payment_due
+        // (rule 2 / G7 exception). A tier upgrade keeps the existing renewal date (G7),
+        // so next_payment_due is left untouched in that case.
+        const intervalSwitchToAnnual = meta.intervalSwitchToAnnual === true;
+        const centerUpdate: Record<string, unknown> = {
+          plan: newPlan,
+          subscription_billing_period: newBp,
+          billing_period: newBp,
+          all_in_price: allIn,
+          billing_amount: billingAmount,
+          billing_status: 'paid',
+          upgrade_count_this_period: prevCount + 1,
+        };
+        if (intervalSwitchToAnnual && typeof meta.freshTermEndYmd === 'string') {
+          centerUpdate.next_payment_due = meta.freshTermEndYmd;
+        }
         const { error: centerErr } = await supabase
           .from('centers')
-          .update({
-            plan: newPlan,
-            subscription_billing_period: newBp,
-            billing_period: newBp,
-            all_in_price: allIn,
-            billing_amount: billingAmount,
-            billing_status: 'paid',
-            upgrade_count_this_period: prevCount + 1,
-          })
+          .update(centerUpdate)
           .eq('id', row.center_id);
 
         if (centerErr) {
@@ -372,11 +384,17 @@ export async function tryFinalizeCombinedPaymentSession(
         }
       }
 
+      // Annual term covers 12 months; monthly covers one. The interval rides in
+      // the session metadata (set by the resubscribe checkout) and is persisted
+      // on the subscription so the recurring engine renews on the same cadence.
+      const billingInterval = rawMeta.billing_interval === 'annual' ? 'annual' : 'monthly';
+      const periodDays = billingInterval === 'annual' ? 365 : 30;
       const nowIso = new Date().toISOString();
-      const periodEndIso = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      const periodEndIso = new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000).toISOString();
       const { error: periodErr } = await supabase
         .from('teacher_subscriptions')
         .update({
+          billing_interval: billingInterval,
           current_period_start: nowIso,
           current_period_end: periodEndIso,
           next_billing_at: periodEndIso,
@@ -462,6 +480,29 @@ export async function tryFinalizeCombinedPaymentSession(
           teacherId,
         });
         return false;
+      }
+
+      // Trialing→Pro paid the FULL Pro price, so it starts a fresh paid Pro month.
+      // An ACTIVE upgrade paid only the prorated difference and KEEPS its renewal
+      // date (G7) — the RPC no longer resets the period, so there is nothing to do.
+      if (rawMeta.freshProPeriod === true) {
+        const nowIso = new Date().toISOString();
+        const periodEndIso = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        const { error: periodErr } = await supabase
+          .from('teacher_subscriptions')
+          .update({
+            current_period_start: nowIso,
+            current_period_end: periodEndIso,
+            next_billing_at: periodEndIso,
+          })
+          .eq('teacher_id', teacherId);
+        if (periodErr) {
+          await logFinalizeFailure(supabase, periodErr, {
+            sessionId: row.id,
+            phase: 'teacher_upgrade_fresh_period',
+            teacherId,
+          });
+        }
       }
 
       const { error: auditErr } = await supabase.from('audit_log').insert({

@@ -33,8 +33,15 @@ import { autoSuspendAtFromDue } from '@/lib/billingSchedule';
 import { lockAtFromBillingDay } from '@/lib/billingLifecycle';
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
 import { finalizeInvoicePaymentSuccess } from '@/lib/invoicePaymobPayment';
-import { ensureTeacherSubscriptionInvoice, advanceTeacherSubscriptionPaid } from '@/lib/teacherBilling';
-import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import {
+  ensureTeacherSubscriptionInvoice,
+  ensureTeacherOverageInvoice,
+  advanceTeacherSubscriptionPaid,
+  advanceTeacherOverageTick,
+} from '@/lib/teacherBilling';
+import { countActiveNonGuestStudents } from '@/lib/teacherCap';
+import { teacherOverageAmount, getTeacherPlan } from '@/lib/teacherPlans';
+import { getIntervalConfig, getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { resolveProcessingFeeAmount } from '@/lib/processingFee';
 import { round2 } from '@/lib/invoiceBalance';
 import { MAX_CHARGE_ATTEMPTS, type DueChargeable, type ManualReason, type MidnightBillingAdapter } from '@/lib/midnightBilling';
@@ -186,7 +193,7 @@ export function createSupabaseMidnightBillingAdapter(
       const { start, endExclusive } = cairoPaidAtDayUtcBounds(todayCairo);
       const { data: dueTeach } = await supabase
         .from('teacher_subscriptions')
-        .select('id, teacher_id, price_gross, dunning_attempts, status, next_billing_at')
+        .select('id, teacher_id, plan_key, price_gross, billing_interval, dunning_attempts, status, next_billing_at, scheduled_plan_key')
         .in('status', ['active', 'trialing', 'past_due'])
         .gte('next_billing_at', start.toISOString())
         .lt('next_billing_at', endExclusive.toISOString());
@@ -202,12 +209,42 @@ export function createSupabaseMidnightBillingAdapter(
       } catch {
         fee = 0;
       }
+      // Shared annual multiplier (=10) — only applied to billing_interval='annual' rows.
+      let annualMultiplier: number | undefined;
+      try {
+        annualMultiplier = (await getIntervalConfig()).annualMultiplier;
+      } catch {
+        annualMultiplier = undefined;
+      }
 
       for (const r of teachRows) {
         const attempt = Number(r.dunning_attempts ?? 0);
         if (attempt >= MAX_CHARGE_ATTEMPTS) continue;
         const ownerId = String(r.teacher_id);
-        const priceGross = Number(r.price_gross ?? 0);
+
+        // G1/G5: a scheduled downgrade LANDS exactly here, at the renewal boundary —
+        // the new (lower) plan + its price take effect for the period now starting,
+        // never sooner. set_teacher_plan_key keeps the renewal cadence; the recurring
+        // engine advances the period on payment.
+        let priceGross = Number(r.price_gross ?? 0);
+        const scheduledPlan = r.scheduled_plan_key ? String(r.scheduled_plan_key) : null;
+        if (scheduledPlan && scheduledPlan !== r.plan_key) {
+          await supabase.rpc('set_teacher_plan_key', {
+            p_user_id: ownerId,
+            p_plan_key: scheduledPlan,
+            p_actor_id: ownerId,
+          });
+          await supabase
+            .from('teacher_subscriptions')
+            .update({ scheduled_plan_key: null, scheduled_billing_interval: null })
+            .eq('id', r.id);
+          priceGross = getTeacherPlan(scheduledPlan).priceGross;
+        }
+
+        const interval: 'monthly' | 'annual' =
+          r.billing_interval === 'annual' ? 'annual' : 'monthly';
+        const monthlyFallbackBase =
+          interval === 'annual' ? priceGross * (annualMultiplier ?? 10) : priceGross;
 
         // Create (or reuse, on retry) the teacher's invoice on the billing day —
         // this is the teacher equivalent of the center subscription invoice.
@@ -216,18 +253,88 @@ export function createSupabaseMidnightBillingAdapter(
           billingDayCairo: todayCairo,
           priceGross,
           fee,
+          interval,
+          annualMultiplier,
         });
 
         items.push({
           key: `teacher:${String(r.id)}`,
           customerType: 'teacher',
           owner: { ownerType: 'teacher', ownerId },
-          amount: ensured ? ensured.total : round2(priceGross + fee),
+          amount: ensured ? ensured.total : round2(monthlyFallbackBase + fee),
           invoiceId: ensured ? ensured.invoiceId : null,
           periodKey: todayCairo.slice(0, 7),
           billingDayCairo: todayCairo,
           hasSavedCard: teacherCarded.has(ownerId),
           attemptIndex: attempt,
+          billingInterval: interval,
+        });
+      }
+
+      // --- Teachers: Scale monthly OVERAGE tick (independent of the base cycle) ---
+      // Driven by overage_next_at, NOT next_billing_at, so an annual Scale base
+      // (next_billing +12m) still gets a monthly overage true-up. Summer-safe: the
+      // tick is only ever set/advanced for active Scale subs, never the held path.
+      const { data: dueOverage } = await supabase
+        .from('teacher_subscriptions')
+        .select('id, teacher_id, plan_key, status, overage_next_at')
+        .eq('plan_key', 'teacher_scale')
+        .in('status', ['active', 'past_due'])
+        .not('overage_next_at', 'is', null)
+        .gte('overage_next_at', start.toISOString())
+        .lt('overage_next_at', endExclusive.toISOString());
+
+      const overageRows = (dueOverage as Row[]) ?? [];
+      const overageTeacherIds = overageRows.map((r) => String(r.teacher_id));
+      const overageCarded = await ownersWithActiveCard(supabase, 'teacher', overageTeacherIds);
+
+      for (const r of overageRows) {
+        const ownerId = String(r.teacher_id);
+        let activeCount = 0;
+        try {
+          activeCount = await countActiveNonGuestStudents(supabase, ownerId);
+        } catch {
+          // Cannot count reliably → skip this tick (do NOT advance; reassess next run).
+          continue;
+        }
+        const overageAmount = teacherOverageAmount('teacher_scale', activeCount);
+
+        if (overageAmount <= 0) {
+          // Nothing over the cap this month — keep the cadence moving, no invoice.
+          await advanceTeacherOverageTick(supabase, ownerId, todayCairo);
+          continue;
+        }
+
+        const ensured = await ensureTeacherOverageInvoice(supabase, {
+          teacherId: ownerId,
+          billingDayCairo: todayCairo,
+          overageAmount,
+          fee,
+          overageStudents: Math.max(0, activeCount - 100),
+        });
+        if (!ensured) {
+          await advanceTeacherOverageTick(supabase, ownerId, todayCairo);
+          continue;
+        }
+
+        // Read the overage invoice's own retry_count so overage dunning is tracked
+        // on the invoice, never on the subscription's base dunning_attempts.
+        const { data: ovInv } = await supabase
+          .from('invoices')
+          .select('retry_count')
+          .eq('id', ensured.invoiceId)
+          .maybeSingle();
+        items.push({
+          key: `teacher-overage:${String(r.id)}`,
+          customerType: 'teacher',
+          owner: { ownerType: 'teacher', ownerId },
+          amount: ensured.total,
+          invoiceId: ensured.invoiceId,
+          periodKey: todayCairo.slice(0, 7),
+          billingDayCairo: todayCairo,
+          hasSavedCard: overageCarded.has(ownerId),
+          attemptIndex: Number((ovInv as Row | null)?.retry_count ?? 0),
+          overage: true,
         });
       }
 
@@ -250,7 +357,7 @@ export function createSupabaseMidnightBillingAdapter(
         await finalizeInvoicePaymentSuccess(supabase, result.paymobOrderId, result.transactionId ?? '');
       } else if (item.customerType === 'teacher') {
         // Defensive fallback (invoice creation failed): advance directly.
-        await advanceTeacherSubscriptionPaid(supabase, item.owner.ownerId, today);
+        await advanceTeacherSubscriptionPaid(supabase, item.owner.ownerId, today, item.billingInterval);
       }
       await emitEvent(supabase, 'autocharge_succeeded', item.owner, {
         invoiceId: item.invoiceId,
@@ -272,7 +379,8 @@ export function createSupabaseMidnightBillingAdapter(
           .maybeSingle();
         const nb = (data as Row | null)?.next_billing_at;
         const alreadyAdvanced = nb && cairoDateKey(new Date(String(nb))) > today;
-        if (!alreadyAdvanced) await advanceTeacherSubscriptionPaid(supabase, item.owner.ownerId, today);
+        if (!alreadyAdvanced)
+          await advanceTeacherSubscriptionPaid(supabase, item.owner.ownerId, today, item.billingInterval);
       }
     },
 
@@ -288,6 +396,9 @@ export function createSupabaseMidnightBillingAdapter(
           .update({ auto_suspend_at: autoSuspendAtFromDue(item.billingDayCairo) })
           .eq('id', item.owner.ownerId)
           .neq('billing_status', 'paid');
+      } else if (item.overage) {
+        // Overage is a month-end true-up, not the base subscription — an unpaid
+        // overage invoice never locks the private engine. Pay-link only (above).
       } else {
         // Teacher free-tier drop preserved: lock the private engine at the next
         // Cairo midnight. The invoice stays unpaid; she pays it to restore access.
@@ -326,6 +437,13 @@ export function createSupabaseMidnightBillingAdapter(
           .update({ auto_suspend_at: deferLock })
           .eq('id', item.owner.ownerId)
           .neq('billing_status', 'paid');
+      } else if (item.overage) {
+        // Overage retries re-detect off overage_next_at (NOT next_billing_at), and
+        // never touch the base dunning_attempts/grace — the base cycle is separate.
+        await supabase
+          .from('teacher_subscriptions')
+          .update({ overage_next_at: startOfUtcInstantForCairoCalendarDay(nextRetryYmd).toISOString() })
+          .eq('teacher_id', item.owner.ownerId);
       } else {
         // Teacher re-detection on the retry day is driven by next_billing_at, so
         // move it forward and record the attempt; defer the free-tier lock.
@@ -357,6 +475,10 @@ export function createSupabaseMidnightBillingAdapter(
           .update({ auto_suspend_at: lockTomorrow })
           .eq('id', item.owner.ownerId)
           .neq('billing_status', 'paid');
+      } else if (item.overage) {
+        // Give up on this month's overage and move the tick on; never lock the
+        // engine for an unpaid true-up (the open invoice remains payable on demand).
+        await advanceTeacherOverageTick(supabase, item.owner.ownerId, today);
       } else {
         await supabase
           .from('teacher_subscriptions')

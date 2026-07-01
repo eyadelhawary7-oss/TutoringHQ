@@ -53,6 +53,14 @@ function makeHarness(opts: {
       if (table === 'centers') {
         return { select: () => ({ eq: () => ({ maybeSingle: centerSelectMaybeSingle }) }) };
       }
+      if (table === 'teacher_subscriptions') {
+        // Interval lookup before the advance RPC (annual → 12-month period).
+        return {
+          select: () => ({
+            eq: () => ({ maybeSingle: vi.fn().mockResolvedValue({ data: { billing_interval: 'monthly' }, error: null }) }),
+          }),
+        };
+      }
       throw new Error(`unexpected table: ${table}`);
     },
   } as unknown as SupabaseClient;

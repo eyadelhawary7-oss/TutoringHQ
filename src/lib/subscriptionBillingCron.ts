@@ -12,6 +12,7 @@ import { isPaygCenter } from '@/lib/billingEngine';
 import { getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { applyProcessingFee } from '@/lib/processingFee';
 import { logBillingEvent } from '@/lib/billingAudit';
+import { resolveScheduledCenterDowngrade } from '@/lib/scheduledDowngrade';
 
 // RETIRED: the legacy day+3 / day+7 overdue WhatsApp reminders below. The unified
 // billing-nudges engine (src/lib/nudges) is now the single source of center +
@@ -125,7 +126,7 @@ export async function runSubscriptionBillingCron(
   const { data: dueIn7, error: q7err } = await supabase
     .from('centers')
     .select(
-      'id, name, phone, next_payment_due, billing_amount, center_code, referral_code, status, billing_type, pricing_type',
+      'id, name, phone, next_payment_due, billing_amount, center_code, referral_code, status, billing_type, pricing_type, scheduled_plan, scheduled_billing_period',
     )
     .eq('next_payment_due', in7)
     .in('status', ['active', 'pending_cancellation'])
@@ -151,6 +152,8 @@ export async function runSubscriptionBillingCron(
         billing_amount: number | null;
         center_code?: string | null;
         referral_code?: string | null;
+        scheduled_plan?: string | null;
+        scheduled_billing_period?: string | null;
       };
       const npd = c.next_payment_due;
 
@@ -163,7 +166,16 @@ export async function runSubscriptionBillingCron(
         .maybeSingle();
       if (existingInv) continue;
 
-      const ba = Number(c.billing_amount ?? 0);
+      // A scheduled downgrade lands at this renewal: bill the NEW (lower) plan's
+      // amount for the upcoming period. The plan fields flip when this invoice is
+      // paid (handleSubscriptionInvoicePaid), so access stays on the old plan until
+      // then (G5).
+      const sched = await resolveScheduledCenterDowngrade(
+        supabase,
+        c.scheduled_plan,
+        c.scheduled_billing_period,
+      );
+      const ba = sched ? sched.billingAmount : Number(c.billing_amount ?? 0);
       const { fee, total } = applyProcessingFee(ba, feeCfg);
       const billingEnd = addMonthsToDateStr(npd, 3);
       const code = centerCodeForInvoice(c);
