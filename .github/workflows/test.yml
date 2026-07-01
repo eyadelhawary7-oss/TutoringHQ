@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [master]
 
+# Cancel an older in-flight run on the same branch when a newer push arrives.
+concurrency:
+  group: test-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   i18n-check:
     name: i18n namespace parity

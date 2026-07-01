@@ -1,0 +1,28 @@
+# Dependabot configuration for CenterHQ.
+#
+# Goal: keep SECURITY vulnerability fixes flowing (this platform stores minors'
+# data and a penetration test is still pending) while cutting the routine
+# version-bump PR noise that was re-running full CI on every push.
+#
+# IMPORTANT: this file only governs *version updates* (routine bumps). Dependabot
+# *security updates* are driven by Dependabot alerts and the repo's
+# Settings -> Code security -> "Dependabot security updates" toggle. They are NOT
+# limited by the settings below, so vulnerability fixes keep coming even though
+# routine updates are throttled hard here. Keep that repo toggle ON.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    # At most one open routine-update PR at a time...
+    open-pull-requests-limit: 1
+    # ...and roll every routine bump into that single grouped PR instead of one
+    # PR per dependency.
+    groups:
+      npm-dependencies:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
