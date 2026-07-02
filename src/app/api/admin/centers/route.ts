@@ -36,6 +36,25 @@ async function isAdminUser(supabaseAdmin: SupabaseClient, userId: string): Promi
   return !!data;
 }
 
+// M1: center lifecycle/billing mutations must gate on the actual admin role,
+// not merely "an admin_users row exists". super_admin (table or phone) and
+// accountant are allowed; other internal roles (sales_rep, support_agent, …)
+// are not. Returns the effective role string, or null if not an admin at all.
+async function centerMutationRoleAllowed(
+  supabaseAdmin: SupabaseClient,
+  userId: string,
+  phone: string | null,
+): Promise<boolean> {
+  if (isSuperAdmin(phone)) return true;
+  const { data } = await supabaseAdmin
+    .from('admin_users')
+    .select('role')
+    .eq('id', userId)
+    .single();
+  const role = data?.role ?? null;
+  return role === 'super_admin' || role === 'accountant';
+}
+
 function isCenterRowAtRisk(lastActive: unknown): boolean {
   if (lastActive === 'Never') return true;
   return typeof lastActive === 'string' && lastActive.includes('days');
@@ -433,11 +452,9 @@ export async function DELETE(request: NextRequest) {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const adminByTable = await isAdminUser(adminSupabase, user.id);
     const { data: userRecord } = await adminSupabase.from('users').select('phone').eq('id', user.id).single();
-    const adminByPhone = isSuperAdmin(userRecord?.phone ?? null);
-
-    if (!adminByTable && !adminByPhone) {
+    // M1: deactivating a center is a lifecycle mutation — super_admin/accountant only.
+    if (!(await centerMutationRoleAllowed(adminSupabase, user.id, userRecord?.phone ?? null))) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     if (!validateCSRFRequest(request, user.id)) {
@@ -636,11 +653,10 @@ export async function PUT(request: Request) {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const adminByTable = await isAdminUser(supabaseAdmin, user.id);
     const { data: userRecord } = await supabaseAdmin.from('users').select('phone').eq('id', user.id).single();
-    const adminByPhone = isSuperAdmin(userRecord?.phone ?? null);
-
-    if (!adminByTable && !adminByPhone) {
+    // M1: plan-change / reactivate / suspend / update-billing are lifecycle +
+    // money mutations — super_admin/accountant only.
+    if (!(await centerMutationRoleAllowed(supabaseAdmin, user.id, userRecord?.phone ?? null))) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     if (!validateCSRFRequest(request, user.id)) {

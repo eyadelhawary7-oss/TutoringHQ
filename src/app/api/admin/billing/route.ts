@@ -306,6 +306,9 @@ export async function POST(request: Request) {
   try {
     const ctx = await getAdminContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // M1: money mutation — restrict to super_admin/accountant, not any admin row.
+    const denied = requireAdminRole(ctx, ['super_admin', 'accountant']);
+    if (denied) return denied;
     if (!validateCSRFRequest(request, ctx.userId)) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
@@ -387,6 +390,9 @@ export async function PUT(request: Request) {
   try {
     const ctx = await getAdminContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // M1: invoice mutation — restrict to super_admin/accountant, not any admin row.
+    const denied = requireAdminRole(ctx, ['super_admin', 'accountant']);
+    if (denied) return denied;
     if (!validateCSRFRequest(request, ctx.userId)) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }

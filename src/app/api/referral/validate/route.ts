@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { getClientIp, rateLimit, rateLimitExceededResponse } from '@/lib/ratelimit';
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,6 +10,14 @@ export async function POST(request: NextRequest) {
 
     if (!supabaseUrl || !supabaseServiceKey) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+
+    // L2: public referral-code lookup — rate-limit per IP to stop code
+    // enumeration. Fails CLOSED when Upstash is unset (see rateLimit).
+    const rlWindowSec = 900;
+    const { success: rlOk } = await rateLimit(`referral-validate:${getClientIp(request)}`, 30, rlWindowSec);
+    if (!rlOk) {
+      return rateLimitExceededResponse(rlWindowSec);
     }
 
     const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
