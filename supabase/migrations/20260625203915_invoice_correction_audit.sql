@@ -1,5 +1,5 @@
 -- ============================================================================
--- 20260625000005_invoice_correction_audit.sql
+-- 20260625203915_invoice_correction_audit.sql
 -- ----------------------------------------------------------------------------
 -- MEDIUM audit fix: the sanctioned invoice-correction path bypasses the
 -- tamper guard by opening the `app.allow_invoice_correction` GUC, but that
