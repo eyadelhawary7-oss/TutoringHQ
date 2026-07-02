@@ -27,7 +27,7 @@
 --
 -- (recalc_all_lifecycle_status / recompute_all_health_scores /
 --  compute_benchmark_snapshots — the platform-wide recompute funcs — are handled
---  separately in 20260626000002_phase6b_restrict_global_recompute.sql.)
+--  separately in 20260626134256_phase6b_restrict_global_recompute.sql.)
 --
 -- Reversible. ROLLBACK: re-grant authenticated on each signature below, e.g.
 --   GRANT EXECUTE ON FUNCTION public.append_commission_pause(uuid) TO authenticated;

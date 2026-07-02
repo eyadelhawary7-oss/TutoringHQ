@@ -21,9 +21,9 @@ function mig(name: string): string {
   return readFileSync(join(process.cwd(), 'supabase/migrations', name), 'utf8');
 }
 
-const A = mig('20260626000001_phase6a_lockdown_definer_rpcs.sql');
-const B = mig('20260626000002_phase6b_restrict_global_recompute.sql');
-const F = mig('20260626000003_phase6f_tighten_anon_definer_funcs.sql');
+const A = mig('20260626134248_phase6a_lockdown_definer_rpcs.sql');
+const B = mig('20260626134256_phase6b_restrict_global_recompute.sql');
+const F = mig('20260626134308_phase6f_tighten_anon_definer_funcs.sql');
 
 describe('Fix A — broader unguarded definer RPC lockdown (SQL contract)', () => {
   const A_RPCS = [

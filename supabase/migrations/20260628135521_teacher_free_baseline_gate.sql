@@ -29,14 +29,16 @@
 -- ============================================================================
 
 -- 1) ── The chokepoint predicate ────────────────────────────────────────────
+-- is_teacher_private_locked(): a subscription row exists (so this is a teacher
+-- who had/has the private engine) AND they currently lack private access → on
+-- the free baseline. NOTE: explanatory comments are kept OUTSIDE the function
+-- body so the stored prosrc byte-matches production (see SCHEMA_HISTORY docs).
 CREATE OR REPLACE FUNCTION public.is_teacher_private_locked()
  RETURNS boolean
  LANGUAGE sql
  STABLE SECURITY DEFINER
  SET search_path TO 'public', 'pg_temp'
 AS $function$
-  -- A subscription row exists (so this is a teacher who had/has the private
-  -- engine) AND they currently lack private access → on the free baseline.
   select exists (select 1 from public.teacher_subscriptions where teacher_id = auth.uid())
      and not public.teacher_private_access(auth.uid());
 $function$;
@@ -113,6 +115,12 @@ ALTER POLICY student_credits_select ON public.student_credits
 -- 4) ── past_due is the terminal free-baseline state for non-payment ─────────
 -- Non-payment must NEVER suspend a teacher (suspension is admin-only): a
 -- non-paying teacher keeps center monitoring on the free baseline indefinitely.
+-- Branch semantics (kept OUTSIDE the body so the stored prosrc byte-matches
+-- production — see SCHEMA_HISTORY docs):
+--   trialing past trial_ends_at   -> past_due (drop to free baseline);
+--   active   past current_period_end -> past_due (drop to free baseline);
+--   past_due is TERMINAL for non-payment — stay on the free baseline (center
+--   monitoring preserved), never auto-suspend; only track dunning attempts.
 CREATE OR REPLACE FUNCTION public.process_due_subscriptions(p_as_of timestamp with time zone DEFAULT now())
  RETURNS TABLE(action_taken text, subscription_id uuid)
  LANGUAGE plpgsql
@@ -130,7 +138,6 @@ begin
     where status in ('trialing','active','past_due')
     for update
   loop
-    -- trialing past trial end -> past_due (drop to free baseline)
     if v_rec.status = 'trialing' and v_rec.trial_ends_at is not null and v_rec.trial_ends_at <= p_as_of then
       perform public.apply_teacher_subscription_transition(v_rec.id, 'past_due', null);
       update public.teacher_subscriptions
@@ -138,7 +145,6 @@ begin
         where id = v_rec.id;
       action_taken := 'trial_expired_to_past_due'; subscription_id := v_rec.id; return next;
 
-    -- active past period end -> past_due (drop to free baseline)
     elsif v_rec.status = 'active' and v_rec.current_period_end is not null and v_rec.current_period_end <= p_as_of then
       perform public.apply_teacher_subscription_transition(v_rec.id, 'past_due', null);
       update public.teacher_subscriptions
@@ -146,8 +152,6 @@ begin
         where id = v_rec.id;
       action_taken := 'period_ended_to_past_due'; subscription_id := v_rec.id; return next;
 
-    -- past_due is TERMINAL for non-payment: stay on the free baseline (center
-    -- monitoring preserved), never auto-suspend. Track dunning attempts only.
     elsif v_rec.status = 'past_due' then
       update public.teacher_subscriptions
         set dunning_attempts = dunning_attempts + 1

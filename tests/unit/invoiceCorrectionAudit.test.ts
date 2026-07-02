@@ -10,7 +10,7 @@ import { join } from 'node:path';
  * catalog introspection).
  */
 const sql = readFileSync(
-  join(process.cwd(), 'supabase/migrations/20260625000005_invoice_correction_audit.sql'),
+  join(process.cwd(), 'supabase/migrations/20260625203915_invoice_correction_audit.sql'),
   'utf8',
 );
 

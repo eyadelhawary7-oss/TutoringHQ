@@ -129,7 +129,6 @@ for (const u of accounts) {
     role: u.userRole,
     phone: u.phone,
     name: u.name,
-    pin_code: u.password,
     preferred_locale: 'ar',
     can_scan: true,
     can_view_payments: true,
