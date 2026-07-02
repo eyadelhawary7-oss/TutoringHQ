@@ -24,6 +24,16 @@ export async function POST(request: NextRequest) {
     const phoneStr = validatePhone(body.phone, 'phone');
     const phone = phoneStr ? phoneStr.trim() : null;
 
+    // Server-side guardian-consent gate: a center adding a student must confirm
+    // it holds the guardian's consent. The checkbox is not enough — reject here
+    // if absent, and stamp who/when as proof on the inserted row below.
+    if (body.guardianConsentConfirmed !== true) {
+      return NextResponse.json(
+        { error: 'guardian_consent_required', code: 'GUARDIAN_CONSENT_REQUIRED' },
+        { status: 403 },
+      );
+    }
+
     const { data: center, error: centerErr } = await supabaseAdmin
       .from('centers')
       .select('student_sequence')
@@ -44,6 +54,8 @@ export async function POST(request: NextRequest) {
       name: name,
       phone,
       is_active: true,
+      guardian_consent_confirmed_at: new Date().toISOString(),
+      guardian_consent_confirmed_by: auth.userId ?? null,
     });
 
     if (insertErr) {

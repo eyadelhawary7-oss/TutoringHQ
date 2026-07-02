@@ -44,6 +44,7 @@ function formatCreatedAt(ts: string, locale: string): string {
 export default function PendingEnrollmentsPage() {
   const t = useTranslations('pendingEnrollments');
   const tToast = useTranslations('toasts');
+  const tConsent = useTranslations('guardianConsent');
   const locale = useLocale();
   const isRTL = locale === 'ar';
   const { toast } = useToast();
@@ -53,6 +54,7 @@ export default function PendingEnrollmentsPage() {
 
   const [reviewing, setReviewing] = useState<PendingEnrollment | null>(null);
   const [parentPhoneEdit, setParentPhoneEdit] = useState('');
+  const [guardianConsent, setGuardianConsent] = useState(false);
   const [enrollInPack, setEnrollInPack] = useState(false);
   const [sellingPrice, setSellingPrice] = useState<string>(String(SUGGESTED_SELLING_PRICE));
   const [submitting, setSubmitting] = useState(false);
@@ -93,6 +95,7 @@ export default function PendingEnrollmentsPage() {
   const openReview = (p: PendingEnrollment) => {
     setReviewing(p);
     setParentPhoneEdit(p.parent_phone ?? '');
+    setGuardianConsent(false);
     setEnrollInPack(false);
     setSellingPrice(String(SUGGESTED_SELLING_PRICE));
     setModalError('');
@@ -111,6 +114,11 @@ export default function PendingEnrollmentsPage() {
 
     if (!reviewing.student_id) {
       setModalError(t('approveError'));
+      return;
+    }
+
+    if (!guardianConsent) {
+      setModalError(tConsent('required'));
       return;
     }
 
@@ -151,6 +159,7 @@ export default function PendingEnrollmentsPage() {
           parent_phone: cleanedParentPhone || null,
           enroll_in_pack: enrollInPack,
           selling_price: priceVal,
+          guardianConsentConfirmed: guardianConsent,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as {
@@ -449,6 +458,17 @@ export default function PendingEnrollmentsPage() {
                 </p>
               </div>
             ) : null}
+
+            <label className="flex items-start gap-3 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] p-3 cursor-pointer">
+              <input
+                type="checkbox"
+                required
+                checked={guardianConsent}
+                onChange={(e) => setGuardianConsent(e.target.checked)}
+                className="mt-0.5 rounded accent-teal-600"
+              />
+              <span className="text-sm text-[var(--color-text-primary)]">{tConsent('checkboxLabel')}</span>
+            </label>
 
             {modalError ? (
               <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-500 dark:text-red-300">

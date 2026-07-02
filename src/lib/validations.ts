@@ -126,6 +126,12 @@ export const studentInsertSchema = z.object({
   parent_pack_opted_in: z.boolean().optional(),
   parent_consent_given: z.boolean().optional(),
   parent_consent_at: z.string().nullable().optional(),
+  // Transient guardian-consent confirmation flag. NOT a column: the /api/db
+  // route reads it, rejects the insert if it is not true (center-side gate),
+  // then strips it and stamps guardian_consent_confirmed_at/_by server-side.
+  // Declared here only so z.object does not silently drop it before the route
+  // can read it.
+  guardian_consent_confirmed: z.boolean().optional(),
   group_id: z.string().uuid().nullable().optional(),
   notes: z.string().max(5000).optional().nullable(),
 }).transform((data) => {

@@ -122,6 +122,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Name must be at least 2 characters' }, { status: 400 });
     }
 
+    // Server-side guardian-consent gate: a center adding a student must confirm
+    // it holds the guardian's consent. Reject if absent; stamp who/when as proof.
+    if ((body as { guardianConsentConfirmed?: unknown }).guardianConsentConfirmed !== true) {
+      return NextResponse.json(
+        { error: 'guardian_consent_required', code: 'GUARDIAN_CONSENT_REQUIRED' },
+        { status: 403 },
+      );
+    }
+
     const phone =
       typeof body.phone === 'string' && body.phone.trim() ? body.phone.trim() : null;
 
@@ -133,6 +142,8 @@ export async function POST(request: NextRequest) {
         phone,
         fee: 0,
         payment_status: 'unpaid',
+        guardian_consent_confirmed_at: new Date().toISOString(),
+        guardian_consent_confirmed_by: ctx.userId,
       })
       .select('id, name, phone, student_number')
       .single();

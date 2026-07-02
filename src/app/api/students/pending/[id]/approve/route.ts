@@ -20,8 +20,22 @@ export async function POST(
   const { supabaseAdmin, centerId, userId } = auth;
   const { id: studentId } = await context.params;
 
-  const body = (await parseBodyWithLimit(request, 65536).catch(() => ({}))) as { groupIds?: string[] };
+  const body = (await parseBodyWithLimit(request, 65536).catch(() => ({}))) as {
+    groupIds?: string[];
+    guardianConsentConfirmed?: unknown;
+  };
   const groupIds: string[] = body.groupIds ?? [];
+
+  // Server-side guardian-consent gate: approving a pending enrollment brings a
+  // student onto the center's active roster, so the center must confirm it holds
+  // the guardian's consent. Reject if absent; the two proof columns are stamped
+  // on the student row after the approval RPC succeeds.
+  if (body.guardianConsentConfirmed !== true) {
+    return NextResponse.json(
+      { error: 'guardian_consent_required', code: 'GUARDIAN_CONSENT_REQUIRED' },
+      { status: 403 },
+    );
+  }
 
   const { data: rpcResult, error: rpcErr } = await supabaseAdmin.rpc('approve_student_rpc', {
     p_student_id: studentId,
@@ -39,6 +53,16 @@ export async function POST(
     }
     return NextResponse.json({ error: rpcErr.message }, { status: 500 });
   }
+
+  // Record the guardian-consent proof on the now-approved student row.
+  await supabaseAdmin
+    .from('students')
+    .update({
+      guardian_consent_confirmed_at: new Date().toISOString(),
+      guardian_consent_confirmed_by: userId ?? null,
+    })
+    .eq('id', studentId)
+    .eq('center_id', centerId);
 
   await logAdminAction(userId ?? 'unknown', 'student_approval', { studentId, centerId }, centerId);
 
