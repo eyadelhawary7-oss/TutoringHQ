@@ -403,21 +403,6 @@ export async function GET(request: Request) {
   }
 }
 
-async function safeDelete(
-  adminSupabase: SupabaseClient,
-  table: string,
-  column: string,
-  value: string,
-  label?: string
-): Promise<void> {
-  try {
-    const { error } = await adminSupabase.from(table).delete().eq(column, value);
-    if (error) console.warn(`[admin/centers DELETE] ${label ?? table} failed:`, error.message);
-  } catch (e) {
-    console.warn(`[admin/centers DELETE] ${label ?? table} error:`, e);
-  }
-}
-
 export async function DELETE(request: NextRequest) {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -481,16 +466,24 @@ export async function DELETE(request: NextRequest) {
       .eq('center_id', centerId);
     const userIds = centerUsers?.map((u: { id: string }) => u.id) ?? [];
 
-    await safeDelete(adminSupabase, 'attendance_scans', 'center_id', centerId);
-    await safeDelete(adminSupabase, 'wa_message_queue', 'center_id', centerId);
-    await safeDelete(adminSupabase, 'wa_conversations', 'center_id', centerId);
-    await safeDelete(adminSupabase, 'wa_inactivity_alerts', 'center_id', centerId);
-    await safeDelete(adminSupabase, 'student_notes', 'center_id', centerId);
+    // Never permanently delete: "delete center" deactivates the center and its
+    // logins while every student, payment, invoice and audit row is preserved.
+    // The middleware locks status='suspended' centers out of the app; revoked
+    // parent-portal tokens close the last external read path.
+    const { error: centerUpdateError } = await adminSupabase
+      .from('centers')
+      .update({ status: 'suspended', billing_status: 'suspended' })
+      .eq('id', centerId);
+
+    if (centerUpdateError) {
+      return NextResponse.json({ error: centerUpdateError.message }, { status: 500 });
+    }
+
+    await adminSupabase.from('users').update({ is_active: false }).eq('center_id', centerId);
 
     const { data: studentRows } = await adminSupabase.from('students').select('id').eq('center_id', centerId);
     const studentIds = studentRows?.map((s: { id: string }) => s.id) ?? [];
     if (studentIds.length > 0) {
-      // N+1 fix per docs/AUDIT_n_plus_1_hotpath_may13.md
       try {
         const { error: tokErr } = await adminSupabase
           .from('parent_portal_tokens')
@@ -504,79 +497,12 @@ export async function DELETE(request: NextRequest) {
       }
     }
 
-    await safeDelete(adminSupabase, 'schedule_slots', 'center_id', centerId);
-    await safeDelete(adminSupabase, 'students', 'center_id', centerId);
-    await safeDelete(adminSupabase, 'student_groups', 'center_id', centerId);
-    await safeDelete(adminSupabase, 'rooms', 'center_id', centerId);
-    await safeDelete(adminSupabase, 'referrals', 'referrer_center_id', centerId);
-    await safeDelete(adminSupabase, 'referrals', 'referred_center_id', centerId);
-    await safeDelete(adminSupabase, 'referral_rewards', 'referrer_center_id', centerId);
-    await safeDelete(adminSupabase, 'referral_rewards', 'referred_center_id', centerId);
-    await safeDelete(adminSupabase, 'academic_periods', 'center_id', centerId);
-    await safeDelete(adminSupabase, 'academic_years', 'center_id', centerId);
-    await safeDelete(adminSupabase, 'holidays', 'center_id', centerId);
-    await safeDelete(adminSupabase, 'admin_alerts', 'center_id', centerId);
-    await safeDelete(adminSupabase, 'center_invites', 'center_id', centerId);
-
-    try {
-      await adminSupabase.from('referral_codes').delete().eq('center_id', centerId);
-    } catch {
-      /* continue */
-    }
-    try {
-      await adminSupabase.from('admin_payments').delete().eq('center_id', centerId);
-    } catch {
-      /* continue */
-    }
-    try {
-      await adminSupabase.from('payments').delete().eq('center_id', centerId);
-    } catch {
-      /* continue */
-    }
-    try {
-      await adminSupabase.from('invoices').delete().eq('center_id', centerId);
-    } catch {
-      /* continue */
-    }
-
-    await adminSupabase.from('users').delete().eq('center_id', centerId);
-
-    const { error: centerDeleteError } = await adminSupabase
-      .from('centers')
-      .delete()
-      .eq('id', centerId);
-
-    if (centerDeleteError) {
-      return NextResponse.json({ error: centerDeleteError.message }, { status: 500 });
-    }
-
-    for (const uid of userIds) {
-      try {
-        await adminSupabase.auth.admin.deleteUser(uid);
-      } catch {
-        /* continue */
-      }
-    }
-
-    if (center.phone) {
-      try {
-        const phoneDigits = (center.phone as string).replace(/\D/g, '');
-        const authEmail = `${phoneDigits}@centerhq.local`;
-        const { data: { users: authUsers } } = await adminSupabase.auth.admin.listUsers({ perPage: 100 });
-        const authUser = authUsers?.find((u) => u.email === authEmail);
-        if (authUser) {
-          await adminSupabase.auth.admin.deleteUser(authUser.id);
-        }
-      } catch {
-        /* continue */
-      }
-    }
-
-    await logAdminAction(user.id, 'delete_center', {
+    await logAdminAction(user.id, 'deactivate_center', {
       centerId,
       centerName: center.name,
       center_phone: center.phone,
-      users_deleted: userIds.length,
+      users_deactivated: userIds.length,
+      note: 'hard delete replaced by deactivation; history preserved',
     }, centerId);
 
     return NextResponse.json({ success: true });

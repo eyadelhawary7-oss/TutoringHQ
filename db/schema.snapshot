@@ -176,7 +176,7 @@ COLUMN admin_alerts.is_resolved ord=5 type=boolean notnull=false default=false
 COLUMN admin_alerts.created_at ord=6 type=timestamp with time zone notnull=false default=now()
 COLUMN admin_payments.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN admin_payments.center_id ord=2 type=uuid notnull=false default=∅
-COLUMN admin_payments.amount ord=3 type=numeric notnull=true default=∅
+COLUMN admin_payments.amount ord=3 type=numeric(12,2) notnull=true default=∅
 COLUMN admin_payments.billing_period ord=4 type=text notnull=false default='monthly'::text
 COLUMN admin_payments.period_start ord=5 type=date notnull=false default=∅
 COLUMN admin_payments.period_end ord=6 type=date notnull=false default=∅
@@ -197,10 +197,10 @@ COLUMN announcement_blasts.template_name ord=4 type=text notnull=true default=�
 COLUMN announcement_blasts.blast_type ord=5 type=text notnull=true default=∅
 COLUMN announcement_blasts.message ord=6 type=text notnull=true default=∅
 COLUMN announcement_blasts.parents_notified ord=7 type=integer notnull=true default=0
-COLUMN announcement_blasts.base_amount ord=8 type=numeric notnull=true default=∅
-COLUMN announcement_blasts.service_fee ord=9 type=numeric notnull=true default=∅
-COLUMN announcement_blasts.vat ord=10 type=numeric notnull=true default=∅
-COLUMN announcement_blasts.total_amount ord=11 type=numeric notnull=true default=∅
+COLUMN announcement_blasts.base_amount ord=8 type=numeric(12,2) notnull=true default=∅
+COLUMN announcement_blasts.service_fee ord=9 type=numeric(12,2) notnull=true default=∅
+COLUMN announcement_blasts.vat ord=10 type=numeric(12,2) notnull=true default=∅
+COLUMN announcement_blasts.total_amount ord=11 type=numeric(12,2) notnull=true default=∅
 COLUMN announcement_blasts.billing_status ord=12 type=text notnull=true default='pending'::text
 COLUMN announcement_blasts.charged_at ord=13 type=timestamp with time zone notnull=false default=∅
 COLUMN announcement_blasts.created_at ord=14 type=timestamp with time zone notnull=true default=now()
@@ -293,8 +293,8 @@ COLUMN billing_reconciliation_reports.owner_id ord=4 type=uuid notnull=false def
 COLUMN billing_reconciliation_reports.invoice_id ord=5 type=uuid notnull=false default=∅
 COLUMN billing_reconciliation_reports.paymob_order_id ord=6 type=text notnull=false default=∅
 COLUMN billing_reconciliation_reports.paymob_transaction_id ord=7 type=text notnull=false default=∅
-COLUMN billing_reconciliation_reports.expected_amount ord=8 type=numeric notnull=false default=∅
-COLUMN billing_reconciliation_reports.paymob_amount ord=9 type=numeric notnull=false default=∅
+COLUMN billing_reconciliation_reports.expected_amount ord=8 type=numeric(12,2) notnull=false default=∅
+COLUMN billing_reconciliation_reports.paymob_amount ord=9 type=numeric(12,2) notnull=false default=∅
 COLUMN billing_reconciliation_reports.status ord=10 type=text notnull=true default='open'::text
 COLUMN billing_reconciliation_reports.detail ord=11 type=jsonb notnull=true default='{}'::jsonb
 COLUMN billing_reconciliation_reports.created_at ord=12 type=timestamp with time zone notnull=true default=now()
@@ -386,9 +386,9 @@ COLUMN card_orders.center_id ord=2 type=uuid notnull=false default=∅
 COLUMN card_orders.created_by ord=3 type=uuid notnull=false default=∅
 COLUMN card_orders.students ord=4 type=jsonb notnull=false default=∅
 COLUMN card_orders.quantity ord=5 type=integer notnull=false default=∅
-COLUMN card_orders.price_per_card ord=6 type=numeric notnull=false default=55
-COLUMN card_orders.delivery_fee ord=7 type=numeric notnull=false default=0
-COLUMN card_orders.total_amount ord=8 type=numeric notnull=false default=∅
+COLUMN card_orders.price_per_card ord=6 type=numeric(12,2) notnull=false default=55
+COLUMN card_orders.delivery_fee ord=7 type=numeric(12,2) notnull=false default=0
+COLUMN card_orders.total_amount ord=8 type=numeric(12,2) notnull=false default=∅
 COLUMN card_orders.status ord=9 type=text notnull=false default='pending'::text
 COLUMN card_orders.delivery_address ord=10 type=text notnull=false default=∅
 COLUMN card_orders.notes ord=11 type=text notnull=false default=∅
@@ -432,10 +432,10 @@ COLUMN center_assignments.referred_by_center ord=13 type=boolean notnull=true de
 COLUMN center_expenses.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN center_expenses.center_id ord=2 type=uuid notnull=true default=∅
 COLUMN center_expenses.month ord=3 type=date notnull=true default=∅
-COLUMN center_expenses.rent ord=4 type=numeric notnull=false default=0
-COLUMN center_expenses.salaries ord=5 type=numeric notnull=false default=0
-COLUMN center_expenses.utilities ord=6 type=numeric notnull=false default=0
-COLUMN center_expenses.other ord=7 type=numeric notnull=false default=0
+COLUMN center_expenses.rent ord=4 type=numeric(12,2) notnull=false default=0
+COLUMN center_expenses.salaries ord=5 type=numeric(12,2) notnull=false default=0
+COLUMN center_expenses.utilities ord=6 type=numeric(12,2) notnull=false default=0
+COLUMN center_expenses.other ord=7 type=numeric(12,2) notnull=false default=0
 COLUMN center_expenses.notes ord=8 type=text notnull=false default=∅
 COLUMN center_expenses.created_at ord=9 type=timestamp with time zone notnull=false default=now()
 COLUMN center_expenses.updated_at ord=10 type=timestamp with time zone notnull=false default=now()
@@ -494,7 +494,7 @@ COLUMN centers.individual_alerts_enabled ord=9 type=boolean notnull=false defaul
 COLUMN centers.billing_period ord=10 type=text notnull=false default='quarterly'::text
 COLUMN centers.billing_cycle_start ord=11 type=date notnull=false default=CURRENT_DATE
 COLUMN centers.next_billing_date ord=12 type=date notnull=false default=∅
-COLUMN centers.billing_amount ord=13 type=numeric notnull=false default=0
+COLUMN centers.billing_amount ord=13 type=numeric(12,2) notnull=false default=0
 COLUMN centers.status ord=14 type=text notnull=false default='active'::text
 COLUMN centers.email ord=15 type=text notnull=false default=∅
 COLUMN centers.requested_at ord=16 type=timestamp with time zone notnull=false default=now()
@@ -502,7 +502,7 @@ COLUMN centers.approved_at ord=17 type=timestamp with time zone notnull=false de
 COLUMN centers.approved_by ord=18 type=uuid notnull=false default=∅
 COLUMN centers.pricing_type ord=19 type=text notnull=false default='fixed'::text
 COLUMN centers.weekly_student_limit ord=20 type=integer notnull=false default=∅
-COLUMN centers.payg_rate ord=21 type=numeric notnull=false default=∅
+COLUMN centers.payg_rate ord=21 type=numeric(12,2) notnull=false default=∅
 COLUMN centers.referral_code ord=22 type=text notnull=false default=∅
 COLUMN centers.referred_by ord=23 type=uuid notnull=false default=∅
 COLUMN centers.referral_code_used_at ord=24 type=timestamp with time zone notnull=false default=∅
@@ -518,7 +518,7 @@ COLUMN centers.billing_status ord=33 type=text notnull=false default='active'::t
 COLUMN centers.payment_due_date ord=34 type=date notnull=false default=∅
 COLUMN centers.auto_suspend_at ord=35 type=date notnull=false default=((CURRENT_DATE + '6 days'::interval))::date
 COLUMN centers.referral_reward_status ord=36 type=text notnull=false default='pending'::text
-COLUMN centers.referral_reward_amount ord=37 type=numeric notnull=false default=0
+COLUMN centers.referral_reward_amount ord=37 type=numeric(12,2) notnull=false default=0
 COLUMN centers.billing_start_date ord=38 type=date notnull=false default=∅
 COLUMN centers.schedule_start_hour ord=39 type=integer notnull=false default=8
 COLUMN centers.schedule_end_hour ord=40 type=integer notnull=false default=20
@@ -534,7 +534,7 @@ COLUMN centers.onboarding_started_at ord=49 type=timestamp with time zone notnul
 COLUMN centers.subscription_start_date ord=50 type=date notnull=false default=∅
 COLUMN centers.subscription_renewal_date ord=51 type=date notnull=false default=∅
 COLUMN centers.subscription_billing_period ord=52 type=text notnull=false default='quarterly'::text
-COLUMN centers.subscription_monthly_fee ord=53 type=numeric notnull=false default=0
+COLUMN centers.subscription_monthly_fee ord=53 type=numeric(12,2) notnull=false default=0
 COLUMN centers.daily_summary_enabled ord=54 type=boolean notnull=false default=true
 COLUMN centers.summer_mode ord=55 type=boolean notnull=false default=false
 COLUMN centers.organization_id ord=56 type=uuid notnull=false default=∅
@@ -545,15 +545,15 @@ COLUMN centers.health_score ord=60 type=integer notnull=false default=∅
 COLUMN centers.health_score_band ord=61 type=text notnull=false default=∅
 COLUMN centers.delivery_address ord=62 type=jsonb notnull=false default=∅
 COLUMN centers.card_color ord=63 type=text notnull=false default='#0D9488'::text
-COLUMN centers.all_in_price ord=64 type=numeric notnull=false default=∅
+COLUMN centers.all_in_price ord=64 type=numeric(12,2) notnull=false default=∅
 COLUMN centers.whatsapp_opted_in ord=65 type=boolean notnull=false default=false
 COLUMN centers.parent_pack_enabled ord=66 type=boolean notnull=false default=false
 COLUMN centers.parent_pack_active_parents ord=67 type=integer notnull=false default=0
-COLUMN centers.announcement_balance ord=68 type=numeric notnull=false default=0
+COLUMN centers.announcement_balance ord=68 type=numeric(12,2) notnull=false default=0
 COLUMN centers.announcement_balance_updated_at ord=69 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.pack_price_per_parent ord=70 type=numeric notnull=false default=12
-COLUMN centers.announcement_price_per_blast ord=71 type=numeric notnull=false default=8
-COLUMN centers.announcement_cap ord=72 type=numeric notnull=false default=1500
+COLUMN centers.pack_price_per_parent ord=70 type=numeric(12,2) notnull=false default=12
+COLUMN centers.announcement_price_per_blast ord=71 type=numeric(12,2) notnull=false default=8
+COLUMN centers.announcement_cap ord=72 type=numeric(12,2) notnull=false default=1500
 COLUMN centers.parent_pack_activated_at ord=73 type=timestamp with time zone notnull=false default=∅
 COLUMN centers.center_code ord=74 type=text notnull=false default=∅
 COLUMN centers.student_sequence ord=75 type=integer notnull=false default=0
@@ -561,9 +561,9 @@ COLUMN centers.pack_request_status ord=76 type=text notnull=true default='none':
 COLUMN centers.pack_requested_at ord=77 type=timestamp with time zone notnull=false default=∅
 COLUMN centers.pack_approved_at ord=78 type=timestamp with time zone notnull=false default=∅
 COLUMN centers.pack_rejection_reason ord=79 type=text notnull=false default=∅
-COLUMN centers.pack_pending_balance ord=80 type=numeric notnull=true default=0
+COLUMN centers.pack_pending_balance ord=80 type=numeric(12,2) notnull=true default=0
 COLUMN centers.pack_months_without_invoice ord=81 type=integer notnull=true default=0
-COLUMN centers.pack_custom_invoice_minimum ord=82 type=numeric notnull=false default=∅
+COLUMN centers.pack_custom_invoice_minimum ord=82 type=numeric(12,2) notnull=false default=∅
 COLUMN centers.renewal_reminder_sent_at ord=83 type=timestamp with time zone notnull=false default=∅
 COLUMN centers.overdue_reminder_sent_at ord=84 type=timestamp with time zone notnull=false default=∅
 COLUMN centers.inactivity_alert_sent_at ord=85 type=timestamp with time zone notnull=false default=∅
@@ -573,12 +573,12 @@ COLUMN centers.blacklisted_at ord=88 type=timestamp with time zone notnull=false
 COLUMN centers.blacklist_reason ord=89 type=text notnull=false default=∅
 COLUMN centers.pack_disabled_at ord=90 type=timestamp with time zone notnull=false default=∅
 COLUMN centers.instapay_number ord=91 type=text notnull=false default=∅
-COLUMN centers.credit_balance ord=92 type=numeric notnull=true default=0
+COLUMN centers.credit_balance ord=92 type=numeric(12,2) notnull=true default=0
 COLUMN centers.upgrade_count_this_period ord=93 type=integer notnull=true default=0
 COLUMN centers.reactivation_tier ord=94 type=text notnull=false default=∅
-COLUMN centers.reactivation_fee_amount ord=95 type=numeric notnull=false default=0
+COLUMN centers.reactivation_fee_amount ord=95 type=numeric(12,2) notnull=false default=0
 COLUMN centers.suspended_at ord=96 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.credit_reserved ord=97 type=numeric notnull=true default=0
+COLUMN centers.credit_reserved ord=97 type=numeric(12,2) notnull=true default=0
 COLUMN centers.cancellation_reason ord=98 type=text notnull=false default=∅
 COLUMN centers.cancellation_requested_at ord=99 type=timestamp with time zone notnull=false default=∅
 COLUMN centers.cancellation_approved_at ord=100 type=timestamp with time zone notnull=false default=∅
@@ -623,7 +623,7 @@ COLUMN ceo_action_queue.title ord=6 type=text notnull=true default=∅
 COLUMN ceo_action_queue.subtitle ord=7 type=text notnull=false default=∅
 COLUMN ceo_action_queue.action_label ord=8 type=text notnull=false default=∅
 COLUMN ceo_action_queue.action_url ord=9 type=text notnull=false default=∅
-COLUMN ceo_action_queue.revenue_at_risk ord=10 type=numeric notnull=false default=0
+COLUMN ceo_action_queue.revenue_at_risk ord=10 type=numeric(12,2) notnull=false default=0
 COLUMN ceo_action_queue.snoozed_until ord=11 type=timestamp with time zone notnull=false default=∅
 COLUMN ceo_action_queue.resolved_at ord=12 type=timestamp with time zone notnull=false default=∅
 COLUMN ceo_action_queue.auto_generated ord=13 type=boolean notnull=false default=true
@@ -649,9 +649,9 @@ COLUMN combined_payment_sessions.id ord=1 type=uuid notnull=true default=gen_ran
 COLUMN combined_payment_sessions.center_id ord=2 type=uuid notnull=false default=∅
 COLUMN combined_payment_sessions.paymob_order_id ord=3 type=text notnull=false default=∅
 COLUMN combined_payment_sessions.invoice_ids ord=4 type=uuid[] notnull=true default='{}'::uuid[]
-COLUMN combined_payment_sessions.credit_amount ord=5 type=numeric notnull=true default=0
-COLUMN combined_payment_sessions.paymob_amount ord=6 type=numeric notnull=true default=0
-COLUMN combined_payment_sessions.total_amount ord=7 type=numeric notnull=true default=0
+COLUMN combined_payment_sessions.credit_amount ord=5 type=numeric(12,2) notnull=true default=0
+COLUMN combined_payment_sessions.paymob_amount ord=6 type=numeric(12,2) notnull=true default=0
+COLUMN combined_payment_sessions.total_amount ord=7 type=numeric(12,2) notnull=true default=0
 COLUMN combined_payment_sessions.status ord=8 type=text notnull=true default='pending'::text
 COLUMN combined_payment_sessions.session_type ord=9 type=text notnull=true default=∅
 COLUMN combined_payment_sessions.created_at ord=10 type=timestamp with time zone notnull=false default=now()
@@ -672,17 +672,17 @@ COLUMN commission_audit_log.created_at ord=10 type=timestamp with time zone notn
 COLUMN commission_payouts.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN commission_payouts.staff_id ord=2 type=uuid notnull=true default=∅
 COLUMN commission_payouts.period ord=3 type=text notnull=true default=∅
-COLUMN commission_payouts.total_amount ord=4 type=numeric notnull=true default=0
-COLUMN commission_payouts.base_salary ord=5 type=numeric notnull=true default=0
-COLUMN commission_payouts.t1_commissions ord=6 type=numeric notnull=true default=0
-COLUMN commission_payouts.t2_commissions ord=7 type=numeric notnull=true default=0
-COLUMN commission_payouts.loyalty_bonuses ord=8 type=numeric notnull=true default=0
-COLUMN commission_payouts.override_commissions ord=9 type=numeric notnull=true default=0
+COLUMN commission_payouts.total_amount ord=4 type=numeric(12,2) notnull=true default=0
+COLUMN commission_payouts.base_salary ord=5 type=numeric(12,2) notnull=true default=0
+COLUMN commission_payouts.t1_commissions ord=6 type=numeric(12,2) notnull=true default=0
+COLUMN commission_payouts.t2_commissions ord=7 type=numeric(12,2) notnull=true default=0
+COLUMN commission_payouts.loyalty_bonuses ord=8 type=numeric(12,2) notnull=true default=0
+COLUMN commission_payouts.override_commissions ord=9 type=numeric(12,2) notnull=true default=0
 COLUMN commission_payouts.commission_count ord=10 type=integer notnull=true default=0
 COLUMN commission_payouts.breakdown ord=11 type=jsonb notnull=false default=∅
 COLUMN commission_payouts.status ord=12 type=text notnull=true default='draft'::text
 COLUMN commission_payouts.requires_review ord=13 type=boolean notnull=true default=false
-COLUMN commission_payouts.adjustment_amount ord=14 type=numeric notnull=true default=0
+COLUMN commission_payouts.adjustment_amount ord=14 type=numeric(12,2) notnull=true default=0
 COLUMN commission_payouts.adjustment_reason ord=15 type=text notnull=false default=∅
 COLUMN commission_payouts.paid_at ord=16 type=timestamp with time zone notnull=false default=∅
 COLUMN commission_payouts.paid_by ord=17 type=uuid notnull=false default=∅
@@ -695,9 +695,9 @@ COLUMN commissions.role_at_time ord=4 type=text notnull=true default=∅
 COLUMN commissions.commission_type ord=5 type=text notnull=true default=∅
 COLUMN commissions.parent_commission_id ord=6 type=uuid notnull=false default=∅
 COLUMN commissions.plan_at_signing ord=7 type=text notnull=true default=∅
-COLUMN commissions.total_commission ord=8 type=numeric notnull=true default=0
-COLUMN commissions.t1_amount ord=9 type=numeric notnull=true default=0
-COLUMN commissions.t2_amount ord=10 type=numeric notnull=true default=0
+COLUMN commissions.total_commission ord=8 type=numeric(12,2) notnull=true default=0
+COLUMN commissions.t1_amount ord=9 type=numeric(12,2) notnull=true default=0
+COLUMN commissions.t2_amount ord=10 type=numeric(12,2) notnull=true default=0
 COLUMN commissions.t1_status ord=11 type=text notnull=true default='pending'::text
 COLUMN commissions.t1_paid_at ord=12 type=timestamp with time zone notnull=false default=∅
 COLUMN commissions.t1_payout_id ord=13 type=uuid notnull=false default=∅
@@ -705,7 +705,7 @@ COLUMN commissions.t2_status ord=14 type=text notnull=true default='locked'::tex
 COLUMN commissions.t2_eligible_at ord=15 type=date notnull=false default=∅
 COLUMN commissions.t2_paid_at ord=16 type=timestamp with time zone notnull=false default=∅
 COLUMN commissions.t2_payout_id ord=17 type=uuid notnull=false default=∅
-COLUMN commissions.loyalty_bonus_amount ord=18 type=numeric notnull=true default=200
+COLUMN commissions.loyalty_bonus_amount ord=18 type=numeric(12,2) notnull=true default=200
 COLUMN commissions.loyalty_bonus_status ord=19 type=text notnull=true default='locked'::text
 COLUMN commissions.loyalty_bonus_eligible_at ord=20 type=date notnull=false default=∅
 COLUMN commissions.loyalty_bonus_paid_at ord=21 type=timestamp with time zone notnull=false default=∅
@@ -741,7 +741,7 @@ COLUMN content_items.expires_policy ord=9 type=jsonb notnull=false default=∅
 COLUMN content_items.created_at ord=10 type=timestamp with time zone notnull=true default=now()
 COLUMN credit_ledger.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN credit_ledger.center_id ord=2 type=uuid notnull=true default=∅
-COLUMN credit_ledger.amount ord=3 type=numeric notnull=true default=∅
+COLUMN credit_ledger.amount ord=3 type=numeric(12,2) notnull=true default=∅
 COLUMN credit_ledger.type ord=4 type=text notnull=true default=∅
 COLUMN credit_ledger.reference_id ord=5 type=uuid notnull=false default=∅
 COLUMN credit_ledger.reference_type ord=6 type=text notnull=false default=∅
@@ -773,7 +773,7 @@ COLUMN dead_letter_queue.resolved_at ord=9 type=timestamp with time zone notnull
 COLUMN dead_letter_queue.resolved_by ord=10 type=uuid notnull=false default=∅
 COLUMN delivery_fees.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN delivery_fees.governorate ord=2 type=text notnull=true default=∅
-COLUMN delivery_fees.fee ord=3 type=numeric notnull=true default=0
+COLUMN delivery_fees.fee ord=3 type=numeric(12,2) notnull=true default=0
 COLUMN delivery_fees.notes ord=4 type=text notnull=false default=∅
 COLUMN delivery_fees.updated_at ord=5 type=timestamp with time zone notnull=false default=now()
 COLUMN delivery_fees.updated_by ord=6 type=uuid notnull=false default=∅
@@ -872,7 +872,7 @@ COLUMN groups.teacher_name ord=5 type=text notnull=false default=∅
 COLUMN groups.schedule_day ord=6 type=text notnull=false default=∅
 COLUMN groups.schedule_time ord=7 type=text notnull=false default=∅
 COLUMN groups.room ord=8 type=text notnull=false default=∅
-COLUMN groups.monthly_fee ord=9 type=numeric notnull=false default=0
+COLUMN groups.monthly_fee ord=9 type=numeric(12,2) notnull=false default=0
 COLUMN groups.max_students ord=10 type=integer notnull=false default=∅
 COLUMN groups.is_active ord=11 type=boolean notnull=false default=true
 COLUMN groups.created_at ord=12 type=timestamp with time zone notnull=false default=now()
@@ -897,14 +897,14 @@ COLUMN invoices.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN invoices.center_id ord=2 type=uuid notnull=false default=∅
 COLUMN invoices.invoice_number ord=3 type=text notnull=false default=∅
 COLUMN invoices.invoice_type ord=4 type=text notnull=true default='subscription'::text
-COLUMN invoices.base_amount ord=5 type=numeric notnull=false default=0
-COLUMN invoices.whatsapp_individual ord=6 type=numeric notnull=false default=0
-COLUMN invoices.whatsapp_group ord=7 type=numeric notnull=false default=0
-COLUMN invoices.whatsapp_parent_checkup ord=8 type=numeric notnull=false default=0
-COLUMN invoices.individual_overage ord=9 type=numeric notnull=false default=0
-COLUMN invoices.group_overage ord=10 type=numeric notnull=false default=0
-COLUMN invoices.discount_amount ord=11 type=numeric notnull=false default=0
-COLUMN invoices.total_amount ord=12 type=numeric notnull=true default=0
+COLUMN invoices.base_amount ord=5 type=numeric(12,2) notnull=false default=0
+COLUMN invoices.whatsapp_individual ord=6 type=numeric(12,2) notnull=false default=0
+COLUMN invoices.whatsapp_group ord=7 type=numeric(12,2) notnull=false default=0
+COLUMN invoices.whatsapp_parent_checkup ord=8 type=numeric(12,2) notnull=false default=0
+COLUMN invoices.individual_overage ord=9 type=numeric(12,2) notnull=false default=0
+COLUMN invoices.group_overage ord=10 type=numeric(12,2) notnull=false default=0
+COLUMN invoices.discount_amount ord=11 type=numeric(12,2) notnull=false default=0
+COLUMN invoices.total_amount ord=12 type=numeric(12,2) notnull=true default=0
 COLUMN invoices.billing_period_start ord=13 type=date notnull=true default=∅
 COLUMN invoices.billing_period_end ord=14 type=date notnull=true default=∅
 COLUMN invoices.due_date ord=15 type=date notnull=true default=∅
@@ -914,26 +914,26 @@ COLUMN invoices.payment_reference ord=18 type=text notnull=false default=∅
 COLUMN invoices.paid_at ord=19 type=timestamp with time zone notnull=false default=∅
 COLUMN invoices.created_at ord=20 type=timestamp with time zone notnull=false default=now()
 COLUMN invoices.updated_at ord=21 type=timestamp with time zone notnull=false default=now()
-COLUMN invoices.payment_amount ord=22 type=numeric notnull=false default=∅
+COLUMN invoices.payment_amount ord=22 type=numeric(12,2) notnull=false default=∅
 COLUMN invoices.paymob_order_id ord=23 type=text notnull=false default=∅
 COLUMN invoices.paymob_transaction_id ord=24 type=text notnull=false default=∅
 COLUMN invoices.paymob_iframe_url ord=25 type=text notnull=false default=∅
 COLUMN invoices.metadata ord=26 type=jsonb notnull=false default=∅
 COLUMN invoices.late_fee_rate ord=27 type=numeric notnull=false default=∅
-COLUMN invoices.late_fee_amount ord=28 type=numeric notnull=false default=∅
+COLUMN invoices.late_fee_amount ord=28 type=numeric(12,2) notnull=false default=∅
 COLUMN invoices.days_overdue ord=29 type=integer notnull=false default=∅
 COLUMN invoices.payment_alert_sent_at ord=30 type=timestamp with time zone notnull=false default=∅
 COLUMN invoices.retry_count ord=31 type=integer notnull=false default=0
 COLUMN invoices.last_retry_at ord=32 type=timestamp with time zone notnull=false default=∅
 COLUMN invoices.next_retry_at ord=33 type=date notnull=false default=∅
 COLUMN invoices.promo_code ord=34 type=text notnull=false default=∅
-COLUMN invoices.promo_original_amount ord=35 type=numeric notnull=false default=∅
-COLUMN invoices.amount_received ord=36 type=numeric notnull=true default=0
+COLUMN invoices.promo_original_amount ord=35 type=numeric(12,2) notnull=false default=∅
+COLUMN invoices.amount_received ord=36 type=numeric(12,2) notnull=true default=0
 COLUMN invoices.owner_type ord=37 type=text notnull=true default='center'::text
 COLUMN invoices.teacher_id ord=38 type=uuid notnull=false default=∅
 COLUMN mrr_snapshots.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN mrr_snapshots.snapshot_date ord=2 type=date notnull=true default=∅
-COLUMN mrr_snapshots.total_mrr ord=3 type=numeric notnull=true default=0
+COLUMN mrr_snapshots.total_mrr ord=3 type=numeric(12,2) notnull=true default=0
 COLUMN mrr_snapshots.active_centers ord=4 type=integer notnull=true default=0
 COLUMN mrr_snapshots.computed_at ord=5 type=timestamp with time zone notnull=false default=now()
 COLUMN mrr_snapshots.by_plan ord=6 type=jsonb notnull=true default='{}'::jsonb
@@ -957,16 +957,16 @@ COLUMN paid_parents.month ord=7 type=text notnull=true default=∅
 COLUMN paid_parents.created_at ord=8 type=timestamp with time zone notnull=true default=now()
 COLUMN parent_pack_billing.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN parent_pack_billing.center_id ord=2 type=uuid notnull=true default=∅
-COLUMN parent_pack_billing.student_id ord=3 type=uuid notnull=true default=∅
+COLUMN parent_pack_billing.student_id ord=3 type=uuid notnull=false default=∅
 COLUMN parent_pack_billing.month ord=4 type=date notnull=true default=∅
-COLUMN parent_pack_billing.amount ord=5 type=numeric notnull=true default=12.00
-COLUMN parent_pack_billing.base_amount ord=6 type=numeric notnull=true default=10.08
+COLUMN parent_pack_billing.amount ord=5 type=numeric(12,2) notnull=true default=12.00
+COLUMN parent_pack_billing.base_amount ord=6 type=numeric(12,2) notnull=true default=10.08
 COLUMN parent_pack_billing.status ord=7 type=text notnull=true default='pending'::text
 COLUMN parent_pack_billing.charged_at ord=8 type=timestamp with time zone notnull=false default=∅
 COLUMN parent_pack_billing.created_at ord=9 type=timestamp with time zone notnull=true default=now()
-COLUMN parent_pack_billing.service_fee ord=10 type=numeric notnull=false default=0
-COLUMN parent_pack_billing.vat ord=11 type=numeric notnull=false default=0
-COLUMN parent_pack_billing.total_amount ord=12 type=numeric notnull=false default=12
+COLUMN parent_pack_billing.service_fee ord=10 type=numeric(12,2) notnull=false default=0
+COLUMN parent_pack_billing.vat ord=11 type=numeric(12,2) notnull=false default=0
+COLUMN parent_pack_billing.total_amount ord=12 type=numeric(12,2) notnull=false default=12
 COLUMN parent_pack_monthly_counts.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN parent_pack_monthly_counts.center_id ord=2 type=uuid notnull=true default=∅
 COLUMN parent_pack_monthly_counts.billing_period ord=3 type=text notnull=true default=∅
@@ -982,12 +982,12 @@ COLUMN parent_portal_tokens.created_at ord=5 type=timestamp with time zone notnu
 COLUMN payg_rates.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN payg_rates.min_students ord=2 type=integer notnull=true default=∅
 COLUMN payg_rates.max_students ord=3 type=integer notnull=false default=∅
-COLUMN payg_rates.price_per_student ord=4 type=numeric notnull=true default=∅
+COLUMN payg_rates.price_per_student ord=4 type=numeric(12,2) notnull=true default=∅
 COLUMN payg_rates.premium_vs_fixed ord=5 type=text notnull=true default=∅
 COLUMN payments.id ord=1 type=uuid notnull=true default=uuid_generate_v4()
 COLUMN payments.student_id ord=2 type=uuid notnull=false default=∅
 COLUMN payments.center_id ord=3 type=uuid notnull=true default=∅
-COLUMN payments.amount ord=4 type=numeric notnull=true default=0
+COLUMN payments.amount ord=4 type=numeric(12,2) notnull=true default=0
 COLUMN payments.method ord=5 type=text notnull=true default=∅
 COLUMN payments.recorded_by ord=6 type=uuid notnull=false default=∅
 COLUMN payments.paid_at ord=7 type=timestamp with time zone notnull=true default=now()
@@ -998,7 +998,7 @@ COLUMN payments.confirmed_at ord=11 type=timestamp with time zone notnull=false 
 COLUMN payments.group_id ord=12 type=uuid notnull=false default=∅
 COLUMN payout_requests.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN payout_requests.center_id ord=2 type=uuid notnull=true default=∅
-COLUMN payout_requests.amount_requested ord=3 type=numeric notnull=true default=∅
+COLUMN payout_requests.amount_requested ord=3 type=numeric(12,2) notnull=true default=∅
 COLUMN payout_requests.status ord=4 type=text notnull=true default='pending'::text
 COLUMN payout_requests.payment_method ord=5 type=text notnull=false default=∅
 COLUMN payout_requests.payment_details ord=6 type=jsonb notnull=false default=∅
@@ -1077,12 +1077,12 @@ COLUMN pricing_plans.plan_key ord=2 type=text notnull=true default=∅
 COLUMN pricing_plans.arabic_name ord=3 type=text notnull=true default=∅
 COLUMN pricing_plans.english_name ord=4 type=text notnull=true default=∅
 COLUMN pricing_plans.weekly_student_limit ord=5 type=integer notnull=false default=∅
-COLUMN pricing_plans.monthly_fee ord=6 type=numeric notnull=true default=∅
-COLUMN pricing_plans.cost_per_student ord=7 type=numeric notnull=true default=∅
-COLUMN pricing_plans.setup_fee ord=8 type=numeric notnull=true default=∅
+COLUMN pricing_plans.monthly_fee ord=6 type=numeric(12,2) notnull=true default=∅
+COLUMN pricing_plans.cost_per_student ord=7 type=numeric(12,2) notnull=true default=∅
+COLUMN pricing_plans.setup_fee ord=8 type=numeric(12,2) notnull=true default=∅
 COLUMN pricing_plans.is_active ord=9 type=boolean notnull=false default=true
-COLUMN pricing_plans.all_in_price ord=10 type=numeric notnull=false default=∅
-COLUMN pricing_plans.payg_rate_per_student ord=11 type=numeric notnull=false default=∅
+COLUMN pricing_plans.all_in_price ord=10 type=numeric(12,2) notnull=false default=∅
+COLUMN pricing_plans.payg_rate_per_student ord=11 type=numeric(12,2) notnull=false default=∅
 COLUMN privacy_requests.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN privacy_requests.full_name ord=2 type=text notnull=true default=∅
 COLUMN privacy_requests.phone ord=3 type=text notnull=true default=∅
@@ -1138,9 +1138,9 @@ COLUMN referral_commissions.referral_id ord=2 type=uuid notnull=false default=�
 COLUMN referral_commissions.referrer_center_id ord=3 type=uuid notnull=false default=∅
 COLUMN referral_commissions.period_month ord=4 type=text notnull=true default=∅
 COLUMN referral_commissions.months_since_activation ord=5 type=integer notnull=true default=∅
-COLUMN referral_commissions.referred_plan_fee ord=6 type=numeric notnull=true default=∅
+COLUMN referral_commissions.referred_plan_fee ord=6 type=numeric(12,2) notnull=true default=∅
 COLUMN referral_commissions.commission_rate ord=7 type=numeric notnull=true default=∅
-COLUMN referral_commissions.commission_amount ord=8 type=numeric notnull=true default=∅
+COLUMN referral_commissions.commission_amount ord=8 type=numeric(12,2) notnull=true default=∅
 COLUMN referral_commissions.referred_paid_in_full ord=9 type=boolean notnull=false default=false
 COLUMN referral_commissions.status ord=10 type=text notnull=false default='hold'::text
 COLUMN referral_commissions.hold_until ord=11 type=timestamp with time zone notnull=false default=∅
@@ -1153,8 +1153,8 @@ COLUMN referral_reward_records.referrer_center_id ord=3 type=uuid notnull=true d
 COLUMN referral_reward_records.referred_center_id ord=4 type=uuid notnull=true default=∅
 COLUMN referral_reward_records.month_number ord=5 type=integer notnull=true default=∅
 COLUMN referral_reward_records.reward_percentage ord=6 type=numeric notnull=true default=∅
-COLUMN referral_reward_records.base_amount ord=7 type=numeric notnull=true default=∅
-COLUMN referral_reward_records.reward_amount ord=8 type=numeric notnull=true default=∅
+COLUMN referral_reward_records.base_amount ord=7 type=numeric(12,2) notnull=true default=∅
+COLUMN referral_reward_records.reward_amount ord=8 type=numeric(12,2) notnull=true default=∅
 COLUMN referral_reward_records.status ord=9 type=text notnull=true default='pending'::text
 COLUMN referral_reward_records.held_until ord=10 type=timestamp with time zone notnull=false default=∅
 COLUMN referral_reward_records.paid_at ord=11 type=timestamp with time zone notnull=false default=∅
@@ -1164,8 +1164,8 @@ COLUMN referral_rewards.id ord=1 type=uuid notnull=true default=gen_random_uuid(
 COLUMN referral_rewards.referring_center_id ord=2 type=uuid notnull=true default=∅
 COLUMN referral_rewards.referred_center_id ord=3 type=uuid notnull=true default=∅
 COLUMN referral_rewards.referred_center_plan ord=4 type=text notnull=true default=∅
-COLUMN referral_rewards.first_month_fee ord=5 type=numeric notnull=true default=∅
-COLUMN referral_rewards.reward_amount ord=6 type=numeric notnull=true default=∅
+COLUMN referral_rewards.first_month_fee ord=5 type=numeric(12,2) notnull=true default=∅
+COLUMN referral_rewards.reward_amount ord=6 type=numeric(12,2) notnull=true default=∅
 COLUMN referral_rewards.reward_status ord=7 type=text notnull=false default='pending'::text
 COLUMN referral_rewards.created_at ord=8 type=timestamp with time zone notnull=false default=now()
 COLUMN referral_rewards.paid_at ord=9 type=timestamp with time zone notnull=false default=∅
@@ -1190,7 +1190,7 @@ COLUMN reminder_settings.updated_at ord=10 type=timestamp with time zone notnull
 COLUMN renewal_history.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN renewal_history.center_id ord=2 type=uuid notnull=true default=∅
 COLUMN renewal_history.renewal_date ord=3 type=date notnull=true default=∅
-COLUMN renewal_history.amount_paid ord=4 type=numeric notnull=true default=∅
+COLUMN renewal_history.amount_paid ord=4 type=numeric(12,2) notnull=true default=∅
 COLUMN renewal_history.payment_method ord=5 type=text notnull=false default=∅
 COLUMN renewal_history.recorded_by ord=6 type=uuid notnull=false default=∅
 COLUMN renewal_history.notes ord=7 type=text notnull=false default=∅
@@ -1299,7 +1299,7 @@ COLUMN staff.role ord=4 type=text notnull=true default=∅
 COLUMN staff.territory ord=5 type=text notnull=false default=∅
 COLUMN staff.territory_city ord=6 type=text notnull=false default=∅
 COLUMN staff.city ord=7 type=text notnull=true default='cairo'::text
-COLUMN staff.base_salary ord=8 type=numeric notnull=true default=15000
+COLUMN staff.base_salary ord=8 type=numeric(12,2) notnull=true default=15000
 COLUMN staff.hire_date ord=9 type=date notnull=true default=CURRENT_DATE
 COLUMN staff.reports_to ord=10 type=uuid notnull=false default=∅
 COLUMN staff.status ord=11 type=text notnull=true default='active'::text
@@ -1346,7 +1346,7 @@ COLUMN student_groups.name ord=3 type=text notnull=true default=∅
 COLUMN student_groups.subject ord=4 type=text notnull=false default=∅
 COLUMN student_groups.whatsapp_group_id ord=5 type=text notnull=false default=∅
 COLUMN student_groups.created_at ord=6 type=timestamp with time zone notnull=false default=now()
-COLUMN student_groups.fee ord=7 type=numeric notnull=false default=0
+COLUMN student_groups.fee ord=7 type=numeric(12,2) notnull=false default=0
 COLUMN student_groups.max_capacity ord=8 type=integer notnull=false default=∅
 COLUMN student_groups.kind ord=9 type=text notnull=true default='center'::text
 COLUMN student_groups.teacher_id ord=10 type=uuid notnull=false default=∅
@@ -1374,7 +1374,7 @@ COLUMN students.qr_data ord=7 type=text notnull=false default=∅
 COLUMN students.payment_status ord=8 type=text notnull=true default='unpaid'::text
 COLUMN students.subject ord=9 type=text notnull=false default=∅
 COLUMN students.subject_id ord=10 type=uuid notnull=false default=∅
-COLUMN students.fee ord=11 type=numeric notnull=false default=0
+COLUMN students.fee ord=11 type=numeric(12,2) notnull=false default=0
 COLUMN students.last_paid_date ord=12 type=timestamp with time zone notnull=false default=∅
 COLUMN students.created_at ord=13 type=timestamp with time zone notnull=true default=now()
 COLUMN students.alert_status ord=14 type=text notnull=false default=∅
@@ -1387,7 +1387,7 @@ COLUMN students.parent_consent_at ord=20 type=timestamp with time zone notnull=f
 COLUMN students.notify_on_scan ord=21 type=boolean notnull=false default=true
 COLUMN students.notify_on_absence ord=22 type=boolean notnull=false default=true
 COLUMN students.notify_on_balance ord=23 type=boolean notnull=false default=true
-COLUMN students.balance_alert_threshold ord=24 type=numeric notnull=false default=100
+COLUMN students.balance_alert_threshold ord=24 type=numeric(12,2) notnull=false default=100
 COLUMN students.lifecycle_status ord=25 type=text notnull=false default='enrolled'::text
 COLUMN students.last_status_change ord=26 type=timestamp with time zone notnull=false default=∅
 COLUMN students.at_risk_since ord=27 type=timestamp with time zone notnull=false default=∅
@@ -1402,7 +1402,7 @@ COLUMN students.is_guest ord=35 type=boolean notnull=true default=false
 COLUMN subjects.id ord=1 type=uuid notnull=true default=uuid_generate_v4()
 COLUMN subjects.center_id ord=2 type=uuid notnull=true default=∅
 COLUMN subjects.name ord=3 type=text notnull=true default=∅
-COLUMN subjects.monthly_fee ord=4 type=numeric notnull=false default=0
+COLUMN subjects.monthly_fee ord=4 type=numeric(12,2) notnull=false default=0
 COLUMN subjects.created_at ord=5 type=timestamp with time zone notnull=true default=now()
 COLUMN subscriptions.id ord=1 type=uuid notnull=true default=uuid_generate_v4()
 COLUMN subscriptions.center_id ord=2 type=uuid notnull=true default=∅
@@ -1540,8 +1540,8 @@ COLUMN upgrade_log.new_plan ord=4 type=text notnull=true default=∅
 COLUMN upgrade_log.previous_period ord=5 type=text notnull=true default=∅
 COLUMN upgrade_log.new_period ord=6 type=text notnull=true default=∅
 COLUMN upgrade_log.days_remaining ord=7 type=integer notnull=true default=∅
-COLUMN upgrade_log.daily_rate_difference ord=8 type=numeric notnull=true default=∅
-COLUMN upgrade_log.amount_charged ord=9 type=numeric notnull=true default=∅
+COLUMN upgrade_log.daily_rate_difference ord=8 type=numeric(12,2) notnull=true default=∅
+COLUMN upgrade_log.amount_charged ord=9 type=numeric(12,2) notnull=true default=∅
 COLUMN upgrade_log.paymob_order_id ord=10 type=text notnull=false default=∅
 COLUMN upgrade_log.billing_anchor_unchanged ord=11 type=date notnull=true default=∅
 COLUMN upgrade_log.upgrade_count_this_cycle ord=12 type=integer notnull=true default=∅
@@ -1597,7 +1597,7 @@ COLUMN wa_inactivity_alerts.center_id ord=2 type=uuid notnull=true default=∅
 COLUMN wa_inactivity_alerts.alert_type ord=3 type=text notnull=true default=∅
 COLUMN wa_inactivity_alerts.triggered_at ord=4 type=timestamp with time zone notnull=true default=now()
 COLUMN wa_inactivity_alerts.last_scan_at ord=5 type=timestamp with time zone notnull=false default=∅
-COLUMN wa_inactivity_alerts.monthly_fee ord=6 type=numeric notnull=false default=∅
+COLUMN wa_inactivity_alerts.monthly_fee ord=6 type=numeric(12,2) notnull=false default=∅
 COLUMN wa_inactivity_alerts.alert_sent ord=7 type=boolean notnull=false default=false
 COLUMN wa_inactivity_alerts.response_received ord=8 type=boolean notnull=false default=false
 COLUMN wa_inactivity_alerts.resolved_at ord=9 type=timestamp with time zone notnull=false default=∅
@@ -1625,7 +1625,7 @@ COLUMN wa_messages.student_id ord=3 type=uuid notnull=false default=∅
 COLUMN wa_messages.message_type ord=4 type=text notnull=true default=∅
 COLUMN wa_messages.template_name ord=5 type=text notnull=false default=∅
 COLUMN wa_messages.status ord=6 type=text notnull=true default='sent'::text
-COLUMN wa_messages.cost ord=7 type=numeric notnull=true default=0.17
+COLUMN wa_messages.cost ord=7 type=numeric(12,2) notnull=true default=0.17
 COLUMN wa_messages.sent_at ord=8 type=timestamp with time zone notnull=true default=now()
 COLUMN wa_meta_templates.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN wa_meta_templates.template_name ord=2 type=text notnull=true default=∅
@@ -1709,21 +1709,21 @@ COLUMN whatsapp_subscriptions.center_id ord=2 type=uuid notnull=true default=∅
 COLUMN whatsapp_subscriptions.billing_month ord=3 type=text notnull=true default=∅
 COLUMN whatsapp_subscriptions.individual_enabled ord=4 type=boolean notnull=false default=false
 COLUMN whatsapp_subscriptions.individual_students_count ord=5 type=integer notnull=false default=0
-COLUMN whatsapp_subscriptions.individual_monthly_charge ord=6 type=numeric notnull=false default=0
+COLUMN whatsapp_subscriptions.individual_monthly_charge ord=6 type=numeric(12,2) notnull=false default=0
 COLUMN whatsapp_subscriptions.individual_messages_used ord=7 type=integer notnull=false default=0
 COLUMN whatsapp_subscriptions.individual_messages_included ord=8 type=integer notnull=false default=0
 COLUMN whatsapp_subscriptions.individual_overage_count ord=9 type=integer notnull=false default=0
-COLUMN whatsapp_subscriptions.individual_overage_charge ord=10 type=numeric notnull=false default=0
+COLUMN whatsapp_subscriptions.individual_overage_charge ord=10 type=numeric(12,2) notnull=false default=0
 COLUMN whatsapp_subscriptions.groups_enabled ord=11 type=boolean notnull=false default=false
 COLUMN whatsapp_subscriptions.groups_count ord=12 type=integer notnull=false default=0
-COLUMN whatsapp_subscriptions.group_monthly_charge ord=13 type=numeric notnull=false default=0
+COLUMN whatsapp_subscriptions.group_monthly_charge ord=13 type=numeric(12,2) notnull=false default=0
 COLUMN whatsapp_subscriptions.group_messages_used ord=14 type=integer notnull=false default=0
 COLUMN whatsapp_subscriptions.group_messages_included ord=15 type=integer notnull=false default=0
 COLUMN whatsapp_subscriptions.group_overage_count ord=16 type=integer notnull=false default=0
-COLUMN whatsapp_subscriptions.group_overage_charge ord=17 type=numeric notnull=false default=0
+COLUMN whatsapp_subscriptions.group_overage_charge ord=17 type=numeric(12,2) notnull=false default=0
 COLUMN whatsapp_subscriptions.parent_checkup_enabled ord=18 type=boolean notnull=false default=false
 COLUMN whatsapp_subscriptions.parent_count ord=19 type=integer notnull=false default=0
-COLUMN whatsapp_subscriptions.parent_monthly_charge ord=20 type=numeric notnull=false default=0
+COLUMN whatsapp_subscriptions.parent_monthly_charge ord=20 type=numeric(12,2) notnull=false default=0
 COLUMN whatsapp_subscriptions.parent_checks_used ord=21 type=integer notnull=false default=0
 COLUMN whatsapp_subscriptions.status ord=22 type=text notnull=false default='active'::text
 COLUMN whatsapp_subscriptions.created_at ord=23 type=timestamp with time zone notnull=false default=now()
@@ -1741,17 +1741,17 @@ COLUMN whatsapp_usage.status ord=10 type=text notnull=false default='sent'::text
 COLUMN whatsapp_usage.meta_message_id ord=11 type=text notnull=false default=∅
 COLUMN whatsapp_usage.billed_month ord=12 type=text notnull=true default=∅
 COLUMN whatsapp_usage.included_in_plan ord=13 type=boolean notnull=false default=true
-COLUMN whatsapp_usage.overage_charge ord=14 type=numeric notnull=false default=0
-COLUMN whatsapp_usage.meta_cost ord=15 type=numeric notnull=false default=0.17
+COLUMN whatsapp_usage.overage_charge ord=14 type=numeric(12,2) notnull=false default=0
+COLUMN whatsapp_usage.meta_cost ord=15 type=numeric(12,2) notnull=false default=0.17
 COLUMN whatsapp_usage.sent_at ord=16 type=timestamp with time zone notnull=false default=now()
 COLUMN whatsapp_usage.delivered_at ord=17 type=timestamp with time zone notnull=false default=∅
 COLUMN whatsapp_usage.read_at ord=18 type=timestamp with time zone notnull=false default=∅
 COLUMN whatsapp_usage.created_at ord=19 type=timestamp with time zone notnull=false default=now()
 COLUMN withdrawal_requests.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN withdrawal_requests.center_id ord=2 type=uuid notnull=true default=∅
-COLUMN withdrawal_requests.credits_deducted ord=3 type=numeric notnull=true default=∅
-COLUMN withdrawal_requests.cash_amount ord=4 type=numeric notnull=true default=∅
-COLUMN withdrawal_requests.fee_amount ord=5 type=numeric notnull=true default=∅
+COLUMN withdrawal_requests.credits_deducted ord=3 type=numeric(12,2) notnull=true default=∅
+COLUMN withdrawal_requests.cash_amount ord=4 type=numeric(12,2) notnull=true default=∅
+COLUMN withdrawal_requests.fee_amount ord=5 type=numeric(12,2) notnull=true default=∅
 COLUMN withdrawal_requests.instapay_number ord=6 type=text notnull=true default=∅
 COLUMN withdrawal_requests.status ord=7 type=text notnull=true default='pending'::text
 COLUMN withdrawal_requests.requested_at ord=8 type=timestamp with time zone notnull=false default=now()
@@ -1772,6 +1772,7 @@ CONSTRAINT access_attempts.access_attempts_session_id_fkey type=f def=FOREIGN KE
 CONSTRAINT admin_alerts.admin_alerts_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT admin_alerts.admin_alerts_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT admin_alerts.admin_alerts_type_check type=c def=CHECK ((type = ANY (ARRAY['critical_inactivity'::text, 'payment_overdue'::text, 'support_escalation'::text])))
+CONSTRAINT admin_payments.admin_payments_amount_nonneg type=c def=CHECK ((amount >= (0)::numeric))
 CONSTRAINT admin_payments.admin_payments_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id)
 CONSTRAINT admin_payments.admin_payments_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT admin_users.admin_users_email_key type=u def=UNIQUE (email)
@@ -1781,6 +1782,7 @@ CONSTRAINT admin_users.admin_users_role_check type=c def=CHECK ((role = ANY (ARR
 CONSTRAINT announcement_blasts.announcement_blasts_billing_status_check type=c def=CHECK ((billing_status = ANY (ARRAY['pending'::text, 'charged'::text, 'included_in_renewal'::text])))
 CONSTRAINT announcement_blasts.announcement_blasts_blast_type_check type=c def=CHECK ((blast_type = ANY (ARRAY['ops'::text, 'promo'::text])))
 CONSTRAINT announcement_blasts.announcement_blasts_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id)
+CONSTRAINT announcement_blasts.announcement_blasts_money_nonneg type=c def=CHECK (((base_amount >= (0)::numeric) AND (service_fee >= (0)::numeric) AND (total_amount >= (0)::numeric) AND (vat >= (0)::numeric)))
 CONSTRAINT announcement_blasts.announcement_blasts_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT announcement_blasts.announcement_blasts_sent_by_fkey type=f def=FOREIGN KEY (sent_by) REFERENCES users(id)
 CONSTRAINT announcement_blasts.announcement_blasts_template_name_check type=c def=CHECK ((template_name = ANY (ARRAY['chq_parent_announcement_ops'::text, 'chq_parent_announcement_promo'::text])))
@@ -1809,7 +1811,7 @@ CONSTRAINT attendance_scans.attendance_scans_session_id_fkey type=f def=FOREIGN 
 CONSTRAINT attendance_scans.attendance_scans_session_student_unique type=u def=UNIQUE (session_id, student_id)
 CONSTRAINT attendance_scans.attendance_scans_status_chk type=c def=CHECK (((status IS NULL) OR (status = ANY (ARRAY['present'::text, 'absent'::text]))))
 CONSTRAINT attendance_scans.attendance_scans_student_id_fkey type=f def=FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
-CONSTRAINT audit_log.audit_log_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT audit_log.audit_log_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE RESTRICT
 CONSTRAINT audit_log.audit_log_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT audit_log.audit_log_user_id_fkey type=f def=FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 CONSTRAINT backup_log.backup_log_pkey type=p def=PRIMARY KEY (id)
@@ -1822,6 +1824,8 @@ CONSTRAINT billing_nudges.billing_nudges_owner_type_check type=c def=CHECK ((own
 CONSTRAINT billing_nudges.billing_nudges_owner_type_owner_id_cycle_key_step_key type=u def=UNIQUE (owner_type, owner_id, cycle_key, step)
 CONSTRAINT billing_nudges.billing_nudges_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT billing_nudges.billing_nudges_step_check type=c def=CHECK ((step = ANY (ARRAY['prebill_t3'::text, 'prebill_t1'::text, 'due_today'::text, 'locked'::text, 'card_expiry_t30'::text, 'card_expiry_t7'::text])))
+CONSTRAINT billing_reconciliation_reports.billing_reconciliation_reports_invoice_id_fkey type=f def=FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE RESTRICT
+CONSTRAINT billing_reconciliation_reports.billing_reconciliation_reports_money_nonneg type=c def=CHECK ((((expected_amount IS NULL) OR (expected_amount >= (0)::numeric)) AND ((paymob_amount IS NULL) OR (paymob_amount >= (0)::numeric))))
 CONSTRAINT billing_reconciliation_reports.billing_reconciliation_reports_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT bookings.bookings_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT bookings.bookings_pkey type=p def=PRIMARY KEY (id)
@@ -1853,7 +1857,7 @@ CONSTRAINT card_order_carts.card_order_carts_center_id_fkey type=f def=FOREIGN K
 CONSTRAINT card_order_carts.card_order_carts_last_modified_by_fkey type=f def=FOREIGN KEY (last_modified_by) REFERENCES auth.users(id)
 CONSTRAINT card_order_carts.card_order_carts_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT card_order_carts.card_order_carts_status_check type=c def=CHECK ((status = ANY (ARRAY['open'::text, 'submitted'::text, 'abandoned'::text])))
-CONSTRAINT card_order_events.card_order_events_card_order_id_fkey type=f def=FOREIGN KEY (card_order_id) REFERENCES card_orders(id) ON DELETE CASCADE
+CONSTRAINT card_order_events.card_order_events_card_order_id_fkey type=f def=FOREIGN KEY (card_order_id) REFERENCES card_orders(id) ON DELETE RESTRICT
 CONSTRAINT card_order_events.card_order_events_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT card_order_items.card_order_items_card_order_id_fkey type=f def=FOREIGN KEY (card_order_id) REFERENCES card_orders(id) ON DELETE CASCADE
 CONSTRAINT card_order_items.card_order_items_check type=c def=CHECK ((((kind = 'student'::text) AND (student_id IS NOT NULL) AND (quantity = 1)) OR ((kind = 'blank'::text) AND (student_id IS NULL) AND (quantity > 0))))
@@ -1868,6 +1872,7 @@ CONSTRAINT card_order_status_wa_dedupe.card_order_status_wa_dedupe_card_order_id
 CONSTRAINT card_order_status_wa_dedupe.card_order_status_wa_dedupe_pkey type=p def=PRIMARY KEY (card_order_id, to_status)
 CONSTRAINT card_orders.card_orders_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id)
 CONSTRAINT card_orders.card_orders_created_by_fkey type=f def=FOREIGN KEY (created_by) REFERENCES users(id)
+CONSTRAINT card_orders.card_orders_money_nonneg type=c def=CHECK ((((delivery_fee IS NULL) OR (delivery_fee >= (0)::numeric)) AND ((price_per_card IS NULL) OR (price_per_card >= (0)::numeric)) AND ((total_amount IS NULL) OR (total_amount >= (0)::numeric))))
 CONSTRAINT card_orders.card_orders_payment_status_check type=c def=CHECK ((payment_status = ANY (ARRAY['unpaid'::text, 'paid'::text, 'failed'::text])))
 CONSTRAINT card_orders.card_orders_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT card_orders.card_orders_refund_status_check type=c def=CHECK (((refund_status IS NULL) OR (refund_status = ANY (ARRAY['pending'::text, 'approved'::text, 'paid'::text, 'rejected'::text]))))
@@ -1882,6 +1887,7 @@ CONSTRAINT center_assignments.center_assignments_staff_id_fkey type=f def=FOREIG
 CONSTRAINT center_assignments.sourced_by_eyad_no_staff type=c def=CHECK ((((sourced_by = 'eyad'::text) AND (staff_id IS NULL)) OR ((sourced_by <> 'eyad'::text) AND (staff_id IS NOT NULL))))
 CONSTRAINT center_expenses.center_expenses_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT center_expenses.center_expenses_center_id_month_key type=u def=UNIQUE (center_id, month)
+CONSTRAINT center_expenses.center_expenses_money_nonneg type=c def=CHECK ((((other IS NULL) OR (other >= (0)::numeric)) AND ((rent IS NULL) OR (rent >= (0)::numeric)) AND ((salaries IS NULL) OR (salaries >= (0)::numeric)) AND ((utilities IS NULL) OR (utilities >= (0)::numeric))))
 CONSTRAINT center_expenses.center_expenses_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT center_invites.center_invites_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT center_invites.center_invites_invited_by_fkey type=f def=FOREIGN KEY (invited_by) REFERENCES auth.users(id) ON DELETE SET NULL
@@ -1907,6 +1913,7 @@ CONSTRAINT centers.centers_billing_status_check type=c def=CHECK ((billing_statu
 CONSTRAINT centers.centers_billing_type_check type=c def=CHECK ((billing_type = ANY (ARRAY['fixed'::text, 'payg'::text])))
 CONSTRAINT centers.centers_center_code_key type=u def=UNIQUE (center_code)
 CONSTRAINT centers.centers_health_status_check type=c def=CHECK ((health_status = ANY (ARRAY['green'::text, 'amber'::text, 'red'::text])))
+CONSTRAINT centers.centers_money_nonneg type=c def=CHECK ((((all_in_price IS NULL) OR (all_in_price >= (0)::numeric)) AND ((announcement_balance IS NULL) OR (announcement_balance >= (0)::numeric)) AND ((announcement_cap IS NULL) OR (announcement_cap >= (0)::numeric)) AND ((announcement_price_per_blast IS NULL) OR (announcement_price_per_blast >= (0)::numeric)) AND (credit_balance >= (0)::numeric) AND (credit_reserved >= (0)::numeric) AND ((early_adopter_price IS NULL) OR (early_adopter_price >= (0)::numeric)) AND (pack_pending_balance >= (0)::numeric) AND ((pack_price_per_parent IS NULL) OR (pack_price_per_parent >= (0)::numeric)) AND ((payg_rate IS NULL) OR (payg_rate >= (0)::numeric)) AND ((reactivation_fee_amount IS NULL) OR (reactivation_fee_amount >= (0)::numeric)) AND ((referral_reward_amount IS NULL) OR (referral_reward_amount >= (0)::numeric)) AND ((subscription_monthly_fee IS NULL) OR (subscription_monthly_fee >= (0)::numeric))))
 CONSTRAINT centers.centers_organization_id_fkey type=f def=FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL
 CONSTRAINT centers.centers_pack_request_status_check type=c def=CHECK ((pack_request_status = ANY (ARRAY['none'::text, 'requested'::text, 'approved'::text, 'rejected'::text, 'suspended'::text])))
 CONSTRAINT centers.centers_payg_pending_switch_check type=c def=CHECK (((payg_pending_switch IS NULL) OR (payg_pending_switch = ANY (ARRAY['to_payg'::text, 'from_payg'::text]))))
@@ -1921,6 +1928,7 @@ CONSTRAINT centers.centers_scanner_default_mode_check type=c def=CHECK ((scanner
 CONSTRAINT centers.centers_status_check type=c def=CHECK ((status = ANY (ARRAY['pending'::text, 'active'::text, 'suspended'::text, 'rejected'::text, 'pending_payment'::text, 'dormant'::text])))
 CONSTRAINT centers.centers_subscription_billing_period_check type=c def=CHECK ((subscription_billing_period = ANY (ARRAY['monthly'::text, 'quarterly'::text, 'biannual'::text, 'yearly'::text])))
 CONSTRAINT centers.centers_subscription_status_check type=c def=CHECK ((subscription_status = ANY (ARRAY['active'::text, 'suspended'::text, 'pending'::text, 'cancelled'::text])))
+CONSTRAINT centers.centers_summer_first_invoice_id_fkey type=f def=FOREIGN KEY (summer_first_invoice_id) REFERENCES invoices(id) ON DELETE RESTRICT
 CONSTRAINT centers.centers_summer_status_check type=c def=CHECK (((summer_status IS NULL) OR (summer_status = ANY (ARRAY['enrolled'::text, 'invoiced'::text, 'paid'::text]))))
 CONSTRAINT centers.chk_billing_amount_positive type=c def=CHECK (((billing_type = 'payg'::text) OR (status = ANY (ARRAY['pending'::text, 'rejected'::text, 'cancelled'::text])) OR (billing_amount > (0)::numeric)))
 CONSTRAINT centers.chk_top_centers_pack_minimum type=c def=CHECK (((plan <> 'top_centers'::text) OR (parent_pack_enabled = false) OR (pack_custom_invoice_minimum > (0)::numeric)))
@@ -1928,6 +1936,7 @@ CONSTRAINT ceo_action_queue.ceo_action_queue_center_id_fkey type=f def=FOREIGN K
 CONSTRAINT ceo_action_queue.ceo_action_queue_lead_id_fkey type=f def=FOREIGN KEY (lead_id) REFERENCES sales_leads(id) ON DELETE CASCADE
 CONSTRAINT ceo_action_queue.ceo_action_queue_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT ceo_action_queue.ceo_action_queue_priority_check type=c def=CHECK ((priority = ANY (ARRAY['red'::text, 'amber'::text, 'green'::text])))
+CONSTRAINT ceo_action_queue.ceo_action_queue_revenue_at_risk_nonneg type=c def=CHECK (((revenue_at_risk IS NULL) OR (revenue_at_risk >= (0)::numeric)))
 CONSTRAINT ceo_action_queue.ceo_action_queue_type_check type=c def=CHECK ((type = ANY (ARRAY['churn_risk'::text, 'activation'::text, 'collection'::text, 'sales'::text, 'ops'::text, 'renewal'::text, 'cancellation_request'::text, 'pack_billing_blocked'::text, 'stuck_payment'::text, 'bosta_lost'::text, 'bosta_returned'::text, 'zero_billing'::text, 'briefing_failed'::text, 'auto_approve_info'::text])))
 CONSTRAINT chargebacks.chargebacks_amount_nonneg_chk type=c def=CHECK ((amount >= (0)::numeric))
 CONSTRAINT chargebacks.chargebacks_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE SET NULL
@@ -1936,33 +1945,39 @@ CONSTRAINT chargebacks.chargebacks_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT chargebacks.chargebacks_status_chk type=c def=CHECK ((status = ANY (ARRAY['opened'::text, 'won'::text, 'lost'::text])))
 CONSTRAINT chargebacks.chargebacks_teacher_id_fkey type=f def=FOREIGN KEY (teacher_id) REFERENCES teacher_profiles(user_id) ON DELETE SET NULL
 CONSTRAINT chargebacks.chargebacks_transaction_id_fkey type=f def=FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE RESTRICT
-CONSTRAINT combined_payment_sessions.combined_payment_sessions_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT combined_payment_sessions.combined_payment_sessions_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE RESTRICT
 CONSTRAINT combined_payment_sessions.combined_payment_sessions_finalized_by_check type=c def=CHECK (((finalized_by IS NULL) OR (finalized_by = ANY (ARRAY['webhook'::text, 'cron'::text, 'credits'::text]))))
+CONSTRAINT combined_payment_sessions.combined_payment_sessions_money_nonneg type=c def=CHECK (((credit_amount >= (0)::numeric) AND (paymob_amount >= (0)::numeric) AND (total_amount >= (0)::numeric)))
 CONSTRAINT combined_payment_sessions.combined_payment_sessions_paymob_order_id_key type=u def=UNIQUE (paymob_order_id)
 CONSTRAINT combined_payment_sessions.combined_payment_sessions_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT combined_payment_sessions.combined_payment_sessions_session_type_check type=c def=CHECK ((session_type = ANY (ARRAY['reactivation_tier1'::text, 'reactivation_tier2'::text, 'signup'::text, 'upgrade'::text, 'pack'::text, 'cards'::text, 'teacher_resubscribe'::text, 'teacher_upgrade'::text])))
 CONSTRAINT combined_payment_sessions.combined_payment_sessions_status_check type=c def=CHECK ((status = ANY (ARRAY['pending'::text, 'paid'::text, 'failed'::text, 'expired'::text])))
 CONSTRAINT commission_audit_log.audit_has_target type=c def=CHECK (((commission_id IS NOT NULL) OR (payout_id IS NOT NULL)))
-CONSTRAINT commission_audit_log.commission_audit_log_action_check type=c def=CHECK ((action = ANY (ARRAY['t1_eligible_set'::text, 't1_clawback'::text, 't2_auto_unlock'::text, 't2_manual_unlock'::text, 't2_forfeited'::text, 'clock_pause'::text, 'clock_resume'::text, 'dispute_opened'::text, 'dispute_resolved'::text, 'payout_confirmed'::text, 'payout_paid'::text, 'payout_adjusted'::text, 'loyalty_eligible_set'::text, 'loyalty_paid'::text, 'commission_created'::text, 'commission_created_eyad'::text])))
-CONSTRAINT commission_audit_log.commission_audit_log_commission_id_fkey type=f def=FOREIGN KEY (commission_id) REFERENCES commissions(id) ON DELETE CASCADE
-CONSTRAINT commission_audit_log.commission_audit_log_payout_id_fkey type=f def=FOREIGN KEY (payout_id) REFERENCES commission_payouts(id) ON DELETE CASCADE
+CONSTRAINT commission_audit_log.commission_audit_log_action_check type=c def=CHECK ((action = ANY (ARRAY['t1_eligible_set'::text, 't1_clawback'::text, 't2_auto_unlock'::text, 't2_manual_unlock'::text, 't2_forfeited'::text, 'clock_pause'::text, 'clock_resume'::text, 'dispute_opened'::text, 'dispute_resolved'::text, 'payout_confirmed'::text, 'payout_paid'::text, 'payout_adjusted'::text, 'payout_voided'::text, 'loyalty_eligible_set'::text, 'loyalty_paid'::text, 'commission_created'::text, 'commission_created_eyad'::text])))
+CONSTRAINT commission_audit_log.commission_audit_log_commission_id_fkey type=f def=FOREIGN KEY (commission_id) REFERENCES commissions(id) ON DELETE RESTRICT
+CONSTRAINT commission_audit_log.commission_audit_log_payout_id_fkey type=f def=FOREIGN KEY (payout_id) REFERENCES commission_payouts(id) ON DELETE RESTRICT
 CONSTRAINT commission_audit_log.commission_audit_log_performed_by_fkey type=f def=FOREIGN KEY (performed_by) REFERENCES admin_users(id)
 CONSTRAINT commission_audit_log.commission_audit_log_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT commission_audit_log.commission_audit_log_triggered_by_check type=c def=CHECK ((triggered_by = ANY (ARRAY['cron'::text, 'manual'::text, 'webhook'::text, 'system'::text])))
+CONSTRAINT commission_payouts.commission_payouts_money_nonneg type=c def=CHECK (((base_salary >= (0)::numeric) AND (loyalty_bonuses >= (0)::numeric) AND (override_commissions >= (0)::numeric) AND (t1_commissions >= (0)::numeric) AND (t2_commissions >= (0)::numeric)))
 CONSTRAINT commission_payouts.commission_payouts_paid_by_fkey type=f def=FOREIGN KEY (paid_by) REFERENCES admin_users(id)
 CONSTRAINT commission_payouts.commission_payouts_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT commission_payouts.commission_payouts_staff_id_fkey type=f def=FOREIGN KEY (staff_id) REFERENCES staff(id)
-CONSTRAINT commission_payouts.commission_payouts_status_check type=c def=CHECK ((status = ANY (ARRAY['draft'::text, 'confirmed'::text, 'paid'::text])))
+CONSTRAINT commission_payouts.commission_payouts_status_check type=c def=CHECK ((status = ANY (ARRAY['draft'::text, 'confirmed'::text, 'paid'::text, 'void'::text])))
 CONSTRAINT commission_payouts.period_format type=c def=CHECK ((period ~ '^\\d{4}-(0[1-9]|1[0-2])$'::text))
-CONSTRAINT commissions.commissions_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT commissions.commissions_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE RESTRICT
 CONSTRAINT commissions.commissions_commission_type_check type=c def=CHECK ((commission_type = ANY (ARRAY['self_sourced'::text, 'override'::text, 'delta_upgrade'::text])))
 CONSTRAINT commissions.commissions_loyalty_bonus_status_check type=c def=CHECK ((loyalty_bonus_status = ANY (ARRAY['locked'::text, 'eligible'::text, 'paid'::text, 'forfeited'::text])))
+CONSTRAINT commissions.commissions_loyalty_payout_id_fkey type=f def=FOREIGN KEY (loyalty_payout_id) REFERENCES commission_payouts(id) ON DELETE RESTRICT
+CONSTRAINT commissions.commissions_money_nonneg type=c def=CHECK (((loyalty_bonus_amount >= (0)::numeric) AND (t1_amount >= (0)::numeric) AND (t2_amount >= (0)::numeric) AND (total_commission >= (0)::numeric)))
 CONSTRAINT commissions.commissions_parent_commission_id_fkey type=f def=FOREIGN KEY (parent_commission_id) REFERENCES commissions(id)
 CONSTRAINT commissions.commissions_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT commissions.commissions_plan_at_signing_check type=c def=CHECK ((plan_at_signing = ANY (ARRAY['nano'::text, 'starter'::text, 'pro'::text, 'business'::text, 'enterprise'::text, 'top_centers'::text])))
 CONSTRAINT commissions.commissions_role_at_time_check type=c def=CHECK ((role_at_time = ANY (ARRAY['sm'::text, 'sr'::text, 'eyad'::text])))
 CONSTRAINT commissions.commissions_staff_id_fkey type=f def=FOREIGN KEY (staff_id) REFERENCES staff(id)
+CONSTRAINT commissions.commissions_t1_payout_id_fkey type=f def=FOREIGN KEY (t1_payout_id) REFERENCES commission_payouts(id) ON DELETE RESTRICT
 CONSTRAINT commissions.commissions_t1_status_check type=c def=CHECK ((t1_status = ANY (ARRAY['pending'::text, 'eligible'::text, 'paid'::text, 'clawed_back'::text])))
+CONSTRAINT commissions.commissions_t2_payout_id_fkey type=f def=FOREIGN KEY (t2_payout_id) REFERENCES commission_payouts(id) ON DELETE RESTRICT
 CONSTRAINT commissions.commissions_t2_status_check type=c def=CHECK ((t2_status = ANY (ARRAY['locked'::text, 'eligible'::text, 'paid'::text, 'forfeited'::text])))
 CONSTRAINT content_access.content_access_access_code_key type=u def=UNIQUE (access_code)
 CONSTRAINT content_access.content_access_content_item_id_fkey type=f def=FOREIGN KEY (content_item_id) REFERENCES content_items(id) ON DELETE CASCADE
@@ -1978,7 +1993,7 @@ CONSTRAINT content_items.content_items_owner_center_id_fkey type=f def=FOREIGN K
 CONSTRAINT content_items.content_items_owner_chk type=c def=CHECK ((num_nonnulls(owner_teacher_id, owner_center_id) = 1))
 CONSTRAINT content_items.content_items_owner_teacher_id_fkey type=f def=FOREIGN KEY (owner_teacher_id) REFERENCES teacher_profiles(user_id) ON DELETE CASCADE
 CONSTRAINT content_items.content_items_pkey type=p def=PRIMARY KEY (id)
-CONSTRAINT credit_ledger.credit_ledger_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT credit_ledger.credit_ledger_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE RESTRICT
 CONSTRAINT credit_ledger.credit_ledger_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT credit_ledger.credit_ledger_reference_type_check type=c def=CHECK ((reference_type = ANY (ARRAY['downgrade'::text, 'invoice'::text, 'subscription'::text, 'withdrawal'::text, 'expiry'::text])))
 CONSTRAINT credit_ledger.credit_ledger_type_check type=c def=CHECK ((type = ANY (ARRAY['earned'::text, 'spent'::text, 'expired'::text, 'withdrawn'::text, 'fee'::text])))
@@ -1988,6 +2003,7 @@ CONSTRAINT cron_log.cron_log_status_check type=c def=CHECK ((status = ANY (ARRAY
 CONSTRAINT dead_letter_queue.dead_letter_queue_outbox_id_fkey type=f def=FOREIGN KEY (outbox_id) REFERENCES webhook_outbox(id) ON DELETE CASCADE
 CONSTRAINT dead_letter_queue.dead_letter_queue_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT dead_letter_queue.dead_letter_queue_resolved_by_fkey type=f def=FOREIGN KEY (resolved_by) REFERENCES users(id)
+CONSTRAINT delivery_fees.delivery_fees_fee_nonneg type=c def=CHECK ((fee >= (0)::numeric))
 CONSTRAINT delivery_fees.delivery_fees_governorate_key type=u def=UNIQUE (governorate)
 CONSTRAINT delivery_fees.delivery_fees_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT delivery_fees.delivery_fees_updated_by_fkey type=f def=FOREIGN KEY (updated_by) REFERENCES auth.users(id)
@@ -2038,22 +2054,25 @@ CONSTRAINT group_slot_proposals.group_slot_proposals_responded_by_fkey type=f de
 CONSTRAINT group_slot_proposals.group_slot_proposals_room_id_fkey type=f def=FOREIGN KEY (room_id) REFERENCES rooms(id)
 CONSTRAINT group_slot_proposals.group_slot_proposals_status_check type=c def=CHECK ((status = ANY (ARRAY['pending'::text, 'confirmed'::text, 'declined'::text, 'withdrawn'::text])))
 CONSTRAINT groups.groups_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT groups.groups_monthly_fee_nonneg type=c def=CHECK (((monthly_fee IS NULL) OR (monthly_fee >= (0)::numeric)))
 CONSTRAINT groups.groups_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT holidays.holidays_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT holidays.holidays_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT in_app_notifications.in_app_notifications_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT in_app_notifications.in_app_notifications_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT in_app_notifications.in_app_notifications_user_id_fkey type=f def=FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
-CONSTRAINT invoices.invoices_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT invoices.invoices_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE RESTRICT
 CONSTRAINT invoices.invoices_invoice_number_key type=u def=UNIQUE (invoice_number)
 CONSTRAINT invoices.invoices_invoice_type_check type=c def=CHECK ((invoice_type = ANY (ARRAY['base_subscription'::text, 'subscription'::text, 'whatsapp_addon'::text, 'setup_fee'::text, 'payment_proof'::text, 'announcement_settlement'::text, 'announcement_cap'::text, 'plan_upgrade_difference'::text, 'pack_billing'::text, 'signup_first_payment'::text, 'late_payment_fee'::text, 'referral_payout'::text, 'teacher_overage'::text])))
+CONSTRAINT invoices.invoices_money_nonneg type=c def=CHECK (((amount_received >= (0)::numeric) AND ((base_amount IS NULL) OR (base_amount >= (0)::numeric)) AND ((discount_amount IS NULL) OR (discount_amount >= (0)::numeric)) AND ((group_overage IS NULL) OR (group_overage >= (0)::numeric)) AND ((individual_overage IS NULL) OR (individual_overage >= (0)::numeric)) AND ((late_fee_amount IS NULL) OR (late_fee_amount >= (0)::numeric)) AND ((payment_amount IS NULL) OR (payment_amount >= (0)::numeric)) AND ((promo_original_amount IS NULL) OR (promo_original_amount >= (0)::numeric)) AND (total_amount >= (0)::numeric) AND ((whatsapp_group IS NULL) OR (whatsapp_group >= (0)::numeric)) AND ((whatsapp_individual IS NULL) OR (whatsapp_individual >= (0)::numeric)) AND ((whatsapp_parent_checkup IS NULL) OR (whatsapp_parent_checkup >= (0)::numeric))))
 CONSTRAINT invoices.invoices_owner_type_check type=c def=CHECK ((owner_type = ANY (ARRAY['center'::text, 'teacher'::text])))
 CONSTRAINT invoices.invoices_owner_xor_check type=c def=CHECK ((((owner_type = 'center'::text) AND (center_id IS NOT NULL) AND (teacher_id IS NULL)) OR ((owner_type = 'teacher'::text) AND (teacher_id IS NOT NULL) AND (center_id IS NULL))))
 CONSTRAINT invoices.invoices_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT invoices.invoices_status_check type=c def=CHECK ((status = ANY (ARRAY['pending'::text, 'paid'::text, 'overdue'::text, 'cancelled'::text, 'approved'::text, 'rejected'::text, 'failed'::text, 'chargeback'::text])))
-CONSTRAINT invoices.invoices_teacher_id_fkey type=f def=FOREIGN KEY (teacher_id) REFERENCES teacher_profiles(user_id) ON DELETE CASCADE
+CONSTRAINT invoices.invoices_teacher_id_fkey type=f def=FOREIGN KEY (teacher_id) REFERENCES teacher_profiles(user_id) ON DELETE RESTRICT
 CONSTRAINT mrr_snapshots.mrr_snapshots_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT mrr_snapshots.mrr_snapshots_snapshot_date_key type=u def=UNIQUE (snapshot_date)
+CONSTRAINT mrr_snapshots.mrr_snapshots_total_mrr_nonneg type=c def=CHECK ((total_mrr >= (0)::numeric))
 CONSTRAINT organizations.organizations_owner_user_id_fkey type=f def=FOREIGN KEY (owner_user_id) REFERENCES auth.users(id) ON DELETE SET NULL
 CONSTRAINT organizations.organizations_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT organizations.organizations_plan_check type=c def=CHECK ((plan = ANY (ARRAY['single'::text, 'multi'::text])))
@@ -2064,11 +2083,12 @@ CONSTRAINT paid_parents.paid_parents_center_id_fkey type=f def=FOREIGN KEY (cent
 CONSTRAINT paid_parents.paid_parents_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT paid_parents.paid_parents_student_id_fkey type=f def=FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
 CONSTRAINT paid_parents.unique_parent_student_month type=u def=UNIQUE (center_id, parent_phone, student_id, month)
-CONSTRAINT parent_pack_billing.parent_pack_billing_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT parent_pack_billing.parent_pack_billing_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE RESTRICT
 CONSTRAINT parent_pack_billing.parent_pack_billing_center_id_student_id_month_key type=u def=UNIQUE (center_id, student_id, month)
+CONSTRAINT parent_pack_billing.parent_pack_billing_money_nonneg type=c def=CHECK (((amount >= (0)::numeric) AND (base_amount >= (0)::numeric) AND ((service_fee IS NULL) OR (service_fee >= (0)::numeric)) AND ((total_amount IS NULL) OR (total_amount >= (0)::numeric)) AND ((vat IS NULL) OR (vat >= (0)::numeric))))
 CONSTRAINT parent_pack_billing.parent_pack_billing_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT parent_pack_billing.parent_pack_billing_status_check type=c def=CHECK ((status = ANY (ARRAY['pending'::text, 'charged'::text, 'failed'::text])))
-CONSTRAINT parent_pack_billing.parent_pack_billing_student_id_fkey type=f def=FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+CONSTRAINT parent_pack_billing.parent_pack_billing_student_id_fkey type=f def=FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE SET NULL
 CONSTRAINT parent_pack_monthly_counts.parent_pack_monthly_counts_center_id_billing_period_student_key type=u def=UNIQUE (center_id, billing_period, student_id)
 CONSTRAINT parent_pack_monthly_counts.parent_pack_monthly_counts_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT parent_pack_monthly_counts.parent_pack_monthly_counts_pkey type=p def=PRIMARY KEY (id)
@@ -2077,12 +2097,15 @@ CONSTRAINT parent_portal_tokens.parent_portal_tokens_pkey type=p def=PRIMARY KEY
 CONSTRAINT parent_portal_tokens.parent_portal_tokens_student_id_fkey type=f def=FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
 CONSTRAINT parent_portal_tokens.parent_portal_tokens_token_key type=u def=UNIQUE (token)
 CONSTRAINT payg_rates.payg_rates_pkey type=p def=PRIMARY KEY (id)
-CONSTRAINT payments.payments_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT payg_rates.payg_rates_price_per_student_nonneg type=c def=CHECK ((price_per_student >= (0)::numeric))
+CONSTRAINT payments.payments_amount_nonneg type=c def=CHECK ((amount >= (0)::numeric))
+CONSTRAINT payments.payments_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE RESTRICT
 CONSTRAINT payments.payments_group_id_fkey type=f def=FOREIGN KEY (group_id) REFERENCES student_groups(id) ON DELETE SET NULL
 CONSTRAINT payments.payments_method_check type=c def=CHECK ((method = ANY (ARRAY['cash'::text, 'instapay'::text, 'vodacash'::text, 'orange'::text, 'fawry'::text, 'bank'::text])))
 CONSTRAINT payments.payments_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT payments.payments_recorded_by_fkey type=f def=FOREIGN KEY (recorded_by) REFERENCES users(id) ON DELETE SET NULL
-CONSTRAINT payments.payments_student_id_fkey type=f def=FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+CONSTRAINT payments.payments_student_id_fkey type=f def=FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE RESTRICT
+CONSTRAINT payout_requests.payout_requests_amount_requested_nonneg type=c def=CHECK ((amount_requested >= (0)::numeric))
 CONSTRAINT payout_requests.payout_requests_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT payout_requests.payout_requests_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT payout_requests.payout_requests_status_check type=c def=CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'paid'::text, 'rejected'::text])))
@@ -2112,6 +2135,7 @@ CONSTRAINT plan_requests.plan_requests_status_check type=c def=CHECK ((status = 
 CONSTRAINT platform_config.platform_config_key_key type=u def=UNIQUE (key)
 CONSTRAINT platform_config.platform_config_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT platform_config.platform_config_updated_by_fkey type=f def=FOREIGN KEY (updated_by) REFERENCES auth.users(id)
+CONSTRAINT pricing_plans.pricing_plans_money_nonneg type=c def=CHECK ((((all_in_price IS NULL) OR (all_in_price >= (0)::numeric)) AND (cost_per_student >= (0)::numeric) AND (monthly_fee >= (0)::numeric) AND ((payg_rate_per_student IS NULL) OR (payg_rate_per_student >= (0)::numeric)) AND (setup_fee >= (0)::numeric)))
 CONSTRAINT pricing_plans.pricing_plans_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT pricing_plans.pricing_plans_plan_key_key type=u def=UNIQUE (plan_key)
 CONSTRAINT privacy_requests.privacy_requests_handled_by_fkey type=f def=FOREIGN KEY (handled_by) REFERENCES auth.users(id) ON DELETE SET NULL
@@ -2124,21 +2148,26 @@ CONSTRAINT promo_codes.promo_codes_code_unique type=u def=UNIQUE (code)
 CONSTRAINT promo_codes.promo_codes_code_upper type=c def=CHECK ((code = upper(code)))
 CONSTRAINT promo_codes.promo_codes_discount_pct_check type=c def=CHECK (((discount_pct > 0) AND (discount_pct <= 100)))
 CONSTRAINT promo_codes.promo_codes_pkey type=p def=PRIMARY KEY (id)
+CONSTRAINT recurring_charge_declines.recurring_charge_declines_card_last4_format type=c def=CHECK ((card_last4 ~ '^[0-9]{4}$'::text))
+CONSTRAINT recurring_charge_declines.recurring_charge_declines_invoice_id_fkey type=f def=FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE RESTRICT
 CONSTRAINT recurring_charge_declines.recurring_charge_declines_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT referral_codes.referral_codes_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id)
 CONSTRAINT referral_codes.referral_codes_center_id_key type=u def=UNIQUE (center_id)
 CONSTRAINT referral_codes.referral_codes_code_key type=u def=UNIQUE (code)
 CONSTRAINT referral_codes.referral_codes_pkey type=p def=PRIMARY KEY (id)
+CONSTRAINT referral_commissions.referral_commissions_money_nonneg type=c def=CHECK (((commission_amount >= (0)::numeric) AND (referred_plan_fee >= (0)::numeric)))
 CONSTRAINT referral_commissions.referral_commissions_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT referral_commissions.referral_commissions_referral_id_fkey type=f def=FOREIGN KEY (referral_id) REFERENCES referrals(id)
 CONSTRAINT referral_commissions.referral_commissions_referred_center_id_fkey type=f def=FOREIGN KEY (referred_center_id) REFERENCES centers(id)
 CONSTRAINT referral_commissions.referral_commissions_referrer_center_id_fkey type=f def=FOREIGN KEY (referrer_center_id) REFERENCES centers(id)
 CONSTRAINT referral_commissions.referral_commissions_status_check type=c def=CHECK ((status = ANY (ARRAY['hold'::text, 'withdrawable'::text, 'paid'::text, 'forfeited'::text])))
+CONSTRAINT referral_reward_records.referral_reward_records_money_nonneg type=c def=CHECK (((base_amount >= (0)::numeric) AND (reward_amount >= (0)::numeric)))
 CONSTRAINT referral_reward_records.referral_reward_records_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT referral_reward_records.referral_reward_records_referral_id_fkey type=f def=FOREIGN KEY (referral_id) REFERENCES referrals(id) ON DELETE CASCADE
 CONSTRAINT referral_reward_records.referral_reward_records_referred_center_id_fkey type=f def=FOREIGN KEY (referred_center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT referral_reward_records.referral_reward_records_referrer_center_id_fkey type=f def=FOREIGN KEY (referrer_center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT referral_reward_records.referral_reward_records_status_check type=c def=CHECK ((status = ANY (ARRAY['pending'::text, 'held'::text, 'available'::text, 'paid'::text])))
+CONSTRAINT referral_rewards.referral_rewards_money_nonneg type=c def=CHECK (((first_month_fee >= (0)::numeric) AND (reward_amount >= (0)::numeric)))
 CONSTRAINT referral_rewards.referral_rewards_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT referral_rewards.referral_rewards_referred_center_id_fkey type=f def=FOREIGN KEY (referred_center_id) REFERENCES centers(id)
 CONSTRAINT referral_rewards.referral_rewards_referring_center_id_fkey type=f def=FOREIGN KEY (referring_center_id) REFERENCES centers(id)
@@ -2153,7 +2182,8 @@ CONSTRAINT referrals.referrals_status_check type=c def=CHECK ((status = ANY (ARR
 CONSTRAINT reminder_settings.reminder_settings_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT reminder_settings.reminder_settings_center_id_key type=u def=UNIQUE (center_id)
 CONSTRAINT reminder_settings.reminder_settings_pkey type=p def=PRIMARY KEY (id)
-CONSTRAINT renewal_history.renewal_history_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT renewal_history.renewal_history_amount_paid_nonneg type=c def=CHECK ((amount_paid >= (0)::numeric))
+CONSTRAINT renewal_history.renewal_history_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE RESTRICT
 CONSTRAINT renewal_history.renewal_history_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT renewal_history.renewal_history_recorded_by_fkey type=f def=FOREIGN KEY (recorded_by) REFERENCES auth.users(id)
 CONSTRAINT renewal_reminders_sent.renewal_reminders_sent_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
@@ -2199,6 +2229,7 @@ CONSTRAINT sessions.sessions_kind_chk type=c def=CHECK ((kind = ANY (ARRAY['cent
 CONSTRAINT sessions.sessions_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT sessions.sessions_schedule_id_fkey type=f def=FOREIGN KEY (schedule_id) REFERENCES schedule_slots(id) ON DELETE SET NULL
 CONSTRAINT sessions.sessions_status_chk type=c def=CHECK ((status = ANY (ARRAY['scheduled'::text, 'live'::text, 'finished'::text, 'cancelled'::text])))
+CONSTRAINT staff.staff_base_salary_nonneg type=c def=CHECK ((base_salary >= (0)::numeric))
 CONSTRAINT staff.staff_phone_key type=u def=UNIQUE (phone)
 CONSTRAINT staff.staff_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT staff.staff_reports_to_fkey type=f def=FOREIGN KEY (reports_to) REFERENCES staff(id)
@@ -2227,10 +2258,12 @@ CONSTRAINT student_group_notes.student_group_notes_group_id_fkey type=f def=FORE
 CONSTRAINT student_group_notes.student_group_notes_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT student_group_notes.student_group_notes_student_group_uniq type=u def=UNIQUE (student_id, group_id)
 CONSTRAINT student_group_notes.student_group_notes_student_id_fkey type=f def=FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+CONSTRAINT student_group_notes.student_group_notes_teacher_id_fkey type=f def=FOREIGN KEY (teacher_id) REFERENCES teacher_profiles(user_id) ON DELETE RESTRICT
 CONSTRAINT student_groups.student_groups_approval_mode_chk type=c def=CHECK (((approval_mode IS NULL) OR (approval_mode = ANY (ARRAY['auto_cap'::text, 'manual'::text]))))
 CONSTRAINT student_groups.student_groups_capacity_cap_chk type=c def=CHECK (((capacity_cap IS NULL) OR (capacity_cap > 0)))
 CONSTRAINT student_groups.student_groups_center_cut_valid type=c def=CHECK (((center_cut_egp >= (0)::numeric) AND ((fee_per_class IS NULL) OR (center_cut_egp <= fee_per_class))))
 CONSTRAINT student_groups.student_groups_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT student_groups.student_groups_fee_nonneg type=c def=CHECK (((fee IS NULL) OR (fee >= (0)::numeric)))
 CONSTRAINT student_groups.student_groups_kind_chk type=c def=CHECK ((kind = ANY (ARRAY['center'::text, 'private'::text])))
 CONSTRAINT student_groups.student_groups_kind_shape_chk type=c def=CHECK ((((kind = 'center'::text) AND (center_id IS NOT NULL)) OR ((kind = 'private'::text) AND (fee_per_class IS NOT NULL) AND (approval_mode IS NOT NULL))))
 CONSTRAINT student_groups.student_groups_pkey type=p def=PRIMARY KEY (id)
@@ -2243,6 +2276,7 @@ CONSTRAINT student_notes.student_notes_student_id_fkey type=f def=FOREIGN KEY (s
 CONSTRAINT students.students_alert_status_check type=c def=CHECK ((alert_status = ANY (ARRAY['overdue'::text, NULL::text])))
 CONSTRAINT students.students_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT students.students_lifecycle_status_check type=c def=CHECK ((lifecycle_status = ANY (ARRAY['enrolled'::text, 'active'::text, 'at_risk'::text, 'inactive'::text, 'churned'::text])))
+CONSTRAINT students.students_money_nonneg type=c def=CHECK ((((fee IS NULL) OR (fee >= (0)::numeric)) AND ((balance_alert_threshold IS NULL) OR (balance_alert_threshold >= (0)::numeric))))
 CONSTRAINT students.students_origin_chk type=c def=CHECK (((origin IS NULL) OR (origin = ANY (ARRAY['self_link'::text, 'walk_in'::text, 'inherited'::text, 'import'::text]))))
 CONSTRAINT students.students_payment_status_check type=c def=CHECK ((payment_status = ANY (ARRAY['paid'::text, 'unpaid'::text, 'pending'::text])))
 CONSTRAINT students.students_pkey type=p def=PRIMARY KEY (id)
@@ -2251,6 +2285,7 @@ CONSTRAINT students.students_sibling_family_id_fkey type=f def=FOREIGN KEY (sibl
 CONSTRAINT students.students_subject_id_fkey type=f def=FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE SET NULL
 CONSTRAINT students.students_waitlist_group_id_fkey type=f def=FOREIGN KEY (waitlist_group_id) REFERENCES student_groups(id) ON DELETE SET NULL
 CONSTRAINT subjects.subjects_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT subjects.subjects_monthly_fee_nonneg type=c def=CHECK (((monthly_fee IS NULL) OR (monthly_fee >= (0)::numeric)))
 CONSTRAINT subjects.subjects_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT subscriptions.subscriptions_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT subscriptions.subscriptions_pkey type=p def=PRIMARY KEY (id)
@@ -2285,6 +2320,7 @@ CONSTRAINT teacher_subscriptions.teacher_subscriptions_nonneg_chk type=c def=CHE
 CONSTRAINT teacher_subscriptions.teacher_subscriptions_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT teacher_subscriptions.teacher_subscriptions_plan_key_chk type=c def=CHECK ((plan_key = ANY (ARRAY['teacher_standard'::text, 'teacher_pro'::text, 'teacher_scale'::text])))
 CONSTRAINT teacher_subscriptions.teacher_subscriptions_status_chk type=c def=CHECK ((status = ANY (ARRAY['trialing'::text, 'active'::text, 'past_due'::text, 'suspended'::text, 'cancelled'::text])))
+CONSTRAINT teacher_subscriptions.teacher_subscriptions_summer_first_invoice_id_fkey type=f def=FOREIGN KEY (summer_first_invoice_id) REFERENCES invoices(id) ON DELETE RESTRICT
 CONSTRAINT teacher_subscriptions.teacher_subscriptions_summer_status_check type=c def=CHECK (((summer_status IS NULL) OR (summer_status = ANY (ARRAY['enrolled'::text, 'invoiced'::text, 'paid'::text]))))
 CONSTRAINT teacher_subscriptions.teacher_subscriptions_teacher_id_fkey type=f def=FOREIGN KEY (teacher_id) REFERENCES teacher_profiles(user_id) ON DELETE CASCADE
 CONSTRAINT teacher_subscriptions.teacher_subscriptions_teacher_id_key type=u def=UNIQUE (teacher_id)
@@ -2304,10 +2340,13 @@ CONSTRAINT transactions.transactions_payer_type_chk type=c def=CHECK (((payer_ty
 CONSTRAINT transactions.transactions_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT transactions.transactions_session_id_fkey type=f def=FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE SET NULL
 CONSTRAINT transactions.transactions_settlement_status_chk type=c def=CHECK ((settlement_status = ANY (ARRAY['not_applicable'::text, 'in_transit'::text, 'settled'::text, 'failed'::text])))
+CONSTRAINT transactions.transactions_snap_processing_flat_nonneg type=c def=CHECK ((snap_processing_flat >= (0)::numeric))
 CONSTRAINT transactions.transactions_status_chk type=c def=CHECK ((status = ANY (ARRAY['pending'::text, 'paid'::text, 'failed'::text, 'cancelled'::text])))
 CONSTRAINT transactions.transactions_student_id_fkey type=f def=FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE RESTRICT
 CONSTRAINT transactions.transactions_teacher_id_fkey type=f def=FOREIGN KEY (teacher_id) REFERENCES teacher_profiles(user_id) ON DELETE RESTRICT
-CONSTRAINT upgrade_log.upgrade_log_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT upgrade_log.upgrade_log_amount_charged_nonneg type=c def=CHECK ((amount_charged >= (0)::numeric))
+CONSTRAINT upgrade_log.upgrade_log_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE RESTRICT
+CONSTRAINT upgrade_log.upgrade_log_center_id_paymob_order_id_key type=u def=UNIQUE (center_id, paymob_order_id)
 CONSTRAINT upgrade_log.upgrade_log_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT users.users_center_check type=c def=CHECK ((((role = ANY (ARRAY['owner'::text, 'admin'::text, 'assistant'::text])) AND (center_id IS NOT NULL)) OR ((role = ANY (ARRAY['super_admin'::text, 'teacher'::text])) AND (center_id IS NULL))))
 CONSTRAINT users.users_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
@@ -2322,6 +2361,7 @@ CONSTRAINT wa_conversations.wa_conversations_center_id_fkey type=f def=FOREIGN K
 CONSTRAINT wa_conversations.wa_conversations_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT wa_inactivity_alerts.wa_inactivity_alerts_alert_type_check type=c def=CHECK ((alert_type = ANY (ARRAY['day3'::text, 'day7'::text, 'day14'::text])))
 CONSTRAINT wa_inactivity_alerts.wa_inactivity_alerts_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT wa_inactivity_alerts.wa_inactivity_alerts_monthly_fee_nonneg type=c def=CHECK (((monthly_fee IS NULL) OR (monthly_fee >= (0)::numeric)))
 CONSTRAINT wa_inactivity_alerts.wa_inactivity_alerts_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT wa_keyword_routes.wa_keyword_routes_match_type_check type=c def=CHECK ((match_type = ANY (ARRAY['any'::text, 'all'::text, 'exact'::text])))
 CONSTRAINT wa_keyword_routes.wa_keyword_routes_pkey type=p def=PRIMARY KEY (id)
@@ -2329,6 +2369,7 @@ CONSTRAINT wa_message_queue.wa_message_queue_center_id_fkey type=f def=FOREIGN K
 CONSTRAINT wa_message_queue.wa_message_queue_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT wa_message_queue.wa_message_queue_status_check type=c def=CHECK ((status = ANY (ARRAY['pending'::text, 'sent'::text, 'delivered'::text, 'read'::text, 'failed'::text])))
 CONSTRAINT wa_messages.wa_messages_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT wa_messages.wa_messages_cost_nonneg type=c def=CHECK ((cost >= (0)::numeric))
 CONSTRAINT wa_messages.wa_messages_message_type_check type=c def=CHECK ((message_type = ANY (ARRAY['individual'::text, 'group'::text, 'check_up'::text, 'reminder'::text])))
 CONSTRAINT wa_messages.wa_messages_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT wa_messages.wa_messages_status_check type=c def=CHECK ((status = ANY (ARRAY['sent'::text, 'delivered'::text, 'read'::text, 'failed'::text])))
@@ -2363,15 +2404,18 @@ CONSTRAINT whatsapp_messages.whatsapp_messages_sent_by_fkey type=f def=FOREIGN K
 CONSTRAINT whatsapp_messages.whatsapp_messages_student_id_fkey type=f def=FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE SET NULL
 CONSTRAINT whatsapp_subscriptions.whatsapp_subscriptions_center_id_billing_month_key type=u def=UNIQUE (center_id, billing_month)
 CONSTRAINT whatsapp_subscriptions.whatsapp_subscriptions_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT whatsapp_subscriptions.whatsapp_subscriptions_money_nonneg type=c def=CHECK ((((group_monthly_charge IS NULL) OR (group_monthly_charge >= (0)::numeric)) AND ((group_overage_charge IS NULL) OR (group_overage_charge >= (0)::numeric)) AND ((individual_monthly_charge IS NULL) OR (individual_monthly_charge >= (0)::numeric)) AND ((individual_overage_charge IS NULL) OR (individual_overage_charge >= (0)::numeric)) AND ((parent_monthly_charge IS NULL) OR (parent_monthly_charge >= (0)::numeric))))
 CONSTRAINT whatsapp_subscriptions.whatsapp_subscriptions_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT whatsapp_subscriptions.whatsapp_subscriptions_status_check type=c def=CHECK ((status = ANY (ARRAY['active'::text, 'suspended'::text])))
 CONSTRAINT whatsapp_usage.whatsapp_usage_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT whatsapp_usage.whatsapp_usage_group_id_fkey type=f def=FOREIGN KEY (group_id) REFERENCES student_groups(id) ON DELETE SET NULL
 CONSTRAINT whatsapp_usage.whatsapp_usage_message_type_check type=c def=CHECK ((message_type = ANY (ARRAY['individual'::text, 'group'::text, 'check_up'::text])))
+CONSTRAINT whatsapp_usage.whatsapp_usage_money_nonneg type=c def=CHECK ((((meta_cost IS NULL) OR (meta_cost >= (0)::numeric)) AND ((overage_charge IS NULL) OR (overage_charge >= (0)::numeric))))
 CONSTRAINT whatsapp_usage.whatsapp_usage_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT whatsapp_usage.whatsapp_usage_status_check type=c def=CHECK ((status = ANY (ARRAY['sent'::text, 'delivered'::text, 'failed'::text, 'read'::text])))
 CONSTRAINT whatsapp_usage.whatsapp_usage_student_id_fkey type=f def=FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE SET NULL
 CONSTRAINT withdrawal_requests.withdrawal_requests_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT withdrawal_requests.withdrawal_requests_money_nonneg type=c def=CHECK (((cash_amount >= (0)::numeric) AND (credits_deducted >= (0)::numeric) AND (fee_amount >= (0)::numeric)))
 CONSTRAINT withdrawal_requests.withdrawal_requests_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT withdrawal_requests.withdrawal_requests_processed_by_fkey type=f def=FOREIGN KEY (processed_by) REFERENCES admin_users(id)
 CONSTRAINT withdrawal_requests.withdrawal_requests_status_check type=c def=CHECK ((status = ANY (ARRAY['pending'::text, 'paid'::text, 'rejected'::text])))
@@ -2736,7 +2780,7 @@ POLICY centers.centers_select_own cmd=SELECT permissive=PERMISSIVE roles=authent
 POLICY ceo_action_queue.Super admin manages action queue cmd=ALL permissive=PERMISSIVE roles=public using=(EXISTS ( SELECT 1 FROM users WHERE ((users.id = auth.uid()) AND (users.role = 'super_admin'::text)))) check=∅
 POLICY combined_payment_sessions.center_read_own_payment_sessions cmd=SELECT permissive=PERMISSIVE roles=authenticated using=(center_id = ( SELECT users.center_id FROM users WHERE (users.id = auth.uid()) LIMIT 1)) check=∅
 POLICY combined_payment_sessions.service_role_all_combined_sessions cmd=ALL permissive=PERMISSIVE roles=service_role using=true check=∅
-POLICY commission_audit_log.commission_audit_log_super_admin_all cmd=ALL permissive=PERMISSIVE roles=public using=(EXISTS ( SELECT 1 FROM admin_users WHERE ((admin_users.id = auth.uid()) AND (admin_users.role = 'super_admin'::text)))) check=∅
+POLICY commission_audit_log.commission_audit_log_super_admin_select cmd=SELECT permissive=PERMISSIVE roles=public using=(EXISTS ( SELECT 1 FROM admin_users WHERE ((admin_users.id = auth.uid()) AND (admin_users.role = 'super_admin'::text)))) check=∅
 POLICY commission_payouts.commission_payouts_super_admin_all cmd=ALL permissive=PERMISSIVE roles=public using=(EXISTS ( SELECT 1 FROM admin_users WHERE ((admin_users.id = auth.uid()) AND (admin_users.role = 'super_admin'::text)))) check=∅
 POLICY commissions.commissions_super_admin_all cmd=ALL permissive=PERMISSIVE roles=public using=(EXISTS ( SELECT 1 FROM admin_users WHERE ((admin_users.id = auth.uid()) AND (admin_users.role = 'super_admin'::text)))) check=∅
 POLICY content_access.content_access_insert cmd=INSERT permissive=PERMISSIVE roles=public using=∅ check=(((EXISTS ( SELECT 1 FROM content_items ci WHERE ((ci.id = content_access.content_item_id) AND (ci.owner_teacher_id = auth.uid())))) AND (NOT is_teacher_private_locked())) OR (EXISTS ( SELECT 1 FROM content_items ci WHERE ((ci.id = content_access.content_item_id) AND (ci.owner_center_id = get_auth_center_id()) AND has_center_role(ARRAY['owner'::text, 'admin'::text])))))
@@ -2914,6 +2958,7 @@ TRIGGER set_referral_code ON centers def=CREATE TRIGGER set_referral_code BEFORE
 TRIGGER trg_chq_prevent_center_escalation ON centers def=CREATE TRIGGER trg_chq_prevent_center_escalation BEFORE UPDATE ON public.centers FOR EACH ROW WHEN ((auth.uid() IS NOT NULL)) EXECUTE FUNCTION chq_prevent_center_escalation()
 TRIGGER trigger_update_billing_amount ON centers def=CREATE TRIGGER trigger_update_billing_amount BEFORE INSERT OR UPDATE OF plan, billing_period, billing_cycle_start ON public.centers FOR EACH ROW EXECUTE FUNCTION update_billing_amount()
 TRIGGER ceo_action_queue_updated_at ON ceo_action_queue def=CREATE TRIGGER ceo_action_queue_updated_at BEFORE UPDATE ON public.ceo_action_queue FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()
+TRIGGER commission_audit_log_no_update_delete ON commission_audit_log def=CREATE TRIGGER commission_audit_log_no_update_delete BEFORE DELETE OR UPDATE ON public.commission_audit_log FOR EACH ROW EXECUTE FUNCTION append_only_block_mutations()
 TRIGGER payout_status_guard ON commission_payouts def=CREATE TRIGGER payout_status_guard BEFORE UPDATE ON public.commission_payouts FOR EACH ROW EXECUTE FUNCTION enforce_payout_status_transition()
 TRIGGER trg_demo_requests_updated_at ON demo_requests def=CREATE TRIGGER trg_demo_requests_updated_at BEFORE UPDATE ON public.demo_requests FOR EACH ROW EXECUTE FUNCTION set_demo_requests_updated_at()
 TRIGGER trg_guard_enrollments_lifecycle ON enrollments def=CREATE TRIGGER trg_guard_enrollments_lifecycle BEFORE UPDATE ON public.enrollments FOR EACH ROW EXECUTE FUNCTION guard_enrollments_lifecycle()
@@ -2942,6 +2987,7 @@ TRIGGER trg_guard_transactions_lifecycle ON transactions def=CREATE TRIGGER trg_
 TRIGGER trg_chq_prevent_user_escalation ON users def=CREATE TRIGGER trg_chq_prevent_user_escalation BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION chq_prevent_user_escalation()
 FUNCTION accept_teacher_center_invite(p_teacher_user_id uuid, p_center_id uuid) returns=teacher_center lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=a41f063a1760e2c70352f100f31cb830
 FUNCTION append_commission_pause(p_center_id uuid) returns=void lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=3f31892e9a385e707e0ec32c2e71a8e1
+FUNCTION append_only_block_mutations() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=48e2ab70d43dbfd279c67e9b8022f353
 FUNCTION apply_center_subscription_transition(p_subscription_id uuid, p_new_status text, p_actor_id uuid) returns=subscriptions lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=ab2efb0ed1da59ebc9bc232301bedd0b
 FUNCTION apply_chargeback_transition(p_chargeback_id uuid, p_new_status text, p_actor_id uuid) returns=chargebacks lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=0b419fc1fb70651a18b0ede89513ee05
 FUNCTION apply_enrollment_transition(p_enrollment_id uuid, p_new_status text, p_actor_id uuid) returns=enrollments lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=7939ad870b52e604be2b83e7ad1ff388
@@ -5904,6 +5950,9 @@ TABLE_GRANT withdrawal_requests grantee=service_role priv=TRUNCATE grantable=NO
 TABLE_GRANT withdrawal_requests grantee=service_role priv=UPDATE grantable=NO
 ROUTINE_GRANT accept_teacher_center_invite grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT append_commission_pause grantee=service_role priv=EXECUTE grantable=NO
+ROUTINE_GRANT append_only_block_mutations grantee=anon priv=EXECUTE grantable=NO
+ROUTINE_GRANT append_only_block_mutations grantee=authenticated priv=EXECUTE grantable=NO
+ROUTINE_GRANT append_only_block_mutations grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT apply_center_subscription_transition grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT apply_chargeback_transition grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT apply_enrollment_transition grantee=service_role priv=EXECUTE grantable=NO
