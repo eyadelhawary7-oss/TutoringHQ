@@ -6,7 +6,7 @@ export default function SentryTestPage() {
   const t = useTranslations('sentryTest');
 
   function throwError() {
-    throw new Error('🧪 Test error from CenterHQ');
+    throw new Error('🧪 Test error from TutoringHQ');
   }
 
   return (
