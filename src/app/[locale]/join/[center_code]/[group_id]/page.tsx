@@ -39,6 +39,7 @@ export default function JoinPage({ params }: PageProps) {
   const [studentPhone, setStudentPhone] = useState('');
   const [parentPhone, setParentPhone] = useState('');
   const [notes, setNotes] = useState('');
+  const [parentConsent, setParentConsent] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -104,6 +105,10 @@ export default function JoinPage({ params }: PageProps) {
       setError(t('phoneRequired'));
       return;
     }
+    if (!parentConsent) {
+      setError(t('consentRequired'));
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -120,6 +125,7 @@ export default function JoinPage({ params }: PageProps) {
           student_phone: studentPhone.trim(),
           parent_phone: parentPhone.trim() || null,
           notes: notes.trim() || null,
+          parent_consent: parentConsent,
         }),
       });
 
@@ -311,6 +317,26 @@ export default function JoinPage({ params }: PageProps) {
                   />
                 </div>
 
+                <label
+                  htmlFor="join-parent-consent"
+                  className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] p-3"
+                >
+                  <input
+                    id="join-parent-consent"
+                    type="checkbox"
+                    checked={parentConsent}
+                    onChange={(e) => {
+                      setParentConsent(e.target.checked);
+                      setError('');
+                    }}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-teal)]"
+                    required
+                  />
+                  <span className="text-xs leading-relaxed text-[var(--color-text-secondary)]">
+                    {t('consentLabel')} <span className="text-[var(--color-teal)]">*</span>
+                  </span>
+                </label>
+
                 {error ? (
                   <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-500 dark:text-red-300">
                     {error}
@@ -319,7 +345,7 @@ export default function JoinPage({ params }: PageProps) {
 
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || !parentConsent}
                   className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-teal)] px-4 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
                 >
                   {submitting ? (

@@ -1402,6 +1402,7 @@ COLUMN students.grade_level ord=34 type=text notnull=false default=∅
 COLUMN students.is_guest ord=35 type=boolean notnull=true default=false
 COLUMN students.guardian_consent_confirmed_at ord=36 type=timestamp with time zone notnull=false default=∅
 COLUMN students.guardian_consent_confirmed_by ord=37 type=uuid notnull=false default=∅
+COLUMN students.parent_self_enroll_consent_at ord=38 type=timestamp with time zone notnull=false default=∅
 COLUMN subjects.id ord=1 type=uuid notnull=true default=uuid_generate_v4()
 COLUMN subjects.center_id ord=2 type=uuid notnull=true default=∅
 COLUMN subjects.name ord=3 type=text notnull=true default=∅
