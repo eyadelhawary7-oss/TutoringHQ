@@ -9,6 +9,7 @@ import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
 import { readRawBodyWithLimit, ValidationError } from '@/lib/validate';
 import { hmacSha256Hex, timingSafeEqualUtf8 } from '@/lib/verifyHmac';
+import { newParentPortalToken, getParentPortalLifetimeDays } from '@/lib/parentPortalToken';
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
@@ -353,20 +354,23 @@ async function processWebhookPayload(body: Record<string, unknown>): Promise<voi
                 .eq('parent_consent_given', false);
               const list = (toConsent ?? []) as { id: string; center_id: string }[];
               const now = new Date().toISOString();
+              // H6: lifetime from platform_config (interim 30-day default),
+              // no longer a hard-coded 1 year.
+              const lifetimeDays = await getParentPortalLifetimeDays(admin);
               const expiresAt = new Date();
-              expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+              expiresAt.setDate(expiresAt.getDate() + lifetimeDays);
               for (const st of list) {
                 await admin.from('students').update({
                   parent_consent_given: true,
                   parent_consent_at: now,
                   parent_phone_verified: true,
                 }).eq('id', st.id);
-                const token = Array.from(crypto.getRandomValues(new Uint8Array(16)))
-                  .map((b) => b.toString(16).padStart(2, '0'))
-                  .join('');
+                // H6: store only the hash; the raw token would go in the portal
+                // link sent to the parent (link delivery is a separate flow).
+                const { hash } = newParentPortalToken();
                 await admin.from('parent_portal_tokens').insert({
                   student_id: st.id,
-                  token,
+                  token_hash: hash,
                   expires_at: expiresAt.toISOString(),
                 });
               }

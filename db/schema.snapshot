@@ -976,9 +976,10 @@ COLUMN parent_pack_monthly_counts.opted_in_at ord=6 type=timestamp with time zon
 COLUMN parent_pack_monthly_counts.opted_out_at ord=7 type=timestamp with time zone notnull=false default=∅
 COLUMN parent_portal_tokens.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN parent_portal_tokens.student_id ord=2 type=uuid notnull=true default=∅
-COLUMN parent_portal_tokens.token ord=3 type=text notnull=true default=∅
-COLUMN parent_portal_tokens.expires_at ord=4 type=timestamp with time zone notnull=true default=∅
-COLUMN parent_portal_tokens.created_at ord=5 type=timestamp with time zone notnull=false default=now()
+COLUMN parent_portal_tokens.expires_at ord=3 type=timestamp with time zone notnull=true default=∅
+COLUMN parent_portal_tokens.created_at ord=4 type=timestamp with time zone notnull=false default=now()
+COLUMN parent_portal_tokens.token_hash ord=5 type=text notnull=true default=∅
+COLUMN parent_portal_tokens.revoked_at ord=6 type=timestamp with time zone notnull=false default=∅
 COLUMN payg_rates.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN payg_rates.min_students ord=2 type=integer notnull=true default=∅
 COLUMN payg_rates.max_students ord=3 type=integer notnull=false default=∅
@@ -2095,7 +2096,6 @@ CONSTRAINT parent_pack_monthly_counts.parent_pack_monthly_counts_pkey type=p def
 CONSTRAINT parent_pack_monthly_counts.parent_pack_monthly_counts_student_id_fkey type=f def=FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
 CONSTRAINT parent_portal_tokens.parent_portal_tokens_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT parent_portal_tokens.parent_portal_tokens_student_id_fkey type=f def=FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
-CONSTRAINT parent_portal_tokens.parent_portal_tokens_token_key type=u def=UNIQUE (token)
 CONSTRAINT payg_rates.payg_rates_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT payg_rates.payg_rates_price_per_student_nonneg type=c def=CHECK ((price_per_student >= (0)::numeric))
 CONSTRAINT payments.payments_amount_nonneg type=c def=CHECK ((amount >= (0)::numeric))
@@ -2584,7 +2584,7 @@ INDEX idx_ppmc_center_period ON parent_pack_monthly_counts def=CREATE INDEX idx_
 INDEX idx_ppmc_student ON parent_pack_monthly_counts def=CREATE INDEX idx_ppmc_student ON public.parent_pack_monthly_counts USING btree (student_id)
 INDEX idx_parent_portal_tokens_expires ON parent_portal_tokens def=CREATE INDEX idx_parent_portal_tokens_expires ON public.parent_portal_tokens USING btree (expires_at)
 INDEX idx_parent_portal_tokens_student ON parent_portal_tokens def=CREATE INDEX idx_parent_portal_tokens_student ON public.parent_portal_tokens USING btree (student_id)
-INDEX idx_parent_portal_tokens_token ON parent_portal_tokens def=CREATE INDEX idx_parent_portal_tokens_token ON public.parent_portal_tokens USING btree (token)
+INDEX parent_portal_tokens_token_hash_key ON parent_portal_tokens def=CREATE UNIQUE INDEX parent_portal_tokens_token_hash_key ON public.parent_portal_tokens USING btree (token_hash)
 INDEX idx_payments_center_date ON payments def=CREATE INDEX idx_payments_center_date ON public.payments USING btree (center_id, paid_at)
 INDEX idx_payments_center_paid ON payments def=CREATE INDEX idx_payments_center_paid ON public.payments USING btree (center_id, paid_at DESC)
 INDEX idx_payments_center_paid_at ON payments def=CREATE INDEX idx_payments_center_paid_at ON public.payments USING btree (center_id, paid_at DESC)
