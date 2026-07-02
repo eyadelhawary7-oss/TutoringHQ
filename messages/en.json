@@ -951,7 +951,8 @@
     "yourCode": "Your Code",
     "yourSchedule": "Your Schedule",
     "notAuthenticated": "Not authenticated",
-    "invalidPin": "Invalid PIN"
+    "invalidPin": "Invalid PIN",
+    "close": "Close"
   },
   "emptyStates": {
     "students": {
@@ -4832,7 +4833,20 @@
     "demoRequestsEmpty": "No demo requests yet",
     "errors": {
       "forbidden": "You don't have permission to perform this action."
-    }
+    },
+    "privacyRequestsNav": "Privacy requests",
+    "privacyRequestsTitle": "Data-rights requests",
+    "privacyRequestsSubtitle": "PDPL data-subject requests. Each is due within 30 days of submission.",
+    "privacyRequestsEmpty": "No requests yet.",
+    "privacyColRequester": "Requester",
+    "privacyColTypes": "Types",
+    "privacyColCreated": "Received",
+    "privacyColDue": "Due",
+    "privacyColStatus": "Status",
+    "privacyFindStudent": "Find student",
+    "privacyNoStudentMatch": "No student matched this phone.",
+    "privacyAnonymize": "Anonymize",
+    "privacyAnonymizeConfirm": "Permanently strip this student's personal data (name, phone, parent phone, notes) and set them inactive? Financial records are kept without the identity. This cannot be undone."
   },
   "notFound": {
     "heading": "Page Not Found",

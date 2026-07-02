@@ -951,7 +951,8 @@
     "yourCode": "Your Code",
     "yourSchedule": "Your الجدول",
     "notAuthenticated": "غير مسجّل الدخول",
-    "invalidPin": "رمز PIN غير صحيح"
+    "invalidPin": "رمز PIN غير صحيح",
+    "close": "إغلاق"
   },
   "emptyStates": {
     "students": {
@@ -3012,7 +3013,20 @@
     "demoRequestsEmpty": "لا توجد طلبات عرض توضيحي بعد",
     "errors": {
       "forbidden": "ليس لديك صلاحية لتنفيذ هذا الإجراء."
-    }
+    },
+    "privacyRequestsNav": "طلبات الخصوصية",
+    "privacyRequestsTitle": "طلبات حقوق البيانات",
+    "privacyRequestsSubtitle": "طلبات أصحاب البيانات وفق قانون حماية البيانات. يجب معالجة كل طلب خلال ٣٠ يومًا من تقديمه.",
+    "privacyRequestsEmpty": "لا توجد طلبات بعد.",
+    "privacyColRequester": "مقدّم الطلب",
+    "privacyColTypes": "النوع",
+    "privacyColCreated": "تاريخ الاستلام",
+    "privacyColDue": "الموعد النهائي",
+    "privacyColStatus": "الحالة",
+    "privacyFindStudent": "البحث عن الطالب",
+    "privacyNoStudentMatch": "لا يوجد طالب مطابق لهذا الرقم.",
+    "privacyAnonymize": "إخفاء الهوية",
+    "privacyAnonymizeConfirm": "هل تريد حذف البيانات الشخصية لهذا الطالب نهائيًا (الاسم، الهاتف، هاتف ولي الأمر، الملاحظات) وتعطيله؟ يتم الاحتفاظ بالسجلات المالية بدون الهوية. لا يمكن التراجع عن هذا الإجراء."
   },
   "ceo": {
     "brandTitle": "TutoringHQ",

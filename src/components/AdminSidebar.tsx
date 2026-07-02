@@ -30,6 +30,7 @@ import {
   ChevronRight,
   Tag,
   GraduationCap,
+  ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { signOutToLogin } from '@/lib/auth/sign-out-client';
@@ -586,6 +587,14 @@ export function AdminSidebar({
           isActive: activeRoute?.includes('admin/internal-team') ?? false,
           canShow: canShowPermKey('internal_team'),
           href: '/admin/internal-team',
+        },
+        {
+          key: 'privacyRequests',
+          icon: ShieldCheck,
+          label: t('privacyRequestsNav'),
+          isActive: activeRoute?.includes('admin/privacy-requests') ?? false,
+          canShow: adminRole === 'super_admin',
+          href: '/admin/privacy-requests',
         },
       ],
     },

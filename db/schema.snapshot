@@ -169,7 +169,7 @@ COLUMN access_attempts.device_id ord=6 type=text notnull=false default=∅
 COLUMN access_attempts.by_user_id ord=7 type=uuid notnull=false default=∅
 COLUMN access_attempts.at ord=8 type=timestamp with time zone notnull=true default=now()
 COLUMN admin_alerts.id ord=1 type=uuid notnull=true default=gen_random_uuid()
-COLUMN admin_alerts.center_id ord=2 type=uuid notnull=true default=∅
+COLUMN admin_alerts.center_id ord=2 type=uuid notnull=false default=∅
 COLUMN admin_alerts.type ord=3 type=text notnull=true default=∅
 COLUMN admin_alerts.message ord=4 type=text notnull=true default=∅
 COLUMN admin_alerts.is_resolved ord=5 type=boolean notnull=false default=false
@@ -1772,7 +1772,7 @@ CONSTRAINT access_attempts.access_attempts_result_chk type=c def=CHECK ((result 
 CONSTRAINT access_attempts.access_attempts_session_id_fkey type=f def=FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE SET NULL
 CONSTRAINT admin_alerts.admin_alerts_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT admin_alerts.admin_alerts_pkey type=p def=PRIMARY KEY (id)
-CONSTRAINT admin_alerts.admin_alerts_type_check type=c def=CHECK ((type = ANY (ARRAY['critical_inactivity'::text, 'payment_overdue'::text, 'support_escalation'::text])))
+CONSTRAINT admin_alerts.admin_alerts_type_check type=c def=CHECK ((type = ANY (ARRAY['critical_inactivity'::text, 'payment_overdue'::text, 'support_escalation'::text, 'privacy_request'::text])))
 CONSTRAINT admin_payments.admin_payments_amount_nonneg type=c def=CHECK ((amount >= (0)::numeric))
 CONSTRAINT admin_payments.admin_payments_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id)
 CONSTRAINT admin_payments.admin_payments_pkey type=p def=PRIMARY KEY (id)
