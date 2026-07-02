@@ -307,6 +307,43 @@ export async function POST(request: Request) {
       );
     }
 
+    // Guardian-consent gate for center-side student creates (direct add + bulk
+    // import both land here as a students insert). The center is responsible for
+    // holding the guardian's consent to process the student's data; this records
+    // the confirmation as proof. The UI checkbox is NOT trusted on its own — the
+    // SERVER is the gate: a center caller (direct scope) must send
+    // `guardian_consent_confirmed === true` per row or the insert is rejected,
+    // and on success the server stamps who confirmed and when. Existing students
+    // are untouched (this only runs on insert). Super-admins (bypass scope) are
+    // exempt from the requirement but still get the proof recorded if they send
+    // the flag. The transient flag is always stripped before the DB write.
+    if (table === 'students' && op === 'insert') {
+      const nowIso = new Date().toISOString();
+      const rows = Array.isArray(effectiveData) ? effectiveData : [effectiveData];
+      for (const row of rows) {
+        if (!row || typeof row !== 'object') continue;
+        const r = row as Record<string, unknown>;
+        const confirmed = r.guardian_consent_confirmed === true;
+        delete r.guardian_consent_confirmed;
+        if (plan.kind === 'direct') {
+          if (!confirmed) {
+            return NextResponse.json(
+              {
+                error: 'Guardian consent confirmation is required to add a student',
+                code: 'GUARDIAN_CONSENT_REQUIRED',
+              },
+              { status: 403 },
+            );
+          }
+          r.guardian_consent_confirmed_at = nowIso;
+          r.guardian_consent_confirmed_by = user.id;
+        } else if (confirmed) {
+          r.guardian_consent_confirmed_at = nowIso;
+          r.guardian_consent_confirmed_by = user.id;
+        }
+      }
+    }
+
     let prevStudentPack: { parent_pack_opted_in: boolean | null; parent_phone: string | null } | null = null;
     if (table === 'students' && op === 'update' && filtersArr) {
       const idFilter = filtersArr.find(

@@ -158,6 +158,7 @@ export default function StudentsPage() {
   const router = useRouter();
   const tCommon = useTranslations('common');
   const tToast = useTranslations('toasts');
+  const tConsent = useTranslations('guardianConsent');
   const { user, hasPermission, refreshUser } = useUser();
   const canViewPayments =
     user?.role === 'owner' || user?.role === 'admin' || user?.role === 'super_admin' || hasPermission('can_view_payments');
@@ -186,6 +187,7 @@ export default function StudentsPage() {
     monthlyFee: '',
     groupId: '',
     parentPackOptIn: false,
+    guardianConsent: false,
   });
   const [showParentSectionAdd, setShowParentSectionAdd] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -929,6 +931,10 @@ export default function StudentsPage() {
       toast.error(ts('groupRequiredError'));
       return;
     }
+    if (!addForm.guardianConsent) {
+      toast.error(tConsent('required'));
+      return;
+    }
     setIsAdding(true);
     try {
       const selectedGroup = groups.find((g) => g.id === addForm.groupId);
@@ -949,6 +955,8 @@ export default function StudentsPage() {
         parent_pack_opted_in: optedIn,
         parent_consent_given: optedIn,
         parent_consent_at: optedIn ? new Date().toISOString() : null,
+        // Server verifies this and stamps guardian_consent_confirmed_at/_by.
+        guardian_consent_confirmed: addForm.guardianConsent,
       };
       const { data: inserted, error } = await dbInsert({
         table: 'students',
@@ -1004,7 +1012,7 @@ export default function StudentsPage() {
       }
       setStudents((prev) => [{ ...student, student_number: studentNumber } as Student, ...(prev ?? [])]);
       toast.success(ts('addStudentSuccess', { name: addForm.name.trim(), studentNumber: formatStudentNumberForDisplay(studentNumber) || studentNumber }));
-      setAddForm({ name: '', phone: '', parentPhone: '', subjectId: '', monthlyFee: '', groupId: '', parentPackOptIn: false });
+      setAddForm({ name: '', phone: '', parentPhone: '', subjectId: '', monthlyFee: '', groupId: '', parentPackOptIn: false, guardianConsent: false });
       setShowParentSectionAdd(false);
       setShowAddModal(false);
     } catch (err) {
@@ -1991,6 +1999,16 @@ export default function StudentsPage() {
                 )}
               </div>
               <p className="text-xs text-[var(--color-text-secondary)]">{ts('autoGenerateNumber')}</p>
+              <label className="flex items-start gap-2 cursor-pointer rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] p-3">
+                <input
+                  type="checkbox"
+                  required
+                  checked={addForm.guardianConsent}
+                  onChange={(e) => setAddForm((f) => ({ ...f, guardianConsent: e.target.checked }))}
+                  className="mt-0.5 rounded accent-teal-600"
+                />
+                <span className="text-sm text-[var(--color-text-primary)]">{tConsent('checkboxLabel')}</span>
+              </label>
               <div className="flex gap-2 justify-end mt-4">
                 <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-lg text-sm border border-border btn-press chq-focus">{tCommon('cancel')}</button>
                 <button type="submit" disabled={isAdding} className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 btn-press chq-focus" style={{ background: 'hsl(var(--primary))' }}>{isAdding ? tCommon('loading') : tCommon('save')}</button>

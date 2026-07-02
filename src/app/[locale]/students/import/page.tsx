@@ -39,6 +39,7 @@ export default function ImportStudentsPage() {
   const t = useTranslations('import');
   const tCommon = useTranslations('common');
   const tsStudents = useTranslations('students');
+  const tConsent = useTranslations('guardianConsent');
 
   const [step, setStep] = useState<ImportStep>('upload');
   const [parsedData, setParsedData] = useState<ParsedData | null>(null);
@@ -52,6 +53,7 @@ export default function ImportStudentsPage() {
   const [centerGroups, setCenterGroups] = useState<CenterGroup[]>([]);
   const [groupMapping, setGroupMapping] = useState<Record<string, string | null>>({});
   const [csvGroupOrder, setCsvGroupOrder] = useState<string[]>([]);
+  const [guardianConsent, setGuardianConsent] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const acceptedExtensions = ['.csv', '.xlsx', '.xls'];
@@ -281,6 +283,10 @@ export default function ImportStudentsPage() {
   const handleImport = async () => {
     const { inserts, memberGroupIds } = importPayloadAndMembers;
     if (!centerId || !userId || inserts.length === 0) return;
+    if (!guardianConsent) {
+      setError(tConsent('required'));
+      return;
+    }
     setIsLoading(true);
     setError('');
     setStep('importing');
@@ -288,7 +294,10 @@ export default function ImportStudentsPage() {
       let insertedTotal = 0;
       const batchSize = 50;
       for (let i = 0; i < inserts.length; i += batchSize) {
-        const batch = inserts.slice(i, i + batchSize);
+        // Server verifies this per row and stamps guardian_consent_confirmed_at/_by.
+        const batch = inserts
+          .slice(i, i + batchSize)
+          .map((row) => ({ ...row, guardian_consent_confirmed: true }));
         const batchMembers = memberGroupIds.slice(i, i + batchSize);
         const { data: inserted, error: insertError } = await dbInsert({
           table: 'students',
@@ -547,6 +556,15 @@ export default function ImportStudentsPage() {
                 </tbody>
               </table>
             </div>
+            <label className="flex items-start gap-2 cursor-pointer rounded-lg border border-border bg-[var(--color-surface-0)] p-3">
+              <input
+                type="checkbox"
+                checked={guardianConsent}
+                onChange={(e) => setGuardianConsent(e.target.checked)}
+                className="mt-0.5 rounded accent-teal-600"
+              />
+              <span className="text-sm text-[var(--color-text-primary)]">{tConsent('checkboxLabel')}</span>
+            </label>
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={() => setStep('resolveGroups')} className="px-4 py-2.5 rounded-lg text-sm border border-border">
                 {tCommon('back')}
@@ -554,7 +572,7 @@ export default function ImportStudentsPage() {
               <button
                 type="button"
                 onClick={handleImport}
-                disabled={previewRows.length === 0 || isLoading}
+                disabled={previewRows.length === 0 || isLoading || !guardianConsent}
                 className="flex-1 min-w-[8rem] py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
                 style={{ background: 'hsl(var(--primary))' }}
               >

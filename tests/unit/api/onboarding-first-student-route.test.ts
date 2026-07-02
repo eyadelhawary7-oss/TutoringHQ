@@ -8,6 +8,9 @@ const mockGetUser = vi.fn();
 const usersCoreMaybeSingle = vi.fn();
 const usersPermsMaybeSingle = vi.fn();
 const studentsInsertSingle = vi.fn();
+const studentsInsertMock = vi.fn((_payload?: Record<string, unknown>) => ({
+  select: () => ({ single: studentsInsertSingle }),
+}));
 
 vi.mock('@supabase/supabase-js', () => ({
   createClient: vi.fn((_url: string, key: string) => {
@@ -32,9 +35,7 @@ vi.mock('@supabase/supabase-js', () => ({
         }
         if (table === 'students') {
           return {
-            insert: () => ({
-              select: () => ({ single: studentsInsertSingle }),
-            }),
+            insert: studentsInsertMock,
           };
         }
         throw new Error(`unexpected table in onboarding/first-student test mock: ${table}`);
@@ -54,7 +55,7 @@ vi.mock('@sentry/nextjs', () => ({
 import { POST } from '@/app/api/onboarding/first-student/route';
 
 function makeRequest(
-  body: Record<string, unknown> = { name: 'Ali' },
+  body: Record<string, unknown> = { name: 'Ali', guardianConsentConfirmed: true },
   token = 'tok',
 ): import('next/server').NextRequest {
   return new Request('http://localhost/api/onboarding/first-student', {
@@ -75,6 +76,10 @@ beforeEach(() => {
   usersCoreMaybeSingle.mockReset();
   usersPermsMaybeSingle.mockReset();
   studentsInsertSingle.mockReset();
+  studentsInsertMock.mockReset();
+  studentsInsertMock.mockImplementation((_payload?: Record<string, unknown>) => ({
+    select: () => ({ single: studentsInsertSingle }),
+  }));
 
   mockGetUser.mockResolvedValue({
     data: { user: { id: USER_ID, email: '201112223344@centerhq.local' } },
@@ -165,7 +170,9 @@ describe('POST /api/onboarding/first-student — Rule 151 CORE+best-effort split
       error: null,
     });
 
-    const res = await POST(makeRequest({ name: 'Ali', phone: '+201111111111' }));
+    const res = await POST(
+      makeRequest({ name: 'Ali', phone: '+201111111111', guardianConsentConfirmed: true }),
+    );
     const json = await res.json();
 
     expect(res.status).toBe(200);
@@ -175,5 +182,45 @@ describe('POST /api/onboarding/first-student — Rule 151 CORE+best-effort split
       phone: '',
       student_number: 'TEST-00001',
     });
+  });
+
+  it('rejects with 403 when guardian consent is not confirmed (server is the gate)', async () => {
+    usersCoreMaybeSingle.mockResolvedValue({
+      data: { id: USER_ID, center_id: CENTER_ID },
+      error: null,
+    });
+    usersPermsMaybeSingle.mockResolvedValue({
+      data: { can_manage_students: true },
+      error: null,
+    });
+
+    const res = await POST(makeRequest({ name: 'Ali' })); // no guardianConsentConfirmed
+    const json = await res.json();
+
+    expect(res.status).toBe(403);
+    expect(json.code).toBe('GUARDIAN_CONSENT_REQUIRED');
+    expect(studentsInsertSingle).not.toHaveBeenCalled();
+  });
+
+  it('records guardian_consent_confirmed_at/_by on the inserted row', async () => {
+    usersCoreMaybeSingle.mockResolvedValue({
+      data: { id: USER_ID, center_id: CENTER_ID },
+      error: null,
+    });
+    usersPermsMaybeSingle.mockResolvedValue({
+      data: { can_manage_students: true },
+      error: null,
+    });
+
+    let capturedInsert: Record<string, unknown> | undefined;
+    studentsInsertMock.mockImplementation((payload?: Record<string, unknown>) => {
+      capturedInsert = payload;
+      return { select: () => ({ single: studentsInsertSingle }) };
+    });
+
+    const res = await POST(makeRequest({ name: 'Ali', guardianConsentConfirmed: true }));
+    expect(res.status).toBe(200);
+    expect(capturedInsert?.guardian_consent_confirmed_by).toBe(USER_ID);
+    expect(typeof capturedInsert?.guardian_consent_confirmed_at).toBe('string');
   });
 });

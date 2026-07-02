@@ -3098,6 +3098,10 @@
     "successMessage": "Your registration request has been sent to the center.",
     "footerNote": "The center will contact you to confirm your enrollment."
   },
+  "guardianConsent": {
+    "checkboxLabel": "I confirm I have the guardian's consent to process this student's data.",
+    "required": "Please confirm you have the guardian's consent before adding this student."
+  },
   "pendingEnrollments": {
     "title": "Pending Requests",
     "subtitle": "Review students who registered through your invite links.",

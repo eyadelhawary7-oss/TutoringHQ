@@ -28,12 +28,14 @@ export default function OnboardingPage() {
 
   const [studentName, setStudentName] = useState('');
   const [studentPhone, setStudentPhone] = useState('');
+  const [guardianConsent, setGuardianConsent] = useState(false);
   const [groupName, setGroupName] = useState('');
   const [groupSubject, setGroupSubject] = useState('');
 
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations('onboarding');
+  const tConsent = useTranslations('guardianConsent');
 
   const supabase = useMemo(
     () =>
@@ -188,6 +190,10 @@ export default function OnboardingPage() {
       setError('Name is required');
       return;
     }
+    if (!guardianConsent) {
+      setError(tConsent('required'));
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -198,6 +204,7 @@ export default function OnboardingPage() {
         body: JSON.stringify({
           name,
           phone: studentPhone.trim() || undefined,
+          guardianConsentConfirmed: guardianConsent,
         }),
       });
       const j = (await res.json().catch(() => ({}))) as {
@@ -367,6 +374,16 @@ export default function OnboardingPage() {
                 className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)] ps-3 pe-3 py-2"
               />
             </div>
+            <label className="flex items-start gap-2 cursor-pointer rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] p-3">
+              <input
+                type="checkbox"
+                required
+                checked={guardianConsent}
+                onChange={(e) => setGuardianConsent(e.target.checked)}
+                className="mt-0.5 rounded accent-teal-600"
+              />
+              <span className="text-sm text-[var(--color-text-primary)]">{tConsent('checkboxLabel')}</span>
+            </label>
             <button
               type="submit"
               disabled={loading}
