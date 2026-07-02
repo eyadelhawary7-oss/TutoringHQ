@@ -1,45 +1,33 @@
-import { createClient } from '@supabase/supabase-js';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { requireCenterAuth } from '@/lib/centerAuth';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
-    }
-
-    const authHeader = request.headers.get('Authorization');
-    const accessToken = authHeader?.replace('Bearer ', '');
-    if (!accessToken) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    // Verify user identity
-    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { persistSession: false },
-      global: { headers: { Authorization: `Bearer ${accessToken}` } },
-    });
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
+    // Authenticate the caller and resolve their authoritative center_id.
+    // Previously this route read `centerId` from the query string and queried
+    // `users` via the service-role client with no ownership check, so any
+    // authenticated user could read another center's staff by passing its id.
+    const auth = await requireCenterAuth(request);
+    if (!auth.ok) return auth.response;
 
     const { searchParams } = new URL(request.url);
-    const centerId = searchParams.get('centerId');
+    const requestedCenterId = searchParams.get('centerId');
     const excludeUserId = searchParams.get('excludeUserId');
 
-    if (!centerId) {
-      return NextResponse.json({ error: 'centerId is required' }, { status: 400 });
+    // Reject cross-center reads. A non-super-admin may only read their own
+    // center; a super-admin may target the requested center explicitly.
+    if (
+      requestedCenterId &&
+      requestedCenterId !== auth.centerId &&
+      !auth.isSuperAdmin
+    ) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const centerId =
+      auth.isSuperAdmin && requestedCenterId ? requestedCenterId : auth.centerId;
 
-    let query = supabaseAdmin
+    let query = auth.supabaseAdmin
       .from('users')
       .select('id, phone, role')
       .eq('center_id', centerId);

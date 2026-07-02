@@ -2741,7 +2741,7 @@ POLICY commission_payouts.commission_payouts_super_admin_all cmd=ALL permissive=
 POLICY commissions.commissions_super_admin_all cmd=ALL permissive=PERMISSIVE roles=public using=(EXISTS ( SELECT 1 FROM admin_users WHERE ((admin_users.id = auth.uid()) AND (admin_users.role = 'super_admin'::text)))) check=∅
 POLICY content_access.content_access_insert cmd=INSERT permissive=PERMISSIVE roles=public using=∅ check=(((EXISTS ( SELECT 1 FROM content_items ci WHERE ((ci.id = content_access.content_item_id) AND (ci.owner_teacher_id = auth.uid())))) AND (NOT is_teacher_private_locked())) OR (EXISTS ( SELECT 1 FROM content_items ci WHERE ((ci.id = content_access.content_item_id) AND (ci.owner_center_id = get_auth_center_id()) AND has_center_role(ARRAY['owner'::text, 'admin'::text])))))
 POLICY content_access.content_access_select cmd=SELECT permissive=PERMISSIVE roles=public using=(EXISTS ( SELECT 1 FROM content_items ci WHERE (ci.id = content_access.content_item_id))) check=∅
-POLICY content_access_log.content_access_log_select cmd=SELECT permissive=PERMISSIVE roles=public using=(EXISTS ( SELECT 1 FROM content_items ci WHERE (ci.id = content_access_log.content_item_id))) check=∅
+POLICY content_access_log.content_access_log_select cmd=SELECT permissive=PERMISSIVE roles=authenticated using=(EXISTS ( SELECT 1 FROM content_items ci WHERE ((ci.id = content_access_log.content_item_id) AND (ci.owner_center_id = get_auth_center_id())))) check=∅
 POLICY content_items.content_items_delete cmd=DELETE permissive=PERMISSIVE roles=public using=(((owner_teacher_id = auth.uid()) AND (NOT is_teacher_private_locked())) OR ((owner_center_id = get_auth_center_id()) AND has_center_role(ARRAY['owner'::text, 'admin'::text]))) check=∅
 POLICY content_items.content_items_insert cmd=INSERT permissive=PERMISSIVE roles=public using=∅ check=(((owner_teacher_id = auth.uid()) AND (NOT is_teacher_private_locked())) OR ((owner_center_id = get_auth_center_id()) AND has_center_role(ARRAY['owner'::text, 'admin'::text])))
 POLICY content_items.content_items_select cmd=SELECT permissive=PERMISSIVE roles=public using=(((owner_teacher_id = auth.uid()) AND (NOT is_teacher_private_locked())) OR ((owner_center_id = get_auth_center_id()) AND has_center_role(ARRAY['owner'::text, 'admin'::text]))) check=∅
@@ -3916,7 +3916,6 @@ TABLE_GRANT content_access grantee=service_role priv=UPDATE grantable=NO
 TABLE_GRANT content_access_log grantee=anon priv=DELETE grantable=NO
 TABLE_GRANT content_access_log grantee=anon priv=INSERT grantable=NO
 TABLE_GRANT content_access_log grantee=anon priv=REFERENCES grantable=NO
-TABLE_GRANT content_access_log grantee=anon priv=SELECT grantable=NO
 TABLE_GRANT content_access_log grantee=anon priv=TRIGGER grantable=NO
 TABLE_GRANT content_access_log grantee=anon priv=TRUNCATE grantable=NO
 TABLE_GRANT content_access_log grantee=anon priv=UPDATE grantable=NO

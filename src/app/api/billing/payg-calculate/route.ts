@@ -1,18 +1,12 @@
 /**
- * Calculate PAYG weekly charge for a center.
- * Can be called by cron or on-demand.
+ * Calculate the PAYG weekly charge for the authenticated caller's center.
+ * On-demand only; requires a valid center session (super-admins may target
+ * another center via a body `centerId`).
  */
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
 import { calculatePaygCharge } from '@/lib/payg-calculator';
 import { parseBodyWithLimit } from '@/lib/validate';
-
-async function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error('Missing Supabase config');
-  return createClient(url, key, { auth: { persistSession: false } });
-}
+import { requireCenterAuth } from '@/lib/centerAuth';
 
 function getWeekBounds(): { start: string; end: string } {
   const now = new Date();
@@ -28,32 +22,23 @@ function getWeekBounds(): { start: string; end: string } {
   };
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = (await parseBodyWithLimit(request, 65536).catch(() => ({}))) as Record<string, unknown>;
-    const { centerId } = body;
-    const authHeader = request.headers.get('Authorization');
 
-    const supabase = await getSupabase();
+    // Always authenticate. Previously auth ran only when the body had no
+    // `centerId`, so sending a `centerId` skipped auth entirely and the route
+    // queried any center's scans via the service role.
+    const auth = await requireCenterAuth(request);
+    if (!auth.ok) return auth.response;
 
-    let targetCenterId = centerId;
-    if (!targetCenterId && authHeader) {
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabaseAuth = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        { auth: { persistSession: false }, global: { headers: { Authorization: authHeader } } }
-      );
-      const { data: { user } } = await supabaseAuth.auth.getUser();
-      if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      const { data: u } = await supabase.from('users').select('center_id').eq('id', user.id).single();
-      if (!u?.center_id) return NextResponse.json({ error: 'No center' }, { status: 403 });
-      targetCenterId = (u as { center_id: string }).center_id;
-    }
+    const supabase = auth.supabaseAdmin;
 
-    if (!targetCenterId) {
-      return NextResponse.json({ error: 'centerId required or valid auth' }, { status: 400 });
-    }
+    // A body-supplied centerId is honoured only for super-admins; every other
+    // caller is scoped to their own center regardless of what they send.
+    const bodyCenterId = typeof body.centerId === 'string' ? body.centerId : undefined;
+    const targetCenterId =
+      auth.isSuperAdmin && bodyCenterId ? bodyCenterId : auth.centerId;
 
     const { start: weekStart, end: weekEnd } = getWeekBounds();
 
