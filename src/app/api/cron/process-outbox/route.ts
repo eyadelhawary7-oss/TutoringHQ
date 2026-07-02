@@ -67,13 +67,22 @@ export async function GET(request: Request) {
   }
 
   for (const job of rows) {
-    const { error: procErr } = await admin
+    // L5: atomic claim. Constrain the flip to rows still in a claimable state
+    // and re-select, so two overlapping cron runs can't both claim the same row
+    // — the loser's update matches 0 rows and it skips the job.
+    const { data: claimed, error: procErr } = await admin
       .from('webhook_outbox')
       .update({ status: 'processing' })
-      .eq('id', job.id);
+      .eq('id', job.id)
+      .in('status', ['pending', 'failed'])
+      .select('id');
     if (procErr) {
       console.error('[process-outbox] processing flag:', job.id, procErr.message);
       failed += 1;
+      continue;
+    }
+    if (!claimed || claimed.length === 0) {
+      // Already claimed by a concurrent run — skip.
       continue;
     }
 

@@ -11,6 +11,7 @@ import { ownerContactByCenterId, resolveOwnerWaPhoneCached } from '@/lib/ownerPh
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { assertIsoDateForOrFilter } from '@/lib/postgrestSafe';
 import { insertCronLogFailure, insertCronLogSuccess } from '@/lib/cron/cronLog';
+import { cairoDateKey } from '@/lib/cairo/day';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -74,7 +75,8 @@ export async function POST(request: Request) {
   const admin = supabaseAdmin;
 
   try {
-  const todayStr = assertIsoDateForOrFilter(new Date().toISOString().slice(0, 10), 'todayStr');
+  // L9: Cairo calendar day, not UTC — avoids an off-by-one near Cairo midnight.
+  const todayStr = assertIsoDateForOrFilter(cairoDateKey(new Date()), 'todayStr');
 
   let rows: InvoiceRetryRow[] = [];
   try {

@@ -474,7 +474,7 @@ export async function finalizeInvoicePaymentSuccess(
   }
 
   if (row.invoice_type === 'late_payment_fee' || row.invoice_type === 'late_fee') {
-    const paidDay = new Date().toISOString().slice(0, 10);
+    const paidDay = cairoDateKey(new Date()); // L9: Cairo calendar day, not UTC
     const { error: cErr } = await supabaseAdmin
       .from('centers')
       .update({
@@ -489,7 +489,7 @@ export async function finalizeInvoicePaymentSuccess(
   }
 
   if (row.invoice_type === 'reactivation_fee') {
-    const paidDay = new Date().toISOString().slice(0, 10);
+    const paidDay = cairoDateKey(new Date()); // L9: Cairo calendar day, not UTC
     const { error: cErr } = await supabaseAdmin
       .from('centers')
       .update({
@@ -524,7 +524,7 @@ export async function finalizeInvoicePaymentSuccess(
     const autoSusLegacy = autoSuspendAtFromDue(nextDueStr);
     const centerUpdates: Record<string, unknown> = {
       billing_status: 'paid',
-      last_payment_date: new Date().toISOString().slice(0, 10),
+      last_payment_date: cairoDateKey(new Date()), // L9: Cairo calendar day, not UTC
       next_payment_due: nextDueStr,
       payment_due_date: nextDueStr,
       auto_suspend_at: autoSusLegacy,

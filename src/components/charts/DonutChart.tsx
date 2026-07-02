@@ -69,7 +69,8 @@ export function DonutChart({
       className="flex items-center justify-center h-full text-[var(--color-text-muted)] text-sm"
       style={{ height }}
     >
-      {/* empty state - not enough data */}
+      {/* L10: a visible, intentional empty state — never a blank/empty SVG */}
+      <span aria-hidden>—</span>
     </div>
   );
 

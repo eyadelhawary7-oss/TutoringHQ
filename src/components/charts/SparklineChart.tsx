@@ -28,7 +28,13 @@ export function SparklineChart({ data, color = 'teal', height = 48 }: SparklineC
   );
 
   if (safe.length < 2) {
-    return <div style={{ height }} aria-hidden />;
+    // L10: a real, intentional empty state (a flat baseline) — not a blank box
+    // that reads as a broken chart.
+    return (
+      <div style={{ height }} className="flex items-center" aria-hidden>
+        <div className="h-px w-full bg-[var(--color-border-subtle)]" />
+      </div>
+    );
   }
 
   return (
