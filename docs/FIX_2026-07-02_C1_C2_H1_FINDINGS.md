@@ -36,6 +36,30 @@ Route state, before (`src/app/api/billing/payg-calculate/route.ts` L33-56): auth
 
 Fix: always call `requireCenterAuth`. Ignore a body-supplied `centerId` unless the caller is super-admin; otherwise scope to the caller's own center.
 
+## Schema snapshot
+
+The C2 migration tightened the live rule, so `db/schema.snapshot` (the drift
+reference) no longer matched — the drift gate fired, correctly. Regenerated the
+two affected lines to match a PG17 rebuild:
+- `POLICY content_access_log.content_access_log_select` → `roles=authenticated`,
+  qual gains `AND (ci.owner_center_id = get_auth_center_id())`.
+- Removed `TABLE_GRANT content_access_log grantee=anon priv=SELECT`.
+
+Both lines were taken byte-for-byte from `introspect.sql`'s own expression run
+against the live PG17 database, so they are identical to what CI's migration
+rebuild will emit. (A full local `schema:snapshot` rebuild couldn't run here:
+the sandbox only has Postgres 16, which rejects the baseline's PG17-only
+`MAINTAIN` grants, and PG17 was unreachable — PGDG apt and the Docker registry
+CDN are both blocked by egress policy.)
+
+## Adjacent observation (NOT fixed — out of scope)
+
+The sibling table `content_access` carries the **same class** of bug as C2: its
+`content_access_select` policy is `roles=public` with qual
+`EXISTS (SELECT 1 FROM content_items ci WHERE ci.id = content_access.content_item_id)`
+— no tenant predicate, readable by anon across centers. Left untouched per the
+"exactly these three" scope; flagging it for a follow-up decision.
+
 ## Verify (before → after)
 
 - **C2**: anon `SELECT * FROM content_access_log` → before: all rows platform-wide; after: `permission denied` (grant revoked) / zero rows (policy is `authenticated` + own-center only). Confirmed from live catalog.
