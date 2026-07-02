@@ -1,23 +1,46 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { normalizePhone } from '@/lib/utils/phone';
 
-type InsertResult = { error: { message: string } | null };
+type InsertOutcome = { data: { id: string } | null; error: { message: string } | null };
 
 // Controllable rate-limit + insert spies.
 const mockRateLimit = vi.fn<
   () => Promise<{ success: boolean; remaining: number; reset: number }>
 >(async () => ({ success: true, remaining: 5, reset: 0 }));
 
-const privacyInsert = vi.fn<(payload: Record<string, unknown>) => Promise<InsertResult>>(
-  async () => ({ error: null }),
+// Outcome of privacy_requests insert(...).select('id').single(). The route now
+// chains .select('id').single() to read back the new id, so the insert spy
+// returns that chain and this fn controls its resolved value.
+const privacyInsertOutcome = vi.fn<() => Promise<InsertOutcome>>(
+  async () => ({ data: { id: 'stub-request-id' }, error: null }),
 );
+
+// Payload-capturing insert spy; returns the .select('id').single() chain.
+const privacyInsert = vi.fn((_payload: Record<string, unknown>) => ({
+  select: () => ({ single: () => privacyInsertOutcome() }),
+}));
+
+// The route also best-effort raises an admin alert + in-app notifications to
+// every admin after a successful insert (H8). Stub those tables so that path
+// runs without hitting the unexpected-table guard.
+const adminAlertsInsert = vi.fn(async () => ({ error: null }));
+const adminUsersSelect = vi.fn(async () => ({ data: [{ id: 'admin-1' }], error: null }));
+const inAppInsert = vi.fn(async () => ({ error: null }));
 
 const adminClient = {
   from: (table: string) => {
-    if (table === 'privacy_requests') {
-      return { insert: privacyInsert };
+    switch (table) {
+      case 'privacy_requests':
+        return { insert: privacyInsert };
+      case 'admin_alerts':
+        return { insert: adminAlertsInsert };
+      case 'admin_users':
+        return { select: adminUsersSelect };
+      case 'in_app_notifications':
+        return { insert: inAppInsert };
+      default:
+        throw new Error(`unexpected table in privacy-request mock: ${table}`);
     }
-    throw new Error(`unexpected table in privacy-request mock: ${table}`);
   },
 };
 
@@ -65,8 +88,12 @@ const VALID_BODY = {
 beforeEach(() => {
   mockRateLimit.mockReset();
   mockRateLimit.mockResolvedValue({ success: true, remaining: 5, reset: 0 });
-  privacyInsert.mockReset();
-  privacyInsert.mockResolvedValue({ error: null });
+  privacyInsert.mockClear();
+  privacyInsertOutcome.mockReset();
+  privacyInsertOutcome.mockResolvedValue({ data: { id: 'stub-request-id' }, error: null });
+  adminAlertsInsert.mockClear();
+  adminUsersSelect.mockClear();
+  inAppInsert.mockClear();
   mockSentryCaptureException.mockReset();
 });
 
@@ -123,7 +150,7 @@ describe('POST /api/privacy-request', () => {
   });
 
   it('insert error -> 500 server_error + Sentry, not 201', async () => {
-    privacyInsert.mockResolvedValueOnce({ error: { message: 'insert failed' } });
+    privacyInsertOutcome.mockResolvedValueOnce({ data: null, error: { message: 'insert failed' } });
 
     const res = await POST(makeRequest(VALID_BODY));
 
