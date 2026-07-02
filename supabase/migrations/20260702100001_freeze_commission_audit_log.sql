@@ -24,6 +24,15 @@ $function$
 ;
 
 REVOKE EXECUTE ON FUNCTION public.append_only_block_mutations() FROM PUBLIC;
+-- Re-grant EXECUTE to the app roles explicitly. On live, Supabase's default
+-- privileges already applied these; stating them here makes a bare-Postgres
+-- rebuild (the CI drift gate) reproduce the committed snapshot deterministically
+-- instead of ending with zero grants after the PUBLIC revoke. PUBLIC is
+-- intentionally NOT re-granted (tighter than audit_log_block_mutations); trigger
+-- firing does not depend on these grants.
+GRANT EXECUTE ON FUNCTION public.append_only_block_mutations() TO anon;
+GRANT EXECUTE ON FUNCTION public.append_only_block_mutations() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.append_only_block_mutations() TO service_role;
 
 CREATE TRIGGER commission_audit_log_no_update_delete
   BEFORE DELETE OR UPDATE ON public.commission_audit_log
