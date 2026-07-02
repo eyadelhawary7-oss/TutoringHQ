@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { hashParentPortalToken } from '@/lib/parentPortalToken';
 
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get('token');
@@ -14,10 +15,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
   }
 
+  // H6: tokens are stored hashed — look up by hash, and a revoked link is dead.
   const { data: row, error } = await supabase
     .from('parent_portal_tokens')
-    .select('student_id, expires_at')
-    .eq('token', token)
+    .select('student_id, expires_at, revoked_at')
+    .eq('token_hash', hashParentPortalToken(token))
     .maybeSingle();
 
   if (error) {
@@ -25,7 +27,8 @@ export async function GET(request: NextRequest) {
   }
 
   const now = new Date().toISOString();
-  if (!row || (row as { expires_at: string }).expires_at <= now) {
+  const isRevoked = !!row && (row as { revoked_at: string | null }).revoked_at !== null;
+  if (!row || isRevoked || (row as { expires_at: string }).expires_at <= now) {
     let centerPhone: string | null = null;
     if (row) {
       const { data: st } = await supabase

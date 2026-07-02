@@ -167,6 +167,16 @@ export async function purgeDormantCenterOperationalData(
   await runDelete('rooms', supabase.from('rooms').delete().eq('center_id', centerId));
   await runDelete('paid_parents', supabase.from('paid_parents').delete().eq('center_id', centerId));
   await runDelete('announcement_blasts', supabase.from('announcement_blasts').delete().eq('center_id', centerId));
+  // card_order_events no longer cascades from card_orders (append-only history
+  // rule), so the purge clears the events for this center's orders explicitly.
+  const { data: orders } = await supabase.from('card_orders').select('id').eq('center_id', centerId);
+  const orderIds = (orders ?? []).map((o: { id: string }) => o.id);
+  if (orderIds.length > 0) {
+    await runDelete(
+      'card_order_events',
+      supabase.from('card_order_events').delete().in('card_order_id', orderIds),
+    );
+  }
   await runDelete('card_orders', supabase.from('card_orders').delete().eq('center_id', centerId));
 
   const { error: ppErr } = await supabase.from('parent_pack_monthly_counts').delete().eq('center_id', centerId);

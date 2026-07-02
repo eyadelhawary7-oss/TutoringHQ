@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAdminContext } from '@/lib/admin-auth';
+import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
 import { customPermissionsToKeys, fetchAdminAccessFlags } from '@/lib/admin-access';
 import { getAdminPermissions } from '@/lib/admin-roles';
 import { validateCSRFRequest } from '@/lib/csrf';
@@ -134,6 +134,10 @@ export async function POST(request: Request) {
   try {
     const ctx = await getAdminContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // M1: renewal mutation (inserts renewal_history, reactivates center) —
+    // restrict to super_admin/accountant, not any admin row.
+    const denied = requireAdminRole(ctx, ['super_admin', 'accountant']);
+    if (denied) return denied;
     if (!validateCSRFRequest(request, ctx.userId)) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }

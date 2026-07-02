@@ -1,34 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
-
-async function ensureAdmin(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) return null;
-
-  const authHeader = request.headers.get('Authorization');
-  const token = authHeader?.replace('Bearer ', '');
-  if (!token) return null;
-
-  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  });
-  const { data: { user }, error } = await supabaseAuth.auth.getUser();
-  if (error || !user) return null;
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } });
-  const { data: adminUser } = await supabaseAdmin.from('admin_users').select('id').eq('id', user.id).single();
-  const { data: userRecord } = await supabaseAdmin.from('users').select('phone').eq('id', user.id).single();
-  const superAdminPhones = (process.env.SUPER_ADMIN_PHONES || '').split(',').map((p: string) => p.trim()).filter(Boolean);
-  const isPhoneAdmin = !!userRecord?.phone && superAdminPhones.includes(userRecord.phone);
-  if (!adminUser && !isPhoneAdmin) return null;
-
-  return { supabaseAdmin, userId: user.id };
-}
+import { validateCSRFRequest } from '@/lib/csrf';
 
 export async function GET(request: NextRequest) {
   try {
@@ -89,8 +62,15 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const ctx = await ensureAdmin(request);
+    const ctx = await getAdminContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // M1: marks referral_commissions paid (money mutation) — was gated only on
+    // "any admin row exists". Restrict to super_admin/accountant and require CSRF.
+    const denied = requireAdminRole(ctx, ['super_admin', 'accountant']);
+    if (denied) return denied;
+    if (!validateCSRFRequest(request, ctx.userId)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+    }
 
     const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;
     const { action, referrer_center_id } = body;

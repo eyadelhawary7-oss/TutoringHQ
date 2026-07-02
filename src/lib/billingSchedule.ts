@@ -1,6 +1,7 @@
 import { addMonthsToDateStr } from '@/lib/subscriptionAnchor';
 import { normalizeBillingPeriod, type BillingPeriod } from '@/lib/pricing';
 import { lockAtFromBillingDay } from '@/lib/billingLifecycle';
+import { cairoDateKey } from '@/lib/cairo/day';
 
 /** Whole months per billing step from anchor (quarterly = 3). */
 export function billingStepMonths(periodRaw: string | null | undefined): number {
@@ -21,7 +22,7 @@ export function anchorYmdFromCenter(center: {
     center.billing_cycle_start?.slice(0, 10) ||
     (center.approved_at ? center.approved_at.slice(0, 10) : null) ||
     center.next_payment_due?.slice(0, 10);
-  return a ?? new Date().toISOString().slice(0, 10);
+  return a ?? cairoDateKey(new Date()); // L9: Cairo calendar day, not UTC
 }
 
 /**

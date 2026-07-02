@@ -76,6 +76,8 @@ export async function POST(request: Request) {
     .select('id, status')
     .eq('staff_id', staff_id)
     .eq('period', period)
+    .neq('status', 'void')
+    .limit(1)
     .maybeSingle()
 
   if (existing) {

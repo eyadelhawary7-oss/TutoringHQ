@@ -1,10 +1,14 @@
-import { getAdminContext } from '@/lib/admin-auth';
+import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
 
 export async function GET(request: Request) {
   const ctx = await getAdminContext(request);
   if (!ctx) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  // M1: MRR is finance data — gate to super_admin/accountant (matches
+  // ceo/financials), not any internal_viewer.
+  const denied = requireAdminRole(ctx, ['super_admin', 'accountant']);
+  if (denied) return denied;
 
   const supabase = ctx.supabaseAdmin;
 

@@ -24,13 +24,17 @@ function truncate(str: string | undefined | null, max: number): string {
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
 
+  // L1: fail closed. A public webhook with no signing secret configured must
+  // reject, not silently process — otherwise anyone can POST a spoofed alert.
   const sentrySecret = process.env.SENTRY_WEBHOOK_SECRET;
-  if (sentrySecret) {
-    const signature = request.headers.get('sentry-hook-signature') || '';
-    if (!verifySentrySignature(rawBody, signature, sentrySecret)) {
-      console.warn('[Sentry Webhook] Invalid signature, rejecting');
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-    }
+  if (!sentrySecret) {
+    console.warn('[Sentry Webhook] SENTRY_WEBHOOK_SECRET not set, rejecting');
+    return NextResponse.json({ error: 'Webhook not configured' }, { status: 503 });
+  }
+  const signature = request.headers.get('sentry-hook-signature') || '';
+  if (!verifySentrySignature(rawBody, signature, sentrySecret)) {
+    console.warn('[Sentry Webhook] Invalid signature, rejecting');
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
   }
 
   let payload: Record<string, unknown>;

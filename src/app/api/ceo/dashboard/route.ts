@@ -1,4 +1,4 @@
-import { getAdminContext } from '@/lib/admin-auth';
+import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
 import { getActionQueue, getPipelineSummary } from '@/lib/ceo';
 import { DEFAULT_RANGE, resolveRange } from '@/lib/ceo-time-range';
 import { getCurrentBillingMonth } from '@/lib/parent-pack';
@@ -17,6 +17,10 @@ export async function GET(request: NextRequest) {
   if (!ctx) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  // M1: the CEO dashboard exposes MRR / revenue / health — finance data.
+  // Gate to super_admin/accountant (matches ceo/financials + ceo/mrr).
+  const denied = requireAdminRole(ctx, ['super_admin', 'accountant']);
+  if (denied) return denied;
 
   const url = new URL(request.url);
   const rawFrom = url.searchParams.get('from');

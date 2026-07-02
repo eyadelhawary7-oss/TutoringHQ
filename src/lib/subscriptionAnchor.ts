@@ -3,6 +3,8 @@
  * Anchor date chain: subscription_start_date → billing_cycle_start → approved_at::date.
  */
 
+import { cairoDateKey } from '@/lib/cairo/day';
+
 function parseYmd(ymd: string): { y: number; m: number; d: number } {
   const [y, m, d] = ymd.split('-').map((x) => parseInt(x, 10));
   return { y, m, d };
@@ -52,7 +54,8 @@ export type AnchorCenterFields = {
 export function computeNextQuarterlyPaymentDue(center: AnchorCenterFields): string {
   const due = center.next_payment_due;
   if (!due) {
-    return addMonthsToDateStr(new Date().toISOString().slice(0, 10), 3);
+    // L9: Cairo calendar day, not UTC — avoids an off-by-one near Cairo midnight.
+    return addMonthsToDateStr(cairoDateKey(new Date()), 3);
   }
 
   const anchorYmd =

@@ -194,7 +194,9 @@ export async function PATCH(
   return NextResponse.json({ payout: updated })
 }
 
-// DELETE - void a draft payout (super_admin only)
+// DELETE - void a draft payout (super_admin only). The row is kept: it moves
+// to status 'void' and any commissions linked to it are released, so the
+// payout trail survives the never-permanently-delete rule.
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -215,7 +217,7 @@ export async function DELETE(
 
   const { data: payout, error: fetchErr } = await supabaseAdmin
     .from('commission_payouts')
-    .select('status')
+    .select('status, period')
     .eq('id', id)
     .single()
   if (fetchErr || !payout) {
@@ -225,13 +227,32 @@ export async function DELETE(
     return NextResponse.json({ errorKey: 'payouts.errors.cannotDeleteNonDraft' }, { status: 400 })
   }
 
-  const { error } = await supabaseAdmin.from('commission_payouts').delete().eq('id', id)
+  const { error } = await supabaseAdmin
+    .from('commission_payouts')
+    .update({ status: 'void' })
+    .eq('id', id)
+    .eq('status', 'draft')
   if (error) {
     return NextResponse.json(
       { errorKey: 'payouts.errors.saveFailed', error: error.message },
       { status: 500 },
     )
   }
+
+  // Release commissions that were attached to this payout so a future payout
+  // for the same period can pick them up again.
+  for (const col of ['t1_payout_id', 't2_payout_id', 'loyalty_payout_id'] as const) {
+    await supabaseAdmin.from('commissions').update({ [col]: null }).eq(col, id)
+  }
+
+  await supabaseAdmin.from('commission_audit_log').insert({
+    payout_id: id,
+    commission_id: null,
+    action: 'payout_voided',
+    triggered_by: 'manual',
+    performed_by: ctx.userId,
+    new_value: { period: payout.period, status: 'void' },
+  })
 
   return NextResponse.json({ success: true })
 }

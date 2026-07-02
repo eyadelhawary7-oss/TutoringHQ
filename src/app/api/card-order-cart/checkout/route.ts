@@ -215,6 +215,9 @@ export async function POST(request: NextRequest) {
     const { error: itemsErr } = await supabaseAdmin.from('card_order_items').insert(itemRows);
     if (itemsErr) {
       console.error('[checkout] card_order_items', itemsErr);
+      // card_order_events no longer cascades from card_orders (append-only
+      // history rule); rolling back an aborted order must clear its events first.
+      await supabaseAdmin.from('card_order_events').delete().eq('card_order_id', orderId);
       await supabaseAdmin.from('card_orders').delete().eq('id', orderId);
       return NextResponse.json({ error: itemsErr.message, code: 'items_failed' }, { status: 500 });
     }
@@ -231,6 +234,7 @@ export async function POST(request: NextRequest) {
   });
 
   if ('error' in paymob) {
+    await supabaseAdmin.from('card_order_events').delete().eq('card_order_id', orderId);
     await supabaseAdmin.from('card_orders').delete().eq('id', orderId);
     return NextResponse.json(
       { error: paymob.error, code: 'paymob_failed' },
