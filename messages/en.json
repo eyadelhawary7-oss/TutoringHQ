@@ -3096,10 +3096,12 @@
     "phoneRequired": "Please enter a phone number.",
     "successTitle": "Request sent",
     "successMessage": "Your registration request has been sent to the center.",
-    "footerNote": "The center will contact you to confirm your enrollment."
+    "footerNote": "The center will contact you to confirm your enrollment.",
+    "consentLabel": "I'm the guardian and I consent.",
+    "consentRequired": "Please confirm you are the parent or legal guardian and consent before submitting."
   },
   "guardianConsent": {
-    "checkboxLabel": "I confirm I have the guardian's consent to process this student's data.",
+    "checkboxLabel": "I have the guardian's consent.",
     "required": "Please confirm you have the guardian's consent before adding this student."
   },
   "pendingEnrollments": {

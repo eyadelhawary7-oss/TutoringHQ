@@ -101,6 +101,13 @@ export async function POST(
       throw new ValidationError('phone is required', 'phone');
     }
 
+    // Server is the gate, not just the checkbox: the self-enrolling parent must
+    // attest they are the parent/legal guardian and consent to processing the
+    // student's data. Recorded on the student row as parent_self_enroll_consent_at.
+    if (body.parent_consent !== true) {
+      return NextResponse.json({ error: 'PARENT_CONSENT_REQUIRED' }, { status: 403 });
+    }
+
     let admin;
     try {
       admin = getSupabaseAdmin();
@@ -159,6 +166,7 @@ export async function POST(
         is_active: false,
         parent_pack_opted_in: false,
         parent_consent_given: false,
+        parent_self_enroll_consent_at: new Date().toISOString(),
       })
       .select('id')
       .single();
