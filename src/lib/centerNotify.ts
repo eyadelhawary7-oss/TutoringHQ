@@ -76,7 +76,7 @@ function serviceSupabase(): SupabaseClient | null {
   return supabaseAdmin;
 }
 
-async function waSendingEnabled(supabase: SupabaseClient): Promise<boolean> {
+export async function waSendingEnabled(supabase: SupabaseClient): Promise<boolean> {
   const { data: cfg } = await supabase
     .from('platform_config')
     .select('value')

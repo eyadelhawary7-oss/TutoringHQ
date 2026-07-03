@@ -8,6 +8,7 @@ import {
   generateOtp,
   maskPhone,
 } from '@/lib/enrollmentOtp';
+import { ENROLLMENT_OTP_JOB_TYPE } from '@/lib/otpOutboxHandler';
 
 const ROUTE_TAG = 'api/join/g/send-otp';
 const OTP_TTL_MS = 10 * 60 * 1000;
@@ -28,10 +29,12 @@ function fail(step: string, err: unknown) {
  * self-enrollment. Rate limited to 3 sends per phone per hour (fail-OPEN on
  * Upstash outage - a code is better than a hard block here).
  *
- * TODO(whatsapp): OTP delivery needs (1) the Meta-approved Utility template
- * 'chq_enrollment_otp' [Arabic (EGY), body "كود تسجيلك في مجموعة {{1}}: {{2}}.
- * صالح ١٠ دقايق.", no buttons], and (2) a 'send_enrollment_otp_wa' handler in
- * /api/cron/process-outbox. Until both ship, rows queue but do not deliver.
+ * Delivery: queued to webhook_outbox and sent by the 'send_enrollment_otp_wa'
+ * handler in /api/cron/process-outbox (src/lib/otpOutboxHandler.ts). The send
+ * fires once the Utility template 'chq_enrollment_otp' [Arabic (EGY), body
+ * "كود تسجيلك في مجموعة {{1}}: {{2}}. صالح ١٠ دقايق.", no buttons] is APPROVED
+ * in Meta and mirrored into wa_meta_templates; until then jobs retry and
+ * dead-letter visibly.
  */
 export async function POST(
   request: NextRequest,
@@ -121,9 +124,9 @@ export async function POST(
   });
   if (insErr) return fail('otp_insert', insErr);
 
-  // Queue the WhatsApp delivery (resilient send via the outbox). See TODO above.
+  // Queue the WhatsApp delivery (resilient send via the outbox).
   const { error: obErr } = await admin.from('webhook_outbox').insert({
-    job_type: 'send_enrollment_otp_wa',
+    job_type: ENROLLMENT_OTP_JOB_TYPE,
     payload: {
       toPhone: payerPhone,
       templateName: 'chq_enrollment_otp',
