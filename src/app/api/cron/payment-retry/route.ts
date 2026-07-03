@@ -90,7 +90,7 @@ export async function POST(request: Request) {
         due_date,
         retry_count,
         invoice_type,
-        centers!inner (
+        centers!invoices_center_id_fkey!inner (
           id,
           name,
           owner_name,

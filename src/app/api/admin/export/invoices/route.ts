@@ -33,7 +33,7 @@ export async function GET(request: Request) {
       discount_amount, status, payment_method, payment_reference,
       billing_period_start, billing_period_end, due_date,
       paid_at, created_at,
-      centers(center_code, name)
+      centers!invoices_center_id_fkey(center_code, name)
     `,
     )
     .order('created_at', { ascending: false })
