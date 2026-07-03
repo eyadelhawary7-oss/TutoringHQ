@@ -127,7 +127,9 @@ export async function POST(
     payload: {
       toPhone: payerPhone,
       templateName: 'chq_enrollment_otp',
-      params: [code, groupName],
+      // Template body: "كود تسجيلك في مجموعة {{1}}: {{2}}. صالح ١٠ دقايق."
+      // {{1}} = group name, {{2}} = code — order must match the body above.
+      params: [groupName, code],
     },
     status: 'pending',
     attempt_count: 0,
