@@ -105,6 +105,7 @@ const AUTHENTICATED_ROUTE_PREFIXES = [
   '/ceo',
   '/ceo-dashboard',
   '/messages',
+  '/invoices',
   '/offline',
   '/orders',
   '/notifications',
