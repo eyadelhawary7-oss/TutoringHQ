@@ -129,8 +129,8 @@ export async function POST(request: NextRequest) {
     }
 
     const appUrl =
-      (process.env.NEXT_PUBLIC_APP_URL || 'https://centerhq.app').replace(/\/+$/, '') ||
-      'https://centerhq.app';
+      (process.env.NEXT_PUBLIC_APP_URL || 'https://tutoringhq.app').replace(/\/+$/, '') ||
+      'https://tutoringhq.app';
     const setupUrl = `${appUrl}/ar/set-pin?t=${encodeURIComponent(plaintext)}`;
 
     try {

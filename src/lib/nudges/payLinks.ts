@@ -6,7 +6,7 @@
 
 import type { OwnerType } from './types';
 
-const DEFAULT_BASE = 'https://centerhq.app';
+const DEFAULT_BASE = 'https://tutoringhq.app';
 
 export function appBaseUrl(): string {
   return (process.env.NEXT_PUBLIC_APP_URL || DEFAULT_BASE).replace(/\/$/, '');
