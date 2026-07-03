@@ -8,8 +8,9 @@ the student's personal data being processed. Adsero un-blocked this parent-facin
 path (2026-07-02). It is the parent-facing counterpart to the center-side tick
 documented in [`GUARDIAN_CONSENT.md`](./GUARDIAN_CONSENT.md).
 
-> **Interim wording — pending Adsero.** The checkbox text below is interim,
-> pending Adsero's final parent-facing wording. It lives in one string per
+> **Interim wording — pending Adsero.** The checkbox text is a short version
+> ("I'm the guardian and I consent.") that drops the "explicit" phrasing Adsero
+> had asked for; Eyad is sending it for sign-off. It lives in one string per
 > language (`join.consentLabel`), so the final swap is a one-line copy change.
 
 ## Consent columns — what records what (no conflation)

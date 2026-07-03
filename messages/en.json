@@ -3097,11 +3097,11 @@
     "successTitle": "Request sent",
     "successMessage": "Your registration request has been sent to the center.",
     "footerNote": "The center will contact you to confirm your enrollment.",
-    "consentLabel": "I confirm that I am this student's parent or legal guardian, and I consent to processing their personal data.",
+    "consentLabel": "I'm the guardian and I consent.",
     "consentRequired": "Please confirm you are the parent or legal guardian and consent before submitting."
   },
   "guardianConsent": {
-    "checkboxLabel": "I confirm that I have obtained the parent/legal guardian's explicit consent to process this student's personal data.",
+    "checkboxLabel": "I have the guardian's consent.",
     "required": "Please confirm you have the guardian's consent before adding this student."
   },
   "pendingEnrollments": {

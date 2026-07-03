@@ -9,10 +9,11 @@ records the center's confirmation **at the moment it adds or approves a
 student**, so the contract clause has concrete proof behind it: **who** confirmed
 and **when**.
 
-> **Final wording — Adsero approved.** The checkbox text was signed off by
-> Adsero and tightened to stress *explicit* consent (was interim before
-> 2026-07-02). It lives in exactly one place per language, so the swap was a
-> one-line copy change, not a code change (see [Wording](#wording-one-string-per-language)).
+> **Interim wording — pending Adsero.** The checkbox text is a short version
+> ("I have the guardian's consent.") that drops the "explicit" phrasing Adsero
+> had asked for; Eyad is sending it for sign-off. It lives in exactly one place
+> per language, so the final wording is a one-line copy change, not a code change
+> (see [Wording](#wording-one-string-per-language)).
 
 ## What changed (before → after)
 
@@ -71,8 +72,9 @@ Required checkboxes, Arabic-first / RTL, logical properties only:
 - `checkboxLabel` — the confirmation text shown on every checkbox.
 - `required` — the error shown if a center tries to proceed without ticking it.
 
-Every flow reads the same `guardianConsent.checkboxLabel`. Adsero's final wording
-is now in place (2026-07-02); any future change is still these two strings only.
+Every flow reads the same `guardianConsent.checkboxLabel`. The wording is interim
+(short version, pending Adsero); adopting the final wording is still these two
+strings only.
 
 ## Out of scope — flagged for Adsero, not built here
 
