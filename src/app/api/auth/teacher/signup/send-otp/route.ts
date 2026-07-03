@@ -26,10 +26,10 @@ const ROUTE_TAG = 'api/auth/teacher/signup/send-otp';
  *   - replace any prior unverified code for the phone (insert-or-replace)
  *   - queue WhatsApp delivery to webhook_outbox (resilient, gated send)
  *
- * Delivery is feature-flag/stub-gated like every other WA send: the outbox worker
- * routes through the WhatsApp helper, which only sends when the template is
- * APPROVED in wa_meta_templates AND wa_sending_enabled. chq_teacher_signup_otp is
- * not yet approved and WhatsApp is not live, so rows queue but do not deliver.
+ * Delivery is gated like every other WA send: the outbox worker's OTP handler
+ * (src/lib/otpOutboxHandler.ts) only sends when the template is APPROVED in
+ * wa_meta_templates AND wa_sending_enabled is on. Until chq_teacher_signup_otp
+ * is approved in Meta, jobs retry and then dead-letter visibly.
  * Rule 149: OTP delivery is availability, not money/credentials, so the send
  * path fails OPEN (the OTP row is created even if enqueue fails).
  */

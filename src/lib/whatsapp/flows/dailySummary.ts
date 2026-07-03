@@ -12,7 +12,7 @@ import { sendTemplateMessage } from '../client';
 const WA_AR = 'ar';
 
 const TEMPLATE = 'chq_daily_summary';
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://centerhq.app';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://tutoringhq.app';
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

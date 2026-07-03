@@ -518,7 +518,7 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
       billing_period_end, due_date, status, notes, created_at, metadata,
       base_amount, payment_method, payment_reference, paymob_transaction_id,
       paid_at, payment_amount,
-      centers (
+      centers!invoices_center_id_fkey (
         id, name, center_code, phone, plan, referral_code, city,
         subscription_billing_period, next_payment_due, pack_price_per_parent,
         announcement_balance, active_months_count, dormancy_date

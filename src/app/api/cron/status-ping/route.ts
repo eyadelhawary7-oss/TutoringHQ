@@ -47,7 +47,7 @@ async function pingPayments(): Promise<{ status: string; ms: number }> {
   const start = Date.now();
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://centerhq.app');
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://tutoringhq.app');
   try {
     const res = await fetch(`${appUrl}/api/health`, { signal: AbortSignal.timeout(10000) }).catch(() => null);
     const ms = Date.now() - start;

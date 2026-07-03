@@ -903,7 +903,7 @@ export async function PUT(request: Request) {
       // Email notifications not implemented - WhatsApp only
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://centerhq.app';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tutoringhq.app';
     const credentialsMessage = `تم تفعيل حسابك في TutoringHQ! 🎉
 
 🔐 بيانات الدخول:

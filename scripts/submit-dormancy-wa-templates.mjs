@@ -1,6 +1,11 @@
 /**
  * Submit dormancy WhatsApp templates to Meta Graph API (WABA message_templates edge).
  *
+ * NOTE (2026-07): the automatic dormancy/purge machinery was removed - nothing
+ * in the app sends chq_dormancy_notice or the two reactivation warnings
+ * anymore, and there is no time-based data cleanup. chq_data_deletion_notice
+ * was reworded for on-request erasure and must be resubmitted in Meta.
+ *
  * Required env:
  *   WHATSAPP_TOKEN
  *   WHATSAPP_BUSINESS_ACCOUNT_ID  (WhatsApp Business Account ID, not phone number ID)
@@ -25,7 +30,7 @@ const templates = [
         type: 'BODY',
         text: 'مرحباً {{1}}، تم إيقاف حسابك مؤقتاً بتاريخ {{2}} بسبب تأخر السداد.\nبياناتك محفوظة لمدة 12 شهراً. أعد التفعيل الآن: {{3}}',
         example: {
-          body_text: [['مركز تجريبي', '2026-01-15', 'https://centerhq.app/ar/settings/billing']],
+          body_text: [['مركز تجريبي', '2026-01-15', 'https://tutoringhq.app/ar/settings/billing']],
         },
       },
     ],
@@ -59,15 +64,19 @@ const templates = [
     ],
   },
   {
+    // Reworded 2026-07: nothing is deleted automatically anymore. Personal
+    // data is erased only on request (privacy-request erasure); financial
+    // records are retained as required by law. {{1}} = student name.
+    // Must be RESUBMITTED in Meta for the new wording to take effect.
     name: 'chq_data_deletion_notice',
     language: 'ar_EG',
     category: 'UTILITY',
     components: [
       {
         type: 'BODY',
-        text: '{{1}}، تم حذف بيانات حسابك بتاريخ {{2}} بعد 12 شهراً من الإيقاف.\nإذا أردت العودة، يمكنك التسجيل كمركز جديد. نتمنى لك التوفيق.',
+        text: 'تم حذف البيانات الشخصية لـ {{1}} بناءً على طلب. السجلات المالية بتتحفظ حسب القانون.',
         example: {
-          body_text: [['مركز تجريبي', '15 يناير 2027']],
+          body_text: [['أحمد']],
         },
       },
     ],

@@ -68,7 +68,7 @@ export async function POST(request: Request) {
 
   const { data: rawRows, error: invErr } = await admin
     .from('invoices')
-    .select('id, invoice_number, due_date, invoice_type, created_at, center_id, centers(name, phone)')
+    .select('id, invoice_number, due_date, invoice_type, created_at, center_id, centers!invoices_center_id_fkey(name, phone)')
     .eq('status', 'pending')
     .lte('due_date', today)
     .lt('created_at', twoHoursAgo)

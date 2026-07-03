@@ -6,7 +6,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { sendTemplateMessage, normalizePhone } from '../client';
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://centerhq.app';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://tutoringhq.app';
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

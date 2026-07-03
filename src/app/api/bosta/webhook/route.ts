@@ -61,7 +61,7 @@ const ORDER_LOOKUP_SELECT = 'id, center_id, quantity, total_amount, bosta_status
 
 function bostaTrackingUrl(trackingNumber: string | null): string {
   const t = (trackingNumber ?? '').trim();
-  if (!t) return (process.env.NEXT_PUBLIC_APP_URL ?? 'https://centerhq.app').replace(/\/$/, '');
+  if (!t) return (process.env.NEXT_PUBLIC_APP_URL ?? 'https://tutoringhq.app').replace(/\/$/, '');
   return `https://bosta.co/en/track-shipment?trackingNumber=${encodeURIComponent(t)}`;
 }
 

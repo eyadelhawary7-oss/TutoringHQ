@@ -519,7 +519,7 @@ export async function POST(request: Request) {
 
 🔗 View in admin panel.`;
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://centerhq.app';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tutoringhq.app';
     const adminWhatsAppUrl = getSupportWhatsAppWaMeWithText(whatsappMessage) || '';
 
     return NextResponse.json({

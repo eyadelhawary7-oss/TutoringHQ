@@ -5,6 +5,8 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendPaymentConfirmed } from '@/lib/centerNotify';
 import { processCardOrderStatusWaOutboxJob } from '@/lib/cardOrderNotifications';
 import { processBillingNudgeWaOutboxJob } from '@/lib/nudges/outboxHandler';
+import { processOtpWaOutboxJob, ENROLLMENT_OTP_JOB_TYPE } from '@/lib/otpOutboxHandler';
+import { TEACHER_SIGNUP_OTP_JOB_TYPE } from '@/lib/teacherSignupOtp';
 import { insertCronLogFailure, insertCronLogSuccess } from '@/lib/cron/cronLog';
 import { createAction } from '@/lib/ceo';
 
@@ -107,6 +109,11 @@ export async function GET(request: Request) {
         success = await processCardOrderStatusWaOutboxJob(job.payload);
       } else if (job.job_type === 'send_billing_nudge_wa') {
         success = await processBillingNudgeWaOutboxJob(job.payload, admin);
+      } else if (
+        job.job_type === ENROLLMENT_OTP_JOB_TYPE ||
+        job.job_type === TEACHER_SIGNUP_OTP_JOB_TYPE
+      ) {
+        success = await processOtpWaOutboxJob(job.payload, admin);
       } else {
         console.warn('[process-outbox] unknown job_type', job.job_type);
       }
