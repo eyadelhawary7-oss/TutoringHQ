@@ -42,7 +42,8 @@
     { "path": "/api/cron/expire-group-proposals", "schedule": "0 2 * * *" },
     { "path": "/api/cron/reset-teacher-blast-credits", "schedule": "0 1 1 * *" },
     { "path": "/api/cron/billing-reconciliation", "schedule": "30 3 * * *" },
-    { "path": "/api/cron/summer-billing", "schedule": "0 23 * * *" }
+    { "path": "/api/cron/summer-billing", "schedule": "0 23 * * *" },
+    { "path": "/api/cron/sync-wa-templates", "schedule": "15 * * * *" }
   ],
   "functions": {
     "src/app/api/login/route.ts": { "maxDuration": 30 },
