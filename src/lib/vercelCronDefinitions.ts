@@ -28,7 +28,6 @@ export const VERCEL_CRON_DEFINITIONS = [
   { path: '/api/cron/monthly-backup', schedule: '0 2 1 * *' },
   { path: '/api/cron/cleanup-status-checks', schedule: '0 1 * * 1' },
   { path: '/api/cron/referral-automation', schedule: '0 3 2 * *' },
-  { path: '/api/cron/dormancy-warnings', schedule: '0 4 2 * *' },
   { path: '/api/cron/onboarding-stall', schedule: '0 */6 * * *' },
   { path: '/api/cron/upgrade-nudge', schedule: '0 6 * * *' },
   { path: '/api/cron/weekly-owner-report', schedule: '0 6 * * 0' },
