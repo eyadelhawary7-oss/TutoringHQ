@@ -18,7 +18,7 @@ function makeBuilder(table: string) {
   const builder: Record<string, unknown> = {};
   const state: { updatePayload?: Row; id?: unknown } = {};
   const chain = () => builder;
-  builder.select = (..._args: unknown[]) => {
+  builder.select = () => {
     if (state.updatePayload !== undefined) {
       // claim path: update().eq().in().select('id')
       return Promise.resolve({ data: [{ id: state.id }], error: null });
@@ -40,8 +40,8 @@ function makeBuilder(table: string) {
   builder.lte = chain;
   builder.order = chain;
   builder.limit = chain;
-  builder.insert = (_payload: Row) => Promise.resolve({ error: null });
-  builder.upsert = (_payload: Row, _opts?: unknown) => Promise.resolve({ error: null });
+  builder.insert = () => Promise.resolve({ error: null });
+  builder.upsert = () => Promise.resolve({ error: null });
   builder.then = (resolve: (v: unknown) => unknown) => {
     const result =
       state.updatePayload !== undefined
