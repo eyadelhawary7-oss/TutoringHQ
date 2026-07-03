@@ -8,10 +8,10 @@ the student's personal data being processed. Adsero un-blocked this parent-facin
 path (2026-07-02). It is the parent-facing counterpart to the center-side tick
 documented in [`GUARDIAN_CONSENT.md`](./GUARDIAN_CONSENT.md).
 
-> **Interim wording — pending Adsero.** The checkbox text is a short version
-> ("I'm the guardian and I consent.") that drops the "explicit" phrasing Adsero
-> had asked for; Eyad is sending it for sign-off. It lives in one string per
-> language (`join.consentLabel`), so the final swap is a one-line copy change.
+> **Wording is final, decided by Eyad.** It is shorter than Adsero's suggested
+> phrasing and does not include the word explicit. The checkbox text
+> ("I'm the guardian and I consent.") lives in one string per language
+> (`join.consentLabel`), so any change is a one-line copy change.
 
 ## Consent columns — what records what (no conflation)
 
@@ -65,7 +65,7 @@ sends `parent_consent: true`.
 
 `messages/en.json` / `messages/ar.json`, namespace `join`:
 
-- `consentLabel` — the parent-facing confirmation text (**interim, pending Adsero**).
+- `consentLabel` — the parent-facing confirmation text (**final, decided by Eyad**).
 - `consentRequired` — the error shown if a parent tries to submit without ticking it.
 
 ## Note — double capture is intended
