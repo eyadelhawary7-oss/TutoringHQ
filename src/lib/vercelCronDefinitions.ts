@@ -38,4 +38,5 @@ export const VERCEL_CRON_DEFINITIONS = [
   { path: '/api/cron/sync-bosta-card-orders', schedule: '*/15 * * * *' },
   { path: '/api/cron/process-outbox', schedule: '*/2 * * * *' },
   { path: '/api/cron/sync-wa-templates', schedule: '15 * * * *' },
+  { path: '/api/cron/class-reminders', schedule: '0 5 * * *' },
 ] as const;

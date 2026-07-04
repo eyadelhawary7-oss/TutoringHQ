@@ -42,7 +42,8 @@
     { "path": "/api/cron/reset-teacher-blast-credits", "schedule": "0 1 1 * *" },
     { "path": "/api/cron/billing-reconciliation", "schedule": "30 3 * * *" },
     { "path": "/api/cron/summer-billing", "schedule": "0 23 * * *" },
-    { "path": "/api/cron/sync-wa-templates", "schedule": "15 * * * *" }
+    { "path": "/api/cron/sync-wa-templates", "schedule": "15 * * * *" },
+    { "path": "/api/cron/class-reminders", "schedule": "0 5 * * *" }
   ],
   "functions": {
     "src/app/api/login/route.ts": { "maxDuration": 30 },
@@ -101,6 +102,7 @@
     "src/app/api/cron/payment-retry/route.ts": { "maxDuration": 120 },
     "src/app/api/cron/fee-reminders/route.ts": { "maxDuration": 300 },
     "src/app/api/cron/billing-reconciliation/route.ts": { "maxDuration": 300 },
-    "src/app/api/cron/summer-billing/route.ts": { "maxDuration": 300 }
+    "src/app/api/cron/summer-billing/route.ts": { "maxDuration": 300 },
+    "src/app/api/cron/class-reminders/route.ts": { "maxDuration": 300 }
   }
 }

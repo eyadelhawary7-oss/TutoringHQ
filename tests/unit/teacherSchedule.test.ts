@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { NextRequest } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -284,23 +284,19 @@ describe('POST /api/teacher/private/schedule/exceptions', () => {
   });
 });
 
-describe('teacherScheduleNotifications stubs', () => {
-  const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => undefined);
-
-  afterEach(() => {
-    infoSpy.mockClear();
-  });
-
-  it('queueClassCancelledNotification resolves without throwing and logs to console.info', async () => {
-    const fakeAdmin = {} as SupabaseClient;
+describe('teacherScheduleNotifications', () => {
+  // Full send/gate behaviour lives in tests/unit/teacherScheduleNotifications.test.ts.
+  // Here we only assert the fail-open contract the route relies on: a call for a
+  // group the caller does not own resolves quietly (ownership guard, no send).
+  it('queueClassCancelledNotification resolves without throwing for a non-matching group', async () => {
+    const admin = {
+      from: () => ({
+        select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }),
+      }),
+    } as unknown as SupabaseClient;
 
     await expect(
-      queueClassCancelledNotification(GROUP_ID, '2026-06-15', 'user-1', fakeAdmin),
+      queueClassCancelledNotification(GROUP_ID, '2026-06-15', 'user-1', admin),
     ).resolves.toBeUndefined();
-
-    expect(infoSpy).toHaveBeenCalledWith(
-      '[stub] queueClassCancelledNotification',
-      { groupId: GROUP_ID, exceptionDate: '2026-06-15', teacherUserId: 'user-1' },
-    );
   });
 });
