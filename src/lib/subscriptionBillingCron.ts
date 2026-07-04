@@ -9,10 +9,11 @@ import { todayISO } from '@/lib/parentPack';
 import { addMonthsToDateStr } from '@/lib/subscriptionAnchor';
 import { sendChqRenewalOverdueTemplate } from '@/lib/centerNotify';
 import { isPaygCenter } from '@/lib/billingEngine';
-import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import { getProcessingFeeConfig, getIntervalConfig } from '@/lib/pricingConfig';
 import { applyProcessingFee } from '@/lib/processingFee';
 import { logBillingEvent } from '@/lib/billingAudit';
 import { resolveScheduledCenterDowngrade } from '@/lib/scheduledDowngrade';
+import { centerRenewalBaseAmount, centerRenewalPeriodMonths } from '@/lib/centerRenewal';
 
 // RETIRED: the legacy day+3 / day+7 overdue WhatsApp reminders below. The unified
 // billing-nudges engine (src/lib/nudges) is now the single source of center +
@@ -88,6 +89,9 @@ export async function runSubscriptionBillingCron(
   const today = todayISO();
   // Flat processing fee (Section 5) added to each subscription renewal invoice.
   const feeCfg = await getProcessingFeeConfig();
+  // Annual centers renew at monthly × annualMultiplier (=10) over a 12-month clock.
+  // Read once per run; only consulted for billing_period='annual' centers.
+  const { annualMultiplier } = await getIntervalConfig();
 
   // Centers with pending_cancellation: finalize cancel after current_period_end (Cairo YMD vs DATE column).
   const { error: periodEndCancelErr } = await supabase
@@ -126,7 +130,7 @@ export async function runSubscriptionBillingCron(
   const { data: dueIn7, error: q7err } = await supabase
     .from('centers')
     .select(
-      'id, name, phone, next_payment_due, billing_amount, center_code, referral_code, status, billing_type, pricing_type, scheduled_plan, scheduled_billing_period',
+      'id, name, phone, next_payment_due, billing_amount, billing_period, all_in_price, center_code, referral_code, status, billing_type, pricing_type, scheduled_plan, scheduled_billing_period',
     )
     .eq('next_payment_due', in7)
     .in('status', ['active', 'pending_cancellation'])
@@ -150,6 +154,8 @@ export async function runSubscriptionBillingCron(
         phone: string | null;
         next_payment_due: string;
         billing_amount: number | null;
+        billing_period?: string | null;
+        all_in_price?: number | null;
         center_code?: string | null;
         referral_code?: string | null;
         scheduled_plan?: string | null;
@@ -175,9 +181,19 @@ export async function runSubscriptionBillingCron(
         c.scheduled_plan,
         c.scheduled_billing_period,
       );
-      const ba = sched ? sched.billingAmount : Number(c.billing_amount ?? 0);
+      // Period-aware renewal: annual bills monthly × 10 over a 12-month clock;
+      // monthly/quarterly stay on the stored (quarterly) amount + 3-month clock,
+      // exactly as before. A scheduled downgrade supplies its own period-aware
+      // amount/period/per-month base (resolveScheduledCenterDowngrade).
+      const effectivePeriod = sched ? sched.billingPeriod : c.billing_period;
+      const ba = centerRenewalBaseAmount({
+        billingPeriod: effectivePeriod,
+        allInPerMonth: sched ? sched.allIn : c.all_in_price,
+        storedBillingAmount: sched ? sched.billingAmount : c.billing_amount,
+        annualMultiplier,
+      });
       const { fee, total } = applyProcessingFee(ba, feeCfg);
-      const billingEnd = addMonthsToDateStr(npd, 3);
+      const billingEnd = addMonthsToDateStr(npd, centerRenewalPeriodMonths(effectivePeriod));
       const code = centerCodeForInvoice(c);
       const yyyymm = npd.slice(0, 7);
       const invoiceNumber = `INV-${code}-${yyyymm}`;
