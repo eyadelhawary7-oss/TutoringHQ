@@ -48,14 +48,17 @@ export type AnchorCenterFields = {
 };
 
 /**
- * Next quarterly due: first occurrence of anchor_day on/after (next_payment_due + 3 months)::date.
- * All centers use quarterly billing per product rules.
+ * Next due: first occurrence of anchor_day on/after (next_payment_due + N months)::date.
+ * `periodMonths` is the billing cadence length — 3 for quarterly centers, 12 for
+ * annual (see centerRenewalPeriodMonths). The anchor-day snapping is cadence-
+ * agnostic: it always lands the due date on the subscription's anchor day-of-month.
  */
-export function computeNextQuarterlyPaymentDue(center: AnchorCenterFields): string {
+export function computeNextPaymentDue(center: AnchorCenterFields, periodMonths: number): string {
+  const months = Number.isFinite(periodMonths) && periodMonths > 0 ? Math.trunc(periodMonths) : 3;
   const due = center.next_payment_due;
   if (!due) {
     // L9: Cairo calendar day, not UTC — avoids an off-by-one near Cairo midnight.
-    return addMonthsToDateStr(cairoDateKey(new Date()), 3);
+    return addMonthsToDateStr(cairoDateKey(new Date()), months);
   }
 
   const anchorYmd =
@@ -63,7 +66,7 @@ export function computeNextQuarterlyPaymentDue(center: AnchorCenterFields): stri
     center.billing_cycle_start?.slice(0, 10) ||
     (center.approved_at ? center.approved_at.slice(0, 10) : null);
 
-  const cursorYmd = addMonthsToDateStr(due, 3);
+  const cursorYmd = addMonthsToDateStr(due, months);
   const cursorTs = utcDateFromYmd(cursorYmd);
 
   if (!anchorYmd) {
@@ -89,4 +92,13 @@ export function computeNextQuarterlyPaymentDue(center: AnchorCenterFields): stri
   }
 
   return cursorYmd;
+}
+
+/**
+ * Next quarterly due (+3 months). Thin wrapper over computeNextPaymentDue — the
+ * historical center default. Kept for the many non-annual call sites so their
+ * behaviour stays byte-identical.
+ */
+export function computeNextQuarterlyPaymentDue(center: AnchorCenterFields): string {
+  return computeNextPaymentDue(center, 3);
 }

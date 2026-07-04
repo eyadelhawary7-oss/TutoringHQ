@@ -1,7 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { todayISO } from '@/lib/parentPack';
 import { processInvoiceSignupAfterPaymobSuccess } from '@/lib/signupPaymobAutoApprove';
-import { computeNextQuarterlyPaymentDue } from '@/lib/subscriptionAnchor';
+import { computeNextPaymentDue } from '@/lib/subscriptionAnchor';
+import { centerRenewalPeriodMonths } from '@/lib/centerRenewal';
+import { getAnnualChargeRounded, normalizeBillingPeriod } from '@/lib/pricing';
+import { getIntervalConfig } from '@/lib/pricingConfig';
 import { sendChqPaymentConfirmedTemplate, sendChqPaymentFailedTemplate } from '@/lib/centerNotify';
 import { autoSuspendAtFromDue } from '@/lib/billingSchedule';
 import { applyPaymentToInvoice, readAppliedTxns, remainingBalance } from '@/lib/invoiceBalance';
@@ -22,6 +25,7 @@ const PERIOD_MONTHS: Record<string, number> = {
 };
 
 const QUARTERLY_LABEL_AR = 'ربع سنوي';
+const ANNUAL_LABEL_AR = 'سنوي';
 
 async function handlePlanUpgradeInvoicePaid(
   supabaseAdmin: SupabaseClient,
@@ -113,7 +117,7 @@ async function handleSubscriptionInvoicePaid(
   const { data: center } = await supabaseAdmin
     .from('centers')
     .select(
-      'billing_status, status, subscription_status, next_payment_due, subscription_start_date, billing_cycle_start, approved_at, name, phone, billing_amount, scheduled_plan, scheduled_billing_period',
+      'billing_status, status, subscription_status, next_payment_due, subscription_start_date, billing_cycle_start, approved_at, name, phone, billing_amount, billing_period, all_in_price, scheduled_plan, scheduled_billing_period',
     )
     .eq('id', inv.center_id)
     .maybeSingle();
@@ -129,6 +133,8 @@ async function handleSubscriptionInvoicePaid(
     name?: string | null;
     phone?: string | null;
     billing_amount?: number | null;
+    billing_period?: string | null;
+    all_in_price?: number | null;
     scheduled_plan?: string | null;
     scheduled_billing_period?: string | null;
   } | null;
@@ -136,12 +142,18 @@ async function handleSubscriptionInvoicePaid(
   if (!c) return null;
 
   const wasSuspendedBilling = c.billing_status === 'suspended';
-  const newDue = computeNextQuarterlyPaymentDue({
-    next_payment_due: c.next_payment_due ?? null,
-    subscription_start_date: c.subscription_start_date,
-    billing_cycle_start: c.billing_cycle_start,
-    approved_at: c.approved_at,
-  });
+  // Period-aware renewal clock: annual advances the due date +12 months, monthly/
+  // quarterly stay on the +3-month quarterly anchor exactly as before.
+  const isAnnual = normalizeBillingPeriod(c.billing_period) === 'annual';
+  const newDue = computeNextPaymentDue(
+    {
+      next_payment_due: c.next_payment_due ?? null,
+      subscription_start_date: c.subscription_start_date,
+      billing_cycle_start: c.billing_cycle_start,
+      approved_at: c.approved_at,
+    },
+    centerRenewalPeriodMonths(c.billing_period),
+  );
   // Single-day lock: auto_suspend_at = next Cairo midnight after the new due date.
   const autoSus = autoSuspendAtFromDue(newDue);
   const totalAmt = Number(inv.total_amount ?? 0);
@@ -188,11 +200,20 @@ async function handleSubscriptionInvoicePaid(
   // dedupe. (Matches how auditInvoicePaid is gated in the sibling handlers below.)
   if (status !== 'already_paid') {
     try {
+      // Annual renewals confirm with the annual label + annual base amount (monthly
+      // × 10). Non-annual keeps the historical quarterly label + stored amount.
+      let billingPeriodLabel = QUARTERLY_LABEL_AR;
+      let billingAmountStr = String(c.billing_amount ?? totalAmt);
+      if (isAnnual) {
+        const { annualMultiplier } = await getIntervalConfig();
+        billingPeriodLabel = ANNUAL_LABEL_AR;
+        billingAmountStr = String(getAnnualChargeRounded(Number(c.all_in_price ?? 0), annualMultiplier));
+      }
       await sendChqPaymentConfirmedTemplate(supabaseAdmin, {
         name: c.name ?? ',',
         phone: c.phone ?? null,
-        billingPeriodLabel: QUARTERLY_LABEL_AR,
-        billingAmountStr: String(c.billing_amount ?? totalAmt),
+        billingPeriodLabel,
+        billingAmountStr,
       });
     } catch (waErr) {
       console.error('[invoicePaymob] WA send error:', waErr);
