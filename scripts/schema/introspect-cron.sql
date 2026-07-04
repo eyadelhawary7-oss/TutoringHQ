@@ -8,16 +8,16 @@
 -- directly on prod. Run only against an environment that has the pg_cron
 -- extension installed (i.e. production).
 --
--- READ-ONLY ROLE REQUIREMENT: cron.job carries row-level security
--- (cron_job_policy: USING (username = current_user)), so a role only ever sees
--- the jobs it OWNS. Prod jobs are owned by `postgres`, so a plain read-only
--- drift role sees ZERO rows and this snapshot comes back empty — every job
--- false-trips as "removed". Unlike the public-schema grants (which moved to
--- catalog columns any role can read), cron.job has no RLS-free catalog mirror,
--- so the fix here is provisioning, not SQL: the read-only DSN role used by the
--- live-drift job must be able to see all cron jobs — grant it BYPASSRLS, or
--- point the DSN at the `postgres` role that owns the jobs. Reading cron.job is
--- otherwise correct and unchanged.
+-- RUN THIS WITH A PRIVILEGED CONNECTION — NOT the read-only drift role.
+-- cron.job carries row-level security (cron_job_policy: USING (username =
+-- current_user)) and has no RLS-free catalog mirror, so a role only ever sees
+-- the jobs it OWNS. Prod jobs are owned by `postgres`, so a plain read-only role
+-- sees ZERO rows and this snapshot comes back empty. We deliberately do NOT
+-- grant the read-only drift role BYPASSRLS or any other elevated privilege, so
+-- the scheduled live-drift job (schema-drift-live.yml) SKIPS cron entirely and
+-- watches the public schema only. Use this file for an on-demand cron check via
+-- a connection that can see cron.job (the `postgres` job owner, or a role with
+-- BYPASSRLS), diffing its output against db/cron.snapshot.
 -- ============================================================================
 -- rtrim() strips trailing whitespace: a job command that ends in a newline (e.g.
 -- a heredoc-style multi-line INSERT) would otherwise collapse to a trailing

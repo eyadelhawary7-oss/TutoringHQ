@@ -43,19 +43,18 @@ jobs:
           DSN: ${{ secrets.SCHEMA_DRIFT_DATABASE_URL }}
         run: |
           chmod +x scripts/schema/check-drift.sh
-          # public-schema snapshot
+          # Public-schema snapshot. Every dimension here — including table and
+          # routine grants — is read from catalog columns any role can see, so a
+          # plain read-only DSN reproduces the committed snapshot byte-for-byte.
+          #
+          # pg_cron jobs are deliberately NOT compared in this read-only run.
+          # cron.job is RLS-gated (cron_job_policy: username = current_user) with
+          # no RLS-free catalog mirror, so a read-only role sees zero rows and the
+          # one prod job would false-trip as drift on every run. We do NOT grant
+          # the drift role BYPASSRLS or any other elevated privilege just to read
+          # it. cron.job is low-churn, changed only by a deliberate privileged
+          # action, and introspect-cron.sql remains for an on-demand check run
+          # with a privileged connection (see its header).
           psql "$DSN" -tAqX -f scripts/schema/introspect.sql > /tmp/live.snapshot
-          # pg_cron jobs snapshot (operational; compared separately)
-          psql "$DSN" -tAqX -f scripts/schema/introspect-cron.sql > /tmp/live.cron.snapshot || true
-
-          status=0
           echo "== public schema =="
-          scripts/schema/check-drift.sh db/schema.snapshot /tmp/live.snapshot || status=1
-          if [ -f db/cron.snapshot ]; then
-            echo "== pg_cron jobs =="
-            if ! diff -u db/cron.snapshot /tmp/live.cron.snapshot; then
-              echo "::warning::pg_cron jobs on prod differ from db/cron.snapshot" >&2
-              status=1
-            fi
-          fi
-          exit $status
+          scripts/schema/check-drift.sh db/schema.snapshot /tmp/live.snapshot
