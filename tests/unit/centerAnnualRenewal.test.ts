@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-// Job 1: a center that pays a subscription renewal invoice must advance its
-// next_payment_due by the RIGHT period — +12 months for an annual center, +3
-// months (unchanged quarterly anchor) for everyone else. We assert the value
-// handed to finalize_subscription_invoice_paid (p_next_payment_due).
+// A center that pays a subscription renewal invoice must advance its
+// next_payment_due by the RIGHT period — +12 months for an annual center, +1
+// month for everyone else (monthly is the standard non-annual cadence; the
+// quarterly clock is retired). We assert the value handed to
+// finalize_subscription_invoice_paid (p_next_payment_due).
 
 vi.mock('@/lib/centerNotify', () => ({
   sendChqPaymentConfirmedTemplate: vi.fn().mockResolvedValue({ success: true }),
@@ -92,15 +93,15 @@ describe('center annual renewal — period-aware next_payment_due', () => {
     expect(nextDueOf(capture)).toBe('2027-06-01');
   });
 
-  it('quarterly center is unchanged: advances +3 months (2026-06-01 → 2026-09-01)', async () => {
-    const capture: RpcCapture = { calls: [] };
-    await finalizeInvoicePaymentSuccess(makeHarness('quarterly', capture), 'order-1', 'tx-1');
-    expect(nextDueOf(capture)).toBe('2026-09-01');
-  });
-
-  it('monthly center is also unchanged (still the quarterly anchor): +3 months', async () => {
+  it('monthly center advances +1 month (2026-06-01 → 2026-07-01)', async () => {
     const capture: RpcCapture = { calls: [] };
     await finalizeInvoicePaymentSuccess(makeHarness('monthly', capture), 'order-1', 'tx-1');
-    expect(nextDueOf(capture)).toBe('2026-09-01');
+    expect(nextDueOf(capture)).toBe('2026-07-01');
+  });
+
+  it('a stray quarterly value also advances +1 month (no 3-month clock remains)', async () => {
+    const capture: RpcCapture = { calls: [] };
+    await finalizeInvoicePaymentSuccess(makeHarness('quarterly', capture), 'order-1', 'tx-1');
+    expect(nextDueOf(capture)).toBe('2026-07-01');
   });
 });

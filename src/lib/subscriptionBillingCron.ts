@@ -182,9 +182,10 @@ export async function runSubscriptionBillingCron(
         c.scheduled_billing_period,
       );
       // Period-aware renewal: annual bills monthly × 10 over a 12-month clock;
-      // monthly/quarterly stay on the stored (quarterly) amount + 3-month clock,
-      // exactly as before. A scheduled downgrade supplies its own period-aware
-      // amount/period/per-month base (resolveScheduledCenterDowngrade).
+      // monthly bills the stored monthly amount over a 1-month clock (the standard
+      // non-annual cadence — the quarterly clock is retired). A scheduled downgrade
+      // supplies its own period-aware amount/period/per-month base
+      // (resolveScheduledCenterDowngrade).
       const effectivePeriod = sched ? sched.billingPeriod : c.billing_period;
       const ba = centerRenewalBaseAmount({
         billingPeriod: effectivePeriod,

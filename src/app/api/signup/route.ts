@@ -189,12 +189,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // Centers are billed monthly or annual only. Monthly is the standard cadence
+    // and the default when the field is absent (the quarterly clock is retired).
     const billingPeriodRaw =
-      body.billingPeriod ?? body.billing_period ?? 'quarterly';
+      body.billingPeriod ?? body.billing_period ?? 'monthly';
     const periodResolved: BillingPeriod = normalizeBillingPeriod(
       ['monthly', 'quarterly', 'annual'].includes(String(billingPeriodRaw))
         ? String(billingPeriodRaw)
-        : 'quarterly',
+        : 'monthly',
     );
 
     const initiatePayment = initiatePaymentRaw === true;
@@ -267,9 +269,9 @@ export async function POST(request: Request) {
     const setup = setupFees[normalizedPlan] ?? 1000;
 
     const allInPerMonth = PLANS[planKey].quarterlyAllIn;
-    const defaultQuarterlyInvoice = allInPerMonth * 3;
     // Annual = monthly × annualMultiplier from the live admin config, so the price
     // CHARGED here matches the price SHOWN on /pricing (same source of truth).
+    // For monthly, getPlanPrice returns the monthly list price (one month, never ×3).
     const intervalCfg = await getIntervalConfig();
     const periodAmount = getPlanPrice(planKey, periodResolved, intervalCfg.annualMultiplier);
 
@@ -310,7 +312,7 @@ export async function POST(request: Request) {
       subscription_status: 'pending',
       billing_type: 'fixed',
       billing_period: periodResolved,
-      billing_amount: defaultQuarterlyInvoice,
+      billing_amount: periodAmount,
       all_in_price: allInPerMonth,
       requested_at: new Date().toISOString(),
       terms_accepted_at: termsAcceptedAt,
@@ -321,6 +323,15 @@ export async function POST(request: Request) {
 
     if (initiatePayment) {
       centerInsert.billing_status = 'pending';
+    }
+
+    // Monthly is billed monthly, not the DB-default quarterly. The activation /
+    // auto-approve path resolves cadence as `subscription_billing_period ??
+    // billing_period`, and this column otherwise defaults to 'quarterly' — which
+    // would bill a monthly signup as quarterly (×3, +90d). Pin it to monthly here.
+    // Annual is left to its existing handling (unchanged by this build).
+    if (periodResolved === 'monthly') {
+      centerInsert.subscription_billing_period = 'monthly';
     }
 
     if (referrerCenterId) {

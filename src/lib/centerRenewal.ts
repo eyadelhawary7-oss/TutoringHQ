@@ -1,17 +1,17 @@
 // Center recurring-renewal period math (the center equivalent of the teacher
 // engine's `teacherCyclePeriodDays` + annual-charge seam in `teacherBilling.ts`).
 //
-// Centers store their cadence on `centers.billing_period` ('monthly' | 'quarterly'
-// | 'annual') and their per-month base on `centers.all_in_price`. `billing_amount`
-// is the QUARTERLY figure (monthly × 3) written at signup — correct for the legacy
-// quarterly clock but NOT for an annual center, whose renewal must bill
-// monthly × annualMultiplier (=10, "true 2 months free") over a 12-month period.
+// Centers are billed **monthly or annual only** (the quarterly clock is retired
+// for all new activity). They store their cadence on `centers.billing_period`
+// ('monthly' | 'annual') and their per-month base on `centers.all_in_price`.
+// `billing_amount` holds the recurring charge for one cycle: the monthly amount
+// for a monthly center. An annual center's renewal must bill monthly ×
+// annualMultiplier (=10, "true 2 months free") over a 12-month period, computed
+// from `all_in_price` rather than the stored amount.
 //
 // These two pure helpers centralise that decision so the recurring cron and the
-// paid-invoice handler stay in lock-step. Only the ANNUAL branch is new: the
-// monthly/quarterly path returns exactly what those call sites used before (the
-// stored quarterly amount over a 3-month clock), so non-annual billing is
-// byte-identical.
+// paid-invoice handler stay in lock-step. The quarterly clock is gone: any
+// non-annual center (and any unknown/legacy value) renews on the 1-month cadence.
 
 import {
   getAnnualChargeRounded,
@@ -20,11 +20,13 @@ import {
 } from '@/lib/pricing';
 
 /**
- * Calendar months in one center billing cycle: 12 for annual, 3 otherwise.
- * Non-annual intentionally stays quarterly (the legacy clock) — see module note.
+ * Calendar months in one center billing cycle: 12 for annual, 1 for everything
+ * else. Monthly is the standard non-annual cadence and the default for any
+ * unknown/legacy value — the three-month (quarterly) clock is removed entirely;
+ * no path returns 3 anymore. See module note.
  */
 export function centerRenewalPeriodMonths(billingPeriod: string | null | undefined): number {
-  return normalizeBillingPeriod(billingPeriod) === 'annual' ? 12 : 3;
+  return normalizeBillingPeriod(billingPeriod) === 'annual' ? 12 : 1;
 }
 
 /**
@@ -32,9 +34,10 @@ export function centerRenewalPeriodMonths(billingPeriod: string | null | undefin
  *
  *  - annual → monthly all-in × annualMultiplier (=10), mirroring the teacher
  *    engine (`getAnnualChargeRounded`). Uses `all_in_price`, the reliable
- *    per-month base, NOT the stored quarterly `billing_amount`.
- *  - monthly / quarterly → UNCHANGED: the stored `billing_amount` (quarterly
- *    figure) exactly as the cron/paid handler used it before.
+ *    per-month base, NOT the stored `billing_amount`.
+ *  - monthly (and the retired quarterly fallback) → the stored `billing_amount`
+ *    exactly as the cron/paid handler uses it: for a monthly center that is the
+ *    monthly charge. Respects custom / early-adopter amounts (never recomputed).
  */
 export function centerRenewalBaseAmount(opts: {
   billingPeriod: string | null | undefined;

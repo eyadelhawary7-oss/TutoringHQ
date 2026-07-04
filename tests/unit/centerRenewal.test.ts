@@ -4,21 +4,24 @@ import {
   centerRenewalBaseAmount,
 } from '@/lib/centerRenewal';
 
-// Job 1: center recurring renewals must be period-aware. Annual bills monthly × 10
-// over a 12-month clock (mirrors the teacher engine); monthly/quarterly are left
-// exactly on the legacy quarterly clock + stored amount.
+// Centers are billed monthly or annual only. Annual bills monthly × 10 over a
+// 12-month clock (mirrors the teacher engine); monthly bills the stored monthly
+// amount over a 1-month clock. The quarterly clock is retired for new activity.
 describe('centerRenewalPeriodMonths', () => {
   it('annual → 12 months', () => {
     expect(centerRenewalPeriodMonths('annual')).toBe(12);
     expect(centerRenewalPeriodMonths('yearly')).toBe(12); // legacy alias
   });
 
-  it('non-annual → 3 months (unchanged quarterly clock)', () => {
-    expect(centerRenewalPeriodMonths('quarterly')).toBe(3);
-    expect(centerRenewalPeriodMonths('monthly')).toBe(3);
-    expect(centerRenewalPeriodMonths(null)).toBe(3);
-    expect(centerRenewalPeriodMonths(undefined)).toBe(3);
-    expect(centerRenewalPeriodMonths('garbage')).toBe(3);
+  it('monthly → 1 month (the standard non-annual cadence)', () => {
+    expect(centerRenewalPeriodMonths('monthly')).toBe(1);
+  });
+
+  it('every non-annual value → 1 month; the 3-month quarterly clock is gone', () => {
+    expect(centerRenewalPeriodMonths('quarterly')).toBe(1);
+    expect(centerRenewalPeriodMonths(null)).toBe(1);
+    expect(centerRenewalPeriodMonths(undefined)).toBe(1);
+    expect(centerRenewalPeriodMonths('garbage')).toBe(1);
   });
 });
 
