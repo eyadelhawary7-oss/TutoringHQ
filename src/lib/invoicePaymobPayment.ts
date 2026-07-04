@@ -25,6 +25,7 @@ const PERIOD_MONTHS: Record<string, number> = {
 };
 
 const QUARTERLY_LABEL_AR = 'ربع سنوي';
+const MONTHLY_LABEL_AR = 'شهري';
 const ANNUAL_LABEL_AR = 'سنوي';
 
 async function handlePlanUpgradeInvoicePaid(
@@ -142,8 +143,9 @@ async function handleSubscriptionInvoicePaid(
   if (!c) return null;
 
   const wasSuspendedBilling = c.billing_status === 'suspended';
-  // Period-aware renewal clock: annual advances the due date +12 months, monthly/
-  // quarterly stay on the +3-month quarterly anchor exactly as before.
+  // Period-aware renewal clock: annual advances the due date +12 months, monthly
+  // advances +1 month (the standard non-annual cadence — the quarterly clock is
+  // retired). centerRenewalPeriodMonths encodes the mapping.
   const isAnnual = normalizeBillingPeriod(c.billing_period) === 'annual';
   const newDue = computeNextPaymentDue(
     {
@@ -201,8 +203,9 @@ async function handleSubscriptionInvoicePaid(
   if (status !== 'already_paid') {
     try {
       // Annual renewals confirm with the annual label + annual base amount (monthly
-      // × 10). Non-annual keeps the historical quarterly label + stored amount.
-      let billingPeriodLabel = QUARTERLY_LABEL_AR;
+      // × 10). Non-annual is monthly now (quarterly retired): the monthly label +
+      // the stored monthly amount.
+      let billingPeriodLabel = MONTHLY_LABEL_AR;
       let billingAmountStr = String(c.billing_amount ?? totalAmt);
       if (isAnnual) {
         const { annualMultiplier } = await getIntervalConfig();
