@@ -147,29 +147,59 @@ lines AS (
            || ' def=' || regexp_replace(pg_get_viewdef(r.oid), '\s+', ' ', 'g')
   FROM pubrel r WHERE r.relkind IN ('v','m')
 
-  -- 90 TABLE GRANTS (frozen as-is — Phase 1 will change some of these)
+  -- 90 TABLE GRANTS — read from the catalog ACL (pg_class.relacl), NOT
+  --    information_schema.role_table_grants. The information_schema privilege
+  --    views only expose grants the CURRENT role is allowed to see, so the
+  --    read-only live-drift role (which is not a member of anon/authenticated/
+  --    service_role) sees NONE of them and every grant line false-trips as
+  --    drift. pg_class.relacl is a plain catalog column any role can read, so
+  --    the output is byte-identical whether run as the superuser CI rebuild or
+  --    the read-only prod role. Two details keep it identical to the old
+  --    information_schema output:
+  --      * privilege_type is constrained to the SQL-standard table privileges
+  --        that information_schema exposes; this drops PG17's non-standard
+  --        MAINTAIN (granted in the baseline but absent from information_schema
+  --        and therefore from the snapshot) so it does not leak in.
+  --      * COALESCE(relacl, acldefault(...)) reconstructs Postgres' default
+  --        privileges for a NULL acl exactly as information_schema reports them.
   UNION ALL
-  SELECT '90_tgrant::' || g.table_name || '::' || g.grantee || '::' || g.privilege_type,
-         'TABLE_GRANT ' || g.table_name
-           || ' grantee=' || g.grantee
-           || ' priv=' || g.privilege_type
-           || ' grantable=' || g.is_grantable
-  FROM information_schema.role_table_grants g
-  WHERE g.table_schema = 'public'
-    AND g.table_name IN (SELECT relname FROM pubrel)
-    AND g.grantee IN ('anon','authenticated','service_role','PUBLIC')  -- security surface; owner grants are env noise
+  SELECT '90_tgrant::' || r.relname || '::' || grantee_name || '::' || acl.privilege_type,
+         'TABLE_GRANT ' || r.relname
+           || ' grantee=' || grantee_name
+           || ' priv=' || acl.privilege_type
+           || ' grantable=' || CASE WHEN acl.is_grantable THEN 'YES' ELSE 'NO' END
+  FROM pubrel r
+  JOIN pg_class pc ON pc.oid = r.oid
+  CROSS JOIN LATERAL aclexplode(COALESCE(pc.relacl, acldefault('r', pc.relowner))) acl
+  CROSS JOIN LATERAL (
+    SELECT CASE WHEN acl.grantee = 0 THEN 'PUBLIC'
+                ELSE (SELECT rolname FROM pg_roles WHERE oid = acl.grantee) END
+  ) gn(grantee_name)
+  WHERE acl.privilege_type IN ('SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER')
+    AND grantee_name IN ('anon','authenticated','service_role','PUBLIC')  -- security surface; owner grants are env noise
 
-  -- 95 ROUTINE GRANTS (EXECUTE on functions — the over-granted RPC surface)
+  -- 95 ROUTINE GRANTS (EXECUTE on functions — the over-granted RPC surface) —
+  --    read from pg_proc.proacl for the same reason as 90: the routine-grant
+  --    information_schema view is filtered to the current role's visibility and
+  --    returns nothing for the read-only live-drift role. proacl is catalog-
+  --    visible to every role. A NULL proacl means the function carries the
+  --    default privilege (EXECUTE to PUBLIC), which acldefault('f', ...)
+  --    reconstructs so those lines match the snapshot exactly.
   UNION ALL
-  SELECT '95_rgrant::' || rg.routine_name || '::' || rg.grantee || '::' || rg.privilege_type,
-         'ROUTINE_GRANT ' || rg.routine_name
-           || ' grantee=' || rg.grantee
-           || ' priv=' || rg.privilege_type
-           || ' grantable=' || rg.is_grantable
-  FROM information_schema.role_routine_grants rg
-  WHERE rg.routine_schema = 'public'
-    AND rg.routine_name IN (SELECT proname FROM pubproc)
-    AND rg.grantee IN ('anon','authenticated','service_role','PUBLIC')  -- security surface; owner grants are env noise
+  SELECT '95_rgrant::' || p.proname || '::' || grantee_name || '::' || acl.privilege_type,
+         'ROUTINE_GRANT ' || p.proname
+           || ' grantee=' || grantee_name
+           || ' priv=' || acl.privilege_type
+           || ' grantable=' || CASE WHEN acl.is_grantable THEN 'YES' ELSE 'NO' END
+  FROM pubproc p
+  JOIN pg_proc pp ON pp.oid = p.oid
+  CROSS JOIN LATERAL aclexplode(COALESCE(pp.proacl, acldefault('f', pp.proowner))) acl
+  CROSS JOIN LATERAL (
+    SELECT CASE WHEN acl.grantee = 0 THEN 'PUBLIC'
+                ELSE (SELECT rolname FROM pg_roles WHERE oid = acl.grantee) END
+  ) gn(grantee_name)
+  WHERE acl.privilege_type = 'EXECUTE'
+    AND grantee_name IN ('anon','authenticated','service_role','PUBLIC')  -- security surface; owner grants are env noise
 
   -- A0 STORAGE.OBJECTS POLICIES (app-owned security surface in the storage schema)
   UNION ALL
