@@ -91,12 +91,14 @@ src/components/skeletons/StudentListSkeleton.tsx
 `src/app/[locale]/(dashboard)/financial-intelligence/page.tsx` was a one-line re-export of `/analytics`. It now server-redirects to `/{locale}/analytics`, so old bookmarks keep working instead of 404-ing. No internal links pointed at it.
 - **Implementation note:** used `redirect()` (307) to match the repo's 9 existing legacy redirect stubs (`/invoices`, `/admin/dashboard`, `/admin/card-orders`, …) verbatim — consistency over introducing a lone `permanentRedirect()` (308). If you want true "permanent" 308 semantics for SEO, swap `redirect` → `permanentRedirect`; it's a one-word change.
 
-### `/admin/sales-pipeline` — **NOT DELETED — PAUSED, needs your call**
-The brief said to pause on either page if anything links to it. It **is** linked:
-- `src/components/AdminSidebar.tsx` — a live sidebar nav entry (`href: '/admin/sales-pipeline'`, lines ~547–549) plus active-route highlighting (line 148).
-- `src/app/[locale]/admin/page.tsx` — the admin `?tab=` redirect map (lines 95–98: `salesPipeline`, `salespipeline`, `sales-pipeline`, `sales_pipeline` → `/admin/sales-pipeline`).
+### `/admin/sales-pipeline` — **FULLY RETIRED** (follow-up build, 2026-07-05)
+Initially paused because it was linked from the nav and the tab-redirect map. Now removed completely, with every reference cleaned up so no dead link remains:
+- **Page deleted:** `src/app/[locale]/admin/sales-pipeline/page.tsx`.
+- **`src/components/AdminSidebar.tsx`** — removed the nav entry (`key/icon/label/isActive/canShow/href`), the `'salesPipeline'` union-type member, the `isSalesPipeline` active-route const, its operand in the `onDedicatedAdminSubpage` OR-chain, and the now-unused `Target` icon import. Nothing else in the file changed.
+- **`src/app/[locale]/admin/page.tsx`** — removed the 4 tab aliases (`salesPipeline`, `salespipeline`, `sales-pipeline`, `sales_pipeline`). Every other tab route in the map is untouched and still resolves.
+- **Verified:** repo grep for `sales-pipeline` returns **zero code references** (only historical mentions remain in `docs/`).
 
-Deleting the page alone would leave a sidebar link and four tab-aliases pointing at a 404. Properly retiring it means also removing the sidebar entry + the tab-map entries — a nav/behavior change beyond "delete an unused file." **Left untouched for a separate, deliberate decision:** build persistence for the prototype, or remove the page *and* its nav/redirect references together.
+**Intentionally left (auth guardrail #1):** the `sales_pipeline` *permission key* in `src/lib/admin-roles.ts` (role arrays + label). That file is the admin auth/permissions surface — out of scope for this build. The key is now a harmless orphan (no nav renders it); removing it belongs in the auth-focused careful step alongside `admin-check.ts`.
 
 ---
 
@@ -107,7 +109,7 @@ Deleting the page alone would leave a sidebar link and four tab-aliases pointing
 | `src/lib/admin-check.ts` | Explicitly excluded by the brief — name touches auth; own careful step later. (Confirmed still dead: 0 importers.) |
 | `src/lib/savedCard/index.ts` | Proven-dead barrel, **but it lives inside the live Paymob + consent + billing `savedCard/` module** (siblings imported by the Paymob webhook, autocharge cron, and consent route). HARD-guardrail zone — defer to a careful step. |
 | `sentryTest` i18n keys | Translation keys, not a source file; leaving them is parity-safe. Optional later cleanup. |
-| `/admin/sales-pipeline` | Has live nav + redirect references (see Batch B). Needs a product decision. |
+| `sales_pipeline` permission key (`src/lib/admin-roles.ts`) | Auth/permissions surface (guardrail #1). Orphaned but harmless; remove in the auth careful step. |
 
 ## Unused dependencies — left for a separate build (per brief guardrail #4)
 
@@ -122,7 +124,7 @@ The audit flagged these as having no static references. **Not removed here** —
 
 ---
 
-## Verification
+## Verification (Batch A + B)
 
 | Check | Result |
 |---|---|
@@ -138,6 +140,19 @@ The audit flagged these as having no static references. **Not removed here** —
 | `/sentry-test` | ✅ removed from route table |
 | No surviving file imports anything removed | ✅ confirmed (typecheck + grep) |
 
+## Verification (sales-pipeline follow-up removal)
+
+| Check | Result |
+|---|---|
+| Files changed | 1 page deleted (`admin/sales-pipeline/page.tsx`), 2 files edited (`AdminSidebar.tsx`, `admin/page.tsx`) |
+| Repo grep for `sales-pipeline` | ✅ **zero code references** (only historical mentions in `docs/`) |
+| `tsc --noEmit` (after clearing stale `.next/types`) | ✅ clean |
+| Unit tests | ✅ **1147 passed / 141 files** |
+| `check:i18n` / `check:bidi` / `check:tolocale` | ✅ OK |
+| `npm run lint` | ✅ 0 errors, 163 warnings (unchanged — `Target` import removal left no new unused-var) |
+| `next build` | ✅ **succeeded** (compiled in 76s); `sales-pipeline` **absent** from route table |
+| Other admin tabs sharing the redirect map | ✅ `admin/finance`, `admin/vendors`, `admin/renewals`, `admin/analytics` all still build & resolve |
+
 ---
 
-*Read-only-adjacent: only deletions + one redirect conversion. No dependency, schema, or snapshot changes. Hold for Eyad's review — no PR.*
+*Read-only-adjacent: deletions, one redirect conversion, and surgical nav/redirect-map edits to retire one prototype route. No dependency, schema, or snapshot changes. Hold for Eyad's review — no PR.*

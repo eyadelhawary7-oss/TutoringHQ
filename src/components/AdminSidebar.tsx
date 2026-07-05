@@ -11,7 +11,6 @@ import {
   FileText,
   Clock,
   Users,
-  Target,
   BarChart3,
   IdCard,
   Gift,
@@ -55,7 +54,6 @@ export type AdminTab =
   | 'referrals'
   | 'withdrawals'
   | 'internalTeam'
-  | 'salesPipeline'
   | 'analytics'
   | 'platformHealth';
 
@@ -145,7 +143,6 @@ export function AdminSidebar({
   const isPlanRequests = activeRoute?.includes('admin/plan-requests');
   const isPendingSignups = activeRoute?.includes('admin/pending-signups');
   const isInternalTeam = activeRoute?.includes('admin/internal-team');
-  const isSalesPipeline = activeRoute?.includes('admin/sales-pipeline');
   const isAnalytics = activeRoute?.includes('admin/analytics');
 
   /** Sub-routes under admin - main Overview entry must not stay highlighted on these. */
@@ -171,7 +168,6 @@ export function AdminSidebar({
     isPlanRequests ||
     isPendingSignups ||
     isInternalTeam ||
-    isSalesPipeline ||
     isAnalytics ||
     isCeo;
 
@@ -539,14 +535,6 @@ export function AdminSidebar({
           isActive: activeRoute?.includes('admin/analytics') ?? false,
           canShow: canSee('analytics'),
           href: '/admin/analytics',
-        },
-        {
-          key: 'salesPipeline',
-          icon: Target,
-          label: t('salesPipeline'),
-          isActive: activeRoute?.includes('admin/sales-pipeline') ?? false,
-          canShow: canSee('sales_pipeline'),
-          href: '/admin/sales-pipeline',
         },
         {
           key: 'referrals',
