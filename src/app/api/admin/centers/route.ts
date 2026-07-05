@@ -10,7 +10,7 @@ import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { customPermissionsToKeys, fetchAdminAccessFlags } from '@/lib/admin-access';
 import { getAdminPermissions } from '@/lib/admin-roles';
-import { PLANS, type PlanKey } from '@/lib/pricing';
+import { PLANS, getChargeFromQuarterlyAllIn, type PlanKey } from '@/lib/pricing';
 import { todayISO } from '@/lib/parentPack';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { parseIncludeTestCenters } from '@/lib/adminIncludeTest';
@@ -833,7 +833,7 @@ export async function PUT(request: Request) {
     const nextPaymentDue = calendarAddDays(approveDay, 30);
     const autoSuspendDay = calendarAddDays(nextPaymentDue, 6);
 
-    // Early Adopter: first 10 approved centers get 40% discount locked in (quarterly all-in base)
+    // Early Adopter: first 10 approved centers get 40% discount locked in (monthly all-in base)
     const plan = (center.plan as string) || 'starter';
     const planKey = (plan in PLANS ? plan : 'starter') as PlanKey;
     const listAllInPerMonth = PLANS[planKey]?.quarterlyAllIn ?? PLANS.starter.quarterlyAllIn;
@@ -845,7 +845,13 @@ export async function PUT(request: Request) {
     const canBeEarlyAdopter = (earlyAdopterCount ?? 0) < 10 && earlyAdopterEligiblePlans.has(plan);
     const earlyAdopterNumber = canBeEarlyAdopter ? (earlyAdopterCount ?? 0) + 1 : null;
     const effectiveAllInPerMonth = canBeEarlyAdopter ? Math.round(listAllInPerMonth * 0.6) : listAllInPerMonth;
-    const quarterlyInvoiceAmount = Math.round(effectiveAllInPerMonth * 3);
+    // Monthly is the only non-annual cadence now (quarterly retired). Charge the
+    // monthly list price (early-adopter discount flows through via effectiveAllInPerMonth),
+    // matching the signup / Paymob auto-approve activation paths — and pairing with
+    // the +30-day next_payment_due above instead of the old ×3 / 90-day quarterly charge.
+    const monthlyInvoiceAmount = Math.round(
+      getChargeFromQuarterlyAllIn(effectiveAllInPerMonth, 'monthly', planKey),
+    );
 
     const centerUpdates: Record<string, unknown> = {
       status: 'active',
@@ -856,13 +862,13 @@ export async function PUT(request: Request) {
       subscription_start_date: nextPaymentDue,
       auto_suspend_at: `${autoSuspendDay}T12:00:00.000Z`,
       billing_status: 'active',
-      subscription_billing_period: 'quarterly',
-      billing_amount: quarterlyInvoiceAmount,
+      subscription_billing_period: 'monthly',
+      billing_amount: monthlyInvoiceAmount,
       all_in_price: effectiveAllInPerMonth,
     };
     if (canBeEarlyAdopter) {
       centerUpdates.is_early_adopter = true;
-      centerUpdates.early_adopter_price = quarterlyInvoiceAmount;
+      centerUpdates.early_adopter_price = monthlyInvoiceAmount;
       centerUpdates.early_adopter_number = earlyAdopterNumber;
       centerUpdates.early_adopter_date = now.toISOString();
     }

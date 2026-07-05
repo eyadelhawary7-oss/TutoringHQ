@@ -491,7 +491,7 @@ COLUMN centers.subscription_status ord=6 type=text notnull=true default='active'
 COLUMN centers.scanner_default_mode ord=7 type=text notnull=false default='camera'::text
 COLUMN centers.created_at ord=8 type=timestamp with time zone notnull=true default=now()
 COLUMN centers.individual_alerts_enabled ord=9 type=boolean notnull=false default=false
-COLUMN centers.billing_period ord=10 type=text notnull=false default='quarterly'::text
+COLUMN centers.billing_period ord=10 type=text notnull=false default='monthly'::text
 COLUMN centers.billing_cycle_start ord=11 type=date notnull=false default=CURRENT_DATE
 COLUMN centers.next_billing_date ord=12 type=date notnull=false default=∅
 COLUMN centers.billing_amount ord=13 type=numeric(12,2) notnull=false default=0
@@ -533,7 +533,7 @@ COLUMN centers.onboarding_completed ord=48 type=boolean notnull=false default=fa
 COLUMN centers.onboarding_started_at ord=49 type=timestamp with time zone notnull=false default=∅
 COLUMN centers.subscription_start_date ord=50 type=date notnull=false default=∅
 COLUMN centers.subscription_renewal_date ord=51 type=date notnull=false default=∅
-COLUMN centers.subscription_billing_period ord=52 type=text notnull=false default='quarterly'::text
+COLUMN centers.subscription_billing_period ord=52 type=text notnull=false default='monthly'::text
 COLUMN centers.subscription_monthly_fee ord=53 type=numeric(12,2) notnull=false default=0
 COLUMN centers.daily_summary_enabled ord=54 type=boolean notnull=false default=true
 COLUMN centers.summer_mode ord=55 type=boolean notnull=false default=false
@@ -1912,7 +1912,7 @@ CONSTRAINT center_notes.center_notes_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT center_reengagement_log.center_reengagement_log_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT center_reengagement_log.center_reengagement_log_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT centers.centers_approved_by_fkey type=f def=FOREIGN KEY (approved_by) REFERENCES auth.users(id)
-CONSTRAINT centers.centers_billing_period_check type=c def=CHECK ((billing_period = ANY (ARRAY['monthly'::text, 'quarterly'::text, 'annual'::text])))
+CONSTRAINT centers.centers_billing_period_check type=c def=CHECK ((billing_period = ANY (ARRAY['monthly'::text, 'annual'::text])))
 CONSTRAINT centers.centers_billing_status_check type=c def=CHECK ((billing_status = ANY (ARRAY['active'::text, 'paid'::text, 'overdue'::text, 'due_soon'::text, 'suspended'::text])))
 CONSTRAINT centers.centers_billing_type_check type=c def=CHECK ((billing_type = ANY (ARRAY['fixed'::text, 'payg'::text])))
 CONSTRAINT centers.centers_center_code_key type=u def=UNIQUE (center_code)
@@ -1930,7 +1930,7 @@ CONSTRAINT centers.centers_referral_code_key type=u def=UNIQUE (referral_code)
 CONSTRAINT centers.centers_referred_by_fkey type=f def=FOREIGN KEY (referred_by) REFERENCES centers(id)
 CONSTRAINT centers.centers_scanner_default_mode_check type=c def=CHECK ((scanner_default_mode = ANY (ARRAY['camera'::text, 'bluetooth'::text])))
 CONSTRAINT centers.centers_status_check type=c def=CHECK ((status = ANY (ARRAY['pending'::text, 'active'::text, 'suspended'::text, 'rejected'::text, 'pending_payment'::text, 'dormant'::text])))
-CONSTRAINT centers.centers_subscription_billing_period_check type=c def=CHECK ((subscription_billing_period = ANY (ARRAY['monthly'::text, 'quarterly'::text, 'biannual'::text, 'yearly'::text])))
+CONSTRAINT centers.centers_subscription_billing_period_check type=c def=CHECK ((subscription_billing_period = ANY (ARRAY['monthly'::text, 'yearly'::text])))
 CONSTRAINT centers.centers_subscription_status_check type=c def=CHECK ((subscription_status = ANY (ARRAY['active'::text, 'suspended'::text, 'pending'::text, 'cancelled'::text])))
 CONSTRAINT centers.centers_summer_first_invoice_id_fkey type=f def=FOREIGN KEY (summer_first_invoice_id) REFERENCES invoices(id) ON DELETE RESTRICT
 CONSTRAINT centers.centers_summer_status_check type=c def=CHECK (((summer_status IS NULL) OR (summer_status = ANY (ARRAY['enrolled'::text, 'invoiced'::text, 'paid'::text]))))

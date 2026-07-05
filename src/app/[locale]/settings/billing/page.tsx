@@ -658,7 +658,6 @@ function PaygTab({
                   style={cairoFont}
                 >
                   <option value="monthly">{t('period.monthly.label')}</option>
-                  <option value="quarterly">{t('period.quarterly.label')}</option>
                   <option value="annual">{t('period.annual.label')}</option>
                 </select>
                 <button
@@ -716,7 +715,7 @@ export default function BillingPage() {
   const [pricingRows, setPricingRows] = useState<PricingPlanRow[]>([]);
   const [activeTab, setActiveTab] = useState<'upgrade' | 'downgrade' | 'payg'>('upgrade');
   const [paygStudentCount, setPaygStudentCount] = useState(50);
-  const [paygLeavePeriod, setPaygLeavePeriod] = useState<BillingPeriod>('quarterly');
+  const [paygLeavePeriod, setPaygLeavePeriod] = useState<BillingPeriod>('monthly');
   const [activeStudentCount, setActiveStudentCount] = useState(0);
   const [selectedPeriod, setSelectedPeriod] = useState<BillingPeriod | ''>('');
   const [selectedPlan, setSelectedPlan] = useState<CenterPlanKey | ''>('');

@@ -123,10 +123,10 @@ export async function POST(request: NextRequest) {
     }
 
     const newPeriodRaw = typeof body.newPeriod === 'string' ? body.newPeriod.trim() : '';
-    const newPeriod = normalizeBillingPeriod(newPeriodRaw || 'quarterly') as BillingPeriod;
-    if (!['monthly', 'quarterly', 'annual'].includes(newPeriod)) {
-      return NextResponse.json({ error: 'newPeriod must be monthly, quarterly, or annual' }, { status: 400 });
-    }
+    // Quarterly is retired — only monthly and annual remain (the pricing rule).
+    // Anything that is not annual (including legacy 'quarterly') coerces to monthly.
+    const normalizedPeriod = normalizeBillingPeriod(newPeriodRaw || 'monthly') as BillingPeriod;
+    const newPeriod: BillingPeriod = normalizedPeriod === 'annual' ? 'annual' : 'monthly';
 
     const { error: uErr } = await supabaseAdmin
       .from('centers')

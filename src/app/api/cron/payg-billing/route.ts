@@ -256,14 +256,20 @@ export async function POST(request: Request) {
           .eq('id', sw.id);
         if (!error) switchesProcessed += 1;
       } else if (sw.payg_pending_switch === 'from_payg') {
-        const period = (sw.payg_pending_target_period || 'quarterly').toLowerCase();
+        // Quarterly is retired: only monthly and annual remain. Anything that is
+        // not annual lands on monthly (never the old 'quarterly' fallback), and
+        // annual honors each column's vocabulary — billing_period='annual',
+        // subscription_billing_period='yearly' (the annual value quirk) — so both
+        // writes satisfy the tightened CHECKs.
+        const targetRaw = (sw.payg_pending_target_period || 'monthly').toLowerCase();
+        const isAnnual = targetRaw === 'annual' || targetRaw === 'yearly';
         const { error } = await supabase
           .from('centers')
           .update({
             billing_type: 'fixed',
             pricing_type: 'fixed',
-            subscription_billing_period: period,
-            billing_period: period,
+            subscription_billing_period: isAnnual ? 'yearly' : 'monthly',
+            billing_period: isAnnual ? 'annual' : 'monthly',
             payg_pending_switch: null,
             payg_switch_effective_date: null,
             payg_pending_target_period: null,

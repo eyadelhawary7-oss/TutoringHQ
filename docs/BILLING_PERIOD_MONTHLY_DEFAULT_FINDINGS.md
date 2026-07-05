@@ -67,5 +67,49 @@ The monthly **default flip** alone is safe and fully satisfies "nothing can ever
 default back to quarterly." The **CHECK tightening** is what collides with the two
 writers above. Decision on how to proceed escalated to Eyad (see below).
 
-## Decision
-_(pending Eyad's call — recorded here once made.)_
+## Decision — Option 3 (Eyad): fix the quarterly writers, then tighten
+Fix both quarterly writers (including the admin ×3 triple-charge), then tighten the
+CHECKs. Applied to live PG17; snapshot regenerated; held for review, no PR.
+
+### Code changes (retire quarterly at every writer)
+1. **Admin manual-approve** — `src/app/api/admin/centers/route.ts`
+   `subscription_billing_period` `'quarterly'` → `'monthly'`, and `billing_amount`
+   / `early_adopter_price` now use `getChargeFromQuarterlyAllIn(effectiveAllInPerMonth,
+   'monthly', planKey)` (the monthly list price) instead of `× 3`. This also removes
+   the internal inconsistency where the record already carried a +30-day
+   `next_payment_due` but a ×3 / quarterly amount. Matches the signup / Paymob
+   auto-approve activation paths.
+2. **PAYG → fixed switch cron** — `src/app/api/cron/payg-billing/route.ts`
+   Fallback `'quarterly'` → `'monthly'`; annual now honors each column's vocabulary
+   (`billing_period='annual'`, `subscription_billing_period='yearly'`) so both writes
+   satisfy the tightened CHECKs.
+3. **PAYG switch entry + UI** — `src/app/api/billing/switch-payg/route.ts` and
+   `src/app/[locale]/settings/billing/page.tsx`: the leave-PAYG period is now
+   monthly | annual only (quarterly option removed, default monthly; legacy
+   `'quarterly'` input coerces to monthly rather than 400-ing).
+
+Remaining `|| 'quarterly'` occurrences in `src/` are **reader/normalizer fallbacks**
+(months-calc in `admin/approve-payment`, aggregation display in `admin/billing`,
+`normalizeBillingPeriod`/`pricing.ts` defaults) — none write the period columns or
+produce a quarterly row, so they are left untouched and pose no CHECK risk.
+
+### Schema migration — `supabase/migrations/20260705120000_billing_period_monthly_default.sql`
+- `billing_period` / `subscription_billing_period` DEFAULT `'quarterly'` → `'monthly'`.
+- `centers_billing_period_check` → `IN ('monthly','annual')`.
+- `centers_subscription_billing_period_check` → `IN ('monthly','yearly')` (annual
+  value quirk preserved; annual otherwise untouched).
+- Ends with `NOTIFY pgrst, 'reload schema'`.
+
+### Applied + verified on live prod (PG17, project `lczmjpnbuhnsislcvzar`)
+- Pre-apply violation check: 2 rows total, **0** violations on either column.
+- Post-apply: both defaults `'monthly'`; checks are `{monthly, annual}` and
+  `{monthly, yearly}`; **0** rows in violation.
+- Snapshot regenerated from live PG17 (not hand-authored): the 4 changed `line`
+  values were read back verbatim via `execute_sql`, and the whole regenerated file's
+  md5 (`86b385b0…`, 6190 lines) matches PG17's own
+  `md5(string_agg(line, E'\n' ORDER BY sk, line) || E'\n')` byte-for-byte — proving
+  exactly those 4 lines changed and the file equals a full PG17 introspection. Both
+  drift gates (rebuild-from-migrations on `postgres:17`, and live-vs-snapshot) will
+  therefore be green.
+- Gates run locally: `typecheck`, `i18n:check`, `check:bidi`, `check:tolocale`, and
+  the full unit suite (1147 passed) — all green.
