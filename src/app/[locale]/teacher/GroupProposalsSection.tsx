@@ -2,18 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Handshake, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Handshake, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
-
-type Offer = {
-  id: string;
-  madeBy: 'teacher' | 'center';
-  cutEgp: number;
-  note: string | null;
-  createdAt: string;
-};
+import OfferHistory from '@/components/group-proposals/OfferHistory';
+import CounterOfferForm from '@/components/group-proposals/CounterOfferForm';
+import { STATUS_KEY, type Offer } from '@/components/group-proposals/types';
 
 type Proposal = {
   id: string;
@@ -57,14 +52,6 @@ const ERROR_KEY: Record<string, string> = {
   GROUP_NOT_ELIGIBLE: 'errorGroupNotEligible',
   GROUP_NO_FEE: 'errorGroupNoFee',
   GROUP_NOT_FOUND: 'errorGroupNotFound',
-};
-
-const STATUS_KEY: Record<Proposal['status'], string> = {
-  open: 'statusOpen',
-  accepted: 'statusAccepted',
-  declined: 'statusDeclined',
-  withdrawn: 'statusWithdrawn',
-  expired: 'statusExpired',
 };
 
 const STATUS_CLASS: Record<Proposal['status'], string> = {
@@ -648,39 +635,12 @@ export default function GroupProposalsSection({
                   </p>
                 )}
 
-                {p.offers.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}
-                    className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-teal-700 hover:underline"
-                  >
-                    {expandedId === p.id ? (
-                      <>
-                        <ChevronUp size={14} aria-hidden /> {t('hideHistory')}
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown size={14} aria-hidden /> {t('showHistory')}
-                      </>
-                    )}
-                  </button>
-                )}
-                {expandedId === p.id && (
-                  <ul className="mt-2 flex flex-col gap-1 border-s-2 border-[var(--color-border)] ps-3">
-                    {p.offers.map((o) => (
-                      <li key={o.id} className="text-xs text-[var(--color-text-secondary)]">
-                        <span className="font-semibold">
-                          {o.madeBy === 'teacher' ? t('byTeacher') : t('byCenter')}
-                        </span>
-                        {': '}
-                        <span className="font-mono">{formatCurrency(o.cutEgp, locale)}</span>
-                        {' - '}
-                        {formatDate(o.createdAt, locale)}
-                        {o.note ? ` - ${o.note}` : ''}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <OfferHistory
+                  offers={p.offers}
+                  expanded={expandedId === p.id}
+                  onToggle={() => setExpandedId(expandedId === p.id ? null : p.id)}
+                  borderClass="border-[var(--color-border)]"
+                />
 
                 {/* Combined center-initiated request: accepting/countering also
                     JOINS the center. */}
@@ -741,40 +701,16 @@ export default function GroupProposalsSection({
                 )}
 
                 {counterFor === p.id && p.status === 'open' && (
-                  <div className="mt-3 flex flex-wrap items-end gap-2 rounded-lg bg-[var(--color-surface-2)] p-3">
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-[var(--color-text-primary)]">
-                        {t('counterCutLabel')}
-                      </label>
-                      <input
-                        type="number"
-                        min={0}
-                        step={0.01}
-                        value={counterCut}
-                        onChange={(e) => setCounterCut(e.target.value)}
-                        className="w-32 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-2 py-1.5 font-mono text-sm text-[var(--color-text-primary)]"
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <label className="mb-1 block text-xs font-medium text-[var(--color-text-primary)]">
-                        {t('noteLabel')}
-                      </label>
-                      <input
-                        value={counterNote}
-                        maxLength={500}
-                        onChange={(e) => setCounterNote(e.target.value)}
-                        className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      disabled={busy || counterCut === '' || Number(counterCut) >= p.feePerClass}
-                      onClick={() => respond(p.id, 'counter', Number(counterCut), counterNote)}
-                      className="rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
-                    >
-                      {t('send')}
-                    </button>
-                  </div>
+                  <CounterOfferForm
+                    counterCut={counterCut}
+                    setCounterCut={setCounterCut}
+                    counterNote={counterNote}
+                    setCounterNote={setCounterNote}
+                    onSend={() => respond(p.id, 'counter', Number(counterCut), counterNote)}
+                    busy={busy}
+                    feePerClass={p.feePerClass}
+                    borderClass="border-[var(--color-border)]"
+                  />
                 )}
               </li>
             );

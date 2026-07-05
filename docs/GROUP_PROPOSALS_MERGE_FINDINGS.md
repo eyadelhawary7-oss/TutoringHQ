@@ -94,3 +94,53 @@ Hold for Eyad. Three viable paths, in order of my recommendation:
 
 My pick: **Option 1** — it captures the audit's real intent (kill the drift-prone
 duplicated *logic*) with zero risk to either side's look or behavior.
+
+---
+
+## 6. What was implemented (Option 1)
+
+Eyad said "continue" → executed the safe partial extraction. New shared feature
+folder `src/components/group-proposals/`:
+
+- `types.ts` — the `Offer` type, `ProposalStatus` union, and `STATUS_KEY` map
+  (byte-identical on both sides; now single-sourced).
+- `OfferHistory.tsx` — the show/hide toggle + expanded offer list.
+- `CounterOfferForm.tsx` — the counter cut/note sub-form, **including the
+  commission guard `Number(counterCut) >= feePerClass`**, now single-sourced so
+  it can never drift between the two sides.
+
+Both screens import these. Each side's exact rendered output is preserved: the
+only per-side difference in the shared blocks was the border colour token
+(`--color-border-subtle` on the center, `--color-border` on the teacher), which
+each side passes verbatim via a `borderClass` prop. No design tokens were
+unified; **neither side changes look or behavior.** No new i18n keys (all `t()`
+keys used already existed).
+
+**What was deliberately NOT merged:** the two screens' chrome, counterparty
+pickers, data-loading strategy, existing-group selectors (incl. the teacher's
+cut pre-fill), badge/note sets, and per-side design tokens. These are genuinely
+divergent (§2–§3); folding them into one component would need a large
+`variant`-conditional shell + a styling-map prop and carries parity risk on a
+commission screen. That is the **full merge (Option 2)** and remains available
+if Eyad wants it — this partial extraction is a safe first step, not a blocker to it.
+
+**Line-count honesty:** the audit's "~982 lines removed" assumed the two bodies
+were near-identical; the diff disproved that. Actual effect: ~128 lines of
+duplicated negotiation UI (offer-history + counter-form + shared types, ×2
+copies) collapsed into ~160 single-sourced shared lines. Raw total LOC is
+roughly flat (+~30, the cost of component/prop boilerplate); the real win is
+**single-sourcing the drift-prone logic** (the commission guard and offer
+rendering now live in exactly one place), which is the audit's stated intent for
+item #12.
+
+### Verification
+
+- `verify:stabilization` (i18n parity, bidi, tolocale): **green**
+- `typecheck`: **green**
+- `lint` (touched files): **green**
+- `test:unit`: **1147 passed / 1147**
+- `next build`: see PR-less report / commit notes.
+- Visual parity: preserved **by construction** — every shared JSX block emits the
+  identical class strings each side used before, with the one differing border
+  token passed per side. (A live screenshot pass needs the running app with
+  seeded Supabase auth, which isn't available in this sandbox.)
