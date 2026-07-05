@@ -91,12 +91,12 @@ export default async function WhatsappNotificationsPage({
   const c = locale === 'en' ? CONTENT.en : CONTENT.ar;
 
   return (
-    <main className="min-h-screen bg-[#080f1a] text-white">
+    <main className="min-h-screen bg-[var(--color-navy-950)] text-white">
       <section
         className="px-4 pb-12 pt-20 md:px-6 md:pb-16 md:pt-28"
         style={{
           background:
-            'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(13, 148, 136, 0.08), transparent), #080f1a',
+            'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(13, 148, 136, 0.08), transparent), var(--color-navy-950)',
         }}
       >
         <div className="mx-auto max-w-3xl text-center">
@@ -115,7 +115,7 @@ export default async function WhatsappNotificationsPage({
         </div>
       </section>
 
-      <section className="border-t border-slate-800/40 bg-[#080f1a] px-4 py-12 md:px-6 md:py-20">
+      <section className="border-t border-slate-800/40 bg-[var(--color-navy-950)] px-4 py-12 md:px-6 md:py-20">
         <div className="mx-auto max-w-4xl">
           <h2 className="mb-8 text-center text-2xl font-bold !text-white md:text-3xl">
             {c.stepsHeading}
@@ -144,7 +144,7 @@ export default async function WhatsappNotificationsPage({
         </div>
       </section>
 
-      <section className="border-t border-slate-800/40 bg-[#080f1a] px-4 py-12 md:px-6 md:py-20">
+      <section className="border-t border-slate-800/40 bg-[var(--color-navy-950)] px-4 py-12 md:px-6 md:py-20">
         <div className="mx-auto max-w-2xl">
           <h2 className="mb-8 text-center text-2xl font-bold !text-white md:text-3xl">
             {c.previewHeading}
