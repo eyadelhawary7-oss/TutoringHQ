@@ -472,3 +472,77 @@ A floor/minimum must be decided, not guessed.
 
 **No code changed for this piece. Holding for your decision. The rest of the
 branch (Phases 2–3) stands as previously proven.**
+
+---
+
+# PHASE 4 (v2) — referral payout: flat 20 then 5%, made real (BUILT, hold before PR)
+
+Locked: on the referral commission payout, deduct the **flat 20 EGP processing
+fee first**, then **5% withdrawal fee** on the remainder. This turns the 5% into a
+**real** deduction for the first time (it was previously copy-only).
+
+## A. The money math (single source of truth)
+`src/lib/referralPayout.ts` → `computeReferralPayout(gross, processingFee)`:
+`net = (gross − 20) × (1 − 0.05)`. Used by the payout route, the receipt PDF, and
+the withdrawal panel so the shown net equals the paid net.
+
+**Worked example (Eyad's, exact):**
+
+| Step | Amount |
+|---|--:|
+| Gross commission withdrawn | 1,020.00 |
+| − Processing fee (flat) | −20.00 |
+| Subtotal | 1,000.00 |
+| − Withdrawal fee (5% of 1,000) | −50.00 |
+| **Net paid to referrer** | **950.00** |
+
+(Also verified 219 → −20 → −5% (9.95) → **189.05**.)
+
+## B. Server is authoritative (never trusts a client fee)
+`api/referrals/payout/route.ts`: reads the flat fee from `platform_config`
+(`getProcessingFeeConfig`), computes gross → −20 → −5% → net **server-side**,
+ignores any client-sent fee, and stores the full breakdown
+(`gross_amount`, `processing_fee`, `withdrawal_fee`, `net_amount`) in
+`payout_requests.payment_details`. Previously the client sent only the InstaPay
+number and the receipt read `withdrawal_fee ?? 0` (→ net = gross); that is fixed.
+
+## C. Floor / negative-payout guard
+The route **rejects** any request whose gross ≤ the flat fee (`code:
+below_fee_floor`) so **net is always > 0**. `computeReferralPayout` also floors
+fees to a net of 0 (never negative) as a second guard. Unit test asserts net ≥ 0
+across a range including 0/19.99/20/20.01.
+
+## D. Minimum withdrawal — reported, NOT invented (STILL Eyad's to set)
+Searched the whole repo:
+- **Referral payout path** (`/api/referrals/payout`, `ReferralWithdrawalPanel`):
+  **no minimum** — only `> 0` and `≤ available` (now plus the fee-floor reject).
+- **Credits system** (a *different* product — `centers.credit_balance`):
+  **minimum 2,000 credits = 1,000 EGP cash** (`api/billing/withdrawal/route.ts:58`,
+  `settings/billing/page.tsx:1488/2565`). Credits convert **2:1** to cash there.
+
+So the "1000/1500" belongs to the **credits** system, not referral payouts. **No
+business minimum is enforced on referral payouts** — only the 20 EGP fee floor.
+**Decision for Eyad:** set a referral-payout minimum (e.g. 1,000 or 1,500 EGP)?
+I did **not** invent one — say the number and I'll add it.
+
+## E. Receipt + UI now match reality
+- Receipt PDF (`generatePayoutReceiptPdf`, the live `/api/payouts/[id]/pdf`): shows
+  **Gross → −Processing fee → −Withdrawal fee (5%) → Net paid** (replaced the old
+  single "−0" line; headline total = net).
+- Withdrawal panel: shows the live breakdown (gross / −20 / −5% / you receive) and
+  the corrected note. Copy `withdrawalFeeNote` fixed in both locales
+  ("flat 20 EGP processing fee first, then 5% on the remainder").
+
+## F. Verification
+`next build` ✅ · unit **1152/1152** (added `referralPayout.test.ts`) ✅ · typecheck
+✅ · lint 0 errors ✅ · i18n parity ✅ (new `referrals.*` payout keys) · bidi ✅ ·
+tolocale ✅. Guard: zero stamp/service strings on customer surfaces.
+
+## G. Whole-branch invoice-fee recap (unchanged from Phase 3)
+Every charge invoice carries the flat 20 EGP: subscription, signup, PAYG, pack,
+teacher (all), plan-upgrade, summer, reactivation, card `setup_fee`, announcement
+cap + settlement — **and now referral payout** (as a deduction). Only
+`payment_proof` is fee-free (it mirrors a referenced invoice; not a new charge).
+
+**No PR until Eyad approves the whole branch. Open item: the referral-payout
+minimum (E).**
