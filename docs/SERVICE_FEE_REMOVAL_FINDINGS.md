@@ -412,3 +412,63 @@ i18n parity ✅ (+`processingFee` keys in `checkout.summary`, `checkout.review`,
 `cardOrders`) · bidi ✅ · tolocale ✅.
 
 **No PR until Eyad approves.**
+
+---
+
+# PHASE 4 — referral-payout 20 EGP fee: STOP & REPORT (no code changed)
+
+The locked decision was: add the flat 20 EGP to the referral payout as a
+**deduction**, "separate from and on top of the existing **5% withdrawal fee**",
+keeping the ordering that matches how the 5% works. Investigating the live code
+first (as instructed) surfaced a blocker — **the 5% withdrawal fee is not applied
+anywhere in the money path.** Reporting before touching anything.
+
+## What the code actually does (referral commission payout)
+
+1. `ReferralWithdrawalPanel.tsx` → POSTs `/api/referrals/payout` with
+   `amount_requested: <full amount, up to available>` and
+   `payment_details: { instapay_number }` — **no `withdrawal_fee`, no `gross_amount`.**
+2. `api/referrals/payout/route.ts` stores `amount_requested` and `payment_details`
+   **verbatim** into `payout_requests`. It applies **no fee** and creates **no invoice**.
+3. The receipt PDF (`generatePayoutReceiptPdf`, from the `payout_requests` row):
+   `fee = Number(details.withdrawal_fee ?? 0)` → **0**; `gross = gross_amount ?? amount_requested`
+   → `amount_requested`; net paid = `amount_requested`. The "رسوم السحب (5%)" line renders **−0**.
+
+So a referrer who requests X **receives X**. The **5% exists only in copy** —
+`withdrawalFeeNote` ("5% withdrawal fee applies to gross commissions",
+`messages/*.json`) and the hardcoded template label — **never in the math.**
+
+## Why this is a STOP (per the brief's own guardrail)
+
+- The brief says apply the 20 "**on top of** the existing 5%" and "keep whatever
+  ordering matches how the 5% already works." **There is no live 5% to order
+  against.** Any "before/after the 5%" implementation would be inventing the 5%.
+- The brief's **own worked example contradicts the "on top of 5%" text**:
+  *"referrer owed 219 receives 199 (219 − 20)."* That is **−20 only, no 5%** — which
+  matches the code (no 5% applied), not the "on top of 5%" description.
+- The brief explicitly says: *"If the two fees interact in a way that looks wrong,
+  STOP and report before applying"* and *"report how the code handles it — do not
+  guess."* Both triggers are met.
+
+## Floor / negative-payout behaviour today
+
+`api/referrals/payout` only checks `amount_requested > 0` and `≤ available`. With
+**no fee**, net can't go negative today. If a flat 20 deduction is added, a request
+**below 20** would net ≤ 0 — and there is **no minimum-withdrawal rule** on this
+path (unlike the separate credits system, which enforces a 2,000-credit minimum).
+A floor/minimum must be decided, not guessed.
+
+## Options for Eyad (pick one; I'll implement then re-prove)
+
+1. **−20 only (matches your example 219 → 199).** Ignore the phantom 5%: deduct a
+   flat 20 from `amount_requested`, snapshot it, show gross → −20 processing fee →
+   net on the receipt, and block/adjust requests below the 20. Simplest; matches
+   your numbers. Also update/remove the misleading "5%" copy. **(Recommended.)**
+2. **Implement the 5% for real, then stack −20 on top.** Deduct 5% then 20 (or 20
+   then 5%). This is a *new* real fee referrers don't pay today — payouts drop ~5%
+   beyond the 20. Bigger money change; needs its own sign-off. (219 → −5% = 208.05
+   → −20 = 188.05, or −20 first = 199 → −5% = 189.05.)
+3. **Something else** (e.g. 20 flat + keep 5% as display-only) — tell me.
+
+**No code changed for this piece. Holding for your decision. The rest of the
+branch (Phases 2–3) stands as previously proven.**
