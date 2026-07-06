@@ -640,12 +640,12 @@ html.dark textarea {
    global utility enforcement resolves correctly inside them.
 
    NOTE: [data-chq-landing] (/center), [data-chq-login] (/login),
-   [data-chq-forgot-password] and [data-chq-pricing] all finished
-   their cream redesign pass and were removed from these locks so
-   their cream surface tokens resolve correctly. Do NOT re-add them.
+   [data-chq-forgot-password], [data-chq-pricing] and
+   [data-chq-session-expired] (/session-expired) all finished their
+   cream redesign pass and were removed from these locks so their
+   cream surface tokens resolve correctly. Do NOT re-add them.
 ──────────────────────────────────────────────────────────── */
-[data-chq-signup],
-[data-chq-session-expired] {
+[data-chq-signup] {
   --color-surface-0: #080f1a !important;
   --color-surface-1: #0f172a !important;
   --color-surface-2: #1e293b !important;
@@ -1481,22 +1481,9 @@ html:not(.dark) .panel-live .text-white {
    page now paints cream via the surface tokens, and its inputs handle autofill
    masking inline (WebkitBoxShadow inset var(--color-surface-0)). Do NOT re-add. */
 
-/* Session expired - full-page dark surface (same as signup) in both themes */
-[data-chq-session-expired] {
-  background-color: #080f1a !important;
-  min-height: 100vh;
-  min-height: 100dvh;
-  width: 100%;
-}
-
-
-[data-chq-session-expired] .text-white,
-[data-chq-session-expired] .\!text-white {
-  color: #ffffff !important;
-}
-[data-chq-session-expired] .text-slate-400 {
-  color: #94a3b8 !important;
-}
+/* [data-chq-session-expired] dark lock removed in the ADR 031 cream pass.
+   The /session-expired page now paints cream via the surface tokens. Do NOT
+   re-add. */
 
 
 @keyframes breathe {
@@ -2205,18 +2192,16 @@ html:not(.dark) [data-admin="true"] textarea.admin-textarea {
   animation: chq-fade-in 200ms ease forwards;
 }
 
-/* signup / session-expired: dark canvas so fast scroll never shows light body gaps.
-   NOTE: [data-chq-landing] (/center), [data-chq-login] and
-   [data-chq-forgot-password] are intentionally absent here - those cream pages
-   paint their own cream canvas via the surface tokens. Do NOT re-add them. */
-[data-chq-signup],
-[data-chq-session-expired] {
+/* signup: dark canvas so fast scroll never shows light body gaps.
+   NOTE: [data-chq-landing] (/center), [data-chq-login],
+   [data-chq-forgot-password] and [data-chq-session-expired] are intentionally
+   absent here - those cream pages paint their own cream canvas via the surface
+   tokens. Do NOT re-add them. */
+[data-chq-signup] {
   background-color: #080f1a;
 }
 html:has([data-chq-signup]),
-body:has([data-chq-signup]),
-html:has([data-chq-session-expired]),
-body:has([data-chq-session-expired]) {
+body:has([data-chq-signup]) {
   background-color: #080f1a;
   margin: 0;
   padding: 0;
