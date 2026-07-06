@@ -6,8 +6,10 @@
   --font-sans: var(--font-plex), 'Cairo-Arabic', system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-plex), 'Cairo-Arabic', system-ui, -apple-system, sans-serif;
   --font-bodoni-stack: 'Bodoni Moda', Georgia, "Times New Roman", serif;
-  /* ADR 031: default app chrome is the warm cream system (founder mock).
-     Dark values live under html.dark; the light-white theme is removed. */
+  /* ADR 031: app chrome is the warm cream system (founder mock), and since the
+     dark-mode removal (2026-07-05) it is the single theme. The html.dark values
+     below are dormant app-side (nothing toggles `.dark` on <html> anymore) and
+     now serve only the deliberately dark-locked auth pages. */
   --color-background: hsl(42 25% 90%);    /* paper  #ece8df */
   --color-foreground: hsl(144 8% 12%);    /* ink    #1b201d */
   --color-card: hsl(43 100% 99%);         /* panel  #fffdf8 */
@@ -241,7 +243,10 @@
   --space-stack-lg:      1rem;
 }
 
-/* ── Dark theme (user-selectable option; carries the previous dark system) ── */
+/* ── Dark token set (no longer user-selectable; the theme toggle was removed
+   2026-07-05). Retained only for the deliberately dark-locked auth pages
+   (/signup, /session-expired, /accept-invite), which scope `.dark` to <html>
+   via LoginThemeEffect. Nothing else in the app adds this class. ── */
 html.dark {
   color-scheme: dark;
 
@@ -503,8 +508,16 @@ html.dark {
    hardcoded Tailwind classes on pages not yet redesigned.
 ──────────────────────────────────────────────────────────── */
 
-/* Cream default: browser scrollbars + system UI use light styling */
+/* Single light theme (dark mode removed, 2026-07-05): pin the root to the light
+   color-scheme so browser scrollbars, form fields and other native UI stay light
+   even on a device/OS set to dark. There is no prefers-color-scheme path and
+   nothing adds `.dark` to <html> for the app, so the app renders light by
+   construction. (The auth dark-lock pages re-declare `color-scheme: dark` under
+   their own `.dark` scope; that override is intentional and page-local.) */
 :root {
+  color-scheme: light;
+}
+html {
   color-scheme: light;
 }
 
