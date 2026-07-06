@@ -5,7 +5,6 @@ import { useTransition } from 'react';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
 import { Globe, Menu, X, ShoppingCart } from 'lucide-react';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { supabase } from '@/lib/supabase';
 import { useCardOrderCartOptional } from '@/hooks/useCardOrderCart';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -85,7 +84,6 @@ export default function MobileTopBar({ openMenu, setOpenMenu }: MobileTopBarProp
             </Link>
           </>
         ) : null}
-        <ThemeToggle />
         <button
           onClick={handleLocaleToggle}
           disabled={isPending}

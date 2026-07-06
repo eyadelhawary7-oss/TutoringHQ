@@ -2,27 +2,22 @@
 
 import { useEffect } from 'react';
 
-const STORAGE_KEY = 'chq-theme';
-
-function applyRootThemeClass(theme: string) {
-  const root = document.documentElement;
-  root.classList.remove('light', 'dark');
-  root.classList.add(theme === 'light' ? 'light' : 'dark');
-}
-
 /**
- * Login is always dark. Restores the user's stored theme on the document root when leaving.
+ * The auth pages (/signup, /session-expired, /accept-invite) are a deliberate,
+ * dark-locked design (see the "Marketing / auth dark locks" block in globals.css)
+ * that resolve their surface tokens through a `.dark` scope. Since the app-wide
+ * dark theme was removed, this effect is the only thing that adds `.dark` to the
+ * document root, and it does so only while one of those pages is mounted — it
+ * removes it again on unmount so the rest of the app always renders light.
+ *
+ * No theme persistence is read or written here; there is a single light theme.
  */
 export function LoginThemeEffect() {
   useEffect(() => {
-    applyRootThemeClass('dark');
+    const root = document.documentElement;
+    root.classList.add('dark');
     return () => {
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY) || 'dark';
-        applyRootThemeClass(stored);
-      } catch {
-        applyRootThemeClass('dark');
-      }
+      root.classList.remove('dark');
     };
   }, []);
 

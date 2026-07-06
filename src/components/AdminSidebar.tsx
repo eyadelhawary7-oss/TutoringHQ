@@ -37,7 +37,6 @@ import { useSidebar } from '@/contexts/SidebarContext';
 import { getAdminPermissions } from '@/lib/admin-roles';
 import { supabase } from '@/lib/supabase';
 import { ChangePinModal } from '@/components/admin/ChangePinModal';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { Suspense } from 'react';
 import { TestLiveToggle } from '@/components/admin/TestLiveToggle';
@@ -851,12 +850,6 @@ export function AdminSidebar({
             );
           })}
         </nav>
-
-        <div className="shrink-0 p-2 border-t border-[var(--color-border)]">
-          <div className="px-1">
-            <ThemeToggle />
-          </div>
-        </div>
       </aside>
     </>
   );
