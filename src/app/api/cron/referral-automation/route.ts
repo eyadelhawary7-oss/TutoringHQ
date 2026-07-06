@@ -27,7 +27,7 @@ function addDays(d: Date, days: number): Date {
 /**
  * Runs on the 2nd of each month at 3am UTC (Vercel cron).
  * Creates referral_commissions for the previous calendar month using net revenue base
- * (all_in_price ex VAT / service fee / stamp duty).
+ * (all_in_price ex VAT; see netReferralBaseFromAllInPrice).
  */
 export async function GET(request: Request) {
   const cronStart = Date.now();

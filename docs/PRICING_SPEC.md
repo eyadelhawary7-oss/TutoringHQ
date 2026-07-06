@@ -2,15 +2,13 @@
 Last updated: 2026-05-09
 
 ## Tax formula (internal)
-Inclusive prices use cascading division: base = inclusive × 0.86 × 0.995 × 0.94 (strips 14% VAT, 0.5% stamp, 6% service). Going up: inclusive = base / 0.94 / 0.995 / 0.86. Markup factor 1.24323. NOT additive math.
+The only customer tax is **14% VAT** (plus the separate flat 20 EGP processing fee — see below). The former **6% service fee** and **0.5% stamp duty** were removed in the service-fee/stamp-duty build (`docs/SERVICE_FEE_REMOVAL_FINDINGS.md`) — they no longer exist in the math or anywhere in the UI. Inclusive → base strips only VAT: base = inclusive × 0.86. Going up: inclusive = base / 0.86.
 
 ## Worked examples
-Inclusive 4,999 → base 4,020.99
-Inclusive 4,499 → base 3,618.27
-Inclusive 999 → base 803.40
-Inclusive 62 (per card) → base 49.87 (display as 50)
-Inclusive 9.80 → base 7.88
-Inclusive 12 → base 9.65
+Inclusive 4,999 → base 4,299.14
+Inclusive 4,499 → base 3,869.14
+Inclusive 999 → base 859.14
+Per QR card: 60 EGP inclusive → base 51.6 (60 × 0.86)
 
 ## Plan price table (monthly INCLUSIVE EGP)
 Plan         Monthly    Quarterly/mo    Annual/mo    Cap
@@ -29,37 +27,33 @@ Exception: Nano Monthly is intentionally +25% not +15% (incentive for Quarterly 
 Enterprise is fixed-price. Top Centers is the only custom-priced tier; centers.all_in_price is source of truth, code reading top_centers MUST throw + Sentry-warn if NULL.
 
 ## Add-ons
-qr_card: 62 EGP per card (inclusive). Bosta added on top, not taxed.
+qr_card: 60 EGP per card (inclusive of VAT). Bosta added on top, not taxed.
 parent_pack: 12 EGP/active parent/month (inclusive).
-blast: 9.80 EGP/blast (inclusive).
+blast: 9.80 EGP/blast (inclusive). (The parent-blast product keeps its own internal `BLAST_SERVICE_FEE_RATE` — a separate additive fee, unrelated to the removed plan-price service fee.)
 
 ## Internal admin breakdown view (descending from inclusive)
-Total:                              62.00 EGP
-incl. VAT (14%):                     8.70
-incl. stamp duty (0.5%):             0.27
-incl. service fee (6%):              3.16
-your net (base):                    49.87
+Total:                              60.00 EGP
+incl. VAT (14%):                     8.40
+your net (base):                    51.60
 For accounting/admin tooling ONLY.
 
 ## Customer-facing invoice display order (LEGAL REQUIREMENT)
-Egyptian tax law (فاتورة ضريبية) requires VAT as the LAST line on any invoice. PDF receipts and legal invoices MUST display:
+Egyptian tax law (فاتورة ضريبية) requires VAT as the LAST tax line on any invoice. PDF receipts and legal invoices MUST display:
 
-Subtotal (base):              49.87 EGP
-Service fee (6%):              3.16
-Stamp duty (0.5%):             0.27
-VAT (14%):                     8.70    ← LAST
+Subtotal (base):              51.60 EGP
+VAT (14%):                     8.40    ← LAST tax line
 ─────────────────────────────────────
-Total:                        62.00 EGP
+Total:                        60.00 EGP
 
-NEVER reverse this order on legal documents.
+NEVER show a service-fee or stamp-duty line — they no longer exist.
 
 Display Annual prices ROUNDED to whole EGP. "849.917 EGP/month" is a bug.
 
-## Audit divergences (2026-05-09)
-1. Card order summary computes additively on base with 6%/0.4%/14%, producing 62 from 51 base. Spec: cascading, base 50, stamp 0.5%.
-2. Per-card price drifts 51 (1-card) vs 51.5 (50-card). Spec: base = 50 EGP exactly.
-3. Stamp hard-coded 0.4% in places. Spec: 0.5%.
-4. Some invoices may not show VAT as last line — must fix for legal compliance.
+## Audit divergences (2026-05-09) — superseded
+The 6% service fee and stamp duty (the source of these divergences) were removed;
+the tax model is now VAT-only, so items 1–3 (service/stamp cascade drift, stamp
+0.4% vs 0.5%) no longer apply. Card price is a flat 60 EGP/card. Item 4 (VAT as
+the last tax line) remains a standing legal requirement.
 
 ## Processing fee (Summer-2026 brief, Section 5)
 
@@ -91,7 +85,7 @@ total     = subscription + late fee + 20 flat (processing fee never inside the %
 
 The processing fee is a separate flat line; the late-fee percentage is **never** applied to it. Redesigned line order (Arabic, RTL): `قيمة الاشتراك → غرامة التأخر في السداد → رسوم المعالجة (ⓘ) → الإجمالي → ضريبة القيمة المضافة (مشمولة)`. Reactivation invoices: `رسوم إعادة التفعيل → رسوم المعالجة (ⓘ) → الإجمالي → ضريبة (مشمولة)`. Both drop the old stamp-duty / service-fee lines. Built via `buildCombinedInvoiceLines` (covered by `tests/unit/processingFee.test.ts`).
 
-Referral commission base is **unaffected** — it derives from `centers.all_in_price` via `netReferralBaseFromAllInPrice`, never the invoice total (the fee is excluded, per brief Section 7).
+Referral commission base derives from `centers.all_in_price` via `netReferralBaseFromAllInPrice`, never the invoice total (the processing fee is excluded, per brief Section 7). With the service-fee removal it now strips only VAT (divisor `1.14 × 1.004`), so the former 6% service slice is commissionable — referrers earn ~6% more than before (approved change; see `docs/SERVICE_FEE_REMOVAL_FINDINGS.md`).
 
 ### Redesigned customer invoice — subscription / pack types (Section 5)
 
@@ -104,7 +98,7 @@ Replaces the stamp-duty and service-fee lines for these invoice types. Order (Ar
 ضريبة القيمة المضافة (مشمولة)        125.16 EGP   (VAT, LAST line — already inside the total, does NOT add)
 ```
 
-VAT here is the simple VAT-inclusive 14% slice (`total × 0.14 / 1.14`); the legacy cascade (service 6% + stamp 0.5%) is **not** shown on these customer invoices. **Card-order (`setup_fee`) invoices keep the legacy cascade** in `buildLegalInvoiceLines` / `exclusiveTotalsStandard`.
+VAT here is the simple VAT-inclusive 14% slice (`total × 0.14 / 1.14`); no service or stamp line is ever shown. **Card-order (`setup_fee`) and announcement invoices** render a base + VAT breakdown via `buildLegalInvoiceLines` / `exclusiveTotalsStandard` (VAT-only; the service/stamp lines were removed).
 
 The ⓘ on the processing-fee line opens an Arabic info sheet (`ProcessingFeeInfoButton`, `src/components/billing/ProcessingFeeInfo.tsx`) with a `تمام` dismiss; the PDF renders the same copy as a footnote.
 

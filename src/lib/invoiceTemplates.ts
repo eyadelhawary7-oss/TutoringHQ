@@ -342,14 +342,11 @@ function taxNoteRow(note: string): string {
   return `<div style="margin-top:10px;font-size:11px;color:#64748b;line-height:1.55;font-family:Cairo,sans-serif;">${esc(note)}</div>`;
 }
 
-const TAX_NOTE_STANDARD_AR =
-  'ضريبة القيمة المضافة 14٪ | رسوم الخدمة 6٪ | ضريبة الدمغة 0.5٪';
+const TAX_NOTE_STANDARD_AR = 'ضريبة القيمة المضافة 14٪ (مشمولة)';
 
 function exclusiveTotalsStandard(p: ExclusivePricing, totalLabel: string, taxNoteAr: string): string {
   return `${totalsRow('المجموع الجزئي', `${fmtMoney(p.base)} EGP`)}
   ${dividerDashed()}
-  ${totalsRow('رسوم الخدمة (6%)', `${fmtMoney(p.service)} EGP`)}
-  ${totalsRow('رسوم الدمغة (0.5%)', `${fmtMoney(p.stamp)} EGP`)}
   ${totalsRow('ضريبة القيمة المضافة (14%)', `${fmtMoney(p.vat)} EGP`)}
   ${dividerSolid()}
   ${totalsRowBold(totalLabel, `${fmtMoney(p.total)} EGP`)}
@@ -922,7 +919,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     }
     const prodTotal = round2(unitPrice * qty);
     const p = calcExclusiveProduct(total, shippingFee);
-    const productSub = p.base + p.service + p.stamp + p.vat;
+    const productSub = p.base + p.vat;
     lineRowsHtml =
       lineRowHtml({
         amount: prodTotal,
@@ -938,15 +935,13 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       });
     totalsInner = `${totalsRow('قيمة المنتج الأساسية', `${fmtMoney(p.base)} EGP`)}
     ${dividerDashed()}
-    ${totalsRow('رسوم الخدمة (6%)', `${fmtMoney(p.service)} EGP`)}
-    ${totalsRow('رسوم الدمغة (0.5%)', `${fmtMoney(p.stamp)} EGP`)}
     ${totalsRow('ضريبة القيمة المضافة (14%)', `${fmtMoney(p.vat)} EGP`)}
     ${dividerLight()}
     ${totalsRow('مجموع المنتج', `${fmtMoney(productSub)} EGP`)}
     ${totalsRow('رسوم شحن بوسطة', `${fmtMoney(p.shipping)} EGP`)}
     ${dividerSolid()}
     ${totalsRowBold('إجمالي المدفوع', `${fmtMoney(p.total)} EGP`)}
-    ${taxNoteRow('ضريبة القيمة المضافة 14٪ | رسوم الخدمة 6٪ | ضريبة الدمغة 0.5٪ - على المنتج فقط. رسوم الشحن منفصلة.')}`;
+    ${taxNoteRow('ضريبة القيمة المضافة 14٪ (مشمولة) - على المنتج فقط. رسوم الشحن منفصلة.')}`;
   } else if (invoiceType === 'referral_payout') {
     showTaxBox = false;
     const metaComm = meta.commissions as { amount: number }[] | undefined;
@@ -989,7 +984,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     )}
     ${dividerSolid()}
     ${totalsRowBold('صافي المدفوع', `${fmtMoney(total)} EGP`)}
-    ${taxNoteRow('لا ضريبة قيمة مضافة او رسوم خدمة - هذا دفع عمولات من TutoringHQ.')}`;
+    ${taxNoteRow('لا ضريبة قيمة مضافة - هذا دفع عمولات من TutoringHQ.')}`;
   } else if (invoiceType === 'payment_proof') {
     showTaxBox = false;
     const refInv = String(meta.reference_invoice_number ?? payRef ?? ',');

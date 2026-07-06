@@ -202,7 +202,7 @@ function renderBreakdownTwoCol(leftRows: BreakRow[], rightRows: BreakRow[]): str
 
 function taxBoxHtml(): string {
   return `<div style="margin-top:18px;padding:12px 14px;border:1px solid ${BORDER};border-radius:8px;background:${GRAY_BG};font-size:11px;line-height:1.6;color:#475569;font-family:Cairo,sans-serif;" dir="rtl">
-  جميع المبالغ شاملة للضرائب والرسوم: ضريبة القيمة المضافة 14% · رسوم الخدمة 6% · رسوم الدمغة 0.5%
+  جميع المبالغ شاملة لضريبة القيمة المضافة 14%
 </div>`;
 }
 

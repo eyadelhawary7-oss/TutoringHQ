@@ -1,8 +1,14 @@
-# Service-fee (6%) removal — Phase 1 findings & proof
+# Service-fee (6%) + stamp-duty removal — findings & proof
 
-**Status: HOLD for Eyad.** Nothing has been changed. This document proves what
-removing the 6% service fee does, tier by tier, and surfaces the two money
-side-effects that need a decision before any code moves.
+**Status: BUILT on `claude/remove-service-fee-o65jvo`, HOLD before any PR.** The
+Phase-1 investigation (below) is unchanged for the record; **Phase 2 (implemented)**
+at the end of this doc has the combined proof for the locked decisions plus the
+stamp-duty removal. Only VAT (14%) + the flat 20 EGP processing fee remain
+customer-visible.
+
+**Phase 1** proved what removing the 6% service fee does, tier by tier, and
+surfaced the two money side-effects. Decisions were then locked by Eyad and
+folded in with stamp-duty removal — see **Phase 2**.
 
 **Goal restated:** make the 6% "service fee" disappear from the math and the UI,
 while **every price a center or teacher pays stays byte-identical**. The 6% was
@@ -213,3 +219,114 @@ every plan anchor, and (recommended) every referral payout.
   stays untouched.
 
 **No code will change until you approve the above.**
+
+---
+
+# PHASE 2 — service fee + stamp duty removed (BUILT, hold before PR)
+
+Locked decisions applied: **card price → flat 60 EGP/card**, **referrers earn ~6%
+more** (service slice now commissionable), **parent-blast `BLAST_SERVICE_FEE_RATE`
+left untouched**. Standing rule enforced: customers see **only 14% VAT + the flat
+20 EGP processing fee** — no service fee, no stamp duty, anywhere.
+
+## A. Stamp-duty rate report (as mandated — every location + value)
+
+| Location | Symbol / string | Value | Notes |
+|---|---|---|---|
+| `src/lib/pricing/taxMath.ts` | `STAMP_RATE` | **0.005 (0.5%)** | the only code constant; removed |
+| `src/lib/referralNetBase.ts` | divisor factor | **1.004 (0.4%)** | **DISAGREES with taxMath's 0.5%** |
+| i18n labels (`invoice/signup/pricing.lines/orderSummary` + tax notes) | "0.5٪" / "0.5%" | 0.5% | dormant; removed |
+| invoice PDF/HTML templates | hardcoded "رسوم الدمغة (0.5%)" | 0.5% | removed |
+| **DB / `platform_config`** | — | **none** | live catalog introspected: no stamp column, no config row |
+
+**Disagreement stated plainly:** the cascade used **0.5%** (`taxMath`) while the
+referral divisor used **0.4%** (`1.004`). Both are now moot for customer display
+(stamp is gone). Per the locked "+6% only" referral decision, the referral
+divisor keeps its `1.004` factor unchanged (so the stamp portion of payouts does
+not move); only the service `1.06` was dropped. **Stamp is code-only → no
+migration** (guardrail 3 does not apply).
+
+## B. Combined price-parity proof — every anchor byte-identical
+
+### Center plans (charged anchors — unchanged; hardcoded, never grossed up)
+| Tier | Quarterly/mo | Monthly list | Annual (×10) | Annual/mo |
+|---|--:|--:|--:|--:|
+| Solo | 999 | 1,149 | 9,990 | 833 |
+| Nano | 1,999 | 2,499 | 19,990 | 1,666 |
+| Starter | 4,499 | 5,199 | 44,990 | 3,749 |
+| Pro | 7,999 | 9,199 | 79,990 | 6,666 |
+| Business | 12,999 | 14,999 | 129,990 | 10,833 |
+| Enterprise | 18,499 | 21,299 | 184,990 | 15,416 |
+
+Display decomposition is now **base + VAT only**, totals unchanged, e.g. Solo 999
+→ base 859.14 + VAT 139.86; Enterprise 18,499 → base 15,909.14 + VAT 2,589.86. ✅
+
+### Teacher plans (VAT-only — never touched service/stamp)
+| Tier | Gross (charged) | Net | VAT | Overage |
+|---|--:|--:|--:|---|
+| Standard | 499 | 437.72 | 61.28 | — |
+| Pro | 999 | 876.32 | 122.68 | — |
+| Scale | 2,499 | 2,192.11 | 306.89 | 20 EGP/active student (flat) |
+✅ Identical.
+
+### Card orders (approved price change → flat 60)
+`CARD_UNIT_BASE_EGP` 50 → **51.6**; `inclusiveFromBase` now VAT-only (`base/0.86`).
+
+| Qty | Before (cascade) | After (locked) | per-card |
+|---|--:|--:|--:|
+| 1 | 62.16 | **60.00** | 60 |
+| 5 | 310.81 | **300.00** | 60 |
+| 50 | 3,108.07 | **3,000.00** | 60 |
+
+### Referral commission base + payout (approved +6%)
+Divisor `1.14 × 1.06 × 1.004` → **`1.14 × 1.004`** (drop service only).
+
+| Tier | all_in | Base before | Base after | m1 payout (25%) before → after |
+|---|--:|--:|--:|--:|
+| Solo | 999 | 823.42 | 872.82 | 206 → **218** |
+| Nano | 1,999 | 1,647.66 | 1,746.52 | 412 → **437** |
+| Starter | 4,499 | 3,708.27 | 3,930.77 | 927 → **983** |
+| Pro | 7,999 | 6,593.12 | 6,988.71 | 1,648 → **1,747** |
+| Business | 12,999 | 10,714.34 | 11,357.20 | 2,679 → **2,839** |
+| Enterprise | 18,499 | 15,247.68 | 16,162.54 | 3,812 → **4,041** |
+
+## C. 20 EGP processing fee — coverage by invoice type (report, not auto-added)
+
+**Carries the 20 EGP today** (via `applyProcessingFee` / `processing_fee` snapshot):
+`subscription`, `base_subscription`, `signup_first_payment`, `plan_upgrade_difference`,
+`pack_billing`, `whatsapp_addon`, `payg`, teacher `resubscribe` / `upgrade` /
+`switch-interval` / `teacher_overage`, and the summer first invoice.
+
+**Does NOT carry the 20 EGP** (unchanged — flagged, not auto-added per brief step 5):
+- `setup_fee` (QR card orders) — total = product + shipping, no processing fee.
+- `reactivation` (`centers/reactivate`) — explicitly sets `processing_fee: 0`.
+- `announcement_settlement` / `announcement_cap` (parent-blast product).
+- `referral_payout`, `payment_proof` (payouts / proofs, not charges).
+
+This matches the documented "Deferred" list in `PRICING_SPEC.md`. **Decision for
+Eyad:** should the fee be extended to any of these (esp. card orders), or stay as-is?
+
+## D. Guard result
+
+Rendered customer surfaces scanned for `رسوم الخدمة` / `رسوم خدمة` / `الدمغة` /
+`دمغة` / "service fee" / "stamp" / `6٪` / `0.5%` / `(6%)`: **zero customer-visible
+matches.** The only hits are code comments (describing the removal) and the
+intentionally-untouched `BLAST_SERVICE_FEE_RATE` (separate blast product). VAT 14%
+present and unchanged everywhere.
+
+## E. Verification
+
+- `next build` ✅ · unit **1147/1147** ✅ · typecheck ✅ · lint 0 errors ✅ ·
+  i18n parity ✅ · bidi ✅ · tolocale ✅.
+- Pricing tests updated to VAT-only + card 60 (`taxMath.test.ts`, `cart-totals.test.ts`).
+
+## F. Open question for Eyad (one)
+
+The referral divisor still carries the stamp `1.004` factor (kept so the stamp
+portion of payouts is unchanged; net effect = exactly the approved +6%). If you'd
+rather the now-abolished stamp slice also become commissionable, drop it too
+(divisor → `1.14`), which lifts payouts ~6.4% total instead of ~6% (e.g. Solo
+month-1 218 → 219, Enterprise 4,041 → 4,057). **Left at +6% as locked** unless you
+say otherwise.
+
+**No PR until Eyad approves.**

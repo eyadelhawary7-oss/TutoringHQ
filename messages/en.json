@@ -114,8 +114,6 @@
   },
   "invoice": {
     "subtotal": "Subtotal",
-    "serviceFee": "Service Fee (6%)",
-    "stampDuty": "Stamp Duty (0.5%)",
     "vat": "VAT (14%)",
     "productBase": "Product Base",
     "productSubtotal": "Product Subtotal",
@@ -126,10 +124,10 @@
     "grossCommissions": "Gross Commissions",
     "withdrawalFee": "Withdrawal Fee (5%)",
     "netPaidOut": "Net Paid Out",
-    "taxNote": "VAT 14% | Service Fee 6% | Stamp Duty 0.5%",
-    "taxNoteSetupFee": "VAT 14% | Service Fee 6% | Stamp Duty 0.5% - applied to product only. Shipping shown separately.",
-    "taxNoteLatePayment": "VAT 14% | Service Fee 6% | Stamp Duty 0.5% - applied to subscription base only. Penalty added after tax.",
-    "taxNotePayoutOnly": "No VAT or service fees - this is a commission payout from TutoringHQ.",
+    "taxNote": "VAT 14% (included)",
+    "taxNoteSetupFee": "VAT 14% (included) - applied to product only. Shipping shown separately.",
+    "taxNoteLatePayment": "VAT 14% (included) - applied to subscription base only. Penalty added after tax.",
+    "taxNotePayoutOnly": "No VAT - this is a commission payout from TutoringHQ.",
     "taxNoteProofOnly": "Amounts reflect the referenced invoice total."
   },
   "paymentStatus": {
@@ -3343,8 +3341,6 @@
     "yourCenter": "Your center",
     "phoneHint": "We will reach you on WhatsApp",
     "subtotal": "Subtotal",
-    "serviceFee": "Service fee 6%",
-    "stampDuty": "Stamp duty 0.5%",
     "included": "Included",
     "allTaxesIncluded": "All taxes included",
     "periodLabel": "Period",
@@ -5896,8 +5892,6 @@
     "howOrdersWorkStep2": "Our vendor produces your cards and dispatches them via Bosta.",
     "howOrdersWorkStep3": "Delivery usually takes 2–7 days depending on your address.",
     "howOrdersWorkClose": "Got it",
-    "orderSummaryServiceFee": "Service Fee (6%)",
-    "orderSummaryStampDuty": "Stamp Duty (0.5%)",
     "orderSummaryVat": "VAT (14%)",
     "orderSummaryCardsSubtotal": "Cards Subtotal",
     "orderSummaryShippingZone": "Shipping ({zone})",
@@ -7856,13 +7850,9 @@
     "enterprise_cta": "Enterprise Cta",
     "lines": {
       "subtotal": "Subtotal",
-      "serviceFee": "Service fee (6%)",
-      "stampDuty": "Stamp duty (0.5%)",
       "vat": "VAT (14%)",
       "total": "Total",
       "inclVat": "incl. VAT (14%)",
-      "inclStamp": "incl. stamp duty (0.5%)",
-      "inclService": "incl. service fee (6%)",
       "netBase": "your net (base)"
     },
     "plans": {

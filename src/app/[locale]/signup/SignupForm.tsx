@@ -655,8 +655,6 @@ export default function SignupForm() {
         : '',
       teal: false,
     },
-    { taxKey: 'service', label: t('serviceFee'), val: t('included'), teal: true },
-    { taxKey: 'stamp', label: t('stampDuty'), val: t('included'), teal: true },
     { taxKey: 'vat', label: 'VAT 14%', val: t('included'), teal: true },
   ];
 

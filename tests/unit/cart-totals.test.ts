@@ -13,7 +13,8 @@ describe('card cart totals', () => {
     const totals = computeCardCartTotals(items, 'en');
     expect(totals.activeCardCount).toBe(5);
     expect(totals.productInclusive).toBe(cardOrderProductInclusiveFromQty(5));
-    expect(totals.productInclusive).toBeCloseTo(310.81, 2);
+    // 5 cards × 60 EGP/card (VAT-inclusive, no service fee / stamp duty)
+    expect(totals.productInclusive).toBe(300);
   });
 
   it('counts 3 students + blank quantity 2 as 5 active cards', () => {
