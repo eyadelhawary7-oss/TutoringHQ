@@ -6,7 +6,6 @@ import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import PhoneInput from '@/components/PhoneInput';
 import OTPInput from '@/components/OTPInput';
-import { LoginThemeEffect } from '@/components/LoginThemeEffect';
 
 type Step = 'phone' | 'otp' | 'done';
 
@@ -125,10 +124,9 @@ export default function AcceptInvitePage() {
 
   return (
     <div
-      className="dark min-h-screen w-full flex flex-col items-center justify-center bg-[#080f1a] px-4 sm:px-6 lg:px-8"
-      style={{ backgroundColor: '#080f1a', minHeight: '100vh' }}
+      className="min-h-screen w-full flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8"
+      style={{ background: 'var(--color-surface-0)', minHeight: '100vh' }}
     >
-      <LoginThemeEffect />
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
             <Link href="/" className="inline-flex flex-col items-center">
@@ -140,25 +138,35 @@ export default function AcceptInvitePage() {
                   fontSize: '14px',
                 }}
               >
-                <span style={{ color: '#f8fafc' }}>Tutoring</span>
-                <span style={{ color: '#0D9488' }}>HQ</span>
+                <span style={{ color: 'var(--color-text-primary)' }}>Tutoring</span>
+                <span style={{ color: 'var(--color-teal)' }}>HQ</span>
               </span>
               <p
                 className="text-xs uppercase tracking-widest mt-3"
-                style={{ color: '#64748b' }}
+                style={{ color: 'var(--color-text-muted)' }}
               >
                 {t('title', { defaultValue: 'Accept Team Invitation' })}
               </p>
             </Link>
           </div>
 
-          <div className="rounded-2xl border border-slate-700/80 bg-slate-900/70 shadow-xl p-8 backdrop-blur-sm">
+          <div
+            className="rounded-2xl p-8"
+            style={{
+              background: 'var(--color-surface-1)',
+              border: '1px solid var(--color-border)',
+              boxShadow: 'var(--shadow-md)',
+            }}
+          >
             {step === 'phone' && (
               <>
-                <h2 className="text-xl font-bold text-slate-100 mb-6 text-center">
+                <h2
+                  className="text-xl font-bold mb-6 text-center"
+                  style={{ ...PLAYFAIR, color: 'var(--color-text-primary)' }}
+                >
                   {t('enterPhone', { defaultValue: 'Enter your phone number' })}
                 </h2>
-                <p className="text-slate-400 text-sm text-center mb-6">
+                <p className="text-sm text-center mb-6" style={{ color: 'var(--color-text-secondary)' }}>
                   {t('enterPhoneDesc', { defaultValue: 'Enter the phone number that received the invitation.' })}
                 </p>
                 <PhoneInput
@@ -178,7 +186,8 @@ export default function AcceptInvitePage() {
                     setStep('phone');
                     setError('');
                   }}
-                  className="text-sm text-teal-400 hover:text-teal-300 hover:underline mb-4 flex items-center gap-1"
+                  className="text-sm hover:underline mb-4 flex items-center gap-1"
+                  style={{ color: 'var(--color-teal)' }}
                 >
                   <svg className="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -186,11 +195,11 @@ export default function AcceptInvitePage() {
                   {t('back', { defaultValue: 'Back' })}
                 </button>
                 {centerName ? (
-                  <p className="text-slate-400 text-sm text-center mb-4">
+                  <p className="text-sm text-center mb-4" style={{ color: 'var(--color-text-secondary)' }}>
                     {t('invitedTo', { centerName, defaultValue: `Invited to ${centerName}` })}
                   </p>
                 ) : null}
-                <p className="text-slate-400 text-center mb-6">
+                <p className="text-center mb-6" style={{ color: 'var(--color-text-secondary)' }}>
                   {t('otpSent', { phone, defaultValue: `Code sent to ${phone}` })}
                 </p>
                 <OTPInput
@@ -205,34 +214,55 @@ export default function AcceptInvitePage() {
 
             {step === 'done' && (
               <div className="text-center">
-                <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div
+                  className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+                  style={{ background: 'var(--color-success-muted)' }}
+                >
+                  <svg
+                    className="w-8 h-8"
+                    fill="none"
+                    stroke="var(--color-success)"
+                    viewBox="0 0 24 24"
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h2 className="text-xl font-bold text-slate-100 mb-2">
+                <h2
+                  className="text-xl font-bold mb-2"
+                  style={{ ...PLAYFAIR, color: 'var(--color-text-primary)' }}
+                >
                   {t('success', { defaultValue: 'Welcome to the team!' })}
                 </h2>
                 {centerName ? (
-                  <p className="text-slate-400 text-sm mb-4">
+                  <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
                     {t('joinedCenter', { centerName, defaultValue: `You've joined ${centerName}` })}
                   </p>
                 ) : null}
-                <div className="bg-slate-800/80 border border-slate-600/60 rounded-lg p-4 mb-4">
-                  <p className="text-sm text-slate-400 mb-2">
+                <div
+                  className="rounded-lg p-4 mb-4"
+                  style={{
+                    background: 'var(--color-surface-2)',
+                    border: '1px solid var(--color-border)',
+                  }}
+                >
+                  <p className="text-sm mb-2" style={{ color: 'var(--color-text-secondary)' }}>
                     {t('yourPin', { defaultValue: 'Your login PIN:' })}
                   </p>
-                  <p className="text-3xl font-mono font-bold text-teal-400 tracking-widest">
+                  <p
+                    className="text-3xl font-mono font-bold tracking-widest"
+                    style={{ color: 'var(--color-teal)' }}
+                  >
                     {generatedPin}
                   </p>
-                  <p className="text-xs text-slate-500 mt-2">
+                  <p className="text-xs mt-2" style={{ color: 'var(--color-text-muted)' }}>
                     {t('savePinWarning', { defaultValue: 'Save this PIN! You will need it to log in.' })}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => router.push('/dashboard')}
-                  className="w-full py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-medium rounded-lg"
+                  className="w-full py-2.5 text-white font-medium rounded-lg transition-opacity hover:opacity-90"
+                  style={{ background: 'var(--color-teal)' }}
                 >
                   {t('goToDashboard', { defaultValue: 'Go to Dashboard' })}
                 </button>
@@ -241,7 +271,7 @@ export default function AcceptInvitePage() {
           </div>
 
           <div className="mt-6 text-center">
-            <Link href="/login" className="text-sm text-teal-400 hover:text-teal-300">
+            <Link href="/login" className="text-sm hover:underline" style={{ color: 'var(--color-teal)' }}>
               {t('hasAccount', { defaultValue: 'Already have an account? Log in' })}
             </Link>
           </div>
