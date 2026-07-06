@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { computeReferralPayout, REFERRAL_WITHDRAWAL_FEE_RATE } from '@/lib/referralPayout';
+import {
+  computeReferralPayout,
+  REFERRAL_WITHDRAWAL_FEE_RATE,
+  REFERRAL_WITHDRAWAL_MIN_EGP,
+} from '@/lib/referralPayout';
 
 describe('computeReferralPayout — flat 20 first, then 5%', () => {
   it("matches Eyad's worked example: 1020 → −20 → −5% = 950", () => {
@@ -27,5 +31,14 @@ describe('computeReferralPayout — flat 20 first, then 5%', () => {
     for (const g of [0, 1, 19.99, 20, 20.01, 100, 5000]) {
       expect(computeReferralPayout(g, 20).net).toBeGreaterThanOrEqual(0);
     }
+  });
+
+  it('cash-withdrawal minimum is 1,000 EGP (route rejects below it on the gross)', () => {
+    expect(REFERRAL_WITHDRAWAL_MIN_EGP).toBe(1000);
+    // 900 is below the minimum → the route rejects before computing fees;
+    // 1,020 is above it → normal breakdown to 950 net.
+    expect(900 < REFERRAL_WITHDRAWAL_MIN_EGP).toBe(true);
+    expect(1020 >= REFERRAL_WITHDRAWAL_MIN_EGP).toBe(true);
+    expect(computeReferralPayout(1020, 20).net).toBe(950);
   });
 });

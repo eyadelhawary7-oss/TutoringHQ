@@ -5920,6 +5920,8 @@
     "tier3Value": "٥٪ / شهر (مستمر)",
     "tierCondition": "يشترط أن يكون المركز المُحال نشطاً ومدفوع الاشتراك",
     "withdrawalFeeNote": "تُخصم رسوم معالجة ثابتة ٢٠ جنيهًا أولًا، ثم رسوم سحب ٥٪ على الباقي.",
+    "withdrawalMinimumNote": "الحد الأدنى للسحب: {min}.",
+    "withdrawalBelowMinimum": "الحد الأدنى للسحب هو {min}.",
     "withdrawalBelowFee": "يجب أن يتجاوز مبلغ السحب رسوم المعالجة ({fee}).",
     "payoutGross": "إجمالي العمولات",
     "payoutProcessingFee": "رسوم المعالجة",

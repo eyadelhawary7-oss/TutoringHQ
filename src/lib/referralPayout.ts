@@ -13,6 +13,14 @@
 
 export const REFERRAL_WITHDRAWAL_FEE_RATE = 0.05;
 
+/**
+ * Minimum GROSS cash withdrawal (EGP) on the referral payout path (wallet/bank
+ * cash-out with the 20 + 5% fees). Checked before fees. Distinct from the separate
+ * credits-system minimum (2,000 credits = 1,000 EGP, 2:1). Spending commission
+ * balance inside the app on an invoice is NOT a withdrawal and is not gated by this.
+ */
+export const REFERRAL_WITHDRAWAL_MIN_EGP = 1000;
+
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }

@@ -546,3 +546,56 @@ cap + settlement — **and now referral payout** (as a deduction). Only
 
 **No PR until Eyad approves the whole branch. Open item: the referral-payout
 minimum (E).**
+
+---
+
+# PHASE 5 — referral cash-withdrawal minimum + in-app-spend check (BUILT / reported)
+
+## Part 1 — 1,000 EGP minimum on referral cash withdrawals (BUILT)
+
+- Constant: `REFERRAL_WITHDRAWAL_MIN_EGP = 1000` in `src/lib/referralPayout.ts`
+  (single source; used by the route and the panel).
+- **Server enforcement** (`api/referrals/payout/route.ts`): checked on the **gross**
+  `amount_requested`, **before** any fee, right after the `> 0` check and before the
+  `≤ available` and fee-floor checks:
+  ```
+  if (amountRequested < REFERRAL_WITHDRAWAL_MIN_EGP)
+      → 400 { code: 'below_minimum' }
+  ```
+  Reads naturally: minimum is on the gross, then `≤ available`, then compute
+  gross → −20 → −5% → net (floor keeps net > 0).
+- **UI** (`ReferralWithdrawalPanel`): blocks submit below 1,000 with a clear error
+  and shows "Minimum withdrawal: 1,000 EGP" in the fee note (both locales).
+- **Distinct** from the separate credits-system minimum (2,000 credits = 1,000 EGP,
+  2:1) — that path (`api/billing/withdrawal`) is untouched.
+
+### Worked proof
+| Request (gross) | Result |
+|---|---|
+| **900** | **Rejected** — `below_minimum` (under 1,000). |
+| **1,020** | Accepted → −20 → −5% (50) → **950 net**. |
+
+## Part 2 — in-app spend of commission balance (CHECK ONLY — does NOT exist)
+
+Searched the repo. **A referrer cannot spend their commission balance on an in-app
+invoice today.** Evidence:
+- Referral commission balance lives in **`referral_reward_records`** (created by
+  `calculate-rewards`). Its **only** consumer is `payout_requests` (cash-out via
+  `/api/referrals/payout`). Nothing applies it to an invoice.
+- The invoice-payment code (`invoices/[id]/pay`, `invoicePaymobPayment.ts`) never
+  references a referral or credit balance — invoices are paid in full via Paymob.
+- The `centers.credit_balance` **credits** system is separate again and is only
+  cashed out 2:1 (`api/billing/withdrawal`); it is **not** applied to invoices
+  either, and it is **not** the referral commission balance.
+
+**Conclusion:** the "spend commission on an in-app invoice at any amount, no
+fees/minimum" flow **does not exist** — so nothing currently (wrongly) applies the
+20 / 5% / minimum to it. If wanted, it is a **new, separately-scoped feature**
+(not built here, per instruction). When built, it must bypass the payout fees and
+the minimum, while the invoice it is spent on keeps its own normal 20 EGP + 14% VAT.
+
+## Verification
+`next build` ✅ · unit **1153/1153** (`referralPayout.test.ts` extended) ✅ ·
+typecheck ✅ · lint 0 errors ✅ · i18n parity ✅ · bidi ✅ · tolocale ✅ · guard clean.
+
+**No PR until Eyad approves the whole branch.**

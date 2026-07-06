@@ -1385,6 +1385,8 @@
     "tier3Value": "5% per month (perpetual)",
     "tierCondition": "Requires referred center to be active and paid in full",
     "withdrawalFeeNote": "A flat 20 EGP processing fee is deducted first, then a 5% withdrawal fee on the remainder.",
+    "withdrawalMinimumNote": "Minimum withdrawal: {min}.",
+    "withdrawalBelowMinimum": "Minimum withdrawal is {min}.",
     "withdrawalBelowFee": "Withdrawal must exceed the {fee} processing fee.",
     "payoutGross": "Gross commissions",
     "payoutProcessingFee": "Processing fee",

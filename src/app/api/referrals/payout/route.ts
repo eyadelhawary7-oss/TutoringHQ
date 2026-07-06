@@ -5,7 +5,7 @@ import { requirePermission } from '@/lib/centerPermissions';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { resolveProcessingFeeAmount } from '@/lib/processingFee';
-import { computeReferralPayout } from '@/lib/referralPayout';
+import { computeReferralPayout, REFERRAL_WITHDRAWAL_MIN_EGP } from '@/lib/referralPayout';
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,6 +33,17 @@ export async function POST(request: NextRequest) {
 
     if (!Number.isFinite(amountRequested) || amountRequested <= 0) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
+    }
+
+    // Minimum cash withdrawal, checked on the GROSS (before the 20 + 5% fees).
+    if (amountRequested < REFERRAL_WITHDRAWAL_MIN_EGP) {
+      return NextResponse.json(
+        {
+          error: `Minimum withdrawal is ${formatNumber(REFERRAL_WITHDRAWAL_MIN_EGP, 'en')} EGP`,
+          code: 'below_minimum',
+        },
+        { status: 400 },
+      );
     }
 
     const centerId = auth.centerId;

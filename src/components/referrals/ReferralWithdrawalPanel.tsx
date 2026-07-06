@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Banknote } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/formatNumber';
-import { computeReferralPayout } from '@/lib/referralPayout';
+import { computeReferralPayout, REFERRAL_WITHDRAWAL_MIN_EGP } from '@/lib/referralPayout';
 import { PROCESSING_FEE_DEFAULT_AMOUNT } from '@/lib/processingFee';
 
 function normalizeInstapayDigits(raw: string): string | null {
@@ -52,6 +52,12 @@ export function ReferralWithdrawalPanel({
     const amount = parseFloat(payoutAmount);
     if (!Number.isFinite(amount) || amount <= 0) {
       setPayoutError(t('payoutInvalidAmount'));
+      return;
+    }
+    if (amount < REFERRAL_WITHDRAWAL_MIN_EGP) {
+      setPayoutError(
+        t('withdrawalBelowMinimum', { min: formatCurrency(REFERRAL_WITHDRAWAL_MIN_EGP, locale) }),
+      );
       return;
     }
     if (amount > available) {
@@ -121,7 +127,7 @@ export function ReferralWithdrawalPanel({
         >
           {t('requestWithdrawal')}
         </button>
-        <p className="text-xs text-amber-700 dark:text-amber-400 mt-3 leading-snug">{t('withdrawalFeeNote')}</p>
+        <p className="text-xs text-amber-700 dark:text-amber-400 mt-3 leading-snug">{t('withdrawalFeeNote')} {t('withdrawalMinimumNote', { min: formatCurrency(REFERRAL_WITHDRAWAL_MIN_EGP, locale) })}</p>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">{t('processingTime')}</p>
       </div>
 
@@ -207,7 +213,7 @@ export function ReferralWithdrawalPanel({
                   </div>
                 );
               })()}
-              <p className="text-xs text-amber-700 dark:text-amber-400 leading-snug">{t('withdrawalFeeNote')}</p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 leading-snug">{t('withdrawalFeeNote')} {t('withdrawalMinimumNote', { min: formatCurrency(REFERRAL_WITHDRAWAL_MIN_EGP, locale) })}</p>
               {payoutError ? <p className="text-sm text-red-600 dark:text-red-400">{payoutError}</p> : null}
               <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end pt-2">
                 <button
