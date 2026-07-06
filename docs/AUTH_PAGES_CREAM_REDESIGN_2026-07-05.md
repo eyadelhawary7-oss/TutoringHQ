@@ -80,31 +80,93 @@ Logic diff: **styling/markup only.** `git diff` touches exactly two files
 
 ---
 
-## Phase B — `/signup` and `/accept-invite` (NOT STARTED — held for approval)
+## Phase B — `/signup` and `/accept-invite` (DONE, awaiting final review)
 
-Pending Eyad's sign-off on the pilot look. Plan, once approved:
+Pilot look approved by Eyad. Same cream/teal card style applied to both pages.
 
-- Apply the same cream/teal card style established in Phase A.
-- On `/accept-invite`, the `PhoneInput` / `OTPInput` currently resolve their colors
-  under a `.dark` scope. In light they resolve to the light token values — verify they
-  render correctly and legibly in the cream look before finalizing.
-- Screenshot each (shell render is fine where a live token/invite is needed), including
-  under emulated dark OS.
-- Keep the same hard guardrail: all fields, OTP send/verify flow, invite-token handling,
-  submits, redirects, error states, and rate-limit behavior stay byte-identical.
+### What changed
+
+**`src/app/[locale]/signup/SignupForm.tsx`** — full styling pass, logic untouched:
+
+- Page canvas cream `var(--color-surface-0)` (was `#080f1a` / `#080D14`); removed the
+  dark decorative teal radial glow layers (the `breathe`-animated blob and the success
+  glow — pure `aria-hidden` decoration, wrong on cream).
+- `UnderlineInput`: ink text `var(--color-text-primary)`, teal focus underline
+  `var(--color-teal)`, filled underline `var(--color-border-strong)`, empty
+  `var(--color-border)`, error `var(--color-danger)`; labels teal when active / muted at
+  rest; autofill masking now insets `var(--color-surface-0)` (cream) instead of `#080D14`.
+- City `<select>` and its options repainted on cream surface tokens.
+- Step progress dots, plan cards, billing toggle, referral/promo blocks, order summary,
+  tax rows, totals, consent checkboxes, error boxes, and both primary CTAs all moved to
+  `var(--color-*)` tokens (teal / teal-deep / teal-soft, danger / danger-muted, brass for
+  the "Top Centers" premium accent, text primary/secondary/muted, border/-strong/-brand).
+- White text kept **only** on the two teal buttons and the radio dot (white-on-teal).
+- The `data-chq-signup` attribute stays as an inert page marker (no CSS references it).
+
+**`src/app/[locale]/accept-invite/page.tsx`** — full styling pass, logic untouched:
+
+- Removed the `dark` class, the `bg-[#080f1a]` canvas, and `<LoginThemeEffect />`.
+- Cream page, soft-white card (`var(--color-surface-1)`, `var(--color-border)`,
+  `var(--shadow-md)`); Playfair step headings in ink; teal back-link / footer link.
+- The "done" step's PIN panel repainted on `var(--color-surface-2)` with the PIN in
+  `var(--color-teal)`; success check uses `var(--color-success)` on `-success-muted`.
+- **`PhoneInput` and `OTPInput` were NOT modified** — they already resolve their colors
+  through `var(--color-*)` and `hsl(var(--primary))` / `hsl(var(--destructive))`. In the
+  light theme `--primary: 174 77% 24%` (dark teal) and `--destructive: 9 53% 37%` render
+  legibly; the phone field (`+20` prefix, ink digits on `--color-surface-2`) and the six
+  OTP boxes (bold ink digits, teal focus ring) read with strong contrast on cream —
+  verified in the screenshots below.
+
+**`src/app/[locale]/signup/layout.tsx`** — dropped `<LoginThemeEffect />` (now a passthrough).
+
+**`src/app/globals.css`** — removed the remaining `[data-chq-signup]` locks: the token
+lock, the `background/input/select/option/placeholder/autofill` `!important` overrides,
+and the `html:has(...)` anti-flash canvas rule (replaced with "do not re-add" comments,
+same convention as `[data-chq-login]`).
+
+### Verification
+
+Screenshots captured with the dev-server + Playwright method (`colorScheme` emulation,
+`executablePath: /opt/pw-browsers/chromium`). Inputs are filled/focused so the phone
+field and OTP boxes are visibly legible; the OTP step is reached by mocking the invite
+`check` + Supabase `otp` network calls (a render-only trick — no app logic changed):
+
+| Render | `<html>` | color-scheme | body bg | result |
+|---|---|---|---|---|
+| `/ar/signup` step 1 (fields filled, phone focused) | `(none)` | `light` | cream | **light** |
+| `/ar/signup` step 2 (plan) / step 3 (payment) | `(none)` | `light` | cream | **light** |
+| `/ar/signup` step 1 under **emulated dark OS** | `(none)` | `light` | cream | **light** |
+| `/ar/accept-invite` phone step (filled `+20 …`) | `(none)` | `light` | cream | **light** |
+| `/ar/accept-invite` OTP step (boxes `1 2 3 4 5`, 6th focused) | `(none)` | `light` | cream | **light** |
+| `/ar/accept-invite` OTP step under **emulated dark OS** | `(none)` | `light` | cream | **light** |
+
+Gates (all green, whole repo):
+
+- [x] `next build` — compiled in ~52s, **394/394** static pages, exit 0.
+- [x] Unit suite — **1147 passed / 141 files**.
+- [x] `npm run typecheck` — clean.
+- [x] `npm run lint` — **0 errors** (161 pre-existing warnings, all in untouched test files).
+- [x] `verify:stabilization` — i18n (3832 keys, en/ar parity), bidi, tolocale all OK.
+
+Logic diff: **styling/markup only.** A targeted `git diff` grep over the two rewritten
+files shows **zero** changes to any line containing `fetch(`, `await`, `supabase`,
+`router.`, `setState`/`setStep`/`setStage`/`setForm`, `signupStep1Schema`/`safeParse`,
+`verifyOtp`/`signInWithOtp`, `persist(`, request `body`/`method`/`headers`, or field
+`value`/`onChange`/`onSubmit`. `PhoneInput`/`OTPInput` are not in the diff at all.
 
 ---
 
 ## Reported for a later separate cleanup step (do NOT collapse in this build)
 
-Once all three pages are light, the following become fully inert and can be removed in
-a dedicated follow-up:
+All three auth pages are now light. The following are fully inert and can be removed in a
+dedicated follow-up:
 
-1. **`src/components/LoginThemeEffect.tsx`** — after Phase B no page imports it, so
-   nothing ever adds `.dark` to the document root. Currently still used by
-   `src/app/[locale]/signup/layout.tsx` and `src/app/[locale]/accept-invite/page.tsx`.
-2. **The `.dark` token blocks in `globals.css`** — the `html.dark` / `.dark` cascade and
-   the remaining `[data-chq-signup]` lock become dead once signup is cream.
+1. **`src/components/LoginThemeEffect.tsx`** — now has **zero importers**; nothing ever
+   adds `.dark` to the document root anymore. The file is left in place, unused.
+2. **The `.dark` token blocks in `globals.css`** — the `html.dark` / `.dark` cascade is
+   now dead app-side (no code path adds `.dark`). All `[data-chq-signup]` and
+   `[data-chq-session-expired]` locks have been removed; only inert `data-chq-*` page
+   markers remain on the elements.
 3. **~54 files using `dark:` Tailwind variants** — inert app-side; safe to strip in the
    cleanup pass.
 
