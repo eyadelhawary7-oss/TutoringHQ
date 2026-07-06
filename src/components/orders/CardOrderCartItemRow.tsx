@@ -120,7 +120,7 @@ export function CardOrderCartItemRow({
           }
         }}
       >
-        <div className="w-9 h-9 rounded-full bg-teal-600/20 text-teal-700 dark:text-teal-300 flex items-center justify-center text-sm font-bold shrink-0">
+        <div className="w-9 h-9 rounded-full bg-teal-600/20 text-teal-700 flex items-center justify-center text-sm font-bold shrink-0">
           {initials(item.student?.name)}
         </div>
         <div className="flex-1 min-w-0">
@@ -131,13 +131,13 @@ export function CardOrderCartItemRow({
             <bdi>#{formatStudentNumberForDisplay(item.student?.student_number ?? '')}</bdi>
           </p>
           {item.stale ? (
-            <p className="text-[11px] text-amber-600 dark:text-amber-300 mt-1">{t('studentRow.removedFromCenter')}</p>
+            <p className="text-[11px] text-amber-600 mt-1">{t('studentRow.removedFromCenter')}</p>
           ) : null}
           <div className="hidden md:flex flex-wrap gap-2 mt-2">
             {!item.stale && item.saved_for_later === false ? (
               <button
                 type="button"
-                className="text-[11px] font-semibold text-teal-600 dark:text-teal-400 underline min-h-[44px]"
+                className="text-[11px] font-semibold text-teal-600 underline min-h-[44px]"
                 disabled={!!busyId}
                 onClick={() => void onSaveForLater()}
               >
@@ -147,7 +147,7 @@ export function CardOrderCartItemRow({
             {!item.stale && item.saved_for_later ? (
               <button
                 type="button"
-                className="text-[11px] font-semibold text-teal-600 dark:text-teal-400 underline min-h-[44px]"
+                className="text-[11px] font-semibold text-teal-600 underline min-h-[44px]"
                 disabled={!!busyId}
                 onClick={() => void onMoveToCart()}
               >

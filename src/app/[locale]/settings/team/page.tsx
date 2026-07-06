@@ -434,7 +434,7 @@ export default function TeamSettingsPage() {
         </div>
 
         {savedMessage && (
-          <div className="mb-4 p-3 bg-teal-50 dark:bg-teal-950/40 border border-teal-500/30 text-teal-800 dark:text-teal-200 rounded-xl text-sm text-center">
+          <div className="mb-4 p-3 bg-teal-50 border border-teal-500/30 text-teal-800 rounded-xl text-sm text-center">
             {savedMessage}
           </div>
         )}
@@ -480,7 +480,7 @@ export default function TeamSettingsPage() {
               </div>
 
               {lastInvitePassword && (
-                <div className="p-4 bg-teal-50 dark:bg-teal-950/40 rounded-xl border border-teal-500/30 text-sm text-teal-800 dark:text-teal-200 mb-4">
+                <div className="p-4 bg-teal-50 rounded-xl border border-teal-500/30 text-sm text-teal-800 mb-4">
                   <p className="font-medium">{t('inviteSuccess')}</p>
                   <p className="mt-1">{t('passwordIs', { password: lastInvitePassword })}</p>
                 </div>
@@ -566,7 +566,7 @@ export default function TeamSettingsPage() {
                                   {PERM_CHIPS.map(({ key, emoji, labelKey }) => (
                                     <span
                                       key={key}
-                                      className={`px-1.5 py-0.5 rounded text-xs font-medium ${permChecked(key) ? 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-200' : 'bg-[var(--color-surface-2)] text-slate-400'}`}
+                                      className={`px-1.5 py-0.5 rounded text-xs font-medium ${permChecked(key) ? 'bg-teal-100 text-teal-800' : 'bg-[var(--color-surface-2)] text-slate-400'}`}
                                       title={t(labelKey)}
                                     >
                                       {emoji}
@@ -582,7 +582,7 @@ export default function TeamSettingsPage() {
                             </td>
                             <td className="px-4 py-3">
                               <span
-                                className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${member.is_active !== false ? 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-200' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200'}`}
+                                className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${member.is_active !== false ? 'bg-teal-100 text-teal-800' : 'bg-red-100 text-red-700'}`}
                               >
                                 {member.is_active !== false ? t('activeStatus') : t('deactivatedStatus')}
                               </span>

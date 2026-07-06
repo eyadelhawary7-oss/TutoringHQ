@@ -174,7 +174,7 @@ export default function ScanResultScreen({
           </div>
           <h2 className="text-2xl font-bold mb-2 text-[var(--color-text-primary)]">{student.name}</h2>
           <p className="text-[var(--color-text-secondary)] text-lg mb-2">{selectedGroup?.name ?? student.subject}</p>
-          <p className="text-sm text-amber-800 dark:text-amber-200 mb-4">{t('entryAllowedUnpaid')}</p>
+          <p className="text-sm text-amber-800 mb-4">{t('entryAllowedUnpaid')}</p>
           <div className="bg-[var(--color-surface-0)] rounded-xl p-4 w-full border border-[var(--color-border-subtle)]">
             <p className="text-sm text-[var(--color-text-secondary)]">{t('amountAddedToBalance', { amount: egp(addedAmount) })}</p>
             <p className="text-3xl font-bold font-mono text-[var(--color-text-primary)]">{egp(addedAmount)}</p>

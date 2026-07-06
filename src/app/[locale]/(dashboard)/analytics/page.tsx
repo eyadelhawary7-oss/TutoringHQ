@@ -268,7 +268,7 @@ export default function AnalyticsPage() {
               {mrrDelta !== undefined && (
                 <span
                   className={`inline-flex items-center gap-0.5 text-xs font-semibold mt-1 ${
-                    mrrDelta >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                    mrrDelta >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}
                 >
                   {mrrDelta >= 0 ? (
@@ -285,10 +285,10 @@ export default function AnalyticsPage() {
               )}
             </div>
             <div
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50 dark:bg-teal-900/30 border border-teal-100/80 dark:border-teal-800/40"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50 border border-teal-100/80"
               aria-hidden
             >
-              <TrendingUp className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+              <TrendingUp className="w-5 h-5 text-teal-600" />
             </div>
           </div>
         </div>
@@ -301,10 +301,10 @@ export default function AnalyticsPage() {
               </span>
             </div>
             <div
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-100/80 dark:border-blue-800/40"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 border border-blue-100/80"
               aria-hidden
             >
-              <Percent className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <Percent className="w-5 h-5 text-blue-600" />
             </div>
           </div>
         </div>
@@ -317,10 +317,10 @@ export default function AnalyticsPage() {
               </span>
             </div>
             <div
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-50 dark:bg-purple-900/30 border border-purple-100/80 dark:border-purple-800/40"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-50 border border-purple-100/80"
               aria-hidden
             >
-              <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <Users className="w-5 h-5 text-purple-600" />
             </div>
           </div>
         </div>
@@ -333,10 +333,10 @@ export default function AnalyticsPage() {
               </span>
             </div>
             <div
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-900/30 border border-amber-100/80 dark:border-amber-800/40"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-50 border border-amber-100/80"
               aria-hidden
             >
-              <Wallet className="w-5 h-5 text-amber-600 dark:text-amber-500" />
+              <Wallet className="w-5 h-5 text-amber-600" />
             </div>
           </div>
         </div>

@@ -206,7 +206,7 @@ export default function OrderDetailClient({
 
   const terminalBanner =
     status === 'cancelled' || status === 'refunded' ? (
-      <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/40 dark:border-red-900 px-4 py-3 text-sm text-red-900 dark:text-red-100 space-y-1">
+      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 space-y-1">
         <p className="font-semibold">
           {status === 'refunded' ? tt('banner.refunded.title') : tt('banner.cancelled.title')}
         </p>
@@ -222,7 +222,7 @@ export default function OrderDetailClient({
         ) : null}
       </div>
     ) : status === 'failed' ? (
-      <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-sm text-amber-950 dark:text-amber-100">
+      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
         {tt('banner.failed')}
       </div>
     ) : null;

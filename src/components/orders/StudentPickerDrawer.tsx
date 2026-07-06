@@ -252,22 +252,22 @@ export function StudentPickerDrawer({
                   </p>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {inCart ? (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-500/15 text-teal-700 dark:text-teal-300">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-500/15 text-teal-700">
                         {t('badgeInCart')}
                       </span>
                     ) : null}
                     {saved ? (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-500/15 text-slate-700 dark:text-slate-300">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-500/15 text-slate-700">
                         {t('badgeSaved')}
                       </span>
                     ) : null}
                     {st === 'delivered' ? (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/15 text-green-800 dark:text-green-300">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/15 text-green-800">
                         {tc('alreadyHasCard')}
                       </span>
                     ) : null}
                     {st === 'pending' ? (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-800 dark:text-amber-200">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-800">
                         {tc('cardPending')}
                       </span>
                     ) : null}

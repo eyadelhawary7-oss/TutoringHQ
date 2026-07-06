@@ -157,7 +157,7 @@ export default function AdminWithdrawalsPage() {
             >
               <DirectionalIcon icon={ArrowLeft} className="h-5 w-5 text-[var(--color-text-primary)]" />
             </button>
-            <Wallet className="h-6 w-6 text-teal-600 dark:text-teal-400" aria-hidden />
+            <Wallet className="h-6 w-6 text-teal-600" aria-hidden />
             <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
           </div>
 
@@ -188,7 +188,7 @@ export default function AdminWithdrawalsPage() {
           ) : null}
 
           {tab === 'pending' && !loading ? (
-            <div className="mb-6 rounded-xl border border-teal-500/30 bg-teal-950/20 p-4 dark:bg-teal-950/30">
+            <div className="mb-6 rounded-xl border border-teal-500/30 bg-teal-950/20 p-4">
               <p className="text-sm font-medium text-[var(--color-text-primary)]">
                 {t('summary', {
                   quarter: formatPlainInteger(quarter, locale),
@@ -286,7 +286,7 @@ export default function AdminWithdrawalsPage() {
                                   if (!window.confirm(t('confirmReject'))) return;
                                   void patchWithdrawal(r.id, 'reject');
                                 }}
-                                className="rounded-lg border-2 border-red-500 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-950/30 dark:text-red-400 disabled:opacity-50"
+                                className="rounded-lg border-2 border-red-500 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-950/30 disabled:opacity-50"
                               >
                                 {t('reject')}
                               </button>

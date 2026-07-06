@@ -128,7 +128,7 @@ export function CardOrderStatusTimeline({
               ? 'ring-2 ring-teal-400 shadow-[0_0_18px_rgba(45,212,191,0.55)] animate-pulse'
               : state === 'completed'
                 ? 'ring-2 ring-teal-600 bg-teal-600 text-white'
-                : 'ring-1 ring-stone-300 bg-transparent text-stone-500 dark:ring-stone-600';
+                : 'ring-1 ring-stone-300 bg-transparent text-stone-500';
 
           const aria = `${labels[stage]}, ${t(`state.${state}`)}${timeLabel ? `, ${timeLabel}` : ''}`;
 

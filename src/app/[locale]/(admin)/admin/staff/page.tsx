@@ -323,7 +323,7 @@ export default function StaffPage() {
 
   if (!gateOk) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-slate-500 dark:text-slate-400">
+      <div className="min-h-screen flex items-center justify-center text-slate-500">
         {tCommon('loading')}
       </div>
     )
@@ -341,13 +341,13 @@ export default function StaffPage() {
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center">
-              <Users className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+              <Users className="w-5 h-5 text-teal-600" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-slate-900 dark:text-white">
+              <h1 className="text-xl font-semibold text-slate-900">
                 {t('staff.title')}
               </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+              <p className="text-sm text-slate-500">
                 {formatNumber(filtered.length, locale)}
               </p>
             </div>
@@ -369,7 +369,7 @@ export default function StaffPage() {
         </div>
 
         {error && !loading ? (
-          <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+          <p className="text-sm text-red-600" role="alert">
             {error}
           </p>
         ) : null}
@@ -414,7 +414,7 @@ export default function StaffPage() {
 
         <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl overflow-hidden overflow-x-auto">
           {loading ? (
-            <div className="p-12 text-center text-slate-500 dark:text-slate-400">
+            <div className="p-12 text-center text-slate-500">
               {tCommon('loading')}
             </div>
           ) : staff.length === 0 ? (
@@ -436,14 +436,14 @@ export default function StaffPage() {
               ) : null}
             </div>
           ) : filtered.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 dark:text-slate-400 border border-[var(--color-border)] rounded-xl bg-[var(--color-surface-1)]">
+            <div className="p-12 text-center text-slate-500 border border-[var(--color-border)] rounded-xl bg-[var(--color-surface-1)]">
               {t('staff.filter_empty')}
             </div>
           ) : (
             <table className="w-full text-sm min-w-[800px]">
-              <thead className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--color-surface-2)]">
+              <thead className="border-b border-slate-200 bg-slate-50">
                 <tr
-                  className={`text-slate-500 dark:text-slate-400 ${isRTL ? 'text-end' : 'text-start'}`}
+                  className={`text-slate-500 ${isRTL ? 'text-end' : 'text-start'}`}
                 >
                   <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('staff.col_name')}</th>
                   <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('staff.col_role')}</th>
@@ -456,15 +456,15 @@ export default function StaffPage() {
                   <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]" aria-label={t('actions')} />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-700/50">
+              <tbody className="divide-y divide-slate-200">
                 {filtered.map((member) => (
                   <tr
                     key={member.id}
-                    className="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors"
+                    className="hover:bg-slate-50 transition-colors"
                   >
                     <td className="px-4 py-3">
-                      <div className="font-medium text-slate-900 dark:text-white">{member.name}</div>
-                      <div className="text-slate-500 dark:text-slate-400 text-xs">{member.phone}</div>
+                      <div className="font-medium text-slate-900">{member.name}</div>
+                      <div className="text-slate-500 text-xs">{member.phone}</div>
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -474,26 +474,26 @@ export default function StaffPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                      <div className="flex items-center gap-1.5 text-slate-700">
                         <MapPin className="w-3 h-3 text-slate-400 shrink-0" aria-hidden />
                         {cityLabel(member.city)}
                       </div>
                       {member.territory_city && member.territory_city !== member.city ? (
-                        <div className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                        <div className="text-xs text-amber-600 mt-0.5">
                           {t('staff.territory_mismatch')}
                         </div>
                       ) : null}
                     </td>
-                    <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
+                    <td className="px-4 py-3 text-slate-700">
                       {member.manager?.name ?? t('staff.dash')}
                     </td>
-                    <td className="px-4 py-3 text-slate-900 dark:text-white font-medium">
+                    <td className="px-4 py-3 text-slate-900 font-medium">
                       {formatNumber(member.center_count, locale)}
                     </td>
-                    <td className="px-4 py-3 text-teal-600 dark:text-teal-400 font-medium">
+                    <td className="px-4 py-3 text-teal-600 font-medium">
                       {formatNumber(member.ytd_commission, locale)} {t('staff.currency_suffix')}
                     </td>
-                    <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
+                    <td className="px-4 py-3 text-slate-600">
                       {formatNumber(Number(member.base_salary), locale)} {t('staff.currency_suffix')}
                     </td>
                     <td className="px-4 py-3">
@@ -509,7 +509,7 @@ export default function StaffPage() {
                           <button
                             type="button"
                             onClick={() => openEdit(member)}
-                            className="p-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 transition-colors"
+                            className="p-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors"
                             aria-label={t('staff.edit')}
                           >
                             <Edit2 className="w-3.5 h-3.5" />
@@ -518,7 +518,7 @@ export default function StaffPage() {
                             <button
                               type="button"
                               onClick={() => setShowTerminateModal(member)}
-                              className="p-1.5 rounded-lg bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 transition-colors"
+                              className="p-1.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 transition-colors"
                               aria-label={t('staff.deactivate')}
                             >
                               <UserX className="w-3.5 h-3.5" />
@@ -537,61 +537,61 @@ export default function StaffPage() {
         {showAddModal ? (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-2xl w-full max-w-lg p-6 space-y-5 shadow-xl">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+              <h2 className="text-lg font-semibold text-slate-900">
                 {editingMember ? t('staff.edit') : t('staff.add')}
               </h2>
               {error ? (
-                <div className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+                <div className="text-red-600 text-sm bg-red-50 rounded-lg p-3">
                   {error}
                 </div>
               ) : null}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                  <label className="text-xs text-slate-500 mb-1 block">
                     {t('staff.name_label')}
                   </label>
                   <input
                     type="text"
                     value={form.name}
                     onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-teal-500 outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-sm focus:border-teal-500 outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                  <label className="text-xs text-slate-500 mb-1 block">
                     {t('staff.phone_label')}
                   </label>
                   <input
                     type="text"
                     value={form.phone}
                     onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-teal-500 outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-sm focus:border-teal-500 outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                  <label className="text-xs text-slate-500 mb-1 block">
                     {t('staff.base_salary')}
                   </label>
                   <input
                     type="number"
                     value={form.base_salary}
                     onChange={(e) => setForm((prev) => ({ ...prev, base_salary: e.target.value }))}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-teal-500 outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-sm focus:border-teal-500 outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                  <label className="text-xs text-slate-500 mb-1 block">
                     {t('staff.hire_date')}
                   </label>
                   <LocalizedDateInput
                     value={form.hire_date}
                     onChange={(e) => setForm((prev) => ({ ...prev, hire_date: e.target.value }))}
                     locale={locale}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-teal-500 outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-sm focus:border-teal-500 outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                  <label className="text-xs text-slate-500 mb-1 block">
                     {t('staff.role_label')}
                   </label>
                   <select
@@ -603,20 +603,20 @@ export default function StaffPage() {
                         base_salary: e.target.value === 'sm' ? '30000' : '15000',
                       }))
                     }
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-teal-500 outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-sm focus:border-teal-500 outline-none"
                   >
                     <option value="sr">{t('staff.role_sr')}</option>
                     <option value="sm">{t('staff.role_sm')}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                  <label className="text-xs text-slate-500 mb-1 block">
                     {t('staff.col_city')}
                   </label>
                   <select
                     value={form.city}
                     onChange={(e) => setForm((prev) => ({ ...prev, city: e.target.value }))}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-teal-500 outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-sm focus:border-teal-500 outline-none"
                   >
                     {CITY_KEYS.map((c) => (
                       <option key={c} value={c}>
@@ -627,13 +627,13 @@ export default function StaffPage() {
                 </div>
                 {form.role === 'sr' ? (
                   <div className="col-span-2">
-                    <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                    <label className="text-xs text-slate-500 mb-1 block">
                       {t('staff.reports_to')}
                     </label>
                     <select
                       value={form.reports_to}
                       onChange={(e) => setForm((prev) => ({ ...prev, reports_to: e.target.value }))}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-teal-500 outline-none"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-sm focus:border-teal-500 outline-none"
                     >
                       <option value="">{t('staff.no_reports_to')}</option>
                       {managers.map((m) => (
@@ -645,14 +645,14 @@ export default function StaffPage() {
                   </div>
                 ) : null}
                 <div className="col-span-2">
-                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                  <label className="text-xs text-slate-500 mb-1 block">
                     {t('staff.notes_label')}
                   </label>
                   <textarea
                     value={form.notes}
                     onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
                     rows={2}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-teal-500 outline-none resize-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-sm focus:border-teal-500 outline-none resize-none"
                   />
                 </div>
               </div>
@@ -664,7 +664,7 @@ export default function StaffPage() {
                     setEditingMember(null)
                     setError(null)
                   }}
-                  className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-white rounded-lg text-sm transition-colors"
+                  className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-sm transition-colors"
                 >
                   {t('staff.cancel')}
                 </button>
@@ -684,20 +684,20 @@ export default function StaffPage() {
         {showTerminateModal ? (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-[var(--color-surface-1)] border border-red-800/40 rounded-2xl w-full max-w-md p-6 space-y-5 shadow-xl">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+              <h2 className="text-lg font-semibold text-slate-900">
                 {t('staff.deactivate')} - {showTerminateModal.name}
               </h2>
               {error ? (
-                <div className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+                <div className="text-red-600 text-sm bg-red-50 rounded-lg p-3">
                   {error}
                 </div>
               ) : null}
-              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 rounded-lg p-3 text-amber-800 dark:text-amber-300 text-sm">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-amber-800 text-sm">
                 {t('staff.terminate_warning')}
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                  <label className="text-xs text-slate-500 mb-1 block">
                     {t('staff.termination_type_label')}
                   </label>
                   <select
@@ -705,7 +705,7 @@ export default function StaffPage() {
                     onChange={(e) =>
                       setTerminateForm((prev) => ({ ...prev, termination_type: e.target.value }))
                     }
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-red-500 outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-sm focus:border-red-500 outline-none"
                   >
                     <option value="resigned">{t('staff.termination_type_resigned')}</option>
                     <option value="terminated">{t('staff.termination_type_terminated')}</option>
@@ -713,7 +713,7 @@ export default function StaffPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                  <label className="text-xs text-slate-500 mb-1 block">
                     {t('staff.termination_date_label')}
                   </label>
                   <LocalizedDateInput
@@ -722,7 +722,7 @@ export default function StaffPage() {
                       setTerminateForm((prev) => ({ ...prev, termination_date: e.target.value }))
                     }
                     locale={locale}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-red-500 outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-sm focus:border-red-500 outline-none"
                   />
                 </div>
               </div>
@@ -733,7 +733,7 @@ export default function StaffPage() {
                     setShowTerminateModal(null)
                     setError(null)
                   }}
-                  className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-white rounded-lg text-sm transition-colors"
+                  className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-sm transition-colors"
                 >
                   {t('staff.cancel')}
                 </button>

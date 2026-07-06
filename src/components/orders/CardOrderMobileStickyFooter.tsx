@@ -41,7 +41,7 @@ export function CardOrderMobileStickyFooter() {
             {t('checkout')}
           </Link>
         ) : (
-          <span className="text-xs text-amber-700 dark:text-amber-200 shrink-0 max-w-[140px]">
+          <span className="text-xs text-amber-700 shrink-0 max-w-[140px]">
             {t('minimumNotMet', { need: Math.max(0, minimumQuantity - activeItemCount) })}
           </span>
         )}

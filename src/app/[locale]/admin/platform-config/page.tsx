@@ -431,7 +431,7 @@ export default function PlatformConfigPage() {
         <button
           type="button"
           onClick={() => router.push('/admin')}
-          className="inline-flex items-center gap-2 text-sm text-teal-700 dark:text-teal-400 hover:underline mb-4"
+          className="inline-flex items-center gap-2 text-sm text-teal-700 hover:underline mb-4"
         >
           <DirectionalIcon icon={ArrowLeft} className="h-4 w-4" aria-hidden />
           {t('platformConfigBack')}

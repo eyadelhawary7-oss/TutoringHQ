@@ -281,7 +281,7 @@ export default function ReferralRewardsPage() {
       <main className="lg:ms-56 p-6 space-y-6 max-w-[1400px] w-full mx-auto min-w-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center">
-            <Gift className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+            <Gift className="w-5 h-5 text-teal-600" />
           </div>
           <div>
             <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
@@ -292,7 +292,7 @@ export default function ReferralRewardsPage() {
         </div>
 
         {listError && !loading ? (
-          <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+          <p className="text-sm text-red-600" role="alert">
             {listError}
           </p>
         ) : null}
@@ -326,7 +326,7 @@ export default function ReferralRewardsPage() {
               {marking ? t('referralRewards.marking') : t('referralRewards.mark_paid')}
             </button>
             {markError ? (
-              <span className="text-xs text-red-600 dark:text-red-400">{markError}</span>
+              <span className="text-xs text-red-600">{markError}</span>
             ) : null}
           </div>
         ) : null}
@@ -363,7 +363,7 @@ export default function ReferralRewardsPage() {
                       <td className="px-4 py-3 font-medium text-[var(--color-text-primary)]">
                         {row.center_name || '-'}
                       </td>
-                      <td className="px-4 py-3 text-teal-600 dark:text-teal-400 font-mono">
+                      <td className="px-4 py-3 text-teal-600 font-mono">
                         {formatNumber(Number(row.pending), locale)} {t('staff.currency_suffix')}
                       </td>
                       <td className="px-4 py-3 text-[var(--color-text-secondary)] font-mono">
@@ -456,7 +456,7 @@ export default function ReferralRewardsPage() {
                       <td className="px-4 py-3 font-mono text-[var(--color-text-secondary)]">
                         {formatNumber(Number(r.base_amount), locale)} {t('staff.currency_suffix')}
                       </td>
-                      <td className="px-4 py-3 font-mono text-teal-600 dark:text-teal-400 font-medium">
+                      <td className="px-4 py-3 font-mono text-teal-600 font-medium">
                         {formatNumber(Number(r.reward_amount), locale)} {t('staff.currency_suffix')}
                       </td>
                       <td className="px-4 py-3 text-[var(--color-text-secondary)]">{r.period_month}</td>

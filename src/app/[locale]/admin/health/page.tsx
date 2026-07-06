@@ -237,14 +237,14 @@ export default function AdminHealthPage() {
         <button
           type="button"
           onClick={() => router.push('/admin')}
-          className="inline-flex items-center gap-2 text-sm text-teal-600 dark:text-teal-400 hover:underline mb-4"
+          className="inline-flex items-center gap-2 text-sm text-teal-600 hover:underline mb-4"
         >
           <DirectionalIcon icon={ArrowLeft} className="h-4 w-4" />
           {t('healthBack')}
         </button>
 
         <div className="flex items-start gap-3 mb-1">
-          <Activity className="h-8 w-8 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
+          <Activity className="h-8 w-8 text-teal-600 shrink-0 mt-0.5" />
           <div>
             <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('healthTitle')}</h1>
             <p className="text-sm text-[var(--color-text-muted)] mt-1">{t('healthSubtitle')}</p>
@@ -260,15 +260,15 @@ export default function AdminHealthPage() {
         {loading && !data ? (
           <p className="text-[var(--color-text-muted)] mt-10">{tCommon('loading')}</p>
         ) : error && !data ? (
-          <p className="text-red-600 dark:text-red-400 mt-10">{error}</p>
+          <p className="text-red-600 mt-10">{error}</p>
         ) : data ? (
           <div className="mt-8 space-y-10">
             <section className="flex flex-wrap gap-3">
               <span
                 className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold tracking-wide ${
                   data.paymob_mode === 'live'
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                    : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-amber-100 text-amber-800'
                 }`}
               >
                 {t('healthPaymob')}: {data.paymob_mode === 'live' ? 'LIVE' : 'SANDBOX'}
@@ -276,8 +276,8 @@ export default function AdminHealthPage() {
               <span
                 className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold tracking-wide ${
                   data.wa_mode === 'live'
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                    : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-amber-100 text-amber-800'
                 }`}
               >
                 {t('healthWhatsApp')}: {data.wa_mode === 'live' ? 'LIVE' : 'TEST'}
@@ -325,9 +325,9 @@ export default function AdminHealthPage() {
                       key={c.label}
                       className={`rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4 ${
                         bad
-                          ? 'border-red-200 dark:border-red-500/40 bg-red-50 dark:bg-red-950/20'
+                          ? 'border-red-200 bg-red-50'
                           : ok
-                            ? 'border-green-200 dark:border-emerald-500/40 bg-green-50 dark:bg-emerald-950/20'
+                            ? 'border-green-200 bg-green-50'
                             : ''
                       }`}
                     >
@@ -335,9 +335,9 @@ export default function AdminHealthPage() {
                       <p
                         className={`text-2xl font-bold font-mono mt-2 ${
                           bad
-                            ? 'text-red-600 dark:text-red-400'
+                            ? 'text-red-600'
                             : ok
-                              ? 'text-green-600 dark:text-green-400'
+                              ? 'text-green-600'
                               : 'text-[var(--color-text-primary)]'
                         }`}
                       >
@@ -355,7 +355,7 @@ export default function AdminHealthPage() {
                 <p className="text-xs text-[var(--color-text-muted)] mt-1">{t('healthDeadLettersDesc')}</p>
               </div>
               {retryError ? (
-                <p className="text-xs text-red-600 dark:text-red-400 mb-2">{retryError}</p>
+                <p className="text-xs text-red-600 mb-2">{retryError}</p>
               ) : null}
               {data.dead_letters && data.dead_letters.length > 0 ? (
                 <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] overflow-x-auto">
@@ -406,8 +406,8 @@ export default function AdminHealthPage() {
                   </table>
                 </div>
               ) : (
-                <div className="rounded-xl border border-green-200 dark:border-emerald-500/40 bg-green-50 dark:bg-emerald-950/20 p-4">
-                  <p className="text-sm text-green-700 dark:text-green-400">{t('healthDeadLetterEmpty')}</p>
+                <div className="rounded-xl border border-green-200 bg-green-50 p-4">
+                  <p className="text-sm text-green-700">{t('healthDeadLetterEmpty')}</p>
                 </div>
               )}
             </section>
@@ -458,14 +458,14 @@ export default function AdminHealthPage() {
                             }
                           }}
                           className={`border-b border-[var(--color-border-subtle)] last:border-0 hover:bg-[var(--color-surface-2)] cursor-pointer ${
-                            errRow ? 'bg-red-50 dark:bg-red-950/35' : stale ? 'bg-amber-50 dark:bg-amber-950/20' : ''
+                            errRow ? 'bg-red-50' : stale ? 'bg-amber-50' : ''
                           }`}
                         >
                           <td className="p-3 font-mono text-[var(--color-text-primary)] whitespace-nowrap">
                             <span className="inline-flex items-center gap-1.5">
                               {failedLast ? (
                                 <span
-                                  className="inline-block h-2 w-2 rounded-full bg-red-600 dark:bg-red-400 shrink-0"
+                                  className="inline-block h-2 w-2 rounded-full bg-red-600 shrink-0"
                                   title={tHealth('statusError')}
                                   aria-hidden
                                 />
@@ -473,7 +473,7 @@ export default function AdminHealthPage() {
                               {row.path}
                               {stale ? (
                                 <AlertTriangle
-                                  className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0"
+                                  className="h-4 w-4 text-amber-600 shrink-0"
                                   aria-label={t('healthStaleCron')}
                                 />
                               ) : null}
@@ -491,15 +491,15 @@ export default function AdminHealthPage() {
                                 {tHealth('statusPending')}
                               </span>
                             ) : row.last_status === 'success' ? (
-                              <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                              <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-700">
                                 ✓ {tHealth('statusSuccess')}
                               </span>
                             ) : row.last_status === 'failure' ? (
-                              <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                              <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-semibold bg-red-100 text-red-700">
                                 ✗ {tHealth('statusError')}
                               </span>
                             ) : (
-                              <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                              <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-semibold bg-amber-100 text-amber-700">
                                 ⚠ {tHealth('statusPartial')}
                               </span>
                             )}
@@ -510,7 +510,7 @@ export default function AdminHealthPage() {
                           <td
                             className={`p-3 max-w-xs font-mono ${
                               row.last_error
-                                ? 'text-red-600 dark:text-red-400'
+                                ? 'text-red-600'
                                 : 'text-[var(--color-text-secondary)]'
                             }`}
                           >
@@ -526,7 +526,7 @@ export default function AdminHealthPage() {
                                   {errText.length > 80 ? (
                                     <button
                                       type="button"
-                                      className="text-xs font-sans font-medium text-teal-600 dark:text-teal-400 hover:underline"
+                                      className="text-xs font-sans font-medium text-teal-600 hover:underline"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setCronDetailRow(row);
@@ -555,7 +555,7 @@ export default function AdminHealthPage() {
                 <li>
                   <Link
                     href="/admin"
-                    className="text-teal-600 dark:text-teal-400 hover:underline inline-flex items-center gap-2"
+                    className="text-teal-600 hover:underline inline-flex items-center gap-2"
                   >
                     {t('healthPendingCancellations')}{' '}
                     <span className="font-mono text-[var(--color-text-muted)]">({data.pending_cancellations})</span>
@@ -564,7 +564,7 @@ export default function AdminHealthPage() {
                 <li>
                   <Link
                     href="/admin/withdrawals"
-                    className="text-teal-600 dark:text-teal-400 hover:underline inline-flex items-center gap-2"
+                    className="text-teal-600 hover:underline inline-flex items-center gap-2"
                   >
                     {t('healthPendingWithdrawals')}{' '}
                     <span className="font-mono text-[var(--color-text-muted)]">({data.pending_withdrawals})</span>
@@ -573,7 +573,7 @@ export default function AdminHealthPage() {
                 <li>
                   <Link
                     href="/admin"
-                    className="text-teal-600 dark:text-teal-400 hover:underline inline-flex items-center gap-2"
+                    className="text-teal-600 hover:underline inline-flex items-center gap-2"
                   >
                     {t('healthPendingSignupsLink')}{' '}
                     <span className="font-mono text-[var(--color-text-muted)]">({data.pending_signups})</span>
@@ -605,7 +605,7 @@ export default function AdminHealthPage() {
                 {t('health.errorModal.stackHeading')}
               </h3>
               {cronDetailRow.last_error_stack?.trim() ? (
-                <pre className="text-xs whitespace-pre-wrap break-words font-mono text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-lg p-3 mb-6">
+                <pre className="text-xs whitespace-pre-wrap break-words font-mono text-red-600 bg-red-50 rounded-lg p-3 mb-6">
                   {cronDetailRow.last_error_stack}
                 </pre>
               ) : (
@@ -630,7 +630,7 @@ export default function AdminHealthPage() {
                         {formatCronRanAt(f.ran_at, locale)}
                       </p>
                       {f.error_message ? (
-                        <p className="text-sm text-red-600 dark:text-red-400 whitespace-pre-wrap break-words">
+                        <p className="text-sm text-red-600 whitespace-pre-wrap break-words">
                           {f.error_message}
                         </p>
                       ) : null}

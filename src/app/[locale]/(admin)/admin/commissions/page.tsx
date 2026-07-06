@@ -51,18 +51,18 @@ const T1_COLORS: Record<string, string> = {
   pending:
     'bg-[var(--color-surface-2)] text-[var(--color-text-muted)] border border-[var(--color-border)]',
   eligible:
-    'bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30',
-  paid: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300',
-  clawed_back: 'bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300',
+    'bg-amber-100 text-amber-800 border border-amber-300',
+  paid: 'bg-emerald-100 text-emerald-800',
+  clawed_back: 'bg-red-100 text-red-800',
 }
 
 const T2_COLORS: Record<string, string> = {
   locked:
     'bg-[var(--color-surface-2)] text-[var(--color-text-muted)] border border-[var(--color-border)]',
   eligible:
-    'bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30',
-  paid: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300',
-  forfeited: 'bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-400',
+    'bg-amber-100 text-amber-800 border border-amber-300',
+  paid: 'bg-emerald-100 text-emerald-800',
+  forfeited: 'bg-red-100 text-red-800',
 }
 
 function relStaff(c: Commission): StaffEmbed {
@@ -299,7 +299,7 @@ export default function CommissionsPage() {
       <main className="lg:ms-56 p-6 space-y-6 max-w-[1400px] w-full mx-auto min-w-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center">
-            <TrendingUp className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+            <TrendingUp className="w-5 h-5 text-teal-600" />
           </div>
           <div>
             <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
@@ -314,7 +314,7 @@ export default function CommissionsPage() {
         </div>
 
         {listError && !loading ? (
-          <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+          <p className="text-sm text-red-600" role="alert">
             {listError}
           </p>
         ) : null}
@@ -413,7 +413,7 @@ export default function CommissionsPage() {
                       <td className="px-4 py-3 text-[var(--color-text-primary)] capitalize">
                         {c.plan_at_signing}
                       </td>
-                      <td className="px-4 py-3 text-teal-600 dark:text-teal-400 font-medium">
+                      <td className="px-4 py-3 text-teal-600 font-medium">
                         {formatNumber(Number(c.total_commission), locale)}{' '}
                         {t('staff.currency_suffix')}
                       </td>
@@ -463,14 +463,14 @@ export default function CommissionsPage() {
                         <div className="flex items-center gap-1.5">
                           {isPaused(c) ? (
                             <Pause
-                              className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 shrink-0"
+                              className="w-3.5 h-3.5 text-amber-500 shrink-0"
                               aria-label={t('commissions.clock_paused')}
                             />
                           ) : null}
                           <span
                             className={`text-sm font-medium ${
                               isPaused(c)
-                                ? 'text-amber-600 dark:text-amber-400'
+                                ? 'text-amber-600'
                                 : 'text-[var(--color-text-primary)]'
                             }`}
                           >
@@ -487,7 +487,7 @@ export default function CommissionsPage() {
                               setUnlockReason('')
                               setUnlockError(null)
                             }}
-                            className="flex items-center gap-1 px-2.5 py-1 bg-amber-100 dark:bg-amber-600/20 hover:bg-amber-200 dark:hover:bg-amber-600/40 border border-amber-300 dark:border-amber-600/30 text-amber-800 dark:text-amber-300 rounded-lg text-xs transition-colors"
+                            className="flex items-center gap-1 px-2.5 py-1 bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-800 rounded-lg text-xs transition-colors"
                           >
                             <Unlock className="w-3 h-3 shrink-0" />
                             {t('commissions.unlock_t2')}
@@ -517,7 +517,7 @@ export default function CommissionsPage() {
                 </div>
               </div>
               {unlockError ? (
-                <div className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+                <div className="text-red-600 text-sm bg-red-50 rounded-lg p-3">
                   {unlockError}
                 </div>
               ) : null}

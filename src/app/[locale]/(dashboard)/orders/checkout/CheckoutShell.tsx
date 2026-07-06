@@ -139,7 +139,7 @@ export function CheckoutShell({
         {gov ? <p className="text-[11px] text-[var(--color-text-tertiary)]">{zoneLabel}</p> : null}
         <div className="flex justify-between gap-2 pt-2 border-t border-[var(--color-border-subtle)] font-bold">
           <span>{t('summary.total')}</span>
-          <span className="tabular-nums text-teal-700 dark:text-teal-300">{formatCurrency(grandTotal, locale)}</span>
+          <span className="tabular-nums text-teal-700">{formatCurrency(grandTotal, locale)}</span>
         </div>
       </div>
     ) : null;
@@ -186,7 +186,7 @@ export function CheckoutShell({
                   className={cn(
                     'flex min-h-[44px] items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold border transition-colors',
                     i === stepIndex
-                      ? 'border-teal-500 bg-teal-500/15 text-teal-800 dark:text-teal-200'
+                      ? 'border-teal-500 bg-teal-500/15 text-teal-800'
                       : 'border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]',
                   )}
                 >
@@ -224,7 +224,7 @@ export function CheckoutShell({
               onClick={() => setMobileSheetOpen(true)}
             >
               <span className="text-sm font-semibold text-[var(--color-text-primary)]">{tm('summaryToggle')}</span>
-              <span className="text-sm font-bold tabular-nums text-teal-700 dark:text-teal-300">
+              <span className="text-sm font-bold tabular-nums text-teal-700">
                 {activeItemCount} · {formatCurrency(grandTotal, locale)}
               </span>
             </button>
@@ -274,7 +274,7 @@ export function CheckoutShell({
                   {gov ? <p className="text-[11px] text-[var(--color-text-tertiary)]">{zoneLabel}</p> : null}
                   <div className="flex justify-between gap-2 pt-2 border-t border-[var(--color-border-subtle)] font-bold">
                     <span>{t('summary.total')}</span>
-                    <span className="tabular-nums text-teal-700 dark:text-teal-300">
+                    <span className="tabular-nums text-teal-700">
                       {formatCurrency(grandTotal, locale)}
                     </span>
                   </div>

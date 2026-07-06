@@ -401,7 +401,7 @@ export default function SchedulePage() {
           <>
             {isTeacher ? t('yourSchedule') : t('title')}
             {isReadOnly && (
-              <span className="inline-flex items-center text-xs bg-teal-50 text-teal-700 border border-teal-200 rounded-full px-2 py-0.5 ms-2 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800">
+              <span className="inline-flex items-center text-xs bg-teal-50 text-teal-700 border border-teal-200 rounded-full px-2 py-0.5 ms-2">
                 {t('readOnly')}
               </span>
             )}
@@ -428,7 +428,7 @@ export default function SchedulePage() {
             {rooms.length === 0 ? (
               <span className="pointer-events-none absolute top-full end-0 z-50 mt-1 hidden max-w-[220px] rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 text-start text-xs text-[var(--color-text-secondary)] shadow-lg group-hover:pointer-events-auto group-hover:block">
                 {t('addRoomFirstTooltip')}{' '}
-                <Link href="/rooms" className="font-semibold text-teal-600 hover:underline dark:text-teal-400">
+                <Link href="/rooms" className="font-semibold text-teal-600 hover:underline">
                   {t('addRoomFirstLink')}
                 </Link>
               </span>
@@ -546,21 +546,21 @@ export default function SchedulePage() {
                                   )}
                                   <p
                                     className={`text-xs font-semibold truncate pe-5 ${
-                                      isConflict ? 'text-red-800 dark:text-red-200' : 'text-[var(--color-text-primary)]'
+                                      isConflict ? 'text-red-800' : 'text-[var(--color-text-primary)]'
                                     }`}
                                   >
                                     {slot.group_name || tCommon('notAvailable')}
                                   </p>
                                   <p
                                     className={`text-xs truncate ${
-                                      isConflict ? 'text-red-700 dark:text-red-300' : 'text-[var(--color-text-secondary)]'
+                                      isConflict ? 'text-red-700' : 'text-[var(--color-text-secondary)]'
                                     }`}
                                   >
                                     {slot.room_name || tCommon('notAvailable')}
                                   </p>
                                   <p
                                     className={`text-xs ${
-                                      isConflict ? 'text-red-600 dark:text-red-400' : 'text-[var(--color-text-tertiary)]'
+                                      isConflict ? 'text-red-600' : 'text-[var(--color-text-tertiary)]'
                                     }`}
                                   >
                                     <span dir="ltr">
@@ -577,8 +577,8 @@ export default function SchedulePage() {
                                       }}
                                       className={`hidden group-hover:block absolute top-1 end-1 p-0.5 rounded ${
                                         isConflict
-                                          ? 'hover:bg-red-500/20 text-red-700 dark:text-red-300'
-                                          : 'hover:bg-[var(--color-surface-2)] text-teal-600 dark:text-teal-400'
+                                          ? 'hover:bg-red-500/20 text-red-700'
+                                          : 'hover:bg-[var(--color-surface-2)] text-teal-600'
                                       }`}
                                     >
                                       <X className="w-3 h-3" />
@@ -636,7 +636,7 @@ export default function SchedulePage() {
                     title={tAtt('captureTitle')}
                     className="mb-2 cursor-pointer rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3 shadow-sm transition-colors hover:bg-[var(--color-surface-2)]"
                   >
-                    <div className="font-mono text-sm text-teal-600 dark:text-teal-400">
+                    <div className="font-mono text-sm text-teal-600">
                       <span dir="ltr">
                         {formatTime(formatTimeForDisplay(session.start_time), locale)} –{' '}
                         {formatTime(formatTimeForDisplay(session.end_time), locale)}
@@ -698,7 +698,7 @@ export default function SchedulePage() {
               const thisWeekSessions = displaySlots.filter((s) => Number(s.day_of_week) !== todayIndex);
               return (
                 <>
-                  <h3 className="mb-2 text-sm font-bold text-teal-700 dark:text-teal-400">{t('today')}</h3>
+                  <h3 className="mb-2 text-sm font-bold text-teal-700">{t('today')}</h3>
                   {todaySessions.length === 0 && (
                     <p className="mb-3 text-xs text-[var(--color-text-secondary)]">{t('noSessionsToday')}</p>
                   )}
@@ -708,7 +708,7 @@ export default function SchedulePage() {
                       className="mb-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3 shadow-sm"
                       dir="rtl"
                     >
-                      <div className="font-mono text-sm text-teal-600 dark:text-teal-400">
+                      <div className="font-mono text-sm text-teal-600">
                         <span dir="ltr">
                           {formatTime(formatTimeForDisplay(session.start_time), locale)} –{' '}
                           {formatTime(formatTimeForDisplay(session.end_time), locale)}
@@ -733,7 +733,7 @@ export default function SchedulePage() {
                       className="mb-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3 shadow-sm"
                       dir="rtl"
                     >
-                      <div className="font-mono text-sm text-teal-600 dark:text-teal-400">
+                      <div className="font-mono text-sm text-teal-600">
                         <span dir="ltr">
                           {formatTime(formatTimeForDisplay(session.start_time), locale)} –{' '}
                           {formatTime(formatTimeForDisplay(session.end_time), locale)}

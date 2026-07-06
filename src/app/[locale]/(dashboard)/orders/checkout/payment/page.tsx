@@ -129,11 +129,11 @@ function PaymentInner() {
         <h1 className="text-lg font-bold text-[var(--color-text-primary)]">
           {t('orderRef', { ref: shortRef || ',' })}
         </h1>
-        <p className="text-sm tabular-nums text-amber-700 dark:text-amber-200 font-semibold">
+        <p className="text-sm tabular-nums text-amber-700 font-semibold">
           {t('timeout', { mm, ss })}
         </p>
       </div>
-      <p className="text-sm font-medium text-amber-800 dark:text-amber-100 bg-amber-500/15 border border-amber-500/30 rounded-lg px-3 py-2">
+      <p className="text-sm font-medium text-amber-800 bg-amber-500/15 border border-amber-500/30 rounded-lg px-3 py-2">
         {t('iframeWarning')}
       </p>
       {recoverError ? <p className="text-sm text-red-600">{recoverError}</p> : null}

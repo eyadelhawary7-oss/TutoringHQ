@@ -74,7 +74,7 @@ export default function NotificationsPageClient() {
         <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('pageTitle')}</h1>
         <button
           type="button"
-          className="min-h-[44px] px-3 text-sm font-semibold text-teal-600 dark:text-teal-400"
+          className="min-h-[44px] px-3 text-sm font-semibold text-teal-600"
           onClick={() => void markAll()}
         >
           {t('markAllRead')}

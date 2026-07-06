@@ -386,7 +386,7 @@ export default function CenterAssignmentsPage() {
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center">
-              <Users className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+              <Users className="w-5 h-5 text-teal-600" />
             </div>
             <div>
               <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
@@ -419,7 +419,7 @@ export default function CenterAssignmentsPage() {
             {!canAddAssignment ? (
               <Link
                 href="/admin/staff"
-                className="text-sm font-medium text-teal-600 dark:text-teal-400 hover:underline"
+                className="text-sm font-medium text-teal-600 hover:underline"
               >
                 {t('staff.title')} →
               </Link>
@@ -428,15 +428,15 @@ export default function CenterAssignmentsPage() {
         </div>
 
         {listError && !loading ? (
-          <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+          <p className="text-sm text-red-600" role="alert">
             {listError}
           </p>
         ) : null}
 
         {unassigned.length > 0 ? (
-          <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-xl p-4">
-            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
-            <p className="text-amber-800 dark:text-amber-300 text-sm">
+          <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+            <p className="text-amber-800 text-sm">
               <span className="font-semibold">{formatNumber(unassigned.length, locale)}</span>{' '}
               {t('centerAssignments.unassigned_warning')}:{' '}
               {unassigned
@@ -452,7 +452,7 @@ export default function CenterAssignmentsPage() {
           </div>
         ) : null}
 
-        <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl overflow-hidden overflow-x-auto shadow-sm dark:shadow-none">
+        <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl overflow-hidden overflow-x-auto shadow-sm">
           {loading ? (
             <div className="p-12 text-center text-[var(--color-text-muted)]">
               {t('centerAssignments.loading')}
@@ -493,7 +493,7 @@ export default function CenterAssignmentsPage() {
                       key={a.id}
                       className={`transition-colors hover:bg-[var(--color-surface-2)]/80 ${
                         a.assignment_disputed
-                          ? 'bg-red-50/50 dark:bg-red-900/10'
+                          ? 'bg-red-50/50'
                           : rowIdx % 2 === 0
                             ? 'bg-[var(--color-surface-0)]'
                             : 'bg-[var(--color-surface-1)]'
@@ -505,7 +505,7 @@ export default function CenterAssignmentsPage() {
                           {cen?.center_code} · {cen?.plan} · {cen?.city}
                         </div>
                         {a.referred_by_center ? (
-                          <span className="text-xs text-amber-600 dark:text-amber-400 block">
+                          <span className="text-xs text-amber-600 block">
                             {t('centerAssignments.referred_badge')}
                           </span>
                         ) : null}
@@ -525,7 +525,7 @@ export default function CenterAssignmentsPage() {
                       <td className={`px-4 py-3 text-[var(--color-text-muted)] text-xs text-start`}>
                         {a.territory_city ?? t('centerAssignments.value_empty')}
                         {a.territory_override_reason ? (
-                          <div className="text-amber-600 dark:text-amber-400 mt-0.5">
+                          <div className="text-amber-600 mt-0.5">
                             {t('centerAssignments.override_note_prefix')}{' '}
                             {a.territory_override_reason}
                           </div>
@@ -540,7 +540,7 @@ export default function CenterAssignmentsPage() {
                           {assignmentStatusLabel(a.assignment_status)}
                         </span>
                         {a.assignment_disputed && a.dispute_notes ? (
-                          <div className="text-xs text-red-600 dark:text-red-400 mt-1">{a.dispute_notes}</div>
+                          <div className="text-xs text-red-600 mt-1">{a.dispute_notes}</div>
                         ) : null}
                       </td>
                       <td className="px-4 py-3 text-end">
@@ -561,7 +561,7 @@ export default function CenterAssignmentsPage() {
                                 setDisputeNotes('')
                                 setError(null)
                               }}
-                              className="p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-400 transition-colors"
+                              className="p-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-700 transition-colors"
                               title={t('centerAssignments.dispute_flag')}
                             >
                               <Flag className="w-3.5 h-3.5" />
@@ -570,7 +570,7 @@ export default function CenterAssignmentsPage() {
                             <button
                               type="button"
                               onClick={() => void handleResolve(a)}
-                              className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 transition-colors"
+                              className="p-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-700 transition-colors"
                               title={t('centerAssignments.resolve_dispute')}
                             >
                               <CheckCircle className="w-3.5 h-3.5" />
@@ -593,7 +593,7 @@ export default function CenterAssignmentsPage() {
                 {editingId ? t('centerAssignments.edit') : t('centerAssignments.add')}
               </h2>
               {error ? (
-                <div className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+                <div className="text-red-600 text-sm bg-red-50 rounded-lg p-3">
                   {error}
                 </div>
               ) : null}
@@ -725,7 +725,7 @@ export default function CenterAssignmentsPage() {
                 {t('centerAssignments.dispute_flag')} - {relCenters(disputeModal)?.name}
               </h2>
               {error ? (
-                <div className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+                <div className="text-red-600 text-sm bg-red-50 rounded-lg p-3">
                   {error}
                 </div>
               ) : null}

@@ -69,7 +69,7 @@ export function CardOrderCartHeader() {
               {t('checkout')}
             </Link>
           ) : (
-            <div className="text-xs font-medium text-amber-700 dark:text-amber-200 bg-amber-500/15 rounded-lg px-3 py-2 border border-amber-500/25">
+            <div className="text-xs font-medium text-amber-700 bg-amber-500/15 rounded-lg px-3 py-2 border border-amber-500/25">
               {t('minimumNotMet', { need })}
             </div>
           )}

@@ -137,13 +137,13 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
           <span className="font-mono text-[var(--color-text-primary)]">
             {`${formatNumber(activePayingCenters, locale)} / ${formatNumber(target, locale)} ${t('centers')}`}
           </span>
-          <span className="rounded-full bg-teal-600/15 text-teal-700 dark:text-teal-300 px-2.5 py-0.5 text-xs font-medium font-mono">
+          <span className="rounded-full bg-teal-600/15 text-teal-700 px-2.5 py-0.5 text-xs font-medium font-mono">
             {formatPercent(pct, locale)}
           </span>
           {pct === 0 && (
             <span className="text-[var(--color-text-secondary)]">{t('breakevenNotStarted')}</span>
           )}
-          {pct >= 100 && <span className="text-green-600 dark:text-green-400">{t('breakevenSelfFunded')}</span>}
+          {pct >= 100 && <span className="text-green-600">{t('breakevenSelfFunded')}</span>}
         </div>
       </section>
 
@@ -192,7 +192,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                     )}
                     <div className="flex flex-wrap items-center gap-2">
                       {n(item.revenue_at_risk) > 0 && (
-                        <span className="text-xs rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400 px-2 py-1 font-mono">
+                        <span className="text-xs rounded-md bg-amber-500/15 text-amber-700 px-2 py-1 font-mono">
                           {formatCurrency(n(item.revenue_at_risk), locale)}
                         </span>
                       )}
@@ -270,7 +270,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                         </td>
                         <td className="py-2 pe-3 text-[var(--color-text-secondary)]">{location}</td>
                         <td className="py-2 pe-3">
-                          <span className="inline-block rounded-full bg-teal-600/15 text-teal-700 dark:text-teal-300 text-xs px-2.5 py-0.5 font-medium">
+                          <span className="inline-block rounded-full bg-teal-600/15 text-teal-700 text-xs px-2.5 py-0.5 font-medium">
                             {planDisplayName(center.plan)}
                           </span>
                         </td>
@@ -287,7 +287,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                         <td className="py-2">
                           <Link
                             href={`/${locale}/admin`}
-                            className="inline-flex rounded-md border border-teal-600 text-teal-700 dark:text-teal-300 text-xs font-medium px-3 py-1.5 hover:bg-teal-600/10"
+                            className="inline-flex rounded-md border border-teal-600 text-teal-700 text-xs font-medium px-3 py-1.5 hover:bg-teal-600/10"
                           >
                             {t('reviewCenter')}
                           </Link>
@@ -323,7 +323,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                     </div>
                     <div className="text-sm">
                       <span className="text-[var(--color-text-tertiary)]">{t('colPlan')}: </span>
-                      <span className="inline-block rounded-full bg-teal-600/15 text-teal-700 dark:text-teal-300 text-xs px-2.5 py-0.5 font-medium">
+                      <span className="inline-block rounded-full bg-teal-600/15 text-teal-700 text-xs px-2.5 py-0.5 font-medium">
                         {planDisplayName(center.plan)}
                       </span>
                     </div>
@@ -343,7 +343,7 @@ export default function FounderCommandStrip(props: CommandStripResponse) {
                     </div>
                     <Link
                       href={`/${locale}/admin`}
-                      className="inline-flex rounded-md border border-teal-600 text-teal-700 dark:text-teal-300 text-xs font-medium px-3 py-1.5 hover:bg-teal-600/10 mt-2"
+                      className="inline-flex rounded-md border border-teal-600 text-teal-700 text-xs font-medium px-3 py-1.5 hover:bg-teal-600/10 mt-2"
                     >
                       {t('reviewCenter')}
                     </Link>

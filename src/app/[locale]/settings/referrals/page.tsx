@@ -347,7 +347,7 @@ export default function SettingsReferralsPage() {
                               <button
                                 type="button"
                                 onClick={() => void openPayoutPdf(p.id)}
-                                className="inline-flex items-center gap-1 rounded-lg border border-teal-600/60 px-2 py-1 text-xs font-semibold text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-950/30"
+                                className="inline-flex items-center gap-1 rounded-lg border border-teal-600/60 px-2 py-1 text-xs font-semibold text-teal-600 hover:bg-teal-50"
                               >
                                 <Download className="w-3.5 h-3.5" />
                                 {tc('download')}
