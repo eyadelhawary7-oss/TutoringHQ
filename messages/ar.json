@@ -4295,6 +4295,7 @@
       "title": "ملخص الطلب",
       "cards": "البطاقات",
       "subtotal": "الإجمالي قبل الشحن (شامل الضرائب)",
+      "processingFee": "رسوم المعالجة",
       "shipping": "الشحن",
       "total": "الإجمالي"
     },
@@ -4370,6 +4371,7 @@
       "styleLight": "فاتح",
       "vendorNotesLabel": "تعليمات المورد",
       "subtotalInclusive": "الإجمالي الشامل (البطاقات)",
+      "processingFee": "رسوم المعالجة",
       "shippingLine": "الشحن ({zone})",
       "grandTotal": "الإجمالي",
       "perCardAllIn": "= {amount} للبطاقة الواحدة شاملًا كل شيء",
@@ -4601,6 +4603,7 @@
     "orderSummaryTotal": "الإجمالي",
     "cardColor": "‫لون البطاقة‬",
     "deliveryFee": "رسوم التوصيل (بج.م)",
+    "processingFee": "رسوم المعالجة",
     "deliveryAddress": "عنوان التوصيل:",
     "deliveryAddressPlaceholder": "أدخل عنوان التسليم",
     "useSavedAddress": "العنوان المحفوظ",

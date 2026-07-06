@@ -27,7 +27,7 @@ Exception: Nano Monthly is intentionally +25% not +15% (incentive for Quarterly 
 Enterprise is fixed-price. Top Centers is the only custom-priced tier; centers.all_in_price is source of truth, code reading top_centers MUST throw + Sentry-warn if NULL.
 
 ## Add-ons
-qr_card: 60 EGP per card (inclusive of VAT). Bosta added on top, not taxed.
+qr_card: 60 EGP per card (inclusive of VAT), **plus one flat 20 EGP processing fee per order** (not per card — so per-card all-in falls with quantity: 1 card = 80, 2 = 140, 3 = 200, 6 = 380). Bosta added on top, not taxed.
 parent_pack: 12 EGP/active parent/month (inclusive).
 blast: 9.80 EGP/blast (inclusive). (The parent-blast product keeps its own internal `BLAST_SERVICE_FEE_RATE` — a separate additive fee, unrelated to the removed plan-price service fee.)
 
@@ -71,8 +71,8 @@ Source of truth: `src/lib/processingFee.ts` (pure helpers — `applyProcessingFe
 
 The fee applied to each invoice is snapshotted into **`invoices.metadata.processing_fee`** at creation, so rendered breakdowns are deterministic even if config later changes. For session-based charges (teacher subscriptions) it rides in `combined_payment_sessions.metadata.processing_fee` and is added to `paymob_amount` / `total_amount`.
 
-**In scope (fee charged + redesigned display):** center subscription renewals, signup first payment, PAYG, parent-pack (`pack_billing`) + WhatsApp add-on (`whatsapp_addon`), teacher resubscribe + teacher upgrade, **`late_payment_fee`** (tier 1 + tier 2), and **`reactivation_fee`** (`centers/reactivate`).
-**Deferred (no fee yet — follow-up):** center plan upgrades (`plan_upgrade_difference`), card-order `setup_fee`, session-based reactivation (`reactivation_tier1/2` combined sessions), Scale overage (overage billing not yet built).
+**Every charge invoice carries the flat 20 EGP** (one per invoice, never per line): center subscription renewals, signup first payment, PAYG, parent-pack (`pack_billing`) + WhatsApp add-on (`whatsapp_addon`), teacher resubscribe / upgrade / switch-interval / overage, `plan_upgrade_difference`, summer first invoice, **reactivation** (`centers/reactivate`), **card-order `setup_fee`**, and **announcement `_cap` / `_settlement`** (added in the service-fee/stamp removal — the earlier "Deferred" list is cleared).
+**Not charged the fee (not customer charges):** `referral_payout` (money paid *out* to the referrer) and `payment_proof` (mirrors a referenced invoice; not a new charge).
 
 ### Late-fee / reactivation invoices (combined, single invoice)
 
@@ -85,7 +85,7 @@ total     = subscription + late fee + 20 flat (processing fee never inside the %
 
 The processing fee is a separate flat line; the late-fee percentage is **never** applied to it. Redesigned line order (Arabic, RTL): `قيمة الاشتراك → غرامة التأخر في السداد → رسوم المعالجة (ⓘ) → الإجمالي → ضريبة القيمة المضافة (مشمولة)`. Reactivation invoices: `رسوم إعادة التفعيل → رسوم المعالجة (ⓘ) → الإجمالي → ضريبة (مشمولة)`. Both drop the old stamp-duty / service-fee lines. Built via `buildCombinedInvoiceLines` (covered by `tests/unit/processingFee.test.ts`).
 
-Referral commission base derives from `centers.all_in_price` via `netReferralBaseFromAllInPrice`, never the invoice total (the processing fee is excluded, per brief Section 7). With the service-fee removal it now strips only VAT (divisor `1.14 × 1.004`), so the former 6% service slice is commissionable — referrers earn ~6% more than before (approved change; see `docs/SERVICE_FEE_REMOVAL_FINDINGS.md`).
+Referral commission base derives from `centers.all_in_price` via `netReferralBaseFromAllInPrice`, never the invoice total (the processing fee is excluded, per brief Section 7). With the service-fee + stamp-duty removal it strips **only VAT (divisor `1.14`)**; both former slices are commissionable, so referrers earn ~6.4% more than the original (approved change; see `docs/SERVICE_FEE_REMOVAL_FINDINGS.md`).
 
 ### Redesigned customer invoice — subscription / pack types (Section 5)
 

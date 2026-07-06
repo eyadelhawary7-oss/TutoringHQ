@@ -330,3 +330,85 @@ month-1 218 → 219, Enterprise 4,041 → 4,057). **Left at +6% as locked** unle
 say otherwise.
 
 **No PR until Eyad approves.**
+
+---
+
+# PHASE 3 — correction round (BUILT, hold before PR)
+
+Eyad's final rule: **every customer invoice shows only the line(s) sold, a flat
+20 EGP processing fee, and 14% VAT.** Locked changes folded in:
+
+## A. Flat 20 EGP processing fee now rides EVERY charge invoice
+Previously three charge types lacked it; now added (charge + `metadata.processing_fee`
+snapshot + invoice display):
+
+| Invoice type | Carries 20 EGP | Where |
+|---|:--:|---|
+| subscription / base_subscription | ✅ (was) | `subscriptionBillingCron` |
+| signup_first_payment | ✅ (was) | `api/signup` |
+| plan_upgrade_difference | ✅ (was) | `api/billing/upgrade` |
+| pack_billing / whatsapp_addon | ✅ (was) | `api/cron/parent-pack-billing`, `parent-pack/toggle` |
+| payg | ✅ (was) | `api/cron/payg-billing` |
+| teacher subscribe / resubscribe / upgrade / switch-interval / overage | ✅ (was) | `teacherBilling`, teacher routes |
+| summer first invoice | ✅ (was) | `summerBillingCron` |
+| **reactivation** (subscription + reactivation flag) | ✅ **NEW** | `api/centers/reactivate` (was hard-coded `processing_fee: 0`) |
+| **setup_fee** (QR card orders) | ✅ **NEW** | `card-order-cart/checkout` + `cardOrderPayment` |
+| **announcement_cap** | ✅ **NEW** | `parent-pack/announcement` |
+| **announcement_settlement** | ✅ **NEW** | `api/cron/process-renewals` |
+
+**Two invoice types intentionally do NOT carry it — flagged, not auto-added,
+because they are not charges to the customer:**
+- `referral_payout` — money paid **out** to a referrer; a 20 EGP fee would mean
+  charging the referrer on their own payout.
+- `payment_proof` — a proof-of-payment document that mirrors a referenced
+  invoice's total; it is not a new charge.
+
+*(These two were not in the locked "add it here" list, which named only
+setup_fee / reactivation / announcement. Confirm if you want them included.)*
+
+## B. Card orders — 60/card + one shared flat 20 (matches the brief exactly)
+The single 20 is charged once per invoice, not per card, so per-card all-in falls
+with quantity. `cards + 20 = total` (shipping added separately on top):
+
+| Qty | Cards (60 each) | + flat fee | **Total** | Fee/card | All-in/card |
+|---|--:|--:|--:|--:|--:|
+| 1 | 60 | 20 | **80** | 20.00 | 80.00 |
+| 2 | 120 | 20 | **140** | 10.00 | 70.00 |
+| 3 | 180 | 20 | **200** | 6.67 | 66.67 |
+| 6 | 360 | 20 | **380** | 3.33 | 63.33 |
+
+Computed (not hardcoded): checkout charges `productInclusive + processingFee +
+shipping`; the fee is derived flat and displayed on the invoice, receipt, cart
+summary, review page, and order-detail views.
+
+## C. Stamp fully erased — including the referral divisor
+`REFERRAL_NET_REVENUE_DIVISOR` **1.14 × 1.06 × 1.004 → 1.14** (VAT only). No stamp
+factor survives anywhere, even inside a formula. Payouts rise vs the original
+(~+6.4%):
+
+| Tier | all_in | Base (÷1.14) | Month-1 (25%) orig → now | Δ |
+|---|--:|--:|--:|--:|
+| Solo | 999 | 876.32 | 206 → **219** | +13 (+6.3%) |
+| Nano | 1,999 | 1,753.51 | 412 → **438** | +26 (+6.3%) |
+| Starter | 4,499 | 3,946.49 | 927 → **987** | +60 (+6.5%) |
+| Pro | 7,999 | 7,016.67 | 1,648 → **1,754** | +106 (+6.4%) |
+| Business | 12,999 | 11,402.63 | 2,679 → **2,851** | +172 (+6.4%) |
+| Enterprise | 18,499 | 16,227.19 | 3,812 → **4,057** | +245 (+6.4%) |
+
+## D. Plan-price parity — still byte-identical
+No plan anchor changed (they are hardcoded, never grossed up): Solo 999 → Enterprise
+18,499 (+×10 annual), Teacher 499/999/2,499 + Scale 20 EGP/student overage. VAT 14%
+unchanged everywhere.
+
+## E. Guard result
+Rendered customer surfaces: **zero** matches for service fee / stamp / 6% / 0.5% /
+0.4% (only a test `describe()` label and the untouched `BLAST_SERVICE_FEE_RATE`).
+Every customer money line is now one of: the item sold, **رسوم المعالجة / Processing
+fee (20 EGP)**, or **VAT 14%**.
+
+## F. Verification
+`next build` ✅ · unit **1147/1147** ✅ · typecheck ✅ · lint 0 errors ✅ ·
+i18n parity ✅ (+`processingFee` keys in `checkout.summary`, `checkout.review`,
+`cardOrders`) · bidi ✅ · tolocale ✅.
+
+**No PR until Eyad approves.**

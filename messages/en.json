@@ -5592,6 +5592,7 @@
       "title": "Order summary",
       "cards": "Cards",
       "subtotal": "Subtotal (incl. taxes)",
+      "processingFee": "Processing fee",
       "shipping": "Shipping",
       "total": "Total"
     },
@@ -5667,6 +5668,7 @@
       "styleLight": "Light",
       "vendorNotesLabel": "Vendor notes",
       "subtotalInclusive": "Subtotal inclusive (cards)",
+      "processingFee": "Processing fee",
       "shippingLine": "Shipping ({zone})",
       "grandTotal": "Total",
       "perCardAllIn": "= {amount} per card all-in",
@@ -5898,6 +5900,7 @@
     "orderSummaryTotal": "Total",
     "cardColor": "Card Color",
     "deliveryFee": "Delivery fee (EGP)",
+    "processingFee": "Processing fee",
     "deliveryAddress": "Delivery Address",
     "deliveryAddressPlaceholder": "Enter delivery address",
     "useSavedAddress": "Use saved address",

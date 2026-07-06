@@ -16,6 +16,7 @@ import {
   type CardOrderReceiptModel,
 } from '@/lib/pdf/cardOrderReceiptTemplate';
 import { loadCardOrderDetailForAdmin, loadCardOrderDetailForCenter } from '@/lib/loadCardOrderDetail';
+import { cardOrderProductInclusiveFromQty } from '@/lib/pricing/taxMath';
 
 const PDF_NUM_LOCALE = 'ar';
 
@@ -1196,7 +1197,9 @@ export async function generateCardOrderReceiptPdf(
   const qty = Math.round(Number(o.quantity ?? 0));
   const ship = Number(o.delivery_fee ?? 0);
   const total = Number(o.total_amount ?? 0);
-  const productInclusive = Math.max(0, Math.round((total - ship) * 100) / 100);
+  const productInclusive = cardOrderProductInclusiveFromQty(qty);
+  // Flat processing fee charged on the order = total − product − shipping.
+  const processingFee = Math.max(0, Math.round((total - productInclusive - ship) * 100) / 100);
 
   const rawItems = (o.items as Array<Record<string, unknown>> | undefined) ?? [];
   const lineItems: CardOrderReceiptLineItem[] = [];
@@ -1229,6 +1232,7 @@ export async function generateCardOrderReceiptPdf(
     notes: String(o.notes ?? '').trim(),
     lineItems: lineItems.length ? lineItems : [{ title: 'بطاقات QR', qty: qty }],
     productInclusive,
+    processingFee,
     shippingFee: ship,
     grandTotal: total,
     paymobTransactionId: typeof o.paymob_transaction_id === 'string' ? o.paymob_transaction_id : null,
