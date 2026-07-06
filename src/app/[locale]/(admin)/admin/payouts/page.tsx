@@ -48,10 +48,10 @@ function relStaff(p: Payout): StaffEmbed {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  draft: 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300',
+  draft: 'bg-slate-200 text-slate-700',
   confirmed:
-    'bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30',
-  paid: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300',
+    'bg-amber-100 text-amber-800 border border-amber-300',
+  paid: 'bg-emerald-100 text-emerald-800',
 }
 
 type PayoutErrorKey =
@@ -280,7 +280,7 @@ export default function PayoutsPage() {
 
   if (!gateOk) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-slate-500 dark:text-slate-400">
+      <div className="min-h-screen flex items-center justify-center text-slate-500">
         {tCommon('loading')}
       </div>
     )
@@ -298,13 +298,13 @@ export default function PayoutsPage() {
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center">
-              <CreditCard className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+              <CreditCard className="w-5 h-5 text-teal-600" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-slate-900 dark:text-white">
+              <h1 className="text-xl font-semibold text-slate-900">
                 {t('payouts.title')}
               </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+              <p className="text-sm text-slate-500">
                 {t('payouts.record_count', {
                   count: formatNumber(payouts.length, locale),
                 })}
@@ -326,7 +326,7 @@ export default function PayoutsPage() {
 
         {error ? (
           <div
-            className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40 rounded-lg p-3"
+            className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg p-3"
             role="alert"
           >
             {error}
@@ -335,7 +335,7 @@ export default function PayoutsPage() {
 
         <div className="space-y-3">
           {loading ? (
-            <div className="p-12 text-center text-slate-500 dark:text-slate-400 bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl">
+            <div className="p-12 text-center text-slate-500 bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl">
               {tCommon('loading')}
             </div>
           ) : payouts.length === 0 ? (
@@ -352,16 +352,16 @@ export default function PayoutsPage() {
                 key={payout.id}
                 className={`bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-5 space-y-4 ${
                   payout.requires_review && payout.status === 'draft'
-                    ? 'border-amber-400 dark:border-amber-600/50'
-                    : 'border-slate-200 dark:border-slate-700'
+                    ? 'border-amber-400'
+                    : 'border-slate-200'
                 }`}
               >
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-slate-900 dark:text-white font-semibold">
+                    <span className="text-slate-900 font-semibold">
                       {relStaff(payout)?.name ?? t('staff.dash')}
                     </span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">
+                    <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
                       {payout.period}
                     </span>
                     <span
@@ -370,13 +370,13 @@ export default function PayoutsPage() {
                       {t(`payouts.status_${payout.status}`)}
                     </span>
                     {payout.requires_review && payout.status === 'draft' ? (
-                      <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                      <span className="flex items-center gap-1 text-xs text-amber-600">
                         <AlertTriangle className="w-3 h-3 shrink-0" aria-hidden />
                         {t('payouts.requires_review')}
                       </span>
                     ) : null}
                   </div>
-                  <div className="text-2xl font-bold text-teal-600 dark:text-teal-400">
+                  <div className="text-2xl font-bold text-teal-600">
                     {formatNumber(Number(payout.total_amount), locale)}{' '}
                     {t('staff.currency_suffix')}
                   </div>
@@ -394,12 +394,12 @@ export default function PayoutsPage() {
                   ).map((item) => (
                     <div
                       key={item.label}
-                      className="bg-slate-50 dark:bg-[var(--color-surface-2)] rounded-lg p-3"
+                      className="bg-slate-50 rounded-lg p-3"
                     >
-                      <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      <div className="text-xs text-slate-500 mb-1">
                         {item.label}
                       </div>
-                      <div className="text-slate-900 dark:text-white font-medium text-sm">
+                      <div className="text-slate-900 font-medium text-sm">
                         {formatNumber(Number(item.value), locale)} {t('staff.currency_suffix')}
                       </div>
                     </div>
@@ -407,7 +407,7 @@ export default function PayoutsPage() {
                 </div>
 
                 {Number(payout.adjustment_amount) !== 0 ? (
-                  <div className="text-sm text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2">
+                  <div className="text-sm text-amber-800 bg-amber-50 rounded-lg p-2">
                     {t('payouts.adjustment')}:{' '}
                     {formatNumber(Number(payout.adjustment_amount), locale)}{' '}
                     {t('staff.currency_suffix')}
@@ -441,7 +441,7 @@ export default function PayoutsPage() {
                             setAdjForm({ adjustment_amount: '', adjustment_reason: '' })
                             setError(null)
                           }}
-                          className="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-white rounded-lg text-sm transition-colors"
+                          className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-sm transition-colors"
                         >
                           {t('payouts.adjustment')}
                         </button>
@@ -471,7 +471,7 @@ export default function PayoutsPage() {
                   </div>
                 ) : null}
                 {payout.status === 'paid' && payout.paid_at ? (
-                  <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 justify-end">
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500 justify-end">
                     <Clock className="w-3 h-3 shrink-0" aria-hidden />
                     {t('payouts.paid_at_label', {
                       date: formatDate(payout.paid_at, locale),
@@ -486,23 +486,23 @@ export default function PayoutsPage() {
         {generateModal ? (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+              <h2 className="text-lg font-semibold text-slate-900">
                 {t('payouts.generate')}
               </h2>
               {error ? (
-                <div className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+                <div className="text-red-600 text-sm bg-red-50 rounded-lg p-3">
                   {error}
                 </div>
               ) : null}
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                  <label className="text-xs text-slate-500 mb-1 block">
                     {t('payouts.staff_label')}
                   </label>
                   <select
                     value={genForm.staff_id}
                     onChange={(e) => setGenForm((p) => ({ ...p, staff_id: e.target.value }))}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-teal-500 outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-sm focus:border-teal-500 outline-none"
                   >
                     <option value="">{t('payouts.staff_placeholder')}</option>
                     {staffList.map((s) => (
@@ -513,14 +513,14 @@ export default function PayoutsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                  <label className="text-xs text-slate-500 mb-1 block">
                     {t('payouts.period')}
                   </label>
                   <input
                     type="month"
                     value={genForm.period}
                     onChange={(e) => setGenForm((p) => ({ ...p, period: e.target.value }))}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-teal-500 outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-sm focus:border-teal-500 outline-none"
                   />
                   <p className="text-xs text-slate-500 mt-1">{t('payouts.period_format_hint')}</p>
                 </div>
@@ -529,7 +529,7 @@ export default function PayoutsPage() {
                 <button
                   type="button"
                   onClick={() => setGenerateModal(false)}
-                  className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-white rounded-lg text-sm transition-colors"
+                  className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-sm transition-colors"
                 >
                   {t('payouts.cancel')}
                 </button>
@@ -549,17 +549,17 @@ export default function PayoutsPage() {
         {adjustModal ? (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+              <h2 className="text-lg font-semibold text-slate-900">
                 {t('payouts.adjustment')}
               </h2>
               {error ? (
-                <div className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+                <div className="text-red-600 text-sm bg-red-50 rounded-lg p-3">
                   {error}
                 </div>
               ) : null}
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                  <label className="text-xs text-slate-500 mb-1 block">
                     {t('payouts.adjustment_amount_label')}
                   </label>
                   <input
@@ -569,11 +569,11 @@ export default function PayoutsPage() {
                       setAdjForm((p) => ({ ...p, adjustment_amount: e.target.value }))
                     }
                     placeholder={t('payouts.adjustment_amount_hint')}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-teal-500 outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-sm focus:border-teal-500 outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                  <label className="text-xs text-slate-500 mb-1 block">
                     {t('payouts.adjustment_reason')} *
                   </label>
                   <textarea
@@ -582,7 +582,7 @@ export default function PayoutsPage() {
                       setAdjForm((p) => ({ ...p, adjustment_reason: e.target.value }))
                     }
                     rows={2}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white text-sm focus:border-teal-500 outline-none resize-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-sm focus:border-teal-500 outline-none resize-none"
                   />
                 </div>
               </div>
@@ -590,7 +590,7 @@ export default function PayoutsPage() {
                 <button
                   type="button"
                   onClick={() => setAdjustModal(null)}
-                  className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-white rounded-lg text-sm transition-colors"
+                  className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-sm transition-colors"
                 >
                   {t('payouts.cancel')}
                 </button>

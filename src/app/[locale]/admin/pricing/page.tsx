@@ -448,7 +448,7 @@ export default function AdminPricingPage() {
           </div>
 
           {readOnly ? (
-            <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 px-4 py-3 mb-4 text-sm">
+            <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 text-amber-700 px-4 py-3 mb-4 text-sm">
               {t('pricing.readOnlyBanner')}
             </div>
           ) : null}

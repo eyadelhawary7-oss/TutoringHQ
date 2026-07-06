@@ -1831,7 +1831,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section2.title')}</h2>
                 {String(data.center?.status) === 'pending_cancellation' ? (
                   <div
-                    className="mb-4 rounded-xl border border-amber-400/60 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:border-amber-600 dark:bg-amber-950/30 dark:text-amber-100"
+                    className="mb-4 rounded-xl border border-amber-400/60 bg-amber-500/10 px-4 py-3 text-sm text-amber-950"
                     dir={isRTL ? 'rtl' : 'ltr'}
                   >
                     <p className="font-semibold">⚠️ {t('centerManagement.cancellation.bannerTitle')}</p>
@@ -1865,7 +1865,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                         type="button"
                         disabled={s2CancellationBusy}
                         onClick={() => void patchCancellationAction('reject_cancellation')}
-                        className="rounded-lg border-2 border-teal-600 px-4 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 dark:border-teal-500 dark:text-teal-200 dark:hover:bg-teal-950/40 disabled:opacity-50"
+                        className="rounded-lg border-2 border-teal-600 px-4 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 disabled:opacity-50"
                       >
                         {t('centerManagement.cancellation.reject')}
                       </button>
@@ -2198,7 +2198,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                           const busy = s4ActionLoadingId === invId;
                           return (
                             <Fragment key={rowKey}>
-                              <tr className="border-t border-gray-200 dark:border-t-slate-700 align-top">
+                              <tr className="border-t border-gray-200 align-top">
                                 <td className="p-2 font-mono text-xs">{String(inv.invoice_number ?? tCommon('notSet'))}</td>
                                 <td className="p-2">{String(inv.invoice_type ?? tCommon('notSet'))}</td>
                                 <td className="p-2 tabular-nums">
@@ -2272,7 +2272,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                                 </td>
                               </tr>
                               {s4ExpandedId === invId ? (
-                                <tr className="bg-[var(--color-surface-2)] border-t border-gray-200 dark:border-t-slate-700">
+                                <tr className="bg-[var(--color-surface-2)] border-t border-gray-200">
                                   <td colSpan={8} className="p-4 space-y-4">
                                     <div className="flex flex-wrap gap-3 items-end">
                                       <div>
@@ -2557,7 +2557,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                               ? `${formatNumber(Number(ap), locale)} ${tCommon('egp')}`
                               : `${formatNumber(0, locale)} ${tCommon('egp')}`;
                           return (
-                            <tr key={rk} className="border-t border-gray-200 dark:border-t-slate-700">
+                            <tr key={rk} className="border-t border-gray-200">
                               <td className="p-2 whitespace-nowrap">
                                 {row.renewal_date != null
                                   ? String(row.renewal_date).slice(0, 10)
@@ -2982,7 +2982,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                           const st = String(req.status ?? '');
                           const canAct = st === 'pending' || st === 'pending_payment';
                           return (
-                            <tr key={rid} className="border-t border-gray-200 dark:border-t-slate-700">
+                            <tr key={rid} className="border-t border-gray-200">
                               <td className="p-2">{formatPlanKey(data.center.plan)}</td>
                               <td className="p-2">{formatPlanKey(req.requested_plan)}</td>
                               <td className="p-2 capitalize">{formatPlanRequestStatus(st)}</td>
@@ -3271,7 +3271,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                                 ? String(com.commission_amount)
                                 : `${formatNumber(0, locale)} ${tCommon('egp')}`;
                           return (
-                            <tr key={cid} className="border-t border-gray-200 dark:border-t-slate-700">
+                            <tr key={cid} className="border-t border-gray-200">
                               <td className="p-2 tabular-nums">{amt}</td>
                               <td className="p-2 capitalize">{cst}</td>
                               <td className="p-2">
@@ -3356,7 +3356,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                               ? `${formatNumber(amtNum, locale)} ${tCommon('egp')}`
                               : `${formatNumber(0, locale)} ${tCommon('egp')}`;
                           return (
-                            <tr key={String(pr.id ?? m)} className="border-t border-gray-200 dark:border-t-slate-700">
+                            <tr key={String(pr.id ?? m)} className="border-t border-gray-200">
                               <td className="p-2 font-mono text-xs">{shortUuid(pr.id)}</td>
                               <td className="p-2">{String(pr.status ?? tCommon('notSet'))}</td>
                               <td className="p-2 tabular-nums">{payoutAmt}</td>
@@ -3492,7 +3492,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                                   })
                                 : tCommon('notSet')}
                               {pinned ? (
-                                <span className="ms-2 text-amber-600 dark:text-amber-400 font-medium">
+                                <span className="ms-2 text-amber-600 font-medium">
                                   {t('centerNotes.pinned_badge')}
                                 </span>
                               ) : null}
@@ -3555,7 +3555,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                                     }
                                   })();
                                 }}
-                                className="p-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-500/10 disabled:opacity-50"
+                                className="p-2 rounded-lg text-red-600 hover:bg-red-500/10 disabled:opacity-50"
                                 aria-label={t('centerNotes.delete')}
                                 title={t('centerNotes.delete')}
                               >
@@ -3685,7 +3685,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       </thead>
                       <tbody>
                         {opsAuditLogs.map((log) => (
-                          <tr key={String(log.id)} className="border-t border-gray-200 dark:border-t-slate-700">
+                          <tr key={String(log.id)} className="border-t border-gray-200">
                             <td className="p-2 whitespace-nowrap tabular-nums">
                               {log.created_at
                                 ? formatDateTime(String(log.created_at), locale, {

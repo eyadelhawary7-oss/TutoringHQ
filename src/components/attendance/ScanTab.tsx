@@ -1430,12 +1430,12 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
               {scanHistory.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
                   <QrCode
-                    className="w-14 h-14 text-slate-300 dark:text-slate-600 mb-3"
+                    className="w-14 h-14 text-slate-300 mb-3"
                     strokeWidth={1.25}
                     aria-hidden
                   />
-                  <p className="text-sm text-slate-500 dark:text-slate-400">{ts('history_empty')}</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-xs">{ts('history_empty_hint')}</p>
+                  <p className="text-sm text-slate-500">{ts('history_empty')}</p>
+                  <p className="text-xs text-slate-400 mt-1 max-w-xs">{ts('history_empty_hint')}</p>
                 </div>
               ) : (
                 <>

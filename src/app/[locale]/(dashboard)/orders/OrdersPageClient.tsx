@@ -66,28 +66,28 @@ function statusBadgeClass(status: string): string {
   switch (status) {
     case 'pending':
     case 'pending_payment':
-      return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200';
+      return 'bg-amber-100 text-amber-800';
     case 'paid':
     case 'vendor_assigned':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200';
+      return 'bg-blue-100 text-blue-800';
     case 'printing':
     case 'processing':
     case 'in_production':
-      return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200';
+      return 'bg-purple-100 text-purple-800';
     case 'ready_for_pickup':
-      return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-200';
+      return 'bg-cyan-100 text-cyan-800';
     case 'shipped':
     case 'in_transit':
-      return 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-200';
+      return 'bg-teal-100 text-teal-800';
     case 'delivered':
     case 'issued':
     case 'confirmed':
-      return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200';
+      return 'bg-green-100 text-green-800';
     case 'cancelled':
     case 'refunded':
-      return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200';
+      return 'bg-red-100 text-red-800';
     case 'failed':
-      return 'bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200';
+      return 'bg-amber-100 text-amber-900';
     default:
       return 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border border-[var(--color-border)]';
   }
@@ -389,7 +389,7 @@ export default function OrdersPageClient({
                   </button>
                 ))}
               </div>
-              <div className="flex flex-wrap gap-3 text-xs text-teal-700 dark:text-teal-300">
+              <div className="flex flex-wrap gap-3 text-xs text-teal-700">
                 <button type="button" className="font-semibold underline-offset-2 hover:underline" onClick={() => onSort('created_at')}>
                   {tHist('colDate')}
                   {sortCol === 'created_at' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
@@ -497,7 +497,7 @@ export default function OrdersPageClient({
                         </p>
                         <Link
                           href={`/orders/${order.id}`}
-                          className="inline-block mt-2 text-xs font-semibold text-teal-600 dark:text-teal-400 underline"
+                          className="inline-block mt-2 text-xs font-semibold text-teal-600 underline"
                           onClick={(e) => e.stopPropagation()}
                         >
                           {t('viewOrder')}

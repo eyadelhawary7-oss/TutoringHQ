@@ -207,7 +207,7 @@ export default function CeoTeachersPage() {
       case 'active':
         return 'bg-green-400/10 text-green-500';
       case 'trialing':
-        return 'bg-teal-500/10 text-teal-600 dark:text-teal-400';
+        return 'bg-teal-500/10 text-teal-600';
       case 'past_due':
         return 'bg-amber-400/10 text-amber-500';
       case 'suspended':

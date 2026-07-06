@@ -143,7 +143,7 @@ function PackFulfillmentTimeline({
           type="button"
           disabled={advancing}
           onClick={() => onAdvance(packRequestId)}
-          className="rounded-md border border-teal-600/40 bg-teal-600/10 px-2 py-1 text-[11px] font-semibold text-teal-800 hover:bg-teal-600/20 disabled:opacity-50 dark:text-teal-200"
+          className="rounded-md border border-teal-600/40 bg-teal-600/10 px-2 py-1 text-[11px] font-semibold text-teal-800 hover:bg-teal-600/20 disabled:opacity-50"
         >
           {advancing ? <Loader2 className="inline h-3 w-3 animate-spin me-1" aria-hidden /> : null}
           {advanceLabel}
@@ -296,7 +296,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
     if (approvedPack && billStatus === 'not_issued') {
       return (
         <div className="flex flex-wrap gap-1 items-center">
-          <span className="inline-flex rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-medium text-teal-800 dark:bg-teal-900/35 dark:text-teal-200 border border-teal-200 dark:border-teal-700">
+          <span className="inline-flex rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-medium text-teal-800 border border-teal-200">
             {tRoot('admin.statusApproved')}
           </span>
           <span
@@ -874,7 +874,7 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
                                     setRejectReason('')
                                     setRejectInlineError(null)
                                   }}
-                                  className="rounded-lg border border-red-500 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                  className="rounded-lg border border-red-500 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
                                 >
                                   {tRoot('admin.reject')}
                                 </button>

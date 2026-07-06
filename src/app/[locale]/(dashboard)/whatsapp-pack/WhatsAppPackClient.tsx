@@ -293,7 +293,7 @@ export default function WhatsAppPackClient({
               type="button"
               disabled={togglingPack}
               onClick={() => setShowDisableConfirm(true)}
-              className="text-sm font-medium text-red-600 dark:text-red-400 border border-red-500/60 rounded-lg px-3 py-1.5 hover:bg-red-500/10 disabled:opacity-50"
+              className="text-sm font-medium text-red-600 border border-red-500/60 rounded-lg px-3 py-1.5 hover:bg-red-500/10 disabled:opacity-50"
             >
               {t('whatsapp.disablePack')}
             </button>
@@ -560,7 +560,7 @@ export default function WhatsAppPackClient({
             })}
           </p>
           {remainingAllowance <= 0 ? (
-            <p className="text-sm rounded-lg bg-amber-500/15 text-amber-800 dark:text-amber-200 px-3 py-2">
+            <p className="text-sm rounded-lg bg-amber-500/15 text-amber-800 px-3 py-2">
               {t('whatsapp.announcementNoBalance')}
             </p>
           ) : null}
@@ -572,7 +572,7 @@ export default function WhatsAppPackClient({
             })}
           </p>
           {monthlyLimitReached ? (
-            <p className="text-sm rounded-lg bg-amber-500/15 text-amber-800 dark:text-amber-200 px-3 py-2">
+            <p className="text-sm rounded-lg bg-amber-500/15 text-amber-800 px-3 py-2">
               {t('whatsapp.announcementMonthlyLimit')}
             </p>
           ) : null}
@@ -661,18 +661,18 @@ export default function WhatsAppPackClient({
           </div>
 
           {pct >= 90 && pct < 100 ? (
-            <p className="text-sm rounded-lg bg-amber-500/15 text-amber-800 dark:text-amber-200 px-3 py-2">
+            <p className="text-sm rounded-lg bg-amber-500/15 text-amber-800 px-3 py-2">
               {t('whatsapp.capWarning')}
             </p>
           ) : null}
           {pct >= 100 ? (
-            <p className="text-sm rounded-lg bg-red-500/15 text-red-700 dark:text-red-200 px-3 py-2">
+            <p className="text-sm rounded-lg bg-red-500/15 text-red-700 px-3 py-2">
               {t('whatsapp.capReached')}
             </p>
           ) : null}
 
           {announcementInlineError ? (
-            <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+            <p className="text-sm text-red-600" role="alert">
               {announcementInlineError}
             </p>
           ) : null}
@@ -765,8 +765,8 @@ export default function WhatsAppPackClient({
                         className={cn(
                           'text-xs font-medium rounded px-2 py-0.5',
                           blast.blast_type === 'ops'
-                            ? 'bg-teal-600/15 text-teal-700 dark:text-teal-300'
-                            : 'bg-amber-500/15 text-amber-800 dark:text-amber-200',
+                            ? 'bg-teal-600/15 text-teal-700'
+                            : 'bg-amber-500/15 text-amber-800',
                         )}
                       >
                         {blast.blast_type === 'ops' ? t('whatsappPack.opsBlastTab') : t('whatsappPack.promoBlastTab')}

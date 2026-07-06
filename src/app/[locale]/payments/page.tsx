@@ -801,7 +801,7 @@ export default function PaymentsPage() {
                       onClick={() => setCollectMethod(m)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors btn-press chq-focus ${
                         collectMethod === m
-                          ? 'border-teal-600 bg-teal-600/15 text-teal-700 dark:text-teal-300'
+                          ? 'border-teal-600 bg-teal-600/15 text-teal-700'
                           : 'border-[var(--color-border-default)] text-[var(--color-text-secondary)]'
                       }`}
                     >

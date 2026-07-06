@@ -273,7 +273,7 @@ export default function BillingPageClient() {
   if (error || !data) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-10">
-        <p className="text-red-600 dark:text-red-400">{error ?? t('loadError')}</p>
+        <p className="text-red-600">{error ?? t('loadError')}</p>
       </div>
     );
   }
@@ -281,7 +281,7 @@ export default function BillingPageClient() {
   if (!data.center) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-10">
-        <p className="text-red-600 dark:text-red-400">{t('loadError')}</p>
+        <p className="text-red-600">{t('loadError')}</p>
       </div>
     );
   }
@@ -347,7 +347,7 @@ export default function BillingPageClient() {
           <div className="flex flex-wrap items-center gap-2">
             <StatusPill subscriptionStatus={center.subscription_status} t={t} />
             {center.is_early_adopter ? (
-              <span className="rounded-full bg-teal-600/15 px-3 py-1 text-xs font-semibold text-teal-700 dark:text-teal-300">
+              <span className="rounded-full bg-teal-600/15 px-3 py-1 text-xs font-semibold text-teal-700">
                 {t('currentPlan.earlyAdopter')}
               </span>
             ) : null}
@@ -381,7 +381,7 @@ export default function BillingPageClient() {
         {pastDueUi ? (
           <div
             role="alert"
-            className="mb-4 rounded-xl border border-red-500/50 bg-red-600/15 px-4 py-3 text-sm text-red-800 dark:text-red-100"
+            className="mb-4 rounded-xl border border-red-500/50 bg-red-600/15 px-4 py-3 text-sm text-red-800"
           >
             {t('nextPayment.pastDueBanner')}
           </div>

@@ -197,7 +197,7 @@ export default function CheckoutReviewPage() {
           </div>
           <div className="flex justify-between gap-2 pt-2 text-lg font-bold">
             <span>{t('grandTotal')}</span>
-            <span className="tabular-nums text-teal-700 dark:text-teal-300">{formatCurrency(grandTotal, locale)}</span>
+            <span className="tabular-nums text-teal-700">{formatCurrency(grandTotal, locale)}</span>
           </div>
           <p className="text-xs text-[var(--color-text-tertiary)] pt-1">{t('perCardAllIn', { amount: formatCurrency(perCard, locale) })}</p>
         </div>

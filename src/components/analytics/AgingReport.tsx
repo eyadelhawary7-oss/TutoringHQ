@@ -20,9 +20,9 @@ export interface AgingReportProps {
 }
 
 function getRowBg(days: number): string {
-  if (days <= 30) return 'bg-yellow-50 dark:bg-yellow-950/20';
-  if (days <= 60) return 'bg-orange-50 dark:bg-orange-950/20';
-  return 'bg-red-50 dark:bg-red-950/20';
+  if (days <= 30) return 'bg-yellow-50';
+  if (days <= 60) return 'bg-orange-50';
+  return 'bg-red-50';
 }
 
 export default function AgingReport({ data = [], onRefresh }: AgingReportProps) {

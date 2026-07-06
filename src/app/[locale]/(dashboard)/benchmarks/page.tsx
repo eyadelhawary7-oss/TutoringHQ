@@ -35,22 +35,22 @@ const DISTRICT_TARGET = 10;
 function BenchmarkLockIllustration() {
   return (
     <svg
-      className="w-28 h-28 mx-auto text-teal-600 dark:text-teal-400"
+      className="w-28 h-28 mx-auto text-teal-600"
       viewBox="0 0 120 120"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
     >
-      <rect x="24" y="52" width="12" height="36" rx="2" className="fill-teal-500/25 stroke-teal-600 dark:stroke-teal-400" strokeWidth="2" />
-      <rect x="44" y="40" width="12" height="48" rx="2" className="fill-teal-500/35 stroke-teal-600 dark:stroke-teal-400" strokeWidth="2" />
-      <rect x="64" y="60" width="12" height="28" rx="2" className="fill-teal-500/20 stroke-slate-400 dark:stroke-slate-500" strokeWidth="2" />
-      <rect x="84" y="48" width="12" height="40" rx="2" className="fill-teal-500/30 stroke-teal-600 dark:stroke-teal-400" strokeWidth="2" />
-      <rect x="38" y="28" width="44" height="34" rx="6" className="fill-slate-200/90 dark:fill-slate-700 stroke-slate-500 dark:stroke-slate-400" strokeWidth="2" />
+      <rect x="24" y="52" width="12" height="36" rx="2" className="fill-teal-500/25 stroke-teal-600" strokeWidth="2" />
+      <rect x="44" y="40" width="12" height="48" rx="2" className="fill-teal-500/35 stroke-teal-600" strokeWidth="2" />
+      <rect x="64" y="60" width="12" height="28" rx="2" className="fill-teal-500/20 stroke-slate-400" strokeWidth="2" />
+      <rect x="84" y="48" width="12" height="40" rx="2" className="fill-teal-500/30 stroke-teal-600" strokeWidth="2" />
+      <rect x="38" y="28" width="44" height="34" rx="6" className="fill-slate-200/90 stroke-slate-500" strokeWidth="2" />
       <path
         d="M52 44h16v10c0 4-3.5 7-8 7s-8-3-8-7V44z"
-        className="fill-slate-500 dark:fill-slate-300"
+        className="fill-slate-500"
       />
-      <circle cx="60" cy="56" r="3" className="fill-slate-800 dark:fill-slate-100" />
+      <circle cx="60" cy="56" r="3" className="fill-slate-800" />
     </svg>
   );
 }
@@ -155,7 +155,7 @@ export default function BenchmarksPage() {
             className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 card-shadow"
           >
             <div className="flex items-center gap-2 text-[var(--color-text-muted)] text-sm mb-2">
-              <Icon className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+              <Icon className="h-4 w-4 text-teal-600" />
               {t(key)}
             </div>
             <p className="text-3xl font-bold text-[var(--color-text-primary)] mb-1">{format(yourVal)}</p>
@@ -204,7 +204,7 @@ export default function BenchmarksPage() {
     return (
       <div className="min-h-screen w-full bg-[var(--color-surface-0)] p-6">
         <PageHeader title={t('title')} subtitle={t('sampleSubtitle')} />
-        <div className="relative rounded-2xl border border-dashed border-amber-400/50 bg-amber-50/40 dark:bg-amber-950/20 p-4 mb-4">
+        <div className="relative rounded-2xl border border-dashed border-amber-400/50 bg-amber-50/40 p-4 mb-4">
           <p className="text-sm text-[var(--color-text-secondary)]">{t('sampleBanner')}</p>
           <Link
             href="/settings"
@@ -280,7 +280,7 @@ export default function BenchmarksPage() {
             )}
             <Link
               href="/settings"
-              className="text-sm font-medium text-teal-600 dark:text-teal-400 hover:underline inline-flex items-center justify-center gap-1"
+              className="text-sm font-medium text-teal-600 hover:underline inline-flex items-center justify-center gap-1"
             >
               {t('learnMore')}
             </Link>

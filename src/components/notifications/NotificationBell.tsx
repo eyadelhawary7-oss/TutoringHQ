@@ -166,7 +166,7 @@ export function NotificationBell({ className }: { className?: string }) {
           <div className="flex flex-col gap-1 border-t border-[var(--color-border-subtle)] p-2">
             <button
               type="button"
-              className="min-h-[44px] w-full rounded-lg py-2 text-xs font-semibold text-teal-600 hover:bg-[var(--color-surface-2)] dark:text-teal-400"
+              className="min-h-[44px] w-full rounded-lg py-2 text-xs font-semibold text-teal-600 hover:bg-[var(--color-surface-2)]"
               onClick={() => void markAll()}
             >
               {t('markAllRead')}

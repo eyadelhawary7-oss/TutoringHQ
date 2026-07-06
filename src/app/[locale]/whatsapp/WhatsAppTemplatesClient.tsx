@@ -27,13 +27,13 @@ function formatTemplateName(raw: string): string {
 function statusBadgeClasses(status: string): string {
   const normalized = (status ?? '').toUpperCase();
   if (normalized === 'APPROVED' || normalized === 'ACTIVE') {
-    return 'bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-200 dark:border-emerald-800';
+    return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
   }
   if (normalized === 'PENDING' || normalized === 'IN_APPEAL' || normalized === 'PENDING_DELETION') {
-    return 'bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:border-amber-800';
+    return 'bg-amber-100 text-amber-800 border border-amber-200';
   }
   if (normalized === 'REJECTED' || normalized === 'DISABLED' || normalized === 'PAUSED') {
-    return 'bg-red-100 text-red-800 border border-red-200 dark:bg-red-950/40 dark:text-red-200 dark:border-red-900';
+    return 'bg-red-100 text-red-800 border border-red-200';
   }
   return 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border border-[var(--color-border-subtle)]';
 }
@@ -75,10 +75,10 @@ export default function WhatsAppTemplatesClient({
           </Link>
         </div>
 
-        <section className="rounded-2xl border border-dashed border-amber-400/60 bg-amber-50/40 p-5 dark:border-amber-700/50 dark:bg-amber-950/20">
+        <section className="rounded-2xl border border-dashed border-amber-400/60 bg-amber-50/40 p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-200">
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
                 {t('comingSoonBadge')}
               </p>
               <h2 className="mt-1 text-lg font-bold text-[var(--color-text-primary)]">chq_pin_delivery</h2>
@@ -122,7 +122,7 @@ export default function WhatsAppTemplatesClient({
                   <button
                     type="button"
                     onClick={() => setPreviewName(row.template_name)}
-                    className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-1.5 text-xs font-semibold text-teal-700 hover:bg-[var(--color-surface-2)] dark:text-teal-300"
+                    className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-1.5 text-xs font-semibold text-teal-700 hover:bg-[var(--color-surface-2)]"
                   >
                     {t('preview')}
                   </button>

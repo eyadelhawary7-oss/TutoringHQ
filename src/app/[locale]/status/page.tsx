@@ -275,7 +275,7 @@ export default function StatusPage() {
                     </p>
                   </div>
                   <span
-                    className={`text-xs px-2 py-0.5 rounded ${inc.severity === 'critical' ? 'bg-destructive/15 text-destructive' : inc.severity === 'major' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'}`}
+                    className={`text-xs px-2 py-0.5 rounded ${inc.severity === 'critical' ? 'bg-destructive/15 text-destructive' : inc.severity === 'major' ? 'bg-amber-500/15 text-amber-700' : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'}`}
                   >
                     {inc.severity}
                   </span>
