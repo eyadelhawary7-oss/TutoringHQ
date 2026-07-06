@@ -66,7 +66,6 @@ import ServiceWorkerRegistrarWrapper from '@/components/ServiceWorkerRegistrarWr
 import { ToastProvider, PWAInstallBanner } from '@/components/ui';
 import { SwUpdateBanner } from '@/components/ui/SwUpdateBanner';
 import { PostHogProvider } from '@/components/PostHogProvider';
-import { ThemeProvider } from '@/components/ThemeProvider';
 import FloatingWhatsAppButton from '@/components/support/FloatingWhatsAppButton';
 
 export function generateStaticParams() {
@@ -164,27 +163,6 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-(function() {
-  try {
-    var stored = localStorage.getItem('chq-theme');
-    /* ADR 031: cream is the default; a stored 'light' preference from the
-       removed theme falls back to cream. */
-    var theme = stored === 'dark' ? 'dark' : 'cream';
-    document.documentElement.classList.add(theme);
-    document.documentElement.classList.remove(theme === 'dark' ? 'cream' : 'dark');
-    document.documentElement.classList.remove('light');
-  } catch(e) {
-    document.documentElement.classList.add('cream');
-    document.documentElement.classList.remove('dark');
-    document.documentElement.classList.remove('light');
-  }
-})();
-`,
-          }}
-        />
         <link
           rel="preload"
           href="/fonts/Cairo-Regular.woff2"
@@ -200,7 +178,6 @@ export default async function LocaleLayout({
         suppressHydrationWarning
       >
         <PostHogProvider>
-        <ThemeProvider>
         <NextIntlClientProvider messages={messages}>
           <ToastProvider>
             <UserProvider>
@@ -214,7 +191,6 @@ export default async function LocaleLayout({
             <PWAInstallBanner />
           </ToastProvider>
         </NextIntlClientProvider>
-        </ThemeProvider>
         <ServiceWorkerRegistrarWrapper />
         <SwUpdateBanner />
         <WebVitalsReporter />
