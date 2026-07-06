@@ -120,9 +120,19 @@ always returns the app to light.
    `dark:` Tailwind variants** are now inert app-side. Kept to serve the auth pages above;
    full removal is a safe optional follow-up once those pages get their cream redesign.
 
-## Verification checklist (filled on completion)
+## Verification checklist (completed)
 
-- [ ] `next build` succeeds
-- [ ] unit suite green · typecheck · lint · i18n · bidi · tolocale
-- [ ] grep proof: no theme toggle, no `.dark` applied to app root, no `prefers-color-scheme`, `color-scheme: light` at root
-- [ ] app renders light on an OS set to dark (by construction)
+- [x] `next build` succeeds — compiled in ~47s, 394/394 static pages generated, exit 0.
+- [x] Unit suite green — **1147 passed / 141 files**. Typecheck clean. Lint 0 errors
+  (162 pre-existing warnings, all in untouched test files). i18n / bidi / tolocale gates OK.
+- [x] Grep proof — no `ThemeToggle` / `next-themes` / `useTheme` / `setTheme` / `chq-theme`
+  anywhere in `src`; the only code that adds `.dark` to `<html>` is `LoginThemeEffect`
+  (the 3 reported auth pages); no `@media (prefers-color-scheme)` in the app;
+  `color-scheme: light` pinned at `:root` and `html`.
+- [x] App renders light on an OS set to dark — verified in Chromium with
+  `colorScheme: 'dark'` emulation:
+  - `/ar/login`  → `<html>` class none, root `color-scheme: light`, body `rgb(236,232,223)` (cream) — **light**.
+  - `/ar/status` → same — **light**.
+  - `/ar/session-expired` → `<html class="dark">`, body `rgb(8,15,26)` (`#080f1a`) — intentional dark-lock intact.
+  - Login/status showing no `.dark` on `<html>` also confirms the `LoginThemeEffect`
+    fix: leaving an auth page returns the app to light (no dark stranding).
