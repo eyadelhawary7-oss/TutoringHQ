@@ -62,6 +62,7 @@ export default function SettingsReferralsPage() {
   const [totalEarned, setTotalEarned] = useState(0);
   const [availableBalance, setAvailableBalance] = useState(0);
   const [referralInstapay, setReferralInstapay] = useState('');
+  const [processingFee, setProcessingFee] = useState(20);
   const [payoutRequests, setPayoutRequests] = useState<PayoutRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -97,6 +98,7 @@ export default function SettingsReferralsPage() {
         setTotalEarned(json.totalEarned ?? 0);
         setAvailableBalance(json.available ?? 0);
         setReferralInstapay(typeof json.instapayNumber === 'string' ? json.instapayNumber : '');
+        if (typeof json.processingFee === 'number') setProcessingFee(json.processingFee);
         const pr = json.payoutRequests;
         if (Array.isArray(pr)) {
           setPayoutRequests(pr as PayoutRequestRow[]);
@@ -293,6 +295,7 @@ export default function SettingsReferralsPage() {
           <ReferralWithdrawalPanel
             available={availableBalance}
             instapayNumber={referralInstapay}
+            processingFee={processingFee}
             onSuccess={() => void loadReferralSummary()}
           />
 

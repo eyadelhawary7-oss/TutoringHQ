@@ -12,6 +12,8 @@ import {
 import { BLAST_PRICE_PER_PARENT_INCLUSIVE } from '@/lib/invoiceTemplates';
 import { requireOwnerAdminCenter } from '@/lib/requireOwnerAdminCenter';
 import { parseBodyWithLimit, validateString, ValidationError } from '@/lib/validate';
+import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import { applyProcessingFee } from '@/lib/processingFee';
 
 export const dynamic = 'force-dynamic';
 
@@ -119,16 +121,20 @@ export async function POST(request: NextRequest) {
 
     if (newBalance >= cap) {
       const today = todayISO();
+      // Flat 20 EGP processing fee rides every invoice (added on top of the blast balance).
+      const feeCfg = await getProcessingFeeConfig();
+      const { fee: processingFee, total: capTotal } = applyProcessingFee(newBalance, feeCfg);
       await supabaseAdmin.from('invoices').insert({
         center_id: centerId,
         invoice_number: `BLAST-${Date.now()}`,
         invoice_type: 'announcement_cap',
         base_amount: newBalance,
-        total_amount: newBalance,
+        total_amount: capTotal,
         billing_period_start: today,
         billing_period_end: today,
         due_date: dateInNDays(7),
         status: 'pending',
+        metadata: { processing_fee: processingFee },
       });
       await supabaseAdmin
         .from('announcement_blasts')

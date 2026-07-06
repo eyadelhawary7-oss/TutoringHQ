@@ -54,6 +54,7 @@ export default function ReferralsPage() {
   const [data, setData] = useState<{
     referralCode: string;
     instapayNumber: string;
+    processingFee: number;
     totalEarned: number;
     available: number;
     pending: number;
@@ -81,6 +82,7 @@ export default function ReferralsPage() {
         setData({
           referralCode: json.referralCode ?? '',
           instapayNumber: typeof json.instapayNumber === 'string' ? json.instapayNumber : '',
+          processingFee: typeof json.processingFee === 'number' ? json.processingFee : 20,
           totalEarned: json.totalEarned ?? 0,
           available: json.available ?? 0,
           pending: json.pending ?? 0,
@@ -189,6 +191,7 @@ export default function ReferralsPage() {
         <ReferralWithdrawalPanel
           available={data?.available ?? 0}
           instapayNumber={data?.instapayNumber ?? ''}
+          processingFee={data?.processingFee ?? 20}
           onSuccess={() => void fetchData()}
         />
 

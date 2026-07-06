@@ -16,6 +16,7 @@ import {
   type CardOrderReceiptModel,
 } from '@/lib/pdf/cardOrderReceiptTemplate';
 import { loadCardOrderDetailForAdmin, loadCardOrderDetailForCenter } from '@/lib/loadCardOrderDetail';
+import { cardOrderProductInclusiveFromQty } from '@/lib/pricing/taxMath';
 
 const PDF_NUM_LOCALE = 'ar';
 
@@ -202,7 +203,7 @@ function renderBreakdownTwoCol(leftRows: BreakRow[], rightRows: BreakRow[]): str
 
 function taxBoxHtml(): string {
   return `<div style="margin-top:18px;padding:12px 14px;border:1px solid ${BORDER};border-radius:8px;background:${GRAY_BG};font-size:11px;line-height:1.6;color:#475569;font-family:Cairo,sans-serif;" dir="rtl">
-  جميع المبالغ شاملة للضرائب والرسوم: ضريبة القيمة المضافة 14% · رسوم الخدمة 6% · رسوم الدمغة 0.5%
+  جميع المبالغ شاملة لضريبة القيمة المضافة 14%
 </div>`;
 }
 
@@ -878,9 +879,11 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
 
 export type PayoutReceiptDetails = {
   instapay_number?: string;
+  processing_fee?: number;
   withdrawal_fee?: number;
   commission_ids?: string[];
   gross_amount?: number;
+  net_amount?: number;
 };
 
 export async function generatePayoutReceiptPdf(payoutId: string, supabase: SupabaseClient): Promise<Buffer | null> {
@@ -896,8 +899,10 @@ export async function generatePayoutReceiptPdf(payoutId: string, supabase: Supab
   const amountReq = Number(p.amount_requested ?? 0);
   const st = String(p.status ?? '');
   const details = (p.payment_details as PayoutReceiptDetails | null) ?? {};
-  const fee = Number(details.withdrawal_fee ?? 0);
-  const gross = Number(details.gross_amount ?? amountReq + fee);
+  const processingFee = Math.max(0, Number(details.processing_fee ?? 0));
+  const withdrawalFee = Math.max(0, Number(details.withdrawal_fee ?? 0));
+  const gross = Number(details.gross_amount ?? amountReq);
+  const net = Number(details.net_amount ?? Math.round((gross - processingFee - withdrawalFee) * 100) / 100);
   const instapay = String(details.instapay_number ?? ',');
 
   const { data: center, error: cErr } = await supabase
@@ -1010,12 +1015,20 @@ export async function generatePayoutReceiptPdf(payoutId: string, supabase: Supab
   }
 
   lineRows.push({
-    titleAr: 'رسوم السحب',
+    titleAr: 'رسوم المعالجة',
     subAr: undefined,
     mid: 'N/A',
-    amount: -fee,
-    amountMuted: fee <= 0,
-    amountRed: fee > 0,
+    amount: -processingFee,
+    amountMuted: processingFee <= 0,
+    amountRed: processingFee > 0,
+  });
+  lineRows.push({
+    titleAr: 'رسوم السحب (5%)',
+    subAr: undefined,
+    mid: 'N/A',
+    amount: -withdrawalFee,
+    amountMuted: withdrawalFee <= 0,
+    amountRed: withdrawalFee > 0,
   });
 
   const docNo = `PAY-${String(payoutId).slice(0, 8).toUpperCase()}`;
@@ -1051,13 +1064,14 @@ export async function generatePayoutReceiptPdf(payoutId: string, supabase: Supab
     centerPhone: String(c.phone ?? ','),
     centerCity: String(c.city ?? ''),
     amountLabel: 'إجمالي المبلغ المُصروف',
-    totalAmount: amountReq,
+    totalAmount: net,
     lineRows,
     leftBreak: [
       { labelAr: 'إجمالي العمولات', value: fmtEgp(gross) },
-      { labelAr: 'رسوم السحب', value: fmtEgp(-fee), red: fee > 0 },
+      { labelAr: 'رسوم المعالجة', value: fmtEgp(-processingFee), red: processingFee > 0 },
+      { labelAr: 'رسوم السحب (5%)', value: fmtEgp(-withdrawalFee), red: withdrawalFee > 0 },
     ],
-    rightBreak: [{ labelAr: 'الصافي المدفوع', value: fmtEgp(amountReq), teal: true }],
+    rightBreak: [{ labelAr: 'الصافي المدفوع', value: fmtEgp(net), teal: true }],
     showTax: false,
   });
 
@@ -1196,7 +1210,9 @@ export async function generateCardOrderReceiptPdf(
   const qty = Math.round(Number(o.quantity ?? 0));
   const ship = Number(o.delivery_fee ?? 0);
   const total = Number(o.total_amount ?? 0);
-  const productInclusive = Math.max(0, Math.round((total - ship) * 100) / 100);
+  const productInclusive = cardOrderProductInclusiveFromQty(qty);
+  // Flat processing fee charged on the order = total − product − shipping.
+  const processingFee = Math.max(0, Math.round((total - productInclusive - ship) * 100) / 100);
 
   const rawItems = (o.items as Array<Record<string, unknown>> | undefined) ?? [];
   const lineItems: CardOrderReceiptLineItem[] = [];
@@ -1229,6 +1245,7 @@ export async function generateCardOrderReceiptPdf(
     notes: String(o.notes ?? '').trim(),
     lineItems: lineItems.length ? lineItems : [{ title: 'بطاقات QR', qty: qty }],
     productInclusive,
+    processingFee,
     shippingFee: ship,
     grandTotal: total,
     paymobTransactionId: typeof o.paymob_transaction_id === 'string' ? o.paymob_transaction_id : null,

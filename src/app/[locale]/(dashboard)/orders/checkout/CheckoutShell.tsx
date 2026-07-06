@@ -45,11 +45,20 @@ export function useCheckoutRates(): Record<string, number> | null {
   return useContext(CheckoutRatesContext);
 }
 
+const CheckoutProcessingFeeContext = createContext<number>(0);
+
+/** Flat 20 EGP processing fee applied to the card order (0 when disabled). */
+export function useCheckoutProcessingFee(): number {
+  return useContext(CheckoutProcessingFeeContext);
+}
+
 export function CheckoutShell({
   shippingRates,
+  processingFee = 0,
   children,
 }: {
   shippingRates: Record<string, number> | null;
+  processingFee?: number;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -103,7 +112,7 @@ export function CheckoutShell({
   const gov = cart?.delivery_governorate?.trim() || '';
   const shipFee = getShippingFee(gov || undefined, shippingRates);
   const zoneLabel = formatShippingZoneForLocale(getShippingZone(gov || undefined, shippingRates), locale);
-  const grandTotal = totals.productInclusive + shipFee;
+  const grandTotal = totals.productInclusive + processingFee + shipFee;
 
   const summaryCard =
     !isSuccess && !isPayment ? (
@@ -117,6 +126,12 @@ export function CheckoutShell({
           <span className="text-[var(--color-text-secondary)]">{t('summary.subtotal')}</span>
           <span className="tabular-nums">{formatCurrency(totals.productInclusive, locale)}</span>
         </div>
+        {processingFee > 0 ? (
+          <div className="flex justify-between gap-2">
+            <span className="text-[var(--color-text-secondary)]">{t('summary.processingFee')}</span>
+            <span className="tabular-nums">{formatCurrency(processingFee, locale)}</span>
+          </div>
+        ) : null}
         <div className="flex justify-between gap-2">
           <span className="text-[var(--color-text-secondary)]">{t('summary.shipping')}</span>
           <span className="tabular-nums">{gov ? formatCurrency(shipFee, locale) : ','}</span>
@@ -132,15 +147,18 @@ export function CheckoutShell({
   if (!gateReady) {
     return (
       <CheckoutRatesContext.Provider value={shippingRates}>
-        <div className="min-h-[40vh] flex items-center justify-center text-sm text-[var(--color-text-secondary)] px-4">
-          {t('loading')}
-        </div>
+        <CheckoutProcessingFeeContext.Provider value={processingFee}>
+          <div className="min-h-[40vh] flex items-center justify-center text-sm text-[var(--color-text-secondary)] px-4">
+            {t('loading')}
+          </div>
+        </CheckoutProcessingFeeContext.Provider>
       </CheckoutRatesContext.Provider>
     );
   }
 
   return (
     <CheckoutRatesContext.Provider value={shippingRates}>
+      <CheckoutProcessingFeeContext.Provider value={processingFee}>
       <div className="max-w-6xl mx-auto px-4 py-6 pb-[calc(96px+env(safe-area-inset-bottom,0px))] lg:pb-8">
       {!isSuccess ? (
         <nav
@@ -243,6 +261,12 @@ export function CheckoutShell({
                     <span className="text-[var(--color-text-secondary)]">{t('summary.subtotal')}</span>
                     <span className="tabular-nums">{formatCurrency(totals.productInclusive, locale)}</span>
                   </div>
+                  {processingFee > 0 ? (
+                    <div className="flex justify-between gap-2">
+                      <span className="text-[var(--color-text-secondary)]">{t('summary.processingFee')}</span>
+                      <span className="tabular-nums">{formatCurrency(processingFee, locale)}</span>
+                    </div>
+                  ) : null}
                   <div className="flex justify-between gap-2">
                     <span className="text-[var(--color-text-secondary)]">{t('summary.shipping')}</span>
                     <span className="tabular-nums">{gov ? formatCurrency(shipFee, locale) : ','}</span>
@@ -268,6 +292,7 @@ export function CheckoutShell({
         </>
       ) : null}
       </div>
+      </CheckoutProcessingFeeContext.Provider>
     </CheckoutRatesContext.Provider>
   );
 }

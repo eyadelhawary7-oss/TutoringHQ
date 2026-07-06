@@ -5,6 +5,8 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Banknote } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/formatNumber';
+import { computeReferralPayout, REFERRAL_WITHDRAWAL_MIN_EGP } from '@/lib/referralPayout';
+import { PROCESSING_FEE_DEFAULT_AMOUNT } from '@/lib/processingFee';
 
 function normalizeInstapayDigits(raw: string): string | null {
   const digits = raw.replace(/\D/g, '');
@@ -15,13 +17,20 @@ function normalizeInstapayDigits(raw: string): string | null {
 export interface ReferralWithdrawalPanelProps {
   available: number;
   instapayNumber: string;
+  /** Flat processing fee (from platform_config); defaults to 20. */
+  processingFee?: number;
   onSuccess: () => void | Promise<void>;
 }
 
 /**
  * Referral commission withdrawal CTA + modal (shared by /referrals and /settings/referrals).
  */
-export function ReferralWithdrawalPanel({ available, instapayNumber, onSuccess }: ReferralWithdrawalPanelProps) {
+export function ReferralWithdrawalPanel({
+  available,
+  instapayNumber,
+  processingFee = PROCESSING_FEE_DEFAULT_AMOUNT,
+  onSuccess,
+}: ReferralWithdrawalPanelProps) {
   const t = useTranslations('referrals');
   const tc = useTranslations('common');
   const locale = useLocale();
@@ -43,6 +52,12 @@ export function ReferralWithdrawalPanel({ available, instapayNumber, onSuccess }
     const amount = parseFloat(payoutAmount);
     if (!Number.isFinite(amount) || amount <= 0) {
       setPayoutError(t('payoutInvalidAmount'));
+      return;
+    }
+    if (amount < REFERRAL_WITHDRAWAL_MIN_EGP) {
+      setPayoutError(
+        t('withdrawalBelowMinimum', { min: formatCurrency(REFERRAL_WITHDRAWAL_MIN_EGP, locale) }),
+      );
       return;
     }
     if (amount > available) {
@@ -112,7 +127,7 @@ export function ReferralWithdrawalPanel({ available, instapayNumber, onSuccess }
         >
           {t('requestWithdrawal')}
         </button>
-        <p className="text-xs text-amber-700 dark:text-amber-400 mt-3 leading-snug">{t('withdrawalFeeNote')}</p>
+        <p className="text-xs text-amber-700 dark:text-amber-400 mt-3 leading-snug">{t('withdrawalFeeNote')} {t('withdrawalMinimumNote', { min: formatCurrency(REFERRAL_WITHDRAWAL_MIN_EGP, locale) })}</p>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">{t('processingTime')}</p>
       </div>
 
@@ -166,7 +181,39 @@ export function ReferralWithdrawalPanel({ available, instapayNumber, onSuccess }
                   dir="ltr"
                 />
               </div>
-              <p className="text-xs text-amber-700 dark:text-amber-400 leading-snug">{t('withdrawalFeeNote')}</p>
+              {(() => {
+                const gross = parseFloat(payoutAmount);
+                if (!Number.isFinite(gross) || gross <= 0) return null;
+                const b = computeReferralPayout(gross, processingFee);
+                if (b.net <= 0) {
+                  return (
+                    <p className="text-xs text-red-600 dark:text-red-400 leading-snug">
+                      {t('withdrawalBelowFee', { fee: formatCurrency(processingFee, locale) })}
+                    </p>
+                  );
+                }
+                return (
+                  <div className="rounded-xl bg-[var(--color-surface-2)] p-3 space-y-1 text-xs">
+                    <div className="flex justify-between gap-2">
+                      <span className="text-slate-600 dark:text-slate-300">{t('payoutGross')}</span>
+                      <span className="tabular-nums">{formatCurrency(b.gross, locale)}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-slate-600 dark:text-slate-300">{t('payoutProcessingFee')}</span>
+                      <span className="tabular-nums text-red-600 dark:text-red-400">-{formatCurrency(b.processingFee, locale)}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-slate-600 dark:text-slate-300">{t('payoutWithdrawalFee')}</span>
+                      <span className="tabular-nums text-red-600 dark:text-red-400">-{formatCurrency(b.withdrawalFee, locale)}</span>
+                    </div>
+                    <div className="flex justify-between gap-2 pt-1 border-t border-[var(--color-border-subtle)] font-semibold">
+                      <span>{t('payoutNet')}</span>
+                      <span className="tabular-nums text-teal-700 dark:text-teal-300">{formatCurrency(b.net, locale)}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+              <p className="text-xs text-amber-700 dark:text-amber-400 leading-snug">{t('withdrawalFeeNote')} {t('withdrawalMinimumNote', { min: formatCurrency(REFERRAL_WITHDRAWAL_MIN_EGP, locale) })}</p>
               {payoutError ? <p className="text-sm text-red-600 dark:text-red-400">{payoutError}</p> : null}
               <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end pt-2">
                 <button

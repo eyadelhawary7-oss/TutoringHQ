@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
 import type { CardOrderLifecycleEvent } from '@/lib/cardOrderState';
 import { isFeatureEnabled } from '@/lib/features';
-import { buildLegalInvoiceLines } from '@/lib/pricing/taxMath';
+import { buildLegalInvoiceLines, cardOrderProductInclusiveFromQty } from '@/lib/pricing/taxMath';
 import { formatCurrency, formatDate, formatDateTime, formatRelativeMinutesAgo } from '@/lib/formatNumber';
 import { formatShippingZoneForLocale } from '@/lib/bostaShipping';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
@@ -189,20 +189,19 @@ export default function AdminCardOrderDetailClient({
     return map[normStatus(status)] ?? status.replace(/_/g, ' ');
   }, [status, ts]);
 
-  const productInclusive = useMemo(() => {
-    const total = Number(order.total_amount ?? 0);
-    const ship = Number(order.delivery_fee ?? 0);
-    return Math.max(0, Math.round((total - ship) * 100) / 100);
-  }, [order.total_amount, order.delivery_fee]);
-
   const shipFee = Number(order.delivery_fee ?? 0);
+  const grandTotal = Number(order.total_amount ?? 0);
+  const productInclusive = useMemo(
+    () => cardOrderProductInclusiveFromQty(Math.round(Number(order.quantity ?? 0))),
+    [order.quantity],
+  );
+  // Flat processing fee = total − product − shipping.
+  const processingFee = Math.max(0, Math.round((grandTotal - productInclusive - shipFee) * 100) / 100);
   const legalLines = useMemo(
     () => buildLegalInvoiceLines(productInclusive, localeShort),
     [productInclusive, localeShort],
   );
-  const taxLines = legalLines.slice(0, 4);
-  const productTotalLine = legalLines[4];
-  const grandTotal = Number(productTotalLine?.amount ?? productInclusive) + shipFee;
+  const taxLines = legalLines.filter((l) => !l.isTotal);
 
   const zoneLabel =
     order.shipping_zone != null && String(order.shipping_zone).trim()
@@ -434,6 +433,12 @@ export default function AdminCardOrderDetailClient({
                         <span className="tabular-nums font-medium">{formatCurrency(ln.amount, locale)}</span>
                       </div>
                     ))}
+                    {processingFee > 0 ? (
+                      <div className="flex justify-between gap-2">
+                        <span className="text-[var(--color-text-secondary)]">{tc('processingFee')}</span>
+                        <span className="tabular-nums font-medium">{formatCurrency(processingFee, locale)}</span>
+                      </div>
+                    ) : null}
                     <div className="flex justify-between gap-2 pt-1 border-t border-[var(--color-border-subtle)]">
                       <span className="text-[var(--color-text-secondary)]">{zoneLabel ?? tc('deliveryFee')}</span>
                       <span className="tabular-nums font-medium">{formatCurrency(shipFee, locale)}</span>

@@ -24,6 +24,8 @@ import { runSubscriptionBillingCron } from '@/lib/subscriptionBillingCron';
 import { tCronBackup } from '@/lib/cronBackupI18n';
 import { incrementActiveMonthsOnFirstOfMonth } from '@/lib/renewalLateFeeDormancy';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import { applyProcessingFee } from '@/lib/processingFee';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -225,16 +227,23 @@ export async function POST(request: Request) {
           const announcementBalance = Number(centerRow.announcement_balance ?? 0);
           if (announcementBalance > 0) {
             const todayStr = todayISO();
+            // Flat 20 EGP processing fee rides every invoice (on top of the settled balance).
+            const annFeeCfg = await getProcessingFeeConfig();
+            const { fee: annProcessingFee, total: annTotal } = applyProcessingFee(
+              announcementBalance,
+              annFeeCfg,
+            );
             await supabase.from('invoices').insert({
               center_id: centerRow.id,
               invoice_number: `ANNC-${Date.now()}`,
               invoice_type: 'announcement_settlement',
               base_amount: announcementBalance,
-              total_amount: announcementBalance,
+              total_amount: annTotal,
               billing_period_start: centerRow.current_period_start ?? todayStr,
               billing_period_end: centerRow.current_period_end ?? todayStr,
               due_date: dateInNDays(7),
               status: 'pending',
+              metadata: { processing_fee: annProcessingFee },
             });
             await supabase
               .from('announcement_blasts')

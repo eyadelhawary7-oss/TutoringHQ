@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import { resolveProcessingFeeAmount } from '@/lib/processingFee';
 
 export async function GET(request: NextRequest) {
   try {
@@ -112,6 +114,8 @@ export async function GET(request: NextRequest) {
       .eq('center_id', centerId)
       .order('requested_at', { ascending: false });
 
+    const processingFee = resolveProcessingFeeAmount(await getProcessingFeeConfig());
+
     return NextResponse.json({
       referralCode: center?.referral_code ?? '',
       instapayNumber: typeof center?.instapay_number === 'string' ? center.instapay_number : '',
@@ -119,6 +123,7 @@ export async function GET(request: NextRequest) {
       available,
       pending,
       paidOut,
+      processingFee,
       totalReferrals: referrals?.length ?? 0,
       activeReferrals,
       rewardHistory,
