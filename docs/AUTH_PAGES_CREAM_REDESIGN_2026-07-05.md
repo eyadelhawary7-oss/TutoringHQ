@@ -171,3 +171,81 @@ dedicated follow-up:
    cleanup pass.
 
 These are intentionally left in place in this build.
+
+---
+
+## Follow-up Item 1 — three English strings on the `/accept-invite` OTP step (FIXED)
+
+The OTP step rendered three strings in English/broken Arabic. All three come from the
+**`login`** i18n namespace, consumed by `src/components/OTPInput.tsx` (`useTranslations('login')`):
+
+| Shown in screenshot | key | was (ar) | now (ar) |
+|---|---|---|---|
+| "Otp عنوان" (field title) | `login.otpTitle` | `"Otp عنوان"` | `"رمز التحقق"` |
+| "Verify" (button) | `login.verify` | `"Verify"` | `"تأكيد"` |
+| "Resend (60s)" | `login.resend` | `"Resend"` | `"إعادة إرسال الرمز"` |
+
+Cause: the Arabic `login.*` values were machine placeholders, never translated. Fixed by
+setting real Arabic values, reusing the wording already on this page/flow — "رمز التحقق"
+matches `acceptInvite.sendOtp` ("إرسال رمز التحقق") and "تأكيد" matches
+`teacherSignup.otpLabel` ("كود التأكيد"). The English side of `login.otpTitle` was also a
+placeholder ("Otp Title") and was set to "Verification code"; `login.verify`/`login.resend`
+were already correct English ("Verify"/"Resend") and were left as-is.
+
+Scope: `login.otpTitle/verify/resend` are consumed **only** by `OTPInput`, which is rendered
+**only** by `/accept-invite` (the `/join` flow uses its own `joinFlow.resend`). So this is a
+contained wording change. **No OTP verify/send/resend logic, timer, or auth behaviour was
+touched** — `messages/ar.json` + `messages/en.json` values only. ar/en key parity unchanged
+(i18n gate green).
+
+---
+
+## Follow-up Item 2 — "رسوم الخدمة 6٪" service fee (INVESTIGATION ONLY — for Eyad)
+
+**Nothing was changed. This is money; reported for a decision.**
+
+**1. Where the 6% comes from.** Two independent places, both **pre-existing** (neither touched
+by this redesign branch — see below):
+
+- **The label text** is hardcoded in the i18n string `signup.serviceFee`
+  (`"رسوم الخدمة 6٪"` / `"Service fee 6%"`). The "6%" is literally part of the translated
+  string, not computed at render. On the signup summary it is paired with the value
+  `signup.included` ("مشمول" / "Included") — it is shown as an *included* line, not an
+  added-on line.
+- **A matching real constant exists in the pricing engine**: `src/lib/pricing/taxMath.ts`
+  defines `export const SERVICE_RATE = 0.06`, used in the tax gross-up
+  `1 / ((1-VAT)(1-STAMP)(1-SERVICE))` (VAT 14% + stamp 0.5% + service 6%, cascading — the
+  model described in `CLAUDE.md` / `docs/PRICING_SPEC.md`).
+
+**2. Display-only, or does it affect the charged amount?** The label itself is display text —
+editing that string changes no amount. But the **6% it describes is real in the pricing
+engine**: `SERVICE_RATE` participates in converting between exclusive and tax-inclusive
+amounts, so it is a genuine component *baked into* the plan's all-in price. On the signup
+summary the amount charged is `getTotalAmount(...)` (the engine's all-in figure), and the 6%
+is presented as **"included"** in that total — i.e. it is inside the price, not an extra charge
+stacked at checkout. Net: the label is a faithful description of a fee the engine really
+applies; the number is not invented at the UI layer.
+
+**3. Pre-existing, or introduced by the redesign?** **Pre-existing — confirmed.**
+- The `serviceFee` label string and the `taxKey: 'service'` summary row both predate this
+  branch; the last change to them / to `taxMath.ts` was **commit `2af2e94` (PR #81, 17 Jun
+  2026)**, long before this redesign.
+- `git diff master..HEAD` for this branch touches **no** pricing/tax/fee file (only the four
+  auth UI files + globals.css + this doc), and the `serviceFee` label string is **unchanged**
+  on the branch. The redesign only recoloured that summary row (its value text `مشمول` turned
+  teal); it did not touch the label, the value, or any amount.
+
+**4. Plain read of what it represents.** The signup summary's "service fee 6%" is the
+**service-fee component of the tax-inclusive gross-up** applied to the subscription plan price
+(alongside VAT 14% and stamp 0.5%), shown as already included in the total. It appears to be a
+**different fee from the "flat 20 EGP per invoice"** you referenced: that flat fee is a
+separate, config-driven **processing fee** (`src/lib/processingFee.ts`
+`PROCESSING_FEE_DEFAULT_AMOUNT = 20`, platform_config `processing_fee_amount`, default 20 EGP,
+"Section 5"). So there seem to be **two distinct fees** in the system — a 6% service component
+inside the plan tax gross-up, and a flat 20 EGP processing fee elsewhere — and the signup
+summary surfaces the former.
+
+**The open question for you:** is showing a "6% service fee (included)" on the signup summary
+the intended customer-facing presentation, given the documented customer fee is a flat 20 EGP
+per invoice? This is a pricing/presentation decision, so it is left untouched pending your call.
+No pricing, fee, or billing value or logic was modified.
