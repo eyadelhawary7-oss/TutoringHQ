@@ -3,6 +3,8 @@ import { getPeriodMultiplier } from '@/lib/billingEngine';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
 import { reactivationChargeAmount } from '@/lib/billingLifecycle';
+import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import { applyProcessingFee } from '@/lib/processingFee';
 
 function billingPeriodKey(sub: string | null | undefined): 'monthly' | 'quarterly' | 'annual' {
   const p = (sub ?? 'quarterly').toLowerCase();
@@ -55,10 +57,13 @@ export async function POST(request: NextRequest) {
   const ba = Number(c.billing_amount ?? 0);
   const allIn = Number(c.all_in_price ?? 0);
   const subscription = ba > 0 ? ba : allIn > 0 ? Math.round(allIn * mult) : 0;
-  const chargedTotal = reactivationChargeAmount(subscription);
-  if (chargedTotal <= 0) {
+  const plainCharge = reactivationChargeAmount(subscription);
+  if (plainCharge <= 0) {
     return NextResponse.json({ error: 'Invalid subscription amount' }, { status: 400 });
   }
+  // Flat 20 EGP processing fee rides every invoice (added on top, snapshotted).
+  const feeCfg = await getProcessingFeeConfig();
+  const { fee: processingFee, total: chargedTotal } = applyProcessingFee(plainCharge, feeCfg);
 
   const codeRaw = String((c.center_code || c.referral_code || '') as string).trim().replace(/\s+/g, '');
   const code = codeRaw || 'UNK';
@@ -79,7 +84,7 @@ export async function POST(request: NextRequest) {
       billing_period_end: todayYmd,
       due_date: todayYmd,
       status: 'pending',
-      metadata: { reactivation: true, processing_fee: 0 },
+      metadata: { reactivation: true, processing_fee: processingFee },
     })
     .select('id')
     .single();

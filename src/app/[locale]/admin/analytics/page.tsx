@@ -212,7 +212,7 @@ export default function AdminAnalyticsPage() {
           </div>
 
           {error && (
-            <div className="mb-4 p-3 rounded-lg bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-sm flex items-center justify-between gap-3">
+            <div className="mb-4 p-3 rounded-lg bg-red-100 text-red-700 text-sm flex items-center justify-between gap-3">
               <span>{error}</span>
               <button
                 type="button"

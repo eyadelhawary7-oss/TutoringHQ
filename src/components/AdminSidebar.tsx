@@ -37,7 +37,6 @@ import { useSidebar } from '@/contexts/SidebarContext';
 import { getAdminPermissions } from '@/lib/admin-roles';
 import { supabase } from '@/lib/supabase';
 import { ChangePinModal } from '@/components/admin/ChangePinModal';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { Suspense } from 'react';
 import { TestLiveToggle } from '@/components/admin/TestLiveToggle';
@@ -361,7 +360,7 @@ export function AdminSidebar({
     cn(
       'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-start border-s-4 border-solid',
       active
-        ? 'border-[var(--color-teal)] bg-teal-50 text-teal-700 dark:border-teal-400 dark:bg-teal-600/15 dark:text-teal-200'
+        ? 'border-[var(--color-teal)] bg-teal-50 text-teal-700'
         : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]',
     );
 
@@ -851,12 +850,6 @@ export function AdminSidebar({
             );
           })}
         </nav>
-
-        <div className="shrink-0 p-2 border-t border-[var(--color-border)]">
-          <div className="px-1">
-            <ThemeToggle />
-          </div>
-        </div>
       </aside>
     </>
   );

@@ -14,7 +14,6 @@ import { MobileWrapper } from '@/components/shell/MobileWrapper';
 import { SidebarProvider } from '@/contexts/SidebarContext';
 import { CardOrderCartProvider } from '@/hooks/useCardOrderCart';
 import { Globe } from 'lucide-react';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useRouter } from '@/i18n/routing';
 import { NudgeBanner } from '@/components/billing/NudgeBanner';
 import { useUser } from '@/contexts/UserContext';
@@ -173,7 +172,6 @@ export default function AppShell({ children }: { children: ReactNode }) {
         {!isAdminRoute && !kioskChromeHidden && (
           <header className="hidden lg:flex items-center h-14 px-6 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shrink-0 sticky top-0 z-30 justify-end">
             <div className="flex items-center gap-3">
-              <ThemeToggle />
               <button
                 onClick={handleLocaleToggle}
                 disabled={isPending}

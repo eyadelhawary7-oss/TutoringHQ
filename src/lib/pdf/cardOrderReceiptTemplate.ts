@@ -36,6 +36,8 @@ export interface CardOrderReceiptModel {
   notes: string;
   lineItems: CardOrderReceiptLineItem[];
   productInclusive: number;
+  /** Flat processing fee added to the order (0 when none). */
+  processingFee: number;
   shippingFee: number;
   grandTotal: number;
   paymobTransactionId: string | null;
@@ -131,6 +133,13 @@ export function buildCardOrderReceiptInnerHtml(model: CardOrderReceiptModel): st
 
     <div style="font-size:12px;font-weight:700;margin-bottom:4px;color:${NAVY};">تفاصيل الأسعار (ضريبة أخيرة)</div>
     ${linesTable(legal.slice(0, 4))}
+    ${
+      model.processingFee > 0
+        ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;border:1px solid ${BORDER};margin-top:10px;background:${GRAY_BG};font-family:Cairo,sans-serif;">
+      <span>رسوم المعالجة</span><span dir="ltr">${esc(fmtEgp(model.processingFee))}</span>
+    </div>`
+        : ''
+    }
     <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;border:1px solid ${BORDER};margin-top:10px;background:${GRAY_BG};font-family:Cairo,sans-serif;">
       <span>الشحن</span><span dir="ltr">${esc(fmtEgp(model.shippingFee))}</span>
     </div>

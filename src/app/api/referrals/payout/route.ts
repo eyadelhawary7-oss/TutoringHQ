@@ -3,6 +3,9 @@ import { formatNumber } from '@/lib/formatNumber';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { requirePermission } from '@/lib/centerPermissions';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import { resolveProcessingFeeAmount } from '@/lib/processingFee';
+import { computeReferralPayout, REFERRAL_WITHDRAWAL_MIN_EGP } from '@/lib/referralPayout';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,11 +24,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid payment method' }, { status: 400 });
     }
 
+    // `amount_requested` is the GROSS commission withdrawn (deducted from balance).
     const amountRequested = Number(body?.amount_requested ?? 0);
-    const paymentDetails = body?.payment_details && typeof body.payment_details === 'object' ? body.payment_details : null;
+    const clientDetails =
+      body?.payment_details && typeof body.payment_details === 'object'
+        ? (body.payment_details as Record<string, unknown>)
+        : null;
 
     if (!Number.isFinite(amountRequested) || amountRequested <= 0) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
+    }
+
+    // Minimum cash withdrawal, checked on the GROSS (before the 20 + 5% fees).
+    if (amountRequested < REFERRAL_WITHDRAWAL_MIN_EGP) {
+      return NextResponse.json(
+        {
+          error: `Minimum withdrawal is ${formatNumber(REFERRAL_WITHDRAWAL_MIN_EGP, 'en')} EGP`,
+          code: 'below_minimum',
+        },
+        { status: 400 },
+      );
     }
 
     const centerId = auth.centerId;
@@ -46,6 +64,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Fees are ALWAYS computed server-side (never trust a client-sent fee/net).
+    // Order: flat 20 EGP processing fee first, then 5% withdrawal fee on the rest.
+    const processingFeeAmount = resolveProcessingFeeAmount(await getProcessingFeeConfig());
+    const breakdown = computeReferralPayout(amountRequested, processingFeeAmount);
+
+    // Floor safety: the gross must exceed the flat fee so net stays positive.
+    if (breakdown.net <= 0) {
+      return NextResponse.json(
+        {
+          error: `Withdrawal must exceed the ${formatNumber(processingFeeAmount, 'en')} EGP processing fee`,
+          code: 'below_fee_floor',
+        },
+        { status: 400 },
+      );
+    }
+
+    const instapayNumber =
+      clientDetails && typeof clientDetails.instapay_number === 'string'
+        ? clientDetails.instapay_number
+        : null;
+
     const { data: payout, error: insertErr } = await auth.supabaseAdmin
       .from('payout_requests')
       .insert({
@@ -53,7 +92,14 @@ export async function POST(request: NextRequest) {
         amount_requested: amountRequested,
         status: 'pending',
         payment_method: paymentMethod,
-        payment_details: paymentDetails,
+        // Server-authoritative breakdown; the receipt renders from these fields.
+        payment_details: {
+          instapay_number: instapayNumber,
+          gross_amount: breakdown.gross,
+          processing_fee: breakdown.processingFee,
+          withdrawal_fee: breakdown.withdrawalFee,
+          net_amount: breakdown.net,
+        },
       })
       .select('id, amount_requested, status, requested_at')
       .single();
@@ -62,7 +108,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: insertErr.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, payout });
+    return NextResponse.json({ success: true, payout, breakdown });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },

@@ -59,6 +59,8 @@ async function ensureCardOrderSetupFeeInvoice(
     shippingZone = getShippingZone(gov, rates);
   }
   const total = Number(r.total_amount ?? productInclusive + deliveryFee);
+  // The flat processing fee charged at checkout = total − product − shipping.
+  const processingFee = Math.max(0, Math.round((total - productInclusive - deliveryFee) * 100) / 100);
 
   const { data: codeRow } = await supabaseAdmin.from('centers').select('center_code').eq('id', cid).maybeSingle();
   const code = String((codeRow as { center_code?: string } | null)?.center_code ?? 'XXX');
@@ -76,6 +78,7 @@ async function ensureCardOrderSetupFeeInvoice(
     shipping_fee: deliveryFee,
     shipping_zone: shippingZone,
     tracking_number: r.tracking_number ?? null,
+    processing_fee: processingFee,
   };
 
   const { error: invErr } = await supabaseAdmin.from('invoices').insert({

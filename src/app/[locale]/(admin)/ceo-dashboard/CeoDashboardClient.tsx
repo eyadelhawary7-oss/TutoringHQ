@@ -86,7 +86,7 @@ function FinancialErrorCard({ onRetry }: { onRetry: () => void }) {
   const t = useTranslations('ceo');
   return (
     <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] card-shadow p-6 mt-10">
-      <p className="text-red-600 dark:text-red-400 text-sm mb-3">{t('financials.fetchError')}</p>
+      <p className="text-red-600 text-sm mb-3">{t('financials.fetchError')}</p>
       <button
         type="button"
         onClick={onRetry}
@@ -326,7 +326,7 @@ function CeoFinancialsBody({
                 {tFinancials('financials.badgePending')}:{' '}
                 {formatNumber(nf(financials.cardOrders?.pendingOrders), locale)}
               </span>
-              <span className="rounded-full bg-teal-500/20 text-teal-700 dark:text-teal-300 text-xs px-3 py-1 font-medium">
+              <span className="rounded-full bg-teal-500/20 text-teal-700 text-xs px-3 py-1 font-medium">
                 {tFinancials('financials.badgePaid')}:{' '}
                 {formatNumber(nf(financials.cardOrders?.paidOrders), locale)}
               </span>

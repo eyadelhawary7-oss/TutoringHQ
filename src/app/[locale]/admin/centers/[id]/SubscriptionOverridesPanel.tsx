@@ -149,7 +149,7 @@ export function SubscriptionOverridesPanel({
             type="button"
             disabled={busy !== null}
             onClick={() => void runExtend(Math.round(Number(daysCustom)) || 1)}
-            className="rounded-lg border border-teal-600 text-teal-700 dark:text-teal-300 px-4 py-2 text-sm font-semibold hover:bg-teal-50 dark:hover:bg-teal-950/40 disabled:opacity-50"
+            className="rounded-lg border border-teal-600 text-teal-700 px-4 py-2 text-sm font-semibold hover:bg-teal-50 disabled:opacity-50"
           >
             {t('extendCustom')}
           </button>

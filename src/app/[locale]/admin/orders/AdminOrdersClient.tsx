@@ -44,43 +44,43 @@ const STATUS_CONFIG: Record<
   { color: string; bg: string; icon: React.ElementType; label: string }
 > = {
   pending: {
-    color: 'text-amber-600 dark:text-amber-400',
+    color: 'text-amber-600',
     bg: 'bg-amber-500/10',
     icon: Clock,
     label: 'statusPending',
   },
   paid: {
-    color: 'text-emerald-600 dark:text-emerald-400',
+    color: 'text-emerald-600',
     bg: 'bg-emerald-500/10',
     icon: CircleDollarSign,
     label: 'statusPaid',
   },
   printing: {
-    color: 'text-purple-600 dark:text-purple-400',
+    color: 'text-purple-600',
     bg: 'bg-purple-500/10',
     icon: Printer,
     label: 'statusPrinting',
   },
   ready_for_pickup: {
-    color: 'text-cyan-600 dark:text-cyan-400',
+    color: 'text-cyan-600',
     bg: 'bg-cyan-500/10',
     icon: PackageOpen,
     label: 'statusReadyPickup',
   },
   shipped: {
-    color: 'text-teal-600 dark:text-teal-400',
+    color: 'text-teal-600',
     bg: 'bg-teal-500/10',
     icon: Truck,
     label: 'statusShipped',
   },
   delivered: {
-    color: 'text-green-600 dark:text-green-400',
+    color: 'text-green-600',
     bg: 'bg-green-500/10',
     icon: CheckCircle,
     label: 'statusDelivered',
   },
   confirmed: {
-    color: 'text-blue-600 dark:text-blue-400',
+    color: 'text-blue-600',
     bg: 'bg-blue-500/10',
     icon: CheckCircle,
     label: 'statusConfirmed',
@@ -649,7 +649,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                     ))}
                   </select>
                   {slideOrder.vendor_sent_at ? (
-                    <p className="text-xs text-teal-600 dark:text-teal-400 mt-2">
+                    <p className="text-xs text-teal-600 mt-2">
                       ✓ {tIdCards('sentToVendor')} -{' '}
                       {formatDateTime(slideOrder.vendor_sent_at, locale, {
                         day: 'numeric',
@@ -728,7 +728,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                       href={`https://bosta.co/tracking?trackingNumber=${encodeURIComponent(slideOrder.tracking_number)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-teal-600 dark:text-teal-400 hover:underline font-mono"
+                      className="text-sm text-teal-600 hover:underline font-mono"
                     >
                       {slideOrder.tracking_number}
                     </a>

@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase';
 import { useCardOrderCart } from '@/hooks/useCardOrderCart';
 import {
   useCheckoutRates,
+  useCheckoutProcessingFee,
   writeCheckoutPaymentSession,
   clearCheckoutPaymentSession,
 } from '../CheckoutShell';
@@ -23,6 +24,7 @@ export default function CheckoutReviewPage() {
   const localeShort: 'en' | 'ar' = locale.startsWith('ar') ? 'ar' : 'en';
   const { cart, activeItems, totals, activeItemCount, loading } = useCardOrderCart();
   const rates = useCheckoutRates();
+  const processingFee = useCheckoutProcessingFee();
 
   const [terms, setTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -47,9 +49,9 @@ export default function CheckoutReviewPage() {
     () => buildLegalInvoiceLines(totals.productInclusive, localeShort),
     [totals.productInclusive, localeShort],
   );
-  const taxLines = legalLines.slice(0, 4);
-  const productInclusive = legalLines[4]?.amount ?? totals.productInclusive;
-  const grandTotal = productInclusive + shipFee;
+  const taxLines = legalLines.filter((l) => !l.isTotal);
+  const productInclusive = legalLines.find((l) => l.isTotal)?.amount ?? totals.productInclusive;
+  const grandTotal = productInclusive + processingFee + shipFee;
   const perCard = activeItemCount > 0 ? grandTotal / activeItemCount : 0;
 
   const blanks = activeItems.filter((i) => i.kind === 'blank');
@@ -183,13 +185,19 @@ export default function CheckoutReviewPage() {
             <span className="text-[var(--color-text-secondary)]">{t('subtotalInclusive')}</span>
             <span className="tabular-nums font-medium">{formatCurrency(productInclusive, locale)}</span>
           </div>
+          {processingFee > 0 ? (
+            <div className="flex justify-between gap-2">
+              <span className="text-[var(--color-text-secondary)]">{t('processingFee')}</span>
+              <span className="tabular-nums">{formatCurrency(processingFee, locale)}</span>
+            </div>
+          ) : null}
           <div className="flex justify-between gap-2">
             <span className="text-[var(--color-text-secondary)]">{t('shippingLine', { zone: zoneLabel || ',' })}</span>
             <span className="tabular-nums">{formatCurrency(shipFee, locale)}</span>
           </div>
           <div className="flex justify-between gap-2 pt-2 text-lg font-bold">
             <span>{t('grandTotal')}</span>
-            <span className="tabular-nums text-teal-700 dark:text-teal-300">{formatCurrency(grandTotal, locale)}</span>
+            <span className="tabular-nums text-teal-700">{formatCurrency(grandTotal, locale)}</span>
           </div>
           <p className="text-xs text-[var(--color-text-tertiary)] pt-1">{t('perCardAllIn', { amount: formatCurrency(perCard, locale) })}</p>
         </div>

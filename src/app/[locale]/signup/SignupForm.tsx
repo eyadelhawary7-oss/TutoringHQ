@@ -197,22 +197,26 @@ function UnderlineInput({
   const [focused, setFocused] = useState(false);
   const active = focused || value.length > 0;
   const err = Boolean(error);
-  const bottomColor = err ? '#f87171' : focused ? '#0D9488' : value ? '#334155' : '#1e293b';
+  const bottomColor = err
+    ? 'var(--color-danger)'
+    : focused
+      ? 'var(--color-teal)'
+      : value
+        ? 'var(--color-border-strong)'
+        : 'var(--color-border)';
   const bottomW = err || focused ? '2px' : '1px';
 
   return (
     <div className="group relative mb-8 pt-6">
       <label
         htmlFor={id}
-        style={SANS}
+        style={{ ...SANS, color: active ? 'var(--color-teal)' : 'var(--color-text-muted)' }}
         className={`pointer-events-none absolute font-medium transition-all duration-300 start-0 ${
-          active
-            ? 'top-0 text-[10px] tracking-wider text-teal-400 uppercase'
-            : 'top-5 text-[13px] text-slate-500'
+          active ? 'top-0 text-[10px] tracking-wider uppercase' : 'top-5 text-[13px]'
         }`}
       >
         {label}
-        {required ? <span className="ms-0.5 text-teal-500">*</span> : null}
+        {required ? <span className="ms-0.5" style={{ color: 'var(--color-teal)' }}>*</span> : null}
       </label>
       <input
         id={id}
@@ -232,7 +236,7 @@ function UnderlineInput({
         inputMode={inputMode}
         dir={dir}
         aria-invalid={err}
-        className="w-full transition-all duration-300 placeholder-slate-600"
+        className="w-full transition-all duration-300 placeholder:text-[var(--color-text-muted)]"
         style={{
           ...PLAYFAIR,
           fontSize: '15px',
@@ -242,27 +246,27 @@ function UnderlineInput({
           border: 'none',
           borderBottom: `${bottomW} solid ${bottomColor}`,
           padding: '3px 0 9px',
-          color: '#f8fafc',
+          color: 'var(--color-text-primary)',
           outline: 'none',
-          WebkitTextFillColor: '#f8fafc',
-          WebkitBoxShadow: '0 0 0px 1000px #080D14 inset',
-          caretColor: '#f8fafc',
+          WebkitTextFillColor: 'var(--color-text-primary)',
+          WebkitBoxShadow: '0 0 0px 1000px var(--color-surface-0) inset',
+          caretColor: 'var(--color-text-primary)',
           appearance: 'none',
           boxSizing: 'border-box',
         }}
       />
       {counterMax != null ? (
-        <p className="mt-1 text-end text-[10px] text-slate-600" style={SANS}>
+        <p className="mt-1 text-end text-[10px]" style={{ ...SANS, color: 'var(--color-text-muted)' }}>
           {value.trim().length}/{counterMax}
         </p>
       ) : null}
       {error ? (
-        <p className="mt-1 text-[11px] text-red-400" style={SANS}>
+        <p className="mt-1 text-[11px]" style={{ ...SANS, color: 'var(--color-danger)' }}>
           {error}
         </p>
       ) : null}
       {hint && !error ? (
-        <p className="mt-2 text-[11px] text-slate-600" style={SANS}>
+        <p className="mt-2 text-[11px]" style={{ ...SANS, color: 'var(--color-text-muted)' }}>
           {hint}
         </p>
       ) : null}
@@ -567,24 +571,23 @@ export default function SignupForm() {
     return (
       <div
         data-chq-signup
-        className="relative flex min-h-screen flex-col items-center justify-center bg-[#080D14] p-8 text-center font-['Cairo',sans-serif]"
+        className="relative flex min-h-screen flex-col items-center justify-center p-8 text-center font-['Cairo',sans-serif]"
+        style={{ background: 'var(--color-surface-0)' }}
       >
-        <div className="pointer-events-none fixed inset-0" aria-hidden>
-          <div
-            className="absolute top-1/2 start-1/2 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full"
-            style={{
-              background: 'radial-gradient(circle, rgba(13,148,136,0.15) 0%, transparent 70%)',
-            }}
-          />
-        </div>
         <div className="relative z-10">
-          <div className="mx-auto mb-8 flex h-16 w-16 items-center justify-center rounded-full border border-teal-700/50 bg-teal-950/50 shadow-[0_0_40px_rgba(13,148,136,0.3)]">
+          <div
+            className="mx-auto mb-8 flex h-16 w-16 items-center justify-center rounded-full"
+            style={{
+              background: 'var(--color-teal-soft)',
+              border: '1px solid var(--color-border-brand)',
+            }}
+          >
             <svg
               width="28"
               height="28"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#0D9488"
+              stroke="var(--color-teal)"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -592,10 +595,16 @@ export default function SignupForm() {
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
-          <h2 className="mb-3 text-[32px] font-black tracking-tight text-white" style={PLAYFAIR}>
+          <h2
+            className="mb-3 text-[32px] font-black tracking-tight"
+            style={{ ...PLAYFAIR, color: 'var(--color-text-primary)' }}
+          >
             {t('successTitle')}
           </h2>
-          <p className="mx-auto max-w-xs text-[13px] leading-relaxed text-slate-500" style={SANS}>
+          <p
+            className="mx-auto max-w-xs text-[13px] leading-relaxed"
+            style={{ ...SANS, color: 'var(--color-text-secondary)' }}
+          >
             {t('successDesc')}
           </p>
         </div>
@@ -646,36 +655,29 @@ export default function SignupForm() {
         : '',
       teal: false,
     },
-    { taxKey: 'service', label: t('serviceFee'), val: t('included'), teal: true },
-    { taxKey: 'stamp', label: t('stampDuty'), val: t('included'), teal: true },
     { taxKey: 'vat', label: 'VAT 14%', val: t('included'), teal: true },
   ];
 
   return (
     <div
       data-chq-signup
-      className="relative min-h-screen w-full bg-[#080f1a] font-['Cairo',sans-serif]"
+      className="relative min-h-screen w-full font-['Cairo',sans-serif]"
+      style={{ background: 'var(--color-surface-0)' }}
     >
-      <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
-        <div
-          className="absolute top-[-20%] start-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(13,148,136,0.12) 0%, transparent 70%)',
-            animation: 'breathe 6s ease-in-out infinite',
-          }}
-        />
-      </div>
-
       <div
-        className="fixed top-0 end-0 start-0 z-50 h-[2px] bg-slate-800/50"
+        className="fixed top-0 end-0 start-0 z-50 h-[2px]"
+        style={{ background: 'var(--color-border)' }}
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={progressNow}
       >
         <div
-          className="h-full bg-gradient-to-r from-teal-600 to-teal-300 transition-all duration-700 ease-out"
-          style={{ width: progressWidth }}
+          className="h-full transition-all duration-700 ease-out"
+          style={{
+            width: progressWidth,
+            background: 'linear-gradient(to right, var(--color-teal-deep), var(--color-teal))',
+          }}
         />
       </div>
 
@@ -685,7 +687,8 @@ export default function SignupForm() {
           onClick={handleLocaleToggle}
           disabled={isPending}
           aria-label={t('localeToggleAria')}
-          className="flex items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-1.5 text-[10px] font-medium text-slate-300 transition-colors hover:text-white"
+          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[10px] font-medium transition-colors"
+          style={{ border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)' }}
         >
           <Globe size={13} aria-hidden />
           <span dir="ltr">{locale === 'ar' ? 'EN' : 'AR'}</span>
@@ -696,8 +699,8 @@ export default function SignupForm() {
         {(stage === 'info' || stage === 'plan' || stage === 'payment') ? (
           <div className="mb-6 flex flex-col items-center gap-2">
             <p
-              className="text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-teal-500/90"
-              style={SANS}
+              className="text-center text-[11px] font-semibold uppercase tracking-[0.12em]"
+              style={{ ...SANS, color: 'var(--color-teal)' }}
             >
               {currentStepNumber === 1
                 ? t('progress.step1Of4')
@@ -713,22 +716,24 @@ export default function SignupForm() {
                 return (
                   <span
                     key={step}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${
-                      isActive
-                        ? 'w-6 bg-teal-500'
+                    className="h-1.5 rounded-full transition-all duration-300"
+                    style={{
+                      width: isActive ? '1.5rem' : '0.375rem',
+                      background: isActive
+                        ? 'var(--color-teal)'
                         : isCompleted
-                          ? 'w-1.5 bg-teal-600'
+                          ? 'var(--color-teal-deep)'
                           : isPayment
-                            ? 'w-1.5 bg-slate-800'
-                            : 'w-1.5 bg-slate-700'
-                    }`}
+                            ? 'var(--color-border-strong)'
+                            : 'var(--color-border)',
+                    }}
                   />
                 );
               })}
             </div>
             <p
-              className="text-center text-[10px] tracking-[0.1em] text-slate-600"
-              style={SANS}
+              className="text-center text-[10px] tracking-[0.1em]"
+              style={{ ...SANS, color: 'var(--color-text-muted)' }}
             >
               {t('progress.step4Payment')}
             </p>
@@ -736,13 +741,13 @@ export default function SignupForm() {
         ) : null}
         <div className="mb-12 flex flex-col items-center">
           <span
-            className="logo-name text-base text-white"
+            className="logo-name text-base"
             style={{ fontFamily: 'var(--font-bodoni)', fontWeight: 700, letterSpacing: '2px' }}
           >
-            <span className="text-[#f8fafc]">Tutoring</span>
-            <span className="text-[#0D9488]">HQ</span>
+            <span style={{ color: 'var(--color-text-primary)' }}>Tutoring</span>
+            <span style={{ color: 'var(--color-teal)' }}>HQ</span>
           </span>
-          <span className="mt-0.5 text-[11px] text-slate-600" style={SANS}>
+          <span className="mt-0.5 text-[11px]" style={{ ...SANS, color: 'var(--color-text-muted)' }}>
             {stageSubtitle}
           </span>
         </div>
@@ -765,7 +770,7 @@ export default function SignupForm() {
               style={{
                 ...SANS,
                 fontSize: '11px',
-                color: '#475569',
+                color: 'var(--color-text-muted)',
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
@@ -784,7 +789,7 @@ export default function SignupForm() {
                 ...PLAYFAIR,
                 fontSize: '26px',
                 fontWeight: 700,
-                color: '#f8fafc',
+                color: 'var(--color-text-primary)',
                 letterSpacing: '-0.3px',
                 lineHeight: '1.15',
                 marginBottom: '24px',
@@ -798,7 +803,7 @@ export default function SignupForm() {
                 style={{
                   ...SANS,
                   fontSize: '9px',
-                  color: '#334155',
+                  color: 'var(--color-text-muted)',
                   textTransform: 'uppercase',
                   letterSpacing: '1.5px',
                   marginBottom: '5px',
@@ -811,7 +816,7 @@ export default function SignupForm() {
                   ...PLAYFAIR,
                   fontSize: '20px',
                   fontWeight: 700,
-                  color: '#f8fafc',
+                  color: 'var(--color-text-primary)',
                   lineHeight: '1.1',
                 }}
               >
@@ -821,7 +826,7 @@ export default function SignupForm() {
                 style={{
                   ...SANS,
                   fontSize: '11px',
-                  color: '#475569',
+                  color: 'var(--color-text-muted)',
                   marginTop: '3px',
                 }}
               >
@@ -829,19 +834,19 @@ export default function SignupForm() {
               </div>
             </div>
 
-            <div style={{ height: '1px', background: '#0f172a', margin: '16px 0' }} />
+            <div style={{ height: '1px', background: 'var(--color-border)', margin: '16px 0' }} />
 
             {orderSummaryRows.map(({ lineId, label, val, serif }) => (
               <div
                 key={lineId}
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0' }}
               >
-                <span style={{ ...SANS, fontSize: '11px', color: '#475569' }}>{label}</span>
+                <span style={{ ...SANS, fontSize: '11px', color: 'var(--color-text-muted)' }}>{label}</span>
                 <span
                   style={{
                     ...(serif ? PLAYFAIR : SANS),
                     fontSize: '11px',
-                    color: serif ? '#f8fafc' : '#64748b',
+                    color: serif ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
                     fontWeight: serif ? 600 : 400,
                   }}
                 >
@@ -852,12 +857,12 @@ export default function SignupForm() {
 
             {form.referralCode ? (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0' }}>
-                <span style={{ ...SANS, fontSize: '11px', color: '#475569' }}>{t('referralCode')}</span>
+                <span style={{ ...SANS, fontSize: '11px', color: 'var(--color-text-muted)' }}>{t('referralCode')}</span>
                 <span
                   style={{
                     ...SANS,
                     fontSize: '11px',
-                    color: '#0D9488',
+                    color: 'var(--color-teal)',
                     fontFamily: 'monospace',
                     letterSpacing: '1px',
                   }}
@@ -867,19 +872,19 @@ export default function SignupForm() {
               </div>
             ) : null}
 
-            <div style={{ height: '1px', background: '#0f172a', margin: '14px 0' }} />
+            <div style={{ height: '1px', background: 'var(--color-border)', margin: '14px 0' }} />
 
             {taxRows.map(({ taxKey, label, val, teal }, idx) => (
               <div
                 key={`${taxKey}-${idx}`}
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0' }}
               >
-                <span style={{ ...SANS, fontSize: '11px', color: '#475569' }}>{label}</span>
+                <span style={{ ...SANS, fontSize: '11px', color: 'var(--color-text-muted)' }}>{label}</span>
                 <span
                   style={{
                     ...SANS,
                     fontSize: teal ? '10px' : '11px',
-                    color: teal ? '#0D9488' : '#64748b',
+                    color: teal ? 'var(--color-teal)' : 'var(--color-text-muted)',
                   }}
                 >
                   {val}
@@ -891,12 +896,12 @@ export default function SignupForm() {
             <div style={{ marginTop: '14px' }}>
               {appliedPromo ? (
                 /* Applied promo badge */
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', borderRadius: '8px', background: 'rgba(13,148,136,0.12)', border: '1px solid rgba(13,148,136,0.3)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', borderRadius: '8px', background: 'var(--color-teal-soft)', border: '1px solid var(--color-border-brand)' }}>
                   <div>
-                    <span style={{ ...SANS, fontSize: '11px', fontWeight: 700, color: '#0D9488', letterSpacing: '1px' }}>
+                    <span style={{ ...SANS, fontSize: '11px', fontWeight: 700, color: 'var(--color-teal)', letterSpacing: '1px' }}>
                       {appliedPromo.code}
                     </span>
-                    <span style={{ ...SANS, fontSize: '10px', color: '#5eead4', marginInlineStart: '8px' }}>
+                    <span style={{ ...SANS, fontSize: '10px', color: 'var(--color-teal)', marginInlineStart: '8px' }}>
                       {t('promoApplied', {
                         discountPct: String(appliedPromo.discountPct),
                         savings: formatNumber(appliedPromo.savingsEgp, locale),
@@ -906,15 +911,15 @@ export default function SignupForm() {
                   <button
                     type="button"
                     onClick={() => { setAppliedPromo(null); setShowPromoInput(false); }}
-                    style={{ ...SANS, fontSize: '10px', color: '#f87171', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                    style={{ ...SANS, fontSize: '10px', color: 'var(--color-danger)', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600 }}
                   >
                     {t('promoRemove')}
                   </button>
                 </div>
               ) : hasActiveReferral ? (
                 /* Blocked: referral is active */
-                <div style={{ padding: '9px 12px', borderRadius: '8px', background: 'rgba(15,23,42,0.6)', border: '1px solid #1e293b' }}>
-                  <p style={{ ...SANS, fontSize: '11px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                <div style={{ padding: '9px 12px', borderRadius: '8px', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)' }}>
+                  <p style={{ ...SANS, fontSize: '11px', color: 'var(--color-text-muted)', margin: 0, lineHeight: '1.5' }}>
                     {t('removeReferralToUsePromo')}{' '}
                     <button
                       type="button"
@@ -922,7 +927,7 @@ export default function SignupForm() {
                         updateForm('referralCode', '');
                         setAppliedReferralCode(null);
                       }}
-                      style={{ ...SANS, fontSize: '11px', color: '#f87171', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 600 }}
+                      style={{ ...SANS, fontSize: '11px', color: 'var(--color-danger)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 600 }}
                     >
                       {t('promoRemove')}
                     </button>
@@ -933,7 +938,7 @@ export default function SignupForm() {
                 <button
                   type="button"
                   onClick={() => setShowPromoInput(true)}
-                  style={{ ...SANS, fontSize: '11px', color: '#475569', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                  style={{ ...SANS, fontSize: '11px', color: 'var(--color-text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
                 >
                   + {t('havePromoCode')}
                 </button>
@@ -954,11 +959,11 @@ export default function SignupForm() {
                         ...SANS,
                         flex: 1,
                         fontSize: '13px',
-                        background: '#0f172a',
-                        border: '1px solid #1e293b',
+                        background: 'var(--color-surface-2)',
+                        border: '1px solid var(--color-border)',
                         borderRadius: '8px',
                         padding: '8px 12px',
-                        color: '#f8fafc',
+                        color: 'var(--color-text-primary)',
                         outline: 'none',
                         letterSpacing: '1px',
                       }}
@@ -972,7 +977,7 @@ export default function SignupForm() {
                         ...SANS,
                         fontSize: '12px',
                         fontWeight: 600,
-                        background: '#0D9488',
+                        background: 'var(--color-teal)',
                         color: 'white',
                         border: 'none',
                         borderRadius: '8px',
@@ -986,7 +991,7 @@ export default function SignupForm() {
                     </button>
                   </div>
                   {promoError ? (
-                    <p style={{ ...SANS, fontSize: '11px', color: '#f87171', margin: 0 }}>{promoError}</p>
+                    <p style={{ ...SANS, fontSize: '11px', color: 'var(--color-danger)', margin: 0 }}>{promoError}</p>
                   ) : null}
                 </div>
               )}
@@ -998,7 +1003,7 @@ export default function SignupForm() {
                 justifyContent: 'space-between',
                 alignItems: 'flex-end',
                 paddingTop: '14px',
-                borderTop: '1px solid #1e293b',
+                borderTop: '1px solid var(--color-border)',
                 marginTop: '8px',
               }}
             >
@@ -1007,7 +1012,7 @@ export default function SignupForm() {
                   style={{
                     ...SANS,
                     fontSize: '9px',
-                    color: '#334155',
+                    color: 'var(--color-text-muted)',
                     textTransform: 'uppercase',
                     letterSpacing: '1px',
                   }}
@@ -1017,7 +1022,7 @@ export default function SignupForm() {
               </div>
               <div style={{ textAlign: 'end' }}>
                 {appliedPromo ? (
-                  <div style={{ ...SANS, fontSize: '11px', color: '#475569', textDecoration: 'line-through', textAlign: 'end' }}>
+                  <div style={{ ...SANS, fontSize: '11px', color: 'var(--color-text-muted)', textDecoration: 'line-through', textAlign: 'end' }}>
                     {formatNumber(appliedPromo.originalAmountEgp, locale)} EGP
                   </div>
                 ) : null}
@@ -1034,7 +1039,7 @@ export default function SignupForm() {
                       ...PLAYFAIR,
                       fontSize: '26px',
                       fontWeight: 700,
-                      color: appliedPromo ? '#5eead4' : '#f8fafc',
+                      color: appliedPromo ? 'var(--color-teal)' : 'var(--color-text-primary)',
                       lineHeight: '1',
                       letterSpacing: '-0.3px',
                     }}
@@ -1052,7 +1057,7 @@ export default function SignupForm() {
                     style={{
                       ...SANS,
                       fontSize: '12px',
-                      color: '#64748b',
+                      color: 'var(--color-text-muted)',
                       marginBottom: '2px',
                     }}
                   >
@@ -1063,7 +1068,7 @@ export default function SignupForm() {
                   style={{
                     ...SANS,
                     fontSize: '10px',
-                    color: '#334155',
+                    color: 'var(--color-text-muted)',
                     marginTop: '4px',
                     textAlign: 'end',
                   }}
@@ -1075,7 +1080,7 @@ export default function SignupForm() {
                     style={{
                       ...SANS,
                       fontSize: '10px',
-                      color: '#334155',
+                      color: 'var(--color-text-muted)',
                       marginTop: '2px',
                       textAlign: 'end',
                     }}
@@ -1098,12 +1103,12 @@ export default function SignupForm() {
                 id="consent-terms"
                 checked={termsAccepted}
                 onChange={(e) => setTermsAccepted(e.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border border-slate-500 accent-[#0D9488]"
+                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border border-[var(--color-border-strong)] accent-[var(--color-teal)]"
                 style={{ minWidth: '16px', minHeight: '16px' }}
               />
               <label
                 htmlFor="consent-terms"
-                className="cursor-pointer text-[11px] leading-relaxed text-slate-500"
+                className="cursor-pointer text-[11px] leading-relaxed text-[var(--color-text-muted)]"
                 style={SANS}
               >
                 {t.rich('consentTerms', {
@@ -1112,7 +1117,7 @@ export default function SignupForm() {
                       href={`/${locale}/legal/terms`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[#0D9488] underline hover:opacity-80"
+                      className="text-[var(--color-teal)] underline hover:opacity-80"
                     >
                       {chunks}
                     </a>
@@ -1127,12 +1132,12 @@ export default function SignupForm() {
                 id="consent-privacy"
                 checked={privacyAccepted}
                 onChange={(e) => setPrivacyAccepted(e.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border border-slate-500 accent-[#0D9488]"
+                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border border-[var(--color-border-strong)] accent-[var(--color-teal)]"
                 style={{ minWidth: '16px', minHeight: '16px' }}
               />
               <label
                 htmlFor="consent-privacy"
-                className="cursor-pointer text-[11px] leading-relaxed text-slate-500"
+                className="cursor-pointer text-[11px] leading-relaxed text-[var(--color-text-muted)]"
                 style={SANS}
               >
                 {t.rich('consentPrivacy', {
@@ -1141,7 +1146,7 @@ export default function SignupForm() {
                       href={`/${locale}/legal/privacy`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[#0D9488] underline hover:opacity-80"
+                      className="text-[var(--color-teal)] underline hover:opacity-80"
                     >
                       {chunks}
                     </a>
@@ -1156,14 +1161,14 @@ export default function SignupForm() {
                   marginBottom: '12px',
                   padding: '10px 14px',
                   borderRadius: '10px',
-                  border: '1px solid rgba(239,68,68,0.3)',
-                  background: 'rgba(127,29,29,0.2)',
+                  border: '1px solid var(--color-danger)',
+                  background: 'var(--color-danger-muted)',
                 }}
               >
-                <p style={{ ...SANS, fontSize: '12px', color: '#f87171' }}>{error}</p>
+                <p style={{ ...SANS, fontSize: '12px', color: 'var(--color-danger)' }}>{error}</p>
                 {error === t('errors.paymentGeneric') ? (
-                  <p style={{ ...SANS, fontSize: '11px', color: '#94a3b8', marginTop: '8px' }}>
-                    <a href="mailto:ops@ehgintelligence.com" style={{ color: '#5eead4', textDecoration: 'underline' }}>
+                  <p style={{ ...SANS, fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '8px' }}>
+                    <a href="mailto:ops@ehgintelligence.com" style={{ color: 'var(--color-teal)', textDecoration: 'underline' }}>
                       ops@ehgintelligence.com
                     </a>
                   </p>
@@ -1180,7 +1185,7 @@ export default function SignupForm() {
                 width: '100%',
                 padding: '14px',
                 borderRadius: '12px',
-                background: '#0D9488',
+                background: 'var(--color-teal)',
                 color: 'white',
                 border: 'none',
                 fontSize: '14px',
@@ -1226,7 +1231,7 @@ export default function SignupForm() {
                     ...SANS,
                     textAlign: 'center',
                     fontSize: '10px',
-                    color: '#94a3b8',
+                    color: 'var(--color-text-secondary)',
                     marginTop: '10px',
                     display: 'flex',
                     alignItems: 'center',
@@ -1249,7 +1254,7 @@ export default function SignupForm() {
                 ...SANS,
                 textAlign: 'center',
                 fontSize: '10px',
-                color: '#1e293b',
+                color: 'var(--color-text-muted)',
                 marginTop: '6px',
                 lineHeight: '1.5',
               }}
@@ -1296,7 +1301,7 @@ export default function SignupForm() {
               <>
                 <div className="mb-10">
                   <h1
-                    className="mb-2 text-[28px] font-black leading-tight tracking-tight text-white"
+                    className="mb-2 text-[28px] font-black leading-tight tracking-tight text-[var(--color-text-primary)]"
                     style={PLAYFAIR}
                   >
                     {t('stageOneTitle')}
@@ -1361,15 +1366,15 @@ export default function SignupForm() {
                 <div className="relative mb-8 pt-6">
                   <label
                     htmlFor="su-city"
-                    style={SANS}
+                    style={{ ...SANS, color: form.city ? 'var(--color-teal)' : 'var(--color-text-muted)' }}
                     className={`pointer-events-none absolute font-medium transition-all duration-300 start-0 ${
                       form.city
-                        ? 'top-0 text-[10px] tracking-wider text-teal-400 uppercase'
-                        : 'top-5 text-[13px] text-slate-500'
+                        ? 'top-0 text-[10px] tracking-wider uppercase'
+                        : 'top-5 text-[13px]'
                     }`}
                   >
                     {t('city')}
-                    <span className="ms-0.5 text-teal-500">*</span>
+                    <span className="ms-0.5" style={{ color: 'var(--color-teal)' }}>*</span>
                   </label>
                   <select
                     id="su-city"
@@ -1390,17 +1395,17 @@ export default function SignupForm() {
                       height: 'auto',
                       paddingTop: '24px',
                       paddingBottom: '10px',
-                      background: '#080D14',
-                      backgroundColor: '#080D14',
+                      background: 'var(--color-surface-0)',
+                      backgroundColor: 'var(--color-surface-0)',
                       border: 'none',
                       borderBottom: step1Errors.city
-                        ? '2px solid #f87171'
+                        ? '2px solid var(--color-danger)'
                         : form.city
-                          ? '1px solid #334155'
-                          : '1px solid #1e293b',
-                      color: form.city ? '#f8fafc' : '#475569',
+                          ? '1px solid var(--color-border-strong)'
+                          : '1px solid var(--color-border)',
+                      color: form.city ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
                       outline: 'none',
-                      WebkitTextFillColor: form.city ? '#f8fafc' : '#475569',
+                      WebkitTextFillColor: form.city ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
                       appearance: 'none',
                       cursor: 'pointer',
                       boxSizing: 'border-box',
@@ -1411,8 +1416,8 @@ export default function SignupForm() {
                       disabled
                       hidden
                       style={{
-                        background: '#080D14',
-                        color: '#f8fafc',
+                        background: 'var(--color-surface-1)',
+                        color: 'var(--color-text-primary)',
                         fontSize: '14px',
                         padding: '8px',
                       }}
@@ -1424,8 +1429,8 @@ export default function SignupForm() {
                         key={city.id}
                         value={city.id}
                         style={{
-                          background: '#0f172a',
-                          color: '#f8fafc',
+                          background: 'var(--color-surface-1)',
+                          color: 'var(--color-text-primary)',
                           fontSize: '14px',
                           padding: '8px',
                         }}
@@ -1440,7 +1445,7 @@ export default function SignupForm() {
                       height="12"
                       viewBox="0 0 24 24"
                       fill="none"
-                      stroke="#475569"
+                      stroke="var(--color-text-muted)"
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -1450,15 +1455,15 @@ export default function SignupForm() {
                     </svg>
                   </div>
                   {step1Errors.city ? (
-                    <p className="mt-1 text-[11px] text-red-400" style={SANS}>
+                    <p className="mt-1 text-[11px] text-[var(--color-danger)]" style={SANS}>
                       {step1Errors.city}
                     </p>
                   ) : null}
                 </div>
 
                 {error ? (
-                  <div className="mb-4 rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3">
-                    <p className="text-[12px] text-red-400" style={SANS}>
+                  <div className="mb-4 rounded-xl border border-[var(--color-danger)] bg-[var(--color-danger-muted)] px-4 py-3">
+                    <p className="text-[12px] text-[var(--color-danger)]" style={SANS}>
                       {error}
                     </p>
                   </div>
@@ -1503,16 +1508,16 @@ export default function SignupForm() {
                     setStage('plan');
                     setStep1Errors({});
                   }}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 py-4 text-[14px] font-semibold text-white shadow-[0_4px_30px_rgba(13,148,136,0.35)] transition-all duration-300 hover:bg-teal-500 hover:shadow-[0_4px_40px_rgba(13,148,136,0.5)] active:scale-[0.98]"
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-teal)] py-4 text-[14px] font-semibold text-white shadow-[0_4px_30px_rgba(13,148,136,0.35)] transition-all duration-300 hover:bg-[var(--color-teal-deep)] hover:shadow-[0_4px_40px_rgba(13,148,136,0.5)] active:scale-[0.98]"
                   style={PLAYFAIR}
                 >
                   <span>{t('continueToPlans')}</span>
                   <ArrowRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
                 </button>
 
-                <p className="mt-6 text-center text-[11px] text-slate-700" style={SANS}>
+                <p className="mt-6 text-center text-[11px] text-[var(--color-text-muted)]" style={SANS}>
                   {t('hasAccount')}{' '}
-                  <Link href="/login" className="text-teal-600 transition-colors hover:text-teal-400">
+                  <Link href="/login" className="text-[var(--color-teal)] transition-colors hover:text-[var(--color-teal-deep)]">
                     {t('login')}
                   </Link>
                 </p>
@@ -1523,41 +1528,41 @@ export default function SignupForm() {
               <>
                 <div className="mb-8">
                   <h1
-                    className="mb-2 text-[28px] font-black leading-tight tracking-tight text-white"
+                    className="mb-2 text-[28px] font-black leading-tight tracking-tight text-[var(--color-text-primary)]"
                     style={PLAYFAIR}
                   >
                     {t('stageTwoTitle')}
                   </h1>
-                  <p className="text-[12px] text-slate-500" style={SANS}>
+                  <p className="text-[12px] text-[var(--color-text-muted)]" style={SANS}>
                     {t('stageTwoSubtitle')}
                   </p>
                 </div>
 
-                <div className="mb-8 flex gap-6 border-b border-slate-800 pb-0">
+                <div className="mb-8 flex gap-6 border-b border-[var(--color-border)] pb-0">
                   {(['monthly', 'annual'] as const).map((p) => (
                     <button
                       key={p}
                       type="button"
                       onClick={() => updateForm('billingPeriod', p)}
                       className={`relative pb-3 text-[12px] font-semibold transition-all duration-200 ${
-                        form.billingPeriod === p ? 'text-white' : 'text-slate-600 hover:text-slate-400'
+                        form.billingPeriod === p ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
                       }`}
                       style={SANS}
                     >
                       {tb(`period.${p}.label` as 'billing.period.monthly.label')}
                       {form.billingPeriod === p ? (
-                        <div className="absolute end-0 bottom-0 start-0 h-[2px] rounded-full bg-teal-500" />
+                        <div className="absolute end-0 bottom-0 start-0 h-[2px] rounded-full bg-[var(--color-teal)]" />
                       ) : null}
                       {p === 'monthly' ? (
                         <span
-                          className={`ms-1 text-[9px] ${form.billingPeriod === p ? 'text-amber-400' : 'text-slate-700'}`}
+                          className={`ms-1 text-[9px] ${form.billingPeriod === p ? 'text-[var(--color-brass)]' : 'text-[var(--color-text-muted)]'}`}
                         >
                           {t('monthlyPremiumMark')}
                         </span>
                       ) : null}
                       {p === 'annual' ? (
                         <span
-                          className={`ms-1 text-[9px] ${form.billingPeriod === p ? 'text-teal-400' : 'text-slate-700'}`}
+                          className={`ms-1 text-[9px] ${form.billingPeriod === p ? 'text-[var(--color-teal)]' : 'text-[var(--color-text-muted)]'}`}
                         >
                           {t('annualDiscountMark')}
                         </span>
@@ -1576,18 +1581,18 @@ export default function SignupForm() {
                       type="button"
                       onClick={() => updateForm('plan', plan.key)}
                       className={`group relative w-full border-b py-5 text-start transition-all duration-300 ${
-                        selected ? 'border-teal-900' : 'border-slate-800/60 hover:border-slate-700'
+                        selected ? 'border-[var(--color-teal)]' : 'border-[var(--color-border)] hover:border-[var(--color-border-strong)]'
                       }`}
                     >
                       {selected ? (
-                        <div className="absolute top-0 bottom-0 start-0 w-[2px] rounded-full bg-gradient-to-b from-teal-500 to-teal-700" />
+                        <div className="absolute top-0 bottom-0 start-0 w-[2px] rounded-full bg-gradient-to-b from-[var(--color-teal)] to-[var(--color-teal-deep)]" />
                       ) : null}
 
                       <div className="flex items-center justify-between ps-4">
                         <div className="flex items-center gap-4">
                           <div
                             className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200 ${
-                              selected ? 'border-teal-500 bg-teal-500' : 'border-slate-700 group-hover:border-slate-500'
+                              selected ? 'border-[var(--color-teal)] bg-[var(--color-teal)]' : 'border-[var(--color-border)] group-hover:border-[var(--color-border-strong)]'
                             }`}
                           >
                             {selected ? <div className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
@@ -1595,13 +1600,13 @@ export default function SignupForm() {
                           <div>
                             <div
                               className={`text-[14px] font-bold transition-colors ${
-                                selected ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'
+                                selected ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)]'
                               }`}
                               style={PLAYFAIR}
                             >
                               {locale === 'ar' ? plan.arabicName : plan.name}
                             </div>
-                            <div className="mt-0.5 text-[11px] text-slate-600" style={SANS}>
+                            <div className="mt-0.5 text-[11px] text-[var(--color-text-muted)]" style={SANS}>
                               {t('upTo')} {formatNumber(planStudents, locale)} {t('studentsPerWeek')}
                             </div>
                           </div>
@@ -1610,13 +1615,13 @@ export default function SignupForm() {
                         <div className="shrink-0 text-end">
                           <div
                             className={`text-[20px] font-black leading-none transition-colors ${
-                              selected ? 'text-white' : 'text-slate-400'
+                              selected ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)]'
                             }`}
                             style={PLAYFAIR}
                           >
                             {formatNumber(price, locale, { integerOnly: true })}
                           </div>
-                          <div className="mt-0.5 text-[9px] text-slate-600" style={SANS}>
+                          <div className="mt-0.5 text-[9px] text-[var(--color-text-muted)]" style={SANS}>
                             EGP / {t('month')}
                           </div>
                         </div>
@@ -1624,10 +1629,10 @@ export default function SignupForm() {
 
                       {selected ? (
                         <div className="mt-2 flex items-center gap-4 ps-12">
-                          <span className="text-[10px] text-slate-600" style={SANS}>
+                          <span className="text-[10px] text-[var(--color-text-muted)]" style={SANS}>
                             {formatNumber(getBilledAmount(plan, form.billingPeriod, dynamicPlanPrices), locale)} EGP {t('billedLabel')}
                           </span>
-                          <span className="text-[10px] text-teal-600" style={SANS}>
+                          <span className="text-[10px] text-[var(--color-teal)]" style={SANS}>
                             {tb('perStudentWeekly', {
                               price: getPerStudentCost(plan, form.billingPeriod, locale, dynamicPlanPrices),
                             })}
@@ -1644,21 +1649,21 @@ export default function SignupForm() {
                   onClick={() => {
                     if (TOP_CENTERS_WHATSAPP) window.open(TOP_CENTERS_WHATSAPP, '_blank');
                   }}
-                  className="group w-full border-b border-slate-800/60 py-5 text-start transition-all duration-300 hover:border-slate-700 disabled:pointer-events-none disabled:opacity-40"
+                  className="group w-full border-b border-[var(--color-border)] py-5 text-start transition-all duration-300 hover:border-[var(--color-border-strong)] disabled:pointer-events-none disabled:opacity-40"
                 >
                   <div className="flex items-center justify-between">
                     <div>
                       <div
-                        className="text-[14px] font-bold text-slate-400 transition-colors group-hover:text-slate-200"
+                        className="text-[14px] font-bold text-[var(--color-text-secondary)] transition-colors group-hover:text-[var(--color-text-primary)]"
                         style={PLAYFAIR}
                       >
                         {locale === 'ar' ? 'كبار السناتر' : 'Top Centers'}
                       </div>
-                      <div className="mt-0.5 text-[11px] text-slate-600" style={SANS}>
+                      <div className="mt-0.5 text-[11px] text-[var(--color-text-muted)]" style={SANS}>
                         {t('topCentersDesc')}
                       </div>
                     </div>
-                    <div className="text-[12px] font-medium text-amber-500/70" style={PLAYFAIR}>
+                    <div className="text-[12px] font-medium text-[var(--color-brass)]" style={PLAYFAIR}>
                       {t('customPricing')} →
                     </div>
                   </div>
@@ -1669,20 +1674,20 @@ export default function SignupForm() {
                     <button
                       type="button"
                       onClick={() => setShowReferral(true)}
-                      className="text-[11px] text-slate-700 transition-colors hover:text-teal-500"
+                      className="text-[11px] text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-teal-deep)]"
                       style={SANS}
                     >
                       + {t('haveReferralCode')}
                     </button>
                   ) : appliedPromo ? (
                     /* Blocked: promo is applied on payment stage */
-                    <div style={{ padding: '9px 12px', borderRadius: '8px', background: 'rgba(15,23,42,0.6)', border: '1px solid #1e293b' }}>
-                      <p style={{ ...SANS, fontSize: '11px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                    <div style={{ padding: '9px 12px', borderRadius: '8px', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)' }}>
+                      <p style={{ ...SANS, fontSize: '11px', color: 'var(--color-text-muted)', margin: 0, lineHeight: '1.5' }}>
                         {t('removePromoToUseReferral')}{' '}
                         <button
                           type="button"
                           onClick={() => { setAppliedPromo(null); setShowPromoInput(false); }}
-                          style={{ ...SANS, fontSize: '11px', color: '#f87171', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 600 }}
+                          style={{ ...SANS, fontSize: '11px', color: 'var(--color-danger)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 600 }}
                         >
                           {t('promoRemove')}
                         </button>
@@ -1692,14 +1697,14 @@ export default function SignupForm() {
                     <div className="space-y-2">
                       {appliedReferralCode ? (
                         <div
-                          className="mb-2 inline-flex items-center gap-2 rounded-full border border-teal-800/60 bg-teal-950/40 px-3 py-1 text-[11px] font-medium text-teal-400"
+                          className="mb-2 inline-flex items-center gap-2 rounded-full border border-[var(--color-teal)] bg-[var(--color-teal-soft)] px-3 py-1 text-[11px] font-medium text-[var(--color-teal)]"
                           style={SANS}
                         >
                           <span>{t('referralApplied', { code: appliedReferralCode })}</span>
                           <button
                             type="button"
                             onClick={() => { setAppliedReferralCode(null); setShowReferral(false); }}
-                            style={{ ...SANS, fontSize: '10px', color: '#f87171', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 600 }}
+                            style={{ ...SANS, fontSize: '10px', color: 'var(--color-danger)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 600 }}
                             aria-label={t('promoRemove')}
                           >
                             {t('promoRemove')}
@@ -1719,8 +1724,8 @@ export default function SignupForm() {
                 </div>
 
                 {error ? (
-                  <div className="mb-4 rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3">
-                    <p className="text-[12px] text-red-400" style={SANS}>
+                  <div className="mb-4 rounded-xl border border-[var(--color-danger)] bg-[var(--color-danger-muted)] px-4 py-3">
+                    <p className="text-[12px] text-[var(--color-danger)]" style={SANS}>
                       {error}
                     </p>
                   </div>
@@ -1733,7 +1738,7 @@ export default function SignupForm() {
                       setDirection('back');
                       setStage('info');
                     }}
-                    className="px-6 py-3.5 text-[13px] font-medium text-slate-600 transition-colors hover:text-white"
+                    className="px-6 py-3.5 text-[13px] font-medium text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-primary)]"
                     style={SANS}
                   >
                     ← {tc('back')}
@@ -1746,7 +1751,7 @@ export default function SignupForm() {
                       setStage('payment');
                     }}
                     disabled={!form.plan || !form.ownerName.trim()}
-                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-teal-600 py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_30px_rgba(13,148,136,0.35)] transition-all duration-200 hover:bg-teal-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30"
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[var(--color-teal)] py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_30px_rgba(13,148,136,0.35)] transition-all duration-200 hover:bg-[var(--color-teal-deep)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30"
                     style={PLAYFAIR}
                   >
                     <span>{t('reviewOrder')}</span>

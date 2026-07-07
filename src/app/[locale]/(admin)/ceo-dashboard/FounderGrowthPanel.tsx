@@ -75,9 +75,9 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
     totalActive === 0 && stages.every((s) => n(s.count) === 0);
 
   const statusChipClass = (centerCount: number, leadCount: number): string => {
-    if (centerCount >= 5) return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
-    if (centerCount >= 2) return 'bg-amber-500/15 text-amber-700 dark:text-amber-400';
-    if (centerCount === 1) return 'bg-sky-500/15 text-sky-600 dark:text-sky-400';
+    if (centerCount >= 5) return 'bg-emerald-500/15 text-emerald-600';
+    if (centerCount >= 2) return 'bg-amber-500/15 text-amber-700';
+    if (centerCount === 1) return 'bg-sky-500/15 text-sky-600';
     return 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]';
   };
 
@@ -143,7 +143,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
               })}
             </div>
             <div className="flex justify-center">
-              <span className="text-xs rounded-md bg-red-500/10 text-red-600 dark:text-red-400 px-3 py-1.5 font-mono">
+              <span className="text-xs rounded-md bg-red-500/10 text-red-600 px-3 py-1.5 font-mono">
                 {`${formatNumber(lostCount, locale)} ${lostLabel}`}
               </span>
             </div>
@@ -191,7 +191,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                       <td
                         className={`py-2 pe-3 font-mono font-semibold ${
                           centerCount > 0
-                            ? 'text-teal-600 dark:text-teal-400'
+                            ? 'text-teal-600'
                             : 'text-[var(--color-text-tertiary)]'
                         }`}
                       >
@@ -200,7 +200,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
                       <td
                         className={`py-2 pe-3 font-mono font-semibold ${
                           leadCount > 0
-                            ? 'text-amber-600 dark:text-amber-400'
+                            ? 'text-amber-600'
                             : 'text-[var(--color-text-tertiary)]'
                         }`}
                       >
@@ -253,11 +253,11 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
               </p>
             </div>
             <div className="rounded-xl border border-teal-600/30 bg-teal-600/5 p-4">
-              <div className="flex items-center gap-2 text-teal-700 dark:text-teal-300 text-xs mb-2">
+              <div className="flex items-center gap-2 text-teal-700 text-xs mb-2">
                 <CheckCircle className="h-4 w-4 shrink-0" />
                 {t('referralConverted')}
               </div>
-              <p className="text-xl font-bold font-mono text-teal-700 dark:text-teal-300">
+              <p className="text-xl font-bold font-mono text-teal-700">
                 {formatNumber(n(referral.converted), locale)}
               </p>
             </div>
@@ -273,10 +273,10 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
               <div
                 className={`flex items-center gap-2 text-xs mb-2 ${
                   n(referral.conversionRate) >= 50
-                    ? 'text-emerald-600 dark:text-emerald-400'
+                    ? 'text-emerald-600'
                     : n(referral.conversionRate) >= 20
-                      ? 'text-amber-700 dark:text-amber-400'
-                      : 'text-red-600 dark:text-red-400'
+                      ? 'text-amber-700'
+                      : 'text-red-600'
                 }`}
               >
                 <TrendingUp className="h-4 w-4 shrink-0" />
@@ -285,10 +285,10 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
               <p
                 className={`text-xl font-bold font-mono ${
                   n(referral.conversionRate) >= 50
-                    ? 'text-emerald-600 dark:text-emerald-400'
+                    ? 'text-emerald-600'
                     : n(referral.conversionRate) >= 20
-                      ? 'text-amber-700 dark:text-amber-400'
-                      : 'text-red-600 dark:text-red-400'
+                      ? 'text-amber-700'
+                      : 'text-red-600'
                 }`}
               >
                 {formatPercent(n(referral.conversionRate), locale)}
@@ -304,7 +304,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
               <div
                 className={`flex items-center gap-2 text-xs mb-2 ${
                   n(referral.commissionsOwed) > 0
-                    ? 'text-amber-700 dark:text-amber-400'
+                    ? 'text-amber-700'
                     : 'text-[var(--color-text-secondary)]'
                 }`}
               >
@@ -314,7 +314,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
               <p
                 className={`text-xl font-bold font-mono ${
                   n(referral.commissionsOwed) > 0
-                    ? 'text-amber-700 dark:text-amber-400'
+                    ? 'text-amber-700'
                     : 'text-[var(--color-text-primary)]'
                 }`}
               >
@@ -331,7 +331,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
               <div
                 className={`flex items-center gap-2 text-xs mb-2 ${
                   n(referral.commissionsPaid) > 0
-                    ? 'text-emerald-600 dark:text-emerald-400'
+                    ? 'text-emerald-600'
                     : 'text-[var(--color-text-secondary)]'
                 }`}
               >
@@ -341,7 +341,7 @@ export default function FounderGrowthPanel(props: GrowthPanelResponse) {
               <p
                 className={`text-xl font-bold font-mono ${
                   n(referral.commissionsPaid) > 0
-                    ? 'text-emerald-600 dark:text-emerald-400'
+                    ? 'text-emerald-600'
                     : 'text-[var(--color-text-primary)]'
                 }`}
               >

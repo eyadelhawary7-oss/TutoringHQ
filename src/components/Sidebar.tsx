@@ -51,7 +51,7 @@ function navLinkClass(isActive: boolean) {
   return cn(
     'flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-sm font-medium transition-colors duration-150 border-solid border-s-4',
     isActive
-      ? 'border-[var(--color-teal)] bg-teal-50 text-teal-800 dark:border-teal-400 dark:bg-teal-600/15 dark:text-[var(--color-text-primary)]'
+      ? 'border-[var(--color-teal)] bg-teal-50 text-teal-800'
       : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]',
   );
 }

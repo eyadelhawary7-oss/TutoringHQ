@@ -1518,7 +1518,7 @@ export default function StudentsPage() {
                                 </td>
                                 <td className="px-4 py-4 align-top">
                                   {balNum > 0 ? (
-                                    <span className="text-sm font-medium text-red-600 dark:text-red-400 tabular-nums">
+                                    <span className="text-sm font-medium text-red-600 tabular-nums">
                                       {formatCurrency(balNum, locale)}
                                     </span>
                                   ) : (
@@ -1764,8 +1764,8 @@ export default function StudentsPage() {
                         {balNum > 0 ? (
                           <div className="space-y-1.5">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-xs text-red-600 dark:text-red-400 font-medium">{ts('balance_due')}:</span>
-                              <span className="text-xs font-semibold text-red-600 dark:text-red-400 tabular-nums">
+                              <span className="text-xs text-red-600 font-medium">{ts('balance_due')}:</span>
+                              <span className="text-xs font-semibold text-red-600 tabular-nums">
                                 {formatCurrency(balNum, locale)}
                               </span>
                             </div>
@@ -2377,7 +2377,7 @@ export default function StudentsPage() {
             <ul className="space-y-3 text-sm text-[var(--color-text-primary)]">
               {(['all', 'active', 'at_risk', 'inactive', 'enrolled', 'churned'] as const).map((k) => (
                 <li key={k}>
-                  <span className="font-semibold text-teal-600 dark:text-teal-400">
+                  <span className="font-semibold text-teal-600">
                     {ts(lifecycleFilterLabelKey(k))}
                   </span>
                   <span className="text-[var(--color-text-secondary)]">, {ts(lifecycleStatusHelpKey(k))}</span>

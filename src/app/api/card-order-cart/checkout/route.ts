@@ -19,6 +19,8 @@ import { cardOrderProductInclusiveFromQty } from '@/lib/pricing/taxMath';
 import { getShippingFee, getShippingZone } from '@/lib/bostaShipping';
 import { loadBostaShippingRates } from '@/lib/loadBostaShippingRates';
 import { issueCardOrderIframePayment } from '@/lib/paymob/issueCardOrderIframe';
+import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import { resolveProcessingFeeAmount } from '@/lib/processingFee';
 
 export const dynamic = 'force-dynamic';
 
@@ -104,7 +106,10 @@ export async function POST(request: NextRequest) {
   const shippingZone = getShippingZone(gov, rates);
 
   const productInclusive = cardOrderProductInclusiveFromQty(qty);
-  const payTotal = Math.round((productInclusive + deliveryFee) * 100) / 100;
+  // One flat 20 EGP processing fee per invoice (not per card) — spread across the
+  // whole order, so per-card cost falls as quantity rises.
+  const processingFee = resolveProcessingFeeAmount(await getProcessingFeeConfig());
+  const payTotal = Math.round((productInclusive + processingFee + deliveryFee) * 100) / 100;
   const perCardInclusive = cardOrderProductInclusiveFromQty(1);
 
   const studentLines = items.filter((i) => i.kind === 'student' && i.student_id);

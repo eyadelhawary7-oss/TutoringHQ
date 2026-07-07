@@ -62,6 +62,7 @@ export default function SettingsReferralsPage() {
   const [totalEarned, setTotalEarned] = useState(0);
   const [availableBalance, setAvailableBalance] = useState(0);
   const [referralInstapay, setReferralInstapay] = useState('');
+  const [processingFee, setProcessingFee] = useState(20);
   const [payoutRequests, setPayoutRequests] = useState<PayoutRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -97,6 +98,7 @@ export default function SettingsReferralsPage() {
         setTotalEarned(json.totalEarned ?? 0);
         setAvailableBalance(json.available ?? 0);
         setReferralInstapay(typeof json.instapayNumber === 'string' ? json.instapayNumber : '');
+        if (typeof json.processingFee === 'number') setProcessingFee(json.processingFee);
         const pr = json.payoutRequests;
         if (Array.isArray(pr)) {
           setPayoutRequests(pr as PayoutRequestRow[]);
@@ -293,6 +295,7 @@ export default function SettingsReferralsPage() {
           <ReferralWithdrawalPanel
             available={availableBalance}
             instapayNumber={referralInstapay}
+            processingFee={processingFee}
             onSuccess={() => void loadReferralSummary()}
           />
 
@@ -344,7 +347,7 @@ export default function SettingsReferralsPage() {
                               <button
                                 type="button"
                                 onClick={() => void openPayoutPdf(p.id)}
-                                className="inline-flex items-center gap-1 rounded-lg border border-teal-600/60 px-2 py-1 text-xs font-semibold text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-950/30"
+                                className="inline-flex items-center gap-1 rounded-lg border border-teal-600/60 px-2 py-1 text-xs font-semibold text-teal-600 hover:bg-teal-50"
                               >
                                 <Download className="w-3.5 h-3.5" />
                                 {tc('download')}

@@ -54,6 +54,7 @@ export default function ReferralsPage() {
   const [data, setData] = useState<{
     referralCode: string;
     instapayNumber: string;
+    processingFee: number;
     totalEarned: number;
     available: number;
     pending: number;
@@ -81,6 +82,7 @@ export default function ReferralsPage() {
         setData({
           referralCode: json.referralCode ?? '',
           instapayNumber: typeof json.instapayNumber === 'string' ? json.instapayNumber : '',
+          processingFee: typeof json.processingFee === 'number' ? json.processingFee : 20,
           totalEarned: json.totalEarned ?? 0,
           available: json.available ?? 0,
           pending: json.pending ?? 0,
@@ -167,35 +169,36 @@ export default function ReferralsPage() {
           />
         </div>
 
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] card-shadow p-6">
-          <h2 className="font-bold text-slate-900 dark:text-white mb-4">{t('commissionStructureTitle')}</h2>
-          <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-200">
+        <div className="rounded-2xl border border-slate-200 bg-[var(--color-surface-1)] card-shadow p-6">
+          <h2 className="font-bold text-slate-900 mb-4">{t('commissionStructureTitle')}</h2>
+          <ul className="space-y-2 text-sm text-slate-700">
             <li className="flex flex-wrap items-baseline justify-between gap-2 py-2 border-b border-[var(--color-border-subtle)] last:border-0">
-              <span className="font-medium text-slate-900 dark:text-white">{t('tier1Label')}</span>
+              <span className="font-medium text-slate-900">{t('tier1Label')}</span>
               <span className="text-[var(--color-text-secondary)]">{t('tier1Value')}</span>
             </li>
             <li className="flex flex-wrap items-baseline justify-between gap-2 py-2 border-b border-[var(--color-border-subtle)] last:border-0">
-              <span className="font-medium text-slate-900 dark:text-white">{t('tier2Label')}</span>
+              <span className="font-medium text-slate-900">{t('tier2Label')}</span>
               <span className="text-[var(--color-text-secondary)]">{t('tier2Value')}</span>
             </li>
             <li className="flex flex-wrap items-baseline justify-between gap-2 py-2 border-b border-[var(--color-border-subtle)] last:border-0">
-              <span className="font-medium text-slate-900 dark:text-white">{t('tier3Label')}</span>
+              <span className="font-medium text-slate-900">{t('tier3Label')}</span>
               <span className="text-[var(--color-text-secondary)]">{t('tier3Value')}</span>
             </li>
           </ul>
-          <p className="text-xs text-amber-700 dark:text-amber-400 mt-4 leading-snug">{t('tierCondition')}</p>
+          <p className="text-xs text-amber-700 mt-4 leading-snug">{t('tierCondition')}</p>
         </div>
 
         <ReferralWithdrawalPanel
           available={data?.available ?? 0}
           instapayNumber={data?.instapayNumber ?? ''}
+          processingFee={data?.processingFee ?? 20}
           onSuccess={() => void fetchData()}
         />
 
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] card-shadow overflow-hidden">
-          <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-            <h2 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Users className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+        <div className="rounded-2xl border border-slate-200 bg-[var(--color-surface-1)] card-shadow overflow-hidden">
+          <div className="p-4 border-b border-slate-200">
+            <h2 className="font-bold text-slate-900 flex items-center gap-2">
+              <Users className="w-5 h-5 text-teal-600" />
               {t('activeReferrals')}
             </h2>
           </div>
@@ -204,11 +207,11 @@ export default function ReferralsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-[var(--color-surface-2)]">
-                    <th className="text-start py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('tableCenter')}</th>
-                    <th className="text-start py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('tableStatus')}</th>
-                    <th className="text-end py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('tableMonths')}</th>
-                    <th className="text-end py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('tableMonthlyReward')}</th>
-                    <th className="text-end py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('tableTotal')}</th>
+                    <th className="text-start py-3 px-4 font-semibold text-slate-600">{t('tableCenter')}</th>
+                    <th className="text-start py-3 px-4 font-semibold text-slate-600">{t('tableStatus')}</th>
+                    <th className="text-end py-3 px-4 font-semibold text-slate-600">{t('tableMonths')}</th>
+                    <th className="text-end py-3 px-4 font-semibold text-slate-600">{t('tableMonthlyReward')}</th>
+                    <th className="text-end py-3 px-4 font-semibold text-slate-600">{t('tableTotal')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -217,17 +220,17 @@ export default function ReferralsPage() {
                       key={r.id}
                       className="transition-colors duration-150 hover:bg-slate-700/40"
                     >
-                      <td className="py-3 px-4 text-slate-900 dark:text-white font-mono">{maskCenterName(r.center_name)}</td>
+                      <td className="py-3 px-4 text-slate-900 font-mono">{maskCenterName(r.center_name)}</td>
                       <td className="py-3 px-4">
                         <span
                           className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                             r.status === 'converted' || r.status === 'active'
-                              ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/45 dark:text-emerald-100 border border-emerald-200 dark:border-emerald-700'
+                              ? 'bg-emerald-100 text-emerald-900 border border-emerald-200'
                               : r.status === 'pending'
-                                ? 'bg-amber-100 text-amber-900 dark:bg-amber-900/45 dark:text-amber-100 border border-amber-200 dark:border-amber-800'
+                                ? 'bg-amber-100 text-amber-900 border border-amber-200'
                                 : r.status === 'disputed'
-                                  ? 'bg-red-100 text-red-900 dark:bg-red-950/50 dark:text-red-100 border border-red-200 dark:border-red-800'
-                                  : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-600'
+                                  ? 'bg-red-100 text-red-900 border border-red-200'
+                                  : 'bg-slate-100 text-slate-700 border border-slate-200'
                           }`}
                         >
                           {r.status === 'converted' || r.status === 'active'
@@ -239,11 +242,11 @@ export default function ReferralsPage() {
                                 : r.status}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-end text-slate-900 dark:text-white tabular-nums">{fmt(r.months)}</td>
-                      <td className="py-3 px-4 text-end font-mono text-slate-900 dark:text-white tabular-nums">
+                      <td className="py-3 px-4 text-end text-slate-900 tabular-nums">{fmt(r.months)}</td>
+                      <td className="py-3 px-4 text-end font-mono text-slate-900 tabular-nums">
                         {fmt(r.monthly_reward)} {tc('egp')}
                       </td>
-                      <td className="py-3 px-4 text-end font-mono text-teal-700 dark:text-teal-300 tabular-nums">
+                      <td className="py-3 px-4 text-end font-mono text-teal-700 tabular-nums">
                         {fmt(r.total)} {tc('egp')}
                       </td>
                     </tr>
@@ -252,14 +255,14 @@ export default function ReferralsPage() {
               </table>
             </div>
           ) : (
-            <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-sm">{t('noReferrals')}</div>
+            <div className="p-8 text-center text-slate-500 text-sm">{t('noReferrals')}</div>
           )}
         </div>
 
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] card-shadow overflow-hidden">
-          <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-            <h2 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+        <div className="rounded-2xl border border-slate-200 bg-[var(--color-surface-1)] card-shadow overflow-hidden">
+          <div className="p-4 border-b border-slate-200">
+            <h2 className="font-bold text-slate-900 flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-teal-600" />
               {t('rewardHistory')}
             </h2>
           </div>
@@ -268,10 +271,10 @@ export default function ReferralsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-[var(--color-surface-2)]">
-                    <th className="text-start py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('rewardMonthCol')}</th>
-                    <th className="text-start py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('rewardCenterCol')}</th>
-                    <th className="text-end py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('rewardAmountCol')}</th>
-                    <th className="text-start py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">{t('rewardStatusCol')}</th>
+                    <th className="text-start py-3 px-4 font-semibold text-slate-600">{t('rewardMonthCol')}</th>
+                    <th className="text-start py-3 px-4 font-semibold text-slate-600">{t('rewardCenterCol')}</th>
+                    <th className="text-end py-3 px-4 font-semibold text-slate-600">{t('rewardAmountCol')}</th>
+                    <th className="text-start py-3 px-4 font-semibold text-slate-600">{t('rewardStatusCol')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -282,31 +285,31 @@ export default function ReferralsPage() {
                       const holdDate = h.held_until ? new Date(h.held_until) : null;
                       const daysLeft = holdDate ? Math.max(0, Math.ceil((holdDate.getTime() - Date.now()) / 86400000)) : 0;
                       statusBadge = (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
                           {daysLeft > 0 ? t('rewardStatusHeld', { days: fmt(daysLeft) }) : t('rewardStatusHeldShort')}
                         </span>
                       );
                     } else if (h.status === 'available') {
                       statusBadge = (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
                           {t('rewardStatusAvailable')}
                         </span>
                       );
                     } else if (h.status === 'paid') {
                       statusBadge = (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-900 dark:bg-emerald-900/45 dark:text-emerald-100 border border-emerald-200 dark:border-emerald-700">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-900 border border-emerald-200">
                           {t('rewardStatusPaid')}
                         </span>
                       );
                     } else if (h.status === 'disputed') {
                       statusBadge = (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-900 dark:bg-red-950/50 dark:text-red-100 border border-red-200 dark:border-red-800">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-900 border border-red-200">
                           {t('statusDisputedShort')}
                         </span>
                       );
                     } else {
                       statusBadge = (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
                           {h.status}
                         </span>
                       );
@@ -316,9 +319,9 @@ export default function ReferralsPage() {
                         key={h.id}
                         className="transition-colors duration-150 hover:bg-slate-700/40"
                       >
-                        <td className="py-3 px-4 text-slate-900 dark:text-white">{monthLabel}</td>
-                        <td className="py-3 px-4 text-slate-900 dark:text-white font-mono">{maskCenterName(h.referred_center_name)}</td>
-                        <td className="py-3 px-4 text-end font-mono text-slate-900 dark:text-white tabular-nums">
+                        <td className="py-3 px-4 text-slate-900">{monthLabel}</td>
+                        <td className="py-3 px-4 text-slate-900 font-mono">{maskCenterName(h.referred_center_name)}</td>
+                        <td className="py-3 px-4 text-end font-mono text-slate-900 tabular-nums">
                           {fmt(h.reward_amount)} {tc('egp')}
                         </td>
                         <td className="py-3 px-4">{statusBadge}</td>
@@ -329,16 +332,16 @@ export default function ReferralsPage() {
               </table>
             </div>
           ) : (
-            <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-sm">{t('noCommissions')}</div>
+            <div className="p-8 text-center text-slate-500 text-sm">{t('noCommissions')}</div>
           )}
         </div>
 
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] card-shadow p-6 md:p-8">
-          <h2 className="font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-            <Gift className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+        <div className="rounded-2xl border border-slate-200 bg-[var(--color-surface-1)] card-shadow p-6 md:p-8">
+          <h2 className="font-bold text-slate-900 mb-2 flex items-center gap-2">
+            <Gift className="w-5 h-5 text-teal-600" />
             {t('yourCode')}
           </h2>
-          <p className="font-mono text-3xl md:text-4xl font-bold text-teal-600 dark:text-teal-400 tracking-wider mb-6 break-all">
+          <p className="font-mono text-3xl md:text-4xl font-bold text-teal-600 tracking-wider mb-6 break-all">
             {data?.referralCode || '-'}
           </p>
           <div className="flex flex-col sm:flex-row flex-wrap gap-2">
@@ -358,7 +361,7 @@ export default function ReferralsPage() {
                 setLinkCopied(true);
                 setTimeout(() => setLinkCopied(false), 2000);
               }}
-              className="btn-lift inline-flex items-center justify-center gap-2 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-semibold text-[var(--color-text-primary)] hover:bg-slate-700/50"
+              className="btn-lift inline-flex items-center justify-center gap-2 px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold text-[var(--color-text-primary)] hover:bg-slate-700/50"
             >
               <Link2 className="w-4 h-4" />
               {linkCopied ? t('copyDoneCheck') : t('shareLink')}
@@ -372,7 +375,7 @@ export default function ReferralsPage() {
                   setTimeout(() => setCodeCopied(false), 2000);
                 }
               }}
-              className="btn-lift inline-flex items-center justify-center gap-2 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-semibold text-[var(--color-text-primary)] hover:bg-slate-700/50"
+              className="btn-lift inline-flex items-center justify-center gap-2 px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold text-[var(--color-text-primary)] hover:bg-slate-700/50"
             >
               <Copy className="w-4 h-4" />
               {codeCopied ? t('copyDoneCheck') : t('copyCode')}
@@ -380,8 +383,8 @@ export default function ReferralsPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[var(--color-surface-1)] card-shadow p-6">
-          <h2 className="font-bold text-slate-900 dark:text-white mb-4">{t('howItWorks')}</h2>
+        <div className="rounded-2xl border border-slate-200 bg-[var(--color-surface-1)] card-shadow p-6">
+          <h2 className="font-bold text-slate-900 mb-4">{t('howItWorks')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {howSteps.map((step) => (
               <div
@@ -391,12 +394,12 @@ export default function ReferralsPage() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-600 text-white text-sm font-bold shrink-0">
                   {formatNumber(step.n, locale)}
                 </div>
-                <p className="font-semibold text-slate-900 dark:text-white">{step.title}</p>
-                <p className="text-sm text-slate-600 dark:text-slate-400 leading-snug">{step.desc}</p>
+                <p className="font-semibold text-slate-900">{step.title}</p>
+                <p className="text-sm text-slate-600 leading-snug">{step.desc}</p>
               </div>
             ))}
           </div>
-          <p className="text-amber-700 dark:text-amber-400 text-xs mt-4">{t('commissionCondition')}</p>
+          <p className="text-amber-700 text-xs mt-4">{t('commissionCondition')}</p>
         </div>
       </div>
     </div>

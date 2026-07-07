@@ -106,7 +106,7 @@ export function CheckoutSuccessClient({ orderId }: { orderId: string }) {
         </button>
         <Link
           href="/orders"
-          className="inline-flex justify-center px-5 py-3 rounded-xl border border-transparent font-semibold text-sm text-teal-700 dark:text-teal-300 underline-offset-2 hover:underline"
+          className="inline-flex justify-center px-5 py-3 rounded-xl border border-transparent font-semibold text-sm text-teal-700 underline-offset-2 hover:underline"
         >
           {t('orderMore')}
         </Link>

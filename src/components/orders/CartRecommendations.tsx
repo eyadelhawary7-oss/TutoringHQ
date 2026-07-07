@@ -189,7 +189,7 @@ export function CartRecommendations({
                 <button
                   type="button"
                   disabled={busy || isStudentInCart(s.id)}
-                  className="min-h-[44px] px-3 rounded-lg border border-teal-600 text-teal-700 dark:text-teal-300 text-xs font-semibold disabled:opacity-40"
+                  className="min-h-[44px] px-3 rounded-lg border border-teal-600 text-teal-700 text-xs font-semibold disabled:opacity-40"
                   onClick={async () => {
                     setBusy(true);
                     try {

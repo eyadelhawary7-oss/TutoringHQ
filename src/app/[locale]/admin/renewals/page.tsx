@@ -40,10 +40,10 @@ interface Summary {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  overdue: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-  suspended: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  cancelled: 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] dark:bg-gray-800 dark:text-[var(--color-text-tertiary)]',
+  active: 'bg-green-100 text-green-700',
+  overdue: 'bg-red-100 text-red-700',
+  suspended: 'bg-amber-100 text-amber-700',
+  cancelled: 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]',
 };
 
 function formatRenewalDate(dateStr: string | null, loc: string): string {
@@ -209,7 +209,7 @@ export default function AdminRenewalsPage() {
                   <AlertTriangle size={16} />
                   {t('overdueCentersCount')}
                 </div>
-                <div className="text-2xl font-bold text-red-600 dark:text-red-400">{formatNumber(summary.overdueCount, locale)}</div>
+                <div className="text-2xl font-bold text-red-600">{formatNumber(summary.overdueCount, locale)}</div>
               </div>
               <div className="rounded-xl border border-border bg-[var(--color-surface-1)] p-4">
                 <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
@@ -239,7 +239,7 @@ export default function AdminRenewalsPage() {
           </div>
 
           {error && (
-            <div className="mb-4 p-3 rounded-lg bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-sm">
+            <div className="mb-4 p-3 rounded-lg bg-red-100 text-red-700 text-sm">
               {error}
             </div>
           )}
@@ -271,9 +271,9 @@ export default function AdminRenewalsPage() {
                         <td className="p-3">{formatRenewalDate(row.renewalDate, locale)}</td>
                         <td className="p-3">
                           {row.daysUntil >= 0 ? (
-                            <span className="text-green-600 dark:text-green-400">{formatNumber(row.daysUntil, locale)} {t('daysRemaining')}</span>
+                            <span className="text-green-600">{formatNumber(row.daysUntil, locale)} {t('daysRemaining')}</span>
                           ) : (
-                            <span className="text-red-600 dark:text-red-400">{formatNumber(Math.abs(row.daysUntil), locale)} {t('daysOverdue')}</span>
+                            <span className="text-red-600">{formatNumber(Math.abs(row.daysUntil), locale)} {t('daysOverdue')}</span>
                           )}
                         </td>
                         <td className="p-3">{formatAmount(row.subscription_monthly_fee, locale)} {tCommon('egp')}</td>

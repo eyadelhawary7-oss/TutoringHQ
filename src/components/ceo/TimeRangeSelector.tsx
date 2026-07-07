@@ -50,7 +50,7 @@ export default function TimeRangeSelector() {
       className="flex flex-row items-center gap-3 py-2 mb-6 flex-wrap sm:flex-nowrap"
       data-chq-ceo-range-pills
     >
-      <CalendarDays className="text-teal-600 dark:text-teal-400 shrink-0 w-5 h-5" aria-hidden />
+      <CalendarDays className="text-teal-600 shrink-0 w-5 h-5" aria-hidden />
       <div className="flex flex-row flex-wrap sm:flex-nowrap gap-2 flex-1 min-w-0">
         {CEO_RANGE_PILLS.map((key) => {
           const pillKey = key as CeoPillKey;

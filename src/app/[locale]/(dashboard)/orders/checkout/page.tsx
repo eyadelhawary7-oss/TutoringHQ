@@ -178,7 +178,7 @@ export default function CheckoutDeliveryPage() {
           </select>
           {errors.delivery_governorate ? <p className="text-xs text-red-600 mt-1">{errors.delivery_governorate}</p> : null}
           {gov.trim() && shipFee != null ? (
-            <p className="text-sm text-teal-700 dark:text-teal-300 mt-2 font-medium">
+            <p className="text-sm text-teal-700 mt-2 font-medium">
               {t('shippingPreview', { amount: formatCurrency(shipFee, locale) })}
             </p>
           ) : null}

@@ -75,8 +75,8 @@ type Summary = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  active: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-  pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200',
+  active: 'bg-green-100 text-green-700',
+  pending: 'bg-amber-100 text-amber-700',
 };
 
 export default function AdminReferralsPage() {
@@ -313,7 +313,7 @@ export default function AdminReferralsPage() {
             >
               <DirectionalIcon icon={ArrowLeft} className="h-5 w-5 text-[var(--color-text-primary)]" />
             </button>
-            <Gift className="h-6 w-6 text-teal-600 dark:text-teal-400" aria-hidden />
+            <Gift className="h-6 w-6 text-teal-600" aria-hidden />
             <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('pageTitle')}</h1>
           </div>
 
@@ -494,7 +494,7 @@ export default function AdminReferralsPage() {
           {mainTab === 'commissions' && isSuperAdmin && (
             <>
               {summary ? (
-                <div className="mb-6 rounded-xl border border-teal-500/30 bg-teal-950/20 p-4 dark:bg-teal-950/30">
+                <div className="mb-6 rounded-xl border border-teal-500/30 bg-teal-950/20 p-4">
                   <p className="text-sm font-semibold text-[var(--color-text-primary)] mb-2">
                     {!summary.quarterAll && summary.quarter != null && summary.year != null
                       ? t('commissionSummaryTitle', {

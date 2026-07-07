@@ -83,10 +83,10 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
   }
 
   const scanColorClass = (color: string): string => {
-    if (color === 'green') return 'text-green-600 dark:text-green-400';
-    if (color === 'teal') return 'text-teal-600 dark:text-teal-400';
-    if (color === 'amber') return 'text-amber-600 dark:text-amber-400';
-    return 'text-red-600 dark:text-red-400';
+    if (color === 'green') return 'text-green-600';
+    if (color === 'teal') return 'text-teal-600';
+    if (color === 'amber') return 'text-amber-600';
+    return 'text-red-600';
   };
 
   const bandFillClass = (band: string | null): string => {
@@ -100,17 +100,17 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
 
   const bandBadgeClass = (band: string | null): string => {
     const c = bandColor(band);
-    if (c === 'green') return 'bg-green-500/15 text-green-700 dark:text-green-400';
-    if (c === 'teal') return 'bg-teal-600/15 text-teal-700 dark:text-teal-300';
-    if (c === 'amber') return 'bg-amber-500/15 text-amber-800 dark:text-amber-400';
-    if (c === 'red') return 'bg-red-500/15 text-red-700 dark:text-red-400';
+    if (c === 'green') return 'bg-green-500/15 text-green-700';
+    if (c === 'teal') return 'bg-teal-600/15 text-teal-700';
+    if (c === 'amber') return 'bg-amber-500/15 text-amber-800';
+    if (c === 'red') return 'bg-red-500/15 text-red-700';
     return 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]';
   };
 
   const subChipClass = (sub: string): string => {
-    if (sub === 'active') return 'bg-green-500/15 text-green-700 dark:text-green-400';
-    if (sub === 'suspended') return 'bg-red-500/15 text-red-700 dark:text-red-400';
-    if (sub === 'pending') return 'bg-amber-500/15 text-amber-800 dark:text-amber-400';
+    if (sub === 'active') return 'bg-green-500/15 text-green-700';
+    if (sub === 'suspended') return 'bg-red-500/15 text-red-700';
+    if (sub === 'pending') return 'bg-amber-500/15 text-amber-800';
     return 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]';
   };
 
@@ -128,10 +128,10 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
 
   const summaryToneClass = (tone: (typeof summaryChips)[number]['tone'], active: boolean) => {
     if (!active) return 'border-[var(--color-border-subtle)] text-[var(--color-text-tertiary)]';
-    if (tone === 'green') return 'border-green-500/40 bg-green-500/10 text-green-800 dark:text-green-300';
-    if (tone === 'teal') return 'border-teal-600/40 bg-teal-600/10 text-teal-700 dark:text-teal-300';
-    if (tone === 'amber') return 'border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-300';
-    if (tone === 'red') return 'border-red-500/40 bg-red-500/10 text-red-800 dark:text-red-300';
+    if (tone === 'green') return 'border-green-500/40 bg-green-500/10 text-green-800';
+    if (tone === 'teal') return 'border-teal-600/40 bg-teal-600/10 text-teal-700';
+    if (tone === 'amber') return 'border-amber-500/40 bg-amber-500/10 text-amber-900';
+    if (tone === 'red') return 'border-red-500/40 bg-red-500/10 text-red-800';
     return 'border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]';
   };
 
@@ -212,7 +212,7 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
                           {districtDisplay}
                         </td>
                         <td className="py-2 pe-3">
-                          <span className="inline-block rounded-full bg-teal-600/15 text-teal-700 dark:text-teal-300 text-xs px-2.5 py-0.5 font-medium">
+                          <span className="inline-block rounded-full bg-teal-600/15 text-teal-700 text-xs px-2.5 py-0.5 font-medium">
                             {planDisplayName(center.plan)}
                           </span>
                         </td>
@@ -253,7 +253,7 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
                         <td className="py-2">
                           <Link
                             href={`/${locale}/admin`}
-                            className="inline-flex rounded-md border border-teal-600 text-teal-700 dark:text-teal-300 text-xs font-medium px-3 py-1.5 hover:bg-teal-600/10"
+                            className="inline-flex rounded-md border border-teal-600 text-teal-700 text-xs font-medium px-3 py-1.5 hover:bg-teal-600/10"
                           >
                             {t('viewCenter')}
                           </Link>
@@ -284,7 +284,7 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
                       {districtDisplay}
                     </div>
                     <div>
-                      <span className="inline-block rounded-full bg-teal-600/15 text-teal-700 dark:text-teal-300 text-xs px-2.5 py-0.5 font-medium">
+                      <span className="inline-block rounded-full bg-teal-600/15 text-teal-700 text-xs px-2.5 py-0.5 font-medium">
                         {planDisplayName(center.plan)}
                       </span>
                     </div>
@@ -320,7 +320,7 @@ export default function CenterHealthPanel(props: HealthPanelResponse) {
                     </span>
                     <Link
                       href={`/${locale}/admin`}
-                      className="inline-flex rounded-md border border-teal-600 text-teal-700 dark:text-teal-300 text-xs font-medium px-3 py-1.5 hover:bg-teal-600/10"
+                      className="inline-flex rounded-md border border-teal-600 text-teal-700 text-xs font-medium px-3 py-1.5 hover:bg-teal-600/10"
                     >
                       {t('viewCenter')}
                     </Link>

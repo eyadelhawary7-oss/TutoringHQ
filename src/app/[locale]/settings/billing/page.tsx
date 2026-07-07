@@ -304,28 +304,28 @@ function PlanCard({
       onClick={onClick}
       className={`w-full rounded-xl border-2 p-4 text-start transition-shadow ${
         isSelected ? 'border-teal-600 ring-2 ring-teal-600/30' : 'border-slate-200 hover:border-slate-300'
-      } dark:border-slate-600 btn-press chq-focus`}
+      } btn-press chq-focus`}
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <p className="font-semibold text-slate-900 dark:text-white" style={cairoFont}>
+          <p className="font-semibold text-slate-900" style={cairoFont}>
             {nameAr}
           </p>
-          {nameEn ? <p className="text-xs text-slate-500 dark:text-slate-400">{nameEn}</p> : null}
+          {nameEn ? <p className="text-xs text-slate-500">{nameEn}</p> : null}
         </div>
         {isCurrent ? (
-          <span className="rounded-full bg-teal-100 px-2 py-0.5 text-xs font-semibold text-teal-800 dark:bg-teal-900/40 dark:text-teal-200">
+          <span className="rounded-full bg-teal-100 px-2 py-0.5 text-xs font-semibold text-teal-800">
             {currentLabel}
           </span>
         ) : null}
       </div>
-      <p className="mt-2 text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+      <p className="mt-2 text-sm text-slate-600" style={cairoFont}>
         {studentsLine}
       </p>
-      <p className="mt-1 tabular-nums text-lg font-semibold text-slate-900 dark:text-white" style={numFont}>
+      <p className="mt-1 tabular-nums text-lg font-semibold text-slate-900" style={numFont}>
         {fmtCurrency(price)} / {period}
       </p>
-      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 tabular-nums" style={numFont}>
+      <p className="mt-1 text-xs text-slate-500 tabular-nums" style={numFont}>
         {fmtPerStudentAmount(perStudent)} {currencySuffix} / {perStudentLabel}
       </p>
     </button>
@@ -361,22 +361,22 @@ function PeriodCard({
       onClick={onClick}
       className={`w-full rounded-xl border-2 p-4 text-start transition-shadow ${
         isSelected ? 'border-teal-600 ring-2 ring-teal-600/30' : 'border-slate-200 hover:border-slate-300'
-      } dark:border-slate-600 btn-press chq-focus`}
+      } btn-press chq-focus`}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="font-semibold text-slate-900 dark:text-white" style={cairoFont}>
+        <span className="font-semibold text-slate-900" style={cairoFont}>
           {label}
         </span>
         {badge ? (
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
             {badge}
           </span>
         ) : null}
       </div>
       {isCurrent ? (
-        <p className="mt-1 text-xs font-medium text-teal-600 dark:text-teal-400">{currentLabel}</p>
+        <p className="mt-1 text-xs font-medium text-teal-600">{currentLabel}</p>
       ) : null}
-      <p className="mt-2 tabular-nums text-lg font-semibold text-slate-900 dark:text-white" style={numFont}>
+      <p className="mt-2 tabular-nums text-lg font-semibold text-slate-900" style={numFont}>
         {fmtCurrency(price)}
       </p>
     </button>
@@ -462,7 +462,7 @@ function PaygTab({
     <div className="mt-6 space-y-6">
       {pending ? (
         <div
-          className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100"
+          className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950"
           style={cairoFont}
         >
           <p>
@@ -475,7 +475,7 @@ function PaygTab({
           {ownerOk ? (
             <button
               type="button"
-              className="mt-2 text-sm font-semibold text-amber-800 underline dark:text-amber-200 btn-press chq-focus"
+              className="mt-2 text-sm font-semibold text-amber-800 underline btn-press chq-focus"
               onClick={() => void postSwitch({ action: 'cancel' })}
             >
               {t('payg.switch.cancel')}
@@ -485,11 +485,11 @@ function PaygTab({
       ) : null}
 
       <div
-        className="rounded-2xl bg-teal-50 p-5 dark:bg-teal-900/20"
+        className="rounded-2xl bg-teal-50 p-5"
         style={cairoFont}
       >
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t('payg.intro.title')}</h3>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{t('payg.intro.subtitle')}</p>
+        <h3 className="text-lg font-bold text-slate-900">{t('payg.intro.title')}</h3>
+        <p className="mt-1 text-sm text-slate-600">{t('payg.intro.subtitle')}</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <span className="rounded-full bg-slate-800/80 px-3 py-1 text-xs font-medium text-teal-100">
             ✓ {t('payg.pill.noCommitment')}
@@ -516,10 +516,10 @@ function PaygTab({
           onChange={(e) => setPaygStudentCount(Number(e.target.value))}
           className="w-full accent-teal-600"
         />
-        <p className="mt-2 text-2xl font-bold text-teal-700 dark:text-teal-300" style={numFont}>
+        <p className="mt-2 text-2xl font-bold text-teal-700" style={numFont}>
           {t('payg.slider.students', { count: String(paygStudentCount) })}
         </p>
-        <div className="relative mt-6 h-8 text-[10px] text-slate-500 dark:text-slate-400">
+        <div className="relative mt-6 h-8 text-[10px] text-slate-500">
           {PAYG_TIER_BREAKPOINTS.map((b) => (
             <span
               key={b.plan}
@@ -547,18 +547,18 @@ function PaygTab({
               key={b.plan}
               className={`rounded-xl border p-3 text-center transition-all duration-200 ${
                 active
-                  ? 'scale-105 border-2 border-teal-600 bg-teal-50 dark:bg-teal-900/30'
+                  ? 'scale-105 border-2 border-teal-600 bg-teal-50'
                   : 'border border-slate-600 bg-[var(--color-surface-2)]'
               }`}
               style={cairoFont}
             >
-              <p className={`text-xs font-semibold ${active ? 'text-teal-800 dark:text-teal-200' : 'text-slate-500'}`}>
+              <p className={`text-xs font-semibold ${active ? 'text-teal-800' : 'text-slate-500'}`}>
                 {tPlan(b.plan)}
               </p>
-              <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-[10px] text-slate-500">
                 {t(`payg.tierRange.${b.plan}` as 'billing.payg.tierRange.nano')}
               </p>
-              <p className="mt-1 text-xs tabular-nums text-slate-700 dark:text-slate-200" style={numFont}>
+              <p className="mt-1 text-xs tabular-nums text-slate-700" style={numFont}>
                 {fmtNum(b.weeklyDisplayRate)} {t('payg.tier.rateUnit')}
               </p>
             </div>
@@ -594,11 +594,11 @@ function PaygTab({
             </dd>
           </div>
         </dl>
-        <div className="my-3 border-t border-slate-200 dark:border-slate-600" />
+        <div className="my-3 border-t border-slate-200" />
         <p className="text-sm text-slate-500" style={cairoFont}>
           {t('payg.estimate.total')}
         </p>
-        <p className="text-3xl font-bold text-teal-600 tabular-nums dark:text-teal-400" style={numFont}>
+        <p className="text-3xl font-bold text-teal-600 tabular-nums" style={numFont}>
           {fmtNum(cappedAmount)} {t('egp')}
         </p>
         {isCapped ? (
@@ -606,7 +606,7 @@ function PaygTab({
             {t('payg.estimate.capped', { amount: fmtNum(capAmount) })}
           </p>
         ) : null}
-        <div className="mt-4 space-y-1 text-xs text-slate-600 dark:text-slate-300" style={cairoFont}>
+        <div className="mt-4 space-y-1 text-xs text-slate-600" style={cairoFont}>
           <p>
             {t('payg.estimate.vsMonthly')}:{' '}
             <span className="tabular-nums font-medium" style={numFont}>
@@ -645,7 +645,7 @@ function PaygTab({
           ) : (
             <>
               <p
-                className="rounded-lg border border-teal-500/50 bg-teal-50 px-3 py-2 text-center text-sm font-semibold text-teal-900 dark:bg-teal-950/40 dark:text-teal-100"
+                className="rounded-lg border border-teal-500/50 bg-teal-50 px-3 py-2 text-center text-sm font-semibold text-teal-900"
                 style={cairoFont}
               >
                 {t('payg.switch.active')}
@@ -662,7 +662,7 @@ function PaygTab({
                 </select>
                 <button
                   type="button"
-                  className="w-full rounded-xl border-2 border-slate-400 px-4 py-3 text-sm font-semibold text-slate-800 dark:border-slate-500 dark:text-slate-100 sm:flex-1 btn-press chq-focus"
+                  className="w-full rounded-xl border-2 border-slate-400 px-4 py-3 text-sm font-semibold text-slate-800 sm:flex-1 btn-press chq-focus"
                   style={cairoFont}
                   onClick={() =>
                     void postSwitch({
@@ -1455,26 +1455,26 @@ export default function BillingPage() {
 
   const planRequestStatusBadge = (st: string) => {
     const v = st.toLowerCase();
-    if (v === 'approved') return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
-    if (v === 'rejected') return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
-    return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200';
+    if (v === 'approved') return 'bg-green-100 text-green-700';
+    if (v === 'rejected') return 'bg-red-100 text-red-700';
+    return 'bg-amber-100 text-amber-800';
   };
 
   const packHeaderBadge = () => {
     if (packReq === 'pending') {
       return {
-        cls: 'border-amber-400/60 bg-amber-500/15 text-amber-800 dark:text-amber-200',
+        cls: 'border-amber-400/60 bg-amber-500/15 text-amber-800',
         label: t('pack.badgeRequested'),
       };
     }
     if (packEnabled) {
       return {
-        cls: 'border-[#0D9488]/50 bg-[#0D9488]/15 text-[#0D9488] dark:text-teal-300',
+        cls: 'border-[#0D9488]/50 bg-[#0D9488]/15 text-[#0D9488]',
         label: t('pack.badgeActive'),
       };
     }
     return {
-      cls: 'border-slate-300 bg-slate-100 text-slate-600 dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-300',
+      cls: 'border-slate-300 bg-slate-100 text-slate-600',
       label: t('pack.badgeInactive'),
     };
   };
@@ -1601,7 +1601,7 @@ export default function BillingPage() {
     if (st === 'paid' || st === 'approved') {
       return (
         <span
-          className={`${base} bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400`}
+          className={`${base} bg-green-100 text-green-700`}
           style={cairoFont}
         >
           {t('status.paid')}
@@ -1610,14 +1610,14 @@ export default function BillingPage() {
     }
     if (st === 'pending') {
       return (
-        <span className={`${base} bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300`} style={cairoFont}>
+        <span className={`${base} bg-amber-100 text-amber-700`} style={cairoFont}>
           {t('status.pending')}
         </span>
       );
     }
     if (st === 'overdue') {
       return (
-        <span className={`${base} bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300`} style={cairoFont}>
+        <span className={`${base} bg-red-100 text-red-700`} style={cairoFont}>
           {t('status.overdue')}
         </span>
       );
@@ -1630,7 +1630,7 @@ export default function BillingPage() {
       );
     }
     return (
-      <span className={`${base} bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300`} style={cairoFont}>
+      <span className={`${base} bg-slate-100 text-slate-600`} style={cairoFont}>
         {st || tCommon('notSet')}
       </span>
     );
@@ -1703,8 +1703,8 @@ export default function BillingPage() {
     return (
       <div className="bg-[var(--color-surface-0)] min-h-screen w-full flex flex-col p-4 pb-10 md:p-8">
         <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
-          <div className="h-10 w-48 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800" />
-          <div className="h-56 animate-pulse rounded-2xl bg-gradient-to-br from-teal-200 to-slate-300 dark:from-teal-900/40 dark:to-slate-800" />
+          <div className="h-10 w-48 animate-pulse rounded-lg bg-slate-200" />
+          <div className="h-56 animate-pulse rounded-2xl bg-gradient-to-br from-teal-200 to-slate-300" />
           <div className="h-48 animate-pulse rounded-2xl bg-[var(--color-surface-1)]" />
           <div className="h-64 animate-pulse rounded-2xl bg-[var(--color-surface-1)]" />
           <div className="h-48 animate-pulse rounded-2xl bg-[var(--color-surface-1)]" />
@@ -1744,7 +1744,7 @@ export default function BillingPage() {
 
         {!ownerOk && (
           <div
-            className="rounded-xl border border-amber-500/40 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100"
+            className="rounded-xl border border-amber-500/40 bg-amber-50 px-4 py-3 text-sm text-amber-900"
             style={cairoFont}
           >
             {t('ownerOnly')}
@@ -1753,7 +1753,7 @@ export default function BillingPage() {
 
         {/* SECTION 1: CURRENT PLAN HERO */}
         <section
-          className="rounded-2xl bg-gradient-to-br from-teal-600 to-slate-800 p-5 text-white shadow-lg dark:from-teal-800 dark:to-slate-900 md:p-6"
+          className="rounded-2xl bg-gradient-to-br from-teal-600 to-slate-800 p-5 text-white shadow-lg md:p-6"
           aria-labelledby="billing-hero-heading"
         >
           <div className="flex flex-col gap-4 border-b border-white/15 pb-4">
@@ -1843,7 +1843,7 @@ export default function BillingPage() {
 
           {showSuspendBanner && (
             <div
-              className="mt-4 flex flex-col gap-3 rounded-xl border border-red-400/50 bg-red-950/40 px-4 py-3 text-sm text-red-50 dark:bg-red-950/60"
+              className="mt-4 flex flex-col gap-3 rounded-xl border border-red-400/50 bg-red-950/40 px-4 py-3 text-sm text-red-50"
               style={cairoFont}
             >
               <p className="flex items-start gap-2">
@@ -1880,12 +1880,12 @@ export default function BillingPage() {
         {/* SECTION 2: UPGRADE / DOWNGRADE */}
         {canPlanChange ? (
           <section
-            className="rounded-2xl border border-slate-700 bg-[var(--color-surface-1)] p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+            className="rounded-2xl border border-slate-700 bg-[var(--color-surface-1)] p-6 shadow-sm"
             aria-labelledby="billing-plan-change-heading"
           >
             <h2
               id="billing-plan-change-heading"
-              className="text-lg font-semibold text-slate-900 dark:text-white"
+              className="text-lg font-semibold text-slate-900"
               style={cairoFont}
             >
               {activeTab === 'upgrade'
@@ -1894,14 +1894,14 @@ export default function BillingPage() {
                   ? t('downgrade.title')
                   : t('payg.tabLabel')}
             </h2>
-            <div className="mt-4 flex flex-wrap gap-4 border-b border-slate-200 dark:border-slate-600">
+            <div className="mt-4 flex flex-wrap gap-4 border-b border-slate-200">
               <button
                 type="button"
                 onClick={() => setActiveTab('upgrade')}
                 className={`pb-2 ps-1 pe-1 text-sm ${
                   activeTab === 'upgrade'
                     ? 'border-b-2 border-teal-600 font-semibold text-teal-600'
-                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                    : 'text-slate-500 hover:text-slate-700'
                 } btn-press chq-focus`}
                 style={cairoFont}
               >
@@ -1913,7 +1913,7 @@ export default function BillingPage() {
                 className={`pb-2 ps-1 pe-1 text-sm ${
                   activeTab === 'downgrade'
                     ? 'border-b-2 border-teal-600 font-semibold text-teal-600'
-                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                    : 'text-slate-500 hover:text-slate-700'
                 } btn-press chq-focus`}
                 style={cairoFont}
               >
@@ -1925,7 +1925,7 @@ export default function BillingPage() {
                 className={`pb-2 ps-1 pe-1 text-sm ${
                   activeTab === 'payg'
                     ? 'border-b-2 border-teal-600 font-semibold text-teal-600'
-                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                    : 'text-slate-500 hover:text-slate-700'
                 } btn-press chq-focus`}
                 style={cairoFont}
               >
@@ -1956,13 +1956,13 @@ export default function BillingPage() {
             ) : null}
 
             {activeTab === 'upgrade' && billingIsPayg ? (
-              <p className="mt-6 text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+              <p className="mt-6 text-sm text-slate-600" style={cairoFont}>
                 {t('payg.switch.active')} - {t('payg.tabLabel')}
               </p>
             ) : null}
 
             {activeTab === 'downgrade' && billingIsPayg ? (
-              <p className="mt-6 text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+              <p className="mt-6 text-sm text-slate-600" style={cairoFont}>
                 {t('payg.switch.disable')} - {t('payg.tabLabel')}
               </p>
             ) : null}
@@ -1970,10 +1970,10 @@ export default function BillingPage() {
             {activeTab === 'upgrade' && !billingIsPayg ? (
               <div className="mt-6 space-y-6">
                 <div>
-                  <p className="text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+                  <p className="text-sm text-slate-600" style={cairoFont}>
                     {t('upgrade.usedOf', { used: formatNum(upgradeUsed), limit: formatNum(upgradeLimit) })}
                   </p>
-                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200">
                     <div
                       className="h-2 rounded-full bg-teal-600 transition-all"
                       style={{
@@ -1982,7 +1982,7 @@ export default function BillingPage() {
                     />
                   </div>
                   {upgradeLimitReached ? (
-                    <p className="mt-2 text-sm text-amber-700 dark:text-amber-300" style={cairoFont}>
+                    <p className="mt-2 text-sm text-amber-700" style={cairoFont}>
                       {t('upgrade.limitReached')}
                       {npdYmd
                         ? ` - ${formatDateLocale(`${npdYmd}T12:00:00`, locale)}`
@@ -2098,61 +2098,61 @@ export default function BillingPage() {
                     </h3>
                     <dl className="mt-3 space-y-2 text-sm">
                       <div className="flex flex-wrap justify-between gap-2">
-                        <dt className="text-slate-500 dark:text-slate-400" style={cairoFont}>
+                        <dt className="text-slate-500" style={cairoFont}>
                           {t('upgrade.newPlan')}
                         </dt>
-                        <dd className="text-end font-medium text-slate-900 dark:text-slate-100" style={cairoFont}>
+                        <dd className="text-end font-medium text-slate-900" style={cairoFont}>
                           {planLabelFromMessages(selectedPlan, tPlan)}
                         </dd>
                       </div>
                       <div className="flex flex-wrap justify-between gap-2">
-                        <dt className="text-slate-500 dark:text-slate-400" style={cairoFont}>
+                        <dt className="text-slate-500" style={cairoFont}>
                           {t('upgrade.newPeriod')}
                         </dt>
-                        <dd className="text-end text-slate-900 dark:text-slate-100" style={cairoFont}>
+                        <dd className="text-end text-slate-900" style={cairoFont}>
                           {t(`period.${selectedPeriod}.label` as 'billing.period.monthly.label')}
                         </dd>
                       </div>
                       <div className="flex flex-wrap justify-between gap-2">
-                        <dt className="text-slate-500 dark:text-slate-400" style={cairoFont}>
+                        <dt className="text-slate-500" style={cairoFont}>
                           {t('upgrade.daysRemaining')}
                         </dt>
-                        <dd className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
+                        <dd className="tabular-nums text-slate-900" style={numFont}>
                           {formatNum(costSummary.daysRemaining)}
                         </dd>
                       </div>
                       <div className="flex flex-wrap justify-between gap-2">
-                        <dt className="text-slate-500 dark:text-slate-400" style={cairoFont}>
+                        <dt className="text-slate-500" style={cairoFont}>
                           {t('upgrade.dailyDiff')}
                         </dt>
-                        <dd className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
+                        <dd className="tabular-nums text-slate-900" style={numFont}>
                           {formatNum(Math.round(costSummary.dailyRateDifference * 100) / 100)} {t('egp')}
                         </dd>
                       </div>
                     </dl>
-                    <div className="my-3 border-t border-slate-200 dark:border-slate-600" />
-                    <p className="text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+                    <div className="my-3 border-t border-slate-200" />
+                    <p className="text-sm text-slate-600" style={cairoFont}>
                       {t('upgrade.amountDue')}
                     </p>
-                    <p className="text-2xl font-bold text-teal-600 tabular-nums dark:text-teal-400" style={numFont}>
+                    <p className="text-2xl font-bold text-teal-600 tabular-nums" style={numFont}>
                       {formatNum(costSummary.amountDue)} {t('egp')}
                     </p>
-                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+                    <p className="mt-2 text-sm text-slate-600" style={cairoFont}>
                       {t('upgrade.nextRenewal')}
                     </p>
-                    <p className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
+                    <p className="tabular-nums text-slate-900" style={numFont}>
                       {npdYmd
                         ? formatDateLocale(`${npdYmd}T12:00:00`, locale)
                         : tCommon('notSet')}
                     </p>
-                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+                    <p className="mt-2 text-sm text-slate-600" style={cairoFont}>
                       {t('upgrade.newMonthlyRate')}
                     </p>
-                    <p className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
+                    <p className="tabular-nums text-slate-900" style={numFont}>
                       {formatCurrencyLocale(pricingForPlan(selectedPlan, pricingRows).allIn)}
                     </p>
                     {planError ? (
-                      <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">
+                      <p className="mt-2 text-sm text-red-600" role="alert">
                         {planError}
                       </p>
                     ) : null}
@@ -2176,7 +2176,7 @@ export default function BillingPage() {
             ) : activeTab === 'downgrade' && !billingIsPayg ? (
               <div className="mt-6 space-y-6">
                 <div
-                  className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
+                  className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
                   style={cairoFont}
                 >
                   {t('downgrade.notice')}
@@ -2283,51 +2283,51 @@ export default function BillingPage() {
                     </h3>
                     <dl className="mt-3 space-y-2 text-sm">
                       <div className="flex flex-wrap justify-between gap-2">
-                        <dt className="text-slate-500 dark:text-slate-400" style={cairoFont}>
+                        <dt className="text-slate-500" style={cairoFont}>
                           {t('downgrade.currentRate')}
                         </dt>
-                        <dd className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
+                        <dd className="tabular-nums text-slate-900" style={numFont}>
                           {formatNum(Math.round(downgradePreview.currentDaily * 100) / 100)} {t('egp')}
                         </dd>
                       </div>
                       <div className="flex flex-wrap justify-between gap-2">
-                        <dt className="text-slate-500 dark:text-slate-400" style={cairoFont}>
+                        <dt className="text-slate-500" style={cairoFont}>
                           {t('downgrade.newRate')}
                         </dt>
-                        <dd className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
+                        <dd className="tabular-nums text-slate-900" style={numFont}>
                           {formatNum(Math.round(downgradePreview.newDaily * 100) / 100)} {t('egp')}
                         </dd>
                       </div>
                       <div className="flex flex-wrap justify-between gap-2">
-                        <dt className="text-slate-500 dark:text-slate-400" style={cairoFont}>
+                        <dt className="text-slate-500" style={cairoFont}>
                           {t('upgrade.daysRemaining')}
                         </dt>
-                        <dd className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
+                        <dd className="tabular-nums text-slate-900" style={numFont}>
                           {formatNum(downgradePreview.remainingDays)}
                         </dd>
                       </div>
                     </dl>
-                    <div className="my-3 border-t border-slate-200 dark:border-slate-600" />
-                    <p className="text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+                    <div className="my-3 border-t border-slate-200" />
+                    <p className="text-sm text-slate-600" style={cairoFont}>
                       {t('downgrade.creditsEarned')}
                     </p>
-                    <p className="text-2xl font-bold text-teal-600 tabular-nums dark:text-teal-400" style={numFont}>
+                    <p className="text-2xl font-bold text-teal-600 tabular-nums" style={numFont}>
                       {formatNum(downgradePreview.earned)} {t('downgrade.creditPoints')}
                     </p>
-                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400" style={cairoFont}>
+                    <p className="mt-2 text-sm text-slate-500" style={cairoFont}>
                       {t('downgrade.currentBalance')}:{' '}
-                      <span className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
+                      <span className="tabular-nums text-slate-900" style={numFont}>
                         {formatNum(Number(center?.credit_balance ?? 0))}
                       </span>
                     </p>
-                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400" style={cairoFont}>
+                    <p className="mt-1 text-sm text-slate-500" style={cairoFont}>
                       {t('downgrade.newBalance')}:{' '}
-                      <span className="tabular-nums text-slate-900 dark:text-slate-100" style={numFont}>
+                      <span className="tabular-nums text-slate-900" style={numFont}>
                         {formatNum(Number(center?.credit_balance ?? 0) + downgradePreview.earned)}
                       </span>
                     </p>
                     {downgradeError ? (
-                      <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">
+                      <p className="mt-2 text-sm text-red-600" role="alert">
                         {downgradeError}
                       </p>
                     ) : null}
@@ -2353,20 +2353,20 @@ export default function BillingPage() {
               <>
             {/* SECTION 3: CREDITS BALANCE */}
             <section
-              className="rounded-2xl border border-slate-700 bg-[var(--color-surface-1)] p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+              className="rounded-2xl border border-slate-700 bg-[var(--color-surface-1)] p-6 shadow-sm"
               aria-labelledby="billing-credits-heading"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2
                   id="billing-credits-heading"
-                  className="text-lg font-semibold text-slate-900 dark:text-white"
+                  className="text-lg font-semibold text-slate-900"
                   style={cairoFont}
                 >
                   {t('credits.title')}
                 </h2>
                 {creditBal > 0 ? (
                   <span
-                    className="rounded-full px-3 py-1 text-sm font-semibold text-teal-800 dark:bg-teal-900/40 dark:text-teal-100"
+                    className="rounded-full px-3 py-1 text-sm font-semibold text-teal-800"
                     style={{ backgroundColor: 'rgba(13, 148, 136, 0.15)' }}
                   >
                     {formatNum(availableCredits)}
@@ -2376,25 +2376,25 @@ export default function BillingPage() {
 
               {creditBal > 0 ? (
                 <div className="mt-4 space-y-4">
-                  <p className="text-3xl font-bold tabular-nums text-slate-900 dark:text-white" style={numFont}>
+                  <p className="text-3xl font-bold tabular-nums text-slate-900" style={numFont}>
                     {t('credits.available', { amount: formatNum(availableCredits) })}
                   </p>
                   {creditReserved > 0 ? (
-                    <p className="text-sm text-slate-500 dark:text-slate-400" style={cairoFont}>
+                    <p className="text-sm text-slate-500" style={cairoFont}>
                       {t('credits.reserved', { amount: formatNum(creditReserved) })}
                     </p>
                   ) : null}
-                  <p className="text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+                  <p className="text-sm text-slate-600" style={cairoFont}>
                     {t('credits.equivalent', { amount: formatNum(availableCredits / 2) })}
                   </p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400" style={cairoFont}>
+                  <p className="text-sm text-slate-500" style={cairoFont}>
                     {t('credits.expiryNote')}
                   </p>
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <button
                       type="button"
                       onClick={() => toast.info(t('credits.applyInfo'))}
-                      className="w-full rounded-xl border-2 border-amber-500 px-4 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-50 dark:border-amber-600 dark:text-amber-200 dark:hover:bg-amber-950/30 sm:w-auto btn-press chq-focus"
+                      className="w-full rounded-xl border-2 border-amber-500 px-4 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-50 sm:w-auto btn-press chq-focus"
                       style={cairoFont}
                     >
                       {t('credits.applyToInvoice')}
@@ -2415,11 +2415,11 @@ export default function BillingPage() {
                   </div>
                 </div>
               ) : (
-                <div className="mt-6 flex flex-col items-center py-8 text-center text-slate-500 dark:text-slate-400">
+                <div className="mt-6 flex flex-col items-center py-8 text-center text-slate-500">
                   <span className="mb-3 text-4xl opacity-50" aria-hidden>
                     🪙
                   </span>
-                  <p className="font-medium text-slate-600 dark:text-slate-300" style={cairoFont}>
+                  <p className="font-medium text-slate-600" style={cairoFont}>
                     {t('credits.empty')}
                   </p>
                   <p className="mt-2 max-w-sm text-sm" style={cairoFont}>
@@ -2433,38 +2433,38 @@ export default function BillingPage() {
             <section
               ref={withdrawalSectionRef}
               id="billing-withdrawal"
-              className="rounded-2xl border border-slate-700 bg-[var(--color-surface-1)] p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+              className="rounded-2xl border border-slate-700 bg-[var(--color-surface-1)] p-6 shadow-sm"
               aria-labelledby="billing-withdrawal-heading"
             >
               {availableCredits < 2000 ? (
-                <p className="text-sm text-slate-500 dark:text-slate-400" style={cairoFont}>
+                <p className="text-sm text-slate-500" style={cairoFont}>
                   {t('withdrawal.insufficientNote', { amount: formatNum(availableCredits) })}
                 </p>
               ) : (
                 <>
                   <h2
                     id="billing-withdrawal-heading"
-                    className="text-lg font-semibold text-slate-900 dark:text-white"
+                    className="text-lg font-semibold text-slate-900"
                     style={cairoFont}
                   >
                     {t('withdrawal.title')}
                   </h2>
-                  <div className="mt-4 rounded-xl bg-teal-50 p-4 dark:bg-teal-900/20">
-                    <p className="font-semibold text-slate-900 dark:text-teal-50" style={cairoFont}>
+                  <div className="mt-4 rounded-xl bg-teal-50 p-4">
+                    <p className="font-semibold text-slate-900" style={cairoFont}>
                       {t('withdrawal.rate')}
                     </p>
-                    <p className="mt-1 text-sm text-slate-600 dark:text-teal-100/90" style={cairoFont}>
+                    <p className="mt-1 text-sm text-slate-600" style={cairoFont}>
                       {t('withdrawal.fee')}
                     </p>
                   </div>
 
                   {String(center?.instapay_number ?? '').trim() ? (
-                    <p className="mt-4 text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+                    <p className="mt-4 text-sm text-slate-600" style={cairoFont}>
                       {t('withdrawal.instapaySet', { number: maskInstapay(center?.instapay_number) })}
                     </p>
                   ) : (
                     <div
-                      className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
+                      className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
                       style={cairoFont}
                     >
                       <p>{t('withdrawal.noInstapay')}</p>
@@ -2481,7 +2481,7 @@ export default function BillingPage() {
                   <div className="mt-4">
                     {withdrawalWindowOpen ? (
                       <span
-                        className="inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-200"
+                        className="inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900"
                         style={cairoFont}
                       >
                         {t('withdrawal.windowOpen')}
@@ -2489,12 +2489,12 @@ export default function BillingPage() {
                     ) : (
                       <div className="space-y-1">
                         <span
-                          className="inline-block rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-800 dark:bg-slate-700 dark:text-slate-200"
+                          className="inline-block rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-800"
                           style={cairoFont}
                         >
                           {t('withdrawal.windowClosed', { date: nextWithdrawalWindowLabel })}
                         </span>
-                        <p className="text-xs text-slate-500 dark:text-slate-400" style={cairoFont}>
+                        <p className="text-xs text-slate-500" style={cairoFont}>
                           {t('withdrawal.quarterly')}
                         </p>
                       </div>
@@ -2503,7 +2503,7 @@ export default function BillingPage() {
 
                   {withdrawalSuccess ? (
                     <div
-                      className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100"
+                      className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
                       style={cairoFont}
                     >
                       <p className="font-semibold">{t('withdrawal.successTitle')}</p>
@@ -2526,14 +2526,14 @@ export default function BillingPage() {
                   ) : null}
 
                   {withdrawalError ? (
-                    <p className="mt-3 text-sm text-red-600 dark:text-red-400" role="alert">
+                    <p className="mt-3 text-sm text-red-600" role="alert">
                       {withdrawalError}
                     </p>
                   ) : null}
 
                   {String(center?.instapay_number ?? '').trim() && withdrawalWindowOpen ? (
                     <div className="mt-6 space-y-3">
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300" style={cairoFont}>
+                      <label className="block text-sm font-medium text-slate-700" style={cairoFont}>
                         {t('withdrawal.amountLabel')}
                       </label>
                       <input
@@ -2548,12 +2548,12 @@ export default function BillingPage() {
                         }}
                         className="w-full rounded-xl border border-slate-600 bg-[var(--color-surface-2)] px-4 py-2.5 text-slate-100 tabular-nums"
                       />
-                      <p className="text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+                      <p className="text-sm text-slate-600" style={cairoFont}>
                         {t('withdrawal.youReceive', {
                           amount: formatNum(Math.max(0, withdrawAmount) / 2),
                         })}
                       </p>
-                      <p className="text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+                      <p className="text-sm text-slate-600" style={cairoFont}>
                         {t('withdrawal.platformFee', {
                           amount: formatNum(Math.max(0, withdrawAmount) / 2),
                         })}
@@ -2675,7 +2675,7 @@ export default function BillingPage() {
                 </label>
               ) : null}
               {useCredits && Number(center?.credit_balance ?? 0) > 0 ? (
-                <div className="mt-2 rounded-lg bg-teal-50 px-3 py-2 text-sm dark:bg-teal-950/30">
+                <div className="mt-2 rounded-lg bg-teal-50 px-3 py-2 text-sm">
                   <p className="text-slate-700" style={cairoFont}>
                     {t('reactivation.creditApplied')}: −
                     {formatNum(Math.min(Number(center?.credit_balance ?? 0), reactivationCalc.total))}{' '}
@@ -2715,9 +2715,9 @@ export default function BillingPage() {
         ) : null}
 
         {/* SECTION 5: WA PACK */}
-        <section className="rounded-2xl border border-slate-700 bg-[var(--color-surface-1)] p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <section className="rounded-2xl border border-slate-700 bg-[var(--color-surface-1)] p-6 shadow-sm">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white" style={cairoFont}>
+            <h2 className="text-lg font-semibold text-slate-900" style={cairoFont}>
               {t('pack.title')}
             </h2>
             <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${badge.cls}`}>{badge.label}</span>
@@ -2726,61 +2726,61 @@ export default function BillingPage() {
           {packEnabled || packReq === 'approved' ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-1">
-                <span className="text-sm text-slate-500 dark:text-slate-400" style={cairoFont}>
+                <span className="text-sm text-slate-500" style={cairoFont}>
                   {t('pack.pricePerParent')}
                 </span>
-                <span className="tabular-nums font-semibold text-slate-900 dark:text-white" style={numFont}>
+                <span className="tabular-nums font-semibold text-slate-900" style={numFont}>
                   {formatNum(packPrice)} {t('egp')}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-sm text-slate-500 dark:text-slate-400" style={cairoFont}>
+                <span className="text-sm text-slate-500" style={cairoFont}>
                   {t('pack.suggestedResale')}
                 </span>
-                <span className="tabular-nums font-semibold text-slate-900 dark:text-white" style={numFont}>
+                <span className="tabular-nums font-semibold text-slate-900" style={numFont}>
                   {t('pack.suggestedResalePerMonth', { amount: formatNum(SUGGESTED_RESALE_EGP) })}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-sm text-slate-500 dark:text-slate-400" style={cairoFont}>
+                <span className="text-sm text-slate-500" style={cairoFont}>
                   {t('pack.yourProfit')}
                 </span>
-                <span className="tabular-nums font-semibold text-slate-900 dark:text-white" style={numFont}>
+                <span className="tabular-nums font-semibold text-slate-900" style={numFont}>
                   {formatNum(profitPerParent)} {t('egp')}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-sm text-slate-500 dark:text-slate-400" style={cairoFont}>
+                <span className="text-sm text-slate-500" style={cairoFont}>
                   {t('pack.subscribedParents')}
                 </span>
-                <span className="tabular-nums font-semibold text-slate-900 dark:text-white" style={numFont}>
+                <span className="tabular-nums font-semibold text-slate-900" style={numFont}>
                   {formatNum(packParents)}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-sm text-slate-500 dark:text-slate-400" style={cairoFont}>
+                <span className="text-sm text-slate-500" style={cairoFont}>
                   {t('pack.monthlyCost')}
                 </span>
-                <span className="tabular-nums font-semibold text-slate-900 dark:text-white" style={numFont}>
+                <span className="tabular-nums font-semibold text-slate-900" style={numFont}>
                   {formatNum(monthlyPackCost)} {t('egp')}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-sm text-slate-500 dark:text-slate-400" style={cairoFont}>
+                <span className="text-sm text-slate-500" style={cairoFont}>
                   {t('pack.announcementBalance')}
                 </span>
-                <span className="tabular-nums font-semibold text-slate-900 dark:text-white" style={numFont}>
+                <span className="tabular-nums font-semibold text-slate-900" style={numFont}>
                   {formatNum(announcementBal)} {t('egp')}
                 </span>
               </div>
             </div>
           ) : (
             <div className="rounded-xl border border-dashed border-slate-600 bg-[var(--color-surface-2)] p-5">
-              <p className="text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+              <p className="text-sm text-slate-600" style={cairoFont}>
                 {t('pack.enableDescription')}
               </p>
               {packReq === 'pending' ? (
-                <p className="mt-3 text-sm font-medium text-amber-700 dark:text-amber-300" style={cairoFont}>
+                <p className="mt-3 text-sm font-medium text-amber-700" style={cairoFont}>
                   {t('pack.pendingApproval')}
                 </p>
               ) : (
@@ -2799,16 +2799,16 @@ export default function BillingPage() {
         </section>
 
         {/* SECTION 6: INVOICE HISTORY */}
-        <section className="rounded-2xl border border-slate-700 bg-[var(--color-surface-1)] p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white" style={cairoFont}>
+        <section className="rounded-2xl border border-slate-700 bg-[var(--color-surface-1)] p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-900" style={cairoFont}>
             {t('history.title')}
           </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400" style={cairoFont}>
+          <p className="mt-1 text-sm text-slate-500" style={cairoFont}>
             {t('history.subtitle')}
           </p>
 
           {filteredInvoices.length === 0 ? (
-            <div className="mt-8 flex flex-col items-center justify-center py-10 text-center text-slate-500 dark:text-slate-400">
+            <div className="mt-8 flex flex-col items-center justify-center py-10 text-center text-slate-500">
               <span className="mb-2 text-3xl" aria-hidden>
                 📄
               </span>
@@ -2827,11 +2827,11 @@ export default function BillingPage() {
                   return (
                     <div
                       key={inv.id}
-                      className="rounded-xl border border-slate-200 p-4 dark:border-slate-600"
+                      className="rounded-xl border border-slate-200 p-4"
                     >
                       <div className="flex justify-between gap-2 text-sm">
                         <span className="text-slate-500">{t('history.date')}</span>
-                        <span className="tabular-nums text-slate-900 dark:text-white" style={numFont}>
+                        <span className="tabular-nums text-slate-900" style={numFont}>
                           {inv.created_at
                             ? formatDateLocale(inv.created_at, locale)
                             : tCommon('notSet')}
@@ -2839,7 +2839,7 @@ export default function BillingPage() {
                       </div>
                       <div className="mt-2 flex justify-between gap-2 text-sm">
                         <span className="text-slate-500">{t('history.reference')}</span>
-                        <span className="font-mono text-slate-900 dark:text-white">{ref}</span>
+                        <span className="font-mono text-slate-900">{ref}</span>
                       </div>
                       <div className="mt-2 flex justify-between gap-2 text-sm">
                         <span className="text-slate-500">{t('history.amount')}</span>
@@ -2861,7 +2861,7 @@ export default function BillingPage() {
               <div className="mt-4 hidden overflow-x-auto md:block">
                 <table className="w-full min-w-[640px] border-collapse text-start text-sm">
                   <thead>
-                    <tr className="border-b border-slate-200 text-slate-500 dark:border-slate-600 dark:text-slate-400">
+                    <tr className="border-b border-slate-200 text-slate-500">
                       <th className="py-2 pe-4 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]" style={cairoFont}>
                         {t('history.date')}
                       </th>
@@ -2891,14 +2891,14 @@ export default function BillingPage() {
                           : tCommon('notSet');
                       const ref = inv.invoice_number ?? inv.id.slice(0, 8);
                       return (
-                        <tr key={inv.id} className="border-b border-slate-100 dark:border-slate-700/80">
-                          <td className="py-3 pe-4 tabular-nums text-slate-900 dark:text-white" style={numFont}>
+                        <tr key={inv.id} className="border-b border-slate-100">
+                          <td className="py-3 pe-4 tabular-nums text-slate-900" style={numFont}>
                             {inv.created_at
                               ? formatDateLocale(inv.created_at, locale)
                               : tCommon('notSet')}
                           </td>
-                          <td className="py-3 pe-4 font-mono text-slate-800 dark:text-slate-200">{ref}</td>
-                          <td className="py-3 pe-4 tabular-nums text-slate-900 dark:text-white" style={numFont}>
+                          <td className="py-3 pe-4 font-mono text-slate-800">{ref}</td>
+                          <td className="py-3 pe-4 tabular-nums text-slate-900" style={numFont}>
                             <span className="inline-flex items-center">
                               {formatNum(Number(inv.total_amount ?? 0))} {t('egp')}
                               {invoiceProcessingFee(inv) > 0 ? (
@@ -2906,7 +2906,7 @@ export default function BillingPage() {
                               ) : null}
                             </span>
                           </td>
-                          <td className="py-3 pe-4 text-xs text-slate-500 dark:text-slate-400">{periodStr}</td>
+                          <td className="py-3 pe-4 text-xs text-slate-500">{periodStr}</td>
                           <td className="py-3 pe-4">{renderInvoiceStatusBadge(st)}</td>
                           <td className="py-3">{renderInvoiceActionCell(inv, st)}</td>
                         </tr>
@@ -2920,19 +2920,19 @@ export default function BillingPage() {
         </section>
 
         {/* SECTION 7: PLAN CHANGE HISTORY */}
-        <section className="rounded-2xl border border-slate-700 bg-[var(--color-surface-1)] p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white" style={cairoFont}>
+        <section className="rounded-2xl border border-slate-700 bg-[var(--color-surface-1)] p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-900" style={cairoFont}>
             {t('planHistory.title')}
           </h2>
           {planRequests.length === 0 ? (
-            <div className="mt-8 flex flex-col items-center py-10 text-center text-slate-500 dark:text-slate-400">
+            <div className="mt-8 flex flex-col items-center py-10 text-center text-slate-500">
               <p style={cairoFont}>{t('planHistory.empty')}</p>
             </div>
           ) : (
             <div className="mt-4 overflow-x-auto">
               <table className="w-full min-w-[480px] text-start text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 text-slate-500 dark:border-slate-600 dark:text-slate-400">
+                  <tr className="border-b border-slate-200 text-slate-500">
                     <th className="py-2 pe-4 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]" style={cairoFont}>
                       {t('planHistory.date')}
                     </th>
@@ -2949,16 +2949,16 @@ export default function BillingPage() {
                 </thead>
                 <tbody>
                   {planRequests.map((req) => (
-                    <tr key={req.id} className="border-b border-slate-100 dark:border-slate-700/80">
-                      <td className="py-3 pe-4 tabular-nums text-slate-700 dark:text-slate-300" style={numFont}>
+                    <tr key={req.id} className="border-b border-slate-100">
+                      <td className="py-3 pe-4 tabular-nums text-slate-700" style={numFont}>
                         {req.requested_at
                           ? formatDateLocale(req.requested_at, locale)
                           : tCommon('notSet')}
                       </td>
-                      <td className="py-3 pe-4 text-slate-900 dark:text-white">
+                      <td className="py-3 pe-4 text-slate-900">
                         {planLabelFromMessages(req.current_plan, tPlan)}
                       </td>
-                      <td className="py-3 pe-4 text-slate-900 dark:text-white">
+                      <td className="py-3 pe-4 text-slate-900">
                         {planLabelFromMessages(req.requested_plan, tPlan)}
                       </td>
                       <td className="py-3">
@@ -2982,17 +2982,17 @@ export default function BillingPage() {
 
         {ownerOk && centerStatusLower === 'pending_cancellation' ? (
           <section
-            className="rounded-2xl border border-amber-300 bg-amber-50 p-6 shadow-sm dark:border-amber-700 dark:bg-amber-950/30"
+            className="rounded-2xl border border-amber-300 bg-amber-50 p-6 shadow-sm"
             aria-labelledby="billing-pending-cancel-heading"
           >
             <h2
               id="billing-pending-cancel-heading"
-              className="text-lg font-semibold text-amber-900 dark:text-amber-100"
+              className="text-lg font-semibold text-amber-900"
               style={cairoFont}
             >
               {t('cancel.title')}
             </h2>
-            <p className="mt-2 text-sm text-amber-900/90 dark:text-amber-100/90" style={cairoFont}>
+            <p className="mt-2 text-sm text-amber-900/90" style={cairoFont}>
               {t('cancel.pendingBanner', { date: billingPeriodEndLabel })}
             </p>
           </section>
@@ -3005,12 +3005,12 @@ export default function BillingPage() {
           >
             <h2
               id="billing-danger-heading"
-              className="text-lg font-semibold text-red-600 dark:text-red-400"
+              className="text-lg font-semibold text-red-600"
               style={cairoFont}
             >
               {t('cancel.title')}
             </h2>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+            <p className="mt-1 text-sm text-slate-600" style={cairoFont}>
               {t('cancel.subtitle')}
             </p>
             <button
@@ -3019,7 +3019,7 @@ export default function BillingPage() {
                 setCancelSubmitError(null);
                 setShowCancelModal(true);
               }}
-              className="mt-3 text-sm text-red-500 underline hover:text-red-600 dark:text-red-400 btn-press chq-focus"
+              className="mt-3 text-sm text-red-500 underline hover:text-red-600 btn-press chq-focus"
               style={cairoFont}
             >
               {t('cancel.link')}
@@ -3040,15 +3040,15 @@ export default function BillingPage() {
           >
             <h2
               id="cancel-modal-title"
-              className="text-lg font-bold text-slate-900 dark:text-white"
+              className="text-lg font-bold text-slate-900"
               style={cairoFont}
             >
               {t('cancel.modalTitle')}
             </h2>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300" style={cairoFont}>
+            <p className="mt-2 text-sm text-slate-600" style={cairoFont}>
               {t('cancel.modalSubtitle')}
             </p>
-            <label className="mt-4 block text-sm font-medium text-slate-700 dark:text-slate-200" style={cairoFont}>
+            <label className="mt-4 block text-sm font-medium text-slate-700" style={cairoFont}>
               {t('cancel.reasonLabel')}
             </label>
             <select
@@ -3063,7 +3063,7 @@ export default function BillingPage() {
                 </option>
               ))}
             </select>
-            <label className="mt-4 block text-sm font-medium text-slate-700 dark:text-slate-200" style={cairoFont}>
+            <label className="mt-4 block text-sm font-medium text-slate-700" style={cairoFont}>
               {t('cancel.confirmLabel')}
             </label>
             {/* CANCEL confirm */}
@@ -3077,7 +3077,7 @@ export default function BillingPage() {
               autoComplete="off"
             />
             {cancelSubmitError ? (
-              <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">
+              <p className="mt-2 text-sm text-red-600" role="alert">
                 {cancelSubmitError}
               </p>
             ) : null}
@@ -3089,7 +3089,7 @@ export default function BillingPage() {
                   setCancelSubmitError(null);
                   setCancelConfirmText('');
                 }}
-                className="order-2 rounded-xl border-2 border-teal-600 px-4 py-2.5 text-sm font-semibold text-teal-700 hover:bg-teal-50 dark:border-teal-500 dark:text-teal-200 dark:hover:bg-teal-950/40 sm:order-1 btn-press chq-focus"
+                className="order-2 rounded-xl border-2 border-teal-600 px-4 py-2.5 text-sm font-semibold text-teal-700 hover:bg-teal-50 sm:order-1 btn-press chq-focus"
                 style={cairoFont}
               >
                 {t('cancel.keep')}

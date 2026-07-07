@@ -7,7 +7,6 @@ import { useTransition } from 'react';
 import { signOutToLogin } from '@/lib/auth/sign-out-client';
 import { supabase } from '@/lib/supabase';
 import { Globe } from 'lucide-react';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { ChangePinModal } from './ChangePinModal';
 import { TestLiveToggle } from '@/components/admin/TestLiveToggle';
 
@@ -112,7 +111,6 @@ export function AdminHeader() {
               <TestLiveToggle />
             </Suspense>
           ) : null}
-          <ThemeToggle />
           <button
             onClick={handleLocaleToggle}
             disabled={isPending}

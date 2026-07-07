@@ -6,8 +6,9 @@
   --font-sans: var(--font-plex), 'Cairo-Arabic', system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-plex), 'Cairo-Arabic', system-ui, -apple-system, sans-serif;
   --font-bodoni-stack: 'Bodoni Moda', Georgia, "Times New Roman", serif;
-  /* ADR 031: default app chrome is the warm cream system (founder mock).
-     Dark values live under html.dark; the light-white theme is removed. */
+  /* ADR 031: app chrome is the warm cream system (founder mock), and since the
+     dark-mode removal (2026-07-05) it is the single theme. The former dark token
+     overrides were removed (2026-07-06) — nothing toggles `.dark` on <html>. */
   --color-background: hsl(42 25% 90%);    /* paper  #ece8df */
   --color-foreground: hsl(144 8% 12%);    /* ink    #1b201d */
   --color-card: hsl(43 100% 99%);         /* panel  #fffdf8 */
@@ -183,7 +184,6 @@
   --shadow-hover: 0 4px 10px rgba(28, 33, 30, 0.08), 0 20px 50px rgba(28, 33, 30, 0.10);
   --shadow-row: 0 1px 2px rgba(28, 33, 30, 0.05);
   --shadow-teal: 0 4px 24px rgba(14, 107, 97, 0.15);
-  --shadow-card-dark: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.2);
   --radius-card: 18px;
   --radius-inner: 12px;
   --transition-fast: 150ms ease;
@@ -203,7 +203,7 @@
   --color-text-brand:     #0e6b61;
   --color-text-amber:     #8a5e16;
 
-  /* shadcn HSL tokens live in @layer base :root / .dark - do not duplicate here
+  /* shadcn HSL tokens live in @layer base :root - do not duplicate here
      (unlayered duplicates beat layered rules). */
 
   /* ── Semantic border colors (var() only) ─────────── */
@@ -241,94 +241,10 @@
   --space-stack-lg:      1rem;
 }
 
-/* ── Dark theme (user-selectable option; carries the previous dark system) ── */
-html.dark {
-  color-scheme: dark;
-
-  --shadow-card: var(--shadow-card-dark);
-  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.45), 0 8px 32px rgba(0, 0, 0, 0.28);
-  --shadow-row: 0 1px 2px rgba(0, 0, 0, 0.35);
-
-  /* Tailwind v4 @theme token overrides - dark chrome */
-  --color-background: hsl(222 47% 3%);
-  --color-foreground: hsl(210 40% 98%);
-  --color-card: hsl(217 33% 10%);
-  --color-card-foreground: hsl(210 40% 98%);
-  --color-popover: hsl(217 33% 10%);
-  --color-popover-foreground: hsl(210 40% 98%);
-  --color-primary: hsl(174 72% 42%);
-  --color-primary-light: hsl(174 72% 42%);
-  --color-primary-foreground: hsl(215 28% 10%);
-  --color-secondary: hsl(215 25% 15%);
-  --color-secondary-foreground: hsl(210 40% 95%);
-  --color-muted: hsl(215 25% 13%);
-  --color-muted-foreground: hsl(215 16% 70%);
-  --color-accent: hsl(174 72% 15%);
-  --color-accent-foreground: hsl(174 72% 60%);
-  --color-destructive: hsl(0 62% 45%);
-  --color-destructive-foreground: hsl(0 0% 100%);
-  --color-input: hsl(215 25% 18%);
-  --color-ring: hsl(174 72% 42%);
-  --color-sidebar: hsl(215 28% 17%);
-  --color-sidebar-foreground: hsl(210 40% 90%);
-  --color-sidebar-accent: hsl(215 25% 24%);
-  --color-sidebar-accent-foreground: hsl(210 40% 95%);
-  --color-sidebar-border: hsl(215 25% 24%);
-
-  --color-surface-0: #080f1a;
-  --color-surface-1: #0f172a;
-  --color-surface-2: #1e293b;
-  --color-surface-3: #334155;
-  --color-surface-4: #475569;
-
-  --color-text-primary: #f8fafc;
-  --color-text-secondary: #cbd5e1;
-  --color-text-tertiary: #64748b;
-  --color-text-muted: #64748b;
-  --color-text-disabled: #475569;
-  --color-text-inverse: #0f172a;
-  --color-text-brand: #0d9488;
-  --color-text-amber: #F59E0B;
-
-  --color-border: #1e293b;
-  --color-border-subtle:  rgba(148, 163, 184, 0.08);
-  --color-border-default: rgba(148, 163, 184, 0.14);
-  --color-border-strong:  rgba(148, 163, 184, 0.24);
-  --color-border-brand:   rgba(13, 148, 136, 0.40);
-
-  --overlay-light: rgba(248, 250, 252, 0.05);
-  --overlay-mid:   rgba(248, 250, 252, 0.10);
-  --overlay-heavy: rgba(8, 15, 26, 0.75);
-
-  --color-teal:       #0d9488;
-  --color-teal-deep:  #0f766e;
-  --color-teal-soft:  rgba(13, 148, 136, 0.15);
-  --color-brass:      #fbbf24;
-  --color-brass-soft: rgba(245, 158, 11, 0.12);
-
-  --color-success:       #10b981;
-  --color-success-muted: #064e3b;
-  --color-warning:       #F59E0B;
-  --color-warning-muted: #451a03;
-  --color-danger:        #ef4444;
-  --color-danger-muted:  #450a0a;
-  --color-info:          #3b82f6;
-  --color-info-muted:    #1e3a5f;
-  --color-neutral-muted: #1e293b;
-  --color-neutral-ink:   #cbd5e1;
-
-  --shadow-xs:  0 1px 2px 0 rgba(0,0,0,0.40);
-  --shadow-sm:  0 1px 3px 0 rgba(0,0,0,0.50), 0 1px 2px -1px rgba(0,0,0,0.40);
-  --shadow-md:  0 4px 6px -1px rgba(0,0,0,0.55), 0 2px 4px -2px rgba(0,0,0,0.45);
-  --shadow-lg:  0 10px 15px -3px rgba(0,0,0,0.60), 0 4px 6px -4px rgba(0,0,0,0.50);
-  --shadow-xl:  0 20px 25px -5px rgba(0,0,0,0.65), 0 8px 10px -6px rgba(0,0,0,0.55);
-  --shadow-2xl: 0 25px 50px -12px rgba(0,0,0,0.80);
-  --shadow-brand-sm: 0 0 0 1px rgba(13,148,136,0.30), 0 4px 12px -2px rgba(13,148,136,0.25);
-  --shadow-brand-md: 0 0 0 1px rgba(13,148,136,0.35), 0 8px 24px -4px rgba(13,148,136,0.35);
-  --shadow-brand-lg: 0 0 0 1px rgba(13,148,136,0.40), 0 16px 40px -6px rgba(13,148,136,0.45);
-  --shadow-gold-sm: 0 0 0 1px rgba(245,158,11,0.30), 0 4px 12px -2px rgba(245,158,11,0.20);
-  --shadow-focus: 0 0 0 2px rgba(13,148,136,0.50);
-}
+/* Dark token set removed 2026-07-06: the theme toggle was removed 2026-07-05 and
+   the three auth pages (/signup, /session-expired, /accept-invite) then finished
+   their cream redesign, so nothing adds `.dark` to <html> anymore. The former
+   `html.dark { … }` token overrides were inert and have been deleted. */
 
 .card-shadow {
   box-shadow: var(--shadow-card);
@@ -401,9 +317,6 @@ html.dark {
   background-color: rgba(0, 0, 0, 0.04);
   transform: translateY(-1px);
 }
-html.dark .btn-outline:hover:not(:disabled) {
-  background-color: rgba(255, 255, 255, 0.06);
-}
 
 .focus-ring:focus-visible {
   outline: none;
@@ -429,10 +342,6 @@ html.dark .btn-outline:hover:not(:disabled) {
 :root {
   --ceo-chart-grid: #ddd8cb;
   --ceo-chart-total-line: #0e6b61;
-}
-html.dark {
-  --ceo-chart-grid: #334155;
-  --ceo-chart-total-line: #99f6e4;
 }
 
 /* ── 13C: Toast container (RTL-safe inline-end) ── */
@@ -499,12 +408,20 @@ html.dark {
 }
 
 /* ── Global theme enforcement ───────────────────────────────
-   Forces ALL pages to respect cream/dark tokens regardless of
+   Forces ALL pages to respect the cream tokens regardless of
    hardcoded Tailwind classes on pages not yet redesigned.
 ──────────────────────────────────────────────────────────── */
 
-/* Cream default: browser scrollbars + system UI use light styling */
+/* Single light theme (dark mode removed, 2026-07-05): pin the root to the light
+   color-scheme so browser scrollbars, form fields and other native UI stay light
+   even on a device/OS set to dark. There is no prefers-color-scheme path and
+   nothing adds `.dark` to <html>, so the app renders light by construction. The
+   `html:not(.dark)` guards below are the live light theme; the `.dark` branch
+   they once paired with was removed (2026-07-06) and never matches. */
 :root {
+  color-scheme: light;
+}
+html {
   color-scheme: light;
 }
 
@@ -573,81 +490,16 @@ html:not(.dark) textarea {
   border-color: var(--color-border-default) !important;
 }
 
-/* Dark: hardcoded light backgrounds flip to dark surfaces */
-html.dark .bg-white,
-html.dark .bg-gray-50,
-html.dark .bg-gray-100,
-html.dark .bg-slate-50,
-html.dark .bg-slate-100,
-html.dark .bg-background,
-html.dark [class*="bg-white"] {
-  background-color: var(--color-surface-1) !important;
-}
-html.dark .text-gray-900,
-html.dark .text-slate-900,
-html.dark .text-gray-800,
-html.dark .text-slate-800,
-html.dark .text-black {
-  color: var(--color-text-primary) !important;
-}
-html.dark .text-gray-600,
-html.dark .text-slate-600,
-html.dark .text-gray-500,
-html.dark .text-slate-500 {
-  color: var(--color-text-secondary) !important;
-}
-html.dark .border-gray-200,
-html.dark .border-slate-200,
-html.dark .border-gray-100,
-html.dark .border-slate-100,
-html.dark .border-zinc-100,
-html.dark .border-zinc-200 {
-  border-color: var(--color-border-subtle) !important;
-}
-html.dark .bg-gray-200,
-html.dark .bg-zinc-50,
-html.dark .bg-zinc-100,
-html.dark .bg-neutral-50,
-html.dark .bg-neutral-100 {
-  background-color: var(--color-surface-1) !important;
-}
-html.dark input:not([type="radio"]):not([type="checkbox"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]),
-html.dark select,
-html.dark textarea {
-  background-color: var(--color-surface-2) !important;
-  color: var(--color-text-primary) !important;
-  border-color: var(--color-border-default) !important;
-}
-
 /* ── Marketing / auth dark locks ────────────────────────────
-   Signup and session-expired are deliberately dark-locked page
-   designs with hardcoded dark component styling. They keep their
-   dark tokens in BOTH themes until their own cream redesign pass
-   (ADR 031 follow-up). The teal/muted vars are pinned too so the
-   global utility enforcement resolves correctly inside them.
+   All auth pages finished their cream redesign pass (ADR 031
+   follow-up) and now resolve the cream surface tokens like the rest
+   of the app.
 
    NOTE: [data-chq-landing] (/center), [data-chq-login] (/login),
-   [data-chq-forgot-password] and [data-chq-pricing] all finished
-   their cream redesign pass and were removed from these locks so
-   their cream surface tokens resolve correctly. Do NOT re-add them.
+   [data-chq-forgot-password], [data-chq-pricing],
+   [data-chq-session-expired] (/session-expired) and [data-chq-signup]
+   (/signup) were all removed from these locks. Do NOT re-add them.
 ──────────────────────────────────────────────────────────── */
-[data-chq-signup],
-[data-chq-session-expired] {
-  --color-surface-0: #080f1a !important;
-  --color-surface-1: #0f172a !important;
-  --color-surface-2: #1e293b !important;
-  --color-surface-3: #334155 !important;
-  --color-text-primary: #f8fafc !important;
-  --color-text-secondary: #cbd5e1 !important;
-  --color-text-muted: #64748b !important;
-  --color-border: #1e293b !important;
-  --color-border-subtle: rgba(148, 163, 184, 0.08) !important;
-  --color-border-default: rgba(148, 163, 184, 0.14) !important;
-  --color-teal: #0d9488 !important;
-  --color-teal-deep: #14b8a6 !important;
-  background-color: #080f1a !important;
-  color: #f8fafc !important;
-}
 
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(6px); }
@@ -762,46 +614,6 @@ html.dark textarea {
     --gradient-navy: linear-gradient(180deg, hsl(215 28% 17%), hsl(215 28% 12%));
     --gradient-hero: linear-gradient(150deg, #0f766b, #083f39);
   }
-
-  .dark {
-    --background: 222 47% 3%;
-    --foreground: 210 40% 98%;
-    --card: 217 33% 10%;
-    --card-foreground: 210 40% 98%;
-    --popover: 217 33% 10%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 174 72% 42%;
-    --primary-foreground: 215 28% 10%;
-    --secondary: 215 25% 15%;
-    --secondary-foreground: 210 40% 95%;
-    --muted: 215 25% 13%;
-    --muted-foreground: 215 16% 64%;
-    --accent: 174 72% 15%;
-    --accent-foreground: 174 72% 60%;
-    --destructive: 0 62% 40%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 215 25% 18%;
-    --input: 215 25% 18%;
-    --ring: 174 72% 42%;
-
-    --sidebar-background: 215 28% 17%;
-    --sidebar-foreground: 210 40% 90%;
-    --sidebar-primary: 174 72% 40%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 25% 24%;
-    --sidebar-accent-foreground: 210 40% 95%;
-    --sidebar-border: 215 25% 24%;
-    --sidebar-ring: 174 72% 40%;
-
-    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.3);
-    --shadow-md: 0 4px 12px -1px hsl(0 0% 0% / 0.4);
-    --shadow-lg: 0 10px 24px -3px hsl(0 0% 0% / 0.5);
-    --shadow-card: 0 2px 8px 0 hsl(0 0% 0% / 0.2), 0 0 0 1px hsl(215 25% 18% / 0.8);
-
-    --gradient-primary: linear-gradient(135deg, hsl(174 72% 42%), hsl(174 72% 28%));
-    --gradient-navy: linear-gradient(180deg, hsl(215 28% 12%), hsl(215 28% 8%));
-    --gradient-hero: linear-gradient(135deg, hsl(215 28% 8%) 0%, hsl(215 28% 14%) 50%, hsl(174 40% 16%) 100%);
-  }
 }
 
 @layer base {
@@ -860,27 +672,15 @@ html.dark textarea {
     background-color: hsl(142 71% 35% / 0.12);
     color: hsl(142 71% 28%);
   }
-  .dark .badge-confirmed {
-    background-color: hsl(142 71% 45% / 0.1);
-    color: hsl(142 71% 55%);
-  }
   .badge-pending {
     @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
     background-color: hsl(38 95% 53% / 0.12);
     color: hsl(38 80% 35%);
   }
-  .dark .badge-pending {
-    background-color: hsl(38 95% 53% / 0.1);
-    color: hsl(38 80% 55%);
-  }
   .badge-late {
     @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
     background-color: hsl(263 70% 50% / 0.12);
     color: hsl(263 70% 40%);
-  }
-  .dark .badge-late {
-    background-color: hsl(263 70% 50% / 0.1);
-    color: hsl(263 70% 60%);
   }
 
   .pay-btn {
@@ -1278,10 +1078,6 @@ samp {
     animation: skeleton-wave 1.5s infinite;
     border-radius: 6px;
   }
-  html.dark .skeleton {
-    background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
-    background-size: 200% 100%;
-  }
 
   /* ── ADR 031 signature surfaces ───────────────────────── */
   /* Money hero: the teal gradient with a soft radial highlight (income
@@ -1372,8 +1168,8 @@ samp {
 
 /* ── Cream - white text readability fix ─────────────────────
    Hardcoded text-white on token surfaces maps to ink on cream.
-   Dark-locked pages pin --color-text-primary back to #f8fafc, so
-   these var-based remaps stay correct inside the locks.
+   The `:not(.dark)` guard is vestigial (no `.dark` scope exists
+   anymore) and kept only so specificity is unchanged.
 ──────────────────────────────────────────────────────────── */
 html:not(.dark) .text-white {
   color: var(--color-text-primary) !important;
@@ -1400,90 +1196,17 @@ html:not(.dark) .panel-live .text-white {
   color: #ffffff !important;
 }
 
-/* Signup (#080D14) - plan cards stay readable (text-white remap) */
-[data-chq-signup] .text-white,
-[data-chq-signup] .\!text-white {
-  color: #ffffff !important;
-}
-[data-chq-signup] .text-slate-400 {
-  color: #94a3b8 !important;
-}
-[data-chq-signup] .text-slate-500 {
-  color: #64748b !important;
-}
-
-[data-chq-signup] {
-  background-color: #080D14 !important;
-  min-height: 100vh;
-}
-
-[data-chq-signup] form,
-[data-chq-signup] [data-form-card] {
-  background-color: rgba(15, 23, 42, 0.8) !important;
-  border-color: rgba(71, 85, 105, 0.6) !important;
-}
-
-[data-chq-signup] input,
-[data-chq-signup] textarea {
-  background: transparent !important;
-  background-color: transparent !important;
-  -webkit-box-shadow: 0 0 0px 1000px #080d14 inset !important;
-  box-shadow: 0 0 0px 1000px #080d14 inset !important;
-  -webkit-text-fill-color: #f8fafc !important;
-  color: #f8fafc !important;
-  border-radius: 0 !important;
-}
-
-[data-chq-signup] select {
-  background: #080d14 !important;
-  background-color: #080d14 !important;
-  -webkit-box-shadow: none !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
-}
-
-[data-chq-signup] select option {
-  background: #0f172a !important;
-  color: #f8fafc !important;
-  -webkit-text-fill-color: #f8fafc !important;
-}
-
-[data-chq-signup] input::placeholder,
-[data-chq-signup] textarea::placeholder {
-  -webkit-text-fill-color: #475569 !important;
-  color: #475569 !important;
-  opacity: 1 !important;
-}
-
-[data-chq-signup] [data-chq-underline]:-webkit-autofill,
-[data-chq-signup] [data-chq-underline]:-webkit-autofill:hover,
-[data-chq-signup] [data-chq-underline]:-webkit-autofill:focus {
-  -webkit-text-fill-color: #f8fafc !important;
-  -webkit-box-shadow: 0 0 0px 1000px #080d14 inset !important;
-  background-color: #080d14 !important;
-  caret-color: #f8fafc;
-}
+/* [data-chq-signup] dark lock removed in the ADR 031 cream pass. The /signup
+   page now paints cream via the surface tokens, and its inputs handle autofill
+   masking inline (WebkitBoxShadow inset var(--color-surface-0)). Do NOT re-add. */
 
 /* [data-chq-login] dark lock removed in the ADR 031 cream pass. The /login
    page now paints cream via the surface tokens, and its inputs handle autofill
    masking inline (WebkitBoxShadow inset var(--color-surface-0)). Do NOT re-add. */
 
-/* Session expired - full-page dark surface (same as signup) in both themes */
-[data-chq-session-expired] {
-  background-color: #080f1a !important;
-  min-height: 100vh;
-  min-height: 100dvh;
-  width: 100%;
-}
-
-
-[data-chq-session-expired] .text-white,
-[data-chq-session-expired] .\!text-white {
-  color: #ffffff !important;
-}
-[data-chq-session-expired] .text-slate-400 {
-  color: #94a3b8 !important;
-}
+/* [data-chq-session-expired] dark lock removed in the ADR 031 cream pass.
+   The /session-expired page now paints cream via the surface tokens. Do NOT
+   re-add. */
 
 
 @keyframes breathe {
@@ -2086,23 +1809,9 @@ html:not(.dark) {
   color: #1b201d !important;
 }
 
-html.dark {
-  color: #f8fafc !important;
-}
-
 /* ─── Native date input (admin shell only) ─── */
-.dark [data-admin="true"] input[type="date"] {
-  color-scheme: dark;
-}
 html:not(.dark) [data-admin="true"] input[type="date"] {
   color-scheme: light;
-}
-.dark [data-admin="true"] input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(1) opacity(0.6);
-  cursor: pointer;
-}
-.dark [data-admin="true"] input[type="date"]::-webkit-calendar-picker-indicator:hover {
-  filter: invert(1) opacity(1);
 }
 /* ─── end date input ─── */
 
@@ -2118,16 +1827,6 @@ html:not(.dark) [data-admin="true"] input[type="date"] {
 .chq-localized-date-native::-webkit-datetime-edit-year-field {
   color: transparent;
   -webkit-text-fill-color: transparent;
-}
-
-.dark [data-admin="true"] .admin-textarea,
-.dark [data-admin="true"] textarea.admin-textarea,
-.dark [data-admin="true"] div .admin-textarea,
-.dark [data-admin="true"] .admin-textarea:not([disabled]) {
-  background-color: #334155 !important;
-  color: white !important;
-  border-color: #475569 !important;
-  color-scheme: dark !important;
 }
 
 html:not(.dark) [data-admin="true"] .admin-textarea,
@@ -2192,23 +1891,10 @@ html:not(.dark) [data-admin="true"] textarea.admin-textarea {
   animation: chq-fade-in 200ms ease forwards;
 }
 
-/* signup / session-expired: dark canvas so fast scroll never shows light body gaps.
-   NOTE: [data-chq-landing] (/center), [data-chq-login] and
-   [data-chq-forgot-password] are intentionally absent here - those cream pages
-   paint their own cream canvas via the surface tokens. Do NOT re-add them. */
-[data-chq-signup],
-[data-chq-session-expired] {
-  background-color: #080f1a;
-}
-html:has([data-chq-signup]),
-body:has([data-chq-signup]),
-html:has([data-chq-session-expired]),
-body:has([data-chq-session-expired]) {
-  background-color: #080f1a;
-  margin: 0;
-  padding: 0;
-  min-height: 100%;
-}
+/* All auth pages (/center, /login, /forgot-password, /session-expired, /signup)
+   finished their cream redesign pass and paint their own cream canvas via the
+   surface tokens. The old [data-chq-signup] dark-canvas anti-flash rule was
+   removed here. Do NOT re-add it. */
 
 @keyframes chq-shimmer {
   from { background-position: -200% 0; }
@@ -2219,10 +1905,6 @@ body:has([data-chq-session-expired]) {
   background-size: 200% 100%;
   animation: chq-shimmer 1.5s infinite;
   border-radius: 0.375rem;
-}
-html.dark .chq-skeleton {
-  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
-  background-size: 200% 100%;
 }
 
 .chq-focus:focus-visible {

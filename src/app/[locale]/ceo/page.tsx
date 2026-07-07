@@ -259,7 +259,7 @@ export default function CeoDashboardPage() {
       return { className: 'bg-green-400/10 text-green-400', label: t('health.excellent') };
     }
     if (score >= 60) {
-      return { className: 'bg-teal-500/10 text-teal-600 dark:text-teal-400', label: t('health.good') };
+      return { className: 'bg-teal-500/10 text-teal-600', label: t('health.good') };
     }
     if (score >= 40) {
       return { className: 'bg-amber-400/10 text-amber-400', label: t('health.average') };
@@ -940,7 +940,7 @@ export default function CeoDashboardPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 border-s-2 border-s-teal-500">
                   <p className="text-xs text-[var(--color-text-secondary)]">{t('cash.quarter')}</p>
-                  <p className="text-lg font-mono font-bold text-teal-600 dark:text-teal-400 mt-1">
+                  <p className="text-lg font-mono font-bold text-teal-600 mt-1">
                     EGP {formatNumber(data.cash.collected_this_quarter, locale)}
                   </p>
                 </div>

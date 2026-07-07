@@ -5,7 +5,7 @@ import { useRouter } from '@/i18n/routing';
 import { Link } from '@/i18n/routing';
 import { useLocale, useTranslations } from 'next-intl';
 import { formatCurrency, formatDateTime } from '@/lib/formatNumber';
-import { buildLegalInvoiceLines } from '@/lib/pricing/taxMath';
+import { buildLegalInvoiceLines, cardOrderProductInclusiveFromQty } from '@/lib/pricing/taxMath';
 import { formatShippingZoneForLocale } from '@/lib/bostaShipping';
 import { supabase } from '@/lib/supabase';
 import { CardOrderStatusTimeline } from '@/components/orders/CardOrderStatusTimeline';
@@ -69,17 +69,16 @@ export default function OrderDetailClient({
   const transitions = (order.transitions as { to_status?: string; created_at?: string }[]) ?? [];
   const items = (order.items as UnknownRecord[]) ?? [];
 
-  const productInclusive = useMemo(() => {
-    const total = Number(order.total_amount ?? 0);
-    const ship = Number(order.delivery_fee ?? 0);
-    return Math.max(0, Math.round((total - ship) * 100) / 100);
-  }, [order.total_amount, order.delivery_fee]);
-
   const shipFee = Number(order.delivery_fee ?? 0);
+  const grandTotal = Number(order.total_amount ?? 0);
+  const productInclusive = useMemo(
+    () => cardOrderProductInclusiveFromQty(Math.round(Number(order.quantity ?? 0))),
+    [order.quantity],
+  );
+  // Flat processing fee = total − product − shipping.
+  const processingFee = Math.max(0, Math.round((grandTotal - productInclusive - shipFee) * 100) / 100);
   const legalLines = useMemo(() => buildLegalInvoiceLines(productInclusive, localeShort), [productInclusive, localeShort]);
-  const taxLines = legalLines.slice(0, 4);
-  const productTotalLine = legalLines[4];
-  const grandTotal = Number(productTotalLine?.amount ?? productInclusive) + shipFee;
+  const taxLines = legalLines.filter((l) => !l.isTotal);
 
   const zoneLabel =
     order.shipping_zone != null && String(order.shipping_zone).trim()
@@ -207,7 +206,7 @@ export default function OrderDetailClient({
 
   const terminalBanner =
     status === 'cancelled' || status === 'refunded' ? (
-      <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/40 dark:border-red-900 px-4 py-3 text-sm text-red-900 dark:text-red-100 space-y-1">
+      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 space-y-1">
         <p className="font-semibold">
           {status === 'refunded' ? tt('banner.refunded.title') : tt('banner.cancelled.title')}
         </p>
@@ -223,7 +222,7 @@ export default function OrderDetailClient({
         ) : null}
       </div>
     ) : status === 'failed' ? (
-      <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-sm text-amber-950 dark:text-amber-100">
+      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
         {tt('banner.failed')}
       </div>
     ) : null;
@@ -325,6 +324,12 @@ export default function OrderDetailClient({
               <span className="tabular-nums font-medium">{formatCurrency(ln.amount, locale)}</span>
             </div>
           ))}
+          {processingFee > 0 ? (
+            <div className="flex justify-between gap-2">
+              <span className="text-[var(--color-text-secondary)]">{tc('processingFee')}</span>
+              <span className="tabular-nums font-medium">{formatCurrency(processingFee, locale)}</span>
+            </div>
+          ) : null}
           <div className="flex justify-between gap-2 pt-1 border-t border-[var(--color-border-subtle)]">
             <span className="text-[var(--color-text-secondary)]">{zoneLabel ?? tc('deliveryFee')}</span>
             <span className="tabular-nums font-medium">{formatCurrency(shipFee, locale)}</span>

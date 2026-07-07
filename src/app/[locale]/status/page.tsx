@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocale } from 'next-intl';
 import { formatDateTime, formatNumber, formatPercent } from '@/lib/formatNumber';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { CheckCircle, AlertTriangle, XCircle, RefreshCw, Loader2 } from 'lucide-react';
 
 const SERVICES = [
@@ -109,7 +108,6 @@ export default function StatusPage() {
           <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
             TutoringHQ - {pickLocale('حالة المنصة', 'Platform Status')}
           </h1>
-          <ThemeToggle />
         </header>
         <div className="flex flex-1 items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
@@ -149,7 +147,6 @@ export default function StatusPage() {
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
-          <ThemeToggle />
         </div>
       </header>
 
@@ -278,7 +275,7 @@ export default function StatusPage() {
                     </p>
                   </div>
                   <span
-                    className={`text-xs px-2 py-0.5 rounded ${inc.severity === 'critical' ? 'bg-destructive/15 text-destructive' : inc.severity === 'major' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'}`}
+                    className={`text-xs px-2 py-0.5 rounded ${inc.severity === 'critical' ? 'bg-destructive/15 text-destructive' : inc.severity === 'major' ? 'bg-amber-500/15 text-amber-700' : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'}`}
                   >
                     {inc.severity}
                   </span>

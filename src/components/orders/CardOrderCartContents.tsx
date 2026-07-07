@@ -161,7 +161,7 @@ export function CardOrderCartContents({
             >
               {t('empty.cta')}
             </button>
-            <Link href="/students" className="block text-xs text-teal-600 dark:text-teal-400 underline">
+            <Link href="/students" className="block text-xs text-teal-600 underline">
               {t('empty.studentsWithoutCards')}
             </Link>
             {!hasCart ? (
@@ -245,7 +245,7 @@ export function CardOrderCartContents({
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className="text-xs font-semibold text-red-600 dark:text-red-400 underline"
+              className="text-xs font-semibold text-red-600 underline"
               onClick={() => setAbandonOpen(true)}
             >
               {t('abandon')}

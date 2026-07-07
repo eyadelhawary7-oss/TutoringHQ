@@ -543,7 +543,7 @@ export default function GeneralSettingsPage() {
         <PageHeader title={t('title')} />
 
         {savedMessage && (
-          <div className="mb-4 p-3 bg-teal-50 dark:bg-teal-950/40 border border-teal-500/30 text-teal-800 dark:text-teal-200 rounded-xl text-sm text-center">
+          <div className="mb-4 p-3 bg-teal-50 border border-teal-500/30 text-teal-800 rounded-xl text-sm text-center">
             {savedMessage}
           </div>
         )}
@@ -555,8 +555,8 @@ export default function GeneralSettingsPage() {
           {/* Center Information */}
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
             <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-              <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
-                <Building2 className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
+              <div className="p-2 bg-teal-100 rounded-xl shrink-0">
+                <Building2 className="w-4 h-4 text-teal-600" aria-hidden />
               </div>
               <div className="min-w-0">
                 <h3 className="font-semibold text-[var(--color-text-primary)]">{t('centerInfo')}</h3>
@@ -566,7 +566,7 @@ export default function GeneralSettingsPage() {
             <div className="p-6">
               <div className="flex items-start gap-6 flex-wrap">
                 <div className="relative w-24 h-24 flex-shrink-0">
-                  <div className="w-24 h-24 rounded-full bg-teal-100 dark:bg-teal-900/30 border-2 border-[var(--color-border-subtle)] overflow-hidden flex items-center justify-center">
+                  <div className="w-24 h-24 rounded-full bg-teal-100 border-2 border-[var(--color-border-subtle)] overflow-hidden flex items-center justify-center">
                     {logoUrl && !logoLoadFailed ? (
                       <img
                         src={logoUrl}
@@ -575,7 +575,7 @@ export default function GeneralSettingsPage() {
                         onError={() => setLogoLoadFailed(true)}
                       />
                     ) : (
-                      <Building2 className="w-10 h-10 text-teal-600 dark:text-teal-400" aria-hidden />
+                      <Building2 className="w-10 h-10 text-teal-600" aria-hidden />
                     )}
                   </div>
                   <label className="absolute bottom-0 end-0 w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center shadow-md hover:bg-teal-700 cursor-pointer transition-colors">
@@ -679,8 +679,8 @@ export default function GeneralSettingsPage() {
           {/* Subjects */}
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
             <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-              <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
-                <BookOpen className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
+              <div className="p-2 bg-teal-100 rounded-xl shrink-0">
+                <BookOpen className="w-4 h-4 text-teal-600" aria-hidden />
               </div>
               <div className="min-w-0">
                 <h3 className="font-semibold text-[var(--color-text-primary)]">{t('subjects')}</h3>
@@ -764,8 +764,8 @@ export default function GeneralSettingsPage() {
               <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] pt-3 pb-0 px-1">{t('sectionPeople')}</h2>
               <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
                 <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-                  <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
-                    <Users className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
+                  <div className="p-2 bg-teal-100 rounded-xl shrink-0">
+                    <Users className="w-4 h-4 text-teal-600" aria-hidden />
                   </div>
                   <div className="min-w-0">
                     <h3 className="font-semibold text-[var(--color-text-primary)]">{t('teamMembers')}</h3>
@@ -791,8 +791,8 @@ export default function GeneralSettingsPage() {
           {/* Scanner Settings */}
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
             <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-              <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
-                <QrCode className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
+              <div className="p-2 bg-teal-100 rounded-xl shrink-0">
+                <QrCode className="w-4 h-4 text-teal-600" aria-hidden />
               </div>
               <div className="min-w-0">
                 <h3 className="font-semibold text-[var(--color-text-primary)]">{t('scannerTitle')}</h3>
@@ -831,8 +831,8 @@ export default function GeneralSettingsPage() {
           {/* Daily WhatsApp Summary */}
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
             <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-              <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
-                <MessageCircle className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
+              <div className="p-2 bg-teal-100 rounded-xl shrink-0">
+                <MessageCircle className="w-4 h-4 text-teal-600" aria-hidden />
               </div>
               <div className="min-w-0">
                 <h3 className="font-semibold text-[var(--color-text-primary)]">{t('dailySummary')}</h3>
@@ -857,8 +857,8 @@ export default function GeneralSettingsPage() {
           {/* Summer mode */}
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
             <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-              <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
-                <Calendar className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
+              <div className="p-2 bg-teal-100 rounded-xl shrink-0">
+                <Calendar className="w-4 h-4 text-teal-600" aria-hidden />
               </div>
               <div className="min-w-0">
                 <h3 className="font-semibold text-[var(--color-text-primary)]">{t('summerMode')}</h3>
@@ -885,10 +885,10 @@ export default function GeneralSettingsPage() {
 
           {/* Financial Settings (owner/super_admin) */}
           {currentUser?.role === 'owner' || currentUser?.role === 'super_admin' ? (
-            <div className="bg-[var(--color-surface-1)] dark:bg-slate-800 rounded-xl border border-[var(--color-border-subtle)] p-6 mb-4 card-shadow">
+            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] p-6 mb-4 card-shadow">
               <div className="flex items-center gap-4 mb-6">
-                <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
-                  <Wallet className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
+                <div className="p-2 bg-teal-100 rounded-xl shrink-0">
+                  <Wallet className="w-4 h-4 text-teal-600" aria-hidden />
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-semibold text-[var(--color-text-primary)]">{t('financialSettingsTitle')}</h3>
@@ -933,7 +933,7 @@ export default function GeneralSettingsPage() {
                   />
                 )}
                 {instapayError ? (
-                  <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+                  <p className="text-sm text-red-600" role="alert">
                     {instapayError}
                   </p>
                 ) : null}
@@ -970,8 +970,8 @@ export default function GeneralSettingsPage() {
           {/* Physical QR card ordering (opt-in, off by default) */}
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
             <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-              <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
-                <CreditCard className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
+              <div className="p-2 bg-teal-100 rounded-xl shrink-0">
+                <CreditCard className="w-4 h-4 text-teal-600" aria-hidden />
               </div>
               <div className="min-w-0">
                 <h3 className="font-semibold text-[var(--color-text-primary)]">{t('cardOrdersTitle')}</h3>
@@ -998,14 +998,14 @@ export default function GeneralSettingsPage() {
             href="/settings/billing"
             className="group flex items-center gap-4 w-full p-6 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow btn-lift mb-4 text-start transition-colors hover:border-teal-500/30"
           >
-            <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
-              <CreditCard className="w-5 h-5 text-teal-600 dark:text-teal-400" aria-hidden />
+            <div className="p-2 bg-teal-100 rounded-xl shrink-0">
+              <CreditCard className="w-5 h-5 text-teal-600" aria-hidden />
             </div>
             <div className="min-w-0 flex-1">
               <h3 className="font-semibold text-[var(--color-text-primary)]">{t('billingCardTitle')}</h3>
               <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('billingDesc')}</p>
             </div>
-            <DirectionalIcon icon={ChevronRight} className="w-6 h-6 text-teal-600 dark:text-teal-400 shrink-0" aria-hidden />
+            <DirectionalIcon icon={ChevronRight} className="w-6 h-6 text-teal-600 shrink-0" aria-hidden />
           </Link>
 
           {/* ── Account ── */}
@@ -1014,8 +1014,8 @@ export default function GeneralSettingsPage() {
           {/* WhatsApp Support */}
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
             <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-              <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
-                <MessageCircle className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
+              <div className="p-2 bg-teal-100 rounded-xl shrink-0">
+                <MessageCircle className="w-4 h-4 text-teal-600" aria-hidden />
               </div>
               <div className="min-w-0">
                 <h3 className="font-semibold text-[var(--color-text-primary)]">{tBilling('whatsappSupport')}</h3>
@@ -1046,8 +1046,8 @@ export default function GeneralSettingsPage() {
           {/* Account */}
           <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow mb-4">
             <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-              <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl shrink-0">
-                <Shield className="w-4 h-4 text-teal-600 dark:text-teal-400" aria-hidden />
+              <div className="p-2 bg-teal-100 rounded-xl shrink-0">
+                <Shield className="w-4 h-4 text-teal-600" aria-hidden />
               </div>
               <div className="min-w-0">
                 <h3 className="font-semibold text-[var(--color-text-primary)]">{t('account')}</h3>

@@ -3,7 +3,6 @@
 import { useEffect, useState, useTransition, type FormEvent } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Globe } from 'lucide-react';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useRouter, usePathname } from '@/i18n/routing';
 
 interface JoinInfo {
@@ -30,7 +29,6 @@ export default function JoinPage({ params }: PageProps) {
 
   const [centerCode, setCenterCode] = useState<string>('');
   const [groupId, setGroupId] = useState<string>('');
-  const [mounted, setMounted] = useState(false);
   const [info, setInfo] = useState<JoinInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -44,10 +42,6 @@ export default function JoinPage({ params }: PageProps) {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     params.then((p) => {
@@ -157,7 +151,6 @@ export default function JoinPage({ params }: PageProps) {
           <span className="text-[var(--color-teal)]">HQ</span>
         </span>
         <div className="flex items-center gap-1.5">
-          {mounted && <ThemeToggle />}
           <button
             type="button"
             onClick={handleLocaleToggle}
@@ -338,7 +331,7 @@ export default function JoinPage({ params }: PageProps) {
                 </label>
 
                 {error ? (
-                  <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-500 dark:text-red-300">
+                  <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-500">
                     {error}
                   </div>
                 ) : null}
