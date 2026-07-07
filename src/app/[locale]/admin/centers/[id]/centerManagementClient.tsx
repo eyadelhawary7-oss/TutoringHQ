@@ -272,7 +272,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
   const [s2Plan, setS2Plan] = useState('');
   const [s2PricingType, setS2PricingType] = useState('fixed');
   const [s2BillingType, setS2BillingType] = useState('fixed');
-  const [s2SubBillingPeriod, setS2SubBillingPeriod] = useState('quarterly');
+  const [s2SubBillingPeriod, setS2SubBillingPeriod] = useState('monthly');
   const [s2WeeklyStudentLimit, setS2WeeklyStudentLimit] = useState('');
   const [s2PaygRate, setS2PaygRate] = useState('');
   const [s2PlanWarning, setS2PlanWarning] = useState(false);
@@ -663,7 +663,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
     setS2Plan((c.plan as string) ?? '');
     setS2PricingType((c.pricing_type as string) ?? 'fixed');
     setS2BillingType((c.billing_type as string) ?? 'fixed');
-    setS2SubBillingPeriod((c.subscription_billing_period as string) ?? 'quarterly');
+    setS2SubBillingPeriod((c.subscription_billing_period as string) ?? 'monthly');
     setS2WeeklyStudentLimit(c.weekly_student_limit != null ? String(c.weekly_student_limit) : '');
     setS2PaygRate(c.payg_rate != null ? String(c.payg_rate) : '');
     setS3BillingAmount(c.billing_amount != null ? String(c.billing_amount) : '');
@@ -1976,8 +1976,6 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                     >
                       <option value="monthly">monthly</option>
-                      <option value="quarterly">quarterly</option>
-                      <option value="biannual">biannual</option>
                       <option value="yearly">yearly</option>
                     </select>
                   </div>

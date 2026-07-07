@@ -18,13 +18,18 @@ export const ORDERED_SUBSCRIPTION_PLAN_KEYS = SUBSCRIPTION_PLAN_DEFINITIONS.map(
 export type PlanKey = SubscriptionPlanKey | 'top_centers';
 export type BillingPeriod = 'monthly' | 'quarterly' | 'annual';
 
-/** DB/UI legacy → canonical billing period */
+/**
+ * DB/UI legacy → canonical billing period. Quarterly is retired: the centers
+ * CHECKs only allow monthly/annual, so empty/unknown input reads as monthly
+ * (the DB default). Explicit legacy quarterly-family values still normalize to
+ * 'quarterly' so historical rows (old invoices, audit data) price correctly.
+ */
 export function normalizeBillingPeriod(raw: string | null | undefined): BillingPeriod {
-  const p = String(raw || 'quarterly').toLowerCase();
+  const p = String(raw || 'monthly').toLowerCase();
   if (p === 'yearly' || p === 'annual') return 'annual';
   if (p === 'half_yearly' || p === 'biannual' || p === 'semi_annual') return 'quarterly';
   if (p === 'monthly' || p === 'quarterly') return p;
-  return 'quarterly';
+  return 'monthly';
 }
 
 export interface PlanConfig {

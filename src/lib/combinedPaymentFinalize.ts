@@ -176,7 +176,10 @@ export async function tryFinalizeCombinedPaymentSession(
         await markSessionFailed(supabase, row.id);
         return false;
       }
-      newBp = normalizeBillingPeriod(newPeriodRaw) as BillingPeriod;
+      // Quarterly is retired — a stale pre-fix session could still carry it in
+      // its metadata; coerce so the centers write below can't violate the CHECKs.
+      const sessionBp = normalizeBillingPeriod(newPeriodRaw) as BillingPeriod;
+      newBp = sessionBp === 'annual' ? 'annual' : 'monthly';
       pk = isPlanKey(newPlan) ? newPlan : null;
       if (!pk) {
         await markSessionFailed(supabase, row.id);
@@ -258,7 +261,9 @@ export async function tryFinalizeCombinedPaymentSession(
         const intervalSwitchToAnnual = meta.intervalSwitchToAnnual === true;
         const centerUpdate: Record<string, unknown> = {
           plan: newPlan,
-          subscription_billing_period: newBp,
+          // Each column keeps its own vocabulary: subscription_billing_period
+          // CHECK allows {monthly, yearly}; billing_period allows {monthly, annual}.
+          subscription_billing_period: newBp === 'annual' ? 'yearly' : 'monthly',
           billing_period: newBp,
           all_in_price: allIn,
           billing_amount: billingAmount,

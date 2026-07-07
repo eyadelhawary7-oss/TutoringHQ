@@ -435,7 +435,7 @@ function PaygTab({
   const pk = isPlanKey(tier.plan) ? tier.plan : 'starter';
   const pr = pricingForPlan(pk, pricingRows);
   const vsMonthly = pr.monthlyFee;
-  const vsQuarterlyMo = pr.allIn;
+  const vsAllInMo = pr.allIn;
 
   const postSwitch = async (body: Record<string, string>): Promise<boolean> => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -614,9 +614,9 @@ function PaygTab({
             </span>
           </p>
           <p>
-            {t('payg.estimate.vsQuarterly')}:{' '}
+            {t('payg.estimate.vsAllIn')}:{' '}
             <span className="tabular-nums font-medium" style={numFont}>
-              {fmtCurrency(vsQuarterlyMo)}
+              {fmtCurrency(vsAllInMo)}
             </span>
           </p>
         </div>
@@ -1128,10 +1128,16 @@ export default function BillingPage() {
     const allIn = periodRefPricing.allIn;
     return {
       monthly: getChargeFromQuarterlyAllIn(allIn, 'monthly', pk),
-      quarterly: getChargeFromQuarterlyAllIn(allIn, 'quarterly', pk),
       annual: getChargeFromQuarterlyAllIn(allIn, 'annual', pk),
     };
   }, [periodRefKey, periodRefPricing.allIn]);
+
+  /**
+   * The Monthly period card must show the SAME number as the current-plan
+   * hero when it represents the center's *current* period — never the
+   * recomputed catalog list price. Only used when bp === 'monthly' (isCurrent).
+   */
+  const currentMonthlyRealPrice = currentPlanMonthlyDisplayEgp;
 
   useEffect(() => {
     if (activeTab !== 'upgrade' || billingIsPayg || !selectedPeriod || !selectedPlan || !npdYmd) {
@@ -1995,31 +2001,16 @@ export default function BillingPage() {
                   <h3 className="mb-3 text-sm font-semibold text-[var(--color-text-primary)]" style={cairoFont}>
                     {t('upgrade.choosePeriod')}
                   </h3>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <PeriodCard
                       label={t('period.monthly.label')}
-                      price={periodPrices.monthly}
+                      price={bp === 'monthly' ? currentMonthlyRealPrice : periodPrices.monthly}
                       isSelected={selectedPeriod === 'monthly'}
                       isCurrent={bp === 'monthly'}
-                      badge={t('upgrade.monthlyPremiumHint')}
+                      badge={null}
                       currentLabel={t('upgrade.currentPeriod')}
                       onClick={() => {
                         setSelectedPeriod('monthly');
-                        setSelectedPlan('');
-                      }}
-                      cairoFont={cairoFont}
-                      numFont={numFont}
-                      fmtCurrency={formatCurrencyLocale}
-                    />
-                    <PeriodCard
-                      label={t('period.quarterly.label')}
-                      price={periodPrices.quarterly}
-                      isSelected={selectedPeriod === 'quarterly'}
-                      isCurrent={bp === 'quarterly'}
-                      badge={t('upgrade.quarterlyDefaultHint')}
-                      currentLabel={t('upgrade.currentPeriod')}
-                      onClick={() => {
-                        setSelectedPeriod('quarterly');
                         setSelectedPlan('');
                       }}
                       cairoFont={cairoFont}
@@ -2059,12 +2050,7 @@ export default function BillingPage() {
                           selectedPeriod as BillingPeriod,
                           pk,
                         );
-                        const periodLabel =
-                          selectedPeriod === 'monthly'
-                            ? t('perMonth')
-                            : selectedPeriod === 'annual'
-                              ? t('perYear')
-                              : t('perQuarter');
+                        const periodLabel = selectedPeriod === 'annual' ? t('perYear') : t('perMonth');
                         return (
                           <PlanCard
                             key={pk}
@@ -2189,14 +2175,14 @@ export default function BillingPage() {
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {downgradePlanOptions.map((pk) => {
                       const pr = pricingForPlan(pk, pricingRows);
-                      const price = getChargeFromQuarterlyAllIn(pr.allIn, 'quarterly', pk);
+                      const price = getChargeFromQuarterlyAllIn(pr.allIn, 'monthly', pk);
                       return (
                         <PlanCard
                           key={pk}
                           nameAr={tPlan(pk)}
                           nameEn={locale === 'en' ? PLANS[pk].arabicName : undefined}
                           price={price}
-                          period={t('perQuarter')}
+                          period={t('perMonth')}
                           studentLimit={pr.students}
                           studentsLine={t('studentsLimit', { limit: formatNum(pr.students) })}
                           isSelected={selectedPlan === pk}
@@ -2223,7 +2209,7 @@ export default function BillingPage() {
                     <h3 className="mb-3 text-sm font-semibold text-[var(--color-text-primary)]" style={cairoFont}>
                       {t('downgrade.choosePeriod')}
                     </h3>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <PeriodCard
                         label={t('period.monthly.label')}
                         price={getChargeFromQuarterlyAllIn(
@@ -2233,25 +2219,9 @@ export default function BillingPage() {
                         )}
                         isSelected={selectedPeriod === 'monthly'}
                         isCurrent={bp === 'monthly'}
-                        badge={t('upgrade.monthlyPremiumHint')}
+                        badge={null}
                         currentLabel={t('upgrade.currentPeriod')}
                         onClick={() => setSelectedPeriod('monthly')}
-                        cairoFont={cairoFont}
-                        numFont={numFont}
-                        fmtCurrency={formatCurrencyLocale}
-                      />
-                      <PeriodCard
-                        label={t('period.quarterly.label')}
-                        price={getChargeFromQuarterlyAllIn(
-                          pricingForPlan(selectedPlan, pricingRows).allIn,
-                          'quarterly',
-                          selectedPlan,
-                        )}
-                        isSelected={selectedPeriod === 'quarterly'}
-                        isCurrent={bp === 'quarterly'}
-                        badge={t('upgrade.quarterlyDefaultHint')}
-                        currentLabel={t('upgrade.currentPeriod')}
-                        onClick={() => setSelectedPeriod('quarterly')}
                         cairoFont={cairoFont}
                         numFont={numFont}
                         fmtCurrency={formatCurrencyLocale}

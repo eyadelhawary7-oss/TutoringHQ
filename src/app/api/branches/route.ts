@@ -105,15 +105,17 @@ export async function POST(request: NextRequest) {
         : pk === 'top_centers'
           ? 0
           : PLANS[pk].quarterlyAllIn;
-    const defaultQuarterlyInvoice =
-      parentAllInPerMonth > 0 ? Math.round(parentAllInPerMonth * 3) : 0;
+    // Quarterly is retired — the centers CHECK only allows monthly/annual, so
+    // a missing parent billing_period defaults to monthly (one month's charge),
+    // never the old ×3 quarterly invoice.
+    const defaultMonthlyInvoice = parentAllInPerMonth > 0 ? Math.round(parentAllInPerMonth) : 0;
     const insert: Record<string, unknown> = {
       name,
       organization_id: organizationId,
       plan: fc?.plan ?? 'starter',
       billing_type: fc?.billing_type ?? 'fixed',
-      billing_period: fc?.billing_period ?? 'quarterly',
-      billing_amount: fc?.billing_amount ?? defaultQuarterlyInvoice,
+      billing_period: fc?.billing_period ?? 'monthly',
+      billing_amount: fc?.billing_amount ?? defaultMonthlyInvoice,
       all_in_price: fc?.all_in_price ?? parentAllInPerMonth,
       status: 'active',
       owner_name: fc?.owner_name ?? '',

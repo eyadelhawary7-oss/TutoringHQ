@@ -3819,7 +3819,6 @@
     "paymentFailed": "دفع فشل",
     "paymentSuccess": "دفع نجاح",
     "perMonth": "لكل شهر",
-    "perQuarter": "لكل الربع",
     "perYear": "لكل سنة",
     "requestSubmitted": "طلب Submitted",
     "selectPlan": "اختيار باقة",
@@ -3848,7 +3847,6 @@
         "studentsUsageUnlimited": "{current} طالباً",
         "earlyAdopter": "تسعيرة المبكرين",
         "periodMonthly": "شهري",
-        "periodQuarterly": "ربع سنوي",
         "periodAnnual": "سنوي",
         "priceLine": "{amount} · {period}"
       },
@@ -3925,10 +3923,6 @@
       "monthly": {
         "label": "شهري",
         "premium": "زيادة 15٪"
-      },
-      "quarterly": {
-        "label": "ربع سنوي",
-        "recommended": "الأفضل"
       },
       "annual": {
         "label": "سنوي",
@@ -4085,20 +4079,18 @@
     "upgrade": {
       "useDowngrade": "هذا لن يزيد تكلفة خطتك. استخدم تبويب التخفيض.",
       "amountDue": "المستحق الآن",
-      "annualSaveHint": "توفير مقارنة بالربع سنوي",
+      "annualSaveHint": "توفير مقارنة بالشهري",
       "choosePeriod": "اختر دورة الفوترة",
       "choosePlan": "اختر الباقة",
       "currentPeriod": "الحالية",
       "dailyDiff": "تغير المعدل اليومي",
       "daysRemaining": "أيام متبقية في الفترة",
       "limitReached": "تم بلوغ حد الترقية لهذه الفترة",
-      "monthlyPremiumHint": "+١٥٪ مقارنة بالربع السنوي",
       "newMonthlyRate": "السعر الشهري الجديد (الشامل)",
       "newPeriod": "الفترة الجديدة",
       "newPlan": "الباقة الجديدة",
       "nextRenewal": "التجديد القادم",
       "proceed": "المتابعة للدفع",
-      "quarterlyDefaultHint": "الفوترة الافتراضية",
       "summary": "ملخص الترقية",
       "title": "ترقية الخطة",
       "usedOf": "{used} من {limit} ترقيات مستخدمة"
@@ -4126,7 +4118,7 @@
         "total": "الفاتورة الشهرية التقديرية",
         "capped": "بحد أقصى {amount} ج.م",
         "vsMonthly": "مقارنة بالشهري",
-        "vsQuarterly": "مقارنة بالربع سنوي"
+        "vsAllIn": "مقارنة بالسعر الشامل"
       },
       "switch": {
         "enable": "التحويل للدفع حسب الاستخدام",

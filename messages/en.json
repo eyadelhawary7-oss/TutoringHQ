@@ -5142,7 +5142,6 @@
     "paymentFailed": "Payment Failed",
     "paymentSuccess": "Payment Success",
     "perMonth": "Per Month",
-    "perQuarter": "Per Quarter",
     "perYear": "Per Year",
     "requestSubmitted": "Request Submitted",
     "selectPlan": "Select Plan",
@@ -5171,7 +5170,6 @@
         "studentsUsageUnlimited": "{current} students",
         "earlyAdopter": "Early adopter pricing",
         "periodMonthly": "Monthly",
-        "periodQuarterly": "Quarterly",
         "periodAnnual": "Annual",
         "priceLine": "{amount} · {period}"
       },
@@ -5248,10 +5246,6 @@
       "monthly": {
         "label": "Monthly",
         "premium": "+15%"
-      },
-      "quarterly": {
-        "label": "Quarterly",
-        "recommended": "Best value"
       },
       "annual": {
         "label": "Annual",
@@ -5408,20 +5402,18 @@
     "upgrade": {
       "useDowngrade": "This would not increase your plan cost. Use the Downgrade tab.",
       "amountDue": "Amount due now",
-      "annualSaveHint": "Save vs quarterly",
+      "annualSaveHint": "Save vs monthly",
       "choosePeriod": "Choose billing period",
       "choosePlan": "Choose plan",
       "currentPeriod": "Current",
       "dailyDiff": "Daily rate change",
       "daysRemaining": "Days left in period",
       "limitReached": "Upgrade limit reached for this period",
-      "monthlyPremiumHint": "+15% vs quarterly",
       "newMonthlyRate": "New monthly rate (all-in)",
       "newPeriod": "New period",
       "newPlan": "New plan",
       "nextRenewal": "Next renewal",
       "proceed": "Proceed to payment",
-      "quarterlyDefaultHint": "Default billing",
       "summary": "Upgrade summary",
       "title": "Upgrade plan",
       "usedOf": "{used} of {limit} upgrades used"
@@ -5449,7 +5441,7 @@
         "total": "Estimated monthly bill",
         "capped": "Capped at plan maximum ({amount} EGP)",
         "vsMonthly": "vs Monthly plan",
-        "vsQuarterly": "vs Quarterly (monthly equiv.)"
+        "vsAllIn": "vs All-in rate"
       },
       "switch": {
         "enable": "Switch to Pay As You Go",

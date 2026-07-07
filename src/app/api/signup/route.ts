@@ -190,11 +190,13 @@ export async function POST(request: Request) {
     }
 
     // Centers are billed monthly or annual only. Monthly is the standard cadence
-    // and the default when the field is absent (the quarterly clock is retired).
+    // and the default when the field is absent or unrecognized (the quarterly
+    // clock is retired — the centers CHECK would reject an inserted 'quarterly'
+    // row outright, so it must never reach the allowlist below).
     const billingPeriodRaw =
       body.billingPeriod ?? body.billing_period ?? 'monthly';
     const periodResolved: BillingPeriod = normalizeBillingPeriod(
-      ['monthly', 'quarterly', 'annual'].includes(String(billingPeriodRaw))
+      ['monthly', 'annual'].includes(String(billingPeriodRaw))
         ? String(billingPeriodRaw)
         : 'monthly',
     );

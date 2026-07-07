@@ -671,6 +671,19 @@ export async function PATCH(
     delete cleanBody[k];
   }
 
+  // Quarterly is retired — the centers CHECKs only allow monthly/annual, so a
+  // raw passthrough here must not let a stale admin client trip the DB
+  // constraint. Coerce legacy quarterly-family values to each column's
+  // monthly spelling rather than surfacing a raw constraint-violation 500.
+  if (typeof cleanBody.billing_period === 'string') {
+    const bp = cleanBody.billing_period.toLowerCase();
+    if (bp !== 'monthly' && bp !== 'annual') cleanBody.billing_period = 'monthly';
+  }
+  if (typeof cleanBody.subscription_billing_period === 'string') {
+    const sbp = cleanBody.subscription_billing_period.toLowerCase();
+    if (sbp !== 'monthly' && sbp !== 'yearly') cleanBody.subscription_billing_period = 'monthly';
+  }
+
   const { data: updatedRow, error } = await supabaseAdmin
     .from('centers')
     .update(cleanBody)

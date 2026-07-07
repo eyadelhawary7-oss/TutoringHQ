@@ -59,7 +59,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
   }
 
-  const newBp = normalizeBillingPeriod(newBillingPeriodRaw) as BillingPeriod;
+  // Quarterly is retired — the centers billing-period CHECKs only allow
+  // monthly/annual, so any legacy/stale client value coerces to monthly here
+  // rather than failing at the post-payment finalize write.
+  const requestedBp = normalizeBillingPeriod(newBillingPeriodRaw) as BillingPeriod;
+  const newBp: BillingPeriod = requestedBp === 'annual' ? 'annual' : 'monthly';
   const { supabaseAdmin, centerId } = auth;
 
   const { data: center, error: cErr } = await supabaseAdmin
@@ -177,8 +181,6 @@ export async function POST(request: NextRequest) {
     switch (newBp) {
       case 'monthly':
         return Number(newPlanData.monthly_fee);
-      case 'quarterly':
-        return Number(newPlanData.all_in_price) * 3;
       case 'annual':
         return getAnnualChargeRounded(Number(newPlanData.all_in_price));
       default:

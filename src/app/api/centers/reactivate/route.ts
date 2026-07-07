@@ -6,11 +6,11 @@ import { reactivationChargeAmount } from '@/lib/billingLifecycle';
 import { getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { applyProcessingFee } from '@/lib/processingFee';
 
-function billingPeriodKey(sub: string | null | undefined): 'monthly' | 'quarterly' | 'annual' {
-  const p = (sub ?? 'quarterly').toLowerCase();
-  if (p === 'monthly') return 'monthly';
-  if (p === 'annual' || p === 'yearly') return 'annual';
-  return 'quarterly';
+// Quarterly is retired — the centers CHECKs only allow monthly/annual, so an
+// unset/legacy period reads as monthly, never the old ×3 quarterly multiplier.
+function billingPeriodKey(sub: string | null | undefined): 'monthly' | 'annual' {
+  const p = (sub ?? 'monthly').toLowerCase();
+  return p === 'annual' || p === 'yearly' ? 'annual' : 'monthly';
 }
 
 /**

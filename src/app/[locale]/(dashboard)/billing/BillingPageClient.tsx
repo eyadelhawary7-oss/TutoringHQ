@@ -293,12 +293,7 @@ export default function BillingPageClient() {
   const planNameEn = planCfg?.englishName ?? '';
 
   const bp = normalizeBillingPeriod(center.billing_period ?? undefined);
-  const periodLabel =
-    bp === 'monthly'
-      ? t('currentPlan.periodMonthly')
-      : bp === 'annual'
-        ? t('currentPlan.periodAnnual')
-        : t('currentPlan.periodQuarterly');
+  const periodLabel = bp === 'annual' ? t('currentPlan.periodAnnual') : t('currentPlan.periodMonthly');
 
   const displayAmount =
     center.billing_amount != null && Number.isFinite(center.billing_amount)
