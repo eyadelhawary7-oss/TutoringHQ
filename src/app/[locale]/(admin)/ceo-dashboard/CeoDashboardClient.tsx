@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useLayout } from '@/contexts/LayoutContext';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { AdminSidebar } from '@/components/AdminSidebar';
+import { colors } from '@/lib/tokens';
 import {
   Building2,
   TrendingUp,
@@ -220,12 +221,12 @@ function CeoFinancialsBody({
                 />
                 <Tooltip
                   {...RECHARTS_TOOLTIP_WRAPPER_PROPS}
-                  cursor={{ stroke: '#334155', strokeWidth: 1, strokeDasharray: '4 4' }}
+                  cursor={{ stroke: colors.navy[700], strokeWidth: 1, strokeDasharray: '4 4' }}
                   content={(props) => {
                     const pl = props.payload?.map((p) => ({
                       name: String(p.name ?? p.dataKey ?? ''),
                       value: Number(p.value ?? 0),
-                      color: String(p.color ?? p.stroke ?? '#0D9488'),
+                      color: String(p.color ?? p.stroke ?? colors.brand[500]),
                       dataKey: String(p.dataKey ?? ''),
                     }));
                     return (
@@ -240,13 +241,13 @@ function CeoFinancialsBody({
                   }}
                 />
                 <Legend
-                  wrapperStyle={{ fontSize: 11, color: '#94A3B8', fontFamily: CHART_STYLE.fontFamily }}
+                  wrapperStyle={{ fontSize: 11, color: colors.navy[400], fontFamily: CHART_STYLE.fontFamily }}
                 />
                 <Bar
                   name={tFinancials('financials.subscriptions')}
                   dataKey="subscriptionRevenue"
                   stackId="revenue"
-                  fill="#0D9488"
+                  fill={colors.brand[500]}
                   animationBegin={0}
                   animationDuration={CHART_STYLE.animDuration}
                   animationEasing={CHART_STYLE.animEasing}
@@ -255,7 +256,7 @@ function CeoFinancialsBody({
                   name={tFinancials('financials.cardOrders')}
                   dataKey="cardOrderRevenue"
                   stackId="revenue"
-                  fill="#F59E0B"
+                  fill={colors.gold[500]}
                   animationBegin={0}
                   animationDuration={CHART_STYLE.animDuration}
                   animationEasing={CHART_STYLE.animEasing}
@@ -275,7 +276,7 @@ function CeoFinancialsBody({
                   stroke="var(--ceo-chart-total-line, #0f766e)"
                   strokeWidth={CHART_STYLE.strokeWidth}
                   dot={false}
-                  activeDot={{ r: CHART_STYLE.dotActiveRadius, stroke: '#0F172A', strokeWidth: 2 }}
+                  activeDot={{ r: CHART_STYLE.dotActiveRadius, stroke: colors.navy[900], strokeWidth: 2 }}
                   animationDuration={CHART_STYLE.animDuration}
                   animationEasing={CHART_STYLE.animEasing}
                 />
@@ -284,7 +285,7 @@ function CeoFinancialsBody({
           ) : (
             <div
               className="flex flex-col items-center justify-center text-center px-4 py-16"
-              style={{ color: '#334155', fontSize: 13, fontFamily: CHART_STYLE.fontFamily }}
+              style={{ color: 'var(--color-navy-700)', fontSize: 13, fontFamily: CHART_STYLE.fontFamily }}
             >
               <p>{tCharts('noData')}</p>
               <p className="mt-1 text-xs opacity-80 max-w-xs">{tCharts('noDataSub')}</p>

@@ -245,6 +245,27 @@ migration must be deliberate, not mechanical.
   - `manifest.ts` (1) — `theme_color` → `colors.brand[500]`; `background_color`
     `#080D14` stays drift (not `#080f1a`).
 
+- **Batch 6 — admin/CEO (~18):**
+  - `(admin)/ceo-dashboard/CeoDashboardClient.tsx` (7) — Recharts SVG props
+    (`fill`, cursor/activeDot `stroke`, legend `wrapperStyle`) → `colors.*`;
+    empty-state div `color` → `var(--color-navy-700)`. `#6366F1` (whatsapp bar)
+    stays drift; `stroke="var(--ceo-chart-total-line, #0f766e)"` left (already
+    tokenized via the CSS var; the hex is only a never-hit fallback).
+  - `admin/analytics/page.tsx` (2) — standalone legend fallbacks
+    `d.color ?? '#64748B'` → `colors.navy[500]`.
+  - `admin/centers/[id]/centerManagementClient.tsx` (5) — toggle/textarea inline
+    styles → `var(--color-brand-500|navy-600|navy-700)`; card-color state default +
+    reset fallback → `colors.brand[500]` (needed `useState<string>` so the setter
+    still accepts arbitrary center colors — caught by typecheck).
+  - `admin/platform-config/page.tsx` (1) — toggle inline style →
+    `var(--color-brand-500|navy-500)`.
+  - **Left whole (reported):** mixed data-viz **schemes** where only some entries
+    match tokens — `admin/analytics` `planColors` (7) + status trio
+    (green/amber/red); `admin/finance/AdminFinanceClient` `palette` (green scale +
+    2 navy). Splitting them piecemeal would create inconsistent half-tokenized
+    arrays and pre-empt the redesign's holistic chart-series palette. `#418` in an
+    `AdminFinanceClient` comment is a React error code, not a color.
+
 ### (b) Drift left for the redesign
 - See §6. Nothing snapped.
 

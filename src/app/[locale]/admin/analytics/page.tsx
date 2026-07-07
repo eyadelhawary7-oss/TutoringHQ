@@ -10,6 +10,7 @@ import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { getAdminSession } from '@/lib/adminAuth-client';
 import { isAdminLastActiveStaleRaw } from '@/lib/adminUtils';
+import { colors } from '@/lib/tokens';
 import { ChartCard, ChartLegend } from '@/components/charts';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { ArrowLeft } from 'lucide-react';
@@ -274,7 +275,7 @@ export default function AdminAnalyticsPage() {
                   <ChartLegend
                     direction="vertical"
                     items={planDonutData.map((d) => ({
-                      color: d.color ?? '#64748B',
+                      color: d.color ?? colors.navy[500],
                       label: d.name,
                       value: d.value,
                     }))}
@@ -290,7 +291,7 @@ export default function AdminAnalyticsPage() {
                   <ChartLegend
                     direction="vertical"
                     items={statusDonutData.map((d) => ({
-                      color: d.color ?? '#64748B',
+                      color: d.color ?? colors.navy[500],
                       label: d.name,
                       value: d.value,
                     }))}
