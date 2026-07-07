@@ -47,7 +47,7 @@ export function QRCard({
               height: `${h * scale}mm`,
               minWidth: `${w * scale}mm`,
               minHeight: `${h * scale}mm`,
-              background: 'linear-gradient(135deg, #0D9488 0%, #1E293B 100%)',
+              background: 'linear-gradient(135deg, var(--color-brand-500) 0%, var(--color-navy-800) 100%)',
             }
       }
     >

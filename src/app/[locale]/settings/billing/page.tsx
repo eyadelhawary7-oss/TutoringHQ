@@ -1469,7 +1469,7 @@ export default function BillingPage() {
     }
     if (packEnabled) {
       return {
-        cls: 'border-[#0D9488]/50 bg-[#0D9488]/15 text-[#0D9488]',
+        cls: 'border-[var(--color-brand-500)]/50 bg-[var(--color-brand-500)]/15 text-[var(--color-brand-500)]',
         label: t('pack.badgeActive'),
       };
     }
@@ -1685,7 +1685,7 @@ export default function BillingPage() {
             disabled={!ownerOk || payingInvoiceId === inv.id}
             onClick={() => void handleInvoicePay(inv.id)}
             className="rounded-lg border-2 px-3 py-1.5 text-xs font-semibold disabled:opacity-50 btn-press chq-focus"
-            style={{ borderColor: '#0D9488', color: '#0D9488' }}
+            style={{ borderColor: 'var(--color-brand-500)', color: 'var(--color-brand-500)' }}
           >
             {payingInvoiceId === inv.id ? t('loadingShort') : t('history.payNow')}
           </button>
@@ -1736,7 +1736,7 @@ export default function BillingPage() {
           <Link
             href="/settings"
             className="text-sm font-medium hover:underline"
-            style={{ color: '#0D9488' }}
+            style={{ color: 'var(--color-brand-500)' }}
           >
             {t('backToSettings')}
           </Link>
@@ -1854,7 +1854,7 @@ export default function BillingPage() {
                 <button
                   type="button"
                   className="w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm md:w-auto btn-press chq-focus"
-                  style={{ backgroundColor: '#F59E0B' }}
+                  style={{ backgroundColor: 'var(--color-gold-500)' }}
                   onClick={() => {
                     setReactivationError(null);
                     setShowReactivation(true);
@@ -2166,7 +2166,7 @@ export default function BillingPage() {
                       }
                       onClick={() => void handleUpgradePay()}
                       className="mt-4 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm disabled:opacity-50 md:w-full btn-press chq-focus"
-                      style={{ backgroundColor: '#0D9488' }}
+                      style={{ backgroundColor: 'var(--color-brand-500)' }}
                     >
                       {paymentLoading ? t('loadingShort') : t('upgrade.proceed')}
                     </button>
@@ -2336,7 +2336,7 @@ export default function BillingPage() {
                       disabled={downgradeLoading}
                       onClick={() => void handleDowngradeConfirm()}
                       className="mt-4 w-full rounded-xl px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm disabled:opacity-50 btn-press chq-focus"
-                      style={{ backgroundColor: '#F59E0B' }}
+                      style={{ backgroundColor: 'var(--color-gold-500)' }}
                     >
                       {downgradeLoading ? t('loadingShort') : t('downgrade.confirm')}
                     </button>
@@ -2471,7 +2471,7 @@ export default function BillingPage() {
                       <Link
                         href="/settings"
                         className="mt-2 inline-block font-semibold hover:underline"
-                        style={{ color: '#0D9488' }}
+                        style={{ color: 'var(--color-brand-500)' }}
                       >
                         {t('withdrawal.settingsLink')}
                       </Link>
@@ -2568,7 +2568,7 @@ export default function BillingPage() {
                         }
                         onClick={() => void handleWithdrawalSubmit()}
                         className="w-full rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm disabled:opacity-50 btn-press chq-focus"
-                        style={{ backgroundColor: '#0D9488' }}
+                        style={{ backgroundColor: 'var(--color-brand-500)' }}
                       >
                         {withdrawalSubmitting ? t('loadingShort') : t('withdrawal.submit')}
                       </button>
@@ -2706,7 +2706,7 @@ export default function BillingPage() {
                 disabled={reactivationLoading}
                 onClick={() => void handleReactivationPay()}
                 className="mt-6 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm disabled:opacity-50 btn-press chq-focus"
-                style={{ backgroundColor: '#0D9488' }}
+                style={{ backgroundColor: 'var(--color-brand-500)' }}
               >
                 {reactivationLoading ? t('loadingShort') : t('reactivation.proceed')}
               </button>
@@ -2789,7 +2789,7 @@ export default function BillingPage() {
                   disabled={!ownerOk || packRequestLoading}
                   onClick={() => void handlePackRequest()}
                   className="mt-4 w-full rounded-xl border-2 px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 md:w-auto btn-press chq-focus"
-                  style={{ borderColor: '#0D9488', backgroundColor: '#0D9488' }}
+                  style={{ borderColor: 'var(--color-brand-500)', backgroundColor: 'var(--color-brand-500)' }}
                 >
                   {packRequestLoading ? t('loadingShort') : t('pack.request')}
                 </button>

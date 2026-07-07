@@ -332,7 +332,7 @@ export default function PlatformConfigPage() {
           >
             <span
               className="relative inline-block h-[26px] w-12 rounded-[13px] transition-colors"
-              style={{ backgroundColor: checked ? '#0d9488' : '#64748b' }}
+              style={{ backgroundColor: checked ? 'var(--color-brand-500)' : 'var(--color-navy-500)' }}
             >
               <span
                 className="absolute top-[3px] h-5 w-5 rounded-full bg-[var(--color-surface-3)] shadow transition-[inset-inline-start]"

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { colors } from '@/lib/tokens';
 
 function getContrastColor(hex: string): string {
   if (!hex?.startsWith('#')) return '#FFFFFF';
@@ -9,7 +10,7 @@ function getContrastColor(hex: string): string {
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.5 ? '#0F172A' : '#FFFFFF';
+  return luminance > 0.5 ? colors.navy[900] : '#FFFFFF';
 }
 
 interface CardTemplatePreviewProps {
@@ -32,7 +33,7 @@ export default function CardTemplatePreview({
   studentName,
   studentNumber,
   qrCode,
-  color = '#0D9488',
+  color = colors.brand[500],
   cardStyle,
   className,
 }: CardTemplatePreviewProps) {
@@ -46,7 +47,7 @@ export default function CardTemplatePreview({
   const usePreset = cardStyle === 'dark' || cardStyle === 'light';
   const faceBg = cardStyle === 'light' ? '#ffffff' : '#0a1628';
   const nameClass =
-    cardStyle === 'light' ? 'text-[color:#0f172a]' : 'text-[var(--color-text-primary)]';
+    cardStyle === 'light' ? 'text-[color:var(--color-navy-900)]' : 'text-[var(--color-text-primary)]';
 
   if (usePreset) {
     return (

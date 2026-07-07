@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, auditLog, dbInsert } from '@/lib/db-proxy';
+import { colors } from '@/lib/tokens';
 import {
   syncStudentsToLocal,
   getAllStudentsOffline,
@@ -1511,7 +1512,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
                     <div className="flex items-start gap-3">
                       <div className="shrink-0 w-8 h-8 rounded-lg bg-teal-900/40 border border-teal-800/40 flex items-center justify-center">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                          stroke="#0D9488" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          stroke={colors.brand[500]} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
                           <line x1="12" y1="18" x2="12" y2="18"/>
                         </svg>

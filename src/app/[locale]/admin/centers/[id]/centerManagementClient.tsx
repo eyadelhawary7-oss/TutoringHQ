@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { AdminSidebar } from '@/components/AdminSidebar';
+import { colors } from '@/lib/tokens';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
@@ -63,7 +64,7 @@ const Toggle = ({
         width: 48,
         height: 26,
         borderRadius: 13,
-        backgroundColor: checked ? '#0d9488' : '#475569',
+        backgroundColor: checked ? 'var(--color-brand-500)' : 'var(--color-navy-600)',
         position: 'relative',
         transition: 'background-color 0.2s',
         flexShrink: 0,
@@ -260,7 +261,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
   const [s1District, setS1District] = useState('');
   const [s1Governorate, setS1Governorate] = useState('');
   const [s1CenterCode, setS1CenterCode] = useState('');
-  const [s1CardColor, setS1CardColor] = useState('#0D9488');
+  const [s1CardColor, setS1CardColor] = useState<string>(colors.brand[500]);
   const [s1SignupNotes, setS1SignupNotes] = useState('');
   const [s1Saving, setS1Saving] = useState(false);
 
@@ -654,7 +655,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
     const gov = (c.governorate as string) ?? '';
     setS1Governorate(gov ? gov.toLowerCase() : '');
     setS1CenterCode((c.center_code as string) ?? '');
-    setS1CardColor((c.card_color as string) ?? '#0D9488');
+    setS1CardColor((c.card_color as string) ?? colors.brand[500]);
     setS1SignupNotes((c.signup_notes as string) ?? '');
     setS2Status((c.status as string) ?? '');
     setS2SubscriptionStatus((c.subscription_status as string) ?? '');
@@ -1805,9 +1806,9 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       onChange={(e) => setS1SignupNotes(e.target.value)}
                       rows={5}
                       style={{
-                        backgroundColor: '#334155',
+                        backgroundColor: 'var(--color-navy-700)',
                         color: 'white',
-                        borderColor: '#475569',
+                        borderColor: 'var(--color-navy-600)',
                         colorScheme: 'dark',
                       }}
                       className="admin-textarea w-full rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-500"

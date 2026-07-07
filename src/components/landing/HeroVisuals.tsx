@@ -1,6 +1,7 @@
 'use client';
 
 import { AnimatedPhoneMockup } from '@/components/landing/AnimatedPhoneMockup';
+import { colors } from '@/lib/tokens';
 
 interface HeroVisualsProps {
   locale: 'ar' | 'en';
@@ -117,14 +118,14 @@ export function HeroVisuals({ locale }: HeroVisualsProps) {
                 <span
                   style={{
                     fontSize: 6,
-                    color: '#5eead4',
+                    color: 'var(--color-brand-300)',
                     fontWeight: 700,
                     letterSpacing: '0.04em',
                   }}
                 >
                   TutoringHQ
                 </span>
-                <span style={{ fontSize: 6, color: '#475569' }}>
+                <span style={{ fontSize: 6, color: 'var(--color-navy-600)' }}>
                   {isAr ? '· لوحة التحكم' : '· Admin'}
                 </span>
               </div>
@@ -133,7 +134,7 @@ export function HeroVisuals({ locale }: HeroVisualsProps) {
               <div style={{ padding: '6px 8px 8px' }}>
                 {/* Sparkline chart */}
                 <p
-                  style={{ fontSize: 5, color: '#64748b', margin: '0 0 3px' }}
+                  style={{ fontSize: 5, color: 'var(--color-navy-500)', margin: '0 0 3px' }}
                 >
                   {isAr ? 'الإيراد الشهري' : 'Monthly revenue (EGP)'}
                 </p>
@@ -154,12 +155,12 @@ export function HeroVisuals({ locale }: HeroVisualsProps) {
                     >
                       <stop
                         offset="0%"
-                        stopColor="#0d9488"
+                        stopColor={colors.brand[500]}
                         stopOpacity="0.28"
                       />
                       <stop
                         offset="100%"
-                        stopColor="#0d9488"
+                        stopColor={colors.brand[500]}
                         stopOpacity="0"
                       />
                     </linearGradient>
@@ -201,7 +202,7 @@ export function HeroVisuals({ locale }: HeroVisualsProps) {
                         style={{
                           fontSize: 9,
                           fontWeight: 700,
-                          color: '#f1f5f9',
+                          color: 'var(--color-navy-100)',
                           margin: 0,
                         }}
                       >
@@ -210,7 +211,7 @@ export function HeroVisuals({ locale }: HeroVisualsProps) {
                       <p
                         style={{
                           fontSize: 5,
-                          color: '#475569',
+                          color: 'var(--color-navy-600)',
                           margin: '1px 0 0',
                         }}
                       >

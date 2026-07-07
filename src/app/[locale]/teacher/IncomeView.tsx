@@ -465,7 +465,7 @@ export default function IncomeView() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {/* ADR 031 signature money surface */}
               <div className="money-hero rounded-[var(--radius-card)] p-5">
-                <div className="mb-1 flex items-center gap-2 text-sm text-[#dfeeeb]">
+                <div className="mb-1 flex items-center gap-2 text-sm text-[var(--color-teal-soft)]">
                   <Banknote size={16} aria-hidden />
                   {isCurrentSelected ? t('income.collectedThisMonth') : t('income.collected')}
                 </div>

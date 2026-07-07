@@ -1,10 +1,12 @@
+import { colors } from '@/lib/tokens';
+
 interface SuccessCheckProps {
   size?: number;
   color?: string;
   className?: string;
 }
 
-export function SuccessCheck({ size = 48, color = '#0D9488', className = '' }: SuccessCheckProps) {
+export function SuccessCheck({ size = 48, color = colors.brand[500], className = '' }: SuccessCheckProps) {
   return (
     <svg
       width={size}

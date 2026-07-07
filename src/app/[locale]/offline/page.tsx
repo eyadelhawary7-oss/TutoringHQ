@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations, useLocale } from 'next-intl';
+import { colors } from '@/lib/tokens';
 
 export default function OfflinePage() {
   const t = useTranslations('offline');
@@ -19,7 +20,7 @@ export default function OfflinePage() {
             height="48"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#F59E0B"
+            stroke={colors.gold[500]}
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"

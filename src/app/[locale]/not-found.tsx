@@ -73,8 +73,8 @@ export default function NotFound() {
               letterSpacing: '2px',
             }}
           >
-            <span className="text-[#f8fafc]">Tutoring</span>
-            <span className="text-[#0D9488]">HQ</span>
+            <span className="text-[var(--color-navy-50)]">Tutoring</span>
+            <span className="text-[var(--color-brand-500)]">HQ</span>
           </span>
         </a>
 

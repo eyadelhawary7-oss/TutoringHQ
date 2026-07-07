@@ -4,16 +4,16 @@ import { useMemo } from 'react';
 import { useLocale } from 'next-intl';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { formatNumber } from '@/lib/formatNumber';
-import { CHART_STYLE, RECHARTS_TOOLTIP_WRAPPER_PROPS } from './ChartTokens';
+import { CHART_COLORS, CHART_STYLE, RECHARTS_TOOLTIP_WRAPPER_PROPS } from './ChartTokens';
 import { ChartTooltip } from './ChartTooltip';
 
 const DEFAULT_PALETTE = [
-  '#0D9488',
-  '#F59E0B',
-  '#8B5CF6',
-  '#10B981',
-  '#EF4444',
-  '#64748B',
+  CHART_COLORS.teal,
+  CHART_COLORS.amber,
+  CHART_COLORS.purple,
+  CHART_COLORS.green,
+  CHART_COLORS.red,
+  CHART_COLORS.slate,
 ];
 
 export interface DonutSlice {

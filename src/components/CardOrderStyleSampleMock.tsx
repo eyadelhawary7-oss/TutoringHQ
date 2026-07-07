@@ -1,8 +1,9 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { colors } from '@/lib/tokens';
 
-const TEAL = '#0d9488';
+const TEAL = colors.brand[500];
 const DARK_BG = '#0a1628';
 const LIGHT_BG = '#ffffff';
 
@@ -61,9 +62,9 @@ export function CardOrderStyleSampleMock({
   const isDark = variant === 'dark';
   const bg = isDark ? DARK_BG : LIGHT_BG;
   const subtext = isDark ? 'rgba(255,255,255,0.55)' : 'rgba(15,23,42,0.45)';
-  const title = isDark ? '#f8fafc' : '#0f172a';
-  const qrColor = isDark ? '#e2e8f0' : '#64748b';
-  const wmColor = isDark ? '#ffffff' : '#0f172a';
+  const title = isDark ? colors.navy[50] : colors.navy[900];
+  const qrColor = isDark ? colors.navy[200] : colors.navy[500];
+  const wmColor = isDark ? '#ffffff' : colors.navy[900];
 
   return (
     <svg

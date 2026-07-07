@@ -1,5 +1,7 @@
 'use client';
 
+import { colors } from '@/lib/tokens';
+
 interface AnimatedPhoneMockupProps {
   locale: 'ar' | 'en';
 }
@@ -112,7 +114,7 @@ export function AnimatedPhoneMockup({ locale }: AnimatedPhoneMockupProps) {
       >
         {/* Status bar */}
         <div className="flex items-center justify-between px-4 pt-3 pb-0.5">
-          <span style={{ fontSize: 8, color: '#94a3b8', fontWeight: 500 }}>9:41</span>
+          <span style={{ fontSize: 8, color: 'var(--color-navy-400)', fontWeight: 500 }}>9:41</span>
           <div className="flex gap-0.5 items-end">
             {[1, 2, 3].map((n) => (
               <div
@@ -123,7 +125,7 @@ export function AnimatedPhoneMockup({ locale }: AnimatedPhoneMockupProps) {
             ))}
             <div
               className="rounded-[2px] ms-1 overflow-hidden"
-              style={{ width: 16, height: 8, border: '1px solid #64748b' }}
+              style={{ width: 16, height: 8, border: '1px solid var(--color-navy-500)' }}
             >
               <div className="h-full bg-teal-400" style={{ width: '75%' }} />
             </div>
@@ -136,10 +138,10 @@ export function AnimatedPhoneMockup({ locale }: AnimatedPhoneMockupProps) {
           {/* Welcome + notification bell */}
           <div className="flex items-center justify-between">
             <div>
-              <p style={{ fontSize: 7, color: '#64748b' }}>
+              <p style={{ fontSize: 7, color: 'var(--color-navy-500)' }}>
                 {isAr ? 'مساء الخير' : 'Good evening'}
               </p>
-              <p style={{ fontSize: 10, fontWeight: 600, color: '#f1f5f9' }}>
+              <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-navy-100)' }}>
                 {isAr ? 'محمد أحمد' : 'Mohamed Ahmed'}
               </p>
             </div>
@@ -148,13 +150,13 @@ export function AnimatedPhoneMockup({ locale }: AnimatedPhoneMockupProps) {
               style={{ width: 28, height: 28, background: 'rgba(255,255,255,0.05)' }}
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                stroke={colors.navy[400]} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
               </svg>
               <span
                 className="absolute top-0.5 end-0.5 rounded-full chq-dot"
-                style={{ width: 7, height: 7, background: '#2dd4bf', display: 'block' }}
+                style={{ width: 7, height: 7, background: 'var(--color-brand-400)', display: 'block' }}
               />
             </div>
           </div>
@@ -167,7 +169,7 @@ export function AnimatedPhoneMockup({ locale }: AnimatedPhoneMockupProps) {
               border: '1px solid rgba(13,148,136,0.28)',
             }}
           >
-            <p style={{ fontSize: 7, color: '#5eead4', marginBottom: 6 }}>
+            <p style={{ fontSize: 7, color: 'var(--color-brand-300)', marginBottom: 6 }}>
               {isAr ? 'طلاب حضروا اليوم' : 'Students attended today'}
             </p>
             <div className="flex items-end gap-1.5">
@@ -178,14 +180,14 @@ export function AnimatedPhoneMockup({ locale }: AnimatedPhoneMockupProps) {
                     <div
                       key={i}
                       className="flex items-center"
-                      style={{ height: ROW_H, fontSize: 22, fontWeight: 700, color: '#f8fafc', lineHeight: 1 }}
+                      style={{ height: ROW_H, fontSize: 22, fontWeight: 700, color: 'var(--color-navy-50)', lineHeight: 1 }}
                     >
                       {v}
                     </div>
                   ))}
                 </div>
               </div>
-              <p style={{ fontSize: 7, color: '#475569', marginBottom: 3 }}>
+              <p style={{ fontSize: 7, color: 'var(--color-navy-600)', marginBottom: 3 }}>
                 / 310 {isAr ? 'متوقع' : 'expected'}
               </p>
             </div>
@@ -195,12 +197,12 @@ export function AnimatedPhoneMockup({ locale }: AnimatedPhoneMockupProps) {
             >
               <div className="h-full rounded-full" style={{ width: '80%', background: '#14b8a6' }} />
             </div>
-            <p style={{ fontSize: 6, color: '#475569', marginTop: 3 }}>80%</p>
+            <p style={{ fontSize: 6, color: 'var(--color-navy-600)', marginTop: 3 }}>80%</p>
           </div>
 
           {/* Recent scans list */}
           <div>
-            <p style={{ fontSize: 7, color: '#64748b', marginBottom: 4 }}>
+            <p style={{ fontSize: 7, color: 'var(--color-navy-500)', marginBottom: 4 }}>
               {isAr ? 'آخر الحضور' : 'Recent scans'}
             </p>
             <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -217,15 +219,15 @@ export function AnimatedPhoneMockup({ locale }: AnimatedPhoneMockupProps) {
                     className="flex items-center justify-center shrink-0 rounded-full"
                     style={{ width: 18, height: 18, background: 'rgba(20,184,166,0.22)' }}
                   >
-                    <span style={{ fontSize: 7, color: '#5eead4', fontWeight: 700 }}>
+                    <span style={{ fontSize: 7, color: 'var(--color-brand-300)', fontWeight: 700 }}>
                       {scan.name.charAt(0)}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="truncate" style={{ fontSize: 7, fontWeight: 500, color: '#e2e8f0' }}>
+                    <p className="truncate" style={{ fontSize: 7, fontWeight: 500, color: 'var(--color-navy-200)' }}>
                       {scan.name}
                     </p>
-                    <p style={{ fontSize: 6, color: '#475569' }}>{scan.group}</p>
+                    <p style={{ fontSize: 6, color: 'var(--color-navy-600)' }}>{scan.group}</p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <svg width="9" height="9" viewBox="0 0 16 16">
@@ -233,7 +235,7 @@ export function AnimatedPhoneMockup({ locale }: AnimatedPhoneMockupProps) {
                       <path d="M5 8.5l2 2 4-4" stroke="#14b8a6" strokeWidth="2.2"
                         strokeLinecap="round" strokeLinejoin="round" fill="none" />
                     </svg>
-                    <span style={{ fontSize: 6, color: '#475569' }}>{scan.time}</span>
+                    <span style={{ fontSize: 6, color: 'var(--color-navy-600)' }}>{scan.time}</span>
                   </div>
                 </div>
               ))}
@@ -248,8 +250,8 @@ export function AnimatedPhoneMockup({ locale }: AnimatedPhoneMockupProps) {
                 className="rounded-lg p-2"
                 style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
               >
-                <p style={{ fontSize: 11, fontWeight: 700, color: '#f1f5f9' }}>{stat.v}</p>
-                <p style={{ fontSize: 6, color: '#475569', marginTop: 2 }}>{stat.l}</p>
+                <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-navy-100)' }}>{stat.v}</p>
+                <p style={{ fontSize: 6, color: 'var(--color-navy-600)', marginTop: 2 }}>{stat.l}</p>
               </div>
             ))}
           </div>

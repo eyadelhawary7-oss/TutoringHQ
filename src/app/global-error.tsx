@@ -2,6 +2,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { useEffect, useState } from 'react';
+import { colors } from '@/lib/tokens';
 import en from '../../messages/en.json';
 import ar from '../../messages/ar.json';
 
@@ -46,8 +47,8 @@ export default function GlobalError({
         suppressHydrationWarning
         style={{
           margin: 0,
-          background: '#080f1a',
-          color: '#f8fafc',
+          background: colors.navy[950],
+          color: colors.navy[50],
           fontFamily: 'system-ui, sans-serif',
           display: 'flex',
           minHeight: '100vh',
@@ -75,12 +76,12 @@ export default function GlobalError({
             </svg>
           </div>
           <h1 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 0.5rem' }}>{err.unexpectedTitle}</h1>
-          <p style={{ color: '#94a3b8', fontSize: 14, marginBottom: '1.5rem' }}>{err.unexpectedDesc}</p>
+          <p style={{ color: colors.navy[400], fontSize: 14, marginBottom: '1.5rem' }}>{err.unexpectedDesc}</p>
           <button
             type="button"
             onClick={reset}
             style={{
-              background: '#0D9488',
+              background: colors.brand[500],
               color: '#fff',
               padding: '0.625rem 1.5rem',
               borderRadius: 8,
@@ -98,7 +99,7 @@ export default function GlobalError({
               marginTop: '1.5rem',
               display: 'inline-block',
               padding: '0.75rem 2rem',
-              background: '#0D9488',
+              background: colors.brand[500],
               color: '#fff',
               borderRadius: '0.75rem',
               textDecoration: 'none',
