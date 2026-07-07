@@ -280,6 +280,16 @@ migration must be deliberate, not mechanical.
     hardcoded, same rule as invoice PDF; a printed card may render without
     globals.css).
 
+- **Batch 8 — server routes (3):**
+  - `api/admin/card-orders/route.ts`, `api/admin/card-orders/[orderId]/pdf/route.ts`,
+    `lib/vendorNotify.ts` — `card_color ?? '#0D9488'` brand defaults →
+    `colors.brand[500]`. `vendorNotify` is WhatsApp-send-adjacent: **only the color
+    string touched**, nothing else.
+  - **Left whole (reported):** `api/ceo/dashboard/route.ts` health-band scale
+    (Healthy green / Engaged teal / At Risk amber / Critical red) — a 4-band
+    sequential scheme; only 2 match tokens, leave for the redesign to define as
+    health-scale tokens.
+
 ### (b) Drift left for the redesign
 - See §6. Nothing snapped.
 
@@ -298,3 +308,21 @@ typecheck, lint (0 errors), i18n/bidi/tolocale — all green. Parity by construc
 Grep proof of raw-hex drop + zero new raw hex; `next build`, unit suite, typecheck,
 lint, i18n/bidi/tolocale all green. Authenticated screens can't be screenshotted in
 this environment — parity is guaranteed by byte-equal token values, stated plainly.
+
+### Final tally (all batches, merged tree)
+- **Exact-match raw-hex occurrences: 143 → 23** (−120 converted). Plus the 11
+  pilot `#080f1a` done pre-merge = **131 total swaps.**
+- Drift: 152 → 149 (−3 bonus: `DonutChart` drift hexes became `CHART_COLORS.*`).
+- **Total raw hex 295 → 172. Zero new raw hex introduced** (only `var(--color-*)`
+  and `colors.*` references added).
+- The **23 remaining exact matches are all documented intentional leaves:**
+  `ChartTokens.ts` (6, chart-palette source), `admin/analytics` planColors+status
+  (5), `AdminFinanceClient` palette (2), `students` print-card CSS (2),
+  `IncomeLifetimeChart` TEAL/BRASS SVG-semantic no-JS-mirror (2), `payments`
+  `METHOD_CONFIG` (2), `api/ceo/dashboard` health scale (2), `HeroVisuals`
+  traffic-dot array (1), `CeoDashboardClient` `--ceo-chart-total-line` var-fallback (1).
+- **Not started this phase:** Tailwind palette utilities (§7, ~3,450) — deliberate
+  later pass.
+- Every batch: `next build`, 1153 unit tests, typecheck, lint (0 errors),
+  i18n/bidi/tolocale green. Parity **by construction** (single cream theme;
+  byte-equal token values).

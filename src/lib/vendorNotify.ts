@@ -3,6 +3,7 @@ import { uploadOrderPdf } from '@/lib/pdfStorage';
 import { notifyAdminOfVendorFailure } from '@/lib/notifyAdminFailure';
 import { isTemplateApproved, sendVendorNewOrder } from '@/lib/centerNotify';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { colors } from '@/lib/tokens';
 
 /** Same template as sendVendorNewOrder - used to gate follow-up document send. */
 const VENDOR_ORDER_TEMPLATE = 'chq_vendor_new_order';
@@ -137,7 +138,7 @@ export async function notifyVendorOfNewOrder(orderId: string): Promise<void> {
       notes: pdfOrderData?.notes ?? null,
       centerName: pdfCenter?.name ?? '',
       centerPhone: pdfCenter?.phone ?? '',
-      cardColor: pdfCenter?.card_color ?? '#0D9488',
+      cardColor: pdfCenter?.card_color ?? colors.brand[500],
       cardStyle: pdfCardStyle,
       academicYear: pdfAcademicYear,
       students: pdfStudents,

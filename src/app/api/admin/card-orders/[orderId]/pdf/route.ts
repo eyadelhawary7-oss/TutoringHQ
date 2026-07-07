@@ -1,6 +1,7 @@
 import { requireSuperAdminApi } from '@/lib/admin-auth';
 import { NextResponse } from 'next/server';
 import { generateOrderPdf } from '@/lib/generateOrderPdf';
+import { colors } from '@/lib/tokens';
 
 export const runtime = 'nodejs';
 
@@ -57,7 +58,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ orderId:
     notes: order.notes ?? null,
     centerName: center?.name ?? '',
     centerPhone: center?.phone ?? '',
-    cardColor: center?.card_color ?? '#0D9488',
+    cardColor: center?.card_color ?? colors.brand[500],
     cardStyle: pdfCardStyle,
     academicYear,
     students,
