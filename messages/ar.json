@@ -4891,7 +4891,7 @@
     "todayRevenue": "إيرادات اليوم",
     "activeStudents": {
       "label": "الطلاب الناشطون",
-      "timeWindow": "(هذا الأسبوع)"
+      "timeWindow": "هذا الأسبوع · {count} إجمالي"
     },
     "pendingPayments": {
       "label": "المدفوعات المعلقة",
@@ -4954,7 +4954,8 @@
     "dailySummaryNoPhone": "أضف هاتف السنتر من الإعدادات لإرسال الملخص.",
     "dailySummaryNoActivity": "لا يوجد حضور أو مدفوعات أمس لإدراجها في الملخص.",
     "dailySummarySent": "تم إرسال الملخص اليومي.",
-    "overdue": "متأخر"
+    "overdue": "متأخر",
+    "moreActions": "المزيد من الإجراءات"
   },
   "forgotPassword": {
     "title": "إعادة تعيين الرمز السري",

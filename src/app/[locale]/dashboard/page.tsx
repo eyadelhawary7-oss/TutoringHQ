@@ -43,6 +43,9 @@ import {
   X,
   ArrowUpRight,
   Send,
+  MoreVertical,
+  BarChart3,
+  PieChart,
 } from 'lucide-react';
 
 const AR_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
@@ -287,6 +290,7 @@ export default function DashboardPage() {
   } | null>(null);
   const [sendingReport, setSendingReport] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showActionsMenu, setShowActionsMenu] = useState(false);
 
   type DashboardGreetingKey = 'goodMorning' | 'goodAfternoon' | 'goodEvening';
   const [greetingKey, setGreetingKey] = useState<DashboardGreetingKey>('goodMorning');
@@ -896,10 +900,9 @@ export default function DashboardPage() {
     return Array.from({ length: 7 }, () => ({ value: c }));
   }, [safeData.pendingInvoicesCount]);
 
-  const activeStudentsSpark7 = useMemo(() => {
-    const n = Number(statsData?.activeStudentsThisWeek ?? 0);
-    return Array.from({ length: 7 }, () => ({ value: n }));
-  }, [statsData?.activeStudentsThisWeek]);
+  const hasAttendanceChartData = attendanceWeekTotal > 0;
+  const hasPaymentStatusData =
+    safeData.paidCount + safeData.pendingCount + safeData.latePaymentCount > 0;
 
   const onSendReport = useCallback(async () => {
     try {
@@ -1111,15 +1114,79 @@ export default function DashboardPage() {
             })}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handleExport}
-          disabled={isExporting || data === null}
-          className="shrink-0 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-2 text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-3)] disabled:opacity-50 btn-press chq-focus"
-        >
-          {isExporting ? t('exporting') : t('exportData')}
-        </button>
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowActionsMenu((v) => !v)}
+            aria-haspopup="menu"
+            aria-expanded={showActionsMenu}
+            aria-label={t('moreActions')}
+            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] p-2.5 text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-3)] btn-press chq-focus"
+          >
+            <MoreVertical className="h-5 w-5" aria-hidden />
+          </button>
+          {showActionsMenu ? (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setShowActionsMenu(false)} />
+              <div
+                role="menu"
+                className="absolute end-0 top-full z-20 mt-2 w-52 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-1.5 shadow-lg"
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setShowActionsMenu(false);
+                    void handleExport();
+                  }}
+                  disabled={isExporting || data === null}
+                  className="flex w-full items-center rounded-lg px-3 py-2 text-start text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-2)] disabled:opacity-50"
+                >
+                  {isExporting ? t('exporting') : t('exportData')}
+                </button>
+              </div>
+            </>
+          ) : null}
+        </div>
       </header>
+
+      <div className="mb-6 max-w-6xl">
+        <div className="mb-3">
+          <SectionHeader title={t('quickActions')} />
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Link
+            href="/students?action=add"
+            className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+          >
+            <UserPlus className="h-6 w-6 text-teal-500" aria-hidden />
+            <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t('addStudent')}</span>
+          </Link>
+          <Link
+            href="/attendance"
+            className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+          >
+            <QrCode className="h-6 w-6 text-teal-500" aria-hidden />
+            <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t('recordAttendance')}</span>
+          </Link>
+          <Link
+            href="/payments?action=collect"
+            className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+          >
+            <CreditCard className="h-6 w-6 text-teal-500" aria-hidden />
+            <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t('collectPayment')}</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => void onSendReport()}
+            disabled={sendingReport}
+            className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] disabled:opacity-50 btn-press chq-focus"
+          >
+            <Send className="h-6 w-6 text-teal-500" aria-hidden />
+            <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t('sendReport')}</span>
+          </button>
+        </div>
+      </div>
 
       {planUsage && planUsage.studentLimit < 999999 && (
         <div className="mb-4 max-w-6xl">
@@ -1133,14 +1200,7 @@ export default function DashboardPage() {
 
       {data === null ? (
         <div className="max-w-6xl space-y-4" aria-busy="true">
-          <div className="mb-6 flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0 space-y-2">
-              <div className="h-7 w-48 rounded-md bg-[var(--color-surface-2)] animate-pulse" />
-              <div className="h-4 w-64 rounded-md bg-[var(--color-surface-2)] animate-pulse" />
-            </div>
-            <div className="h-9 w-32 shrink-0 rounded-lg bg-[var(--color-surface-2)] animate-pulse" />
-          </div>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
@@ -1151,6 +1211,21 @@ export default function DashboardPage() {
                 <div className="pe-8 h-3 w-24 rounded bg-[var(--color-surface-2)] animate-pulse" />
                 <div className="mt-2 h-8 w-20 rounded bg-[var(--color-surface-2)] animate-pulse" />
                 <div className="mt-3 h-8 w-full rounded-md bg-[var(--color-surface-2)] animate-pulse" />
+              </div>
+            ))}
+          </div>
+          <div className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
+            <div className="mb-3 h-4 w-32 rounded bg-[var(--color-surface-2)] animate-pulse" />
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="mb-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2.5"
+              >
+                <div className="flex justify-between gap-2">
+                  <div className="h-4 w-36 rounded bg-[var(--color-surface-3)] animate-pulse" />
+                  <div className="h-3 w-10 rounded bg-[var(--color-surface-3)] animate-pulse" />
+                </div>
+                <div className="mt-2 h-1 w-full rounded-full bg-[var(--color-surface-3)]" />
               </div>
             ))}
           </div>
@@ -1168,45 +1243,19 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <div className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
-              <div className="mb-3 h-4 w-32 rounded bg-[var(--color-surface-2)] animate-pulse" />
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="mb-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2.5"
-                >
-                  <div className="flex justify-between gap-2">
-                    <div className="h-4 w-36 rounded bg-[var(--color-surface-3)] animate-pulse" />
-                    <div className="h-3 w-10 rounded bg-[var(--color-surface-3)] animate-pulse" />
-                  </div>
-                  <div className="mt-2 h-1 w-full rounded-full bg-[var(--color-surface-3)]" />
-                </div>
-              ))}
-            </div>
-            <div className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
-              <div className="mb-3 h-4 w-36 rounded bg-[var(--color-surface-2)] animate-pulse" />
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="mb-2 flex min-h-14 items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3"
-                >
-                  <div className="h-6 w-6 shrink-0 rounded bg-[var(--color-surface-3)] animate-pulse" />
-                  <div className="h-4 flex-1 rounded bg-[var(--color-surface-3)] animate-pulse" />
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       ) : (
         <>
           <div className="mb-4 max-w-6xl">
             <SectionHeader title={tCommon('sectionAtAGlance')} />
           </div>
-          <div className="mb-6 grid max-w-6xl grid-cols-2 gap-3 lg:grid-cols-5">
+          <div className="mb-6 grid max-w-6xl grid-cols-2 gap-3">
             <KpiCommandCard
-              label={t('totalStudents')}
-              valueDisplay={formatNumber(Number(safeData.totalStudents), locale)}
+              label={t('activeStudents.label')}
+              subLabel={t('activeStudents.timeWindow', {
+                count: formatNumber(Number(safeData.totalStudents), locale),
+              })}
+              valueDisplay={formatNumber(Number(statsData?.activeStudentsThisWeek ?? 0), locale)}
               growth={
                 safeData.studentSparkline7d.length >= 2
                   ? {
@@ -1217,16 +1266,6 @@ export default function DashboardPage() {
               }
               delayMs={0}
               sparkline={studentSparklinePoints}
-              staleMetrics={kpiStale}
-              locale={locale}
-            />
-            <KpiCommandCard
-              label={t('activeStudents.label')}
-              subLabel={t('activeStudents.timeWindow')}
-              valueDisplay={formatNumber(Number(statsData?.activeStudentsThisWeek ?? 0), locale)}
-              growth={null}
-              delayMs={50}
-              sparkline={activeStudentsSpark7}
               staleMetrics={kpiStale}
               locale={locale}
             />
@@ -1292,6 +1331,79 @@ export default function DashboardPage() {
             />
           </div>
 
+          <div className="mb-6 max-w-6xl rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
+            <div className="mb-1 flex items-start justify-between gap-2">
+              <div>
+                <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{t('atRisk')}</h2>
+                <p className="text-xs text-[var(--color-text-muted)]">{t('atRiskDesc')}</p>
+              </div>
+              <Link
+                href="/students?filter=atrisk"
+                className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-teal-400 hover:text-teal-300 btn-press chq-focus"
+              >
+                {t('viewAll')}
+                <ArrowUpRight className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden />
+              </Link>
+            </div>
+            {atRiskStudents.length === 0 ? (
+              <div className="py-8 text-center text-sm text-[var(--color-text-secondary)] space-y-2">
+                {!atRiskMeta ? (
+                  <p className="text-teal-400">{t('allGood')}</p>
+                ) : atRiskMeta.totalActive === 0 ? (
+                  <p>{t('atRiskNoStudentsYet')}</p>
+                ) : atRiskMeta.avgAttendancePct > 80 ? (
+                  <p className="text-teal-400">{t('allGood')}</p>
+                ) : (
+                  <p className="text-[var(--color-text-muted)]">{t('atRiskStable')}</p>
+                )}
+              </div>
+            ) : (
+              <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {atRiskStudents.slice(0, 6).map((student) => {
+                  const rawPct =
+                    student.attendance_rate_pct ??
+                    atRiskAttendanceIndicator(student.days_since_last_scan);
+                  const pct = Math.min(100, Math.round(rawPct * 10) / 10);
+                  const barColor = pct < 40 ? 'bg-red-500' : 'bg-amber-500';
+                  return (
+                    <li
+                      key={student.id}
+                      className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2.5"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0 flex-1 text-end">
+                          <p className="truncate text-sm font-medium text-[var(--color-text-primary)]">{student.name}</p>
+                          <p className="truncate font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">
+                            {student.student_number ? (
+                              formatStudentNumberForDisplay(student.student_number)
+                            ) : (
+                              <span className="text-[var(--color-text-muted)] text-xs">-</span>
+                            )}
+                          </p>
+                        </div>
+                        <span
+                          className="shrink-0 tabular-nums text-xs font-semibold text-[var(--color-text-secondary)]"
+                          style={{
+                            fontFamily:
+                              'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                          }}
+                        >
+                          {formatPercent(pct, locale)}
+                        </span>
+                      </div>
+                      <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[var(--color-surface-3)]">
+                        <div
+                          className={`h-full rounded-full transition-all ${barColor}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
           <div className="mb-4 max-w-6xl">
             <SectionHeader title={tCommon('sectionTrends')} />
           </div>
@@ -1299,173 +1411,76 @@ export default function DashboardPage() {
             <div className="md:col-span-3">
               <ChartCard
                 title={t('attendanceChart')}
-                value={formatNumber(Number(attendanceWeekTotal), locale)}
-                growthPair={{
+                value={hasAttendanceChartData ? formatNumber(Number(attendanceWeekTotal), locale) : undefined}
+                growthPair={hasAttendanceChartData ? {
                   current: safeData.thisWeekScanTotal,
                   prior: safeData.lastWeekScanTotal,
-                }}
-                trendLabel={t('vsLastWeek')}
+                } : undefined}
+                trendLabel={hasAttendanceChartData ? t('vsLastWeek') : undefined}
                 minHeight={200}
                 footer={
-                  safeData.generatedAt
+                  hasAttendanceChartData && safeData.generatedAt
                     ? t('chartLastUpdated', {
                         time: formatRelativeMinutesAgo(safeData.generatedAt, locale),
                       })
                     : undefined
                 }
               >
-                <AreaChartComponent
-                  data={attendanceChart7 as Record<string, string | number>[]}
-                  dataKey="count"
-                  xKey="date"
-                  color="teal"
-                  height={200}
-                  integerYAxis
-                  dedupYAxisTicks
-                />
+                {hasAttendanceChartData ? (
+                  <AreaChartComponent
+                    data={attendanceChart7 as Record<string, string | number>[]}
+                    dataKey="count"
+                    xKey="date"
+                    color="teal"
+                    height={200}
+                    integerYAxis
+                    dedupYAxisTicks
+                  />
+                ) : (
+                  <div className="flex h-[168px] flex-col items-center justify-center gap-2 text-center">
+                    <BarChart3 className="h-8 w-8 text-[var(--color-text-muted)]" aria-hidden />
+                    <p className="text-sm text-[var(--color-text-muted)]">{t('noDataForChart')}</p>
+                  </div>
+                )}
               </ChartCard>
             </div>
             <div className="flex flex-col md:col-span-2">
               <div className="flex h-full min-h-[240px] flex-col rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
                 <p className="text-xs font-medium text-[var(--color-text-muted)]">{t('paymentStatus')}</p>
                 <div className="min-h-0 flex-1">
-                  <DonutChart
-                    data={[
-                      { name: t('paid'), value: safeData.paidCount, color: colors.brand[500] },
-                      { name: t('pending'), value: safeData.pendingCount, color: colors.gold[500] },
-                      { name: t('overdue'), value: safeData.latePaymentCount, color: '#EF4444' },
-                    ]}
-                    height={200}
-                    centerLabel={t('collected')}
-                    centerValue={
-                      canViewRevenue
-                        ? formatCurrency(Number(safeData.monthConfirmed), locale)
-                        : tCommon('noData')
-                    }
-                    suffix=""
-                    tooltipValueFormatter={(v) => formatNumber(Number(v), locale)}
-                    centerValueFill="var(--color-text-primary)"
-                    centerLabelFill="var(--color-text-secondary)"
-                  />
+                  {hasPaymentStatusData ? (
+                    <DonutChart
+                      data={[
+                        { name: t('paid'), value: safeData.paidCount, color: colors.brand[500] },
+                        { name: t('pending'), value: safeData.pendingCount, color: colors.gold[500] },
+                        { name: t('overdue'), value: safeData.latePaymentCount, color: '#EF4444' },
+                      ]}
+                      height={200}
+                      centerLabel={t('collected')}
+                      centerValue={
+                        canViewRevenue
+                          ? formatCurrency(Number(safeData.monthConfirmed), locale)
+                          : tCommon('noData')
+                      }
+                      suffix=""
+                      tooltipValueFormatter={(v) => formatNumber(Number(v), locale)}
+                      centerValueFill="var(--color-text-primary)"
+                      centerLabelFill="var(--color-text-secondary)"
+                    />
+                  ) : (
+                    <div className="flex h-[168px] flex-col items-center justify-center gap-2 text-center">
+                      <PieChart className="h-8 w-8 text-[var(--color-text-muted)]" aria-hidden />
+                      <p className="text-sm text-[var(--color-text-muted)]">{t('noDataForChart')}</p>
+                    </div>
+                  )}
                 </div>
-                {safeData.generatedAt ? (
+                {hasPaymentStatusData && safeData.generatedAt ? (
                   <p className="mt-2 border-t border-[var(--color-border-subtle)] pt-2 text-xs text-[var(--color-text-muted)]">
                     {t('chartLastUpdated', {
                       time: formatRelativeMinutesAgo(safeData.generatedAt, locale),
                     })}
                   </p>
                 ) : null}
-              </div>
-            </div>
-          </div>
-
-          <div className="mb-6 grid max-w-6xl grid-cols-1 gap-4 lg:grid-cols-2">
-            <div className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
-              <div className="mb-1 flex items-start justify-between gap-2">
-                <div>
-                  <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{t('atRisk')}</h2>
-                  <p className="text-xs text-[var(--color-text-muted)]">{t('atRiskDesc')}</p>
-                </div>
-                <Link
-                  href="/students?filter=atrisk"
-                  className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-teal-400 hover:text-teal-300 btn-press chq-focus"
-                >
-                  {t('viewAll')}
-                  <ArrowUpRight className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden />
-                </Link>
-              </div>
-              {atRiskStudents.length === 0 ? (
-                <div className="py-8 text-center text-sm text-[var(--color-text-secondary)] space-y-2">
-                  {!atRiskMeta ? (
-                    <p className="text-teal-400">{t('allGood')}</p>
-                  ) : atRiskMeta.totalActive === 0 ? (
-                    <p>{t('atRiskNoStudentsYet')}</p>
-                  ) : atRiskMeta.avgAttendancePct > 80 ? (
-                    <p className="text-teal-400">{t('allGood')}</p>
-                  ) : (
-                    <p className="text-[var(--color-text-muted)]">{t('atRiskStable')}</p>
-                  )}
-                </div>
-              ) : (
-                <ul className="flex flex-col gap-2">
-                  {atRiskStudents.slice(0, 5).map((student) => {
-                    const rawPct =
-                      student.attendance_rate_pct ??
-                      atRiskAttendanceIndicator(student.days_since_last_scan);
-                    const pct = Math.min(100, Math.round(rawPct * 10) / 10);
-                    const barColor = pct < 40 ? 'bg-red-500' : 'bg-amber-500';
-                    return (
-                      <li
-                        key={student.id}
-                        className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2.5"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="min-w-0 flex-1 text-end">
-                            <p className="truncate text-sm font-medium text-[var(--color-text-primary)]">{student.name}</p>
-                            <p className="truncate font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">
-                              {student.student_number ? (
-                                formatStudentNumberForDisplay(student.student_number)
-                              ) : (
-                                <span className="text-[var(--color-text-muted)] text-xs">-</span>
-                              )}
-                            </p>
-                          </div>
-                          <span
-                            className="shrink-0 tabular-nums text-xs font-semibold text-[var(--color-text-secondary)]"
-                            style={{
-                              fontFamily:
-                                'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                            }}
-                          >
-                            {formatPercent(pct, locale)}
-                          </span>
-                        </div>
-                        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[var(--color-surface-3)]">
-                          <div
-                            className={`h-full rounded-full transition-all ${barColor}`}
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
-
-            <div className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
-              <h2 className="mb-3 text-sm font-semibold text-[var(--color-text-primary)]">{t('quickActions')}</h2>
-              <div className="flex flex-col gap-2">
-                <Link
-                  href="/students?action=add"
-                  className="flex min-h-14 items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3 text-end text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
-                >
-                  <UserPlus className="h-6 w-6 shrink-0 text-teal-500" aria-hidden />
-                  <span className="flex-1">{t('addStudent')}</span>
-                </Link>
-                <Link
-                  href="/attendance"
-                  className="flex min-h-14 items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3 text-end text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
-                >
-                  <QrCode className="h-6 w-6 shrink-0 text-teal-500" aria-hidden />
-                  <span className="flex-1">{t('recordAttendance')}</span>
-                </Link>
-                <Link
-                  href="/payments?action=collect"
-                  className="flex min-h-14 items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3 text-end text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
-                >
-                  <CreditCard className="h-6 w-6 shrink-0 text-teal-500" aria-hidden />
-                  <span className="flex-1">{t('collectPayment')}</span>
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => void onSendReport()}
-                  disabled={sendingReport}
-                  className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3 text-end text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-2)] disabled:opacity-50 btn-press chq-focus"
-                >
-                  <Send className="h-6 w-6 shrink-0 text-teal-500" aria-hidden />
-                  <span className="flex-1">{t('sendReport')}</span>
-                </button>
               </div>
             </div>
           </div>

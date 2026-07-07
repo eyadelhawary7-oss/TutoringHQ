@@ -1980,7 +1980,7 @@
     "todayRevenue": "Today's Revenue",
     "activeStudents": {
       "label": "Active Students",
-      "timeWindow": "(this week)"
+      "timeWindow": "this week · {count} total"
     },
     "pendingPayments": {
       "label": "Pending Payments",
@@ -2043,7 +2043,8 @@
     "dailySummaryNoPhone": "Add your center phone in settings to send the summary.",
     "dailySummaryNoActivity": "No attendance or payments recorded for yesterday to include in the summary.",
     "dailySummarySent": "Daily summary sent.",
-    "overdue": "Overdue"
+    "overdue": "Overdue",
+    "moreActions": "More actions"
   },
   "analytics": {
     "title": "Financial Intelligence",
