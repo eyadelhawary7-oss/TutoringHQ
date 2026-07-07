@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
+import { colors } from '@/lib/tokens';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -26,10 +27,10 @@ const ICONS: Record<ToastType, string> = {
 };
 
 const COLORS: Record<ToastType, { bar: string; icon: string }> = {
-  success: { bar: '#0D9488', icon: '#0D9488' },
+  success: { bar: colors.brand[500], icon: colors.brand[500] },
   error: { bar: '#EF4444', icon: '#EF4444' },
-  warning: { bar: '#F59E0B', icon: '#F59E0B' },
-  info: { bar: '#64748B', icon: '#94A3B8' },
+  warning: { bar: colors.gold[500], icon: colors.gold[500] },
+  info: { bar: colors.navy[500], icon: colors.navy[400] },
 };
 
 export function ToastItem({ toast, onDismiss }: ToastItemProps) {

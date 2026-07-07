@@ -216,6 +216,21 @@ migration must be deliberate, not mechanical.
     call, so the whole array is left. All the `#…"` SVG-attribute drift
     (`#14b8a6`, `#34D399`) and WhatsApp-mock colors stay as drift.
 
+- **Batch 4 — UI primitives/components (~18):**
+  - `ui/Toast.tsx` — `COLORS` config uses `${color}15`/`${color}30` alpha
+    concatenation, so `var()` would break it → `colors.brand/gold[500]`,
+    `colors.navy[500|400]` (real hex strings). `#EF4444` error stays drift.
+  - `ui/SuccessCheck.tsx` — `color` default (SVG stroke) → `colors.brand[500]`.
+  - `empty-states/EmptyState.tsx` — `backgroundColor` → `var(--color-brand-500)`.
+  - `QRCard.tsx` — gradient → `var(--color-brand-500|navy-800)`.
+  - `CardOrderStyleSampleMock.tsx` — SVG `fill` vars → `colors.brand[500]`,
+    `colors.navy[50|200|500|900]` (whites/`#0a1628` stay drift).
+  - `CardTemplatePreview.tsx` — contrast helper `#0F172A`→`colors.navy[900]`;
+    `color` default → `colors.brand[500]`; `text-[color:#0f172a]` →
+    `text-[color:var(--color-navy-900)]`.
+  - `attendance/ScanTab.tsx` — SVG `stroke` → `{colors.brand[500]}` (color only;
+    no scanner logic touched).
+
 ### (b) Drift left for the redesign
 - See §6. Nothing snapped.
 

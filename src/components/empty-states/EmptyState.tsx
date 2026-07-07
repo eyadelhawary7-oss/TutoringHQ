@@ -35,7 +35,7 @@ export default function EmptyState({
         <button
           onClick={onAction}
           className="px-6 py-3 rounded-lg font-semibold text-white transition-colors hover:opacity-90"
-          style={{ backgroundColor: '#0D9488' }}
+          style={{ backgroundColor: 'var(--color-brand-500)' }}
         >
           {t(actionLabel)}
         </button>
