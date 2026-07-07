@@ -18,6 +18,7 @@ import { CardOrderCartContents } from '@/components/orders/CardOrderCartContents
 import { CardOrderMobileStickyFooter } from '@/components/orders/CardOrderMobileStickyFooter';
 import { useCardOrderCart } from '@/hooks/useCardOrderCart';
 import { useToast } from '@/components/ui/ToastProvider';
+import { SectionHeader } from '@/components/shared';
 
 export type CardOrdersShippingQuote = {
   hasGovernorate: boolean;
@@ -134,6 +135,7 @@ export default function OrdersPageClient({
   const tHist = useTranslations('orderHistory');
   const tOrders = useTranslations('orders');
   const tCheckoutErr = useTranslations('checkout.errors');
+  const tCommon = useTranslations('common');
   const locale = useLocale();
   const router = useRouter();
   const { toast } = useToast();
@@ -324,13 +326,13 @@ export default function OrdersPageClient({
         </div>
 
         {loading && initialShippingQuote?.hasGovernorate === false ? (
-          <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-950/25 px-4 py-3 text-sm text-amber-100">
+          <div className="mb-4 rounded-xl border border-[var(--color-warning)]/40 bg-[var(--color-warning-muted)] px-4 py-3 text-sm text-[var(--color-warning)]">
             {t('governorateShippingHint')}
           </div>
         ) : null}
 
         {centerInfo && showGovernorateHint ? (
-          <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-950/25 px-4 py-3 text-sm text-amber-100">
+          <div className="mb-4 rounded-xl border border-[var(--color-warning)]/40 bg-[var(--color-warning-muted)] px-4 py-3 text-sm text-[var(--color-warning)]">
             {t('governorateShippingHint')}
           </div>
         ) : null}
@@ -389,24 +391,6 @@ export default function OrdersPageClient({
                   </button>
                 ))}
               </div>
-              <div className="flex flex-wrap gap-3 text-xs text-teal-700">
-                <button type="button" className="font-semibold underline-offset-2 hover:underline" onClick={() => onSort('created_at')}>
-                  {tHist('colDate')}
-                  {sortCol === 'created_at' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
-                </button>
-                <button type="button" className="font-semibold underline-offset-2 hover:underline" onClick={() => onSort('status')}>
-                  {tHist('colStatus')}
-                  {sortCol === 'status' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
-                </button>
-                <button type="button" className="font-semibold underline-offset-2 hover:underline" onClick={() => onSort('quantity')}>
-                  {tHist('colItems')}
-                  {sortCol === 'quantity' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
-                </button>
-                <button type="button" className="font-semibold underline-offset-2 hover:underline" onClick={() => onSort('total_amount')}>
-                  {tHist('colTotal')}
-                  {sortCol === 'total_amount' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
-                </button>
-              </div>
               <p className="text-[11px] text-[var(--color-text-tertiary)]">
                 {tHist('showing', { from: rangeFrom, to: rangeTo, total: ordersTotal })}
               </p>
@@ -414,7 +398,7 @@ export default function OrdersPageClient({
           ) : null}
 
           {loadError && !loading ? (
-            <div className="rounded-xl border border-amber-500/40 bg-amber-950/30 px-4 py-3 text-sm text-amber-100 mb-4">
+            <div className="rounded-xl border border-[var(--color-warning)]/40 bg-[var(--color-warning-muted)] px-4 py-3 text-sm text-[var(--color-warning)] mb-4">
               <p>{loadError}</p>
               <button
                 type="button"
@@ -424,7 +408,7 @@ export default function OrdersPageClient({
                     if (centerId) void loadHistory();
                   })
                 }
-                className="mt-2 text-xs font-semibold text-teal-400 underline"
+                className="mt-2 text-xs font-semibold text-teal-700 underline"
               >
                 {t('tryAgain')}
               </button>
@@ -591,6 +575,33 @@ export default function OrdersPageClient({
               ) : null}
             </>
           )}
+
+          {!loading ? (
+            <div className="mt-6 pt-4 border-t border-[var(--color-border-subtle)]">
+              <div className="mb-2">
+                <SectionHeader title={tCommon('moreActions')} />
+              </div>
+              <div className="flex flex-wrap items-center gap-3 text-xs">
+                <span className="text-[var(--color-text-tertiary)]">{tHist('sortBy')}</span>
+                <button type="button" className="font-semibold text-teal-700 underline-offset-2 hover:underline" onClick={() => onSort('created_at')}>
+                  {tHist('colDate')}
+                  {sortCol === 'created_at' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
+                </button>
+                <button type="button" className="font-semibold text-teal-700 underline-offset-2 hover:underline" onClick={() => onSort('status')}>
+                  {tHist('colStatus')}
+                  {sortCol === 'status' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
+                </button>
+                <button type="button" className="font-semibold text-teal-700 underline-offset-2 hover:underline" onClick={() => onSort('quantity')}>
+                  {tHist('colItems')}
+                  {sortCol === 'quantity' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
+                </button>
+                <button type="button" className="font-semibold text-teal-700 underline-offset-2 hover:underline" onClick={() => onSort('total_amount')}>
+                  {tHist('colTotal')}
+                  {sortCol === 'total_amount' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

@@ -165,8 +165,8 @@ export default function BranchesPage() {
         <PageHeader title={t('title')} subtitle={t('upgradeBody')} />
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-8 max-w-lg">
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-14 h-14 rounded-xl bg-teal-900/40 flex items-center justify-center">
-              <Building2 className="h-7 w-7 text-teal-400" />
+            <div className="w-14 h-14 rounded-xl bg-teal-100 flex items-center justify-center">
+              <Building2 className="h-7 w-7 text-teal-600" />
             </div>
             <div>
               <h2 className="text-xl font-bold text-[var(--color-text-primary)]">{t('upgradeTitle')}</h2>
@@ -176,7 +176,7 @@ export default function BranchesPage() {
           <p className="text-[var(--color-text-secondary)] mb-6">{t('upgradeDesc')}</p>
           <Link
             href="/settings"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-primary-foreground font-medium hover:bg-teal-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-white font-medium hover:bg-teal-700 transition-colors"
           >
             {t('upgradeCta')}
           </Link>
@@ -197,7 +197,7 @@ export default function BranchesPage() {
       <PageHeader title={t('title')} subtitle={t('upgradeBody')} />
 
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm">{error}</div>
+        <div className="mb-4 p-3 rounded-lg bg-[var(--color-danger-muted)] text-[var(--color-danger)] text-sm">{error}</div>
       )}
 
       {isOwner && (
@@ -215,7 +215,7 @@ export default function BranchesPage() {
           <button
             onClick={handleAddBranch}
             disabled={adding || !newName.trim()}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-primary-foreground font-medium hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-white font-medium hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus size={18} />}
             {t('addBranch')}
@@ -254,7 +254,7 @@ export default function BranchesPage() {
             title={tCharts('studentsByBranch')}
             subtitle={t('students')}
             minHeight={260}
-            actions={<Users size={18} className="text-teal-400" aria-hidden />}
+            actions={<Users size={18} className="text-teal-600" aria-hidden />}
           >
             <BarChartComponent
               data={chartData}
@@ -272,7 +272,7 @@ export default function BranchesPage() {
             title={tCharts('revenueByBranch')}
             subtitle={t('monthlyRevenue')}
             minHeight={260}
-            actions={<DollarSign size={18} className="text-teal-400" aria-hidden />}
+            actions={<DollarSign size={18} className="text-teal-600" aria-hidden />}
           >
             <BarChartComponent
               data={chartData}

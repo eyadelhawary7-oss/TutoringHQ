@@ -499,7 +499,7 @@ export default function TeamSettingsPage() {
                         <th className="px-4 py-3 text-start text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{tCommon('actions')}</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-[var(--color-border-subtle)]">
                       {teamMembers.map((member) => {
                         const isSelf = member.id === userId;
                         const isPermReadOnly = isOwner(member) || isSelf;
@@ -566,7 +566,7 @@ export default function TeamSettingsPage() {
                                   {PERM_CHIPS.map(({ key, emoji, labelKey }) => (
                                     <span
                                       key={key}
-                                      className={`px-1.5 py-0.5 rounded text-xs font-medium ${permChecked(key) ? 'bg-teal-100 text-teal-800' : 'bg-[var(--color-surface-2)] text-slate-400'}`}
+                                      className={`px-1.5 py-0.5 rounded text-xs font-medium ${permChecked(key) ? 'bg-teal-100 text-teal-800' : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'}`}
                                       title={t(labelKey)}
                                     >
                                       {emoji}
@@ -706,7 +706,7 @@ export default function TeamSettingsPage() {
                                     e.target.checked ? [...prev, g.id] : prev.filter((id) => id !== g.id),
                                   )
                                 }
-                                className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                                className="rounded border-[var(--color-border)] text-teal-600 focus:ring-teal-500"
                               />
                               <span className="text-sm text-[var(--color-text-primary)]">{g.name}{g.subject ? ` (${g.subject})` : ''}</span>
                             </label>
@@ -728,7 +728,7 @@ export default function TeamSettingsPage() {
                     ].map(({ key, labelKey, Icon }) => (
                       <div key={key} className="flex items-center justify-between py-2 border-b border-[var(--color-border-subtle)]">
                         <div className="flex items-center gap-2">
-                          <Icon className="w-4 h-4 text-slate-400" />
+                          <Icon className="w-4 h-4 text-[var(--color-text-muted)]" />
                           <span className="text-sm text-[var(--color-text-primary)]">{t(labelKey)}</span>
                         </div>
                         <button
@@ -736,7 +736,7 @@ export default function TeamSettingsPage() {
                           role="switch"
                           aria-checked={invitePerms[key] ?? false}
                           onClick={() => setInvitePerms((p) => ({ ...p, [key]: !(p[key] ?? false) }))}
-                          className={`relative w-10 h-5 rounded-full transition-colors ${invitePerms[key] ?? false ? 'bg-teal-600' : 'bg-slate-200'}`}
+                          className={`relative w-10 h-5 rounded-full transition-colors ${invitePerms[key] ?? false ? 'bg-teal-600' : 'bg-[var(--color-surface-3)]'}`}
                         >
                           <span className={`absolute top-0.5 w-4 h-4 bg-[var(--color-surface-1)] rounded-full shadow transition-all ${invitePerms[key] ?? false ? 'start-5' : 'start-0.5'}`} />
                         </button>

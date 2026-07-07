@@ -948,7 +948,8 @@
     "yourSchedule": "Your Schedule",
     "notAuthenticated": "Not authenticated",
     "invalidPin": "Invalid PIN",
-    "close": "Close"
+    "close": "Close",
+    "moreActions": "More actions"
   },
   "emptyStates": {
     "students": {
@@ -5833,7 +5834,8 @@
     "pagePrev": "Previous",
     "pageNext": "Next",
     "emptyFiltered": "No orders match your filters.",
-    "showing": "Showing {from}-{to} of {total}"
+    "showing": "Showing {from}-{to} of {total}",
+    "sortBy": "Sort"
   },
   "notifications": {
     "bellAria": "Notifications",

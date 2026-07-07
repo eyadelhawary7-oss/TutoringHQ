@@ -1027,72 +1027,42 @@ export default function StudentsPage() {
     <>
       <div className="min-h-screen w-full min-w-0 overflow-x-clip bg-[var(--color-surface-0)] page-enter max-md:pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
         <div className="px-4 pt-4 pb-3 max-w-3xl mx-auto w-full">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{ts('title')}</h1>
-                <span
-                  className={`inline-flex items-center rounded-full bg-teal-600 text-white text-xs font-semibold px-2.5 py-0.5 tabular-nums shrink-0 transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}
-                >
-                  {students === null ? '-' : formatNumber(studentsList.length, locale)}
-                </span>
-              </div>
-              <p className="text-xs text-[var(--color-text-secondary)] mt-1">{ts('subtitle')}</p>
+          <div className="mb-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{ts('title')}</h1>
+              <span
+                className={`inline-flex items-center rounded-full bg-teal-600 text-white text-xs font-semibold px-2.5 py-0.5 tabular-nums shrink-0 transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}
+              >
+                {students === null ? '-' : formatNumber(studentsList.length, locale)}
+              </span>
             </div>
-            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-              <Link
-                href="/students/import"
-                className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow"
-              >
-                <Upload size={16} /> {ts('import')}
-              </Link>
-              <Link
-                href="/orders"
-                className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow btn-press chq-focus"
-                aria-label={ts('order_cards')}
-              >
-                <ShoppingCart size={16} />
-                {ts('order_cards')}
-                {activeItemCount > 0 ? (
-                  <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-teal-500 text-white text-[10px] font-bold leading-none">
-                    {activeItemCount > 99 ? '99+' : activeItemCount}
-                  </span>
-                ) : null}
-              </Link>
-              <Link
-                href="/students/pending"
-                className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow btn-press chq-focus"
-                aria-label={ts('pendingRequests')}
-              >
-                <Inbox size={16} /> {ts('pendingRequests')}
-                {pendingCount > 0 ? (
-                  <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-teal-500 text-white text-[10px] font-bold leading-none">
-                    {pendingCount > 99 ? '99+' : pendingCount}
-                  </span>
-                ) : null}
-              </Link>
-              {(user?.role === 'owner' || user?.role === 'admin' || user?.role === 'super_admin') && (
-                <button
-                  type="button"
-                  disabled={!canSendAnnouncement}
-                  onClick={() => {
-                    setAnnouncementBlastType(null);
-                    setAnnouncementMessage('');
-                    setShowAnnouncementModal(true);
+            <p className="text-xs text-[var(--color-text-secondary)] mt-1">{ts('subtitle')}</p>
+          </div>
+
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex-1 min-w-0 rounded-xl bg-[var(--color-surface-1)] ring-1 ring-[var(--color-border-subtle)] border-0 shadow-sm focus-within:ring-2 focus-within:ring-teal-500 transition-shadow duration-150">
+              <div className="relative">
+                <Search size={18} className="absolute top-1/2 -translate-y-1/2 start-4 text-[var(--color-text-muted)] pointer-events-none" />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setFilterKey((k) => k + 1);
                   }}
-                  className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow disabled:opacity-50 disabled:cursor-not-allowed btn-press chq-focus"
-                >
-                  {ts('sendAnnouncement')}
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setShowAddModal(true)}
-                className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-xl transition-all duration-150 shadow-sm btn-press chq-focus"
-              >
-                <Plus size={16} /> {ts('add_student')}
-              </button>
+                  placeholder={ts('search_placeholder')}
+                  className="w-full bg-transparent ps-12 pe-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none border-0 rounded-xl"
+                  dir="auto"
+                />
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={() => setShowAddModal(true)}
+              className="btn-lift shrink-0 flex items-center gap-1.5 px-4 py-3 min-h-[48px] bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-xl transition-all duration-150 shadow-sm btn-press chq-focus"
+            >
+              <Plus size={18} /> <span className="hidden sm:inline">{ts('add_student')}</span>
+            </button>
           </div>
 
           <div className="mb-3">
@@ -1126,23 +1096,6 @@ export default function StudentsPage() {
                 />
               </div>
             )}
-          </div>
-
-          <div className="rounded-xl bg-[var(--color-surface-1)] mb-3 ring-1 ring-[var(--color-border-subtle)] border-0 shadow-sm focus-within:ring-2 focus-within:ring-teal-500 transition-shadow duration-150">
-            <div className="relative">
-              <Search size={18} className="absolute top-1/2 -translate-y-1/2 start-4 text-[var(--color-text-muted)] pointer-events-none" />
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setFilterKey((k) => k + 1);
-                }}
-                placeholder={ts('search_placeholder')}
-                className="w-full bg-transparent ps-12 pe-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none border-0 rounded-xl"
-                dir="auto"
-              />
-            </div>
           </div>
 
           <div className="flex flex-col gap-3 mb-3">
@@ -1207,38 +1160,6 @@ export default function StudentsPage() {
                 onClick={() => setStatusHelpOpen(true)}
               >
                 <CircleHelp className="h-5 w-5" aria-hidden />
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-[var(--color-text-tertiary)]">{ts('sort')}</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setSortBy('name');
-                  setFilterKey((k) => k + 1);
-                }}
-                className={`px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 border ${
-                  sortBy === 'name'
-                    ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
-                    : 'bg-[var(--color-surface-1)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)] hover:border-teal-500/40'
-                } btn-press chq-focus`}
-              >
-                {ts('sortName')}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSortBy('balance');
-                  setFilterKey((k) => k + 1);
-                }}
-                className={`px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 border ${
-                  sortBy === 'balance'
-                    ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
-                    : 'bg-[var(--color-surface-1)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)] hover:border-teal-500/40'
-                } btn-press chq-focus`}
-              >
-                {ts('sortBalance')}
               </button>
             </div>
           </div>
@@ -1920,6 +1841,89 @@ export default function StudentsPage() {
               )}
             </div>
           )}
+
+          <div className="pt-2">
+            <div className="mb-3">
+              <SectionHeader title={tCommon('moreActions')} />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href="/students/import"
+                className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow"
+              >
+                <Upload size={16} /> {ts('import')}
+              </Link>
+              <Link
+                href="/orders"
+                className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow btn-press chq-focus"
+                aria-label={ts('order_cards')}
+              >
+                <ShoppingCart size={16} />
+                {ts('order_cards')}
+                {activeItemCount > 0 ? (
+                  <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-teal-500 text-white text-[10px] font-bold leading-none">
+                    {activeItemCount > 99 ? '99+' : activeItemCount}
+                  </span>
+                ) : null}
+              </Link>
+              <Link
+                href="/students/pending"
+                className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow btn-press chq-focus"
+                aria-label={ts('pendingRequests')}
+              >
+                <Inbox size={16} /> {ts('pendingRequests')}
+                {pendingCount > 0 ? (
+                  <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-teal-500 text-white text-[10px] font-bold leading-none">
+                    {pendingCount > 99 ? '99+' : pendingCount}
+                  </span>
+                ) : null}
+              </Link>
+              {(user?.role === 'owner' || user?.role === 'admin' || user?.role === 'super_admin') && (
+                <button
+                  type="button"
+                  disabled={!canSendAnnouncement}
+                  onClick={() => {
+                    setAnnouncementBlastType(null);
+                    setAnnouncementMessage('');
+                    setShowAnnouncementModal(true);
+                  }}
+                  className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow disabled:opacity-50 disabled:cursor-not-allowed btn-press chq-focus"
+                >
+                  {ts('sendAnnouncement')}
+                </button>
+              )}
+              <span className="mx-1 h-6 w-px bg-[var(--color-border-subtle)]" aria-hidden />
+              <span className="text-xs text-[var(--color-text-tertiary)]">{ts('sort')}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setSortBy('name');
+                  setFilterKey((k) => k + 1);
+                }}
+                className={`px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 border ${
+                  sortBy === 'name'
+                    ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
+                    : 'bg-[var(--color-surface-1)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)] hover:border-teal-500/40'
+                } btn-press chq-focus`}
+              >
+                {ts('sortName')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSortBy('balance');
+                  setFilterKey((k) => k + 1);
+                }}
+                className={`px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 border ${
+                  sortBy === 'balance'
+                    ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
+                    : 'bg-[var(--color-surface-1)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)] hover:border-teal-500/40'
+                } btn-press chq-focus`}
+              >
+                {ts('sortBalance')}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

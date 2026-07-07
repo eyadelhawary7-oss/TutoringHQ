@@ -948,7 +948,8 @@
     "yourSchedule": "Your الجدول",
     "notAuthenticated": "غير مسجّل الدخول",
     "invalidPin": "رمز PIN غير صحيح",
-    "close": "إغلاق"
+    "close": "إغلاق",
+    "moreActions": "إجراءات إضافية"
   },
   "emptyStates": {
     "students": {
@@ -4530,7 +4531,8 @@
     "pagePrev": "السابق",
     "pageNext": "التالي",
     "emptyFiltered": "لا توجد طلبات مطابقة.",
-    "showing": "عرض {from}-{to} من {total}"
+    "showing": "عرض {from}-{to} من {total}",
+    "sortBy": "ترتيب"
   },
   "notifications": {
     "bellAria": "الإشعارات",

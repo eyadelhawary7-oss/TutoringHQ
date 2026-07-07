@@ -490,7 +490,7 @@ export default function GroupsPage() {
                 </div>
                 <div className="flex items-center">
                   <span
-                    className="text-xs text-slate-400 font-mono tabular-nums"
+                    className="text-xs text-[var(--color-text-muted)] font-mono tabular-nums"
                     title={t('studentCount')}
                   >
                     {formatNumber(g.student_count ?? g.member_count ?? 0, locale)}
@@ -515,7 +515,7 @@ export default function GroupsPage() {
                 <span className="text-sm font-semibold text-[var(--color-text-primary)] font-mono">
                   {g.fee != null ? formatCurrency(g.fee, locale) : tCommon('notSet')}
                 </span>
-                <span className="text-xs text-slate-400">{t('perLesson')}</span>
+                <span className="text-xs text-[var(--color-text-muted)]">{t('perLesson')}</span>
               </div>
             </div>
           ))}
@@ -536,7 +536,7 @@ export default function GroupsPage() {
                 <input
                   value={addForm.name}
                   onChange={e => setAddForm(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm text-[var(--color-text-primary)]"
+                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm text-[var(--color-text-primary)]"
                   required
                 />
               </div>
@@ -545,7 +545,7 @@ export default function GroupsPage() {
                 <select
                   value={addForm.subjectId}
                   onChange={e => setAddForm(prev => ({ ...prev, subjectId: e.target.value }))}
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm text-[var(--color-text-primary)]"
+                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm text-[var(--color-text-primary)]"
                   required
                   disabled={subjects.length === 0}
                 >
@@ -573,7 +573,7 @@ export default function GroupsPage() {
                   onChange={e => setAddForm(prev => ({ ...prev, fee_per_class: e.target.value }))}
                   type="number"
                   min={0}
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm font-mono text-[var(--color-text-primary)]"
+                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm font-mono text-[var(--color-text-primary)]"
                   required
                 />
               </div>
@@ -585,10 +585,10 @@ export default function GroupsPage() {
                   type="number"
                   min={0}
                   step={0.01}
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm font-mono text-[var(--color-text-primary)]"
+                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm font-mono text-[var(--color-text-primary)]"
                 />
                 {addForm.centerCut.trim() !== '' && addForm.fee_per_class.trim() !== '' && Number(addForm.centerCut) >= Number(addForm.fee_per_class) && (
-                  <p className="mt-1 text-xs text-red-600">{tCut('mustBeLessThanFee')}</p>
+                  <p className="mt-1 text-xs text-[var(--color-danger)]">{tCut('mustBeLessThanFee')}</p>
                 )}
               </div>
               <div>
@@ -599,28 +599,28 @@ export default function GroupsPage() {
                   type="number"
                   min={0}
                   placeholder={t('optional', { defaultValue: 'اختياري' })}
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm font-mono text-[var(--color-text-primary)]"
+                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm font-mono text-[var(--color-text-primary)]"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('assignStudents')}</label>
                 <div className="relative mb-2">
-                  <Search size={14} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
+                  <Search size={14} className="absolute top-1/2 -translate-y-1/2 start-3 text-[var(--color-text-muted)]" />
                   <input
                     value={addSearch}
                     onChange={e => setAddSearch(e.target.value)}
                     placeholder={t('searchStudents')}
-                    className="w-full ps-9 pe-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
+                    className="w-full ps-9 pe-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
                   />
                 </div>
-                <div className="max-h-32 overflow-y-auto border border-border rounded-lg p-2 space-y-1">
+                <div className="max-h-32 overflow-y-auto border border-[var(--color-border)] rounded-lg p-2 space-y-1">
                   {studentsForAddModal.map(s => (
-                    <label key={s.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted cursor-pointer">
+                    <label key={s.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-[var(--color-surface-2)] cursor-pointer">
                       <input type="checkbox" checked={addForm.studentIds.includes(s.id)} onChange={() => toggleAddFormStudent(s.id)} className="rounded accent-primary" />
                       <span className="flex flex-col min-w-0 flex-1">
                         <span className="text-sm text-[var(--color-text-primary)]">{s.name}</span>
                         {s.student_number ? (
-                          <span className="text-xs text-slate-400" dir="ltr">{formatStudentNumberForDisplay(s.student_number)}</span>
+                          <span className="text-xs text-[var(--color-text-muted)]" dir="ltr">{formatStudentNumberForDisplay(s.student_number)}</span>
                         ) : null}
                       </span>
                     </label>
@@ -628,8 +628,8 @@ export default function GroupsPage() {
                 </div>
               </div>
               <div className="flex gap-2 justify-end mt-4">
-                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-lg text-sm border border-border text-[var(--color-text-secondary)]">{tCommon('cancel')}</button>
-                <button type="submit" disabled={isAdding} className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'hsl(var(--primary))' }}>{tCommon('save')}</button>
+                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-lg text-sm border border-[var(--color-border)] text-[var(--color-text-secondary)]">{tCommon('cancel')}</button>
+                <button type="submit" disabled={isAdding} className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 transition-colors disabled:opacity-50">{tCommon('save')}</button>
               </div>
             </form>
           </div>
@@ -640,10 +640,10 @@ export default function GroupsPage() {
       {detailGroup && (
         <div className="fixed inset-0 z-50" onClick={() => setDetailGroup(null)}>
           <div className="absolute inset-0 bg-black/40" />
-          <div className="absolute top-0 end-0 bottom-0 w-full max-w-md bg-[var(--color-surface-1)] border-s border-border overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="p-5 border-b border-border flex items-center justify-between">
+          <div className="absolute top-0 end-0 bottom-0 w-full max-w-md bg-[var(--color-surface-1)] border-s border-[var(--color-border)] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-[var(--color-border)] flex items-center justify-between">
               <h2 className="font-bold text-[var(--color-text-primary)] text-lg">{detailGroup.name}</h2>
-              <button onClick={() => setDetailGroup(null)} className="p-1.5 rounded-lg hover:bg-muted"><X size={18} /></button>
+              <button onClick={() => setDetailGroup(null)} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-2)]"><X size={18} /></button>
             </div>
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-3 gap-3">
@@ -665,12 +665,12 @@ export default function GroupsPage() {
                 </div>
               </div>
               {detailGroup.max_capacity != null && detailGroup.max_capacity < 999 && (
-                <div className="flex gap-1 p-1 rounded-lg bg-muted/50">
+                <div className="flex gap-1 p-1 rounded-lg bg-[var(--color-surface-2)]/50">
                   <button type="button" onClick={() => setActiveTab('members')} className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium ${activeTab === 'members' ? 'bg-[var(--color-surface-0)] shadow text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}>{t('members')}</button>
                   <button type="button" onClick={() => setActiveTab('waitlist')} className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium ${activeTab === 'waitlist' ? 'bg-[var(--color-surface-0)] shadow text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}>{t('waitlist', { defaultValue: 'قائمة الانتظار' })} ({formatNumber(waitlist.length, locale)})</button>
                 </div>
               )}
-              <div className="border-t border-border pt-4">
+              <div className="border-t border-[var(--color-border)] pt-4">
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setExpandedHeatmapId(expandedHeatmapId === detailGroup.id ? null : detailGroup.id); }}
@@ -688,7 +688,7 @@ export default function GroupsPage() {
               </div>
 
               {/* Per-session attendance breakdown (relocated from standalone Attendance page) */}
-              <div className="border-t border-border pt-4">
+              <div className="border-t border-[var(--color-border)] pt-4">
                 <h3 className="font-bold text-[var(--color-text-primary)] mb-3 flex items-center gap-2">
                   <ClipboardList size={16} /> {tAtt('sessionBreakdown')}
                 </h3>
@@ -719,10 +719,10 @@ export default function GroupsPage() {
                             </p>
                           </div>
                         </div>
-                        <div className="overflow-x-auto rounded-lg border border-border">
+                        <div className="overflow-x-auto rounded-lg border border-[var(--color-border)]">
                           <table className="w-full text-sm">
                             <thead>
-                              <tr className="border-b border-border bg-[var(--color-surface-0)]">
+                              <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-0)]">
                                 <th className="text-start py-2 px-3 text-xs font-semibold text-[var(--color-text-secondary)]">{tAtt('date')}</th>
                                 <th className="text-start py-2 px-3 text-xs font-semibold text-[var(--color-text-secondary)]">{tAtt('studentsPresent')}</th>
                                 <th className="text-start py-2 px-3 text-xs font-semibold text-[var(--color-text-secondary)]">{tAtt('attendanceRate')}</th>
@@ -730,7 +730,7 @@ export default function GroupsPage() {
                             </thead>
                             <tbody>
                               {sessionBreakdown.map((sb) => (
-                                <tr key={sb.date} className="border-b border-border last:border-0">
+                                <tr key={sb.date} className="border-b border-[var(--color-border)] last:border-0">
                                   <td className="py-2 px-3 text-[var(--color-text-secondary)] text-start" dir="ltr">
                                     {formatDate(sb.date, locale, { dateStyle: 'short' })}
                                   </td>
@@ -750,17 +750,17 @@ export default function GroupsPage() {
                   })()
                 )}
               </div>
-              <div className="border-t border-border pt-4">
+              <div className="border-t border-[var(--color-border)] pt-4">
                 {detailGroup.max_capacity != null && detailGroup.max_capacity < 999 && activeTab === 'waitlist' ? (
                   <>
                     <h3 className="font-bold text-[var(--color-text-primary)] mb-3">{t('waitlist', { defaultValue: 'قائمة الانتظار' })}</h3>
                     <div className="space-y-2 mb-4">
                       {waitlist.map((w, i) => (
-                        <div key={w.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                        <div key={w.id} className="flex items-center justify-between py-2 border-b border-[var(--color-border)] last:border-0">
                           <div>
                             <div className="text-sm font-medium text-[var(--color-text-primary)]"><bdi>#{i + 1}</bdi> {w.name}</div>
                             {w.student_number ? (
-                              <div className="text-xs text-slate-400 mt-0.5" dir="ltr">{formatStudentNumberForDisplay(w.student_number)}</div>
+                              <div className="text-xs text-[var(--color-text-muted)] mt-0.5" dir="ltr">{formatStudentNumberForDisplay(w.student_number)}</div>
                             ) : w.parent_phone ? (
                               <div className="text-xs text-[var(--color-text-secondary)] font-mono mt-0.5" dir="ltr">{w.parent_phone}</div>
                             ) : (
@@ -794,16 +794,16 @@ export default function GroupsPage() {
                 <h3 className="font-bold text-[var(--color-text-primary)] mb-3 flex items-center gap-2"><Users size={16} /> {t('members')}</h3>
                 <div className="space-y-2 mb-4">
                   {members.map(m => (
-                    <div key={m.student_id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                    <div key={m.student_id} className="flex items-center justify-between py-2 border-b border-[var(--color-border)] last:border-0">
                       <div>
                         <div className="text-sm font-medium text-[var(--color-text-primary)]">{m.student_name}</div>
                         {m.student_number ? (
-                          <div className="text-xs text-slate-400 mt-0.5" dir="ltr">{formatStudentNumberForDisplay(m.student_number)}</div>
+                          <div className="text-xs text-[var(--color-text-muted)] mt-0.5" dir="ltr">{formatStudentNumberForDisplay(m.student_number)}</div>
                         ) : (
                           <div className="text-xs text-[var(--color-text-secondary)] font-mono mt-0.5" dir="ltr">-</div>
                         )}
                       </div>
-                      <button type="button" onClick={() => handleRemoveMember(m.student_id)} className="text-xs text-red-600 hover:text-red-700 font-medium">
+                      <button type="button" onClick={() => handleRemoveMember(m.student_id)} className="text-xs text-[var(--color-danger)] hover:opacity-80 font-medium">
                         {t('remove')}
                       </button>
                     </div>
@@ -812,12 +812,12 @@ export default function GroupsPage() {
                 </div>
                 <h4 className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">{t('addStudent')}</h4>
                 <div className="relative mb-2">
-                  <Search size={14} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
+                  <Search size={14} className="absolute top-1/2 -translate-y-1/2 start-3 text-[var(--color-text-muted)]" />
                   <input
                     value={addMemberSearch}
                     onChange={e => setAddMemberSearch(e.target.value)}
                     placeholder={t('searchStudents')}
-                    className="w-full ps-9 pe-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
+                    className="w-full ps-9 pe-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
                   />
                 </div>
                 <div className="flex flex-wrap gap-2">

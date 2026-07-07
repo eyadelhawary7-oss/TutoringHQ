@@ -375,8 +375,8 @@ export default function ChecklistTab({ initialGroupId }: { initialGroupId?: stri
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {!probeOk && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-700/40 bg-amber-900/20 px-3 py-1 text-xs font-medium text-amber-500">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-amber-400" /> {t('offline')}
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-amber-500" /> {t('offline')}
             </span>
           )}
           {pendingCount > 0 && (
@@ -453,7 +453,7 @@ export default function ChecklistTab({ initialGroupId }: { initialGroupId?: stri
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t('searchStudents')}
-              className="w-full rounded-lg border border-input bg-[var(--color-surface-1)] ps-9 pe-3 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] ps-9 pe-3 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
             />
           </div>
 

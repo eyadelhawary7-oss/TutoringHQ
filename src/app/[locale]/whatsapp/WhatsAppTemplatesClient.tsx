@@ -75,10 +75,10 @@ export default function WhatsAppTemplatesClient({
           </Link>
         </div>
 
-        <section className="rounded-2xl border border-dashed border-amber-400/60 bg-amber-50/40 p-5">
+        <section className="rounded-2xl border border-dashed border-[var(--color-warning)]/40 bg-[var(--color-warning-muted)] p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-warning)]">
                 {t('comingSoonBadge')}
               </p>
               <h2 className="mt-1 text-lg font-bold text-[var(--color-text-primary)]">chq_pin_delivery</h2>
@@ -87,7 +87,7 @@ export default function WhatsAppTemplatesClient({
             </div>
             <a
               href={notifyHref}
-              className="inline-flex items-center justify-center rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-700"
+              className="inline-flex items-center justify-center rounded-xl bg-[var(--color-warning)] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"
             >
               {t('notifyMe')}
             </a>
