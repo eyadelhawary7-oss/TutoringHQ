@@ -11,6 +11,7 @@ export type ActionType =
   | 'renewal'
   | 'cancellation_request'
   | 'pack_billing_blocked'
+  | 'billing_blocked'
 
 export interface SalesLead {
   id: string

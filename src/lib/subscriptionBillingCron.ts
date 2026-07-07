@@ -14,6 +14,8 @@ import { applyProcessingFee } from '@/lib/processingFee';
 import { logBillingEvent } from '@/lib/billingAudit';
 import { resolveScheduledCenterDowngrade } from '@/lib/scheduledDowngrade';
 import { centerRenewalBaseAmount, centerRenewalPeriodMonths } from '@/lib/centerRenewal';
+import { requireTopCentersAllInPrice } from '@/lib/pricing/topCentersPrice';
+import { createAction } from '@/lib/ceo';
 
 // RETIRED: the legacy day+3 / day+7 overdue WhatsApp reminders below. The unified
 // billing-nudges engine (src/lib/nudges) is now the single source of center +
@@ -127,12 +129,18 @@ export async function runSubscriptionBillingCron(
   const dueMinus3 = calendarAddDays(today, -3);
   const dueMinus7 = calendarAddDays(today, -7);
 
+  // B-H3: create the renewal invoice for any center due on OR BEFORE today+7 that
+  // has no invoice yet for that period — not only the ones due EXACTLY today+7.
+  // The old `.eq(next_payment_due, in7)` was a one-shot window: a single missed
+  // cron day (deploy/outage) meant the invoice was never created, so the center
+  // got locked with nothing payable on /pay. `.lte` + the per-period existence
+  // check below (billing_period_start) make creation idempotent and self-healing.
   const { data: dueIn7, error: q7err } = await supabase
     .from('centers')
     .select(
-      'id, name, phone, next_payment_due, billing_amount, billing_period, all_in_price, center_code, referral_code, status, billing_type, pricing_type, scheduled_plan, scheduled_billing_period',
+      'id, name, phone, next_payment_due, billing_amount, billing_period, all_in_price, plan, center_code, referral_code, status, billing_type, pricing_type, scheduled_plan, scheduled_billing_period',
     )
-    .eq('next_payment_due', in7)
+    .lte('next_payment_due', in7)
     .in('status', ['active', 'pending_cancellation'])
     .not('status', 'in', '(cancelled,rejected)')
     .not('subscription_status', 'in', '(cancelled)')
@@ -156,6 +164,7 @@ export async function runSubscriptionBillingCron(
         billing_amount: number | null;
         billing_period?: string | null;
         all_in_price?: number | null;
+        plan?: string | null;
         center_code?: string | null;
         referral_code?: string | null;
         scheduled_plan?: string | null;
@@ -181,6 +190,41 @@ export async function runSubscriptionBillingCron(
         c.scheduled_plan,
         c.scheduled_billing_period,
       );
+
+      // B-H4: top_centers is custom-priced from centers.all_in_price (the source
+      // of truth). Without this guard a top_centers center with a NULL/invalid
+      // all_in_price renews for `getAnnualChargeRounded(0) = 0` (+ the flat fee) —
+      // a silent 0 EGP invoice. Mirror the pack-billing guard: skip the center and
+      // enqueue a red CEO action rather than bill nothing. A scheduled downgrade
+      // already resolves a concrete per-month base, so it is exempt.
+      if (!sched && c.plan === 'top_centers') {
+        try {
+          requireTopCentersAllInPrice(c.all_in_price, 'subscriptionBillingCron.renewal');
+        } catch {
+          try {
+            await createAction(supabase, {
+              type: 'billing_blocked',
+              priority: 'red',
+              center_id: c.id,
+              title: `Renewal skipped, ${c.name}`,
+              subtitle: JSON.stringify({
+                centerId: c.id,
+                reason: 'top_centers plan missing all_in_price',
+                nextPaymentDue: npd,
+              }),
+              revenue_at_risk: 0,
+              auto_generated: true,
+            });
+          } catch (e) {
+            console.error('[subscriptionBillingCron] ceo_action_queue billing_blocked:', e);
+          }
+          console.warn(
+            `[subscriptionBillingCron] Skipping top_centers ${c.id}`,
+            ', all_in_price is null or 0',
+          );
+          continue;
+        }
+      }
       // Period-aware renewal: annual bills monthly × 10 over a 12-month clock;
       // monthly bills the stored monthly amount over a 1-month clock (the standard
       // non-annual cadence — the quarterly clock is retired). A scheduled downgrade
@@ -384,9 +428,19 @@ export async function runSubscriptionBillingCron(
     }
   }
 
-  // Auto-suspend when auto_suspend_at falls on today. Grace is normally next_payment_due + N calendar days
-  // (see platform_config.subscription_grace_period_days; billingSchedule.autoSuspendAtFromDue when writing centers).
-  const tomorrow = calendarAddDays(today, 1);
+  // B-H2: suspend on the single-day lock model, keyed off next_payment_due — NOT
+  // the stored auto_suspend_at. auto_suspend_at is a DATE column and
+  // lockAtFromBillingDay writes it as the 00:00-Cairo instant of due+1, whose
+  // UTC date part truncates to the due DAY. The old `auto_suspend_at == today`
+  // window therefore locked centers a day EARLY (mid-morning of their due day,
+  // when they should keep full access until the next Cairo midnight) AND, being
+  // an exact same-day match, never caught up a row whose day was missed.
+  //
+  // A center is locked once the Cairo day is strictly AFTER its billing day
+  // (resolveBillingAccess: locked when todayCairo > billingDay). So suspend every
+  // still-active row whose next_payment_due is before today (Cairo) and is unpaid.
+  // `.lt` (not an exact match) self-heals missed cron days. `today` is Cairo
+  // (todayISO), aligned with the next_payment_due DATE storage.
   const { data: suspendRows, error: susErr } = await supabase
     .from('centers')
     .update({
@@ -394,8 +448,8 @@ export async function runSubscriptionBillingCron(
       billing_status: 'suspended',
       subscription_status: 'suspended',
     })
-    .gte('auto_suspend_at', `${today}T00:00:00.000Z`)
-    .lt('auto_suspend_at', `${tomorrow}T00:00:00.000Z`)
+    .lt('next_payment_due', today)
+    .not('next_payment_due', 'is', null)
     .neq('billing_status', 'paid')
     .neq('status', 'suspended')
     .not('status', 'in', '(cancelled,rejected)')

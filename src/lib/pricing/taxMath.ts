@@ -8,26 +8,44 @@
 export const VAT_RATE = 0.14;
 
 /**
- * QR card physical economics: base per card before VAT. Grosses up to a flat
- * 60 EGP/card inclusive (60 × (1 − VAT) = 51.6). Kept as a base so the setup_fee
- * invoice can still show a base + VAT breakdown.
+ * VAT-INCLUSIVE decomposition (B-H1). A VAT-inclusive price P contains base B
+ * and VAT at rate r where P = B × (1 + r). Therefore:
+ *   base = P / (1 + r)          VAT = P − base = P × r / (1 + r)
+ * This is the ONLY arithmetically correct split for a "VAT (14%)" line — the
+ * printed VAT then equals exactly 14% of the printed subtotal, as an Egyptian
+ * فاتورة ضريبية legally requires. (The former model stripped P × 0.14 / P × 0.86,
+ * which made the "14%" line 16.28% of the subtotal — non-compliant, and it
+ * disagreed with processingFee.vatInsideInclusive, which already used ÷1.14.)
  */
-export const CARD_UNIT_BASE_EGP = 51.6;
+const VAT_DIVISOR = 1 + VAT_RATE;
+
+/**
+ * QR card physical economics: base per card before VAT. Grosses up to a flat
+ * 60 EGP/card inclusive under the VAT-inclusive split (base = 60 / 1.14). Kept
+ * UNROUNDED so N-card multiples gross back to exactly N × 60 EGP with no
+ * rounding drift, and so the setup_fee invoice can show a base + VAT breakdown.
+ */
+export const CARD_UNIT_BASE_EGP = 60 / VAT_DIVISOR;
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+/** VAT contained inside a VAT-inclusive amount: P × 0.14 / 1.14. */
+function vatInside(inclusive: number): number {
+  return round2((inclusive * VAT_RATE) / VAT_DIVISOR);
+}
+
 export function baseFromInclusive(inclusive: number): number {
   const i = Number(inclusive);
   if (!Number.isFinite(i)) return 0;
-  return round2(i * (1 - VAT_RATE));
+  return round2(i / VAT_DIVISOR);
 }
 
 export function inclusiveFromBase(base: number): number {
   const b = Number(base);
   if (!Number.isFinite(b) || b <= 0) return 0;
-  return round2(b / (1 - VAT_RATE));
+  return round2(b * VAT_DIVISOR);
 }
 
 export interface TaxBreakdown {
@@ -37,14 +55,16 @@ export interface TaxBreakdown {
 }
 
 /**
- * Decompose inclusive amount into base + VAT so the two sum exactly.
+ * Decompose inclusive amount into base + VAT so the two sum exactly. VAT is the
+ * 14% slice already inside the inclusive amount (P × 0.14 / 1.14), identical to
+ * processingFee.vatInsideInclusive — the two modules now agree exactly.
  */
 export function explodeInclusive(inclusive: number): TaxBreakdown {
   const i = round2(Number(inclusive));
   if (!Number.isFinite(i) || i <= 0) {
     return { inclusive: 0, vat: 0, base: 0 };
   }
-  const vat = round2(i * VAT_RATE);
+  const vat = vatInside(i);
   const base = round2(i - vat);
   return { inclusive: i, vat, base };
 }
