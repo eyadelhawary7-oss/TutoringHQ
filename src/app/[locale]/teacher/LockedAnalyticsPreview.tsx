@@ -50,7 +50,7 @@ export default function LockedAnalyticsPreview({ onStartTrial }: { onStartTrial:
           className="pointer-events-none select-none p-5 blur-[4px] transition-all duration-300 group-hover:blur-[2px]"
         >
           <div className="money-hero mb-5 rounded-[var(--radius-card)] p-5">
-            <div className="mb-1 flex items-center gap-2 text-sm text-[#dfeeeb]">
+            <div className="mb-1 flex items-center gap-2 text-sm text-[var(--color-teal-soft)]">
               <CalendarClock size={16} aria-hidden />
               {t('projectionTitle')}
               <span className="rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide">

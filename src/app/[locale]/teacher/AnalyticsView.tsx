@@ -224,7 +224,7 @@ export default function AnalyticsView() {
       {/* #1 Projection ----------------------------------------------------- */}
       <section className="flex flex-col gap-3">
         <div className="money-hero rounded-[var(--radius-card)] p-5">
-          <div className="mb-1 flex items-center gap-2 text-sm text-[#dfeeeb]">
+          <div className="mb-1 flex items-center gap-2 text-sm text-[var(--color-teal-soft)]">
             <CalendarClock size={16} aria-hidden />
             {t('projectionTitle')}
             <span className="rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide">
@@ -232,7 +232,7 @@ export default function AnalyticsView() {
             </span>
           </div>
           <p className="num text-3xl font-bold">{formatCurrency(data.projection.total, locale)}</p>
-          <p className="mt-1 text-xs text-[#dfeeeb]/80">
+          <p className="mt-1 text-xs text-[var(--color-teal-soft)]/80">
             {t('projectionForMonth', { month: projectionMonth })} · {t('projectionSubtitle')}
           </p>
         </div>

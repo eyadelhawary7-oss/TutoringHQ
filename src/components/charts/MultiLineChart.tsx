@@ -15,6 +15,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { formatNumber } from '@/lib/formatNumber';
 import { CHART_MARGIN, CHART_STYLE } from './ChartTokens';
 import { ChartTooltip } from './ChartTooltip';
+import { colors } from '@/lib/tokens';
 
 export type MultiLineDataPoint = Record<string, string | number | undefined | null>;
 
@@ -57,7 +58,7 @@ export function MultiLineChart({
     return (
       <div
         className="flex flex-col items-center justify-center text-center px-4"
-        style={{ height, color: '#80827a', fontSize: 13, fontFamily: CHART_STYLE.fontFamily }}
+        style={{ height, color: 'var(--color-text-muted)', fontSize: 13, fontFamily: CHART_STYLE.fontFamily }}
       >
         <p>{t('noData')}</p>
         <p className="mt-1 text-xs opacity-80 max-w-xs">{t('noDataSub')}</p>
@@ -93,12 +94,12 @@ export function MultiLineChart({
           }
         />
         <Tooltip
-          cursor={{ stroke: '#80827a', strokeWidth: 1, strokeDasharray: '4 4' }}
+          cursor={{ stroke: CHART_STYLE.axisColor, strokeWidth: 1, strokeDasharray: '4 4' }}
           content={(props) => {
             const pl = props.payload?.map((p) => ({
               name: String(p.name ?? p.dataKey ?? ''),
               value: Number(p.value ?? 0),
-              color: String(p.stroke ?? '#94A3B8'),
+              color: String(p.stroke ?? colors.navy[400]),
               dataKey: String(p.dataKey ?? ''),
             }));
             return (
@@ -115,7 +116,7 @@ export function MultiLineChart({
         />
         {showLegend ? (
           <Legend
-            wrapperStyle={{ fontFamily: CHART_STYLE.fontFamily, fontSize: 11, color: '#94A3B8' }}
+            wrapperStyle={{ fontFamily: CHART_STYLE.fontFamily, fontSize: 11, color: colors.navy[400] }}
           />
         ) : null}
         {series.map((s) => (
@@ -127,7 +128,7 @@ export function MultiLineChart({
             stroke={s.color}
             strokeWidth={CHART_STYLE.strokeWidth}
             dot={false}
-            activeDot={{ r: CHART_STYLE.dotActiveRadius, stroke: '#0F172A', strokeWidth: 2, fill: s.color }}
+            activeDot={{ r: CHART_STYLE.dotActiveRadius, stroke: colors.navy[900], strokeWidth: 2, fill: s.color }}
             isAnimationActive
             animationDuration={CHART_STYLE.animDuration}
             animationEasing={CHART_STYLE.animEasing}

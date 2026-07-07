@@ -372,7 +372,7 @@ export default function AnalyticsPage() {
                 <ChartLegend
                   direction="vertical"
                   items={donutData.map((slice) => ({
-                    color: slice.color ?? '#64748B',
+                    color: slice.color ?? colors.navy[500],
                     label: slice.name,
                     value: formatCurrency(Number(slice.value), locale),
                     suffix: '',

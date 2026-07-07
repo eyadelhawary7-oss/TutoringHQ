@@ -183,6 +183,25 @@ migration must be deliberate, not mechanical.
 ### (a) Exact swaps done
 - **Batch 1 — pilot `features/` (11):** all `#080f1a` → `var(--color-navy-950)`.
   Left drift `#0b141a`, `#005c4b` and the `#1024` student-ID text untouched.
+- **Batch 2 — charts (20):**
+  - `DonutChart.tsx` (6) — `DEFAULT_PALETTE` now references `CHART_COLORS.*`
+    (teal/amber/purple/green/red/slate), the local chart source. SVG `<Cell fill>`
+    can't resolve vars, so JS constants are correct here.
+  - `MultiLineChart.tsx` (5) — DOM inline `#80827a`→`var(--color-text-muted)`;
+    SVG cursor `#80827a`→`CHART_STYLE.axisColor`; navy values feeding SVG/props
+    →`colors.navy[400|900]` from `@/lib/tokens`.
+  - `AreaChart.tsx` (3) — same pattern (`var(--color-text-muted)`,
+    `CHART_STYLE.axisColor`, `colors.navy[900]`).
+  - `teacher/AnalyticsView` (2), `IncomeView` (1), `LockedAnalyticsPreview` (1),
+    `LockedIncomePreview` (1) — `text-[#dfeeeb]` → `text-[var(--color-teal-soft)]`
+    (the `/80` opacity variant renders identically via color-mix).
+  - `(dashboard)/analytics/page.tsx` (1) — `#64748B` fallback → `colors.navy[500]`
+    (already imported).
+  - **Left (reported):** `teacher/IncomeLifetimeChart.tsx` `TEAL='#0e6b61'` /
+    `BRASS='#9a6b1f'` — semantic values used in **SVG presentation attributes**
+    (vars don't resolve) with **no JS mirror** in `tokens.ts`. Converting is
+    impossible without either breaking the color (var in SVG) or adding new JS
+    infra; left as-is for the redesign.
 
 ### (b) Drift left for the redesign
 - See §6. Nothing snapped.
