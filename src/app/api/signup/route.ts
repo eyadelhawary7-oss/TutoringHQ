@@ -327,14 +327,16 @@ export async function POST(request: Request) {
       centerInsert.billing_status = 'pending';
     }
 
-    // Monthly is billed monthly, not the DB-default quarterly. The activation /
-    // auto-approve path resolves cadence as `subscription_billing_period ??
-    // billing_period`, and this column otherwise defaults to 'quarterly' — which
-    // would bill a monthly signup as quarterly (×3, +90d). Pin it to monthly here.
-    // Annual is left to its existing handling (unchanged by this build).
-    if (periodResolved === 'monthly') {
-      centerInsert.subscription_billing_period = 'monthly';
-    }
+    // Pin the subscription billing cadence explicitly for EVERY period. The
+    // activation / auto-approve path resolves cadence as
+    // `subscription_billing_period ?? billing_period`; this column otherwise
+    // takes its DB default of 'monthly' (migration 20260705050120). Leaving it
+    // unset for an ANNUAL signup billed the customer the full annual amount up
+    // front but then activated on a monthly clock (+30d) and re-invoiced at day
+    // 31 — a double charge. The column's CHECK allows only {'monthly','yearly'};
+    // annual is spelled 'yearly' here (billing_period uses 'annual').
+    centerInsert.subscription_billing_period =
+      periodResolved === 'annual' ? 'yearly' : 'monthly';
 
     if (referrerCenterId) {
       centerInsert.referred_by = referrerCenterId;

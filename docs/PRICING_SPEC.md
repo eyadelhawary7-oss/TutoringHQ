@@ -1,14 +1,16 @@
 # CenterHQ Pricing Spec
-Last updated: 2026-05-09
+Last updated: 2026-07-07
 
 ## Tax formula (internal)
-The only customer tax is **14% VAT** (plus the separate flat 20 EGP processing fee — see below). The former **6% service fee** and **0.5% stamp duty** were removed in the service-fee/stamp-duty build (`docs/SERVICE_FEE_REMOVAL_FINDINGS.md`) — they no longer exist in the math or anywhere in the UI. Inclusive → base strips only VAT: base = inclusive × 0.86. Going up: inclusive = base / 0.86.
+The only customer tax is **14% VAT** (plus the separate flat 20 EGP processing fee — see below). The former **6% service fee** and **0.5% stamp duty** were removed in the service-fee/stamp-duty build (`docs/SERVICE_FEE_REMOVAL_FINDINGS.md`) — they no longer exist in the math or anywhere in the UI.
+
+**VAT-inclusive decomposition (B-H1, 2026-07-07):** VAT is INSIDE the inclusive price, so a VAT-inclusive price `P` splits as `base = P / 1.14` and `VAT = P − base = P × 0.14 / 1.14`. Going up: `inclusive = base × 1.14`. This is the only split under which the printed "VAT (14%)" line equals exactly 14% of the printed subtotal, as an Egyptian فاتورة ضريبية requires. (The earlier `base = inclusive × 0.86` model made the VAT line 16.28% of the base and disagreed with `processingFee.vatInsideInclusive`; both `taxMath` and `processingFee` now use ÷1.14 and agree exactly.)
 
 ## Worked examples
-Inclusive 4,999 → base 4,299.14
-Inclusive 4,499 → base 3,869.14
-Inclusive 999 → base 859.14
-Per QR card: 60 EGP inclusive → base 51.6 (60 × 0.86)
+Inclusive 4,999 → base 4,385.09, VAT 613.91
+Inclusive 4,499 → base 3,946.49, VAT 552.51
+Inclusive 999 → base 876.32, VAT 122.68
+Per QR card: 60 EGP inclusive → base 52.63, VAT 7.37 (base = 60 / 1.14; `CARD_UNIT_BASE_EGP` is kept unrounded as 60/1.14 so N-card multiples gross back to exactly N × 60)
 
 ## Plan price table (monthly INCLUSIVE EGP)
 Plan         Monthly    Quarterly/mo    Annual/mo    Cap
@@ -33,15 +35,15 @@ blast: 9.80 EGP/blast (inclusive). (The parent-blast product keeps its own inter
 
 ## Internal admin breakdown view (descending from inclusive)
 Total:                              60.00 EGP
-incl. VAT (14%):                     8.40
-your net (base):                    51.60
+incl. VAT (14%):                     7.37
+your net (base):                    52.63
 For accounting/admin tooling ONLY.
 
 ## Customer-facing invoice display order (LEGAL REQUIREMENT)
 Egyptian tax law (فاتورة ضريبية) requires VAT as the LAST tax line on any invoice. PDF receipts and legal invoices MUST display:
 
-Subtotal (base):              51.60 EGP
-VAT (14%):                     8.40    ← LAST tax line
+Subtotal (base):              52.63 EGP
+VAT (14%):                     7.37    ← LAST tax line (exactly 14% of the subtotal)
 ─────────────────────────────────────
 Total:                        60.00 EGP
 

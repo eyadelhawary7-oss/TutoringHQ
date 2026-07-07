@@ -10,19 +10,24 @@ import { autoSuspendAtFromDue } from '@/lib/billingSchedule';
 import { applyPaymentToInvoice, readAppliedTxns, remainingBalance } from '@/lib/invoiceBalance';
 import { cairoDateKey, cairoYmdPlusDays, startOfUtcInstantForCairoCalendarDay } from '@/lib/cairo/day';
 import { logBillingEvent, invoiceOwner } from '@/lib/billingAudit';
+import * as Sentry from '@sentry/nextjs';
 import {
   resolveScheduledCenterDowngrade,
   applyScheduledCenterDowngrade,
 } from '@/lib/scheduledDowngrade';
 
-const PERIOD_MONTHS: Record<string, number> = {
-  monthly: 1,
-  quarterly: 3,
-  half_yearly: 6,
-  yearly: 12,
-  semi_annual: 6,
-  annual: 12,
-};
+// Non-subscription invoice types that legitimately reach the tail of
+// finalizeInvoicePaymentSuccess. Settling one marks the invoice paid but must
+// NOT advance the billing cycle or reactivate a suspended center (C2). Any type
+// NOT in this set and not handled by an explicit branch above is unexpected and
+// gets a Sentry warning so it can be given its own branch.
+const KNOWN_NON_SUBSCRIPTION_TYPES: ReadonlySet<string> = new Set([
+  'announcement_cap',
+  'announcement_settlement',
+  'setup_fee',
+  'whatsapp_addon',
+  'payment_proof',
+]);
 
 const QUARTERLY_LABEL_AR = 'ربع سنوي';
 const MONTHLY_LABEL_AR = 'شهري';
@@ -531,39 +536,28 @@ export async function finalizeInvoicePaymentSuccess(
     return { invoiceId: row.id, settled: true };
   }
 
-  const { data: center } = await supabaseAdmin
-    .from('centers')
-    .select('billing_period, status, subscription_status, next_payment_due')
-    .eq('id', centerRow.center_id)
-    .maybeSingle();
-
-  if (center) {
-    const bp = (center as { billing_period?: string | null }).billing_period ?? 'quarterly';
-    const months = PERIOD_MONTHS[bp] ?? 3;
-    const currentDue = (center as { next_payment_due?: string | null }).next_payment_due;
-    const base = currentDue ? new Date(`${currentDue}T12:00:00`) : new Date();
-    base.setMonth(base.getMonth() + months);
-    const nextDueStr = base.toISOString().slice(0, 10);
-
-    const autoSusLegacy = autoSuspendAtFromDue(nextDueStr);
-    const centerUpdates: Record<string, unknown> = {
-      billing_status: 'paid',
-      last_payment_date: cairoDateKey(new Date()), // L9: Cairo calendar day, not UTC
-      next_payment_due: nextDueStr,
-      payment_due_date: nextDueStr,
-      auto_suspend_at: autoSusLegacy,
-      upgrade_count_this_period: 0,
-    };
-    const st = (center as { status?: string | null }).status;
-    if (st === 'suspended') {
-      centerUpdates.status = 'active';
-      centerUpdates.subscription_status = 'active';
-    }
-
-    const { error: cErr } = await supabaseAdmin.from('centers').update(centerUpdates).eq('id', row.center_id);
-    if (cErr) {
-      console.error('[finalizeInvoicePaymentSuccess] center', cErr);
-    }
+  // Any invoice type reaching this point is NON-subscription
+  // (announcement_cap, announcement_settlement, setup_fee, whatsapp_addon,
+  // payment_proof, …). Every type that legitimately drives the billing cycle —
+  // `subscription`, `signup_first_payment`, and the legacy `reactivation_fee` —
+  // is handled by an explicit branch above and returns before here.
+  //
+  // The old fallback advanced `next_payment_due` by a full period AND flipped a
+  // suspended center back to active for ANY unhandled type. That let a locked
+  // center pay a small `announcement_settlement` and unlock a whole subscription
+  // cycle for free (C2). Non-subscription invoices must NOT touch the center's
+  // billing cadence or suspension state — the invoice was already marked paid
+  // above (line ~478), which is the only correct side effect. Any genuinely new
+  // subscription-cycle type must get its own explicit branch, not ride this
+  // path.
+  if (row.invoice_type && !KNOWN_NON_SUBSCRIPTION_TYPES.has(row.invoice_type)) {
+    // A type we neither handle above nor recognize as non-subscription reached
+    // the tail — surface it so it gets an explicit branch rather than silently
+    // (and safely) settling with no cadence effect.
+    Sentry.captureMessage(
+      `finalizeInvoicePaymentSuccess: unhandled invoice_type '${row.invoice_type}' settled without cycle side-effect`,
+      { level: 'warning' },
+    );
   }
 
   return { invoiceId: row.id, settled: true };

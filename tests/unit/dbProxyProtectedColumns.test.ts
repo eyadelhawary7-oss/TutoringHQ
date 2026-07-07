@@ -4,6 +4,8 @@ import {
   findProtectedUsersWrite,
   CARD_ORDERS_PROTECTED_COLUMNS,
   findProtectedCardOrdersWrite,
+  CENTERS_PROTECTED_COLUMNS,
+  findProtectedCentersWrite,
 } from '@/lib/dbProxyProtectedColumns';
 
 describe('USERS_PROTECTED_COLUMNS', () => {
@@ -195,5 +197,77 @@ describe('findProtectedCardOrdersWrite', () => {
     expect(findProtectedCardOrdersWrite(null)).toBeNull();
     expect(findProtectedCardOrdersWrite({})).toBeNull();
     expect(findProtectedCardOrdersWrite([])).toBeNull();
+  });
+});
+
+describe('CENTERS_PROTECTED_COLUMNS', () => {
+  it('protects suspension / blacklist state (self-unsuspend class)', () => {
+    for (const key of [
+      'status',
+      'billing_status',
+      'subscription_status',
+      'is_blacklisted',
+      'auto_suspend_at',
+    ]) {
+      expect(CENTERS_PROTECTED_COLUMNS.has(key), `missing protection for ${key}`).toBe(true);
+    }
+  });
+
+  it('protects plan + custom-pricing columns (self-reprice class)', () => {
+    for (const key of [
+      'plan',
+      'billing_period',
+      'subscription_billing_period',
+      'billing_amount',
+      'all_in_price',
+      'early_adopter_price',
+    ]) {
+      expect(CENTERS_PROTECTED_COLUMNS.has(key), `missing protection for ${key}`).toBe(true);
+    }
+  });
+
+  it('protects the billing clock and is_test flag', () => {
+    for (const key of ['next_payment_due', 'payment_due_date', 'subscription_start_date', 'is_test']) {
+      expect(CENTERS_PROTECTED_COLUMNS.has(key), `missing protection for ${key}`).toBe(true);
+    }
+  });
+});
+
+describe('findProtectedCentersWrite', () => {
+  it('returns "status" for the self-unsuspend payload', () => {
+    // Exact payload a suspended centre would send via /api/db to reactivate
+    // itself: the columns the proxy suspension wall reads.
+    expect(
+      findProtectedCentersWrite({
+        status: 'active',
+        billing_status: 'paid',
+        auto_suspend_at: null,
+        is_blacklisted: false,
+      }),
+    ).toBe('status');
+  });
+
+  it('returns "all_in_price" for a top_centers self-reprice payload', () => {
+    expect(findProtectedCentersWrite({ all_in_price: 1 })).toBe('all_in_price');
+  });
+
+  it('returns "next_payment_due" for a billing-clock tampering payload', () => {
+    expect(findProtectedCentersWrite({ next_payment_due: '2099-01-01' })).toBe('next_payment_due');
+  });
+
+  it('returns "is_test" so a tenant cannot hide itself from admin aggregates', () => {
+    expect(findProtectedCentersWrite({ is_test: true })).toBe('is_test');
+  });
+
+  it('returns null for benign profile updates (name / city / email)', () => {
+    expect(
+      findProtectedCentersWrite({ name: 'Al-Noor', city: 'giza', email: 'a@b.co' }),
+    ).toBeNull();
+  });
+
+  it('returns null for empty / non-object data', () => {
+    expect(findProtectedCentersWrite(null)).toBeNull();
+    expect(findProtectedCentersWrite({})).toBeNull();
+    expect(findProtectedCentersWrite([])).toBeNull();
   });
 });

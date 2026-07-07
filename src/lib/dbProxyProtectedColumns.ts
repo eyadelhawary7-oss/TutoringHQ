@@ -101,6 +101,70 @@ export function findProtectedCardOrdersWrite(data: unknown): string | null {
   return findProtectedWrite(data, CARD_ORDERS_PROTECTED_COLUMNS);
 }
 
+/**
+ * Columns on `centers` that drive billing, subscription lifecycle, suspension,
+ * blacklist, plan, and custom pricing, and must not be writable by centre
+ * callers via the legacy /api/db proxy.
+ *
+ * `centers` is a direct TABLE_SCOPE entry (scoped by `id`) and — unlike other
+ * scoped tables — is exempt from forced-payload rewriting, and the proxy runs
+ * NO suspension/blacklist gate (middleware skips /api/*). Without this gate a
+ * centre owner could PATCH their own row via /api/db and:
+ *   - status='active' / billing_status='paid' / subscription_status='active' /
+ *     auto_suspend_at=null  -> self-unsuspend after non-payment (the exact
+ *     columns the proxy suspension wall reads, src/proxy.ts)
+ *   - is_blacklisted=false  -> lift a platform blacklist
+ *   - plan / billing_amount / all_in_price / early_adopter_price  -> self-reprice
+ *     (a top_centers customer rewriting all_in_price directly changes what they
+ *     are billed and their referral/MRR base)
+ *   - next_payment_due / payment_due_date / subscription_start_date /
+ *     approved_at / last_payment_date  -> move their own billing clock
+ *
+ * These columns are only legitimately written by service-role paths (signup
+ * activation, the Paymob webhook / invoice finalizers, renewal + billing crons,
+ * and admin routes), never by a centre request through the proxy. Legitimate
+ * self-service (e.g. editing centre name/city/phone display) does not touch any
+ * column below, so the gate has no false positives.
+ *
+ * Both INSERT and UPDATE writes touching any of these are rejected for
+ * non-super-admin callers.
+ */
+export const CENTERS_PROTECTED_COLUMNS: ReadonlySet<string> = new Set([
+  // Account + suspension/blacklist state
+  'status',
+  'billing_status',
+  'subscription_status',
+  'is_blacklisted',
+  'auto_suspend_at',
+  'dormancy_date',
+  'reactivation_date',
+  // Plan + custom pricing (gates what the centre is billed)
+  'plan',
+  'billing_type',
+  'billing_period',
+  'subscription_billing_period',
+  'billing_amount',
+  'all_in_price',
+  'is_early_adopter',
+  'early_adopter_price',
+  // Billing clock / lifecycle timestamps
+  'next_payment_due',
+  'payment_due_date',
+  'subscription_start_date',
+  'approved_at',
+  'last_payment_date',
+  'upgrade_count_this_period',
+  // Test / internal flags that must not be tenant-writable
+  'is_test',
+]);
+
+/**
+ * Returns the first protected centers column found in `data`, or null.
+ */
+export function findProtectedCentersWrite(data: unknown): string | null {
+  return findProtectedWrite(data, CENTERS_PROTECTED_COLUMNS);
+}
+
 function findProtectedWrite(data: unknown, protectedSet: ReadonlySet<string>): string | null {
   if (data == null) return null;
   const rows = Array.isArray(data) ? data : [data];

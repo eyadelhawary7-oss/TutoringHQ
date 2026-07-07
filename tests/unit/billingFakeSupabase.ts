@@ -116,17 +116,19 @@ export function makeFakeSupabase(tables: Record<string, Row[]>) {
         return { data: payload, error: null };
       }
       if (mode === 'update') {
-        for (const r of rows) {
-          if (filters.every((f) => f(r))) Object.assign(r, payload);
-        }
-        return { data: null, error: null };
+        const matched = rows.filter((r) => filters.every((f) => f(r)));
+        for (const r of matched) Object.assign(r, payload);
+        // Mirror PostgREST `.update().select()`: return the mutated rows.
+        return { data: matched, error: null };
       }
       return { data: rows.filter((r) => filters.every((f) => f(r))), error: null };
     };
 
     const api: Record<string, unknown> = {
       select() {
-        mode = 'select';
+        // A `.select()` after `.update()`/`.insert()` is a RETURNING projection,
+        // not a read — it must not reset the write mode.
+        if (mode !== 'update' && mode !== 'insert') mode = 'select';
         return api;
       },
       update(p: Row) {
@@ -135,6 +137,13 @@ export function makeFakeSupabase(tables: Record<string, Row[]>) {
         return api;
       },
       insert(p: Row) {
+        mode = 'insert';
+        payload = p;
+        return Promise.resolve(apply());
+      },
+      // Minimal upsert: behaves as insert (push). Enough for the reminder/idempotency
+      // bookkeeping the cron writes; conflict resolution is not asserted on.
+      upsert(p: Row) {
         mode = 'insert';
         payload = p;
         return Promise.resolve(apply());
@@ -157,6 +166,10 @@ export function makeFakeSupabase(tables: Record<string, Row[]>) {
       },
       lte(col: string, val: unknown) {
         filters.push((r) => (r[col] as string) <= (val as string));
+        return api;
+      },
+      lt(col: string, val: unknown) {
+        filters.push((r) => r[col] != null && (r[col] as string) < (val as string));
         return api;
       },
       not(col: string, op: string, val: unknown) {
@@ -187,6 +200,9 @@ export function makeFakeSupabase(tables: Record<string, Row[]>) {
         filters.push((r) =>
           clauses.some(({ col, op, val }) => {
             const cell = r[col];
+            // `is.null` / `neq` must be evaluated even when the cell is null.
+            if (op === 'is') return val === 'null' ? cell == null : String(cell) === val;
+            if (op === 'neq') return cell == null ? true : String(cell) !== val;
             if (cell == null) return false;
             if (op === 'gte') return String(cell) >= val;
             if (op === 'lte') return String(cell) <= val;

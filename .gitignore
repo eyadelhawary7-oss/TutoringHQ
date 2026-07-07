@@ -63,7 +63,10 @@ supabase/.temp/.claude/
 
 # Local tool noise
 .cursor/
-.claude/
+.claude/*
+# ...but track shared skills and C-Suite agents (versioned deliverables)
+!.claude/skills/
+!.claude/agents/
 
 # Cursor / audit runtime artifacts
 .cursor-i18n-out.txt

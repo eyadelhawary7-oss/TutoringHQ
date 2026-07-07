@@ -491,8 +491,10 @@ export async function processInvoiceSignupAfterPaymobSuccess(
     approved_at: new Date().toISOString(),
     billing_amount: billingAmount,
     all_in_price: allIn,
-    // Column vocabulary is {monthly, yearly} — canonical 'annual' must not be
-    // echoed back verbatim or the CHECK rejects the activation write.
+    // `period` is a normalized BillingPeriod ('monthly' | 'annual'); the
+    // subscription_billing_period column's CHECK allows only {'monthly','yearly'}
+    // (annual is spelled 'yearly' here). Writing the raw 'annual' value would
+    // fail the CHECK and abort activation AFTER the customer has paid.
     subscription_billing_period: period === 'annual' ? 'yearly' : 'monthly',
     next_payment_due: nextPaymentDue,
     subscription_start_date: todayISO(),
