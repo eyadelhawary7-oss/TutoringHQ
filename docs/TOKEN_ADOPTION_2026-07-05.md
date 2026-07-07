@@ -1,206 +1,188 @@
 # Token Adoption — Phase 1 of the redesign
 
-**Date:** 2026-07-05
+**Date:** 2026-07-05 (revised 2026-07-07 after syncing `master`)
 **Branch:** `claude/token-adoption-phase-1-o12pp7`
 **Source brief:** "Token Adoption (Phase 1)" — point hand-typed raw hex at the color
 tokens that already exist. **Swap-the-source, not restyle. Nothing on screen may
 change color.**
-**Audit reference:** `docs/CODEBASE_AUDIT_2026-07-05.md` §D (redesign readiness),
-finding #29.
+**Audit reference:** `docs/CODEBASE_AUDIT_2026-07-05.md` §D, finding #29.
 
 ---
 
-## 1. The golden rule (how a hex qualifies)
+## 0. Update after syncing master — dark mode is gone
+
+The pilot analysis assumed two themes and restricted swaps to *theme-stable* tokens.
+`master` has since merged **full dark-mode removal** (`docs/DARK_MODE_REMOVAL_2026-07-05.md`,
+`#141`): `ThemeProvider`, `ThemeToggle`, `LoginThemeEffect` deleted; the
+`html.dark { … }` overrides removed from `globals.css`; the `[data-chq-signup]` /
+`[data-chq-session-expired]` dark-locks removed; nothing applies a `dark` class.
+
+**There is now exactly one theme (cream).** Every token resolves to a single value,
+so the theme-stability restriction is **dropped**: any token whose one value equals
+a raw hex is a safe, pixel-identical swap. Parity remains **by construction**.
+
+---
+
+## 1. The golden rule (unchanged)
 
 A raw hex is swapped **only when a token's value is byte-for-byte equal to it**.
-Exact value match ⇒ the rendered pixel is identical ⇒ appearance cannot change.
-Any hex with no exact token match is **drift**: it is listed here for the redesign
-phase to decide on purpose, never snapped to a "near" token.
-
-### 1a. Theme-stability constraint (critical)
-
-`globals.css` defines two kinds of color token:
-
-- **Theme-stable** — defined once in `@theme` and **never overridden** in the
-  `html.dark` block or any `[data-*]` lock. Their value is identical in light and
-  dark. These are the **only safe swap targets.** They are exactly the three
-  numeric scales: `--color-brand-*`, `--color-navy-*`, `--color-gold-*`.
-- **Theme-dependent** — e.g. `--color-teal` (`#0e6b61` light / `#0d9488` dark),
-  `--color-surface-*`, `--color-warning`, `--color-text-*`. Their value changes
-  between themes. Pointing a raw hex at one of these **would change how it renders
-  in one theme**, so they are **excluded as targets** in this pass even when a hex
-  happens to match one theme's value. Always prefer the theme-stable scale token.
-
-Because every swap target is theme-stable and byte-equal, **parity is by
-construction**: no screenshot diff is possible or needed to prove it.
+Any hex with no exact token match is **drift** — listed here for the redesign phase,
+never snapped to a "near" token. 8-digit alpha hex (`#1e293b80`, `#0D948820`) never
+matches a solid token and stays as drift.
 
 ---
 
-## 2. Hex → token map (exact-match, theme-stable only)
+## 2. Hex → token map (full cream palette)
 
-Two adoption targets depending on context (see §3):
+Source: `globals.css` `@theme` + `:root`. Where several tokens share one value the
+canonical target is listed first; the value renders identically either way, so the
+choice is by usage (bg/fill → surface/accent token; text → `text-*` token).
 
-| Raw hex (any case) | CSS var (JSX/inline/Tailwind) | JS value (`@/lib/tokens`) |
-|---|---|---|
-| `#f0fdfa` | `var(--color-brand-50)`  | `colors.brand[50]`  |
-| `#ccfbf1` | `var(--color-brand-100)` | `colors.brand[100]` |
-| `#99f6e4` | `var(--color-brand-200)` | `colors.brand[200]` |
-| `#5eead4` | `var(--color-brand-300)` | `colors.brand[300]` |
-| `#2dd4bf` | `var(--color-brand-400)` | `colors.brand[400]` |
-| `#0D9488` | `var(--color-brand-500)` | `colors.brand[500]` |
-| `#0f766e` | `var(--color-brand-600)` | `colors.brand[600]` |
-| `#115e59` | `var(--color-brand-700)` | `colors.brand[700]` |
-| `#134e4a` | `var(--color-brand-800)` | `colors.brand[800]` |
-| `#042f2e` | `var(--color-brand-900)` | `colors.brand[900]` |
-| `#f8fafc` | `var(--color-navy-50)`   | `colors.navy[50]`   |
-| `#f1f5f9` | `var(--color-navy-100)`  | `colors.navy[100]`  |
-| `#e2e8f0` | `var(--color-navy-200)`  | `colors.navy[200]`  |
-| `#cbd5e1` | `var(--color-navy-300)`  | `colors.navy[300]`  |
-| `#94a3b8` | `var(--color-navy-400)`  | `colors.navy[400]`  |
-| `#64748b` | `var(--color-navy-500)`  | `colors.navy[500]`  |
-| `#475569` | `var(--color-navy-600)`  | `colors.navy[600]`  |
-| `#334155` | `var(--color-navy-700)`  | `colors.navy[700]`  |
-| `#1e293b` | `var(--color-navy-800)`  | `colors.navy[800]`  |
-| `#0f172a` | `var(--color-navy-900)`  | `colors.navy[900]`  |
-| `#080f1a` | `var(--color-navy-950)`  | `colors.navy[950]`  |
-| `#fffbeb` | `var(--color-gold-50)`   | `colors.gold[50]`   |
-| `#fef3c7` | `var(--color-gold-100)`  | `colors.gold[100]`  |
-| `#fde68a` | `var(--color-gold-200)`  | `colors.gold[200]`  |
-| `#fcd34d` | `var(--color-gold-300)`  | `colors.gold[300]`  |
-| `#fbbf24` | `var(--color-gold-400)`  | `colors.gold[400]`  |
-| `#F59E0B` | `var(--color-gold-500)`  | `colors.gold[500]`  |
-| `#d97706` | `var(--color-gold-600)`  | `colors.gold[600]`  |
-| `#b45309` | `var(--color-gold-700)`  | `colors.gold[700]`  |
-| `#92400e` | `var(--color-gold-800)`  | `colors.gold[800]`  |
-| `#78350f` | `var(--color-gold-900)`  | `colors.gold[900]`  |
+### Scales — also available in JS via `@/lib/tokens` `colors.<group>[step]`
 
-> 8-digit hex with an alpha suffix (e.g. `#1e293b80`, `#0D948820`) is **drift** —
-> there is no solid token that carries the alpha, so it is never matched.
+| Hex | CSS var | Hex | CSS var | Hex | CSS var |
+|---|---|---|---|---|---|
+| `#f0fdfa` | brand-50  | `#f8fafc` | navy-50  | `#fffbeb` | gold-50  |
+| `#ccfbf1` | brand-100 | `#f1f5f9` | navy-100 | `#fef3c7` | gold-100 |
+| `#99f6e4` | brand-200 | `#e2e8f0` | navy-200 | `#fde68a` | gold-200 |
+| `#5eead4` | brand-300 | `#cbd5e1` | navy-300 | `#fcd34d` | gold-300 |
+| `#2dd4bf` | brand-400 | `#94a3b8` | navy-400 | `#fbbf24` | gold-400 |
+| `#0D9488` | brand-500 | `#64748b` | navy-500 | `#F59E0B` | gold-500 |
+| `#0f766e` | brand-600 | `#475569` | navy-600 | `#d97706` | gold-600 |
+| `#115e59` | brand-700 | `#334155` | navy-700 | `#b45309` | gold-700 |
+| `#134e4a` | brand-800 | `#1e293b` | navy-800 | `#92400e` | gold-800 |
+| `#042f2e` | brand-900 | `#0f172a` | navy-900 | `#78350f` | gold-900 |
+|           |           | `#080f1a` | navy-950 |           |          |
 
----
+### Semantic tokens — CSS `var()` only (no correct JS mirror; see §5)
 
-## 3. Two conversion targets (context decides)
-
-| Context | Target | Why |
-|---|---|---|
-| Inline `style={{ … }}`, Tailwind arbitrary `bg-[#…]` / `text-[#…]`, CSS gradient strings, SVG `fill`/`stroke` in JSX | `var(--color-…)` | Rendered as CSS in the browser; `var()` resolves to the same static value. |
-| Recharts props, `<canvas>`, PWA `manifest.ts` `theme_color`, and other JS values consumed outside CSS | `colors.…` imported from `@/lib/tokens` | `var()` is invalid in these contexts. `tokens.ts` is the sanctioned JS mirror (its own header: "Use ONLY when CSS variables are inaccessible: Recharts, canvas"). The literal it holds is byte-equal. |
-
-`src/lib/tokens.ts` is the **JS source of truth** and is never rewritten by this
-pass — it is the import *target* for the second row.
+| Hex | CSS var | Hex | CSS var |
+|---|---|---|---|
+| `#ece8df` | surface-0 | `#1a6d4d` | success |
+| `#fffdf8` | surface-1 (or text-inverse) | `#e4f0e9` | success-muted |
+| `#f8f4ec` | surface-2 | `#8a5e16` | warning (or text-amber) |
+| `#eceee9` | surface-3 | `#f4ebd7` | warning-muted |
+| `#dcd7c9` | surface-4 | `#9c3322` | danger |
+| `#0e6b61` | teal (or text-brand) | `#f4e5e2` | danger-muted |
+| `#0a514a` | teal-deep | `#2563eb` | info |
+| `#dfeeeb` | teal-soft | `#e3ecf6` | info-muted |
+| `#9a6b1f` | brass | `#e9ebe7` | neutral-muted |
+| `#f1e8d6` | brass-soft | `#5a605a` | neutral-ink |
+| `#1b201d` | text-primary | `#80827a` | text-muted (or text-tertiary) |
+| `#5d635c` | text-secondary | `#a6a79d` | text-disabled |
+| `#e2ddd1` | border | `#ddd8cb` | ceo-chart-grid |
 
 ---
 
-## 4. Counts
+## 3. Conversion target by context
+
+| Context | Target |
+|---|---|
+| Inline `style={{ … }}` on DOM elements, Tailwind arbitrary `bg-[#…]`/`text-[#…]`, CSS gradient strings | `var(--color-…)` (full map) |
+| **Recharts SVG presentation props** (`stroke=`/`fill=`/`cursor`/`activeDot`) — CSS vars do **not** resolve in SVG presentation attributes (per `ChartTokens.ts`) | existing `CHART_STYLE.*` / `CHART_COLORS.*` constant (same value), else `colors.<scale>[…]` from `@/lib/tokens` |
+| PWA `manifest.ts`, `<canvas>`, server JSON color data | `colors.<scale>[…]` from `@/lib/tokens` (scale values only) |
+
+`var()` is only emitted where it actually resolves (DOM CSS). Recharts/manifest/
+canvas use the JS mirror, matching the existing project convention.
+
+---
+
+## 4. Counts (merged tree, after pilot)
 
 | Bucket | Occurrences | Files |
 |---|---:|---:|
-| **Exact-match — convertible this phase** | **212** | **42** |
-| Drift — left for redesign (§6) | 177 (77 distinct values) | — |
-| Excluded (source-of-truth / PDF-email, §5) | — | 5 |
-| Tailwind palette utilities — separate later pass (§7) | 3,456 | 183 |
+| **Exact-match — convertible** | **143** (130 scale, 13 semantic) | 41 |
+| Drift — left for redesign (§6) | 152 (72 distinct) | — |
+| Excluded (sources / PDF-email, §5) | — | 7 |
+| Tailwind palette utilities — later pass (§7) | ~3,450 | ~180 |
 
-Exact-match frequency (top values):
-
-```
-#0d9488 ×59  -> brand-500      #1e293b ×10  -> navy-800
-#080f1a ×23  -> navy-950       #334155  ×9  -> navy-700
-#64748b ×21  -> navy-500       #5eead4  ×6  -> brand-300
-#f8fafc ×21  -> navy-50        #f1f5f9  ×3  -> navy-100
-#475569 ×19  -> navy-600       #e2e8f0  ×2  -> navy-200
-#f59e0b ×14  -> gold-500       #2dd4bf  ×1  -> brand-400
-#94a3b8 ×12  -> navy-400       #0f766e  ×1  -> brand-600
-#0f172a ×11  -> navy-900
-```
+Exact-match frequency: `#0d9488`×45 (brand-500), `#64748b`×15 (navy-500),
+`#f59e0b`×14 (gold-500), `#94a3b8`×10 (navy-400), `#475569`×9 (navy-600),
+`#f8fafc`×7, `#0f172a`×7, `#080f1a`×7, `#80827a`×6 (text-muted), `#dfeeeb`×5
+(teal-soft), `#f1f5f9`×3, `#5eead4`×3, `#1e293b`×3, `#334155`×3, `#e2e8f0`×2,
+`#2dd4bf`/`#0e6b61`/`#9a6b1f`/`#0f766e`×1.
 
 ---
 
 ## 5. Exclusions (do not touch)
 
-By project rule these keep their hardcoded hex; they are **not** in the 212 count:
+- `src/app/globals.css` — CSS token source of truth.
+- `src/lib/tokens.ts` — JS token source of truth (import *target*, never rewritten).
+- `src/components/charts/ChartTokens.ts` — the chart palette's local source of truth
+  (deliberate literals for SVG props). Chart *components* reference it.
+- `src/lib/invoiceTemplates.ts`, `src/lib/generateInvoicePdf.ts`,
+  `src/lib/generateOrderPdf.ts`, `src/lib/pdf/cardOrderReceiptTemplate.ts` — invoice/
+  order/receipt PDF + email HTML (hardcoded hex on purpose, RTL-EXEMPT).
 
-- `src/lib/invoiceTemplates.ts` — invoice PDF/email HTML (RTL-EXEMPT).
-- `src/lib/generateInvoicePdf.ts` — invoice PDF builder.
-- `src/lib/generateOrderPdf.ts` — order PDF builder.
-- `src/lib/pdf/cardOrderReceiptTemplate.ts` — receipt PDF HTML.
-- `src/lib/tokens.ts` — the JS token source of truth (import target, never a consumer).
-- `src/app/globals.css` — the CSS token source of truth.
+**Follow-ups noted, not done here (adoption-only scope):**
+- `tokens.ts` `surface`/`state`/`text` groups still carry **old dark-era values**
+  (`surface[0]='#080f1a'`, `text.primary='#f8fafc'`, `state.warning='#F59E0B'`) — they
+  no longer match the cream CSS semantic tokens. Only `colors.brand/navy/gold` are
+  used as swap targets here. The stale groups should be reconciled in the redesign.
+- `ChartTokens.ts` scale values (`#0D9488`, `#F59E0B`, `#64748B`, `#1E293B`) duplicate
+  global tokens; reconciling the two palettes is a redesign-infra task.
 
-**Guardrail files** (billing / consent / summer engine / Paymob / WhatsApp send /
-auth **logic**): if such a file contains an exact-match hex, only the color string
-is swapped, nothing else; if there is any doubt the hex is skipped and reported.
+**Guardrail files** (billing / consent / summer / Paymob / WhatsApp send / auth
+logic): only the color string is swapped, nothing else; on any doubt the hex is
+skipped and reported.
 
 ---
 
-## 6. Drift list — for the redesign phase to decide (NOT converted)
+## 6. Drift list — for the redesign phase (NOT converted)
 
-77 distinct values, 177 occurrences. No theme-stable token equals these, so
-snapping them would change appearance. Notable clusters:
+152 occurrences, 72 distinct. Notable clusters (no cream token equals these):
 
 | Hex | ~count | Note |
 |---|---:|---|
-| `#ffffff` / `#fff` / `#000000` | 29 | pure white/black — semantic surface/ink tokens exist but are theme-dependent; redesign call. |
-| `#ef4444`, `#f87171`, `#b91c1c` | ~21 | reds — `--color-danger` is theme-dependent (`#9c3322` / `#ef4444`), not a stable match. |
-| `#25d366`, `#075e54`, `#128c7e`, `#005c4b`, `#0b141a` | ~11 | WhatsApp brand green + chat-bubble mock — **no token exists** (audit §D flags adding one). |
-| `#80827a` | 6 | chart axis/tick grey (`ChartTokens.ts`) — theme-dependent `--color-text-tertiary` only. |
-| `#14b8a6`, `#34d399`, `#22c55e`, `#10b981` | ~13 | teal/emerald 400-ish greens — no stable scale match. |
-| `#6b5d3a`, `#4a4030`, `#8f7322`, `#7a6019`, `#2e5a4c`, `#244a3e` | ~22 | signup/marketing brass & deep-teal custom shades — no token. |
-| `#080d14`, `#0b0e17`, `#0a1628`, `#1c1f2e`, `#0e1018`, … | ~20 | signup/landing near-navy darks that differ from `#080f1a` — redesign should reconcile. |
-| `#dfeeeb`, `#f1e8d6`, `#fbf9f4`, `#faf6ec`, `#b2dfdb` | ~11 | cream/teal-soft washes — theme-dependent surface/accent tokens only. |
-| `#3b82f6`, `#6366f1`, `#8b5cf6` | ~7 | info blue / indigo / violet — theme-dependent `--color-info` only. |
-| 8-digit alpha hex (`#1e293b80`, `#0D948820`, …) | several | token value + alpha; no solid token carries alpha. |
+| `#ffffff` / `#fff` / `#000000` / `#111` | ~31 | pure white/black — no token is pure #fff/#000 (surface-1 is `#fffdf8`, ink is `#1b201d`). Redesign call. |
+| `#ef4444`, `#f87171`, `#b91c1c` | ~15 | reds — `--color-danger` is `#9c3322`, not a match. Chart/status reds diverge. |
+| `#25d366`, `#075e54`, `#128c7e`, `#005c4b`, `#0b141a`, `#ece5dd`, `#667781` | ~13 | WhatsApp brand green + chat-bubble mock — **no token exists** (audit §D). |
+| `#14b8a6`, `#34d399`, `#22c55e`, `#10b981` | ~13 | teal/emerald 400-ish greens — no cream match (`#10b981` is the stale `tokens.ts` success). |
+| `#6b5d3a`, `#4a4030`, `#8f7322`, `#7a6019`, `#2e5a4c`, `#244a3e` | ~22 | landing/marketing custom brass & deep-teal shades — no token. |
+| `#080d14`, `#0b0e17`, `#0a1628`, `#1c1f2e`, `#0e1018`, `#2f3347`, … | ~18 | landing near-navy darks that differ from `#080f1a`. |
+| `#fbf9f4`, `#faf6ec`, `#faf8f3`, `#b2dfdb` | ~7 | cream/teal washes just off the surface tokens. |
+| `#3b82f6`, `#6366f1`, `#8b5cf6` | ~7 | chart blue / indigo / violet — `--color-info` is `#2563eb`. |
+| 8-digit alpha (`#1e293b80`, `#0D948820`) | several | token value + alpha; no solid token carries alpha. |
 
-_(Full machine list reproducible via `scratchpad/analyze.mjs`.)_
+_(Full list reproducible via `scratchpad/analyze2.mjs`.)_
 
 ---
 
 ## 7. Tailwind palette-utility list — separate later pass (NOT converted)
 
-Palette utility classes (`bg-teal-600`, `text-red-400`, `border-slate-700`, …) are
-a more careful pass and are **out of scope for phase 1**. Inventory: **3,456
-occurrences across 183 files.** Top classes:
-
-```
-275 bg-teal-600     102 text-teal-400    81 text-red-600     49 text-teal-700
-136 text-teal-600    98 text-red-400      75 border-teal-500  48 text-teal-300
-129 bg-teal-700      90 text-slate-500    75 bg-teal-500      48 text-slate-600
-103 text-slate-400   86 text-slate-900    70 ring-teal-500    47 border-slate-700
-```
-
-Note: `globals.css` already remaps several of these at runtime for the cream theme
-(e.g. `bg-teal-600 → var(--color-teal)`, slate/white text remaps), which is why a
-utility→token migration must be done deliberately, not mechanically.
+`bg-teal-600`, `text-red-400`, `border-slate-700`, … remain out of scope: ~3,450
+occurrences across ~180 files. Top: `bg-teal-600` (275), `text-teal-600` (136),
+`bg-teal-700` (129), `text-slate-400` (103), `text-teal-400` (102). A utility→token
+migration must be deliberate, not mechanical.
 
 ---
 
-## 8. Batch plan
+## 8. Batch plan (each = one commit; build + tests green before the next)
 
-Group by folder/area, each its own commit, `next build` + full tests green before
-the next. **Hold for Eyad's review after the pilot, and again before final merge.**
-
-1. **Pilot — `src/app/[locale]/features/` marketing pages** (3 files, `#080f1a`
-   → `var(--color-navy-950)` via Tailwind-arbitrary + inline gradient string).
-2. Charts — `src/components/charts/*` (`tokens.ts`-import path; validates the JS-value target).
-3. UI primitives — `src/components/ui/*`, `src/components/empty-states/*`, `src/components/attendance/*`.
-4. Landing/marketing — `src/components/landing/*`, `features` remainder, `blog`, `compare`, `demo-request`.
-5. Error/utility pages — `not-found`, `global-error`, `offline`, `session-expired`, `accept-invite`, `layout`, `manifest.ts`.
-6. Admin/CEO screens — `admin/*`, `(admin)/ceo-dashboard`, `ceo` (color strings only; skip anything touching logic).
-7. Settings/billing/payments/dashboard/students — one at a time; billing & payments are guardrail-sensitive (color string only).
-8. Server routes — `api/ceo/dashboard`, `api/admin/card-orders/*`, `vendorNotify.ts` — only if the hex is UI/CSS, not email HTML; otherwise report.
-9. **Largest & most sensitive: `signup/SignupForm.tsx` (63)** — auth surface; color strings only, done last with extra care.
+1. **Pilot — `features/`** ✅ done (11 swaps, `#080f1a`→navy-950).
+2. **Charts** — chart components reference `CHART_STYLE`/`colors.*` for their raw hex
+   (`MultiLineChart`, `AreaChart`, `DonutChart`, teacher chart views). `ChartTokens.ts`
+   excluded as source.
+3. **Landing/marketing** — `landing/AnimatedPhoneMockup`, `landing/HeroVisuals`,
+   `compare/spreadsheets`, `blog`, `demo-request`.
+4. **UI primitives & components** — `ui/Toast`, `ui/SuccessCheck`, `empty-states`,
+   `QRCard`, `CardOrderStyleSampleMock`, `CardTemplatePreview`, `attendance/ScanTab`.
+5. **Error/utility pages + manifest** — `not-found` (root + locale), `global-error`,
+   `offline`, `layout`, `manifest.ts` (`colors.brand[500]`).
+6. **Admin / CEO** — `(admin)/ceo-dashboard`, `admin/analytics`, `admin/centers`,
+   `admin/finance`, `admin/platform-config` (color strings only).
+7. **Settings / billing / payments / dashboard / students** — one at a time; billing
+   & payments are guardrail-sensitive (color string only).
+8. **Server routes** — `api/ceo/dashboard`, `api/admin/card-orders`, `vendorNotify`
+   (scale values → `colors.*`; drift left).
 
 ---
 
 ## 9. Running log
 
 ### (a) Exact swaps done
-- **Pilot (batch 1) — `src/app/[locale]/features/` — 11 swaps, all `#080f1a` → `var(--color-navy-950)`:**
-  - `features/qr-attendance/page.tsx` — 4 (3× `bg-[#…]`, 1× inline gradient string).
-  - `features/student-management/page.tsx` — 3 (2× `bg-[#…]`, 1× inline gradient string).
-  - `features/whatsapp-notifications/page.tsx` — 4 (3× `bg-[#…]`, 1× inline gradient string).
-  - Left untouched in the same files (correctly): `#0b141a`, `#005c4b` (WhatsApp
-    chat-bubble mock — drift), and `#1024` (student-ID text in a translation string,
-    not a color).
+- **Batch 1 — pilot `features/` (11):** all `#080f1a` → `var(--color-navy-950)`.
+  Left drift `#0b141a`, `#005c4b` and the `#1024` student-ID text untouched.
 
 ### (b) Drift left for the redesign
 - See §6. Nothing snapped.
@@ -213,19 +195,10 @@ the next. **Hold for Eyad's review after the pilot, and again before final merge
 ## 10. Verification
 
 ### Pilot (batch 1) — all green
-- **Grep proof:** the 11 `#080f1a` occurrences in `features/` → 0; net raw-hex in
-  those files dropped by 11; **zero new raw hex** added (only `var(--color-navy-950)`
-  references introduced). Global exact-match remaining: 212 → 201.
-- **`next build`** — success (full route tree emitted, no errors).
-- **Unit suite** — 1147 passed / 141 files.
-- **typecheck** — clean (`tsc --noEmit`, no errors).
-- **lint** — 0 errors (163 pre-existing warnings in test files, none from this diff).
-- **i18n / bidi / tolocale** gates — OK (3834 t() keys, en/ar parity).
-- **Parity is by construction:** `--color-navy-950` is `#080f1a` in both light and
-  dark (theme-stable, `@theme`, never overridden), byte-equal to the hex it
-  replaced ⇒ identical pixel. Authenticated screens cannot be screenshotted in this
-  environment — stated plainly, not glossed.
+Grep proof (11 `#080f1a` → 0, zero new raw hex), `next build`, 1147 unit tests,
+typecheck, lint (0 errors), i18n/bidi/tolocale — all green. Parity by construction.
 
-### Per-batch (repeat before each subsequent commit)
-- Grep proof of raw-hex drop + zero new raw hex added.
-- `next build` green; unit suite green; typecheck, lint, i18n, bidi, tolocale green.
+### Per-batch (repeat before each commit)
+Grep proof of raw-hex drop + zero new raw hex; `next build`, unit suite, typecheck,
+lint, i18n/bidi/tolocale all green. Authenticated screens can't be screenshotted in
+this environment — parity is guaranteed by byte-equal token values, stated plainly.
