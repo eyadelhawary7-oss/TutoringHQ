@@ -17,6 +17,7 @@ import {
 import { isSuperAdminPhone } from '@/lib/admin-access';
 import {
   findProtectedCardOrdersWrite,
+  findProtectedCentersWrite,
   findProtectedUsersWrite,
 } from '@/lib/dbProxyProtectedColumns';
 
@@ -220,6 +221,31 @@ export async function POST(request: Request) {
           {
             error: `Writing column '${protectedKey}' on card_orders is not permitted via the proxy`,
             code: 'CARD_ORDERS_PROTECTED_COLUMN',
+          },
+          { status: 403 },
+        );
+      }
+    }
+
+    // Defense-in-depth: block centre callers from writing billing / suspension /
+    // blacklist / plan / custom-pricing columns on their own `centers` row via
+    // the legacy proxy. `centers` is direct-scope, exempt from forced-payload
+    // rewriting, and the proxy runs no suspension gate — so without this a
+    // suspended centre could PATCH status='active' / auto_suspend_at=null and
+    // self-unsuspend, or a top_centers centre could rewrite all_in_price to
+    // change what it is billed. These columns are only written by service-role
+    // paths (signup activation, Paymob webhook, billing crons, admin routes).
+    if (
+      table === 'centers' &&
+      (op === 'insert' || op === 'update') &&
+      !isSuperAdmin
+    ) {
+      const protectedKey = findProtectedCentersWrite(data);
+      if (protectedKey) {
+        return NextResponse.json(
+          {
+            error: `Writing column '${protectedKey}' on centers is not permitted via the proxy`,
+            code: 'CENTERS_PROTECTED_COLUMN',
           },
           { status: 403 },
         );
