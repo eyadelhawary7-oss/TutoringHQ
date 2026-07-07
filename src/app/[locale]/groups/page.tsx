@@ -558,7 +558,7 @@ export default function GroupsPage() {
                 </select>
                 {subjects.length === 0 && (
                   <RouterLink
-                    href="/settings/general"
+                    href="/settings/subjects"
                     className="mt-1.5 inline-block text-xs text-teal-600 hover:underline"
                   >
                     {t('add.createSubjectHelper')}

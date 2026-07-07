@@ -429,7 +429,7 @@ export default function TeamSettingsPage() {
             className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
           >
             <DirectionalIcon icon={ChevronRight} className="w-4 h-4 rotate-180" />
-            {t('general')}
+            {t('title')}
           </Link>
         </div>
 

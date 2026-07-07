@@ -2852,6 +2852,18 @@
     "view_student": "View Student",
     "subjectManagement": {
       "ownerOnlyMessage": "Only the center owner can manage subjects."
+    },
+    "billingMoneyTitle": "Billing & Money",
+    "supportTitle": "Support",
+    "accountSecurityTitle": "Account & Security",
+    "menu": {
+      "centerInfoDesc": "Name, phone, district, governorate, logo",
+      "subjectsDesc": "Manage the subjects you teach",
+      "scannerDesc": "Default scan mode for attendance",
+      "notificationsDesc": "Daily summary and summer mode",
+      "billingMoneyDesc": "InstaPay, card ordering, plan & invoices",
+      "supportDesc": "Contact us on WhatsApp",
+      "accountDesc": "Change PIN, sign out"
     }
   },
   "centerCut": {

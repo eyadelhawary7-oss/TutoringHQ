@@ -6443,6 +6443,18 @@
     "view_student": "عرض طالب",
     "subjectManagement": {
       "ownerOnlyMessage": "يمكن لمالك السنتر فقط إدارة المواد."
+    },
+    "billingMoneyTitle": "الفواتير والمال",
+    "supportTitle": "الدعم",
+    "accountSecurityTitle": "الحساب والأمان",
+    "menu": {
+      "centerInfoDesc": "الاسم، الهاتف، الحي، المحافظة، الشعار",
+      "subjectsDesc": "إدارة المواد التي يتم تدريسها",
+      "scannerDesc": "وضع المسح الافتراضي للحضور",
+      "notificationsDesc": "الملخص اليومي ووضع الصيف",
+      "billingMoneyDesc": "إنستاباي، طلب الكروت، الخطة والفواتير",
+      "supportDesc": "تواصل معنا عبر واتساب",
+      "accountDesc": "تغيير الرمز السري، تسجيل الخروج"
     }
   },
   "setPin": {
