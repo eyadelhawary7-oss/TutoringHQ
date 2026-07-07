@@ -128,7 +128,7 @@ export function CardOrderCartItemRow({
             {item.student?.name ?? ','}
           </p>
           <p className="text-xs text-[var(--color-text-tertiary)] font-mono" dir="ltr">
-            <bdi>#{formatStudentNumberForDisplay(item.student?.student_number ?? '')}</bdi>
+            <bdi>{formatStudentNumberForDisplay(item.student?.student_number ?? '')}</bdi>
           </p>
           {item.stale ? (
             <p className="text-[11px] text-amber-600 mt-1">{t('studentRow.removedFromCenter')}</p>

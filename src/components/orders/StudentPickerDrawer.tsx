@@ -248,7 +248,7 @@ export function StudentPickerDrawer({
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{s.name}</p>
                   <p className="text-xs font-mono text-[var(--color-text-tertiary)]" dir="ltr">
-                    <bdi>#{formatStudentNumberForDisplay(String(s.student_number ?? ''))}</bdi>
+                    <bdi>{formatStudentNumberForDisplay(String(s.student_number ?? ''))}</bdi>
                   </p>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {inCart ? (

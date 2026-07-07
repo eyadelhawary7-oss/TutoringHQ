@@ -2757,8 +2757,6 @@
     "deactivatedStatus": "Deactivated",
     "account": "Account",
     "logout": "Logout",
-    "resetPassword": "Change PIN",
-    "resetPasswordDesc": "Change your account PIN",
     "platformAdminSettingsHint": "Your account is not linked to a center. Change your sign-in PIN or return to the admin console.",
     "backToAdminConsole": "Back to admin",
     "parentPack": {

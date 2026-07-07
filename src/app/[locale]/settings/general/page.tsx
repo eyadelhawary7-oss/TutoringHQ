@@ -516,13 +516,14 @@ export default function GeneralSettingsPage() {
           <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow p-6 space-y-4">
             <p className="text-sm text-[var(--color-text-secondary)]">{t('platformAdminSettingsHint')}</p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <Link
-                href="/settings/reset-password"
+              <button
+                type="button"
+                onClick={() => setIsPinModalOpen(true)}
                 className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
               >
                 <KeyRound className="w-4 h-4 shrink-0" />
-                {t('resetPassword')}
-              </Link>
+                {t('changePin')}
+              </button>
               <Link
                 href="/admin"
                 className="inline-flex items-center justify-center gap-2 px-4 py-3 border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg hover:bg-[var(--color-surface-0)] transition-colors"
@@ -533,6 +534,7 @@ export default function GeneralSettingsPage() {
             </div>
           </div>
         </div>
+        <ChangePinModal isOpen={isPinModalOpen} onClose={() => setIsPinModalOpen(false)} />
       </div>
     );
   }
@@ -1063,12 +1065,6 @@ export default function GeneralSettingsPage() {
                 >
                   <KeyRound className="w-4 h-4" /> {t('changePin')}
                 </button>
-                <Link
-                  href="/settings/reset-password"
-                  className="flex items-center gap-2 px-4 py-2 border border-[var(--color-border-default)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors"
-                >
-                  <KeyRound className="w-4 h-4" /> {t('resetPassword')}
-                </Link>
                 <button
                   type="button"
                   onClick={handleLogout}
