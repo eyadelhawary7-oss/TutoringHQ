@@ -6,6 +6,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { dbSelect } from '@/lib/db-proxy';
+import { colors } from '@/lib/tokens';
 import { exportDashboardToExcel } from '@/lib/excel-export';
 import { hasPlanFeature } from '@/lib/plans';
 import { useUser } from '@/contexts/UserContext';
@@ -1330,8 +1331,8 @@ export default function DashboardPage() {
                 <div className="min-h-0 flex-1">
                   <DonutChart
                     data={[
-                      { name: t('paid'), value: safeData.paidCount, color: '#0D9488' },
-                      { name: t('pending'), value: safeData.pendingCount, color: '#F59E0B' },
+                      { name: t('paid'), value: safeData.paidCount, color: colors.brand[500] },
+                      { name: t('pending'), value: safeData.pendingCount, color: colors.gold[500] },
                       { name: t('overdue'), value: safeData.latePaymentCount, color: '#EF4444' },
                     ]}
                     height={200}

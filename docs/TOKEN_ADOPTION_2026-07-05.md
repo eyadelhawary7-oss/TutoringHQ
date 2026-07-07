@@ -266,6 +266,20 @@ migration must be deliberate, not mechanical.
     arrays and pre-empt the redesign's holistic chart-series palette. `#418` in an
     `AdminFinanceClient` comment is a React error code, not a color.
 
+- **Batch 7 — settings/billing/payments/dashboard/students (16):**
+  - `settings/billing/page.tsx` (14) — inline styles + Tailwind arbitrary classes
+    (incl. `bg-[…]/15` opacity) all brand-500/gold-500 → `var(--color-*)`. Billing
+    is guardrail-sensitive: **only color strings touched**, no billing logic.
+  - `dashboard/page.tsx` (2) — payments donut paid/pending are intentional brand
+    teal/amber → `colors.brand[500]` / `colors.gold[500]`; overdue `#EF4444` drift.
+  - **Left whole (reported):** `payments/page.tsx` `METHOD_CONFIG` — a
+    payment-provider brand-color scheme (vodafone red, instapay indigo, fawry amber,
+    …); only fawry/`#f59e0b` + the `#64748b` fallback match, splitting it would
+    break the provider scheme. `students/page.tsx` — QR `{dark:#000,light:#fff}`
+    module colors (drift) and the **print/PDF card-template CSS string** (leave
+    hardcoded, same rule as invoice PDF; a printed card may render without
+    globals.css).
+
 ### (b) Drift left for the redesign
 - See §6. Nothing snapped.
 
