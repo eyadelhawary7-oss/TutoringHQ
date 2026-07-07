@@ -231,6 +231,20 @@ migration must be deliberate, not mechanical.
   - `attendance/ScanTab.tsx` — SVG `stroke` → `{colors.brand[500]}` (color only;
     no scanner logic touched).
 
+- **Batch 5 — error/utility pages + manifest (~18):**
+  - **Important:** `globals.css` is imported **only** in `[locale]/layout.tsx`.
+    Root `not-found.tsx` and `global-error.tsx` (own `<html>`) render **without**
+    it, so `var()` tokens would be undefined there → used `colors.*` (literal hex,
+    no CSS dependency) instead. This is why they hardcoded hex originally.
+  - `not-found.tsx` (root, 5) + `global-error.tsx` (4) — inline styles →
+    `colors.navy[950|50|400]`, `colors.brand[500]`; `#fff`/`#ef4444` stay drift.
+  - `[locale]/not-found.tsx` (2) — within `[locale]` (globals.css loaded) →
+    `text-[var(--color-navy-50|brand-500)]`.
+  - `[locale]/offline/page.tsx` (1) — SVG `stroke` → `{colors.gold[500]}`.
+  - `[locale]/layout.tsx` (1) — viewport `themeColor` (metadata) → `colors.brand[500]`.
+  - `manifest.ts` (1) — `theme_color` → `colors.brand[500]`; `background_color`
+    `#080D14` stays drift (not `#080f1a`).
+
 ### (b) Drift left for the redesign
 - See §6. Nothing snapped.
 

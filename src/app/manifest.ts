@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { colors } from '@/lib/tokens';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -9,7 +10,7 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: '/ar/dashboard',
     display: 'standalone',
     background_color: '#080D14',
-    theme_color: '#0D9488',
+    theme_color: colors.brand[500],
     orientation: 'portrait',
     lang: 'ar',
     dir: 'rtl',

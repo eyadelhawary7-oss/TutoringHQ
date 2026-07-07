@@ -10,6 +10,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import WebVitalsReporter from '@/lib/monitoring/WebVitalsReporter';
 import { SITE_URL } from '@/config/site';
+import { colors } from '@/lib/tokens';
 import '../globals.css';
 
 // ADR 031: IBM Plex Sans Arabic is the product font (Arabic + Latin in one
@@ -139,7 +140,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#0D9488',
+  themeColor: colors.brand[500],
 };
 
 export default async function LocaleLayout({
