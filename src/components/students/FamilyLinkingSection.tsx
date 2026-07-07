@@ -27,6 +27,7 @@ export function FamilyLinkingSection({
   onFamilyCreated,
 }: FamilyLinkingSectionProps) {
   const t = useTranslations('students');
+  const tCommon = useTranslations('common');
   const [families, setFamilies] = useState<Family[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -87,47 +88,47 @@ export function FamilyLinkingSection({
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-        {t('linkToFamily', { defaultValue: 'ربط بأسرة' })}
+        {t('linkToFamily')}
       </label>
       {loading ? (
-        <p className="text-xs text-[var(--color-text-secondary)]">{t('loading', { defaultValue: 'جاري التحميل...' })}</p>
+        <p className="text-xs text-[var(--color-text-secondary)]">{t('loading')}</p>
       ) : showCreate ? (
-        <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
+        <div className="space-y-2 p-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)]/30">
           <input
             value={createForm.family_name}
             onChange={(e) => setCreateForm((p) => ({ ...p, family_name: e.target.value }))}
-            placeholder={t('familyNamePlaceholder', { defaultValue: 'اسم الأسرة' })}
-            className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+            placeholder={t('familyNamePlaceholder')}
+            className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm"
           />
           <input
             value={createForm.parent_name}
             onChange={(e) => setCreateForm((p) => ({ ...p, parent_name: e.target.value }))}
-            placeholder={t('parentNamePlaceholder', { defaultValue: 'اسم ولي الأمر' })}
-            className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+            placeholder={t('parentNamePlaceholder')}
+            className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm"
           />
           <input
             value={createForm.parent_phone}
             onChange={(e) => setCreateForm((p) => ({ ...p, parent_phone: e.target.value }))}
-            placeholder={t('parentPhone', { defaultValue: 'رقم ولي الأمر' })}
+            placeholder={t('parentPhone')}
             type="tel"
             dir="ltr"
-            className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+            className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm"
           />
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => setShowCreate(false)}
-              className="px-3 py-1.5 text-xs rounded-lg border border-border"
+              className="px-3 py-1.5 text-xs rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)]"
             >
-              إلغاء
+              {tCommon('cancel')}
             </button>
             <button
               type="button"
               onClick={handleCreateFamily}
               disabled={creating}
-              className="px-3 py-1.5 text-xs rounded-lg bg-primary text-primary-foreground font-medium disabled:opacity-50"
+              className="px-3 py-1.5 text-xs rounded-lg bg-teal-600 hover:bg-teal-700 text-white transition-colors font-medium disabled:opacity-50"
             >
-              {creating ? '...' : t('createFamily', { defaultValue: 'إنشاء' })}
+              {creating ? '...' : t('createFamily')}
             </button>
           </div>
         </div>
@@ -136,9 +137,9 @@ export function FamilyLinkingSection({
           <select
             value={currentFamilyId ?? ''}
             onChange={(e) => onFamilyChange(e.target.value || null)}
-            className="flex-1 px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+            className="flex-1 px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm"
           >
-            <option value="">{t('noFamily', { defaultValue: '- لا أسرة -' })}</option>
+            <option value="">{t('noFamily')}</option>
             {families.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.family_name || f.parent_name || f.parent_phone || f.id.slice(0, 8)}
@@ -148,9 +149,9 @@ export function FamilyLinkingSection({
           <button
             type="button"
             onClick={() => setShowCreate(true)}
-            className="px-3 py-2 rounded-lg border border-border text-sm font-medium hover:bg-muted"
+            className="px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-surface-2)]"
           >
-            {t('createNewFamily', { defaultValue: 'إنشاء أسرة جديدة' })}
+            {t('createNewFamily')}
           </button>
         </div>
       )}

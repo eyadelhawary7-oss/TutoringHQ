@@ -176,7 +176,7 @@ export default function CheckoutDeliveryPage() {
               </option>
             ))}
           </select>
-          {errors.delivery_governorate ? <p className="text-xs text-red-600 mt-1">{errors.delivery_governorate}</p> : null}
+          {errors.delivery_governorate ? <p className="text-xs text-[var(--color-danger)] mt-1">{errors.delivery_governorate}</p> : null}
           {gov.trim() && shipFee != null ? (
             <p className="text-sm text-teal-700 mt-2 font-medium">
               {t('shippingPreview', { amount: formatCurrency(shipFee, locale) })}
@@ -196,7 +196,7 @@ export default function CheckoutDeliveryPage() {
             onChange={(e) => setAddress(e.target.value)}
             maxLength={200}
           />
-          {errors.delivery_address ? <p className="text-xs text-red-600 mt-1">{errors.delivery_address}</p> : null}
+          {errors.delivery_address ? <p className="text-xs text-[var(--color-danger)] mt-1">{errors.delivery_address}</p> : null}
         </div>
 
         <div>
@@ -211,7 +211,7 @@ export default function CheckoutDeliveryPage() {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
           />
-          {errors.delivery_phone ? <p className="text-xs text-red-600 mt-1">{errors.delivery_phone}</p> : null}
+          {errors.delivery_phone ? <p className="text-xs text-[var(--color-danger)] mt-1">{errors.delivery_phone}</p> : null}
         </div>
 
         <div>
@@ -222,7 +222,7 @@ export default function CheckoutDeliveryPage() {
             onChange={(e) => setNotes(e.target.value)}
             maxLength={200}
           />
-          {errors.notes ? <p className="text-xs text-red-600 mt-1">{errors.notes}</p> : null}
+          {errors.notes ? <p className="text-xs text-[var(--color-danger)] mt-1">{errors.notes}</p> : null}
         </div>
 
         <label className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
@@ -235,7 +235,7 @@ export default function CheckoutDeliveryPage() {
           <span>{t('saveDefaults')}</span>
         </label>
 
-        {errors.form ? <p className="text-sm text-red-600">{errors.form}</p> : null}
+        {errors.form ? <p className="text-sm text-[var(--color-danger)]">{errors.form}</p> : null}
 
         <button
           type="submit"
