@@ -40,12 +40,12 @@ export default async function BlogPage({
   const c = locale === 'en' ? CONTENT.en : CONTENT.ar;
 
   return (
-    <main className="min-h-screen bg-[#080f1a] text-white">
+    <main className="min-h-screen bg-[var(--color-navy-950)] text-white">
       <section
         className="flex min-h-screen flex-col items-center justify-center px-4 py-20 md:px-6"
         style={{
           background:
-            'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(13, 148, 136, 0.08), transparent), #080f1a',
+            'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(13, 148, 136, 0.08), transparent), var(--color-navy-950)',
         }}
       >
         <div className="mx-auto max-w-2xl text-center">

@@ -203,6 +203,19 @@ migration must be deliberate, not mechanical.
     impossible without either breaking the color (var in SVG) or adding new JS
     infra; left as-is for the redesign.
 
+- **Batch 3 — landing/marketing (31):**
+  - `landing/AnimatedPhoneMockup.tsx` (17) — 16 single-quoted `style` values →
+    `var(--color-…)`; SVG `stroke="#94a3b8"` → `stroke={colors.navy[400]}`.
+  - `landing/HeroVisuals.tsx` (7) — 5 `style` values → `var(--color-…)`; 2 SVG
+    `stopColor="#0d9488"` → `{colors.brand[500]}`.
+  - `compare/spreadsheets` (3), `blog` (2), `demo-request` (2) — `bg-[#080f1a]`/
+    gradient/`text-[…]` → `var(--color-navy-950 | navy-50 | brand-500)`.
+  - **Left (reported):** `HeroVisuals` traffic-dot array
+    `['#ef4444','#f59e0b','#22c55e']` — a cohesive decorative window-control trio;
+    only `#f59e0b` matches (gold-500). Splitting one out of the trio is a redesign
+    call, so the whole array is left. All the `#…"` SVG-attribute drift
+    (`#14b8a6`, `#34D399`) and WhatsApp-mock colors stay as drift.
+
 ### (b) Drift left for the redesign
 - See §6. Nothing snapped.
 
