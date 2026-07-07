@@ -248,7 +248,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                           {grp ?? tCommon('notAvailable')}
                         </td>
                         <td className="py-2.5 px-4 text-start">
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${badge.cls}`}>{badge.label}</span>
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${badge.cls}`}>{badge.label}</span>
                         </td>
                       </tr>
                     );

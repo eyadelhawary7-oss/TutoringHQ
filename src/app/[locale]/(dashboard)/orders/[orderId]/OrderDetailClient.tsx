@@ -412,7 +412,7 @@ export default function OrderDetailClient({
                 <div className="flex justify-end gap-2">
                   <button
                     type="button"
-                    className="px-4 py-2 rounded-xl border text-sm font-semibold"
+                    className="px-4 py-2 rounded-xl border border-[var(--color-border-subtle)] text-sm font-semibold"
                     disabled={reorderBusy}
                     onClick={() => {
                       setReorderOpen(false);

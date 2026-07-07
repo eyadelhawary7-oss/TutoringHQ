@@ -48,7 +48,7 @@ export default function TodayHistorySheet({ open, onClose, rows }: TodayHistoryS
     <div className="fixed inset-0 z-[58] flex items-end justify-center bg-black/50 sm:items-center p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
       <div className="w-full max-w-md rounded-t-2xl sm:rounded-2xl bg-[var(--color-surface-1)] shadow-xl border border-[var(--color-border-subtle)] max-h-[88vh] flex flex-col">
         <div className="flex justify-center pt-3 pb-1 shrink-0">
-          <div className="w-12 h-1 rounded-full bg-slate-400/50" aria-hidden />
+          <div className="w-12 h-1 rounded-full bg-[var(--color-border-strong)]" aria-hidden />
         </div>
         <div className="px-4 pb-3 border-b border-[var(--color-border-subtle)]">
           <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('title')}</h2>

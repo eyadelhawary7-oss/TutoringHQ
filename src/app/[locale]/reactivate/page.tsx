@@ -150,16 +150,16 @@ export default function ReactivatePage() {
 
       <div className="chq-spring-in mt-12 w-full max-w-xl space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-white">{t('title')}</h1>
-          <p className="mt-2 text-sm text-slate-400">{t('subtitle')}</p>
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
+          <p className="mt-2 text-sm text-[var(--color-text-muted)]">{t('subtitle')}</p>
         </div>
 
         {loading ? (
-          <div className="rounded-2xl bg-[var(--color-surface-2)] p-6 text-center text-sm text-slate-400">
+          <div className="rounded-2xl bg-[var(--color-surface-2)] p-6 text-center text-sm text-[var(--color-text-muted)]">
             {t('loading')}
           </div>
         ) : error && !info ? (
-          <div className="rounded-2xl border border-red-800/40 bg-red-900/20 p-4 text-sm text-red-300">
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
             {error}
             {errorCode ? (
               <div className="mt-1 font-mono text-xs text-[var(--color-text-muted)]">
@@ -170,16 +170,16 @@ export default function ReactivatePage() {
         ) : info ? (
           <>
             <div className="rounded-2xl bg-[var(--color-surface-2)] p-4 text-sm">
-              <p className="text-slate-300">
-                {t('centerLabel')}: <span className="font-semibold text-white">{info.center.name}</span>
+              <p className="text-[var(--color-text-secondary)]">
+                {t('centerLabel')}: <span className="font-semibold text-[var(--color-text-primary)]">{info.center.name}</span>
               </p>
-              <p className="mt-1 text-slate-400">
+              <p className="mt-1 text-[var(--color-text-muted)]">
                 {t('tierLabel')}: {t(`tier.${info.tier}`)}
               </p>
             </div>
 
             <fieldset className="space-y-3">
-              <legend className="px-1 text-sm font-semibold text-slate-300">{t('choosePlan')}</legend>
+              <legend className="px-1 text-sm font-semibold text-[var(--color-text-secondary)]">{t('choosePlan')}</legend>
               {info.plans.map((p) => {
                 const isSel = p.key === selected;
                 const name = isAr ? p.arabicName : p.englishName;
@@ -188,8 +188,8 @@ export default function ReactivatePage() {
                     key={p.key}
                     className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-colors ${
                       isSel
-                        ? 'border-teal-500/70 bg-teal-900/20'
-                        : 'border-transparent bg-[var(--color-surface-2)] hover:border-teal-800/40'
+                        ? 'border-teal-500/70 bg-teal-50'
+                        : 'border-transparent bg-[var(--color-surface-2)] hover:border-teal-200'
                     }`}
                   >
                     <input
@@ -202,25 +202,25 @@ export default function ReactivatePage() {
                     />
                     <div className="flex-1">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-semibold text-white">{name}</span>
+                        <span className="text-sm font-semibold text-[var(--color-text-primary)]">{name}</span>
                         {p.isCurrent ? (
-                          <span className="rounded-full bg-teal-700/40 px-2 py-0.5 text-xs text-teal-200">
+                          <span className="rounded-full bg-teal-100 px-2 py-0.5 text-xs text-teal-800">
                             {t('currentPlan')}
                           </span>
                         ) : null}
                       </div>
                       {p.weeklyStudentLimit != null ? (
-                        <p className="mt-1 text-xs text-slate-400">
+                        <p className="mt-1 text-xs text-[var(--color-text-muted)]">
                           {t('weeklyLimit', { count: p.weeklyStudentLimit })}
                         </p>
                       ) : null}
-                      <p className="mt-2 text-sm text-slate-200">
+                      <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
                         {t('reactivationTotal')}:{' '}
-                        <span className="font-semibold text-white">
+                        <span className="font-semibold text-[var(--color-text-primary)]">
                           {formatCurrency(p.reactivationTotal, locale)}
                         </span>
                       </p>
-                      <p className="mt-1 text-xs text-slate-400">
+                      <p className="mt-1 text-xs text-[var(--color-text-muted)]">
                         {t('nextPeriod')}: {formatCurrency(p.nextPeriodAmount, locale)}
                         {p.fineOrFee > 0
                           ? ` · ${t('fineOrFee')}: ${formatCurrency(p.fineOrFee, locale)}`
@@ -234,15 +234,15 @@ export default function ReactivatePage() {
 
             {selectedRow ? (
               <div className="rounded-2xl bg-[var(--color-surface-2)] p-4 text-center text-sm">
-                <p className="text-slate-300">{t('youWillPay')}</p>
-                <p className="mt-1 text-2xl font-bold text-white">
+                <p className="text-[var(--color-text-secondary)]">{t('youWillPay')}</p>
+                <p className="mt-1 text-2xl font-bold text-[var(--color-text-primary)]">
                   {formatCurrency(selectedRow.reactivationTotal, locale)}
                 </p>
               </div>
             ) : null}
 
             {error ? (
-              <div className="rounded-xl border border-red-800/40 bg-red-900/20 p-3 text-sm text-red-300">
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900">
                 {error}
                 {errorCode ? (
                   <div className="mt-1 font-mono text-xs text-[var(--color-text-muted)]">
@@ -266,7 +266,7 @@ export default function ReactivatePage() {
         <button
           type="button"
           onClick={() => void handleLogout()}
-          className="mx-auto block text-sm text-slate-500 transition-colors hover:text-slate-400 btn-press chq-focus rounded-lg px-2 py-1"
+          className="mx-auto block text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-secondary)] btn-press chq-focus rounded-lg px-2 py-1"
         >
           {t('logout')}
         </button>
