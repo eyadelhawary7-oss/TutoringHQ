@@ -5560,7 +5560,11 @@
       "orderCard": "Order card",
       "inCart": "In cart",
       "back": "Back",
-      "notFound": "Student not found."
+      "notFound": "Student not found.",
+      "visits": "Visits",
+      "lastSeen": "Last seen",
+      "family": "Family",
+      "noFamilyLinked": "No family linked yet"
     },
     "nav": {
       "viewCart": "View cart",
