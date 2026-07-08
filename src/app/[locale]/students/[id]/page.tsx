@@ -148,7 +148,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   const [showParentSection, setShowParentSection] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
-  const canCollect = hasPermission('can_record_payments');
+  const canCollect = hasPermission('can_record_payments') || hasPermission('can_view_payments');
   const canEdit = hasPermission('can_manage_students');
   const parentPackEnabled = user?.center?.parent_pack_enabled === true;
 
@@ -254,23 +254,29 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   // an edit, so the stat row and family section reflect the change.
   const reloadStudent = useCallback(async () => {
     if (!centerId) return;
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session) return;
-    const sel = await dbSelect({
-      table: 'students',
-      select: STUDENT_SELECT,
-      filters: [
-        { column: 'id', op: 'eq', value: id },
-        { column: 'center_id', op: 'eq', value: centerId },
-      ],
-    });
-    const raw = Array.isArray(sel.data) && sel.data[0] ? (sel.data[0] as Record<string, unknown>) : null;
-    if (!raw) return;
-    const row = normalizeStudent(raw);
-    setStudent(row);
-    setFamily(await fetchFamilyForStudent(row.sibling_family_id ?? null, session.access_token));
+    // Self-contained: a refresh hiccup must never surface as a collect/edit
+    // failure at the call sites (which await this inside their success path).
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) return;
+      const sel = await dbSelect({
+        table: 'students',
+        select: STUDENT_SELECT,
+        filters: [
+          { column: 'id', op: 'eq', value: id },
+          { column: 'center_id', op: 'eq', value: centerId },
+        ],
+      });
+      const raw = Array.isArray(sel.data) && sel.data[0] ? (sel.data[0] as Record<string, unknown>) : null;
+      if (!raw) return;
+      const row = normalizeStudent(raw);
+      setStudent(row);
+      setFamily(await fetchFamilyForStudent(row.sibling_family_id ?? null, session.access_token));
+    } catch (err) {
+      console.error('[student-detail] reloadStudent failed', err);
+    }
   }, [centerId, id]);
 
   const onOrderCard = async () => {
@@ -607,6 +613,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                   step="0.01"
                   value={collectAmount}
                   onChange={(e) => setCollectAmount(e.target.value)}
+                  dir="ltr"
                   className="w-full px-3 py-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] text-sm font-mono text-[var(--color-text-primary)]"
                   placeholder="0"
                 />
