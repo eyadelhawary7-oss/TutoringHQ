@@ -171,7 +171,6 @@ export async function GET(request: Request) {
       business: 0,
       enterprise: 0,
       top_centers: 0,
-      payg: 0,
     };
     const centersByPlan: Record<string, number> = {
       solo: 0,
@@ -181,14 +180,9 @@ export async function GET(request: Request) {
       business: 0,
       enterprise: 0,
       top_centers: 0,
-      payg: 0,
     };
     for (const c of subscriptionMrrCenters) {
       const plan = c.plan || 'starter';
-      if ((c.billing_type || 'fixed') === 'payg') {
-        centersByPlan.payg = (centersByPlan.payg ?? 0) + 1;
-        continue;
-      }
       centersByPlan[plan] = (centersByPlan[plan] ?? 0) + 1;
       const amt = getImpliedMonthlyMrr({
         plan: c.plan,
@@ -202,37 +196,6 @@ export async function GET(request: Request) {
         is_test: c.is_test,
       });
       mrrByPlan[plan] = (mrrByPlan[plan] ?? 0) + amt;
-    }
-
-    let paygMRR = 0;
-    try {
-      const paygCenterIds = activeCenters
-        .filter((c: { billing_type?: string }) => (c.billing_type || 'fixed') === 'payg')
-        .map((c: { id: string }) => c.id);
-      if (paygCenterIds.length > 0) {
-        const fourWeeksAgo = new Date();
-        fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
-        const { data: paygCharges } = await supabaseAdmin
-          .from('payg_weekly_charges')
-          .select('center_id, total_charge')
-          .in('center_id', paygCenterIds)
-          .gte('week_start_date', fourWeeksAgo.toISOString().slice(0, 10));
-        const paygByCenter: Record<string, number[]> = {};
-        (paygCharges || []).forEach((c: { center_id: string; total_charge: number }) => {
-          if (!paygByCenter[c.center_id]) paygByCenter[c.center_id] = [];
-          paygByCenter[c.center_id].push(Number(c.total_charge));
-        });
-        const MONTHLY_WEEKS = 4.333;
-        let paygAccum = 0;
-        Object.values(paygByCenter).forEach((charges) => {
-          const avgWeekly = charges.length > 0 ? charges.reduce((a, b) => a + b, 0) / charges.length : 0;
-          paygAccum += avgWeekly * MONTHLY_WEEKS;
-        });
-        paygMRR = paygAccum;
-        mrrByPlan.payg = Math.round(paygMRR);
-      }
-    } catch (paygErr) {
-      console.warn('[admin/overview] PAYG query failed (non-fatal):', paygErr);
     }
 
     const arpuByPlan: Record<string, number> = {};
@@ -283,7 +246,6 @@ export async function GET(request: Request) {
       business: 0,
       enterprise: 0,
       top_centers: 0,
-      payg: 0,
     };
     for (const c of allCenters) {
       const plan = c.plan || 'starter';
@@ -448,7 +410,6 @@ export async function GET(request: Request) {
       pendingCenters: pendingCenters.length,
       totalStudents,
       totalMRR,
-      paygMRR: Math.round(paygMRR),
       mrr: totalMRR,
       mrrByPlan,
       arpuByPlan,

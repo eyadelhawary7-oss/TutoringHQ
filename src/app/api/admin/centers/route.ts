@@ -176,7 +176,6 @@ async function enrichCentersList(
     business: 1000,
     enterprise: 2000,
     top_centers: 999999,
-    payg: 999999,
   };
 
   return centers.map((c) => {
@@ -682,7 +681,7 @@ export async function PUT(request: Request) {
     }
 
     if (action === 'change_plan') {
-      if (!newPlan || !['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers', 'payg'].includes(newPlan as string)) {
+      if (!newPlan || !['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'].includes(newPlan as string)) {
         return NextResponse.json({ error: 'Valid newPlan required' }, { status: 400 });
       }
       const oldPlan = center.plan || 'starter';

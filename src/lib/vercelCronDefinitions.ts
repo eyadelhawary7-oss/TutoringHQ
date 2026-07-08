@@ -12,7 +12,6 @@ export const VERCEL_CRON_DEFINITIONS = [
   { path: '/api/cron/parent-balance-alerts', schedule: '0 8 * * *' },
   { path: '/api/cron/pack-request-check', schedule: '0 7 * * *' },
   { path: '/api/cron/ceo-briefing', schedule: '15 7 * * *' },
-  { path: '/api/cron/payg-billing', schedule: '0 21 28-31 * *' },
   { path: '/api/cron/commission-t2-check', schedule: '0 9 * * *' },
   { path: '/api/cron/loyalty-bonus-check', schedule: '0 9 * * *' },
   { path: '/api/cron/process-renewals', schedule: '0 7 * * *' },

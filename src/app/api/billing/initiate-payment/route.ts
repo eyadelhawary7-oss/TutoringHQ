@@ -10,22 +10,6 @@ import {
 
 import { getChargeFromQuarterlyAllIn, normalizeBillingPeriod, PLANS, type BillingPeriod, type PlanKey } from '@/lib/pricing';
 
-const MONTHLY_MULTIPLIER = 4.333;
-
-function getBracketRate(students: number): number {
-  if (students <= 100) return 4;
-  if (students <= 250) return 3;
-  if (students <= 500) return 2.5;
-  if (students <= 1000) return 2;
-  if (students <= 2000) return 2;
-  return 1.75;
-}
-
-function calculatePaygMonthly(studentsPerWeek: number): number {
-  const rate = getBracketRate(studentsPerWeek);
-  return Math.round(studentsPerWeek * rate * MONTHLY_MULTIPLIER);
-}
-
 async function getUserContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -82,25 +66,18 @@ export async function POST(request: NextRequest) {
 
     const centerName = (center as { name?: string }).name || 'Center';
     const plan = center.plan || 'starter';
-    const pricingType = (center as { pricing_type?: string }).pricing_type || 'fixed';
     const isEarlyAdopter = !!(center as { is_early_adopter?: boolean }).is_early_adopter;
     const earlyAdopterPrice = (center as { early_adopter_price?: number }).early_adopter_price;
 
-    let billingAmountEgp: number;
-    if (pricingType === 'payg') {
-      const weeklyLimit = (center as { weekly_student_limit?: number }).weekly_student_limit ?? 200;
-      billingAmountEgp = calculatePaygMonthly(weeklyLimit);
-    } else {
-      const planKey = (plan in PLANS ? plan : 'starter') as PlanKey;
-      const period = normalizeBillingPeriod((center as { billing_period?: string | null }).billing_period);
-      const qBase =
-        isEarlyAdopter && typeof earlyAdopterPrice === 'number'
-          ? earlyAdopterPrice
-          : (center as { all_in_price?: number | null }).all_in_price != null
-            ? Number((center as { all_in_price?: number | null }).all_in_price)
-            : PLANS[planKey].quarterlyAllIn;
-      billingAmountEgp = getChargeFromQuarterlyAllIn(qBase, period as BillingPeriod, planKey);
-    }
+    const planKey = (plan in PLANS ? plan : 'starter') as PlanKey;
+    const period = normalizeBillingPeriod((center as { billing_period?: string | null }).billing_period);
+    const qBase =
+      isEarlyAdopter && typeof earlyAdopterPrice === 'number'
+        ? earlyAdopterPrice
+        : (center as { all_in_price?: number | null }).all_in_price != null
+          ? Number((center as { all_in_price?: number | null }).all_in_price)
+          : PLANS[planKey].quarterlyAllIn;
+    const billingAmountEgp = getChargeFromQuarterlyAllIn(qBase, period as BillingPeriod, planKey);
 
     if (billingAmountEgp <= 0) {
       return NextResponse.json({ error: 'No amount due' }, { status: 400 });

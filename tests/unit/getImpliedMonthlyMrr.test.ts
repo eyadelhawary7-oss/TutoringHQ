@@ -104,18 +104,6 @@ describe('getImpliedMonthlyMrr', () => {
     ).toBe(PLANS.solo.quarterlyAllIn);
   });
 
-  it('PAYG billing_type → 0 fixed subscription MRR', () => {
-    expect(
-      getImpliedMonthlyMrr({
-        plan: 'starter',
-        all_in_price: 4499,
-        billing_period: 'quarterly',
-        billing_type: 'payg',
-        ...active,
-      }),
-    ).toBe(0);
-  });
-
   it('is_test=true centre → 0 subscription MRR regardless of plan/status', () => {
     expect(
       getImpliedMonthlyMrr({

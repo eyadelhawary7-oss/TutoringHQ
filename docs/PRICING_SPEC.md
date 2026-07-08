@@ -73,7 +73,7 @@ Source of truth: `src/lib/processingFee.ts` (pure helpers — `applyProcessingFe
 
 The fee applied to each invoice is snapshotted into **`invoices.metadata.processing_fee`** at creation, so rendered breakdowns are deterministic even if config later changes. For session-based charges (teacher subscriptions) it rides in `combined_payment_sessions.metadata.processing_fee` and is added to `paymob_amount` / `total_amount`.
 
-**Every charge invoice carries the flat 20 EGP** (one per invoice, never per line): center subscription renewals, signup first payment, PAYG, parent-pack (`pack_billing`) + WhatsApp add-on (`whatsapp_addon`), teacher resubscribe / upgrade / switch-interval / overage, `plan_upgrade_difference`, summer first invoice, **reactivation** (`centers/reactivate`), **card-order `setup_fee`**, and **announcement `_cap` / `_settlement`** (added in the service-fee/stamp removal — the earlier "Deferred" list is cleared).
+**Every charge invoice carries the flat 20 EGP** (one per invoice, never per line): center subscription renewals, signup first payment, parent-pack (`pack_billing`) + WhatsApp add-on (`whatsapp_addon`), teacher resubscribe / upgrade / switch-interval / overage, `plan_upgrade_difference`, summer first invoice, **reactivation** (`centers/reactivate`), **card-order `setup_fee`**, and **announcement `_cap` / `_settlement`** (added in the service-fee/stamp removal, the earlier "Deferred" list is cleared).
 **Not charged the fee (not customer charges):** `referral_payout` (money paid *out* to the referrer) and `payment_proof` (mirrors a referenced invoice; not a new charge).
 
 ### Late-fee / reactivation invoices (combined, single invoice)
@@ -183,7 +183,7 @@ summary lock screen.
 
 **Billing period → implied monthly MRR:** `normalizeBillingPeriod`; semi-annual / half-yearly map to **quarterly** for MRR. **Quarterly** billing: implied MRR equals that monthly all-in rate. **Monthly** / **annual**: derived via `getChargeFromQuarterlyAllIn` / annual rounding ÷ 12 (see `computeImpliedMonthlyMrrFromBase`).
 
-**Centres excluded from subscription MRR** (`isCenterEligibleForSubscriptionMrr`): **test centres** (`centers.is_test === true`) are always excluded (before status), regardless of account status. Additionally by status: `suspended`, `churned`, `deleted`, `cancelled`, `inactive`. **PAYG** (`billing_type === 'payg'`): subscription MRR `0`; PAYG estimate is added separately in billing/overview where applicable.
+**Centres excluded from subscription MRR** (`isCenterEligibleForSubscriptionMrr`): **test centres** (`centers.is_test === true`) are always excluded (before status), regardless of account status. Additionally by status: `suspended`, `churned`, `deleted`, `cancelled`, `inactive`. (PAYG billing was removed in 2026-07; every center is fixed billing.)
 
 ## Daily MRR snapshots (`mrr_snapshots`)
 
@@ -220,7 +220,7 @@ Without this, the finance dashboard falls back to live subscription MRR for the 
   declines to the OTP fallback (no silent retry), and retries soft declines on a
   capped day 0/+3/+7 schedule. The single-day lock model now drives access
   enforcement (`resolveBillingAccess` via the proxy) and all side paths
-  (signup/PAYG/admin) lock uniformly the next Cairo midnight.
+  (signup/admin) lock uniformly the next Cairo midnight.
 - **Still inert**: with no `PAYMOB_RECURRING_INTEGRATION_ID` the engine charges
   nothing — every due customer is left on the manual surface. Phase 2 finishing
   does NOT make auto-charge live. Detail: `docs/SAVED_CARD_ENGINE.md`.

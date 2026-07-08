@@ -12,7 +12,6 @@ import {
   type PlanKey,
 } from '@/lib/pricing';
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
-import { isPaygCenter } from '@/lib/billingEngine';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { applyProcessingFee } from '@/lib/processingFee';
@@ -94,13 +93,6 @@ export async function POST(request: NextRequest) {
     pricing_type?: string | null;
   };
 
-  if (isPaygCenter(c)) {
-    return NextResponse.json(
-      { error: 'Pay As You Go plans scale automatically with student count' },
-      { status: 400 },
-    );
-  }
-
   if (c.status !== 'active') {
     return NextResponse.json({ error: 'Center must be active' }, { status: 400 });
   }
@@ -136,7 +128,6 @@ export async function POST(request: NextRequest) {
       requestedPlanRank: requestedRank,
       upgradeCountThisPeriod: Number(c.upgrade_count_this_period ?? 0),
       billingPeriod: periodForLimit,
-      isPaygCenter: isPaygCenter(c),
     });
 
     if (!gate.allowed) {

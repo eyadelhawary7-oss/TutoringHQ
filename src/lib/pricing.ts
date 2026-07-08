@@ -183,7 +183,7 @@ function isStatusEligibleForSubscriptionMrr(status: string | null | undefined): 
 /**
  * Same exclusions as finance admin `isActive`: these centres do not contribute to subscription MRR.
  * Test centres (`is_test === true`) are excluded before status is considered.
- * PAYG is excluded via `billing_type` in `getImpliedMonthlyMrr`; pending/trial centres still count if paying (unless status excludes).
+ * Pending/trial centres still count if paying (unless status excludes).
  *
  * Pass a **string** (status only) for legacy call sites where `is_test` is unknown - unknown is treated as non-test.
  * Prefer a **row object** `{ status, is_test }` when available so test centres are excluded.
@@ -248,7 +248,6 @@ function computeImpliedMonthlyMrrFromBase(
 }
 
 function getImpliedMonthlyMrrFromCenterFields(row: ImpliedMrrCenterFields): number {
-  if ((row.billing_type || 'fixed') === 'payg') return 0;
   if (!isCenterEligibleForSubscriptionMrr(row)) return 0;
 
   const bp = row.billing_period || 'quarterly';
@@ -269,7 +268,7 @@ export function getImpliedMonthlyMrr(
   period: BillingPeriod,
   planKey?: PlanKey,
 ): number;
-/** Canonical path: derive implied MRR from a centre row (billing period, plan tier, PAYG / inactive exclusions). */
+/** Canonical path: derive implied MRR from a centre row (billing period, plan tier, inactive exclusions). */
 export function getImpliedMonthlyMrr(center: ImpliedMrrCenterFields): number;
 export function getImpliedMonthlyMrr(
   a: number | ImpliedMrrCenterFields,

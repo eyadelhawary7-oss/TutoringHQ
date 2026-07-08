@@ -2248,8 +2248,7 @@
         "billingType": "نوع الفوترة",
         "billingPeriod": "فترة الفوترة",
         "weeklyStudentLimit": "حد الطلاب الأسبوعي",
-        "planWarning": "تحذير حد الخطة",
-        "paygRate": "سعر الدفع حسب الاستخدام"
+        "planWarning": "تحذير حد الخطة"
       },
       "section3": {
         "title": "تفاصيل الفوترة",
@@ -3758,7 +3757,6 @@
       "business": "أعمال",
       "enterprise": "مؤسسات",
       "top_centers": "كبار السناتر",
-      "payg": "الدفع حسب الاستخدام",
       "activeParents": "نشط أولياء الأمور",
       "billingStatus": "الفوترة الحالة",
       "centerName": "سنتر الاسم",
@@ -4095,62 +4093,6 @@
       "summary": "ملخص الترقية",
       "title": "ترقية الخطة",
       "usedOf": "{used} من {limit} ترقيات مستخدمة"
-    },
-    "payg": {
-      "tabLabel": "الدفع حسب الاستخدام",
-      "intro": {
-        "title": "مرن تماماً - ادفع على حسب استخدامك الفعلي",
-        "subtitle": "الفاتورة شهرية حسب عدد الطلاب الفعليين. السعر المعروض لكل طالب في الأسبوع. بدون التزام."
-      },
-      "pill": {
-        "noCommitment": "بدون التزام",
-        "cancelAnytime": "إلغاء في أي وقت",
-        "endOfMonth": "الفاتورة آخر الشهر"
-      },
-      "slider": {
-        "label": "كم عدد الطلاب المتوقع؟",
-        "students": "{count} طالب"
-      },
-      "estimate": {
-        "students": "الطلاب هذا الشهر",
-        "rate": "السعر لكل طالب/أسبوع",
-        "rateUnit": "ج.م/طالب/أسبوع",
-        "tier": "الخطة الحالية",
-        "total": "الفاتورة الشهرية التقديرية",
-        "capped": "بحد أقصى {amount} ج.م",
-        "vsMonthly": "مقارنة بالشهري",
-        "vsAllIn": "مقارنة بالسعر الشامل"
-      },
-      "switch": {
-        "enable": "التحويل للدفع حسب الاستخدام",
-        "effectiveDate": "يبدأ في {date}",
-        "active": "✓ أنت على خطة الدفع حسب الاستخدام",
-        "disable": "العودة للدفع الثابت",
-        "pending": "تحويل مجدول في {date}",
-        "cancel": "إلغاء التحويل",
-        "scheduled": "تم جدولة التحويل في {date}",
-        "fixedScheduled": "يستأنف الدفع الثابت في {date}"
-      },
-      "hero": {
-        "badge": "حسب الاستخدام",
-        "rate": "السعر لكل طالب/أسبوع",
-        "billingDate": "تاريخ الفاتورة",
-        "billingDateValue": "آخر الشهر",
-        "activeStudents": "الطلاب النشطون",
-        "estimate": "تقدير هذا الشهر"
-      },
-      "tierRange": {
-        "solo": "١–٥٠",
-        "nano": "٥١–٧٥",
-        "starter": "٧٦–١٥٠",
-        "pro": "١٥١–٥٠٠",
-        "business": "٥٠١–١٬٠٠٠",
-        "enterprise": "١٬٠٠١–٢٬٠٠٠"
-      },
-      "tier": {
-        "rateUnit": "ج.م/أسبوع"
-      },
-      "perStudent": "{rate} ج.م/طالب/أسبوع"
     },
     "whatsappSupport": "دعم واتساب",
     "contactSupportViaWhatsapp": "تواصل مع الدعم عبر واتساب",
@@ -7156,7 +7098,6 @@
       "billingPeriod": "الفوترة فترة",
       "billingStatus": "الفوترة الحالة",
       "billingType": "الفوترة النوع",
-      "paygRate": "Payg السعر",
       "plan": "باقة",
       "planWarning": "باقة تحذير",
       "pricingType": "الأسعار النوع",
@@ -8317,53 +8258,6 @@
   "yourCode": {},
   "yourPin": {},
   "yourSchedule": {},
-  "payg": {
-    "estimate": {
-      "capped": "Capped",
-      "rate": "السعر",
-      "rateUnit": "السعر Unit",
-      "students": "طلاب",
-      "tier": "Tier",
-      "total": "إجمالي",
-      "vsMonthly": "مقابل شهري",
-      "vsQuarterly": "مقابل ربع سنوي"
-    },
-    "hero": {
-      "activeStudents": "نشط طلاب",
-      "badge": "شارة",
-      "billingDate": "الفوترة التاريخ",
-      "billingDateValue": "الفوترة التاريخ Value",
-      "estimate": "Estimate",
-      "rate": "السعر"
-    },
-    "intro": {
-      "subtitle": "وصف",
-      "title": "عنوان"
-    },
-    "pill": {
-      "cancelAnytime": "إلغاء Anytime",
-      "endOfMonth": "نهاية من شهر",
-      "noCommitment": "لا Commitment"
-    },
-    "slider": {
-      "label": "تسمية",
-      "students": "طلاب"
-    },
-    "switch": {
-      "active": "نشط",
-      "cancel": "إلغاء",
-      "disable": "تعطيل",
-      "effectiveDate": "Effective التاريخ",
-      "enable": "تفعيل",
-      "fixedScheduled": "ثابت Scheduled",
-      "pending": "معلق",
-      "scheduled": "Scheduled"
-    },
-    "tier": {
-      "rateUnit": "السعر Unit"
-    },
-    "tabLabel": "Tab تسمية"
-  },
   "platformConfig": "المنصة إعدادات",
   "platformHealth": "المنصة الصحة",
   "cronBackup": {

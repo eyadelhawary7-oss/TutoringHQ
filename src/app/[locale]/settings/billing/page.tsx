@@ -22,12 +22,6 @@ import {
   getReactivationAmount,
 } from '@/lib/billingEngine';
 import {
-  calculatePaygBill,
-  getWeeklyDisplayRate,
-  PAYG_TIER_BREAKPOINTS,
-  firstDayNextMonthCairoYmd,
-} from '@/lib/paygBilling';
-import {
   getTodayCairo,
   isWithdrawalWindowOpen,
   nextQuarterFirstOnOrAfter,
@@ -136,11 +130,6 @@ type CenterRow = {
   cancellation_requested_at?: string | null;
   billing_type?: string | null;
   pricing_type?: string | null;
-  /** Monthly EGP per active student (billing); UI shows weekly via getWeeklyDisplayRate. */
-  payg_rate?: number | string | null;
-  payg_pending_switch?: string | null;
-  payg_switch_effective_date?: string | null;
-  payg_pending_target_period?: string | null;
 };
 
 type InvoiceRow = {
@@ -383,310 +372,6 @@ function PeriodCard({
   );
 }
 
-function PaygTab({
-  t,
-  tPlan,
-  tCommon,
-  toast,
-  refresh,
-  ownerOk,
-  center,
-  pricingRows,
-  paygStudentCount,
-  setPaygStudentCount,
-  paygLeavePeriod,
-  setPaygLeavePeriod,
-  cairoFont,
-  numFont,
-  locale,
-  fmtNum,
-  fmtCurrency,
-}: {
-  t: (key: string, values?: Record<string, string | number | Date>) => string;
-  tPlan: (key: string) => string;
-  tCommon: (key: string) => string;
-  toast: { success: (title: string, description?: string) => void; error: (title: string, description?: string) => void };
-  refresh: () => void | Promise<void>;
-  ownerOk: boolean;
-  center: CenterRow | null;
-  pricingRows: PricingPlanRow[];
-  paygStudentCount: number;
-  setPaygStudentCount: (n: number) => void;
-  paygLeavePeriod: BillingPeriod;
-  setPaygLeavePeriod: (p: BillingPeriod) => void;
-  cairoFont: CSSProperties;
-  numFont: CSSProperties;
-  locale: string;
-  fmtNum: (n: number | null | undefined) => string;
-  fmtCurrency: (n: number) => string;
-}) {
-  const billingPayg =
-    center?.billing_type === 'payg' || center?.pricing_type === 'payg';
-  const pending = center?.payg_pending_switch ?? null;
-  const pendingDate = center?.payg_switch_effective_date?.slice(0, 10) ?? '';
-  const effectiveYmd = firstDayNextMonthCairoYmd();
-  const effectiveLabel = (() => {
-    const d = new Date(`${effectiveYmd}T12:00:00`);
-    return Number.isNaN(d.getTime())
-      ? effectiveYmd
-      : formatDateLocale(d, locale);
-  })();
-  const { tier, cappedAmount, isCapped, capAmount } = calculatePaygBill(paygStudentCount);
-  const pk = isPlanKey(tier.plan) ? tier.plan : 'starter';
-  const pr = pricingForPlan(pk, pricingRows);
-  const vsMonthly = pr.monthlyFee;
-  const vsAllInMo = pr.allIn;
-
-  const postSwitch = async (body: Record<string, string>): Promise<boolean> => {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token;
-    if (!token) {
-      toast.error(t('loadError'));
-      return false;
-    }
-    const res = await fetch('/api/billing/switch-payg', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const data = (await res.json().catch(() => ({}))) as { error?: string; ok?: boolean };
-    if (!res.ok) {
-      toast.error(typeof data.error === 'string' ? data.error : t('paymentFailed'));
-      return false;
-    }
-    await refresh();
-    return true;
-  };
-
-  return (
-    <div className="mt-6 space-y-6">
-      {pending ? (
-        <div
-          className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950"
-          style={cairoFont}
-        >
-          <p>
-            {t('payg.switch.pending', {
-              date: pendingDate
-                ? formatDateLocale(`${pendingDate}T12:00:00`, locale)
-                : effectiveLabel,
-            })}
-          </p>
-          {ownerOk ? (
-            <button
-              type="button"
-              className="mt-2 text-sm font-semibold text-amber-800 underline btn-press chq-focus"
-              onClick={() => void postSwitch({ action: 'cancel' })}
-            >
-              {t('payg.switch.cancel')}
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-
-      <div
-        className="rounded-2xl bg-teal-50 p-5"
-        style={cairoFont}
-      >
-        <h3 className="text-lg font-bold text-[var(--color-text-primary)]">{t('payg.intro.title')}</h3>
-        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">{t('payg.intro.subtitle')}</p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <span className="rounded-full bg-[var(--color-teal-soft)] px-3 py-1 text-xs font-medium text-[var(--color-teal-deep)]">
-            ✓ {t('payg.pill.noCommitment')}
-          </span>
-          <span className="rounded-full bg-[var(--color-teal-soft)] px-3 py-1 text-xs font-medium text-[var(--color-teal-deep)]">
-            ✓ {t('payg.pill.cancelAnytime')}
-          </span>
-          <span className="rounded-full bg-[var(--color-teal-soft)] px-3 py-1 text-xs font-medium text-[var(--color-teal-deep)]">
-            ✓ {t('payg.pill.endOfMonth')}
-          </span>
-        </div>
-      </div>
-
-      <div>
-        <label className="mb-2 block text-sm font-semibold text-[var(--color-text-primary)]" style={cairoFont}>
-          {t('payg.slider.label')}
-        </label>
-        <input
-          type="range"
-          min={1}
-          max={2000}
-          step={1}
-          value={paygStudentCount}
-          onChange={(e) => setPaygStudentCount(Number(e.target.value))}
-          className="w-full accent-teal-600"
-        />
-        <p className="mt-2 text-2xl font-bold text-teal-700" style={numFont}>
-          {t('payg.slider.students', { count: String(paygStudentCount) })}
-        </p>
-        <div className="relative mt-6 h-8 text-[10px] text-[var(--color-text-muted)]">
-          {PAYG_TIER_BREAKPOINTS.map((b) => (
-            <span
-              key={b.plan}
-              className="absolute -translate-x-1/2 text-center"
-              style={{ insetInlineStart: `${(b.maxStudents / 2000) * 100}%` }}
-            >
-              <span
-                className={tier.plan === b.plan ? 'font-bold text-teal-600' : ''}
-                style={cairoFont}
-              >
-                {tPlan(b.plan)}
-              </span>
-              <br />
-              {fmtNum(b.maxStudents)}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-        {PAYG_TIER_BREAKPOINTS.map((b) => {
-          const active = tier.plan === b.plan;
-          return (
-            <div
-              key={b.plan}
-              className={`rounded-xl border p-3 text-center transition-all duration-200 ${
-                active
-                  ? 'scale-105 border-2 border-teal-600 bg-teal-50'
-                  : 'border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)]'
-              }`}
-              style={cairoFont}
-            >
-              <p className={`text-xs font-semibold ${active ? 'text-teal-800' : 'text-[var(--color-text-muted)]'}`}>
-                {tPlan(b.plan)}
-              </p>
-              <p className="mt-1 text-[10px] text-[var(--color-text-muted)]">
-                {t(`payg.tierRange.${b.plan}` as 'billing.payg.tierRange.nano')}
-              </p>
-              <p className="mt-1 text-xs tabular-nums text-[var(--color-text-secondary)]" style={numFont}>
-                {fmtNum(b.weeklyDisplayRate)} {t('payg.tier.rateUnit')}
-              </p>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-6 shadow-sm">
-        <dl className="space-y-2 text-sm">
-          <div className="flex justify-between gap-2">
-            <dt className="text-[var(--color-text-muted)]" style={cairoFont}>
-              {t('payg.estimate.students')}
-            </dt>
-            <dd className="font-medium tabular-nums" style={numFont}>
-              {paygStudentCount}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-2">
-            <dt className="text-[var(--color-text-muted)]" style={cairoFont}>
-              {t('payg.estimate.rate')}
-            </dt>
-            <dd className="tabular-nums" style={numFont}>
-              {fmtNum(getWeeklyDisplayRate(tier.ratePerStudent))}{' '}
-              {t('payg.estimate.rateUnit')}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-2">
-            <dt className="text-[var(--color-text-muted)]" style={cairoFont}>
-              {t('payg.estimate.tier')}
-            </dt>
-            <dd className="font-medium" style={cairoFont}>
-              {tPlan(tier.plan)}
-            </dd>
-          </div>
-        </dl>
-        <div className="my-3 border-t border-[var(--color-border-subtle)]" />
-        <p className="text-sm text-[var(--color-text-muted)]" style={cairoFont}>
-          {t('payg.estimate.total')}
-        </p>
-        <p className="text-3xl font-bold text-teal-600 tabular-nums" style={numFont}>
-          {fmtNum(cappedAmount)} {t('egp')}
-        </p>
-        {isCapped ? (
-          <p className="mt-2 text-xs text-[var(--color-text-muted)]" style={cairoFont}>
-            {t('payg.estimate.capped', { amount: fmtNum(capAmount) })}
-          </p>
-        ) : null}
-        <div className="mt-4 space-y-1 text-xs text-[var(--color-text-secondary)]" style={cairoFont}>
-          <p>
-            {t('payg.estimate.vsMonthly')}:{' '}
-            <span className="tabular-nums font-medium" style={numFont}>
-              {fmtCurrency(vsMonthly)}
-            </span>
-          </p>
-          <p>
-            {t('payg.estimate.vsAllIn')}:{' '}
-            <span className="tabular-nums font-medium" style={numFont}>
-              {fmtCurrency(vsAllInMo)}
-            </span>
-          </p>
-        </div>
-      </div>
-
-      {ownerOk && !pending ? (
-        <div className="space-y-3">
-          {!billingPayg ? (
-            <>
-              <button
-                type="button"
-                className="w-full rounded-xl bg-teal-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 btn-press chq-focus"
-                style={cairoFont}
-                onClick={() =>
-                  void postSwitch({ action: 'enable' }).then((ok) => {
-                    if (ok) toast.success(t('payg.switch.scheduled', { date: effectiveLabel }));
-                  })
-                }
-              >
-                {t('payg.switch.enable')}
-              </button>
-              <p className="text-center text-xs text-[var(--color-text-muted)]" style={cairoFont}>
-                {t('payg.switch.effectiveDate', { date: effectiveLabel })}
-              </p>
-            </>
-          ) : (
-            <>
-              <p
-                className="rounded-lg border border-teal-500/50 bg-teal-50 px-3 py-2 text-center text-sm font-semibold text-teal-900"
-                style={cairoFont}
-              >
-                {t('payg.switch.active')}
-              </p>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <select
-                  value={paygLeavePeriod}
-                  onChange={(e) => setPaygLeavePeriod(e.target.value as BillingPeriod)}
-                  className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
-                  style={cairoFont}
-                >
-                  <option value="monthly">{t('period.monthly.label')}</option>
-                  <option value="annual">{t('period.annual.label')}</option>
-                </select>
-                <button
-                  type="button"
-                  className="w-full rounded-xl border-2 border-[var(--color-border-strong)] px-4 py-3 text-sm font-semibold text-[var(--color-text-primary)] sm:flex-1 btn-press chq-focus"
-                  style={cairoFont}
-                  onClick={() =>
-                    void postSwitch({
-                      action: 'disable',
-                      newPeriod: paygLeavePeriod,
-                    }).then((ok) => {
-                      if (ok) toast.success(t('payg.switch.fixedScheduled', { date: effectiveLabel }));
-                    })
-                  }
-                >
-                  {t('payg.switch.disable')}
-                </button>
-              </div>
-              <p className="text-center text-xs text-[var(--color-text-muted)]" style={cairoFont}>
-                {t('payg.switch.effectiveDate', { date: effectiveLabel })}
-              </p>
-            </>
-          )}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 export default function BillingPage() {
   const t = useTranslations('billing');
   const tPlan = useTranslations('plan');
@@ -713,10 +398,7 @@ export default function BillingPage() {
   const [paymobInvoicePollId, setPaymobInvoicePollId] = useState<string | null>(null);
   const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null);
   const [pricingRows, setPricingRows] = useState<PricingPlanRow[]>([]);
-  const [activeTab, setActiveTab] = useState<'upgrade' | 'downgrade' | 'payg'>('upgrade');
-  const [paygStudentCount, setPaygStudentCount] = useState(50);
-  const [paygLeavePeriod, setPaygLeavePeriod] = useState<BillingPeriod>('monthly');
-  const [activeStudentCount, setActiveStudentCount] = useState(0);
+  const [activeTab, setActiveTab] = useState<'upgrade' | 'downgrade'>('upgrade');
   const [selectedPeriod, setSelectedPeriod] = useState<BillingPeriod | ''>('');
   const [selectedPlan, setSelectedPlan] = useState<CenterPlanKey | ''>('');
   const [costSummary, setCostSummary] = useState<CostSummary | null>(null);
@@ -956,19 +638,6 @@ export default function BillingPage() {
     return Number.isFinite(fromCenter) && fromCenter > 0 ? fromCenter : catalogAllIn;
   }, [planKey, pricingRows, center?.all_in_price]);
 
-  const billingIsPayg = useMemo(
-    () => center?.billing_type === 'payg' || center?.pricing_type === 'payg',
-    [center?.billing_type, center?.pricing_type],
-  );
-
-  const billingRateContext = useMemo(
-    () =>
-      center
-        ? { billing_type: center.billing_type, pricing_type: center.pricing_type }
-        : undefined,
-    [center?.billing_type, center?.pricing_type],
-  );
-
   const npdYmd = center?.next_payment_due?.slice(0, 10) ?? '';
 
   const daysUntilDue = useMemo(() => {
@@ -1033,52 +702,8 @@ export default function BillingPage() {
     centerStatusLower === 'active' &&
     !isSuspendedCenter &&
     subLower === 'active' &&
-    (billingIsPayg ? true : (bsLower === 'paid' || bsLower === 'active') && !isOverdue);
-
-  useEffect(() => {
-    const cid = center?.id;
-    if (!cid) return;
-    let cancelled = false;
-    void (async () => {
-      const { count, error } = await supabase
-        .from('students')
-        .select('id', { count: 'exact', head: true })
-        .eq('center_id', cid)
-        .eq('is_active', true);
-      if (cancelled || error) return;
-      const n = Number(count ?? 0);
-      setActiveStudentCount(n);
-      if (billingIsPayg && n > 0) {
-        setPaygStudentCount((prev) => (prev === 50 ? Math.min(2000, Math.max(1, n)) : prev));
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [center?.id, billingIsPayg]);
-
-  const paygHeroEstimate = useMemo(
-    () => calculatePaygBill(Math.max(1, activeStudentCount || paygStudentCount)).cappedAmount,
-    [activeStudentCount, paygStudentCount],
-  );
-
-  const paygMonthlyRateForHero = useMemo(() => {
-    const fromDb = Number(center?.payg_rate);
-    if (billingIsPayg && Number.isFinite(fromDb) && fromDb > 0) {
-      return fromDb;
-    }
-    return calculatePaygBill(Math.max(1, activeStudentCount || paygStudentCount)).tier.ratePerStudent;
-  }, [
-    billingIsPayg,
-    center?.payg_rate,
-    activeStudentCount,
-    paygStudentCount,
-  ]);
-
-  const paygHeroWeeklyDisplay = useMemo(
-    () => getWeeklyDisplayRate(paygMonthlyRateForHero),
-    [paygMonthlyRateForHero],
-  );
+    (bsLower === 'paid' || bsLower === 'active') &&
+    !isOverdue;
 
   const billingPeriodEndLabel = useMemo(() => {
     const ymd =
@@ -1140,7 +765,7 @@ export default function BillingPage() {
   const currentMonthlyRealPrice = currentPlanMonthlyDisplayEgp;
 
   useEffect(() => {
-    if (activeTab !== 'upgrade' || billingIsPayg || !selectedPeriod || !selectedPlan || !npdYmd) {
+    if (activeTab !== 'upgrade' || !selectedPeriod || !selectedPlan || !npdYmd) {
       setCostSummary(null);
       return;
     }
@@ -1168,7 +793,6 @@ export default function BillingPage() {
     });
   }, [
     activeTab,
-    billingIsPayg,
     selectedPeriod,
     selectedPlan,
     npdYmd,
@@ -1181,7 +805,6 @@ export default function BillingPage() {
   const downgradePreview = useMemo(() => {
     if (
       activeTab !== 'downgrade' ||
-      billingIsPayg ||
       !selectedPeriod ||
       !selectedPlan ||
       !npdYmd ||
@@ -1206,13 +829,12 @@ export default function BillingPage() {
       selectedPlan as PlanKey,
     );
     const currentPeriodPrice = getChargeFromQuarterlyAllIn(currentAllIn, bp, planKey);
-    const currentDaily = getDailyRate(currentPeriodPrice, bp, billingRateContext);
-    const newDaily = getDailyRate(newPeriodPrice, selectedPeriod as BillingPeriod, billingRateContext);
+    const currentDaily = getDailyRate(currentPeriodPrice, bp);
+    const newDaily = getDailyRate(newPeriodPrice, selectedPeriod as BillingPeriod);
     const earned = Math.round(Math.max(0, (currentDaily - newDaily) * remainingDays) * 100) / 100;
     return { currentDaily, newDaily, remainingDays, earned };
   }, [
     activeTab,
-    billingIsPayg,
     selectedPeriod,
     selectedPlan,
     npdYmd,
@@ -1220,18 +842,16 @@ export default function BillingPage() {
     bp,
     planKey,
     pricingRows,
-    billingRateContext,
   ]);
 
   const reactivationCalc = useMemo(() => {
-    if (billingIsPayg) return null;
     const ba = Number(center?.billing_amount ?? 0);
     if (!center?.suspended_at || !Number.isFinite(ba) || ba <= 0) return null;
     const tier = getReactivationTier(new Date(center.suspended_at));
-    const dailyRate = getDailyRate(ba, bp, billingRateContext);
+    const dailyRate = getDailyRate(ba, bp);
     const calc = getReactivationAmount({ tier, nextPeriodAmount: ba, dailyRate });
     return { tier, ...calc, nextPeriodAmount: ba, dailyRate };
-  }, [center?.suspended_at, center?.billing_amount, bp, billingIsPayg, billingRateContext]);
+  }, [center?.suspended_at, center?.billing_amount, bp]);
 
   const upgradeUsed = Number(center?.upgrade_count_this_period ?? 0);
   const upgradeLimit = getUpgradeLimit(bp);
@@ -1771,18 +1391,10 @@ export default function BillingPage() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <span
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                    billingIsPayg
-                      ? 'border border-teal-200 text-teal-100'
-                      : 'text-white'
-                  }`}
-                  style={
-                    billingIsPayg
-                      ? { backgroundColor: 'rgba(13,148,136,0.25)' }
-                      : { backgroundColor: 'rgba(255,255,255,0.2)' }
-                  }
+                  className="rounded-full px-3 py-1 text-xs font-semibold text-white"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
                 >
-                  {billingIsPayg ? t('payg.hero.badge') : `${t('billingPeriod')}: ${t(`period.${bp}.label` as 'billing.period.monthly.label')}`}
+                  {`${t('billingPeriod')}: ${t(`period.${bp}.label` as 'billing.period.monthly.label')}`}
                 </span>
                 <span
                   className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold ${billingStatusChip.cls}`}
@@ -1797,24 +1409,20 @@ export default function BillingPage() {
           <div className="mt-4 grid grid-cols-1 border-y border-white/10 md:grid-cols-3">
             <div className="flex flex-col gap-1 border-b border-white/15 py-4 md:border-b-0 md:border-e md:py-3 md:pe-4">
               <span className="text-xs font-medium uppercase tracking-wide text-teal-100/90" style={cairoFont}>
-                {billingIsPayg ? t('payg.hero.rate') : t('currentPlan.monthlyPrice')}
+                {t('currentPlan.monthlyPrice')}
               </span>
               <span className="text-lg font-semibold tabular-nums text-white" style={numFont}>
-                {billingIsPayg
-                  ? `${formatNum(paygHeroWeeklyDisplay)} ${t('payg.estimate.rateUnit')}`
-                  : formatCurrencyLocale(currentPlanMonthlyDisplayEgp)}
+                {formatCurrencyLocale(currentPlanMonthlyDisplayEgp)}
               </span>
             </div>
             <div className="flex flex-col gap-1 border-b border-white/15 py-4 md:border-b-0 md:border-e md:py-3 md:px-4">
               <span className="text-xs font-medium uppercase tracking-wide text-teal-100/90" style={cairoFont}>
-                {billingIsPayg ? t('payg.hero.billingDate') : t('currentPlan.nextPayment')}
+                {t('currentPlan.nextPayment')}
               </span>
               <span className="text-lg font-semibold tabular-nums text-white" style={numFont}>
-                {billingIsPayg
-                  ? t('payg.hero.billingDateValue')
-                  : npdYmd
-                    ? formatDateLocale(`${npdYmd}T12:00:00`, locale)
-                    : tCommon('notSet')}
+                {npdYmd
+                  ? formatDateLocale(`${npdYmd}T12:00:00`, locale)
+                  : tCommon('notSet')}
               </span>
             </div>
             <div className="flex flex-col gap-1 py-4 md:py-3 md:ps-4">
@@ -1826,26 +1434,6 @@ export default function BillingPage() {
               </span>
             </div>
           </div>
-
-          {billingIsPayg ? (
-            <div
-              className="mt-4 grid grid-cols-1 gap-2 border-t border-white/10 pt-4 text-sm text-teal-50 md:grid-cols-2"
-              style={cairoFont}
-            >
-              <p>
-                <span className="opacity-80">{t('payg.hero.activeStudents')}: </span>
-                <span className="font-semibold tabular-nums" style={numFont}>
-                  {activeStudentCount}
-                </span>
-              </p>
-              <p>
-                <span className="opacity-80">{t('payg.hero.estimate')}: </span>
-                <span className="font-semibold tabular-nums text-white" style={numFont}>
-                  {formatNum(paygHeroEstimate)} {t('egp')}
-                </span>
-              </p>
-            </div>
-          ) : null}
 
           {showSuspendBanner && (
             <div
@@ -1894,11 +1482,7 @@ export default function BillingPage() {
               className="text-lg font-semibold text-[var(--color-text-primary)]"
               style={cairoFont}
             >
-              {activeTab === 'upgrade'
-                ? t('upgrade.title')
-                : activeTab === 'downgrade'
-                  ? t('downgrade.title')
-                  : t('payg.tabLabel')}
+              {activeTab === 'upgrade' ? t('upgrade.title') : t('downgrade.title')}
             </h2>
             <div className="mt-4 flex flex-wrap gap-4 border-b border-[var(--color-border-subtle)]">
               <button
@@ -1925,55 +1509,9 @@ export default function BillingPage() {
               >
                 {t('downgrade.title')}
               </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('payg')}
-                className={`pb-2 ps-1 pe-1 text-sm ${
-                  activeTab === 'payg'
-                    ? 'border-b-2 border-teal-600 font-semibold text-teal-600'
-                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
-                } btn-press chq-focus`}
-                style={cairoFont}
-              >
-                {t('payg.tabLabel')}
-              </button>
             </div>
 
-            {activeTab === 'payg' ? (
-              <PaygTab
-                t={t}
-                tPlan={tPlan}
-                tCommon={tCommon}
-                toast={toast}
-                refresh={refresh}
-                ownerOk={ownerOk}
-                center={center}
-                pricingRows={pricingRows}
-                paygStudentCount={paygStudentCount}
-                setPaygStudentCount={setPaygStudentCount}
-                paygLeavePeriod={paygLeavePeriod}
-                setPaygLeavePeriod={setPaygLeavePeriod}
-                cairoFont={cairoFont}
-                numFont={numFont}
-                locale={locale}
-                fmtNum={formatNum}
-                fmtCurrency={formatCurrencyLocale}
-              />
-            ) : null}
-
-            {activeTab === 'upgrade' && billingIsPayg ? (
-              <p className="mt-6 text-sm text-[var(--color-text-secondary)]" style={cairoFont}>
-                {t('payg.switch.active')} - {t('payg.tabLabel')}
-              </p>
-            ) : null}
-
-            {activeTab === 'downgrade' && billingIsPayg ? (
-              <p className="mt-6 text-sm text-[var(--color-text-secondary)]" style={cairoFont}>
-                {t('payg.switch.disable')} - {t('payg.tabLabel')}
-              </p>
-            ) : null}
-
-            {activeTab === 'upgrade' && !billingIsPayg ? (
+            {activeTab === 'upgrade' ? (
               <div className="mt-6 space-y-6">
                 <div>
                   <p className="text-sm text-[var(--color-text-secondary)]" style={cairoFont}>
@@ -2159,7 +1697,7 @@ export default function BillingPage() {
                   </div>
                 ) : null}
               </div>
-            ) : activeTab === 'downgrade' && !billingIsPayg ? (
+            ) : activeTab === 'downgrade' ? (
               <div className="mt-6 space-y-6">
                 <div
                   className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
@@ -2319,8 +1857,6 @@ export default function BillingPage() {
 
         {ownerOk ? (
           <>
-            {!billingIsPayg ? (
-              <>
             {/* SECTION 3: CREDITS BALANCE */}
             <section
               className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-6 shadow-sm"
@@ -2547,8 +2083,6 @@ export default function BillingPage() {
                 </>
               )}
             </section>
-              </>
-            ) : null}
 
         {showReactivation && reactivationCalc && center?.suspended_at ? (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4">

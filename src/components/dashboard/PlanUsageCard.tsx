@@ -11,7 +11,6 @@ const PLAN_LABELS: Record<string, string> = {
   business: 'Business',
   enterprise: 'Enterprise',
   top_centers: 'Top Centers',
-  payg: 'Pay-As-You-Go',
 };
 
 interface PlanUsageCardProps {

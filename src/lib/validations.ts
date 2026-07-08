@@ -229,14 +229,14 @@ export const adminBillingInvoiceSchema = z.object({
 export const adminCentersCreateSchema = z.object({
   name: z.string().min(2).max(200).regex(/^[a-zA-Z0-9\s\u0600-\u06FF]+$/, 'Invalid characters'),
   ownerPhone: z.string().refine((v) => /^\d{10,15}$/.test(v.replace(/\D/g, '')), 'Invalid phone'),
-  plan: z.enum(['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers', 'payg']).optional().default('starter'),
+  plan: z.enum(['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers']).optional().default('starter'),
 });
 
 /** Admin centers - update (PUT) */
 export const adminCentersUpdateSchema = z.object({
   centerId: z.string().uuid('Invalid center ID'),
   action: z.enum(['approve', 'reject', 'change_plan', 'suspend', 'reactivate', 'delete', 'update_billing']),
-  newPlan: z.enum(['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers', 'payg']).optional(),
+  newPlan: z.enum(['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers']).optional(),
   confirmName: z.string().optional(),
   billing_period: z.string().optional(),
   next_payment_due: z.string().optional(),
@@ -258,7 +258,7 @@ export const permissionsUpdateSchema = z.object({
 /** Settings billing - payment proof (PUT) */
 export const settingsBillingPutSchema = z.object({
   action: z.enum(['request_change', 'cancel_change', 'submit_payment_proof', 'submit_payment_reference']),
-  new_plan: z.enum(['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers', 'payg']).optional(),
+  new_plan: z.enum(['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers']).optional(),
   new_billing_type: z.string().max(50).optional(),
   reference: z.string().min(1).max(200).optional(),
   amount: z.number().positive().max(1000000).optional(),
@@ -273,7 +273,7 @@ export const settingsBillingPostSchema = z.object({
 
 /** Plan request */
 export const planRequestSchema = z.object({
-  requested_plan: z.enum(['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers', 'payg']),
+  requested_plan: z.enum(['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers']),
 });
 
 /** Admin approve payment */
@@ -292,11 +292,6 @@ export const adminPlanRequestsSchema = z.object({
   requestId: z.string().uuid('Invalid request ID'),
   action: z.enum(['approve', 'reject']),
   notes: z.string().max(500).optional().nullable(),
-});
-
-/** PAYG calculate */
-export const paygCalculateSchema = z.object({
-  centerId: z.string().uuid().optional(),
 });
 
 /** Student group create/update */

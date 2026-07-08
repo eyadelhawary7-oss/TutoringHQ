@@ -10,7 +10,6 @@ const styles: Record<string, string> = {
   business: 'bg-teal-100 text-teal-700 border border-teal-300',
   enterprise: 'bg-purple-100 text-purple-700 border border-purple-300',
   top_centers: 'bg-amber-100 text-amber-700 border border-amber-300',
-  payg: 'bg-indigo-100 text-indigo-700 border border-indigo-300',
 };
 
 const PLAN_LABEL_KEYS = [
@@ -21,7 +20,6 @@ const PLAN_LABEL_KEYS = [
   'business',
   'enterprise',
   'top_centers',
-  'payg',
 ] as const;
 
 function canonicalPlanKey(plan?: string): string {

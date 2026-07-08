@@ -502,118 +502,114 @@ COLUMN centers.approved_at ord=17 type=timestamp with time zone notnull=false de
 COLUMN centers.approved_by ord=18 type=uuid notnull=false default=∅
 COLUMN centers.pricing_type ord=19 type=text notnull=false default='fixed'::text
 COLUMN centers.weekly_student_limit ord=20 type=integer notnull=false default=∅
-COLUMN centers.payg_rate ord=21 type=numeric(12,2) notnull=false default=∅
-COLUMN centers.referral_code ord=22 type=text notnull=false default=∅
-COLUMN centers.referred_by ord=23 type=uuid notnull=false default=∅
-COLUMN centers.referral_code_used_at ord=24 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.billing_type ord=25 type=text notnull=false default='fixed'::text
-COLUMN centers.pending_plan_change ord=26 type=text notnull=false default=∅
-COLUMN centers.pending_billing_type ord=27 type=text notnull=false default=∅
-COLUMN centers.current_period_start ord=28 type=date notnull=false default=∅
-COLUMN centers.current_period_end ord=29 type=date notnull=false default=∅
-COLUMN centers.last_payment_date ord=30 type=date notnull=false default=∅
-COLUMN centers.instapay_reference ord=31 type=text notnull=false default=∅
-COLUMN centers.next_payment_due ord=32 type=date notnull=false default=∅
-COLUMN centers.billing_status ord=33 type=text notnull=false default='active'::text
-COLUMN centers.payment_due_date ord=34 type=date notnull=false default=∅
-COLUMN centers.auto_suspend_at ord=35 type=date notnull=false default=((CURRENT_DATE + '6 days'::interval))::date
-COLUMN centers.referral_reward_status ord=36 type=text notnull=false default='pending'::text
-COLUMN centers.referral_reward_amount ord=37 type=numeric(12,2) notnull=false default=0
-COLUMN centers.billing_start_date ord=38 type=date notnull=false default=∅
-COLUMN centers.schedule_start_hour ord=39 type=integer notnull=false default=8
-COLUMN centers.schedule_end_hour ord=40 type=integer notnull=false default=20
-COLUMN centers.is_early_adopter ord=41 type=boolean notnull=false default=false
-COLUMN centers.early_adopter_price ord=42 type=numeric(10,2) notnull=false default=∅
-COLUMN centers.early_adopter_number ord=43 type=integer notnull=false default=∅
-COLUMN centers.owner_name ord=44 type=text notnull=false default=∅
-COLUMN centers.city ord=45 type=text notnull=false default=∅
-COLUMN centers.signup_notes ord=46 type=text notnull=false default=∅
-COLUMN centers.onboarding_step ord=47 type=integer notnull=false default=0
-COLUMN centers.onboarding_completed ord=48 type=boolean notnull=false default=false
-COLUMN centers.onboarding_started_at ord=49 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.subscription_start_date ord=50 type=date notnull=false default=∅
-COLUMN centers.subscription_renewal_date ord=51 type=date notnull=false default=∅
-COLUMN centers.subscription_billing_period ord=52 type=text notnull=false default='monthly'::text
-COLUMN centers.subscription_monthly_fee ord=53 type=numeric(12,2) notnull=false default=0
-COLUMN centers.daily_summary_enabled ord=54 type=boolean notnull=false default=true
-COLUMN centers.summer_mode ord=55 type=boolean notnull=false default=false
-COLUMN centers.organization_id ord=56 type=uuid notnull=false default=∅
-COLUMN centers.district ord=57 type=text notnull=false default=∅
-COLUMN centers.governorate ord=58 type=text notnull=false default='cairo'::text
-COLUMN centers.student_count_tier ord=59 type=text notnull=false default=∅
-COLUMN centers.health_score ord=60 type=integer notnull=false default=∅
-COLUMN centers.health_score_band ord=61 type=text notnull=false default=∅
-COLUMN centers.delivery_address ord=62 type=jsonb notnull=false default=∅
-COLUMN centers.card_color ord=63 type=text notnull=false default='#0D9488'::text
-COLUMN centers.all_in_price ord=64 type=numeric(12,2) notnull=false default=∅
-COLUMN centers.whatsapp_opted_in ord=65 type=boolean notnull=false default=false
-COLUMN centers.parent_pack_enabled ord=66 type=boolean notnull=false default=false
-COLUMN centers.parent_pack_active_parents ord=67 type=integer notnull=false default=0
-COLUMN centers.announcement_balance ord=68 type=numeric(12,2) notnull=false default=0
-COLUMN centers.announcement_balance_updated_at ord=69 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.pack_price_per_parent ord=70 type=numeric(12,2) notnull=false default=12
-COLUMN centers.announcement_price_per_blast ord=71 type=numeric(12,2) notnull=false default=8
-COLUMN centers.announcement_cap ord=72 type=numeric(12,2) notnull=false default=1500
-COLUMN centers.parent_pack_activated_at ord=73 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.center_code ord=74 type=text notnull=false default=∅
-COLUMN centers.student_sequence ord=75 type=integer notnull=false default=0
-COLUMN centers.pack_request_status ord=76 type=text notnull=true default='none'::text
-COLUMN centers.pack_requested_at ord=77 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.pack_approved_at ord=78 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.pack_rejection_reason ord=79 type=text notnull=false default=∅
-COLUMN centers.pack_pending_balance ord=80 type=numeric(12,2) notnull=true default=0
-COLUMN centers.pack_months_without_invoice ord=81 type=integer notnull=true default=0
-COLUMN centers.pack_custom_invoice_minimum ord=82 type=numeric(12,2) notnull=false default=∅
-COLUMN centers.renewal_reminder_sent_at ord=83 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.overdue_reminder_sent_at ord=84 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.inactivity_alert_sent_at ord=85 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.onboarding_step1_sent_at ord=86 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.is_blacklisted ord=87 type=boolean notnull=true default=false
-COLUMN centers.blacklisted_at ord=88 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.blacklist_reason ord=89 type=text notnull=false default=∅
-COLUMN centers.pack_disabled_at ord=90 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.instapay_number ord=91 type=text notnull=false default=∅
-COLUMN centers.credit_balance ord=92 type=numeric(12,2) notnull=true default=0
-COLUMN centers.upgrade_count_this_period ord=93 type=integer notnull=true default=0
-COLUMN centers.reactivation_tier ord=94 type=text notnull=false default=∅
-COLUMN centers.reactivation_fee_amount ord=95 type=numeric(12,2) notnull=false default=0
-COLUMN centers.suspended_at ord=96 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.credit_reserved ord=97 type=numeric(12,2) notnull=true default=0
-COLUMN centers.cancellation_reason ord=98 type=text notnull=false default=∅
-COLUMN centers.cancellation_requested_at ord=99 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.cancellation_approved_at ord=100 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.payg_pending_switch ord=101 type=text notnull=false default=∅
-COLUMN centers.payg_switch_effective_date ord=102 type=date notnull=false default=∅
-COLUMN centers.payg_pending_target_period ord=103 type=text notnull=false default=∅
-COLUMN centers.dormancy_date ord=104 type=date notnull=false default=∅
-COLUMN centers.reactivation_date ord=105 type=date notnull=false default=∅
-COLUMN centers.active_months_count ord=106 type=integer notnull=false default=0
-COLUMN centers.health_status ord=107 type=text notnull=false default=∅
-COLUMN centers.health_score_updated_at ord=108 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.onboarding_step_updated_at ord=109 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.onboarding_completed_at ord=110 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.onboarding_nudge_sent_at ord=111 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.upgrade_nudge_sent_at ord=112 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.terms_accepted_at ord=113 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.terms_version ord=114 type=text notnull=false default=∅
-COLUMN centers.is_test ord=115 type=boolean notnull=true default=false
-COLUMN centers.last_card_style ord=116 type=text notnull=false default=∅
-COLUMN centers.policy_accepted_at ord=117 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.policy_version ord=118 type=text notnull=false default=∅
-COLUMN centers.dpa_accepted_at ord=119 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.dpa_version ord=120 type=text notnull=false default=∅
-COLUMN centers.marketing_opt_out ord=121 type=boolean notnull=true default=false
-COLUMN centers.ai_analytics_opt_out ord=122 type=boolean notnull=true default=false
-COLUMN centers.marketing_opted_out_at ord=123 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.card_orders_enabled ord=124 type=boolean notnull=true default=false
-COLUMN centers.summer_trial_start ord=125 type=date notnull=false default=∅
-COLUMN centers.summer_first_invoice_at ord=126 type=date notnull=false default=∅
-COLUMN centers.summer_lock_at ord=127 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.summer_enrolled_at ord=128 type=timestamp with time zone notnull=false default=∅
-COLUMN centers.summer_first_invoice_id ord=129 type=uuid notnull=false default=∅
-COLUMN centers.summer_status ord=130 type=text notnull=false default=∅
-COLUMN centers.scheduled_plan ord=131 type=text notnull=false default=∅
-COLUMN centers.scheduled_billing_period ord=132 type=text notnull=false default=∅
+COLUMN centers.referral_code ord=21 type=text notnull=false default=∅
+COLUMN centers.referred_by ord=22 type=uuid notnull=false default=∅
+COLUMN centers.referral_code_used_at ord=23 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.billing_type ord=24 type=text notnull=false default='fixed'::text
+COLUMN centers.pending_plan_change ord=25 type=text notnull=false default=∅
+COLUMN centers.pending_billing_type ord=26 type=text notnull=false default=∅
+COLUMN centers.current_period_start ord=27 type=date notnull=false default=∅
+COLUMN centers.current_period_end ord=28 type=date notnull=false default=∅
+COLUMN centers.last_payment_date ord=29 type=date notnull=false default=∅
+COLUMN centers.instapay_reference ord=30 type=text notnull=false default=∅
+COLUMN centers.next_payment_due ord=31 type=date notnull=false default=∅
+COLUMN centers.billing_status ord=32 type=text notnull=false default='active'::text
+COLUMN centers.payment_due_date ord=33 type=date notnull=false default=∅
+COLUMN centers.auto_suspend_at ord=34 type=date notnull=false default=((CURRENT_DATE + '6 days'::interval))::date
+COLUMN centers.referral_reward_status ord=35 type=text notnull=false default='pending'::text
+COLUMN centers.referral_reward_amount ord=36 type=numeric(12,2) notnull=false default=0
+COLUMN centers.billing_start_date ord=37 type=date notnull=false default=∅
+COLUMN centers.schedule_start_hour ord=38 type=integer notnull=false default=8
+COLUMN centers.schedule_end_hour ord=39 type=integer notnull=false default=20
+COLUMN centers.is_early_adopter ord=40 type=boolean notnull=false default=false
+COLUMN centers.early_adopter_price ord=41 type=numeric(10,2) notnull=false default=∅
+COLUMN centers.early_adopter_number ord=42 type=integer notnull=false default=∅
+COLUMN centers.owner_name ord=43 type=text notnull=false default=∅
+COLUMN centers.city ord=44 type=text notnull=false default=∅
+COLUMN centers.signup_notes ord=45 type=text notnull=false default=∅
+COLUMN centers.onboarding_step ord=46 type=integer notnull=false default=0
+COLUMN centers.onboarding_completed ord=47 type=boolean notnull=false default=false
+COLUMN centers.onboarding_started_at ord=48 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.subscription_start_date ord=49 type=date notnull=false default=∅
+COLUMN centers.subscription_renewal_date ord=50 type=date notnull=false default=∅
+COLUMN centers.subscription_billing_period ord=51 type=text notnull=false default='monthly'::text
+COLUMN centers.subscription_monthly_fee ord=52 type=numeric(12,2) notnull=false default=0
+COLUMN centers.daily_summary_enabled ord=53 type=boolean notnull=false default=true
+COLUMN centers.summer_mode ord=54 type=boolean notnull=false default=false
+COLUMN centers.organization_id ord=55 type=uuid notnull=false default=∅
+COLUMN centers.district ord=56 type=text notnull=false default=∅
+COLUMN centers.governorate ord=57 type=text notnull=false default='cairo'::text
+COLUMN centers.student_count_tier ord=58 type=text notnull=false default=∅
+COLUMN centers.health_score ord=59 type=integer notnull=false default=∅
+COLUMN centers.health_score_band ord=60 type=text notnull=false default=∅
+COLUMN centers.delivery_address ord=61 type=jsonb notnull=false default=∅
+COLUMN centers.card_color ord=62 type=text notnull=false default='#0D9488'::text
+COLUMN centers.all_in_price ord=63 type=numeric(12,2) notnull=false default=∅
+COLUMN centers.whatsapp_opted_in ord=64 type=boolean notnull=false default=false
+COLUMN centers.parent_pack_enabled ord=65 type=boolean notnull=false default=false
+COLUMN centers.parent_pack_active_parents ord=66 type=integer notnull=false default=0
+COLUMN centers.announcement_balance ord=67 type=numeric(12,2) notnull=false default=0
+COLUMN centers.announcement_balance_updated_at ord=68 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.pack_price_per_parent ord=69 type=numeric(12,2) notnull=false default=12
+COLUMN centers.announcement_price_per_blast ord=70 type=numeric(12,2) notnull=false default=8
+COLUMN centers.announcement_cap ord=71 type=numeric(12,2) notnull=false default=1500
+COLUMN centers.parent_pack_activated_at ord=72 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.center_code ord=73 type=text notnull=false default=∅
+COLUMN centers.student_sequence ord=74 type=integer notnull=false default=0
+COLUMN centers.pack_request_status ord=75 type=text notnull=true default='none'::text
+COLUMN centers.pack_requested_at ord=76 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.pack_approved_at ord=77 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.pack_rejection_reason ord=78 type=text notnull=false default=∅
+COLUMN centers.pack_pending_balance ord=79 type=numeric(12,2) notnull=true default=0
+COLUMN centers.pack_months_without_invoice ord=80 type=integer notnull=true default=0
+COLUMN centers.pack_custom_invoice_minimum ord=81 type=numeric(12,2) notnull=false default=∅
+COLUMN centers.renewal_reminder_sent_at ord=82 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.overdue_reminder_sent_at ord=83 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.inactivity_alert_sent_at ord=84 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.onboarding_step1_sent_at ord=85 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.is_blacklisted ord=86 type=boolean notnull=true default=false
+COLUMN centers.blacklisted_at ord=87 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.blacklist_reason ord=88 type=text notnull=false default=∅
+COLUMN centers.pack_disabled_at ord=89 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.instapay_number ord=90 type=text notnull=false default=∅
+COLUMN centers.credit_balance ord=91 type=numeric(12,2) notnull=true default=0
+COLUMN centers.upgrade_count_this_period ord=92 type=integer notnull=true default=0
+COLUMN centers.reactivation_tier ord=93 type=text notnull=false default=∅
+COLUMN centers.reactivation_fee_amount ord=94 type=numeric(12,2) notnull=false default=0
+COLUMN centers.suspended_at ord=95 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.credit_reserved ord=96 type=numeric(12,2) notnull=true default=0
+COLUMN centers.cancellation_reason ord=97 type=text notnull=false default=∅
+COLUMN centers.cancellation_requested_at ord=98 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.cancellation_approved_at ord=99 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.dormancy_date ord=100 type=date notnull=false default=∅
+COLUMN centers.reactivation_date ord=101 type=date notnull=false default=∅
+COLUMN centers.active_months_count ord=102 type=integer notnull=false default=0
+COLUMN centers.health_status ord=103 type=text notnull=false default=∅
+COLUMN centers.health_score_updated_at ord=104 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.onboarding_step_updated_at ord=105 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.onboarding_completed_at ord=106 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.onboarding_nudge_sent_at ord=107 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.upgrade_nudge_sent_at ord=108 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.terms_accepted_at ord=109 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.terms_version ord=110 type=text notnull=false default=∅
+COLUMN centers.is_test ord=111 type=boolean notnull=true default=false
+COLUMN centers.last_card_style ord=112 type=text notnull=false default=∅
+COLUMN centers.policy_accepted_at ord=113 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.policy_version ord=114 type=text notnull=false default=∅
+COLUMN centers.dpa_accepted_at ord=115 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.dpa_version ord=116 type=text notnull=false default=∅
+COLUMN centers.marketing_opt_out ord=117 type=boolean notnull=true default=false
+COLUMN centers.ai_analytics_opt_out ord=118 type=boolean notnull=true default=false
+COLUMN centers.marketing_opted_out_at ord=119 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.card_orders_enabled ord=120 type=boolean notnull=true default=false
+COLUMN centers.summer_trial_start ord=121 type=date notnull=false default=∅
+COLUMN centers.summer_first_invoice_at ord=122 type=date notnull=false default=∅
+COLUMN centers.summer_lock_at ord=123 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.summer_enrolled_at ord=124 type=timestamp with time zone notnull=false default=∅
+COLUMN centers.summer_first_invoice_id ord=125 type=uuid notnull=false default=∅
+COLUMN centers.summer_status ord=126 type=text notnull=false default=∅
+COLUMN centers.scheduled_plan ord=127 type=text notnull=false default=∅
+COLUMN centers.scheduled_billing_period ord=128 type=text notnull=false default=∅
 COLUMN ceo_action_queue.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN ceo_action_queue.type ord=2 type=text notnull=true default=∅
 COLUMN ceo_action_queue.priority ord=3 type=text notnull=true default='amber'::text
@@ -1914,17 +1910,15 @@ CONSTRAINT center_reengagement_log.center_reengagement_log_pkey type=p def=PRIMA
 CONSTRAINT centers.centers_approved_by_fkey type=f def=FOREIGN KEY (approved_by) REFERENCES auth.users(id)
 CONSTRAINT centers.centers_billing_period_check type=c def=CHECK ((billing_period = ANY (ARRAY['monthly'::text, 'annual'::text])))
 CONSTRAINT centers.centers_billing_status_check type=c def=CHECK ((billing_status = ANY (ARRAY['active'::text, 'paid'::text, 'overdue'::text, 'due_soon'::text, 'suspended'::text])))
-CONSTRAINT centers.centers_billing_type_check type=c def=CHECK ((billing_type = ANY (ARRAY['fixed'::text, 'payg'::text])))
+CONSTRAINT centers.centers_billing_type_check type=c def=CHECK ((billing_type = 'fixed'::text))
 CONSTRAINT centers.centers_center_code_key type=u def=UNIQUE (center_code)
 CONSTRAINT centers.centers_health_status_check type=c def=CHECK ((health_status = ANY (ARRAY['green'::text, 'amber'::text, 'red'::text])))
-CONSTRAINT centers.centers_money_nonneg type=c def=CHECK ((((all_in_price IS NULL) OR (all_in_price >= (0)::numeric)) AND ((announcement_balance IS NULL) OR (announcement_balance >= (0)::numeric)) AND ((announcement_cap IS NULL) OR (announcement_cap >= (0)::numeric)) AND ((announcement_price_per_blast IS NULL) OR (announcement_price_per_blast >= (0)::numeric)) AND (credit_balance >= (0)::numeric) AND (credit_reserved >= (0)::numeric) AND ((early_adopter_price IS NULL) OR (early_adopter_price >= (0)::numeric)) AND (pack_pending_balance >= (0)::numeric) AND ((pack_price_per_parent IS NULL) OR (pack_price_per_parent >= (0)::numeric)) AND ((payg_rate IS NULL) OR (payg_rate >= (0)::numeric)) AND ((reactivation_fee_amount IS NULL) OR (reactivation_fee_amount >= (0)::numeric)) AND ((referral_reward_amount IS NULL) OR (referral_reward_amount >= (0)::numeric)) AND ((subscription_monthly_fee IS NULL) OR (subscription_monthly_fee >= (0)::numeric))))
+CONSTRAINT centers.centers_money_nonneg type=c def=CHECK ((((all_in_price IS NULL) OR (all_in_price >= (0)::numeric)) AND ((announcement_balance IS NULL) OR (announcement_balance >= (0)::numeric)) AND ((announcement_cap IS NULL) OR (announcement_cap >= (0)::numeric)) AND ((announcement_price_per_blast IS NULL) OR (announcement_price_per_blast >= (0)::numeric)) AND (credit_balance >= (0)::numeric) AND (credit_reserved >= (0)::numeric) AND ((early_adopter_price IS NULL) OR (early_adopter_price >= (0)::numeric)) AND (pack_pending_balance >= (0)::numeric) AND ((pack_price_per_parent IS NULL) OR (pack_price_per_parent >= (0)::numeric)) AND ((reactivation_fee_amount IS NULL) OR (reactivation_fee_amount >= (0)::numeric)) AND ((referral_reward_amount IS NULL) OR (referral_reward_amount >= (0)::numeric)) AND ((subscription_monthly_fee IS NULL) OR (subscription_monthly_fee >= (0)::numeric))))
 CONSTRAINT centers.centers_organization_id_fkey type=f def=FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL
 CONSTRAINT centers.centers_pack_request_status_check type=c def=CHECK ((pack_request_status = ANY (ARRAY['none'::text, 'requested'::text, 'approved'::text, 'rejected'::text, 'suspended'::text])))
-CONSTRAINT centers.centers_payg_pending_switch_check type=c def=CHECK (((payg_pending_switch IS NULL) OR (payg_pending_switch = ANY (ARRAY['to_payg'::text, 'from_payg'::text]))))
-CONSTRAINT centers.centers_payg_pending_target_period_check type=c def=CHECK (((payg_pending_target_period IS NULL) OR (payg_pending_target_period = ANY (ARRAY['monthly'::text, 'quarterly'::text, 'annual'::text]))))
 CONSTRAINT centers.centers_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT centers.centers_plan_check type=c def=CHECK ((plan = ANY (ARRAY['nano'::text, 'starter'::text, 'pro'::text, 'business'::text, 'enterprise'::text, 'top_centers'::text, 'solo'::text])))
-CONSTRAINT centers.centers_pricing_type_check type=c def=CHECK ((pricing_type = ANY (ARRAY['fixed'::text, 'payg'::text])))
+CONSTRAINT centers.centers_pricing_type_check type=c def=CHECK ((pricing_type = 'fixed'::text))
 CONSTRAINT centers.centers_reactivation_tier_check type=c def=CHECK ((reactivation_tier = ANY (ARRAY['tier1'::text, 'tier2'::text, 'tier3'::text])))
 CONSTRAINT centers.centers_referral_code_key type=u def=UNIQUE (referral_code)
 CONSTRAINT centers.centers_referred_by_fkey type=f def=FOREIGN KEY (referred_by) REFERENCES centers(id)

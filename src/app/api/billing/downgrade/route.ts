@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
-import { isPaygCenter } from '@/lib/billingEngine';
 import {
   isPlanKey,
   normalizeBillingPeriod,
@@ -78,13 +77,6 @@ export async function POST(request: NextRequest) {
     billing_type?: string | null;
     pricing_type?: string | null;
   };
-
-  if (isPaygCenter(c)) {
-    return NextResponse.json(
-      { error: 'Pay As You Go uses the billing settings tab to change plans' },
-      { status: 400 },
-    );
-  }
 
   if (
     c.status !== 'active' ||
