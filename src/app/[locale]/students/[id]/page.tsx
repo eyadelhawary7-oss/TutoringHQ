@@ -14,7 +14,7 @@ import { KpiCard } from '@/components/shared';
 import { FamilyLinkingSection } from '@/components/students/FamilyLinkingSection';
 import { ReceiptModal } from '@/components/payments/ReceiptModal';
 import { pushRecentlyViewedStudent } from '@/lib/recentlyViewedStudents';
-import { formatDateTime, formatDate, formatCurrency, formatNumber } from '@/lib/formatNumber';
+import { formatDateTime, formatDate, formatNumber } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 type FamilyRow = { id: string; family_name: string | null; parent_phone: string | null; parent_name: string | null };
@@ -23,7 +23,6 @@ type StudentRow = {
   id: string;
   name: string;
   student_number?: string | null;
-  balance_due?: number | null;
   phone?: string | null;
   parent_phone?: string | null;
   parent_pack_opted_in?: boolean | null;
@@ -44,10 +43,13 @@ interface ScanRecord {
   payment_recorded?: boolean;
 }
 
-// Only plain columns on the students table (all proven readable elsewhere:
-// balance_due on the payments page; the parent/sibling fields on the list page).
+// Only plain columns that physically exist on the students table (the
+// parent/sibling fields are the same ones the list page reads). NOTE: do NOT
+// add `balance_due` here — that column is not present in the students schema,
+// and selecting it makes PostgREST 400 the whole query, which surfaces as
+// "student not found" for every student.
 const STUDENT_SELECT =
-  'id, name, student_number, balance_due, phone, parent_phone, parent_pack_opted_in, parent_consent_given, sibling_family_id';
+  'id, name, student_number, phone, parent_phone, parent_pack_opted_in, parent_consent_given, sibling_family_id';
 
 function deriveResultBadge(scan: ScanRecord, t: (k: string) => string): { label: string; cls: string } {
   if (scan.payment_status_at_scan === 'paid') {
@@ -78,7 +80,6 @@ function normalizeStudent(raw: Record<string, unknown>): StudentRow {
     id: String(raw.id),
     name: String(raw.name ?? ''),
     student_number: (raw.student_number as string | null | undefined) ?? null,
-    balance_due: raw.balance_due != null ? Number(raw.balance_due) : 0,
     phone: (raw.phone as string | null | undefined) ?? null,
     parent_phone: (raw.parent_phone as string | null | undefined) ?? null,
     parent_pack_opted_in: raw.parent_pack_opted_in === true,
@@ -452,11 +453,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       ) : null}
 
       {/* 1. Stat row */}
-      <div className="mt-6 grid grid-cols-3 gap-3">
-        <KpiCard
-          label={ts('balance')}
-          value={<span className="tabular-nums">{formatCurrency(student.balance_due ?? 0, locale)}</span>}
-        />
+      <div className="mt-6 grid grid-cols-2 gap-3">
         <KpiCard
           label={tDetail('visits')}
           value={<span className="tabular-nums">{formatNumber(visits, locale)}</span>}
