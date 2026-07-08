@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import { ArrowLeft, ClipboardList } from 'lucide-react';
 import { pushRecentlyViewedStudent } from '@/lib/recentlyViewedStudents';
 import { formatDateTime } from '@/lib/formatNumber';
+import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 type StudentRow = { id: string; name: string; student_number?: string | null };
 
@@ -183,7 +184,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{student.name}</h1>
       {student.student_number ? (
         <p className="text-sm font-mono text-[var(--color-text-tertiary)] mt-1" dir="ltr">
-          <bdi>#{student.student_number}</bdi>
+          <bdi>{formatStudentNumberForDisplay(student.student_number)}</bdi>
         </p>
       ) : null}
 
@@ -247,7 +248,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                           {grp ?? tCommon('notAvailable')}
                         </td>
                         <td className="py-2.5 px-4 text-start">
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${badge.cls}`}>{badge.label}</span>
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${badge.cls}`}>{badge.label}</span>
                         </td>
                       </tr>
                     );

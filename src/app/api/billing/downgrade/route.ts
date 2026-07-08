@@ -48,7 +48,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
   }
 
-  const newBp = normalizeBillingPeriod(newBillingPeriodRaw) as BillingPeriod;
+  // Quarterly is retired — coerce any legacy/stale client value to monthly so
+  // the scheduled downgrade can never carry a period the centers CHECKs reject.
+  const requestedBp = normalizeBillingPeriod(newBillingPeriodRaw) as BillingPeriod;
+  const newBp: BillingPeriod = requestedBp === 'annual' ? 'annual' : 'monthly';
   const { supabaseAdmin, centerId } = auth;
 
   const { data: center, error: cErr } = await supabaseAdmin

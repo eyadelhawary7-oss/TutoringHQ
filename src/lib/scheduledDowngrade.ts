@@ -34,7 +34,10 @@ export async function resolveScheduledCenterDowngrade(
   scheduledBillingPeriod: string | null | undefined,
 ): Promise<ScheduledCenterDowngrade | null> {
   if (!scheduledPlan || !isPlanKey(scheduledPlan) || scheduledPlan === 'top_centers') return null;
-  const bp = normalizeBillingPeriod(scheduledBillingPeriod);
+  // Quarterly is retired — a stale scheduled_billing_period value coerces to
+  // monthly so the apply-write below can't violate the centers CHECKs.
+  const normalized = normalizeBillingPeriod(scheduledBillingPeriod);
+  const bp = normalized === 'annual' ? 'annual' : 'monthly';
   const { data } = await supabase
     .from('pricing_plans')
     .select('all_in_price')
@@ -63,7 +66,8 @@ export async function applyScheduledCenterDowngrade(
     .from('centers')
     .update({
       plan: sched.plan,
-      subscription_billing_period: sched.billingPeriod,
+      // subscription_billing_period CHECK allows {monthly, yearly}; billing_period {monthly, annual}.
+      subscription_billing_period: sched.billingPeriod === 'annual' ? 'yearly' : 'monthly',
       billing_period: sched.billingPeriod,
       all_in_price: sched.allIn,
       billing_amount: sched.billingAmount,

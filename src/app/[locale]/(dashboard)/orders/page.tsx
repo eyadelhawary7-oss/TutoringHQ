@@ -129,7 +129,7 @@ export default async function OrdersPage({
                 <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">{tOrders('disabledTitle')}</h1>
                 <p className="text-sm text-[var(--color-text-secondary)]">{tOrders('disabledMessage')}</p>
                 <Link
-                  href="/settings/general"
+                  href="/settings/money"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
                 >
                   {tOrders('disabledCta')}

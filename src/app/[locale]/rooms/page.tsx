@@ -142,10 +142,10 @@ export default function RoomsPage() {
             {rooms.map((r) => (
               <div key={r.id} className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-5">
                 <div className="flex items-start justify-between mb-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <DoorOpen className="w-5 h-5 text-blue-600" />
+                  <div className="p-2 bg-teal-100 rounded-lg">
+                    <DoorOpen className="w-5 h-5 text-teal-600" />
                   </div>
-                  <button className="p-1.5 hover:bg-[var(--color-surface-2)] rounded-lg text-slate-400" aria-label="More">
+                  <button className="p-1.5 hover:bg-[var(--color-surface-2)] rounded-lg text-[var(--color-text-muted)]" aria-label="More">
                     <MoreVertical className="w-4 h-4" />
                   </button>
                 </div>
@@ -183,7 +183,7 @@ export default function RoomsPage() {
                 <input
                   value={addName}
                   onChange={e => setAddName(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                   required
                 />
               </div>
@@ -195,12 +195,12 @@ export default function RoomsPage() {
                   value={addCapacity}
                   onChange={e => setAddCapacity(e.target.value)}
                   placeholder="-"
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
-              {addError && <p className="text-sm text-red-500">{addError}</p>}
+              {addError && <p className="text-sm text-[var(--color-danger)]">{addError}</p>}
               <div className="flex justify-end gap-3 pt-0">
-                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 border border-slate-300 hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors">{tCommon('cancel')}</button>
+                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 border border-[var(--color-border)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors">{tCommon('cancel')}</button>
                 <button type="submit" disabled={isAdding} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50">{tCommon('save')}</button>
               </div>
             </form>

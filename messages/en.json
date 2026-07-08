@@ -948,7 +948,8 @@
     "yourSchedule": "Your Schedule",
     "notAuthenticated": "Not authenticated",
     "invalidPin": "Invalid PIN",
-    "close": "Close"
+    "close": "Close",
+    "moreActions": "More actions"
   },
   "emptyStates": {
     "students": {
@@ -1557,10 +1558,10 @@
     "atRiskPanelTitle": "At Risk Panel Title",
     "atRiskSince": "At Risk Since",
     "balance": "Balance",
-    "createFamily": "Create Family",
+    "createFamily": "Create",
     "createNewFamily": "Create New Family",
     "daysSinceLastScan": "Days Since Last Scan",
-    "familyNamePlaceholder": "Family Name Placeholder",
+    "familyNamePlaceholder": "Family name",
     "feePerLesson": "Fee Per Lesson",
     "groupRequired": "Group Required",
     "groupRequiredError": "Group Required Error",
@@ -1569,11 +1570,11 @@
     "lifecycleChurned": "Lifecycle Churned",
     "lifecycleEnrolled": "Lifecycle Enrolled",
     "lifecycleInactive": "Lifecycle Inactive",
-    "linkToFamily": "Link To Family",
+    "linkToFamily": "Link to Family",
     "name": "Name",
     "nameRequired": "Name Required",
     "noFamily": "No Family",
-    "parentNamePlaceholder": "Parent Name Placeholder",
+    "parentNamePlaceholder": "Parent name",
     "parentPhone": "Parent Phone",
     "parentPhoneOptional": "Parent Phone Optional",
     "phone": "Phone",
@@ -1675,7 +1676,15 @@
     "regenerateQR": "Regenerate QR",
     "add": {
       "noGroupsPlaceholder": "No groups yet, create one first",
-      "createGroupHelper": "Create your first group"
+      "createGroupHelper": "Create your first group",
+      "newGroup": "+ New Group",
+      "groupNameRequired": "Group name is required",
+      "groupSubjectRequired": "Subject is required",
+      "groupFeeRequired": "Valid fee is required",
+      "groupCreated": "Group created",
+      "groupNamePlaceholder": "Group name",
+      "createGroup": "Create",
+      "groupFeePlaceholder": "Fee per class (EGP)"
     },
     "status_active": "Active"
   },
@@ -1980,7 +1989,7 @@
     "todayRevenue": "Today's Revenue",
     "activeStudents": {
       "label": "Active Students",
-      "timeWindow": "(this week)"
+      "timeWindow": "this week · {count} total"
     },
     "pendingPayments": {
       "label": "Pending Payments",
@@ -2043,7 +2052,8 @@
     "dailySummaryNoPhone": "Add your center phone in settings to send the summary.",
     "dailySummaryNoActivity": "No attendance or payments recorded for yesterday to include in the summary.",
     "dailySummarySent": "Daily summary sent.",
-    "overdue": "Overdue"
+    "overdue": "Overdue",
+    "moreActions": "More actions"
   },
   "analytics": {
     "title": "Financial Intelligence",
@@ -2757,8 +2767,6 @@
     "deactivatedStatus": "Deactivated",
     "account": "Account",
     "logout": "Logout",
-    "resetPassword": "Change PIN",
-    "resetPasswordDesc": "Change your account PIN",
     "platformAdminSettingsHint": "Your account is not linked to a center. Change your sign-in PIN or return to the admin console.",
     "backToAdminConsole": "Back to admin",
     "parentPack": {
@@ -2844,6 +2852,18 @@
     "view_student": "View Student",
     "subjectManagement": {
       "ownerOnlyMessage": "Only the center owner can manage subjects."
+    },
+    "billingMoneyTitle": "Billing & Money",
+    "supportTitle": "Support",
+    "accountSecurityTitle": "Account & Security",
+    "menu": {
+      "centerInfoDesc": "Name, phone, district, governorate, logo",
+      "subjectsDesc": "Manage the subjects you teach",
+      "scannerDesc": "Default scan mode for attendance",
+      "notificationsDesc": "Daily summary and summer mode",
+      "billingMoneyDesc": "InstaPay, card ordering, plan & invoices",
+      "supportDesc": "Contact us on WhatsApp",
+      "accountDesc": "Change PIN, sign out"
     }
   },
   "centerCut": {
@@ -5144,7 +5164,6 @@
     "paymentFailed": "Payment Failed",
     "paymentSuccess": "Payment Success",
     "perMonth": "Per Month",
-    "perQuarter": "Per Quarter",
     "perYear": "Per Year",
     "requestSubmitted": "Request Submitted",
     "selectPlan": "Select Plan",
@@ -5173,7 +5192,6 @@
         "studentsUsageUnlimited": "{current} students",
         "earlyAdopter": "Early adopter pricing",
         "periodMonthly": "Monthly",
-        "periodQuarterly": "Quarterly",
         "periodAnnual": "Annual",
         "priceLine": "{amount} · {period}"
       },
@@ -5250,10 +5268,6 @@
       "monthly": {
         "label": "Monthly",
         "premium": "+15%"
-      },
-      "quarterly": {
-        "label": "Quarterly",
-        "recommended": "Best value"
       },
       "annual": {
         "label": "Annual",
@@ -5410,20 +5424,18 @@
     "upgrade": {
       "useDowngrade": "This would not increase your plan cost. Use the Downgrade tab.",
       "amountDue": "Amount due now",
-      "annualSaveHint": "Save vs quarterly",
+      "annualSaveHint": "Save vs monthly",
       "choosePeriod": "Choose billing period",
       "choosePlan": "Choose plan",
       "currentPeriod": "Current",
       "dailyDiff": "Daily rate change",
       "daysRemaining": "Days left in period",
       "limitReached": "Upgrade limit reached for this period",
-      "monthlyPremiumHint": "+15% vs quarterly",
       "newMonthlyRate": "New monthly rate (all-in)",
       "newPeriod": "New period",
       "newPlan": "New plan",
       "nextRenewal": "Next renewal",
       "proceed": "Proceed to payment",
-      "quarterlyDefaultHint": "Default billing",
       "summary": "Upgrade summary",
       "title": "Upgrade plan",
       "usedOf": "{used} of {limit} upgrades used"
@@ -5451,7 +5463,7 @@
         "total": "Estimated monthly bill",
         "capped": "Capped at plan maximum ({amount} EGP)",
         "vsMonthly": "vs Monthly plan",
-        "vsQuarterly": "vs Quarterly (monthly equiv.)"
+        "vsAllIn": "vs All-in rate"
       },
       "switch": {
         "enable": "Switch to Pay As You Go",
@@ -5842,7 +5854,8 @@
     "pagePrev": "Previous",
     "pageNext": "Next",
     "emptyFiltered": "No orders match your filters.",
-    "showing": "Showing {from}-{to} of {total}"
+    "showing": "Showing {from}-{to} of {total}",
+    "sortBy": "Sort"
   },
   "notifications": {
     "bellAria": "Notifications",

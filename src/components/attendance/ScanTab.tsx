@@ -1180,7 +1180,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
       {showFlash && <div className="chq-flash-success" aria-hidden />}
       <div className="bg-[var(--color-surface-0)] min-h-screen w-full flex flex-col animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0 pt-[max(16px,env(safe-area-inset-top,0px))]">
         {!probeOk && (
-          <div className="chq-fade-in mx-4 mt-2 flex items-center justify-center gap-2 rounded-xl border border-amber-800/50 bg-amber-900/30 px-3 py-2 text-sm text-amber-300 sm:mx-0">
+          <div className="chq-fade-in mx-4 mt-2 flex items-center justify-center gap-2 rounded-xl border border-[var(--color-warning)]/40 bg-[var(--color-warning-muted)] px-3 py-2 text-sm text-[var(--color-warning)] sm:mx-0">
             <div className="h-2 w-2 animate-pulse rounded-full bg-amber-400" />
             <span>{ts('offlineBanner')}</span>
           </div>
@@ -1188,7 +1188,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
         <ScannerPastDueNotice />
 
         {contextGroupName ? (
-          <div className="mx-4 mt-2 flex items-center justify-center gap-2 rounded-xl border border-teal-700/40 bg-teal-900/20 px-3 py-2 text-sm font-medium text-teal-300 sm:mx-0">
+          <div className="mx-4 mt-2 flex items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-3 py-2 text-sm font-medium text-teal-700 sm:mx-0">
             <BookOpen className="h-4 w-4 shrink-0" aria-hidden />
             <span className="truncate">{tAtt('takingForGroup', { group: contextGroupName })}</span>
           </div>
@@ -1308,8 +1308,8 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
 
           <div className="flex flex-col items-center gap-4 flex-1">
             {scanCount > 0 ? (
-              <div className="mb-2 w-full max-w-sm text-center text-xs text-slate-400">
-                <span className="rounded-full border border-teal-800/40 bg-teal-900/40 px-2 py-0.5 text-xs text-teal-400">
+              <div className="mb-2 w-full max-w-sm text-center text-xs text-[var(--color-text-muted)]">
+                <span className="rounded-full border border-teal-200 bg-teal-100 px-2 py-0.5 text-xs text-teal-700">
                   {formatNumber(scanCount, locale)} {ts('scansToday')}
                 </span>
               </div>
@@ -1431,12 +1431,12 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
               {scanHistory.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
                   <QrCode
-                    className="w-14 h-14 text-slate-300 mb-3"
+                    className="w-14 h-14 text-[var(--color-text-tertiary)] mb-3"
                     strokeWidth={1.25}
                     aria-hidden
                   />
-                  <p className="text-sm text-slate-500">{ts('history_empty')}</p>
-                  <p className="text-xs text-slate-400 mt-1 max-w-xs">{ts('history_empty_hint')}</p>
+                  <p className="text-sm text-[var(--color-text-secondary)]">{ts('history_empty')}</p>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1 max-w-xs">{ts('history_empty_hint')}</p>
                 </div>
               ) : (
                 <>
@@ -1468,7 +1468,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
                             scan.status === 'success'
                               ? 'badge-success'
                               : scan.status === 'duplicate'
-                                ? 'border border-amber-700/50 bg-amber-950/40 text-amber-200'
+                                ? 'border border-amber-200 bg-amber-100 text-amber-800'
                                 : 'badge-danger'
                           }`}
                         >
@@ -1510,7 +1510,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
                   </button>
                   <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4 pe-10">
                     <div className="flex items-start gap-3">
-                      <div className="shrink-0 w-8 h-8 rounded-lg bg-teal-900/40 border border-teal-800/40 flex items-center justify-center">
+                      <div className="shrink-0 w-8 h-8 rounded-lg bg-teal-100 border border-teal-200 flex items-center justify-center">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                           stroke={colors.brand[500]} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
@@ -1535,11 +1535,11 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
                         <p className="text-xs text-[var(--color-text-muted)]">
                           <span className="text-[var(--color-text-secondary)]">{ts('hardwareSpecs.recommended')}: </span>
                           {tier === 'enterprise' ? (
-                            <bdi dir="ltr" className="font-medium text-teal-400">Apple iPad (9th Gen)</bdi>
+                            <bdi dir="ltr" className="font-medium text-teal-700">Apple iPad (9th Gen)</bdi>
                           ) : tier === 'pro' ? (
-                            <bdi dir="ltr" className="font-medium text-teal-400">Samsung Galaxy Tab A9+</bdi>
+                            <bdi dir="ltr" className="font-medium text-teal-700">Samsung Galaxy Tab A9+</bdi>
                           ) : (
-                            <bdi dir="ltr" className="font-medium text-teal-400">Lenovo Tab M9</bdi>
+                            <bdi dir="ltr" className="font-medium text-teal-700">Lenovo Tab M9</bdi>
                           )}
                         </p>
                         {tier === 'enterprise' && (
@@ -1575,14 +1575,14 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
           <div className="bg-[var(--color-surface-1)] rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-sm max-h-[85vh] min-h-[58vh] flex flex-col">
             {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-1 shrink-0">
-              <div className="w-12 h-1 rounded-full bg-slate-300" aria-hidden />
+              <div className="w-12 h-1 rounded-full bg-[var(--color-border-strong)]" aria-hidden />
             </div>
             <div className="p-4 pb-2 border-b border-[var(--color-border-subtle)] shrink-0">
               <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('selectGroupTitle')}</h2>
               <p className="text-sm text-[var(--color-text-secondary)] mt-1">{t('selectGroupDesc')}</p>
               {/* Search */}
               <div className="relative mt-3">
-                <Search size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
+                <Search size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-[var(--color-text-tertiary)]" />
                 <input
                   type="search"
                   placeholder={tCommon('search')}
@@ -1592,7 +1592,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
                 />
               </div>
             </div>
-            <div className="p-4 overflow-y-auto flex-1 divide-y divide-slate-200">
+            <div className="p-4 overflow-y-auto flex-1 divide-y divide-[var(--color-border-subtle)]">
               {filteredGroupsForSheet.map((g) => (
                 <button
                   key={g.id}
@@ -1614,7 +1614,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
                         : `${tCommon('egp')} ${formatNumber(0, locale)}`}
                     </p>
                   </div>
-                  <DirectionalIcon icon={ChevronRight} className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                  <DirectionalIcon icon={ChevronRight} className="w-4 h-4 text-[var(--color-text-tertiary)] flex-shrink-0" />
                 </button>
               ))}
             </div>

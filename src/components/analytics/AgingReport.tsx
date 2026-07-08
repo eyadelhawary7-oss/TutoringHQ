@@ -90,13 +90,13 @@ export default function AgingReport({ data = [], onRefresh }: AgingReportProps) 
 
   return (
     <div className="rounded-lg border bg-[var(--color-surface-1)] overflow-hidden">
-      <div className="flex items-center justify-between p-4 border-b bg-muted/30">
+      <div className="flex items-center justify-between p-4 border-b bg-[var(--color-surface-2)]/30">
         <h3 className="font-semibold">{t('agingReport')}</h3>
         <button
           type="button"
           onClick={sendAllReminders}
           disabled={sendingAll}
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-md bg-teal-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
         >
           {sendingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
           {t('sendReminderToAll')}
@@ -105,7 +105,7 @@ export default function AgingReport({ data = [], onRefresh }: AgingReportProps) 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-muted/50">
+            <tr className="border-b bg-[var(--color-surface-2)]">
               <th className="text-end py-3 px-4 font-medium">{t('studentName')}</th>
               <th className="text-end py-3 px-4 font-medium">{t('group')}</th>
               <th className="text-end py-3 px-4 font-medium">{t('daysOverdue')}</th>
@@ -125,7 +125,7 @@ export default function AgingReport({ data = [], onRefresh }: AgingReportProps) 
                     type="button"
                     onClick={() => sendReminder(row.student_id)}
                     disabled={sendingId === row.student_id}
-                    className="p-1.5 rounded hover:bg-muted disabled:opacity-50"
+                    className="p-1.5 rounded hover:bg-[var(--color-surface-2)] disabled:opacity-50"
                     title={t('sendReminder')}
                   >
                     {sendingId === row.student_id ? (

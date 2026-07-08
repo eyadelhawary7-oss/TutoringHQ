@@ -270,7 +270,7 @@ export default function PendingEnrollmentsPage() {
               {t('emptyDescription')}
             </p>
             {error ? (
-              <p className="mt-3 text-xs text-red-500">{error}</p>
+              <p className="mt-3 text-xs text-[var(--color-danger)]">{error}</p>
             ) : null}
           </div>
         ) : (
@@ -471,7 +471,7 @@ export default function PendingEnrollmentsPage() {
             </label>
 
             {modalError ? (
-              <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-500">
+              <div className="rounded-lg border border-[var(--color-danger)]/30 bg-[var(--color-danger-muted)] px-3 py-2 text-sm text-[var(--color-danger)]">
                 {modalError}
               </div>
             ) : null}
@@ -489,7 +489,7 @@ export default function PendingEnrollmentsPage() {
                 type="button"
                 onClick={handleReject}
                 disabled={submitting || rejecting}
-                className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-500/15 disabled:opacity-60"
+                className="flex items-center gap-2 rounded-lg border border-[var(--color-danger)]/30 bg-[var(--color-danger-muted)] px-4 py-2 text-sm font-semibold text-[var(--color-danger)] transition-colors hover:bg-[var(--color-danger)]/15 disabled:opacity-60"
               >
                 {rejecting ? (
                   <>

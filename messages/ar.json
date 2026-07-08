@@ -948,7 +948,8 @@
     "yourSchedule": "Your الجدول",
     "notAuthenticated": "غير مسجّل الدخول",
     "invalidPin": "رمز PIN غير صحيح",
-    "close": "إغلاق"
+    "close": "إغلاق",
+    "moreActions": "إجراءات إضافية"
   },
   "emptyStates": {
     "students": {
@@ -3819,7 +3820,6 @@
     "paymentFailed": "دفع فشل",
     "paymentSuccess": "دفع نجاح",
     "perMonth": "لكل شهر",
-    "perQuarter": "لكل الربع",
     "perYear": "لكل سنة",
     "requestSubmitted": "طلب Submitted",
     "selectPlan": "اختيار باقة",
@@ -3848,7 +3848,6 @@
         "studentsUsageUnlimited": "{current} طالباً",
         "earlyAdopter": "تسعيرة المبكرين",
         "periodMonthly": "شهري",
-        "periodQuarterly": "ربع سنوي",
         "periodAnnual": "سنوي",
         "priceLine": "{amount} · {period}"
       },
@@ -3925,10 +3924,6 @@
       "monthly": {
         "label": "شهري",
         "premium": "زيادة 15٪"
-      },
-      "quarterly": {
-        "label": "ربع سنوي",
-        "recommended": "الأفضل"
       },
       "annual": {
         "label": "سنوي",
@@ -4085,20 +4080,18 @@
     "upgrade": {
       "useDowngrade": "هذا لن يزيد تكلفة خطتك. استخدم تبويب التخفيض.",
       "amountDue": "المستحق الآن",
-      "annualSaveHint": "توفير مقارنة بالربع سنوي",
+      "annualSaveHint": "توفير مقارنة بالشهري",
       "choosePeriod": "اختر دورة الفوترة",
       "choosePlan": "اختر الباقة",
       "currentPeriod": "الحالية",
       "dailyDiff": "تغير المعدل اليومي",
       "daysRemaining": "أيام متبقية في الفترة",
       "limitReached": "تم بلوغ حد الترقية لهذه الفترة",
-      "monthlyPremiumHint": "+١٥٪ مقارنة بالربع السنوي",
       "newMonthlyRate": "السعر الشهري الجديد (الشامل)",
       "newPeriod": "الفترة الجديدة",
       "newPlan": "الباقة الجديدة",
       "nextRenewal": "التجديد القادم",
       "proceed": "المتابعة للدفع",
-      "quarterlyDefaultHint": "الفوترة الافتراضية",
       "summary": "ملخص الترقية",
       "title": "ترقية الخطة",
       "usedOf": "{used} من {limit} ترقيات مستخدمة"
@@ -4126,7 +4119,7 @@
         "total": "الفاتورة الشهرية التقديرية",
         "capped": "بحد أقصى {amount} ج.م",
         "vsMonthly": "مقارنة بالشهري",
-        "vsQuarterly": "مقارنة بالربع سنوي"
+        "vsAllIn": "مقارنة بالسعر الشامل"
       },
       "switch": {
         "enable": "التحويل للدفع حسب الاستخدام",
@@ -4538,7 +4531,8 @@
     "pagePrev": "السابق",
     "pageNext": "التالي",
     "emptyFiltered": "لا توجد طلبات مطابقة.",
-    "showing": "عرض {from}-{to} من {total}"
+    "showing": "عرض {from}-{to} من {total}",
+    "sortBy": "ترتيب"
   },
   "notifications": {
     "bellAria": "الإشعارات",
@@ -4899,7 +4893,7 @@
     "todayRevenue": "إيرادات اليوم",
     "activeStudents": {
       "label": "الطلاب الناشطون",
-      "timeWindow": "(هذا الأسبوع)"
+      "timeWindow": "هذا الأسبوع · {count} إجمالي"
     },
     "pendingPayments": {
       "label": "المدفوعات المعلقة",
@@ -4962,7 +4956,8 @@
     "dailySummaryNoPhone": "أضف هاتف السنتر من الإعدادات لإرسال الملخص.",
     "dailySummaryNoActivity": "لا يوجد حضور أو مدفوعات أمس لإدراجها في الملخص.",
     "dailySummarySent": "تم إرسال الملخص اليومي.",
-    "overdue": "متأخر"
+    "overdue": "متأخر",
+    "moreActions": "المزيد من الإجراءات"
   },
   "forgotPassword": {
     "title": "إعادة تعيين الرمز السري",
@@ -6363,8 +6358,6 @@
     "deactivatedStatus": "متوقف",
     "account": "الحسابات",
     "logout": "تسجيل الخروج",
-    "resetPassword": "تغيير رقم التعريف الشخصي PIN‏ ",
-    "resetPasswordDesc": "تغيير رقم التعريف الشخصي (PIN) لحساب",
     "platformAdminSettingsHint": "حسابك غير مرتبط بمركز. يمكنك تغيير رمز الدخول أو العودة إلى لوحة الإدارة.",
     "backToAdminConsole": "العودة إلى الإدارة",
     "parentPack": {
@@ -6450,6 +6443,18 @@
     "view_student": "عرض طالب",
     "subjectManagement": {
       "ownerOnlyMessage": "يمكن لمالك السنتر فقط إدارة المواد."
+    },
+    "billingMoneyTitle": "الفواتير والمال",
+    "supportTitle": "الدعم",
+    "accountSecurityTitle": "الحساب والأمان",
+    "menu": {
+      "centerInfoDesc": "الاسم، الهاتف، الحي، المحافظة، الشعار",
+      "subjectsDesc": "إدارة المواد التي يتم تدريسها",
+      "scannerDesc": "وضع المسح الافتراضي للحضور",
+      "notificationsDesc": "الملخص اليومي ووضع الصيف",
+      "billingMoneyDesc": "إنستاباي، طلب الكروت، الخطة والفواتير",
+      "supportDesc": "تواصل معنا عبر واتساب",
+      "accountDesc": "تغيير الرمز السري، تسجيل الخروج"
     }
   },
   "setPin": {
@@ -6649,10 +6654,10 @@
     "atRiskPanelTitle": "عند خطر لوحة عنوان",
     "atRiskSince": "عند خطر Since",
     "balance": "الرصيد",
-    "createFamily": "Create Family",
-    "createNewFamily": "Create جديد Family",
+    "createFamily": "إنشاء",
+    "createNewFamily": "إنشاء أسرة جديدة",
     "daysSinceLastScan": "أيام Since آخر مسح",
-    "familyNamePlaceholder": "Family الاسم Placeholder",
+    "familyNamePlaceholder": "اسم الأسرة",
     "feePerLesson": "رسوم لكل Lesson",
     "groupRequired": "مجموعة مطلوب",
     "groupRequiredError": "مجموعة مطلوب خطأ",
@@ -6661,11 +6666,11 @@
     "lifecycleChurned": "Lifecycle Churned",
     "lifecycleEnrolled": "Lifecycle Enrolled",
     "lifecycleInactive": "Lifecycle Inactive",
-    "linkToFamily": "Link إلى Family",
+    "linkToFamily": "ربط بأسرة",
     "name": "الاسم",
     "nameRequired": "الاسم مطلوب",
-    "noFamily": "لا Family",
-    "parentNamePlaceholder": "ولي أمر الاسم Placeholder",
+    "noFamily": "- لا أسرة -",
+    "parentNamePlaceholder": "اسم ولي الأمر",
     "parentPhone": "هاتف ولي الأمر",
     "parentPhoneOptional": "هاتف ولي الأمر اختياري",
     "phone": "الهاتف",
@@ -6767,7 +6772,15 @@
     "regenerateQR": "إعادة إنشاء QR",
     "add": {
       "noGroupsPlaceholder": "لا توجد مجموعات بعد، أنشئ مجموعة أولاً",
-      "createGroupHelper": "أنشئ مجموعتك الأولى"
+      "createGroupHelper": "أنشئ مجموعتك الأولى",
+      "newGroup": "+ مجموعة جديدة",
+      "groupNameRequired": "اسم المجموعة مطلوب",
+      "groupSubjectRequired": "المادة مطلوبة",
+      "groupFeeRequired": "رسوم صحيحة مطلوبة",
+      "groupCreated": "تم إنشاء المجموعة",
+      "groupNamePlaceholder": "اسم المجموعة",
+      "createGroup": "إنشاء",
+      "groupFeePlaceholder": "الرسوم لكل حصة (جنيه)"
     },
     "status_active": "نشط"
   },

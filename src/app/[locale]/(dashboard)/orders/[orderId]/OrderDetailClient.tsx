@@ -5,6 +5,7 @@ import { useRouter } from '@/i18n/routing';
 import { Link } from '@/i18n/routing';
 import { useLocale, useTranslations } from 'next-intl';
 import { formatCurrency, formatDateTime } from '@/lib/formatNumber';
+import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { buildLegalInvoiceLines, cardOrderProductInclusiveFromQty } from '@/lib/pricing/taxMath';
 import { formatShippingZoneForLocale } from '@/lib/bostaShipping';
 import { supabase } from '@/lib/supabase';
@@ -264,7 +265,7 @@ export default function OrderDetailClient({
                 return (
                   <li key={idx} className="flex justify-between gap-2">
                     <span className="text-[var(--color-text-primary)]">{name}</span>
-                    <span className="text-[var(--color-text-secondary)] tabular-nums">{num ? `#${num}` : ''}</span>
+                    <span className="text-[var(--color-text-secondary)] tabular-nums">{formatStudentNumberForDisplay(num)}</span>
                   </li>
                 );
               }
@@ -411,7 +412,7 @@ export default function OrderDetailClient({
                 <div className="flex justify-end gap-2">
                   <button
                     type="button"
-                    className="px-4 py-2 rounded-xl border text-sm font-semibold"
+                    className="px-4 py-2 rounded-xl border border-[var(--color-border-subtle)] text-sm font-semibold"
                     disabled={reorderBusy}
                     onClick={() => {
                       setReorderOpen(false);

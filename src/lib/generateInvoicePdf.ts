@@ -3,6 +3,7 @@ import puppeteer from 'puppeteer-core';
 import type { Browser } from 'puppeteer-core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { formatDate, formatDateTime, formatNumber, formatPercent } from '@/lib/formatNumber';
+import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { getSupabaseAdmin, supabaseAdmin } from '@/lib/supabase-admin';
 import {
   buildInvoiceHtml,
@@ -1220,7 +1221,7 @@ export async function generateCardOrderReceiptPdf(
     if (it.kind === 'student') {
       const name = String(it.student_name ?? 'طالب');
       const num = it.student_number != null ? String(it.student_number) : '';
-      lineItems.push({ title: name, subtitle: num ? `#${num}` : undefined, qty: 1 });
+      lineItems.push({ title: name, subtitle: formatStudentNumberForDisplay(num) || undefined, qty: 1 });
     } else if (it.kind === 'blank') {
       lineItems.push({
         title: 'بطاقة فارغة',

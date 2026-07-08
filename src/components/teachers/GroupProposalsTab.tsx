@@ -48,11 +48,11 @@ const ERROR_KEY: Record<string, string> = {
 };
 
 const STATUS_CLASS: Record<Proposal['status'], string> = {
-  open: 'bg-teal-100 text-teal-800',
-  accepted: 'bg-emerald-100 text-emerald-800',
-  declined: 'bg-red-100 text-red-700',
-  withdrawn: 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]',
-  expired: 'bg-amber-100 text-amber-800',
+  open: 'badge-brand',
+  accepted: 'badge-success',
+  declined: 'badge-danger',
+  withdrawn: 'badge-neutral',
+  expired: 'badge-gold',
 };
 
 /**
@@ -297,7 +297,7 @@ export default function GroupProposalsTab({ onChanged }: { onChanged?: () => voi
       </div>
 
       {errorKey && (
-        <p className="mt-3 mb-3 text-sm text-red-600" role="alert">
+        <p className="mt-3 mb-3 text-sm text-[var(--color-danger)]" role="alert">
           {t(errorKey)}
         </p>
       )}
@@ -533,12 +533,12 @@ export default function GroupProposalsTab({ onChanged }: { onChanged?: () => voi
                     </p>
                     <p className="text-sm text-[var(--color-text-secondary)]">{groupLabel}</p>
                     {p.targetGroupId && (
-                      <span className="mt-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                      <span className="badge badge-gold mt-1 inline-flex">
                         {t('attachBadge')}
                       </span>
                     )}
                     {p.carriesLink && p.status === 'open' && (
-                      <span className="mt-1 ms-1 inline-block rounded-full bg-[var(--color-surface-2)] px-2 py-0.5 text-xs font-semibold text-[var(--color-text-secondary)]">
+                      <span className="badge badge-neutral mt-1 ms-1 inline-flex">
                         {t('linkPendingBadge')}
                       </span>
                     )}
@@ -564,7 +564,7 @@ export default function GroupProposalsTab({ onChanged }: { onChanged?: () => voi
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_CLASS[p.status]}`}>
+                    <span className={`badge ${STATUS_CLASS[p.status]}`}>
                       {t(STATUS_KEY[p.status])}
                     </span>
                     <span className="text-xs text-[var(--color-text-muted)]">
@@ -625,7 +625,7 @@ export default function GroupProposalsTab({ onChanged }: { onChanged?: () => voi
                           type="button"
                           disabled={busy}
                           onClick={() => respond(p.id, 'decline')}
-                          className="rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 disabled:opacity-50"
+                          className="rounded-lg border border-[var(--color-danger)]/50 px-3 py-1.5 text-xs font-semibold text-[var(--color-danger)] disabled:opacity-50"
                         >
                           {t('decline')}
                         </button>

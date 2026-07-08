@@ -76,7 +76,7 @@ function SlotRow({
   };
 
   return (
-    <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4 space-y-3">
+    <div className="rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 space-y-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
           <p className="text-sm font-bold text-[var(--color-text-primary)]">
@@ -100,7 +100,7 @@ function SlotRow({
           <select
             value={roomId}
             onChange={(e) => setRoomId(e.target.value)}
-            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+            className="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
           >
             <option value="">{t('roomNone')}</option>
             {rooms.map((r) => (
@@ -188,7 +188,7 @@ export default function GroupSlotsTab({ onChanged }: { onChanged?: () => void })
         <p className="text-sm text-[var(--color-text-secondary)]">{t('centerSubtitle')}</p>
       </div>
       {proposals.length === 0 ? (
-        <p className="rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-6 text-center text-sm text-[var(--color-text-secondary)]">
+        <p className="rounded-[var(--radius-card)] border border-dashed border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-4 py-6 text-center text-sm text-[var(--color-text-secondary)]">
           {t('noPending')}
         </p>
       ) : (

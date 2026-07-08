@@ -379,7 +379,7 @@ export default function AdminCardOrderDetailClient({
                               <span className="text-[var(--color-text-primary)]">{name}</span>
                               <span className="flex items-center gap-2">
                                 <span className="text-[var(--color-text-secondary)] tabular-nums">
-                                  {num ? `#${formatStudentNumberForDisplay(num)}` : ''}
+                                  {formatStudentNumberForDisplay(num)}
                                 </span>
                                 <span
                                   className={cn(

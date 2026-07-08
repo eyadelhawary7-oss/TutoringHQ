@@ -139,7 +139,7 @@ export default function CheckoutCustomizePage() {
           <span>{t('rememberStyle')}</span>
         </label>
 
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {error ? <p className="text-sm text-[var(--color-danger)]">{error}</p> : null}
 
         <button
           type="submit"

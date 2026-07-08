@@ -191,6 +191,9 @@ export default function StudentsPage() {
   });
   const [showParentSectionAdd, setShowParentSectionAdd] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [createGroupForm, setCreateGroupForm] = useState({ name: '', subjectId: '', fee: '' });
+  const [creatingGroup, setCreatingGroup] = useState(false);
   const [qrModalStudent, setQrModalStudent] = useState<Student | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [isGeneratingAll, setIsGeneratingAll] = useState(false);
@@ -1023,76 +1026,110 @@ export default function StudentsPage() {
     }
   };
 
+  const errorDetail = (err: unknown): string =>
+    err instanceof Error
+      ? err.message
+      : typeof err === 'object' && err !== null && 'message' in err
+        ? String((err as { message: string }).message)
+        : 'Failed to create group';
+
+  const handleCreateGroupQuick = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const meRes = await fetch('/api/me', { headers: { Authorization: `Bearer ${session.access_token}` } });
+    const meData = await meRes.json();
+    const cid = meData?.user?.center_id;
+    const uid = meData?.user?.id;
+    if (!cid || !uid) return;
+
+    if (!createGroupForm.name.trim()) {
+      toast.error(ts('add.groupNameRequired'));
+      return;
+    }
+    if (!createGroupForm.subjectId) {
+      toast.error(ts('add.groupSubjectRequired'));
+      return;
+    }
+    const fee = Number(createGroupForm.fee);
+    if (!Number.isFinite(fee) || fee <= 0) {
+      toast.error(ts('add.groupFeeRequired'));
+      return;
+    }
+
+    setCreatingGroup(true);
+    try {
+      const subjectName = subjects.find((s) => s.id === createGroupForm.subjectId)?.name ?? '';
+      const { data: inserted, error } = await dbInsert({
+        table: 'student_groups',
+        data: {
+          center_id: cid,
+          name: createGroupForm.name.trim(),
+          subject: subjectName,
+          fee_per_class: fee,
+          center_cut_egp: 0,
+          max_capacity: null,
+        },
+        single: true,
+      });
+      if (error || !inserted) {
+        toast.error(tToast('error'), errorDetail(error));
+        return;
+      }
+      const row = Array.isArray(inserted) ? inserted[0] : inserted;
+      await auditLog({ centerId: cid, userId: uid, action: 'group_create', entityType: 'student_groups', entityId: row.id, details: { name: row.name } });
+      const newGroup: Group = { id: row.id, name: createGroupForm.name.trim(), subject: subjectName, fee };
+      setGroups((prev) => [...prev, newGroup]);
+      setAddForm((f) => ({ ...f, groupId: newGroup.id, subjectId: createGroupForm.subjectId, monthlyFee: String(fee) }));
+      setCreateGroupForm({ name: '', subjectId: '', fee: '' });
+      setShowCreateGroup(false);
+      toast.success(ts('add.groupCreated'));
+    } catch (err) {
+      toast.error(tToast('error'), errorDetail(err));
+    } finally {
+      setCreatingGroup(false);
+    }
+  };
+
   return (
     <>
       <div className="min-h-screen w-full min-w-0 overflow-x-clip bg-[var(--color-surface-0)] page-enter max-md:pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
         <div className="px-4 pt-4 pb-3 max-w-3xl mx-auto w-full">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{ts('title')}</h1>
-                <span
-                  className={`inline-flex items-center rounded-full bg-teal-600 text-white text-xs font-semibold px-2.5 py-0.5 tabular-nums shrink-0 transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}
-                >
-                  {students === null ? '-' : formatNumber(studentsList.length, locale)}
-                </span>
-              </div>
-              <p className="text-xs text-[var(--color-text-secondary)] mt-1">{ts('subtitle')}</p>
+          <div className="mb-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{ts('title')}</h1>
+              <span
+                className={`inline-flex items-center rounded-full bg-teal-600 text-white text-xs font-semibold px-2.5 py-0.5 tabular-nums shrink-0 transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}
+              >
+                {students === null ? '-' : formatNumber(studentsList.length, locale)}
+              </span>
             </div>
-            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-              <Link
-                href="/students/import"
-                className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow"
-              >
-                <Upload size={16} /> {ts('import')}
-              </Link>
-              <Link
-                href="/orders"
-                className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow btn-press chq-focus"
-                aria-label={ts('order_cards')}
-              >
-                <ShoppingCart size={16} />
-                {ts('order_cards')}
-                {activeItemCount > 0 ? (
-                  <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-teal-500 text-white text-[10px] font-bold leading-none">
-                    {activeItemCount > 99 ? '99+' : activeItemCount}
-                  </span>
-                ) : null}
-              </Link>
-              <Link
-                href="/students/pending"
-                className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow btn-press chq-focus"
-                aria-label={ts('pendingRequests')}
-              >
-                <Inbox size={16} /> {ts('pendingRequests')}
-                {pendingCount > 0 ? (
-                  <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-teal-500 text-white text-[10px] font-bold leading-none">
-                    {pendingCount > 99 ? '99+' : pendingCount}
-                  </span>
-                ) : null}
-              </Link>
-              {(user?.role === 'owner' || user?.role === 'admin' || user?.role === 'super_admin') && (
-                <button
-                  type="button"
-                  disabled={!canSendAnnouncement}
-                  onClick={() => {
-                    setAnnouncementBlastType(null);
-                    setAnnouncementMessage('');
-                    setShowAnnouncementModal(true);
+            <p className="text-xs text-[var(--color-text-secondary)] mt-1">{ts('subtitle')}</p>
+          </div>
+
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex-1 min-w-0 rounded-xl bg-[var(--color-surface-1)] ring-1 ring-[var(--color-border-subtle)] border-0 shadow-sm focus-within:ring-2 focus-within:ring-teal-500 transition-shadow duration-150">
+              <div className="relative">
+                <Search size={18} className="absolute top-1/2 -translate-y-1/2 start-4 text-[var(--color-text-muted)] pointer-events-none" />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setFilterKey((k) => k + 1);
                   }}
-                  className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow disabled:opacity-50 disabled:cursor-not-allowed btn-press chq-focus"
-                >
-                  {ts('sendAnnouncement')}
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setShowAddModal(true)}
-                className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-xl transition-all duration-150 shadow-sm btn-press chq-focus"
-              >
-                <Plus size={16} /> {ts('add_student')}
-              </button>
+                  placeholder={ts('search_placeholder')}
+                  className="w-full bg-transparent ps-12 pe-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none border-0 rounded-xl"
+                  dir="auto"
+                />
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={() => setShowAddModal(true)}
+              className="btn-lift shrink-0 flex items-center gap-1.5 px-4 py-3 min-h-[48px] bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-xl transition-all duration-150 shadow-sm btn-press chq-focus"
+            >
+              <Plus size={18} /> <span className="hidden sm:inline">{ts('add_student')}</span>
+            </button>
           </div>
 
           <div className="mb-3">
@@ -1126,23 +1163,6 @@ export default function StudentsPage() {
                 />
               </div>
             )}
-          </div>
-
-          <div className="rounded-xl bg-[var(--color-surface-1)] mb-3 ring-1 ring-[var(--color-border-subtle)] border-0 shadow-sm focus-within:ring-2 focus-within:ring-teal-500 transition-shadow duration-150">
-            <div className="relative">
-              <Search size={18} className="absolute top-1/2 -translate-y-1/2 start-4 text-[var(--color-text-muted)] pointer-events-none" />
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setFilterKey((k) => k + 1);
-                }}
-                placeholder={ts('search_placeholder')}
-                className="w-full bg-transparent ps-12 pe-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none border-0 rounded-xl"
-                dir="auto"
-              />
-            </div>
           </div>
 
           <div className="flex flex-col gap-3 mb-3">
@@ -1207,38 +1227,6 @@ export default function StudentsPage() {
                 onClick={() => setStatusHelpOpen(true)}
               >
                 <CircleHelp className="h-5 w-5" aria-hidden />
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-[var(--color-text-tertiary)]">{ts('sort')}</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setSortBy('name');
-                  setFilterKey((k) => k + 1);
-                }}
-                className={`px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 border ${
-                  sortBy === 'name'
-                    ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
-                    : 'bg-[var(--color-surface-1)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)] hover:border-teal-500/40'
-                } btn-press chq-focus`}
-              >
-                {ts('sortName')}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSortBy('balance');
-                  setFilterKey((k) => k + 1);
-                }}
-                className={`px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 border ${
-                  sortBy === 'balance'
-                    ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
-                    : 'bg-[var(--color-surface-1)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)] hover:border-teal-500/40'
-                } btn-press chq-focus`}
-              >
-                {ts('sortBalance')}
               </button>
             </div>
           </div>
@@ -1493,7 +1481,7 @@ export default function StudentsPage() {
                                           onChange={(e) => setParentPhoneDraft(e.target.value)}
                                           placeholder={ts('parentPhonePlaceholder')}
                                           dir="ltr"
-                                          className="w-full rounded-lg border border-input bg-[var(--color-surface-0)] px-3 py-2 text-sm"
+                                          className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2 text-sm"
                                         />
                                         <div className="mt-2 flex gap-2">
                                           <button
@@ -1712,7 +1700,7 @@ export default function StudentsPage() {
                                     onChange={(e) => setParentPhoneDraft(e.target.value)}
                                     placeholder={ts('parentPhonePlaceholder')}
                                     dir="ltr"
-                                    className="w-full rounded-lg border border-input bg-[var(--color-surface-0)] px-3 py-2 text-sm"
+                                    className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2 text-sm"
                                   />
                                   <div className="mt-2 flex gap-2">
                                     <button
@@ -1920,20 +1908,103 @@ export default function StudentsPage() {
               )}
             </div>
           )}
+
+          <div className="pt-2">
+            <div className="mb-3">
+              <SectionHeader title={tCommon('moreActions')} />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href="/students/import"
+                className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow"
+              >
+                <Upload size={16} /> {ts('import')}
+              </Link>
+              <Link
+                href="/orders"
+                className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow btn-press chq-focus"
+                aria-label={ts('order_cards')}
+              >
+                <ShoppingCart size={16} />
+                {ts('order_cards')}
+                {activeItemCount > 0 ? (
+                  <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-teal-500 text-white text-[10px] font-bold leading-none">
+                    {activeItemCount > 99 ? '99+' : activeItemCount}
+                  </span>
+                ) : null}
+              </Link>
+              <Link
+                href="/students/pending"
+                className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow btn-press chq-focus"
+                aria-label={ts('pendingRequests')}
+              >
+                <Inbox size={16} /> {ts('pendingRequests')}
+                {pendingCount > 0 ? (
+                  <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-teal-500 text-white text-[10px] font-bold leading-none">
+                    {pendingCount > 99 ? '99+' : pendingCount}
+                  </span>
+                ) : null}
+              </Link>
+              {(user?.role === 'owner' || user?.role === 'admin' || user?.role === 'super_admin') && (
+                <button
+                  type="button"
+                  disabled={!canSendAnnouncement}
+                  onClick={() => {
+                    setAnnouncementBlastType(null);
+                    setAnnouncementMessage('');
+                    setShowAnnouncementModal(true);
+                  }}
+                  className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow disabled:opacity-50 disabled:cursor-not-allowed btn-press chq-focus"
+                >
+                  {ts('sendAnnouncement')}
+                </button>
+              )}
+              <span className="mx-1 h-6 w-px bg-[var(--color-border-subtle)]" aria-hidden />
+              <span className="text-xs text-[var(--color-text-tertiary)]">{ts('sort')}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setSortBy('name');
+                  setFilterKey((k) => k + 1);
+                }}
+                className={`px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 border ${
+                  sortBy === 'name'
+                    ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
+                    : 'bg-[var(--color-surface-1)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)] hover:border-teal-500/40'
+                } btn-press chq-focus`}
+              >
+                {ts('sortName')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSortBy('balance');
+                  setFilterKey((k) => k + 1);
+                }}
+                className={`px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 border ${
+                  sortBy === 'balance'
+                    ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
+                    : 'bg-[var(--color-surface-1)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)] hover:border-teal-500/40'
+                } btn-press chq-focus`}
+              >
+                {ts('sortBalance')}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Add Student Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddModal(false)}>
-          <div className="bg-[var(--color-surface-1)] rounded-2xl border border-border p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border)] p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-[var(--color-text-primary)]">{ts('addStudent')}</h3>
               <button onClick={() => setShowAddModal(false)} className="btn-press chq-focus"><X size={18} className="text-[var(--color-text-secondary)]" /></button>
             </div>
             <form onSubmit={handleAddStudent} className="space-y-3">
-              <input value={addForm.name} onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))} placeholder={ts('studentName')} className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" required />
-              <input value={addForm.phone} onChange={(e) => setAddForm((f) => ({ ...f, phone: e.target.value }))} placeholder={tCommon('phone')} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" />
+              <input value={addForm.name} onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))} placeholder={ts('studentName')} className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm" required />
+              <input value={addForm.phone} onChange={(e) => setAddForm((f) => ({ ...f, phone: e.target.value }))} placeholder={tCommon('phone')} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm" />
               <button
                 type="button"
                 onClick={() => setShowParentSectionAdd((v) => !v)}
@@ -1950,7 +2021,7 @@ export default function StudentsPage() {
                     aria-label={ts('parentPhone')}
                     type="tel"
                     dir="ltr"
-                    className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+                    className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm"
                   />
                   {centerInfo?.parent_pack_enabled === true && (
                     <label className="flex items-start gap-2 cursor-pointer">
@@ -1970,32 +2041,80 @@ export default function StudentsPage() {
               )}
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{ts('groupRequired')}</label>
-                <select
-                  value={addForm.groupId}
-                  onChange={(e) => { const gId = e.target.value; const g = groups.find((gr) => gr.id === gId); setAddForm((f) => ({ ...f, groupId: gId, subjectId: g ? subjects.find((s) => s.name === g.subject)?.id ?? '' : '', monthlyFee: g?.fee != null ? String(g.fee) : '' })); }}
-                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
-                  required
-                  disabled={groups.length === 0}
-                >
-                  {groups.length === 0 ? (
-                    <option value="" disabled>{ts('add.noGroupsPlaceholder')}</option>
-                  ) : (
-                    <option value="">{tCommon('select')}</option>
-                  )}
-                  {groups.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name}
-                      {g.fee != null ? ` (${formatCurrency(g.fee, locale)})` : ''}
-                    </option>
-                  ))}
-                </select>
-                {groups.length === 0 && (
-                  <Link
-                    href="/groups"
-                    className="mt-1.5 inline-block text-xs text-teal-600 hover:underline"
-                  >
-                    {ts('add.createGroupHelper')}
-                  </Link>
+                {showCreateGroup ? (
+                  <div className="space-y-2 p-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)]/30">
+                    <input
+                      value={createGroupForm.name}
+                      onChange={(e) => setCreateGroupForm((f) => ({ ...f, name: e.target.value }))}
+                      placeholder={ts('add.groupNamePlaceholder')}
+                      className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm"
+                    />
+                    <select
+                      value={createGroupForm.subjectId}
+                      onChange={(e) => setCreateGroupForm((f) => ({ ...f, subjectId: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm"
+                    >
+                      <option value="">{tCommon('select')}</option>
+                      {subjects.map((s) => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                    <input
+                      value={createGroupForm.fee}
+                      onChange={(e) => setCreateGroupForm((f) => ({ ...f, fee: e.target.value }))}
+                      placeholder={ts('add.groupFeePlaceholder')}
+                      type="number"
+                      inputMode="decimal"
+                      dir="ltr"
+                      className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setShowCreateGroup(false); setCreateGroupForm({ name: '', subjectId: '', fee: '' }); }}
+                        className="px-3 py-1.5 text-xs rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)]"
+                      >
+                        {tCommon('cancel')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleCreateGroupQuick()}
+                        disabled={creatingGroup}
+                        className="px-3 py-1.5 text-xs rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-medium disabled:opacity-50"
+                      >
+                        {creatingGroup ? '...' : ts('add.createGroup')}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <select
+                      value={addForm.groupId}
+                      onChange={(e) => { const gId = e.target.value; const g = groups.find((gr) => gr.id === gId); setAddForm((f) => ({ ...f, groupId: gId, subjectId: g ? subjects.find((s) => s.name === g.subject)?.id ?? '' : '', monthlyFee: g?.fee != null ? String(g.fee) : '' })); }}
+                      className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm"
+                      required
+                      disabled={groups.length === 0}
+                    >
+                      {groups.length === 0 ? (
+                        <option value="" disabled>{ts('add.noGroupsPlaceholder')}</option>
+                      ) : (
+                        <option value="">{tCommon('select')}</option>
+                      )}
+                      {groups.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.name}
+                          {g.fee != null ? ` (${formatCurrency(g.fee, locale)})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateGroup(true)}
+                      className="shrink-0 px-3 py-2.5 rounded-lg border border-[var(--color-border)] text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)]"
+                    >
+                      {ts('add.newGroup')}
+                    </button>
+                  </div>
                 )}
               </div>
               <p className="text-xs text-[var(--color-text-secondary)]">{ts('autoGenerateNumber')}</p>
@@ -2010,8 +2129,8 @@ export default function StudentsPage() {
                 <span className="text-sm text-[var(--color-text-primary)]">{tConsent('checkboxLabel')}</span>
               </label>
               <div className="flex gap-2 justify-end mt-4">
-                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-lg text-sm border border-border btn-press chq-focus">{tCommon('cancel')}</button>
-                <button type="submit" disabled={isAdding} className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 btn-press chq-focus" style={{ background: 'hsl(var(--primary))' }}>{isAdding ? tCommon('loading') : tCommon('save')}</button>
+                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-lg text-sm border border-[var(--color-border)] btn-press chq-focus">{tCommon('cancel')}</button>
+                <button type="submit" disabled={isAdding} className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 transition-colors disabled:opacity-50 btn-press chq-focus">{isAdding ? tCommon('loading') : tCommon('save')}</button>
               </div>
             </form>
           </div>
@@ -2021,14 +2140,14 @@ export default function StudentsPage() {
       {/* Edit Student Modal */}
       {editStudent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setEditStudent(null)}>
-          <div className="bg-[var(--color-surface-1)] rounded-2xl border border-border p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border)] p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-[var(--color-text-primary)]">{tCommon('edit')}</h3>
               <button onClick={() => setEditStudent(null)} className="btn-press chq-focus"><X size={18} className="text-[var(--color-text-secondary)]" /></button>
             </div>
             <div className="space-y-3">
-              <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder={ts('studentName')} className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" />
-              <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder={tCommon('phone')} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm" />
+              <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder={ts('studentName')} className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm" />
+              <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder={tCommon('phone')} type="tel" dir="ltr" className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm" />
               <button
                 type="button"
                 onClick={() => setShowParentSectionEdit((v) => !v)}
@@ -2045,7 +2164,7 @@ export default function StudentsPage() {
                     aria-label={ts('parentPhone')}
                     type="tel"
                     dir="ltr"
-                    className="w-full px-3 py-2.5 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+                    className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm"
                   />
                   {user?.center?.parent_pack_enabled === true && (
                     <label className="flex items-start gap-2 cursor-pointer">
@@ -2078,7 +2197,7 @@ export default function StudentsPage() {
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{ts('assignGroups')}</label>
                 <div className="space-y-1.5 max-h-40 overflow-y-auto">
                   {groups.map((g) => (
-                    <label key={g.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted cursor-pointer">
+                    <label key={g.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-[var(--color-surface-2)] cursor-pointer">
                       <input type="checkbox" checked={editGroups.includes(g.id)} onChange={(e) => setEditGroups((prev) => e.target.checked ? [...prev, g.id] : prev.filter((x) => x !== g.id))} className="rounded accent-primary" />
                       <span className="text-sm text-[var(--color-text-primary)]">{g.name}</span>
                       <span className="text-xs text-[var(--color-text-secondary)] ms-auto">{g.subject}</span>
@@ -2088,8 +2207,8 @@ export default function StudentsPage() {
               </div>
             </div>
             <div className="flex gap-2 justify-end mt-4">
-              <button onClick={() => setEditStudent(null)} className="px-4 py-2 rounded-lg text-sm border border-border btn-press chq-focus">{tCommon('cancel')}</button>
-              <button onClick={saveEdit} disabled={isSavingEdit} className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 btn-press chq-focus" style={{ background: 'hsl(var(--primary))' }}>{isSavingEdit ? tCommon('loading') : tCommon('save')}</button>
+              <button onClick={() => setEditStudent(null)} className="px-4 py-2 rounded-lg text-sm border border-[var(--color-border)] btn-press chq-focus">{tCommon('cancel')}</button>
+              <button onClick={saveEdit} disabled={isSavingEdit} className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 transition-colors disabled:opacity-50 btn-press chq-focus">{isSavingEdit ? tCommon('loading') : tCommon('save')}</button>
             </div>
           </div>
         </div>
@@ -2098,12 +2217,12 @@ export default function StudentsPage() {
       {/* Delete Confirmation Dialog */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDeleteTarget(null)}>
-          <div className="bg-[var(--color-surface-1)] rounded-2xl border border-border p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border)] p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-bold text-[var(--color-text-primary)] text-lg mb-2">{ts('deleteStudent')}</h3>
             <p className="text-sm text-[var(--color-text-secondary)] mb-3">{ts('deleteStudentConfirm')}</p>
             <p className="font-medium text-[var(--color-text-primary)] mb-5">{deleteTarget.name}</p>
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 rounded-lg text-sm border border-border btn-press chq-focus">{tCommon('cancel')}</button>
+              <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 rounded-lg text-sm border border-[var(--color-border)] btn-press chq-focus">{tCommon('cancel')}</button>
               <button onClick={() => { if (deleteTarget) { handleDeleteStudent(deleteTarget); setDeleteTarget(null); } }} className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-destructive hover:bg-destructive/90 btn-press chq-focus">{tCommon('delete')}</button>
             </div>
           </div>
@@ -2113,10 +2232,10 @@ export default function StudentsPage() {
       {/* View QR Modal -- Professional ID Card */}
       {qrModalStudent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4" onClick={() => { setQrModalStudent(null); setQrDataUrl(null); }}>
-          <div className="bg-[var(--color-surface-1)] rounded-2xl border border-border p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border)] p-6 max-w-sm mx-4 w-full" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-bold text-[var(--color-text-primary)]">{ts('viewQR')}</h3>
-              <button onClick={() => { setQrModalStudent(null); setQrDataUrl(null); }} className="p-1.5 rounded-lg hover:bg-muted btn-press chq-focus"><X size={18} className="text-[var(--color-text-secondary)]" /></button>
+              <button onClick={() => { setQrModalStudent(null); setQrDataUrl(null); }} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-2)] btn-press chq-focus"><X size={18} className="text-[var(--color-text-secondary)]" /></button>
             </div>
             {/* Professional ID card */}
             <div className="flex justify-center mb-5">
@@ -2144,14 +2263,14 @@ export default function StudentsPage() {
               )}
             </div>
             <div className="flex gap-2">
-              <button onClick={downloadQR} disabled={!qrDataUrl} className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium border border-border hover:bg-muted transition-colors disabled:opacity-50 btn-press chq-focus">
+              <button onClick={downloadQR} disabled={!qrDataUrl} className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium border border-[var(--color-border)] hover:bg-[var(--color-surface-2)] transition-colors disabled:opacity-50 btn-press chq-focus">
                 <Download size={14} /> {tCommon('download')}
               </button>
-              <button onClick={printCard} disabled={!qrDataUrl} className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-colors disabled:opacity-50 btn-press chq-focus" style={{ background: 'hsl(var(--primary))' }}>
+              <button onClick={printCard} disabled={!qrDataUrl} className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 transition-colors disabled:opacity-50 btn-press chq-focus">
                 <QrCode size={14} /> {tCommon('print')}
               </button>
             </div>
-            {qrDataUrl && <button onClick={handleRegenerateQR} className="mt-3 w-full py-1 text-xs text-amber-500 hover:underline btn-press chq-focus">{ts('regenerateQR')}</button>}
+            {qrDataUrl && <button onClick={handleRegenerateQR} className="mt-3 w-full py-1 text-xs text-amber-600 hover:underline btn-press chq-focus">{ts('regenerateQR')}</button>}
           </div>
         </div>
       )}
@@ -2165,7 +2284,7 @@ export default function StudentsPage() {
           role="presentation"
         >
           <div
-            className="bg-[var(--color-surface-1)] rounded-2xl border border-border max-w-md w-full max-h-[90vh] overflow-y-auto p-6 shadow-xl"
+            className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border)] max-w-md w-full max-h-[90vh] overflow-y-auto p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">
@@ -2174,7 +2293,7 @@ export default function StudentsPage() {
                 type="button"
                 disabled={announcementSubmitting}
                 onClick={() => setShowAnnouncementModal(false)}
-                className="p-1 rounded-lg hover:bg-muted btn-press chq-focus"
+                className="p-1 rounded-lg hover:bg-[var(--color-surface-2)] btn-press chq-focus"
                 aria-label={tCommon('cancel')}
               >
                 <X size={18} className="text-[var(--color-text-secondary)]" />
@@ -2211,7 +2330,7 @@ export default function StudentsPage() {
               dir="rtl"
               maxLength={200}
               rows={4}
-              className="w-full border border-input rounded-lg p-3 text-sm bg-[var(--color-surface-0)]"
+              className="w-full border border-[var(--color-border)] rounded-lg p-3 text-sm bg-[var(--color-surface-0)]"
             />
             <p className="text-xs text-[var(--color-text-tertiary)] mt-1 text-end">
               {200 - announcementMessage.length}

@@ -268,7 +268,7 @@ export default function AnalyticsPage() {
               {mrrDelta !== undefined && (
                 <span
                   className={`inline-flex items-center gap-0.5 text-xs font-semibold mt-1 ${
-                    mrrDelta >= 0 ? 'text-green-600' : 'text-red-600'
+                    mrrDelta >= 0 ? 'text-emerald-600' : 'text-red-600'
                   }`}
                 >
                   {mrrDelta >= 0 ? (

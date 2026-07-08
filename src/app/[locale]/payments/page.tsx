@@ -465,16 +465,26 @@ export default function PaymentsPage() {
   return (
     <>
       <div className="min-h-screen w-full bg-[var(--color-surface-0)] animate-fade-in pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
-        <div className="px-4 pt-4 pb-3 max-w-3xl mx-auto w-full flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{tp('title')}</h1>
-            <p className="text-xs text-[var(--color-text-secondary)]">{tp('subtitle')}</p>
+        <div className="px-4 pt-4 pb-3 max-w-3xl mx-auto w-full">
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{tp('title')}</h1>
+          <p className="text-xs text-[var(--color-text-secondary)]">{tp('subtitle')}</p>
+        </div>
+
+        <div className="flex items-center gap-2 px-4 pb-3 max-w-3xl mx-auto w-full">
+          <div className="relative flex-1 min-w-0">
+            <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-[var(--color-text-tertiary)]" />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={tp('searchStudent')}
+              className="w-full ps-9 pe-4 py-3 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
+            />
           </div>
           {canCollectPayment ? (
             <button
               type="button"
               onClick={() => setShowCollectModal(true)}
-              className="bg-teal-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-teal-700 transition shrink-0 btn-press chq-focus"
+              className="bg-teal-600 text-white px-4 py-3 rounded-xl text-sm font-semibold hover:bg-teal-700 transition shrink-0 btn-press chq-focus"
             >
               {tp('collectPayment')}
             </button>
@@ -610,22 +620,6 @@ export default function PaymentsPage() {
                 className="px-3 py-2 rounded-lg text-sm border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)]"
               />
             </label>
-            <div className="relative flex-1 min-w-[160px]">
-              <Search size={15} className="absolute top-1/2 -translate-y-1/2 start-3 text-[var(--color-text-tertiary)]" />
-              <input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={tp('searchStudent')}
-                className="w-full ps-9 pe-4 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={handleExportCSV}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)] text-sm font-semibold hover:bg-[var(--color-surface-2)] hover:border-teal-500/40 shrink-0 btn-press chq-focus self-end ms-auto"
-            >
-              <Download size={14} /> {tCommon('exportCsv')}
-            </button>
           </div>
         </div>
 
@@ -742,6 +736,19 @@ export default function PaymentsPage() {
             })}
             </div>
           )}
+        </div>
+
+        <div className="px-4 pb-8 max-w-3xl mx-auto w-full">
+          <div className="mb-3">
+            <SectionHeader title={tCommon('moreActions')} />
+          </div>
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)] text-sm font-semibold hover:bg-[var(--color-surface-2)] hover:border-teal-500/40 btn-press chq-focus"
+          >
+            <Download size={14} /> {tCommon('exportCsv')}
+          </button>
         </div>
       </div>
 
