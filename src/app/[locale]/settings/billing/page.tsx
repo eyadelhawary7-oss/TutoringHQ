@@ -72,7 +72,6 @@ function planRank(plan: string): number {
 type PricingPlanRow = {
   id?: string;
   plan_key?: string | null;
-  monthly_fee?: number | string | null;
   all_in_price?: number | string | null;
   students_per_week_limit?: number | string | null;
 };
@@ -84,14 +83,13 @@ function rowPlanKey(row: PricingPlanRow): string {
 function pricingForPlan(
   planKey: string,
   rows: PricingPlanRow[],
-): { allIn: number; monthlyFee: number; students: number } {
+): { allIn: number; students: number } {
   const row = rows.find((r) => rowPlanKey(r) === planKey);
   if (row && row.all_in_price != null && Number(row.all_in_price) > 0) {
     const pk = isPlanKey(planKey) ? planKey : 'starter';
     const def = PLANS[pk];
     return {
       allIn: Number(row.all_in_price),
-      monthlyFee: Number(row.monthly_fee ?? def.monthlyListPrice),
       students: Number(row.students_per_week_limit ?? def.weeklyStudentLimit ?? 0),
     };
   }
@@ -99,7 +97,6 @@ function pricingForPlan(
   const p = PLANS[pk];
   return {
     allIn: p.quarterlyAllIn,
-    monthlyFee: p.monthlyListPrice,
     students: p.weeklyStudentLimit ?? 0,
   };
 }

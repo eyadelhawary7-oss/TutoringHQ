@@ -253,7 +253,7 @@ export default function PricingPageClient() {
                   const isPopular = p.landingBadge === 'popular';
                   const isEntry = p.landingBadge === 'entry';
                   const perMonth =
-                    interval === 'annual' ? dyn.annualEffectiveMonthly : dyn.monthlyListPrice;
+                    interval === 'annual' ? dyn.annualEffectiveMonthly : dyn.quarterlyAllIn;
 
                   return (
                     <div

@@ -149,7 +149,7 @@ export async function GET(
       .order('created_at', { ascending: false }),
     supabaseAdmin
       .from('pricing_plans')
-      .select('plan_key, arabic_name, english_name, monthly_fee, all_in_price, weekly_student_limit')
+      .select('plan_key, arabic_name, english_name, all_in_price, weekly_student_limit')
       .eq('is_active', true)
       .neq('plan_key', ['pro', '_plus'].join(''))
       .order('all_in_price', { ascending: true, nullsFirst: false }),

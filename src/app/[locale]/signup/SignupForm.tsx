@@ -90,7 +90,7 @@ function billingPeriodFromUi(period: string): BillingPeriod {
 /** EGP/month headline figure shown on the plan card for the selected period. */
 function getSignupMonthlyDisplay(dyn: DynamicPlanPrice, period: BillingPeriod): number {
   if (period === 'quarterly') return dyn.quarterlyAllIn;
-  if (period === 'monthly') return dyn.monthlyListPrice;
+  if (period === 'monthly') return dyn.quarterlyAllIn;
   return dyn.annualEffectiveMonthly;
 }
 
@@ -104,13 +104,13 @@ function getSignupCycleTotal(dyn: DynamicPlanPrice, period: BillingPeriod): numb
     case 'quarterly':
       return dyn.quarterlyAllIn * 3;
     case 'monthly':
-      return dyn.monthlyListPrice;
+      return dyn.quarterlyAllIn;
     case 'annual':
       // Annual total = monthly × 10 ("2 months free"); annualTotal is computed
       // server-side with the live admin multiplier so display == the amount charged.
       return dyn.annualTotal;
     default:
-      return dyn.monthlyListPrice;
+      return dyn.quarterlyAllIn;
   }
 }
 

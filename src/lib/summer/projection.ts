@@ -65,7 +65,7 @@ export function teacherTierForStudents(activeStudents: number): TeacherPlanKey {
 export interface CenterProjectionOpts {
   /** Flat processing fee EGP (from getProcessingFeeConfig). */
   feeAmount: number;
-  /** Optional dynamic monthly inclusive price per tier (else PLANS[].monthlyListPrice). */
+  /** Optional dynamic monthly inclusive price per tier (else PLANS[].quarterlyAllIn). */
   monthlyByTier?: Partial<Record<SubscriptionPlanKey, number>>;
 }
 
@@ -97,7 +97,7 @@ export function projectCenterFirstInvoice(
   const monthly =
     opts.monthlyByTier?.[tierKey] != null && Number(opts.monthlyByTier[tierKey]) > 0
       ? round2(Number(opts.monthlyByTier[tierKey]))
-      : PLANS[tierKey].monthlyListPrice;
+      : PLANS[tierKey].quarterlyAllIn;
   const applied = applyProcessingFee(monthly, { enabled: fee > 0, amount: fee });
   return {
     segment: 'center',

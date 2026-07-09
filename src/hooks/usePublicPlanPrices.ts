@@ -19,7 +19,6 @@ import {
  * even on first render or when the fetch fails.
  */
 export interface DynamicPlanPrice {
-  monthlyListPrice: number;
   quarterlyAllIn: number;
   annualTotal: number;
   annualEffectiveMonthly: number;
@@ -33,7 +32,6 @@ function buildFallback(): DynamicPlanPriceMap {
     ORDERED_SUBSCRIPTION_PLAN_KEYS.map((k) => [
       k,
       {
-        monthlyListPrice: PLANS[k].monthlyListPrice,
         quarterlyAllIn: PLANS[k].quarterlyAllIn,
         annualTotal: getAnnualChargeRounded(PLANS[k].quarterlyAllIn),
         annualEffectiveMonthly: PLANS[k].annualEffectiveMonthly,
@@ -65,10 +63,6 @@ export function usePublicPlanPrices(): DynamicPlanPriceMap {
             if (!incoming) continue;
             const base = next[k];
             const merged: DynamicPlanPrice = {
-              monthlyListPrice:
-                typeof incoming.monthlyListPrice === 'number' && incoming.monthlyListPrice > 0
-                  ? incoming.monthlyListPrice
-                  : base.monthlyListPrice,
               quarterlyAllIn:
                 typeof incoming.quarterlyAllIn === 'number' && incoming.quarterlyAllIn > 0
                   ? incoming.quarterlyAllIn

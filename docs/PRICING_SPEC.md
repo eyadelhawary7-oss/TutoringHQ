@@ -14,17 +14,15 @@ Per QR card: 60 EGP inclusive → base 52.63, VAT 7.37 (base = 60 / 1.14; `CARD_
 
 ## Plan price table (monthly INCLUSIVE EGP)
 Plan         Monthly    Quarterly/mo    Annual/mo    Cap
-solo          1,149          999             849       50
-nano          2,499        1,999           1,699      120
-starter       5,199        4,499           3,824      200
-pro           9,199        7,999           6,799      500
-business     14,999       12,999          11,049    1,000
-enterprise   21,299       18,499          15,724    2,000
+solo            999          999             833       50
+nano          1,999        1,999           1,666      120
+starter       4,499        4,499           3,749      200
+pro           7,999        7,999           6,666      500
+business     12,999       12,999          10,833    1,000
+enterprise   18,499       18,499          15,416    2,000
 top_centers   CUSTOM       CUSTOM          CUSTOM   2,000+
 
-Quarterly/mo is baseline shown on signup cards. Monthly ≈ Quarterly × 1.15, Annual ≈ Quarterly × 0.85, both rounded to .99 endings (marketing approximations).
-
-Exception: Nano Monthly is intentionally +25% not +15% (incentive for Quarterly commitment). Do NOT "fix" to 2,299.
+Monthly and quarterly bill at the SAME per-month all-in price (`all_in_price`); there is no separate monthly list price. Annual/mo = all_in_price x 10 / 12 (pay 10 months, get 12; "2 months free"), rounded to whole EGP. The former +15% monthly list price (`pricing_plans.monthly_fee`) and the `pricing.interval.monthly_multiplier` config key were removed in 2026-07 when monthly was repriced down to the all-in rate.
 
 Enterprise is fixed-price. Top Centers is the only custom-priced tier; centers.all_in_price is source of truth, code reading top_centers MUST throw + Sentry-warn if NULL.
 

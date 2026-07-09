@@ -29,7 +29,6 @@ import {
 
 type PatchBody = Partial<{
   interval: Partial<{
-    monthlyMultiplier: number;
     annualMultiplier: number;
     annualLabelEn: string;
     annualLabelAr: string;
@@ -120,11 +119,6 @@ export async function PATCH(request: NextRequest) {
   // ── Interval ─────────────────────────────────────────────────────────────
   if (body.interval) {
     const i = body.interval;
-    if (i.monthlyMultiplier !== undefined) {
-      if (!isNum(i.monthlyMultiplier) || i.monthlyMultiplier <= 0 || i.monthlyMultiplier > 5) {
-        errors.push('interval.monthlyMultiplier must be a number between 0 and 5');
-      } else updates.push({ key: 'pricing.interval.monthly_multiplier', value: i.monthlyMultiplier });
-    }
     if (i.annualMultiplier !== undefined) {
       // Annual multiplier = months charged per year (annual total = monthly × this).
       // 10 → "true 2 months free". Allow 1..12.

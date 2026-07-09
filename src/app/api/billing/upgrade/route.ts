@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
 
   const { data: newPriceRow } = await supabaseAdmin
     .from('pricing_plans')
-    .select('all_in_price, plan_key, monthly_fee')
+    .select('all_in_price, plan_key')
     .eq('plan_key', newPlan)
     .eq('is_active', true)
     .maybeSingle();
@@ -150,7 +150,6 @@ export async function POST(request: NextRequest) {
   const newPlanData = (newPriceRow ?? {}) as {
     all_in_price?: number;
     plan_key?: string;
-    monthly_fee?: number;
   };
   const newAllIn = Number(newPlanData.all_in_price ?? 0);
   if (!Number.isFinite(newAllIn) || newAllIn <= 0) {
@@ -171,11 +170,12 @@ export async function POST(request: NextRequest) {
   const newPlanFullPeriodPrice = (() => {
     switch (newBp) {
       case 'monthly':
-        return Number(newPlanData.monthly_fee);
+        // Monthly bills at the same per-month rate as quarterly (all_in_price).
+        return newAllIn;
       case 'annual':
         return getAnnualChargeRounded(Number(newPlanData.all_in_price));
       default:
-        return Number(newPlanData.monthly_fee);
+        return newAllIn;
     }
   })();
 

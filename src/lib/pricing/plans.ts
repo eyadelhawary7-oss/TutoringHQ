@@ -13,7 +13,6 @@ export const SUBSCRIPTION_PLAN_DEFINITIONS = [
     englishName: 'Solo',
     weeklyStudentLimit: 50,
     quarterlyAllIn: 999,
-    monthlyListPrice: 1149,
     annualEffectiveMonthly: 833,
     landingBadge: 'entry' as const,
   },
@@ -23,7 +22,6 @@ export const SUBSCRIPTION_PLAN_DEFINITIONS = [
     englishName: 'Nano',
     weeklyStudentLimit: 120,
     quarterlyAllIn: 1999,
-    monthlyListPrice: 2499,
     annualEffectiveMonthly: 1666,
   },
   {
@@ -32,7 +30,6 @@ export const SUBSCRIPTION_PLAN_DEFINITIONS = [
     englishName: 'Starter',
     weeklyStudentLimit: 200,
     quarterlyAllIn: 4499,
-    monthlyListPrice: 5199,
     annualEffectiveMonthly: 3749,
     landingBadge: 'popular' as const,
   },
@@ -42,7 +39,6 @@ export const SUBSCRIPTION_PLAN_DEFINITIONS = [
     englishName: 'Pro',
     weeklyStudentLimit: 500,
     quarterlyAllIn: 7999,
-    monthlyListPrice: 9199,
     annualEffectiveMonthly: 6666,
   },
   {
@@ -51,7 +47,6 @@ export const SUBSCRIPTION_PLAN_DEFINITIONS = [
     englishName: 'Business',
     weeklyStudentLimit: 1000,
     quarterlyAllIn: 12999,
-    monthlyListPrice: 14999,
     annualEffectiveMonthly: 10833,
   },
   {
@@ -60,7 +55,6 @@ export const SUBSCRIPTION_PLAN_DEFINITIONS = [
     englishName: 'Enterprise',
     weeklyStudentLimit: 2000,
     quarterlyAllIn: 18499,
-    monthlyListPrice: 21299,
     annualEffectiveMonthly: 15416,
     isMegaCenter: true,
   },

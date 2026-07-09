@@ -37,9 +37,9 @@ describe('projectCenterFirstInvoice — monthly subscription + processing fee', 
   it('Solo tier with a 20 EGP fee', () => {
     const p = projectCenterFirstInvoice(40, { feeAmount: 20 });
     expect(p.tierKey).toBe('solo');
-    expect(p.subscriptionInclusive).toBe(PLANS.solo.monthlyListPrice);
+    expect(p.subscriptionInclusive).toBe(PLANS.solo.quarterlyAllIn);
     expect(p.fee).toBe(20);
-    expect(p.total).toBe(PLANS.solo.monthlyListPrice + 20);
+    expect(p.total).toBe(PLANS.solo.quarterlyAllIn + 20);
     expect(p.vatIncluded).toBeGreaterThan(0);
   });
 
@@ -47,7 +47,7 @@ describe('projectCenterFirstInvoice — monthly subscription + processing fee', 
     const p = projectCenterFirstInvoice(300, { feeAmount: 0 });
     expect(p.tierKey).toBe('pro');
     expect(p.fee).toBe(0);
-    expect(p.total).toBe(PLANS.pro.monthlyListPrice);
+    expect(p.total).toBe(PLANS.pro.quarterlyAllIn);
   });
 
   it('honors a dynamic per-tier monthly override', () => {

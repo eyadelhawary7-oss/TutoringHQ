@@ -21,7 +21,7 @@ describe('getImpliedMonthlyMrr', () => {
     ).toBe(3447);
   });
 
-  it('solo monthly: all_in 999 (quarterly-rate baseline) → monthly list-equivalent via pricing math', () => {
+  it('solo monthly: all_in 999 → monthly bills at the all-in per-month rate (999)', () => {
     const implied = getImpliedMonthlyMrr({
       plan: 'solo',
       all_in_price: 999,
@@ -31,7 +31,8 @@ describe('getImpliedMonthlyMrr', () => {
     expect(implied).toBe(
       getImpliedMonthlyMrr(999, 'monthly', 'solo'),
     );
-    expect(implied).toBeGreaterThan(999);
+    // Monthly now bills at the same per-month rate as quarterly (all_in_price).
+    expect(implied).toBe(999);
   });
 
   it('solo annual: uses annual formula / 12', () => {

@@ -1074,12 +1074,11 @@ COLUMN pricing_plans.plan_key ord=2 type=text notnull=true default=∅
 COLUMN pricing_plans.arabic_name ord=3 type=text notnull=true default=∅
 COLUMN pricing_plans.english_name ord=4 type=text notnull=true default=∅
 COLUMN pricing_plans.weekly_student_limit ord=5 type=integer notnull=false default=∅
-COLUMN pricing_plans.monthly_fee ord=6 type=numeric(12,2) notnull=true default=∅
-COLUMN pricing_plans.cost_per_student ord=7 type=numeric(12,2) notnull=true default=∅
-COLUMN pricing_plans.setup_fee ord=8 type=numeric(12,2) notnull=true default=∅
-COLUMN pricing_plans.is_active ord=9 type=boolean notnull=false default=true
-COLUMN pricing_plans.all_in_price ord=10 type=numeric(12,2) notnull=false default=∅
-COLUMN pricing_plans.payg_rate_per_student ord=11 type=numeric(12,2) notnull=false default=∅
+COLUMN pricing_plans.cost_per_student ord=6 type=numeric(12,2) notnull=true default=∅
+COLUMN pricing_plans.setup_fee ord=7 type=numeric(12,2) notnull=true default=∅
+COLUMN pricing_plans.is_active ord=8 type=boolean notnull=false default=true
+COLUMN pricing_plans.all_in_price ord=9 type=numeric(12,2) notnull=false default=∅
+COLUMN pricing_plans.payg_rate_per_student ord=10 type=numeric(12,2) notnull=false default=∅
 COLUMN privacy_requests.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN privacy_requests.full_name ord=2 type=text notnull=true default=∅
 COLUMN privacy_requests.phone ord=3 type=text notnull=true default=∅
@@ -2132,7 +2131,7 @@ CONSTRAINT plan_requests.plan_requests_status_check type=c def=CHECK ((status = 
 CONSTRAINT platform_config.platform_config_key_key type=u def=UNIQUE (key)
 CONSTRAINT platform_config.platform_config_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT platform_config.platform_config_updated_by_fkey type=f def=FOREIGN KEY (updated_by) REFERENCES auth.users(id)
-CONSTRAINT pricing_plans.pricing_plans_money_nonneg type=c def=CHECK ((((all_in_price IS NULL) OR (all_in_price >= (0)::numeric)) AND (cost_per_student >= (0)::numeric) AND (monthly_fee >= (0)::numeric) AND ((payg_rate_per_student IS NULL) OR (payg_rate_per_student >= (0)::numeric)) AND (setup_fee >= (0)::numeric)))
+CONSTRAINT pricing_plans.pricing_plans_money_nonneg type=c def=CHECK ((((all_in_price IS NULL) OR (all_in_price >= (0)::numeric)) AND (cost_per_student >= (0)::numeric) AND ((payg_rate_per_student IS NULL) OR (payg_rate_per_student >= (0)::numeric)) AND (setup_fee >= (0)::numeric)))
 CONSTRAINT pricing_plans.pricing_plans_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT pricing_plans.pricing_plans_plan_key_key type=u def=UNIQUE (plan_key)
 CONSTRAINT privacy_requests.privacy_requests_handled_by_fkey type=f def=FOREIGN KEY (handled_by) REFERENCES auth.users(id) ON DELETE SET NULL

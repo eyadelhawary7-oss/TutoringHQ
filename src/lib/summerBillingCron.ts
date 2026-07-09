@@ -237,7 +237,7 @@ function centerBase(raw: Row): number {
   if (Number.isFinite(ba) && ba > 0) return ba;
   const planKey = String(raw.plan || 'starter').toLowerCase();
   const pk: PlanKey = isPlanKey(planKey) && planKey !== 'top_centers' ? (planKey as PlanKey) : 'starter';
-  return PLANS[pk].monthlyListPrice;
+  return PLANS[pk].quarterlyAllIn;
 }
 
 // ── Teachers ────────────────────────────────────────────────────────────────
