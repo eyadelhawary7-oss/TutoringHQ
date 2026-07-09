@@ -1920,7 +1920,7 @@ CONSTRAINT centers.centers_subscription_billing_period_check type=c def=CHECK ((
 CONSTRAINT centers.centers_subscription_status_check type=c def=CHECK ((subscription_status = ANY (ARRAY['active'::text, 'suspended'::text, 'pending'::text, 'cancelled'::text])))
 CONSTRAINT centers.centers_summer_first_invoice_id_fkey type=f def=FOREIGN KEY (summer_first_invoice_id) REFERENCES invoices(id) ON DELETE RESTRICT
 CONSTRAINT centers.centers_summer_status_check type=c def=CHECK (((summer_status IS NULL) OR (summer_status = ANY (ARRAY['enrolled'::text, 'invoiced'::text, 'paid'::text]))))
-CONSTRAINT centers.chk_billing_amount_positive type=c def=CHECK (((billing_type = 'payg'::text) OR (status = ANY (ARRAY['pending'::text, 'rejected'::text, 'cancelled'::text])) OR (billing_amount > (0)::numeric)))
+CONSTRAINT centers.chk_billing_amount_positive type=c def=CHECK (((status = ANY (ARRAY['pending'::text, 'rejected'::text, 'cancelled'::text])) OR (billing_amount > (0)::numeric)))
 CONSTRAINT centers.chk_top_centers_pack_minimum type=c def=CHECK (((plan <> 'top_centers'::text) OR (parent_pack_enabled = false) OR (pack_custom_invoice_minimum > (0)::numeric)))
 CONSTRAINT ceo_action_queue.ceo_action_queue_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT ceo_action_queue.ceo_action_queue_lead_id_fkey type=f def=FOREIGN KEY (lead_id) REFERENCES sales_leads(id) ON DELETE CASCADE
