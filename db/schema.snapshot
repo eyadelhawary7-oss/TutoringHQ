@@ -3021,7 +3021,6 @@ FUNCTION compute_lesson_money(p_lesson_fee numeric, p_method text) returns=TABLE
 FUNCTION compute_student_count_tier() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public bodymd5=45217cd541998b61275d89b035cb7a32
 FUNCTION confirm_group_slot(p_slot_proposal_id uuid, p_center_id uuid, p_actor_user_id uuid, p_room_id uuid) returns=schedule_slots lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=faca62f38594060871dec27063f9e7ab
 FUNCTION create_enrollment(p_group_id uuid, p_student_id uuid, p_payer text, p_actor_id uuid, p_source text) returns=TABLE(enrollment_id uuid, status text) lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=2f63e39352d36385278126eb250db35b
-FUNCTION create_referral_reward() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public bodymd5=d9b82a36e0923d6af148d4a96b2adb8b
 FUNCTION decline_group_slot(p_slot_proposal_id uuid, p_center_id uuid, p_actor_user_id uuid) returns=group_slot_proposals lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=84b7635c91410fe7c00b6608a95070b8
 FUNCTION deduct_blast_balance_rpc(p_center_id uuid, p_blast_type text, p_parent_count integer, p_message_body text) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=1d429db7588a9f19ce53b6a151409d3b
 FUNCTION deduct_blast_credits(p_user_id uuid, p_amount numeric) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=7008c1017c5488d3ad15e4b25b58c8b6
@@ -6002,10 +6001,6 @@ ROUTINE_GRANT compute_student_count_tier grantee=authenticated priv=EXECUTE gran
 ROUTINE_GRANT compute_student_count_tier grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT confirm_group_slot grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT create_enrollment grantee=service_role priv=EXECUTE grantable=NO
-ROUTINE_GRANT create_referral_reward grantee=PUBLIC priv=EXECUTE grantable=NO
-ROUTINE_GRANT create_referral_reward grantee=anon priv=EXECUTE grantable=NO
-ROUTINE_GRANT create_referral_reward grantee=authenticated priv=EXECUTE grantable=NO
-ROUTINE_GRANT create_referral_reward grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT decline_group_slot grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT deduct_blast_balance_rpc grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT deduct_blast_credits grantee=service_role priv=EXECUTE grantable=NO
