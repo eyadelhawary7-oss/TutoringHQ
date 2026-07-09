@@ -175,7 +175,7 @@ async function resolveBillingForAutoApprove(
   const planKey = c.plan ?? 'starter';
   const { data: priceByKey } = await supabase
     .from('pricing_plans')
-    .select('all_in_price, monthly_fee, plan_key, id')
+    .select('all_in_price, plan_key, id')
     .eq('plan_key', planKey)
     .maybeSingle();
 
@@ -183,14 +183,13 @@ async function resolveBillingForAutoApprove(
   if (!priceRow) {
     const { data: byId } = await supabase
       .from('pricing_plans')
-      .select('all_in_price, monthly_fee, plan_key, id')
+      .select('all_in_price, plan_key, id')
       .eq('id', planKey)
       .maybeSingle();
     priceRow = byId ?? null;
   }
 
   let allIn = Number((priceRow as { all_in_price?: number | null } | null)?.all_in_price);
-  const monthlyFee = Number((priceRow as { monthly_fee?: number | null } | null)?.monthly_fee);
 
   if (!Number.isFinite(allIn) || allIn <= 0) {
     const custom = Number(c.all_in_price);
@@ -199,7 +198,7 @@ async function resolveBillingForAutoApprove(
     }
   }
 
-  if (!Number.isFinite(allIn) || allIn <= 0 || !Number.isFinite(monthlyFee) || monthlyFee <= 0) {
+  if (!Number.isFinite(allIn) || allIn <= 0) {
     console.info(`[signupInvoiceAutoApprove] Cannot auto-approve: invalid pricing for plan ${planKey}`);
     try {
       await createAction(supabase, {
@@ -698,7 +697,7 @@ export async function processSignupAutoApprovalAfterPaymobSuccess(
   const planKey = c.plan ?? 'starter';
   const { data: priceByKey } = await supabase
     .from('pricing_plans')
-    .select('all_in_price, monthly_fee, plan_key, id')
+    .select('all_in_price, plan_key, id')
     .eq('plan_key', planKey)
     .maybeSingle();
 
@@ -706,14 +705,13 @@ export async function processSignupAutoApprovalAfterPaymobSuccess(
   if (!priceRow) {
     const { data: byId } = await supabase
       .from('pricing_plans')
-      .select('all_in_price, monthly_fee, plan_key, id')
+      .select('all_in_price, plan_key, id')
       .eq('id', planKey)
       .maybeSingle();
     priceRow = byId ?? null;
   }
 
   let allIn = Number((priceRow as { all_in_price?: number | null } | null)?.all_in_price);
-  const monthlyFee = Number((priceRow as { monthly_fee?: number | null } | null)?.monthly_fee);
 
   if (!Number.isFinite(allIn) || allIn <= 0) {
     const custom = Number(c.all_in_price);
@@ -722,7 +720,7 @@ export async function processSignupAutoApprovalAfterPaymobSuccess(
     }
   }
 
-  if (!Number.isFinite(allIn) || allIn <= 0 || !Number.isFinite(monthlyFee) || monthlyFee <= 0) {
+  if (!Number.isFinite(allIn) || allIn <= 0) {
     console.info(`[signupAutoApprove] Cannot auto-approve: invalid pricing for plan ${planKey}`);
     try {
       await createAction(supabase, {

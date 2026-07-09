@@ -43,7 +43,6 @@ type PlanRow = {
   arabic_name: string;
   english_name: string;
   weekly_student_limit: number;
-  monthly_fee: number;
   cost_per_student: number;
   setup_fee: number;
   is_active: boolean;
@@ -52,7 +51,6 @@ type PlanRow = {
 
 type PlanDraft = {
   weekly_student_limit: string;
-  monthly_fee: string;
   all_in_price: string;
   is_active: boolean;
 };
@@ -198,7 +196,6 @@ export default function AdminPricingPage() {
     for (const p of list) {
       next[p.plan_key] = {
         weekly_student_limit: String(p.weekly_student_limit ?? ''),
-        monthly_fee: String(p.monthly_fee ?? ''),
         all_in_price: String(p.all_in_price ?? ''),
         is_active: p.is_active !== false,
       };
@@ -325,10 +322,9 @@ export default function AdminPricingPage() {
   const savePlan = async (planKey: string) => {
     const d = drafts[planKey];
     if (!d) return;
-    const monthly_fee = parseFloat(d.monthly_fee);
     const all_in_price = parseFloat(d.all_in_price);
     const weekly_student_limit = Math.round(parseFloat(d.weekly_student_limit));
-    if (!Number.isFinite(monthly_fee) || monthly_fee <= 0 || !Number.isFinite(all_in_price) || all_in_price <= 0) {
+    if (!Number.isFinite(all_in_price) || all_in_price <= 0) {
       toast.error(t('pricingValidationPositive'));
       return;
     }
@@ -344,7 +340,6 @@ export default function AdminPricingPage() {
         method: 'PATCH',
         headers,
         body: JSON.stringify({
-          monthly_fee,
           all_in_price,
           is_active: d.is_active,
           weekly_student_limit,
@@ -362,7 +357,6 @@ export default function AdminPricingPage() {
           ...prev,
           [planKey]: {
             weekly_student_limit: String(plan.weekly_student_limit ?? ''),
-            monthly_fee: String(plan.monthly_fee ?? ''),
             all_in_price: String(plan.all_in_price ?? ''),
             is_active: plan.is_active !== false,
           },
@@ -480,7 +474,6 @@ export default function AdminPricingPage() {
                       <tr className="border-b border-[var(--color-border-subtle)]">
                         <th className="text-start p-3 text-xs font-medium text-[var(--color-text-muted)]">{t('pricingPlanName')}</th>
                         <th className="text-start p-3 text-xs font-medium text-[var(--color-text-muted)]">{t('pricingStudentLimit')}</th>
-                        <th className="text-start p-3 text-xs font-medium text-[var(--color-text-muted)]">{t('pricingMonthlyList')}</th>
                         <th className="text-start p-3 text-xs font-medium text-[var(--color-text-muted)]">{t('pricingQuarterlyAllIn')}</th>
                         <th className="text-start p-3 text-xs font-medium text-[var(--color-text-muted)]">{t('pricingAnnualDerived')}</th>
                         <th className="text-start p-3 text-xs font-medium text-[var(--color-text-muted)]">{t('pricingMonthlyPremiumDerived')}</th>
@@ -511,16 +504,6 @@ export default function AdminPricingPage() {
                                 className="w-full min-w-[4.5rem] rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-2 py-1.5"
                                 value={d.weekly_student_limit}
                                 onChange={(e) => updateDraft(p.plan_key, { weekly_student_limit: e.target.value })}
-                              />
-                            </td>
-                            <td className="p-2">
-                              <input
-                                type="number"
-                                min={0}
-                                step="0.01"
-                                className="w-full min-w-[5rem] rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-2 py-1.5"
-                                value={d.monthly_fee}
-                                onChange={(e) => updateDraft(p.plan_key, { monthly_fee: e.target.value })}
                               />
                             </td>
                             <td className="p-2">
@@ -637,30 +620,6 @@ export default function AdminPricingPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-                          {t('pricingMonthlyPremiumPct')}
-                        </label>
-                        <input
-                          type="number"
-                          min={0}
-                          step="0.5"
-                          className="w-full max-w-xs rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2"
-                          value={Math.round((pricingCfgDraft.interval.monthlyMultiplier - 1) * 1000) / 10}
-                          onChange={(e) => {
-                            const pct = parseFloat(e.target.value);
-                            if (!Number.isFinite(pct)) return;
-                            setPricingCfgDraft((d) =>
-                              d
-                                ? {
-                                    ...d,
-                                    interval: { ...d.interval, monthlyMultiplier: 1 + pct / 100 },
-                                  }
-                                : d,
-                            );
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
                           {t('pricingAnnualMonths')}
                         </label>
                         <input
@@ -729,10 +688,6 @@ export default function AdminPricingPage() {
                     </div>
                     <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] px-3 py-2 text-xs">
                       <span className="text-[var(--color-text-secondary)]">{t('pricingPreview')}:</span>
-                      <span className="font-semibold text-amber-500">
-                        +{formatNumber(Math.round((pricingCfgDraft.interval.monthlyMultiplier - 1) * 1000) / 10, locale)}%
-                      </span>
-                      <span className="text-[var(--color-text-secondary)]">·</span>
                       <span className="rounded-full bg-teal-600/20 px-2 py-0.5 text-teal-400">
                         {locale === 'ar'
                           ? pricingCfgDraft.interval.annualLabelAr

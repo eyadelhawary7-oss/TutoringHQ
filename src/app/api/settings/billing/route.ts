@@ -3,37 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { requirePermission } from '@/lib/centerPermissions';
-import {
-  getPlanPrice,
-  normalizeBillingPeriod,
-  ORDERED_SUBSCRIPTION_PLAN_KEYS,
-  type BillingPeriod,
-  type PlanKey,
-} from '@/lib/pricing';
+import { normalizeBillingPeriod } from '@/lib/pricing';
 import { getAnnouncementCap } from '@/lib/parentPack';
 import { parseBodyWithLimit } from '@/lib/validate';
-
-const MONTHLY_MULTIPLIER = 4.333;
-
-/** Flat rate per bracket: entire student count uses the rate of the bracket it falls into. */
-function getBracketRate(students: number): number {
-  if (students <= 50) return 4;
-  if (students <= 75) return 4;
-  if (students <= 150) return 3;
-  if (students <= 500) return 2.5;
-  if (students <= 1000) return 2;
-  if (students <= 2000) return 2;
-  return 1.75;
-}
-
-function calculatePaygCost(studentsPerWeek: number) {
-  const rate = getBracketRate(studentsPerWeek);
-  const weeklyCost = studentsPerWeek * rate;
-  const monthly = Math.round(weeklyCost * MONTHLY_MULTIPLIER);
-  const effectiveRate = rate;
-  const tiers = studentsPerWeek > 0 ? [{ students: studentsPerWeek, rate, subtotal: weeklyCost }] : [];
-  return { weekly: weeklyCost, monthly, effectiveRate, tiers };
-}
 
 function getMonthBounds() {
   const now = new Date();
@@ -86,12 +58,6 @@ export async function GET(request: NextRequest) {
       }
     } catch { /* pricing_plans query failed, using empty */ }
 
-    let paygRates: unknown[] = [];
-    try {
-      const { data: paygData } = await auth.supabaseAdmin.from('payg_rates').select('*').order('sort_order', { ascending: true });
-      if (paygData) paygRates = paygData;
-    } catch { /* payg_rates query failed, using empty */ }
-
     const { start: monthStart, end: monthEnd } = getMonthBounds();
 
     const { data: scans } = await auth.supabaseAdmin
@@ -103,55 +69,6 @@ export async function GET(request: NextRequest) {
 
     const totalCheckins = scans?.length ?? 0;
     const uniqueStudents = new Set((scans || []).map((s: { student_id: string }) => s.student_id));
-    const weeklyAverage = Math.round((uniqueStudents.size / MONTHLY_MULTIPLIER) * 100) / 100;
-    const paygEstimate = calculatePaygCost(weeklyAverage);
-
-    // This week's unique students (for PAYG centers)
-    const now = new Date();
-    const weekStart = new Date(now);
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-    weekStart.setHours(0, 0, 0, 0);
-    const weekStartStr = weekStart.toISOString().slice(0, 10);
-    const weekEndStr = now.toISOString().slice(0, 10);
-    const { data: thisWeekScans } = await auth.supabaseAdmin
-      .from('attendance_scans')
-      .select('student_id')
-      .eq('center_id', auth.centerId)
-      .gte('scanned_at', `${weekStartStr}T00:00:00`)
-      .lte('scanned_at', `${weekEndStr}T23:59:59`);
-    const thisWeekUnique = new Set((thisWeekScans || []).map((s: { student_id: string }) => s.student_id)).size;
-    const thisWeekPayg = calculatePaygCost(thisWeekUnique);
-
-    // Last 4 weeks PAYG charges from payg_weekly_charges
-    let paygWeeklyCharges: { week_start_date: string; week_end_date: string; student_count: number; total_charge: number; paid: boolean }[] = [];
-    try {
-      const fourWeeksAgo = new Date(now);
-      fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
-      const { data: charges } = await auth.supabaseAdmin
-        .from('payg_weekly_charges')
-        .select('week_start_date, week_end_date, student_count, total_charge, paid')
-        .eq('center_id', auth.centerId)
-        .gte('week_start_date', fourWeeksAgo.toISOString().slice(0, 10))
-        .order('week_start_date', { ascending: false })
-        .limit(4);
-      paygWeeklyCharges = (charges || []) as typeof paygWeeklyCharges;
-    } catch {
-      // table may not exist
-    }
-
-    const fixedPlanComparison = { plan: '', price: 0, savings: 0 };
-    if (thisWeekPayg.monthly > 0) {
-      const order: PlanKey[] = [...ORDERED_SUBSCRIPTION_PLAN_KEYS];
-      for (const p of order) {
-        const price = getPlanPrice(p, 'monthly' as BillingPeriod);
-        if (price > 0 && price < thisWeekPayg.monthly) {
-          fixedPlanComparison.plan = p;
-          fixedPlanComparison.price = price;
-          fixedPlanComparison.savings = thisWeekPayg.monthly - price;
-          break;
-        }
-      }
-    }
 
     let invoices: unknown[] = [];
     try {
@@ -224,23 +141,12 @@ export async function GET(request: NextRequest) {
       pending_billing_type: (center as { pending_billing_type?: string }).pending_billing_type,
       center_name: (center as { name?: string }).name,
       plans: plans || [],
-      payg_rates: paygRates || [],
       current_plan_details: currentPlanDetails,
       invoices: invoices || [],
       current_usage: {
         total_checkins: totalCheckins,
         unique_students: uniqueStudents.size,
-        weekly_average: weeklyAverage,
-        estimated_bill: paygEstimate.monthly,
       },
-      payg_this_week: {
-        students_scanned: thisWeekUnique,
-        weekly_cost: thisWeekPayg.weekly,
-        monthly_estimate: thisWeekPayg.monthly,
-        rate_per_student: thisWeekPayg.effectiveRate,
-      },
-      payg_weekly_charges: paygWeeklyCharges,
-      payg_fixed_plan_savings: fixedPlanComparison,
       parent_pack_active_parents: parentPackActiveParents,
       announcement_balance: announcementBalanceNum,
       announcement_cap: announcementCap,

@@ -41,7 +41,6 @@ export type BannerStyle = 'promo' | 'info' | 'warning' | 'success';
 export const BANNER_STYLES: readonly BannerStyle[] = ['promo', 'info', 'warning', 'success'];
 
 export interface IntervalConfig {
-  monthlyMultiplier: number;
   annualMultiplier: number;
   annualLabelEn: string;
   annualLabelAr: string;
@@ -98,7 +97,6 @@ export interface PricingConfigSnapshot {
 }
 
 const INTERVAL_DEFAULTS: IntervalConfig = {
-  monthlyMultiplier: 1.15,
   // Annual = "true 2 months free": annual total = monthly all-in × annualMultiplier.
   // 10 means pay for 10 months, get 12. Per-month figure = annual total ÷ 12.
   annualMultiplier: 10,
@@ -202,7 +200,6 @@ function asStringArray(value: unknown, fallback: string[]): string[] {
 
 /** Pricing-related platform_config keys (only ones this module owns). */
 export const PRICING_CONFIG_KEYS = [
-  'pricing.interval.monthly_multiplier',
   'pricing.interval.annual_multiplier',
   'pricing.interval.annual_label_en',
   'pricing.interval.annual_label_ar',
@@ -259,13 +256,11 @@ async function readKeys(keys: readonly string[]): Promise<Record<string, unknown
 
 export async function getIntervalConfig(): Promise<IntervalConfig> {
   const rows = await readKeys([
-    'pricing.interval.monthly_multiplier',
     'pricing.interval.annual_multiplier',
     'pricing.interval.annual_label_en',
     'pricing.interval.annual_label_ar',
   ]);
   return {
-    monthlyMultiplier: num(rows['pricing.interval.monthly_multiplier'], INTERVAL_DEFAULTS.monthlyMultiplier),
     annualMultiplier: num(rows['pricing.interval.annual_multiplier'], INTERVAL_DEFAULTS.annualMultiplier),
     annualLabelEn: str(rows['pricing.interval.annual_label_en'], INTERVAL_DEFAULTS.annualLabelEn),
     annualLabelAr: str(rows['pricing.interval.annual_label_ar'], INTERVAL_DEFAULTS.annualLabelAr),
@@ -389,8 +384,8 @@ export async function getPlanPrices(): Promise<Record<SubscriptionPlanKey, numbe
 /**
  * Per-plan display prices for visitor / signup / billing UI surfaces.
  *
- * - `monthlyListPrice` - `pricing_plans.monthly_fee` (fallback `PLANS[k].monthlyListPrice`).
  * - `quarterlyAllIn` - `pricing_plans.all_in_price` (fallback `PLANS[k].quarterlyAllIn`).
+ *   This is also the monthly price: monthly and quarterly bill at the same per-month rate.
  * - `annualTotal` - full-year charge = quarterlyAllIn × `pricing.interval.annual_multiplier`
  *   (=10 → "true 2 months free"). This is the number CHARGED at signup, so display and
  *   charge stay identical.
@@ -400,7 +395,6 @@ export async function getPlanPrices(): Promise<Record<SubscriptionPlanKey, numbe
  * Top Centers is excluded (custom-priced).
  */
 export interface PublicPlanPrice {
-  monthlyListPrice: number;
   quarterlyAllIn: number;
   annualTotal: number;
   annualEffectiveMonthly: number;
@@ -412,7 +406,6 @@ export async function getPublicPlanPrices(): Promise<Record<SubscriptionPlanKey,
   const interval = await getIntervalConfig();
 
   const fallbackFor = (k: SubscriptionPlanKey): PublicPlanPrice => ({
-    monthlyListPrice: PLANS[k].monthlyListPrice,
     quarterlyAllIn: PLANS[k].quarterlyAllIn,
     annualTotal: getAnnualChargeRounded(PLANS[k].quarterlyAllIn, interval.annualMultiplier),
     annualEffectiveMonthly: getAnnualMonthlyFromBase(
@@ -429,7 +422,7 @@ export async function getPublicPlanPrices(): Promise<Record<SubscriptionPlanKey,
 
   const { data } = await client
     .from('pricing_plans')
-    .select('plan_key, monthly_fee, all_in_price, weekly_student_limit, is_active')
+    .select('plan_key, all_in_price, weekly_student_limit, is_active')
     .in('plan_key', ORDERED_SUBSCRIPTION_PLAN_KEYS as unknown as string[]);
 
   const out: Record<SubscriptionPlanKey, PublicPlanPrice> = { ...fallback };
@@ -438,7 +431,6 @@ export async function getPublicPlanPrices(): Promise<Record<SubscriptionPlanKey,
     if (!(key in fallback)) continue;
     const fb = fallback[key];
     const quarterlyAllIn = num((row as { all_in_price: unknown }).all_in_price, fb.quarterlyAllIn);
-    const monthlyListPrice = num((row as { monthly_fee: unknown }).monthly_fee, fb.monthlyListPrice);
     const limitRaw = (row as { weekly_student_limit: unknown }).weekly_student_limit;
     const weeklyStudentLimit =
       typeof limitRaw === 'number' && Number.isFinite(limitRaw) && limitRaw > 0
@@ -451,7 +443,6 @@ export async function getPublicPlanPrices(): Promise<Record<SubscriptionPlanKey,
       interval.annualMultiplier,
     );
     out[key] = {
-      monthlyListPrice: monthlyListPrice > 0 ? monthlyListPrice : fb.monthlyListPrice,
       quarterlyAllIn: quarterlyAllIn > 0 ? quarterlyAllIn : fb.quarterlyAllIn,
       annualTotal: annualTotal > 0 ? annualTotal : fb.annualTotal,
       annualEffectiveMonthly:

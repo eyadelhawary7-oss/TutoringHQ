@@ -8,7 +8,6 @@ import { pauseCommissionClocks } from '@/lib/commissions';
 import { todayISO } from '@/lib/parentPack';
 import { addMonthsToDateStr } from '@/lib/subscriptionAnchor';
 import { sendChqRenewalOverdueTemplate } from '@/lib/centerNotify';
-import { isPaygCenter } from '@/lib/billingEngine';
 import { getProcessingFeeConfig, getIntervalConfig } from '@/lib/pricingConfig';
 import { applyProcessingFee } from '@/lib/processingFee';
 import { logBillingEvent } from '@/lib/billingAudit';
@@ -48,9 +47,6 @@ function filterCentersWithPaymentDue<
   const raw = rows ?? [];
   const validCenters: T[] = [];
   for (const center of raw) {
-    if (isPaygCenter(center)) {
-      continue;
-    }
     if (!center.next_payment_due) {
       console.warn(
         `[subscriptionBillingCron] Skipping center ${center.id}`,
@@ -144,9 +140,7 @@ export async function runSubscriptionBillingCron(
     .in('status', ['active', 'pending_cancellation'])
     .not('status', 'in', '(cancelled,rejected)')
     .not('subscription_status', 'in', '(cancelled)')
-    .not('next_payment_due', 'is', null)
-    .or('billing_type.is.null,billing_type.neq.payg')
-    .or('pricing_type.is.null,pricing_type.neq.payg');
+    .not('next_payment_due', 'is', null);
 
   if (q7err) {
     console.error('[subscriptionBillingCron] dueIn7:', q7err);
@@ -294,9 +288,7 @@ export async function runSubscriptionBillingCron(
     .not('status', 'in', '(cancelled,rejected)')
     .not('subscription_status', 'in', '(cancelled)')
     .neq('billing_status', 'paid')
-    .not('next_payment_due', 'is', null)
-    .or('billing_type.is.null,billing_type.neq.payg')
-    .or('pricing_type.is.null,pricing_type.neq.payg');
+    .not('next_payment_due', 'is', null);
 
   if (p3err) {
     console.error('[subscriptionBillingCron] day+3:', p3err);
@@ -363,9 +355,7 @@ export async function runSubscriptionBillingCron(
     .not('status', 'in', '(cancelled,rejected)')
     .not('subscription_status', 'in', '(cancelled)')
     .neq('billing_status', 'paid')
-    .not('next_payment_due', 'is', null)
-    .or('billing_type.is.null,billing_type.neq.payg')
-    .or('pricing_type.is.null,pricing_type.neq.payg');
+    .not('next_payment_due', 'is', null);
 
   if (p7err) {
     console.error('[subscriptionBillingCron] day+7:', p7err);

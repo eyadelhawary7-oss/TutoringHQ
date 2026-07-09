@@ -1,9 +1,9 @@
 /**
  * Plan features, limits, and feature-gating utilities.
- * Plans: nano | starter | pro | business | enterprise | top_centers | payg
+ * Plans: solo | nano | starter | pro | business | enterprise | top_centers
  */
 
-export const PLAN_ORDER = ['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers', 'payg'] as const;
+export const PLAN_ORDER = ['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
 export type PlanId = (typeof PLAN_ORDER)[number];
 
 /** Legacy merged tier; treat like business for limits/ordering. */
@@ -21,7 +21,6 @@ export const PLAN_STUDENT_LIMITS: Record<string, number> = {
   business: 1000,
   enterprise: 2000,
   top_centers: 999999,
-  payg: 999999,
 };
 
 export const PLAN_TEAM_LIMITS: Record<string, number> = {
@@ -32,7 +31,6 @@ export const PLAN_TEAM_LIMITS: Record<string, number> = {
   business: 10,
   enterprise: 20,
   top_centers: 999999,
-  payg: 5, // PAYG default
 };
 
 /** Plan level for comparison (higher = more features) */
@@ -44,7 +42,6 @@ const PLAN_LEVEL: Record<string, number> = {
   business: 5,
   enterprise: 6,
   top_centers: 7,
-  payg: 4, // PAYG treated as pro-level for features
 };
 
 /** Minimum plan required for each feature */

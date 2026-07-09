@@ -22,7 +22,6 @@ function monthlyEquivFromPricingPlanRow(
   pricingRow: { all_in_price?: number | null } | null | undefined,
 ): number {
   const k = (plan || 'starter').toLowerCase();
-  if (k === 'payg') return 0;
   if (!isPlanKey(k) || k === 'top_centers') return 0;
   const pk = k as PlanKey;
   const base =
@@ -295,7 +294,6 @@ export async function PUT(request: Request) {
       business: 'Business',
       enterprise: 'Enterprise',
       top_centers: 'Top Centers',
-      payg: 'PAYG',
     };
     const requestedLabel = PLAN_LABELS[rp] || rp;
     const phone = ((centerRow as { phone?: string }).phone || '').trim();

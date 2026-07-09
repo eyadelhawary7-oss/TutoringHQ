@@ -143,8 +143,7 @@ export async function GET(request: NextRequest) {
     nextPaymentDue: center?.next_payment_due ?? null,
     billingAmount: center?.billing_amount ?? null,
     processingFee: feeAmount,
-    subscriptionActive:
-      !!center && center.status !== 'cancelled' && center.billing_type !== 'payg',
+    subscriptionActive: !!center && center.status !== 'cancelled',
   });
 
   return NextResponse.json({ unpaid, paid, upcoming });

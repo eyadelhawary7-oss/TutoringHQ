@@ -38,10 +38,8 @@ export interface PlanConfig {
   englishName: string;
   /** Max students/week for this tier (top_centers = custom / unlimited). */
   weeklyStudentLimit: number | null;
-  /** Same as DB all_in_price - monthly rate on quarterly billing. */
+  /** Same as DB all_in_price - the per-month rate, charged for monthly AND quarterly. */
   quarterlyAllIn: number;
-  /** Listed price if customer pays monthly (+15% tier; nano uses exact list). */
-  monthlyListPrice: number;
   /** Whole EGP/month equivalent on annual billing (PRICING_SPEC). */
   annualEffectiveMonthly: number;
   /** Marketing badge on public pricing grid only. */
@@ -57,7 +55,6 @@ const PLANS_FROM_DEFS = Object.fromEntries(
       englishName: d.englishName,
       weeklyStudentLimit: d.weeklyStudentLimit,
       quarterlyAllIn: d.quarterlyAllIn,
-      monthlyListPrice: d.monthlyListPrice,
       annualEffectiveMonthly: d.annualEffectiveMonthly,
     };
     if ('landingBadge' in d && d.landingBadge) cfg.landingBadge = d.landingBadge;
@@ -74,7 +71,6 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     englishName: 'Top Centers',
     weeklyStudentLimit: null,
     quarterlyAllIn: 0,
-    monthlyListPrice: 0,
     annualEffectiveMonthly: 0,
     isMegaCenter: true,
   },
@@ -116,9 +112,10 @@ export function getAnnualMonthlyFromBase(
 const WEEKS_PER_QUARTER = 13;
 
 /**
- * One billing-cycle charge from all_in_price (monthly rate on quarterly plan) and period.
+ * One billing-cycle charge from all_in_price (per-month rate) and period.
+ * Monthly and quarterly bill at the same per-month rate; annual applies the multiplier.
  * @param allInPerMonth - centers.all_in_price or PLANS[].quarterlyAllIn
- * @param planKey - required for correct monthly list price when scaling custom all_in
+ * @param planKey - accepted for signature compatibility; no longer affects the amount
  */
 export function getChargeFromQuarterlyAllIn(
   allInPerMonth: number,
@@ -128,19 +125,13 @@ export function getChargeFromQuarterlyAllIn(
 ): number {
   if (allInPerMonth <= 0) return 0;
   const p = normalizeBillingPeriod(period);
-  const pk =
-    planKey && isPlanKey(planKey) && planKey !== 'top_centers' ? planKey : null;
-  const def = pk ? PLANS[pk] : null;
-  const defaultAllIn = def?.quarterlyAllIn ?? allInPerMonth;
-  const scale = defaultAllIn > 0 ? allInPerMonth / defaultAllIn : 1;
 
   switch (p) {
     case 'quarterly':
       return allInPerMonth * 3;
-    case 'monthly': {
-      const list = def?.monthlyListPrice ?? allInPerMonth * 1.15;
-      return Math.max(1, list * scale);
-    }
+    case 'monthly':
+      // Monthly is charged at the same per-month rate as quarterly (all_in_price).
+      return Math.max(1, allInPerMonth);
     case 'annual':
       return getAnnualChargeRounded(allInPerMonth, annualMultiplier);
     default:
@@ -183,7 +174,7 @@ function isStatusEligibleForSubscriptionMrr(status: string | null | undefined): 
 /**
  * Same exclusions as finance admin `isActive`: these centres do not contribute to subscription MRR.
  * Test centres (`is_test === true`) are excluded before status is considered.
- * PAYG is excluded via `billing_type` in `getImpliedMonthlyMrr`; pending/trial centres still count if paying (unless status excludes).
+ * Pending/trial centres still count if paying (unless status excludes).
  *
  * Pass a **string** (status only) for legacy call sites where `is_test` is unknown - unknown is treated as non-test.
  * Prefer a **row object** `{ status, is_test }` when available so test centres are excluded.
@@ -248,7 +239,6 @@ function computeImpliedMonthlyMrrFromBase(
 }
 
 function getImpliedMonthlyMrrFromCenterFields(row: ImpliedMrrCenterFields): number {
-  if ((row.billing_type || 'fixed') === 'payg') return 0;
   if (!isCenterEligibleForSubscriptionMrr(row)) return 0;
 
   const bp = row.billing_period || 'quarterly';
@@ -269,7 +259,7 @@ export function getImpliedMonthlyMrr(
   period: BillingPeriod,
   planKey?: PlanKey,
 ): number;
-/** Canonical path: derive implied MRR from a centre row (billing period, plan tier, PAYG / inactive exclusions). */
+/** Canonical path: derive implied MRR from a centre row (billing period, plan tier, inactive exclusions). */
 export function getImpliedMonthlyMrr(center: ImpliedMrrCenterFields): number;
 export function getImpliedMonthlyMrr(
   a: number | ImpliedMrrCenterFields,
@@ -294,7 +284,7 @@ export function getSignupDisplayMonthlyPrice(
   if (!plan || planKey === 'top_centers') return 0;
   const p = normalizeBillingPeriod(period);
   if (p === 'quarterly') return plan.quarterlyAllIn;
-  if (p === 'monthly') return plan.monthlyListPrice;
+  if (p === 'monthly') return plan.quarterlyAllIn;
   return getAnnualMonthlyEquivalent(planKey, annualMultiplier);
 }
 
@@ -311,7 +301,7 @@ export function getPlanPrice(
     case 'quarterly':
       return plan.quarterlyAllIn * 3;
     case 'monthly':
-      return plan.monthlyListPrice;
+      return plan.quarterlyAllIn;
     case 'annual':
       return getAnnualChargeRounded(plan.quarterlyAllIn, annualMultiplier);
     default:

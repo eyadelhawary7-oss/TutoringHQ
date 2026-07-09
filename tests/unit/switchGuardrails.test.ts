@@ -332,7 +332,6 @@ describe('G6 — an upgrade activates only after payment', () => {
         data: {
           all_in_price: PLANS.business.quarterlyAllIn,
           plan_key: 'business',
-          monthly_fee: PLANS.business.monthlyListPrice,
         },
         error: null,
       },

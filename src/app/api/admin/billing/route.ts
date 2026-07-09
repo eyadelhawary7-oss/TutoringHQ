@@ -78,7 +78,6 @@ export async function GET(request: Request) {
       }
     });
     let billingRows = centers || [];
-    let paygMRR = 0;
     const mrrByPlan: Record<string, number> = {};
 
     for (const row of billingRows) {
@@ -86,31 +85,26 @@ export async function GET(request: Request) {
       const nextDue = (row as { next_payment_due?: string }).next_payment_due;
       const billingType = (row as { billing_type?: string }).billing_type || 'fixed';
 
-      if (billingType === 'payg') {
-        (row as Record<string, unknown>).amount = 0;
-        (row as Record<string, unknown>).monthlyEquivalent = 0;
-      } else {
-        const baseQ = getQuarterlyAllInMonthlyRateFromCenter(
-          row as Parameters<typeof getQuarterlyAllInMonthlyRateFromCenter>[0],
-        );
-        const planStr = (row as { plan?: string }).plan || 'starter';
-        const amount = adminCycleAmount(bp, baseQ, planStr);
-        (row as Record<string, unknown>).amount = amount;
-        const monthlyEquiv = getImpliedMonthlyMrr({
-          plan: (row as { plan?: string }).plan,
-          all_in_price: (row as { all_in_price?: number | null }).all_in_price,
-          billing_period: bp,
-          status: (row as { status?: string }).status,
-          billing_type: billingType,
-          is_early_adopter: (row as { is_early_adopter?: boolean }).is_early_adopter,
-          early_adopter_price: (row as { early_adopter_price?: number | null }).early_adopter_price,
-          id: (row as { id: string }).id,
-          is_test: (row as { is_test?: boolean | null }).is_test,
-        });
-        (row as Record<string, unknown>).monthlyEquivalent = Math.round(monthlyEquiv);
-        const planKey = (row.plan as string) || 'starter';
-        mrrByPlan[planKey] = (mrrByPlan[planKey] ?? 0) + monthlyEquiv;
-      }
+      const baseQ = getQuarterlyAllInMonthlyRateFromCenter(
+        row as Parameters<typeof getQuarterlyAllInMonthlyRateFromCenter>[0],
+      );
+      const planStr = (row as { plan?: string }).plan || 'starter';
+      const amount = adminCycleAmount(bp, baseQ, planStr);
+      (row as Record<string, unknown>).amount = amount;
+      const monthlyEquiv = getImpliedMonthlyMrr({
+        plan: (row as { plan?: string }).plan,
+        all_in_price: (row as { all_in_price?: number | null }).all_in_price,
+        billing_period: bp,
+        status: (row as { status?: string }).status,
+        billing_type: billingType,
+        is_early_adopter: (row as { is_early_adopter?: boolean }).is_early_adopter,
+        early_adopter_price: (row as { early_adopter_price?: number | null }).early_adopter_price,
+        id: (row as { id: string }).id,
+        is_test: (row as { is_test?: boolean | null }).is_test,
+      });
+      (row as Record<string, unknown>).monthlyEquivalent = Math.round(monthlyEquiv);
+      const planKey = (row.plan as string) || 'starter';
+      mrrByPlan[planKey] = (mrrByPlan[planKey] ?? 0) + monthlyEquiv;
       const canon = normalizeBillingPeriod(bp);
       const discount =
         bp === 'semi_annual' || bp === 'half_yearly'
@@ -133,40 +127,8 @@ export async function GET(request: Request) {
       (row as Record<string, unknown>).autoSuspendAt = suspendAt;
     }
 
-    // PAYG centers: get recent weekly charges for MRR estimate
-    const paygCenterIds = billingRows
-      .filter((r: { billing_type?: string }) => (r.billing_type || 'fixed') === 'payg')
-      .map((r: { id: string }) => r.id);
-    if (paygCenterIds.length > 0) {
-      const fourWeeksAgo = new Date();
-      fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
-      const { data: paygCharges } = await supabaseAdmin
-        .from('payg_weekly_charges')
-        .select('center_id, total_charge')
-        .in('center_id', paygCenterIds)
-        .gte('week_start_date', fourWeeksAgo.toISOString().slice(0, 10));
-      const paygByCenter: Record<string, number[]> = {};
-      (paygCharges || []).forEach((c: { center_id: string; total_charge: number }) => {
-        if (!paygByCenter[c.center_id]) paygByCenter[c.center_id] = [];
-        paygByCenter[c.center_id].push(Number(c.total_charge));
-      });
-      const MONTHLY_WEEKS = 4.333;
-      Object.entries(paygByCenter).forEach(([cid, charges]) => {
-        const avgWeekly = charges.length > 0 ? charges.reduce((a, b) => a + b, 0) / charges.length : 0;
-        const mrr = avgWeekly * MONTHLY_WEEKS;
-        paygMRR += mrr;
-        mrrByPlan['payg'] = (mrrByPlan['payg'] ?? 0) + mrr;
-        const row = billingRows.find((r: { id: string }) => r.id === cid) as Record<string, unknown> | undefined;
-        if (row) {
-          row.monthlyEquivalent = Math.round(mrr);
-          row.paygWeeklyAvg = avgWeekly;
-        }
-      });
-    }
-
     if (planFilter) {
-      billingRows = billingRows.filter((r: { plan?: string; billing_type?: string }) => {
-        if (planFilter === 'payg') return (r.billing_type || 'fixed') === 'payg';
+      billingRows = billingRows.filter((r: { plan?: string }) => {
         return (r.plan || 'starter') === planFilter;
       });
     }
@@ -275,7 +237,7 @@ export async function GET(request: Request) {
 
     const totalMRR = computeSubscriptionTotalMrrRounded(billingRows as Parameters<typeof computeSubscriptionTotalMrrRounded>[0]);
     const activeFixedCount = (centers || []).filter((c: { billing_type?: string }) => (c.billing_type || 'fixed') === 'fixed').length;
-    const revenueProjection = (totalMRR + paygMRR) * 12;
+    const revenueProjection = totalMRR * 12;
 
     return NextResponse.json({
       centers: billingRows,
@@ -290,7 +252,6 @@ export async function GET(request: Request) {
       mrrByPlan,
       totalMRR,
       fixedMRR: totalMRR,
-      paygMRR,
       revenueProjection,
       activeFixedCount,
     });

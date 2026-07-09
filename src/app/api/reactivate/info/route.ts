@@ -5,7 +5,6 @@ import {
   getDailyRate,
   getReactivationAmount,
   getReactivationTier,
-  isPaygCenter,
 } from '@/lib/billingEngine';
 import {
   PLANS,
@@ -62,12 +61,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Center is not suspended' }, { status: 400 });
   }
 
-  if (isPaygCenter(c)) {
-    return NextResponse.json(
-      { error: 'Pay As You Go centres reactivate via their monthly invoice flow' },
-      { status: 400 },
-    );
-  }
 
   const suspendedAtRaw = c.suspended_at;
   if (!suspendedAtRaw) {

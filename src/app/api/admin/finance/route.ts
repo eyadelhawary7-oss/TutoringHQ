@@ -30,11 +30,10 @@ const INVOICE_TYPE_LABELS: Record<string, string> = {
   parent_pack: 'Parent pack',
   whatsapp_pack: 'Parent pack',
   blast: 'Blast',
-  payg: 'PAYG',
   other: 'Other',
 };
 
-const REVENUE_BUCKET_ORDER = ['Subscriptions', 'Card orders', 'Parent pack', 'Blast', 'PAYG', 'Other'];
+const REVENUE_BUCKET_ORDER = ['Subscriptions', 'Card orders', 'Parent pack', 'Blast', 'Other'];
 
 export async function GET(request: Request) {
   const ctx = await getAdminContext(request);

@@ -5,7 +5,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { parseBodyWithLimit } from '@/lib/validate';
 
 type PatchBody = {
-  monthly_fee?: number;
   all_in_price?: number;
   is_active?: boolean;
   weekly_student_limit?: number;
@@ -48,14 +47,6 @@ export async function PATCH(request: NextRequest, ctx: { params: Promise<{ plan_
 
   const updates: Record<string, unknown> = {};
 
-  if (body.monthly_fee !== undefined) {
-    const n = Number(body.monthly_fee);
-    if (!Number.isFinite(n) || n <= 0) {
-      return NextResponse.json({ error: 'monthly_fee must be a positive number' }, { status: 400 });
-    }
-    updates.monthly_fee = n;
-  }
-
   if (body.all_in_price !== undefined) {
     const n = Number(body.all_in_price);
     if (!Number.isFinite(n) || n <= 0) {
@@ -85,7 +76,7 @@ export async function PATCH(request: NextRequest, ctx: { params: Promise<{ plan_
     .update(updates)
     .eq('plan_key', planKey)
     .select(
-      'plan_key, arabic_name, english_name, weekly_student_limit, monthly_fee, cost_per_student, setup_fee, is_active, all_in_price',
+      'plan_key, arabic_name, english_name, weekly_student_limit, cost_per_student, setup_fee, is_active, all_in_price',
     )
     .single();
 

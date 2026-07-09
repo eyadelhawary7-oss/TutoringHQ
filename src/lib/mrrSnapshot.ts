@@ -60,8 +60,6 @@ export async function computeMrrSnapshot(supabase: SupabaseClient): Promise<MrrS
 
     if (mrr > 0) active_centers += 1;
 
-    if ((row.billing_type || 'fixed') === 'payg') continue;
-
     const bucket = String(planKeyForMrrBreakdown(row.plan));
     const b = by_plan[bucket] ?? { count: 0, mrr: 0 };
     b.count += 1;

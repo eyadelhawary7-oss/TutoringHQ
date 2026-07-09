@@ -4098,8 +4098,7 @@
         "billingType": "Billing Type",
         "billingPeriod": "Billing Period",
         "weeklyStudentLimit": "Weekly Student Limit",
-        "planWarning": "Plan limit warning",
-        "paygRate": "Pay-as-you-go rate"
+        "planWarning": "Plan limit warning"
       },
       "section3": {
         "title": "Billing Details",
@@ -5102,7 +5101,6 @@
       "business": "Business",
       "enterprise": "Enterprise",
       "top_centers": "Top Centers",
-      "payg": "PAYG",
       "activeParents": "Active Parents",
       "billingStatus": "Billing Status",
       "centerName": "Center Name",
@@ -5439,62 +5437,6 @@
       "summary": "Upgrade summary",
       "title": "Upgrade plan",
       "usedOf": "{used} of {limit} upgrades used"
-    },
-    "payg": {
-      "tabLabel": "Pay As You Go",
-      "intro": {
-        "title": "Fully flexible - pay for actual usage",
-        "subtitle": "Billed monthly based on active student count. Rate shown per student per week. No commitment."
-      },
-      "pill": {
-        "noCommitment": "No commitment",
-        "cancelAnytime": "Cancel anytime",
-        "endOfMonth": "Billed end of month"
-      },
-      "slider": {
-        "label": "How many students do you expect?",
-        "students": "{count} students"
-      },
-      "estimate": {
-        "students": "Students this month",
-        "rate": "Rate per Student/Week",
-        "rateUnit": "EGP/student/week",
-        "tier": "Current tier",
-        "total": "Estimated monthly bill",
-        "capped": "Capped at plan maximum ({amount} EGP)",
-        "vsMonthly": "vs Monthly plan",
-        "vsAllIn": "vs All-in rate"
-      },
-      "switch": {
-        "enable": "Switch to Pay As You Go",
-        "effectiveDate": "Takes effect on {date}",
-        "active": "✓ You are on Pay As You Go",
-        "disable": "Switch back to fixed billing",
-        "pending": "PAYG switch scheduled for {date}",
-        "cancel": "Cancel switch",
-        "scheduled": "PAYG switch scheduled for {date}",
-        "fixedScheduled": "Fixed billing resumes on {date}"
-      },
-      "hero": {
-        "badge": "Pay As You Go",
-        "rate": "Rate per Student/Week",
-        "billingDate": "Billing Date",
-        "billingDateValue": "End of month",
-        "activeStudents": "Active students",
-        "estimate": "This month's estimate"
-      },
-      "tierRange": {
-        "solo": "1–50",
-        "nano": "51–75",
-        "starter": "76–150",
-        "pro": "151–500",
-        "business": "501–1,000",
-        "enterprise": "1,001–2,000"
-      },
-      "tier": {
-        "rateUnit": "EGP/week"
-      },
-      "perStudent": "{rate} EGP/student/week"
     },
     "whatsappSupport": "WhatsApp Support",
     "contactSupportViaWhatsapp": "Contact support via WhatsApp",
@@ -7156,7 +7098,6 @@
       "billingPeriod": "Billing Period",
       "billingStatus": "Billing Status",
       "billingType": "Billing Type",
-      "paygRate": "Payg Rate",
       "plan": "Plan",
       "planWarning": "Plan Warning",
       "pricingType": "Pricing Type",
@@ -8317,53 +8258,6 @@
   "yourCode": {},
   "yourPin": {},
   "yourSchedule": {},
-  "payg": {
-    "estimate": {
-      "capped": "Capped",
-      "rate": "Rate",
-      "rateUnit": "Rate Unit",
-      "students": "Students",
-      "tier": "Tier",
-      "total": "Total",
-      "vsMonthly": "Vs Monthly",
-      "vsQuarterly": "Vs Quarterly"
-    },
-    "hero": {
-      "activeStudents": "Active Students",
-      "badge": "Badge",
-      "billingDate": "Billing Date",
-      "billingDateValue": "Billing Date Value",
-      "estimate": "Estimate",
-      "rate": "Rate"
-    },
-    "intro": {
-      "subtitle": "Subtitle",
-      "title": "Title"
-    },
-    "pill": {
-      "cancelAnytime": "Cancel Anytime",
-      "endOfMonth": "End Of Month",
-      "noCommitment": "No Commitment"
-    },
-    "slider": {
-      "label": "Label",
-      "students": "Students"
-    },
-    "switch": {
-      "active": "Active",
-      "cancel": "Cancel",
-      "disable": "Disable",
-      "effectiveDate": "Effective Date",
-      "enable": "Enable",
-      "fixedScheduled": "Fixed Scheduled",
-      "pending": "Pending",
-      "scheduled": "Scheduled"
-    },
-    "tier": {
-      "rateUnit": "Rate Unit"
-    },
-    "tabLabel": "Tab Label"
-  },
   "platformConfig": "Platform Config",
   "platformHealth": "Platform Health",
   "cronBackup": {

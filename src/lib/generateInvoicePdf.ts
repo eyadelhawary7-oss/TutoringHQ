@@ -109,7 +109,6 @@ function planPresentation(planRaw: string | null | undefined): { en: string; ar:
     pro: { en: 'Pro', ar: 'محترف' },
     business: { en: 'Business', ar: 'أعمال' },
     enterprise: { en: 'Enterprise', ar: 'مؤسسات' },
-    payg: { en: 'Pay as you go', ar: 'دفع حسب الاستخدام' },
     top_centers: { en: 'Top Centers', ar: 'مراكز مميزة' },
   };
   const hit = table[k];

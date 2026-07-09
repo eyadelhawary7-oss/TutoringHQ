@@ -12,7 +12,6 @@ import {
   type PlanKey,
 } from '@/lib/pricing';
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
-import { isPaygCenter } from '@/lib/billingEngine';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { applyProcessingFee } from '@/lib/processingFee';
@@ -94,13 +93,6 @@ export async function POST(request: NextRequest) {
     pricing_type?: string | null;
   };
 
-  if (isPaygCenter(c)) {
-    return NextResponse.json(
-      { error: 'Pay As You Go plans scale automatically with student count' },
-      { status: 400 },
-    );
-  }
-
   if (c.status !== 'active') {
     return NextResponse.json({ error: 'Center must be active' }, { status: 400 });
   }
@@ -136,7 +128,6 @@ export async function POST(request: NextRequest) {
       requestedPlanRank: requestedRank,
       upgradeCountThisPeriod: Number(c.upgrade_count_this_period ?? 0),
       billingPeriod: periodForLimit,
-      isPaygCenter: isPaygCenter(c),
     });
 
     if (!gate.allowed) {
@@ -151,7 +142,7 @@ export async function POST(request: NextRequest) {
 
   const { data: newPriceRow } = await supabaseAdmin
     .from('pricing_plans')
-    .select('all_in_price, plan_key, monthly_fee')
+    .select('all_in_price, plan_key')
     .eq('plan_key', newPlan)
     .eq('is_active', true)
     .maybeSingle();
@@ -159,7 +150,6 @@ export async function POST(request: NextRequest) {
   const newPlanData = (newPriceRow ?? {}) as {
     all_in_price?: number;
     plan_key?: string;
-    monthly_fee?: number;
   };
   const newAllIn = Number(newPlanData.all_in_price ?? 0);
   if (!Number.isFinite(newAllIn) || newAllIn <= 0) {
@@ -180,11 +170,12 @@ export async function POST(request: NextRequest) {
   const newPlanFullPeriodPrice = (() => {
     switch (newBp) {
       case 'monthly':
-        return Number(newPlanData.monthly_fee);
+        // Monthly bills at the same per-month rate as quarterly (all_in_price).
+        return newAllIn;
       case 'annual':
         return getAnnualChargeRounded(Number(newPlanData.all_in_price));
       default:
-        return Number(newPlanData.monthly_fee);
+        return newAllIn;
     }
   })();
 

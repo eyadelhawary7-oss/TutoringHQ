@@ -274,7 +274,6 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
   const [s2BillingType, setS2BillingType] = useState('fixed');
   const [s2SubBillingPeriod, setS2SubBillingPeriod] = useState('monthly');
   const [s2WeeklyStudentLimit, setS2WeeklyStudentLimit] = useState('');
-  const [s2PaygRate, setS2PaygRate] = useState('');
   const [s2PlanWarning, setS2PlanWarning] = useState(false);
   const [s2Saving, setS2Saving] = useState(false);
   const [s2CancellationBusy, setS2CancellationBusy] = useState(false);
@@ -665,7 +664,6 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
     setS2BillingType((c.billing_type as string) ?? 'fixed');
     setS2SubBillingPeriod((c.subscription_billing_period as string) ?? 'monthly');
     setS2WeeklyStudentLimit(c.weekly_student_limit != null ? String(c.weekly_student_limit) : '');
-    setS2PaygRate(c.payg_rate != null ? String(c.payg_rate) : '');
     setS3BillingAmount(c.billing_amount != null ? String(c.billing_amount) : '');
     setS3AllInPrice(c.all_in_price != null ? String(c.all_in_price) : '');
     setS3NextPaymentDue((c.next_payment_due as string) ?? '');
@@ -787,7 +785,6 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
           billing_type: s2BillingType,
           subscription_billing_period: s2SubBillingPeriod,
           weekly_student_limit: s2WeeklyStudentLimit !== '' ? Number(s2WeeklyStudentLimit) : null,
-          payg_rate: s2PaygRate !== '' ? Number(s2PaygRate) : null,
         }),
       });
       const raw = await res.text();
@@ -1950,7 +1947,6 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
                     >
                       <option value="fixed">fixed</option>
-                      <option value="payg">payg</option>
                     </select>
                   </div>
                   <div>
@@ -1992,22 +1988,6 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       dir="ltr"
                     />
                   </div>
-                  {s2PricingType === 'payg' ? (
-                    <div>
-                      <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
-                        {t('centerManagement.section2.paygRate')}
-                      </label>
-                      <input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={s2PaygRate}
-                        onChange={(e) => setS2PaygRate(e.target.value)}
-                        className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 text-sm"
-                        dir="ltr"
-                      />
-                    </div>
-                  ) : null}
                 </div>
                 <div className="mt-6 flex justify-end">
                   <button

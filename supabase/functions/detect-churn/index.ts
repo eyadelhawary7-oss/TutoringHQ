@@ -49,11 +49,12 @@ Deno.serve(async (req) => {
     );
   }
 
-  // 2. Get last scan per center (and monthly fee from pricing_plans if available)
-  const { data: plans } = await supabase.from('pricing_plans').select('id, monthly_fee');
+  // 2. Get last scan per center (and monthly fee from pricing_plans if available).
+  //    Monthly bills at the all-in per-month rate, so all_in_price is the monthly fee.
+  const { data: plans } = await supabase.from('pricing_plans').select('id, all_in_price');
   const planFees = new Map<string, number>();
   for (const p of plans ?? []) {
-    planFees.set((p as { id: string; monthly_fee: number }).id, Number((p as { monthly_fee: number }).monthly_fee));
+    planFees.set((p as { id: string; all_in_price: number }).id, Number((p as { all_in_price: number }).all_in_price));
   }
 
   const rows: CenterInfo[] = [];

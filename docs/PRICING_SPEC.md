@@ -14,17 +14,15 @@ Per QR card: 60 EGP inclusive → base 52.63, VAT 7.37 (base = 60 / 1.14; `CARD_
 
 ## Plan price table (monthly INCLUSIVE EGP)
 Plan         Monthly    Quarterly/mo    Annual/mo    Cap
-solo          1,149          999             849       50
-nano          2,499        1,999           1,699      120
-starter       5,199        4,499           3,824      200
-pro           9,199        7,999           6,799      500
-business     14,999       12,999          11,049    1,000
-enterprise   21,299       18,499          15,724    2,000
+solo            999          999             833       50
+nano          1,999        1,999           1,666      120
+starter       4,499        4,499           3,749      200
+pro           7,999        7,999           6,666      500
+business     12,999       12,999          10,833    1,000
+enterprise   18,499       18,499          15,416    2,000
 top_centers   CUSTOM       CUSTOM          CUSTOM   2,000+
 
-Quarterly/mo is baseline shown on signup cards. Monthly ≈ Quarterly × 1.15, Annual ≈ Quarterly × 0.85, both rounded to .99 endings (marketing approximations).
-
-Exception: Nano Monthly is intentionally +25% not +15% (incentive for Quarterly commitment). Do NOT "fix" to 2,299.
+Monthly and quarterly bill at the SAME per-month all-in price (`all_in_price`); there is no separate monthly list price. Annual/mo = all_in_price x 10 / 12 (pay 10 months, get 12; "2 months free"), rounded to whole EGP. The former +15% monthly list price (`pricing_plans.monthly_fee`) and the `pricing.interval.monthly_multiplier` config key were removed in 2026-07 when monthly was repriced down to the all-in rate.
 
 Enterprise is fixed-price. Top Centers is the only custom-priced tier; centers.all_in_price is source of truth, code reading top_centers MUST throw + Sentry-warn if NULL.
 
@@ -73,7 +71,7 @@ Source of truth: `src/lib/processingFee.ts` (pure helpers — `applyProcessingFe
 
 The fee applied to each invoice is snapshotted into **`invoices.metadata.processing_fee`** at creation, so rendered breakdowns are deterministic even if config later changes. For session-based charges (teacher subscriptions) it rides in `combined_payment_sessions.metadata.processing_fee` and is added to `paymob_amount` / `total_amount`.
 
-**Every charge invoice carries the flat 20 EGP** (one per invoice, never per line): center subscription renewals, signup first payment, PAYG, parent-pack (`pack_billing`) + WhatsApp add-on (`whatsapp_addon`), teacher resubscribe / upgrade / switch-interval / overage, `plan_upgrade_difference`, summer first invoice, **reactivation** (`centers/reactivate`), **card-order `setup_fee`**, and **announcement `_cap` / `_settlement`** (added in the service-fee/stamp removal — the earlier "Deferred" list is cleared).
+**Every charge invoice carries the flat 20 EGP** (one per invoice, never per line): center subscription renewals, signup first payment, parent-pack (`pack_billing`) + WhatsApp add-on (`whatsapp_addon`), teacher resubscribe / upgrade / switch-interval / overage, `plan_upgrade_difference`, summer first invoice, **reactivation** (`centers/reactivate`), **card-order `setup_fee`**, and **announcement `_cap` / `_settlement`** (added in the service-fee/stamp removal, the earlier "Deferred" list is cleared).
 **Not charged the fee (not customer charges):** `referral_payout` (money paid *out* to the referrer) and `payment_proof` (mirrors a referenced invoice; not a new charge).
 
 ### Late-fee / reactivation invoices (combined, single invoice)
@@ -183,7 +181,7 @@ summary lock screen.
 
 **Billing period → implied monthly MRR:** `normalizeBillingPeriod`; semi-annual / half-yearly map to **quarterly** for MRR. **Quarterly** billing: implied MRR equals that monthly all-in rate. **Monthly** / **annual**: derived via `getChargeFromQuarterlyAllIn` / annual rounding ÷ 12 (see `computeImpliedMonthlyMrrFromBase`).
 
-**Centres excluded from subscription MRR** (`isCenterEligibleForSubscriptionMrr`): **test centres** (`centers.is_test === true`) are always excluded (before status), regardless of account status. Additionally by status: `suspended`, `churned`, `deleted`, `cancelled`, `inactive`. **PAYG** (`billing_type === 'payg'`): subscription MRR `0`; PAYG estimate is added separately in billing/overview where applicable.
+**Centres excluded from subscription MRR** (`isCenterEligibleForSubscriptionMrr`): **test centres** (`centers.is_test === true`) are always excluded (before status), regardless of account status. Additionally by status: `suspended`, `churned`, `deleted`, `cancelled`, `inactive`. (PAYG billing was removed in 2026-07; every center is fixed billing.)
 
 ## Daily MRR snapshots (`mrr_snapshots`)
 
@@ -220,7 +218,7 @@ Without this, the finance dashboard falls back to live subscription MRR for the 
   declines to the OTP fallback (no silent retry), and retries soft declines on a
   capped day 0/+3/+7 schedule. The single-day lock model now drives access
   enforcement (`resolveBillingAccess` via the proxy) and all side paths
-  (signup/PAYG/admin) lock uniformly the next Cairo midnight.
+  (signup/admin) lock uniformly the next Cairo midnight.
 - **Still inert**: with no `PAYMOB_RECURRING_INTEGRATION_ID` the engine charges
   nothing — every due customer is left on the manual surface. Phase 2 finishing
   does NOT make auto-charge live. Detail: `docs/SAVED_CARD_ENGINE.md`.

@@ -160,44 +160,6 @@ describe('computeMrrSnapshot', () => {
   });
 
   // ─────────────────────────────────────────────
-  // PART 1 – Scenario 4: PAYG EXCLUSION
-  // ─────────────────────────────────────────────
-  // Note on actual PAYG behavior in mrrSnapshot.ts:
-  //   1. A PAYG centre passes isCenterEligibleForSubscriptionMrr (billing_type is not
-  //      checked there — only is_test and status are).
-  //   2. getImpliedMonthlyMrr returns 0 for billing_type='payg' (checked inside that fn).
-  //   3. total_mrr += 0, active_centers is NOT incremented (mrr > 0 guard).
-  //   4. The explicit `if (billing_type === 'payg') continue` then skips the by_plan
-  //      accumulation — so count/mrr stay at 0 for the PAYG centre's plan bucket.
-  //   PAYG is identified by billing_type='payg', not by plan name.
-  describe('PAYG exclusion', () => {
-    it(
-      'a PAYG centre (billing_type=payg) contributes 0 to total_mrr, is not counted in active_centers, and does not appear in by_plan',
-      async () => {
-        const paygCentre = {
-          id: '1',
-          plan: 'starter',
-          all_in_price: 4499,
-          billing_period: 'quarterly',
-          status: 'active',
-          billing_type: 'payg',
-          is_test: false,
-          is_early_adopter: false,
-          early_adopter_price: null,
-        };
-
-        const supabase = makeSupabaseMock([paygCentre]);
-        const snapshot = await computeMrrSnapshot(supabase);
-
-        expect(snapshot.total_mrr).toBe(0);
-        expect(snapshot.active_centers).toBe(0);
-        expect(snapshot.by_plan['starter'].count).toBe(0);
-        expect(snapshot.by_plan['starter'].mrr).toBe(0);
-      },
-    );
-  });
-
-  // ─────────────────────────────────────────────
   // PART 1 – Scenario 5: DAILY IDEMPOTENCY
   // ─────────────────────────────────────────────
   // Note: computeMrrSnapshot is a pure read+compute function — it does not call
