@@ -71,7 +71,6 @@ TABLE paid_parents rls=true force_rls=false
 TABLE parent_pack_billing rls=true force_rls=false
 TABLE parent_pack_monthly_counts rls=true force_rls=false
 TABLE parent_portal_tokens rls=true force_rls=false
-TABLE payg_rates rls=true force_rls=false
 TABLE payments rls=true force_rls=false
 TABLE payout_requests rls=true force_rls=false
 TABLE pending_enrollments rls=true force_rls=false
@@ -976,11 +975,6 @@ COLUMN parent_portal_tokens.expires_at ord=3 type=timestamp with time zone notnu
 COLUMN parent_portal_tokens.created_at ord=4 type=timestamp with time zone notnull=false default=now()
 COLUMN parent_portal_tokens.token_hash ord=5 type=text notnull=true default=∅
 COLUMN parent_portal_tokens.revoked_at ord=6 type=timestamp with time zone notnull=false default=∅
-COLUMN payg_rates.id ord=1 type=uuid notnull=true default=gen_random_uuid()
-COLUMN payg_rates.min_students ord=2 type=integer notnull=true default=∅
-COLUMN payg_rates.max_students ord=3 type=integer notnull=false default=∅
-COLUMN payg_rates.price_per_student ord=4 type=numeric(12,2) notnull=true default=∅
-COLUMN payg_rates.premium_vs_fixed ord=5 type=text notnull=true default=∅
 COLUMN payments.id ord=1 type=uuid notnull=true default=uuid_generate_v4()
 COLUMN payments.student_id ord=2 type=uuid notnull=false default=∅
 COLUMN payments.center_id ord=3 type=uuid notnull=true default=∅
@@ -1078,7 +1072,6 @@ COLUMN pricing_plans.cost_per_student ord=6 type=numeric(12,2) notnull=true defa
 COLUMN pricing_plans.setup_fee ord=7 type=numeric(12,2) notnull=true default=∅
 COLUMN pricing_plans.is_active ord=8 type=boolean notnull=false default=true
 COLUMN pricing_plans.all_in_price ord=9 type=numeric(12,2) notnull=false default=∅
-COLUMN pricing_plans.payg_rate_per_student ord=10 type=numeric(12,2) notnull=false default=∅
 COLUMN privacy_requests.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN privacy_requests.full_name ord=2 type=text notnull=true default=∅
 COLUMN privacy_requests.phone ord=3 type=text notnull=true default=∅
@@ -2092,8 +2085,6 @@ CONSTRAINT parent_pack_monthly_counts.parent_pack_monthly_counts_pkey type=p def
 CONSTRAINT parent_pack_monthly_counts.parent_pack_monthly_counts_student_id_fkey type=f def=FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
 CONSTRAINT parent_portal_tokens.parent_portal_tokens_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT parent_portal_tokens.parent_portal_tokens_student_id_fkey type=f def=FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
-CONSTRAINT payg_rates.payg_rates_pkey type=p def=PRIMARY KEY (id)
-CONSTRAINT payg_rates.payg_rates_price_per_student_nonneg type=c def=CHECK ((price_per_student >= (0)::numeric))
 CONSTRAINT payments.payments_amount_nonneg type=c def=CHECK ((amount >= (0)::numeric))
 CONSTRAINT payments.payments_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE RESTRICT
 CONSTRAINT payments.payments_group_id_fkey type=f def=FOREIGN KEY (group_id) REFERENCES student_groups(id) ON DELETE SET NULL
@@ -2131,7 +2122,7 @@ CONSTRAINT plan_requests.plan_requests_status_check type=c def=CHECK ((status = 
 CONSTRAINT platform_config.platform_config_key_key type=u def=UNIQUE (key)
 CONSTRAINT platform_config.platform_config_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT platform_config.platform_config_updated_by_fkey type=f def=FOREIGN KEY (updated_by) REFERENCES auth.users(id)
-CONSTRAINT pricing_plans.pricing_plans_money_nonneg type=c def=CHECK ((((all_in_price IS NULL) OR (all_in_price >= (0)::numeric)) AND (cost_per_student >= (0)::numeric) AND ((payg_rate_per_student IS NULL) OR (payg_rate_per_student >= (0)::numeric)) AND (setup_fee >= (0)::numeric)))
+CONSTRAINT pricing_plans.pricing_plans_money_nonneg type=c def=CHECK ((((all_in_price IS NULL) OR (all_in_price >= (0)::numeric)) AND (cost_per_student >= (0)::numeric) AND (setup_fee >= (0)::numeric)))
 CONSTRAINT pricing_plans.pricing_plans_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT pricing_plans.pricing_plans_plan_key_key type=u def=UNIQUE (plan_key)
 CONSTRAINT privacy_requests.privacy_requests_handled_by_fkey type=f def=FOREIGN KEY (handled_by) REFERENCES auth.users(id) ON DELETE SET NULL
@@ -2831,7 +2822,6 @@ POLICY paid_parents.Parents: center update cmd=UPDATE permissive=PERMISSIVE role
 POLICY parent_pack_billing.pack_billing_select cmd=SELECT permissive=PERMISSIVE roles=authenticated using=(center_id IN ( SELECT users.center_id FROM users WHERE (users.id = auth.uid()))) check=∅
 POLICY parent_pack_monthly_counts.center_select_own_counts cmd=SELECT permissive=PERMISSIVE roles=public using=(center_id IN ( SELECT centers.id FROM centers WHERE (centers.id = parent_pack_monthly_counts.center_id))) check=∅
 POLICY parent_portal_tokens.parent_portal_tokens_service_only cmd=ALL permissive=PERMISSIVE roles=public using=false check=∅
-POLICY payg_rates.Anyone can read PAYG rates cmd=SELECT permissive=PERMISSIVE roles=public using=true check=∅
 POLICY payments.payments_delete_own_center cmd=DELETE permissive=PERMISSIVE roles=authenticated using=((center_id = get_auth_center_id()) AND has_center_role(ARRAY['owner'::text, 'admin'::text])) check=∅
 POLICY payments.payments_insert_own_center cmd=INSERT permissive=PERMISSIVE roles=authenticated using=∅ check=((center_id = get_auth_center_id()) AND can_record_payments_fn())
 POLICY payments.payments_select_own_center cmd=SELECT permissive=PERMISSIVE roles=authenticated using=(center_id = get_auth_center_id()) check=∅
@@ -4516,27 +4506,6 @@ TABLE_GRANT parent_portal_tokens grantee=service_role priv=SELECT grantable=NO
 TABLE_GRANT parent_portal_tokens grantee=service_role priv=TRIGGER grantable=NO
 TABLE_GRANT parent_portal_tokens grantee=service_role priv=TRUNCATE grantable=NO
 TABLE_GRANT parent_portal_tokens grantee=service_role priv=UPDATE grantable=NO
-TABLE_GRANT payg_rates grantee=anon priv=DELETE grantable=NO
-TABLE_GRANT payg_rates grantee=anon priv=INSERT grantable=NO
-TABLE_GRANT payg_rates grantee=anon priv=REFERENCES grantable=NO
-TABLE_GRANT payg_rates grantee=anon priv=SELECT grantable=NO
-TABLE_GRANT payg_rates grantee=anon priv=TRIGGER grantable=NO
-TABLE_GRANT payg_rates grantee=anon priv=TRUNCATE grantable=NO
-TABLE_GRANT payg_rates grantee=anon priv=UPDATE grantable=NO
-TABLE_GRANT payg_rates grantee=authenticated priv=DELETE grantable=NO
-TABLE_GRANT payg_rates grantee=authenticated priv=INSERT grantable=NO
-TABLE_GRANT payg_rates grantee=authenticated priv=REFERENCES grantable=NO
-TABLE_GRANT payg_rates grantee=authenticated priv=SELECT grantable=NO
-TABLE_GRANT payg_rates grantee=authenticated priv=TRIGGER grantable=NO
-TABLE_GRANT payg_rates grantee=authenticated priv=TRUNCATE grantable=NO
-TABLE_GRANT payg_rates grantee=authenticated priv=UPDATE grantable=NO
-TABLE_GRANT payg_rates grantee=service_role priv=DELETE grantable=NO
-TABLE_GRANT payg_rates grantee=service_role priv=INSERT grantable=NO
-TABLE_GRANT payg_rates grantee=service_role priv=REFERENCES grantable=NO
-TABLE_GRANT payg_rates grantee=service_role priv=SELECT grantable=NO
-TABLE_GRANT payg_rates grantee=service_role priv=TRIGGER grantable=NO
-TABLE_GRANT payg_rates grantee=service_role priv=TRUNCATE grantable=NO
-TABLE_GRANT payg_rates grantee=service_role priv=UPDATE grantable=NO
 TABLE_GRANT payments grantee=anon priv=DELETE grantable=NO
 TABLE_GRANT payments grantee=anon priv=INSERT grantable=NO
 TABLE_GRANT payments grantee=anon priv=REFERENCES grantable=NO
