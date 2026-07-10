@@ -3,7 +3,10 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   admin: ['overview', 'centers', 'billing', 'renewals', 'card_orders', 'plan_requests', 'pending_signups', 'referrals', 'sales_pipeline', 'analytics'],
   internal_admin: ['overview', 'centers', 'billing', 'renewals', 'plan_requests', 'pending_signups'],
   internal_viewer: ['overview', 'centers', 'analytics'],
-  sales_rep: ['overview', 'centers', 'pending_signups', 'sales_pipeline'],
+  // Manager / Rep: scoped Accounts (centers) list. pending_signups is CEO-only now
+  // (enforced by SUPER_ONLY_PERMISSION_KEYS in AdminSidebar + super_admin API gates).
+  sales_manager: ['overview', 'centers', 'card_orders'],
+  sales_rep: ['overview', 'centers'],
   support_agent: ['overview', 'centers', 'pending_signups'],
   accountant: [
     'overview',

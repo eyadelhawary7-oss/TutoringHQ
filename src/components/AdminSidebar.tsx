@@ -57,7 +57,15 @@ export type AdminTab =
   | 'platformHealth';
 
 /** Shown only when admin_users.role === 'super_admin' (see /api/admin/check). */
-const SUPER_ONLY_PERMISSION_KEYS = new Set(['billing', 'withdrawals', 'internal_team']);
+const SUPER_ONLY_PERMISSION_KEYS = new Set([
+  'billing',
+  'withdrawals',
+  'internal_team',
+  // Phase 1 (rebuild): Pending Signups & Plan Requests are CEO-only. The underlying
+  // signup-approval / plan-change flows are unchanged; only the screens are restricted.
+  'pending_signups',
+  'plan_requests',
+]);
 
 const SIDEBAR_SECTIONS_KEY = 'chq-admin-sidebar-sections';
 

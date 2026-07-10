@@ -74,6 +74,14 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    // CEO-only (Phase 1 rebuild): the Pending Signups screen is restricted to
+    // super_admin. The signup-approval flow itself (auto_approve_signups config +
+    // signupPaymobAutoApprove + /api/admin/centers/[id]) is unchanged.
+    const isSuperAdminUser = isPhoneAdmin || adminUser?.role === 'super_admin';
+    if (!isSuperAdminUser) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     // Try full query first, fallback to basic columns if extended columns don't exist
     let pendingCenters: Record<string, unknown>[] | null = null;
     let error: { message: string } | null = null;
@@ -150,8 +158,8 @@ export async function POST(request: Request) {
   if (!ctx) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  // Role gate added per docs/AUDIT_v22.md Phase 3 / Phase 8 P0 (Task 9)
-  const roleErr = requireAdminRole(ctx, ['super_admin', 'admin']);
+  // CEO-only (Phase 1 rebuild): Pending Signups screen mutations are super_admin-only.
+  const roleErr = requireAdminRole(ctx, ['super_admin']);
   if (roleErr) return roleErr;
 
   let body: Record<string, unknown>;
@@ -227,8 +235,8 @@ export async function DELETE(request: Request) {
   if (!ctx) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  // Role gate added per docs/AUDIT_v22.md Phase 3 / Phase 8 P0 (Task 9)
-  const roleErr = requireAdminRole(ctx, ['super_admin', 'admin']);
+  // CEO-only (Phase 1 rebuild): Pending Signups screen mutations are super_admin-only.
+  const roleErr = requireAdminRole(ctx, ['super_admin']);
   if (roleErr) return roleErr;
 
   const { searchParams } = new URL(request.url);

@@ -188,14 +188,14 @@ export const adminTeamAddSchema = z.object({
   name: z.string().min(2).max(100).regex(/^[a-zA-Z\s\u0600-\u06FF]+$/, 'Invalid characters'),
   email: z.string().email().optional().or(z.literal('')),
   phone: z.string().refine((v) => /^\d{10,15}$/.test(v.replace(/\D/g, '')), 'Invalid phone'),
-  role: z.enum(['internal_viewer', 'internal_admin', 'sales_rep', 'support_agent', 'accountant', 'custom']),
+  role: z.enum(['internal_viewer', 'internal_admin', 'sales_manager', 'sales_rep', 'support_agent', 'accountant', 'custom']),
   custom_permissions: z.array(z.string()).optional().default([]),
 });
 
 /** Admin team - update role */
 export const adminTeamUpdateSchema = z.object({
   memberId: z.string().uuid('Invalid member ID'),
-  role: z.enum(['internal_viewer', 'internal_admin', 'sales_rep', 'support_agent', 'accountant', 'custom']),
+  role: z.enum(['internal_viewer', 'internal_admin', 'sales_manager', 'sales_rep', 'support_agent', 'accountant', 'custom']),
   custom_permissions: z.array(z.string()).optional(),
   password: z.string().optional(), // Required for sensitive action
 });

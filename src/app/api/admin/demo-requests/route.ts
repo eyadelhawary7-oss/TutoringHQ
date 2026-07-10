@@ -1,72 +1,24 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { parseBodyWithLimit } from '@/lib/validate';
-import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
-
-function isSuperAdmin(phone: string | null): boolean {
-  const admins = process.env.SUPER_ADMIN_PHONES || '';
-  return !!phone && admins.split(',').map((p: string) => p.trim()).includes(phone);
-}
-
-async function isAdminUser(supabaseAdmin: SupabaseClient, userId: string): Promise<boolean> {
-  const { data } = await supabaseAdmin.from('admin_users').select('id').eq('id', userId).single();
-  return !!data;
-}
+import { getAdminContext, requireAdminRole, requireSuperAdminApi } from '@/lib/admin-auth';
 
 export async function GET(request: Request) {
-  try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // CEO-only (Phase 1 rebuild): the Demo Requests screen is restricted to super_admin.
+  // The public demo-intake form (/api/demo-request) is unchanged.
+  const gate = await requireSuperAdminApi(request);
+  if (!gate.ok) return gate.response;
 
-    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
-    }
+  const { data: requestsData, error } = await gate.supabaseAdmin
+    .from('demo_requests')
+    .select('*')
+    .order('created_at', { ascending: false });
 
-    const authHeader = request.headers.get('Authorization');
-    const accessToken = authHeader?.replace('Bearer ', '');
-    if (!accessToken) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { persistSession: false },
-      global: { headers: { Authorization: `Bearer ${accessToken}` } },
-    });
-
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-
-    const adminByTable = await isAdminUser(supabaseAdmin, user.id);
-    const { data: userRecord } = await supabaseAdmin.from('users').select('phone').eq('id', user.id).single();
-    const adminByPhone = isSuperAdmin(userRecord?.phone ?? null);
-
-    if (!adminByTable && !adminByPhone) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    const { data: requestsData, error } = await supabaseAdmin
-      .from('demo_requests')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ requests: requestsData || [] });
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  return NextResponse.json({ requests: requestsData || [] });
 }
 
 // PATCH /api/admin/demo-requests - update a demo request (mark handled, assign, etc.)
@@ -81,8 +33,8 @@ export async function PATCH(request: Request) {
   if (!ctx) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  // Role gate added per docs/AUDIT_v22.md Phase 3 / Phase 8 P0 (Task 9)
-  const roleErr = requireAdminRole(ctx, ['super_admin', 'admin']);
+  // CEO-only (Phase 1 rebuild): Demo Requests screen mutations are super_admin-only.
+  const roleErr = requireAdminRole(ctx, ['super_admin']);
   if (roleErr) return roleErr;
 
   let body: Record<string, unknown>;
@@ -137,8 +89,8 @@ export async function DELETE(request: Request) {
   if (!ctx) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  // Role gate added per docs/AUDIT_v22.md Phase 3 / Phase 8 P0 (Task 9)
-  const roleErr = requireAdminRole(ctx, ['super_admin', 'admin']);
+  // CEO-only (Phase 1 rebuild): Demo Requests screen mutations are super_admin-only.
+  const roleErr = requireAdminRole(ctx, ['super_admin']);
   if (roleErr) return roleErr;
 
   const { searchParams } = new URL(request.url);

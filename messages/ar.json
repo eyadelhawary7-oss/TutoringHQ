@@ -2996,6 +2996,7 @@
     "internalTeamEmptyState": "لم يتم تحميل أعضاء الفريق.",
     "internalTeamRoleViewer": "مشاهد",
     "internalTeamRoleInternalAdmin": "مدير داخلي",
+    "internalTeamRoleSalesManager": "مدير مبيعات",
     "internalTeamRoleSalesRep": "مندوب مبيعات",
     "internalTeamRoleSupportAgent": "موظف دعم",
     "internalTeamRoleAccountant": "محاسب",

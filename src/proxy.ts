@@ -296,6 +296,36 @@ export default async function proxy(request: NextRequest) {
         return applySecurityHeaders(redirectResp, requestId);
       }
 
+      // Internal admin/CEO wall (Phase 1 rebuild): only internal users — a phone
+      // super-admin OR someone with an admin_users row — may LOAD /admin, /ceo or
+      // /ceo-dashboard. Previously any authenticated non-teacher (e.g. a center owner)
+      // could render the admin shell; per-API 403s were the only real boundary. The
+      // admin_users self-read is permitted by RLS ("id = auth.uid()"). We fail OPEN on a
+      // query error (the per-API role gates remain the authoritative defence), and deny
+      // only on a definitive "no admin_users row".
+      const isInternalArea =
+        cleanPathForAuth === '/admin' ||
+        cleanPathForAuth.startsWith('/admin/') ||
+        cleanPathForAuth === '/ceo' ||
+        cleanPathForAuth.startsWith('/ceo/') ||
+        cleanPathForAuth === '/ceo-dashboard' ||
+        cleanPathForAuth.startsWith('/ceo-dashboard/');
+      if (isInternalArea && !isSuperAdmin) {
+        const { data: adminMembership, error: membershipErr } = await supabase
+          .from('admin_users')
+          .select('id')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (!membershipErr && !adminMembership) {
+          const localeSeg = pathname.startsWith('/ar') ? '/ar' : '/en';
+          const redirectResp = NextResponse.redirect(new URL(`${localeSeg}/dashboard`, request.url));
+          storedCookies.forEach(({ name, value, options }) =>
+            redirectResp.cookies.set(name, value, options ?? {})
+          );
+          return applySecurityHeaders(redirectResp, requestId);
+        }
+      }
+
       if (userRecord?.center_id) {
         const { data: center } = await supabase
           .from('centers')

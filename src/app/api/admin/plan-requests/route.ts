@@ -42,7 +42,10 @@ export async function GET(request: Request) {
   try {
     const ctx = await getAdminContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (ctx.internalRole === 'internal_viewer') {
+    // CEO-only (Phase 1 rebuild): the Plan Requests screen is restricted to super_admin.
+    // The underlying plan-change flow (owner requests, /api/admin/centers/[id] approval)
+    // is unchanged.
+    if (ctx.internalRole !== 'super_admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -134,7 +137,10 @@ export async function PUT(request: Request) {
   try {
     const ctx = await getAdminContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (ctx.internalRole === 'internal_viewer') {
+    // CEO-only (Phase 1 rebuild): the Plan Requests screen is restricted to super_admin.
+    // The underlying plan-change flow (owner requests, /api/admin/centers/[id] approval)
+    // is unchanged.
+    if (ctx.internalRole !== 'super_admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     if (!validateCSRFRequest(request, ctx.userId)) {

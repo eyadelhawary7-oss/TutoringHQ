@@ -28,6 +28,7 @@ interface TeamMember {
 type RoleKey =
   | 'internal_viewer'
   | 'internal_admin'
+  | 'sales_manager'
   | 'sales_rep'
   | 'support_agent'
   | 'accountant'
@@ -36,6 +37,7 @@ type RoleKey =
 const ROLE_OPTIONS: RoleKey[] = [
   'internal_viewer',
   'internal_admin',
+  'sales_manager',
   'sales_rep',
   'support_agent',
   'accountant',
@@ -45,6 +47,7 @@ const ROLE_OPTIONS: RoleKey[] = [
 const ROLE_LABEL_KEY: Record<RoleKey, string> = {
   internal_viewer: 'internalTeamRoleViewer',
   internal_admin: 'internalTeamRoleInternalAdmin',
+  sales_manager: 'internalTeamRoleSalesManager',
   sales_rep: 'internalTeamRoleSalesRep',
   support_agent: 'internalTeamRoleSupportAgent',
   accountant: 'internalTeamRoleAccountant',

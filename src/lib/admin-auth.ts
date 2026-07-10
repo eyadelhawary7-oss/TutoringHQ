@@ -122,12 +122,16 @@ export async function getAdminContext(request: Request): Promise<AdminContext | 
     internalRole = 'internal_admin';
   } else if (
     adminRow?.role === 'staff' ||
+    adminRow?.role === 'sales_manager' ||
     adminRow?.role === 'sales_rep' ||
     adminRow?.role === 'support_agent' ||
     adminRow?.role === 'accountant' ||
     adminRow?.role === 'custom' ||
     adminRow?.role === 'internal_viewer'
   ) {
+    // Managers and reps collapse to internal_viewer for the coarse gates; the raw
+    // adminRole is preserved on ctx.adminRole and drives center-scoping via
+    // getInternalScope (see src/lib/internalScope.ts).
     internalRole = 'internal_viewer';
   }
 
@@ -145,6 +149,7 @@ export const ROLE_HIERARCHY: Record<string, number> = {
   admin: 80,
   internal_admin: 60,
   accountant: 40,
+  sales_manager: 35,
   sales_rep: 30,
   support_agent: 30,
   internal_viewer: 20,
