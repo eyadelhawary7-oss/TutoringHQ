@@ -9,7 +9,6 @@ import {
   Building2,
   CreditCard,
   FileText,
-  Clock,
   Users,
   BarChart3,
   IdCard,
@@ -119,7 +118,6 @@ export function AdminSidebar({
   const [userPhone, setUserPhone] = useState('');
   const [adminRole, setAdminRole] = useState<string | null>(null);
   const [customPermissions, setCustomPermissions] = useState<string[]>([]);
-  const [pendingCentersCount, setPendingCentersCount] = useState(0);
   /** Which accordion sections are currently expanded. Empty set = all collapsed (default). */
   const [openSections, setOpenSections] = useState<Set<string>>(new Set());
   const sectionsInitialized = useRef(false);
@@ -197,27 +195,6 @@ export function AdminSidebar({
     },
     [adminRole, canSee],
   );
-
-  useEffect(() => {
-    let cancelled = false;
-    const loadPendingCentersCount = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session || cancelled) return;
-      const { count, error } = await supabase
-        .from('centers')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'pending');
-      if (!cancelled) {
-        setPendingCentersCount(error == null && count != null ? count : 0);
-      }
-    };
-    void loadPendingCentersCount();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     const loadAdminRole = async () => {
@@ -499,20 +476,6 @@ export function AdminSidebar({
       key: 'growth',
       labelKey: 'sidebarSectionGrowth',
       items: [
-        {
-          key: 'pendingSignups',
-          icon: Clock,
-          label: t('pendingSignups'),
-          isActive: activeRoute?.includes('admin/pending-signups') ?? false,
-          canShow: canSee('pending_signups'),
-          badge:
-            pendingCentersCount > 0 ? (
-              <span className="ms-auto min-w-[20px] h-5 flex items-center justify-center rounded-full bg-red-600 text-primary-foreground text-[11px] font-bold px-1.5">
-                {pendingCentersCount}
-              </span>
-            ) : undefined,
-          href: '/admin/pending-signups',
-        },
         {
           key: 'planRequests',
           icon: FileText,

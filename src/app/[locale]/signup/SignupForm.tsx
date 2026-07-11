@@ -531,12 +531,11 @@ export default function SignupForm() {
         } else setError(data.error || t('errorGeneric'));
         return;
       }
-      if (data.paymentUrl) {
+      if (data.success) {
         clearReferralCode();
-        window.location.href = data.paymentUrl;
-      } else if (data.success) {
-        clearReferralCode();
-        setStage('success');
+        // Trial-first: no payment at signup. Go straight to owner PIN setup
+        // (which auto-logs-in on success).
+        window.location.href = `/${locale}/set-pin`;
       }
     } catch {
       setError(t('errorGeneric'));
@@ -1017,7 +1016,7 @@ export default function SignupForm() {
                     letterSpacing: '1px',
                   }}
                 >
-                  {t('totalDue')}
+                  {t('dueAfterTrial')}
                 </div>
               </div>
               <div style={{ textAlign: 'end' }}>
@@ -1176,6 +1175,19 @@ export default function SignupForm() {
               </div>
             ) : null}
 
+            <p
+              style={{
+                ...SANS,
+                textAlign: 'center',
+                fontSize: '11px',
+                color: 'var(--color-teal)',
+                marginBottom: '10px',
+                fontWeight: 600,
+              }}
+            >
+              {t('noChargeToday')}
+            </p>
+
             <button
               type="button"
               onClick={handleSubmit}
@@ -1219,7 +1231,7 @@ export default function SignupForm() {
                     <rect x="1" y="11" width="22" height="11" rx="2" ry="2" />
                     <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                   </svg>
-                  {t('confirmAndPay')}
+                  {t('startFreeTrial')}
                 </>
               )}
             </button>

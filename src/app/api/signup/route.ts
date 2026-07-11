@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/nextjs';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { getClientIp, rateLimit, rateLimitExceededResponse } from '@/lib/ratelimit';
 import {
@@ -7,7 +7,6 @@ import {
   SIGNUP_SESSION_COOKIE_OPTIONS,
   signSignupSession,
 } from '@/lib/signupSessionCookie';
-import { getSupportWhatsAppWaMeWithText } from '@/lib/supportWhatsApp';
 import { normalizePhone } from '@/lib/utils/phone';
 import {
   PLANS,
@@ -17,27 +16,12 @@ import {
   type BillingPeriod,
   type PlanKey,
 } from '@/lib/pricing';
-import {
-  getPaymobAuthToken,
-  createPaymobOrder,
-  createPaymentKey,
-  buildPaymobIframeUrl,
-} from '@/lib/paymob';
-import { isFeatureEnabled } from '@/lib/features';
-import { todayISO } from '@/lib/parentPack';
-import { formatNumber } from '@/lib/formatNumber';
 import { parseBodyWithLimit } from '@/lib/validate';
-import { validatePromoCodeServerSide } from '@/lib/promoCode';
-import { getIntervalConfig, getProcessingFeeConfig } from '@/lib/pricingConfig';
-import { applyProcessingFee } from '@/lib/processingFee';
-
-function getTotalSignupAmount(
-  planKey: PlanKey,
-  period: BillingPeriod,
-  annualMultiplier?: number,
-): number {
-  return getPlanPrice(planKey, period, annualMultiplier);
-}
+import { getIntervalConfig } from '@/lib/pricingConfig';
+import { getSummerConfig } from '@/lib/summer/config';
+import { computeSummerSchedule } from '@/lib/summer/dates';
+import { cairoDateKey } from '@/lib/cairo/day';
+import { provisionCenterOwner } from '@/lib/centerOwnerProvision';
 
 const CITY_ID_TO_DB: Record<string, string> = {
   cairo: 'Cairo',
@@ -62,68 +46,19 @@ function mapCityToDb(city: unknown): string | null {
   return t;
 }
 
-function addMonthsToYmd(ymd: string, months: number): string {
-  const [y, m, d] = ymd.split('-').map((x) => parseInt(x, 10));
-  const dt = new Date(Date.UTC(y, m - 1 + months, d));
-  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
-}
-
-function billingEndForPeriod(startYmd: string, period: BillingPeriod): string {
-  if (period === 'monthly') return addMonthsToYmd(startYmd, 1);
-  if (period === 'annual') return addMonthsToYmd(startYmd, 12);
-  return addMonthsToYmd(startYmd, 3);
-}
-
-/** Best-effort mapping from Paymob/third-party error text for client-side i18n. */
-function mapPaymobFailureCode(msg: string): 'invalid_card' | 'insufficient_funds' | '3ds_failed' | 'generic' {
-  const m = msg.toLowerCase();
-  if (m.includes('insufficient') || m.includes('not enough') || m.includes('balance')) {
-    return 'insufficient_funds';
-  }
-  if (m.includes('3ds') || m.includes('3-d') || m.includes('secure') || m.includes('authentication')) {
-    return '3ds_failed';
-  }
-  if (
-    m.includes('declin') ||
-    m.includes('reject') ||
-    (m.includes('invalid') && m.includes('card')) ||
-    m.includes('card') ||
-    m.includes('cvv') ||
-    m.includes('expired')
-  ) {
-    return 'invalid_card';
-  }
-  return 'generic';
-}
-
-async function phoneHasActiveCenter(supabase: SupabaseClient, formattedPhone: string): Promise<boolean> {
-  const { data: userRows } = await supabase
-    .from('users')
-    .select('center_id')
-    .eq('phone', formattedPhone);
-
-  if (!userRows?.length) return false;
-
-  const centerIds = [
-    ...new Set(
-      userRows
-        .map((u: { center_id: string | null }) => u.center_id)
-        .filter((id): id is string => Boolean(id)),
-    ),
-  ];
-  if (!centerIds.length) return false;
-
-  const { data: active } = await supabase
-    .from('centers')
-    .select('id')
-    .in('id', centerIds)
-    .eq('status', 'active')
-    .limit(1)
-    .maybeSingle();
-
-  return !!active;
-}
-
+/**
+ * POST /api/signup — TRIAL-FIRST center signup.
+ *
+ * Centers no longer pay at signup. A signup creates the center already ACTIVE and
+ * enrolled in the 14-day free trial (billing-neutral: no next_payment_due, no
+ * auto_suspend), provisions the owner login immediately (no Paymob webhook needed),
+ * and hands the browser to /set-pin. The first invoice is issued at trial-end by the
+ * summer-billing engine (Aug 30 for the launch cohort, signup+14 thereafter) and is
+ * paid through Paymob by any method — only customers who saved a card are auto-charged.
+ *
+ * Abuse control: one free trial per phone, enforced atomically via the durable
+ * `trial_claims` ledger (the UNIQUE insert is the lock).
+ */
 export async function POST(request: Request) {
   try {
     type SignupJson = {
@@ -134,13 +69,14 @@ export async function POST(request: Request) {
       plan?: string;
       notes?: string;
       referralCode?: string;
-      promoCode?: unknown;
       email?: string;
-      initiatePayment?: unknown;
       billingPeriod?: unknown;
       billing_period?: unknown;
       termsAccepted?: unknown;
       privacyAccepted?: unknown;
+      // Accepted for client compatibility; ignored — signup never charges now.
+      initiatePayment?: unknown;
+      promoCode?: unknown;
     };
 
     let body: SignupJson;
@@ -153,8 +89,7 @@ export async function POST(request: Request) {
     const rawPhone = typeof body.phone === 'string' ? body.phone.trim() : '';
     const ip = getClientIp(request);
     const normalizedForKey = rawPhone ? normalizePhone(rawPhone) : '';
-    const signupKey =
-      normalizedForKey.length > 0 ? `signup:${normalizedForKey}` : `signup:${ip}`;
+    const signupKey = normalizedForKey.length > 0 ? `signup:${normalizedForKey}` : `signup:${ip}`;
     const signupWindowSec = 3600;
     const { success } = await rateLimit(signupKey, 3, signupWindowSec);
     if (!success) {
@@ -169,19 +104,14 @@ export async function POST(request: Request) {
       plan,
       notes,
       referralCode,
-      promoCode: promoCodeRaw,
       email,
-      initiatePayment: initiatePaymentRaw,
       termsAccepted: termsAcceptedRaw,
       privacyAccepted: privacyAcceptedRaw,
     } = body;
 
-    const rawPromoCode =
-      typeof promoCodeRaw === 'string' ? promoCodeRaw.trim().toUpperCase() : '';
-
-    // PDPL consent: terms acceptance and data-processing consent are distinct
-    // and both mandatory. Enforced server-side so a bypassed checkbox (direct
-    // API call) is rejected before any center row is created.
+    // PDPL consent: terms acceptance and data-processing consent are distinct and
+    // both mandatory. Enforced server-side so a bypassed checkbox (direct API call)
+    // is rejected before any center row is created.
     if (termsAcceptedRaw !== true || privacyAcceptedRaw !== true) {
       return NextResponse.json(
         { error: 'Consent required', code: 'CONSENT_REQUIRED' },
@@ -189,19 +119,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // Centers are billed monthly or annual only. Monthly is the standard cadence
-    // and the default when the field is absent or unrecognized (the quarterly
-    // clock is retired — the centers CHECK would reject an inserted 'quarterly'
-    // row outright, so it must never reach the allowlist below).
-    const billingPeriodRaw =
-      body.billingPeriod ?? body.billing_period ?? 'monthly';
+    // Centers are billed monthly or annual only; monthly is the default.
+    const billingPeriodRaw = body.billingPeriod ?? body.billing_period ?? 'monthly';
     const periodResolved: BillingPeriod = normalizeBillingPeriod(
-      ['monthly', 'annual'].includes(String(billingPeriodRaw))
-        ? String(billingPeriodRaw)
-        : 'monthly',
+      ['monthly', 'annual'].includes(String(billingPeriodRaw)) ? String(billingPeriodRaw) : 'monthly',
     );
-
-    const initiatePayment = initiatePaymentRaw === true;
 
     if (!centerName?.trim() || !ownerName?.trim() || !phone?.trim() || !plan) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -212,7 +134,6 @@ export async function POST(request: Request) {
     if (!isPlanKey(planLower) || planLower === 'top_centers') {
       return NextResponse.json({ error: 'Invalid plan selected' }, { status: 400 });
     }
-
     const planKey = planLower as PlanKey;
 
     const formattedPhone = normalizePhone(String(phone).trim());
@@ -222,63 +143,47 @@ export async function POST(request: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
     );
 
-    if (initiatePayment) {
-      if (!isFeatureEnabled('PAYMOB_ENABLED')) {
-        return NextResponse.json({ error: 'payment_unavailable' }, { status: 503 });
-      }
-
-      const activeOwner = await phoneHasActiveCenter(supabase, formattedPhone);
-      if (activeOwner) {
+    // One free trial per phone — reserve the phone atomically. The UNIQUE constraint
+    // on trial_claims.phone is the lock: a second signup for the same phone (even a
+    // deleted/rejected past center) fails the insert with 23505.
+    const { error: claimErr } = await supabase.from('trial_claims').insert({ phone: formattedPhone });
+    if (claimErr) {
+      if ((claimErr as { code?: string }).code === '23505') {
         return NextResponse.json({ error: 'phone_exists' }, { status: 400 });
       }
-
-      const { data: blacklistedRow } = await supabase
-        .from('centers')
-        .select('id')
-        .eq('is_blacklisted', true)
-        .eq('phone', formattedPhone)
-        .limit(1)
-        .maybeSingle();
-
-      if (blacklistedRow) {
-        return NextResponse.json({ error: 'phone_blacklisted' }, { status: 400 });
-      }
-    } else {
-      const { data: blacklistedMatch } = await supabase
-        .from('centers')
-        .select('id')
-        .eq('is_blacklisted', true)
-        .eq('phone', formattedPhone)
-        .limit(1)
-        .maybeSingle();
-
-      if (blacklistedMatch) {
-        return NextResponse.json(
-          { error: 'Registration is not available for this phone number.' },
-          { status: 403 },
-        );
-      }
+      console.error('[signup] trial_claims insert', claimErr);
+      return NextResponse.json({ error: 'Failed to create signup request' }, { status: 500 });
     }
 
-    const setupFees: Record<string, number> = {
-      SOLO: 200,
-      NANO: 500,
-      STARTER: 1000,
-      PRO: 2000,
-      BUSINESS: 3000,
-      ENTERPRISE: 5000,
+    const releasePhoneClaim = async () => {
+      try {
+        await supabase.from('trial_claims').delete().eq('phone', formattedPhone);
+      } catch {
+        /* best-effort release */
+      }
     };
-    const setup = setupFees[normalizedPlan] ?? 1000;
 
+    // Blacklisted phones may not register.
+    const { data: blacklistedRow } = await supabase
+      .from('centers')
+      .select('id')
+      .eq('is_blacklisted', true)
+      .eq('phone', formattedPhone)
+      .limit(1)
+      .maybeSingle();
+    if (blacklistedRow) {
+      await releasePhoneClaim();
+      return NextResponse.json({ error: 'phone_blacklisted' }, { status: 400 });
+    }
+
+    // Pricing snapshot for the (post-trial) subscription. No money moves now.
     const allInPerMonth = PLANS[planKey].quarterlyAllIn;
-    // Annual = monthly × annualMultiplier from the live admin config, so the price
-    // CHARGED here matches the price SHOWN on /pricing (same source of truth).
-    // For monthly, getPlanPrice returns the monthly list price (one month, never ×3).
     const intervalCfg = await getIntervalConfig();
     const periodAmount = getPlanPrice(planKey, periodResolved, intervalCfg.annualMultiplier);
-
+    const weeklyLimit = PLANS[planKey]?.weeklyStudentLimit ?? null;
     const cityDb = mapCityToDb(city);
 
+    // Referral attribution (best-effort).
     let referrerCenterId: string | null = null;
     const cleanRefCode = typeof referralCode === 'string' ? referralCode.trim().toUpperCase() : '';
     if (cleanRefCode) {
@@ -299,9 +204,17 @@ export async function POST(request: Request) {
       }
     }
 
-    const emailTrim = typeof email === 'string' ? email.trim() : '';
+    // Enroll into the 14-day trial via the shared summer schedule (same math the
+    // summer-billing cron uses): trial_start = max(signup, free_until=Aug 16),
+    // first_invoice_at = max(trial_start+14, first_charge_floor=Aug 30). Billing is
+    // neutralised (next_payment_due/auto_suspend NULL) so the normal billing crons
+    // skip the center; the summer engine owns the trial-end invoice + lock.
+    const summerCfg = await getSummerConfig();
+    const signupCairo = cairoDateKey(new Date());
+    const schedule = computeSummerSchedule(signupCairo, summerCfg);
 
-    const termsAcceptedAt = new Date().toISOString();
+    const nowIso = new Date().toISOString();
+    const emailTrim = typeof email === 'string' ? email.trim() : '';
     const centerInsert: Record<string, unknown> = {
       name: centerName.trim(),
       owner_name: ownerName.trim(),
@@ -310,240 +223,109 @@ export async function POST(request: Request) {
       city: cityDb,
       plan: planLower,
       signup_notes: typeof notes === 'string' ? notes.trim() || null : null,
-      status: initiatePayment ? 'pending_payment' : 'pending',
-      subscription_status: 'pending',
+      // Trial-first: active with full access, but billing-neutral until trial-end.
+      status: 'active',
+      subscription_status: 'active',
+      billing_status: 'active',
+      // approved_at is the "provisioned" signal /set-pin AND-s with status='active'
+      // to authorise the owner's PIN choice (isCenterPaidAndActivated).
+      approved_at: nowIso,
       billing_type: 'fixed',
       billing_period: periodResolved,
       billing_amount: periodAmount,
       all_in_price: allInPerMonth,
-      requested_at: new Date().toISOString(),
-      terms_accepted_at: termsAcceptedAt,
+      // CHECK allows {'monthly','yearly'}; annual is spelled 'yearly' here.
+      subscription_billing_period: periodResolved === 'annual' ? 'yearly' : 'monthly',
+      next_payment_due: null,
+      auto_suspend_at: null,
+      // Trial enrollment (mirrors summerBillingCron.runCenters enroll action).
+      summer_status: 'enrolled',
+      summer_trial_start: schedule.trialStart,
+      summer_first_invoice_at: schedule.firstInvoiceAt,
+      summer_lock_at: schedule.lockAtIso,
+      summer_enrolled_at: nowIso,
+      requested_at: nowIso,
+      terms_accepted_at: nowIso,
       terms_version: 'v1-2026-05',
-      policy_accepted_at: termsAcceptedAt,
+      policy_accepted_at: nowIso,
       policy_version: '1.0',
     };
-
-    if (initiatePayment) {
-      centerInsert.billing_status = 'pending';
-    }
-
-    // Pin the subscription billing cadence explicitly for EVERY period. The
-    // activation / auto-approve path resolves cadence as
-    // `subscription_billing_period ?? billing_period`; this column otherwise
-    // takes its DB default of 'monthly' (migration 20260705050120). Leaving it
-    // unset for an ANNUAL signup billed the customer the full annual amount up
-    // front but then activated on a monthly clock (+30d) and re-invoiced at day
-    // 31 — a double charge. The column's CHECK allows only {'monthly','yearly'};
-    // annual is spelled 'yearly' here (billing_period uses 'annual').
-    centerInsert.subscription_billing_period =
-      periodResolved === 'annual' ? 'yearly' : 'monthly';
-
+    if (weeklyLimit != null) centerInsert.weekly_student_limit = weeklyLimit;
     if (referrerCenterId) {
       centerInsert.referred_by = referrerCenterId;
-      centerInsert.referral_code_used_at = new Date().toISOString();
+      centerInsert.referral_code_used_at = nowIso;
     }
 
     const { data: center, error: centerError } = await supabase
       .from('centers')
       .insert(centerInsert)
-      .select()
+      .select('id')
       .single();
 
-    if (centerError) {
+    if (centerError || !center?.id) {
       console.error('[signup] Center creation error:', centerError);
+      await releasePhoneClaim();
       return NextResponse.json({ error: 'Failed to create signup request' }, { status: 500 });
     }
 
-    if (referrerCenterId && center?.id && cleanRefCode) {
+    const centerId = center.id as string;
+
+    if (referrerCenterId && cleanRefCode) {
       const { error: refErr } = await supabase.from('referrals').insert({
         referrer_center_id: referrerCenterId,
-        referred_center_id: center.id,
+        referred_center_id: centerId,
         referral_code: cleanRefCode,
         status: 'pending',
       });
       if (refErr) console.error('[signup] Referral link insert failed:', refErr);
     }
 
-    if (initiatePayment && center?.id) {
-      const baseAmountEgp = getTotalSignupAmount(
-        planKey,
-        periodResolved,
-        intervalCfg.annualMultiplier,
-      );
-      if (!Number.isFinite(baseAmountEgp) || baseAmountEgp <= 0) {
-        return NextResponse.json({ error: 'Invalid payment amount' }, { status: 400 });
-      }
-
-      // Server-side promo validation (do not trust client-side validation).
-      let promoResult: Awaited<ReturnType<typeof validatePromoCodeServerSide>> | null = null;
-      if (rawPromoCode) {
-        promoResult = await validatePromoCodeServerSide(supabase, {
-          code: rawPromoCode,
-          planKey,
-          billingInterval: periodResolved,
-        });
-        if (!promoResult.valid) {
-          return NextResponse.json(
-            { error: 'promo_code_invalid', promoError: promoResult.error },
-            { status: 400 },
-          );
-        }
-      }
-
-      const subscriptionEgp =
-        promoResult?.valid ? promoResult.discountedAmountEgp : baseAmountEgp;
-      const invoiceDiscountAmount =
-        promoResult?.valid ? promoResult.savingsEgp : 0;
-
-      // Flat processing fee (Section 5) added on top of the (possibly discounted)
-      // subscription. amountEgp is what the customer is actually charged.
-      const feeCfg = await getProcessingFeeConfig();
-      const { fee: processingFee, total: amountEgp } = applyProcessingFee(
-        subscriptionEgp,
-        feeCfg,
-      );
-
-      const startYmd = todayISO();
-      const endYmd = billingEndForPeriod(startYmd, periodResolved);
-      const dueYmd = addMonthsToYmd(startYmd, 0);
-      const dueDateObj = new Date(`${dueYmd}T12:00:00.000Z`);
-      dueDateObj.setUTCDate(dueDateObj.getUTCDate() + 1);
-      const dueYmdPlus1 = dueDateObj.toISOString().slice(0, 10);
-
-      const { data: codeRow } = await supabase
-        .from('centers')
-        .select('center_code')
-        .eq('id', center.id)
-        .maybeSingle();
-      const code = (codeRow as { center_code?: string } | null)?.center_code ?? 'NEW';
-      const yearMonth = startYmd.slice(0, 7);
-      const invoiceNumber = `SIG-${code}-${yearMonth}-${Date.now().toString(36)}`;
-
-      const amountCents = Math.round(amountEgp * 100);
-      const payName = ownerName.trim() || centerName.trim();
-
+    // Provision the owner login immediately (auth user + owner row + PIN rails +
+    // referral code + welcome). No payment / webhook required.
+    try {
+      await provisionCenterOwner(supabase, {
+        centerId,
+        centerName: centerName.trim(),
+        ownerName: ownerName.trim(),
+        phone: formattedPhone,
+      });
+    } catch (provErr) {
+      console.error('[signup] owner provisioning failed:', provErr);
+      Sentry.captureException(provErr, {
+        tags: { route: 'signup', step: 'provisionCenterOwner' },
+        extra: { centerId },
+      });
+      // Roll back so the phone can retry a clean trial.
       try {
-        const authToken = await getPaymobAuthToken();
-        const orderId = await createPaymobOrder({
-          authToken,
-          amountCents,
-          centerId: center.id,
-          centerName: centerName.trim(),
-        });
-
-        const invoiceInsert: Record<string, unknown> = {
-          center_id: center.id,
-          invoice_number: invoiceNumber,
-          invoice_type: 'signup_first_payment',
-          total_amount: amountEgp,
-          base_amount: baseAmountEgp,
-          billing_period_start: startYmd,
-          billing_period_end: endYmd,
-          due_date: dueYmdPlus1,
-          status: 'pending',
-          discount_amount: invoiceDiscountAmount,
-          paymob_order_id: orderId,
-          metadata: { processing_fee: processingFee },
-        };
-        if (promoResult?.valid) {
-          invoiceInsert.promo_code = promoResult.code;
-          invoiceInsert.promo_original_amount = promoResult.originalAmountEgp;
-        }
-
-        const { data: invRow, error: invErr } = await supabase
-          .from('invoices')
-          .insert(invoiceInsert)
-          .select('id')
-          .single();
-
-        if (invErr || !invRow) {
-          console.error('[signup] Invoice insert', invErr);
-          return NextResponse.json({ error: 'Failed to create invoice' }, { status: 500 });
-        }
-
-        const paymentToken = await createPaymentKey({
-          authToken,
-          orderId,
-          amountCents,
-          phone: formattedPhone.replace(/^\+/, '') || formattedPhone,
-          name: payName,
-          // Phase 2 (2f): first payment — ask Paymob to tokenize the card so it can
-          // be saved (consent-gated) for future auto-charges.
-          requestToken: true,
-        });
-
-        const paymentUrl = buildPaymobIframeUrl(paymentToken);
-
-        // chq_signup_session - proves the browser arriving back at /set-pin is
-        // the same browser that initiated THIS signup. The cookie alone is NOT
-        // sufficient authority to set a PIN; /api/auth/set-initial-pin AND-s it
-        // against webhook-confirmed paid+activated state.
-        const signed = signSignupSession(center.id);
-        const response = NextResponse.json({
-          success: true,
-          paymentUrl,
-          center_id: center.id,
-        });
-        if (signed) {
-          response.cookies.set({
-            name: SIGNUP_SESSION_COOKIE,
-            value: signed,
-            ...SIGNUP_SESSION_COOKIE_OPTIONS,
-          });
-        } else {
-          // CSRF_SECRET missing / malformed - set-PIN cookie path will silently
-          // not work. Surface loudly so ops sees the misconfig instead of
-          // discovering it via broken onboarding.
-          Sentry.captureMessage(
-            'signup: chq_signup_session cookie not signed - CSRF_SECRET unset/malformed; cross-device fallback still works',
-            {
-              level: 'error',
-              tags: { route: 'signup', reason: 'signup_session_secret_missing' },
-            },
-          );
-        }
-        return response;
-      } catch (payErr) {
-        console.error('[signup] Paymob error:', payErr);
-        const msg = payErr instanceof Error ? payErr.message : 'Payment initiation failed';
-        const paymob_code = mapPaymobFailureCode(msg);
-        return NextResponse.json(
-          { error: 'payment_unavailable', paymob_code, detail: msg },
-          { status: 502 },
-        );
+        await supabase.from('centers').delete().eq('id', centerId);
+      } catch {
+        /* best-effort rollback */
       }
+      await releasePhoneClaim();
+      return NextResponse.json({ error: 'Failed to create signup request' }, { status: 500 });
     }
 
-    const firstPayment = periodAmount + setup;
-    const whatsappMessage = `🆕 *NEW SIGNUP REQUEST*
+    // Record which center consumed the phone's free trial (audit; best-effort).
+    await supabase.from('trial_claims').update({ center_id: centerId }).eq('phone', formattedPhone);
 
-📋 *Center Details:*
-- Name: ${centerName}
-- Owner: ${ownerName}
-- Phone: ${formattedPhone}
-- City: ${cityDb || ','}
-- Plan: ${normalizedPlan}
-- Billing period: ${periodResolved}
-
-💰 *Payment Required (all-inclusive):*
-- Selected period total: EGP ${formatNumber(periodAmount, 'en')}
-- Setup Fee: EGP ${formatNumber(setup, 'en')}
-- *First Payment: EGP ${formatNumber(firstPayment, 'en')}*
-
-📝 Notes: ${notes || 'None'}
-
-🔗 View in admin panel.`;
-
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tutoringhq.app';
-    const adminWhatsAppUrl = getSupportWhatsAppWaMeWithText(whatsappMessage) || '';
-
-    return NextResponse.json({
-      success: true,
-      message: 'Signup request submitted successfully',
-      center_id: center.id,
-      center,
-      admin_whatsapp_url: adminWhatsAppUrl,
-    });
+    // chq_signup_session proves the browser arriving at /set-pin initiated THIS
+    // signup. It is not sufficient authority alone — /api/auth/set-initial-pin
+    // AND-s it against the center's active+approved state and a live PIN token.
+    const signed = signSignupSession(centerId);
+    const response = NextResponse.json({ success: true, center_id: centerId, pinSetup: true });
+    if (signed) {
+      response.cookies.set({
+        name: SIGNUP_SESSION_COOKIE,
+        value: signed,
+        ...SIGNUP_SESSION_COOKIE_OPTIONS,
+      });
+    } else {
+      Sentry.captureMessage(
+        'signup: chq_signup_session cookie not signed - CSRF_SECRET unset/malformed; owner can recover a PIN link via fallback',
+        { level: 'error', tags: { route: 'signup', reason: 'signup_session_secret_missing' } },
+      );
+    }
+    return response;
   } catch (error) {
     console.error('[signup] Error:', error);
     return NextResponse.json(
