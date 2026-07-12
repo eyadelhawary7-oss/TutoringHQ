@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@supabase/supabase-js'
 import { parseBodyWithLimit } from '@/lib/validate';
 import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
@@ -13,6 +14,21 @@ const supabaseAdmin =
       })
     : null
 
+// Two FKs from center_assignments -> staff now exist (staff_id, manager_staff_id), so the
+// embed must disambiguate by column, otherwise PostgREST errors on ambiguous embedding.
+const ASSIGNMENT_SELECT = `
+        *,
+        centers (
+          id, name, center_code, plan, status, city, referred_by
+        ),
+        staff:staff!staff_id (
+          id, name, role, city
+        ),
+        manager:staff!manager_staff_id (
+          id, name, role, city
+        )
+      `
+
 // GET /api/admin/center-assignments
 export async function GET(request: Request) {
   if (!supabaseAdmin) {
@@ -22,24 +38,75 @@ export async function GET(request: Request) {
     )
   }
 
-  if (!(await getAdminContext(request))) {
+  const ctx = await getAdminContext(request)
+  if (!ctx) {
     return NextResponse.json({ errorKey: 'centerAssignments.errors.unauthorized' }, { status: 401 })
   }
 
+  const isFullAdmin = requireAdminRole(ctx, ['super_admin', 'admin']) === null
+  const isManager = ctx.adminRole === 'sales_manager'
+  // Reps get nothing here; only CEO / internal_admin and the sales_manager view this page.
+  if (!isFullAdmin && !isManager) {
+    return NextResponse.json({ errorKey: 'centerAssignments.errors.unauthorized' }, { status: 403 })
+  }
+
+  // ── Manager view: only their own assigned accounts + their reps for sub-assign ──
+  if (isManager && !isFullAdmin) {
+    const { data: staffRow } = await supabaseAdmin
+      .from('staff')
+      .select('id')
+      .eq('user_id', ctx.userId)
+      .maybeSingle()
+    const managerStaffId = (staffRow as { id?: string } | null)?.id ?? null
+    // Fail closed: an unlinked manager sees nothing.
+    if (!managerStaffId) {
+      return NextResponse.json({
+        assignments: [],
+        unassigned_centers: [],
+        all_active_centers: [],
+        staff: [],
+        reps: [],
+        viewer: { role: 'sales_manager', staff_id: null },
+      })
+    }
+
+    const { data: reps } = await supabaseAdmin
+      .from('staff')
+      .select('id, name, role, city, status')
+      .eq('reports_to', managerStaffId)
+      .eq('status', 'active')
+      .order('name')
+    const repList = reps ?? []
+    const scopeIds = [managerStaffId, ...repList.map((r) => (r as { id: string }).id)]
+
+    const { data: assignments, error } = await supabaseAdmin
+      .from('center_assignments')
+      .select(ASSIGNMENT_SELECT)
+      .or(`manager_staff_id.eq.${managerStaffId},staff_id.in.(${scopeIds.join(',')})`)
+      .order('assigned_at', { ascending: false })
+
+    if (error) {
+      return NextResponse.json(
+        { errorKey: 'centerAssignments.errors.list_failed', detail: error.message },
+        { status: 500 },
+      )
+    }
+
+    return NextResponse.json({
+      assignments: assignments ?? [],
+      unassigned_centers: [],
+      all_active_centers: [],
+      staff: repList,
+      reps: repList,
+      viewer: { role: 'sales_manager', staff_id: managerStaffId },
+    })
+  }
+
+  // ── CEO / internal_admin view: everything ──
   const [assignmentsRes, centersRes, staffRes] = await Promise.all([
     supabaseAdmin
       .from('center_assignments')
-      .select(
-        `
-        *,
-        centers (
-          id, name, center_code, plan, status, city, referred_by
-        ),
-        staff (
-          id, name, role, city
-        )
-      `,
-      )
+      .select(ASSIGNMENT_SELECT)
       .order('assigned_at', { ascending: false }),
 
     supabaseAdmin
@@ -87,10 +154,101 @@ export async function GET(request: Request) {
     unassigned_centers: unassignedCenters,
     all_active_centers: allActiveCenters,
     staff: staffList,
+    reps: [],
+    viewer: { role: 'super_admin' },
   })
 }
 
-// POST /api/admin/center-assignments - create assignment (super_admin or admin role)
+/**
+ * Phase 4b — CEO batch-assigns a set of centers to a Manager. Each row is left in the
+ * "assigned to manager, rep not yet chosen" state (manager_staff_id set, staff_id NULL,
+ * status pending_sm_approval, sourced_by 'sm'). Because one_primary_per_center is a
+ * partial unique index, a PostgREST upsert can't target it cleanly, so this does a manual
+ * upsert: update the existing primary row per center, insert where none exists. Does NOT
+ * touch commission logic.
+ */
+async function batchAssignCentersToManager(
+  admin: SupabaseClient,
+  userId: string,
+  body: Record<string, unknown>,
+) {
+  const centerIds = (body.center_ids as unknown[]).filter(
+    (x): x is string => typeof x === 'string' && x.length > 0,
+  )
+  const managerStaffId = body.manager_staff_id as string | undefined
+
+  if (!managerStaffId || centerIds.length === 0) {
+    return NextResponse.json(
+      { errorKey: 'centerAssignments.errors.batch_requires_manager_and_centers' },
+      { status: 400 },
+    )
+  }
+
+  const { data: mgr } = await admin
+    .from('staff')
+    .select('id, role')
+    .eq('id', managerStaffId)
+    .maybeSingle()
+  if (!mgr || (mgr as { role?: string }).role !== 'sm') {
+    return NextResponse.json(
+      { errorKey: 'centerAssignments.errors.manager_not_sm' },
+      { status: 400 },
+    )
+  }
+
+  const { data: existing } = await admin
+    .from('center_assignments')
+    .select('id, center_id')
+    .in('center_id', centerIds)
+    .eq('is_primary', true)
+  const existingByCenter = new Map(
+    (existing ?? []).map((r) => [(r as { center_id: string }).center_id, (r as { id: string }).id]),
+  )
+
+  const patch = {
+    manager_staff_id: managerStaffId,
+    staff_id: null,
+    assignment_status: 'pending_sm_approval',
+    sourced_by: 'sm',
+    assigned_by: userId,
+  }
+
+  const toInsert: Record<string, unknown>[] = []
+  for (const cid of centerIds) {
+    const existingId = existingByCenter.get(cid)
+    if (existingId) {
+      const { error } = await admin.from('center_assignments').update(patch).eq('id', existingId)
+      if (error) {
+        return NextResponse.json(
+          { errorKey: 'centerAssignments.errors.save_failed', detail: error.message },
+          { status: 500 },
+        )
+      }
+    } else {
+      toInsert.push({ center_id: cid, is_primary: true, ...patch })
+    }
+  }
+
+  if (toInsert.length > 0) {
+    const { error } = await admin.from('center_assignments').insert(toInsert)
+    if (error) {
+      if (error.code === '23505') {
+        return NextResponse.json(
+          { errorKey: 'centerAssignments.errors.duplicate_primary' },
+          { status: 409 },
+        )
+      }
+      return NextResponse.json(
+        { errorKey: 'centerAssignments.errors.save_failed', detail: error.message },
+        { status: 500 },
+      )
+    }
+  }
+
+  return NextResponse.json({ success: true, assigned: centerIds.length }, { status: 201 })
+}
+
+// POST /api/admin/center-assignments
 export async function POST(request: Request) {
   if (!supabaseAdmin) {
     return NextResponse.json(
@@ -103,9 +261,6 @@ export async function POST(request: Request) {
   if (!ctx) {
     return NextResponse.json({ errorKey: 'centerAssignments.errors.unauthorized' }, { status: 401 })
   }
-  // Role gate added per docs/AUDIT_v22.md Phase 3 / Phase 8 P0 (Task 9)
-  const roleErr = requireAdminRole(ctx, ['super_admin', 'admin'])
-  if (roleErr) return roleErr
 
   let body: Record<string, unknown>
   try {
@@ -113,6 +268,17 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ errorKey: 'centerAssignments.errors.invalid_json' }, { status: 400 })
   }
+
+  // Phase 4b: CEO batch-assigns a list of centers to a Manager (super_admin only).
+  if (Array.isArray(body.center_ids)) {
+    const roleErr = requireAdminRole(ctx, ['super_admin'])
+    if (roleErr) return roleErr
+    return batchAssignCentersToManager(supabaseAdmin, ctx.userId, body)
+  }
+
+  // Legacy single-assignment path (super_admin or admin role).
+  const roleErr = requireAdminRole(ctx, ['super_admin', 'admin'])
+  if (roleErr) return roleErr
 
   const center_id = body.center_id as string | undefined
   const staff_id = (body.staff_id as string | null | undefined) ?? null

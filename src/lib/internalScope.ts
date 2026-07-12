@@ -120,8 +120,13 @@ export async function getInternalScope(ctx: AdminContext): Promise<InternalScope
 /**
  * Center ids this scope may access, or `null` for unrestricted (level === 'all').
  * A restricted scope with no staff ids returns `[]` (sees nothing) — fail closed.
- * Only 'approved' assignments count; unassigned / eyad-sourced / referral centers are
- * therefore never returned to a Manager or Rep.
+ * Only 'approved' assignments count; unassigned / eyad-sourced / referral / still-pending
+ * centers are therefore never returned to a Manager or Rep.
+ *
+ * Phase 4b: a Manager (level 'team') owns a center two ways — a row directly assigned to
+ * one of their staff ids (self or a reporting rep), OR a row assigned to the manager at
+ * the manager level (manager_staff_id set, rep not yet chosen). A Rep (level 'own') only
+ * ever matches on staff_id — a rep is never a manager, so manager_staff_id never widens them.
  */
 export async function allowedCenterIds(
   supabaseAdmin: SupabaseClient,
@@ -130,16 +135,69 @@ export async function allowedCenterIds(
   if (scope.level === 'all') return null;
   if (scope.staffIds.length === 0) return [];
 
-  const { data } = await supabaseAdmin
+  const ids = new Set<string>();
+
+  const { data: byStaff } = await supabaseAdmin
     .from('center_assignments')
     .select('center_id')
     .in('staff_id', scope.staffIds)
     .eq('assignment_status', 'approved');
-
-  const ids = new Set<string>();
-  for (const row of data ?? []) {
+  for (const row of byStaff ?? []) {
     const centerId = (row as { center_id: string | null }).center_id;
     if (centerId) ids.add(centerId);
   }
+
+  if (scope.level === 'team') {
+    const { data: byManager } = await supabaseAdmin
+      .from('center_assignments')
+      .select('center_id')
+      .in('manager_staff_id', scope.staffIds)
+      .eq('assignment_status', 'approved');
+    for (const row of byManager ?? []) {
+      const centerId = (row as { center_id: string | null }).center_id;
+      if (centerId) ids.add(centerId);
+    }
+  }
+
+  return [...ids];
+}
+
+/**
+ * Teacher ids (teacher_profiles.user_id) this scope may access, or `null` for unrestricted
+ * (level === 'all'). Same shape and fail-closed contract as {@link allowedCenterIds}, over
+ * the teacher_assignments table: a Manager matches staff_id (self + reps) OR manager_staff_id
+ * (self at the manager level); a Rep matches staff_id only. Only 'approved' rows count.
+ */
+export async function allowedTeacherIds(
+  supabaseAdmin: SupabaseClient,
+  scope: InternalScope,
+): Promise<string[] | null> {
+  if (scope.level === 'all') return null;
+  if (scope.staffIds.length === 0) return [];
+
+  const ids = new Set<string>();
+
+  const { data: byStaff } = await supabaseAdmin
+    .from('teacher_assignments')
+    .select('teacher_id')
+    .in('staff_id', scope.staffIds)
+    .eq('assignment_status', 'approved');
+  for (const row of byStaff ?? []) {
+    const teacherId = (row as { teacher_id: string | null }).teacher_id;
+    if (teacherId) ids.add(teacherId);
+  }
+
+  if (scope.level === 'team') {
+    const { data: byManager } = await supabaseAdmin
+      .from('teacher_assignments')
+      .select('teacher_id')
+      .in('manager_staff_id', scope.staffIds)
+      .eq('assignment_status', 'approved');
+    for (const row of byManager ?? []) {
+      const teacherId = (row as { teacher_id: string | null }).teacher_id;
+      if (teacherId) ids.add(teacherId);
+    }
+  }
+
   return [...ids];
 }

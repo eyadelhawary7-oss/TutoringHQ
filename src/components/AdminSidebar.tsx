@@ -573,7 +573,7 @@ export function AdminSidebar({
           icon: MapPin,
           label: t('centerAssignments.title'),
           isActive: !!isCenterAssignments,
-          canShow: adminRole === 'super_admin',
+          canShow: adminRole === 'super_admin' || adminRole === 'sales_manager',
           href: '/admin/center-assignments',
         },
         {

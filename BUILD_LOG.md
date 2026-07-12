@@ -137,3 +137,22 @@ built on the finalized commission engine)**.
   the scoped manager payout VIEW should show status/commission only (refine in Phase 5);
   (2) Centers-page suspend/delete/blacklist buttons stay visible to sales roles though
   the API fails closed — hide-or-keep is a UI decision.
+
+## Phase 4b — two-level CEO→Manager→Rep assignment (Opus 4.8) — DONE ✅
+- **Migration (repo only)** `20260712120000_two_level_assignment.sql`: adds
+  `center_assignments.manager_staff_id` (FK staff) + relaxes `sourced_by_eyad_no_staff`
+  (a non-eyad row may carry manager_staff_id with staff_id NULL); new **`teacher_assignments`**
+  table (service-role-only RLS, mirrors center concept). **NEW DATA — flagged.**
+- **Scope extended (fail-closed)**: `allowedCenterIds` — a manager (`team`) unions
+  `staff_id ∈ staffIds` + `manager_staff_id ∈ staffIds`; a rep (`own`) matches `staff_id`
+  only (never manager_staff_id — proven by test). New `allowedTeacherIds` (same shape over
+  `teacher_assignments`). 27 scope/assignment tests pass.
+- **Two-level API**: CEO batch-assign centers/teachers to a manager (POST, super_admin,
+  validates target is a staff `sm`, writes manager_staff_id + `pending_sm_approval`);
+  manager sub-assign to rep (PATCH, gated: caller's `staff.id === row.manager_staff_id`
+  AND rep's `reports_to === caller` — else 403; sets staff_id + `approved`); CEO override.
+  New `/api/admin/teacher-assignments` + `[id]`. **Commission calc untouched** (money track).
+- **UI**: center-assignments page gets Centers/Teachers tabs, CEO batch/override, manager
+  sub-assign view; sidebar link now visible to `sales_manager`.
+- Verified by orchestrator: typecheck exit 0, 1232 unit tests, stabilization OK; manual
+  review of the manager sub-assign gate + migration confirms fail-closed. SW_VERSION v12→v13.
