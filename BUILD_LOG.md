@@ -47,5 +47,21 @@ fixes, orchestration, and verification driven by the Fable 5 orchestrator.
 ### CI gate — GREEN
 - `typecheck` clean; `test:unit` 145 files / 1181 tests pass (was 1 failing suite).
 
-### Centers-route auth refactor
-- (pending) `/api/admin/centers` onto `getAdminContext` before Phase 4.
+### Centers-route auth refactor — DONE
+- `/api/admin/centers` GET refactored off its bespoke inline cookie/bearer +
+  admin_users lookup onto the shared `getAdminContext(request)` resolver, exposing a
+  `ctx: AdminContext` that Phase 4 will pass to `getInternalScope()` for center
+  scoping. Access semantics preserved (super_admin OR canApproveSignups OR `centers`
+  perm; `!ctx` → 403 to match the client's `/dashboard` redirect). Removed the now-dead
+  `createServerClient`/`cookies`/`customPermissionsToKeys` imports.
+  - _Scoped to GET (the list — the scoped read path). POST/DELETE mutations retain
+    their own auth (not scoped reads); noted for a later cleanup._
+  - _Model note: authored by the Fable orchestrator as foundational/pre-Phase-4
+    refactor; product feature phases (2–6) will use Opus 4.8 subagents._
+
+## PRE-WORK GATE COMPLETE ✅ (typecheck + 1181 unit tests + verify:stabilization green)
+
+Ready to begin Phase 2. Remaining: Phase 2 CEO home → Phase 3 combined screens →
+Phase 4 manager scope + two-level assignment + promo request → Phase 5 rep scope →
+Phase 6 HR/commission views → W3 saved-card sandbox → W4 export gate → money track
+(REQUIRES SIGN-OFF, Fable 5).

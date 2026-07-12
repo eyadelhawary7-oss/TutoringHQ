@@ -1,14 +1,13 @@
-import { createServerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { getAdminContext } from '@/lib/admin-auth';
 import { verifyPasswordForSensitiveAction } from '@/lib/verify-password';
 import { logAdminAction } from '@/lib/audit';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { normalizePhone } from '@/lib/utils/phone';
 import { generateReferralCode } from '@/lib/referral';
 import { sendWelcomeTemplate } from '@/lib/centerNotify';
-import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
-import { customPermissionsToKeys, fetchAdminAccessFlags } from '@/lib/admin-access';
+import { fetchAdminAccessFlags } from '@/lib/admin-access';
 import { getAdminPermissions } from '@/lib/admin-roles';
 import { PLANS, getChargeFromQuarterlyAllIn, type PlanKey } from '@/lib/pricing';
 import { todayISO } from '@/lib/parentPack';
@@ -229,84 +228,21 @@ function generatePin(): string {
 
 export async function GET(request: Request) {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
-    }
-
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-
-    let userId: string | null = null;
-
-    // Try 1: Cookie-based auth
-    const cookieStore = await cookies();
-    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll().map((c) => ({ name: c.name, value: c.value }));
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
-        },
-      },
-    });
-
-    const { data: { session: cookieSession } } = await supabase.auth.getSession();
-
-    if (cookieSession) {
-      userId = cookieSession.user.id;
-    } else {
-      // Try 2: Authorization header
-      const authHeader = request.headers.get('Authorization');
-      if (authHeader?.startsWith('Bearer ')) {
-        const token = authHeader.substring(7);
-        const { data: { user }, error } = await supabase.auth.getUser(token);
-
-        if (user && !error) {
-          userId = user.id;
-        }
-      }
-    }
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized - no session found' }, { status: 401 });
-    }
-
-    // Check if user is admin
-    const { data: adminUser } = await adminClient
-      .from('admin_users')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    const { data: userData } = await adminClient
-      .from('users')
-      .select('phone')
-      .eq('id', userId)
-      .single();
-
-    const superAdminPhones = (process.env.SUPER_ADMIN_PHONES || '')
-      .split(',')
-      .map((p: string) => p.trim())
-      .filter(Boolean);
-    const userPhone = cookieSession?.user?.phone ?? userData?.phone ?? null;
-    const isPhoneAdmin = !!userPhone && superAdminPhones.includes(String(userPhone));
-
-    if (!adminUser && !isPhoneAdmin) {
+    // Shared internal-auth resolver (cookie or bearer, admin_users row or
+    // SUPER_ADMIN_PHONES). Refactored off the old inline cookie/bearer block so
+    // Phase 4 can pass this `ctx` to getInternalScope() for CEO/Manager/Rep center
+    // scoping. `!ctx` (no session or not internal) returns 403 to match the prior
+    // behaviour — the Centers client redirects to /dashboard on 403.
+    const ctx = await getAdminContext(request);
+    if (!ctx) {
       return NextResponse.json({ error: 'Forbidden - admin access required' }, { status: 403 });
     }
+    const adminClient = ctx.supabaseAdmin;
+    const userId = ctx.userId;
 
     const flags = await fetchAdminAccessFlags(adminClient, userId);
-    const effRole = flags.isSuperAdmin ? 'super_admin' : (adminUser?.role ?? 'internal_viewer');
-    const customKeys = customPermissionsToKeys(adminUser?.custom_permissions);
-    const perms = getAdminPermissions(effRole, customKeys);
+    const effRole = flags.isSuperAdmin ? 'super_admin' : (flags.adminRole ?? 'internal_viewer');
+    const perms = getAdminPermissions(effRole, flags.customPermissionKeys);
     if (!flags.isSuperAdmin && !flags.canApproveSignups && !perms.includes('centers')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
