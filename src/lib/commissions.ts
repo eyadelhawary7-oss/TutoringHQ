@@ -1,4 +1,26 @@
+// src/lib/commissions.ts
+//
+// Money-track commission engine (v2). REQUIRES SIGN-OFF — every amount here changes
+// what a rep/manager is PAID. The pure amount math lives in `@/lib/commission/rates`;
+// this file is the DB layer (create / convert / clawback / clock / reassign).
+//
+// Model (replaces the old fixed-EGP COMMISSION_TABLE):
+//   • rep      = 20% of the customer's monthly plan price (post-discount), split into
+//                two equal halves — T1 at conversion, T2 at 180 active days recomputed
+//                at the CURRENT plan price (the T2 cron does the recompute).
+//   • loyalty  = 1% of realized first-12-months revenue, unlocked at 365 active days
+//                (the loyalty cron computes the amount from real paid invoices).
+//   • override = manager gets 20% of the rep's commission AND 20% of the rep's loyalty.
+//   • Owners are polymorphic: 'center' (center_id) or 'teacher' (teacher_id). Same rules.
+//
+// Dedup: uses explicit INSERT + 23505-catch against the partial unique indexes
+// (one_commission_per_{center,teacher}_staff_type / one_eyad_commission_per_*), NOT
+// PostgREST upsert onConflict — a partial index can't be inferred by column list, which
+// is what let the old `ignoreDuplicates` upsert fall through to a duplicate INSERT.
+
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { computeRepCommission, computeOverride } from '@/lib/commission/rates'
+import { resolveOwnerMonthlyPrice, type OwnerType as _OwnerType } from '@/lib/commission/ownerFinancials'
 
 let cachedAdmin: SupabaseClient | null = null
 
@@ -20,89 +42,107 @@ const supabaseAdmin = new Proxy({} as SupabaseClient, {
   },
 })
 
-export const COMMISSION_TABLE = {
-  sr: {
-    solo: 200,
-    nano: 500,
-    starter: 1000,
-    pro: 2000,
-    business: 3000,
-    enterprise: 5000,
-    top_centers: 5000,
-  },
-  sm: {
-    solo: 400,
-    nano: 800,
-    starter: 1800,
-    pro: 3200,
-    business: 5200,
-    enterprise: 7500,
-    top_centers: 7500,
-  },
-} as const
+export type OwnerType = _OwnerType
 
-export const SM_OVERRIDE_RATE = 0.2
-export const T1_RATE = 0.6
-export const T2_RATE = 0.4
-export const LOYALTY_BONUS = 200
-export const T2_ACTIVE_DAYS = 180
+interface OwnerAssignment {
+  staff_id: string | null
+  sourced_by: string | null
+  assignment_status: string | null
+  referred_by_center: boolean
+}
 
-type PlanKey = keyof typeof COMMISSION_TABLE.sr
-type StaffRole = 'sm' | 'sr'
+async function getOwnerAssignment(ownerType: OwnerType, ownerId: string): Promise<OwnerAssignment | null> {
+  // Literal select strings per branch (a union select string trips the typed parser).
+  const query =
+    ownerType === 'center'
+      ? supabaseAdmin
+          .from('center_assignments')
+          .select('staff_id, sourced_by, referred_by_center, assignment_status')
+          .eq('center_id', ownerId)
+      : supabaseAdmin.from('teacher_assignments').select('staff_id, sourced_by, assignment_status').eq('teacher_id', ownerId)
+  const { data } = await query.eq('is_primary', true).maybeSingle()
+  if (!data) return null
+  const r = data as Record<string, unknown>
+  return {
+    staff_id: (r.staff_id as string | null) ?? null,
+    sourced_by: (r.sourced_by as string | null) ?? null,
+    assignment_status: (r.assignment_status as string | null) ?? null,
+    referred_by_center: r.referred_by_center === true,
+  }
+}
 
-export async function createCommissionsForCenter(centerId: string): Promise<void> {
-  const { data: center } = await supabaseAdmin
-    .from('centers')
-    .select('id, plan, referred_by')
-    .eq('id', centerId)
-    .single()
-  if (!center) return
+/** owner_type-aware column pair for a commissions row. */
+function ownerCols(ownerType: OwnerType, ownerId: string): Record<string, unknown> {
+  return ownerType === 'center'
+    ? { owner_type: 'center', center_id: ownerId, teacher_id: null }
+    : { owner_type: 'teacher', center_id: null, teacher_id: ownerId }
+}
 
-  const confirmedPlan = center.plan as PlanKey
+/**
+ * Insert a commission row, tolerating the unique-index race (idempotent re-runs).
+ * Returns the new id, or null when an equivalent row already exists (23505).
+ */
+async function insertCommission(row: Record<string, unknown>): Promise<string | null> {
+  const { data, error } = await supabaseAdmin.from('commissions').insert(row).select('id').single()
+  if (error) {
+    if ((error as { code?: string }).code === '23505') return null // already exists
+    throw error
+  }
+  return (data as { id: string }).id
+}
 
-  const { data: assignment } = await supabaseAdmin
-    .from('center_assignments')
-    .select('staff_id, sourced_by, referred_by_center, assignment_status')
-    .eq('center_id', centerId)
-    .eq('is_primary', true)
-    .maybeSingle()
+async function findCommissionId(
+  ownerType: OwnerType,
+  ownerId: string,
+  staffId: string | null,
+  commissionType: string,
+): Promise<string | null> {
+  const ownerCol = ownerType === 'center' ? 'center_id' : 'teacher_id'
+  let q = supabaseAdmin.from('commissions').select('id').eq(ownerCol, ownerId).eq('commission_type', commissionType)
+  q = staffId === null ? q.is('staff_id', null) : q.eq('staff_id', staffId)
+  const { data } = await q.maybeSingle()
+  return (data as { id?: string } | null)?.id ?? null
+}
 
+/**
+ * Create the commission rows for an owner (center or teacher) at (re)assignment.
+ * Idempotent: an existing row for (owner, staff, type) is left untouched. Amounts are
+ * v2 (20% of monthly price, halved). Loyalty starts at 0/locked — the loyalty cron sets
+ * the real 1%-of-12-months amount when it unlocks.
+ */
+export async function createCommissionsForOwner(ownerType: OwnerType, ownerId: string): Promise<void> {
+  const priced = await resolveOwnerMonthlyPrice(supabaseAdmin, ownerType, ownerId)
+  if (!priced) return
+  const { monthly, planKey } = priced
+
+  const assignment = await getOwnerAssignment(ownerType, ownerId)
+
+  // Eyad-sourced (or unassigned) → a zero self-sourced row, so the owner still has a
+  // single canonical commission record.
   if (!assignment || assignment.sourced_by === 'eyad') {
-    await supabaseAdmin.from('commissions').upsert(
-      {
-        center_id: centerId,
-        staff_id: null,
-        role_at_time: 'eyad',
-        commission_type: 'self_sourced',
-        plan_at_signing: confirmedPlan,
-        total_commission: 0,
-        t1_amount: 0,
-        t2_amount: 0,
-        t1_status: 'paid',
-        t2_status: 'paid',
-        loyalty_bonus_status: 'paid',
-      },
-      { onConflict: 'center_id', ignoreDuplicates: true },
-    )
-    await logAudit({
-      centerId,
-      action: 'commission_created_eyad',
-      triggeredBy: 'system',
-      newValue: { sourced_by: 'eyad', total_commission: 0 },
+    await insertCommission({
+      ...ownerCols(ownerType, ownerId),
+      staff_id: null,
+      role_at_time: 'eyad',
+      commission_type: 'self_sourced',
+      plan_at_signing: planKey,
+      total_commission: 0,
+      t1_amount: 0,
+      t2_amount: 0,
+      loyalty_bonus_amount: 0,
+      t1_status: 'paid',
+      t2_status: 'paid',
+      loyalty_bonus_status: 'paid',
     })
+    await logAudit({ action: 'commission_created_eyad', triggeredBy: 'system', newValue: { ownerType, sourced_by: 'eyad' } })
     return
   }
 
-  if (assignment.referred_by_center || center.referred_by) {
-    await supabaseAdmin
-      .from('center_assignments')
-      .update({ referred_by_center: true })
-      .eq('center_id', centerId)
-      .eq('is_primary', true)
-    return
-  }
+  // A center that was referred by another center pays no acquisition commission.
+  if (ownerType === 'center' && assignment.referred_by_center) return
 
   if (assignment.assignment_status !== 'approved') return
+  if (!assignment.staff_id) return
 
   const { data: staffMember } = await supabaseAdmin
     .from('staff')
@@ -111,88 +151,89 @@ export async function createCommissionsForCenter(centerId: string): Promise<void
     .single()
   if (!staffMember) return
 
-  const role = staffMember.role as StaffRole
-  const totalCommission = COMMISSION_TABLE[role][confirmedPlan]
-  const t1 = Math.round(totalCommission * T1_RATE)
-  const t2 = totalCommission - t1
+  const role = String((staffMember as { role?: string }).role ?? 'sr') as 'sm' | 'sr'
+  const rep = computeRepCommission(monthly)
 
-  const { data: commissionRow } = await supabaseAdmin
-    .from('commissions')
-    .upsert(
-      {
-        center_id: centerId,
-        staff_id: staffMember.id,
-        role_at_time: role,
-        commission_type: 'self_sourced',
-        plan_at_signing: confirmedPlan,
-        total_commission: totalCommission,
-        t1_amount: t1,
-        t2_amount: t2,
-      },
-      { onConflict: 'center_id,staff_id,commission_type', ignoreDuplicates: true },
-    )
-    .select('id')
-    .maybeSingle()
-
-  if (commissionRow) {
+  const repId = await insertCommission({
+    ...ownerCols(ownerType, ownerId),
+    staff_id: staffMember.id,
+    role_at_time: role,
+    commission_type: 'self_sourced',
+    plan_at_signing: planKey,
+    total_commission: rep.total,
+    t1_amount: rep.t1,
+    t2_amount: rep.t2,
+    loyalty_bonus_amount: 0,
+  })
+  const repCommissionId = repId ?? (await findCommissionId(ownerType, ownerId, staffMember.id, 'self_sourced'))
+  if (repId) {
     await logAudit({
-      commissionId: commissionRow.id,
+      commissionId: repId,
       action: 'commission_created',
       triggeredBy: 'system',
-      newValue: { role, plan: confirmedPlan, total: totalCommission, t1, t2 },
+      newValue: { ownerType, role, plan: planKey, monthly, total: rep.total, t1: rep.t1, t2: rep.t2 },
     })
   }
 
-  if (role === 'sr' && staffMember.reports_to) {
-    const overrideTotal = Math.round(totalCommission * SM_OVERRIDE_RATE)
-    const overrideT1 = Math.round(overrideTotal * T1_RATE)
-    const overrideT2 = overrideTotal - overrideT1
-
-    const { data: overrideRow } = await supabaseAdmin
-      .from('commissions')
-      .upsert(
-        {
-          center_id: centerId,
-          staff_id: staffMember.reports_to,
-          role_at_time: 'sm',
-          commission_type: 'override',
-          parent_commission_id: commissionRow?.id ?? null,
-          plan_at_signing: confirmedPlan,
-          total_commission: overrideTotal,
-          t1_amount: overrideT1,
-          t2_amount: overrideT2,
-        },
-        { onConflict: 'center_id,staff_id,commission_type', ignoreDuplicates: true },
-      )
-      .select('id')
-      .maybeSingle()
-
-    if (overrideRow) {
+  // Manager override — 20% of the rep's two halves. The loyalty override (20% of the
+  // rep's loyalty) is added by the loyalty cron when the amount is known.
+  const reportsTo = (staffMember as { reports_to?: string | null }).reports_to
+  if (role === 'sr' && reportsTo) {
+    const ov = computeOverride(rep.t1, rep.t2)
+    const overrideId = await insertCommission({
+      ...ownerCols(ownerType, ownerId),
+      staff_id: reportsTo,
+      role_at_time: 'sm',
+      commission_type: 'override',
+      parent_commission_id: repCommissionId,
+      plan_at_signing: planKey,
+      total_commission: ov.t1 + ov.t2,
+      t1_amount: ov.t1,
+      t2_amount: ov.t2,
+      loyalty_bonus_amount: 0,
+    })
+    if (overrideId) {
       await logAudit({
-        commissionId: overrideRow.id,
+        commissionId: overrideId,
         action: 'commission_created',
         triggeredBy: 'system',
-        newValue: { type: 'override', parent: commissionRow?.id, total: overrideTotal },
+        newValue: { ownerType, type: 'override', parent: repCommissionId, t1: ov.t1, t2: ov.t2 },
       })
     }
   }
 }
 
-export async function triggerT1Eligible(centerId: string): Promise<void> {
+/** Back-compat wrapper — existing callers pass a centerId. */
+export async function createCommissionsForCenter(centerId: string): Promise<void> {
+  return createCommissionsForOwner('center', centerId)
+}
+
+/** New: teacher conversion entry point (used by the payment finalizer). */
+export async function createCommissionsForTeacher(teacherId: string): Promise<void> {
+  return createCommissionsForOwner('teacher', teacherId)
+}
+
+/**
+ * First real payment → T1 becomes eligible and the T2/loyalty clock starts
+ * (center_first_payment_date). Idempotent: rows that already have a first-payment date
+ * are skipped, so re-delivery (webhook + finalizer + autocharge) never re-triggers.
+ */
+export async function triggerT1EligibleForOwner(ownerType: OwnerType, ownerId: string): Promise<void> {
   const today = new Date().toISOString().split('T')[0]
+  const ownerCol = ownerType === 'center' ? 'center_id' : 'teacher_id'
   const { data: rows } = await supabaseAdmin
     .from('commissions')
     .select('id, t1_status, center_first_payment_date')
-    .eq('center_id', centerId)
+    .eq(ownerCol, ownerId)
     .eq('t1_status', 'pending')
   for (const row of rows ?? []) {
-    if (row.center_first_payment_date) continue
+    if ((row as { center_first_payment_date?: string | null }).center_first_payment_date) continue
     await supabaseAdmin
       .from('commissions')
       .update({ center_first_payment_date: today, t1_status: 'eligible' })
-      .eq('id', row.id)
+      .eq('id', (row as { id: string }).id)
     await logAudit({
-      commissionId: row.id,
+      commissionId: (row as { id: string }).id,
       action: 't1_eligible_set',
       triggeredBy: 'webhook',
       previousValue: { t1_status: 'pending' },
@@ -201,11 +242,92 @@ export async function triggerT1Eligible(centerId: string): Promise<void> {
   }
 }
 
-export async function clawbackCommissions(
-  centerId: string,
-  adminId: string,
-  reason: string,
+export async function triggerT1Eligible(centerId: string): Promise<void> {
+  return triggerT1EligibleForOwner('center', centerId)
+}
+
+export async function triggerT1EligibleTeacher(teacherId: string): Promise<void> {
+  return triggerT1EligibleForOwner('teacher', teacherId)
+}
+
+/**
+ * Reassign an owner to a new rep: void the previous rep's still-UNEARNED tiers (never a
+ * paid one — no double-pay, no clawing back earned money), then create fresh rows for the
+ * new rep that INHERIT the first-payment clock (future eligibility transfers), and the new
+ * rep's manager override. Idempotent-ish: a no-op when the new rep already owns the row.
+ */
+export async function reassignCommissions(
+  ownerType: OwnerType,
+  ownerId: string,
+  newStaffId: string | null,
 ): Promise<void> {
+  const ownerCol = ownerType === 'center' ? 'center_id' : 'teacher_id'
+
+  // Preserve the clock anchor so the new rep inherits accrued active time.
+  const { data: existing } = await supabaseAdmin
+    .from('commissions')
+    .select('id, staff_id, commission_type, t1_status, t2_status, loyalty_bonus_status, center_first_payment_date, role_at_time')
+    .eq(ownerCol, ownerId)
+  const rows = (existing ?? []) as {
+    id: string
+    staff_id: string | null
+    commission_type: string
+    t1_status: string
+    t2_status: string
+    loyalty_bonus_status: string
+    center_first_payment_date: string | null
+    role_at_time: string
+  }[]
+
+  const firstPaymentDate =
+    rows.map((r) => r.center_first_payment_date).find((d) => d != null) ?? null
+
+  // Void the OLD rep's + old manager's unearned tiers. A 'paid' tier is left as-is
+  // (already earned); only pending/eligible/locked tiers flip to 'reassigned'.
+  for (const r of rows) {
+    if (r.staff_id === newStaffId) continue // the incoming rep — nothing to void
+    const patch: Record<string, unknown> = {}
+    if (r.t1_status !== 'paid') patch.t1_status = 'reassigned'
+    if (r.t2_status !== 'paid') patch.t2_status = 'reassigned'
+    if (r.loyalty_bonus_status !== 'paid') patch.loyalty_bonus_status = 'reassigned'
+    if (Object.keys(patch).length === 0) continue
+    await supabaseAdmin.from('commissions').update(patch).eq('id', r.id)
+    await logAudit({
+      commissionId: r.id,
+      action: 'commission_reassigned_void',
+      triggeredBy: 'manual',
+      previousValue: { t1_status: r.t1_status, t2_status: r.t2_status, loyalty_bonus_status: r.loyalty_bonus_status },
+      newValue: patch,
+    })
+  }
+
+  if (!newStaffId) return
+
+  // Build fresh rows for the incoming rep. Reuse createCommissionsForOwner for the amounts
+  // + override, then transfer the clock anchor + convert T1 if the owner had already paid.
+  await createCommissionsForOwner(ownerType, ownerId)
+
+  if (firstPaymentDate) {
+    // The owner already converted under the old rep — the new rep inherits that clock and
+    // an immediately-eligible T1 (they own the future tiers from here).
+    const { data: fresh } = await supabaseAdmin
+      .from('commissions')
+      .select('id, staff_id, t1_status, center_first_payment_date')
+      .eq(ownerCol, ownerId)
+    for (const r of (fresh ?? []) as { id: string; staff_id: string | null; t1_status: string; center_first_payment_date: string | null }[]) {
+      if (r.center_first_payment_date) continue
+      await supabaseAdmin
+        .from('commissions')
+        .update({
+          center_first_payment_date: firstPaymentDate,
+          t1_status: r.t1_status === 'pending' ? 'eligible' : r.t1_status,
+        })
+        .eq('id', r.id)
+    }
+  }
+}
+
+export async function clawbackCommissions(centerId: string, adminId: string, reason: string): Promise<void> {
   const { data: rows } = await supabaseAdmin
     .from('commissions')
     .select('id, t1_status')
@@ -233,12 +355,7 @@ export async function pauseCommissionClocks(centerId: string): Promise<void> {
     .eq('center_id', centerId)
     .in('t2_status', ['locked', 'eligible'])
   for (const row of rows ?? []) {
-    await logAudit({
-      commissionId: row.id,
-      action: 'clock_pause',
-      triggeredBy: 'cron',
-      newValue: { paused_at: new Date().toISOString() },
-    })
+    await logAudit({ commissionId: row.id, action: 'clock_pause', triggeredBy: 'cron', newValue: { paused_at: new Date().toISOString() } })
   }
 }
 
@@ -250,12 +367,7 @@ export async function resumeCommissionClocks(centerId: string): Promise<void> {
     .eq('center_id', centerId)
     .in('t2_status', ['locked', 'eligible'])
   for (const row of rows ?? []) {
-    await logAudit({
-      commissionId: row.id,
-      action: 'clock_resume',
-      triggeredBy: 'webhook',
-      newValue: { resumed_at: new Date().toISOString() },
-    })
+    await logAudit({ commissionId: row.id, action: 'clock_resume', triggeredBy: 'webhook', newValue: { resumed_at: new Date().toISOString() } })
   }
 }
 
@@ -274,12 +386,7 @@ interface AuditParams {
 async function logAudit(p: AuditParams): Promise<void> {
   let commissionId = p.commissionId
   if (!commissionId && p.centerId) {
-    const { data } = await supabaseAdmin
-      .from('commissions')
-      .select('id')
-      .eq('center_id', p.centerId)
-      .limit(1)
-      .maybeSingle()
+    const { data } = await supabaseAdmin.from('commissions').select('id').eq('center_id', p.centerId).limit(1).maybeSingle()
     commissionId = data?.id
   }
   await supabaseAdmin.from('commission_audit_log').insert({

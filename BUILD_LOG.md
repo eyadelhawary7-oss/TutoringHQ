@@ -262,3 +262,38 @@ Recon-first: an Explore pass mapped every customer export + never-gate surface b
 - Verified by orchestrator (independent): typecheck exit 0, **1274 unit tests**, i18n parity OK
   (3858 keys), bidi/tolocale OK. Reviewed line-by-line: helper (fail-open), teacher 402 gate,
   `/api/me` surface, signup fork (live-config + cron consistency + live master switch value).
+
+## Money track — commission/loyalty rewrite (Fable 5) — DONE ✅ ⚠️ REQUIRES SIGN-OFF
+Replaces the fixed-EGP `COMMISSION_TABLE` with the 20%/1% model. **Amounts change → this
+lands as a REQUIRES SIGN-OFF commit and is NOT merged until Eyad approves.** Live-DB preflight
+(read-only) confirmed GREENFIELD: 0 commissions / 0 payouts / 0 staff / 0 assignments / 0 real
+centers — no data migration or reconciliation, pure forward behavior.
+- **Pure core** `src/lib/commission/rates.ts`: rep = 20% of monthly price split into two EQUAL
+  halves (t1+t2===total, no drift); T2 recomputed at CURRENT price; override = 20% of rep halves;
+  loyalty = 1% of revenue; override-on-loyalty = 20%. Fully unit-tested (exact amounts + edges).
+- **Owner financials** `ownerFinancials.ts`: `resolveOwnerMonthlyPrice` (center = getImpliedMonthlyMrr,
+  teacher = price_gross) and `firstTwelveMonthsRevenue` (Σ COALESCE(payment_amount,total_amount)
+  over paid invoices in [firstPaymentDate,+12mo)).
+- **Engine** `commissions.ts`: owner-polymorphic `createCommissionsForOwner` (center+teacher),
+  explicit INSERT + 23505-catch dedup (kills the partial-index double-insert), eyad zero-row,
+  referred-by short-circuit, manager override; `reassignCommissions` (voids ONLY unearned tiers →
+  'reassigned', never a paid one; transfers center_first_payment_date; recreates for the new rep +
+  override; never double-pays); center back-compat wrappers preserved.
+- **Conversion trigger** moved into the unified `finalizeInvoicePaymentSuccess` (`runOwnerConversion`,
+  center+teacher, idempotent, wrapped so a commission failure NEVER blocks the payment) — so
+  saved-card autocharge + summer first-payment + webhook all convert. Webhook's center call left
+  (idempotent, also covers combined sessions).
+- **Crons** `commission-t2-check` (recompute T2 at current price at 180 days) and `loyalty-bonus-check`
+  (compute loyalty = 1% of realized 12mo revenue at 365 days), both extended to teachers via the
+  shared `tierUnlock.ts` loader (centers embed billing state; teachers loaded in a second pass).
+- **Payout** `admin/payouts/{route,[id]}`: the manager's LOYALTY override is now AGGREGATED into the
+  payout total AND marked paid on confirm (was neither → the override loyalty would never pay).
+- **Migration (repo-only, NEW DATA)** `20260712140000_commission_rewrite.sql`: add 'solo' + teacher
+  plan keys to `plan_at_signing` CHECK; owner polymorphism (owner_type + teacher_id FK
+  teacher_profiles.user_id, center_id nullable, exactly-one-owner CHECK); teacher partial unique
+  indexes + tightened center ones; 'reassigned' added to t1/t2/loyalty status CHECKs.
+- 25 new unit tests (rates/ownerFinancials/tierUnlock/engine). Verified by orchestrator: typecheck
+  exit 0, 1299 unit tests, stabilization OK. **Adversarial review workflow run separately.**
+- **Interpretation choices flagged for sign-off** (see MERGE_CHECKLIST): 20% base = implied MONTHLY
+  price (not the quarterly/annual charge); delta_upgrade left unpaid; reassign-back-to-a-voided-rep
+  edge left as a known limitation.

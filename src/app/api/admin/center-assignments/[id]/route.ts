@@ -120,8 +120,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
 
     try {
-      const { createCommissionsForCenter } = await import('@/lib/commissions')
-      await createCommissionsForCenter(existing.center_id)
+      if (updates.staff_id !== undefined) {
+        // Rep reassignment: void the previous rep's still-unearned tiers, transfer the
+        // clock, create the new rep's rows + manager override (never double-pay).
+        const nextStaffId = (data as { staff_id?: string | null } | null)?.staff_id ?? null
+        const { reassignCommissions } = await import('@/lib/commissions')
+        await reassignCommissions('center', existing.center_id, nextStaffId)
+      } else {
+        const { createCommissionsForCenter } = await import('@/lib/commissions')
+        await createCommissionsForCenter(existing.center_id)
+      }
     } catch (err) {
       console.error('[center-assignments] Commission refresh failed:', err)
     }

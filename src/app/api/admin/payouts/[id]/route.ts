@@ -17,7 +17,7 @@ type Breakdown = {
   t1_details?: Array<{ id: string }>
   t2_details?: Array<{ id: string }>
   loyalty_details?: Array<{ id: string }>
-  override_details?: Array<{ id: string; t1_status?: string; t2_status?: string }>
+  override_details?: Array<{ id: string; t1_status?: string; t2_status?: string; loyalty_bonus_status?: string }>
 }
 
 export async function GET(
@@ -175,6 +175,13 @@ export async function PATCH(
         await supabaseAdmin
           .from('commissions')
           .update({ t2_status: 'paid', t2_paid_at: paidAt, t2_payout_id: id })
+          .eq('id', o.id)
+      }
+      // Money-track: the manager's 20% override on the rep's loyalty bonus.
+      if (o.loyalty_bonus_status === 'eligible') {
+        await supabaseAdmin
+          .from('commissions')
+          .update({ loyalty_bonus_status: 'paid', loyalty_bonus_paid_at: paidAt, loyalty_payout_id: id })
           .eq('id', o.id)
       }
     }

@@ -266,6 +266,30 @@ async function handlePackBillingInvoicePaid(
  * no-op. Returns `settled` so callers (the status poll) can distinguish a
  * completing payment from a partial one.
  */
+/**
+ * Money-track conversion: a subscription's FIRST real payment creates/reprices the
+ * owner's commission rows, flips T1 eligible, and resumes any paused clock. All three
+ * are idempotent, so firing on every settle (webhook + autocharge + summer + teacher
+ * finalizer) never double-creates or re-triggers. Wrapped so a commission-bookkeeping
+ * failure can NEVER block the payment finalize (money-safety).
+ */
+async function runOwnerConversion(
+  supabaseAdmin: SupabaseClient,
+  ownerType: 'center' | 'teacher',
+  ownerId: string,
+): Promise<void> {
+  try {
+    const { createCommissionsForOwner, triggerT1EligibleForOwner, resumeCommissionClocks } = await import(
+      '@/lib/commissions'
+    );
+    await createCommissionsForOwner(ownerType, ownerId);
+    await triggerT1EligibleForOwner(ownerType, ownerId);
+    if (ownerType === 'center') await resumeCommissionClocks(ownerId);
+  } catch (e) {
+    console.error('[finalizeInvoicePaymentSuccess] owner conversion (non-blocking)', ownerType, ownerId, e);
+  }
+}
+
 export async function finalizeInvoicePaymentSuccess(
   supabaseAdmin: SupabaseClient,
   paymobOrderId: string,
@@ -454,6 +478,8 @@ export async function finalizeInvoicePaymentSuccess(
     }
     if ((typeof tRes === 'string' ? tRes : String(tRes ?? '')) !== 'already_paid') {
       await auditInvoicePaid();
+      // Teacher acquisition commission converts on her first paid subscription invoice.
+      await runOwnerConversion(supabaseAdmin, 'teacher', row.teacher_id);
     }
     return { invoiceId: row.id, settled: true };
   }
@@ -472,7 +498,11 @@ export async function finalizeInvoicePaymentSuccess(
       mergedMetadata,
     );
     if (subStatus === null) return null;
-    if (subStatus !== 'already_paid') await auditInvoicePaid();
+    if (subStatus !== 'already_paid') {
+      await auditInvoicePaid();
+      // Center acquisition commission converts on the first paid subscription invoice.
+      await runOwnerConversion(supabaseAdmin, 'center', centerRow.center_id);
+    }
     return { invoiceId: row.id, settled: true };
   }
 

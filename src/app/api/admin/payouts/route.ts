@@ -187,7 +187,7 @@ export async function POST(request: Request) {
 
   const { data: overrideCommissions } = await supabaseAdmin
     .from('commissions')
-    .select('id, t1_amount, t2_amount, t1_status, t2_status, center_id')
+    .select('id, t1_amount, t2_amount, loyalty_bonus_amount, t1_status, t2_status, loyalty_bonus_status, center_id')
     .eq('staff_id', staff_id)
     .eq('commission_type', 'override')
 
@@ -203,7 +203,11 @@ export async function POST(request: Request) {
   const overrideT2 = (overrideCommissions ?? [])
     .filter((c) => c.t2_status === 'eligible')
     .reduce((s, c) => s + Number(c.t2_amount), 0)
-  const overrideTotal = overrideT1 + overrideT2
+  // Money-track: the manager also earns 20% override on the rep's LOYALTY bonus.
+  const overrideLoyalty = (overrideCommissions ?? [])
+    .filter((c) => c.loyalty_bonus_status === 'eligible')
+    .reduce((s, c) => s + Number(c.loyalty_bonus_amount ?? 0), 0)
+  const overrideTotal = overrideT1 + overrideT2 + overrideLoyalty
 
   const { data: prevPayout } = await supabaseAdmin
     .from('commission_payouts')
@@ -241,11 +245,12 @@ export async function POST(request: Request) {
       id: c.id,
       amount: Number(c.loyalty_bonus_amount),
     })),
-    override_detail: { t1: overrideT1, t2: overrideT2 },
+    override_detail: { t1: overrideT1, t2: overrideT2, loyalty: overrideLoyalty },
     override_details: (overrideCommissions ?? []).map((c) => ({
       id: c.id,
       t1_status: c.t1_status,
       t2_status: c.t2_status,
+      loyalty_bonus_status: c.loyalty_bonus_status,
     })),
     carryover_from_prev: carryover,
   }
