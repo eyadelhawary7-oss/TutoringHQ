@@ -27,7 +27,10 @@ type CentersEmbed = {
 
 interface Commission {
   id: string
-  center_id: string
+  center_id: string | null
+  teacher_id?: string | null
+  owner_type?: 'center' | 'teacher' | null
+  teacher?: { id: string; name: string | null } | null
   staff_id: string | null
   role_at_time: 'sm' | 'sr' | 'eyad'
   commission_type: string
@@ -54,6 +57,7 @@ const T1_COLORS: Record<string, string> = {
     'bg-amber-100 text-amber-800 border border-amber-300',
   paid: 'bg-emerald-100 text-emerald-800',
   clawed_back: 'bg-red-100 text-red-800',
+  reassigned: 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)] border border-[var(--color-border)] line-through',
 }
 
 const T2_COLORS: Record<string, string> = {
@@ -63,6 +67,7 @@ const T2_COLORS: Record<string, string> = {
     'bg-amber-100 text-amber-800 border border-amber-300',
   paid: 'bg-emerald-100 text-emerald-800',
   forfeited: 'bg-red-100 text-red-800',
+  reassigned: 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)] border border-[var(--color-border)] line-through',
 }
 
 function relStaff(c: Commission): StaffEmbed {
@@ -326,6 +331,14 @@ export default function CommissionsPage() {
               </p>
             ) : null}
           </div>
+          {/* Phase 6: scoped CSV export — the API returns only the viewer's rows
+              (CEO=all, manager=team+override, rep=own), so the link is safe for all three. */}
+          <a
+            href="/api/admin/export/commissions"
+            className="ms-auto inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)]"
+          >
+            {t('commissions.export_csv')}
+          </a>
         </div>
 
         {listError && !loading ? (
@@ -414,12 +427,25 @@ export default function CommissionsPage() {
                       }`}
                     >
                       <td className="px-4 py-3">
-                        <div className="font-medium text-[var(--color-text-primary)]">
-                          {center?.name ?? t('staff.dash')}
-                        </div>
-                        <div className="text-xs text-[var(--color-text-muted)]">
-                          {center?.center_code ?? ''}
-                        </div>
+                        {c.owner_type === 'teacher' ? (
+                          <>
+                            <div className="font-medium text-[var(--color-text-primary)]">
+                              {c.teacher?.name || t('staff.dash')}
+                            </div>
+                            <div className="text-xs text-[var(--color-text-muted)]">
+                              {t('commissions.owner_teacher')}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="font-medium text-[var(--color-text-primary)]">
+                              {center?.name ?? t('staff.dash')}
+                            </div>
+                            <div className="text-xs text-[var(--color-text-muted)]">
+                              {center?.center_code ?? ''}
+                            </div>
+                          </>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="text-[var(--color-text-primary)]">{staffDisplayName(c)}</div>
@@ -466,13 +492,23 @@ export default function CommissionsPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span
-                          className={`px-2 py-0.5 rounded-md text-xs ${T2_COLORS[c.loyalty_bonus_status] ?? ''}`}
-                        >
-                          {t(
-                            `commissions.loyalty_${c.loyalty_bonus_status}` as 'commissions.loyalty_locked',
-                          )}
-                        </span>
+                        <div className="flex flex-col gap-1">
+                          <span
+                            className={`px-2 py-0.5 rounded-md text-xs w-fit ${T2_COLORS[c.loyalty_bonus_status] ?? ''}`}
+                          >
+                            {t(
+                              `commissions.loyalty_${c.loyalty_bonus_status}` as 'commissions.loyalty_locked',
+                            )}
+                          </span>
+                          {/* v2: the loyalty amount (1% of first-12-months revenue) is computed
+                              at unlock — show it once it exists; a locked 0 is just "not yet". */}
+                          {Number(c.loyalty_bonus_amount) > 0 ? (
+                            <span className="text-xs text-[var(--color-text-muted)]">
+                              {formatNumber(Number(c.loyalty_bonus_amount), locale)}{' '}
+                              {t('staff.currency_suffix')}
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">

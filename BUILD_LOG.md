@@ -345,3 +345,27 @@ money defects** (3 were the same root cause found by different lenses); all fixe
   revive their old row; a draft payout generated before a reassignment keeps its frozen total
   (the status guards keep the commission ledger truthful; the draft→confirm→paid flow is a
   human-reviewed surface).
+
+## Phase 6 — HR/commission views on the finalized engine (Fable 5) — DONE ✅
+Built directly on the money-track engine (after its adversarial review), per the revised order.
+Role model was already wired (4a: scoped GETs; 5: salary privacy) — Phase 6 makes the views
+speak the FINAL engine's language (owner-polymorphic rows, computed-at-unlock amounts,
+'reassigned' status) and adds the scoped export:
+- **Commissions API** (`admin/commissions` GET): teacher-owned rows (owner_type='teacher')
+  now carry a `teacher {id,name}` embed (batch-loaded from `users`) so the views can show
+  the owner — the centers join is null for them. Scoping unchanged (CEO all / manager
+  team+own-override / rep own; fail-closed sentinel).
+- **Commissions page**: owner cell renders teacher name + "teacher" badge for teacher rows;
+  `reassigned` added to the T1/T2/loyalty status colors (struck-through neutral); the loyalty
+  cell now shows the AMOUNT once it exists (v2: computed at unlock = 1% of 12-mo revenue —
+  a locked 0 just means "not yet"). Header gains a scoped **Export CSV** button (safe for all
+  three roles — the API scopes rows server-side).
+- **Commissions export** (`admin/export/commissions`): gate relaxed from super_admin-only to
+  the SAME gate as the list API — CEO exports all; sales_manager/sales_rep export ONLY their
+  scoped rows (getInternalScope, fail-closed sentinel); all other roles 403. Columns now
+  owner-polymorphic: `owner_type / owner_code / owner_name` (teacher names batch-loaded).
+  Gate-matrix test updated from superAdminOnly → commissionsScopedCases (dead helper removed).
+- **Payouts views**: no change needed — Phase 4a scoping + Phase 5 commission-only whitelist
+  already give rep=own / manager=team-commission-only / CEO=full.
+- i18n +5 keys each locale (t1/t2/loyalty_reassigned, owner_teacher, export_csv). SW v17→v18.
+- Verified: typecheck exit 0, **1303 unit tests pass**, i18n parity (3860 keys), bidi/tolocale OK.

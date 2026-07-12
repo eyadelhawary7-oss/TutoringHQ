@@ -149,23 +149,6 @@ function tighterGateCases(): Case[] {
 }
 
 /**
- * Strict gate: super_admin only (commissions routes were super_admin-only
- * pre-rewrite; the broader gate from the previous round was a regression).
- */
-function superAdminOnlyCases(): Case[] {
-  return [
-    { label: 'super_admin allowed', ctx: makeCtx('super_admin', 'super_admin'), expectAllowed: true },
-    { label: 'admin (raw) DENIED (super_admin-only gate)', ctx: makeCtx('internal_admin', 'admin'), expectAllowed: false },
-    { label: 'internal_admin DENIED (super_admin-only gate)', ctx: makeCtx('internal_admin', 'internal_admin'), expectAllowed: false },
-    { label: 'accountant DENIED (super_admin-only gate)', ctx: makeCtx('internal_viewer', 'accountant'), expectAllowed: false },
-    { label: 'support_agent denied', ctx: makeCtx('internal_viewer', 'support_agent'), expectAllowed: false },
-    { label: 'sales_rep denied', ctx: makeCtx('internal_viewer', 'sales_rep'), expectAllowed: false },
-    { label: 'custom (unknown) denied fail-CLOSED', ctx: makeCtx('internal_viewer', 'custom'), expectAllowed: false },
-    { label: 'no ctx (unauth) → 401', ctx: null, expectAllowed: false },
-  ];
-}
-
-/**
  * Runs a route's GET against a matrix of mocked admin contexts.
  * `expectAllowed=true` asserts non-403 (pass), false asserts 403 / 401.
  */
@@ -207,12 +190,15 @@ describe('/api/admin/export/centers GET — broader gate', () => {
   }
 });
 
-describe('/api/admin/export/commissions GET — super_admin-only (re-tightened)', () => {
+describe('/api/admin/export/commissions GET — CEO + scoped sales roles (Phase 6)', () => {
   it('matrix', async () => {
+    // Phase 6 relaxed the export from super_admin-only to the SAME gate as the
+    // commissions list API: CEO exports all rows; sales_manager / sales_rep export
+    // only their scoped rows (fail-closed via getInternalScope). All other roles 403.
     await expectGate(
       'export/commissions',
       () => exportCommissionsRoute.GET(reqWithSearch()),
-      superAdminOnlyCases(),
+      commissionsScopedCases(),
     );
   });
 });

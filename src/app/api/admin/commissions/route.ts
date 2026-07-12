@@ -63,12 +63,38 @@ export async function GET(request: Request) {
     );
   }
 
+  // Phase 6 / money-track: teacher-owned rows (owner_type='teacher') have no centers
+  // embed — batch-load the teacher display names so the views can show the owner.
+  const rows = (data ?? []) as { teacher_id?: string | null; owner_type?: string | null }[];
+  const teacherIds = [
+    ...new Set(
+      rows
+        .filter((r) => r.owner_type === 'teacher' && r.teacher_id)
+        .map((r) => String(r.teacher_id)),
+    ),
+  ];
+  const teacherNames = new Map<string, string>();
+  if (teacherIds.length) {
+    const { data: teachers } = await ctx.supabaseAdmin
+      .from('users')
+      .select('id, name')
+      .in('id', teacherIds);
+    for (const u of (teachers ?? []) as { id: string; name?: string | null }[]) {
+      teacherNames.set(String(u.id), String(u.name ?? '').trim());
+    }
+  }
+
   const enriched = await Promise.all(
     (data ?? []).map(async (commission) => {
       const { data: activeDays } = await ctx.supabaseAdmin.rpc('compute_active_days', {
         p_commission_id: commission.id,
       });
-      return { ...commission, active_days: activeDays ?? 0 };
+      const c = commission as { owner_type?: string | null; teacher_id?: string | null };
+      const teacher =
+        c.owner_type === 'teacher' && c.teacher_id
+          ? { id: String(c.teacher_id), name: teacherNames.get(String(c.teacher_id)) || null }
+          : null;
+      return { ...commission, active_days: activeDays ?? 0, teacher };
     }),
   );
 
