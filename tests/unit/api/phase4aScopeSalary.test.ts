@@ -9,7 +9,13 @@
  *       - card-orders            -> .in('center_id', <assigned | sentinel>)
  *     A CEO (super_admin) gets NO filter (sees everything).
  *  3. Non-CEO / non-sales roles are denied (403); card-order status mutations stay
- *     CEO-only (managers/reps are view-only).
+ *     CEO-only (managers are view-only).
+ *
+ * Phase 5 refinements also covered here:
+ *  - Card Orders: a sales_rep gets NOTHING (403); only super_admin + sales_manager read.
+ *  - Payouts: a non-CEO caller never receives base_salary OR the salary-inclusive
+ *    total_amount (nor adjustment/breakdown) — only commission components, status, and a
+ *    derived commission_total. The CEO still gets the full shape.
  *
  * The recording stub is shared by the route's own client (module-level createClient,
  * mocked) and by getInternalScope (ctx.supabaseAdmin), so the assertions exercise the
@@ -163,7 +169,7 @@ describe('/api/admin/commissions GET — staff_id scoping', () => {
 
 // ── Payouts: staff_id scoping + base_salary strip ─────────────────────────────
 describe('/api/admin/payouts GET — scope + salary privacy', () => {
-  it('CEO keeps base_salary and gets no staff_id filter', async () => {
+  it('CEO keeps base_salary + total_amount and gets no staff_id filter', async () => {
     mockedGetAdminContext.mockResolvedValueOnce(makeCtx('super_admin', 'super_admin'));
     h.setResponses({
       commission_payouts: {
@@ -172,24 +178,95 @@ describe('/api/admin/payouts GET — scope + salary privacy', () => {
     });
     const res = await payoutsRoute.GET(req());
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { payouts: { base_salary?: number }[] };
+    const body = (await res.json()) as { payouts: { base_salary?: number; total_amount?: number }[] };
     expect(body.payouts[0].base_salary).toBe(5000);
+    expect(body.payouts[0].total_amount).toBe(5000);
     expect(inCallFor('commission_payouts', 'staff_id')).toBeUndefined();
   });
 
-  it('sales_rep: base_salary stripped and scoped to own staff id', async () => {
+  it('sales_rep: base_salary AND total_amount stripped, commission_total added, scoped to own staff id', async () => {
     mockedGetAdminContext.mockResolvedValueOnce(makeCtx('internal_viewer', 'sales_rep'));
     h.setResponses({
       staff: { maybeSingle: { id: 'staff-rep', role: 'sr' } },
       commission_payouts: {
-        list: [{ id: 'p1', staff_id: 'staff-rep', base_salary: 5000, total_amount: 5000 }],
+        list: [
+          {
+            id: 'p1',
+            staff_id: 'staff-rep',
+            period: '2026-06',
+            status: 'draft',
+            base_salary: 5000,
+            total_amount: 8000,
+            adjustment_amount: 500,
+            adjustment_reason: 'bonus',
+            breakdown: { secret: 1 },
+            requires_review: true,
+            t1_commissions: 1000,
+            t2_commissions: 500,
+            loyalty_bonuses: 200,
+            override_commissions: 300,
+            commission_count: 4,
+            paid_at: null,
+          },
+        ],
       },
     });
     const res = await payoutsRoute.GET(req());
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { payouts: { base_salary?: number }[] };
-    expect(body.payouts[0].base_salary).toBeUndefined();
+    const body = (await res.json()) as {
+      payouts: Record<string, unknown>[];
+    };
+    const row = body.payouts[0];
+    // Salary and every salary-inclusive / adjustment field is absent.
+    expect(row.base_salary).toBeUndefined();
+    expect(row.total_amount).toBeUndefined();
+    expect(row.adjustment_amount).toBeUndefined();
+    expect(row.adjustment_reason).toBeUndefined();
+    expect(row.breakdown).toBeUndefined();
+    expect(row.requires_review).toBeUndefined();
+    // Commission components + status + derived commission_total are present.
+    expect(row.status).toBe('draft');
+    expect(row.t1_commissions).toBe(1000);
+    expect(row.t2_commissions).toBe(500);
+    expect(row.loyalty_bonuses).toBe(200);
+    expect(row.override_commissions).toBe(300);
+    expect(row.commission_count).toBe(4);
+    expect(row.commission_total).toBe(2000);
     expect(inCallFor('commission_payouts', 'staff_id')?.values).toEqual(['staff-rep']);
+  });
+
+  it('sales_manager: no base_salary / total_amount, commission_total present, scoped to team', async () => {
+    mockedGetAdminContext.mockResolvedValueOnce(makeCtx('internal_viewer', 'sales_manager'));
+    h.setResponses({
+      staff: { maybeSingle: { id: 'staff-mgr', role: 'sm' }, list: [{ id: 'r1' }] },
+      commission_payouts: {
+        list: [
+          {
+            id: 'p2',
+            staff_id: 'r1',
+            period: '2026-06',
+            status: 'paid',
+            base_salary: 9000,
+            total_amount: 12000,
+            t1_commissions: 700,
+            t2_commissions: 300,
+            loyalty_bonuses: 0,
+            override_commissions: 0,
+            commission_count: 2,
+            paid_at: '2026-06-30T00:00:00.000Z',
+          },
+        ],
+      },
+    });
+    const res = await payoutsRoute.GET(req());
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { payouts: Record<string, unknown>[] };
+    const row = body.payouts[0];
+    expect(row.base_salary).toBeUndefined();
+    expect(row.total_amount).toBeUndefined();
+    expect(row.commission_total).toBe(1000);
+    expect(row.status).toBe('paid');
+    expect(inCallFor('commission_payouts', 'staff_id')?.values).toEqual(['staff-mgr', 'r1']);
   });
 
   it('UNLINKED sales role fails closed — sentinel', async () => {
@@ -250,12 +327,20 @@ describe('/api/admin/card-orders GET — center scoping', () => {
     expect(inCallFor('card_orders', 'center_id')?.values).toEqual(['c1', 'c2']);
   });
 
-  it('UNLINKED sales role fails closed — sentinel', async () => {
-    mockedGetAdminContext.mockResolvedValueOnce(makeCtx('internal_viewer', 'sales_rep'));
+  it('UNLINKED manager fails closed — sentinel', async () => {
+    mockedGetAdminContext.mockResolvedValueOnce(makeCtx('internal_viewer', 'sales_manager'));
     h.setResponses({ staff: { maybeSingle: null }, card_orders: { list: [] } });
     const res = await cardOrdersRoute.GET(req());
     expect(res.status).toBe(200);
     expect(inCallFor('card_orders', 'center_id')?.values).toEqual([SENTINEL]);
+  });
+
+  it('Phase 5: sales_rep gets NOTHING — denied (403)', async () => {
+    mockedGetAdminContext.mockResolvedValueOnce(makeCtx('internal_viewer', 'sales_rep'));
+    const res = await cardOrdersRoute.GET(req());
+    expect(res.status).toBe(403);
+    // Fail closed: no center_id query is ever issued for a rep.
+    expect(inCallFor('card_orders', 'center_id')).toBeUndefined();
   });
 
   it('non-sales, non-CEO role is denied (403)', async () => {

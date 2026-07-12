@@ -18,18 +18,22 @@ interface Payout {
   id: string
   staff_id: string
   period: string
-  total_amount: number
-  base_salary: number
+  // Salary-inclusive fields (total_amount, base_salary, adjustment_*, breakdown,
+  // requires_review) are CEO-only — the API omits them for non-CEO callers, so they are
+  // optional here. `commission_total` (commissions only, no salary) is what non-CEO sees.
+  total_amount?: number
+  base_salary?: number
+  commission_total?: number
   t1_commissions: number
   t2_commissions: number
   loyalty_bonuses: number
   override_commissions: number
   commission_count: number
-  breakdown: Record<string, unknown>
+  breakdown?: Record<string, unknown>
   status: 'draft' | 'confirmed' | 'paid'
-  requires_review: boolean
-  adjustment_amount: number
-  adjustment_reason: string | null
+  requires_review?: boolean
+  adjustment_amount?: number
+  adjustment_reason?: string | null
   paid_at: string | null
   staff?: StaffEmbed | StaffEmbed[]
 }
@@ -103,6 +107,7 @@ export default function PayoutsPage() {
 
   const [gateOk, setGateOk] = useState(false)
   const [canWrite, setCanWrite] = useState(false)
+  const [viewerRole, setViewerRole] = useState<string | null>(null)
   const [payouts, setPayouts] = useState<Payout[]>([])
   const [staffList, setStaffList] = useState<StaffOption[]>([])
   const [loading, setLoading] = useState(true)
@@ -201,6 +206,7 @@ export default function PayoutsPage() {
         router.replace('/dashboard')
         return
       }
+      setViewerRole(j.role ?? null)
       setCanWrite(j.role === 'super_admin')
       setGateOk(true)
     }
@@ -316,6 +322,13 @@ export default function PayoutsPage() {
                   count: formatNumber(payouts.length, locale),
                 })}
               </p>
+              {!canWrite && viewerRole ? (
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {viewerRole === 'sales_manager'
+                    ? t('payouts.scoped_note_manager')
+                    : t('payouts.scoped_note_rep')}
+                </p>
+              ) : null}
             </div>
           </div>
           {canWrite ? (
@@ -385,9 +398,19 @@ export default function PayoutsPage() {
                       </span>
                     ) : null}
                   </div>
-                  <div className="text-2xl font-bold text-teal-600">
-                    {formatNumber(Number(payout.total_amount), locale)}{' '}
-                    {t('staff.currency_suffix')}
+                  <div className="text-end">
+                    {!canWrite ? (
+                      <div className="text-xs text-slate-500">
+                        {t('payouts.commission_total')}
+                      </div>
+                    ) : null}
+                    <div className="text-2xl font-bold text-teal-600">
+                      {formatNumber(
+                        Number(canWrite ? payout.total_amount : payout.commission_total ?? 0),
+                        locale,
+                      )}{' '}
+                      {t('staff.currency_suffix')}
+                    </div>
                   </div>
                 </div>
 
@@ -417,7 +440,7 @@ export default function PayoutsPage() {
                   ))}
                 </div>
 
-                {Number(payout.adjustment_amount) !== 0 ? (
+                {canWrite && Number(payout.adjustment_amount) !== 0 ? (
                   <div className="text-sm text-amber-800 bg-amber-50 rounded-lg p-2">
                     {t('payouts.adjustment')}:{' '}
                     {formatNumber(Number(payout.adjustment_amount), locale)}{' '}

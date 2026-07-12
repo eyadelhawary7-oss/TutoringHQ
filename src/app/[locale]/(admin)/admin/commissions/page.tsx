@@ -133,6 +133,7 @@ export default function CommissionsPage() {
 
   const [gateOk, setGateOk] = useState(false)
   const [canWrite, setCanWrite] = useState(false)
+  const [viewerRole, setViewerRole] = useState<string | null>(null)
   const [commissions, setCommissions] = useState<Commission[]>([])
   const [loading, setLoading] = useState(true)
   const [listError, setListError] = useState<string | null>(null)
@@ -221,6 +222,7 @@ export default function CommissionsPage() {
         router.replace('/dashboard')
         return
       }
+      setViewerRole(j.role ?? null)
       setCanWrite(j.role === 'super_admin')
       setGateOk(true)
     }
@@ -316,6 +318,13 @@ export default function CommissionsPage() {
                 count: formatNumber(commissions.length, locale),
               })}
             </p>
+            {!canWrite && viewerRole ? (
+              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                {viewerRole === 'sales_manager'
+                  ? t('commissions.scoped_note_manager')
+                  : t('commissions.scoped_note_rep')}
+              </p>
+            ) : null}
           </div>
         </div>
 

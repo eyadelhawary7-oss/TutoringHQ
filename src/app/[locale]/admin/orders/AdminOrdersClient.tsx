@@ -142,6 +142,13 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
           headers: { Authorization: `Bearer ${token}` },
         });
         const j = (await res.json().catch(() => ({}))) as { role?: string };
+        // Phase 5: reps get NOTHING here. A sales_rep who lands on /admin/orders directly
+        // (the nav link is already hidden for them, and the API 403s) is bounced back to
+        // the admin overview rather than shown an empty shell.
+        if (active && j.role === 'sales_rep') {
+          router.replace('/admin');
+          return;
+        }
         if (active) setCanWrite(j.role === 'super_admin');
       } catch {
         // best-effort - default stays view-only (canWrite=false)
@@ -150,7 +157,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
     return () => {
       active = false;
     };
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (typeof closeMainSidebar === 'function') closeMainSidebar();

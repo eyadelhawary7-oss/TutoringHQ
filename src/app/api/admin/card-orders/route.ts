@@ -102,12 +102,13 @@ export async function GET(request: Request) {
   if (!ctx) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  // Phase 4a: card orders are visible to the CEO (super_admin, all orders) and to
-  // sales_manager / sales_rep (scoped to their approved-center assignments). Every
-  // other role is denied. Status transitions (PUT/PATCH) stay CEO-only below.
+  // Phase 5: card orders are visible to the CEO (super_admin, all orders) and to
+  // sales_manager ONLY (view-only, scoped to their approved-center assignments). A
+  // sales_rep gets NOTHING here — reps are denied outright. Every other role is denied
+  // too. Status transitions (PUT/PATCH) stay CEO-only below; managers are view-only.
   const isCEO = ctx.internalRole === 'super_admin';
-  const isSalesRole = ctx.adminRole === 'sales_manager' || ctx.adminRole === 'sales_rep';
-  if (!isCEO && !isSalesRole) {
+  const isManager = ctx.adminRole === 'sales_manager';
+  if (!isCEO && !isManager) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

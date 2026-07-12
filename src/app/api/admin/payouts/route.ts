@@ -59,12 +59,32 @@ export async function GET(request: Request) {
     )
   }
 
-  // Salary privacy: strip the payout row's own base_salary column for non-CEO callers
-  // (the joined staff.base_salary is already excluded from the select above).
+  // Salary privacy (Phase 5). The CEO gets the full row unchanged. A NON-CEO caller
+  // (manager/rep) must never receive `base_salary` OR the salary-inclusive `total_amount`
+  // (from which base_salary is trivially derivable), nor any adjustment/breakdown field.
+  // For them we build a fresh whitelist object: staff id/name/role, period, status and the
+  // commission components only, plus a derived `commission_total` (commissions, no salary).
   const payouts = (data ?? []).map((row) => {
-    const r = { ...(row as Record<string, unknown>) }
-    if (!isCEO) delete r.base_salary
-    return r
+    const r = row as Record<string, unknown>
+    if (isCEO) return r
+    const t1 = Number(r.t1_commissions ?? 0)
+    const t2 = Number(r.t2_commissions ?? 0)
+    const loyalty = Number(r.loyalty_bonuses ?? 0)
+    const override = Number(r.override_commissions ?? 0)
+    return {
+      id: r.id,
+      staff_id: r.staff_id,
+      staff: r.staff, // already selected without base_salary for non-CEO
+      period: r.period,
+      status: r.status,
+      t1_commissions: t1,
+      t2_commissions: t2,
+      loyalty_bonuses: loyalty,
+      override_commissions: override,
+      commission_count: r.commission_count,
+      commission_total: t1 + t2 + loyalty + override,
+      paid_at: r.paid_at ?? null,
+    }
   })
 
   return NextResponse.json({ payouts })

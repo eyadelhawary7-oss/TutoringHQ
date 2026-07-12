@@ -33,7 +33,8 @@ export async function GET(
     return NextResponse.json({ errorKey: 'payouts.errors.unauthorized' }, { status: 401 })
   }
   // GET stays open to all admin_users members - no role gate per AUDIT_v22.md Phase 3.
-  // Phase 4a: base_salary (salary) is CEO-only.
+  // Phase 5: salary privacy — the CEO gets the full row; a non-CEO caller never receives
+  // base_salary OR the salary-inclusive total_amount (nor adjustment/breakdown fields).
   const isCEO = ctx.internalRole === 'super_admin'
   const staffSelect = isCEO ? 'staff(id, name, role, base_salary)' : 'staff(id, name, role)'
 
@@ -46,8 +47,30 @@ export async function GET(
   if (error) {
     return NextResponse.json({ errorKey: 'payouts.errors.notFound' }, { status: 404 })
   }
-  const payout = { ...(data as Record<string, unknown>) }
-  if (!isCEO) delete payout.base_salary
+  const r = data as Record<string, unknown>
+  if (isCEO) {
+    return NextResponse.json({ payout: r })
+  }
+  // Non-CEO whitelist: staff id/name/role, period, status, commission components + a
+  // derived commission_total (commissions only, no salary). Fail closed on everything else.
+  const t1 = Number(r.t1_commissions ?? 0)
+  const t2 = Number(r.t2_commissions ?? 0)
+  const loyalty = Number(r.loyalty_bonuses ?? 0)
+  const override = Number(r.override_commissions ?? 0)
+  const payout = {
+    id: r.id,
+    staff_id: r.staff_id,
+    staff: r.staff,
+    period: r.period,
+    status: r.status,
+    t1_commissions: t1,
+    t2_commissions: t2,
+    loyalty_bonuses: loyalty,
+    override_commissions: override,
+    commission_count: r.commission_count,
+    commission_total: t1 + t2 + loyalty + override,
+    paid_at: r.paid_at ?? null,
+  }
   return NextResponse.json({ payout })
 }
 

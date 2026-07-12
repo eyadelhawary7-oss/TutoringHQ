@@ -32,11 +32,12 @@ billed-amount/period fix will each land as their own REQUIRES SIGN-OFF commits._
 | Phase 2 — CEO home | Trials-watch widget renders on `/ceo` (super_admin) and is absent for accountant; `/admin` overview layout OK after removing the fake Security-alerts + Pending-Signups tiles; `/ceo-dashboard` and legacy `/admin?tab=ceo` land on `/ceo`; RTL of new Arabic strings |
 | Phase 3 — combined screens | Centers/Teachers/All toggle on billing/renewals/finance URL-syncs (`?owner_type=`) and refetches; needs an env WITH real teacher subscriptions to see teacher rows + folded finance MRR (dev DB has none); teacher rows hide center-only actions (Mark paid / Record payment → em-dash); finance `all` north-star tiles = center + teacher |
 | Phase 4a — scoping | Log in as a real `sales_manager` and `sales_rep` (staff.user_id linked, admin_users.role set, approved center_assignments): Centers/Card-Orders/Commissions/Payouts show ONLY their scope; write buttons hidden; direct mutation attempts 403; unlinked sales role sees nothing |
+| Phase 5 — rep lockout + salary privacy | As a `sales_rep`: `/admin/orders` (card orders) redirects/403s — reps must not see the fulfilment queue. As a `sales_manager`: the Payouts view shows commission tiles + status only, **no total-pay / base-salary column** (so a rep's base_salary cannot be inferred by subtraction). CEO still sees full totals. |
 
 ## Phase 4a follow-ups (UI/scope refinements — decide before merge)
 | Item | Note |
 |------|------|
-| Manager payout salary inference | Scoped payout view still shows `total_amount` + commission tiles → a manager can subtract to infer a rep's base_salary. The manager payout VIEW should show status/commission only. (To refine in Phase 5 rep/manager views.) |
+| Manager payout salary inference | ✅ RESOLVED in Phase 5 — scoped (non-CEO) payout view is now commission-only (no `total_amount`/`base_salary`). |
 | Centers-page write buttons | suspend/delete/blacklist/change-plan buttons remain visible to sales roles (API fails closed). Decide whether to hide them for sales roles (can't gate on `role==='super_admin'` alone without stripping accountant's legitimate buttons). |
 
 ## Environment / config switches (go-live, not on-branch)

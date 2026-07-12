@@ -170,3 +170,24 @@ built on the finalized commission engine)**.
   request is rejected 400. Reps get nothing (403; nav hidden).
 - 16 new tests; verified by orchestrator: typecheck exit 0, 1248 unit tests, stabilization
   OK; approve/reject gate reviewed (CEO-only). SW_VERSION v13→v14.
+
+## Phase 5 — rep card-order lockout + manager payout salary-privacy (Opus 4.8) — DONE ✅
+- **Card-orders is Manager+ only.** `card-orders/route.ts` GET gate is now `isCEO ||
+  isManager`; a `sales_rep` gets **403** (was allowed in 4a). Reps never see the fulfilment
+  queue. `AdminOrdersClient.tsx` bounces a stray sales_rep client-side too.
+- **Closes the 4a salary-inference leak.** The scoped (non-CEO) payout view no longer
+  returns figures a manager could subtract to back out a rep's `base_salary`:
+  - `payouts/route.ts` + `[id]/route.ts` — non-CEO branch builds a **NEW whitelisted
+    object** with only `staff{id,name,role}` (no base_salary), `period`, `status`,
+    the commission tiles (`t1/t2/loyalty/override`), `commission_count`, `paid_at`, and a
+    derived `commission_total`. It **omits** `total_amount`, `base_salary`, `adjustment`,
+    and `breakdown`. The CEO branch is unchanged (full `total_amount` + `base_salary`).
+  - Verified by grep: `isCEO = ctx.internalRole === 'super_admin'`; staff embed select is
+    `base_salary`-free for non-CEO; the whitelist object literal carries no salary/total.
+- Frontend `payouts/page.tsx` + `commissions/page.tsx` render the commission-only view for
+  managers (total-pay column hidden when the field is absent).
+- i18n +5 admin keys (ar+en); SW_VERSION v14→v15.
+- Verified by orchestrator: typecheck exit 0, **1250 unit tests pass**, i18n/bidi/tolocale
+  OK. Manual review confirms the non-CEO payout object cannot leak base_salary.
+- Resolves both Phase-4a follow-ups: (1) manager payout salary inference — CLOSED (view is
+  commission-only); (2) card-order rep access — CLOSED (reps 403).

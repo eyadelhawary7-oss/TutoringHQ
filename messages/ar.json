@@ -2746,7 +2746,9 @@
         "cannotUnlock": "لا يمكن الفتح - الحالة الحالية:",
         "saveFailed": "تعذر إتمام الفتح. حاول مرة أخرى."
       },
-      "type_delta_upgrade": "ترقية خطة"
+      "type_delta_upgrade": "ترقية خطة",
+      "scoped_note_manager": "عرض عمولات فريقك",
+      "scoped_note_rep": "عرض عمولاتك"
     },
     "payouts": {
       "title": "المدفوعات الشهرية",
@@ -2766,6 +2768,9 @@
       "mark_confirmed": "تأكيد",
       "confirm_reviewed": "تجاوز علامة المراجعة",
       "mark_paid": "تأكيد الدفع",
+      "commission_total": "العمولات",
+      "scoped_note_manager": "حالة مدفوعات فريقك",
+      "scoped_note_rep": "أرباح عمولاتك وحالة المدفوعات",
       "no_payouts": "لا توجد مدفوعات بعد",
       "no_payouts_description": "تظهر طلبات الدفع هنا عندما يصبح أحد أفراد الفريق جاهزاً للحصول على مستحقاته.",
       "adjustment": "تسوية",

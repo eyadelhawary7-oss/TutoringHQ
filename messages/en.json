@@ -4599,7 +4599,9 @@
         "cannotUnlock": "Cannot unlock - current status:",
         "saveFailed": "Could not complete unlock. Please try again."
       },
-      "type_delta_upgrade": "Upgrade Delta"
+      "type_delta_upgrade": "Upgrade Delta",
+      "scoped_note_manager": "Showing your team's commissions",
+      "scoped_note_rep": "Showing your commissions"
     },
     "payouts": {
       "title": "Monthly Payouts",
@@ -4619,6 +4621,9 @@
       "mark_confirmed": "Confirm",
       "confirm_reviewed": "Override Review Flag",
       "mark_paid": "Mark as Paid",
+      "commission_total": "Commissions",
+      "scoped_note_manager": "Your team's payout status",
+      "scoped_note_rep": "Your commission earnings & payout status",
       "no_payouts": "No payouts yet",
       "no_payouts_description": "Payout requests show up here once a staff member is ready to be paid.",
       "adjustment": "Adjustment",
