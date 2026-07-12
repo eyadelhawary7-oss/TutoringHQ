@@ -51,11 +51,11 @@ const ADMIN_TAB_REDIRECTS: Record<string, string> = {
   cardorders: '/admin/orders',
   'card-orders': '/admin/orders',
   card_orders: '/admin/orders',
-  ceo: '/ceo-dashboard',
-  ceoDashboard: '/ceo-dashboard',
-  ceodashboard: '/ceo-dashboard',
-  'ceo-dashboard': '/ceo-dashboard',
-  ceo_dashboard: '/ceo-dashboard',
+  ceo: '/ceo',
+  ceoDashboard: '/ceo',
+  ceodashboard: '/ceo',
+  'ceo-dashboard': '/ceo',
+  ceo_dashboard: '/ceo',
   finance: '/admin/finance',
   finances: '/admin/finance',
   health: '/admin/health',
@@ -65,11 +65,6 @@ const ADMIN_TAB_REDIRECTS: Record<string, string> = {
   internal_team: '/admin/internal-team',
   money: '/admin/finance',
   mrr: '/admin/finance',
-  pending: '/admin/pending-signups',
-  pendingSignups: '/admin/pending-signups',
-  pendingsignups: '/admin/pending-signups',
-  'pending-signups': '/admin/pending-signups',
-  pending_signups: '/admin/pending-signups',
   platformConfig: '/admin/platform-config',
   'platform-config': '/admin/platform-config',
   platformconfig: '/admin/platform-config',
@@ -292,8 +287,8 @@ function AdminOverviewPageContent() {
 
           {isLoading && !overview ? (
             <div className="flex-1 space-y-6 animate-pulse">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                {[1, 2, 3, 4, 5].map((i) => (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[1, 2, 3, 4].map((i) => (
                   <div
                     key={i}
                     className="h-24 rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)]"
@@ -323,7 +318,7 @@ function AdminOverviewPageContent() {
               <div className="mb-3">
                 <SectionHeader title={tAdmin('platformHealth')} />
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                 <KpiCard
                   label={tAdmin('totalCenters')}
                   value={formatNumber(overview.totalCenters ?? 0, locale)}
@@ -332,11 +327,6 @@ function AdminOverviewPageContent() {
                   label={tAdmin('activeCenters')}
                   value={formatNumber(overview.activeCenters ?? 0, locale)}
                   tone="success"
-                />
-                <KpiCard
-                  label={tAdmin('pendingSignups')}
-                  value={formatNumber(overview.pendingSignups ?? 0, locale)}
-                  tone={overview.pendingSignups ? 'warning' : 'muted'}
                 />
                 <KpiCard
                   label={tAdmin('suspendedCenters')}
@@ -382,40 +372,6 @@ function AdminOverviewPageContent() {
                       : 0,
                     locale,
                   )}%`}
-                />
-              </div>
-
-              <div className="mb-3">
-                <SectionHeader title={tAdmin('securityAlerts')} />
-              </div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-                <KpiCard
-                  label={tAdmin('failedLogins24h', { hours: formatNumber(24, locale) })}
-                  value={formatNumber(0, locale)}
-                  tone="muted"
-                />
-                <KpiCard
-                  label={tAdmin('newRegistrations7d', { days: formatNumber(7, locale) })}
-                  value={formatNumber(overview.pendingSignups ?? 0, locale)}
-                  tone="muted"
-                />
-                <KpiCard
-                  label={tAdmin('flaggedActivity')}
-                  value={formatNumber(0, locale)}
-                  tone="muted"
-                />
-                <KpiCard
-                  label={tAdmin('systemStatus')}
-                  value={
-                    <span className="inline-flex items-center gap-2">
-                      <span className="relative flex h-2.5 w-2.5">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-                      </span>
-                      <span className="text-base font-medium">{tAdmin('allSystemsOperational')}</span>
-                    </span>
-                  }
-                  tone="success"
                 />
               </div>
 

@@ -172,6 +172,19 @@ export interface CeoOps {
   } | null
 }
 
+/**
+ * Trials-watch summary (super_admin only). Center trials use the summer promo
+ * enrollment (`centers.summer_status`); teacher trials use the regular
+ * subscription status (`teacher_subscriptions.status = 'trialing'`). Test rows
+ * (`centers.is_test`, `teacher_profiles.is_test`) are excluded.
+ */
+export interface CeoTrialsWatch {
+  centers_in_trial: number
+  teachers_in_trial: number
+  converted_to_paid: number
+  trials_ending_7d: number
+}
+
 /** Combined center + teacher-side top-line (Section A, owner-only). */
 export interface CeoTeacherCombined {
   center_mrr: number

@@ -6505,6 +6505,13 @@
       "atRisk": "At-risk centers",
       "openAlerts": "Open alerts"
     },
+    "trialsWatch": {
+      "title": "Trials watch",
+      "centersInTrial": "Centers in trial",
+      "teachersInTrial": "Teachers in trial",
+      "convertedToPaid": "Converted to paid",
+      "endingSoon": "Ending soon (next {days} days)"
+    },
     "pipeline": {
       "title": "Sales pipeline",
       "planSolo": "Solo",

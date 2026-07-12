@@ -1,44 +1,16 @@
-import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
-import TimeRangeSelector from '@/components/ceo/TimeRangeSelector';
-import { isValidRangeKey, resolveRange, DEFAULT_RANGE } from '@/lib/ceo-time-range';
-import { getAdminContext } from '@/lib/admin-auth';
-import CeoDashboardClient from './CeoDashboardClient';
 
-export default async function CeoDashboardPage({
+/**
+ * RETIRED — the CEO home is now the single canonical `/ceo` dashboard, which
+ * carries the full exec view plus the platform controls (ops kill-switches,
+ * announcement banner, and the emergency panel). This second, overlapping
+ * dashboard has been folded into it; any direct link lands on `/ceo`.
+ */
+export default async function RetiredCeoDashboardPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ range?: string }>;
 }) {
   const { locale } = await params;
-
-  const ctx = await getAdminContext(new Request('https://ceo-dashboard.internal'));
-  if (!ctx) {
-    redirect(`/${locale}/login`);
-  }
-  if (ctx.internalRole !== 'super_admin' && ctx.internalRole !== 'internal_admin') {
-    redirect(`/${locale}/dashboard`);
-  }
-
-  const { range: rawRange } = await searchParams;
-  const rangeKey = isValidRangeKey(rawRange) ? rawRange : DEFAULT_RANGE;
-  const { from, to } = resolveRange(rangeKey);
-
-  return (
-    <CeoDashboardClient
-      from={from}
-      to={to}
-      rangeSelector={
-        <Suspense
-          fallback={
-            <div className="h-12 w-full skeleton rounded-xl mb-6" />
-          }
-        >
-          <TimeRangeSelector />
-        </Suspense>
-      }
-    />
-  );
+  redirect(`/${locale}/ceo`);
 }

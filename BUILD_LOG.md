@@ -74,4 +74,23 @@ built on the finalized commission engine)**.
 
 ---
 
-## Phase 2 — CEO home
+## Phase 2 — CEO home (Opus 4.8) — DONE ✅
+- **Trials watch:** new `src/app/api/ceo/trials-watch/route.ts` (super_admin-only via
+  requireSuperAdminApi) counting centers in trial (`summer_status='enrolled'`),
+  teachers in trial (`teacher_subscriptions.status='trialing'`), converted
+  (`summer_status='paid'`), and trials ending within 7 Cairo days
+  (`summer_first_invoice_at`). Excludes test rows (`centers.is_test` — verified
+  NOT NULL default false, so `.eq(is_test,false)` is complete; teacher test excluded
+  via `teacher_profiles.is_test`). Widget rendered on `/ceo` in the existing 30s poll.
+  Read-only-verified against live DB: 0/0/0/0 (greenfield). `CeoTrialsWatch` type added.
+- **Removed the fakes:** deleted the hard-coded "Security alerts" tiles
+  (`failedLogins24h`, `flaggedActivity`, always-0 `newRegistrations7d`, static
+  systemStatus) and the dead Pending Signups KPI + its retired-page links from
+  `admin/page.tsx` (grid tightened 5→4). Real revenue/health KPIs kept.
+- **Dedup:** `/ceo-dashboard` now server-redirects to `/{locale}/ceo` (canonical CEO
+  home). All platform controls preserved on `/ceo` (kill-switches, announcement editor,
+  Section H emergency panel).
+- i18n `ceo.trialsWatch.*` added (ar+en); SW_VERSION v9→v10.
+- Verified by orchestrator: typecheck exit 0, 1181 unit tests, i18n/bidi/tolocale OK.
+- _Human click-through needed (see MERGE_CHECKLIST): widget render on /ceo, /admin
+  overview layout after removals, /ceo-dashboard redirect, RTL of new strings._

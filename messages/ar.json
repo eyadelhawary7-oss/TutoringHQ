@@ -3057,6 +3057,13 @@
       "atRisk": "مراكز في خطر",
       "openAlerts": "تنبيهات مفتوحة"
     },
+    "trialsWatch": {
+      "title": "متابعة التجارب",
+      "centersInTrial": "مراكز في التجربة",
+      "teachersInTrial": "مدرّسون في التجربة",
+      "convertedToPaid": "تحوّلوا إلى مدفوع",
+      "endingSoon": "تنتهي قريباً (خلال {days} أيام)"
+    },
     "pipeline": {
       "title": "خط المبيعات",
       "planSolo": "فردي",

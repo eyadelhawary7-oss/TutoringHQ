@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { ChartCard } from '@/components/charts';
 import { MobileWrapper } from '@/components/shell/MobileWrapper';
-import type { CeoCenterHealthTierRow, CeoDashboardData, LeadStage } from '@/types/ceo';
+import type { CeoCenterHealthTierRow, CeoDashboardData, CeoTrialsWatch, LeadStage } from '@/types/ceo';
 import { ChevronDown } from 'lucide-react';
 import { formatNumber, formatDateTime, formatCurrency } from '@/lib/formatNumber';
 
@@ -63,6 +63,7 @@ export default function CeoDashboardPage() {
   };
 
   const [data, setData] = useState<CeoDashboardData | null>(null);
+  const [trials, setTrials] = useState<CeoTrialsWatch | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [isHUnlocked, setIsHUnlocked] = useState(false);
@@ -92,21 +93,28 @@ export default function CeoDashboardPage() {
       setLoading(false);
       return;
     }
+    const authHeader = { Authorization: `Bearer ${session.access_token}` };
     try {
-      const res = await fetch('/api/ceo/dashboard', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (!res.ok) {
-        setLoading(false);
-        return;
+      const res = await fetch('/api/ceo/dashboard', { headers: authHeader });
+      if (res.ok) {
+        const json = (await res.json()) as CeoDashboardData;
+        setData(json);
+        setLastSync(new Date());
       }
-      const json = (await res.json()) as CeoDashboardData;
-      setData(json);
-      setLastSync(new Date());
     } catch {
       setData(null);
     } finally {
       setLoading(false);
+    }
+    // Trials watch is super_admin-only; best-effort so accountants (who can see
+    // the rest of the dashboard) simply don't get the widget on a 403.
+    try {
+      const tRes = await fetch('/api/ceo/trials-watch', { headers: authHeader });
+      if (tRes.ok) {
+        setTrials((await tRes.json()) as CeoTrialsWatch);
+      }
+    } catch {
+      // ignore — widget hidden when data unavailable
     }
   }, []);
 
@@ -376,6 +384,53 @@ export default function CeoDashboardPage() {
                 </div>
               </div>
             </section>
+
+            {trials && (
+              <section id="section-trials" aria-labelledby="trials-watch-heading">
+                <h2
+                  id="trials-watch-heading"
+                  className="text-sm font-semibold text-[var(--color-text-primary)] mb-3"
+                >
+                  {t('trialsWatch.title')}
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 border-s-2 border-s-[var(--color-brand-500)]">
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t('trialsWatch.centersInTrial')}</p>
+                    <p className="text-xl font-mono font-bold text-[var(--color-text-primary)] mt-1">
+                      {formatNumber(trials.centers_in_trial, locale)}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 border-s-2 border-s-teal-500">
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t('trialsWatch.teachersInTrial')}</p>
+                    <p className="text-xl font-mono font-bold text-[var(--color-text-primary)] mt-1">
+                      {formatNumber(trials.teachers_in_trial, locale)}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 border-s-2 border-s-[var(--color-border-default)]">
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t('trialsWatch.convertedToPaid')}</p>
+                    <p className="text-xl font-mono font-bold text-[var(--color-text-primary)] mt-1">
+                      {formatNumber(trials.converted_to_paid, locale)}
+                    </p>
+                  </div>
+                  <div
+                    className={`rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 border-s-2 ${
+                      trials.trials_ending_7d > 0 ? 'border-s-amber-400' : 'border-s-[var(--color-border-default)]'
+                    }`}
+                  >
+                    <p className="text-xs text-[var(--color-text-secondary)]">
+                      {t('trialsWatch.endingSoon', { days: formatNumber(7, locale) })}
+                    </p>
+                    <p
+                      className={`text-xl font-mono font-bold mt-1 ${
+                        trials.trials_ending_7d > 0 ? 'text-amber-400' : 'text-[var(--color-text-primary)]'
+                      }`}
+                    >
+                      {formatNumber(trials.trials_ending_7d, locale)}
+                    </p>
+                  </div>
+                </div>
+              </section>
+            )}
 
             {data.teacher_combined && (
               <section id="section-combined" aria-labelledby="combined-heading">
