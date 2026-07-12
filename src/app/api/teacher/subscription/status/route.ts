@@ -4,6 +4,7 @@ import { requireTeacherAuth } from '@/lib/centerAuth';
 import { isFeatureEnabled } from '@/lib/features';
 import { DEFAULT_TEACHER_PLAN_KEY, getTeacherPlan } from '@/lib/teacherPlans';
 import { getIntervalConfig } from '@/lib/pricingConfig';
+import { ownerHasEverPaidInvoice, teacherHasExportAccess } from '@/lib/exportEntitlement';
 
 const ROUTE_TAG = 'api/teacher/subscription/status';
 
@@ -92,6 +93,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       has_subscription: false,
       status: null,
+      // W4: no subscription → not trialing → export ungated (unreachable path in
+      // practice, since private surfaces require an active/trialing subscription).
+      export_access: true,
       plan_key: defaultPlanKey,
       price_gross: stdPrice,
       std_price_gross: stdPrice,
@@ -131,9 +135,25 @@ export async function GET(request: NextRequest) {
         ? proPrice
         : getTeacherPlan(sub.plan_key).priceGross;
 
+  // W4 export entitlement: CUSTOMER income export is paid-only during trial. Probe
+  // paid invoices only while trialing (active is already ungated) so an existing
+  // payer swept into a trial is never gated.
+  let teacherHasEverPaid = false;
+  if (sub.status === 'trialing') {
+    teacherHasEverPaid = await ownerHasEverPaidInvoice(auth.supabaseAdmin, {
+      ownerType: 'teacher',
+      teacherId: auth.userId,
+    });
+  }
+  const exportAccess = teacherHasExportAccess({
+    subscriptionStatus: sub.status,
+    hasEverPaid: teacherHasEverPaid,
+  });
+
   return NextResponse.json({
     has_subscription: true,
     status: sub.status,
+    export_access: exportAccess,
     plan_key: sub.plan_key,
     price_gross: priceGross,
     std_price_gross: stdPrice,

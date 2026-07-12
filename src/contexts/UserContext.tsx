@@ -27,6 +27,9 @@ interface UserProfile {
     billing_status?: string;
     next_payment_due?: string | null;
     auto_suspend_at?: string | null;
+    summer_status?: string | null;
+    // W4: may this center run CUSTOMER data exports? Paid-only during trial.
+    export_access?: boolean;
   } | null;
   can_scan?: boolean;
   can_view_payments?: boolean;

@@ -36,6 +36,8 @@ vi.mock('@/lib/summer/config', () => ({
     payWindowDays: 2,
     firstChargeRelease: 'HELD',
   })),
+  // Summer ON here → signup takes the trial-first path (asserted below).
+  summerModeActive: (cfg: { enabled?: boolean }) => cfg.enabled === true,
 }));
 
 function genericBuilder() {
@@ -186,6 +188,33 @@ describe('POST /api/signup (trial-first)', () => {
     expect(payload.summer_status).toBe('enrolled');
     expect(payload.next_payment_due).toBeNull();
     expect(payload.auto_suspend_at).toBeNull();
+  });
+
+  it('summer OFF -> normal billing (no trial): next_payment_due + suspend set, summer_status unset', async () => {
+    const { getSummerConfig } = await import('@/lib/summer/config');
+    (getSummerConfig as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      enabled: false,
+      freeUntil: '2026-08-16',
+      firstChargeFloor: '2026-08-30',
+      trialDays: 14,
+      payWindowDays: 2,
+      firstChargeRelease: 'HELD',
+    });
+
+    const res = await POST(makeRequest(VALID_BODY));
+    expect(res.status).toBe(200);
+
+    expect(h.centerInsertSpy).toHaveBeenCalledTimes(1);
+    const payload = h.centerInsertSpy.mock.calls[0][0];
+    // Active immediately, but on the NORMAL billing rails — not a trial enrollment.
+    expect(payload.status).toBe('active');
+    expect(payload.summer_status).toBeUndefined();
+    expect(typeof payload.next_payment_due).toBe('string');
+    expect(typeof payload.auto_suspend_at).toBe('string');
+    expect(typeof payload.subscription_start_date).toBe('string');
+    // Amounts unchanged from the trial path (only the provisioning path differs).
+    expect(payload.billing_amount).toBeDefined();
+    expect(payload.all_in_price).toBeDefined();
   });
 
   it('one free trial per phone -> 23505 on trial_claims -> 400 phone_exists, no center', async () => {

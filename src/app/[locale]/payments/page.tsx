@@ -131,6 +131,9 @@ export default function PaymentsPage() {
     canViewPayments ||
     user?.can_record_payments === true ||
     hasPermission('can_record_payments');
+  // W4: CSV export of CUSTOMER payment data is paid-only during the free trial.
+  // Default allowed while /api/me loads (undefined); only explicit false gates.
+  const exportAccess = user?.center?.export_access !== false;
 
   const [records, setRecords] = useState<PaymentRecord[] | null>(() => readPaymentsCache());
   const [paymentsFresh, setPaymentsFresh] = useState(false);
@@ -435,6 +438,8 @@ export default function PaymentsPage() {
   };
 
   const handleExportCSV = () => {
+    // Defense-in-depth: the button is swapped for an upsell when gated.
+    if (!exportAccess) return;
     const cols = [
       tp('csv_col_date'),
       tp('csv_col_student'),
@@ -742,13 +747,27 @@ export default function PaymentsPage() {
           <div className="mb-3">
             <SectionHeader title={tCommon('moreActions')} />
           </div>
-          <button
-            type="button"
-            onClick={handleExportCSV}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)] text-sm font-semibold hover:bg-[var(--color-surface-2)] hover:border-teal-500/40 btn-press chq-focus"
-          >
-            <Download size={14} /> {tCommon('exportCsv')}
-          </button>
+          {exportAccess ? (
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)] text-sm font-semibold hover:bg-[var(--color-surface-2)] hover:border-teal-500/40 btn-press chq-focus"
+            >
+              <Download size={14} /> {tCommon('exportCsv')}
+            </button>
+          ) : (
+            <div className="inline-flex flex-col items-start gap-1">
+              <button
+                type="button"
+                disabled
+                title={tCommon('exportRequiresPaidNote')}
+                className="inline-flex cursor-not-allowed items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-muted)] text-sm font-semibold opacity-60"
+              >
+                <Download size={14} /> {tCommon('exportCsv')}
+              </button>
+              <p className="text-xs text-[var(--color-teal-deep)]">{tCommon('exportRequiresPaid')}</p>
+            </div>
+          )}
         </div>
       </div>
 

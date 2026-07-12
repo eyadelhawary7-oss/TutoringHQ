@@ -263,7 +263,7 @@ export default function DashboardPage() {
   const canViewRevenue =
     user?.role === 'owner' || user?.role === 'admin' || user?.role === 'super_admin' || user?.can_view_revenue === true;
 
-  const [centerBilling, setCenterBilling] = useState<{ payment_due_date?: string; billing_status?: string; name?: string; plan?: string } | null>(null);
+  const [centerBilling, setCenterBilling] = useState<{ payment_due_date?: string; billing_status?: string; name?: string; plan?: string; export_access?: boolean } | null>(null);
   const [planUsage, setPlanUsage] = useState<{ plan: string; weeklyUniqueStudents: number; studentLimit: number } | null>(null);
   const [data, setData] = useState<DashboardData | null>(null);
   const [dashboardDataFresh, setDashboardDataFresh] = useState(false);
@@ -630,6 +630,7 @@ export default function DashboardPage() {
           billing_status: meData.user.center.billing_status,
           name: meData.user.center.name,
           plan: meData.user.center.plan,
+          export_access: meData.user.center.export_access,
         } : null);
         // Fetch plan usage in parallel (don't block dashboard load)
         fetch('/api/settings/limits', {
@@ -786,9 +787,16 @@ export default function DashboardPage() {
   }, [centerId, inactivePeriod, timeRange, loadDashboard]);
 
   const canExportExcel = hasPlanFeature(centerBilling?.plan, 'excel_export');
+  // W4: CUSTOMER data export is paid-only during the free trial. Default to
+  // allowed while /api/me is still loading (undefined) so we never flash a
+  // wrongly-gated button; only an explicit `false` gates.
+  const exportAccess = centerBilling?.export_access !== false;
 
   const handleExport = useCallback(async () => {
     if (!centerId) return;
+    // Defense-in-depth: the button is hidden when gated, but never run the export
+    // for a trial center that hasn't paid even if this handler is reached.
+    if (!exportAccess) return;
     if (!canExportExcel) {
       setShowUpgradeModal(true);
       return;
@@ -848,7 +856,7 @@ export default function DashboardPage() {
     } finally {
       setIsExporting(false);
     }
-  }, [centerId, canExportExcel]);
+  }, [centerId, canExportExcel, exportAccess]);
 
   const safeData = data ?? EMPTY_DASHBOARD_DATA;
 
@@ -1132,18 +1140,34 @@ export default function DashboardPage() {
                 role="menu"
                 className="absolute end-0 top-full z-20 mt-2 w-52 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-1.5 shadow-lg"
               >
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setShowActionsMenu(false);
-                    void handleExport();
-                  }}
-                  disabled={isExporting || data === null}
-                  className="flex w-full items-center rounded-lg px-3 py-2 text-start text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-2)] disabled:opacity-50"
-                >
-                  {isExporting ? t('exporting') : t('exportData')}
-                </button>
+                {exportAccess ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setShowActionsMenu(false);
+                      void handleExport();
+                    }}
+                    disabled={isExporting || data === null}
+                    className="flex w-full items-center rounded-lg px-3 py-2 text-start text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-2)] disabled:opacity-50"
+                  >
+                    {isExporting ? t('exporting') : t('exportData')}
+                  </button>
+                ) : (
+                  <Link
+                    href="/settings/billing"
+                    role="menuitem"
+                    onClick={() => setShowActionsMenu(false)}
+                    className="block rounded-lg px-3 py-2 transition-colors hover:bg-[var(--color-surface-2)]"
+                  >
+                    <span className="block text-sm font-medium text-[var(--color-text-muted)]">
+                      {t('exportData')}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-[var(--color-teal-deep)]">
+                      {tCommon('exportRequiresPaid')}
+                    </span>
+                  </Link>
+                )}
               </div>
             </>
           ) : null}

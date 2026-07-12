@@ -18,9 +18,11 @@ import {
 } from '@/lib/pricing';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { getIntervalConfig } from '@/lib/pricingConfig';
-import { getSummerConfig } from '@/lib/summer/config';
+import { getSummerConfig, summerModeActive } from '@/lib/summer/config';
 import { computeSummerSchedule } from '@/lib/summer/dates';
 import { cairoDateKey } from '@/lib/cairo/day';
+import { addMonthsToDateStr } from '@/lib/subscriptionAnchor';
+import { autoSuspendAtFromDue } from '@/lib/billingSchedule';
 import { provisionCenterOwner } from '@/lib/centerOwnerProvision';
 
 const CITY_ID_TO_DB: Record<string, string> = {
@@ -47,14 +49,22 @@ function mapCityToDb(city: unknown): string | null {
 }
 
 /**
- * POST /api/signup — TRIAL-FIRST center signup.
+ * POST /api/signup — center signup. The provisioning path forks on the summer
+ * master switch (summer.promo.enabled):
  *
- * Centers no longer pay at signup. A signup creates the center already ACTIVE and
- * enrolled in the 14-day free trial (billing-neutral: no next_payment_due, no
- * auto_suspend), provisions the owner login immediately (no Paymob webhook needed),
- * and hands the browser to /set-pin. The first invoice is issued at trial-end by the
- * summer-billing engine (Aug 30 for the launch cohort, signup+14 thereafter) and is
- * paid through Paymob by any method — only customers who saved a card are auto-charged.
+ *   Summer ON  → TRIAL-FIRST: the center is created ACTIVE and enrolled in the
+ *   14-day free trial (billing-neutral: no next_payment_due, no auto_suspend). The
+ *   first invoice is issued at trial-end by the summer-billing engine (Aug 30 for
+ *   the launch cohort, signup+14 thereafter).
+ *
+ *   Summer OFF → NORMAL billing (no trial): the center is created ACTIVE with a
+ *   next_payment_due ~30 days out and a single-day lock, so the standard renewal
+ *   cron owns the first invoice. summer_status stays NULL. Charge AMOUNTS are
+ *   identical to the trial path — only the provisioning path differs.
+ *
+ * Either way, signup provisions the owner login immediately (no Paymob webhook
+ * needed) and hands the browser to /set-pin. Invoices are paid through Paymob by
+ * any method — only customers who saved a card are auto-charged.
  *
  * Abuse control: one free trial per phone, enforced atomically via the durable
  * `trial_claims` ledger (the UNIQUE insert is the lock).
@@ -204,14 +214,20 @@ export async function POST(request: Request) {
       }
     }
 
-    // Enroll into the 14-day trial via the shared summer schedule (same math the
-    // summer-billing cron uses): trial_start = max(signup, free_until=Aug 16),
-    // first_invoice_at = max(trial_start+14, first_charge_floor=Aug 30). Billing is
-    // neutralised (next_payment_due/auto_suspend NULL) so the normal billing crons
-    // skip the center; the summer engine owns the trial-end invoice + lock.
+    // Provisioning fork keyed off the summer master switch (summer.promo.enabled):
+    //  - Summer ON  → 14-day trial enrollment via the shared summer schedule (same
+    //    math the summer-billing cron uses): trial_start = max(signup, free_until),
+    //    first_invoice_at = max(trial_start+14, first_charge_floor). Billing is
+    //    neutralised (next_payment_due/auto_suspend NULL) so the normal crons skip
+    //    the center; the summer engine owns the trial-end invoice + lock.
+    //  - Summer OFF → NORMAL billing, no trial. Mirrors the admin "approve"
+    //    activation: active now, first invoice issued by the standard renewal cron
+    //    ~30 days out, single-day lock keyed off next_payment_due. summer_status
+    //    stays NULL so the center is never treated as a trial signup. No charge
+    //    AMOUNT changes — only which provisioning path a new signup takes.
     const summerCfg = await getSummerConfig();
+    const summerActive = summerModeActive(summerCfg);
     const signupCairo = cairoDateKey(new Date());
-    const schedule = computeSummerSchedule(signupCairo, summerCfg);
 
     const nowIso = new Date().toISOString();
     const emailTrim = typeof email === 'string' ? email.trim() : '';
@@ -223,7 +239,7 @@ export async function POST(request: Request) {
       city: cityDb,
       plan: planLower,
       signup_notes: typeof notes === 'string' ? notes.trim() || null : null,
-      // Trial-first: active with full access, but billing-neutral until trial-end.
+      // Active with full access immediately in both paths.
       status: 'active',
       subscription_status: 'active',
       billing_status: 'active',
@@ -236,20 +252,33 @@ export async function POST(request: Request) {
       all_in_price: allInPerMonth,
       // CHECK allows {'monthly','yearly'}; annual is spelled 'yearly' here.
       subscription_billing_period: periodResolved === 'annual' ? 'yearly' : 'monthly',
-      next_payment_due: null,
-      auto_suspend_at: null,
-      // Trial enrollment (mirrors summerBillingCron.runCenters enroll action).
-      summer_status: 'enrolled',
-      summer_trial_start: schedule.trialStart,
-      summer_first_invoice_at: schedule.firstInvoiceAt,
-      summer_lock_at: schedule.lockAtIso,
-      summer_enrolled_at: nowIso,
       requested_at: nowIso,
       terms_accepted_at: nowIso,
       terms_version: 'v1-2026-05',
       policy_accepted_at: nowIso,
       policy_version: '1.0',
     };
+
+    if (summerActive) {
+      // Trial enrollment (mirrors summerBillingCron.runCenters enroll action).
+      const schedule = computeSummerSchedule(signupCairo, summerCfg);
+      centerInsert.next_payment_due = null;
+      centerInsert.auto_suspend_at = null;
+      centerInsert.summer_status = 'enrolled';
+      centerInsert.summer_trial_start = schedule.trialStart;
+      centerInsert.summer_first_invoice_at = schedule.firstInvoiceAt;
+      centerInsert.summer_lock_at = schedule.lockAtIso;
+      centerInsert.summer_enrolled_at = nowIso;
+    } else {
+      // Normal billing: no trial. First invoice on the standard renewal cron ~30
+      // days out; the cron re-anchors subsequent cadence per centers.billing_period.
+      const firstDueYmd = addMonthsToDateStr(signupCairo, 1);
+      centerInsert.subscription_start_date = signupCairo;
+      centerInsert.billing_cycle_start = signupCairo;
+      centerInsert.next_payment_due = firstDueYmd;
+      centerInsert.auto_suspend_at = autoSuspendAtFromDue(firstDueYmd);
+      // summer_status intentionally left NULL — not a trial center.
+    }
     if (weeklyLimit != null) centerInsert.weekly_student_limit = weeklyLimit;
     if (referrerCenterId) {
       centerInsert.referred_by = referrerCenterId;

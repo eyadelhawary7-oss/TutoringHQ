@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
+import { centerHasExportAccess, ownerHasEverPaidInvoice } from '@/lib/exportEntitlement';
 
 export async function GET(request: Request) {
   try {
@@ -250,17 +251,35 @@ export async function GET(request: Request) {
       suspended_at?: string | null;
       billing_type?: string | null;
       pricing_type?: string | null;
+      summer_status?: string | null;
+      // W4: does this center get CUSTOMER data exports? Paid-only during trial.
+      export_access?: boolean;
     } | null = null;
     if (userRecord.center_id) {
+      const centerIdForMe: string = userRecord.center_id;
       const { data: centerRow } = await supabaseAdmin
         .from('centers')
         .select(
-          'id, logo_url, name, phone, governorate, last_card_style, payment_due_date, auto_suspend_at, billing_status, subscription_status, status, current_period_end, cancellation_reason, cancellation_requested_at, cancellation_approved_at, plan, delivery_address, card_color, parent_pack_enabled, parent_pack_active_parents, card_orders_enabled, pack_price_per_parent, pack_request_status, announcement_balance, subscription_billing_period, billing_period, next_payment_due, billing_amount, all_in_price, credit_balance, credit_reserved, instapay_number, upgrade_count_this_period, suspended_at, billing_type, pricing_type',
+          'id, logo_url, name, phone, governorate, last_card_style, payment_due_date, auto_suspend_at, billing_status, subscription_status, status, current_period_end, cancellation_reason, cancellation_requested_at, cancellation_approved_at, plan, delivery_address, card_color, parent_pack_enabled, parent_pack_active_parents, card_orders_enabled, pack_price_per_parent, pack_request_status, announcement_balance, subscription_billing_period, billing_period, next_payment_due, billing_amount, all_in_price, credit_balance, credit_reserved, instapay_number, upgrade_count_this_period, suspended_at, billing_type, pricing_type, summer_status',
         )
         .eq('id', userRecord.center_id)
         .single();
       if (centerRow) {
         const cr = centerRow as Record<string, unknown>;
+        // W4 export entitlement: gated only when a trial center hasn't paid. Skip
+        // the invoices probe unless the trial states could gate (enrolled/invoiced).
+        const summerStatus = (cr.summer_status as string | null) ?? null;
+        let hasEverPaid = false;
+        if (summerStatus === 'enrolled' || summerStatus === 'invoiced') {
+          hasEverPaid = await ownerHasEverPaidInvoice(supabaseAdmin, {
+            ownerType: 'center',
+            centerId: centerIdForMe,
+          });
+        }
+        const exportAccess = centerHasExportAccess({
+          summer_status: summerStatus,
+          hasEverPaid,
+        });
         center = {
           id: String(cr.id ?? userRecord.center_id),
           logo_url: centerRow.logo_url ?? undefined,
@@ -303,6 +322,8 @@ export async function GET(request: Request) {
           suspended_at: (cr.suspended_at as string | null) ?? undefined,
           billing_type: (cr.billing_type as string | null) ?? undefined,
           pricing_type: (cr.pricing_type as string | null) ?? undefined,
+          summer_status: summerStatus ?? undefined,
+          export_access: exportAccess,
         };
       }
     }

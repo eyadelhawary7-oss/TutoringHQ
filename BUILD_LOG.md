@@ -229,3 +229,36 @@ Orchestrator pre-verified all three against the code + live DB before dispatch.
 - Verified by orchestrator (independent run): typecheck exit 0, **1260 unit tests pass**,
   i18n parity OK (3854 keys), bidi/tolocale OK. Reviewed line-by-line: consent gate,
   teacher owner resolution, `.lte` idempotency, Paymob field parity with `paymob.ts`.
+
+## W4 — export = paid-only during trial (never gate legal/financial) (Opus 4.8) — DONE ✅
+Recon-first: an Explore pass mapped every customer export + never-gate surface before the build.
+- **Shared entitlement helper** `src/lib/exportEntitlement.ts` (pure + fail-OPEN to access):
+  `centerHasExportAccess({summer_status,hasEverPaid})` = access unless `summer_status ∈
+  {enrolled,invoiced}` and never paid; `teacherHasExportAccess({subscriptionStatus,hasEverPaid})`
+  = access unless `trialing` and never paid. `ownerHasEverPaidInvoice` probes one paid `invoices`
+  row and **fails open (grants) on a DB error** — a blip never gates a payer. The `hasEverPaid`
+  OR-clause is the safety margin so an existing payer swept into the Aug-16 free runway
+  (momentarily `enrolled`) is NEVER gated. Chosen safe default (logged): fail toward access.
+- **4 gated exports**: dashboard Excel (`dashboard/page.tsx`), payments CSV (`payments/page.tsx`),
+  analytics P&L CSV (`components/analytics/PnLCard.tsx`) — all three **client-side soft-gate**
+  (button → disabled + "upgrade to export" upsell; data already in the browser); teacher income
+  CSV (`api/teacher/private/income/export`) — **hard server 402** `{error:'export_requires_paid',
+  upsell:true}` (a NEW `active||hasEverPaid` check, since `requireTeacherPrivateAccess` passes BOTH
+  trialing and active). Client `IncomeView` also hides the button + maps 402 back to gated.
+- **Never-gated (verified: not in the diff, helper not imported)**: PDPL `privacy-request` route +
+  form; invoice/receipt/payout PDFs (center invoice, teacher invoice, order receipt, referral payout).
+- **Entitlement surfaced**: `/api/me` adds `center.summer_status` + `center.export_access` (computes
+  `hasEverPaid` only when in a trial state); teacher `subscription/status` adds `export_access`;
+  `UserContext` center shape extended. Typed end-to-end.
+- **Signup summer-off fallback** (`api/signup/route.ts`): forks on live `summerModeActive` (reads
+  `platform_config` via service-role). Summer ON → unchanged 14-day trial enrollment. Summer OFF →
+  normal billing (`next_payment_due ≈ +1mo`, single-day lock, `summer_status` NULL) mirroring the
+  admin-approve activation. **No charge AMOUNT changes.** Consistent with the summer cron, which
+  already no-ops when `!enabled` (`summerBillingCron.ts:87`), so an OFF signup is never swept.
+  **Live check:** `summer.promo.enabled=true` (release HELD) → the fallback is DORMANT in prod;
+  current signups still get the trial (zero behavior change), the guard only fires if the switch flips.
+- i18n +4 keys (ar+en parity): `common.exportRequiresPaid(+Note)`,
+  `teacherPortal.income.exportRequiresPaid(+Note)`. SW_VERSION v16→v17.
+- Verified by orchestrator (independent): typecheck exit 0, **1274 unit tests**, i18n parity OK
+  (3858 keys), bidi/tolocale OK. Reviewed line-by-line: helper (fail-open), teacher 402 gate,
+  `/api/me` surface, signup fork (live-config + cron consistency + live master switch value).

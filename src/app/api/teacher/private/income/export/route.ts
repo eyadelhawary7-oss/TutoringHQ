@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherPrivateAccess } from '@/lib/centerAuth';
+import { ownerHasEverPaidInvoice, teacherHasExportAccess } from '@/lib/exportEntitlement';
 import {
   cairoDateKey,
   parseCairoYmd,
@@ -89,6 +90,31 @@ type ExportTxnRow = {
 export async function GET(request: NextRequest) {
   const auth = await requireTeacherPrivateAccess(request);
   if (!auth.ok) return auth.response;
+
+  // W4 hard export gate — paid-only during trial. requireTeacherPrivateAccess
+  // passes BOTH 'trialing' and 'active', so this NEW check is what blocks a
+  // trialing (unpaid) teacher. Trialing-with-a-paid-invoice and active both pass.
+  // Never rely on the client hiding the button — a raw request must 402 too.
+  const { data: subRow, error: subErr } = await auth.supabaseAdmin
+    .from('teacher_subscriptions')
+    .select('status')
+    .eq('teacher_id', auth.userId)
+    .maybeSingle();
+  if (subErr) return serverError('export_gate', subErr);
+  const subscriptionStatus = (subRow as { status?: string | null } | null)?.status ?? null;
+  let teacherHasEverPaid = false;
+  if (subscriptionStatus === 'trialing') {
+    teacherHasEverPaid = await ownerHasEverPaidInvoice(auth.supabaseAdmin, {
+      ownerType: 'teacher',
+      teacherId: auth.userId,
+    });
+  }
+  if (!teacherHasExportAccess({ subscriptionStatus, hasEverPaid: teacherHasEverPaid })) {
+    return NextResponse.json(
+      { error: 'export_requires_paid', upsell: true },
+      { status: 402 },
+    );
+  }
 
   const params = request.nextUrl.searchParams;
   const period = params.get('period') === 'all' ? 'all' : 'current';

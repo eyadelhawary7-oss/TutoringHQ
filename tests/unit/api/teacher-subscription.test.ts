@@ -134,6 +134,7 @@ describe('GET /api/teacher/subscription/status', () => {
     expect(json).toEqual({
       has_subscription: false,
       status: null,
+      export_access: true,
       plan_key: 'teacher_standard',
       price_gross: 299,
       std_price_gross: 299,
@@ -178,6 +179,7 @@ describe('GET /api/teacher/subscription/status', () => {
     expect(json).toEqual({
       has_subscription: true,
       status: 'active',
+      export_access: true,
       plan_key: 'teacher_standard',
       price_gross: 299,
       std_price_gross: 299,

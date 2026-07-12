@@ -14,7 +14,7 @@ if (globalThis.workbox) {
 }
 
 const WB = globalThis.workbox;
-const SW_VERSION = 'v16';
+const SW_VERSION = 'v17';
 const PRECACHE_NAME = `centerhq-precache-${SW_VERSION}`;
 const RUNTIME_NAME = `centerhq-${SW_VERSION}-runtime`;
 // Cache-Storage names belonging to the CURRENT version — everything else under

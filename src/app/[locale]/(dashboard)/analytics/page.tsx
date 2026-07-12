@@ -418,6 +418,7 @@ export default function AnalyticsPage() {
           expensesByMonth={d.expenses_by_month}
           pnlMonths={d.pnl_months}
           locale={locale}
+          exportAllowed={user?.center?.export_access !== false}
         />
       </section>
 

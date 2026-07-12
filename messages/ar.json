@@ -387,6 +387,8 @@
     "pdfError": "تعذر إنشاء الفاتورة. حاول مجدداً.",
     "exportCsv": "تصدير CSV",
     "exportPdf": "تصدير PDF",
+    "exportRequiresPaid": "الترقية للتصدير",
+    "exportRequiresPaidNote": "تصدير بياناتك متاح في الباقة المدفوعة. قم بالترقية لتفعيله.",
     "print": "طباعة",
     "refresh": "تحديث",
     "active": "نشط",
@@ -8967,6 +8969,8 @@
       "exportThisMonth": "هذا الشهر",
       "exportAllTime": "كل الوقت",
       "exportError": "مقدرناش نصدّر. جرب تاني.",
+      "exportRequiresPaid": "الترقية للتصدير",
+      "exportRequiresPaidNote": "تصدير دخلك متاح في الاشتراك المدفوع. اشترك عشان تفعّله.",
       "emptyHistoryBody": "لسه ماسجلتش دخل. خلّص أول حصة وشوف كسبك هنا.",
       "goToGroups": "روح لمجموعاتي"
     },

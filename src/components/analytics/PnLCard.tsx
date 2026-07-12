@@ -14,6 +14,8 @@ export interface PnLCardProps {
   expensesByMonth: Record<string, { rent: number; salaries: number; utilities: number; other: number }>;
   pnlMonths: string[];
   locale?: string;
+  /** W4: CSV export is paid-only during the free trial. Defaults to allowed. */
+  exportAllowed?: boolean;
 }
 
 function formatMonth(key: string, locale: string): string {
@@ -31,6 +33,7 @@ export default function PnLCard({
   expensesByMonth = {},
   pnlMonths = [],
   locale = 'ar',
+  exportAllowed = true,
 }: PnLCardProps) {
   const t = useTranslations('analytics');
   const tCommon = useTranslations('common');
@@ -44,6 +47,8 @@ export default function PnLCard({
   const net = totalIncome - totalExpenses;
 
   const exportCsv = () => {
+    // Defense-in-depth: the button is swapped for an upsell when gated.
+    if (!exportAllowed) return;
     const rows: string[][] = [
       [t('month'), t('income'), t('rent'), t('salaries'), t('utilities'), t('other'), t('expenses'), t('net')],
     ];
@@ -90,14 +95,26 @@ export default function PnLCard({
     <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] overflow-hidden card-shadow">
       <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
         <h3 className="font-semibold text-[var(--color-text-primary)]">{t('pnl')}</h3>
-        <button
-          type="button"
-          onClick={exportCsv}
-          className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-3)] transition-colors"
-        >
-          <Download className="h-4 w-4" />
-          {tCommon('exportCsv')}
-        </button>
+        {exportAllowed ? (
+          <button
+            type="button"
+            onClick={exportCsv}
+            className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-3)] transition-colors"
+          >
+            <Download className="h-4 w-4" />
+            {tCommon('exportCsv')}
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled
+            title={tCommon('exportRequiresPaidNote')}
+            className="inline-flex cursor-not-allowed items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium text-[var(--color-teal-deep)] opacity-90"
+          >
+            <Download className="h-4 w-4" />
+            {tCommon('exportRequiresPaid')}
+          </button>
+        )}
       </div>
       <div className="p-4 space-y-4">
         <div className="grid grid-cols-3 gap-4 text-center">

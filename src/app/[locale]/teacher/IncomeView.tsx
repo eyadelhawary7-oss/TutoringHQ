@@ -98,6 +98,10 @@ export default function IncomeView() {
   const [exportOpen, setExportOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState(false);
+  // W4: CUSTOMER income export is paid-only during the free trial. Default to
+  // allowed until the subscription status resolves so we never flash a wrongly
+  // gated control; the server route 402s regardless (hard gate).
+  const [exportAllowed, setExportAllowed] = useState(true);
 
   const authedFetch = useCallback(
     async (path: string) => {
@@ -179,6 +183,20 @@ export default function IncomeView() {
     loadMonth(current, true);
   }, [loadAll, loadMonth, current]);
 
+  // W4: resolve export entitlement from the teacher's subscription status.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const res = await authedFetch('/api/teacher/subscription/status');
+      if (!res || cancelled || !res.ok) return;
+      const j = (await res.json()) as { export_access?: boolean };
+      if (!cancelled && typeof j.export_access === 'boolean') setExportAllowed(j.export_access);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authedFetch]);
+
   const isCurrentSelected = selected.year === current.year && selected.month === current.month;
 
   const selectMonth = (ym: YearMonth) => {
@@ -197,6 +215,11 @@ export default function IncomeView() {
           : `period=current&year=${selected.year}&month=${selected.month}&locale=${locale}`;
       const res = await authedFetch(`/api/teacher/private/income/export?${qs}`);
       if (!res) return;
+      // Hard server gate: paid-only during trial. Reflect it in the UI.
+      if (res.status === 402) {
+        setExportAllowed(false);
+        return;
+      }
       if (!res.ok) {
         setExportError(true);
         return;
@@ -278,6 +301,17 @@ export default function IncomeView() {
             {t('income.exportError')}
           </p>
         )}
+        {!exportAllowed ? (
+          <button
+            type="button"
+            disabled
+            title={t('income.exportRequiresPaidNote')}
+            className="flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-1.5 text-sm font-medium text-[var(--color-teal-deep)] opacity-90"
+          >
+            <Download size={14} aria-hidden />
+            {t('income.exportRequiresPaid')}
+          </button>
+        ) : (
         <div className="relative">
           <button
             type="button"
@@ -315,6 +349,7 @@ export default function IncomeView() {
             </>
           )}
         </div>
+        )}
       </div>
 
       {/* Zones 1-3: lifetime stats, split bar, month navigator */}

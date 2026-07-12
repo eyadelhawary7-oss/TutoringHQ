@@ -387,6 +387,8 @@
     "pdfError": "Could not generate PDF. Please try again.",
     "exportCsv": "Export CSV",
     "exportPdf": "Export PDF",
+    "exportRequiresPaid": "Upgrade to export",
+    "exportRequiresPaidNote": "Exporting your data is available on a paid plan. Upgrade to unlock it.",
     "print": "Print",
     "refresh": "Refresh",
     "active": "Active",
@@ -8967,6 +8969,8 @@
       "exportThisMonth": "This month",
       "exportAllTime": "All time",
       "exportError": "Could not export. Try again.",
+      "exportRequiresPaid": "Upgrade to export",
+      "exportRequiresPaidNote": "Exporting your income is available on a paid subscription. Subscribe to unlock it.",
       "emptyHistoryBody": "No income recorded yet. Finish your first class to see your earnings here.",
       "goToGroups": "Go to my groups"
     },
