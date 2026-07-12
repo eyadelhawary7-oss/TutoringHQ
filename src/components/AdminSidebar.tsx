@@ -489,7 +489,11 @@ export function AdminSidebar({
           icon: Tag,
           label: t('promoCodesNavLabel'),
           isActive: !!isPromoCodes,
-          canShow: adminRole === 'super_admin' || adminRole === 'admin' || adminRole === 'internal_admin',
+          canShow:
+            adminRole === 'super_admin' ||
+            adminRole === 'admin' ||
+            adminRole === 'internal_admin' ||
+            adminRole === 'sales_manager',
           href: '/admin/promo-codes',
         },
       ],

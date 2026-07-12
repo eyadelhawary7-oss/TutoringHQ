@@ -156,3 +156,17 @@ built on the finalized commission engine)**.
   sub-assign view; sidebar link now visible to `sales_manager`.
 - Verified by orchestrator: typecheck exit 0, 1232 unit tests, stabilization OK; manual
   review of the manager sub-assign gate + migration confirms fail-closed. SW_VERSION v12→v13.
+
+## Phase 4c — manager promo-code request flow (Opus 4.8) — DONE ✅ (Phase 4 complete)
+- **Migration (repo only)** `20260712130000_promo_code_requests.sql`: new
+  `promo_code_requests` table (service-role-only RLS). **NEW DATA — flagged.**
+- Manager requests a code (discount/max-uses/expiry/target) → **pending**; CEO approves
+  (creates the live `promo_codes` row, idempotent-safe) or rejects **with a reason**.
+- Gates: POST `sales_manager` (or super_admin) + CSRF; GET managers see only their own
+  (`.eq requested_by`), full-admin sees all; PATCH approve/reject **super_admin-only** + CSRF.
+- **Caps** (no 100%-off unlimited): `DEFAULT_MAX_DISCOUNT_PCT=30`, `DEFAULT_MAX_USES=500`
+  in `src/lib/promoCodeRequests.ts`, overridable via `platform_config`
+  `promo_request.max_discount_pct` / `promo_request.max_uses`; an unbounded max-uses
+  request is rejected 400. Reps get nothing (403; nav hidden).
+- 16 new tests; verified by orchestrator: typecheck exit 0, 1248 unit tests, stabilization
+  OK; approve/reject gate reviewed (CEO-only). SW_VERSION v13→v14.

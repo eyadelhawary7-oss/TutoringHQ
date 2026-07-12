@@ -13,6 +13,7 @@ not re-run._
 | — | `20260710194333_phase1_staff_user_link_and_manager_role.sql` | ✅ yes (renamed to match ledger) | do not re-run |
 | — | `20260711095712_trial_claims.sql` | ✅ yes (renamed to match ledger) | do not re-run |
 | 1 | `20260712120000_two_level_assignment.sql` | ❌ NOT applied (repo only) | **NEW DATA** — `center_assignments.manager_staff_id` (FK staff) + relaxed `sourced_by_eyad_no_staff` CHECK; new `teacher_assignments` table (service-role-only RLS). Apply before the Phase-4b code runs. Idempotent. |
+| 2 | `20260712130000_promo_code_requests.sql` | ❌ NOT applied (repo only) | **NEW DATA** — new `promo_code_requests` table (service-role-only RLS): manager promo requests + CEO approve/reject. Apply before Phase-4c code runs. Idempotent. |
 
 ## Data fixes — DONE on live DB (the one authorized correction)
 | Item | Action | Status |
