@@ -18,9 +18,6 @@ vi.mock('@/lib/billingAudit', () => ({
       ? { ownerType: 'teacher', ownerId: row.teacher_id }
       : { ownerType: 'center', ownerId: row.center_id },
 }));
-vi.mock('@/lib/signupPaymobAutoApprove', () => ({
-  processInvoiceSignupAfterPaymobSuccess: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock('@/lib/pricingConfig', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/pricingConfig')>()),
   getIntervalConfig: vi.fn().mockResolvedValue({ annualMultiplier: 10 }),

@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { gotoWithRetry } from './goto-with-retry';
 
+// Trial-first signup: no payment step. Submitting a valid form provisions the owner
+// and redirects the browser to /set-pin (owner PIN setup). This spec drives the
+// resumed 'payment' stage, accepts both PDPL consents, clicks "Start free trial",
+// and asserts the redirect to /set-pin (the signup API is mocked to succeed).
 const SESSION_SNAPSHOT = JSON.stringify({
   stage: 'payment',
   centerName: 'E2E Center',
@@ -9,15 +13,15 @@ const SESSION_SNAPSHOT = JSON.stringify({
   email: 'e2e-signup@test.invalid',
   city: 'cairo',
   plan: 'starter',
-  billingPeriod: 'quarterly',
+  billingPeriod: 'monthly',
   referralCode: '',
   notes: '',
 });
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
-test.describe('signup happy path (mocked Paymob / signup API)', () => {
-  test('confirm-and-pay reaches success when APIs return success', async ({ page }) => {
+test.describe('signup happy path (trial-first, mocked signup API)', () => {
+  test('accepting consents + Start free trial redirects to /set-pin', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (err) => errors.push(err.message));
 
@@ -38,7 +42,11 @@ test.describe('signup happy path (mocked Paymob / signup API)', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ success: true }),
+        body: JSON.stringify({
+          success: true,
+          pinSetup: true,
+          center_id: '00000000-0000-4000-8000-000000000011',
+        }),
       });
     });
 
@@ -47,10 +55,14 @@ test.describe('signup happy path (mocked Paymob / signup API)', () => {
 
     await expect(page.getByRole('heading', { name: 'تأكيد طلبك' })).toBeVisible({ timeout: 30_000 });
 
-    await page.locator('#terms').click();
-    await page.getByRole('button', { name: /تأكيد الدفع/ }).click();
+    // Both PDPL consents are mandatory (terms + data-processing).
+    await page.locator('#consent-terms').click();
+    await page.locator('#consent-privacy').click();
+    await page.getByRole('button', { name: /ابدأ التجربة المجانية/ }).click();
 
-    await expect(page.getByRole('heading', { name: 'تم بنجاح' })).toBeVisible({ timeout: 30_000 });
+    // Trial-first redirects to the owner PIN-setup page (no success screen, no payment).
+    await page.waitForURL('**/set-pin', { timeout: 30_000 });
+    expect(page.url()).toContain('/set-pin');
     expect(errors).toHaveLength(0);
   });
 });

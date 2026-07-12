@@ -110,9 +110,6 @@ async function processPaymobEvent(payload: Record<string, unknown>): Promise<voi
           });
         }
       }
-      const { processSignupAutoApprovalAfterPaymobSuccess } = await import('@/lib/signupPaymobAutoApprove');
-      await processSignupAutoApprovalAfterPaymobSuccess(supabaseAdminLocal, orderId, transactionId);
-
       try {
         await redeemPromoCodeForPaymobOrder(supabaseAdminLocal, { paymobOrderId: orderId });
       } catch (promoErr) {

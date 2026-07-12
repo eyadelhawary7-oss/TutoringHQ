@@ -19,9 +19,6 @@ vi.mock('@/lib/billingAudit', () => ({
       ? { ownerType: 'teacher', ownerId: row.teacher_id }
       : { ownerType: 'center', ownerId: row.center_id },
 }));
-vi.mock('@/lib/signupPaymobAutoApprove', () => ({
-  processInvoiceSignupAfterPaymobSuccess: vi.fn().mockResolvedValue(undefined),
-}));
 
 import { finalizeInvoicePaymentSuccess } from '@/lib/invoicePaymobPayment';
 

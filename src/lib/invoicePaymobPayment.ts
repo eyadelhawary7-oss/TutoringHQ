@@ -1,6 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { todayISO } from '@/lib/parentPack';
-import { processInvoiceSignupAfterPaymobSuccess } from '@/lib/signupPaymobAutoApprove';
 import { computeNextPaymentDue } from '@/lib/subscriptionAnchor';
 import { centerRenewalPeriodMonths } from '@/lib/centerRenewal';
 import { getAnnualChargeRounded, normalizeBillingPeriod } from '@/lib/pricing';
@@ -489,11 +488,6 @@ export async function finalizeInvoicePaymentSuccess(
 
   if (row.invoice_type === 'plan_upgrade_difference') {
     await handlePlanUpgradeInvoicePaid(supabaseAdmin, centerRow, paymobTransactionId);
-    return { invoiceId: row.id, settled: true };
-  }
-
-  if (row.invoice_type === 'signup_first_payment') {
-    await processInvoiceSignupAfterPaymobSuccess(supabaseAdmin, centerRow.center_id, paymobTransactionId);
     return { invoiceId: row.id, settled: true };
   }
 

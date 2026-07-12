@@ -92,8 +92,6 @@ export async function POST(request: Request) {
               const { finalizeInvoicePaymentSuccess } = await import('@/lib/invoicePaymobPayment');
               await finalizeInvoicePaymentSuccess(supabase, orderId, txId);
             }
-            const { processSignupAutoApprovalAfterPaymobSuccess } = await import('@/lib/signupPaymobAutoApprove');
-            await processSignupAutoApprovalAfterPaymobSuccess(supabase, orderId, txId);
             resolved++;
           }
         } else if (inquiry.state === 'failed') {
