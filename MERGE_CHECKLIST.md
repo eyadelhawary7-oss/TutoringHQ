@@ -13,10 +13,10 @@ not re-run._
 | — | `20260710194333_phase1_staff_user_link_and_manager_role.sql` | ✅ yes (renamed to match ledger) | do not re-run |
 | — | `20260711095712_trial_claims.sql` | ✅ yes (renamed to match ledger) | do not re-run |
 
-## Data fixes to run at merge (NOT applied on-branch — no live-DB writes allowed)
+## Data fixes — DONE on live DB (the one authorized correction)
 | Item | Action | Status |
 |------|--------|--------|
-| ⚠️ Stale teacher trial — **REAL ACCOUNT, needs a decision** | `teacher_subscriptions` row (`teacher_id 68718be7…`, "Aly Shady", +201220601810) stuck `status='trialing'` 15 days past `trial_ends_at`=2026-06-26. **`teacher_profiles.is_test = false` — this is NOT test data**, contrary to the audit's assumption, so it was **left untouched**. It exposes the teacher trial-conversion gap (`process_due_subscriptions` has no caller). Decide the business outcome (charge 499 / convert / lapse to free baseline / extend) **before** enabling any teacher trial-expiry automation. **REQUIRES SIGN-OFF (money — real customer).** | ⛔ human decision required |
+| Stale teacher trial (Eyad's test account) | Per Eyad: the `teacher_id 68718be7…` account ("Aly Shady", +201220601810) is his own test account despite `is_test=false`. **Authorized live-DB correction applied:** set `teacher_profiles.is_test=true`; deleted the stale `teacher_subscriptions` `trialing` row and its 1 unpaid invoice (no paid history). Verified: is_test=true, 0 sub rows, 0 invoices. | ✅ done (authorized) |
 
 ## REQUIRES SIGN-OFF (money — built, tested, NOT final until Eyad approves)
 _None committed yet. The commission/loyalty rewrite (money track) and the annual-trial

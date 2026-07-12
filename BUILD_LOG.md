@@ -59,9 +59,19 @@ fixes, orchestration, and verification driven by the Fable 5 orchestrator.
   - _Model note: authored by the Fable orchestrator as foundational/pre-Phase-4
     refactor; product feature phases (2–6) will use Opus 4.8 subagents._
 
+### Live-DB correction (authorized by Eyad — the single permitted write)
+- Eyad confirmed the stale `trialing` teacher (`68718be7…`) is his own test account
+  despite `is_test=false`. Applied: `teacher_profiles.is_test=true`; deleted the stale
+  `teacher_subscriptions` row + its 1 unpaid invoice. Verified 0/0. (See MERGE_CHECKLIST.)
+
 ## PRE-WORK GATE COMPLETE ✅ (typecheck + 1181 unit tests + verify:stabilization green)
 
-Ready to begin Phase 2. Remaining: Phase 2 CEO home → Phase 3 combined screens →
-Phase 4 manager scope + two-level assignment + promo request → Phase 5 rep scope →
-Phase 6 HR/commission views → W3 saved-card sandbox → W4 export gate → money track
-(REQUIRES SIGN-OFF, Fable 5).
+### Revised build order (per Eyad)
+Phase 2 CEO home → Phase 3 combined screens → Phase 4 manager scope + two-level
+assignment + promo request → Phase 5 rep scope → W3 saved-card sandbox → W4 export gate
+→ **Money track (REQUIRES SIGN-OFF, Fable 5)** → **Phase 6 HR/commission views (Fable 5,
+built on the finalized commission engine)**.
+
+---
+
+## Phase 2 — CEO home
