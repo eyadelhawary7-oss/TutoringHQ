@@ -120,10 +120,37 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
   const [slideOverId, setSlideOverId] = useState<string | null>(null);
   const [statusSavingId, setStatusSavingId] = useState<string | null>(null);
   const [bookingCourier, setBookingCourier] = useState<string | null>(null);
+  // Phase 4a: sales_manager / sales_rep get a scoped, VIEW-ONLY orders list. Only the
+  // CEO (super_admin) may change status or book a courier. The API enforces this too;
+  // this flag just hides the write controls from non-CEO viewers.
+  const [canWrite, setCanWrite] = useState(false);
 
   useEffect(() => {
     setOrders(initialOrders);
   }, [initialOrders]);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) return;
+      try {
+        const res = await fetch('/api/admin/check', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const j = (await res.json().catch(() => ({}))) as { role?: string };
+        if (active) setCanWrite(j.role === 'super_admin');
+      } catch {
+        // best-effort - default stays view-only (canWrite=false)
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof closeMainSidebar === 'function') closeMainSidebar();
@@ -630,38 +657,40 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                   </div>
                 ) : null}
 
-                <div>
-                  <h4 className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase mb-1.5">
-                    {tIdCards('updateStatus')}
-                  </h4>
-                  <select
-                    value={slideOrder.status}
-                    disabled={statusSavingId === slideOrder.id}
-                    onChange={(e) =>
-                      updateStatus(slideOrder.id, e.target.value as CardOrderFulfillmentStatus)
-                    }
-                    className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
-                  >
-                    {STATUS_ORDER.map((s) => (
-                      <option key={s} value={s}>
-                        {tIdCards(cfgFor(s).label)}
-                      </option>
-                    ))}
-                  </select>
-                  {slideOrder.vendor_sent_at ? (
-                    <p className="text-xs text-teal-600 mt-2">
-                      ✓ {tIdCards('sentToVendor')} -{' '}
-                      {formatDateTime(slideOrder.vendor_sent_at, locale, {
-                        day: 'numeric',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                  ) : null}
-                </div>
+                {canWrite ? (
+                  <div>
+                    <h4 className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase mb-1.5">
+                      {tIdCards('updateStatus')}
+                    </h4>
+                    <select
+                      value={slideOrder.status}
+                      disabled={statusSavingId === slideOrder.id}
+                      onChange={(e) =>
+                        updateStatus(slideOrder.id, e.target.value as CardOrderFulfillmentStatus)
+                      }
+                      className="w-full px-3 py-2 rounded-lg border border-input bg-[var(--color-surface-0)] text-sm"
+                    >
+                      {STATUS_ORDER.map((s) => (
+                        <option key={s} value={s}>
+                          {tIdCards(cfgFor(s).label)}
+                        </option>
+                      ))}
+                    </select>
+                    {slideOrder.vendor_sent_at ? (
+                      <p className="text-xs text-teal-600 mt-2">
+                        ✓ {tIdCards('sentToVendor')} -{' '}
+                        {formatDateTime(slideOrder.vendor_sent_at, locale, {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
 
-                {slideOrder.status === 'ready_for_pickup' && !slideOrder.bosta_order_id ? (
+                {canWrite && slideOrder.status === 'ready_for_pickup' && !slideOrder.bosta_order_id ? (
                   <button
                     type="button"
                     title={tIdCards('bookCourierTooltip')}

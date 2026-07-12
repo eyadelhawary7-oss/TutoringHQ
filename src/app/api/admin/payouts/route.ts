@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { parseBodyWithLimit } from '@/lib/validate';
 import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
+import { getInternalScope } from '@/lib/internalScope';
+
+// Sentinel that matches no row - used so a scoped role with an EMPTY scope sees
+// nothing (fail closed) rather than everything.
+const NO_MATCH_SENTINEL = '00000000-0000-0000-0000-000000000000';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -21,15 +26,31 @@ export async function GET(request: Request) {
     return NextResponse.json({ errorKey: 'payouts.errors.listFailed' }, { status: 500 })
   }
 
-  if (!(await getAdminContext(request))) {
+  const ctx = await getAdminContext(request)
+  if (!ctx) {
     return NextResponse.json({ errorKey: 'payouts.errors.unauthorized' }, { status: 401 })
   }
-  // GET stays open to all admin_users members - no role gate per AUDIT_v22.md Phase 3
+  // GET stays open to all admin_users members - no role gate per AUDIT_v22.md Phase 3.
+  // Phase 4a: salary is CEO-only, and sales_manager/sales_rep only see their own /
+  // team's payouts (fail closed when the scope is empty).
+  const isCEO = ctx.internalRole === 'super_admin'
+  const staffSelect = isCEO ? 'staff(id, name, role, base_salary)' : 'staff(id, name, role)'
 
-  const { data, error } = await supabaseAdmin
+  const scope = await getInternalScope(ctx)
+
+  let query = supabaseAdmin
     .from('commission_payouts')
-    .select(`*, staff(id, name, role, base_salary)`)
+    .select(`*, ${staffSelect}`)
     .order('period', { ascending: false })
+
+  if (scope.level !== 'all') {
+    query = query.in(
+      'staff_id',
+      scope.staffIds.length ? scope.staffIds : [NO_MATCH_SENTINEL],
+    )
+  }
+
+  const { data, error } = await query
 
   if (error) {
     return NextResponse.json(
@@ -37,7 +58,16 @@ export async function GET(request: Request) {
       { status: 500 },
     )
   }
-  return NextResponse.json({ payouts: data ?? [] })
+
+  // Salary privacy: strip the payout row's own base_salary column for non-CEO callers
+  // (the joined staff.base_salary is already excluded from the select above).
+  const payouts = (data ?? []).map((row) => {
+    const r = { ...(row as Record<string, unknown>) }
+    if (!isCEO) delete r.base_salary
+    return r
+  })
+
+  return NextResponse.json({ payouts })
 }
 
 // POST - generate payout for a period (super_admin only)

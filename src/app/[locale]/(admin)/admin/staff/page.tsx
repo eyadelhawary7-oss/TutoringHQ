@@ -494,7 +494,9 @@ export default function StaffPage() {
                       {formatNumber(member.ytd_commission, locale)} {t('staff.currency_suffix')}
                     </td>
                     <td className="px-4 py-3 text-slate-600">
-                      {formatNumber(Number(member.base_salary), locale)} {t('staff.currency_suffix')}
+                      {member.base_salary == null
+                        ? t('staff.dash')
+                        : `${formatNumber(Number(member.base_salary), locale)} ${t('staff.currency_suffix')}`}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-md text-xs ${statusBadge(member.status)}`}>

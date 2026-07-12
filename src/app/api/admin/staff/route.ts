@@ -22,9 +22,12 @@ export async function GET(request: Request) {
     )
   }
 
-  if (!(await getAdminContext(request))) {
+  const ctx = await getAdminContext(request)
+  if (!ctx) {
     return NextResponse.json({ errorKey: 'staff.errors.unauthorized' }, { status: 401 })
   }
+  // Phase 4a: base_salary (salary) is CEO-only; strip it for every non-CEO caller.
+  const isCEO = ctx.internalRole === 'super_admin'
 
   const { data: staffList, error } = await supabaseAdmin
     .from('staff')
@@ -60,7 +63,13 @@ export async function GET(request: Request) {
         (sum, p) => sum + Number(p.total_amount),
         0,
       )
-      return { ...member, center_count: centerCount ?? 0, ytd_commission: ytdCommission }
+      const row: Record<string, unknown> = {
+        ...member,
+        center_count: centerCount ?? 0,
+        ytd_commission: ytdCommission,
+      }
+      if (!isCEO) delete row.base_salary
+      return row
     }),
   )
 

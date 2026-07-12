@@ -28,21 +28,27 @@ export async function GET(
     return NextResponse.json({ errorKey: 'payouts.errors.listFailed' }, { status: 500 })
   }
 
-  if (!(await getAdminContext(request))) {
+  const ctx = await getAdminContext(request)
+  if (!ctx) {
     return NextResponse.json({ errorKey: 'payouts.errors.unauthorized' }, { status: 401 })
   }
-  // GET stays open to all admin_users members - no role gate per AUDIT_v22.md Phase 3
+  // GET stays open to all admin_users members - no role gate per AUDIT_v22.md Phase 3.
+  // Phase 4a: base_salary (salary) is CEO-only.
+  const isCEO = ctx.internalRole === 'super_admin'
+  const staffSelect = isCEO ? 'staff(id, name, role, base_salary)' : 'staff(id, name, role)'
 
   const { id } = await params
   const { data, error } = await supabaseAdmin
     .from('commission_payouts')
-    .select(`*, staff(id, name, role, base_salary)`)
+    .select(`*, ${staffSelect}`)
     .eq('id', id)
     .single()
   if (error) {
     return NextResponse.json({ errorKey: 'payouts.errors.notFound' }, { status: 404 })
   }
-  return NextResponse.json({ payout: data })
+  const payout = { ...(data as Record<string, unknown>) }
+  if (!isCEO) delete payout.base_salary
+  return NextResponse.json({ payout })
 }
 
 export async function PATCH(

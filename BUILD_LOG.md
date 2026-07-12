@@ -113,3 +113,27 @@ built on the finalized commission engine)**.
   `payment_amount=NULL, total_amount=1020` reads 0 today vs 1020 canonical.
 - i18n +5 admin keys (ar+en); SW_VERSION v10→v11.
 - Verified by orchestrator: typecheck exit 0, 1198 unit tests, i18n/bidi/tolocale OK.
+
+## Phase 4a — access scoping + salary privacy (Opus 4.8) — DONE ✅
+- **base_salary is CEO-only** — stripped from GET responses for non-super_admin in
+  `payouts/route.ts`, `payouts/[id]/route.ts`, `staff/route.ts`, `staff/[id]/route.ts`
+  (conditional select on the joined embed + post-fetch delete of the row column).
+- **getInternalScope wired (fail-closed)** into 4 GET routes; empty scope → sentinel
+  uuid matching nothing:
+  - `centers` GET — scope by `allowedCenterIds` (`.in('id', …)`), main + pending queries.
+  - `card-orders` GET — gate relaxed to super_admin OR sales_manager/sales_rep; scope by
+    `center_id`. PUT/PATCH **tightened to CEO-only** (was any-admin — a security fix).
+  - `commissions` GET — gate relaxed to super_admin OR sales roles; scope by `staff_id`
+    (an explicit `?staff_id=` param ANDs with the scope, so it can't widen). Unlock stays CEO.
+  - `payouts` GET — scope by `staff_id`. Generate/mark-paid/adjust stay CEO-only.
+- **Frontend gates relaxed in lockstep** (commissions/payouts/orders/staff pages) so
+  sales roles render their scoped view; CEO-only write buttons hidden for non-CEO.
+- New `tests/unit/api/phase4aScopeSalary.test.ts` (17 cases) proving per-role scope
+  filters, the empty-scope sentinel, and base_salary stripping.
+- Verified by orchestrator: typecheck exit 0, 1215 unit tests, stabilization OK; manual
+  review of commissions + card-orders GET confirms fail-closed. SW_VERSION v11→v12.
+- **Known follow-ups (flagged, see MERGE_CHECKLIST):** (1) a manager can still infer a
+  rep's base_salary by subtracting commission tiles from the payout `total_amount` —
+  the scoped manager payout VIEW should show status/commission only (refine in Phase 5);
+  (2) Centers-page suspend/delete/blacklist buttons stay visible to sales roles though
+  the API fails closed — hide-or-keep is a UI decision.

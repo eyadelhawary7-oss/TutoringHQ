@@ -102,6 +102,7 @@ export default function PayoutsPage() {
   const isRTL = locale === 'ar'
 
   const [gateOk, setGateOk] = useState(false)
+  const [canWrite, setCanWrite] = useState(false)
   const [payouts, setPayouts] = useState<Payout[]>([])
   const [staffList, setStaffList] = useState<StaffOption[]>([])
   const [loading, setLoading] = useState(true)
@@ -191,10 +192,16 @@ export default function PayoutsPage() {
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
       const j = (await res.json().catch(() => ({}))) as { isAdmin?: boolean; role?: string }
-      if (!j?.isAdmin || j.role !== 'super_admin') {
+      // Phase 4a: CEO sees everything; sales_manager / sales_rep render the page and
+      // get their scoped payouts from the API. Salary + generate/confirm/pay/adjust
+      // stay CEO-only (canWrite).
+      const allowed =
+        j.role === 'super_admin' || j.role === 'sales_manager' || j.role === 'sales_rep'
+      if (!j?.isAdmin || !allowed) {
         router.replace('/dashboard')
         return
       }
+      setCanWrite(j.role === 'super_admin')
       setGateOk(true)
     }
     void gate()
@@ -311,17 +318,19 @@ export default function PayoutsPage() {
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setGenerateModal(true)
-              setError(null)
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg text-sm font-medium transition-colors"
-          >
-            <Plus className="w-4 h-4" aria-hidden />
-            {t('payouts.generate_for_month', { month: payoutGenerateMonthLabel })}
-          </button>
+          {canWrite ? (
+            <button
+              type="button"
+              onClick={() => {
+                setGenerateModal(true)
+                setError(null)
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              <Plus className="w-4 h-4" aria-hidden />
+              {t('payouts.generate_for_month', { month: payoutGenerateMonthLabel })}
+            </button>
+          ) : null}
         </div>
 
         {error ? (
@@ -383,15 +392,17 @@ export default function PayoutsPage() {
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  {(
-                    [
-                      { label: t('payouts.base_salary'), value: payout.base_salary },
-                      { label: t('payouts.t1_total'), value: payout.t1_commissions },
-                      { label: t('payouts.t2_total'), value: payout.t2_commissions },
-                      { label: t('payouts.loyalty_total'), value: payout.loyalty_bonuses },
-                      { label: t('payouts.override_total'), value: payout.override_commissions },
-                    ] as const
-                  ).map((item) => (
+                  {[
+                    // base_salary (salary) is CEO-only and is stripped from the API
+                    // response for non-CEO callers, so only render the tile for canWrite.
+                    ...(canWrite
+                      ? [{ label: t('payouts.base_salary'), value: payout.base_salary }]
+                      : []),
+                    { label: t('payouts.t1_total'), value: payout.t1_commissions },
+                    { label: t('payouts.t2_total'), value: payout.t2_commissions },
+                    { label: t('payouts.loyalty_total'), value: payout.loyalty_bonuses },
+                    { label: t('payouts.override_total'), value: payout.override_commissions },
+                  ].map((item) => (
                     <div
                       key={item.label}
                       className="bg-slate-50 rounded-lg p-3"
@@ -417,7 +428,7 @@ export default function PayoutsPage() {
                   </div>
                 ) : null}
 
-                {payout.status === 'confirmed' || payout.status === 'paid' ? (
+                {canWrite && (payout.status === 'confirmed' || payout.status === 'paid') ? (
                   <div className="flex justify-end">
                     <a
                       href={`/api/admin/payouts/${payout.id}/pdf`}
@@ -430,7 +441,7 @@ export default function PayoutsPage() {
                   </div>
                 ) : null}
 
-                {payout.status !== 'paid' ? (
+                {canWrite && payout.status !== 'paid' ? (
                   <div className="flex gap-2 justify-end flex-wrap">
                     {payout.status === 'draft' ? (
                       <>

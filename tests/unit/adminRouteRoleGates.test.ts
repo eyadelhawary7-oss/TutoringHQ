@@ -227,12 +227,30 @@ describe('/api/admin/export/invoices GET — broader gate', () => {
   });
 });
 
-describe('/api/admin/commissions GET — super_admin-only (re-tightened)', () => {
+// Phase 4a relaxed commissions from super_admin-only to CEO + scoped sales roles.
+// super_admin (all) and sales_manager / sales_rep (scoped by staff_id) may read;
+// every other internal role is denied. The unlock mutation stays super_admin-only.
+function commissionsScopedCases(): Case[] {
+  return [
+    { label: 'super_admin allowed', ctx: makeCtx('super_admin', 'super_admin'), expectAllowed: true },
+    { label: 'sales_manager allowed (scoped)', ctx: makeCtx('internal_viewer', 'sales_manager'), expectAllowed: true },
+    { label: 'sales_rep allowed (scoped)', ctx: makeCtx('internal_viewer', 'sales_rep'), expectAllowed: true },
+    { label: 'admin (raw) DENIED', ctx: makeCtx('internal_admin', 'admin'), expectAllowed: false },
+    { label: 'internal_admin DENIED', ctx: makeCtx('internal_admin', 'internal_admin'), expectAllowed: false },
+    { label: 'accountant DENIED', ctx: makeCtx('internal_viewer', 'accountant'), expectAllowed: false },
+    { label: 'support_agent DENIED', ctx: makeCtx('internal_viewer', 'support_agent'), expectAllowed: false },
+    { label: 'internal_viewer DENIED', ctx: makeCtx('internal_viewer', 'internal_viewer'), expectAllowed: false },
+    { label: 'custom (unknown) denied fail-CLOSED', ctx: makeCtx('internal_viewer', 'custom'), expectAllowed: false },
+    { label: 'no ctx (unauth) → 401', ctx: null, expectAllowed: false },
+  ];
+}
+
+describe('/api/admin/commissions GET — CEO + scoped sales roles (Phase 4a)', () => {
   it('matrix', async () => {
     await expectGate(
       'commissions',
       () => commissionsRoute.GET(reqWithSearch()),
-      superAdminOnlyCases(),
+      commissionsScopedCases(),
     );
   });
 });

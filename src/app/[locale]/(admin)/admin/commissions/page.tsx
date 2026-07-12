@@ -132,6 +132,7 @@ export default function CommissionsPage() {
   const isRTL = locale === 'ar'
 
   const [gateOk, setGateOk] = useState(false)
+  const [canWrite, setCanWrite] = useState(false)
   const [commissions, setCommissions] = useState<Commission[]>([])
   const [loading, setLoading] = useState(true)
   const [listError, setListError] = useState<string | null>(null)
@@ -212,10 +213,15 @@ export default function CommissionsPage() {
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
       const j = (await res.json().catch(() => ({}))) as { isAdmin?: boolean; role?: string }
-      if (!j?.isAdmin || j.role !== 'super_admin') {
+      // Phase 4a: CEO sees everything; sales_manager / sales_rep render the page and
+      // get their scoped rows from the API. Write actions stay CEO-only (canWrite).
+      const allowed =
+        j.role === 'super_admin' || j.role === 'sales_manager' || j.role === 'sales_rep'
+      if (!j?.isAdmin || !allowed) {
         router.replace('/dashboard')
         return
       }
+      setCanWrite(j.role === 'super_admin')
       setGateOk(true)
     }
     void gate()
@@ -479,7 +485,7 @@ export default function CommissionsPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        {c.t2_status === 'locked' && c.staff_id ? (
+                        {canWrite && c.t2_status === 'locked' && c.staff_id ? (
                           <button
                             type="button"
                             onClick={() => {

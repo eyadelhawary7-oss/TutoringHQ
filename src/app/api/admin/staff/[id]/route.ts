@@ -21,9 +21,12 @@ export async function GET(
     return NextResponse.json({ errorKey: 'staff.errors.listFailed' }, { status: 500 })
   }
 
-  if (!(await getAdminContext(request))) {
+  const ctx = await getAdminContext(request)
+  if (!ctx) {
     return NextResponse.json({ errorKey: 'staff.errors.unauthorized' }, { status: 401 })
   }
+  // Phase 4a: base_salary (salary) is CEO-only.
+  const isCEO = ctx.internalRole === 'super_admin'
 
   const { id } = await params
 
@@ -36,6 +39,9 @@ export async function GET(
   if (error) {
     return NextResponse.json({ errorKey: 'staff.errors.notFound' }, { status: 404 })
   }
+
+  const memberOut = { ...(member as Record<string, unknown>) }
+  if (!isCEO) delete memberOut.base_salary
 
   const { data: commissions } = await supabaseAdmin
     .from('commissions')
@@ -52,7 +58,7 @@ export async function GET(
     .limit(12)
 
   return NextResponse.json({
-    staff: member,
+    staff: memberOut,
     commissions: commissions ?? [],
     payouts: payouts ?? [],
   })

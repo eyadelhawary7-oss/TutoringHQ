@@ -9,6 +9,7 @@ import { sendWelcomeTemplate } from '@/lib/centerNotify';
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchAdminAccessFlags } from '@/lib/admin-access';
 import { getAdminPermissions } from '@/lib/admin-roles';
+import { getInternalScope, allowedCenterIds } from '@/lib/internalScope';
 import { PLANS, getChargeFromQuarterlyAllIn, type PlanKey } from '@/lib/pricing';
 import { todayISO } from '@/lib/parentPack';
 import { parseBodyWithLimit } from '@/lib/validate';
@@ -247,6 +248,19 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    // Phase 4a: sales_manager / sales_rep already pass the 'centers' permission gate
+    // above; here we constrain WHICH centers they see to their approved assignments.
+    // `allowedIds === null` means CEO / org-wide roles (no center filter). A scoped
+    // role with no assignments yields [] -> the sentinel below matches nothing (fail
+    // closed) so they never see the full roster.
+    const scope = await getInternalScope(ctx);
+    const allowedIds = await allowedCenterIds(adminClient, scope);
+    const SCOPE_SENTINEL = '00000000-0000-0000-0000-000000000000';
+    // Ids to constrain by when the caller is a scoped sales role; null = no filter
+    // (CEO / org-wide). Empty scope -> sentinel that matches nothing (fail closed).
+    const scopeIds: string[] | null =
+      allowedIds === null ? null : allowedIds.length ? allowedIds : [SCOPE_SENTINEL];
+
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '50', 10) || 50));
@@ -268,6 +282,10 @@ export async function GET(request: Request) {
       let q = withCount
         ? adminClient.from('centers').select('*', { count: 'exact' }).neq('status', 'deleted')
         : adminClient.from('centers').select('*').neq('status', 'deleted');
+      // Phase 4a center scoping (sales_manager / sales_rep). null = unrestricted.
+      if (scopeIds !== null) {
+        q = q.in('id', scopeIds);
+      }
       // Canonical admin aggregate semantic (CLAUDE.md): exclude is_test rows unless
       // include_test=1 explicitly requested. Keeps Total Centers / Active Centers KPIs
       // aligned with /api/admin/overview, /api/admin/billing, /api/admin/health.
@@ -325,13 +343,18 @@ export async function GET(request: Request) {
       rows = await enrichCentersList(adminClient, (centersData || []) as Record<string, unknown>[]);
     }
 
-    const { data: pendingRaw } = await adminClient
+    let pendingQuery = adminClient
       .from('centers')
       .select('*')
       .eq('status', 'pending')
       .neq('status', 'deleted')
       .order('created_at', { ascending: false })
       .limit(500);
+    // Phase 4a: scope pending centers to a sales role's assignments too.
+    if (scopeIds !== null) {
+      pendingQuery = pendingQuery.in('id', scopeIds);
+    }
+    const { data: pendingRaw } = await pendingQuery;
     const pendingCenters = await enrichCentersList(adminClient, (pendingRaw || []) as Record<string, unknown>[]);
 
     const pagination = {

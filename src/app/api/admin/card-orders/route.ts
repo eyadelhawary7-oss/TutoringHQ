@@ -1,4 +1,5 @@
-import { requireSuperAdminApi } from '@/lib/admin-auth';
+import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
+import { getInternalScope, allowedCenterIds } from '@/lib/internalScope';
 import { colors } from '@/lib/tokens';
 import type {
   AdminCardOrderRow,
@@ -97,14 +98,28 @@ async function updateOrderStatus(
 }
 
 export async function GET(request: Request) {
-  const auth = await requireSuperAdminApi(request);
-  if (!auth.ok) {
-    return auth.response;
+  const ctx = await getAdminContext(request);
+  if (!ctx) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  // Phase 4a: card orders are visible to the CEO (super_admin, all orders) and to
+  // sales_manager / sales_rep (scoped to their approved-center assignments). Every
+  // other role is denied. Status transitions (PUT/PATCH) stay CEO-only below.
+  const isCEO = ctx.internalRole === 'super_admin';
+  const isSalesRole = ctx.adminRole === 'sales_manager' || ctx.adminRole === 'sales_rep';
+  if (!isCEO && !isSalesRole) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { supabaseAdmin } = auth;
+  const { supabaseAdmin } = ctx;
 
-  const { data: rows, error } = await supabaseAdmin
+  // Resolve center scope. `allowedIds === null` = unrestricted (CEO). A scoped role
+  // with no assignments yields [] -> sentinel matches no order (fail closed).
+  const scope = await getInternalScope(ctx);
+  const allowedIds = await allowedCenterIds(supabaseAdmin, scope);
+  const NO_MATCH_SENTINEL = '00000000-0000-0000-0000-000000000000';
+
+  let query = supabaseAdmin
     .from('card_orders')
     .select(
       `
@@ -133,6 +148,12 @@ export async function GET(request: Request) {
     )
     .not('payment_status', 'in', '(unpaid,failed)')
     .order('created_at', { ascending: false });
+
+  if (allowedIds !== null) {
+    query = query.in('center_id', allowedIds.length ? allowedIds : [NO_MATCH_SENTINEL]);
+  }
+
+  const { data: rows, error } = await query;
 
   if (error) {
     console.error('[GET /api/admin/card-orders]', error);
@@ -177,11 +198,14 @@ export async function GET(request: Request) {
 }
 
 async function handleOrderStatusUpdate(request: Request) {
-  const { getAdminContext } = await import('@/lib/admin-auth');
   const ctx = await getAdminContext(request);
   if (!ctx) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  // Phase 4a: status transitions are CEO-only. Opening the GET to sales_manager /
+  // sales_rep must NOT let them mutate order state - they are strictly view-only.
+  const denied = requireAdminRole(ctx, ['super_admin']);
+  if (denied) return denied;
 
   let body: unknown;
   try {
