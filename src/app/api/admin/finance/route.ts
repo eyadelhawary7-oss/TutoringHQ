@@ -18,6 +18,8 @@ import type {
 import { computeSubscriptionTotalMrrRounded } from '@/lib/adminSubscriptionMrr';
 import { computeMrrSnapshot } from '@/lib/mrrSnapshot';
 import { getImpliedMonthlyMrr } from '@/lib/pricing';
+import { computeTeacherMrr } from '@/lib/ceoTeachers';
+import { invoiceAmount, parseOwnerFilter, type OwnerFilter } from '@/lib/ownerNormalizer';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -48,7 +50,12 @@ export async function GET(request: Request) {
   if (denied) return denied;
 
   const includeTest = parseIncludeTestCenters(request);
-  const data = await getFinanceData(ctx.supabaseAdmin, includeTest);
+  // Combined Centers / Teachers / All. Absent → 'center' (today's behavior).
+  const ownerFilter = parseOwnerFilter(request);
+  const data =
+    ownerFilter === 'center'
+      ? await getFinanceData(ctx.supabaseAdmin, includeTest)
+      : await getCombinedFinanceData(ctx.supabaseAdmin, includeTest, ownerFilter);
   return NextResponse.json(data, {
     headers: { 'Cache-Control': 'private, no-store' },
   });
@@ -108,6 +115,251 @@ async function getFinanceData(admin: SupabaseClient, includeTest: boolean): Prom
     cardPipeline,
     generatedAt: now.toISOString(),
   };
+}
+
+// ---------- combined (center + teacher) path ----------
+//
+// Owner filter 'teacher' | 'all'. Display-only: the money headline, plan
+// distribution and outstanding list become owner-aware; center-only analytical
+// panels (cohorts, at-risk, card pipeline, unit economics) stay center-sourced
+// for 'all' and empty for 'teacher' (no teacher analog). The center path
+// ('center') never reaches here, so today's numbers are untouched.
+
+type TeacherFinanceAgg = {
+  teacherMrr: number;
+  teacherActive: number;
+  teacherNewThisMonth: number;
+  teacherThisMonthRevenue: number;
+  teacherOutstandingTotal: number;
+  teacherOutstandingCount: number;
+  teacherPlanCounts: FinancePlanCount[];
+  teacherOutstanding: FinanceOutstandingInvoice[];
+  teacherRevenueByLabel: Map<string, number>;
+};
+
+async function getCombinedFinanceData(
+  admin: SupabaseClient,
+  includeTest: boolean,
+  ownerFilter: OwnerFilter,
+): Promise<FinanceData> {
+  const wantCenters = ownerFilter !== 'teacher'; // 'all' → true, 'teacher' → false
+  const now = new Date();
+  const monthStart = startOfMonthUtc(now);
+
+  const base: FinanceData = wantCenters
+    ? await getFinanceData(admin, includeTest)
+    : emptyFinanceData(now);
+
+  const t = await computeTeacherFinance(admin, includeTest, now, monthStart);
+
+  const northStar: FinanceNorthStar = {
+    totalMRR: base.northStar.totalMRR + t.teacherMrr,
+    activeCenters: base.northStar.activeCenters + t.teacherActive,
+    thisMonthRevenue: base.northStar.thisMonthRevenue + Math.round(t.teacherThisMonthRevenue),
+    outstandingTotal: base.northStar.outstandingTotal + Math.round(t.teacherOutstandingTotal),
+    outstandingCount: base.northStar.outstandingCount + t.teacherOutstandingCount,
+    // A combined month-over-month delta is not derivable here; only the pure
+    // center view carries a trustworthy % change.
+    mrrChangePct: 0,
+    newCentersThisMonth: base.northStar.newCentersThisMonth + t.teacherNewThisMonth,
+  };
+
+  const planDistribution = [...base.planDistribution, ...t.teacherPlanCounts];
+
+  const outstandingInvoices = [...base.outstandingInvoices, ...t.teacherOutstanding]
+    .sort((a, b) => b.daysOverdue - a.daysOverdue || b.amount - a.amount)
+    .slice(0, 10);
+
+  const mrrTrend =
+    base.mrrTrend.length > 0
+      ? base.mrrTrend.map((p) => ({ ...p, amount: p.amount + t.teacherMrr }))
+      : buildFlatTrend(now, t.teacherMrr);
+
+  const revenueByType = mergeRevenue(base.revenueByType, t.teacherRevenueByLabel);
+
+  return {
+    ...base,
+    northStar,
+    planDistribution,
+    outstandingInvoices,
+    mrrTrend,
+    revenueByType,
+    generatedAt: now.toISOString(),
+  };
+}
+
+function emptyFinanceData(now: Date): FinanceData {
+  return {
+    northStar: {
+      totalMRR: 0,
+      activeCenters: 0,
+      thisMonthRevenue: 0,
+      outstandingTotal: 0,
+      outstandingCount: 0,
+      mrrChangePct: 0,
+      newCentersThisMonth: 0,
+    },
+    unitEconomics: { monthlyChurnRate: 0, ltv: 0, ttfpDays: null },
+    mrrTrend: [],
+    revenueByType: [],
+    planDistribution: [],
+    cohorts: [],
+    outstandingInvoices: [],
+    atRiskCenters: [],
+    cardPipeline: { pendingVendor: 0, inTransit: 0, delivered: 0, failed: 0 },
+    generatedAt: now.toISOString(),
+  };
+}
+
+function buildFlatTrend(now: Date, amount: number): FinanceMrrPoint[] {
+  const out: FinanceMrrPoint[] = [];
+  for (let i = 5; i >= 0; i--) {
+    out.push({ month: yearMonthKey(startOfMonthUtc(addMonths(now, -i))), amount });
+  }
+  return out;
+}
+
+/** Fold teacher revenue (by bucket label) into the center revenue slices and re-percentage. */
+function mergeRevenue(
+  centerSlices: FinanceRevenueSlice[],
+  teacherByLabel: Map<string, number>,
+): FinanceRevenueSlice[] {
+  const totals = new Map<string, number>();
+  for (const s of centerSlices) totals.set(s.label, (totals.get(s.label) ?? 0) + s.amount);
+  for (const [label, amount] of teacherByLabel.entries()) {
+    if (amount > 0) totals.set(label, (totals.get(label) ?? 0) + amount);
+  }
+  let grand = 0;
+  for (const amount of totals.values()) grand += amount;
+  const slices: FinanceRevenueSlice[] = [];
+  for (const label of REVENUE_BUCKET_ORDER) {
+    const amount = totals.get(label);
+    if (!amount) continue;
+    slices.push({
+      type: label,
+      label,
+      amount: Math.round(amount),
+      pct: grand > 0 ? Math.round((amount / grand) * 1000) / 10 : 0,
+    });
+  }
+  return slices;
+}
+
+type TeacherSubFin = { teacher_id: string; plan_key: string | null; status: string | null; price_gross: number | null };
+type TeacherProfileFin = { user_id: string; display_name: string | null; created_at: string | null; is_test: boolean | null };
+type TeacherInvoiceFin = {
+  id: string;
+  teacher_id: string | null;
+  payment_amount: number | null;
+  total_amount: number | null;
+  status: string | null;
+  invoice_type: string | null;
+  created_at: string | null;
+  due_date: string | null;
+};
+
+async function computeTeacherFinance(
+  admin: SupabaseClient,
+  includeTest: boolean,
+  now: Date,
+  monthStart: Date,
+): Promise<TeacherFinanceAgg> {
+  const empty: TeacherFinanceAgg = {
+    teacherMrr: 0,
+    teacherActive: 0,
+    teacherNewThisMonth: 0,
+    teacherThisMonthRevenue: 0,
+    teacherOutstandingTotal: 0,
+    teacherOutstandingCount: 0,
+    teacherPlanCounts: [],
+    teacherOutstanding: [],
+    teacherRevenueByLabel: new Map(),
+  };
+  try {
+    const [subsRes, profilesRes, invoicesRes] = await Promise.all([
+      admin.from('teacher_subscriptions').select('teacher_id, plan_key, status, price_gross'),
+      admin.from('teacher_profiles').select('user_id, display_name, created_at, is_test'),
+      admin
+        .from('invoices')
+        .select('id, teacher_id, payment_amount, total_amount, status, invoice_type, created_at, due_date')
+        .eq('owner_type', 'teacher')
+        .gte('created_at', addMonths(now, -12).toISOString()),
+    ]);
+
+    const subs = (subsRes.data ?? []) as TeacherSubFin[];
+    const profiles = (profilesRes.data ?? []) as TeacherProfileFin[];
+    const invoices = (invoicesRes.data ?? []) as TeacherInvoiceFin[];
+
+    const testIds = new Set(profiles.filter((p) => p.is_test).map((p) => p.user_id));
+    const nameById = new Map(profiles.map((p) => [p.user_id, p.display_name]));
+    const isTestTeacher = (id: string | null | undefined) => !!id && testIds.has(id);
+
+    const nonTestSubs = includeTest ? subs : subs.filter((s) => !isTestTeacher(s.teacher_id));
+    const teacherMrr = computeTeacherMrr(nonTestSubs);
+    const teacherActive = nonTestSubs.filter((s) => s.status === 'active').length;
+
+    const teacherNewThisMonth = profiles.filter(
+      (p) => (includeTest || !p.is_test) && p.created_at && new Date(p.created_at) >= monthStart,
+    ).length;
+
+    const scopedInvoices = includeTest ? invoices : invoices.filter((i) => !isTestTeacher(i.teacher_id));
+    const paid = (s: string | null) => s === 'paid' || s === 'approved';
+    const pending = (s: string | null) => s === 'pending';
+
+    let teacherThisMonthRevenue = 0;
+    const teacherRevenueByLabel = new Map<string, number>();
+    for (const inv of scopedInvoices) {
+      if (!paid(inv.status)) continue;
+      if (!inv.created_at || new Date(inv.created_at) < monthStart) continue;
+      const amount = invoiceAmount(inv);
+      if (amount <= 0) continue;
+      teacherThisMonthRevenue += amount;
+      const label = INVOICE_TYPE_LABELS[(inv.invoice_type ?? 'other').toLowerCase()] ?? 'Other';
+      teacherRevenueByLabel.set(label, (teacherRevenueByLabel.get(label) ?? 0) + amount);
+    }
+
+    const pendingInvoices = scopedInvoices.filter((i) => pending(i.status));
+    const teacherOutstandingTotal = pendingInvoices.reduce((s, i) => s + invoiceAmount(i), 0);
+    const teacherOutstanding: FinanceOutstandingInvoice[] = pendingInvoices
+      .map((inv) => {
+        const due = inv.due_date ? new Date(inv.due_date) : inv.created_at ? new Date(inv.created_at) : null;
+        const days = due ? Math.max(0, Math.floor((now.getTime() - due.getTime()) / 86_400_000)) : 0;
+        return {
+          invoiceId: inv.id,
+          centerId: inv.teacher_id ?? '',
+          centerName: (inv.teacher_id ? nameById.get(inv.teacher_id) : null) ?? '(teacher)',
+          amount: Math.round(invoiceAmount(inv)),
+          daysOverdue: days,
+        };
+      })
+      .sort((a, b) => b.daysOverdue - a.daysOverdue || b.amount - a.amount)
+      .slice(0, 10);
+
+    const planCounts = new Map<string, number>();
+    for (const s of nonTestSubs) {
+      if (s.status !== 'active') continue;
+      const key = (s.plan_key ?? 'unknown').toLowerCase();
+      planCounts.set(key, (planCounts.get(key) ?? 0) + 1);
+    }
+    const teacherPlanOrder = ['teacher_standard', 'teacher_pro', 'teacher_scale'];
+    const teacherPlanCounts: FinancePlanCount[] = teacherPlanOrder
+      .filter((k) => planCounts.has(k))
+      .map((plan) => ({ plan, count: planCounts.get(plan) ?? 0 }));
+
+    return {
+      teacherMrr,
+      teacherActive,
+      teacherNewThisMonth,
+      teacherThisMonthRevenue,
+      teacherOutstandingTotal,
+      teacherOutstandingCount: pendingInvoices.length,
+      teacherPlanCounts,
+      teacherOutstanding,
+      teacherRevenueByLabel,
+    };
+  } catch {
+    return empty;
+  }
 }
 
 // ---------- fetchers (resilient, return [] on failure) ----------

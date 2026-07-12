@@ -94,3 +94,22 @@ built on the finalized commission engine)**.
 - Verified by orchestrator: typecheck exit 0, 1181 unit tests, i18n/bidi/tolocale OK.
 - _Human click-through needed (see MERGE_CHECKLIST): widget render on /ceo, /admin
   overview layout after removals, /ceo-dashboard redirect, RTL of new strings._
+
+## Phase 3 — combined center+teacher screens (Opus 4.8) — DONE ✅
+- **`src/lib/ownerNormalizer.ts`** (new, pure, 17 unit tests): `UnifiedAccount` +
+  `normalizeCenter`/`normalizeTeacher`, `centerUnifiedStatus`/`teacherUnifiedStatus`
+  (trial/active/overdue/suspended/churned/inactive), Cairo-day date normalization,
+  and the canonical **`invoiceAmount()` = payment_amount ?? total_amount ?? 0** (0
+  stays 0). Reuses existing MRR helpers (getImpliedMonthlyMrr / teacherMonthlyGross) —
+  pricing ladders kept distinct. `parseOwnerFilter`/`ownerMatchesFilter`.
+- **Centers/Teachers/All filter** (`?owner_type=center|teacher|all`, default `center`
+  = regression-safe) wired into `/api/admin/{billing,renewals,finance}` GET + their
+  pages (URL-synced control). Teacher subs folded into renewals/finance; teacher
+  invoices resolved with names + canonical amount. Finance `center` path calls the
+  original `getFinanceData` verbatim (byte-identical); canonical amount applied only to
+  teacher rows so center numbers don't move.
+- **No money-engine changes** — POST/PUT mutation handlers + auth gates untouched.
+- Read-only DB check confirmed the bug class: an engine invoice with
+  `payment_amount=NULL, total_amount=1020` reads 0 today vs 1020 canonical.
+- i18n +5 admin keys (ar+en); SW_VERSION v10→v11.
+- Verified by orchestrator: typecheck exit 0, 1198 unit tests, i18n/bidi/tolocale OK.

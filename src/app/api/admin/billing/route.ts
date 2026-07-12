@@ -18,6 +18,15 @@ import {
 import { parseBodyWithLimit } from '@/lib/validate';
 import { parseIncludeTestCenters } from '@/lib/adminIncludeTest';
 import { computeSubscriptionTotalMrrRounded } from '@/lib/adminSubscriptionMrr';
+import {
+  invoiceAmount,
+  normalizeTeacher,
+  ownerMatchesFilter,
+  parseOwnerFilter,
+  type TeacherProfileRow,
+  type TeacherSubRow,
+  type TeacherUserRow,
+} from '@/lib/ownerNormalizer';
 
 function adminCycleAmount(periodRaw: string, baseQ: number, plan: string): number {
   const p = normalizeBillingPeriod(periodRaw);
@@ -53,6 +62,13 @@ export async function GET(request: Request) {
     const planFilter = new URL(request.url).searchParams.get('plan') || '';
     const includeTest = parseIncludeTestCenters(request);
 
+    // Combined Centers / Teachers / All filter. Absent → 'center' (today's
+    // behavior). Plan filter is a center-only concept, so it forces center scope.
+    const ownerFilter = parseOwnerFilter(request);
+    const effectiveFilter = planFilter ? 'center' : ownerFilter;
+    const wantCenters = effectiveFilter !== 'teacher';
+    const wantTeachers = effectiveFilter !== 'center';
+
     let centersQuery = supabaseAdmin
       .from('centers')
       .select('id, name, plan, phone, billing_period, all_in_price, next_payment_due, billing_status, status, payment_due_date, auto_suspend_at, is_early_adopter, early_adopter_price, billing_type, is_test')
@@ -81,6 +97,7 @@ export async function GET(request: Request) {
     const mrrByPlan: Record<string, number> = {};
 
     for (const row of billingRows) {
+      (row as Record<string, unknown>).ownerType = 'center';
       const bp = (row as { billing_period?: string }).billing_period || 'quarterly';
       const nextDue = (row as { next_payment_due?: string }).next_payment_due;
       const billingType = (row as { billing_type?: string }).billing_type || 'fixed';
@@ -133,6 +150,59 @@ export async function GET(request: Request) {
       });
     }
 
+    // ── Teacher accounts (combined Centers/Teachers/All view) ────────────────
+    // Display-only: normalize teacher_subscriptions into the same billing-row
+    // shape. No writes, no money-engine calls beyond the pure MRR helper.
+    let teacherBillingRows: Record<string, unknown>[] = [];
+    const teacherProfileByTeacher = new Map<string, TeacherProfileRow>();
+    const teacherUserByTeacher = new Map<string, TeacherUserRow>();
+    if (wantTeachers) {
+      const [subsRes, profilesRes] = await Promise.all([
+        supabaseAdmin
+          .from('teacher_subscriptions')
+          .select('teacher_id, plan_key, status, price_gross, billing_interval, next_billing_at, last_payment_at'),
+        supabaseAdmin.from('teacher_profiles').select('user_id, display_name, is_test'),
+      ]);
+      const subs = (subsRes.data ?? []) as TeacherSubRow[];
+      const profiles = (profilesRes.data ?? []) as TeacherProfileRow[];
+      for (const p of profiles) {
+        if (p.user_id) teacherProfileByTeacher.set(p.user_id, p);
+      }
+      const teacherIds = subs.map((s) => s.teacher_id).filter(Boolean);
+      const { data: teacherUsers } = teacherIds.length
+        ? await supabaseAdmin.from('users').select('id, phone, name').in('id', teacherIds)
+        : { data: [] };
+      for (const u of (teacherUsers ?? []) as TeacherUserRow[]) {
+        if (u.id) teacherUserByTeacher.set(u.id, u);
+      }
+
+      teacherBillingRows = subs
+        .map((s) =>
+          normalizeTeacher(
+            s,
+            teacherProfileByTeacher.get(s.teacher_id) ?? null,
+            teacherUserByTeacher.get(s.teacher_id) ?? null,
+          ),
+        )
+        .filter((acct) => includeTest || !acct.isTest)
+        .map((acct) => ({
+          id: acct.ownerId,
+          ownerType: 'teacher' as const,
+          name: acct.name,
+          phone: acct.phone,
+          plan: acct.tier,
+          amount: acct.monthlyMrr,
+          billing_period: acct.cadence,
+          nextDue: acct.nextChargeCairoDay,
+          next_payment_due: acct.nextChargeCairoDay,
+          billing_status: acct.unifiedStatus === 'overdue' ? 'overdue' : 'active',
+          status: acct.unifiedStatus,
+        }));
+    }
+
+    const resolveTeacherName = (tid: string | null | undefined): string =>
+      (tid && (teacherProfileByTeacher.get(tid)?.display_name ?? teacherUserByTeacher.get(tid)?.name)) || '';
+
     const { data: payments, error: payError } = await supabaseAdmin
       .from('admin_payments')
       .select(`
@@ -148,7 +218,7 @@ export async function GET(request: Request) {
 
     const { data: allInvoices } = await supabaseAdmin
       .from('invoices')
-      .select('id, center_id, payment_amount, payment_reference, status, paid_at, updated_at')
+      .select('id, center_id, teacher_id, owner_type, payment_amount, total_amount, payment_reference, status, paid_at, updated_at')
       .in('status', ['approved', 'rejected'])
       .order('updated_at', { ascending: false })
       .limit(50);
@@ -175,63 +245,91 @@ export async function GET(request: Request) {
     const lookupCenterName = (centerId: string): string =>
       centerNameById[centerId] ?? billingRows.find((c: { id: string }) => c.id === centerId)?.name ?? '';
 
-    const paymentRows = (payments || []).map((p: { center_id: string; notes?: string | null; [k: string]: unknown }) => {
-      const notes = p.notes != null ? String(p.notes) : '';
-      const proof = derivePaymentProofColumns({
-        payment_reference: notes || null,
-        source: 'admin_payment',
-      });
-      return {
-        ...p,
-        centerName: lookupCenterName(p.center_id),
-        source: 'admin_payment' as const,
-        proof_type: proof.proofType,
-        proof_reference: proof.proofReference,
-      };
-    });
+    // admin_payments are a center-only concept (no teacher analog) — include
+    // them only when centers are in scope.
+    const paymentRows = wantCenters
+      ? (payments || []).map((p: { center_id: string; notes?: string | null; [k: string]: unknown }) => {
+          const notes = p.notes != null ? String(p.notes) : '';
+          const proof = derivePaymentProofColumns({
+            payment_reference: notes || null,
+            source: 'admin_payment',
+          });
+          return {
+            ...p,
+            centerName: lookupCenterName(p.center_id),
+            ownerType: 'center' as const,
+            source: 'admin_payment' as const,
+            proof_type: proof.proofType,
+            proof_reference: proof.proofReference,
+          };
+        })
+      : [];
 
-    const invoiceRows = (allInvoices || []).map((inv: { center_id: string; [k: string]: unknown }) => {
-      const proof = derivePaymentProofColumns({
-        payment_reference: inv.payment_reference as string | null | undefined,
-        source: 'invoice',
+    const invoiceRows = (allInvoices || [])
+      .filter((inv: { owner_type?: string | null }) => ownerMatchesFilter(inv.owner_type, effectiveFilter))
+      .map((inv: { center_id: string; teacher_id?: string | null; owner_type?: string | null; payment_amount?: number | string | null; total_amount?: number | string | null; [k: string]: unknown }) => {
+        const isTeacher = inv.owner_type === 'teacher';
+        const proof = derivePaymentProofColumns({
+          payment_reference: inv.payment_reference as string | null | undefined,
+          source: 'invoice',
+        });
+        return {
+          id: inv.id,
+          center_id: inv.center_id,
+          centerName: isTeacher ? resolveTeacherName(inv.teacher_id) : lookupCenterName(inv.center_id),
+          ownerType: isTeacher ? ('teacher' as const) : ('center' as const),
+          // Canonical amount for teacher invoices (payment_amount is always NULL
+          // there). Center rows keep today's raw read for regression safety.
+          amount: isTeacher ? invoiceAmount(inv) : (inv.payment_amount ?? 0),
+          billing_period: 'payment_proof',
+          paid_at: inv.paid_at ?? inv.updated_at,
+          notes: `Invoice ${inv.payment_reference ?? inv.id}`,
+          source: 'invoice' as const,
+          invoiceStatus: inv.status,
+          payment_reference: inv.payment_reference ?? null,
+          proof_type: proof.proofType,
+          proof_reference: proof.proofReference,
+        };
       });
-      return {
-        id: inv.id,
-        center_id: inv.center_id,
-        centerName: lookupCenterName(inv.center_id),
-        amount: inv.payment_amount ?? 0,
-        billing_period: 'payment_proof',
-        paid_at: inv.paid_at ?? inv.updated_at,
-        notes: `Invoice ${inv.payment_reference ?? inv.id}`,
-        source: 'invoice' as const,
-        invoiceStatus: inv.status,
-        payment_reference: inv.payment_reference ?? null,
-        proof_type: proof.proofType,
-        proof_reference: proof.proofReference,
-      };
-    });
 
     const { data: pendingInvoices } = await supabaseAdmin
       .from('invoices')
-      .select('id, center_id, payment_amount, payment_reference, payment_method, created_at, invoice_number')
+      .select('id, center_id, teacher_id, owner_type, payment_amount, total_amount, payment_reference, payment_method, created_at, invoice_number')
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
 
+    const pendingScoped = (pendingInvoices || []).filter((inv: { owner_type?: string | null }) =>
+      ownerMatchesFilter(inv.owner_type, effectiveFilter),
+    );
+
     // Get center status for each pending invoice (billingRows may be plan-filtered, so fetch from full centers)
-    const pendingCenterIds = [...new Set((pendingInvoices || []).map((inv: { center_id: string }) => inv.center_id))];
+    const pendingCenterIds = [
+      ...new Set(
+        pendingScoped
+          .map((inv: { center_id?: string | null }) => inv.center_id)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0),
+      ),
+    ];
     const { data: pendingCentersData } = pendingCenterIds.length > 0
       ? await supabaseAdmin.from('centers').select('id, name, status, plan, billing_period').in('id', pendingCenterIds)
       : { data: [] };
     const centerById = Object.fromEntries(((pendingCentersData || []) as { id: string; name: string; status: string; plan?: string; billing_period?: string }[]).map((c) => [c.id, c]));
 
-    const pendingInvoiceRows = (pendingInvoices || []).map((inv: { center_id: string; [k: string]: unknown }) => {
+    const pendingInvoiceRows = pendingScoped.map((inv: { center_id: string; teacher_id?: string | null; owner_type?: string | null; payment_amount?: number | string | null; total_amount?: number | string | null; [k: string]: unknown }) => {
+      const isTeacher = inv.owner_type === 'teacher';
       const center = centerById[inv.center_id];
       return {
         ...inv,
-        centerName: center?.name ?? billingRows.find((c: { id: string }) => c.id === inv.center_id)?.name ?? ',',
-        centerStatus: center?.status ?? ',',
-        centerPlan: center?.plan ?? ',',
-        centerBillingPeriod: center?.billing_period ?? ',',
+        ownerType: isTeacher ? ('teacher' as const) : ('center' as const),
+        // Teacher invoices only populate total_amount → canonical. Center rows
+        // keep today's raw value (regression-safe; proof invoices set payment_amount).
+        payment_amount: isTeacher ? invoiceAmount(inv) : inv.payment_amount,
+        centerName: isTeacher
+          ? resolveTeacherName(inv.teacher_id)
+          : (center?.name ?? billingRows.find((c: { id: string }) => c.id === inv.center_id)?.name ?? ','),
+        centerStatus: isTeacher ? '' : (center?.status ?? ','),
+        centerPlan: isTeacher ? (inv.owner_type ?? '') : (center?.plan ?? ','),
+        centerBillingPeriod: isTeacher ? '' : (center?.billing_period ?? ','),
       };
     });
 
@@ -239,8 +337,14 @@ export async function GET(request: Request) {
     const activeFixedCount = (centers || []).filter((c: { billing_type?: string }) => (c.billing_type || 'fixed') === 'fixed').length;
     const revenueProjection = totalMRR * 12;
 
+    const accountRows = [
+      ...(wantCenters ? billingRows : []),
+      ...teacherBillingRows,
+    ];
+
     return NextResponse.json({
-      centers: billingRows,
+      centers: accountRows,
+      ownerFilter: effectiveFilter,
       paymentHistory: [...paymentRows, ...invoiceRows].sort((a, b) => {
         const aPaid = (a as { paid_at?: string }).paid_at;
         const bPaid = (b as { paid_at?: string }).paid_at;

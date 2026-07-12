@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useLocale } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 import { createBrowserClient } from '@supabase/ssr';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
@@ -64,16 +65,42 @@ const FINANCE_LAST_UPDATED_OPTS: Intl.DateTimeFormatOptions = {
   second: '2-digit',
 };
 
+type OwnerFilter = 'center' | 'teacher' | 'all';
+
+function normalizeOwnerFilter(raw: string | null | undefined): OwnerFilter {
+  return raw === 'teacher' ? 'teacher' : raw === 'all' ? 'all' : 'center';
+}
+
 export default function AdminFinanceClient({ initialData }: { initialData: FinanceData }) {
   const locale = useLocale();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const isAr = locale === 'ar' || locale.startsWith('ar-');
+  const ownerFilter = normalizeOwnerFilter(searchParams?.get('owner_type'));
   const { closeMainSidebar } = useSidebar() ?? {};
   const { setHideShell } = useLayout();
   const { toast } = useToast();
   const [data, setData] = useState<FinanceData>(initialData);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(() => new Date(initialData.generatedAt));
+
+  // The finance page is a server component; changing owner_type re-renders it
+  // with fresh initialData. Sync that into local state so the filter takes effect.
+  useEffect(() => {
+    setData(initialData);
+    setLastUpdated(new Date(initialData.generatedAt));
+  }, [initialData]);
+
+  const setOwnerFilter = useCallback(
+    (next: OwnerFilter) => {
+      const qs = new URLSearchParams(searchParams?.toString() ?? '');
+      if (next === 'center') qs.delete('owner_type');
+      else qs.set('owner_type', next);
+      const suffix = qs.toString();
+      router.replace(`/admin/finance${suffix ? `?${suffix}` : ''}`);
+    },
+    [router, searchParams],
+  );
 
   useEffect(() => { setHideShell(true); return () => setHideShell(false); }, [setHideShell]);
   useEffect(() => { closeMainSidebar?.(); }, [closeMainSidebar]);
@@ -144,13 +171,35 @@ export default function AdminFinanceClient({ initialData }: { initialData: Finan
                 {formatDate(lastUpdated, locale, FINANCE_LAST_UPDATED_OPTS)}
               </p>
             </div>
-            <button
-              onClick={refresh}
-              disabled={refreshing}
-              className="text-sm px-3 py-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-1)] hover:bg-[var(--color-surface-2)] disabled:opacity-60"
-            >
-              {refreshing ? (isAr ? 'جارٍ التحديث' : 'Refreshing') : (isAr ? 'تحديث' : 'Refresh')}
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex flex-wrap gap-1.5">
+                {(['center', 'teacher', 'all'] as const).map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setOwnerFilter(f)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
+                      ownerFilter === f
+                        ? 'bg-[var(--color-brand-500)] text-white border-transparent'
+                        : 'bg-[var(--color-surface-1)] text-[var(--color-text-secondary)] border-[var(--color-border)]'
+                    }`}
+                  >
+                    {f === 'center'
+                      ? (isAr ? 'السناتر' : 'Centers')
+                      : f === 'teacher'
+                        ? (isAr ? 'المدرّسون' : 'Teachers')
+                        : (isAr ? 'الكل' : 'All')}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={refresh}
+                disabled={refreshing}
+                className="text-sm px-3 py-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-1)] hover:bg-[var(--color-surface-2)] disabled:opacity-60"
+              >
+                {refreshing ? (isAr ? 'جارٍ التحديث' : 'Refreshing') : (isAr ? 'تحديث' : 'Refresh')}
+              </button>
+            </div>
           </div>
 
           <SectionHeader title={isAr ? 'الأرقام الرئيسية' : 'North star'} />

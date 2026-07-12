@@ -28,6 +28,7 @@ billed-amount/period fix will each land as their own REQUIRES SIGN-OFF commits._
 | Signup happy path | `/signup` → owner provisioned → `/set-pin` → PIN → auto-login to dashboard |
 | e2e | Run `tests/e2e/signup-happy.spec.ts` against a live preview (not runnable in build env) |
 | Phase 2 — CEO home | Trials-watch widget renders on `/ceo` (super_admin) and is absent for accountant; `/admin` overview layout OK after removing the fake Security-alerts + Pending-Signups tiles; `/ceo-dashboard` and legacy `/admin?tab=ceo` land on `/ceo`; RTL of new Arabic strings |
+| Phase 3 — combined screens | Centers/Teachers/All toggle on billing/renewals/finance URL-syncs (`?owner_type=`) and refetches; needs an env WITH real teacher subscriptions to see teacher rows + folded finance MRR (dev DB has none); teacher rows hide center-only actions (Mark paid / Record payment → em-dash); finance `all` north-star tiles = center + teacher |
 
 ## Environment / config switches (go-live, not on-branch)
 | Switch | Purpose |

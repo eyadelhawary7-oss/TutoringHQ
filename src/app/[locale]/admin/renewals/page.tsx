@@ -23,6 +23,7 @@ import { formatDate, formatNumber } from '@/lib/formatNumber';
 
 interface RenewalRow {
   id: string;
+  ownerType?: 'center' | 'teacher';
   name: string;
   phone?: string | null;
   subscription_renewal_date: string | null;
@@ -31,6 +32,12 @@ interface RenewalRow {
   subscription_status: string | null;
   daysUntil: number;
   renewalDate: string | null;
+}
+
+type OwnerFilter = 'center' | 'teacher' | 'all';
+
+function normalizeOwnerFilter(raw: string | null | undefined): OwnerFilter {
+  return raw === 'teacher' ? 'teacher' : raw === 'all' ? 'all' : 'center';
 }
 
 interface Summary {
@@ -83,8 +90,20 @@ export default function AdminRenewalsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const includeTest = searchParams?.get('include_test') === '1';
+  const ownerFilter = normalizeOwnerFilter(searchParams?.get('owner_type'));
   const { closeMainSidebar } = useSidebar() ?? {};
   const { setHideShell } = useLayout();
+
+  const setOwnerFilter = useCallback(
+    (next: OwnerFilter) => {
+      const qs = new URLSearchParams();
+      if (next !== 'center') qs.set('owner_type', next);
+      if (includeTest) qs.set('include_test', '1');
+      const suffix = qs.toString();
+      router.replace(`/admin/renewals${suffix ? `?${suffix}` : ''}`);
+    },
+    [router, includeTest],
+  );
 
   const [centers, setCenters] = useState<RenewalRow[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -108,6 +127,7 @@ export default function AdminRenewalsPage() {
     try {
       const qs = new URLSearchParams({ filter });
       if (includeTest) qs.set('include_test', '1');
+      if (ownerFilter !== 'center') qs.set('owner_type', ownerFilter);
       const res = await fetch(`/api/admin/renewals?${qs.toString()}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
@@ -128,7 +148,7 @@ export default function AdminRenewalsPage() {
     } finally {
       setLoading(false);
     }
-  }, [router, filter, includeTest]);
+  }, [router, filter, includeTest, ownerFilter]);
 
   useEffect(() => {
     setHideShell(true);
@@ -221,6 +241,23 @@ export default function AdminRenewalsPage() {
             </div>
           )}
 
+          {/* Owner-type filter */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {(['center', 'teacher', 'all'] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setOwnerFilter(f)}
+                className={`px-3 py-1.5 rounded-badge text-xs font-medium transition-all duration-fast ease-out ${
+                  ownerFilter === f
+                    ? 'bg-[var(--color-brand-500)] text-white'
+                    : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]'
+                }`}
+              >
+                {f === 'center' ? t('ownerFilterCenters') : f === 'teacher' ? t('ownerFilterTeachers') : t('ownerFilterAll')}
+              </button>
+            ))}
+          </div>
+
           {/* Filters */}
           <div className="flex flex-wrap gap-2 mb-4">
             {(['all', 'this_week', 'this_month', 'overdue'] as const).map((f) => (
@@ -266,8 +303,17 @@ export default function AdminRenewalsPage() {
                   </thead>
                   <tbody>
                     {centers.map((row) => (
-                      <tr key={row.id} className="border-b border-border last:border-0 hover:bg-muted/30">
-                        <td className="p-3 font-medium">{row.name}</td>
+                      <tr key={`${row.ownerType ?? 'center'}:${row.id}`} className="border-b border-border last:border-0 hover:bg-muted/30">
+                        <td className="p-3 font-medium">
+                          <span className="flex items-center gap-2">
+                            {row.name}
+                            {ownerFilter !== 'center' && (
+                              <span className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold bg-[var(--color-surface-2)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)]">
+                                {row.ownerType === 'teacher' ? t('rowOwnerTeacher') : t('rowOwnerCenter')}
+                              </span>
+                            )}
+                          </span>
+                        </td>
                         <td className="p-3">{formatRenewalDate(row.renewalDate, locale)}</td>
                         <td className="p-3">
                           {row.daysUntil >= 0 ? (
@@ -283,16 +329,20 @@ export default function AdminRenewalsPage() {
                           </span>
                         </td>
                         <td className="p-3 text-end">
-                          <button
-                            onClick={() => {
-                              setRecordModal(row);
-                              setRecordAmount(String(row.subscription_monthly_fee ?? ''));
-                            }}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 text-sm font-medium"
-                          >
-                            <CreditCard size={14} />
-                            {t('recordPayment')}
-                          </button>
+                          {row.ownerType === 'teacher' ? (
+                            <span className="text-xs text-[var(--color-text-muted)]">—</span>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setRecordModal(row);
+                                setRecordAmount(String(row.subscription_monthly_fee ?? ''));
+                              }}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 text-sm font-medium"
+                            >
+                              <CreditCard size={14} />
+                              {t('recordPayment')}
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}

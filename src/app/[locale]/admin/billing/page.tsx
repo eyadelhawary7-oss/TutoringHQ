@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/routing';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
@@ -25,6 +26,7 @@ import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
 
 interface BillingRow {
   id: string;
+  ownerType?: 'center' | 'teacher';
   name: string;
   phone?: string;
   plan?: string;
@@ -34,6 +36,12 @@ interface BillingRow {
   next_payment_due?: string;
   billing_status?: string;
   status?: string;
+}
+
+type OwnerFilter = 'center' | 'teacher' | 'all';
+
+function normalizeOwnerFilter(raw: string | null | undefined): OwnerFilter {
+  return raw === 'teacher' ? 'teacher' : raw === 'all' ? 'all' : 'center';
 }
 
 interface PaymentRow {
@@ -80,8 +88,17 @@ export default function AdminBillingPage() {
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const ownerFilter = normalizeOwnerFilter(searchParams?.get('owner_type'));
   const { closeMainSidebar } = useSidebar() ?? {};
   const { setHideShell } = useLayout();
+
+  const setOwnerFilter = useCallback(
+    (next: OwnerFilter) => {
+      router.replace(next === 'center' ? '/admin/billing' : `/admin/billing?owner_type=${next}`);
+    },
+    [router],
+  );
 
   const [billingData, setBillingData] = useState<BillingRow[]>([]);
   const [paymentHistory, setPaymentHistory] = useState<PaymentRow[]>([]);
@@ -103,7 +120,8 @@ export default function AdminBillingPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/admin/billing', {
+      const qs = ownerFilter === 'center' ? '' : `?owner_type=${ownerFilter}`;
+      const res = await fetch(`/api/admin/billing${qs}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (res.status === 403) {
@@ -130,7 +148,7 @@ export default function AdminBillingPage() {
     } finally {
       setLoading(false);
     }
-  }, [router, tCommon]);
+  }, [router, tCommon, ownerFilter]);
 
   useEffect(() => {
     setHideShell(true);
@@ -210,6 +228,23 @@ export default function AdminBillingPage() {
               <DirectionalIcon icon={ArrowLeft} className="h-5 w-5" />
             </button>
             <h1 className="text-xl font-bold">{t('billing')}</h1>
+          </div>
+
+          <div className="flex flex-wrap gap-2 mb-4">
+            {(['center', 'teacher', 'all'] as const).map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setOwnerFilter(f)}
+                className={`px-3 py-1.5 rounded-badge text-xs font-medium transition-all duration-fast ease-out ${
+                  ownerFilter === f
+                    ? 'bg-[var(--color-brand-500)] text-white'
+                    : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]'
+                }`}
+              >
+                {f === 'center' ? t('ownerFilterCenters') : f === 'teacher' ? t('ownerFilterTeachers') : t('ownerFilterAll')}
+              </button>
+            ))}
           </div>
 
           {error && (
@@ -301,11 +336,21 @@ export default function AdminBillingPage() {
                         .filter((b) => b && typeof b.id === 'string' && b.id.length > 0)
                         .map((b) => {
                           const isPaid = b.billing_status === 'paid';
+                          const isTeacher = b.ownerType === 'teacher';
                           const nextDueStr = b.nextDue ?? b.next_payment_due ?? '';
                           const billingStatus = b.billing_status ?? b.status ?? 'active';
                           return (
-                            <tr key={b.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
-                              <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">{b.name}</td>
+                            <tr key={`${b.ownerType ?? 'center'}:${b.id}`} className="hover:bg-[var(--color-surface-0)] transition-colors">
+                              <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium">
+                                <span className="flex items-center gap-2">
+                                  {b.name}
+                                  {ownerFilter !== 'center' && (
+                                    <span className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)]">
+                                      {isTeacher ? t('rowOwnerTeacher') : t('rowOwnerCenter')}
+                                    </span>
+                                  )}
+                                </span>
+                              </td>
                               <td className="py-3.5 px-4"><PlanBadge plan={b.plan} /></td>
                               <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">
                                 {b.billing_period ?? tCommon('notSet')}
@@ -324,7 +369,7 @@ export default function AdminBillingPage() {
                               </td>
                               <td className="py-3.5 px-4 min-w-[280px]">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  {!isPaid && (
+                                  {!isPaid && !isTeacher && (
                                     <button
                                       type="button"
                                       onClick={() => handleMarkPaid(b.id, b.amount ?? 0, b.billing_period ?? 'monthly')}

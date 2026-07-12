@@ -30,11 +30,15 @@ export default async function AdminFinancePage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ include_test?: string }>;
+  searchParams: Promise<{ include_test?: string; owner_type?: string }>;
 }) {
   const { locale } = await params;
   const sp = await searchParams;
-  const financeQs = sp.include_test === '1' ? '?include_test=1' : '';
+  const qs = new URLSearchParams();
+  if (sp.include_test === '1') qs.set('include_test', '1');
+  const ownerType = sp.owner_type === 'teacher' ? 'teacher' : sp.owner_type === 'all' ? 'all' : '';
+  if (ownerType) qs.set('owner_type', ownerType);
+  const financeQs = qs.toString() ? `?${qs.toString()}` : '';
   const supabase = await createClient();
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();

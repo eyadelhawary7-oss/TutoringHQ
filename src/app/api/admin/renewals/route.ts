@@ -5,6 +5,13 @@ import { getAdminPermissions } from '@/lib/admin-roles';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { parseIncludeTestCenters } from '@/lib/adminIncludeTest';
+import {
+  normalizeTeacher,
+  parseOwnerFilter,
+  type TeacherProfileRow,
+  type TeacherSubRow,
+  type TeacherUserRow,
+} from '@/lib/ownerNormalizer';
 
 function addMonths(date: Date, months: number): Date {
   const d = new Date(date);
@@ -21,6 +28,7 @@ const PERIOD_MONTHS: Record<string, number> = {
 
 interface RenewalRow {
   id?: string;
+  ownerType?: 'center' | 'teacher';
   name?: string;
   phone?: string | null;
   subscription_start_date?: string | null;
@@ -30,6 +38,13 @@ interface RenewalRow {
   subscription_status?: string | null;
   daysUntil: number;
   renewalDate: string;
+}
+
+/** Days between `today` (Cairo noon anchor) and a YYYY-MM-DD renewal day. */
+function daysUntilRenewal(renewalYmd: string | null | undefined, today: Date): number {
+  if (!renewalYmd) return 0;
+  const renewal = new Date(`${renewalYmd}T12:00:00`);
+  return Math.round((renewal.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
 }
 
 export async function GET(request: Request) {
@@ -54,48 +69,94 @@ export async function GET(request: Request) {
     const filter = url.searchParams.get('filter') || 'all'; // all | this_week | this_month | overdue
     const includeTest = parseIncludeTestCenters(request);
 
-    let renewalCentersQuery = supabaseAdmin
-      .from('centers')
-      .select(`
-        id,
-        name,
-        phone,
-        subscription_start_date,
-        subscription_renewal_date,
-        subscription_billing_period,
-        subscription_monthly_fee,
-        subscription_status
-      `)
-      .in('subscription_status', ['active', 'overdue', 'suspended'])
-      .not('subscription_renewal_date', 'is', null)
-      .order('subscription_renewal_date', { ascending: true });
-    if (!includeTest) {
-      renewalCentersQuery = renewalCentersQuery.eq('is_test', false);
-    }
-    const { data: centers, error } = await renewalCentersQuery;
-
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    // Combined Centers / Teachers / All. Absent → 'center' (today's behavior).
+    const ownerFilter = parseOwnerFilter(request);
+    const wantCenters = ownerFilter !== 'teacher';
+    const wantTeachers = ownerFilter !== 'center';
 
     const today = new Date();
     today.setHours(12, 0, 0, 0);
 
-    const weekEnd = new Date(today);
-    weekEnd.setDate(weekEnd.getDate() + 7);
-    const monthEnd = new Date(today);
-    monthEnd.setMonth(monthEnd.getMonth() + 1);
+    let centerRows: RenewalRow[] = [];
+    if (wantCenters) {
+      let renewalCentersQuery = supabaseAdmin
+        .from('centers')
+        .select(`
+          id,
+          name,
+          phone,
+          subscription_start_date,
+          subscription_renewal_date,
+          subscription_billing_period,
+          subscription_monthly_fee,
+          subscription_status
+        `)
+        .in('subscription_status', ['active', 'overdue', 'suspended'])
+        .not('subscription_renewal_date', 'is', null)
+        .order('subscription_renewal_date', { ascending: true });
+      if (!includeTest) {
+        renewalCentersQuery = renewalCentersQuery.eq('is_test', false);
+      }
+      const { data: centers, error } = await renewalCentersQuery;
 
-    const rows: RenewalRow[] = (centers || []).map((c: Record<string, unknown>) => {
-      const renewalStr = c.subscription_renewal_date as string;
-      const renewal = renewalStr ? new Date(renewalStr + 'T12:00:00') : null;
-      const diffMs = renewal ? renewal.getTime() - today.getTime() : 0;
-      const daysUntil = Math.round(diffMs / (24 * 60 * 60 * 1000));
-      const monthlyFee = Number(c.subscription_monthly_fee ?? 0);
-      return {
-        ...c,
-        daysUntil,
-        renewalDate: renewalStr,
-      } as RenewalRow;
-    });
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+      centerRows = (centers || []).map((c: Record<string, unknown>) => {
+        const renewalStr = c.subscription_renewal_date as string;
+        return {
+          ...c,
+          ownerType: 'center' as const,
+          daysUntil: daysUntilRenewal(renewalStr, today),
+          renewalDate: renewalStr,
+        } as RenewalRow;
+      });
+    }
+
+    // ── Teacher renewals (display-only) ──────────────────────────────────────
+    let teacherRows: RenewalRow[] = [];
+    if (wantTeachers) {
+      const [subsRes, profilesRes] = await Promise.all([
+        supabaseAdmin
+          .from('teacher_subscriptions')
+          .select('teacher_id, plan_key, status, price_gross, billing_interval, next_billing_at, last_payment_at')
+          .in('status', ['active', 'past_due', 'suspended'])
+          .not('next_billing_at', 'is', null),
+        supabaseAdmin.from('teacher_profiles').select('user_id, display_name, is_test'),
+      ]);
+      const subs = (subsRes.data ?? []) as TeacherSubRow[];
+      const profiles = (profilesRes.data ?? []) as TeacherProfileRow[];
+      const profileByTeacher = new Map<string, TeacherProfileRow>();
+      for (const p of profiles) if (p.user_id) profileByTeacher.set(p.user_id, p);
+      const teacherIds = subs.map((s) => s.teacher_id).filter(Boolean);
+      const { data: teacherUsers } = teacherIds.length
+        ? await supabaseAdmin.from('users').select('id, phone, name').in('id', teacherIds)
+        : { data: [] };
+      const userByTeacher = new Map<string, TeacherUserRow>();
+      for (const u of (teacherUsers ?? []) as TeacherUserRow[]) if (u.id) userByTeacher.set(u.id, u);
+
+      teacherRows = subs
+        .map((s) =>
+          normalizeTeacher(s, profileByTeacher.get(s.teacher_id) ?? null, userByTeacher.get(s.teacher_id) ?? null),
+        )
+        .filter((acct) => includeTest || !acct.isTest)
+        .map((acct) => ({
+          id: acct.ownerId,
+          ownerType: 'teacher' as const,
+          name: acct.name ?? undefined,
+          phone: acct.phone,
+          subscription_start_date: null,
+          subscription_renewal_date: acct.nextChargeCairoDay,
+          subscription_billing_period: acct.cadence,
+          subscription_monthly_fee: acct.monthlyMrr,
+          subscription_status: acct.unifiedStatus, // active | overdue | suspended
+          daysUntil: daysUntilRenewal(acct.nextChargeCairoDay, today),
+          renewalDate: acct.nextChargeCairoDay ?? '',
+        }) as RenewalRow);
+    }
+
+    const rows: RenewalRow[] = [...centerRows, ...teacherRows].sort(
+      (a, b) => (a.renewalDate || '').localeCompare(b.renewalDate || ''),
+    );
 
     let filtered = rows;
     if (filter === 'this_week') {
@@ -120,6 +181,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       centers: filtered,
+      ownerFilter,
       summary: { renewalsThisWeek, overdueCount, mrrAtRisk },
     });
   } catch (err) {
