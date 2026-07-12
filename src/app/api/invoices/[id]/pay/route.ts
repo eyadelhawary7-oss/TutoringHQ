@@ -6,6 +6,8 @@ import {
   getPaymobIframeId,
 } from '@/lib/paymobConfig';
 import { remainingBalance } from '@/lib/invoiceBalance';
+import { createSupabaseSavedCardStore } from '@/lib/savedCard/store';
+import { optInToCardTokenization } from '@/lib/savedCard/consent';
 
 const PAYMOB_BASE = 'https://accept.paymob.com/api';
 
@@ -20,6 +22,19 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     if (!auth.ok) return auth.response;
     if (auth.role !== 'owner') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Opt-in card saving (Phase 2f): the pay surface may send { saveCard, locale }
+    // when the owner ticks "save my card for automatic renewal". Card-less stays
+    // the default — a missing/invalid body reads as saveCard=false (no token).
+    let saveCard = false;
+    let bodyLocale: 'ar' | 'en' = 'ar';
+    try {
+      const parsed = (await request.json()) as { saveCard?: unknown; locale?: unknown };
+      saveCard = parsed?.saveCard === true;
+      if (parsed?.locale === 'en' || parsed?.locale === 'ar') bodyLocale = parsed.locale;
+    } catch {
+      // No/invalid JSON body → behave exactly as before (no card saving).
     }
 
     const apiKey = getPaymobApiKey();
@@ -91,7 +106,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     // Reuse the cached iframe only when nothing has been received yet (the cached
     // order is for the full total). Once a partial credit exists, the cached order
     // is for the wrong amount — fall through and mint a fresh order for `remaining`.
-    if (received <= 0 && row.paymob_order_id && row.paymob_iframe_url) {
+    // When the owner opts to save their card, never reuse a cached (non-tokenizing)
+    // key — mint a fresh key that requests the token.
+    if (received <= 0 && !saveCard && row.paymob_order_id && row.paymob_iframe_url) {
       return NextResponse.json({
         iframeUrl: row.paymob_iframe_url,
         orderId: row.paymob_order_id,
@@ -155,34 +172,60 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     }
     const paymobOrderId = String(orderJson.id);
 
+    // Only ask Paymob to tokenize the card when the owner explicitly opted in AND
+    // a sufficient consent (store + auto-charge) is on record. Card-less otherwise.
+    const requestToken = await optInToCardTokenization(
+      createSupabaseSavedCardStore(auth.supabaseAdmin),
+      {
+        owner: { ownerType: 'center', ownerId: auth.centerId },
+        saveCard,
+        locale: bodyLocale,
+        userId: auth.userId,
+        ipAddress:
+          request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+          request.headers.get('x-real-ip') ??
+          null,
+        userAgent: request.headers.get('user-agent'),
+      },
+    );
+
+    const keyBody: Record<string, unknown> = {
+      auth_token: token,
+      amount_cents: amountCents,
+      currency: 'EGP',
+      order_id: orderJson.id,
+      billing_data: {
+        first_name: centerName,
+        last_name: '.',
+        phone_number: centerPhone,
+        email: 'NA',
+        street: 'NA',
+        building: 'NA',
+        floor: 'NA',
+        apartment: 'NA',
+        city: 'Cairo',
+        country: 'EG',
+        state: 'Cairo',
+        postal_code: 'NA',
+      },
+      integration_id: Number(integrationId),
+      lock_order_when_paid: false,
+    };
+    if (requestToken) {
+      // Save-card request: Paymob emits a separate TOKEN callback after a
+      // successful auth, which the webhook routes into the (consent-gated,
+      // INERT-without-recurring-id) save path.
+      keyBody.request_token = true;
+      keyBody.token_agreement = 'recurring';
+    }
+
     const keyRes = await fetch(`${PAYMOB_BASE}/acceptance/payment_keys`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        auth_token: token,
-        amount_cents: amountCents,
-        currency: 'EGP',
-        order_id: orderJson.id,
-        billing_data: {
-          first_name: centerName,
-          last_name: '.',
-          phone_number: centerPhone,
-          email: 'NA',
-          street: 'NA',
-          building: 'NA',
-          floor: 'NA',
-          apartment: 'NA',
-          city: 'Cairo',
-          country: 'EG',
-          state: 'Cairo',
-          postal_code: 'NA',
-        },
-        integration_id: Number(integrationId),
-        lock_order_when_paid: false,
-      }),
+      body: JSON.stringify(keyBody),
     });
     const keyJson = (await keyRes.json()) as { token?: string; message?: string };
     if (!keyRes.ok || !keyJson.token) {

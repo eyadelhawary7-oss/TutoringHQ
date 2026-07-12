@@ -191,3 +191,41 @@ built on the finalized commission engine)**.
   OK. Manual review confirms the non-CEO payout object cannot leak base_salary.
 - Resolves both Phase-4a follow-ups: (1) manager payout salary inference — CLOSED (view is
   commission-only); (2) card-order rep access — CLOSED (reps 403).
+
+## W3 — saved-card auto-charge testable in Paymob sandbox (Opus 4.8) — DONE ✅
+Fixed the three concrete gaps that made the (already-built) saved-card engine unreachable.
+Orchestrator pre-verified all three against the code + live DB before dispatch.
+- **Gap 1 — nothing ever set `requestToken: true`.** New `optInToCardTokenization(store, …)`
+  in `savedCard/consent.ts`: returns false (records nothing) unless the customer ticked
+  "save my card"; when ticked, records consent via the canonical `recordConsent` path and
+  gates on `consentIsSufficient(getLatestConsent())`. Wired into BOTH first-invoice pay
+  routes (`invoices/[id]/pay`, `teacher/invoices/[id]/pay`) — they set
+  `request_token=true` + `token_agreement='recurring'` (same fields as `paymob.ts`
+  `createPaymentKey`) ONLY when the gate returns true. Cached-iframe reuse guarded with
+  `!saveCard` so an opt-in always mints a fresh tokenizing key. **Card-less stays the
+  default** (product decision A) — a missing/false `saveCard` behaves exactly as before.
+- **Gap 2 — token callback resolved centers only.** `resolveOwnerForOrder` now selects
+  `owner_type, center_id, teacher_id` and returns a teacher owner ref for
+  `owner_type='teacher'` invoices (teachers now share the `invoices` machinery), so a
+  teacher's first-payment token is saved to her own owner. Center + combined-session paths
+  preserved.
+- **Gap 3 — autocharge `due_date` filter was exact `.eq`.** Widened the center
+  "initial subscription due" query to `.lte('due_date', todayCairo)` so a summer-billing
+  straggler (issued 23:00 UTC, after autocharge's old 22:00 UTC slot) is collected the
+  next night. Idempotent: status stays `pending/overdue` (a `failed` invoice is the
+  separate retry query), `applyCharged` guards `.neq('status','paid')`, finalize no-ops if
+  paid. Also **reordered crons** in `vercel.json`: `subscription-autocharge` 22:00 →
+  **23:30 UTC** so it runs AFTER `summer-billing` (23:00) — belt-and-suspenders with the
+  `.lte`.
+- **UI**: one opt-in checkbox on the shared `CustomerInvoicesView` (default OFF), reusing
+  existing `savedCard.consent.title/body` i18n keys — **no new i18n keys**. SW_VERSION v15→v16.
+- **INERT preserved**: requesting a token is benign; `saveCardFromFirstPayment` /
+  `chargeSavedCard` still return `recurring_integration_not_configured` until
+  `PAYMOB_RECURRING_INTEGRATION_ID` is set — no real customer saved/charged in prod.
+- **No charge AMOUNT touched** — only whether/when a due invoice is collected and whether a
+  card is saved. NOT a REQUIRES SIGN-OFF item.
+- New tests: `savedCardOptIn.test.ts` (4), `tokenCallbackOwnerResolution.test.ts` (4),
+  `autochargeDueWidening.test.ts` (2) + `lte` added to a stub in `teacherInvoiceParity.test.ts`.
+- Verified by orchestrator (independent run): typecheck exit 0, **1260 unit tests pass**,
+  i18n parity OK (3854 keys), bidi/tolocale OK. Reviewed line-by-line: consent gate,
+  teacher owner resolution, `.lte` idempotency, Paymob field parity with `paymob.ts`.

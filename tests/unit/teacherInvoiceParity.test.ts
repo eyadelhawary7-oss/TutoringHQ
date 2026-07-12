@@ -119,6 +119,10 @@ function makeFakeSupabase(tables: Record<string, Row[]>) {
         filters.push((r) => (r[c] as never) < (v as never));
         return api;
       },
+      lte(c: string, v: unknown) {
+        filters.push((r) => (r[c] as never) <= (v as never));
+        return api;
+      },
       order(c: string, opts?: { ascending?: boolean }) {
         orderCol = c;
         orderAsc = opts?.ascending !== false;

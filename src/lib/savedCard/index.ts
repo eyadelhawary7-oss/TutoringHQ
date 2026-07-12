@@ -19,10 +19,11 @@ export {
   recordConsent,
   consentIsSufficient,
   getConsentText,
+  optInToCardTokenization,
   CONSENT_TEXT,
   CONSENT_VERSION,
 } from './consent';
-export type { RecordConsentInput } from './consent';
+export type { RecordConsentInput, OptInTokenizationInput } from './consent';
 export { buildIdempotencyKey, buildRequestFingerprint } from './idempotency';
 export { createSupabaseSavedCardStore } from './store';
 export { paymobRecurringClient } from './paymobRecurring';

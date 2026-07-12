@@ -27,18 +27,30 @@ export function isPaymobTokenCallback(payload: Record<string, unknown>): boolean
   );
 }
 
-async function resolveOwnerForOrder(
+export async function resolveOwnerForOrder(
   supabase: SupabaseClient,
   orderId: string,
 ): Promise<OwnerRef | null> {
   if (!orderId) return null;
+  // Teachers now flow through the SAME `invoices` machinery as centers
+  // (owner_type='teacher', teacher_id set, center_id null), so branch on
+  // owner_type to route a teacher's first-payment token to her own owner ref.
   const { data: inv } = await supabase
     .from('invoices')
-    .select('center_id')
+    .select('owner_type, center_id, teacher_id')
     .eq('paymob_order_id', orderId)
     .maybeSingle();
-  const invCenter = (inv as { center_id?: string } | null)?.center_id;
-  if (invCenter) return { ownerType: 'center', ownerId: String(invCenter) };
+  const invRow = inv as
+    | { owner_type?: string | null; center_id?: string | null; teacher_id?: string | null }
+    | null;
+  if (invRow) {
+    if (invRow.owner_type === 'teacher' && invRow.teacher_id) {
+      return { ownerType: 'teacher', ownerId: String(invRow.teacher_id) };
+    }
+    if (invRow.center_id) {
+      return { ownerType: 'center', ownerId: String(invRow.center_id) };
+    }
+  }
 
   const { data: sess } = await supabase
     .from('combined_payment_sessions')

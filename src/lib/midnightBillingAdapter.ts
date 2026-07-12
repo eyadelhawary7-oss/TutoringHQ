@@ -150,14 +150,26 @@ export function createSupabaseMidnightBillingAdapter(
     async listDue(todayCairo: string): Promise<DueChargeable[]> {
       const items: DueChargeable[] = [];
 
-      // --- Centers: initial subscription charges due today ---
+      // --- Centers: initial subscription charges due today (or earlier) ---
+      // `.lte` (not `.eq`) so a straggler is still picked up on the NEXT run: a
+      // center's first subscription invoice can be issued by summer-billing on
+      // Cairo-day D with due_date=D, and if autocharge already ran that day it
+      // would never re-match an `.eq('due_date', D+1)`. Widening catches it the
+      // next night. The status filter (pending/overdue) still excludes a
+      // final-failed invoice (status='failed', handled by retryInv below), and
+      // the downstream charge path is idempotent (applyCharged guards
+      // `.neq('status','paid')` and finalizeInvoicePaymentSuccess no-ops if
+      // already paid), so a paid invoice is never re-charged.
+      // NOTE (cron ordering): vercel.json also runs summer-billing BEFORE
+      // subscription-autocharge on the same night so same-day issuance is
+      // collected immediately; this `.lte` widening is the belt-and-suspenders.
       const { data: dueInv } = await supabase
         .from('invoices')
         .select('id, center_id, total_amount, billing_period_start, status, retry_count')
         .eq('owner_type', 'center')
         .eq('invoice_type', 'subscription')
         .in('status', ['pending', 'overdue'])
-        .eq('due_date', todayCairo);
+        .lte('due_date', todayCairo);
 
       // --- Centers: soft-decline retries scheduled for today ---
       const { data: retryInv } = await supabase

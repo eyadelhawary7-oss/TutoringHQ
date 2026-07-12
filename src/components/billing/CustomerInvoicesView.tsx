@@ -94,12 +94,17 @@ async function authHeader(): Promise<HeadersInit | null> {
  */
 export function CustomerInvoicesView({ endpoints }: { endpoints: CustomerInvoicesEndpoints }) {
   const t = useTranslations('customerInvoices');
+  const tConsent = useTranslations('savedCard.consent');
   const locale = useLocale();
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
 
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<Payload | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Opt-in card saving (default OFF — card-less is the product default). When
+  // ticked, the pay request records consent and asks Paymob to tokenize the card.
+  const [saveCard, setSaveCard] = useState(false);
 
   // Pay flow state
   const [payingId, setPayingId] = useState<string | null>(null);
@@ -146,7 +151,8 @@ export function CustomerInvoicesView({ endpoints }: { endpoints: CustomerInvoice
         }
         const res = await fetch(endpoints.pay(invoiceId), {
           method: 'POST',
-          headers: hdr,
+          headers: { ...hdr, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ saveCard, locale }),
         });
         const json = (await res.json()) as { iframeUrl?: string; error?: string };
         if (!res.ok || !json.iframeUrl) {
@@ -160,7 +166,7 @@ export function CustomerInvoicesView({ endpoints }: { endpoints: CustomerInvoice
         setPayingId(null);
       }
     },
-    [locale, payingId, t, endpoints],
+    [locale, payingId, saveCard, t, endpoints],
   );
 
   const onDownload = useCallback(
@@ -280,6 +286,25 @@ export function CustomerInvoicesView({ endpoints }: { endpoints: CustomerInvoice
                     </button>
                   </article>
                 ))}
+
+                {/* Opt-in card saving for automatic renewal (default OFF). */}
+                <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-3">
+                  <input
+                    type="checkbox"
+                    checked={saveCard}
+                    onChange={(e) => setSaveCard(e.target.checked)}
+                    className="chq-focus mt-0.5 h-4 w-4 shrink-0 accent-amber-500"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-[var(--color-text-primary)]">
+                      {tConsent('title')}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-[var(--color-text-muted)]">
+                      {tConsent('body')}
+                    </span>
+                  </span>
+                </label>
+
                 {payError ? (
                   <p className="text-xs text-red-400" role="alert">
                     {payError}

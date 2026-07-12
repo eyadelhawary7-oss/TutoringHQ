@@ -15,7 +15,7 @@
     { "path": "/api/cron/commission-t2-check", "schedule": "0 9 * * *" },
     { "path": "/api/cron/loyalty-bonus-check", "schedule": "0 9 * * *" },
     { "path": "/api/cron/process-renewals", "schedule": "0 7 * * *" },
-    { "path": "/api/cron/subscription-autocharge", "schedule": "0 22 * * *" },
+    { "path": "/api/cron/subscription-autocharge", "schedule": "30 23 * * *" },
     { "path": "/api/cron/billing-nudges", "schedule": "0 8 * * *" },
     { "path": "/api/cron/detect-churn", "schedule": "0 2 * * *" },
     { "path": "/api/cron/daily-summary", "schedule": "55 5 * * *" },

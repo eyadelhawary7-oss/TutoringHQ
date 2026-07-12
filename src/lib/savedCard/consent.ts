@@ -82,3 +82,47 @@ export async function recordConsent(
 
   return consent;
 }
+
+export interface OptInTokenizationInput {
+  owner: OwnerRef;
+  /** The customer ticked "save my card for automatic renewal" on THIS payment. */
+  saveCard: boolean;
+  locale: 'ar' | 'en';
+  userId?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+}
+
+/**
+ * First-payment opt-in gate (Phase 2f): decide whether to ask Paymob to tokenize
+ * the card on a customer's checkout.
+ *
+ * Card-saving is strictly OPT-IN (product decision A — card-less is the default):
+ * this returns true ONLY when the customer explicitly ticked "save my card" on
+ * this payment. When they did, the consent (store + auto-charge) is recorded
+ * through the canonical `recordConsent` path first, and the flag is then gated on
+ * a sufficient consent actually being on record (`getLatestConsent`), so we never
+ * request a token the customer hasn't agreed to. Unticked ⇒ false ⇒ no token, no
+ * saved card — identical to the prior behavior.
+ *
+ * Requesting the token is benign when recurring billing is not yet configured:
+ * the later TOKEN callback's save path still refuses to store the card without
+ * `PAYMOB_RECURRING_INTEGRATION_ID` (the INERT go-live switch).
+ */
+export async function optInToCardTokenization(
+  store: SavedCardStore,
+  input: OptInTokenizationInput,
+): Promise<boolean> {
+  if (!input.saveCard) return false;
+  await recordConsent(store, {
+    owner: input.owner,
+    locale: input.locale,
+    agreedToStore: true,
+    agreedToAutoCharge: true,
+    userId: input.userId ?? null,
+    ipAddress: input.ipAddress ?? null,
+    userAgent: input.userAgent ?? null,
+  });
+  const latest = await store.getLatestConsent(input.owner);
+  return consentIsSufficient(latest);
+}

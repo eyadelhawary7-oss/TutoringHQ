@@ -33,6 +33,7 @@ billed-amount/period fix will each land as their own REQUIRES SIGN-OFF commits._
 | Phase 3 — combined screens | Centers/Teachers/All toggle on billing/renewals/finance URL-syncs (`?owner_type=`) and refetches; needs an env WITH real teacher subscriptions to see teacher rows + folded finance MRR (dev DB has none); teacher rows hide center-only actions (Mark paid / Record payment → em-dash); finance `all` north-star tiles = center + teacher |
 | Phase 4a — scoping | Log in as a real `sales_manager` and `sales_rep` (staff.user_id linked, admin_users.role set, approved center_assignments): Centers/Card-Orders/Commissions/Payouts show ONLY their scope; write buttons hidden; direct mutation attempts 403; unlinked sales role sees nothing |
 | Phase 5 — rep lockout + salary privacy | As a `sales_rep`: `/admin/orders` (card orders) redirects/403s — reps must not see the fulfilment queue. As a `sales_manager`: the Payouts view shows commission tiles + status only, **no total-pay / base-salary column** (so a rep's base_salary cannot be inferred by subtraction). CEO still sees full totals. |
+| W3 — saved-card opt-in (sandbox) | On `/pay` and `/teacher/pay`, the "save my card for automatic renewal" checkbox is present and **OFF by default**; paying with it OFF behaves exactly as before (no card saved). Requires sandbox `PAYMOB_RECURRING_INTEGRATION_ID` to actually tokenize + auto-charge; without it the engine stays INERT (nothing saved/charged). Verify a first payment with the box TICKED produces a Paymob TOKEN callback and a `saved_cards` row (teacher + center). |
 
 ## Phase 4a follow-ups (UI/scope refinements — decide before merge)
 | Item | Note |
@@ -45,3 +46,8 @@ billed-amount/period fix will each land as their own REQUIRES SIGN-OFF commits._
 |--------|---------|
 | `PAYMOB_RECURRING_INTEGRATION_ID` (sandbox) | required for W3 saved-card save + auto-charge tests |
 | `summer.first_charge_release` HELD→RELEASED | one-time money release at go-live |
+
+## Cron schedule change (ships in vercel.json — auto-applies on deploy)
+| Cron | Change | Why |
+|------|--------|-----|
+| `subscription-autocharge` | `0 22 * * *` → `30 23 * * *` (W3) | Run AFTER `summer-billing` (`0 23`) so a same-night first invoice is collected immediately; pairs with the `.lte('due_date')` straggler widening. No `maxDuration` change. |
