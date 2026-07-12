@@ -164,11 +164,16 @@ export async function POST(request: Request) {
     baseSalary = Math.round(baseSalary * (daysWorked / daysInMonth))
   }
 
+  // Every tier query excludes rows already CLAIMED by another payout
+  // (`<tier>_payout_id IS NULL`) — a tier can only ever be swept into ONE payout.
+  // Claims are written right after the payout row is created (below) and released
+  // by the DELETE/void handler, so generate→void→regenerate still works.
   const { data: t1Commissions } = await supabaseAdmin
     .from('commissions')
     .select('id, t1_amount, commission_type, plan_at_signing, center_id')
     .eq('staff_id', staff_id)
     .eq('t1_status', 'eligible')
+    .is('t1_payout_id', null)
     .neq('commission_type', 'override')
 
   const { data: t2Commissions } = await supabaseAdmin
@@ -176,6 +181,7 @@ export async function POST(request: Request) {
     .select('id, t2_amount, commission_type, plan_at_signing, center_id')
     .eq('staff_id', staff_id)
     .eq('t2_status', 'eligible')
+    .is('t2_payout_id', null)
     .neq('commission_type', 'override')
 
   const { data: loyaltyCommissions } = await supabaseAdmin
@@ -183,11 +189,14 @@ export async function POST(request: Request) {
     .select('id, loyalty_bonus_amount, center_id')
     .eq('staff_id', staff_id)
     .eq('loyalty_bonus_status', 'eligible')
+    .is('loyalty_payout_id', null)
     .neq('commission_type', 'override')
 
   const { data: overrideCommissions } = await supabaseAdmin
     .from('commissions')
-    .select('id, t1_amount, t2_amount, loyalty_bonus_amount, t1_status, t2_status, loyalty_bonus_status, center_id')
+    .select(
+      'id, t1_amount, t2_amount, loyalty_bonus_amount, t1_status, t2_status, loyalty_bonus_status, t1_payout_id, t2_payout_id, loyalty_payout_id, center_id',
+    )
     .eq('staff_id', staff_id)
     .eq('commission_type', 'override')
 
@@ -197,28 +206,22 @@ export async function POST(request: Request) {
     (s, c) => s + Number(c.loyalty_bonus_amount),
     0,
   )
-  const overrideT1 = (overrideCommissions ?? [])
-    .filter((c) => c.t1_status === 'eligible')
-    .reduce((s, c) => s + Number(c.t1_amount), 0)
-  const overrideT2 = (overrideCommissions ?? [])
-    .filter((c) => c.t2_status === 'eligible')
-    .reduce((s, c) => s + Number(c.t2_amount), 0)
+  // Per-tier claim filter on override rows (a single override row carries all three tiers).
+  const ovT1Rows = (overrideCommissions ?? []).filter((c) => c.t1_status === 'eligible' && !c.t1_payout_id)
+  const ovT2Rows = (overrideCommissions ?? []).filter((c) => c.t2_status === 'eligible' && !c.t2_payout_id)
   // Money-track: the manager also earns 20% override on the rep's LOYALTY bonus.
-  const overrideLoyalty = (overrideCommissions ?? [])
-    .filter((c) => c.loyalty_bonus_status === 'eligible')
-    .reduce((s, c) => s + Number(c.loyalty_bonus_amount ?? 0), 0)
+  const ovLoyaltyRows = (overrideCommissions ?? []).filter(
+    (c) => c.loyalty_bonus_status === 'eligible' && !c.loyalty_payout_id,
+  )
+  const overrideT1 = ovT1Rows.reduce((s, c) => s + Number(c.t1_amount), 0)
+  const overrideT2 = ovT2Rows.reduce((s, c) => s + Number(c.t2_amount), 0)
+  const overrideLoyalty = ovLoyaltyRows.reduce((s, c) => s + Number(c.loyalty_bonus_amount ?? 0), 0)
   const overrideTotal = overrideT1 + overrideT2 + overrideLoyalty
 
-  const { data: prevPayout } = await supabaseAdmin
-    .from('commission_payouts')
-    .select('adjustment_amount')
-    .eq('staff_id', staff_id)
-    .in('status', ['confirmed', 'paid'])
-    .order('period', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  const carryover = Number(prevPayout?.adjustment_amount ?? 0)
+  // NOTE: the previous-payout `adjustment_amount` carryover was REMOVED (money fix):
+  // the adjust action already bumps the payout it is applied to, so re-adding it to the
+  // NEXT payout paid every adjustment twice. A cross-period correction is now applied by
+  // adjusting the next payout directly.
   const commissionIds = new Set<string>()
   for (const c of t1Commissions ?? []) commissionIds.add(c.id)
   for (const c of t2Commissions ?? []) commissionIds.add(c.id)
@@ -226,9 +229,12 @@ export async function POST(request: Request) {
   for (const c of overrideCommissions ?? []) commissionIds.add(c.id)
   const commissionCount = commissionIds.size
 
-  const totalAmount =
-    baseSalary + t1Total + t2Total + loyaltyTotal + overrideTotal + carryover
+  const totalAmount = baseSalary + t1Total + t2Total + loyaltyTotal + overrideTotal
   const requiresReview = totalAmount > Number(staffMember.base_salary) * 5
+
+  const ovT1Ids = new Set(ovT1Rows.map((c) => c.id))
+  const ovT2Ids = new Set(ovT2Rows.map((c) => c.id))
+  const ovLoyaltyIds = new Set(ovLoyaltyRows.map((c) => c.id))
 
   const breakdown = {
     t1_details: (t1Commissions ?? []).map((c) => ({
@@ -246,13 +252,16 @@ export async function POST(request: Request) {
       amount: Number(c.loyalty_bonus_amount),
     })),
     override_detail: { t1: overrideT1, t2: overrideT2, loyalty: overrideLoyalty },
-    override_details: (overrideCommissions ?? []).map((c) => ({
-      id: c.id,
-      t1_status: c.t1_status,
-      t2_status: c.t2_status,
-      loyalty_bonus_status: c.loyalty_bonus_status,
-    })),
-    carryover_from_prev: carryover,
+    // Only the tiers THIS payout swept — mark_paid pays exactly these, so a tier
+    // claimed by another payout can never be flipped 'paid' from here.
+    override_details: (overrideCommissions ?? [])
+      .filter((c) => ovT1Ids.has(c.id) || ovT2Ids.has(c.id) || ovLoyaltyIds.has(c.id))
+      .map((c) => ({
+        id: c.id,
+        t1_status: ovT1Ids.has(c.id) ? 'eligible' : 'not_swept',
+        t2_status: ovT2Ids.has(c.id) ? 'eligible' : 'not_swept',
+        loyalty_bonus_status: ovLoyaltyIds.has(c.id) ? 'eligible' : 'not_swept',
+      })),
   }
 
   const { data: payout, error } = await supabaseAdmin
@@ -278,6 +287,37 @@ export async function POST(request: Request) {
       { errorKey: 'payouts.errors.saveFailed', error: error.message },
       { status: 500 },
     )
+  }
+
+  // CLAIM the swept tiers for this payout (released again by DELETE/void). The
+  // `.is(<tier>_payout_id, null)` guard means a concurrent generation cannot steal
+  // an already-claimed tier — each tier is only ever disbursed by ONE payout.
+  const t1ClaimIds = [...(t1Commissions ?? []).map((c) => c.id), ...ovT1Rows.map((c) => c.id)]
+  const t2ClaimIds = [...(t2Commissions ?? []).map((c) => c.id), ...ovT2Rows.map((c) => c.id)]
+  const loyaltyClaimIds = [
+    ...(loyaltyCommissions ?? []).map((c) => c.id),
+    ...ovLoyaltyRows.map((c) => c.id),
+  ]
+  if (t1ClaimIds.length) {
+    await supabaseAdmin
+      .from('commissions')
+      .update({ t1_payout_id: payout.id })
+      .in('id', t1ClaimIds)
+      .is('t1_payout_id', null)
+  }
+  if (t2ClaimIds.length) {
+    await supabaseAdmin
+      .from('commissions')
+      .update({ t2_payout_id: payout.id })
+      .in('id', t2ClaimIds)
+      .is('t2_payout_id', null)
+  }
+  if (loyaltyClaimIds.length) {
+    await supabaseAdmin
+      .from('commissions')
+      .update({ loyalty_payout_id: payout.id })
+      .in('id', loyaltyClaimIds)
+      .is('loyalty_payout_id', null)
   }
 
   const firstCommissionId =

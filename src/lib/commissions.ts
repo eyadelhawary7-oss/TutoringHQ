@@ -282,10 +282,38 @@ export async function reassignCommissions(
   const firstPaymentDate =
     rows.map((r) => r.center_first_payment_date).find((d) => d != null) ?? null
 
+  // The incoming rep's manager: their override survives a SAME-manager reassignment
+  // (rep A → rep B, both under M): voiding it would orphan M's override forever,
+  // because the re-insert collides on the unique index and never revives the row.
+  let newRepManager: string | null = null
+  if (newStaffId) {
+    const { data: st } = await supabaseAdmin
+      .from('staff')
+      .select('reports_to')
+      .eq('id', newStaffId)
+      .maybeSingle()
+    newRepManager = (st as { reports_to?: string | null } | null)?.reports_to ?? null
+  }
+
+  // ONCE-PER-CUSTOMER guard: a tier already PAID to a prior rep/manager (incl. the
+  // eyad zero-row, settled at 0 by design) must never become payable again on the
+  // incoming rep's fresh row. Computed per family (rep vs override) from the
+  // pre-reassignment snapshot.
+  const priorPaid = (isOverride: boolean, tier: 't1_status' | 't2_status' | 'loyalty_bonus_status') =>
+    rows.some(
+      (r) =>
+        (r.commission_type === 'override') === isOverride &&
+        r.staff_id !== newStaffId &&
+        r[tier] === 'paid',
+    )
+
   // Void the OLD rep's + old manager's unearned tiers. A 'paid' tier is left as-is
-  // (already earned); only pending/eligible/locked tiers flip to 'reassigned'.
+  // (already earned money is never clawed back here); only pending/eligible/locked
+  // tiers flip to 'reassigned'. The incoming rep's own rows and the (unchanged)
+  // manager's override are untouched.
   for (const r of rows) {
     if (r.staff_id === newStaffId) continue // the incoming rep — nothing to void
+    if (r.commission_type === 'override' && r.staff_id != null && r.staff_id === newRepManager) continue // same manager — keep
     const patch: Record<string, unknown> = {}
     if (r.t1_status !== 'paid') patch.t1_status = 'reassigned'
     if (r.t2_status !== 'paid') patch.t2_status = 'reassigned'
@@ -304,25 +332,46 @@ export async function reassignCommissions(
   if (!newStaffId) return
 
   // Build fresh rows for the incoming rep. Reuse createCommissionsForOwner for the amounts
-  // + override, then transfer the clock anchor + convert T1 if the owner had already paid.
+  // + override, then transfer the clock anchor. Tiers a prior rep was ALREADY PAID are
+  // suppressed to 'reassigned' on the fresh rows (never double-pay); only genuinely
+  // unearned tiers transfer as earnable.
   await createCommissionsForOwner(ownerType, ownerId)
 
   if (firstPaymentDate) {
-    // The owner already converted under the old rep — the new rep inherits that clock and
-    // an immediately-eligible T1 (they own the future tiers from here).
     const { data: fresh } = await supabaseAdmin
       .from('commissions')
-      .select('id, staff_id, t1_status, center_first_payment_date')
+      .select('id, staff_id, commission_type, t1_status, center_first_payment_date')
       .eq(ownerCol, ownerId)
-    for (const r of (fresh ?? []) as { id: string; staff_id: string | null; t1_status: string; center_first_payment_date: string | null }[]) {
-      if (r.center_first_payment_date) continue
-      await supabaseAdmin
-        .from('commissions')
-        .update({
-          center_first_payment_date: firstPaymentDate,
-          t1_status: r.t1_status === 'pending' ? 'eligible' : r.t1_status,
-        })
-        .eq('id', r.id)
+    for (const r of (fresh ?? []) as {
+      id: string
+      staff_id: string | null
+      commission_type: string
+      t1_status: string
+      center_first_payment_date: string | null
+    }[]) {
+      if (r.center_first_payment_date) continue // pre-existing row — not a fresh one
+      const isOv = r.commission_type === 'override'
+      const patch: Record<string, unknown> = {
+        center_first_payment_date: firstPaymentDate,
+        // T1: already paid to a prior rep → terminally suppressed; else the owner
+        // has converted, so the (unearned, voided-off-the-old-rep) T1 transfers eligible.
+        t1_status: priorPaid(isOv, 't1_status')
+          ? 'reassigned'
+          : r.t1_status === 'pending'
+            ? 'eligible'
+            : r.t1_status,
+      }
+      // T2 / loyalty: if already paid out once, the crons must never unlock the
+      // fresh row — suppress; otherwise leave 'locked' for the normal 180/365-day unlock.
+      if (priorPaid(isOv, 't2_status')) patch.t2_status = 'reassigned'
+      if (priorPaid(isOv, 'loyalty_bonus_status')) patch.loyalty_bonus_status = 'reassigned'
+      await supabaseAdmin.from('commissions').update(patch).eq('id', r.id)
+      await logAudit({
+        commissionId: r.id,
+        action: 'commission_reassigned_transfer',
+        triggeredBy: 'manual',
+        newValue: { ...patch, once_per_customer_suppressed: priorPaid(isOv, 't1_status') || priorPaid(isOv, 't2_status') || priorPaid(isOv, 'loyalty_bonus_status') },
+      })
     }
   }
 }

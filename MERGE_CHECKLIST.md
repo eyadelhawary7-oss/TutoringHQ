@@ -39,6 +39,15 @@ Replaces the fixed-EGP engine. **Every commission amount changes.** Built + gree
   3. `delta_upgrade` commission rows are left UNPAID (not auto-eligible).
   4. Reassigning BACK to a rep who was previously voided leaves their old 'reassigned' row (insert
      dedups on 23505) → they would not be re-paid. Rare; decide whether to handle.
+  5. **Eyad-sourced → rep handover pays the rep NO acquisition commission** (the eyad zero-row is
+     'paid at 0'; once-per-customer means the acquisition was already consumed). Confirm intended.
+  6. **Adjustment carryover removed:** a manual payout adjustment now affects exactly the payout it
+     is applied to (it was previously ALSO re-added to the next payout → paid twice). Cross-period
+     corrections = adjust the next payout directly.
+- **Adversarially reviewed:** a 12-agent refute-style workflow confirmed 6 money defects
+  (reassignment double-pay ×3 lenses, same-manager override orphaned, adjustment double-pay,
+  double-sweep of eligible tiers) — ALL FIXED + regression-tested (see BUILD_LOG). Payouts now
+  claim swept tiers at generation; mark-paid has status guards.
 - **Apply migration `20260712140000` before this code runs.** Nothing is applied to live yet.
 
 ### 2. Annual-trial billed-amount/period alignment (commit "Money track: annual-trial alignment")

@@ -141,17 +141,21 @@ export async function PATCH(
     const t2Ids = (breakdown?.t2_details ?? []).map((d) => d.id)
     const loyaltyIds = (breakdown?.loyalty_details ?? []).map((d) => d.id)
 
+    // `.eq(<tier>_status, 'eligible')` guards: a tier that changed state since the
+    // draft was generated (e.g. voided by a reassignment) is never flipped to 'paid'.
     if (t1Ids.length) {
       await supabaseAdmin
         .from('commissions')
         .update({ t1_status: 'paid', t1_paid_at: paidAt, t1_payout_id: id })
         .in('id', t1Ids)
+        .eq('t1_status', 'eligible')
     }
     if (t2Ids.length) {
       await supabaseAdmin
         .from('commissions')
         .update({ t2_status: 'paid', t2_paid_at: paidAt, t2_payout_id: id })
         .in('id', t2Ids)
+        .eq('t2_status', 'eligible')
     }
     if (loyaltyIds.length) {
       await supabaseAdmin
@@ -162,6 +166,7 @@ export async function PATCH(
           loyalty_payout_id: id,
         })
         .in('id', loyaltyIds)
+        .eq('loyalty_bonus_status', 'eligible')
     }
 
     for (const o of breakdown?.override_details ?? []) {
@@ -170,12 +175,14 @@ export async function PATCH(
           .from('commissions')
           .update({ t1_status: 'paid', t1_paid_at: paidAt, t1_payout_id: id })
           .eq('id', o.id)
+          .eq('t1_status', 'eligible')
       }
       if (o.t2_status === 'eligible') {
         await supabaseAdmin
           .from('commissions')
           .update({ t2_status: 'paid', t2_paid_at: paidAt, t2_payout_id: id })
           .eq('id', o.id)
+          .eq('t2_status', 'eligible')
       }
       // Money-track: the manager's 20% override on the rep's loyalty bonus.
       if (o.loyalty_bonus_status === 'eligible') {
@@ -183,6 +190,7 @@ export async function PATCH(
           .from('commissions')
           .update({ loyalty_bonus_status: 'paid', loyalty_bonus_paid_at: paidAt, loyalty_payout_id: id })
           .eq('id', o.id)
+          .eq('loyalty_bonus_status', 'eligible')
       }
     }
   } else if (action === 'adjust') {

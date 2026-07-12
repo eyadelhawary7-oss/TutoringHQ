@@ -308,3 +308,40 @@ Now uses the SAME period-aware helpers as the normal renewal cron: `centerRenewa
 (annual = 12, else 1). Added `billing_period, all_in_price` to the runCenters select; removed the
 dead `centerBase`. **Changes billed amount + period for annual trial centers → REQUIRES SIGN-OFF**
 (no live annual trial centers exist yet). Verified: typecheck exit 0, 1299 unit tests, stabilization OK.
+
+## Money track — adversarial review + fixes (Fable 5) — DONE ✅ ⚠️ part of the SIGN-OFF scope
+Ran a 12-agent adversarial workflow over the commission rewrite (5 independent review lenses →
+every finding independently re-verified by a skeptic instructed to refute it). **6 confirmed
+money defects** (3 were the same root cause found by different lenses); all fixed + tested:
+1. **Double-pay on reassignment (CRITICAL — the root finding, confirmed 3×):** reassigning a
+   customer whose T1/T2 was already PAID to the old rep re-created the tiers payable for the
+   new rep (T1 flipped eligible immediately; T2 unlocked via the cron on the inherited clock)
+   → up to 2× the acquisition commission per reassigned-after-paid customer. **Fix:** per-tier
+   ONCE-PER-CUSTOMER guard in `reassignCommissions` — a tier already 'paid' to any prior
+   rep/manager is suppressed to 'reassigned' on the fresh row (per family: rep vs override);
+   only genuinely unearned tiers transfer as earnable.
+2. **Same-manager reassignment orphaned the manager's override (missed pay):** rep A → rep B
+   under the SAME manager M voided M's override, and the re-insert collided (23505) with no
+   revival — M permanently lost the override on that customer. **Fix:** the void loop now skips
+   the override row belonging to the incoming rep's own manager.
+3. **Manual adjustment paid twice:** the adjust action bumps the payout it's applied to AND the
+   next generation re-added `prevPayout.adjustment_amount` as carryover. **Fix:** carryover
+   removed from generation; an adjustment affects exactly the payout it is applied to.
+4. **Same eligible tier sweepable into two payouts:** generation aggregated purely by status and
+   only mark-paid flipped it — two drafts (different periods) could both include and disburse
+   the same tier. **Fix:** payouts now CLAIM swept tiers at generation (`<tier>_payout_id`, with
+   `.is(null)` guards so a claim can't be stolen), aggregation excludes claimed tiers, the
+   DELETE/void release (already present) un-claims, mark-paid gained `.eq(status,'eligible')`
+   guards, and `override_details` records only the tiers THIS payout swept.
+- New `tests/unit/commission/reassign.test.ts` (4 tests: paid-tier suppression, unearned-tier
+  transfer, same-manager override preserved, cross-manager override voided). Suite: **1303 pass**,
+  typecheck 0, stabilization OK.
+- Workflow stats: 12 agents, 1 verifier errored (structured-output cap) — its finding lens had
+  redundant coverage; all 6 confirmed findings carried high-confidence refutation-resistant proofs.
+- **New interpretation flagged for sign-off:** the eyad zero-row is 'paid at 0', so an
+  eyad-sourced customer later handed to a rep pays that rep NO acquisition commission
+  (once-per-customer: the acquisition was Eyad's). Confirm this is intended.
+- **Known edges (documented, not bugs):** reassigning BACK to a previously-voided rep does not
+  revive their old row; a draft payout generated before a reassignment keeps its frozen total
+  (the status guards keep the commission ledger truthful; the draft→confirm→paid flow is a
+  human-reviewed surface).
