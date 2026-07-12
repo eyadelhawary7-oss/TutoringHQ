@@ -297,3 +297,14 @@ centers — no data migration or reconciliation, pure forward behavior.
 - **Interpretation choices flagged for sign-off** (see MERGE_CHECKLIST): 20% base = implied MONTHLY
   price (not the quarterly/annual charge); delta_upgrade left unpaid; reassign-back-to-a-voided-rep
   edge left as a known limitation.
+
+## Money track — annual-trial billed-amount/period alignment (Fable 5) — DONE ✅ ⚠️ REQUIRES SIGN-OFF
+Separate money commit. The summer trial's first invoice (`summerBillingCron.runCenters`
+issue_invoice) hardcoded `billing_period_end = firstInvoiceAt + 30 days` and `centerBase`
+(quarterly fallback) regardless of the center's cadence — so an annual/quarterly trial center
+was charged a full cycle amount over a 30-day window (next-billing + amount both misaligned).
+Now uses the SAME period-aware helpers as the normal renewal cron: `centerRenewalBaseAmount`
+(annual = all_in × annualMultiplier=10; monthly = stored billing_amount) + `centerRenewalPeriodMonths`
+(annual = 12, else 1). Added `billing_period, all_in_price` to the runCenters select; removed the
+dead `centerBase`. **Changes billed amount + period for annual trial centers → REQUIRES SIGN-OFF**
+(no live annual trial centers exist yet). Verified: typecheck exit 0, 1299 unit tests, stabilization OK.

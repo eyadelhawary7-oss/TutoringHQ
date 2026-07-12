@@ -31,9 +31,10 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { cairoDateKey, cairoYmdPlusDays, startOfUtcInstantForCairoCalendarDay } from '@/lib/cairo/day';
 import { getSummerConfig, firstChargeAllowed, type SummerConfig } from '@/lib/summer/config';
 import { decideSummerAction, type SummerCustomerState, type SummerCustomerStatus } from '@/lib/summer/engine';
-import { getProcessingFeeConfig } from '@/lib/pricingConfig';
+import { getProcessingFeeConfig, getIntervalConfig } from '@/lib/pricingConfig';
 import { applyProcessingFee } from '@/lib/processingFee';
-import { PLANS, isPlanKey, type PlanKey } from '@/lib/pricing';
+import { centerRenewalBaseAmount, centerRenewalPeriodMonths } from '@/lib/centerRenewal';
+import { addMonthsToDateStr } from '@/lib/subscriptionAnchor';
 import { TEACHER_PLANS, getTeacherPlan } from '@/lib/teacherPlans';
 import { ensureTeacherSubscriptionInvoice } from '@/lib/teacherBilling';
 import { dropTeacherToFreeBaseline } from '@/lib/teacherFreeBaseline';
@@ -111,7 +112,7 @@ async function runCenters(
   const { data, error } = await supabase
     .from('centers')
     .select(
-      'id, name, created_at, status, plan, billing_amount, center_code, referral_code, ' +
+      'id, name, created_at, status, plan, billing_amount, billing_period, all_in_price, center_code, referral_code, ' +
         'summer_status, summer_first_invoice_at, summer_lock_at, summer_first_invoice_id',
     )
     .not('status', 'in', '(cancelled,rejected,deleted)')
@@ -121,6 +122,15 @@ async function runCenters(
     console.error('[summerBillingCron] centers select', error);
     out.errors += 1;
     return;
+  }
+
+  // Annual centers bill monthly × annualMultiplier over a 12-month clock (shared
+  // with the normal renewal cron); read once per run.
+  let annualMultiplier: number | undefined;
+  try {
+    annualMultiplier = (await getIntervalConfig()).annualMultiplier;
+  } catch {
+    annualMultiplier = undefined;
   }
 
   for (const raw of (data ?? []) as unknown as Row[]) {
@@ -157,11 +167,20 @@ async function runCenters(
         out.centersEnrolled += 1;
       } else if (action.kind === 'issue_invoice') {
         const firstInvoiceAt = String(raw.summer_first_invoice_at);
-        const base = centerBase(raw);
+        // Period-aware (same helpers as the normal renewal cron): an annual/quarterly
+        // trial center's first invoice bills the FULL cycle amount over the matching
+        // period, not a monthly amount forced into a 30-day window.
+        const effectivePeriod = String(raw.billing_period ?? 'monthly');
+        const base = centerRenewalBaseAmount({
+          billingPeriod: effectivePeriod,
+          allInPerMonth: raw.all_in_price as number | null,
+          storedBillingAmount: raw.billing_amount as number | null,
+          annualMultiplier,
+        });
         const { fee, total } = applyProcessingFee(base, { enabled: feeEnabled, amount: feeAmount });
         const code = (String(raw.center_code || raw.referral_code || '').trim() || 'UNK').replace(/\s+/g, '');
         const invoiceNumber = `SINV-${code}-${firstInvoiceAt}`;
-        const billingEnd = cairoYmdPlusDays(firstInvoiceAt, 30);
+        const billingEnd = addMonthsToDateStr(firstInvoiceAt, centerRenewalPeriodMonths(effectivePeriod));
 
         // Idempotent: unique invoice_number means a same-day re-run reuses the row.
         const { data: existing } = await supabase
@@ -230,14 +249,6 @@ function state_invoiceId(raw: Row): string | null {
 }
 async function maybePaid(supabase: SupabaseClient, invoiceId: string | null): Promise<boolean> {
   return invoiceIsPaid(supabase, invoiceId);
-}
-
-function centerBase(raw: Row): number {
-  const ba = Number(raw.billing_amount ?? 0);
-  if (Number.isFinite(ba) && ba > 0) return ba;
-  const planKey = String(raw.plan || 'starter').toLowerCase();
-  const pk: PlanKey = isPlanKey(planKey) && planKey !== 'top_centers' ? (planKey as PlanKey) : 'starter';
-  return PLANS[pk].quarterlyAllIn;
 }
 
 // ── Teachers ────────────────────────────────────────────────────────────────
