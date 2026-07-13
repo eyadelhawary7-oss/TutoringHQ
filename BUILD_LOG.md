@@ -369,3 +369,21 @@ speak the FINAL engine's language (owner-polymorphic rows, computed-at-unlock am
   already give rep=own / manager=team-commission-only / CEO=full.
 - i18n +5 keys each locale (t1/t2/loyalty_reassigned, owner_teacher, export_csv). SW v17→v18.
 - Verified: typecheck exit 0, **1303 unit tests pass**, i18n parity (3860 keys), bidi/tolocale OK.
+
+## Post-report verification — "can anyone be billed quarterly?" (Fable 5) — ANSWERED ✅
+Eyad asked whether `quarterlyAllIn` implies a live quarterly billing path. Verified in code AND
+live DB: **quarterly billing is fully retired; no customer can be billed quarterly today.**
+- Live `centers` CHECKs: `billing_period ∈ {monthly, annual}`, `subscription_billing_period ∈
+  {monthly, yearly}` — 'quarterly' cannot be stored. Live data: all centers monthly.
+- Signup UI offers only `['monthly','annual']`; renewal engine has NO 3-month clock
+  (`centerRenewalPeriodMonths` → 12 or 1) and bills non-annual at the stored monthly amount.
+- `getChargeFromQuarterlyAllIn`'s `'quarterly' → ×3` branch is unreachable from any live path
+  (all callers derive the period from the CHECK-constrained center row); it survives only for
+  legacy/normalization of historical labels.
+- **`quarterlyAllIn` is NOT dead code but a legacy NAME**: it holds the per-month list rate
+  (docs in pricing.ts: "Same as DB all_in_price - the per-month rate"; annual = ×10 confirms).
+- **Commission base has zero quarterly dependency**: `getImpliedMonthlyMrr` returns the same
+  per-month rate for 'monthly' AND legacy 'quarterly' labels (no ×3/÷3 anywhere in the path).
+- Corrected the sign-off framing accordingly (rates.ts header + MERGE_CHECKLIST item 1): the
+  up-front-payment case is ANNUAL (monthly×10 up front, rep earns 20% of one implied month) —
+  the earlier "quarterly customer pays 3 months up front" wording was wrong and is removed.

@@ -14,10 +14,13 @@
 //   • Manager override = 20% of the rep's commission AND 20% of the rep's loyalty.
 //   • Applies to ALL plans, for BOTH centers and teachers, once per customer.
 //
-// INTERPRETATION FLAGGED FOR SIGN-OFF: "monthly plan price" is the monthly
-// EQUIVALENT (e.g. a quarterly-billed center's quarterly all-in ÷ 3 via
-// getImpliedMonthlyMrr), NOT the full amount charged that cycle. A quarterly
-// customer pays 3 months up front; the rep still earns 20% of ONE month.
+// INTERPRETATION FLAGGED FOR SIGN-OFF: "monthly plan price" is the PER-MONTH
+// rate (centers.all_in_price / plan list rate via getImpliedMonthlyMrr; teacher
+// price_gross), NOT the full amount charged that cycle. Quarterly billing is
+// retired (the live centers CHECK allows only monthly/annual; `quarterlyAllIn`
+// is a legacy NAME for the per-month rate), so in practice this only matters
+// for ANNUAL customers: they pay monthly × 10 up front, and the rep earns 20%
+// of ONE implied month (annual total ÷ 12).
 
 export const REP_RATE = 0.2; // 20% of monthly plan price
 export const OVERRIDE_RATE = 0.2; // manager: 20% of rep commission + rep loyalty

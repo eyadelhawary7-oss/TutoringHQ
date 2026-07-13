@@ -32,9 +32,12 @@ Replaces the fixed-EGP engine. **Every commission amount changes.** Built + gree
 - **manager override = 20% of the rep's commission AND 20% of the rep's loyalty.**
 - Applies to centers AND teachers; once per customer.
 - **Interpretation decisions that change payout amounts — confirm each:**
-  1. "monthly plan price" = the implied **monthly** figure (quarterly all-in ÷ period / teacher
-     `price_gross`), NOT the full quarterly/annual amount charged that cycle. A quarterly customer
-     pays 3 months up front; the rep earns 20% of ONE month. **← biggest lever; confirm.**
+  1. "monthly plan price" = the **per-month rate** (`centers.all_in_price` / plan list rate via
+     `getImpliedMonthlyMrr`; teacher `price_gross`), NOT the full amount charged that cycle.
+     Quarterly billing is RETIRED (live DB CHECK allows only monthly/annual; `quarterlyAllIn` is a
+     legacy field NAME that now holds the per-month rate), so in practice this only matters for
+     **annual** customers: they pay monthly×10 up front and the rep earns 20% of ONE implied month
+     (annual total ÷ 12). **← biggest lever; confirm.**
   2. Each rep half = 10% of monthly; override halves = 2% of monthly; override loyalty = 0.2% of 12mo revenue.
   3. `delta_upgrade` commission rows are left UNPAID (not auto-eligible).
   4. Reassigning BACK to a rep who was previously voided leaves their old 'reassigned' row (insert
