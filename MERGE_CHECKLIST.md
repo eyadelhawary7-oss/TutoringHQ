@@ -14,51 +14,51 @@ not re-run._
 | — | `20260711095712_trial_claims.sql` | ✅ yes (renamed to match ledger) | do not re-run |
 | 1 | `20260712120000_two_level_assignment.sql` | ❌ NOT applied (repo only) | **NEW DATA** — `center_assignments.manager_staff_id` (FK staff) + relaxed `sourced_by_eyad_no_staff` CHECK; new `teacher_assignments` table (service-role-only RLS). Apply before the Phase-4b code runs. Idempotent. |
 | 2 | `20260712130000_promo_code_requests.sql` | ❌ NOT applied (repo only) | **NEW DATA** — new `promo_code_requests` table (service-role-only RLS): manager promo requests + CEO approve/reject. Apply before Phase-4c code runs. Idempotent. |
-| 3 | `20260712140000_commission_rewrite.sql` | ❌ NOT applied (repo only) | **NEW DATA + SCHEMA — ⚠️ REQUIRES SIGN-OFF (money).** Adds 'solo' + teacher plan keys to `plan_at_signing` CHECK (fixes the solo insert crash); owner polymorphism on `commissions` (`owner_type` + `teacher_id` FK, `center_id` nullable, exactly-one-owner CHECK); teacher partial unique indexes + tightened center ones; 'reassigned' added to tier status CHECKs. Safe on the live dataset (0 commission rows). Apply before the commission-rewrite code runs. Idempotent. |
+| 3 | `20260712140000_commission_rewrite.sql` | ❌ NOT applied (repo only) | **NEW DATA + SCHEMA — ✅ SIGNED OFF (money), apply at merge.** Adds 'solo' + teacher plan keys to `plan_at_signing` CHECK (fixes the solo insert crash); owner polymorphism on `commissions` (`owner_type` + `teacher_id` FK, `center_id` nullable, exactly-one-owner CHECK); teacher partial unique indexes + tightened center ones; 'reassigned' added to tier status CHECKs. Safe on the live dataset (0 commission rows). Apply before the commission-rewrite code runs. Idempotent. |
 
 ## Data fixes — DONE on live DB (the one authorized correction)
 | Item | Action | Status |
 |------|--------|--------|
 | Stale teacher trial (Eyad's test account) | Per Eyad: the `teacher_id 68718be7…` account ("Aly Shady", +201220601810) is his own test account despite `is_test=false`. **Authorized live-DB correction applied:** set `teacher_profiles.is_test=true`; deleted the stale `teacher_subscriptions` `trialing` row and its 1 unpaid invoice (no paid history). Verified: is_test=true, 0 sub rows, 0 invoices. | ✅ done (authorized) |
 
-## REQUIRES SIGN-OFF (money — built, tested, NOT final until Eyad approves)
+## ✅ SIGNED OFF (money — approved by Eyad 2026-07-13; mechanical merge steps below remain)
 
 ### 1. Commission/loyalty rewrite (commit "Money track: commission/loyalty rewrite")
 Replaces the fixed-EGP engine. **Every commission amount changes.** Built + green (typecheck,
-1299 tests) + adversarially reviewed, but NOT to be merged until Eyad signs off the rules below.
+1303 tests) + adversarially reviewed. **The interpretation rules below are CONFIRMED by Eyad.**
 - **rep = 20% of the customer's MONTHLY plan price**, split into two equal halves: T1 at conversion,
   T2 at 180 active days **recomputed at the price in force then** (up/downgrades move the 2nd half).
 - **loyalty = 1% of realized first-12-months revenue** (Σ paid invoices in the 12mo window), at 365 days.
 - **manager override = 20% of the rep's commission AND 20% of the rep's loyalty.**
 - Applies to centers AND teachers; once per customer.
-- **Interpretation decisions that change payout amounts — confirm each:**
-  1. "monthly plan price" = the **per-month rate** (`centers.all_in_price` / plan list rate via
+- **Interpretation decisions (all CONFIRMED by Eyad):**
+  1. ✅ "monthly plan price" = the **per-month rate** (`centers.all_in_price` / plan list rate via
      `getImpliedMonthlyMrr`; teacher `price_gross`), NOT the full amount charged that cycle.
-     Quarterly billing is RETIRED (live DB CHECK allows only monthly/annual; `quarterlyAllIn` is a
-     legacy field NAME that now holds the per-month rate), so in practice this only matters for
-     **annual** customers: they pay monthly×10 up front and the rep earns 20% of ONE implied month
-     (annual total ÷ 12). **← biggest lever; confirm.**
-  2. Each rep half = 10% of monthly; override halves = 2% of monthly; override loyalty = 0.2% of 12mo revenue.
-  3. `delta_upgrade` commission rows are left UNPAID (not auto-eligible).
-  4. Reassigning BACK to a rep who was previously voided leaves their old 'reassigned' row (insert
-     dedups on 23505) → they would not be re-paid. Rare; decide whether to handle.
-  5. **Eyad-sourced → rep handover pays the rep NO acquisition commission** (the eyad zero-row is
-     'paid at 0'; once-per-customer means the acquisition was already consumed). Confirm intended.
-  6. **Adjustment carryover removed:** a manual payout adjustment now affects exactly the payout it
+     Quarterly billing is RETIRED (verified in code + live DB: centers CHECK allows only
+     monthly/annual; `quarterlyAllIn` is a legacy field NAME holding the per-month rate), so this
+     only matters for **annual** customers: they pay monthly×10 up front and the rep earns 20% of
+     ONE implied month (annual total ÷ 12).
+  2. ✅ Each rep half = 10% of monthly; override halves = 2% of monthly; override loyalty = 0.2% of 12mo revenue.
+  3. ✅ `delta_upgrade` commission rows are left UNPAID (not auto-eligible).
+  4. ✅ Accepted known limitation: reassigning BACK to a previously-voided rep leaves their old
+     'reassigned' row (insert dedups on 23505) → not re-paid. Rare; greenfield; revisit if it occurs.
+  5. ✅ **Eyad-sourced → rep handover pays the rep NO acquisition commission** — CONFIRMED intended
+     (the eyad zero-row is 'paid at 0'; once-per-customer means the acquisition was already consumed).
+  6. ✅ **Adjustment carryover removed:** a manual payout adjustment now affects exactly the payout it
      is applied to (it was previously ALSO re-added to the next payout → paid twice). Cross-period
      corrections = adjust the next payout directly.
 - **Adversarially reviewed:** a 12-agent refute-style workflow confirmed 6 money defects
   (reassignment double-pay ×3 lenses, same-manager override orphaned, adjustment double-pay,
   double-sweep of eligible tiers) — ALL FIXED + regression-tested (see BUILD_LOG). Payouts now
   claim swept tiers at generation; mark-paid has status guards.
-- **Apply migration `20260712140000` before this code runs.** Nothing is applied to live yet.
+- **Remaining at merge (mechanical, not sign-off):** apply migration `20260712140000` before this
+  code runs (repo-only today), and run the per-role click-throughs below.
 
-### 2. Annual-trial billed-amount/period alignment (commit "Money track: annual-trial alignment")
+### 2. ✅ Annual-trial billed-amount/period alignment (commit "Money track: annual-trial alignment") — SIGNED OFF
 The summer trial's first invoice now uses the same period-aware helpers as the normal renewal
 (`centerRenewalBaseAmount` + `centerRenewalPeriodMonths`): an **annual** trial center is billed
 `all_in × annualMultiplier (=10)` over a **12-month** period (not a monthly amount over a hardcoded
-30-day window); monthly is unchanged. **Changes the billed amount + period for annual trial
-centers → confirm before merge.** (No live annual trial centers exist yet.)
+30-day window); monthly is unchanged. **Approved by Eyad.** (No live annual trial centers exist yet.)
 
 ## Human click-throughs required before merge
 | Area | What to verify |

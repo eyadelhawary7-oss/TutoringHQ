@@ -387,3 +387,16 @@ live DB: **quarterly billing is fully retired; no customer can be billed quarter
 - Corrected the sign-off framing accordingly (rates.ts header + MERGE_CHECKLIST item 1): the
   up-front-payment case is ANNUAL (monthly×10 up front, rep earns 20% of one implied month) —
   the earlier "quarterly customer pays 3 months up front" wording was wrong and is removed.
+
+## SIGN-OFF GRANTED (Eyad, 2026-07-13) — branch ready for merge
+Eyad confirmed the two open money interpretations and approved all sign-off items:
+- **Eyad-sourced → rep handover pays the rep NO acquisition commission** — CONFIRMED intended
+  (eyad zero-row is 'paid at 0'; once-per-customer). No change.
+- **20% base = per-month rate; quarterly billing retired** — verified in code + live DB, framing
+  corrected (annual is the only up-front-payment case). No change to amounts.
+- Commission/loyalty rewrite + annual-trial alignment: **SIGNED OFF.** MERGE_CHECKLIST §REQUIRES
+  SIGN-OFF marked ✅.
+Final state: 15 feature commits + 2 doc-correction commits on `claude/tutoring-portal-rebuild-2qfql1`,
+pushed. typecheck 0, **1303 unit tests pass**, i18n/bidi/tolocale OK. Not merged (Eyad merges).
+Remaining at merge = mechanical human steps only (apply 3 repo-only migrations in order; per-role
+click-throughs; go-live env switches PAYMOB_RECURRING_INTEGRATION_ID + summer.first_charge_release).
