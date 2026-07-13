@@ -453,3 +453,40 @@ non-bypass defects, both fixed + regression-tested:
    deletes the just-created auth user before rethrowing; `tests/unit/staffLoginProvision.test.ts`
    covers happy-path + rollback + auth-create-failure + blank-phone.
 typecheck 0, 1309 tests, i18n/bidi/tolocale OK.
+
+### Staff invite → self-service intake → CEO-approval flow (replaces direct staff provisioning) — SW_VERSION v18→v19
+Replaced the direct-provision entry point (`POST /api/admin/team`, now REMOVED) with a
+5-step flow. **Nothing applied to live; nothing merged — branch only.**
+- **Migration `20260713150000_staff_invites_and_requests.sql` (REPO-ONLY, not applied):** two
+  service-role-only tables (RLS + `REVOKE ALL` from anon/authenticated, same pattern as
+  `promo_code_requests`). `staff_invites` (SHA-256 `token_hash` UNIQUE, `role`/`custom_permissions`
+  frozen by the CEO, `expires_at`/`used_at`/`revoked_at`); `staff_requests` (inert pending intake,
+  `invite_id` FK RESTRICT, one-per-invite unique index, `provisioned_user_id` FK→auth.users).
+  **super_admin/admin excluded at the DB CHECK on both `role` columns.**
+- **`staffInviteTokens.ts`** (mirrors `pinSetupTokens`): `mintStaffInvite` (returns plaintext once,
+  stores only the hash, 7-day TTL), `findOpenInviteByPlaintext` (hash lookup, open-only), atomic
+  single-use `consumeStaffInvite`. **`admin-roles.ts`**: `ASSIGNABLE_INTERNAL_ROLES` +
+  `isAssignableInternalRole` (super_admin/admin never assignable), reused by the Zod schemas + the
+  DB-CHECK comment.
+- **Routes:** `POST /api/admin/staff-invites` (super_admin+CSRF, mint link) & `GET` (open invites);
+  `POST /api/staff-invite/submit` (**PUBLIC**, IP rate-limited fail-closed — role/perms come ONLY
+  from the invite, any body `role` is stripped by the schema, invite consumed atomically BEFORE the
+  inert insert); `GET /api/admin/staff-requests` (super_admin-only queue);
+  `PATCH /api/admin/staff-requests/[id]` (super_admin+CSRF — **approve** reuses `provisionStaffLogin`
+  then writes the `admin_users` row with the request's FROZEN role, links the staff row by phone,
+  returns the single-use set-PIN link; **decline** provisions nothing). Self-approval blocked by
+  phone-key match AND the definitive resolved-login self-add guard; freshly provisioned auth users
+  rolled back on any downstream failure.
+- **Public page** `/staff-invite` (added to `publicRoutes`): server-validates `?t=` to show the
+  frozen role read-only + the intake form (name/phone/email only — **no role picker**), or the
+  invalid/used view. **UI** `/admin/internal-team`: "Generate invite link" (role + optional custom
+  perms → copyable link modal) + a **Pending requests** queue with Approve/Decline (+decline-reason);
+  the approve set-PIN link reuses the existing copyable modal. Direct add-member form removed.
+- i18n: new `staffInvite` namespace + `admin.internalTeam.*` invite/pending/decline keys (ar+en
+  parity). **Tests:** `staffInviteTokens` (hash/mint-freeze/find/consume), `staff-invite-submit`
+  (role frozen, body role ignored, unknown/used token, consume race, rate-limit fail-closed),
+  `staff-requests-review` (super_admin-only, approve provisions via the primitive with the frozen
+  role, self-approval blocked, non-assignable-role refused, decline provisions nothing, 404/409).
+- Roles confirmed: all needed internal roles already exist (the hypothesized "support" role IS
+  `support_agent`); no undefined-scope role created.
+typecheck 0, 1332 tests, i18n/bidi/tolocale OK.

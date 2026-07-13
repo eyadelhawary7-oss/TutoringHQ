@@ -53,6 +53,29 @@ export const ALL_PERMISSIONS = [
 
 export const ALL_ADMIN_PERMISSIONS = ALL_PERMISSIONS;
 
+/**
+ * Internal roles that MAY be assigned to a team member (via the invite/approval flow or a
+ * role edit). super_admin and the legacy 'admin' are intentionally ABSENT: they are never
+ * conferred through team management — only by seed SQL and SUPER_ADMIN_PHONES. Kept in sync
+ * with the DB CHECK on staff_invites.role / staff_requests.role.
+ */
+export const ASSIGNABLE_INTERNAL_ROLES = [
+  'internal_viewer',
+  'internal_admin',
+  'sales_manager',
+  'sales_rep',
+  'support_agent',
+  'accountant',
+  'custom',
+] as const;
+
+export type AssignableInternalRole = (typeof ASSIGNABLE_INTERNAL_ROLES)[number];
+
+/** True only for a role this flow is permitted to grant (excludes super_admin/admin). */
+export function isAssignableInternalRole(role: unknown): role is AssignableInternalRole {
+  return typeof role === 'string' && (ASSIGNABLE_INTERNAL_ROLES as readonly string[]).includes(role);
+}
+
 export function getPermissionsForRole(role: string, customPermissions: string[]): string[] {
   if (role === 'custom') return customPermissions;
   return ROLE_PERMISSIONS[role] ?? ROLE_PERMISSIONS['internal_viewer'];

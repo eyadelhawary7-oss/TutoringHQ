@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ASSIGNABLE_INTERNAL_ROLES } from '@/lib/admin-roles';
 
 // Egyptian phone: 01XXXXXXXXX, +201XXXXXXXXX, or 1XXXXXXXXX - all normalize to 10 digits
 function normalizeEgyptianPhone(v: string): string {
@@ -203,6 +204,41 @@ export const adminTeamUpdateSchema = z.object({
 /** Admin team - remove member */
 export const adminTeamRemoveSchema = z.object({
   memberId: z.string().uuid('Invalid member ID'),
+});
+
+/**
+ * Staff INVITE flow.
+ *
+ * (a) CEO mints an invite link — super_admin only, CSRF-required. Role is chosen HERE and
+ *     frozen onto the link. super_admin/admin are not in the enum, so they can never be the
+ *     invited role.
+ */
+export const staffInviteCreateSchema = z.object({
+  role: z.enum(ASSIGNABLE_INTERNAL_ROLES),
+  custom_permissions: z.array(z.string()).optional().default([]),
+});
+
+/**
+ * (b) The invited person submits their intake. PUBLIC route — the token is the authority.
+ *     There is deliberately NO `role` field: the role comes ONLY from the invite the token
+ *     resolves to. Any `role` key in the request body is stripped by Zod and ignored, so the
+ *     submitter can never choose, change, or escalate their role/permissions.
+ */
+export const staffInviteSubmitSchema = z.object({
+  token: z.string().min(10).max(512),
+  name: z
+    .string()
+    .min(2, 'Name must be at least 2 characters')
+    .max(100, 'Name too long')
+    .regex(/^[a-zA-Z\s؀-ۿ]+$/, 'Invalid characters'),
+  phone: egyptianPhoneRequired,
+  email: z.string().email().optional().or(z.literal('')),
+});
+
+/** (c) CEO approves or declines a pending request — super_admin only, CSRF-required. */
+export const staffRequestReviewSchema = z.object({
+  action: z.enum(['approve', 'decline']),
+  decline_reason: z.string().max(500).optional().nullable(),
 });
 
 /** Admin billing - record payment */

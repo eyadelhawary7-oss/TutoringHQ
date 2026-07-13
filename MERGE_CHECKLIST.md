@@ -15,6 +15,15 @@ MCP and their repo files renamed to match the assigned ledger versions — **do 
 | 2 | `20260713094018_promo_code_requests.sql` | ✅ yes (ledger `20260713094018`) | new `promo_code_requests` table (service-role-only RLS). Verified live. |
 | 3 | `20260713094037_commission_rewrite.sql` | ✅ yes (ledger `20260713094037`) | 'solo' + teacher plan keys in `plan_at_signing` CHECK; owner polymorphism on `commissions` (`owner_type` + `teacher_id` FK, `center_id` nullable, exactly-one-owner CHECK); teacher partial unique indexes + tightened center ones; 'reassigned' tier statuses. Verified live; 0 commission rows preserved. |
 
+## Migrations — REPO-ONLY (pending merge, NOT applied to live) ⏳
+These migration files exist in the repo but have **NOT** been run against the live DB. Apply
+them (in filename order) as part of the merge, before the dependent code serves traffic.
+
+| File | Adds | Service-role-only? |
+|------|------|:---:|
+| `20260712140000_*` (money track) | commission/loyalty rewrite schema — see the money section below | — |
+| `20260713150000_staff_invites_and_requests.sql` | `staff_invites` (single-use, expiring, hashed invite tokens; role/perms frozen; super_admin/admin excluded at CHECK) + `staff_requests` (inert pending intake; one-per-invite unique index; super_admin/admin excluded at CHECK). Both **RLS-enabled + REVOKE ALL from anon/authenticated** (same pattern as `trial_claims`/`promo_code_requests`). `staff_requests.provisioned_user_id` FKs `auth.users` ON DELETE SET NULL. | ✅ yes |
+
 ## Data fixes — DONE on live DB (the one authorized correction)
 | Item | Action | Status |
 |------|--------|--------|
@@ -71,6 +80,7 @@ The summer trial's first invoice now uses the same period-aware helpers as the n
 | W3 — saved-card opt-in (sandbox) | On `/pay` and `/teacher/pay`, the "save my card for automatic renewal" checkbox is present and **OFF by default**; paying with it OFF behaves exactly as before (no card saved). Requires sandbox `PAYMOB_RECURRING_INTEGRATION_ID` to actually tokenize + auto-charge; without it the engine stays INERT (nothing saved/charged). Verify a first payment with the box TICKED produces a Paymob TOKEN callback and a `saved_cards` row (teacher + center). |
 | W4 — export paid-only gate | As a **trial** customer (center `summer_status='enrolled'`, or teacher `status='trialing'`) with no paid invoice: dashboard Excel / payments CSV / analytics P&L CSV buttons show the "upgrade to export" upsell (disabled); the teacher income CSV endpoint returns **402**. As a **paid** customer (or one with any paid invoice — incl. an existing payer swept into the free runway): all four export. **MUST still work for everyone (never gated):** invoice/receipt/payout PDFs and the `/legal/privacy-request` (PDPL) form. Fallback: while `summer.promo.enabled=true` (current live value) new signups still get the trial; only if the switch is turned OFF do new signups fall to normal billing (no trial) — verify that branch if you flip it. |
 | Phase 6 — HR/commission views | As a `sales_rep`: `/admin/commissions` shows ONLY own lines; Export CSV downloads only those rows. As a `sales_manager`: team lines + own override rows; export likewise scoped. CEO: all rows + export all. Teacher-owned commission rows show the teacher's name + "teacher" badge (needs the money-track migration + a teacher commission to exist). `reassigned` tiers render struck-through; loyalty amount appears once unlocked. |
+| Staff invite → intake → approval | As CEO on `/admin/internal-team`: **Generate invite link** (pick a role, e.g. Sales Rep) → copy the link. Open the link in a logged-out/incognito window → the intake page shows "Invited as Sales Rep" with NO role picker → submit name/phone/email → "Request submitted". Back on `/admin/internal-team` the request appears under **Pending requests** → **Approve** provisions the login and surfaces the one-time set-PIN link (also WhatsApped); the person sets their PIN and logs in with the invited role. Re-opening the same link a second time shows the invalid/used view. **Decline** (with/without a reason) provisions nothing and clears the row. Confirm the pending queue and the Approve/Decline buttons are **invisible to a non-super_admin** (accountant/manager/viewer) and that approving your OWN phone's request is refused. |
 
 ## Phase 4a follow-ups (UI/scope refinements — decide before merge)
 | Item | Note |
