@@ -252,15 +252,38 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json({ error: 'auth_system_error' }, { status: 500 });
   }
-  if (!userRow) return unauthorizedResponse();
-  if ((userRow as { pin_set_at?: string | null }).pin_set_at) {
+
+  // Internal team members (managers/reps/…) have an admin_users row and NO public.users
+  // row (the documented internal-team invariant). Their set-PIN link is minted ONLY by
+  // the super_admin-only team route; they have no center, so the center-paid gate below
+  // does not apply. The single-use token claim (plus invalidateSiblingTokens on success,
+  // further down) is the authority that prevents a second link from re-setting the PIN —
+  // the pin_set_at "already set" signal lives on public.users, which they do not have.
+  let isInternalAdmin = false;
+  if (!userRow) {
+    const { data: adminRow, error: adminErr } = await admin
+      .from('admin_users')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle();
+    if (adminErr) {
+      Sentry.captureException(adminErr, {
+        tags: { route: 'set-initial-pin', step: 'admin_lookup' },
+      });
+      return NextResponse.json({ error: 'auth_system_error' }, { status: 500 });
+    }
+    isInternalAdmin = !!adminRow;
+  }
+
+  if (!userRow && !isInternalAdmin) return unauthorizedResponse();
+  if (userRow && (userRow as { pin_set_at?: string | null }).pin_set_at) {
     return NextResponse.json({ error: 'pin_already_set' }, { status: 409 });
   }
 
-  // For the fallback path: re-verify the user's center is paid+activated.
-  // The cookie path already did this above; do it for both paths for
-  // defense-in-depth.
-  if (submittedToken) {
+  // For the fallback path (center OWNERS only): re-verify the user's center is
+  // paid+activated. The cookie path already did this above; do it for both paths for
+  // defense-in-depth. Internal admins have no center and skip this gate.
+  if (submittedToken && userRow) {
     const centerId = (userRow as { center_id?: string | null }).center_id;
     if (!centerId) return unauthorizedResponse();
     const { data: center, error: cErr } = await admin
@@ -352,8 +375,10 @@ export async function POST(request: NextRequest) {
   try {
     await admin.from('audit_log').insert({
       action: 'set_initial_pin',
+      // Null-safe: internal admins have no users row (center_id null) — the earlier
+      // dot-access threw here and silently dropped the audit row for every employee.
       user_id: userId,
-      center_id: (userRow as { center_id?: string | null }).center_id ?? null,
+      center_id: (userRow as { center_id?: string | null } | null)?.center_id ?? null,
       details: {
         set_at: new Date().toISOString(),
         source: submittedToken ? 'fallback_link' : 'webhook_paymob',

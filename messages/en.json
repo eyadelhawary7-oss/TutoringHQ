@@ -3964,7 +3964,12 @@
       "deactivateConfirmMessage": "They will lose access immediately. You can reactivate them later.",
       "deactivateConfirmCta": "Deactivate",
       "editRoleTitle": "Edit role",
-      "editRoleSave": "Save changes"
+      "editRoleSave": "Save changes",
+      "pinLinkTitle": "Set-PIN link created",
+      "pinLinkHelper": "Share this one-time link with the new team member so they can set their own PIN and sign in. It was also sent to their WhatsApp.",
+      "pinLinkCopy": "Copy link",
+      "pinLinkCopied": "Copied",
+      "pinLinkDone": "Done"
     },
     "salesPipeline": "Sales Pipeline",
     "analytics": "Analytics",

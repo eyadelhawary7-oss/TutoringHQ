@@ -412,3 +412,44 @@ Eyad authorized applying the three migrations then merging to master.
      confirmed; commissions row count still 0, greenfield preserved)
 - Repo migration files renamed to their assigned ledger versions (filename prefix = ledger
   version) so a future `supabase db push` never re-runs them. SQL content unchanged.
+
+## Fix — Internal Team add-manager/add-rep provisions the login directly (Opus 4.8, 2026-07-13)
+Bug (predates the rebuild): `POST /api/admin/team` looked the person up in the customer
+`users` table by phone and returned "must sign up at TutoringHQ first" if absent — forcing
+employees through customer signup — and never linked a `staff` row. Fixed per Eyad's chosen
+approach (relax the PIN rail + extend /set-pin):
+- **Migration `20260713112808_pin_setup_tokens_auth_users_fk`** (APPLIED live): repoint
+  `pin_setup_tokens.user_id` FK from `public.users(id)` → `auth.users(id)` so a center-less
+  internal admin (no `public.users` row — documented invariant) can hold a set-PIN grant.
+- **`src/lib/staffLoginProvision.ts`** (new): mirrors `provisionCenterOwner` for an employee —
+  `auth.admin.createUser` (`<digits>@centerhq.local`), a `mintForFallback` set-PIN grant, and a
+  best-effort WhatsApp link. No `users` row, no center/billing.
+- **`POST /api/admin/team`**: if no login exists for the phone, provision directly; insert
+  `admin_users` (chosen role; super_admin still blocked, self-add blocked); link the `staff` row's
+  `user_id` by phone (only when currently NULL); return the one-time set-PIN link. Rolls back a
+  freshly provisioned auth user if the `admin_users` insert fails (no orphans). Existing-customer
+  reuse preserved.
+- **`/api/auth/set-initial-pin`**: added an internal-admin branch to the token path — a user with
+  an `admin_users` row and NO `users` row skips the users-row + center-paid gates; the single-use
+  token claim + `invalidateSiblingTokens` is the double-set guard. **Center-owner path unchanged.**
+- **Internal Team UI**: surfaces the returned set-PIN link in a copyable modal (i18n +5 keys ar/en).
+- **Verified end to end (live, read-only proofs + unit):** FK now → auth.users (live); a
+  pin_setup_tokens insert for a center-less internal admin is ACCEPTED (was impossible pre-migration);
+  `/api/login` resolves a center-less admin to `<digits>@centerhq.local` (live). set-initial-pin
+  internal-admin branch: +2 unit tests (sets PIN skipping the center gate; rejects a token whose
+  user has neither a users nor an admin_users row). typecheck 0, 1305 tests, i18n/bidi/tolocale OK.
+  (The live `auth.admin.createUser` primitive itself is the same one `provisionCenterOwner` uses in
+  prod; not re-exercised here since no service key is exposed to the session.)
+
+### Add-staff — adversarial security review (2 lenses × refute-verify) — 2 defects fixed
+No auth-bypass / privilege-escalation found (the security-critical gates hold). Two confirmed
+non-bypass defects, both fixed + regression-tested:
+1. (low) set-initial-pin audit_log insert dereferenced `userRow.center_id` on a null userRow for
+   internal admins → TypeError swallowed → the credential-creation audit row was silently dropped.
+   Fixed with null-safe access (`userRow?.center_id ?? null`); test asserts the audit row is written.
+2. (medium) provisionStaffLogin left an orphan auth user if `mintForFallback` failed after
+   `createUser` (the caller's rollback was gated on `provisioned`, set only after the await), which
+   also permanently blocked re-adding that phone (duplicate email). Fixed: provisionStaffLogin now
+   deletes the just-created auth user before rethrowing; `tests/unit/staffLoginProvision.test.ts`
+   covers happy-path + rollback + auth-create-failure + blank-phone.
+typecheck 0, 1309 tests, i18n/bidi/tolocale OK.

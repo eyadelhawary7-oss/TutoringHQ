@@ -130,6 +130,8 @@ function makeAdmin(opts?: {
   ownerLookup?: { id: string; pin_set_at: string | null } | null;
   updateUserByIdError?: boolean;
   getUserByIdEmail?: string | null;
+  adminUser?: { id: string } | null;
+  auditInsertMock?: ReturnType<typeof vi.fn>;
 }): SupabaseClient {
   const center: CenterShape | null =
     opts?.center ?? {
@@ -139,11 +141,9 @@ function makeAdmin(opts?: {
       approved_at: new Date().toISOString(),
     };
   const user: UserShape | null =
-    opts?.user ?? {
-      id: VALID_USER_ID,
-      pin_set_at: null,
-      center_id: VALID_CENTER_ID,
-    };
+    opts?.user === undefined
+      ? { id: VALID_USER_ID, pin_set_at: null, center_id: VALID_CENTER_ID }
+      : opts.user;
   const ownerLookup =
     opts?.ownerLookup === undefined
       ? { id: VALID_USER_ID, pin_set_at: null }
@@ -178,8 +178,15 @@ function makeAdmin(opts?: {
       });
       return builder;
     }
+    if (table === 'admin_users') {
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: opts?.adminUser ?? null, error: null }),
+      };
+    }
     if (table === 'audit_log') {
-      return { insert: vi.fn().mockResolvedValue({ error: null }) };
+      return { insert: opts?.auditInsertMock ?? vi.fn().mockResolvedValue({ error: null }) };
     }
     return {
       select: vi.fn().mockReturnThis(),
@@ -394,6 +401,68 @@ describe('POST /api/auth/set-initial-pin', () => {
       expect.anything(),
       'plaintext-from-whatsapp',
     );
+  });
+
+  it('INTERNAL ADMIN fallback: no public.users row but an admin_users row → sets PIN, skips the center gate', async () => {
+    cookieMap.delete('chq_signup_session');
+    vi.mocked(verifySignupSession).mockReturnValue(null);
+    findLiveTokenByPlaintextMock.mockResolvedValueOnce({
+      id: VALID_TOKEN_ROW_ID,
+      user_id: VALID_USER_ID,
+      token_hash: 'somehash',
+      source: 'fallback_link',
+      created_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 29 * 60_000).toISOString(),
+      used_at: null,
+    });
+    // Center-less internal admin: no users row, has an admin_users row, and NO center
+    // anywhere — proving the center-paid gate is not consulted for internal admins.
+    const auditInsert = vi.fn().mockResolvedValue({ error: null });
+    vi.mocked(getSupabaseAdmin).mockReturnValue(
+      makeAdmin({ user: null, center: null, adminUser: { id: VALID_USER_ID }, auditInsertMock: auditInsert }),
+    );
+
+    const res = await POST(
+      makeRequest({ pin: VALID_PIN, pinConfirm: VALID_PIN, token: 'plaintext-from-whatsapp' }),
+    );
+    ssrState.lastSetAllCallback?.([
+      { name: 'sb-test-auth-token', value: 'tok3', options: { httpOnly: false, path: '/' } },
+    ]);
+
+    expect(res.status).toBe(200);
+    expect(claimTokenMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ rowId: VALID_TOKEN_ROW_ID }),
+    );
+    expect(invalidateSiblingTokensMock).toHaveBeenCalledWith(expect.anything(), VALID_USER_ID);
+    // Audit row IS written for the center-less internal admin (center_id null) — the
+    // null-safe access must not throw and drop it.
+    expect(auditInsert).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'set_initial_pin', user_id: VALID_USER_ID, center_id: null }),
+    );
+  });
+
+  it('REFUSES a fallback token whose user has NEITHER a users row NOR an admin_users row', async () => {
+    cookieMap.delete('chq_signup_session');
+    vi.mocked(verifySignupSession).mockReturnValue(null);
+    findLiveTokenByPlaintextMock.mockResolvedValueOnce({
+      id: VALID_TOKEN_ROW_ID,
+      user_id: VALID_USER_ID,
+      token_hash: 'somehash',
+      source: 'fallback_link',
+      created_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 29 * 60_000).toISOString(),
+      used_at: null,
+    });
+    vi.mocked(getSupabaseAdmin).mockReturnValue(makeAdmin({ user: null, adminUser: null }));
+
+    const res = await POST(
+      makeRequest({ pin: VALID_PIN, pinConfirm: VALID_PIN, token: 'plaintext-from-whatsapp' }),
+    );
+    expect(res.status).toBe(401);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe('token_invalid_or_used');
+    expect(claimTokenMock).not.toHaveBeenCalled();
   });
 
   it('FAILS CLOSED with 503 when Upstash is not configured', async () => {

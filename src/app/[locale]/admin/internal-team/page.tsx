@@ -75,6 +75,9 @@ export default function AdminInternalTeamPage() {
   const [editRoleSelection, setEditRoleSelection] = useState<RoleKey>('internal_viewer');
   const [editRolePassword, setEditRolePassword] = useState('');
   const [deactivateMember, setDeactivateMember] = useState<TeamMember | null>(null);
+  // Set-PIN link surfaced after provisioning a brand-new employee login.
+  const [pinSetupLink, setPinSetupLink] = useState<string | null>(null);
+  const [pinLinkCopied, setPinLinkCopied] = useState(false);
 
   const loadData = useCallback(async () => {
     const session = await getAdminSession();
@@ -141,6 +144,11 @@ export default function AdminInternalTeamPage() {
       setForm({ name: '', phone: '', email: '' });
       setSelectedRole('internal_viewer');
       setCustomPerms([]);
+      // A freshly provisioned employee returns a one-time set-PIN link to share.
+      if (typeof data?.setupUrl === 'string' && data.setupUrl) {
+        setPinLinkCopied(false);
+        setPinSetupLink(data.setupUrl as string);
+      }
       loadData();
     } catch (e) {
       setError(e instanceof Error ? e.message : tCommon('errorGeneric'));
@@ -414,6 +422,58 @@ export default function AdminInternalTeamPage() {
                 className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
               >
                 {t('internalTeam.deactivateConfirmCta')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pinSetupLink && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setPinSetupLink(null)}
+        >
+          <div
+            className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 max-w-md mx-4 w-full bg-[var(--color-surface-1)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-bold text-[var(--color-text-primary)] mb-2">
+              {t('internalTeam.pinLinkTitle')}
+            </h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-3">
+              {t('internalTeam.pinLinkHelper')}
+            </p>
+            <div className="flex items-center gap-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] p-2 mb-4">
+              <input
+                type="text"
+                readOnly
+                value={pinSetupLink}
+                dir="ltr"
+                className="chq-focus min-w-0 flex-1 bg-transparent text-xs text-[var(--color-text-primary)]"
+                onFocus={(e) => e.currentTarget.select()}
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(pinSetupLink);
+                    setPinLinkCopied(true);
+                  } catch {
+                    setPinLinkCopied(false);
+                  }
+                }}
+                className="shrink-0 rounded-md px-3 py-1.5 text-xs font-semibold text-white bg-teal-600 hover:bg-teal-700"
+              >
+                {pinLinkCopied ? t('internalTeam.pinLinkCopied') : t('internalTeam.pinLinkCopy')}
+              </button>
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setPinSetupLink(null)}
+                className="px-4 py-2 rounded-lg text-sm font-semibold border border-border"
+              >
+                {t('internalTeam.pinLinkDone')}
               </button>
             </div>
           </div>
