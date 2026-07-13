@@ -3,18 +3,17 @@
 Everything a human must do/verify before merging this branch to `master`. Nothing here
 has been applied to the live database; migrations are repo files only.
 
-## Migrations to apply at merge (in order)
-_None new yet. The two already-applied migrations were renamed on-branch to match the
-live ledger versions (`20260710194333`, `20260711095712`) — they are ALREADY LIVE; do
-not re-run._
+## Migrations — ALL APPLIED to live (2026-07-13) ✅
+All five migrations are now LIVE. The three new ones were applied in order via the Supabase
+MCP and their repo files renamed to match the assigned ledger versions — **do not re-run any.**
 
 | Order | File | Applied to live? | Notes |
 |------:|------|:---:|-------|
-| — | `20260710194333_phase1_staff_user_link_and_manager_role.sql` | ✅ yes (renamed to match ledger) | do not re-run |
-| — | `20260711095712_trial_claims.sql` | ✅ yes (renamed to match ledger) | do not re-run |
-| 1 | `20260712120000_two_level_assignment.sql` | ❌ NOT applied (repo only) | **NEW DATA** — `center_assignments.manager_staff_id` (FK staff) + relaxed `sourced_by_eyad_no_staff` CHECK; new `teacher_assignments` table (service-role-only RLS). Apply before the Phase-4b code runs. Idempotent. |
-| 2 | `20260712130000_promo_code_requests.sql` | ❌ NOT applied (repo only) | **NEW DATA** — new `promo_code_requests` table (service-role-only RLS): manager promo requests + CEO approve/reject. Apply before Phase-4c code runs. Idempotent. |
-| 3 | `20260712140000_commission_rewrite.sql` | ❌ NOT applied (repo only) | **NEW DATA + SCHEMA — ✅ SIGNED OFF (money), apply at merge.** Adds 'solo' + teacher plan keys to `plan_at_signing` CHECK (fixes the solo insert crash); owner polymorphism on `commissions` (`owner_type` + `teacher_id` FK, `center_id` nullable, exactly-one-owner CHECK); teacher partial unique indexes + tightened center ones; 'reassigned' added to tier status CHECKs. Safe on the live dataset (0 commission rows). Apply before the commission-rewrite code runs. Idempotent. |
+| — | `20260710194333_phase1_staff_user_link_and_manager_role.sql` | ✅ yes | do not re-run |
+| — | `20260711095712_trial_claims.sql` | ✅ yes | do not re-run |
+| 1 | `20260713094002_two_level_assignment.sql` | ✅ yes (ledger `20260713094002`) | `center_assignments.manager_staff_id` (FK staff) + relaxed `sourced_by_eyad_no_staff` CHECK; new `teacher_assignments` table (service-role-only RLS). Verified live. |
+| 2 | `20260713094018_promo_code_requests.sql` | ✅ yes (ledger `20260713094018`) | new `promo_code_requests` table (service-role-only RLS). Verified live. |
+| 3 | `20260713094037_commission_rewrite.sql` | ✅ yes (ledger `20260713094037`) | 'solo' + teacher plan keys in `plan_at_signing` CHECK; owner polymorphism on `commissions` (`owner_type` + `teacher_id` FK, `center_id` nullable, exactly-one-owner CHECK); teacher partial unique indexes + tightened center ones; 'reassigned' tier statuses. Verified live; 0 commission rows preserved. |
 
 ## Data fixes — DONE on live DB (the one authorized correction)
 | Item | Action | Status |

@@ -400,3 +400,15 @@ Final state: 15 feature commits + 2 doc-correction commits on `claude/tutoring-p
 pushed. typecheck 0, **1303 unit tests pass**, i18n/bidi/tolocale OK. Not merged (Eyad merges).
 Remaining at merge = mechanical human steps only (apply 3 repo-only migrations in order; per-role
 click-throughs; go-live env switches PAYMOB_RECURRING_INTEGRATION_ID + summer.first_charge_release).
+
+## Migrations applied to live + merge (Opus 4.8, 2026-07-13) — authorized by Eyad
+Eyad authorized applying the three migrations then merging to master.
+- Applied in order via Supabase MCP (project lczmjpnbuhnsislcvzar), each verified:
+  1. `two_level_assignment` → ledger `20260713094002` (center_assignments.manager_staff_id +
+     teacher_assignments table — both confirmed present)
+  2. `promo_code_requests` → ledger `20260713094018` (table confirmed present)
+  3. `commission_rewrite` → ledger `20260713094037` (owner_type + teacher_id + nullable center_id
+     + solo/teacher plan_at_signing CHECK + exactly-one-owner + teacher unique indexes — all
+     confirmed; commissions row count still 0, greenfield preserved)
+- Repo migration files renamed to their assigned ledger versions (filename prefix = ledger
+  version) so a future `supabase db push` never re-runs them. SQL content unchanged.
