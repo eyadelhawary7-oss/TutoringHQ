@@ -2111,7 +2111,12 @@
       "deactivateConfirmMessage": "سيفقدون الوصول فوراً. يمكنك إعادة تفعيلهم لاحقاً.",
       "deactivateConfirmCta": "تعطيل",
       "editRoleTitle": "تعديل الدور",
-      "editRoleSave": "حفظ التغييرات"
+      "editRoleSave": "حفظ التغييرات",
+      "pinLinkTitle": "تم إنشاء رابط تعيين الرمز",
+      "pinLinkHelper": "شارك هذا الرابط لمرة واحدة مع عضو الفريق الجديد ليحدد رمزه السري ويسجّل الدخول. تم إرساله أيضاً على واتساب.",
+      "pinLinkCopy": "نسخ الرابط",
+      "pinLinkCopied": "تم النسخ",
+      "pinLinkDone": "تم"
     },
     "salesPipeline": "خط المبيعات",
     "analytics": "التحليلات",

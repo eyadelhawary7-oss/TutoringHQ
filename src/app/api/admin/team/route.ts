@@ -69,7 +69,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'This phone number is already in the team' }, { status: 400 });
     }
 
-    // Find user in users table by phone (various formats used in the app)
+    // Team members are EMPLOYEES, not customers — they never go through center/teacher
+    // signup. If the phone already has a login (e.g. the person is also a center owner),
+    // reuse it; otherwise provision the login DIRECTLY (auth identity + self-service
+    // set-PIN link), the same way a center owner is provisioned without signing up.
     const phoneVariants = [formattedPhone, phoneWithPlus, '0' + formattedPhone.slice(2), formattedPhone.slice(2)];
     let userId: string | null = null;
     for (const p of phoneVariants) {
@@ -84,14 +87,34 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // A newly provisioned employee gets a set-PIN link to return to the caller.
+    let setupUrl: string | null = null;
+    let provisioned = false;
     if (!userId) {
-      return NextResponse.json({
-        error: 'User not found. The person must sign up at TutoringHQ first, then you can add them to the team.',
-      }, { status: 400 });
+      try {
+        const { provisionStaffLogin } = await import('@/lib/staffLoginProvision');
+        const result = await provisionStaffLogin(ctx.supabaseAdmin, {
+          phone: phoneWithPlus,
+          name: name.trim(),
+        });
+        userId = result.userId;
+        setupUrl = result.setupUrl;
+        provisioned = true;
+      } catch (e) {
+        return NextResponse.json(
+          {
+            error:
+              'Could not create the team member login. If they were added before, remove the stale account first, then retry.',
+            detail: e instanceof Error ? e.message : 'unknown',
+          },
+          { status: 500 },
+        );
+      }
     }
 
     // CRITICAL: Admins cannot add themselves to the team (privilege escalation protection)
     if (ctx.userId === userId) {
+      if (provisioned && userId) await ctx.supabaseAdmin.auth.admin.deleteUser(userId).catch(() => {});
       return NextResponse.json({ error: 'Cannot add yourself to the team' }, { status: 403 });
     }
 
@@ -102,6 +125,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (existingAdmin) {
+      // Only possible when reusing an existing account (a freshly provisioned id is new).
       return NextResponse.json({ error: 'This user is already in the team' }, { status: 400 });
     }
 
@@ -119,9 +143,37 @@ export async function POST(request: NextRequest) {
         custom_permissions: customPerms,
       });
 
-    if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
+    if (insertError) {
+      // Roll back a freshly provisioned auth user so a failed add never leaves an orphan.
+      if (provisioned && userId) await ctx.supabaseAdmin.auth.admin.deleteUser(userId).catch(() => {});
+      return NextResponse.json({ error: insertError.message }, { status: 500 });
+    }
 
-    return NextResponse.json({ success: true });
+    // Link the HR staff row (sm/sr) to this login so scoped queries (getInternalScope)
+    // resolve. Match by phone; only link an unlinked row (never steal another login's).
+    let staffLinked = false;
+    let staffRow: { id: string; user_id: string | null } | null = null;
+    for (const p of phoneVariants) {
+      const { data } = await ctx.supabaseAdmin
+        .from('staff')
+        .select('id, user_id')
+        .eq('phone', p)
+        .maybeSingle();
+      if (data) {
+        staffRow = data as { id: string; user_id: string | null };
+        break;
+      }
+    }
+    if (staffRow && !staffRow.user_id) {
+      const { error: linkErr } = await ctx.supabaseAdmin
+        .from('staff')
+        .update({ user_id: userId })
+        .eq('id', staffRow.id)
+        .is('user_id', null);
+      if (!linkErr) staffLinked = true;
+    }
+
+    return NextResponse.json({ success: true, provisioned, setupUrl, staffLinked });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
