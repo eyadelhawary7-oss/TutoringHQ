@@ -82,6 +82,11 @@ The summer trial's first invoice now uses the same period-aware helpers as the n
 | Phase 6 — HR/commission views | As a `sales_rep`: `/admin/commissions` shows ONLY own lines; Export CSV downloads only those rows. As a `sales_manager`: team lines + own override rows; export likewise scoped. CEO: all rows + export all. Teacher-owned commission rows show the teacher's name + "teacher" badge (needs the money-track migration + a teacher commission to exist). `reassigned` tiers render struck-through; loyalty amount appears once unlocked. |
 | Staff invite → intake → approval | As CEO on `/admin/internal-team`: **Generate invite link** (pick a role, e.g. Sales Rep) → copy the link. Open the link in a logged-out/incognito window → the intake page shows "Invited as Sales Rep" with NO role picker → submit name/phone/email → "Request submitted". Back on `/admin/internal-team` the request appears under **Pending requests** → **Approve** provisions the login and surfaces the one-time set-PIN link (also WhatsApped); the person sets their PIN and logs in with the invited role. Re-opening the same link a second time shows the invalid/used view. **Decline** (with/without a reason) provisions nothing and clears the row. Confirm the pending queue and the Approve/Decline buttons are **invisible to a non-super_admin** (accountant/manager/viewer) and that approving your OWN phone's request is refused. |
 
+## Staff-invite follow-up (design decision — not a blocker)
+| Item | Note |
+|------|------|
+| Dual-identity on approve | If a submitted intake phone already belongs to a **center owner** (`public.users` row), approving attaches an internal `admin_users` role to that same auth identity — one login with both a customer/tenant session and internal admin-portal access. This is gated by super_admin invite-mint **and** CEO approval (not an unauthenticated escalation), and the flow already refuses to *change* an existing team member's role. Optional hardening if desired: surface an "existing center-owner login" warning in the pending queue (needs a small queue-payload + UI + i18n addition) so the CEO sees it before confirming. Flagged by the auth-abuse adversarial review (Low). |
+
 ## Phase 4a follow-ups (UI/scope refinements — decide before merge)
 | Item | Note |
 |------|------|

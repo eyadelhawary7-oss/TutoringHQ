@@ -489,4 +489,28 @@ Replaced the direct-provision entry point (`POST /api/admin/team`, now REMOVED) 
   role, self-approval blocked, non-assignable-role refused, decline provisions nothing, 404/409).
 - Roles confirmed: all needed internal roles already exist (the hypothesized "support" role IS
   `support_agent`); no undefined-scope role created.
-typecheck 0, 1332 tests, i18n/bidi/tolocale OK.
+
+#### Adversarial security review (2 lenses: auth-abuse + integrity/race) — 2 defects fixed
+**Auth-abuse lens:** all 5 required invariants HOLD (link never grants a login; invitee can't
+choose/escalate role — schema strips it + insert reads only the invite; nothing active until
+approval; super_admin excluded at 4 layers + no self-approval + super_admin-only queue; set-PIN
+link keeps single-use/expiring/own-creds). RLS+REVOKE correct; only-hash token handling; public
+submit fails closed; proxy `/staff-invite` prefix-guarded (opens nothing else). Verdict: no
+invariant breakable. One **Low, CEO-approval-gated** design note logged to MERGE_CHECKLIST (a
+center-owner phone can be attached as internal admin → dual identity; not an escalation).
+
+**Integrity/race lens — 2 confirmed Medium defects, both FIXED (approve route):**
+1. The existing-login reuse lookup queried only `public.users`, but internal staff have NO
+   `users` row — so an already-provisioned member was invisible and `provisionStaffLogin` hit the
+   duplicate `<digits>@centerhq.local` auth email → 500, request stuck un-approvable (a regression:
+   the old team route had an `admin_users`-by-phone pre-check I hadn't carried over). **Fix:** an
+   `admin_users`-by-phone (`.in(variants)`) pre-check now retires such a request as
+   `alreadyInTeam` without re-provisioning. Regression-tested.
+2. Approve ran all side effects BEFORE the guarded status flip and ignored its matched-row count,
+   so a concurrent decline could leave a live login on a `declined` request. **Fix:** the request
+   is now CLAIMED atomically (guarded `UPDATE … WHERE status='pending' RETURNING id`) BEFORE any
+   provisioning; a lost claim → 409 provisions nothing, and any downstream failure reverts the row
+   to `pending` (+ rolls back a freshly provisioned auth user) so it never sits half-provisioned.
+   Decline is now equally honest (guarded update → 409 on a lost race). Regression-tested (claim
+   won, existing-member-by-phone, lost claim, lost decline).
+typecheck 0, 1335 tests, i18n/bidi/tolocale OK.
