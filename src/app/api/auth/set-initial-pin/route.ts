@@ -375,8 +375,10 @@ export async function POST(request: NextRequest) {
   try {
     await admin.from('audit_log').insert({
       action: 'set_initial_pin',
+      // Null-safe: internal admins have no users row (center_id null) — the earlier
+      // dot-access threw here and silently dropped the audit row for every employee.
       user_id: userId,
-      center_id: (userRow as { center_id?: string | null }).center_id ?? null,
+      center_id: (userRow as { center_id?: string | null } | null)?.center_id ?? null,
       details: {
         set_at: new Date().toISOString(),
         source: submittedToken ? 'fallback_link' : 'webhook_paymob',

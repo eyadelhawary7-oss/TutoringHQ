@@ -131,6 +131,7 @@ function makeAdmin(opts?: {
   updateUserByIdError?: boolean;
   getUserByIdEmail?: string | null;
   adminUser?: { id: string } | null;
+  auditInsertMock?: ReturnType<typeof vi.fn>;
 }): SupabaseClient {
   const center: CenterShape | null =
     opts?.center ?? {
@@ -185,7 +186,7 @@ function makeAdmin(opts?: {
       };
     }
     if (table === 'audit_log') {
-      return { insert: vi.fn().mockResolvedValue({ error: null }) };
+      return { insert: opts?.auditInsertMock ?? vi.fn().mockResolvedValue({ error: null }) };
     }
     return {
       select: vi.fn().mockReturnThis(),
@@ -416,8 +417,9 @@ describe('POST /api/auth/set-initial-pin', () => {
     });
     // Center-less internal admin: no users row, has an admin_users row, and NO center
     // anywhere — proving the center-paid gate is not consulted for internal admins.
+    const auditInsert = vi.fn().mockResolvedValue({ error: null });
     vi.mocked(getSupabaseAdmin).mockReturnValue(
-      makeAdmin({ user: null, center: null, adminUser: { id: VALID_USER_ID } }),
+      makeAdmin({ user: null, center: null, adminUser: { id: VALID_USER_ID }, auditInsertMock: auditInsert }),
     );
 
     const res = await POST(
@@ -433,6 +435,11 @@ describe('POST /api/auth/set-initial-pin', () => {
       expect.objectContaining({ rowId: VALID_TOKEN_ROW_ID }),
     );
     expect(invalidateSiblingTokensMock).toHaveBeenCalledWith(expect.anything(), VALID_USER_ID);
+    // Audit row IS written for the center-less internal admin (center_id null) — the
+    // null-safe access must not throw and drop it.
+    expect(auditInsert).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'set_initial_pin', user_id: VALID_USER_ID, center_id: null }),
+    );
   });
 
   it('REFUSES a fallback token whose user has NEITHER a users row NOR an admin_users row', async () => {

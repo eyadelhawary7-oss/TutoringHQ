@@ -21,8 +21,10 @@ export interface ProvisionStaffLoginResult {
  * center or billing.
  *
  * Creates only the auth identity + a self-service set-PIN grant. The caller owns the
- * `admin_users` row and the `staff.user_id` link so it can roll back atomically; this
- * function's single hard step (auth create) throws on failure with nothing to undo.
+ * `admin_users` row and the `staff.user_id` link so it can roll back atomically. If any
+ * step AFTER the auth-user create fails (e.g. minting the token), this function deletes
+ * the just-created auth user before rethrowing, so a failed add never leaves an orphan
+ * `<digits>@centerhq.local` identity that would block re-adding the same phone.
  *
  * Mirrors `provisionCenterOwner`: `<digits>@centerhq.local` auth email (so phone+PIN
  * login resolves), a 256-bit placeholder password overwritten at /set-pin, and a
@@ -52,23 +54,33 @@ export async function provisionStaffLogin(
   }
   const userId = authData.user.id;
 
-  // Self-service set-PIN grant (single-use, TTL'd). Same helper the owner path uses.
-  const { plaintext } = await mintForFallback(admin, { userId });
-  const appUrl =
-    (process.env.NEXT_PUBLIC_APP_URL || 'https://tutoringhq.app').replace(/\/+$/, '') ||
-    'https://tutoringhq.app';
-  const setupUrl = `${appUrl}/ar/set-pin?t=${encodeURIComponent(plaintext)}`;
-
-  // Best-effort WhatsApp delivery — the caller also returns setupUrl so the CEO can
-  // copy/share it. A send failure must never fail provisioning.
   try {
-    await sendPinSetupLink(normalized, setupUrl);
-  } catch (e) {
-    Sentry.captureException(e, {
-      tags: { source: 'provisionStaffLogin', step: 'sendPinSetupLink' },
-      extra: { userId },
-    });
-  }
+    // Self-service set-PIN grant (single-use, TTL'd). Same helper the owner path uses.
+    const { plaintext } = await mintForFallback(admin, { userId });
+    const appUrl =
+      (process.env.NEXT_PUBLIC_APP_URL || 'https://tutoringhq.app').replace(/\/+$/, '') ||
+      'https://tutoringhq.app';
+    const setupUrl = `${appUrl}/ar/set-pin?t=${encodeURIComponent(plaintext)}`;
 
-  return { userId, setupUrl };
+    // Best-effort WhatsApp delivery — the caller also returns setupUrl so the CEO can
+    // copy/share it. A send failure must never fail provisioning.
+    try {
+      await sendPinSetupLink(normalized, setupUrl);
+    } catch (e) {
+      Sentry.captureException(e, {
+        tags: { source: 'provisionStaffLogin', step: 'sendPinSetupLink' },
+        extra: { userId },
+      });
+    }
+
+    return { userId, setupUrl };
+  } catch (e) {
+    // Token mint failed AFTER the auth user was created — delete the orphan before
+    // rethrowing so the same phone can be re-added (createUser would otherwise 422 on
+    // the duplicate email forever).
+    await admin.auth.admin.deleteUser(userId).catch(() => {});
+    throw e instanceof Error
+      ? e
+      : new Error('provisionStaffLogin: set-PIN grant failed after auth create');
+  }
 }

@@ -440,3 +440,16 @@ approach (relax the PIN rail + extend /set-pin):
   user has neither a users nor an admin_users row). typecheck 0, 1305 tests, i18n/bidi/tolocale OK.
   (The live `auth.admin.createUser` primitive itself is the same one `provisionCenterOwner` uses in
   prod; not re-exercised here since no service key is exposed to the session.)
+
+### Add-staff — adversarial security review (2 lenses × refute-verify) — 2 defects fixed
+No auth-bypass / privilege-escalation found (the security-critical gates hold). Two confirmed
+non-bypass defects, both fixed + regression-tested:
+1. (low) set-initial-pin audit_log insert dereferenced `userRow.center_id` on a null userRow for
+   internal admins → TypeError swallowed → the credential-creation audit row was silently dropped.
+   Fixed with null-safe access (`userRow?.center_id ?? null`); test asserts the audit row is written.
+2. (medium) provisionStaffLogin left an orphan auth user if `mintForFallback` failed after
+   `createUser` (the caller's rollback was gated on `provisioned`, set only after the await), which
+   also permanently blocked re-adding that phone (duplicate email). Fixed: provisionStaffLogin now
+   deletes the just-created auth user before rethrowing; `tests/unit/staffLoginProvision.test.ts`
+   covers happy-path + rollback + auth-create-failure + blank-phone.
+typecheck 0, 1309 tests, i18n/bidi/tolocale OK.
