@@ -19,6 +19,7 @@
 // is what let the old `ignoreDuplicates` upsert fall through to a duplicate INSERT.
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import * as Sentry from '@sentry/nextjs'
 import { computeRepCommission, computeOverride } from '@/lib/commission/rates'
 import { resolveOwnerConversionMonthlyPrice, type OwnerType as _OwnerType } from '@/lib/commission/ownerFinancials'
 
@@ -421,7 +422,20 @@ export async function clawbackCommissionsForOwner(
     if (clawable(r.t2_status)) patch.t2_status = 'clawed_back'
     if (clawable(r.loyalty_bonus_status)) patch.loyalty_bonus_status = 'clawed_back'
     if (Object.keys(patch).length === 0) continue // already terminal on every tier — idempotent
-    await supabaseAdmin.from('commissions').update(patch).eq('id', r.id)
+    const { error: updErr } = await supabaseAdmin.from('commissions').update(patch).eq('id', r.id)
+    if (updErr) {
+      // Money-safety: PostgREST returns a rejected UPDATE (e.g. a missing 'clawed_back'
+      // CHECK migration) in `error`, NOT as a throw. Surface it LOUDLY and abort — never let a
+      // chargeback silently leave a rep paid on reversed money. The caller's non-blocking catch
+      // then logs it; Sentry alerts regardless.
+      Sentry.captureException(updErr, {
+        tags: { source: 'clawbackCommissionsForOwner' },
+        extra: { commissionId: r.id, ownerType, ownerId, patch },
+      })
+      throw new Error(
+        `clawbackCommissionsForOwner: update failed for ${r.id}: ${(updErr as { message?: string }).message ?? 'unknown'}`,
+      )
+    }
     await logAudit({
       commissionId: r.id,
       action: 'commission_chargeback_clawback',

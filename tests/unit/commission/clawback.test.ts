@@ -5,10 +5,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
  * Proves it is: owner-aware (center OR teacher), full-tier (T1 + T2 + loyalty, including
  * already-PAID tiers), and idempotent (terminal statuses are left untouched).
  */
+vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
+
 const S = vi.hoisted(() => ({
   rows: [] as unknown[], // rows the commissions SELECT returns
   updates: [] as { patch: Record<string, unknown>; eqs: Record<string, unknown> }[],
   selectEqs: [] as { table: string; col: string; val: unknown }[],
+  updateError: null as { message: string } | null, // injected error on the UPDATE
 }));
 
 vi.mock('@supabase/supabase-js', () => {
@@ -34,10 +37,10 @@ vi.mock('@supabase/supabase-js', () => {
     };
     b.maybeSingle = async () => ({ data: null, error: null });
     b.single = async () => ({ data: null, error: null });
-    b.then = (resolve: (v: { data: unknown; error: null }) => unknown) => {
+    b.then = (resolve: (v: { data: unknown; error: unknown }) => unknown) => {
       if (op === 'update') {
         S.updates.push({ patch, eqs });
-        return resolve({ data: null, error: null });
+        return resolve({ data: null, error: S.updateError });
       }
       if (op === 'insert') return resolve({ data: null, error: null });
       if (table === 'commissions') return resolve({ data: S.rows, error: null });
@@ -56,6 +59,7 @@ beforeEach(() => {
   S.rows = [];
   S.updates = [];
   S.selectEqs = [];
+  S.updateError = null;
 });
 
 describe('clawbackCommissionsForOwner', () => {
@@ -111,5 +115,12 @@ describe('clawbackCommissionsForOwner', () => {
     S.rows = [{ id: 'eyad', staff_id: null, t1_status: 'paid', t2_status: 'paid', loyalty_bonus_status: 'paid' }];
     await clawbackCommissionsForOwner('center', 'c1', 'chargeback');
     expect(S.updates).toHaveLength(0);
+  });
+
+  it('a REJECTED update (e.g. missing constraint migration) THROWS — never a silent skip', async () => {
+    // Money-safety: a chargeback must not silently leave a rep paid on reversed money.
+    S.rows = [{ id: 'r1', staff_id: 'sr1', t1_status: 'paid', t2_status: 'locked', loyalty_bonus_status: 'locked' }];
+    S.updateError = { message: 'new row violates check constraint "commissions_t2_status_check"' };
+    await expect(clawbackCommissionsForOwner('teacher', 't1', 'chargeback')).rejects.toThrow(/update failed/);
   });
 });
