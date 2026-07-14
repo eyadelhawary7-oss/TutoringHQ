@@ -84,6 +84,7 @@ TABLE platform_config rls=true force_rls=false
 TABLE pricing_plans rls=true force_rls=false
 TABLE privacy_requests rls=true force_rls=false
 TABLE promo_code_redemptions rls=true force_rls=false
+TABLE promo_code_requests rls=true force_rls=false
 TABLE promo_codes rls=true force_rls=false
 TABLE recurring_charge_declines rls=true force_rls=false
 TABLE referral_codes rls=true force_rls=false
@@ -114,12 +115,14 @@ TABLE students rls=true force_rls=false
 TABLE subjects rls=true force_rls=false
 TABLE subscriptions rls=true force_rls=false
 TABLE system_settings rls=true force_rls=false
+TABLE teacher_assignments rls=true force_rls=false
 TABLE teacher_center rls=true force_rls=false
 TABLE teacher_center_requests rls=true force_rls=false
 TABLE teacher_profiles rls=true force_rls=false
 TABLE teacher_signup_otps rls=true force_rls=false
 TABLE teacher_subscriptions rls=true force_rls=false
 TABLE transactions rls=true force_rls=false
+TABLE trial_claims rls=true force_rls=false
 TABLE upgrade_log rls=true force_rls=false
 TABLE users rls=true force_rls=false
 TABLE vendors rls=true force_rls=false
@@ -428,6 +431,7 @@ COLUMN center_assignments.dispute_notes ord=10 type=text notnull=false default=�
 COLUMN center_assignments.territory_city ord=11 type=text notnull=false default=∅
 COLUMN center_assignments.territory_override_reason ord=12 type=text notnull=false default=∅
 COLUMN center_assignments.referred_by_center ord=13 type=boolean notnull=true default=false
+COLUMN center_assignments.manager_staff_id ord=14 type=uuid notnull=false default=∅
 COLUMN center_expenses.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN center_expenses.center_id ord=2 type=uuid notnull=true default=∅
 COLUMN center_expenses.month ord=3 type=date notnull=true default=∅
@@ -684,7 +688,7 @@ COLUMN commission_payouts.paid_by ord=17 type=uuid notnull=false default=∅
 COLUMN commission_payouts.notes ord=18 type=text notnull=false default=∅
 COLUMN commission_payouts.created_at ord=19 type=timestamp with time zone notnull=true default=now()
 COLUMN commissions.id ord=1 type=uuid notnull=true default=gen_random_uuid()
-COLUMN commissions.center_id ord=2 type=uuid notnull=true default=∅
+COLUMN commissions.center_id ord=2 type=uuid notnull=false default=∅
 COLUMN commissions.staff_id ord=3 type=uuid notnull=false default=∅
 COLUMN commissions.role_at_time ord=4 type=text notnull=true default=∅
 COLUMN commissions.commission_type ord=5 type=text notnull=true default=∅
@@ -708,6 +712,8 @@ COLUMN commissions.loyalty_payout_id ord=22 type=uuid notnull=false default=∅
 COLUMN commissions.center_first_payment_date ord=23 type=date notnull=false default=∅
 COLUMN commissions.clock_pause_log ord=24 type=jsonb notnull=true default='[]'::jsonb
 COLUMN commissions.created_at ord=25 type=timestamp with time zone notnull=true default=now()
+COLUMN commissions.owner_type ord=26 type=text notnull=true default='center'::text
+COLUMN commissions.teacher_id ord=27 type=uuid notnull=false default=∅
 COLUMN content_access.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN content_access.content_item_id ord=2 type=uuid notnull=true default=∅
 COLUMN content_access.student_id ord=3 type=uuid notnull=true default=∅
@@ -1094,6 +1100,20 @@ COLUMN promo_code_redemptions.redeemed_at ord=5 type=timestamp with time zone no
 COLUMN promo_code_redemptions.paymob_order_id ord=6 type=text notnull=false default=∅
 COLUMN promo_code_redemptions.original_amount_egp ord=7 type=integer notnull=true default=∅
 COLUMN promo_code_redemptions.discount_amount_egp ord=8 type=integer notnull=true default=∅
+COLUMN promo_code_requests.id ord=1 type=uuid notnull=true default=gen_random_uuid()
+COLUMN promo_code_requests.requested_by ord=2 type=uuid notnull=false default=∅
+COLUMN promo_code_requests.requested_by_staff_id ord=3 type=uuid notnull=false default=∅
+COLUMN promo_code_requests.code ord=4 type=text notnull=false default=∅
+COLUMN promo_code_requests.discount_pct ord=5 type=integer notnull=true default=∅
+COLUMN promo_code_requests.max_uses_total ord=6 type=integer notnull=false default=∅
+COLUMN promo_code_requests.expires_at ord=7 type=timestamp with time zone notnull=false default=∅
+COLUMN promo_code_requests.target_type ord=8 type=text notnull=true default='all'::text
+COLUMN promo_code_requests.status ord=9 type=text notnull=true default='pending'::text
+COLUMN promo_code_requests.rejection_reason ord=10 type=text notnull=false default=∅
+COLUMN promo_code_requests.reviewed_by ord=11 type=uuid notnull=false default=∅
+COLUMN promo_code_requests.reviewed_at ord=12 type=timestamp with time zone notnull=false default=∅
+COLUMN promo_code_requests.created_promo_code_id ord=13 type=uuid notnull=false default=∅
+COLUMN promo_code_requests.created_at ord=14 type=timestamp with time zone notnull=true default=now()
 COLUMN promo_codes.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN promo_codes.code ord=2 type=text notnull=true default=∅
 COLUMN promo_codes.discount_pct ord=3 type=integer notnull=true default=∅
@@ -1297,6 +1317,7 @@ COLUMN staff.termination_type ord=13 type=text notnull=false default=∅
 COLUMN staff.notes ord=14 type=text notnull=false default=∅
 COLUMN staff.created_at ord=15 type=timestamp with time zone notnull=true default=now()
 COLUMN staff.updated_at ord=16 type=timestamp with time zone notnull=true default=now()
+COLUMN staff.user_id ord=17 type=uuid notnull=false default=∅
 COLUMN status_checks.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN status_checks.service ord=2 type=text notnull=true default=∅
 COLUMN status_checks.status ord=3 type=text notnull=true default=∅
@@ -1406,6 +1427,15 @@ COLUMN subscriptions.created_at ord=7 type=timestamp with time zone notnull=true
 COLUMN subscriptions.updated_at ord=8 type=timestamp with time zone notnull=true default=now()
 COLUMN system_settings.key ord=1 type=text notnull=true default=∅
 COLUMN system_settings.value ord=2 type=text notnull=true default=∅
+COLUMN teacher_assignments.id ord=1 type=uuid notnull=true default=gen_random_uuid()
+COLUMN teacher_assignments.teacher_id ord=2 type=uuid notnull=true default=∅
+COLUMN teacher_assignments.manager_staff_id ord=3 type=uuid notnull=false default=∅
+COLUMN teacher_assignments.staff_id ord=4 type=uuid notnull=false default=∅
+COLUMN teacher_assignments.assignment_status ord=5 type=text notnull=true default='approved'::text
+COLUMN teacher_assignments.is_primary ord=6 type=boolean notnull=true default=true
+COLUMN teacher_assignments.assigned_by ord=7 type=uuid notnull=false default=∅
+COLUMN teacher_assignments.sourced_by ord=8 type=text notnull=false default=∅
+COLUMN teacher_assignments.created_at ord=9 type=timestamp with time zone notnull=true default=now()
 COLUMN teacher_center.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN teacher_center.teacher_id ord=2 type=uuid notnull=true default=∅
 COLUMN teacher_center.center_id ord=3 type=uuid notnull=true default=∅
@@ -1525,6 +1555,10 @@ COLUMN transactions.created_by ord=37 type=uuid notnull=false default=∅
 COLUMN transactions.created_at ord=38 type=timestamp with time zone notnull=true default=now()
 COLUMN transactions.fee_reminder_count ord=39 type=integer notnull=true default=0
 COLUMN transactions.fee_reminder_last_at ord=40 type=timestamp with time zone notnull=false default=∅
+COLUMN trial_claims.id ord=1 type=uuid notnull=true default=gen_random_uuid()
+COLUMN trial_claims.phone ord=2 type=text notnull=true default=∅
+COLUMN trial_claims.center_id ord=3 type=uuid notnull=false default=∅
+COLUMN trial_claims.claimed_at ord=4 type=timestamp with time zone notnull=true default=now()
 COLUMN upgrade_log.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN upgrade_log.center_id ord=2 type=uuid notnull=true default=∅
 COLUMN upgrade_log.previous_plan ord=3 type=text notnull=true default=∅
@@ -1770,7 +1804,7 @@ CONSTRAINT admin_payments.admin_payments_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT admin_users.admin_users_email_key type=u def=UNIQUE (email)
 CONSTRAINT admin_users.admin_users_id_fkey type=f def=FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
 CONSTRAINT admin_users.admin_users_pkey type=p def=PRIMARY KEY (id)
-CONSTRAINT admin_users.admin_users_role_check type=c def=CHECK ((role = ANY (ARRAY['super_admin'::text, 'admin'::text, 'internal_admin'::text, 'internal_viewer'::text, 'sales_rep'::text, 'support_agent'::text, 'accountant'::text, 'custom'::text])))
+CONSTRAINT admin_users.admin_users_role_check type=c def=CHECK ((role = ANY (ARRAY['super_admin'::text, 'admin'::text, 'internal_admin'::text, 'internal_viewer'::text, 'sales_manager'::text, 'sales_rep'::text, 'support_agent'::text, 'accountant'::text, 'custom'::text])))
 CONSTRAINT announcement_blasts.announcement_blasts_billing_status_check type=c def=CHECK ((billing_status = ANY (ARRAY['pending'::text, 'charged'::text, 'included_in_renewal'::text])))
 CONSTRAINT announcement_blasts.announcement_blasts_blast_type_check type=c def=CHECK ((blast_type = ANY (ARRAY['ops'::text, 'promo'::text])))
 CONSTRAINT announcement_blasts.announcement_blasts_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id)
@@ -1873,10 +1907,11 @@ CONSTRAINT card_orders.card_orders_vendor_id_fkey type=f def=FOREIGN KEY (vendor
 CONSTRAINT center_assignments.center_assignments_assigned_by_fkey type=f def=FOREIGN KEY (assigned_by) REFERENCES admin_users(id)
 CONSTRAINT center_assignments.center_assignments_assignment_status_check type=c def=CHECK ((assignment_status = ANY (ARRAY['pending_sm_approval'::text, 'approved'::text, 'disputed'::text])))
 CONSTRAINT center_assignments.center_assignments_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT center_assignments.center_assignments_manager_staff_id_fkey type=f def=FOREIGN KEY (manager_staff_id) REFERENCES staff(id)
 CONSTRAINT center_assignments.center_assignments_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT center_assignments.center_assignments_sourced_by_check type=c def=CHECK ((sourced_by = ANY (ARRAY['eyad'::text, 'sm'::text, 'sr'::text])))
 CONSTRAINT center_assignments.center_assignments_staff_id_fkey type=f def=FOREIGN KEY (staff_id) REFERENCES staff(id)
-CONSTRAINT center_assignments.sourced_by_eyad_no_staff type=c def=CHECK ((((sourced_by = 'eyad'::text) AND (staff_id IS NULL)) OR ((sourced_by <> 'eyad'::text) AND (staff_id IS NOT NULL))))
+CONSTRAINT center_assignments.sourced_by_eyad_no_staff type=c def=CHECK ((((sourced_by = 'eyad'::text) AND (staff_id IS NULL)) OR ((sourced_by <> 'eyad'::text) AND ((staff_id IS NOT NULL) OR (manager_staff_id IS NOT NULL)))))
 CONSTRAINT center_expenses.center_expenses_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT center_expenses.center_expenses_center_id_month_key type=u def=UNIQUE (center_id, month)
 CONSTRAINT center_expenses.center_expenses_money_nonneg type=c def=CHECK ((((other IS NULL) OR (other >= (0)::numeric)) AND ((rent IS NULL) OR (rent >= (0)::numeric)) AND ((salaries IS NULL) OR (salaries >= (0)::numeric)) AND ((utilities IS NULL) OR (utilities >= (0)::numeric))))
@@ -1957,18 +1992,21 @@ CONSTRAINT commission_payouts.commission_payouts_status_check type=c def=CHECK (
 CONSTRAINT commission_payouts.period_format type=c def=CHECK ((period ~ '^\\d{4}-(0[1-9]|1[0-2])$'::text))
 CONSTRAINT commissions.commissions_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE RESTRICT
 CONSTRAINT commissions.commissions_commission_type_check type=c def=CHECK ((commission_type = ANY (ARRAY['self_sourced'::text, 'override'::text, 'delta_upgrade'::text])))
-CONSTRAINT commissions.commissions_loyalty_bonus_status_check type=c def=CHECK ((loyalty_bonus_status = ANY (ARRAY['locked'::text, 'eligible'::text, 'paid'::text, 'forfeited'::text])))
+CONSTRAINT commissions.commissions_loyalty_bonus_status_check type=c def=CHECK ((loyalty_bonus_status = ANY (ARRAY['locked'::text, 'eligible'::text, 'paid'::text, 'forfeited'::text, 'reassigned'::text])))
 CONSTRAINT commissions.commissions_loyalty_payout_id_fkey type=f def=FOREIGN KEY (loyalty_payout_id) REFERENCES commission_payouts(id) ON DELETE RESTRICT
 CONSTRAINT commissions.commissions_money_nonneg type=c def=CHECK (((loyalty_bonus_amount >= (0)::numeric) AND (t1_amount >= (0)::numeric) AND (t2_amount >= (0)::numeric) AND (total_commission >= (0)::numeric)))
+CONSTRAINT commissions.commissions_owner_exactly_one type=c def=CHECK ((((owner_type = 'center'::text) AND (center_id IS NOT NULL) AND (teacher_id IS NULL)) OR ((owner_type = 'teacher'::text) AND (teacher_id IS NOT NULL) AND (center_id IS NULL))))
+CONSTRAINT commissions.commissions_owner_type_check type=c def=CHECK ((owner_type = ANY (ARRAY['center'::text, 'teacher'::text])))
 CONSTRAINT commissions.commissions_parent_commission_id_fkey type=f def=FOREIGN KEY (parent_commission_id) REFERENCES commissions(id)
 CONSTRAINT commissions.commissions_pkey type=p def=PRIMARY KEY (id)
-CONSTRAINT commissions.commissions_plan_at_signing_check type=c def=CHECK ((plan_at_signing = ANY (ARRAY['nano'::text, 'starter'::text, 'pro'::text, 'business'::text, 'enterprise'::text, 'top_centers'::text])))
+CONSTRAINT commissions.commissions_plan_at_signing_check type=c def=CHECK ((plan_at_signing = ANY (ARRAY['solo'::text, 'nano'::text, 'starter'::text, 'pro'::text, 'business'::text, 'enterprise'::text, 'top_centers'::text, 'teacher_standard'::text, 'teacher_pro'::text, 'teacher_scale'::text])))
 CONSTRAINT commissions.commissions_role_at_time_check type=c def=CHECK ((role_at_time = ANY (ARRAY['sm'::text, 'sr'::text, 'eyad'::text])))
 CONSTRAINT commissions.commissions_staff_id_fkey type=f def=FOREIGN KEY (staff_id) REFERENCES staff(id)
 CONSTRAINT commissions.commissions_t1_payout_id_fkey type=f def=FOREIGN KEY (t1_payout_id) REFERENCES commission_payouts(id) ON DELETE RESTRICT
-CONSTRAINT commissions.commissions_t1_status_check type=c def=CHECK ((t1_status = ANY (ARRAY['pending'::text, 'eligible'::text, 'paid'::text, 'clawed_back'::text])))
+CONSTRAINT commissions.commissions_t1_status_check type=c def=CHECK ((t1_status = ANY (ARRAY['pending'::text, 'eligible'::text, 'paid'::text, 'clawed_back'::text, 'reassigned'::text])))
 CONSTRAINT commissions.commissions_t2_payout_id_fkey type=f def=FOREIGN KEY (t2_payout_id) REFERENCES commission_payouts(id) ON DELETE RESTRICT
-CONSTRAINT commissions.commissions_t2_status_check type=c def=CHECK ((t2_status = ANY (ARRAY['locked'::text, 'eligible'::text, 'paid'::text, 'forfeited'::text])))
+CONSTRAINT commissions.commissions_t2_status_check type=c def=CHECK ((t2_status = ANY (ARRAY['locked'::text, 'eligible'::text, 'paid'::text, 'forfeited'::text, 'reassigned'::text])))
+CONSTRAINT commissions.commissions_teacher_id_fkey type=f def=FOREIGN KEY (teacher_id) REFERENCES teacher_profiles(user_id) ON DELETE RESTRICT
 CONSTRAINT content_access.content_access_access_code_key type=u def=UNIQUE (access_code)
 CONSTRAINT content_access.content_access_content_item_id_fkey type=f def=FOREIGN KEY (content_item_id) REFERENCES content_items(id) ON DELETE CASCADE
 CONSTRAINT content_access.content_access_pkey type=p def=PRIMARY KEY (id)
@@ -2115,7 +2153,7 @@ CONSTRAINT pin_setup_tokens.pin_setup_tokens_hash_absent_for_webhook type=c def=
 CONSTRAINT pin_setup_tokens.pin_setup_tokens_hash_required_for_fallback type=c def=CHECK (((source <> 'fallback_link'::text) OR (token_hash IS NOT NULL)))
 CONSTRAINT pin_setup_tokens.pin_setup_tokens_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT pin_setup_tokens.pin_setup_tokens_source_check type=c def=CHECK ((source = ANY (ARRAY['webhook_paymob'::text, 'fallback_link'::text])))
-CONSTRAINT pin_setup_tokens.pin_setup_tokens_user_id_fkey type=f def=FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+CONSTRAINT pin_setup_tokens.pin_setup_tokens_user_id_fkey type=f def=FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 CONSTRAINT plan_requests.plan_requests_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id)
 CONSTRAINT plan_requests.plan_requests_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT plan_requests.plan_requests_status_check type=c def=CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text, 'pending_downgrade'::text, 'pending_payment'::text])))
@@ -2131,6 +2169,15 @@ CONSTRAINT privacy_requests.privacy_requests_status_check type=c def=CHECK ((sta
 CONSTRAINT promo_code_redemptions.promo_code_redemptions_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT promo_code_redemptions.promo_code_redemptions_promo_code_id_fkey type=f def=FOREIGN KEY (promo_code_id) REFERENCES promo_codes(id)
 CONSTRAINT promo_code_redemptions.promo_code_redemptions_unique_center type=u def=UNIQUE (promo_code_id, center_id)
+CONSTRAINT promo_code_requests.promo_code_requests_created_promo_code_id_fkey type=f def=FOREIGN KEY (created_promo_code_id) REFERENCES promo_codes(id) ON DELETE SET NULL
+CONSTRAINT promo_code_requests.promo_code_requests_discount_pct_check type=c def=CHECK (((discount_pct >= 1) AND (discount_pct <= 100)))
+CONSTRAINT promo_code_requests.promo_code_requests_max_uses_total_check type=c def=CHECK (((max_uses_total IS NULL) OR (max_uses_total >= 1)))
+CONSTRAINT promo_code_requests.promo_code_requests_pkey type=p def=PRIMARY KEY (id)
+CONSTRAINT promo_code_requests.promo_code_requests_requested_by_fkey type=f def=FOREIGN KEY (requested_by) REFERENCES admin_users(id) ON DELETE SET NULL
+CONSTRAINT promo_code_requests.promo_code_requests_requested_by_staff_id_fkey type=f def=FOREIGN KEY (requested_by_staff_id) REFERENCES staff(id) ON DELETE SET NULL
+CONSTRAINT promo_code_requests.promo_code_requests_reviewed_by_fkey type=f def=FOREIGN KEY (reviewed_by) REFERENCES admin_users(id) ON DELETE SET NULL
+CONSTRAINT promo_code_requests.promo_code_requests_status_check type=c def=CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))
+CONSTRAINT promo_code_requests.promo_code_requests_target_type_check type=c def=CHECK ((target_type = ANY (ARRAY['center'::text, 'teacher'::text, 'all'::text])))
 CONSTRAINT promo_codes.promo_codes_code_unique type=u def=UNIQUE (code)
 CONSTRAINT promo_codes.promo_codes_code_upper type=c def=CHECK ((code = upper(code)))
 CONSTRAINT promo_codes.promo_codes_discount_pct_check type=c def=CHECK (((discount_pct > 0) AND (discount_pct <= 100)))
@@ -2223,6 +2270,8 @@ CONSTRAINT staff.staff_reports_to_fkey type=f def=FOREIGN KEY (reports_to) REFER
 CONSTRAINT staff.staff_role_check type=c def=CHECK ((role = ANY (ARRAY['sm'::text, 'sr'::text])))
 CONSTRAINT staff.staff_status_check type=c def=CHECK ((status = ANY (ARRAY['active'::text, 'inactive'::text, 'terminated'::text])))
 CONSTRAINT staff.staff_termination_type_check type=c def=CHECK ((termination_type = ANY (ARRAY['resigned'::text, 'terminated'::text, 'completed'::text])))
+CONSTRAINT staff.staff_user_id_fkey type=f def=FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE SET NULL
+CONSTRAINT staff.staff_user_id_key type=u def=UNIQUE (user_id)
 CONSTRAINT status_checks.status_checks_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT status_checks.status_checks_status_check type=c def=CHECK ((status = ANY (ARRAY['operational'::text, 'degraded'::text, 'outage'::text])))
 CONSTRAINT status_incidents.status_incidents_pkey type=p def=PRIMARY KEY (id)
@@ -2279,6 +2328,13 @@ CONSTRAINT subscriptions.subscriptions_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT subscriptions.subscriptions_plan_check type=c def=CHECK ((plan = ANY (ARRAY['starter'::text, 'pro'::text, 'enterprise'::text])))
 CONSTRAINT subscriptions.subscriptions_status_check type=c def=CHECK ((status = ANY (ARRAY['active'::text, 'past_due'::text, 'suspended'::text, 'cancelled'::text])))
 CONSTRAINT system_settings.system_settings_pkey type=p def=PRIMARY KEY (key)
+CONSTRAINT teacher_assignments.teacher_assignments_assigned_by_fkey type=f def=FOREIGN KEY (assigned_by) REFERENCES admin_users(id)
+CONSTRAINT teacher_assignments.teacher_assignments_assignment_status_check type=c def=CHECK ((assignment_status = ANY (ARRAY['pending_sm_approval'::text, 'approved'::text, 'disputed'::text])))
+CONSTRAINT teacher_assignments.teacher_assignments_manager_staff_id_fkey type=f def=FOREIGN KEY (manager_staff_id) REFERENCES staff(id)
+CONSTRAINT teacher_assignments.teacher_assignments_pkey type=p def=PRIMARY KEY (id)
+CONSTRAINT teacher_assignments.teacher_assignments_sourced_by_check type=c def=CHECK ((sourced_by = ANY (ARRAY['eyad'::text, 'sm'::text, 'sr'::text])))
+CONSTRAINT teacher_assignments.teacher_assignments_staff_id_fkey type=f def=FOREIGN KEY (staff_id) REFERENCES staff(id)
+CONSTRAINT teacher_assignments.teacher_assignments_teacher_id_fkey type=f def=FOREIGN KEY (teacher_id) REFERENCES teacher_profiles(user_id) ON DELETE CASCADE
 CONSTRAINT teacher_center.teacher_center_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT teacher_center.teacher_center_invited_by_fkey type=f def=FOREIGN KEY (invited_by) REFERENCES users(id) ON DELETE SET NULL
 CONSTRAINT teacher_center.teacher_center_pkey type=p def=PRIMARY KEY (id)
@@ -2331,6 +2387,9 @@ CONSTRAINT transactions.transactions_snap_processing_flat_nonneg type=c def=CHEC
 CONSTRAINT transactions.transactions_status_chk type=c def=CHECK ((status = ANY (ARRAY['pending'::text, 'paid'::text, 'failed'::text, 'cancelled'::text])))
 CONSTRAINT transactions.transactions_student_id_fkey type=f def=FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE RESTRICT
 CONSTRAINT transactions.transactions_teacher_id_fkey type=f def=FOREIGN KEY (teacher_id) REFERENCES teacher_profiles(user_id) ON DELETE RESTRICT
+CONSTRAINT trial_claims.trial_claims_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE SET NULL
+CONSTRAINT trial_claims.trial_claims_phone_key type=u def=UNIQUE (phone)
+CONSTRAINT trial_claims.trial_claims_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT upgrade_log.upgrade_log_amount_charged_nonneg type=c def=CHECK ((amount_charged >= (0)::numeric))
 CONSTRAINT upgrade_log.upgrade_log_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE RESTRICT
 CONSTRAINT upgrade_log.upgrade_log_center_id_paymob_order_id_key type=u def=UNIQUE (center_id, paymob_order_id)
@@ -2463,6 +2522,7 @@ INDEX idx_card_orders_created_by ON card_orders def=CREATE INDEX idx_card_orders
 INDEX idx_card_orders_payment_status ON card_orders def=CREATE INDEX idx_card_orders_payment_status ON public.card_orders USING btree (payment_status)
 INDEX idx_card_orders_paymob ON card_orders def=CREATE INDEX idx_card_orders_paymob ON public.card_orders USING btree (paymob_order_id) WHERE (paymob_order_id IS NOT NULL)
 INDEX idx_card_orders_tracking ON card_orders def=CREATE INDEX idx_card_orders_tracking ON public.card_orders USING btree (tracking_number) WHERE (tracking_number IS NOT NULL)
+INDEX idx_center_assignments_manager_staff_id ON center_assignments def=CREATE INDEX idx_center_assignments_manager_staff_id ON public.center_assignments USING btree (manager_staff_id) WHERE (manager_staff_id IS NOT NULL)
 INDEX idx_center_assignments_staff_id ON center_assignments def=CREATE INDEX idx_center_assignments_staff_id ON public.center_assignments USING btree (staff_id) WHERE (staff_id IS NOT NULL)
 INDEX idx_center_assignments_status ON center_assignments def=CREATE INDEX idx_center_assignments_status ON public.center_assignments USING btree (assignment_status)
 INDEX one_primary_per_center ON center_assignments def=CREATE UNIQUE INDEX one_primary_per_center ON public.center_assignments USING btree (center_id) WHERE (is_primary = true)
@@ -2513,8 +2573,11 @@ INDEX idx_commissions_loyalty_status ON commissions def=CREATE INDEX idx_commiss
 INDEX idx_commissions_staff_id ON commissions def=CREATE INDEX idx_commissions_staff_id ON public.commissions USING btree (staff_id) WHERE (staff_id IS NOT NULL)
 INDEX idx_commissions_staff_t1 ON commissions def=CREATE INDEX idx_commissions_staff_t1 ON public.commissions USING btree (staff_id, t1_status) WHERE (staff_id IS NOT NULL)
 INDEX idx_commissions_t2_status ON commissions def=CREATE INDEX idx_commissions_t2_status ON public.commissions USING btree (t2_status, center_first_payment_date) WHERE ((t2_status = 'locked'::text) AND (center_first_payment_date IS NOT NULL))
-INDEX one_commission_per_center_staff_type ON commissions def=CREATE UNIQUE INDEX one_commission_per_center_staff_type ON public.commissions USING btree (center_id, staff_id, commission_type) WHERE (staff_id IS NOT NULL)
-INDEX one_eyad_commission_per_center ON commissions def=CREATE UNIQUE INDEX one_eyad_commission_per_center ON public.commissions USING btree (center_id) WHERE (staff_id IS NULL)
+INDEX idx_commissions_teacher ON commissions def=CREATE INDEX idx_commissions_teacher ON public.commissions USING btree (teacher_id) WHERE (teacher_id IS NOT NULL)
+INDEX one_commission_per_center_staff_type ON commissions def=CREATE UNIQUE INDEX one_commission_per_center_staff_type ON public.commissions USING btree (center_id, staff_id, commission_type) WHERE ((staff_id IS NOT NULL) AND (center_id IS NOT NULL))
+INDEX one_commission_per_teacher_staff_type ON commissions def=CREATE UNIQUE INDEX one_commission_per_teacher_staff_type ON public.commissions USING btree (teacher_id, staff_id, commission_type) WHERE ((staff_id IS NOT NULL) AND (teacher_id IS NOT NULL))
+INDEX one_eyad_commission_per_center ON commissions def=CREATE UNIQUE INDEX one_eyad_commission_per_center ON public.commissions USING btree (center_id) WHERE ((staff_id IS NULL) AND (center_id IS NOT NULL))
+INDEX one_eyad_commission_per_teacher ON commissions def=CREATE UNIQUE INDEX one_eyad_commission_per_teacher ON public.commissions USING btree (teacher_id) WHERE ((staff_id IS NULL) AND (teacher_id IS NOT NULL))
 INDEX idx_content_access_item ON content_access def=CREATE INDEX idx_content_access_item ON public.content_access USING btree (content_item_id)
 INDEX idx_content_access_student ON content_access def=CREATE INDEX idx_content_access_student ON public.content_access USING btree (student_id)
 INDEX idx_content_access_log_code ON content_access_log def=CREATE INDEX idx_content_access_log_code ON public.content_access_log USING btree (access_code)
@@ -2593,6 +2656,8 @@ INDEX idx_privacy_requests_status ON privacy_requests def=CREATE INDEX idx_priva
 INDEX idx_pcr_center_id ON promo_code_redemptions def=CREATE INDEX idx_pcr_center_id ON public.promo_code_redemptions USING btree (center_id)
 INDEX idx_pcr_promo_code_id ON promo_code_redemptions def=CREATE INDEX idx_pcr_promo_code_id ON public.promo_code_redemptions USING btree (promo_code_id)
 INDEX idx_pcr_user_id ON promo_code_redemptions def=CREATE INDEX idx_pcr_user_id ON public.promo_code_redemptions USING btree (user_id)
+INDEX idx_promo_code_requests_requested_by ON promo_code_requests def=CREATE INDEX idx_promo_code_requests_requested_by ON public.promo_code_requests USING btree (requested_by) WHERE (requested_by IS NOT NULL)
+INDEX idx_promo_code_requests_status ON promo_code_requests def=CREATE INDEX idx_promo_code_requests_status ON public.promo_code_requests USING btree (status)
 INDEX idx_promo_codes_code ON promo_codes def=CREATE INDEX idx_promo_codes_code ON public.promo_codes USING btree (code)
 INDEX idx_promo_codes_is_active ON promo_codes def=CREATE INDEX idx_promo_codes_is_active ON public.promo_codes USING btree (is_active)
 INDEX recurring_charge_declines_code_idx ON recurring_charge_declines def=CREATE INDEX recurring_charge_declines_code_idx ON public.recurring_charge_declines USING btree (decline_code, created_at)
@@ -2631,6 +2696,7 @@ INDEX idx_schedule_teacher ON schedule_slots def=CREATE INDEX idx_schedule_teach
 INDEX idx_sessions_billing ON sessions def=CREATE INDEX idx_sessions_billing ON public.sessions USING btree (status, billed)
 INDEX idx_sessions_group_time ON sessions def=CREATE INDEX idx_sessions_group_time ON public.sessions USING btree (group_id, scheduled_at)
 INDEX idx_sessions_schedule ON sessions def=CREATE INDEX idx_sessions_schedule ON public.sessions USING btree (schedule_id)
+INDEX idx_staff_user_id ON staff def=CREATE INDEX idx_staff_user_id ON public.staff USING btree (user_id)
 INDEX idx_status_checks_service_time ON status_checks def=CREATE INDEX idx_status_checks_service_time ON public.status_checks USING btree (service, checked_at DESC)
 INDEX idx_status_incidents_resolved ON status_incidents def=CREATE INDEX idx_status_incidents_resolved ON public.status_incidents USING btree (resolved_at) WHERE (resolved_at IS NULL)
 INDEX idx_status_incidents_started ON status_incidents def=CREATE INDEX idx_status_incidents_started ON public.status_incidents USING btree (started_at DESC)
@@ -2658,6 +2724,10 @@ INDEX idx_students_waitlist_group ON students def=CREATE INDEX idx_students_wait
 INDEX idx_subjects_center ON subjects def=CREATE INDEX idx_subjects_center ON public.subjects USING btree (center_id)
 INDEX idx_subs_center ON subscriptions def=CREATE INDEX idx_subs_center ON public.subscriptions USING btree (center_id)
 INDEX idx_subs_status ON subscriptions def=CREATE INDEX idx_subs_status ON public.subscriptions USING btree (status)
+INDEX idx_teacher_assignments_manager_staff_id ON teacher_assignments def=CREATE INDEX idx_teacher_assignments_manager_staff_id ON public.teacher_assignments USING btree (manager_staff_id) WHERE (manager_staff_id IS NOT NULL)
+INDEX idx_teacher_assignments_staff_id ON teacher_assignments def=CREATE INDEX idx_teacher_assignments_staff_id ON public.teacher_assignments USING btree (staff_id) WHERE (staff_id IS NOT NULL)
+INDEX idx_teacher_assignments_status ON teacher_assignments def=CREATE INDEX idx_teacher_assignments_status ON public.teacher_assignments USING btree (assignment_status)
+INDEX one_primary_per_teacher ON teacher_assignments def=CREATE UNIQUE INDEX one_primary_per_teacher ON public.teacher_assignments USING btree (teacher_id) WHERE (is_primary = true)
 INDEX idx_teacher_center_center ON teacher_center def=CREATE INDEX idx_teacher_center_center ON public.teacher_center USING btree (center_id)
 INDEX teacher_center_requests_center_idx ON teacher_center_requests def=CREATE INDEX teacher_center_requests_center_idx ON public.teacher_center_requests USING btree (center_id, status, created_at DESC)
 INDEX teacher_center_requests_pending_unique ON teacher_center_requests def=CREATE UNIQUE INDEX teacher_center_requests_pending_unique ON public.teacher_center_requests USING btree (teacher_id, center_id) WHERE (status = 'pending'::text)
