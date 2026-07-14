@@ -60,7 +60,7 @@ beforeEach(() => {
 
 describe('clawbackCommissionsForOwner', () => {
   it('TEACHER-aware: queries by teacher_id and reverses ALL live tiers (incl. already PAID)', async () => {
-    S.rows = [{ id: 'r1', t1_status: 'paid', t2_status: 'eligible', loyalty_bonus_status: 'locked' }];
+    S.rows = [{ id: 'r1', staff_id: 'sr1', t1_status: 'paid', t2_status: 'eligible', loyalty_bonus_status: 'locked' }];
     await clawbackCommissionsForOwner('teacher', 't1', 'chargeback');
 
     // Selected by teacher_id (not center_id).
@@ -78,7 +78,7 @@ describe('clawbackCommissionsForOwner', () => {
   });
 
   it('CENTER-aware: queries by center_id', async () => {
-    S.rows = [{ id: 'c-row', t1_status: 'eligible', t2_status: 'locked', loyalty_bonus_status: 'locked' }];
+    S.rows = [{ id: 'c-row', staff_id: 'sr1', t1_status: 'eligible', t2_status: 'locked', loyalty_bonus_status: 'locked' }];
     await clawbackCommissionsForOwner('center', 'c1', 'chargeback');
     expect(commissionEqs().some((e) => e.col === 'center_id' && e.val === 'c1')).toBe(true);
     expect(commissionEqs().some((e) => e.col === 'teacher_id')).toBe(false);
@@ -90,13 +90,13 @@ describe('clawbackCommissionsForOwner', () => {
   });
 
   it('IDEMPOTENT: a row already terminal on every tier is not updated', async () => {
-    S.rows = [{ id: 'r1', t1_status: 'reassigned', t2_status: 'forfeited', loyalty_bonus_status: 'clawed_back' }];
+    S.rows = [{ id: 'r1', staff_id: 'sr1', t1_status: 'reassigned', t2_status: 'forfeited', loyalty_bonus_status: 'clawed_back' }];
     await clawbackCommissionsForOwner('teacher', 't1', 'chargeback');
     expect(S.updates).toHaveLength(0);
   });
 
   it('MIXED: only the still-live tiers flip; terminal tiers are preserved', async () => {
-    S.rows = [{ id: 'r1', t1_status: 'paid', t2_status: 'reassigned', loyalty_bonus_status: 'locked' }];
+    S.rows = [{ id: 'r1', staff_id: 'sr1', t1_status: 'paid', t2_status: 'reassigned', loyalty_bonus_status: 'locked' }];
     await clawbackCommissionsForOwner('teacher', 't1', 'chargeback');
     expect(S.updates).toHaveLength(1);
     // T2 was already 'reassigned' → left as-is; only T1 + loyalty flip.
@@ -104,5 +104,12 @@ describe('clawbackCommissionsForOwner', () => {
       t1_status: 'clawed_back',
       loyalty_bonus_status: 'clawed_back',
     });
+  });
+
+  it('NEVER claws the CEO-sourced eyad zero row (staff_id null) — keeps "CEO-sourced pays zero forever"', async () => {
+    // The eyad zero row is all-'paid' at 0; clawing it would break once-per-customer.
+    S.rows = [{ id: 'eyad', staff_id: null, t1_status: 'paid', t2_status: 'paid', loyalty_bonus_status: 'paid' }];
+    await clawbackCommissionsForOwner('center', 'c1', 'chargeback');
+    expect(S.updates).toHaveLength(0);
   });
 });

@@ -402,15 +402,20 @@ export async function clawbackCommissionsForOwner(
   const ownerCol = ownerType === 'center' ? 'center_id' : 'teacher_id'
   const { data: rows } = await supabaseAdmin
     .from('commissions')
-    .select('id, t1_status, t2_status, loyalty_bonus_status')
+    .select('id, staff_id, t1_status, t2_status, loyalty_bonus_status')
     .eq(ownerCol, ownerId)
   const clawable = (s: unknown) => (CLAWBACKABLE_TIER_STATUSES as readonly string[]).includes(String(s))
   for (const r of (rows ?? []) as {
     id: string
+    staff_id: string | null
     t1_status: string
     t2_status: string
     loyalty_bonus_status: string
   }[]) {
+    // NEVER claw the CEO-sourced 'eyad' zero row (staff_id null): nobody is owed on it, and
+    // its tiers are the 'paid'-at-0 marker that keeps once-per-customer intact — flipping it
+    // to 'clawed_back' would let a later reassigned rep earn on a CEO-sourced customer.
+    if (!r.staff_id) continue
     const patch: Record<string, unknown> = {}
     if (clawable(r.t1_status)) patch.t1_status = 'clawed_back'
     if (clawable(r.t2_status)) patch.t2_status = 'clawed_back'
