@@ -19,8 +19,9 @@
 // is what let the old `ignoreDuplicates` upsert fall through to a duplicate INSERT.
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import * as Sentry from '@sentry/nextjs'
 import { computeRepCommission, computeOverride } from '@/lib/commission/rates'
-import { resolveOwnerMonthlyPrice, type OwnerType as _OwnerType } from '@/lib/commission/ownerFinancials'
+import { resolveOwnerConversionMonthlyPrice, type OwnerType as _OwnerType } from '@/lib/commission/ownerFinancials'
 
 let cachedAdmin: SupabaseClient | null = null
 
@@ -111,7 +112,11 @@ async function findCommissionId(
  * the real 1%-of-12-months amount when it unlocks.
  */
 export async function createCommissionsForOwner(ownerType: OwnerType, ownerId: string): Promise<void> {
-  const priced = await resolveOwnerMonthlyPrice(supabaseAdmin, ownerType, ownerId)
+  // Conversion base = the per-month plan price ACTUALLY paid after any one-time promo (T1).
+  // Negotiated / early-adopter prices flow through (they're inside the standing rate this
+  // starts from). The T2 cron reprices the second half from the current standing price at the
+  // 6-month mark, where the one-time promo no longer applies.
+  const priced = await resolveOwnerConversionMonthlyPrice(supabaseAdmin, ownerType, ownerId)
   if (!priced) return
   const { monthly, planKey } = priced
 
@@ -299,25 +304,28 @@ export async function reassignCommissions(
   // eyad zero-row, settled at 0 by design) must never become payable again on the
   // incoming rep's fresh row. Computed per family (rep vs override) from the
   // pre-reassignment snapshot.
-  const priorPaid = (isOverride: boolean, tier: 't1_status' | 't2_status' | 'loyalty_bonus_status') =>
+  // A tier a prior rep/manager already CONSUMED must never become earnable on the incoming
+  // rep's fresh row: 'paid' (once-per-customer, already earned) OR 'clawed_back' (a chargeback
+  // reversal — resurrecting it would pay a new rep on funds the card issuer took back).
+  const priorConsumed = (isOverride: boolean, tier: 't1_status' | 't2_status' | 'loyalty_bonus_status') =>
     rows.some(
       (r) =>
         (r.commission_type === 'override') === isOverride &&
         r.staff_id !== newStaffId &&
-        r[tier] === 'paid',
+        (r[tier] === 'paid' || r[tier] === 'clawed_back'),
     )
 
-  // Void the OLD rep's + old manager's unearned tiers. A 'paid' tier is left as-is
-  // (already earned money is never clawed back here); only pending/eligible/locked
-  // tiers flip to 'reassigned'. The incoming rep's own rows and the (unchanged)
-  // manager's override are untouched.
+  // Only UNEARNED, still-live tiers are voided to 'reassigned'. Every terminal tier is left
+  // intact: 'paid' (earned — never clawed back here), 'clawed_back' (chargeback-reversed — must
+  // stay reversed, never flipped to an earnable transfer), 'forfeited', and existing 'reassigned'.
+  const isLiveTier = (s: string) => s === 'pending' || s === 'eligible' || s === 'locked'
   for (const r of rows) {
     if (r.staff_id === newStaffId) continue // the incoming rep — nothing to void
     if (r.commission_type === 'override' && r.staff_id != null && r.staff_id === newRepManager) continue // same manager — keep
     const patch: Record<string, unknown> = {}
-    if (r.t1_status !== 'paid') patch.t1_status = 'reassigned'
-    if (r.t2_status !== 'paid') patch.t2_status = 'reassigned'
-    if (r.loyalty_bonus_status !== 'paid') patch.loyalty_bonus_status = 'reassigned'
+    if (isLiveTier(r.t1_status)) patch.t1_status = 'reassigned'
+    if (isLiveTier(r.t2_status)) patch.t2_status = 'reassigned'
+    if (isLiveTier(r.loyalty_bonus_status)) patch.loyalty_bonus_status = 'reassigned'
     if (Object.keys(patch).length === 0) continue
     await supabaseAdmin.from('commissions').update(patch).eq('id', r.id)
     await logAudit({
@@ -355,7 +363,7 @@ export async function reassignCommissions(
         center_first_payment_date: firstPaymentDate,
         // T1: already paid to a prior rep → terminally suppressed; else the owner
         // has converted, so the (unearned, voided-off-the-old-rep) T1 transfers eligible.
-        t1_status: priorPaid(isOv, 't1_status')
+        t1_status: priorConsumed(isOv, 't1_status')
           ? 'reassigned'
           : r.t1_status === 'pending'
             ? 'eligible'
@@ -363,35 +371,85 @@ export async function reassignCommissions(
       }
       // T2 / loyalty: if already paid out once, the crons must never unlock the
       // fresh row — suppress; otherwise leave 'locked' for the normal 180/365-day unlock.
-      if (priorPaid(isOv, 't2_status')) patch.t2_status = 'reassigned'
-      if (priorPaid(isOv, 'loyalty_bonus_status')) patch.loyalty_bonus_status = 'reassigned'
+      if (priorConsumed(isOv, 't2_status')) patch.t2_status = 'reassigned'
+      if (priorConsumed(isOv, 'loyalty_bonus_status')) patch.loyalty_bonus_status = 'reassigned'
       await supabaseAdmin.from('commissions').update(patch).eq('id', r.id)
       await logAudit({
         commissionId: r.id,
         action: 'commission_reassigned_transfer',
         triggeredBy: 'manual',
-        newValue: { ...patch, once_per_customer_suppressed: priorPaid(isOv, 't1_status') || priorPaid(isOv, 't2_status') || priorPaid(isOv, 'loyalty_bonus_status') },
+        newValue: { ...patch, once_per_customer_suppressed: priorConsumed(isOv, 't1_status') || priorConsumed(isOv, 't2_status') || priorConsumed(isOv, 'loyalty_bonus_status') },
       })
     }
   }
 }
 
-export async function clawbackCommissions(centerId: string, adminId: string, reason: string): Promise<void> {
+/** Tier statuses that a genuine chargeback reverses. Terminal states
+ * (reassigned / forfeited / clawed_back) are already settled and left untouched. */
+const CLAWBACKABLE_TIER_STATUSES = ['pending', 'eligible', 'locked', 'paid'] as const
+
+/**
+ * Reverse commission on a GENUINE payment chargeback (the Paymob void/refund path,
+ * `finalizeInvoiceChargeback`) — NEVER on a cancellation, suspension, or blacklist/ban.
+ *
+ * Owner-aware (center OR teacher) and FULL-TIER: the first half (T1), the second half (T2),
+ * AND the loyalty bonus are all reversed to 'clawed_back' — including tiers already paid out,
+ * because the underlying money was reversed by the card issuer. Terminal tiers
+ * (reassigned/forfeited/already clawed_back) are skipped, so the call is idempotent (a retried
+ * chargeback webhook re-runs it harmlessly).
+ */
+export async function clawbackCommissionsForOwner(
+  ownerType: OwnerType,
+  ownerId: string,
+  reason: string,
+): Promise<void> {
+  const ownerCol = ownerType === 'center' ? 'center_id' : 'teacher_id'
   const { data: rows } = await supabaseAdmin
     .from('commissions')
-    .select('id, t1_status')
-    .eq('center_id', centerId)
-    .in('t1_status', ['pending', 'eligible', 'paid'])
-  for (const row of rows ?? []) {
-    await supabaseAdmin.from('commissions').update({ t1_status: 'clawed_back' }).eq('id', row.id)
+    .select('id, staff_id, t1_status, t2_status, loyalty_bonus_status')
+    .eq(ownerCol, ownerId)
+  const clawable = (s: unknown) => (CLAWBACKABLE_TIER_STATUSES as readonly string[]).includes(String(s))
+  for (const r of (rows ?? []) as {
+    id: string
+    staff_id: string | null
+    t1_status: string
+    t2_status: string
+    loyalty_bonus_status: string
+  }[]) {
+    // NEVER claw the CEO-sourced 'eyad' zero row (staff_id null): nobody is owed on it, and
+    // its tiers are the 'paid'-at-0 marker that keeps once-per-customer intact — flipping it
+    // to 'clawed_back' would let a later reassigned rep earn on a CEO-sourced customer.
+    if (!r.staff_id) continue
+    const patch: Record<string, unknown> = {}
+    if (clawable(r.t1_status)) patch.t1_status = 'clawed_back'
+    if (clawable(r.t2_status)) patch.t2_status = 'clawed_back'
+    if (clawable(r.loyalty_bonus_status)) patch.loyalty_bonus_status = 'clawed_back'
+    if (Object.keys(patch).length === 0) continue // already terminal on every tier — idempotent
+    const { error: updErr } = await supabaseAdmin.from('commissions').update(patch).eq('id', r.id)
+    if (updErr) {
+      // Money-safety: PostgREST returns a rejected UPDATE (e.g. a missing 'clawed_back'
+      // CHECK migration) in `error`, NOT as a throw. Surface it LOUDLY and abort — never let a
+      // chargeback silently leave a rep paid on reversed money. The caller's non-blocking catch
+      // then logs it; Sentry alerts regardless.
+      Sentry.captureException(updErr, {
+        tags: { source: 'clawbackCommissionsForOwner' },
+        extra: { commissionId: r.id, ownerType, ownerId, patch },
+      })
+      throw new Error(
+        `clawbackCommissionsForOwner: update failed for ${r.id}: ${(updErr as { message?: string }).message ?? 'unknown'}`,
+      )
+    }
     await logAudit({
-      commissionId: row.id,
-      action: 't1_clawback',
-      triggeredBy: 'manual',
-      performedBy: adminId,
+      commissionId: r.id,
+      action: 'commission_chargeback_clawback',
+      triggeredBy: 'webhook',
       reason,
-      previousValue: { t1_status: row.t1_status },
-      newValue: { t1_status: 'clawed_back' },
+      previousValue: {
+        t1_status: r.t1_status,
+        t2_status: r.t2_status,
+        loyalty_bonus_status: r.loyalty_bonus_status,
+      },
+      newValue: patch,
     })
   }
 }

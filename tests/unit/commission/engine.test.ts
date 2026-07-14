@@ -81,6 +81,26 @@ describe('createCommissionsForOwner — rep + manager override (teacher, monthly
   });
 });
 
+describe('createCommissionsForOwner — rep base reflects a one-time promo (FIX 3)', () => {
+  it('T1/T2 halves + the override come off the POST-promo price (2000 → 10% promo → base 1800)', async () => {
+    S.reads.teacher_subscriptions = { plan_key: 'teacher_pro', price_gross: 2000 };
+    S.reads.teacher_assignments = { staff_id: 'sr1', sourced_by: 'sr', assignment_status: 'approved' };
+    S.reads.staff = { id: 'sr1', role: 'sr', reports_to: 'sm1' };
+    // First paid invoice carried a 10% promo: 2000 → 1800 charged.
+    S.reads.invoices = { promo_code: 'SUMMER10', promo_original_amount: 2000, total_amount: 1800 };
+    S.commissionIds = ['rep-id', 'ov-id'];
+
+    await createCommissionsForOwner('teacher', 't1');
+
+    const rep = (S.inserts.commissions ?? []).find((r) => r.commission_type === 'self_sourced');
+    // 20% of the post-promo 1800 = 360, halves 180/180 (vs 400/200/200 at full 2000).
+    expect(rep).toMatchObject({ total_commission: 360, t1_amount: 180, t2_amount: 180 });
+    const ov = (S.inserts.commissions ?? []).find((r) => r.commission_type === 'override');
+    // Override tracks the rep halves: 20% of 180 = 36 each.
+    expect(ov).toMatchObject({ t1_amount: 36, t2_amount: 36 });
+  });
+});
+
 describe('createCommissionsForOwner — eyad-sourced', () => {
   it('inserts a single zero self_sourced row (no rep, no override)', async () => {
     S.reads.teacher_subscriptions = { plan_key: 'teacher_standard', price_gross: 499 };

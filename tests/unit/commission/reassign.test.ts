@@ -174,6 +174,48 @@ describe('reassignCommissions — ONCE-PER-CUSTOMER (never double-pay)', () => {
     expect(bPatch.t2_status).toBeUndefined();
     expect(bPatch.loyalty_bonus_status).toBeUndefined();
   });
+
+  it('FIX C — a CLAWED-BACK tier (chargeback) is terminal: not voided on the old rep, not resurrected on the new rep', async () => {
+    const snapshot = [
+      {
+        id: 'a-row',
+        staff_id: 'rep-a',
+        commission_type: 'self_sourced',
+        t1_status: 'clawed_back',
+        t2_status: 'clawed_back',
+        loyalty_bonus_status: 'clawed_back',
+        center_first_payment_date: '2026-01-01',
+        role_at_time: 'sr',
+      },
+    ];
+    const fresh = [
+      ...snapshot,
+      {
+        id: 'b-row',
+        staff_id: 'rep-b',
+        commission_type: 'self_sourced',
+        t1_status: 'pending',
+        center_first_payment_date: null,
+      },
+    ];
+    S.commissionsSelects = [snapshot, fresh];
+    S.staffReads.push({ reports_to: null });
+    armCreateForOwner('rep-b', null);
+    S.commissionInsertIds = ['b-row'];
+
+    await reassignCommissions('teacher', 't1', 'rep-b');
+
+    // Old rep's clawed_back tiers are LEFT INTACT — never flipped to 'reassigned'.
+    expect(updatesFor('a-row')).toHaveLength(0);
+    // New rep earns NOTHING: every tier is suppressed because the prior rep's tiers were
+    // consumed (chargeback-reversed money must never be resurrected to a new rep).
+    const bPatch = updatesFor('b-row')[0].patch;
+    expect(bPatch).toMatchObject({
+      t1_status: 'reassigned',
+      t2_status: 'reassigned',
+      loyalty_bonus_status: 'reassigned',
+    });
+  });
 });
 
 describe('reassignCommissions — same-manager override survives', () => {

@@ -1992,7 +1992,7 @@ CONSTRAINT commission_payouts.commission_payouts_status_check type=c def=CHECK (
 CONSTRAINT commission_payouts.period_format type=c def=CHECK ((period ~ '^\\d{4}-(0[1-9]|1[0-2])$'::text))
 CONSTRAINT commissions.commissions_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE RESTRICT
 CONSTRAINT commissions.commissions_commission_type_check type=c def=CHECK ((commission_type = ANY (ARRAY['self_sourced'::text, 'override'::text, 'delta_upgrade'::text])))
-CONSTRAINT commissions.commissions_loyalty_bonus_status_check type=c def=CHECK ((loyalty_bonus_status = ANY (ARRAY['locked'::text, 'eligible'::text, 'paid'::text, 'forfeited'::text, 'reassigned'::text])))
+CONSTRAINT commissions.commissions_loyalty_bonus_status_check type=c def=CHECK ((loyalty_bonus_status = ANY (ARRAY['locked'::text, 'eligible'::text, 'paid'::text, 'forfeited'::text, 'reassigned'::text, 'clawed_back'::text])))
 CONSTRAINT commissions.commissions_loyalty_payout_id_fkey type=f def=FOREIGN KEY (loyalty_payout_id) REFERENCES commission_payouts(id) ON DELETE RESTRICT
 CONSTRAINT commissions.commissions_money_nonneg type=c def=CHECK (((loyalty_bonus_amount >= (0)::numeric) AND (t1_amount >= (0)::numeric) AND (t2_amount >= (0)::numeric) AND (total_commission >= (0)::numeric)))
 CONSTRAINT commissions.commissions_owner_exactly_one type=c def=CHECK ((((owner_type = 'center'::text) AND (center_id IS NOT NULL) AND (teacher_id IS NULL)) OR ((owner_type = 'teacher'::text) AND (teacher_id IS NOT NULL) AND (center_id IS NULL))))
@@ -2005,7 +2005,7 @@ CONSTRAINT commissions.commissions_staff_id_fkey type=f def=FOREIGN KEY (staff_i
 CONSTRAINT commissions.commissions_t1_payout_id_fkey type=f def=FOREIGN KEY (t1_payout_id) REFERENCES commission_payouts(id) ON DELETE RESTRICT
 CONSTRAINT commissions.commissions_t1_status_check type=c def=CHECK ((t1_status = ANY (ARRAY['pending'::text, 'eligible'::text, 'paid'::text, 'clawed_back'::text, 'reassigned'::text])))
 CONSTRAINT commissions.commissions_t2_payout_id_fkey type=f def=FOREIGN KEY (t2_payout_id) REFERENCES commission_payouts(id) ON DELETE RESTRICT
-CONSTRAINT commissions.commissions_t2_status_check type=c def=CHECK ((t2_status = ANY (ARRAY['locked'::text, 'eligible'::text, 'paid'::text, 'forfeited'::text, 'reassigned'::text])))
+CONSTRAINT commissions.commissions_t2_status_check type=c def=CHECK ((t2_status = ANY (ARRAY['locked'::text, 'eligible'::text, 'paid'::text, 'forfeited'::text, 'reassigned'::text, 'clawed_back'::text])))
 CONSTRAINT commissions.commissions_teacher_id_fkey type=f def=FOREIGN KEY (teacher_id) REFERENCES teacher_profiles(user_id) ON DELETE RESTRICT
 CONSTRAINT content_access.content_access_access_code_key type=u def=UNIQUE (access_code)
 CONSTRAINT content_access.content_access_content_item_id_fkey type=f def=FOREIGN KEY (content_item_id) REFERENCES content_items(id) ON DELETE CASCADE

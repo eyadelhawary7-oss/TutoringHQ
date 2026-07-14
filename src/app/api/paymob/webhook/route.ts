@@ -17,7 +17,9 @@ export const dynamic = 'force-dynamic';
 const paymentFailedEnabled = true; // chq_payment_failed - set to false if template gets rejected
 
 const BODY_LIMIT = 32 * 1024;
-async function processPaymobEvent(payload: Record<string, unknown>): Promise<void> {
+// Exported for unit testing (the chargeback-reachability regression). Not an HTTP handler —
+// Next.js only routes GET/POST/etc.; extra named exports are ignored by the router.
+export async function processPaymobEvent(payload: Record<string, unknown>): Promise<void> {
   let supabaseAdminLocal;
   try {
     supabaseAdminLocal = getSupabaseAdmin();
@@ -39,6 +41,25 @@ async function processPaymobEvent(payload: Record<string, unknown>): Promise<voi
       ? String(orderForIdem.id)
       : '';
   if (!orderId) {
+    return;
+  }
+
+  // Chargebacks (is_voided / is_refunded) arrive AFTER a successful capture, so by the time
+  // they land the invoice / combined session is already status='paid'. They MUST therefore be
+  // detected BEFORE the paid-status idempotency guards below — otherwise those guards
+  // early-return and the reversal (invoice → 'chargeback', center suspend, commission clawback)
+  // never runs. finalizeInvoiceChargeback is itself idempotent: it no-ops unless the invoice is
+  // still 'paid', then flips it to 'chargeback', so a re-delivered void webhook is safe.
+  const isChargebackLike =
+    obj != null &&
+    (objRec.is_voided === true ||
+      objRec.is_voided === 'true' ||
+      objRec.is_refunded === true ||
+      objRec.is_refunded === 'true');
+  if (isChargebackLike) {
+    const chargebackTxnId = String(objRec.id ?? '');
+    const { finalizeInvoiceChargeback } = await import('@/lib/invoicePaymobPayment');
+    await finalizeInvoiceChargeback(supabaseAdminLocal, orderId, chargebackTxnId);
     return;
   }
 
@@ -74,17 +95,8 @@ async function processPaymobEvent(payload: Record<string, unknown>): Promise<voi
     const amountPaidEgp =
       Number.isFinite(amountCentsRaw) && amountCentsRaw > 0 ? amountCentsRaw / 100 : undefined;
 
-    /** Paymob HMAC object includes is_voided / is_refunded - used for chargebacks after capture. */
-    const isChargebackLike =
-      objRec.is_voided === true ||
-      objRec.is_voided === 'true' ||
-      objRec.is_refunded === true ||
-      objRec.is_refunded === 'true';
-
-    if (isChargebackLike) {
-      const { finalizeInvoiceChargeback } = await import('@/lib/invoicePaymobPayment');
-      await finalizeInvoiceChargeback(supabaseAdminLocal, orderId, transactionId);
-    } else if (success) {
+    // Chargebacks (is_voided / is_refunded) are handled above, before the idempotency guards.
+    if (success) {
       const { tryFinalizeCombinedPaymentSession } = await import('@/lib/combinedPaymentFinalize');
       const combo = existingSession as { id?: string; status?: string } | null;
       const combined =

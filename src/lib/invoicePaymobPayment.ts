@@ -690,6 +690,20 @@ export async function finalizeInvoiceChargeback(
       amount: row.total_amount ?? null,
       transactionId: paymobTransactionId,
     });
+
+    // Reverse commission on a GENUINE chargeback (this path only — never on a
+    // cancellation/blacklist). Owner-aware + full-tier (T1, T2, loyalty). Non-blocking:
+    // a bookkeeping failure must never break the money reversal above.
+    try {
+      const { clawbackCommissionsForOwner } = await import('@/lib/commissions');
+      await clawbackCommissionsForOwner(
+        cbOwner.ownerType,
+        cbOwner.ownerId,
+        `chargeback: paymob txn ${paymobTransactionId}`,
+      );
+    } catch (e) {
+      console.error('[finalizeInvoiceChargeback] commission clawback (non-blocking)', e);
+    }
   }
   // Teacher chargeback has no center-suspension side effect; the audit + status
   // flip above still apply. Center side effects below run only for center owners.
