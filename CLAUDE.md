@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-CenterHQ — multi-tenant SaaS for Egyptian tutoring centers (سناتر). Next.js 16 App Router on Vercel, Supabase Postgres + Auth, served bilingually at `/ar/...` (default, RTL) and `/en/...` (LTR). Production: `https://centerhq.app`.
+CenterHQ — multi-tenant SaaS for Egyptian tutoring centers (سناتر). Next.js 16 App Router on Vercel, Supabase Postgres + Auth, served bilingually at `/ar/...` (default, RTL) and `/en/...` (LTR). Production: `https://tutoringhq.app` (the former `centerhq.app` is retired).
 
 **Stack:** React 19.2 + Next 16.2 (App Router, React Compiler on) · TypeScript 5 · Tailwind 4 · Zod 4 · Recharts 3 · SWR + Zustand · `next-intl` 4 · Supabase JS 2 + `@supabase/ssr` · Sentry · Upstash Redis (rate limiting) · Playwright + Vitest 4.
 
