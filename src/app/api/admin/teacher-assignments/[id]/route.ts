@@ -82,6 +82,23 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       )
     }
 
+    // Commission refresh — mirrors the center full-admin branch EXACTLY so a teacher
+    // reassignment behaves like a center one: on a rep change, transfer future commission +
+    // loyalty to the new rep, void the old rep's still-unearned tiers, keep already-paid tiers
+    // (no clawback, no double-pay), and recompute the manager override to the new chain.
+    try {
+      if (updates.staff_id !== undefined) {
+        const nextStaffId = (data as { staff_id?: string | null } | null)?.staff_id ?? null
+        const { reassignCommissions } = await import('@/lib/commissions')
+        await reassignCommissions('teacher', existing.teacher_id, nextStaffId)
+      } else {
+        const { createCommissionsForTeacher } = await import('@/lib/commissions')
+        await createCommissionsForTeacher(existing.teacher_id)
+      }
+    } catch (err) {
+      console.error('[teacher-assignments] Commission refresh failed:', err)
+    }
+
     return NextResponse.json({ assignment: data })
   }
 

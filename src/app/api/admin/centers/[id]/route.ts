@@ -7,7 +7,7 @@ import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendFreeformMessage } from '@/lib/whatsapp/client';
 import { formatDate } from '@/lib/formatNumber';
-import { createCommissionsForCenter, clawbackCommissions } from '@/lib/commissions';
+import { createCommissionsForCenter } from '@/lib/commissions';
 import { parseBodyWithLimit } from '@/lib/validate';
 
 const STRIP = [
@@ -526,13 +526,9 @@ export async function PATCH(
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    await clawbackCommissions(
-      centerId,
-      ctx.userId,
-      typeof body.reason === 'string' && body.reason.trim()
-        ? body.reason.trim()
-        : 'Blacklisted by admin',
-    );
+    // NOTE: blacklisting is an admin ban, NOT a payment chargeback — it must NOT claw back
+    // commission. Commission clawback fires ONLY on a genuine Paymob void/refund
+    // (finalizeInvoiceChargeback). A rep is not penalised for a customer the CEO bans.
     return NextResponse.json({ center: updatedRow });
   }
 

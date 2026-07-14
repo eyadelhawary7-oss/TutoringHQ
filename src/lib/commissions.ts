@@ -20,7 +20,7 @@
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { computeRepCommission, computeOverride } from '@/lib/commission/rates'
-import { resolveOwnerMonthlyPrice, type OwnerType as _OwnerType } from '@/lib/commission/ownerFinancials'
+import { resolveOwnerConversionMonthlyPrice, type OwnerType as _OwnerType } from '@/lib/commission/ownerFinancials'
 
 let cachedAdmin: SupabaseClient | null = null
 
@@ -111,7 +111,11 @@ async function findCommissionId(
  * the real 1%-of-12-months amount when it unlocks.
  */
 export async function createCommissionsForOwner(ownerType: OwnerType, ownerId: string): Promise<void> {
-  const priced = await resolveOwnerMonthlyPrice(supabaseAdmin, ownerType, ownerId)
+  // Conversion base = the per-month plan price ACTUALLY paid after any one-time promo (T1).
+  // Negotiated / early-adopter prices flow through (they're inside the standing rate this
+  // starts from). The T2 cron reprices the second half from the current standing price at the
+  // 6-month mark, where the one-time promo no longer applies.
+  const priced = await resolveOwnerConversionMonthlyPrice(supabaseAdmin, ownerType, ownerId)
   if (!priced) return
   const { monthly, planKey } = priced
 
@@ -376,22 +380,54 @@ export async function reassignCommissions(
   }
 }
 
-export async function clawbackCommissions(centerId: string, adminId: string, reason: string): Promise<void> {
+/** Tier statuses that a genuine chargeback reverses. Terminal states
+ * (reassigned / forfeited / clawed_back) are already settled and left untouched. */
+const CLAWBACKABLE_TIER_STATUSES = ['pending', 'eligible', 'locked', 'paid'] as const
+
+/**
+ * Reverse commission on a GENUINE payment chargeback (the Paymob void/refund path,
+ * `finalizeInvoiceChargeback`) — NEVER on a cancellation, suspension, or blacklist/ban.
+ *
+ * Owner-aware (center OR teacher) and FULL-TIER: the first half (T1), the second half (T2),
+ * AND the loyalty bonus are all reversed to 'clawed_back' — including tiers already paid out,
+ * because the underlying money was reversed by the card issuer. Terminal tiers
+ * (reassigned/forfeited/already clawed_back) are skipped, so the call is idempotent (a retried
+ * chargeback webhook re-runs it harmlessly).
+ */
+export async function clawbackCommissionsForOwner(
+  ownerType: OwnerType,
+  ownerId: string,
+  reason: string,
+): Promise<void> {
+  const ownerCol = ownerType === 'center' ? 'center_id' : 'teacher_id'
   const { data: rows } = await supabaseAdmin
     .from('commissions')
-    .select('id, t1_status')
-    .eq('center_id', centerId)
-    .in('t1_status', ['pending', 'eligible', 'paid'])
-  for (const row of rows ?? []) {
-    await supabaseAdmin.from('commissions').update({ t1_status: 'clawed_back' }).eq('id', row.id)
+    .select('id, t1_status, t2_status, loyalty_bonus_status')
+    .eq(ownerCol, ownerId)
+  const clawable = (s: unknown) => (CLAWBACKABLE_TIER_STATUSES as readonly string[]).includes(String(s))
+  for (const r of (rows ?? []) as {
+    id: string
+    t1_status: string
+    t2_status: string
+    loyalty_bonus_status: string
+  }[]) {
+    const patch: Record<string, unknown> = {}
+    if (clawable(r.t1_status)) patch.t1_status = 'clawed_back'
+    if (clawable(r.t2_status)) patch.t2_status = 'clawed_back'
+    if (clawable(r.loyalty_bonus_status)) patch.loyalty_bonus_status = 'clawed_back'
+    if (Object.keys(patch).length === 0) continue // already terminal on every tier — idempotent
+    await supabaseAdmin.from('commissions').update(patch).eq('id', r.id)
     await logAudit({
-      commissionId: row.id,
-      action: 't1_clawback',
-      triggeredBy: 'manual',
-      performedBy: adminId,
+      commissionId: r.id,
+      action: 'commission_chargeback_clawback',
+      triggeredBy: 'webhook',
       reason,
-      previousValue: { t1_status: row.t1_status },
-      newValue: { t1_status: 'clawed_back' },
+      previousValue: {
+        t1_status: r.t1_status,
+        t2_status: r.t2_status,
+        loyalty_bonus_status: r.loyalty_bonus_status,
+      },
+      newValue: patch,
     })
   }
 }
