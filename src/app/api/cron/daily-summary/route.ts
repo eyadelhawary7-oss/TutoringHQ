@@ -10,6 +10,7 @@ import { requireCronSecret } from '@/lib/cron/requireCronSecret';
 import { insertCronLogSuccess, insertCronLogFailure } from '@/lib/cron/cronLog';
 import { normalizeWhatsAppNumber, sendWhatsAppMessage } from '@/lib/whatsapp';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getStudentBalances, sumOutstanding } from '@/lib/studentBalance';
 import {
   sendDailySummary,
   getYesterdayCairo,
@@ -365,7 +366,7 @@ export async function POST(request: Request) {
     const centerList = centers as { id: string; name: string; phone: string }[];
     const centerIds = centerList.map((c) => c.id);
 
-    const [scansRangeRes, paymentsRes, studentsRes, slotsRes, sessionScansRes] = await Promise.all([
+    const [scansRangeRes, paymentsRes, slotsRes, sessionScansRes] = await Promise.all([
       supabase
         .from('attendance_scans')
         .select('center_id')
@@ -378,11 +379,6 @@ export async function POST(request: Request) {
         .in('center_id', centerIds)
         .gte('paid_at', rangeStart)
         .lte('paid_at', rangeEnd),
-      supabase
-        .from('students')
-        .select('center_id, balance_due')
-        .in('center_id', centerIds)
-        .eq('is_active', true),
       supabase
         .from('schedule_slots')
         .select('id, group_id, center_id')
@@ -410,9 +406,9 @@ export async function POST(request: Request) {
     }
 
     const balanceByCenter = new Map<string, number>();
-    for (const row of studentsRes.data ?? []) {
-      const s = row as { center_id: string; balance_due?: number | null };
-      balanceByCenter.set(s.center_id, (balanceByCenter.get(s.center_id) ?? 0) + (Number(s.balance_due) || 0));
+    for (const centerId of centerIds) {
+      const centerBalances = await getStudentBalances(supabase, { centerId, activeOnly: true });
+      balanceByCenter.set(centerId, sumOutstanding(centerBalances.values()));
     }
 
     const slotsByCenter = new Map<string, { id: string; group_id: string | null }[]>();

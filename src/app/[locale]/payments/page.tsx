@@ -200,10 +200,10 @@ export default function PaymentsPage() {
 
       const { data: allStudentsData } = await dbSelect({
         table: 'students',
-        select: 'id, name, student_number, balance_due',
+        select: 'id, name, student_number',
         filters: [{ column: 'center_id', op: 'eq', value: cid }],
       });
-      const allStudents = (allStudentsData || []) as { id: string; name: string; student_number?: string; balance_due?: number }[];
+      const allStudents = (allStudentsData || []) as { id: string; name: string; student_number?: string }[];
 
       setCenterId(cid);
       setCenterStudents(

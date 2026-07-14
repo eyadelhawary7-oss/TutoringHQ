@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import { getStudentBalances, sumOutstanding } from '@/lib/studentBalance';
 
 export async function GET(request: NextRequest) {
   try {
@@ -60,14 +61,13 @@ export async function GET(request: NextRequest) {
     const pendingAmount = pendingPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
     const pendingCount = pendingPayments.length;
 
-    // Total balance due: SUM balance_due from students WHERE center_id AND is_active
-    const { data: students } = await auth.supabaseAdmin
-      .from('students')
-      .select('balance_due')
-      .eq('center_id', centerId)
-      .or('is_active.is.null,is_active.eq.true');
-
-    const balanceDue = (students || []).reduce((sum, s) => sum + (Number(s.balance_due) || 0), 0);
+    // Total balance due: computed (fee × attended − logged payments) per active
+    // student, summing only positive balances (credits are not netted).
+    const balancesMap = await getStudentBalances(auth.supabaseAdmin, {
+      centerId,
+      activeOnly: true,
+    });
+    const balanceDue = sumOutstanding(balancesMap.values());
 
     return NextResponse.json({
       totalToday,

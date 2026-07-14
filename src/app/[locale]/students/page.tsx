@@ -24,6 +24,7 @@ import {
   getAnnouncementCap,
 } from '@/lib/parentPack';
 import { formatCurrency, formatNumber, formatPlainInteger } from '@/lib/formatNumber';
+import { getStudentBalances } from '@/lib/studentBalance';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { memoryCacheGet, memoryCacheSet } from '@/lib/clientMemoryCache';
 
@@ -381,48 +382,13 @@ export default function StudentsPage() {
       if (!meData?.user?.center_id) return;
       const cid = meData.user.center_id;
 
-      const [scansRes, paymentsRes] = await Promise.all([
-        dbSelect({
-          table: 'attendance_scans',
-          select: 'student_id, group_id',
-          filters: [{ column: 'center_id', op: 'eq', value: cid }],
-        }),
-        dbSelect({
-          table: 'payments',
-          select: 'student_id, amount, confirmed',
-          filters: [{ column: 'center_id', op: 'eq', value: cid }],
-        }),
-      ]);
-      const scans = (scansRes.data || []) as { student_id: string; group_id: string | null }[];
-      const payments = (paymentsRes.data || []) as { student_id: string; amount: number; confirmed?: boolean }[];
-
-      const groupFeeMap = new Map(groups.map((g) => [g.id, g.fee ?? 0]));
-      const owedByStudent: Record<string, number> = {};
-      for (const s of scans) {
-        if (s.group_id && groupFeeMap.has(s.group_id)) {
-          const key = `${s.student_id}:${s.group_id}`;
-          owedByStudent[key] = (owedByStudent[key] ?? 0) + 1;
-        }
-      }
-      const totalOwedByStudent: Record<string, number> = {};
-      for (const [key, count] of Object.entries(owedByStudent)) {
-        const [sid, gid] = key.split(':');
-        const fee = groupFeeMap.get(gid) ?? 0;
-        totalOwedByStudent[sid] = (totalOwedByStudent[sid] ?? 0) + count * fee;
-      }
-      const paidByStudent: Record<string, number> = {};
-      for (const p of payments) {
-        if (p.confirmed === true) {
-          paidByStudent[p.student_id] = (paidByStudent[p.student_id] ?? 0) + parseFloat(String(p.amount ?? 0));
-        }
-      }
+      // Single source of truth: the shared balance helper (group fee × attended
+      // − logged payments, absent excluded, pending counted, credit shown).
+      // Replaces the old inline math that charged absent scans, dropped pending
+      // payments, and floored credits to zero.
+      const balances = await getStudentBalances(supabase, { centerId: cid });
       const balance: Record<string, number> = {};
-      const allIds = new Set([...Object.keys(totalOwedByStudent), ...Object.keys(paidByStudent)]);
-      for (const sid of allIds) {
-        const owed = totalOwedByStudent[sid] ?? 0;
-        const paid = paidByStudent[sid] ?? 0;
-        balance[sid] = Math.max(0, owed - paid);
-      }
+      for (const [sid, b] of balances) balance[sid] = b.balance;
       setBalanceByStudent(balance);
       } catch (err) {
         console.error('[students] loadBalanceData failed', err);

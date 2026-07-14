@@ -51,9 +51,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, message: 'Already confirmed' });
     }
 
-    const amount = Number((payment as { amount?: number }).amount ?? 0);
-    const studentId = (payment as { student_id?: string }).student_id;
-
     const { error: updateErr } = await auth.supabaseAdmin
       .from('payments')
       .update({
@@ -69,23 +66,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to confirm payment' }, { status: 500 });
     }
 
-    if (studentId && amount > 0) {
-      const { data: student } = await auth.supabaseAdmin
-        .from('students')
-        .select('balance_due')
-        .eq('id', studentId)
-        .single();
-
-      if (student && typeof (student as { balance_due?: number }).balance_due === 'number') {
-        const currentBalance = (student as { balance_due: number }).balance_due;
-        const newBalance = Math.max(0, currentBalance - amount);
-        await auth.supabaseAdmin
-          .from('students')
-          .update({ balance_due: newBalance })
-          .eq('id', studentId);
-      }
-    }
-
+    // NOTE: we do NOT write a stored balance here. A student's balance is never
+    // cached on students.balance_due (that column does not exist — the old
+    // decrement was dead code). Balance is always computed on read via
+    // `getStudentBalances` (src/lib/studentBalance.ts), so it can never drift.
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[payments/confirm] Error:', error);

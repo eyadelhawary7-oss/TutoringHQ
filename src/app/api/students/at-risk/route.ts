@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { getStudentBalances } from '@/lib/studentBalance';
 
 async function getContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -106,11 +107,13 @@ export async function GET(request: NextRequest) {
     const { data: rawStudents } = await supabaseAdmin
       .from('students')
       .select(
-        'id, name, student_number, parent_phone, balance_due, lifecycle_status, at_risk_since, created_at, is_active',
+        'id, name, student_number, parent_phone, lifecycle_status, at_risk_since, created_at, is_active',
       )
       .eq('center_id', centerId);
 
     const students = (rawStudents ?? []).filter(isRosterActive);
+
+    const balances = await getStudentBalances(supabaseAdmin, { centerId });
 
     const { data: scans } = await supabaseAdmin
       .from('attendance_scans')
@@ -236,7 +239,7 @@ export async function GET(request: NextRequest) {
         name: (s as { name?: string }).name ?? '',
         student_number: (s as { student_number?: string | null }).student_number ?? null,
         parent_phone: (s as { parent_phone?: string | null }).parent_phone ?? null,
-        balance_due: Number((s as { balance_due?: number }).balance_due ?? 0),
+        balance_due: balances.get(s.id)?.balance ?? 0,
         lifecycle_status: (s as { lifecycle_status?: string }).lifecycle_status ?? 'active',
         at_risk_since: (s as { at_risk_since?: string | null }).at_risk_since ?? null,
         days_since_last_scan: daysSinceLastScan,

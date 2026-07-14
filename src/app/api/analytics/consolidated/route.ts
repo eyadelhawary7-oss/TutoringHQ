@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { getStudentBalances, sumOutstanding } from '@/lib/studentBalance';
 
 async function getOrgContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -80,7 +81,7 @@ export async function GET(request: NextRequest) {
         .lte('paid_at', monthEnd.toISOString()),
       supabaseAdmin
         .from('students')
-        .select('center_id, balance_due')
+        .select('center_id')
         .in('center_id', centerIds),
       supabaseAdmin
         .from('users')
@@ -94,10 +95,8 @@ export async function GET(request: NextRequest) {
         mrrByCenter[p.center_id] = (mrrByCenter[p.center_id] ?? 0) + (p.amount ?? 0);
       }
     }
-    const outstandingByCenter: Record<string, number> = {};
     const studentCountByCenter: Record<string, number> = {};
-    for (const st of (studentsRes.data ?? []) as { center_id: string; balance_due?: number }[]) {
-      outstandingByCenter[st.center_id] = (outstandingByCenter[st.center_id] ?? 0) + (Number(st.balance_due) || 0);
+    for (const st of (studentsRes.data ?? []) as { center_id: string }[]) {
       studentCountByCenter[st.center_id] = (studentCountByCenter[st.center_id] ?? 0) + 1;
     }
     const staffCountByCenter: Record<string, number> = {};
@@ -112,7 +111,9 @@ export async function GET(request: NextRequest) {
 
     for (const c of centers ?? []) {
       const mrr = mrrByCenter[c.id] ?? 0;
-      const outstanding = outstandingByCenter[c.id] ?? 0;
+      const outstanding = sumOutstanding(
+        (await getStudentBalances(supabaseAdmin, { centerId: c.id, activeOnly: true })).values(),
+      );
       const studentCount = studentCountByCenter[c.id] ?? 0;
       const staffCount = staffCountByCenter[c.id] ?? 0;
 

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, auditLog, dbInsert } from '@/lib/db-proxy';
+import { getStudentBalances, getStudentBalance } from '@/lib/studentBalance';
 import { colors } from '@/lib/tokens';
 import {
   syncStudentsToLocal,
@@ -220,10 +221,15 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
 
       const { data: studentsRaw } = await dbSelect({
         table: 'students',
-        select: 'id, name, phone, parent_phone, subject, fee, qr_code, student_number, balance_due',
+        select: 'id, name, phone, parent_phone, subject, fee, qr_code, student_number',
         filters: [{ column: 'center_id', op: 'eq', value: centerId }],
       });
       const studentsList = (studentsRaw || []) as { id: string; name?: string; phone?: string; subject?: string; fee?: number; student_number?: string | null; balance_due?: number }[];
+
+      // Outstanding balance is computed (never a stored column). Compute it once
+      // for the whole roster here (online) and stamp it onto each student so the
+      // offline cache carries the same number every other screen shows.
+      const balanceMap = await getStudentBalances(supabase, { centerId });
 
       if (studentsList.length > 0) {
         const { data: membersData } = await dbSelect({
@@ -256,6 +262,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
             .filter(Boolean);
           return {
             ...s,
+            balance_due: balanceMap.get(s.id)?.balance ?? 0,
             groups: studentGroups,
           };
         }) as Student[];
@@ -493,7 +500,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
               : [{ column: 'student_number', op: 'eq' as const, value: value.toUpperCase() }, { column: 'center_id', op: 'eq' as const, value: centerId }];
             const { data, error: lookupError } = await dbSelect({
               table: 'students',
-              select: 'id, name, phone, parent_phone, subject, fee, student_number, balance_due',
+              select: 'id, name, phone, parent_phone, subject, fee, student_number',
               filters,
               single: true,
             });
@@ -503,7 +510,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
               const normalizedPhone = code.trim().startsWith('0') ? '+2' + code.trim() : '+' + code.trim();
               const { data: phoneData, error: phoneError } = await dbSelect({
                 table: 'students',
-                select: 'id, name, phone, parent_phone, subject, fee, student_number, balance_due',
+                select: 'id, name, phone, parent_phone, subject, fee, student_number',
                 filters: [
                   { column: 'phone', op: 'eq', value: normalizedPhone },
                   { column: 'center_id', op: 'eq', value: centerId },
@@ -511,6 +518,15 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
                 single: true,
               });
               if (!phoneError && phoneData) student = phoneData as Student;
+            }
+            // Stamp the computed outstanding balance onto the online-fetched
+            // student (offline lookups carry it from the cached roster instead).
+            if (student?.id) {
+              try {
+                student.balance_due = await getStudentBalance(supabase, student.id);
+              } catch {
+                /* leave undefined; display falls back to 0 */
+              }
             }
           } catch (networkErr) {
             // Network error: fall back to IndexedDB

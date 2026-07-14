@@ -43,7 +43,6 @@ interface RosterStudent {
   name: string;
   student_number?: string | null;
   fee?: number;
-  balance_due?: number;
   groups?: { id: string; name: string; fee: number; subject?: string | null }[];
 }
 
@@ -152,7 +151,7 @@ export default function ChecklistTab({ initialGroupId }: { initialGroupId?: stri
     try {
       const { data: studentsRaw } = await dbSelect({
         table: 'students',
-        select: 'id, name, parent_phone, subject, fee, student_number, balance_due',
+        select: 'id, name, parent_phone, subject, fee, student_number',
         filters: [{ column: 'center_id', op: 'eq', value: centerId }],
       });
       const list = (studentsRaw || []) as RosterStudent[];

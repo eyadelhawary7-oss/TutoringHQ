@@ -7,6 +7,7 @@ import {
   type DailySummaryData,
 } from '@/lib/whatsapp/flows/dailySummary';
 import { assertIsoDateForOrFilter, orClauseDayOfWeekEgypt } from '@/lib/postgrestSafe';
+import { getStudentBalances, sumOutstanding } from '@/lib/studentBalance';
 
 /** Egypt week: Sat=0..Fri=6 from Y-M-D in local calendar. */
 function getEgyptDayOfWeek(dateStr: string): number {
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     const { start: rangeStart, end: rangeEnd } = getYesterdayCairoUtcRange();
     const egyptDay = getEgyptDayOfWeek(yesterdayStr);
 
-    const [scansRangeRes, paymentsRes, studentsRes, slotsRes, sessionScansRes] = await Promise.all([
+    const [scansRangeRes, paymentsRes, balancesMap, slotsRes, sessionScansRes] = await Promise.all([
       supabaseAdmin
         .from('attendance_scans')
         .select('center_id')
@@ -70,11 +71,9 @@ export async function POST(request: NextRequest) {
         .eq('center_id', centerId)
         .gte('paid_at', rangeStart)
         .lte('paid_at', rangeEnd),
-      supabaseAdmin
-        .from('students')
-        .select('center_id, balance_due')
-        .eq('center_id', centerId)
-        .eq('is_active', true),
+      // Outstanding balance is computed (fee × attended − logged payments) per
+      // active student — never a stored column.
+      getStudentBalances(supabaseAdmin, { centerId, activeOnly: true }),
       supabaseAdmin
         .from('schedule_slots')
         .select('id, group_id, center_id')
@@ -97,8 +96,7 @@ export async function POST(request: NextRequest) {
       .filter((p) => p.confirmed === false)
       .reduce((s, p) => s + Number(p.amount || 0), 0);
 
-    const studentsRows = (studentsRes.data ?? []) as { balance_due?: number | null }[];
-    const pendingBalanceTotal = studentsRows.reduce((s, st) => s + (Number(st.balance_due) || 0), 0);
+    const pendingBalanceTotal = sumOutstanding(balancesMap.values());
 
     const slots = (slotsRes.data ?? []) as { id: string; group_id: string | null; center_id: string }[];
     const groupIds = [...new Set(slots.map((s) => s.group_id).filter(Boolean))] as string[];
