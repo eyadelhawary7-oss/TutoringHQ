@@ -304,25 +304,28 @@ export async function reassignCommissions(
   // eyad zero-row, settled at 0 by design) must never become payable again on the
   // incoming rep's fresh row. Computed per family (rep vs override) from the
   // pre-reassignment snapshot.
-  const priorPaid = (isOverride: boolean, tier: 't1_status' | 't2_status' | 'loyalty_bonus_status') =>
+  // A tier a prior rep/manager already CONSUMED must never become earnable on the incoming
+  // rep's fresh row: 'paid' (once-per-customer, already earned) OR 'clawed_back' (a chargeback
+  // reversal — resurrecting it would pay a new rep on funds the card issuer took back).
+  const priorConsumed = (isOverride: boolean, tier: 't1_status' | 't2_status' | 'loyalty_bonus_status') =>
     rows.some(
       (r) =>
         (r.commission_type === 'override') === isOverride &&
         r.staff_id !== newStaffId &&
-        r[tier] === 'paid',
+        (r[tier] === 'paid' || r[tier] === 'clawed_back'),
     )
 
-  // Void the OLD rep's + old manager's unearned tiers. A 'paid' tier is left as-is
-  // (already earned money is never clawed back here); only pending/eligible/locked
-  // tiers flip to 'reassigned'. The incoming rep's own rows and the (unchanged)
-  // manager's override are untouched.
+  // Only UNEARNED, still-live tiers are voided to 'reassigned'. Every terminal tier is left
+  // intact: 'paid' (earned — never clawed back here), 'clawed_back' (chargeback-reversed — must
+  // stay reversed, never flipped to an earnable transfer), 'forfeited', and existing 'reassigned'.
+  const isLiveTier = (s: string) => s === 'pending' || s === 'eligible' || s === 'locked'
   for (const r of rows) {
     if (r.staff_id === newStaffId) continue // the incoming rep — nothing to void
     if (r.commission_type === 'override' && r.staff_id != null && r.staff_id === newRepManager) continue // same manager — keep
     const patch: Record<string, unknown> = {}
-    if (r.t1_status !== 'paid') patch.t1_status = 'reassigned'
-    if (r.t2_status !== 'paid') patch.t2_status = 'reassigned'
-    if (r.loyalty_bonus_status !== 'paid') patch.loyalty_bonus_status = 'reassigned'
+    if (isLiveTier(r.t1_status)) patch.t1_status = 'reassigned'
+    if (isLiveTier(r.t2_status)) patch.t2_status = 'reassigned'
+    if (isLiveTier(r.loyalty_bonus_status)) patch.loyalty_bonus_status = 'reassigned'
     if (Object.keys(patch).length === 0) continue
     await supabaseAdmin.from('commissions').update(patch).eq('id', r.id)
     await logAudit({
@@ -360,7 +363,7 @@ export async function reassignCommissions(
         center_first_payment_date: firstPaymentDate,
         // T1: already paid to a prior rep → terminally suppressed; else the owner
         // has converted, so the (unearned, voided-off-the-old-rep) T1 transfers eligible.
-        t1_status: priorPaid(isOv, 't1_status')
+        t1_status: priorConsumed(isOv, 't1_status')
           ? 'reassigned'
           : r.t1_status === 'pending'
             ? 'eligible'
@@ -368,14 +371,14 @@ export async function reassignCommissions(
       }
       // T2 / loyalty: if already paid out once, the crons must never unlock the
       // fresh row — suppress; otherwise leave 'locked' for the normal 180/365-day unlock.
-      if (priorPaid(isOv, 't2_status')) patch.t2_status = 'reassigned'
-      if (priorPaid(isOv, 'loyalty_bonus_status')) patch.loyalty_bonus_status = 'reassigned'
+      if (priorConsumed(isOv, 't2_status')) patch.t2_status = 'reassigned'
+      if (priorConsumed(isOv, 'loyalty_bonus_status')) patch.loyalty_bonus_status = 'reassigned'
       await supabaseAdmin.from('commissions').update(patch).eq('id', r.id)
       await logAudit({
         commissionId: r.id,
         action: 'commission_reassigned_transfer',
         triggeredBy: 'manual',
-        newValue: { ...patch, once_per_customer_suppressed: priorPaid(isOv, 't1_status') || priorPaid(isOv, 't2_status') || priorPaid(isOv, 'loyalty_bonus_status') },
+        newValue: { ...patch, once_per_customer_suppressed: priorConsumed(isOv, 't1_status') || priorConsumed(isOv, 't2_status') || priorConsumed(isOv, 'loyalty_bonus_status') },
       })
     }
   }
