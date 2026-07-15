@@ -933,6 +933,9 @@ COLUMN invoices.promo_original_amount ord=35 type=numeric(12,2) notnull=false de
 COLUMN invoices.amount_received ord=36 type=numeric(12,2) notnull=true default=0
 COLUMN invoices.owner_type ord=37 type=text notnull=true default='center'::text
 COLUMN invoices.teacher_id ord=38 type=uuid notnull=false default=∅
+COLUMN invoices.vat_rate ord=39 type=numeric notnull=false default=∅
+COLUMN invoices.vat_amount ord=40 type=numeric notnull=false default=∅
+COLUMN invoices.processing_fee ord=41 type=numeric notnull=false default=∅
 COLUMN mrr_snapshots.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN mrr_snapshots.snapshot_date ord=2 type=date notnull=true default=∅
 COLUMN mrr_snapshots.total_mrr ord=3 type=numeric(12,2) notnull=true default=0
@@ -2097,6 +2100,7 @@ CONSTRAINT invoices.invoices_owner_type_check type=c def=CHECK ((owner_type = AN
 CONSTRAINT invoices.invoices_owner_xor_check type=c def=CHECK ((((owner_type = 'center'::text) AND (center_id IS NOT NULL) AND (teacher_id IS NULL)) OR ((owner_type = 'teacher'::text) AND (teacher_id IS NOT NULL) AND (center_id IS NULL))))
 CONSTRAINT invoices.invoices_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT invoices.invoices_status_check type=c def=CHECK ((status = ANY (ARRAY['pending'::text, 'paid'::text, 'overdue'::text, 'cancelled'::text, 'approved'::text, 'rejected'::text, 'failed'::text, 'chargeback'::text])))
+CONSTRAINT invoices.invoices_tax_snapshot_nonneg type=c def=CHECK ((((vat_amount IS NULL) OR (vat_amount >= (0)::numeric)) AND ((processing_fee IS NULL) OR (processing_fee >= (0)::numeric)) AND ((vat_rate IS NULL) OR ((vat_rate >= (0)::numeric) AND (vat_rate <= (1)::numeric)))))
 CONSTRAINT invoices.invoices_teacher_id_fkey type=f def=FOREIGN KEY (teacher_id) REFERENCES teacher_profiles(user_id) ON DELETE RESTRICT
 CONSTRAINT mrr_snapshots.mrr_snapshots_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT mrr_snapshots.mrr_snapshots_snapshot_date_key type=u def=UNIQUE (snapshot_date)
