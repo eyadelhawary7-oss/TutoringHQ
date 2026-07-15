@@ -61,10 +61,10 @@ describe('buildInvoiceTaxSnapshot — VAT on the full VAT-inclusive total', () =
     expect(snap.vat_amount).not.toBeCloseTo(vatInsideInclusive(1000), 2);
   });
 
-  it('card orders tax product + fee, leaving shipping outside the VAT base', () => {
-    // total 435 = product 300 + shipping 115 + fee 20 → VAT on (product+fee)=320.
-    const snap = buildInvoiceTaxSnapshot({ total: 435, fee: 20, vatBasis: 300 + 20 });
-    expect(snap.vat_amount).toBeCloseTo(vatInsideInclusive(320), 2); // 39.30
+  it('card orders now tax the full total including delivery (no carve-out)', () => {
+    // total 435 = product 300 + delivery 115 + fee 20 → VAT on the whole 435.
+    const snap = buildInvoiceTaxSnapshot({ total: 435, fee: 20 });
+    expect(snap.vat_amount).toBeCloseTo(vatInsideInclusive(435), 2); // 53.42
     expect(snap.processing_fee).toBe(20);
   });
 
@@ -139,23 +139,23 @@ describe('buildInvoiceHtml — reads the stored snapshot (no subtotal/tax_amount
     expect(html).toContain('1,020.00'); // total unchanged
   });
 
-  it('card order taxes product + fee, shipping stays outside VAT, total unchanged', () => {
+  it('card order taxes the full total incl. delivery; total unchanged, no carve-out', () => {
     const html = buildInvoiceHtml(
       makeInvoice({
         invoice_type: 'setup_fee',
         total_amount: 435,
         base_amount: 263.16,
         processing_fee: 20,
-        vat_amount: 39.3, // vatInsideInclusive(320)
+        vat_amount: 53.42, // vatInsideInclusive(435)
         vat_rate: 0.14,
         metadata: { shipping_fee: 115, qty: 5, processing_fee: 20 },
       }),
     );
-    expect(html).toContain('39.30'); // VAT on product + fee
-    expect(html).toContain('115.00'); // shipping shown, untaxed
+    expect(html).toContain('53.42'); // VAT on the FULL total (product + fee + delivery)
+    expect(html).toContain('115.00'); // delivery still shown as a line
     expect(html).toContain('رسوم المعالجة'); // fee shown
     expect(html).toContain('435.00'); // total unchanged
-    expect(html).toContain('الشحن غير خاضع'); // shipping-untaxed disclosure
+    expect(html).not.toContain('الشحن غير خاضع'); // delivery no longer carved out
   });
 
   it('late fees are left unchanged: VAT via the generic path (total − fee)', () => {

@@ -99,18 +99,12 @@ export interface InvoiceTaxSnapshot {
 /**
  * Build the tax/fee snapshot to persist on an invoice at the moment it is raised.
  *
- * `total` is the full VAT-INCLUSIVE amount charged, INCLUDING the processing fee,
- * i.e. exactly what lands in invoices.total_amount. By default VAT is the slice
- * already inside that total (total × rate / (1 + rate)) — the fee treated as
- * VAT-inclusive too, matching the subscription-family render
+ * `total` is the full VAT-INCLUSIVE amount charged, i.e. exactly what lands in
+ * invoices.total_amount. VAT is the slice already inside that total
+ * (total × rate / (1 + rate)). Every component — subscription/charge, the flat
+ * processing fee, and card delivery — is VAT-inclusive, so VAT is taken on the
+ * FULL total for every invoice type with no carve-out, matching the render
  * (buildCombinedInvoiceLines) and the legal decomposition (taxMath.explodeInclusive).
- *
- * `vatBasis` overrides the amount VAT is taken from, for invoice types whose
- * customer-facing PDF taxes a NARROWER base than the full total:
- *   • announcement settlement/cap — VAT on the settled balance only (total − fee);
- *   • card setup_fee — VAT on the product portion only (shipping + fee untaxed).
- * Passing it keeps the stored vat_amount EQUAL to what that invoice's PDF prints,
- * so the PDF reads the stored value with no change in output.
  *
  * The rate is stored per-invoice so a later national VAT-rate change never
  * rewrites history: an old invoice always reprints at its original rate.
@@ -119,7 +113,6 @@ export function buildInvoiceTaxSnapshot(opts: {
   total: number;
   fee?: number;
   vatRate?: number;
-  vatBasis?: number;
 }): InvoiceTaxSnapshot {
   const rate =
     Number.isFinite(opts.vatRate) && (opts.vatRate as number) > 0
@@ -127,11 +120,9 @@ export function buildInvoiceTaxSnapshot(opts: {
       : PROCESSING_FEE_VAT_RATE;
   const total = round2(Number(opts.total));
   const safeTotal = Number.isFinite(total) && total > 0 ? total : 0;
-  const basisRaw = opts.vatBasis != null ? round2(Number(opts.vatBasis)) : safeTotal;
-  const basis = Number.isFinite(basisRaw) && basisRaw > 0 ? basisRaw : 0;
   const fee = Math.max(0, round2(Number(opts.fee) || 0));
   return {
-    vat_amount: vatInsideInclusiveAtRate(basis, rate),
+    vat_amount: vatInsideInclusiveAtRate(safeTotal, rate),
     vat_rate: rate,
     processing_fee: fee,
   };

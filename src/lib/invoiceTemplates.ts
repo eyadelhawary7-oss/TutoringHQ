@@ -978,12 +978,11 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       shippingFee = Math.max(0, total - unitPrice * qty - feeAmt);
     }
     const prodTotal = round2(unitPrice * qty);
-    // Product + processing fee are VAT-bearing; shipping is a courier pass-through
-    // outside the VAT base. VAT is the inclusive slice of (product + fee).
+    // Product, processing fee and delivery are ALL VAT-inclusive — VAT is the
+    // inclusive slice of the full total, no carve-out.
     const productInclusive = round2(total - feeAmt - shippingFee);
-    const vatBasisCard = round2(productInclusive + feeAmt);
     // Prefer the stored VAT so an old card invoice reprints at its original rate.
-    const vatShownSetup = storedVat != null ? storedVat : vatInsideInclusive(vatBasisCard);
+    const vatShownSetup = storedVat != null ? storedVat : vatInsideInclusive(round2(total));
     const feeRow = feeAmt > 0 ? totalsRow('رسوم المعالجة (ⓘ)', `${fmtMoney(feeAmt)} EGP`) : '';
     const feeNote = feeAmt > 0 ? processingFeeNoteRow(feeAmt) : '';
     lineRowsHtml =
@@ -1005,7 +1004,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     ${dividerSolid()}
     ${totalsRowBold('إجمالي المدفوع', `${fmtMoney(round2(total))} EGP`)}
     ${totalsRow('ضريبة القيمة المضافة (مشمولة)', `${fmtMoney(vatShownSetup)} EGP`)}
-    ${taxNoteRow(`ضريبة القيمة المضافة ${vatPct}٪ محتسبة على المنتج ورسوم المعالجة (مشمولة). الشحن غير خاضع للضريبة.`)}
+    ${taxNoteRow(taxNoteStandardAr(vatPct))}
     ${feeNote}`;
   } else if (invoiceType === 'referral_payout') {
     showTaxBox = false;

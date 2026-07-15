@@ -51,19 +51,14 @@ ALTER TABLE public.invoices
 -- slice of total_amount at 0.14 (the rate in force for every invoice raised to
 -- date); the processing fee is lifted out of metadata.processing_fee (0 when
 -- absent). Only touches rows still NULL, so re-running is a no-op.
--- VAT is the inclusive slice of the VAT-bearing amount at 0.14 (the rate in force
--- for every invoice raised to date). The processing fee IS VAT-bearing, so it sits
--- inside the VAT base uniformly. The single carve-out is card `setup_fee` shipping —
--- a courier pass-through outside the VAT base — so its basis is total − shipping.
+-- VAT is the inclusive slice of the full total at 0.14 (the rate in force for
+-- every invoice raised to date). Every component — charge, processing fee and card
+-- delivery — is VAT-bearing, so the VAT base is the full total for every invoice
+-- type with no carve-out.
 UPDATE public.invoices
    SET processing_fee = COALESCE(NULLIF(metadata->>'processing_fee', '')::numeric, 0),
        vat_rate       = 0.14,
-       vat_amount     = round(
-         (CASE
-            WHEN invoice_type = 'setup_fee'
-              THEN total_amount - COALESCE(NULLIF(metadata->>'shipping_fee', '')::numeric, 0)
-            ELSE total_amount
-          END) * 0.14 / 1.14, 2)
+       vat_amount     = round(total_amount * 0.14 / 1.14, 2)
  WHERE vat_amount IS NULL
     OR vat_rate IS NULL
     OR processing_fee IS NULL;
