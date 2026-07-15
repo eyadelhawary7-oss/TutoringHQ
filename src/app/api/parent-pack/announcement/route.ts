@@ -130,8 +130,8 @@ export async function POST(request: NextRequest) {
         invoice_type: 'announcement_cap',
         base_amount: newBalance,
         total_amount: capTotal,
-        // VAT is on the blast balance only; the flat fee is not VAT-bearing here.
-        ...buildInvoiceTaxSnapshot({ total: capTotal, fee: processingFee, vatBasis: newBalance }),
+        // VAT is on the full VAT-inclusive total (the processing fee is VAT-bearing).
+        ...buildInvoiceTaxSnapshot({ total: capTotal, fee: processingFee }),
         billing_period_start: today,
         billing_period_end: today,
         due_date: dateInNDays(7),

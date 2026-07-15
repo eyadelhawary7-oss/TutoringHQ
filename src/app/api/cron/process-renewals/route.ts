@@ -239,8 +239,8 @@ export async function POST(request: Request) {
               invoice_type: 'announcement_settlement',
               base_amount: announcementBalance,
               total_amount: annTotal,
-              // VAT is on the settled balance only; the flat fee is not VAT-bearing here.
-              ...buildInvoiceTaxSnapshot({ total: annTotal, fee: annProcessingFee, vatBasis: announcementBalance }),
+              // VAT is on the full VAT-inclusive total (the processing fee is VAT-bearing).
+              ...buildInvoiceTaxSnapshot({ total: annTotal, fee: annProcessingFee }),
               billing_period_start: centerRow.current_period_start ?? todayStr,
               billing_period_end: centerRow.current_period_end ?? todayStr,
               due_date: dateInNDays(7),

@@ -3,11 +3,14 @@ import { buildInvoiceTaxSnapshot, vatInsideInclusive } from '@/lib/processingFee
 import { buildInvoiceHtml, type InvoiceTemplateData } from '@/lib/invoiceTemplates';
 import { paymentConfirmationAmountStr } from '@/lib/invoicePaymobPayment';
 
-// The invoice tax-snapshot change: generateInvoicePdf used to SELECT invoices.subtotal
-// and invoices.tax_amount — columns that never existed — so every PDF failed. VAT was
-// recomputed at render from a hardcoded rate and discarded. We now snapshot vat_amount,
-// vat_rate and processing_fee on the invoice at issue time and read them back, so an
-// invoice always reprints the exact VAT it was charged at the rate then in force.
+// Invoice tax-snapshot: generateInvoicePdf used to SELECT invoices.subtotal and
+// invoices.tax_amount — columns that never existed — so every PDF failed. VAT was
+// recomputed at render from a hardcoded rate and discarded. We now snapshot
+// vat_amount, vat_rate and processing_fee at issue time and read them back.
+//
+// VAT basis is UNIFORM: the processing fee is VAT-bearing, so VAT is the slice of
+// the full VAT-inclusive amount for every type (announcements + cards included).
+// The only carve-out is card shipping — a courier pass-through outside the VAT base.
 
 function makeInvoice(
   overrides: Partial<InvoiceTemplateData['invoice']> = {},
@@ -41,8 +44,8 @@ function makeInvoice(
   };
 }
 
-describe('buildInvoiceTaxSnapshot — VAT derived from a VAT-inclusive total', () => {
-  it('splits VAT out of the inclusive total (fee treated as VAT-inclusive)', () => {
+describe('buildInvoiceTaxSnapshot — VAT on the full VAT-inclusive total', () => {
+  it('splits VAT out of the inclusive total (fee is VAT-inclusive)', () => {
     // 1000 subscription + 20 fee = 1020 inclusive → VAT = 1020 × 0.14 / 1.14 = 125.26.
     const snap = buildInvoiceTaxSnapshot({ total: 1020, fee: 20 });
     expect(snap.vat_amount).toBeCloseTo(125.26, 2);
@@ -51,16 +54,17 @@ describe('buildInvoiceTaxSnapshot — VAT derived from a VAT-inclusive total', (
     expect(snap.processing_fee).toBe(20);
   });
 
-  it('matches the canonical worked example (999 + 20 fee → VAT inside 1019)', () => {
-    const snap = buildInvoiceTaxSnapshot({ total: 1019, fee: 20 });
-    expect(snap.vat_amount).toBeCloseTo(125.14, 2);
+  it('announcements now tax the full total including the fee (no vatBasis carve-out)', () => {
+    // Uniform basis: VAT on the whole 1020, not on the 1000 balance.
+    const snap = buildInvoiceTaxSnapshot({ total: 1020, fee: 20 });
+    expect(snap.vat_amount).toBeCloseTo(vatInsideInclusive(1020), 2); // 125.26, NOT 122.81
+    expect(snap.vat_amount).not.toBeCloseTo(vatInsideInclusive(1000), 2);
   });
 
-  it('vatBasis narrows the taxed amount (announcement: fee is NOT VAT-bearing)', () => {
-    // total 1020 = 1000 balance + 20 fee, but VAT is on the balance only.
-    const snap = buildInvoiceTaxSnapshot({ total: 1020, fee: 20, vatBasis: 1000 });
-    expect(snap.vat_amount).toBeCloseTo(vatInsideInclusive(1000), 2); // 122.81
-    expect(snap.vat_amount).not.toBeCloseTo(125.26, 2);
+  it('card orders tax product + fee, leaving shipping outside the VAT base', () => {
+    // total 435 = product 300 + shipping 115 + fee 20 → VAT on (product+fee)=320.
+    const snap = buildInvoiceTaxSnapshot({ total: 435, fee: 20, vatBasis: 300 + 20 });
+    expect(snap.vat_amount).toBeCloseTo(vatInsideInclusive(320), 2); // 39.30
     expect(snap.processing_fee).toBe(20);
   });
 
@@ -77,40 +81,100 @@ describe('buildInvoiceTaxSnapshot — VAT derived from a VAT-inclusive total', (
 });
 
 describe('buildInvoiceHtml — reads the stored snapshot (no subtotal/tax_amount)', () => {
-  it('renders WITHOUT throwing and without any subtotal/tax_amount fields present', () => {
+  it('subscription renders without throwing and shows the fee + stored VAT', () => {
     const html = buildInvoiceHtml(makeInvoice({ vat_amount: 125.26, vat_rate: 0.14, processing_fee: 20 }));
     expect(typeof html).toBe('string');
     expect(html).toContain('<!DOCTYPE html>');
-    // The processing fee appears on the invoice.
-    expect(html).toContain('رسوم المعالجة');
-    expect(html).toContain('20.00');
+    expect(html).toContain('رسوم المعالجة'); // fee shown
+    expect(html).toContain('125.26'); // stored VAT
+    expect(html).toContain('1,020.00'); // total
   });
 
   it('an OLD invoice reprints its STORED VAT, not a recomputed figure (rate-change safe)', () => {
-    // Simulate a VAT rate change: this old invoice was raised at 15% and stored a
-    // distinctive VAT that does NOT equal 0.14 × decomposition of its total. The PDF
-    // must print the stored value, proving it does not recalculate at the live rate.
-    const storedVat = 137.77;
     const html = buildInvoiceHtml(
-      makeInvoice({ total_amount: 1020, processing_fee: 20, vat_amount: storedVat, vat_rate: 0.15 }),
+      makeInvoice({ total_amount: 1020, processing_fee: 20, vat_amount: 137.77, vat_rate: 0.15 }),
     );
-    expect(html).toContain('137.77'); // the stored VAT is what prints
+    expect(html).toContain('137.77'); // stored VAT prints
     expect(html).not.toContain('125.26'); // NOT the 14% recomputation of 1020
   });
 
-  it('drives the "(N%)" rate label from the stored rate for announcement invoices', () => {
+  it('the existing invoice stays at 125.26 (subscription, total 1020)', () => {
+    const html = buildInvoiceHtml(
+      makeInvoice({ total_amount: 1020, processing_fee: 20, vat_amount: 125.26, vat_rate: 0.14 }),
+    );
+    expect(html).toContain('125.26');
+    expect(html).toContain('1,020.00');
+  });
+
+  it('announcement now shows VAT on the full total (fee taxed), total unchanged', () => {
+    // Uniform: stored VAT = vatInsideInclusive(1020) = 125.26 (was 122.81 on the balance).
     const html = buildInvoiceHtml(
       makeInvoice({
         invoice_type: 'announcement_settlement',
         total_amount: 1020,
         base_amount: 1000,
         processing_fee: 20,
-        vat_amount: 116, // distinctive stored VAT
+        vat_amount: 125.26,
+        vat_rate: 0.14,
+      }),
+    );
+    expect(html).toContain('125.26'); // VAT on full total, fee included
+    expect(html).not.toContain('122.81'); // NOT the old balance-only VAT
+    expect(html).toContain('1,020.00'); // total unchanged
+    expect(html).toContain('رسوم المعالجة'); // fee still visible
+  });
+
+  it('announcement reads the STORED VAT verbatim (rate-change safe)', () => {
+    const html = buildInvoiceHtml(
+      makeInvoice({
+        invoice_type: 'announcement_cap',
+        total_amount: 1020,
+        base_amount: 1000,
+        processing_fee: 20,
+        vat_amount: 130.5,
         vat_rate: 0.15,
       }),
     );
-    expect(html).toContain('(15%)'); // rate label from stored vat_rate, not hardcoded 14%
-    expect(html).toContain('116.00'); // stored VAT amount
+    expect(html).toContain('130.50'); // stored VAT prints regardless of live rate
+    expect(html).toContain('1,020.00'); // total unchanged
+  });
+
+  it('card order taxes product + fee, shipping stays outside VAT, total unchanged', () => {
+    const html = buildInvoiceHtml(
+      makeInvoice({
+        invoice_type: 'setup_fee',
+        total_amount: 435,
+        base_amount: 263.16,
+        processing_fee: 20,
+        vat_amount: 39.3, // vatInsideInclusive(320)
+        vat_rate: 0.14,
+        metadata: { shipping_fee: 115, qty: 5, processing_fee: 20 },
+      }),
+    );
+    expect(html).toContain('39.30'); // VAT on product + fee
+    expect(html).toContain('115.00'); // shipping shown, untaxed
+    expect(html).toContain('رسوم المعالجة'); // fee shown
+    expect(html).toContain('435.00'); // total unchanged
+    expect(html).toContain('الشحن غير خاضع'); // shipping-untaxed disclosure
+  });
+
+  it('late fees are left unchanged: VAT via the generic path (total − fee)', () => {
+    // With no processing fee (the only way late-fee invoices are raised today),
+    // total − fee == total, so VAT already falls on the full amount.
+    const html = buildInvoiceHtml(
+      makeInvoice({
+        invoice_type: 'late_payment_fee',
+        total_amount: 500,
+        base_amount: 500,
+        processing_fee: null,
+        vat_amount: null,
+        vat_rate: null,
+        metadata: { late_fee_rate: 0.05 },
+      }),
+    );
+    expect(typeof html).toBe('string');
+    expect(html).toContain(vatInsideInclusive(500).toFixed(2)); // 61.40
+    expect(html).toContain('500.00');
   });
 
   it('legacy invoice (no stored snapshot) still renders by recomputing at 14%', () => {
@@ -118,7 +182,6 @@ describe('buildInvoiceHtml — reads the stored snapshot (no subtotal/tax_amount
       makeInvoice({ total_amount: 1020, processing_fee: null, vat_amount: null, vat_rate: null }),
     );
     expect(typeof html).toBe('string');
-    // vatInsideInclusive(1020) = 125.26 recomputed at the default rate.
     expect(html).toContain('125.26');
   });
 });
@@ -128,7 +191,6 @@ describe('payment confirmation reports the full charge (fee included)', () => {
     const base = 1000;
     const snap = buildInvoiceTaxSnapshot({ total: base + 20, fee: 20 });
     const invoiceTotal = base + snap.processing_fee; // = 1020
-    // The confirmation string is the fee-inclusive total, i.e. 20 EGP more than base.
     expect(paymentConfirmationAmountStr(invoiceTotal)).toBe('1020');
     expect(paymentConfirmationAmountStr(invoiceTotal)).not.toBe(String(base));
   });

@@ -88,8 +88,9 @@ async function ensureCardOrderSetupFeeInvoice(
     invoice_type: 'setup_fee',
     total_amount: total,
     base_amount: Math.round(productTax.base * 100) / 100,
-    // VAT applies to the card product only — shipping and the flat fee are untaxed.
-    ...buildInvoiceTaxSnapshot({ total, fee: processingFee, vatBasis: productInclusive }),
+    // VAT applies to the card product AND the processing fee (both VAT-bearing);
+    // shipping is a courier pass-through and stays outside the VAT base.
+    ...buildInvoiceTaxSnapshot({ total, fee: processingFee, vatBasis: productInclusive + processingFee }),
     billing_period_start: ymd,
     billing_period_end: ymd,
     due_date: ymd,
