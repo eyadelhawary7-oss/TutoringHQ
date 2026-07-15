@@ -2,8 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { todayISO } from '@/lib/parentPack';
 import { computeNextPaymentDue } from '@/lib/subscriptionAnchor';
 import { centerRenewalPeriodMonths } from '@/lib/centerRenewal';
-import { getAnnualChargeRounded, normalizeBillingPeriod } from '@/lib/pricing';
-import { getIntervalConfig } from '@/lib/pricingConfig';
+import { normalizeBillingPeriod } from '@/lib/pricing';
 import { sendChqPaymentConfirmedTemplate, sendChqPaymentFailedTemplate } from '@/lib/centerNotify';
 import { autoSuspendAtFromDue } from '@/lib/billingSchedule';
 import { applyPaymentToInvoice, readAppliedTxns, remainingBalance } from '@/lib/invoiceBalance';
@@ -31,6 +30,17 @@ const KNOWN_NON_SUBSCRIPTION_TYPES: ReadonlySet<string> = new Set([
 const QUARTERLY_LABEL_AR = 'ربع سنوي';
 const MONTHLY_LABEL_AR = 'شهري';
 const ANNUAL_LABEL_AR = 'سنوي';
+
+/**
+ * Amount to display in the WhatsApp payment-confirmation message: the invoice
+ * total actually charged, which INCLUDES the flat processing fee. Using the
+ * invoice total (not centers.billing_amount / the annual base, which exclude the
+ * fee) is what stops the confirmation under-reporting the charge by the fee.
+ */
+export function paymentConfirmationAmountStr(invoiceTotal: number | string | null): string {
+  const n = Number(invoiceTotal);
+  return String(Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : 0);
+}
 
 async function handlePlanUpgradeInvoicePaid(
   supabaseAdmin: SupabaseClient,
@@ -94,7 +104,9 @@ async function handlePlanUpgradeInvoicePaid(
       name: c?.name ?? ',',
       phone: c?.phone ?? null,
       billingPeriodLabel: QUARTERLY_LABEL_AR,
-      billingAmountStr: String(c?.billing_amount ?? newAmt),
+      // The upgrade invoice total is what was actually charged (fee-inclusive), unlike
+      // billing_amount / all_in_price which exclude the flat processing fee.
+      billingAmountStr: String(Number(inv.total_amount ?? 0) || c?.billing_amount || newAmt),
     });
   } catch (waErr) {
     console.error('[invoicePaymob] WA send error:', waErr);
@@ -206,16 +218,12 @@ async function handleSubscriptionInvoicePaid(
   // dedupe. (Matches how auditInvoicePaid is gated in the sibling handlers below.)
   if (status !== 'already_paid') {
     try {
-      // Annual renewals confirm with the annual label + annual base amount (monthly
-      // × 10). Non-annual is monthly now (quarterly retired): the monthly label +
-      // the stored monthly amount.
-      let billingPeriodLabel = MONTHLY_LABEL_AR;
-      let billingAmountStr = String(c.billing_amount ?? totalAmt);
-      if (isAnnual) {
-        const { annualMultiplier } = await getIntervalConfig();
-        billingPeriodLabel = ANNUAL_LABEL_AR;
-        billingAmountStr = String(getAnnualChargeRounded(Number(c.all_in_price ?? 0), annualMultiplier));
-      }
+      // Confirm the amount ACTUALLY charged — the invoice total, which includes the
+      // flat processing fee. billing_amount / the annual base are the subscription
+      // price WITHOUT the fee, so they under-report the charge by the fee. Only the
+      // label differs by cadence (annual vs monthly, quarterly retired).
+      const billingPeriodLabel = isAnnual ? ANNUAL_LABEL_AR : MONTHLY_LABEL_AR;
+      const billingAmountStr = paymentConfirmationAmountStr(inv.total_amount);
       await sendChqPaymentConfirmedTemplate(supabaseAdmin, {
         name: c.name ?? ',',
         phone: c.phone ?? null,

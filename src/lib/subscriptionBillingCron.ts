@@ -9,7 +9,7 @@ import { todayISO } from '@/lib/parentPack';
 import { addMonthsToDateStr } from '@/lib/subscriptionAnchor';
 import { sendChqRenewalOverdueTemplate } from '@/lib/centerNotify';
 import { getProcessingFeeConfig, getIntervalConfig } from '@/lib/pricingConfig';
-import { applyProcessingFee } from '@/lib/processingFee';
+import { applyProcessingFee, buildInvoiceTaxSnapshot } from '@/lib/processingFee';
 import { logBillingEvent } from '@/lib/billingAudit';
 import { resolveScheduledCenterDowngrade } from '@/lib/scheduledDowngrade';
 import { centerRenewalBaseAmount, centerRenewalPeriodMonths } from '@/lib/centerRenewal';
@@ -244,6 +244,7 @@ export async function runSubscriptionBillingCron(
         status: 'pending',
         total_amount: total,
         base_amount: ba,
+        ...buildInvoiceTaxSnapshot({ total, fee }),
         billing_period_start: npd,
         billing_period_end: billingEnd,
         due_date: npd,

@@ -4,6 +4,7 @@ import { adminPlanRequestsSchema } from '@/lib/validations';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { getImpliedMonthlyMrr, isPlanKey, normalizeBillingPeriod, PLANS, type PlanKey } from '@/lib/pricing';
 import { todayISO } from '@/lib/parentPack';
+import { buildInvoiceTaxSnapshot } from '@/lib/processingFee';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { parseBodyWithLimit } from '@/lib/validate';
 
@@ -262,6 +263,8 @@ export async function PUT(request: Request) {
       status: 'pending',
       total_amount: difference,
       base_amount: difference,
+      // No processing fee on admin-approved upgrade-difference invoices.
+      ...buildInvoiceTaxSnapshot({ total: difference, fee: 0 }),
       billing_period_start: todayStr,
       billing_period_end: billingPeriodEnd,
       due_date: todayStr,

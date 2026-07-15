@@ -429,7 +429,9 @@ async function generateTeacherInvoicePdf(
   const teacherId = String(inv.teacher_id ?? '');
   const total = Number(inv.total_amount ?? 0);
   const meta = (inv.metadata ?? {}) as Record<string, unknown>;
-  const fee = Math.max(0, Math.round(Number(meta.processing_fee ?? 0) * 100) / 100);
+  // Prefer the stored processing_fee column; fall back to the legacy metadata snapshot.
+  const feeRaw = inv.processing_fee != null ? Number(inv.processing_fee) : Number(meta.processing_fee ?? 0);
+  const fee = Math.max(0, Math.round((Number.isFinite(feeRaw) ? feeRaw : 0) * 100) / 100);
   const subscription = Math.max(0, Math.round((total - fee) * 100) / 100);
 
   const [{ data: u }, { data: prof }, { data: sub }] = await Promise.all([
@@ -514,8 +516,8 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
     .from("invoices")
     .select(
       `
-      id, owner_type, teacher_id, center_id, invoice_number, invoice_type, total_amount, subtotal,
-      tax_amount, discount_amount, billing_period_start,
+      id, owner_type, teacher_id, center_id, invoice_number, invoice_type, total_amount,
+      vat_amount, vat_rate, processing_fee, discount_amount, billing_period_start,
       billing_period_end, due_date, status, notes, created_at, metadata,
       base_amount, payment_method, payment_reference, paymob_transaction_id,
       paid_at, payment_amount,
@@ -816,8 +818,9 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
       invoice_number: invNoResolved,
       invoice_type: invoiceType,
       total_amount: Number(inv.total_amount ?? 0),
-      subtotal: inv.subtotal != null ? Number(inv.subtotal) : null,
-      tax_amount: inv.tax_amount != null ? Number(inv.tax_amount) : null,
+      vat_amount: inv.vat_amount != null ? Number(inv.vat_amount) : null,
+      vat_rate: inv.vat_rate != null ? Number(inv.vat_rate) : null,
+      processing_fee: inv.processing_fee != null ? Number(inv.processing_fee) : null,
       discount_amount: inv.discount_amount != null ? Number(inv.discount_amount) : null,
       billing_period_start: String(inv.billing_period_start ?? ""),
       billing_period_end: String(inv.billing_period_end ?? ""),

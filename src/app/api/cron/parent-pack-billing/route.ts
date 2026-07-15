@@ -18,7 +18,7 @@ import { sendChqPackInvoiceTemplate } from '@/lib/centerNotify';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
 import { tCronBackup, tCronWaAr } from '@/lib/cronBackupI18n';
 import { getProcessingFeeConfig } from '@/lib/pricingConfig';
-import { applyProcessingFee } from '@/lib/processingFee';
+import { applyProcessingFee, buildInvoiceTaxSnapshot } from '@/lib/processingFee';
 
 // TODO: set to true when chq_pack_invoice is approved by Meta
 const packInvoiceEnabled = true;
@@ -211,6 +211,7 @@ export async function POST(request: Request) {
               invoice_type: 'pack_billing',
               base_amount: totalAmount,
               total_amount: packChargedTotal,
+              ...buildInvoiceTaxSnapshot({ total: packChargedTotal, fee: packFee }),
               billing_period_start: periodStart,
               billing_period_end: periodEnd,
               due_date: dateInNDays(7),
@@ -272,6 +273,7 @@ export async function POST(request: Request) {
               invoice_type: 'whatsapp_addon',
               base_amount: newPendingBalance,
               total_amount: waChargedTotal,
+              ...buildInvoiceTaxSnapshot({ total: waChargedTotal, fee: waFee }),
               billing_period_start: periodStart,
               billing_period_end: periodEnd,
               due_date: dateInNDays(7),

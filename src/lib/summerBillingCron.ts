@@ -32,7 +32,7 @@ import { cairoDateKey, cairoYmdPlusDays, startOfUtcInstantForCairoCalendarDay } 
 import { getSummerConfig, firstChargeAllowed, type SummerConfig } from '@/lib/summer/config';
 import { decideSummerAction, type SummerCustomerState, type SummerCustomerStatus } from '@/lib/summer/engine';
 import { getProcessingFeeConfig, getIntervalConfig } from '@/lib/pricingConfig';
-import { applyProcessingFee } from '@/lib/processingFee';
+import { applyProcessingFee, buildInvoiceTaxSnapshot } from '@/lib/processingFee';
 import { centerRenewalBaseAmount, centerRenewalPeriodMonths } from '@/lib/centerRenewal';
 import { addMonthsToDateStr } from '@/lib/subscriptionAnchor';
 import { TEACHER_PLANS, getTeacherPlan } from '@/lib/teacherPlans';
@@ -199,6 +199,7 @@ async function runCenters(
               status: 'pending',
               total_amount: total,
               base_amount: base,
+              ...buildInvoiceTaxSnapshot({ total, fee }),
               billing_period_start: firstInvoiceAt,
               billing_period_end: billingEnd,
               due_date: firstInvoiceAt,

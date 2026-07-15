@@ -4,7 +4,7 @@ import { requireCenterAuth } from '@/lib/centerAuth';
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
 import { reactivationChargeAmount } from '@/lib/billingLifecycle';
 import { getProcessingFeeConfig } from '@/lib/pricingConfig';
-import { applyProcessingFee } from '@/lib/processingFee';
+import { applyProcessingFee, buildInvoiceTaxSnapshot } from '@/lib/processingFee';
 
 // Quarterly is retired — the centers CHECKs only allow monthly/annual, so an
 // unset/legacy period reads as monthly, never the old ×3 quarterly multiplier.
@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
       invoice_type: 'subscription',
       base_amount: subscription,
       total_amount: chargedTotal,
+      ...buildInvoiceTaxSnapshot({ total: chargedTotal, fee: processingFee }),
       billing_period_start: todayYmd,
       billing_period_end: todayYmd,
       due_date: todayYmd,
