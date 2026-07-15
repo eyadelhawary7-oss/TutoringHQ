@@ -8,11 +8,12 @@
  * where
  *   • attended session = an attendance_scans row for the student whose `status`
  *                        is NOT 'absent' (present, or legacy NULL). Absent excluded.
- *   • session fee      = the fee of the scan's group (student_groups.fee), which
- *                        is the authoritative per-session price the scanner charges
- *                        (ScanTab: `grp?.fee ?? student.fee ?? 0`). students.fee is
- *                        only a legacy fallback for a group-less scan (it is NULL in
- *                        practice); a scan with no resolvable fee contributes 0.
+ *   • session fee      = student_groups.fee_per_class — the authoritative single
+ *                        per-group price. (NOT student_groups.fee, which is dead
+ *                        leftover: only mirrored from fee_per_class on dashboard
+ *                        create and 0 for groups made any other way — reading it
+ *                        undercharges to 0.) students.fee is a NULL-in-practice
+ *                        fallback for a group-less scan; unresolved fee → 0.
  *   • logged payments  = SUM(payments.amount) for the student whose `status` is a
  *                        real collection state (see PAID_PAYMENT_STATUSES). Both
  *                        'confirmed' (cash / verified) and 'pending' (logged
@@ -136,15 +137,19 @@ export async function getStudentBalances(
   const attended = scanRows.filter((s) => s.status !== NON_CHARGEABLE_SCAN_STATUS);
 
   // 3) Group fees for exactly the groups those scans reference (per-session price).
+  // Read `fee_per_class` — the authoritative single per-group price. The older
+  // `student_groups.fee` column is dead leftover: it is only mirrored from
+  // fee_per_class on dashboard group-create (src/lib/validations.ts) and is 0 for
+  // groups created any other way, so reading it undercharges to 0. See the PR.
   const groupIds = Array.from(
     new Set(attended.map((s) => s.group_id).filter((g): g is string => !!g)),
   );
   const groupFee = new Map<string, number>();
   if (groupIds.length > 0) {
-    const gRows = (((await build('student_groups', 'id, fee').in('id', groupIds)) as {
+    const gRows = (((await build('student_groups', 'id, fee_per_class').in('id', groupIds)) as {
       data?: unknown;
-    }).data ?? []) as { id: string; fee: number | null }[];
-    for (const g of gRows) groupFee.set(g.id, Number(g.fee) || 0);
+    }).data ?? []) as { id: string; fee_per_class: number | null }[];
+    for (const g of gRows) groupFee.set(g.id, Number(g.fee_per_class) || 0);
   }
 
   // 4) Payments — sum logged collections (confirmed + pending + paid) per student.

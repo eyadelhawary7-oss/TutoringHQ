@@ -17,7 +17,9 @@ import {
 function makeClient(data: {
   students?: { id: string; fee: number | null; is_active?: boolean | null }[];
   attendance_scans?: { student_id: string; status: string | null; group_id: string | null }[];
-  student_groups?: { id: string; fee: number | null }[];
+  // `fee` is the dead leftover column; include it in fixtures to prove the helper
+  // ignores it in favour of `fee_per_class`.
+  student_groups?: { id: string; fee_per_class: number | null; fee?: number | null }[];
   payments?: { student_id: string; amount: number | null; status: string }[];
 }) {
   return {
@@ -44,7 +46,7 @@ function makeClient(data: {
 const S = 'stu-1';
 const G = 'grp-1'; // group fee 100
 const balanceOf = (m: Map<string, StudentBalance>) => m.get(S)?.balance;
-const groups = [{ id: G, fee: 100 }];
+const groups = [{ id: G, fee_per_class: 100 }];
 const present = (group: string | null = G) => ({ student_id: S, status: 'present', group_id: group });
 
 describe('computeBalance (pure formula: charge − paid)', () => {
@@ -127,14 +129,30 @@ describe('getStudentBalances (set-based, group-fee model)', () => {
         students: [{ id: S, fee: null }],
         attendance_scans: [present(G), present('grp-2')],
         student_groups: [
-          { id: G, fee: 100 },
-          { id: 'grp-2', fee: 150 },
+          { id: G, fee_per_class: 100 },
+          { id: 'grp-2', fee_per_class: 150 },
         ],
         payments: [],
       }),
       { centerId: 'c1' },
     );
     expect(m.get(S)).toMatchObject({ charge: 250, balance: 250 });
+  });
+
+  it('FEE FIELD — charges fee_per_class, IGNORES the dead `fee` column when they disagree', async () => {
+    // Mirrors live prod data: group has fee = 0 but fee_per_class = 300. A helper
+    // that (re)reads `fee` would charge 0 here — this test fails loudly if it does.
+    const m = await getStudentBalances(
+      makeClient({
+        students: [{ id: S, fee: null }],
+        attendance_scans: [present(G), present(G)],
+        student_groups: [{ id: G, fee: 0, fee_per_class: 300 }],
+        payments: [],
+      }),
+      { centerId: 'c1' },
+    );
+    // 2 sessions × 300 = 600 (NOT 0 from the dead `fee` field).
+    expect(m.get(S)).toMatchObject({ charge: 600, balance: 600 });
   });
 
   it('activeOnly excludes soft-deactivated students', async () => {
