@@ -15,11 +15,17 @@ import {
  * group-fee lookup are the helper's own logic and run unchanged.
  */
 function makeClient(data: {
-  students?: { id: string; fee: number | null; is_active?: boolean | null }[];
-  attendance_scans?: { student_id: string; status: string | null; group_id: string | null }[];
+  students?: { id: string; fee?: number | null; is_active?: boolean | null }[];
+  attendance_scans?: {
+    student_id: string;
+    status: string | null;
+    group_id: string | null;
+    billable?: boolean | null;
+    payment_status_at_scan?: string | null;
+  }[];
   // `fee` is the dead leftover column; include it in fixtures to prove the helper
-  // ignores it in favour of `fee_per_class`.
-  student_groups?: { id: string; fee_per_class: number | null; fee?: number | null }[];
+  // ignores it in favour of `fee_per_class`. `kind` gates center-vs-private.
+  student_groups?: { id: string; fee_per_class: number | null; fee?: number | null; kind?: string }[];
   payments?: { student_id: string; amount: number | null; status: string }[];
 }) {
   return {
@@ -46,7 +52,7 @@ function makeClient(data: {
 const S = 'stu-1';
 const G = 'grp-1'; // group fee 100
 const balanceOf = (m: Map<string, StudentBalance>) => m.get(S)?.balance;
-const groups = [{ id: G, fee_per_class: 100 }];
+const groups = [{ id: G, fee_per_class: 100, kind: 'center' }];
 const present = (group: string | null = G) => ({ student_id: S, status: 'present', group_id: group });
 
 describe('computeBalance (pure formula: charge − paid)', () => {
@@ -129,8 +135,8 @@ describe('getStudentBalances (set-based, group-fee model)', () => {
         students: [{ id: S, fee: null }],
         attendance_scans: [present(G), present('grp-2')],
         student_groups: [
-          { id: G, fee_per_class: 100 },
-          { id: 'grp-2', fee_per_class: 150 },
+          { id: G, fee_per_class: 100, kind: 'center' },
+          { id: 'grp-2', fee_per_class: 150, kind: 'center' },
         ],
         payments: [],
       }),
@@ -146,7 +152,7 @@ describe('getStudentBalances (set-based, group-fee model)', () => {
       makeClient({
         students: [{ id: S, fee: null }],
         attendance_scans: [present(G), present(G)],
-        student_groups: [{ id: G, fee: 0, fee_per_class: 300 }],
+        student_groups: [{ id: G, fee: 0, fee_per_class: 300, kind: 'center' }],
         payments: [],
       }),
       { centerId: 'c1' },
@@ -175,6 +181,57 @@ describe('getStudentBalances (set-based, group-fee model)', () => {
   it('empty scope (no centerId, no ids) → empty map, no table scan', async () => {
     const m = await getStudentBalances(makeClient({}), {});
     expect(m.size).toBe(0);
+  });
+});
+
+describe('getStudentBalances — non-chargeable scans excluded from the center charge', () => {
+  it('teacher-private attendance (kind=private, billable=true) is NOT charged to the center balance', async () => {
+    const m = await getStudentBalances(
+      makeClient({
+        students: [{ id: S }],
+        attendance_scans: [
+          present(G), // center group, chargeable
+          { student_id: S, status: 'present', group_id: 'priv-1', billable: true }, // teacher-private
+        ],
+        student_groups: [
+          { id: G, fee_per_class: 100, kind: 'center' },
+          { id: 'priv-1', fee_per_class: 700, kind: 'private' },
+        ],
+        payments: [],
+      }),
+      { centerId: 'c1' },
+    );
+    // Only the center session (100) is charged; the private 700 is the teacher engine's.
+    expect(m.get(S)).toMatchObject({ charge: 100, balance: 100 });
+  });
+
+  it('a fee-exempt admission (payment_status_at_scan=admitted) is not charged', async () => {
+    const m = await getStudentBalances(
+      makeClient({
+        students: [{ id: S }],
+        attendance_scans: [
+          present(G),
+          { student_id: S, status: 'present', group_id: G, payment_status_at_scan: 'admitted' },
+        ],
+        student_groups: groups,
+        payments: [],
+      }),
+      { centerId: 'c1' },
+    );
+    expect(m.get(S)).toMatchObject({ charge: 100, balance: 100 });
+  });
+
+  it('an explicitly waived scan (billable=false) is not charged', async () => {
+    const m = await getStudentBalances(
+      makeClient({
+        students: [{ id: S }],
+        attendance_scans: [present(G), { student_id: S, status: 'present', group_id: G, billable: false }],
+        student_groups: groups,
+        payments: [],
+      }),
+      { centerId: 'c1' },
+    );
+    expect(m.get(S)).toMatchObject({ charge: 100, balance: 100 });
   });
 });
 
