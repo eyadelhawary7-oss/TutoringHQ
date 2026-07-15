@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { getShippingFee, getShippingZone } from '@/lib/bostaShipping';
 import { loadBostaShippingRates } from '@/lib/loadBostaShippingRates';
 import { cardOrderProductInclusiveFromQty, explodeInclusive } from '@/lib/pricing/taxMath';
+import { buildInvoiceTaxSnapshot } from '@/lib/processingFee';
 import { notifyVendorOfNewOrder } from '@/lib/vendorNotify';
 import { applyCardOrderTransition } from '@/lib/cardOrderState';
 
@@ -87,6 +88,9 @@ async function ensureCardOrderSetupFeeInvoice(
     invoice_type: 'setup_fee',
     total_amount: total,
     base_amount: Math.round(productTax.base * 100) / 100,
+    // Product, processing fee AND delivery are all VAT-bearing — VAT is the
+    // inclusive slice of the full charged total, no carve-out.
+    ...buildInvoiceTaxSnapshot({ total, fee: processingFee }),
     billing_period_start: ymd,
     billing_period_end: ymd,
     due_date: ymd,

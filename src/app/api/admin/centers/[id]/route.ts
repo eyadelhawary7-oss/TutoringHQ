@@ -7,6 +7,7 @@ import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendFreeformMessage } from '@/lib/whatsapp/client';
 import { formatDate } from '@/lib/formatNumber';
+import { buildInvoiceTaxSnapshot } from '@/lib/processingFee';
 import { createCommissionsForCenter } from '@/lib/commissions';
 import { parseBodyWithLimit } from '@/lib/validate';
 
@@ -311,6 +312,8 @@ export async function PATCH(
       invoice_type: invoiceType,
       total_amount: Number(totalAmount),
       base_amount: Number(totalAmount),
+      // Manually-created invoice: VAT is the inclusive slice of the total; no processing fee.
+      ...buildInvoiceTaxSnapshot({ total: Number(totalAmount), fee: 0 }),
       billing_period_start: billingPeriodStart,
       billing_period_end: billingPeriodEnd,
       due_date: dueDate,

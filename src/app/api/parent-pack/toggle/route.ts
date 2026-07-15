@@ -12,7 +12,7 @@ import {
 } from '@/lib/packBilling'
 import { parseBodyWithLimit } from '@/lib/validate';
 import { getProcessingFeeConfig } from '@/lib/pricingConfig';
-import { applyProcessingFee } from '@/lib/processingFee';
+import { applyProcessingFee, buildInvoiceTaxSnapshot } from '@/lib/processingFee';
 
 // TODO: set to true when chq_pack_invoice is approved by Meta
 const packInvoiceEnabled = true
@@ -104,6 +104,7 @@ export async function PATCH(request: NextRequest) {
         invoice_type: 'pack_billing',
         base_amount: proratedTotal,
         total_amount: chargedTotal,
+        ...buildInvoiceTaxSnapshot({ total: chargedTotal, fee: processingFee }),
         billing_period_start: periodStart,
         billing_period_end: periodEnd,
         due_date: dateInNDays(7),

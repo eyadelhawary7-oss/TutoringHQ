@@ -27,6 +27,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { cairoDateKey, cairoYmdPlusDays, startOfUtcInstantForCairoCalendarDay } from '@/lib/cairo/day';
 import { round2 } from '@/lib/invoiceBalance';
 import { logBillingEvent } from '@/lib/billingAudit';
+import { buildInvoiceTaxSnapshot } from '@/lib/processingFee';
 import { getAnnualChargeRounded, ANNUAL_BILLED_MONTHS_DEFAULT } from '@/lib/pricing';
 
 type Row = Record<string, unknown>;
@@ -119,6 +120,7 @@ export async function ensureTeacherSubscriptionInvoice(
       status: 'pending',
       base_amount: cycleBase,
       total_amount: total,
+      ...buildInvoiceTaxSnapshot({ total, fee }),
       billing_period_start: billingDayCairo,
       billing_period_end: periodEnd,
       due_date: billingDayCairo,
@@ -209,6 +211,7 @@ export async function ensureTeacherOverageInvoice(
       status: 'pending',
       base_amount: overage,
       total_amount: total,
+      ...buildInvoiceTaxSnapshot({ total, fee }),
       billing_period_start: billingDayCairo,
       billing_period_end: periodEnd,
       due_date: billingDayCairo,

@@ -1,8 +1,11 @@
 import { formatDate, formatDateTime, formatNumber, formatPercent, formatTime } from '@/lib/formatNumber';
 import { calcExclusive, type ExclusivePricing } from '@/lib/invoiceTaxUtils';
 import {
+  buildCombinedInvoiceLines,
   buildRedesignedInvoiceLines,
   processingFeeInfoBodyAr,
+  PROCESSING_FEE_VAT_RATE,
+  vatInsideInclusive,
   type RedesignedInvoiceLine,
 } from '@/lib/processingFee';
 
@@ -65,8 +68,12 @@ export interface InvoiceTemplateData {
     invoice_number: string | null;
     invoice_type: string;
     total_amount: string | number;
-    subtotal: string | number | null;
-    tax_amount: string | number | null;
+    /** VAT slice already inside total_amount, snapshotted at issue time (null = legacy). */
+    vat_amount?: string | number | null;
+    /** VAT fraction used for this invoice (e.g. 0.14), snapshotted at issue time (null = legacy). */
+    vat_rate?: string | number | null;
+    /** Flat processing fee snapshotted at issue time; source of truth over metadata.processing_fee. */
+    processing_fee?: string | number | null;
     discount_amount: string | number | null;
     billing_period_start: string;
     billing_period_end: string;
@@ -329,10 +336,6 @@ function dividerDashed(): string {
   return `<div style="margin:8px 0;border-top:1px dashed #475569;opacity:0.9;"></div>`;
 }
 
-function dividerLight(): string {
-  return `<div style="margin:8px 0;border-top:1px solid #334155;"></div>`;
-}
-
 function dividerSolid(): string {
   return `<div style="margin:8px 0;border-top:2px solid #1e293b;"></div>`;
 }
@@ -341,7 +344,10 @@ function taxNoteRow(note: string): string {
   return `<div style="margin-top:10px;font-size:11px;color:#64748b;line-height:1.55;font-family:Cairo,sans-serif;">${esc(note)}</div>`;
 }
 
-const TAX_NOTE_STANDARD_AR = 'ضريبة القيمة المضافة 14٪ (مشمولة)';
+/** Standard "VAT N٪ (included)" note, driven by the invoice's stored rate. */
+function taxNoteStandardAr(vatPct: string): string {
+  return `ضريبة القيمة المضافة ${vatPct}٪ (مشمولة)`;
+}
 
 /**
  * `p` decomposes the CHARGE (base + VAT). `feeAmt` is the flat processing fee
@@ -353,11 +359,14 @@ function exclusiveTotalsStandard(
   taxNoteAr: string,
   feeAmt = 0,
   grandTotal?: number,
+  vatOverride?: number | null,
+  vatPct = '14',
 ): string {
   const total = grandTotal != null ? grandTotal : round2(p.total + feeAmt);
+  const vatShown = vatOverride != null ? vatOverride : p.vat;
   return `${totalsRow('المجموع الجزئي', `${fmtMoney(p.base)} EGP`)}
   ${dividerDashed()}
-  ${totalsRow('ضريبة القيمة المضافة (14%)', `${fmtMoney(p.vat)} EGP`)}
+  ${totalsRow(`ضريبة القيمة المضافة (${vatPct}%)`, `${fmtMoney(vatShown)} EGP`)}
   ${feeAmt > 0 ? totalsRow('رسوم المعالجة (ⓘ)', `${fmtMoney(feeAmt)} EGP`) : ''}
   ${dividerSolid()}
   ${totalsRowBold(totalLabel, `${fmtMoney(total)} EGP`)}
@@ -376,7 +385,11 @@ function processingFeeNoteRow(amount: number): string {
  * VAT is the LAST line, a breakdown already inside the total (does not add to it).
  * The old stamp-duty and service-fee lines are removed.
  */
-function renderRedesignedTotals(lines: RedesignedInvoiceLine[], totalLabel: string): string {
+function renderRedesignedTotals(
+  lines: RedesignedInvoiceLine[],
+  totalLabel: string,
+  vatOverride?: number | null,
+): string {
   const charges = lines.filter((l) => !l.isTotal && !l.isVatNote && l.key !== 'processing_fee');
   const feeLine = lines.find((l) => l.key === 'processing_fee');
   const totalLine = lines.find((l) => l.isTotal);
@@ -387,7 +400,8 @@ function renderRedesignedTotals(lines: RedesignedInvoiceLine[], totalLabel: stri
   const feeRow = feeLine
     ? totalsRow(`${esc(feeLine.label)} ⓘ`, `${fmtMoney(feeLine.amount)} EGP`)
     : '';
-  const vatRow = vat ? totalsRow(esc(vat.label), `${fmtMoney(vat.amount)} EGP`) : '';
+  const vatAmt = vatOverride != null ? vatOverride : vat?.amount ?? 0;
+  const vatRow = vat ? totalsRow(esc(vat.label), `${fmtMoney(vatAmt)} EGP`) : '';
   const note = feeLine ? processingFeeNoteRow(feeLine.amount) : '';
   return `${chargeRows}
   ${feeRow}
@@ -398,8 +412,17 @@ function renderRedesignedTotals(lines: RedesignedInvoiceLine[], totalLabel: stri
 }
 
 /** Subscription / pack totals: قيمة الاشتراك → رسوم المعالجة (ⓘ) → الإجمالي → VAT. */
-function redesignedSubscriptionTotals(total: number, fee: number, totalLabel: string): string {
-  return renderRedesignedTotals(buildRedesignedInvoiceLines({ total, fee, locale: 'ar' }), totalLabel);
+function redesignedSubscriptionTotals(
+  total: number,
+  fee: number,
+  totalLabel: string,
+  vatOverride?: number | null,
+): string {
+  return renderRedesignedTotals(
+    buildRedesignedInvoiceLines({ total, fee, locale: 'ar' }),
+    totalLabel,
+    vatOverride,
+  );
 }
 
 function lineRowHtml(opts: {
@@ -548,6 +571,13 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
   const invoiceType = (inv.invoice_type ?? 'subscription').replace(/late_fee/g, 'late_payment_fee');
   const status = String(inv.status ?? 'pending');
   const meta = (inv.metadata ?? {}) as Record<string, unknown>;
+  // Stored tax snapshot (persisted at issue time). Prefer these over recomputing so
+  // an invoice always reprints the exact VAT it was charged, at the rate in force
+  // when it was raised — a later national VAT-rate change never rewrites old invoices.
+  const storedVat = inv.vat_amount != null ? num(inv.vat_amount) : null;
+  const storedVatRate = inv.vat_rate != null && num(inv.vat_rate) > 0 ? num(inv.vat_rate) : null;
+  const storedProcessingFee = inv.processing_fee != null ? num(inv.processing_fee) : null;
+  const vatPct = String(Math.round((storedVatRate ?? PROCESSING_FEE_VAT_RATE) * 100));
   const dueYmd = inv.due_date ? String(inv.due_date).slice(0, 10) : undefined;
   const daysLate = overdueDaysFromDue(dueYmd);
   const { key: badgeKey, overdueExtra } = resolveBadgeKey(invoiceType, status, daysLate);
@@ -561,7 +591,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
   const periodArabic = `${periodStart} – ${periodEnd}`;
   const issueDate = fmtDateAr(inv.created_at);
   const total = num(inv.total_amount);
-  const base = num(inv.base_amount ?? inv.subtotal ?? total);
+  const base = num(inv.base_amount ?? total);
   const discount = num(inv.discount_amount);
 
   const payRef =
@@ -765,7 +795,8 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
   let txnLine = '';
   const txnId = r.transactionId ?? payRef;
   // Flat processing fee snapshotted on the invoice (Section 5). 0 = none / legacy.
-  const processingFeeAmt = num(meta.processing_fee);
+  // Prefer the stored column; fall back to the legacy metadata snapshot.
+  const processingFeeAmt = storedProcessingFee ?? num(meta.processing_fee);
   const subscriptionValue = round2(total - processingFeeAmt);
 
   const discountRowHtml =
@@ -781,7 +812,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       subtitle: `حتى ${studentCap > 0 ? studentCap : ','} طالب`,
     });
     totalsInner = `${discountRowHtml}
-    ${redesignedSubscriptionTotals(total, processingFeeAmt, totalLabel)}`;
+    ${redesignedSubscriptionTotals(total, processingFeeAmt, totalLabel, storedVat)}`;
   } else if (invoiceType === 'signup_first_payment') {
     lineRowsHtml = lineRowHtml({
       amount: subscriptionValue,
@@ -790,7 +821,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       subtitle: `حتى ${studentCap > 0 ? studentCap : ','} طالب`,
     });
     totalsInner = `${discountRowHtml}
-    ${redesignedSubscriptionTotals(total, processingFeeAmt, totalLabel)}`;
+    ${redesignedSubscriptionTotals(total, processingFeeAmt, totalLabel, storedVat)}`;
   } else if (invoiceType === 'teacher_overage') {
     const overStudents = num(meta.overage_students ?? 0);
     lineRowsHtml = lineRowHtml({
@@ -799,7 +830,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       title: 'رسوم طلاب فوق الحد (Scale)',
       subtitle: overStudents > 0 ? `${overStudents} طالب × 20 ج.م` : 'تسوية شهرية',
     });
-    totalsInner = redesignedSubscriptionTotals(total, processingFeeAmt, totalLabel);
+    totalsInner = redesignedSubscriptionTotals(total, processingFeeAmt, totalLabel, storedVat);
   } else if (invoiceType === 'pack_billing') {
     const active = packActivePre;
     const activeCount = num(meta.active_count ?? meta.active_parent_count ?? active) || active;
@@ -819,9 +850,10 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
         subtitle: `${inactive} أولياء`,
         amountMuted: true,
       });
-    totalsInner = redesignedSubscriptionTotals(total, processingFeeAmt, totalLabel);
+    totalsInner = redesignedSubscriptionTotals(total, processingFeeAmt, totalLabel, storedVat);
   } else if (invoiceType === 'announcement_settlement') {
-    // Decompose the blast charge only (total − flat processing fee).
+    // p (charge = total − fee) drives the per-parent price only; VAT is taken on
+    // the FULL VAT-inclusive total below (the processing fee is VAT-bearing).
     const p = calcExclusive(round2(total - processingFeeAmt));
     const blasts = r.settlementBlasts ?? [];
     const metaAnn = meta.announcements as { parent_count: number }[] | undefined;
@@ -841,8 +873,6 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
         title: `إعلان 1 - ${blastTypeAr('promo')}`,
         subtitle: `${pc} ولي أمر × ${exclusivePerParent} ج.م/ولي`,
       });
-      totalsInner = `${totalsRow(`إعلان 1 - ${pc} × ${exclusivePerParent} ج.م`, `${fmtMoney(amt)} EGP`)}
-      ${exclusiveTotalsStandard(p, totalLabel, TAX_NOTE_STANDARD_AR, processingFeeAmt, round2(total))}`;
     } else {
       lineRowsHtml = blasts
         .map((b, i) => {
@@ -856,18 +886,23 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
           });
         })
         .join('');
-      totalsInner =
-        blasts
-          .map((b, i) => {
-            const pc = b.parents_notified;
-            const amt = num(b.total_amount) || round2(pc * (totalParents > 0 ? p.base / totalParents : 0));
-            return totalsRow(`إعلان ${i + 1} - ${pc} × ${exclusivePerParent} ج.م`, `${fmtMoney(amt)} EGP`);
-          })
-          .join('') +
-        exclusiveTotalsStandard(p, totalLabel, TAX_NOTE_STANDARD_AR, processingFeeAmt, round2(total));
     }
+    // VAT on the FULL VAT-inclusive total (fee is VAT-bearing), shown as an
+    // included breakdown like subscriptions. The per-blast detail stays above in
+    // the line-items table; the totals summarise charge → fee → total → VAT.
+    totalsInner = renderRedesignedTotals(
+      buildCombinedInvoiceLines({
+        charges: [{ key: 'announcements', label: 'قيمة الإعلانات', amount: round2(total - processingFeeAmt) }],
+        fee: processingFeeAmt,
+        total: round2(total),
+        locale: 'ar',
+      }),
+      totalLabel,
+      storedVat,
+    );
   } else if (invoiceType === 'announcement_cap') {
-    // Decompose the blast charge only (total − flat processing fee).
+    // p (charge = total − fee) drives the per-parent price only; VAT is taken on
+    // the FULL VAT-inclusive total below (the processing fee is VAT-bearing).
     const p = calcExclusive(round2(total - processingFeeAmt));
     const cb = r.capBlast;
     const pc = cb?.parents_notified ?? 0;
@@ -893,9 +928,18 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
         subtitle: `هذا هو إعلانك ${n} هذا الشهر`,
         amountMuted: true,
       });
-    totalsInner = `${totalsRow(`${pc} ولي أمر × ${exclusivePerParentCap} ج.م`, `${fmtMoney(amt)} EGP`)}
-    ${totalsRow('رسوم تجاوز الحد', `0 ج.م`)}
-    ${exclusiveTotalsStandard(p, totalLabel, TAX_NOTE_STANDARD_AR, processingFeeAmt, round2(total))}`;
+    // VAT on the FULL VAT-inclusive total (fee is VAT-bearing), shown as an
+    // included breakdown like subscriptions.
+    totalsInner = renderRedesignedTotals(
+      buildCombinedInvoiceLines({
+        charges: [{ key: 'announcement', label: 'قيمة الإعلان', amount: round2(total - processingFeeAmt) }],
+        fee: processingFeeAmt,
+        total: round2(total),
+        locale: 'ar',
+      }),
+      totalLabel,
+      storedVat,
+    );
   } else if (invoiceType === 'plan_upgrade_difference') {
     const u = r.upgrade;
     const days = u?.daysRemaining ?? 0;
@@ -918,7 +962,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       });
     // Processing-fee layout (Section 5): the charge, an optional flat fee, then the
     // total. No 6% service line, no 0.5% stamp line — VAT is shown as included.
-    totalsInner = redesignedSubscriptionTotals(total, processingFeeAmt, totalLabel);
+    totalsInner = redesignedSubscriptionTotals(total, processingFeeAmt, totalLabel, storedVat);
   } else if (invoiceType === 'setup_fee') {
     showTaxBox = false;
     const productName = String(meta.product_name_ar ?? 'ماسح البطاقات الذكية');
@@ -934,10 +978,11 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       shippingFee = Math.max(0, total - unitPrice * qty - feeAmt);
     }
     const prodTotal = round2(unitPrice * qty);
-    // Product portion only (VAT applies to the cards, not the flat fee or shipping).
+    // Product, processing fee and delivery are ALL VAT-inclusive — VAT is the
+    // inclusive slice of the full total, no carve-out.
     const productInclusive = round2(total - feeAmt - shippingFee);
-    const p = calcExclusive(productInclusive);
-    const productSub = round2(p.base + p.vat);
+    // Prefer the stored VAT so an old card invoice reprints at its original rate.
+    const vatShownSetup = storedVat != null ? storedVat : vatInsideInclusive(round2(total));
     const feeRow = feeAmt > 0 ? totalsRow('رسوم المعالجة (ⓘ)', `${fmtMoney(feeAmt)} EGP`) : '';
     const feeNote = feeAmt > 0 ? processingFeeNoteRow(feeAmt) : '';
     lineRowsHtml =
@@ -953,16 +998,13 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
         title: 'رسوم توصيل Bosta',
         subtitle: `توصيل سريع - ${city}`,
       });
-    totalsInner = `${totalsRow('قيمة المنتج الأساسية', `${fmtMoney(p.base)} EGP`)}
-    ${dividerDashed()}
-    ${totalsRow('ضريبة القيمة المضافة (14%)', `${fmtMoney(p.vat)} EGP`)}
-    ${dividerLight()}
-    ${totalsRow('مجموع المنتج', `${fmtMoney(productSub)} EGP`)}
+    totalsInner = `${totalsRow('قيمة المنتج', `${fmtMoney(productInclusive)} EGP`)}
     ${feeRow}
     ${totalsRow('رسوم شحن بوسطة', `${fmtMoney(shippingFee)} EGP`)}
     ${dividerSolid()}
     ${totalsRowBold('إجمالي المدفوع', `${fmtMoney(round2(total))} EGP`)}
-    ${taxNoteRow('ضريبة القيمة المضافة 14٪ (مشمولة) - على المنتج فقط. رسوم المعالجة والشحن منفصلة.')}
+    ${totalsRow('ضريبة القيمة المضافة (مشمولة)', `${fmtMoney(vatShownSetup)} EGP`)}
+    ${taxNoteRow(taxNoteStandardAr(vatPct))}
     ${feeNote}`;
   } else if (invoiceType === 'referral_payout') {
     showTaxBox = false;
@@ -1027,7 +1069,7 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
       subtitle: desc,
     });
     totalsInner = `${discountRowHtml}
-    ${redesignedSubscriptionTotals(total, processingFeeAmt, totalLabel)}`;
+    ${redesignedSubscriptionTotals(total, processingFeeAmt, totalLabel, storedVat)}`;
   } else {
     const p = calcExclusive(round2(total - processingFeeAmt));
     lineRowsHtml = lineRowHtml({
@@ -1039,9 +1081,11 @@ export function buildInvoiceHtml(data: InvoiceTemplateData): string {
     totalsInner = exclusiveTotalsStandard(
       p,
       'الإجمالي',
-      TAX_NOTE_STANDARD_AR,
+      taxNoteStandardAr(vatPct),
       processingFeeAmt,
       round2(total),
+      storedVat,
+      vatPct,
     );
   }
 

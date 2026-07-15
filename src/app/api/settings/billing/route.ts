@@ -5,6 +5,7 @@ import { requireCenterAuth } from '@/lib/centerAuth';
 import { requirePermission } from '@/lib/centerPermissions';
 import { normalizeBillingPeriod } from '@/lib/pricing';
 import { getAnnouncementCap } from '@/lib/parentPack';
+import { buildInvoiceTaxSnapshot } from '@/lib/processingFee';
 import { parseBodyWithLimit } from '@/lib/validate';
 
 function getMonthBounds() {
@@ -222,6 +223,7 @@ export async function PUT(request: NextRequest) {
         payment_amount: numAmount,
         total_amount: numAmount,
         base_amount: numAmount,
+        ...buildInvoiceTaxSnapshot({ total: numAmount, fee: 0 }),
         payment_method: 'instapay',
         payment_reference: String(reference!).trim(),
         status: 'pending',
@@ -302,6 +304,7 @@ export async function POST(request: NextRequest) {
       payment_amount: amount,
       total_amount: amount,
       base_amount: amount,
+      ...buildInvoiceTaxSnapshot({ total: amount, fee: 0 }),
       payment_method: paymentMethod ?? 'instapay',
       payment_reference: reference,
       status: 'pending',

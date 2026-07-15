@@ -25,7 +25,7 @@ import { tCronBackup } from '@/lib/cronBackupI18n';
 import { incrementActiveMonthsOnFirstOfMonth } from '@/lib/renewalLateFeeDormancy';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { getProcessingFeeConfig } from '@/lib/pricingConfig';
-import { applyProcessingFee } from '@/lib/processingFee';
+import { applyProcessingFee, buildInvoiceTaxSnapshot } from '@/lib/processingFee';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -239,6 +239,8 @@ export async function POST(request: Request) {
               invoice_type: 'announcement_settlement',
               base_amount: announcementBalance,
               total_amount: annTotal,
+              // VAT is on the full VAT-inclusive total (the processing fee is VAT-bearing).
+              ...buildInvoiceTaxSnapshot({ total: annTotal, fee: annProcessingFee }),
               billing_period_start: centerRow.current_period_start ?? todayStr,
               billing_period_end: centerRow.current_period_end ?? todayStr,
               due_date: dateInNDays(7),

@@ -78,6 +78,56 @@ export function vatInsideInclusive(inclusive: number): number {
   return round2((i * PROCESSING_FEE_VAT_RATE) / (1 + PROCESSING_FEE_VAT_RATE));
 }
 
+/** VAT contained inside a VAT-inclusive amount at an ARBITRARY rate: P × r / (1 + r). */
+export function vatInsideInclusiveAtRate(inclusive: number, rate: number): number {
+  const i = round2(Number(inclusive));
+  const r = Number(rate);
+  if (!Number.isFinite(i) || i <= 0 || !Number.isFinite(r) || r <= 0) return 0;
+  return round2((i * r) / (1 + r));
+}
+
+/** The VAT + processing-fee snapshot persisted on an invoice at issue time. */
+export interface InvoiceTaxSnapshot {
+  /** VAT slice already inside total_amount (total × rate / (1 + rate)). */
+  vat_amount: number;
+  /** VAT fraction used for this invoice (e.g. 0.14). Stored so old invoices reprint at their rate. */
+  vat_rate: number;
+  /** Flat processing fee applied to this invoice (0 = none). */
+  processing_fee: number;
+}
+
+/**
+ * Build the tax/fee snapshot to persist on an invoice at the moment it is raised.
+ *
+ * `total` is the full VAT-INCLUSIVE amount charged, i.e. exactly what lands in
+ * invoices.total_amount. VAT is the slice already inside that total
+ * (total × rate / (1 + rate)). Every component — subscription/charge, the flat
+ * processing fee, and card delivery — is VAT-inclusive, so VAT is taken on the
+ * FULL total for every invoice type with no carve-out, matching the render
+ * (buildCombinedInvoiceLines) and the legal decomposition (taxMath.explodeInclusive).
+ *
+ * The rate is stored per-invoice so a later national VAT-rate change never
+ * rewrites history: an old invoice always reprints at its original rate.
+ */
+export function buildInvoiceTaxSnapshot(opts: {
+  total: number;
+  fee?: number;
+  vatRate?: number;
+}): InvoiceTaxSnapshot {
+  const rate =
+    Number.isFinite(opts.vatRate) && (opts.vatRate as number) > 0
+      ? (opts.vatRate as number)
+      : PROCESSING_FEE_VAT_RATE;
+  const total = round2(Number(opts.total));
+  const safeTotal = Number.isFinite(total) && total > 0 ? total : 0;
+  const fee = Math.max(0, round2(Number(opts.fee) || 0));
+  return {
+    vat_amount: vatInsideInclusiveAtRate(safeTotal, rate),
+    vat_rate: rate,
+    processing_fee: fee,
+  };
+}
+
 export type RedesignedInvoiceLineKey =
   | 'subscription'
   | 'processing_fee'

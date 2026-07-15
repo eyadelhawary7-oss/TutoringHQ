@@ -14,7 +14,7 @@ import {
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { getProcessingFeeConfig } from '@/lib/pricingConfig';
-import { applyProcessingFee } from '@/lib/processingFee';
+import { applyProcessingFee, buildInvoiceTaxSnapshot } from '@/lib/processingFee';
 
 export const dynamic = 'force-dynamic';
 
@@ -265,6 +265,7 @@ export async function POST(request: NextRequest) {
       invoice_type: 'plan_upgrade_difference',
       total_amount: chargedTotal,
       base_amount: subscriptionValue,
+      ...buildInvoiceTaxSnapshot({ total: chargedTotal, fee: processingFee }),
       billing_period_start: today,
       billing_period_end: invoicePeriodEnd,
       due_date: today,
