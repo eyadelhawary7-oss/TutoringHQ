@@ -132,48 +132,26 @@ export async function getStudentBalances(
   if (out.size === 0) return out;
   const ids = Array.from(out.keys());
 
-  // 2) Attendance scans. A scan is a chargeable CENTER attendance iff it is
-  //    attended (status != 'absent'), NOT a fee-exempt admission
-  //    (payment_status_at_scan != 'admitted'), NOT explicitly waived
-  //    (billable is not false), has a group, AND that group is a center group
-  //    (checked below). This excludes teacher-private sessions (billable=true,
-  //    kind='private' — billed by the teacher-private engine, so counting them
-  //    here would double-charge) and exempt/waived admissions.
-  let scanQ = build(
-    'attendance_scans',
-    'student_id, status, group_id, billable, payment_status_at_scan',
-  ).in('student_id', ids);
+  // 2) Attendance scans. The charge is the SNAPSHOTTED per-session price
+  //    (attendance_scans.charged_fee), written by the scanner/checklist at scan
+  //    time — NOT re-derived from the live group price — so editing a group's
+  //    price or deleting the group does NOT rewrite recorded history. A scan
+  //    contributes its charged_fee unless it is absent or a teacher-private row
+  //    (billable=true, billed by the teacher-private engine). Fee-exempt / waived
+  //    / re-scan rows carry charged_fee = 0/NULL, so they contribute nothing.
+  let scanQ = build('attendance_scans', 'student_id, status, charged_fee, billable').in(
+    'student_id',
+    ids,
+  );
   if (centerId) scanQ = scanQ.eq('center_id', centerId);
   const scanRows = (((await scanQ) as { data?: unknown }).data ?? []) as {
     student_id: string;
     status: string | null;
-    group_id: string | null;
+    charged_fee: number | null;
     billable: boolean | null;
-    payment_status_at_scan: string | null;
   }[];
-  const chargeable = scanRows.filter(
-    (s) =>
-      s.group_id != null &&
-      s.status !== NON_CHARGEABLE_SCAN_STATUS &&
-      s.payment_status_at_scan !== EXEMPT_SCAN_STATUS &&
-      s.billable !== false,
-  );
 
-  // 3) Center-group per-session prices for exactly the groups those scans
-  //    reference. Only kind='center' groups are charged here — teacher-private
-  //    (kind='private') attendance is billed by the teacher-private engine.
-  const groupIds = Array.from(new Set(chargeable.map((s) => s.group_id as string)));
-  const centerGroupFee = new Map<string, number>();
-  if (groupIds.length > 0) {
-    const gRows = (((await build('student_groups', 'id, fee_per_class, kind').in('id', groupIds)) as {
-      data?: unknown;
-    }).data ?? []) as { id: string; fee_per_class: number | null; kind: string | null }[];
-    for (const g of gRows) {
-      if (g.kind === 'center') centerGroupFee.set(g.id, Number(g.fee_per_class) || 0);
-    }
-  }
-
-  // 4) Payments — sum logged collections (confirmed + pending + paid) per student.
+  // 3) Payments — sum logged collections (confirmed + pending + paid) per student.
   let payQ = build('payments', 'student_id, amount, status')
     .in('student_id', ids)
     .in('status', PAID_PAYMENT_STATUSES);
@@ -184,12 +162,12 @@ export async function getStudentBalances(
     status: string;
   }[];
 
-  // Fold: charge = Σ CENTER-group session fees; paid = Σ payments; balance = charge − paid.
+  // Fold: charge = Σ snapshotted charged_fee; paid = Σ payments; balance = charge − paid.
   const charge = new Map<string, number>();
-  for (const scan of chargeable) {
-    const fee = centerGroupFee.get(scan.group_id as string);
-    if (fee === undefined) continue; // private / deleted / unknown group — not a center charge
-    charge.set(scan.student_id, (charge.get(scan.student_id) ?? 0) + fee);
+  for (const scan of scanRows) {
+    if (scan.status === NON_CHARGEABLE_SCAN_STATUS) continue; // absent
+    if (scan.billable === true) continue; // teacher-private — billed separately
+    charge.set(scan.student_id, (charge.get(scan.student_id) ?? 0) + (Number(scan.charged_fee) || 0));
   }
   const paidTotal = new Map<string, number>();
   for (const p of payRows) {

@@ -11,21 +11,24 @@ import {
  * A faithful minimal Supabase stub: `from(table).select(...)` returns a
  * chainable, awaitable builder resolving to the preset rows for that table.
  * It honours `.in('status', ...)` (so the payments allow-list is exercised the
- * same way it runs against PostgREST); the in-JS absent-exclusion and the
- * group-fee lookup are the helper's own logic and run unchanged.
+ * same way it runs against PostgREST); the in-JS absent/teacher-private
+ * exclusion and the charged_fee sum are the helper's own logic and run
+ * unchanged.
+ *
+ * NOTE: the helper no longer queries `student_groups` at all — the per-session
+ * charge is the SNAPSHOTTED `attendance_scans.charged_fee`, written by the
+ * scanner/checklist at scan time. So fixtures put the price on each scan, and
+ * there is deliberately no group-price lookup to mock.
  */
 function makeClient(data: {
-  students?: { id: string; fee?: number | null; is_active?: boolean | null }[];
+  students?: { id: string; is_active?: boolean | null }[];
   attendance_scans?: {
     student_id: string;
     status: string | null;
-    group_id: string | null;
+    charged_fee?: number | null;
     billable?: boolean | null;
-    payment_status_at_scan?: string | null;
+    group_id?: string | null;
   }[];
-  // `fee` is the dead leftover column; include it in fixtures to prove the helper
-  // ignores it in favour of `fee_per_class`. `kind` gates center-vs-private.
-  student_groups?: { id: string; fee_per_class: number | null; fee?: number | null; kind?: string }[];
   payments?: { student_id: string; amount: number | null; status: string }[];
 }) {
   return {
@@ -50,10 +53,14 @@ function makeClient(data: {
 }
 
 const S = 'stu-1';
-const G = 'grp-1'; // group fee 100
 const balanceOf = (m: Map<string, StudentBalance>) => m.get(S)?.balance;
-const groups = [{ id: G, fee_per_class: 100, kind: 'center' }];
-const present = (group: string | null = G) => ({ student_id: S, status: 'present', group_id: group });
+/** An attended, chargeable center scan carrying its snapshotted price. */
+const present = (charged_fee = 100, group_id: string | null = 'grp-1') => ({
+  student_id: S,
+  status: 'present',
+  charged_fee,
+  group_id,
+});
 
 describe('computeBalance (pure formula: charge − paid)', () => {
   it('zero → 0', () => expect(computeBalance(0, 0)).toBe(0));
@@ -63,21 +70,20 @@ describe('computeBalance (pure formula: charge − paid)', () => {
   it('rounds money to 2dp', () => expect(computeBalance(99.999, 0)).toBe(100));
 });
 
-describe('getStudentBalances (set-based, group-fee model)', () => {
+describe('getStudentBalances (set-based, snapshotted charged_fee model)', () => {
   it('CASE 1 — zero sessions: no scans, no payments → balance 0', async () => {
     const m = await getStudentBalances(
-      makeClient({ students: [{ id: S, fee: null }], attendance_scans: [], student_groups: groups, payments: [] }),
+      makeClient({ students: [{ id: S }], attendance_scans: [], payments: [] }),
       { centerId: 'c1' },
     );
     expect(m.get(S)).toMatchObject({ charge: 0, paid: 0, balance: 0 });
   });
 
-  it('CASE 2 — unpaid sessions: 3 attended @ group fee 100, nothing paid → 300 owed', async () => {
+  it('CASE 2 — unpaid sessions: 3 attended @ snapshot 100, nothing paid → 300 owed', async () => {
     const m = await getStudentBalances(
       makeClient({
-        students: [{ id: S, fee: null }],
-        attendance_scans: [present(), present(), { ...present(), status: null }], // legacy NULL counts
-        student_groups: groups,
+        students: [{ id: S }],
+        attendance_scans: [present(), present(), { ...present(), status: null }], // legacy NULL status counts
         payments: [],
       }),
       { centerId: 'c1' },
@@ -88,9 +94,8 @@ describe('getStudentBalances (set-based, group-fee model)', () => {
   it('CASE 3 — partial payment: 3 attended (300) − 100 paid → 200 owed', async () => {
     const m = await getStudentBalances(
       makeClient({
-        students: [{ id: S, fee: null }],
+        students: [{ id: S }],
         attendance_scans: [present(), present(), present()],
-        student_groups: groups,
         payments: [{ student_id: S, amount: 100, status: 'confirmed' }],
       }),
       { centerId: 'c1' },
@@ -101,9 +106,8 @@ describe('getStudentBalances (set-based, group-fee model)', () => {
   it('CASE 4 — overpayment shows a CREDIT: 1 attended (100) − 250 paid → −150', async () => {
     const m = await getStudentBalances(
       makeClient({
-        students: [{ id: S, fee: null }],
+        students: [{ id: S }],
         attendance_scans: [present()],
-        student_groups: groups,
         // confirmed + pending both count (pending is logged money)
         payments: [
           { student_id: S, amount: 150, status: 'confirmed' },
@@ -118,9 +122,8 @@ describe('getStudentBalances (set-based, group-fee model)', () => {
   it('CASE 5 — absent excluded (and late-fee row excluded): 3 scans, 1 absent → 2 charged', async () => {
     const m = await getStudentBalances(
       makeClient({
-        students: [{ id: S, fee: null }],
+        students: [{ id: S }],
         attendance_scans: [present(), { ...present(), status: 'absent' }, present()],
-        student_groups: groups,
         // a 'late'-fee assessment row must NOT be treated as a payment/credit
         payments: [{ student_id: S, amount: 50, status: 'late' }],
       }),
@@ -129,15 +132,11 @@ describe('getStudentBalances (set-based, group-fee model)', () => {
     expect(m.get(S)).toMatchObject({ charge: 200, paid: 0, balance: 200 });
   });
 
-  it('per-session group fee: sessions across two groups charge each group’s fee', async () => {
+  it('per-session snapshot: sessions with different snapshotted prices sum each price', async () => {
     const m = await getStudentBalances(
       makeClient({
-        students: [{ id: S, fee: null }],
-        attendance_scans: [present(G), present('grp-2')],
-        student_groups: [
-          { id: G, fee_per_class: 100, kind: 'center' },
-          { id: 'grp-2', fee_per_class: 150, kind: 'center' },
-        ],
+        students: [{ id: S }],
+        attendance_scans: [present(100, 'grp-1'), present(150, 'grp-2')],
         payments: [],
       }),
       { centerId: 'c1' },
@@ -145,31 +144,38 @@ describe('getStudentBalances (set-based, group-fee model)', () => {
     expect(m.get(S)).toMatchObject({ charge: 250, balance: 250 });
   });
 
-  it('FEE FIELD — charges fee_per_class, IGNORES the dead `fee` column when they disagree', async () => {
-    // Mirrors live prod data: group has fee = 0 but fee_per_class = 300. A helper
-    // that (re)reads `fee` would charge 0 here — this test fails loudly if it does.
+  it('a fee-exempt / free admission (charged_fee 0) contributes nothing', async () => {
     const m = await getStudentBalances(
       makeClient({
-        students: [{ id: S, fee: null }],
-        attendance_scans: [present(G), present(G)],
-        student_groups: [{ id: G, fee: 0, fee_per_class: 300, kind: 'center' }],
+        students: [{ id: S }],
+        attendance_scans: [present(100), { ...present(0), payment_status_at_scan: 'admitted' } as never],
         payments: [],
       }),
       { centerId: 'c1' },
     );
-    // 2 sessions × 300 = 600 (NOT 0 from the dead `fee` field).
-    expect(m.get(S)).toMatchObject({ charge: 600, balance: 600 });
+    expect(m.get(S)).toMatchObject({ charge: 100, balance: 100 });
+  });
+
+  it('a NULL charged_fee (unresolved / unpriced) contributes nothing, never NaN', async () => {
+    const m = await getStudentBalances(
+      makeClient({
+        students: [{ id: S }],
+        attendance_scans: [present(100), { student_id: S, status: 'present', charged_fee: null }],
+        payments: [],
+      }),
+      { centerId: 'c1' },
+    );
+    expect(m.get(S)).toMatchObject({ charge: 100, balance: 100 });
   });
 
   it('activeOnly excludes soft-deactivated students', async () => {
     const m = await getStudentBalances(
       makeClient({
         students: [
-          { id: S, fee: null, is_active: true },
-          { id: 'gone', fee: null, is_active: false },
+          { id: S, is_active: true },
+          { id: 'gone', is_active: false },
         ],
-        attendance_scans: [present(), { student_id: 'gone', status: 'present', group_id: G }],
-        student_groups: groups,
+        attendance_scans: [present(), { student_id: 'gone', status: 'present', charged_fee: 100 }],
         payments: [],
       }),
       { centerId: 'c1', activeOnly: true },
@@ -185,17 +191,13 @@ describe('getStudentBalances (set-based, group-fee model)', () => {
 });
 
 describe('getStudentBalances — non-chargeable scans excluded from the center charge', () => {
-  it('teacher-private attendance (kind=private, billable=true) is NOT charged to the center balance', async () => {
+  it('teacher-private attendance (billable=true) is NOT charged to the center balance', async () => {
     const m = await getStudentBalances(
       makeClient({
         students: [{ id: S }],
         attendance_scans: [
-          present(G), // center group, chargeable
-          { student_id: S, status: 'present', group_id: 'priv-1', billable: true }, // teacher-private
-        ],
-        student_groups: [
-          { id: G, fee_per_class: 100, kind: 'center' },
-          { id: 'priv-1', fee_per_class: 700, kind: 'private' },
+          present(100), // center group, chargeable
+          { student_id: S, status: 'present', group_id: 'priv-1', billable: true, charged_fee: 700 },
         ],
         payments: [],
       }),
@@ -204,16 +206,17 @@ describe('getStudentBalances — non-chargeable scans excluded from the center c
     // Only the center session (100) is charged; the private 700 is the teacher engine's.
     expect(m.get(S)).toMatchObject({ charge: 100, balance: 100 });
   });
+});
 
-  it('a fee-exempt admission (payment_status_at_scan=admitted) is not charged', async () => {
+describe('snapshot makes history non-destructive to group price edits / deletion', () => {
+  it('PRICE EDIT — editing the group price does NOT move an already-recorded charge', async () => {
+    // The scan was recorded at charged_fee 100. The group's LIVE fee_per_class is
+    // now 999 — but the helper never reads the group, it sums the snapshot. So the
+    // recorded charge stays 100 regardless of the new price.
     const m = await getStudentBalances(
       makeClient({
         students: [{ id: S }],
-        attendance_scans: [
-          present(G),
-          { student_id: S, status: 'present', group_id: G, payment_status_at_scan: 'admitted' },
-        ],
-        student_groups: groups,
+        attendance_scans: [present(100, 'grp-1')], // snapshot frozen at 100
         payments: [],
       }),
       { centerId: 'c1' },
@@ -221,12 +224,14 @@ describe('getStudentBalances — non-chargeable scans excluded from the center c
     expect(m.get(S)).toMatchObject({ charge: 100, balance: 100 });
   });
 
-  it('an explicitly waived scan (billable=false) is not charged', async () => {
+  it('GROUP DELETE — the debt survives after the group is deleted (group_id → NULL)', async () => {
+    // attendance_scans.group_id_fkey is ON DELETE SET NULL, so deleting the group
+    // nulls the scan's group_id. Under the old live-price join that zeroed the
+    // debt; with the snapshot the charged_fee is intact, so the debt survives.
     const m = await getStudentBalances(
       makeClient({
         students: [{ id: S }],
-        attendance_scans: [present(G), { student_id: S, status: 'present', group_id: G, billable: false }],
-        student_groups: groups,
+        attendance_scans: [{ student_id: S, status: 'present', group_id: null, charged_fee: 100 }],
         payments: [],
       }),
       { centerId: 'c1' },

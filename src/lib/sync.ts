@@ -31,6 +31,9 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
           payment_status_at_scan: 'admitted',
           session_date: sessionDate,
           payment_recorded: false,
+          // Fee-exempt admission: nothing is charged. Snapshot 0 so the balance
+          // helper (which SUMS charged_fee) never bills this attendance.
+          charged_fee: 0,
         };
         if (groupId) scanData.group_id = groupId;
 
@@ -68,6 +71,10 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
             session_date: sessionDate,
             payment_recorded: false,
             group_id: groupId,
+            // Late entry owes the session fee. Snapshot it as the charge; the
+            // paired 'late' payments row is an assessment, not a collection, so
+            // it is excluded from PAID_PAYMENT_STATUSES and does not offset this.
+            charged_fee: fee,
           },
           select: false,
         });
@@ -115,6 +122,12 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
         if ((scan.payment_action as { group_id?: string }).group_id) {
           scanData.group_id = (scan.payment_action as { group_id?: string }).group_id;
         }
+        // Snapshot the SESSION FEE (group fee_per_class at scan time), NOT the
+        // payment amount — a partial payment must still leave a balance, an
+        // overpayment a credit. The payment amount is recorded on the payments
+        // row below; the charge is frozen here so later group price edits /
+        // deletion never rewrite this session's cost.
+        scanData.charged_fee = Number((scan.payment_action as { session_fee?: number }).session_fee ?? 0);
       }
       const { error: attendanceError } = await dbInsert({
         table: 'attendance_scans',

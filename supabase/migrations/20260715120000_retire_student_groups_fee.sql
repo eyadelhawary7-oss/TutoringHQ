@@ -27,4 +27,15 @@ UPDATE public.student_groups
 ALTER TABLE public.student_groups DROP CONSTRAINT IF EXISTS student_groups_fee_nonneg;
 ALTER TABLE public.student_groups DROP COLUMN IF EXISTS fee;
 
+-- 3. Once `fee` is gone, fee_per_class is the ONLY price. A CENTER group with no
+--    price would make the scanner/checklist charge 0 silently. Require every
+--    center group to carry a positive fee_per_class. (Private groups are already
+--    gated NOT NULL by kind_shape_chk; the app requires a positive fee on create.)
+--    Verified: 0 live center groups violate this today. The onboarding
+--    create-group path now requires a positive fee (see src/app/api/onboarding).
+ALTER TABLE public.student_groups DROP CONSTRAINT IF EXISTS student_groups_center_priced_chk;
+ALTER TABLE public.student_groups
+  ADD CONSTRAINT student_groups_center_priced_chk
+  CHECK (kind <> 'center' OR (fee_per_class IS NOT NULL AND fee_per_class > 0));
+
 NOTIFY pgrst, 'reload schema';

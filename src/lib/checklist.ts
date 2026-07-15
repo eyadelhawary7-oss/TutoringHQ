@@ -25,6 +25,8 @@ export interface ChecklistScanPayload {
     amount: number;
     isPending?: boolean;
     group_id?: string;
+    /** Session fee (group fee_per_class) snapshotted into charged_fee at commit. */
+    session_fee?: number;
   };
   admission_kind?: 'fee_exempt';
   group_id?: string | null;
@@ -76,6 +78,9 @@ export function buildChecklistScanPayload(
       amount: input.fee,
       isPending: !isCash,
       group_id: input.groupId ?? undefined,
+      // Charge snapshot = the session fee (here the checklist always charges the
+      // full group fee, so amount === session_fee), frozen at commit time.
+      session_fee: input.fee,
     },
   };
 }

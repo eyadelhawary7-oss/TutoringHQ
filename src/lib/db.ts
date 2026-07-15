@@ -128,6 +128,9 @@ export async function queueScan(scanData: {
     amount: number;
     isPending?: boolean;
     group_id?: string;
+    /** The session fee (group fee_per_class) at scan time — snapshotted into
+     *  attendance_scans.charged_fee. Distinct from `amount` (what was paid). */
+    session_fee?: number;
   };
   /** Offline late-entry path - synced by `syncQueuedScans` */
   scan_kind?: 'late_entry';

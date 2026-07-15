@@ -5582,6 +5582,7 @@
     "groupNamePlaceholder": "اسم المجموعة",
     "selectSubject": "أختر موضوعاً",
     "feePerLessonPlaceholder": "الرسوم لكل درس (ج.م)",
+    "feeRequired": "الرسوم لكل درس لازم تكون أكبر من صفر",
     "addGroup": "إضافة مجموعة",
     "qrReady": "بطاقات الاستجابة السريعة جاهزة!",
     "qrMessage": "Print them and distribute to your students.",

@@ -1099,6 +1099,11 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
     const isCash = method === 'cash' || method === 'نقدي';
     const paymentAmount = amount ?? scannedStudent.fee ?? 0;
     const effectiveGroupId = groupId ?? selectedGroup?.id ?? scannedStudent.groups?.[0]?.id ?? null;
+    // Session fee = the group's per-class price at scan time (what the student is
+    // CHARGED for attending), distinct from paymentAmount (what they paid — may be
+    // partial or extra). Snapshotted into attendance_scans.charged_fee so the
+    // balance never re-derives from the live group price.
+    const sessionFee = Number(selectedGroup?.fee_per_class ?? scannedStudent.fee ?? 0);
 
     try {
       await queueScan({
@@ -1111,6 +1116,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
           amount: paymentAmount,
           isPending: !isCash,
           group_id: effectiveGroupId ?? undefined,
+          session_fee: sessionFee,
         },
       });
       await markPaidTodayOffline(centerId, scannedStudent.id);

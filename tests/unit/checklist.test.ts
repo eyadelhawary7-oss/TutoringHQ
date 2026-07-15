@@ -66,6 +66,7 @@ describe('buildChecklistScanPayload', () => {
         amount: 150,
         isPending: false,
         group_id: 'group-1',
+        session_fee: 150,
       },
     });
     expect(p).not.toHaveProperty('admission_kind');
@@ -78,6 +79,7 @@ describe('buildChecklistScanPayload', () => {
       amount: 150,
       isPending: true,
       group_id: 'group-1',
+      session_fee: 150,
     });
   });
 
