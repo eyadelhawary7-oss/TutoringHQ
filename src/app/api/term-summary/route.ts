@@ -27,14 +27,14 @@ export async function POST(request: NextRequest) {
 
   const { data: groupRow, error: gErr } = await supabaseAdmin
     .from('student_groups')
-    .select('id, name, fee, center_id')
+    .select('id, name, fee_per_class, center_id')
     .eq('id', groupId)
     .maybeSingle();
   if (gErr || !groupRow || (groupRow as { center_id?: string }).center_id !== centerId) {
     return NextResponse.json({ error: 'Group not found' }, { status: 404 });
   }
   const groupName = String((groupRow as { name?: string | null }).name ?? '').trim() || ',';
-  const groupFee = Number((groupRow as { fee?: number | string | null }).fee ?? 0) || 0;
+  const groupFee = Number((groupRow as { fee_per_class?: number | string | null }).fee_per_class ?? 0) || 0;
 
   const { data: centerRow } = await supabaseAdmin
     .from('centers')

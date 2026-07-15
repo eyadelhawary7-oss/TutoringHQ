@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { hashParentPortalToken } from '@/lib/parentPortalToken';
+import { getStudentBalance } from '@/lib/studentBalance';
 
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get('token');
@@ -52,13 +53,15 @@ export async function GET(request: NextRequest) {
 
   const { data: student } = await supabase
     .from('students')
-    .select('id, name, center_id, balance_due')
+    .select('id, name, center_id')
     .eq('id', studentId)
     .single();
 
   if (!student) {
     return NextResponse.json({ error: 'Student not found' }, { status: 404 });
   }
+
+  const balance = await getStudentBalance(supabase, studentId);
 
   const cid = (student as { center_id: string }).center_id;
   const { data: center } = await supabase
@@ -128,7 +131,7 @@ export async function GET(request: NextRequest) {
     name: (student as { name: string }).name ?? '',
     center_name: (center as { name?: string })?.name ?? '',
     center_phone: (center as { phone?: string })?.phone ?? null,
-    balance_due: Number((student as { balance_due?: number }).balance_due) || 0,
+    balance_due: balance,
     scans_by_date: scansByDate,
     next_sessions: nextSessions,
   });

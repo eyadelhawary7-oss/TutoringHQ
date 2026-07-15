@@ -208,7 +208,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
             }),
             dbSelect({
               table: 'student_groups',
-              select: 'id, name, subject, fee',
+              select: 'id, name, subject, fee_per_class',
               filters: [{ column: 'center_id', op: 'eq', value: cid }],
               order: { column: 'name' },
             }),

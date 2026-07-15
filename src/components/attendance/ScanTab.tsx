@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, auditLog, dbInsert } from '@/lib/db-proxy';
+import { getStudentBalances, getStudentBalance } from '@/lib/studentBalance';
 import { colors } from '@/lib/tokens';
 import {
   syncStudentsToLocal,
@@ -49,7 +50,7 @@ interface Student {
   student_number?: string | null;
   last_payment_method?: string | null;
   balance_due?: number;
-  groups?: { id: string; name: string; fee: number; subject?: string | null }[];
+  groups?: { id: string; name: string; fee_per_class: number; subject?: string | null }[];
 }
 
 /** Active students row for instant QR lookup (Supabase `students.name`, not full_name). */
@@ -117,7 +118,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
   const manualInputRef = useRef<HTMLInputElement>(null);
   const [scannedStudent, setScannedStudent] = useState<Student | null>(null);
   const [needGroupSelection, setNeedGroupSelection] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<{ id: string; name: string; fee: number; subject?: string | null } | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<{ id: string; name: string; fee_per_class: number; subject?: string | null } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
@@ -220,10 +221,15 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
 
       const { data: studentsRaw } = await dbSelect({
         table: 'students',
-        select: 'id, name, phone, parent_phone, subject, fee, qr_code, student_number, balance_due',
+        select: 'id, name, phone, parent_phone, subject, fee, qr_code, student_number',
         filters: [{ column: 'center_id', op: 'eq', value: centerId }],
       });
       const studentsList = (studentsRaw || []) as { id: string; name?: string; phone?: string; subject?: string; fee?: number; student_number?: string | null; balance_due?: number }[];
+
+      // Outstanding balance is computed (never a stored column). Compute it once
+      // for the whole roster here (online) and stamp it onto each student so the
+      // offline cache carries the same number every other screen shows.
+      const balanceMap = await getStudentBalances(supabase, { centerId });
 
       if (studentsList.length > 0) {
         const { data: membersData } = await dbSelect({
@@ -234,17 +240,17 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
         const members = (membersData || []) as { student_id: string; group_id: string }[];
 
         const groupIds = [...new Set(members.map(m => m.group_id))];
-        let groupsMap: Record<string, { id: string; name: string; fee: number; subject?: string | null }> = {};
+        let groupsMap: Record<string, { id: string; name: string; fee_per_class: number; subject?: string | null }> = {};
         if (groupIds.length > 0) {
           const { data: groupsData } = await dbSelect({
             table: 'student_groups',
-            select: 'id, name, fee, subject',
+            select: 'id, name, fee_per_class, subject',
             filters: [{ column: 'id', op: 'in', value: groupIds }],
           });
           groupsMap = Object.fromEntries(
-            ((groupsData || []) as { id: string; name?: string; fee?: number; subject?: string | null }[]).map(g => [
+            ((groupsData || []) as { id: string; name?: string; fee_per_class?: number; subject?: string | null }[]).map(g => [
               g.id,
-              { id: g.id, name: g.name ?? '', fee: g.fee ?? 0, subject: g.subject ?? null },
+              { id: g.id, name: g.name ?? '', fee_per_class: g.fee_per_class ?? 0, subject: g.subject ?? null },
             ])
           );
         }
@@ -256,6 +262,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
             .filter(Boolean);
           return {
             ...s,
+            balance_due: balanceMap.get(s.id)?.balance ?? 0,
             groups: studentGroups,
           };
         }) as Student[];
@@ -493,7 +500,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
               : [{ column: 'student_number', op: 'eq' as const, value: value.toUpperCase() }, { column: 'center_id', op: 'eq' as const, value: centerId }];
             const { data, error: lookupError } = await dbSelect({
               table: 'students',
-              select: 'id, name, phone, parent_phone, subject, fee, student_number, balance_due',
+              select: 'id, name, phone, parent_phone, subject, fee, student_number',
               filters,
               single: true,
             });
@@ -503,7 +510,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
               const normalizedPhone = code.trim().startsWith('0') ? '+2' + code.trim() : '+' + code.trim();
               const { data: phoneData, error: phoneError } = await dbSelect({
                 table: 'students',
-                select: 'id, name, phone, parent_phone, subject, fee, student_number, balance_due',
+                select: 'id, name, phone, parent_phone, subject, fee, student_number',
                 filters: [
                   { column: 'phone', op: 'eq', value: normalizedPhone },
                   { column: 'center_id', op: 'eq', value: centerId },
@@ -511,6 +518,15 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
                 single: true,
               });
               if (!phoneError && phoneData) student = phoneData as Student;
+            }
+            // Stamp the computed outstanding balance onto the online-fetched
+            // student (offline lookups carry it from the cached roster instead).
+            if (student?.id) {
+              try {
+                student.balance_due = await getStudentBalance(supabase, student.id);
+              } catch {
+                /* leave undefined; display falls back to 0 */
+              }
             }
           } catch (networkErr) {
             // Network error: fall back to IndexedDB
@@ -538,18 +554,18 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
               const grpIds = (membersData as { group_id: string }[]).map((m) => m.group_id);
               const { data: groupsData } = await dbSelect({
                 table: 'student_groups',
-                select: 'id, name, fee',
+                select: 'id, name, fee_per_class',
                 filters: [{ column: 'id', op: 'in', value: grpIds }],
               });
               if (groupsData && Array.isArray(groupsData)) {
-                student.groups = (groupsData as { id: string; name: string; fee?: number }[]).map((g) => ({
+                student.groups = (groupsData as { id: string; name: string; fee_per_class?: number }[]).map((g) => ({
                   id: g.id,
                   name: g.name,
-                  fee: g.fee ?? 0,
+                  fee_per_class: g.fee_per_class ?? 0,
                 }));
                 const primaryGroup = student.groups[0];
                 if (primaryGroup && !student.fee) {
-                  student.fee = primaryGroup.fee;
+                  student.fee = primaryGroup.fee_per_class;
                   student.subject = primaryGroup.name;
                 }
               }
@@ -651,14 +667,14 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
       const displayStatus = paidToday ? (lastPaymentMethod && lastPaymentMethod !== 'cash' ? 'pending' : 'paid') : 'unpaid';
       const studentForDisplay: Student = {
         ...st,
-        fee: grp?.fee ?? st.fee ?? 0,
+        fee: grp?.fee_per_class ?? st.fee ?? 0,
         subject: grp?.name ?? st.subject ?? '',
         payment_status: displayStatus,
         last_payment_method: lastPaymentMethod,
       };
       const scannedAt = new Date().toISOString();
       const subActive = centerSubscriptionStatus === 'active';
-      const sessionFee = grp?.fee ?? st.fee ?? 0;
+      const sessionFee = grp?.fee_per_class ?? st.fee ?? 0;
 
       if (paidToday) {
         await appendHistoryRow({
@@ -809,7 +825,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
     centerSubscriptionStatus,
   ]);
 
-  const handleGroupSelect = useCallback(async (group: { id: string; name: string; fee: number }) => {
+  const handleGroupSelect = useCallback(async (group: { id: string; name: string; fee_per_class: number }) => {
     if (!scannedStudent || !centerId || !userId) return;
     setSelectedGroup(group);
     setNeedGroupSelection(false);
@@ -849,7 +865,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
     const displayStatus = paidToday ? (lastPaymentMethod && lastPaymentMethod !== 'cash' ? 'pending' : 'paid') : 'unpaid';
     const studentForDisplay: Student = {
       ...student,
-      fee: group.fee,
+      fee: group.fee_per_class,
       subject: group.name,
       payment_status: displayStatus,
       last_payment_method: lastPaymentMethod,
@@ -875,7 +891,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
     }
 
     const subActive = centerSubscriptionStatus === 'active';
-    const sessionFee = group.fee ?? 0;
+    const sessionFee = group.fee_per_class ?? 0;
 
     if (paidToday) {
       await appendHistoryRow({
@@ -1010,7 +1026,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
     if (!scannedStudent || !centerId || !userId || !canAllowLateEntry) return;
     setIsProcessing(true);
     const grp = selectedGroup ?? scannedStudent.groups?.[0];
-    const fee = grp?.fee ?? scannedStudent.fee ?? 0;
+    const fee = grp?.fee_per_class ?? scannedStudent.fee ?? 0;
     const scannedAt = new Date().toISOString();
 
     try {
@@ -1083,6 +1099,11 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
     const isCash = method === 'cash' || method === 'نقدي';
     const paymentAmount = amount ?? scannedStudent.fee ?? 0;
     const effectiveGroupId = groupId ?? selectedGroup?.id ?? scannedStudent.groups?.[0]?.id ?? null;
+    // Session fee = the group's per-class price at scan time (what the student is
+    // CHARGED for attending), distinct from paymentAmount (what they paid — may be
+    // partial or extra). Snapshotted into attendance_scans.charged_fee so the
+    // balance never re-derives from the live group price.
+    const sessionFee = Number(selectedGroup?.fee_per_class ?? scannedStudent.fee ?? 0);
 
     try {
       await queueScan({
@@ -1095,6 +1116,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
           amount: paymentAmount,
           isPending: !isCash,
           group_id: effectiveGroupId ?? undefined,
+          session_fee: sessionFee,
         },
       });
       await markPaidTodayOffline(centerId, scannedStudent.id);
@@ -1609,8 +1631,8 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
                     )}
                     <p className="text-xs font-medium text-teal-600 mt-1">
                       {t('perLesson')} ·{' '}
-                      {g.fee != null
-                        ? `${tCommon('egp')} ${formatNumber(g.fee, locale)}`
+                      {g.fee_per_class != null
+                        ? `${tCommon('egp')} ${formatNumber(g.fee_per_class, locale)}`
                         : `${tCommon('egp')} ${formatNumber(0, locale)}`}
                     </p>
                   </div>

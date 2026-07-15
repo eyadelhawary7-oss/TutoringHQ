@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendTemplateMessage } from '@/lib/whatsapp/client';
 import { formatNumber } from '@/lib/formatNumber';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { getStudentBalances } from '@/lib/studentBalance';
 
 async function getUserContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -58,12 +59,15 @@ export async function POST(request: NextRequest) {
 
     const { data: students } = await supabaseAdmin
       .from('students')
-      .select('id, name, phone, balance_due')
+      .select('id, name, phone')
       .eq('center_id', centerId)
-      .in('id', ids)
-      .gt('balance_due', 0);
+      .in('id', ids);
 
-    const list = (students || []) as { id: string; name: string; phone: string | null; balance_due: number }[];
+    const balances = await getStudentBalances(supabaseAdmin, { centerId, activeOnly: true });
+
+    const list = ((students || []) as { id: string; name: string; phone: string | null }[])
+      .map((s) => ({ ...s, balance: balances.get(s.id)?.balance ?? 0 }))
+      .filter((s) => s.balance > 0);
     const results: { student_id: string; success: boolean; error?: string }[] = [];
 
     for (const st of list) {
@@ -75,7 +79,7 @@ export async function POST(request: NextRequest) {
 
       const variables: Record<string, string> = {
         '1': st.name ?? '',
-        '2': formatNumber(Number(st.balance_due), 'ar'),
+        '2': formatNumber(Number(st.balance), 'ar'),
       };
 
       const result = await sendTemplateMessage(centerId, phone, BALANCE_REMINDER_TEMPLATE, variables);

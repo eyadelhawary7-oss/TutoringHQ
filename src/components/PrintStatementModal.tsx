@@ -8,6 +8,7 @@ import {
   type StudentBalanceStatementProps,
 } from './StudentBalanceStatement';
 import { supabase } from '@/lib/supabase';
+import { getStudentBalance } from '@/lib/studentBalance';
 import { Loader2, Printer, X } from 'lucide-react';
 import { LocalizedDateInput } from '@/components/forms/LocalizedDateInput';
 
@@ -75,13 +76,16 @@ export function PrintStatementModal({
 
       const { data: student, error: studentErr } = await supabase
         .from('students')
-        .select('id, name, student_number, phone, balance_due')
+        .select('id, name, student_number, phone')
         .eq('id', studentId)
         .eq('center_id', centerId)
         .maybeSingle();
 
       if (studentErr) throw studentErr;
       if (!student) throw new Error('Student not found');
+
+      // Computed balance (single source of truth) — never a stored column.
+      const balanceDue = await getStudentBalance(supabase, studentId);
 
       const { data: members } = await supabase
         .from('student_group_members')
@@ -141,7 +145,7 @@ export function PrintStatementModal({
           student_number: student.student_number ?? '',
           phone: student.phone ?? '',
           groups: groupNames,
-          balance_due: Number(student.balance_due ?? 0),
+          balance_due: balanceDue,
         },
         payments,
         centerName,

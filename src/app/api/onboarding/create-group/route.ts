@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { parseBodyWithLimit, validateString, ValidationError } from '@/lib/validate';
+import { parseBodyWithLimit, validateAmount, validateString, ValidationError } from '@/lib/validate';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,10 +16,20 @@ export async function POST(request: NextRequest) {
     const subjectRaw = validateString(body.subject, 'subject', { maxLength: 100 });
     const subject = subjectRaw.length > 0 ? subjectRaw : null;
 
+    // A center group MUST carry a positive per-class price — an unpriced group
+    // would make the scanner/checklist snapshot a 0 charge silently. This mirrors
+    // the student_groups_center_priced_chk DB constraint so the API rejects it
+    // with a clear field error instead of letting the insert fail on the check.
+    const feePerClass = validateAmount(body.fee_per_class, 'fee_per_class');
+    if (feePerClass <= 0) {
+      throw new ValidationError('fee_per_class must be greater than zero', 'fee_per_class');
+    }
+
     const { error: insertErr } = await supabaseAdmin.from('student_groups').insert({
       center_id: auth.centerId,
       name: name,
       subject,
+      fee_per_class: feePerClass,
     });
 
     if (insertErr) {

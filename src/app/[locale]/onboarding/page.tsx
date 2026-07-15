@@ -31,6 +31,7 @@ export default function OnboardingPage() {
   const [guardianConsent, setGuardianConsent] = useState(false);
   const [groupName, setGroupName] = useState('');
   const [groupSubject, setGroupSubject] = useState('');
+  const [groupFee, setGroupFee] = useState('');
 
   const router = useRouter();
   const locale = useLocale();
@@ -228,7 +229,12 @@ export default function OnboardingPage() {
     e.preventDefault();
     const name = groupName.trim();
     if (name.length < 2) {
-      setError('Group name is required');
+      setError(t('groupNameRequired'));
+      return;
+    }
+    const fee = Number(groupFee);
+    if (!Number.isFinite(fee) || fee <= 0) {
+      setError(t('feeRequired'));
       return;
     }
     setLoading(true);
@@ -241,6 +247,7 @@ export default function OnboardingPage() {
         body: JSON.stringify({
           name,
           subject: groupSubject.trim() || undefined,
+          fee_per_class: fee,
         }),
       });
       const j = (await res.json().catch(() => ({}))) as { error?: string };
@@ -425,6 +432,26 @@ export default function OnboardingPage() {
                 value={groupSubject}
                 onChange={(e) => setGroupSubject(e.target.value)}
                 className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)] ps-3 pe-3 py-2"
+              />
+            </div>
+            <div>
+              <label
+                className="block text-sm text-[var(--color-text-secondary)] mb-1"
+                htmlFor="group-fee"
+              >
+                {t('feePerLessonPlaceholder')}
+              </label>
+              <input
+                id="group-fee"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                step="any"
+                required
+                dir="ltr"
+                value={groupFee}
+                onChange={(e) => setGroupFee(e.target.value)}
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)] ps-3 pe-3 py-2 text-start"
               />
             </div>
             <button

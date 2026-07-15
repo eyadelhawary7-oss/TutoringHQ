@@ -10,8 +10,6 @@ const mockValidateCSRF = vi.fn<(req: NextRequest, userId: string) => boolean>(()
 
 const paymentsSelectSingle = vi.fn();
 const paymentsUpdateEq = vi.fn();
-const studentsSelectSingle = vi.fn();
-const studentsUpdateEq = vi.fn();
 
 const supabaseAdminStub = {
   from: (table: string) => {
@@ -21,14 +19,14 @@ const supabaseAdminStub = {
         update: () => ({ eq: paymentsUpdateEq }),
       };
     }
-    if (table === 'students') {
-      return {
-        select: () => ({ eq: () => ({ single: studentsSelectSingle }) }),
-        update: () => ({ eq: studentsUpdateEq }),
-      };
-    }
+    // GUARD: confirming a payment must NOT touch `students`. The old route read
+    // students.balance_due and wrote a decrement back — dead code against a
+    // column that does not exist. A previous version of this test mocked
+    // `{ balance_due: 200 }`, which faked the phantom column and hid the bug.
+    // Balance is now computed on read via src/lib/studentBalance.ts. If the
+    // route reaches for `students` again, fail loudly.
     throw new Error(
-      `unexpected table in payments/confirm test mock: ${table} — route should not be reading 'users' directly anymore (Rule 151 fix uses auth.permissions / auth.role).`,
+      `unexpected table in payments/confirm test mock: ${table} — confirm must not read/write students (balance is computed, never stored); and never reads 'users' directly (Rule 151 uses auth.permissions / auth.role).`,
     );
   },
 };
@@ -100,8 +98,6 @@ beforeEach(() => {
   mockValidateCSRF.mockReturnValue(true);
   paymentsSelectSingle.mockReset();
   paymentsUpdateEq.mockReset();
-  studentsSelectSingle.mockReset();
-  studentsUpdateEq.mockReset();
 
   paymentsSelectSingle.mockResolvedValue({
     data: {
@@ -114,8 +110,6 @@ beforeEach(() => {
     error: null,
   });
   paymentsUpdateEq.mockResolvedValue({ data: null, error: null });
-  studentsSelectSingle.mockResolvedValue({ data: { balance_due: 200 }, error: null });
-  studentsUpdateEq.mockResolvedValue({ data: null, error: null });
 });
 
 describe('POST /api/payments/confirm — Rule 151 best-effort permissions', () => {

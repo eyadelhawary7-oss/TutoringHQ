@@ -19,7 +19,7 @@ interface Group {
   id: string;
   name: string;
   subject: string | null;
-  fee?: number;
+  fee_per_class?: number;
   /** Member count (same as student_count; kept for mutations). */
   member_count?: number;
   /** Display count for UI (synced with member_count). */
@@ -104,7 +104,7 @@ export default function GroupsPage() {
     const [groupsRes, studentsRes, subjectsRes, slotsRes] = await Promise.all([
       dbSelect({
         table: 'student_groups',
-        select: 'id, name, subject, fee, max_capacity',
+        select: 'id, name, subject, fee_per_class, max_capacity',
         filters: [{ column: 'center_id', op: 'eq', value: cid }],
         order: { column: 'name' },
       }),
@@ -340,7 +340,7 @@ export default function GroupsPage() {
           await dbInsert({ table: 'student_group_members', data: { group_id: inserted.id, student_id: sid }, select: false });
         }
         const addN = memberIds.length;
-        setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, subject: subjectName, fee, member_count: addN, student_count: addN, teacher_name: null, max_capacity: maxCap }]);
+        setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, subject: subjectName, fee_per_class: fee, member_count: addN, student_count: addN, teacher_name: null, max_capacity: maxCap }]);
         setShowAddModal(false);
         setAddForm({ name: '', subjectId: '', fee_per_class: '', centerCut: '', studentIds: [], maxCapacity: '' });
         toast.success(tToast('saved'));
@@ -513,7 +513,7 @@ export default function GroupsPage() {
               <p className="text-sm text-[var(--color-text-secondary)] mb-3">{g.subject || tCommon('notSet')}</p>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-[var(--color-text-primary)] font-mono">
-                  {g.fee != null ? formatCurrency(g.fee, locale) : tCommon('notSet')}
+                  {g.fee_per_class != null ? formatCurrency(g.fee_per_class, locale) : tCommon('notSet')}
                 </span>
                 <span className="text-xs text-[var(--color-text-muted)]">{t('perLesson')}</span>
               </div>
@@ -651,7 +651,7 @@ export default function GroupsPage() {
                 <div>
                   <p className="text-xs text-[var(--color-text-secondary)]">{t('feePerLesson')}</p>
                   <p className="font-semibold text-[var(--color-text-primary)] font-mono">
-                    {detailGroup.fee != null ? formatCurrency(detailGroup.fee, locale) : tCommon('notSet')}
+                    {detailGroup.fee_per_class != null ? formatCurrency(detailGroup.fee_per_class, locale) : tCommon('notSet')}
                   </p>
                 </div>
                 <div>

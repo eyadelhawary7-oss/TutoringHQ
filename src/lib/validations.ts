@@ -299,15 +299,11 @@ export const studentGroupSchema = z.object({
   name: z.string().min(2).max(100).regex(/^[a-zA-Z0-9\s\u0600-\u06FF]+$/, 'Invalid characters'),
   center_id: z.string().uuid().optional(),
   subject: z.string().optional().nullable(),
-  fee: z.number().optional(),
+  // `fee_per_class` is the single canonical per-group price. The legacy `fee`
+  // column has been retired (migration 20260715120000) — no mirror is written.
   fee_per_class: z.number().positive(),
   max_capacity: z.number().int().min(1).max(9999).optional().nullable(),
-}).passthrough().transform((data) => {
-  // student_groups carries both the legacy `fee` column and the canonical
-  // `fee_per_class`. Mirror fee_per_class into fee so the two stay in sync
-  // and the center_cut_egp <= fee_per_class CHECK binds for dashboard groups.
-  return { ...data, fee: data.fee_per_class };
-});
+}).passthrough();
 
 /** Card order student entry */
 const cardOrderStudentSchema = z.object({

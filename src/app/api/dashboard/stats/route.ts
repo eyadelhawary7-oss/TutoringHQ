@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import { getStudentBalances, sumOutstanding } from '@/lib/studentBalance';
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
         .gte('scanned_at', weekStart.toISOString()),
       supabaseAdmin
         .from('students')
-        .select('balance_due')
+        .select('id')
         .eq('center_id', centerId),
       supabaseAdmin
         .from('payments')
@@ -143,7 +144,6 @@ export async function GET(request: NextRequest) {
 
     const payments = (paymentsRes.data || []) as { amount: number; paid_at: string }[];
     const scans = (scansRes.data || []) as { student_id: string; scanned_at: string }[];
-    const students = (studentsRes.data || []) as { balance_due?: number }[];
     const recentPayments = (recentPaymentsRes.data || []) as { id: string; amount: number; method: string; paid_at: string; students?: { name?: string } | null }[];
     const recentScans = (recentScansRes.data || []) as { id: string; scanned_at: string; payment_status_at_scan?: string; students?: { name?: string } | null }[];
 
@@ -161,7 +161,8 @@ export async function GET(request: NextRequest) {
       return d >= todayStart && d <= todayEnd;
     }).length;
 
-    const pendingBalance = students.reduce((s, st) => s + (Number(st.balance_due) || 0), 0);
+    const balances = await getStudentBalances(supabaseAdmin, { centerId, activeOnly: true });
+    const pendingBalance = sumOutstanding(balances.values());
 
     const byMonth: Record<string, number> = {};
     for (let i = 5; i >= 0; i--) {

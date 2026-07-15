@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { isSuperAdminPhone } from '@/lib/admin-access';
+import { getStudentBalances, sumOutstanding } from '@/lib/studentBalance';
 
 const EMPTY_ANALYTICS_PAYLOAD = {
   mrr: 0,
@@ -118,9 +119,8 @@ export async function GET(request: NextRequest) {
         .gte('paid_at', sixMonthsAgo.toISOString()),
       supabaseAdmin
         .from('students')
-        .select('id, name, balance_due, phone, student_number')
-        .eq('center_id', centerId)
-        .gt('balance_due', 0),
+        .select('id, name, phone, student_number')
+        .eq('center_id', centerId),
       supabaseAdmin
         .from('student_groups')
         .select('id, name')
@@ -133,7 +133,17 @@ export async function GET(request: NextRequest) {
     ]);
 
     const payments = (paymentsRes.data || []) as { amount: number; paid_at: string; method: string; group_id: string | null; student_id: string | null; status: string }[];
-    const studentsWithBalance = (studentsRes.data || []) as { id: string; name: string; balance_due: number; phone: string | null; student_number: string | null }[];
+    const studentRows = (studentsRes.data || []) as { id: string; name: string; phone: string | null; student_number: string | null }[];
+    const balances = await getStudentBalances(supabaseAdmin, { centerId, activeOnly: true });
+    const studentsWithBalance = studentRows
+      .map((s) => ({
+        id: s.id,
+        name: s.name,
+        balance_due: balances.get(s.id)?.balance ?? 0,
+        phone: s.phone,
+        student_number: s.student_number,
+      }))
+      .filter((s) => s.balance_due > 0);
     const groups = (groupsRes.data || []) as { id: string; name: string }[];
     const expenses = (expensesRes.data || []) as { month: string; rent: number; salaries: number; utilities: number; other: number }[];
 
@@ -143,7 +153,7 @@ export async function GET(request: NextRequest) {
     const monthPayments = confirmedPayments.filter((p) => p.paid_at >= monthStart.toISOString() && p.paid_at <= monthEnd.toISOString());
 
     const mrr = monthPayments.reduce((s, p) => s + (p.amount ?? 0), 0);
-    const outstanding_total = studentsWithBalance.reduce((s, st) => s + (Number(st.balance_due) || 0), 0);
+    const outstanding_total = sumOutstanding(balances.values());
 
     const expectedThisMonth = studentsWithBalance.length > 0
       ? studentsWithBalance.reduce((s, st) => s + (Number(st.balance_due) || 0), 0) + monthPayments.reduce((s, p) => s + (p.amount ?? 0), 0)

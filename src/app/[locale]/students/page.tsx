@@ -24,6 +24,7 @@ import {
   getAnnouncementCap,
 } from '@/lib/parentPack';
 import { formatCurrency, formatNumber, formatPlainInteger } from '@/lib/formatNumber';
+import { getStudentBalances } from '@/lib/studentBalance';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { memoryCacheGet, memoryCacheSet } from '@/lib/clientMemoryCache';
 
@@ -58,7 +59,7 @@ interface Group {
   id: string;
   name: string;
   subject: string | null;
-  fee?: number;
+  fee_per_class?: number;
 }
 
 type SortBy = 'name' | 'balance';
@@ -381,48 +382,13 @@ export default function StudentsPage() {
       if (!meData?.user?.center_id) return;
       const cid = meData.user.center_id;
 
-      const [scansRes, paymentsRes] = await Promise.all([
-        dbSelect({
-          table: 'attendance_scans',
-          select: 'student_id, group_id',
-          filters: [{ column: 'center_id', op: 'eq', value: cid }],
-        }),
-        dbSelect({
-          table: 'payments',
-          select: 'student_id, amount, confirmed',
-          filters: [{ column: 'center_id', op: 'eq', value: cid }],
-        }),
-      ]);
-      const scans = (scansRes.data || []) as { student_id: string; group_id: string | null }[];
-      const payments = (paymentsRes.data || []) as { student_id: string; amount: number; confirmed?: boolean }[];
-
-      const groupFeeMap = new Map(groups.map((g) => [g.id, g.fee ?? 0]));
-      const owedByStudent: Record<string, number> = {};
-      for (const s of scans) {
-        if (s.group_id && groupFeeMap.has(s.group_id)) {
-          const key = `${s.student_id}:${s.group_id}`;
-          owedByStudent[key] = (owedByStudent[key] ?? 0) + 1;
-        }
-      }
-      const totalOwedByStudent: Record<string, number> = {};
-      for (const [key, count] of Object.entries(owedByStudent)) {
-        const [sid, gid] = key.split(':');
-        const fee = groupFeeMap.get(gid) ?? 0;
-        totalOwedByStudent[sid] = (totalOwedByStudent[sid] ?? 0) + count * fee;
-      }
-      const paidByStudent: Record<string, number> = {};
-      for (const p of payments) {
-        if (p.confirmed === true) {
-          paidByStudent[p.student_id] = (paidByStudent[p.student_id] ?? 0) + parseFloat(String(p.amount ?? 0));
-        }
-      }
+      // Single source of truth: the shared balance helper (group fee × attended
+      // − logged payments, absent excluded, pending counted, credit shown).
+      // Replaces the old inline math that charged absent scans, dropped pending
+      // payments, and floored credits to zero.
+      const balances = await getStudentBalances(supabase, { centerId: cid });
       const balance: Record<string, number> = {};
-      const allIds = new Set([...Object.keys(totalOwedByStudent), ...Object.keys(paidByStudent)]);
-      for (const sid of allIds) {
-        const owed = totalOwedByStudent[sid] ?? 0;
-        const paid = paidByStudent[sid] ?? 0;
-        balance[sid] = Math.max(0, owed - paid);
-      }
+      for (const [sid, b] of balances) balance[sid] = b.balance;
       setBalanceByStudent(balance);
       } catch (err) {
         console.error('[students] loadBalanceData failed', err);
@@ -441,7 +407,7 @@ export default function StudentsPage() {
       if (!meData?.user?.center_id) return;
       const [subRes, grpRes] = await Promise.all([
         dbSelect({ table: 'subjects', select: 'id, name', filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }], order: { column: 'name' } }),
-        dbSelect({ table: 'student_groups', select: 'id, name, subject, fee', filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }], order: { column: 'name' } }),
+        dbSelect({ table: 'student_groups', select: 'id, name, subject, fee_per_class', filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }], order: { column: 'name' } }),
       ]);
       if (subRes.data) setSubjects(subRes.data as Subject[]);
       if (grpRes.data) {
@@ -460,7 +426,7 @@ export default function StudentsPage() {
             if (g) {
               if (!map[m.student_id]) map[m.student_id] = { names: [], fees: [], subjects: [], groupIds: [] };
               map[m.student_id].names.push(g.name);
-              map[m.student_id].fees.push(g.fee ?? 0);
+              map[m.student_id].fees.push(g.fee_per_class ?? 0);
               map[m.student_id].groupIds.push(g.id);
               if (g.subject && !map[m.student_id].subjects.includes(g.subject)) {
                 map[m.student_id].subjects.push(g.subject);
@@ -868,7 +834,7 @@ export default function StudentsPage() {
         ...prev,
         [editStudent.id]: {
           names: updatedGroups.map((g) => g.name),
-          fees: updatedGroups.map((g) => g.fee ?? 0),
+          fees: updatedGroups.map((g) => g.fee_per_class ?? 0),
           subjects: [...new Set(updatedGroups.map((g) => g.subject).filter(Boolean))] as string[],
           groupIds: editGroups,
         },
@@ -947,7 +913,7 @@ export default function StudentsPage() {
         : null;
       const packEnabled = meData?.user?.center?.parent_pack_enabled === true;
       const optedIn = packEnabled && addForm.parentPackOptIn;
-      // Fee comes from group (groups.fee), not from students table
+      // Fee comes from group (groups.fee_per_class), not from students table
       const insertPayload = {
         center_id: centerId,
         name: addForm.name.trim(),
@@ -1007,7 +973,7 @@ export default function StudentsPage() {
           ...prev,
           [student.id]: {
             names: [addedGroup.name],
-            fees: [addedGroup.fee ?? 0],
+            fees: [addedGroup.fee_per_class ?? 0],
             subjects: addedGroup.subject ? [addedGroup.subject] : [],
             groupIds: [addedGroup.id],
           },
@@ -1077,7 +1043,7 @@ export default function StudentsPage() {
       }
       const row = Array.isArray(inserted) ? inserted[0] : inserted;
       await auditLog({ centerId: cid, userId: uid, action: 'group_create', entityType: 'student_groups', entityId: row.id, details: { name: row.name } });
-      const newGroup: Group = { id: row.id, name: createGroupForm.name.trim(), subject: subjectName, fee };
+      const newGroup: Group = { id: row.id, name: createGroupForm.name.trim(), subject: subjectName, fee_per_class: fee };
       setGroups((prev) => [...prev, newGroup]);
       setAddForm((f) => ({ ...f, groupId: newGroup.id, subjectId: createGroupForm.subjectId, monthlyFee: String(fee) }));
       setCreateGroupForm({ name: '', subjectId: '', fee: '' });
@@ -2090,7 +2056,7 @@ export default function StudentsPage() {
                   <div className="flex gap-2">
                     <select
                       value={addForm.groupId}
-                      onChange={(e) => { const gId = e.target.value; const g = groups.find((gr) => gr.id === gId); setAddForm((f) => ({ ...f, groupId: gId, subjectId: g ? subjects.find((s) => s.name === g.subject)?.id ?? '' : '', monthlyFee: g?.fee != null ? String(g.fee) : '' })); }}
+                      onChange={(e) => { const gId = e.target.value; const g = groups.find((gr) => gr.id === gId); setAddForm((f) => ({ ...f, groupId: gId, subjectId: g ? subjects.find((s) => s.name === g.subject)?.id ?? '' : '', monthlyFee: g?.fee_per_class != null ? String(g.fee_per_class) : '' })); }}
                       className="flex-1 min-w-0 px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm"
                       required
                       disabled={groups.length === 0}
@@ -2103,7 +2069,7 @@ export default function StudentsPage() {
                       {groups.map((g) => (
                         <option key={g.id} value={g.id}>
                           {g.name}
-                          {g.fee != null ? ` (${formatCurrency(g.fee, locale)})` : ''}
+                          {g.fee_per_class != null ? ` (${formatCurrency(g.fee_per_class, locale)})` : ''}
                         </option>
                       ))}
                     </select>

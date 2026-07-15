@@ -1236,6 +1236,7 @@
     "groupNamePlaceholder": "Group name",
     "selectSubject": "Select Subject",
     "feePerLessonPlaceholder": "Fee per lesson (EGP)",
+    "feeRequired": "Fee per lesson must be greater than zero",
     "addGroup": "Add Group",
     "qrReady": "QR Cards Ready!",
     "qrMessage": "Print them and distribute to your students.",
