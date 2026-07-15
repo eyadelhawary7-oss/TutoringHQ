@@ -50,7 +50,7 @@ interface Student {
   student_number?: string | null;
   last_payment_method?: string | null;
   balance_due?: number;
-  groups?: { id: string; name: string; fee: number; subject?: string | null }[];
+  groups?: { id: string; name: string; fee_per_class: number; subject?: string | null }[];
 }
 
 /** Active students row for instant QR lookup (Supabase `students.name`, not full_name). */
@@ -118,7 +118,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
   const manualInputRef = useRef<HTMLInputElement>(null);
   const [scannedStudent, setScannedStudent] = useState<Student | null>(null);
   const [needGroupSelection, setNeedGroupSelection] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<{ id: string; name: string; fee: number; subject?: string | null } | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<{ id: string; name: string; fee_per_class: number; subject?: string | null } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
@@ -240,17 +240,17 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
         const members = (membersData || []) as { student_id: string; group_id: string }[];
 
         const groupIds = [...new Set(members.map(m => m.group_id))];
-        let groupsMap: Record<string, { id: string; name: string; fee: number; subject?: string | null }> = {};
+        let groupsMap: Record<string, { id: string; name: string; fee_per_class: number; subject?: string | null }> = {};
         if (groupIds.length > 0) {
           const { data: groupsData } = await dbSelect({
             table: 'student_groups',
-            select: 'id, name, fee, subject',
+            select: 'id, name, fee_per_class, subject',
             filters: [{ column: 'id', op: 'in', value: groupIds }],
           });
           groupsMap = Object.fromEntries(
-            ((groupsData || []) as { id: string; name?: string; fee?: number; subject?: string | null }[]).map(g => [
+            ((groupsData || []) as { id: string; name?: string; fee_per_class?: number; subject?: string | null }[]).map(g => [
               g.id,
-              { id: g.id, name: g.name ?? '', fee: g.fee ?? 0, subject: g.subject ?? null },
+              { id: g.id, name: g.name ?? '', fee_per_class: g.fee_per_class ?? 0, subject: g.subject ?? null },
             ])
           );
         }
@@ -554,18 +554,18 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
               const grpIds = (membersData as { group_id: string }[]).map((m) => m.group_id);
               const { data: groupsData } = await dbSelect({
                 table: 'student_groups',
-                select: 'id, name, fee',
+                select: 'id, name, fee_per_class',
                 filters: [{ column: 'id', op: 'in', value: grpIds }],
               });
               if (groupsData && Array.isArray(groupsData)) {
-                student.groups = (groupsData as { id: string; name: string; fee?: number }[]).map((g) => ({
+                student.groups = (groupsData as { id: string; name: string; fee_per_class?: number }[]).map((g) => ({
                   id: g.id,
                   name: g.name,
-                  fee: g.fee ?? 0,
+                  fee_per_class: g.fee_per_class ?? 0,
                 }));
                 const primaryGroup = student.groups[0];
                 if (primaryGroup && !student.fee) {
-                  student.fee = primaryGroup.fee;
+                  student.fee = primaryGroup.fee_per_class;
                   student.subject = primaryGroup.name;
                 }
               }
@@ -667,14 +667,14 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
       const displayStatus = paidToday ? (lastPaymentMethod && lastPaymentMethod !== 'cash' ? 'pending' : 'paid') : 'unpaid';
       const studentForDisplay: Student = {
         ...st,
-        fee: grp?.fee ?? st.fee ?? 0,
+        fee: grp?.fee_per_class ?? st.fee ?? 0,
         subject: grp?.name ?? st.subject ?? '',
         payment_status: displayStatus,
         last_payment_method: lastPaymentMethod,
       };
       const scannedAt = new Date().toISOString();
       const subActive = centerSubscriptionStatus === 'active';
-      const sessionFee = grp?.fee ?? st.fee ?? 0;
+      const sessionFee = grp?.fee_per_class ?? st.fee ?? 0;
 
       if (paidToday) {
         await appendHistoryRow({
@@ -825,7 +825,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
     centerSubscriptionStatus,
   ]);
 
-  const handleGroupSelect = useCallback(async (group: { id: string; name: string; fee: number }) => {
+  const handleGroupSelect = useCallback(async (group: { id: string; name: string; fee_per_class: number }) => {
     if (!scannedStudent || !centerId || !userId) return;
     setSelectedGroup(group);
     setNeedGroupSelection(false);
@@ -865,7 +865,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
     const displayStatus = paidToday ? (lastPaymentMethod && lastPaymentMethod !== 'cash' ? 'pending' : 'paid') : 'unpaid';
     const studentForDisplay: Student = {
       ...student,
-      fee: group.fee,
+      fee: group.fee_per_class,
       subject: group.name,
       payment_status: displayStatus,
       last_payment_method: lastPaymentMethod,
@@ -891,7 +891,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
     }
 
     const subActive = centerSubscriptionStatus === 'active';
-    const sessionFee = group.fee ?? 0;
+    const sessionFee = group.fee_per_class ?? 0;
 
     if (paidToday) {
       await appendHistoryRow({
@@ -1026,7 +1026,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
     if (!scannedStudent || !centerId || !userId || !canAllowLateEntry) return;
     setIsProcessing(true);
     const grp = selectedGroup ?? scannedStudent.groups?.[0];
-    const fee = grp?.fee ?? scannedStudent.fee ?? 0;
+    const fee = grp?.fee_per_class ?? scannedStudent.fee ?? 0;
     const scannedAt = new Date().toISOString();
 
     try {
@@ -1625,8 +1625,8 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
                     )}
                     <p className="text-xs font-medium text-teal-600 mt-1">
                       {t('perLesson')} ·{' '}
-                      {g.fee != null
-                        ? `${tCommon('egp')} ${formatNumber(g.fee, locale)}`
+                      {g.fee_per_class != null
+                        ? `${tCommon('egp')} ${formatNumber(g.fee_per_class, locale)}`
                         : `${tCommon('egp')} ${formatNumber(0, locale)}`}
                     </p>
                   </div>

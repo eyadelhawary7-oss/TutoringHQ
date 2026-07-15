@@ -1356,17 +1356,16 @@ COLUMN student_groups.name ord=3 type=text notnull=true default=∅
 COLUMN student_groups.subject ord=4 type=text notnull=false default=∅
 COLUMN student_groups.whatsapp_group_id ord=5 type=text notnull=false default=∅
 COLUMN student_groups.created_at ord=6 type=timestamp with time zone notnull=false default=now()
-COLUMN student_groups.fee ord=7 type=numeric(12,2) notnull=false default=0
-COLUMN student_groups.max_capacity ord=8 type=integer notnull=false default=∅
-COLUMN student_groups.kind ord=9 type=text notnull=true default='center'::text
-COLUMN student_groups.teacher_id ord=10 type=uuid notnull=false default=∅
-COLUMN student_groups.teacher_split_pct ord=11 type=numeric notnull=false default=∅
-COLUMN student_groups.fee_per_class ord=12 type=numeric notnull=false default=∅
-COLUMN student_groups.approval_mode ord=13 type=text notnull=false default=∅
-COLUMN student_groups.is_self_enroll_open ord=14 type=boolean notnull=true default=false
-COLUMN student_groups.status ord=15 type=text notnull=true default='active'::text
-COLUMN student_groups.capacity_cap ord=16 type=integer notnull=false default=∅
-COLUMN student_groups.center_cut_egp ord=17 type=numeric notnull=true default=0
+COLUMN student_groups.max_capacity ord=7 type=integer notnull=false default=∅
+COLUMN student_groups.kind ord=8 type=text notnull=true default='center'::text
+COLUMN student_groups.teacher_id ord=9 type=uuid notnull=false default=∅
+COLUMN student_groups.teacher_split_pct ord=10 type=numeric notnull=false default=∅
+COLUMN student_groups.fee_per_class ord=11 type=numeric notnull=false default=∅
+COLUMN student_groups.approval_mode ord=12 type=text notnull=false default=∅
+COLUMN student_groups.is_self_enroll_open ord=13 type=boolean notnull=true default=false
+COLUMN student_groups.status ord=14 type=text notnull=true default='active'::text
+COLUMN student_groups.capacity_cap ord=15 type=integer notnull=false default=∅
+COLUMN student_groups.center_cut_egp ord=16 type=numeric notnull=true default=0
 COLUMN student_notes.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN student_notes.student_id ord=2 type=uuid notnull=true default=∅
 COLUMN student_notes.center_id ord=3 type=uuid notnull=true default=∅
@@ -2299,7 +2298,6 @@ CONSTRAINT student_groups.student_groups_approval_mode_chk type=c def=CHECK (((a
 CONSTRAINT student_groups.student_groups_capacity_cap_chk type=c def=CHECK (((capacity_cap IS NULL) OR (capacity_cap > 0)))
 CONSTRAINT student_groups.student_groups_center_cut_valid type=c def=CHECK (((center_cut_egp >= (0)::numeric) AND ((fee_per_class IS NULL) OR (center_cut_egp <= fee_per_class))))
 CONSTRAINT student_groups.student_groups_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
-CONSTRAINT student_groups.student_groups_fee_nonneg type=c def=CHECK (((fee IS NULL) OR (fee >= (0)::numeric)))
 CONSTRAINT student_groups.student_groups_kind_chk type=c def=CHECK ((kind = ANY (ARRAY['center'::text, 'private'::text])))
 CONSTRAINT student_groups.student_groups_kind_shape_chk type=c def=CHECK ((((kind = 'center'::text) AND (center_id IS NOT NULL)) OR ((kind = 'private'::text) AND (fee_per_class IS NOT NULL) AND (approval_mode IS NOT NULL))))
 CONSTRAINT student_groups.student_groups_pkey type=p def=PRIMARY KEY (id)

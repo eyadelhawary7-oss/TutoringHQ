@@ -34,7 +34,7 @@ import { ListChecks, BookOpen, Search, X, Check, Banknote, Smartphone, Gift, Che
 interface ChecklistGroup {
   id: string;
   name: string;
-  fee: number;
+  fee_per_class: number;
   subject: string | null;
 }
 
@@ -43,7 +43,7 @@ interface RosterStudent {
   name: string;
   student_number?: string | null;
   fee?: number;
-  groups?: { id: string; name: string; fee: number; subject?: string | null }[];
+  groups?: { id: string; name: string; fee_per_class: number; subject?: string | null }[];
 }
 
 /** Fire-and-forget parent notify after the server accepts the attendance row (mirrors scan/page.tsx). */
@@ -132,12 +132,12 @@ export default function ChecklistTab({ initialGroupId }: { initialGroupId?: stri
       // No mode gate: the checklist is always available for every group.
       const { data } = await dbSelect({
         table: 'student_groups',
-        select: 'id, name, fee, subject',
+        select: 'id, name, fee_per_class, subject',
         filters: [{ column: 'center_id', op: 'eq', value: centerId }],
         order: { column: 'name' },
       });
       const rows = (data || []) as ChecklistGroup[];
-      setGroups(rows.map((g) => ({ id: g.id, name: g.name, fee: g.fee ?? 0, subject: g.subject ?? null })));
+      setGroups(rows.map((g) => ({ id: g.id, name: g.name, fee_per_class: g.fee_per_class ?? 0, subject: g.subject ?? null })));
     } catch {
       setGroups([]);
     } finally {
@@ -163,17 +163,17 @@ export default function ChecklistTab({ initialGroupId }: { initialGroupId?: stri
         });
         const members = (membersData || []) as { student_id: string; group_id: string }[];
         const groupIds = [...new Set(members.map((m) => m.group_id))];
-        let groupsMap: Record<string, { id: string; name: string; fee: number; subject?: string | null }> = {};
+        let groupsMap: Record<string, { id: string; name: string; fee_per_class: number; subject?: string | null }> = {};
         if (groupIds.length > 0) {
           const { data: groupsData } = await dbSelect({
             table: 'student_groups',
-            select: 'id, name, fee, subject',
+            select: 'id, name, fee_per_class, subject',
             filters: [{ column: 'id', op: 'in', value: groupIds }],
           });
           groupsMap = Object.fromEntries(
-            ((groupsData || []) as { id: string; name?: string; fee?: number; subject?: string | null }[]).map((g) => [
+            ((groupsData || []) as { id: string; name?: string; fee_per_class?: number; subject?: string | null }[]).map((g) => [
               g.id,
-              { id: g.id, name: g.name ?? '', fee: g.fee ?? 0, subject: g.subject ?? null },
+              { id: g.id, name: g.name ?? '', fee_per_class: g.fee_per_class ?? 0, subject: g.subject ?? null },
             ]),
           );
         }
@@ -305,7 +305,7 @@ export default function ChecklistTab({ initialGroupId }: { initialGroupId?: stri
       }
 
       const scannedAt = new Date().toISOString();
-      const fee = selectedGroup.fee ?? student.fee ?? 0;
+      const fee = selectedGroup.fee_per_class ?? student.fee ?? 0;
       const deps: ChecklistCommitDeps = {
         queueScan,
         markPaidTodayOffline,
@@ -407,7 +407,7 @@ export default function ChecklistTab({ initialGroupId }: { initialGroupId?: stri
                 <span className="min-w-0">
                   <span className="block truncate font-semibold text-[var(--color-text-primary)]">{g.name}</span>
                   <span className="block truncate text-sm text-[var(--color-text-secondary)]">
-                    {g.subject || tCommon('notSet')} · {formatCurrency(g.fee, locale)}
+                    {g.subject || tCommon('notSet')} · {formatCurrency(g.fee_per_class, locale)}
                   </span>
                 </span>
                 <DirectionalIcon icon={ChevronRight} className="h-5 w-5 shrink-0 text-[var(--color-text-tertiary)]" />
@@ -429,7 +429,7 @@ export default function ChecklistTab({ initialGroupId }: { initialGroupId?: stri
             </button>
             <div className="text-end">
               <div className="font-semibold text-[var(--color-text-primary)]">{selectedGroup.name}</div>
-              <div className="text-xs text-[var(--color-text-secondary)] font-mono">{formatCurrency(selectedGroup.fee, locale)}</div>
+              <div className="text-xs text-[var(--color-text-secondary)] font-mono">{formatCurrency(selectedGroup.fee_per_class, locale)}</div>
             </div>
           </div>
 

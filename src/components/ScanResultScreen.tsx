@@ -12,12 +12,12 @@ interface Student {
   subject: string;
   student_number?: string | null;
   last_payment_method?: string | null;
-  groups?: { id: string; name: string; fee: number }[];
+  groups?: { id: string; name: string; fee_per_class: number }[];
 }
 
 interface ScanResultScreenProps {
   student: Student;
-  selectedGroup?: { id: string; name: string; fee: number } | null;
+  selectedGroup?: { id: string; name: string; fee_per_class: number } | null;
   onPaymentSelect: (method: string, groupId?: string, amount?: number) => void;
   /** Called with audit reason slug after operator confirms */
   onAllowLateEntry?: (reason: string) => void;
@@ -145,7 +145,7 @@ export default function ScanResultScreen({
           </div>
           <h2 className="text-2xl font-bold mb-2">{student.name}</h2>
           <p className="text-[var(--color-text-secondary)] text-lg mb-1">{selectedGroup?.name ?? student.subject}</p>
-          <p className="text-3xl font-bold font-mono mt-2 mb-6 text-emerald-600">{egp(selectedGroup?.fee ?? student.fee ?? 0)}</p>
+          <p className="text-3xl font-bold font-mono mt-2 mb-6 text-emerald-600">{egp(selectedGroup?.fee_per_class ?? student.fee ?? 0)}</p>
           {balanceDue > 0 && (
             <div className="bg-[var(--color-surface-0)] rounded-xl p-4 mb-6 w-full border border-[var(--color-border-subtle)]">
               <p className="text-sm text-[var(--color-text-secondary)]">{t('balanceDue')}</p>
@@ -225,7 +225,7 @@ export default function ScanResultScreen({
   }
 
   // ─── RED / debt unpaid (card, not full bleed) ───
-  const fee = selectedGroup?.fee ?? student.fee ?? 0;
+  const fee = selectedGroup?.fee_per_class ?? student.fee ?? 0;
   const headline =
     paymentHeadline ||
     (outstandingBalance > 0
@@ -264,7 +264,7 @@ export default function ScanResultScreen({
                 onPaymentSelect(
                   value,
                   selectedGroup?.id ?? student.groups?.[0]?.id,
-                  selectedGroup?.fee ?? student.groups?.[0]?.fee ?? student.fee,
+                  selectedGroup?.fee_per_class ?? student.groups?.[0]?.fee_per_class ?? student.fee,
                 );
               }}
               className="min-h-[44px] py-3 px-4 bg-[var(--color-surface-0)] hover:bg-[var(--color-surface-2)] rounded-xl font-semibold transition-colors border border-[var(--color-border-default)] text-sm disabled:opacity-50 text-[var(--color-text-primary)]"
