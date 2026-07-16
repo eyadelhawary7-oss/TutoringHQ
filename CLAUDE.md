@@ -127,6 +127,15 @@ Most business logic lives in **`src/lib/`** as standalone modules. Prefer import
 - **Webhooks verify HMAC themselves** — middleware does not check auth on `PUBLIC_WEBHOOK_PREFIXES`.
 - **No `forwardRef` boilerplate.** `ref` is a normal prop in React 19 — don't wrap new components in `forwardRef`, and strip it from older components when you touch them. Footgun: copy-pasting pre-React-19 component patterns drags `forwardRef` back in.
 
+## Working rules
+
+<!-- Rules 1–3 are defined in the source brief `BUILD_BRIEF_skills_pack_and_rules.md`
+     (a project-knowledge file that was not present in this repo/environment when this
+     section was created). Insert them here when the full brief is run. This section
+     currently carries only rule 4, added per the 2026-07-15 session additions. -->
+
+4. **Migrations are manual apply to production.** Supabase Branching auto-applies to preview branches only, never to production on merge. This was tested on 2026-07-15: PR #159 merged as `80f82ba` and the migration was still absent from the production catalog and history 8 minutes later. Apply the migration by hand, confirm the columns exist in `information_schema`, then let the code deploy. **Never merge and assume.**
+
 ## Where to look first
 
 - New API route: `src/app/api/<domain>/route.ts` + a helper in `src/lib/<domain>.ts`. Check `requireOwnerAdminCenter` / `centerAuth` / `admin-access` for the right gate.
