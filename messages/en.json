@@ -5054,6 +5054,7 @@
     "summaryStudents": "Total students",
     "summaryGroups": "Total groups",
     "summaryHint": "Individual records are locked until you pay.",
+    "invoiceDueTitle": "Amount due",
     "message": "Please renew to continue using the system",
     "centerSuspendedTitle": "Your Account Has Been Suspended",
     "centerSuspendedMessage": "Your account has been suspended. Contact support to renew.",

@@ -3,6 +3,7 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { centerAccessGateResponse } from '@/lib/centerAccessGate';
 import { processOnboardingStep } from '@/lib/whatsapp/flows/onboarding';
 import { normalizePhone } from '@/lib/whatsapp/client';
 
@@ -50,6 +51,11 @@ export async function POST(request: NextRequest) {
     if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Part 6 (CLOSE as leak): inherit the suspension / lock gate the hand-rolled
+    // auth skipped. A locked centre must not send outbound WhatsApp.
+    const welcomeGate = await centerAccessGateResponse(ctx.supabaseAdmin, ctx.centerId);
+    if (welcomeGate) return welcomeGate;
 
     const { data: row } = await ctx.supabaseAdmin.from('centers').select('phone').eq('id', ctx.centerId).single();
 

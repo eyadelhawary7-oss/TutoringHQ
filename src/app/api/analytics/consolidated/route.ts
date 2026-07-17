@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { getStudentBalances, sumOutstanding } from '@/lib/studentBalance';
+import { centerAccessGateResponse } from '@/lib/centerAccessGate';
 
 async function getOrgContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -42,7 +43,8 @@ async function getOrgContext(request: NextRequest) {
   }
   if (!orgId) return null;
 
-  return { organizationId: orgId, supabaseAdmin };
+  const callerCenterId = (userRecord as { center_id?: string | null } | null)?.center_id ?? null;
+  return { organizationId: orgId, supabaseAdmin, callerCenterId };
 }
 
 export async function GET(request: NextRequest) {
@@ -50,7 +52,17 @@ export async function GET(request: NextRequest) {
     const ctx = await getOrgContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { organizationId, supabaseAdmin } = ctx;
+    const { organizationId, supabaseAdmin, callerCenterId } = ctx;
+
+    // Part 6 (BLOCK): org-consolidated analytics expose per-branch revenue and
+    // outstanding balances. When the caller's own centre is locked they see only
+    // the invoice and a pay button, so inherit the gate the hand-rolled auth
+    // skipped. Gate on the caller's home centre (pure-org admins have none).
+    if (callerCenterId) {
+      const gate = await centerAccessGateResponse(supabaseAdmin, callerCenterId);
+      if (gate) return gate;
+    }
+
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);

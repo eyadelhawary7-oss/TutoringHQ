@@ -8,7 +8,7 @@ import { dbSelect } from '@/lib/db-proxy';
 import { Link } from '@/i18n/routing';
 import LanguageToggle from '@/components/LanguageToggle';
 import { getSupportWhatsAppWaMeWithText } from '@/lib/supportWhatsApp';
-import { formatNumber } from '@/lib/formatNumber';
+import { formatNumber, formatCurrency } from '@/lib/formatNumber';
 
 export default function SuspendedPage() {
   const t = useTranslations('suspended');
@@ -18,6 +18,11 @@ export default function SuspendedPage() {
   const [fawryCode, setFawryCode] = useState('');
   // Read-only summary screen (single-day lock model): headline numbers only.
   const [summary, setSummary] = useState<{ students: number; groups: number } | null>(null);
+  // The outstanding invoice — the single-day lock shows "only the invoice and a pay
+  // button". Display only; the invoice row itself is never modified here.
+  const [invoice, setInvoice] = useState<
+    { invoice_number: string | null; total_amount: number | null; due_date: string | null } | null
+  >(null);
 
   useEffect(() => {
     const loadSummary = async () => {
@@ -31,11 +36,23 @@ export default function SuspendedPage() {
       const meData = await meRes.json();
       const centerId = meData?.user?.center_id as string | undefined;
       if (!centerId) return;
-      const [studentsRes, groupsRes] = await Promise.all([
+      const [studentsRes, groupsRes, invoiceRes] = await Promise.all([
         supabase.from('students').select('id', { count: 'exact', head: true }).eq('center_id', centerId),
         supabase.from('student_groups').select('id', { count: 'exact', head: true }).eq('center_id', centerId),
+        supabase
+          .from('invoices')
+          .select('invoice_number, total_amount, due_date')
+          .eq('center_id', centerId)
+          .neq('status', 'paid')
+          .order('due_date', { ascending: true })
+          .limit(1)
+          .maybeSingle(),
       ]);
       setSummary({ students: studentsRes.count ?? 0, groups: groupsRes.count ?? 0 });
+      setInvoice(
+        (invoiceRes.data as { invoice_number: string | null; total_amount: number | null; due_date: string | null } | null) ??
+          null,
+      );
     };
     void loadSummary();
   }, []);
@@ -104,6 +121,20 @@ export default function SuspendedPage() {
           <h1 className="text-xl font-bold text-white">{t('title')}</h1>
           <p className="mt-2 text-sm text-slate-400">{t('desc')}</p>
         </div>
+
+        {isPaymentOverdue && invoice ? (
+          <div className="rounded-xl border border-amber-800/40 bg-amber-900/20 p-4 text-start">
+            <p className="mb-2 text-xs font-semibold tracking-widest text-amber-300/80 uppercase">
+              {t('invoiceDueTitle')}
+            </p>
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-sm text-slate-300">{invoice.invoice_number ?? ''}</span>
+              <span className="text-2xl font-bold tabular-nums text-white">
+                {formatCurrency(invoice.total_amount ?? 0, locale)}
+              </span>
+            </div>
+          </div>
+        ) : null}
 
         {summary ? (
           <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">

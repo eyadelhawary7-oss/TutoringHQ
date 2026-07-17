@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { isFeatureEnabled } from '@/lib/features';
+import { validateCSRFRequest } from '@/lib/csrf';
 import {
   getPaymobAuthToken,
   createPaymobOrder,
@@ -53,6 +54,19 @@ export async function POST(request: NextRequest) {
     const ctx = await getUserContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (ctx.user.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+    // Part 7: CSRF on a money-touching POST, matching every other mutation. This
+    // is the standard validateCSRFRequest check (fails closed when CSRF_SECRET is
+    // unset/malformed), NOT an auth rewrite; the hand-rolled bearer auth above is
+    // unchanged. The client sends X-CSRF-Token + X-Session-ID.
+    if (!validateCSRFRequest(request, ctx.user.id)) {
+      return NextResponse.json({ error: 'Invalid CSRF token', code: 'CSRF_INVALID' }, { status: 403 });
+    }
+
+    // Part 6 (EXEMPT, explicit): the lockout concentrates every locked centre onto
+    // this one route, so it MUST stay reachable while locked. It is deliberately
+    // NOT gated by centerAccessGateResponse. The owner paying here is exactly what
+    // clears the lock. Exempt by decision, not by omission.
 
     const { data: center, error: centerError } = await ctx.supabaseAdmin
       .from('centers')

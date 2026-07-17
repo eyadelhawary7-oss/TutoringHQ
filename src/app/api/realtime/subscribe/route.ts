@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { centerAccessGateResponse } from '@/lib/centerAccessGate';
 
 function extractUuid(s: string): string | null {
   const m = s.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
@@ -87,6 +88,13 @@ export async function POST(request: Request) {
 
     if (channelUuid && profile?.center_id && !isStaff && channelUuid !== profile.center_id) {
       return NextResponse.json({ error: 'Forbidden channel for this user' }, { status: 403 });
+    }
+
+    // Part 6 (BLOCK): a locked centre has nothing to feed a realtime channel, and
+    // the hand-rolled auth here skipped the suspension / lock gate. Staff bypass.
+    if (!isStaff && profile?.center_id) {
+      const gate = await centerAccessGateResponse(supabaseAdmin, profile.center_id);
+      if (gate) return gate;
     }
 
     return NextResponse.json({ ok: true, channel: channel || undefined });

@@ -38,7 +38,6 @@ function inferRowEditor(value: unknown, key: string): 'bool' | 'number' | 'text'
   if (typeof value === 'object' && value !== null) return 'json';
   const n = coerceNumericLike(value);
   if (n !== null && key.includes('_percent')) return 'number';
-  if (n !== null && (key === 'late_fee_tier1_rate' || key === 'late_fee_tier2_rate')) return 'number';
   if (typeof value === 'number') return 'number';
   return 'text';
 }
@@ -59,9 +58,6 @@ function formatDraftValue(key: string, value: unknown): string {
       if (n > 0 && n <= 1) return String(Math.round(n * 100));
       return String(Math.round(n));
     }
-    if ((key === 'late_fee_tier1_rate' || key === 'late_fee_tier2_rate') && n > 0 && n <= 1) {
-      return String(Math.round(n * 100));
-    }
     return typeof value === 'number' ? String(value) : String(n);
   }
 
@@ -69,8 +65,11 @@ function formatDraftValue(key: string, value: unknown): string {
 }
 
 function isLateFeesDormancyKey(key: string): boolean {
+  // The five late_fee_* keys were removed with the switch to the single-day lock
+  // (Job 3, Part 4): the first late fee triggered on day 4 overdue but the lockout
+  // closes the account on day 1, so they were unreachable. This grouping now covers
+  // only the remaining dormancy / reactivation-discount keys.
   return (
-    key.startsWith('late_fee_') ||
     key.startsWith('dormancy_') ||
     key.startsWith('reactivation_discount_')
   );
@@ -78,7 +77,6 @@ function isLateFeesDormancyKey(key: string): boolean {
 
 function numberStepForKey(key: string): string {
   if (key.includes('_percent')) return '1';
-  if (key === 'late_fee_tier1_rate' || key === 'late_fee_tier2_rate') return '1';
   if (key.includes('_rate') || key.includes('reactivation_discount')) return '0.01';
   return '1';
 }
@@ -235,10 +233,6 @@ export default function PlatformConfigPage() {
           let pct = Math.round(n);
           if (n > 0 && n < 1) pct = Math.round(n * 100);
           parsed = Math.min(100, Math.max(0, pct));
-        } else if (key === 'late_fee_tier1_rate' || key === 'late_fee_tier2_rate') {
-          let pct = Math.round(n);
-          if (n > 0 && n <= 1) pct = Math.round(n * 100);
-          parsed = Math.min(100, Math.max(0, pct));
         } else {
           parsed = numberStepForKey(key) === '1' ? Math.trunc(n) : n;
         }
@@ -363,16 +357,13 @@ export default function PlatformConfigPage() {
             onChange={(e) => setDrafts((d) => ({ ...d, [key]: e.target.value }))}
             spellCheck={false}
           />
-        ) : editor === 'number' &&
-          (key.includes('_percent') ||
-            key === 'late_fee_tier1_rate' ||
-            key === 'late_fee_tier2_rate') ? (
+        ) : editor === 'number' && key.includes('_percent') ? (
           <div className="flex max-w-md items-center gap-2">
             <input
               type="number"
               step={numberStepForKey(key)}
               min={0}
-              max={key.includes('_percent') || key === 'late_fee_tier1_rate' || key === 'late_fee_tier2_rate' ? 100 : undefined}
+              max={key.includes('_percent') ? 100 : undefined}
               className="min-w-0 flex-1 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-0)] px-3 py-2 text-[var(--color-text-primary)]"
               value={drafts[key] ?? ''}
               disabled={busy}

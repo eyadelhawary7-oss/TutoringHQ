@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/nextjs';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { isSuperAdminPhone } from '@/lib/admin-access';
 import { phoneFromCenterhqAuthEmail } from '@/lib/ownerPhone';
+import { centerAccessGateResponse } from '@/lib/centerAccessGate';
 
 export type CenterPermissions = {
   can_record_payments: boolean;
@@ -23,6 +24,7 @@ export type CenterAuthErrorCode =
   | 'NO_CENTER_ID'
   | 'CENTER_SUSPENDED'
   | 'CENTER_BLACKLISTED'
+  | 'CENTER_LOCKED'
   | 'TEACHER_NOT_MEMBER'
   | 'TEACHER_NO_CENTER_CONTEXT'
   | 'NOT_A_TEACHER'
@@ -78,10 +80,6 @@ const ZERO_PERMISSIONS: CenterPermissions = {
 
 function unauthorized(code: CenterAuthErrorCode): NextResponse {
   return NextResponse.json({ error: 'Unauthorized', code }, { status: 401 });
-}
-
-function suspended(code: 'CENTER_SUSPENDED' | 'CENTER_BLACKLISTED'): NextResponse {
-  return NextResponse.json({ error: 'Center access blocked', code }, { status: 403 });
 }
 
 function forbidden(code: CenterAuthErrorCode): NextResponse {
@@ -267,22 +265,17 @@ export async function requireCenterAuth(
   // place. Super-admins (admin_users / SUPER_ADMIN_PHONES) bypass for support
   // workflows; the reactivation routes opt in via `allowSuspended: true` so a
   // suspended owner can still pay to come back online.
+  // Suspension / blacklist / single-day billing lock gate. Enforced HERE, at the
+  // API layer, evaluated at the lock moment rather than waiting for a cron to flip
+  // `status` to 'suspended'. The middleware skips /api/* before its own lock block,
+  // and this helper previously checked only status/blacklist, so a just-locked
+  // centre kept full API access until the next cron run (Part 9). The lock half is
+  // gated by the lockout policy (auto-charge interlock, first_charge_release HELD,
+  // kill switch), so nothing locks while auto-charge is inert. Pay / reactivation
+  // routes opt out via `allowSuspended` and never reach this block.
   if (!isSuperAdmin && !options.allowSuspended) {
-    const { data: centerStatusRow } = await admin
-      .from('centers')
-      .select('status, is_blacklisted')
-      .eq('id', centerId)
-      .maybeSingle();
-
-    const csr = centerStatusRow as
-      | { status?: string | null; is_blacklisted?: boolean | null }
-      | null;
-    if (csr?.is_blacklisted === true) {
-      return { ok: false, response: suspended('CENTER_BLACKLISTED') };
-    }
-    if (csr && String(csr.status ?? '').toLowerCase() === 'suspended') {
-      return { ok: false, response: suspended('CENTER_SUSPENDED') };
-    }
+    const gate = await centerAccessGateResponse(admin, centerId);
+    if (gate) return { ok: false, response: gate };
   }
 
   // PERMISSIONS lookup: best-effort. If a can_* column is missing (schema drift)

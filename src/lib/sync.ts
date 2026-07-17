@@ -1,4 +1,4 @@
-import { dbInsert } from './db-proxy';
+import { dbInsert, isPermanentDbError, isCenterLockedDbError } from './db-proxy';
 import {
   getUnsyncedScans,
   markScanSynced,
@@ -10,10 +10,35 @@ import { cairoDateKey } from '@/lib/cairo/day';
 
 export type SyncStatus = 'online' | 'offline' | 'syncing';
 
-export async function syncQueuedScans(): Promise<{ synced: number; errors: number }> {
+/** Fired on `window` when a sync learns the centre is locked, so the scanner can paywall. */
+export const CENTER_LOCKED_EVENT = 'centerhq:center-locked';
+
+/** Remove a processed scan from whichever queue store it came from. */
+async function removeFromQueue(scan: unknown): Promise<void> {
+  const isLegacySyncQueue = Object.prototype.hasOwnProperty.call(scan as object, 'synced');
+  const localId = (scan as { localId: number }).localId;
+  if (isLegacySyncQueue) {
+    await markScanSynced(localId);
+  } else {
+    await deletePendingScanLocal(localId);
+  }
+}
+
+export interface SyncResult {
+  synced: number;
+  errors: number;
+  /** Items the server PERMANENTLY rejected (e.g. scans taken while locked); dropped, not retried. */
+  droppedPermanent: number;
+  /** True if any rejection indicated the centre is locked/suspended — the scanner must paywall. */
+  centerLocked: boolean;
+}
+
+export async function syncQueuedScans(): Promise<SyncResult> {
   const unsyncedScans = await getUnsyncedScans();
   let synced = 0;
   let errors = 0;
+  let droppedPermanent = 0;
+  let centerLocked = false;
 
   for (const scan of unsyncedScans) {
     try {
@@ -42,14 +67,9 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
           data: scanData,
           select: false,
         });
-        if (attendanceError) throw new Error(attendanceError.message);
+        if (attendanceError) throw attendanceError;
 
-        const isLegacySyncQueue = Object.prototype.hasOwnProperty.call(scan, 'synced');
-        if (isLegacySyncQueue) {
-          await markScanSynced((scan as { localId: number }).localId);
-        } else {
-          await deletePendingScanLocal((scan as { localId: number }).localId);
-        }
+        await removeFromQueue(scan);
         synced++;
         continue;
       }
@@ -78,7 +98,7 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
           },
           select: false,
         });
-        if (scanErrLate) throw new Error(scanErrLate.message);
+        if (scanErrLate) throw scanErrLate;
 
         const { error: payLateErr } = await dbInsert({
           table: 'payments',
@@ -95,14 +115,9 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
           },
           select: false,
         });
-        if (payLateErr) throw new Error(payLateErr.message);
+        if (payLateErr) throw payLateErr;
 
-        const isLegacySyncQueue = Object.prototype.hasOwnProperty.call(scan, 'synced');
-        if (isLegacySyncQueue) {
-          await markScanSynced((scan as { localId: number }).localId);
-        } else {
-          await deletePendingScanLocal((scan as { localId: number }).localId);
-        }
+        await removeFromQueue(scan);
         synced++;
         continue;
       }
@@ -135,7 +150,7 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
         select: false,
       });
 
-      if (attendanceError) throw new Error(attendanceError.message);
+      if (attendanceError) throw attendanceError;
 
       // If there was a payment action, record it (per-session: payments table is source of truth)
       if (scan.payment_action) {
@@ -162,16 +177,25 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
         });
       }
 
-      const isLegacySyncQueue = Object.prototype.hasOwnProperty.call(scan, 'synced');
-
-      if (isLegacySyncQueue) {
-        await markScanSynced((scan as { localId: number }).localId);
-      } else {
-        await deletePendingScanLocal((scan as { localId: number }).localId);
-      }
+      await removeFromQueue(scan);
       synced++;
-    } catch {
-      errors++;
+    } catch (err) {
+      // Retry semantics (Job 3, Part 8). A PERMANENT rejection is one the server
+      // will never accept — a scan taken while the centre was locked. Drop it so it
+      // does not linger in the queue and then get replayed into existence the
+      // moment the centre pays and the lock lifts. A transient failure (network,
+      // 5xx) is left in the queue to retry, exactly as before.
+      if (isCenterLockedDbError(err)) centerLocked = true;
+      if (isPermanentDbError(err)) {
+        try {
+          await removeFromQueue(scan);
+          droppedPermanent++;
+        } catch {
+          errors++;
+        }
+      } else {
+        errors++;
+      }
     }
   }
 
@@ -181,5 +205,13 @@ export async function syncQueuedScans(): Promise<{ synced: number; errors: numbe
     await recordLastSuccessfulSyncNow();
   }
 
-  return { synced, errors };
+  // Paywall on next signal (Job 3, Part 8, case 2/3). The offline scanner cannot
+  // know the centre is locked until it reaches the server; the moment it learns,
+  // it must show the paywall instead of accepting scans all evening into a queue
+  // that will never drain. A listener in the scanner navigates to the lock screen.
+  if (centerLocked && typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(CENTER_LOCKED_EVENT));
+  }
+
+  return { synced, errors, droppedPermanent, centerLocked };
 }
