@@ -48,7 +48,10 @@ function feeOf(row: InvoiceRow): number {
  *  - upcoming: a FORECAST preview of the next charge — never a persisted invoice.
  */
 export async function GET(request: NextRequest) {
-  const auth = await requireCenterAuth(request);
+  // allowSuspended: /pay reads its invoice list from here, so a locked centre must be
+  // able to load it. Without the exemption the single-day-lock gate (PR B) returns 403
+  // CENTER_LOCKED and the lock screen's pay page cannot even render the invoice.
+  const auth = await requireCenterAuth(request, { allowSuspended: true });
   if (!auth.ok) return auth.response;
   if (auth.role !== 'owner') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

@@ -18,7 +18,11 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       return NextResponse.json({ error: 'Invalid invoice id' }, { status: 400 });
     }
 
-    const auth = await requireCenterAuth(request);
+    // allowSuspended: this is the pay route the lock screen sends a locked centre to.
+    // Without the exemption the new single-day-lock gate (PR B) returns 403 CENTER_LOCKED
+    // here, so a locked owner could neither load nor pay their invoice -- the one door
+    // out of the lock would be locked. Paying is exactly what clears the lock.
+    const auth = await requireCenterAuth(request, { allowSuspended: true });
     if (!auth.ok) return auth.response;
     if (auth.role !== 'owner') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

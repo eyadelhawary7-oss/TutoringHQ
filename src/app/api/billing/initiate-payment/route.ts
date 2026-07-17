@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { isFeatureEnabled } from '@/lib/features';
+import { validateCSRFRequest } from '@/lib/csrf';
 import {
   getPaymobAuthToken,
   createPaymobOrder,
@@ -57,8 +58,17 @@ export async function POST(request: NextRequest) {
     // Part 6 (EXEMPT by decision, not omission): the billing lockout concentrates
     // every locked centre onto the pay flow, so this route MUST stay reachable while
     // locked. It is deliberately NOT gated by centerAccessGateResponse; the owner
-    // paying here is exactly what clears the lock. CSRF hardening for this route
-    // lands in PR E, which also fixes the lock-screen pay path.
+    // paying here is exactly what clears the lock.
+
+    // Part 7: CSRF on a money-touching POST, matching every other mutation. Standard
+    // validateCSRFRequest, which FAILS CLOSED when CSRF_SECRET is unset or malformed.
+    // Server-side hygiene, not an auth rewrite (the hand-rolled bearer auth above is
+    // unchanged). NOTE: the lock-screen "Pay now" button is a LINK to /pay, not a POST
+    // to this route, and there is no other client caller today, so adding this breaks
+    // nothing. It does NOT send CSRF headers itself -- /pay pays via /api/invoices/[id]/pay.
+    if (!validateCSRFRequest(request, ctx.user.id)) {
+      return NextResponse.json({ error: 'Invalid CSRF token', code: 'CSRF_INVALID' }, { status: 403 });
+    }
 
     const { data: center, error: centerError } = await ctx.supabaseAdmin
       .from('centers')
