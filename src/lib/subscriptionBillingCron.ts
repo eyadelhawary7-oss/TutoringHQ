@@ -15,6 +15,7 @@ import { resolveScheduledCenterDowngrade } from '@/lib/scheduledDowngrade';
 import { centerRenewalBaseAmount, centerRenewalPeriodMonths } from '@/lib/centerRenewal';
 import { requireTopCentersAllInPrice } from '@/lib/pricing/topCentersPrice';
 import { createAction } from '@/lib/ceo';
+import * as Sentry from '@sentry/nextjs';
 
 // RETIRED: the legacy day+3 / day+7 overdue WhatsApp reminders below. The unified
 // billing-nudges engine (src/lib/nudges) is now the single source of center +
@@ -432,31 +433,69 @@ export async function runSubscriptionBillingCron(
   // still-active row whose next_payment_due is before today (Cairo) and is unpaid.
   // `.lt` (not an exact match) self-heals missed cron days. `today` is Cairo
   // (todayISO), aligned with the next_payment_due DATE storage.
-  const { data: suspendRows, error: susErr } = await supabase
-    .from('centers')
-    .update({
-      status: 'suspended',
-      billing_status: 'suspended',
-      subscription_status: 'suspended',
-    })
-    .lt('next_payment_due', today)
-    .not('next_payment_due', 'is', null)
-    .neq('billing_status', 'paid')
-    .neq('status', 'suspended')
-    .not('status', 'in', '(cancelled,rejected)')
-    .not('subscription_status', 'in', '(cancelled)')
-    .select('id');
+  // PR A interlock (minimal, inline). While the saved-card recurring credential is
+  // not a real value, merchant-initiated auto-charge cannot run (the engine is inert),
+  // so a center that missed its charge has had no automated way to pay. Suspending it
+  // then is exactly the "paywall while auto-charge is inert" outage the billing lockout
+  // interlock exists to prevent, so skip the auto-suspend entirely in that state.
+  //
+  // Semantics must match PR B's shared module: unset, empty, or the literal
+  // "placeholder" all mean NOT configured; any other non-empty value reads as
+  // configured (presence check only, not proof the credential can actually charge).
+  //
+  // TEMPORARY: PR B introduces billingLockoutPolicy.recurringAutochargeConfigured().
+  // Replace this inline check with that import once B lands. Do NOT grow a second
+  // policy module here.
+  const recurringRaw = process.env.PAYMOB_RECURRING_INTEGRATION_ID;
+  const recurringNorm = recurringRaw == null ? '' : recurringRaw.trim().toLowerCase();
+  const recurringConfigured = recurringNorm !== '' && recurringNorm !== 'placeholder';
 
-  if (susErr) {
-    console.error('[subscriptionBillingCron] auto-suspend:', susErr);
+  if (!recurringConfigured) {
+    console.warn(
+      '[subscriptionBillingCron] auto-suspend SKIPPED: PAYMOB_RECURRING_INTEGRATION_ID ' +
+        'is unset/empty/placeholder, so saved-card auto-charge cannot run. Suspending ' +
+        'unpaid centers now would paywall them while the charge engine is inert. ' +
+        'No center suspended.',
+    );
+    Sentry.withScope((scope) => {
+      scope.setTag('cron', 'subscription-billing-cron');
+      scope.setTag('step', 'auto_suspend_interlock');
+      scope.setTag('reason', 'autocharge_not_configured');
+      scope.setLevel('warning');
+      Sentry.captureMessage(
+        'subscriptionBillingCron auto-suspend suppressed by the auto-charge interlock: ' +
+          'PAYMOB_RECURRING_INTEGRATION_ID is still a placeholder, so nothing can charge a ' +
+          'saved card. No center was suspended. Set the real recurring credential to ' +
+          're-enable nonpayment suspension.',
+      );
+    });
   } else {
-    out.autoSuspended = suspendRows?.length ?? 0;
-    for (const row of suspendRows ?? []) {
-      const center = row as { id: string };
-      try {
-        await pauseCommissionClocks(center.id);
-      } catch (e) {
-        console.error('[subscriptionBillingCron] pauseCommissionClocks', center.id, e);
+    const { data: suspendRows, error: susErr } = await supabase
+      .from('centers')
+      .update({
+        status: 'suspended',
+        billing_status: 'suspended',
+        subscription_status: 'suspended',
+      })
+      .lt('next_payment_due', today)
+      .not('next_payment_due', 'is', null)
+      .neq('billing_status', 'paid')
+      .neq('status', 'suspended')
+      .not('status', 'in', '(cancelled,rejected)')
+      .not('subscription_status', 'in', '(cancelled)')
+      .select('id');
+
+    if (susErr) {
+      console.error('[subscriptionBillingCron] auto-suspend:', susErr);
+    } else {
+      out.autoSuspended = suspendRows?.length ?? 0;
+      for (const row of suspendRows ?? []) {
+        const center = row as { id: string };
+        try {
+          await pauseCommissionClocks(center.id);
+        } catch (e) {
+          console.error('[subscriptionBillingCron] pauseCommissionClocks', center.id, e);
+        }
       }
     }
   }

@@ -24,7 +24,11 @@ vi.mock('@/lib/billingAudit', () => ({
 vi.mock('@/lib/scheduledDowngrade', () => ({
   resolveScheduledCenterDowngrade: async () => null,
 }));
-vi.mock('@sentry/nextjs', () => ({ captureMessage: () => {} }));
+vi.mock('@sentry/nextjs', () => ({
+  captureMessage: () => {},
+  withScope: (cb: (scope: { setTag: () => void; setLevel: () => void }) => void) =>
+    cb({ setTag: () => {}, setLevel: () => {} }),
+}));
 
 import { runSubscriptionBillingCron } from '@/lib/subscriptionBillingCron';
 import { todayISO } from '@/lib/parentPack';
@@ -63,7 +67,13 @@ function baseCenter(over: Partial<Row>): Row {
 }
 
 describe('runSubscriptionBillingCron (B-H2 / B-H3 / B-H4)', () => {
-  beforeEach(() => createActionSpy.mockClear());
+  beforeEach(() => {
+    createActionSpy.mockClear();
+    // The B-H2 auto-suspend is now gated by the auto-charge interlock (PR A). Give it a
+    // real recurring credential so the existing suspend assertions exercise that path;
+    // the interlock skip is covered by its own test below.
+    process.env.PAYMOB_RECURRING_INTEGRATION_ID = 'test-recurring-id';
+  });
 
   it('B-H3: creates the renewal invoice for a MISSED overdue center (not only exactly due+7)', async () => {
     const tables: Record<string, Row[]> = {
@@ -104,6 +114,21 @@ describe('runSubscriptionBillingCron (B-H2 / B-H3 / B-H4)', () => {
     expect(byId('due_today').status, 'due today keeps full access').toBe('active');
     expect(byId('paid_ahead').status, 'paid-ahead untouched').toBe('active');
     expect(out.autoSuspended).toBe(1);
+  });
+
+  it('B-H2 interlock: does NOT suspend while auto-charge is inert (placeholder credential)', async () => {
+    // While PAYMOB_RECURRING_INTEGRATION_ID is a placeholder the saved-card engine
+    // cannot charge, so suspending an unpaid center would paywall it with no automated
+    // way to have paid. The suspend must be skipped and the center left active.
+    process.env.PAYMOB_RECURRING_INTEGRATION_ID = 'placeholder';
+    const tables: Record<string, Row[]> = {
+      centers: [baseCenter({ id: 'overdue', next_payment_due: past3, billing_status: 'active' })],
+      invoices: [],
+    };
+    const out = await runSubscriptionBillingCron(makeFakeSupabase(tables));
+    const overdue = tables.centers.find((c) => c.id === 'overdue')!;
+    expect(overdue.status, 'stays active while auto-charge is inert').toBe('active');
+    expect(out.autoSuspended).toBe(0);
   });
 
   it('B-H4: skips a top_centers renewal with NULL all_in_price and enqueues a CEO action', async () => {
