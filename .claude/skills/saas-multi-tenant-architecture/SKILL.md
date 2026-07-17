@@ -1,75 +1,31 @@
 ---
 name: saas-multi-tenant-architecture
-description: >
-  Multi-tenant SaaS architecture playbook for CenterHQ (EH Group). Use when
-  adding routes, API endpoints, tables, or auth gates; when reasoning about
-  tenancy isolation, RLS, middleware protection, or suspension/lock
-  enforcement; or when reviewing code for cross-tenant leakage.
+description: Tenant isolation and minors' data protection rules for TutoringHQ. Use whenever touching auth, API routes, middleware, database queries, RLS, service-role code, exports, cron jobs, or anything that reads or writes center, student, or parent data.
 ---
 
-# Multi-Tenant SaaS Architecture — CenterHQ
+# Tenant and data safety (LOCKED)
+Cross-tenant leakage of minors' data is an existential risk for this business. Treat any doubt as a blocker, not a judgment call.
 
-## Tenancy model (non-negotiable invariants)
+1. Every tenant-owned row carries center_id and RLS scopes by it. If you cannot point to the exact line where a query is scoped to the caller's center, that is a finding, not an assumption.
+2. Service-role paths (supabase-admin, /api/db) bypass RLS entirely. They MUST derive center_id server-side from the authenticated user. Caller-supplied center_id in body, query, or headers is hostile input and is never trusted.
+3. Model B is locked: teachers are center-less (users.center_id is NULL), linked via the teacher_center table. Do not "fix" this.
+4. Any new authenticated route prefix must be added to AUTHENTICATED_ROUTE_PREFIXES in src/proxy.ts or it ships unprotected.
+5. Routes under PUBLIC_WEBHOOK_PREFIXES get no middleware auth. Each must verify HMAC itself with a timing-safe comparison and re-verify amounts against expected totals. A webhook trusting its payload amount is a critical finding.
+6. Mutations require CSRF (validateCSRFRequest, src/lib/csrf.ts). It fails CLOSED: when CSRF_SECRET is unset or malformed, validateCSRFRequest returns false and every caller rejects the mutation with a 403 (the uniform `if (!validateCSRFRequest(...)) return 403` pattern), in every environment; getKey additionally throws in production. An unset secret does NOT silently skip validation, it blocks all state-changing requests, so CSRF_SECRET must be set in every environment. (Corrected 2026-07-16 to match csrf.ts and its callers; the earlier "silently skips" wording described a fail-open vulnerability that does not exist.)
+7. Admin aggregates default is_test = false. Test data (is_test, e2e_seed:v1, TEST-xxxxx numbers) must never leak into customer-facing views or finance metrics.
+8. Suspension and blacklist gating lives in middleware plus resolveBillingAccess. Never create a route or payment path that reactivates or bypasses a suspended center outside the intended handlers.
+9. No new callers of the legacy /api/db proxy. New domain logic lands as a narrow REST route with the right gate (requireOwnerAdminCenter, centerAuth, or admin-access).
+10. Parent-facing links must be short-lived and revokable (PDPL phase 2 direction). Never mint long-lived tokens to student or parent data.
+11. Known accepted state (July 2026 scan): 18 server-only tables run RLS-on with zero policies, deny-by-default on purpose. Several SECURITY DEFINER helper functions are RPC-callable; anonymous EXECUTE on them should be revoked before launch. Do not "fix" the zero-policy tables by adding permissive policies.
 
-1. **`center_id` on every tenant-scoped row.** Isolation = Postgres RLS keyed
-   off the authenticated user's `users` row → `center_id`. The middleware
-   (`src/proxy.ts`) authenticates but does **not** authorize per-center —
-   authorization lives in RLS + per-route gates.
-2. **Two DB access paths, two threat models:**
-   - Browser/SSR Supabase client (`src/lib/supabase.ts`) → RLS enforced.
-   - Service-role (`src/lib/supabase-admin.ts`, `/api/db` proxy) → **RLS
-     bypassed**. Every service-role query MUST apply its own `center_id`
-     scoping derived from the *authenticated session*, never from
-     client-supplied body/query/header values.
-3. **Never trust caller-supplied `center_id`.** Resolve it server-side via
-   `requireOwnerAdminCenter`, `centerAuth`, or `centerPermissions`. Design
-   decision #8 in `docs/EH_GROUP_MASTER_CONTEXT_v24.md`: `/api/admin/check`
-   reflects JWT-derived scope only.
+# Review method
+For any diff touching these areas, read the actual code path end to end and state in the PR where center scoping happens for each new query. Run npm run security:audit when relevant.
 
-## Route-protection checklist (run on EVERY new route)
+# Additional verified notes
+Correct facts carried forward from the previous version of this skill, verified against the codebase 2026-07-16. None contradict the locked rules above.
 
-- [ ] Page route → prefix added to `AUTHENTICATED_ROUTE_PREFIXES` in
-      `src/proxy.ts`? (Missing prefix = publicly renderable page.)
-- [ ] API mutation → CSRF via `validateCSRFRequest` (`src/lib/csrf.ts`)?
-- [ ] API route → correct gate: `requireOwnerAdminCenter` (owner/admin of a
-      center), `centerAuth` (member of center), `admin-access` /
-      `isSuperAdminPhone` (platform super-admin — phone-based via
-      `SUPER_ADMIN_PHONES`, never DB role alone), `centerPermissions`
-      (fine-grained staff permission)?
-- [ ] Webhook → path in `PUBLIC_WEBHOOK_PREFIXES` AND does its own HMAC
-      verification (`verifyHmac.ts`)? Middleware gives webhooks NOTHING.
-- [ ] Cron → `Authorization: Bearer ${CRON_SECRET}` check; registered in
-      `vercel.json` `crons[]`; `maxDuration` set if >10s.
-- [ ] New table → RLS policy written in the same migration; `is_test` column
-      if it feeds admin aggregates (default `is_test = false` in queries).
-
-## Suspension & access enforcement
-
-- Middleware loads `centers.status`, `billing_status`, `auto_suspend_at`,
-  `is_blacklisted` + `subscriptions.status` per authenticated request.
-- Single-day lock model (`src/lib/billingLifecycle.ts`): unpaid at billing
-  day → full access until 23:59:59 Cairo → next 00:00 Cairo locks to the
-  `/suspended` summary screen. Teachers instead drop to free tier via
-  `teacher_private_access` RPC (data preserved, never deleted).
-- Blacklisted centers: 401 everywhere except `/settings` and
-  `/session-expired`.
-
-## Locale & edge rules
-
-- Every user-facing path is locale-prefixed (`/ar` default RTL, `/en`).
-  `localePrefix: 'always'` — never redirect off the locale prefix.
-- CSP lives in **two places**: `next.config.ts` `headers()` and
-  `src/proxy.ts` `SECURITY_HEADERS`. Adding a third-party origin means
-  editing both.
-
-## Review heuristics (cross-tenant leak hunting)
-
-- Grep new code for `supabaseAdmin` / `supabase-admin` — each hit must show
-  explicit `.eq('center_id', <server-resolved id>)` or an admin-only gate.
-- Grep for `center_id` read from `req`, `body`, `params`, `searchParams` —
-  each hit must be followed by a membership check against the session user.
-- Any aggregate feeding `/admin/finance` or CEO dashboards must filter
-  `is_test = false` unless `include_test=1` diagnostic flag is explicit.
-- Rate-limiter and CSRF fallbacks must **fail closed in production**:
-  missing `UPSTASH_REDIS_REST_URL`/`TOKEN` or `CSRF_SECRET` should hard-fail
-  on Vercel prod, not silently skip.
+- CSP lives in two places: next.config.ts headers() and src/proxy.ts SECURITY_HEADERS. Adding a third-party origin (PostHog, Sentry, Paymob, Supabase realtime) means editing both.
+- Suspension enforcement, in detail: middleware loads centers.status, billing_status, auto_suspend_at, is_blacklisted plus the matching subscriptions.status per authenticated request. Suspended/overdue centers redirect to /{locale}/suspended. Blacklisted centers get 401 everywhere except /settings and /session-expired.
+- The single-day lock is implemented in src/lib/billingLifecycle.ts and gated through resolveBillingAccess (src/lib/billingAccessGate.ts). On lock, teachers drop to a free tier with data preserved via the teacher private-view path (teacher_private_access, src/lib/teacherPrivateView.ts). That free-tier drop is a separate mechanism from the teacher_center linking model in rule 3.
+- Every user-facing path is locale-prefixed (/ar default RTL, /en) with localePrefix: 'always'. Never redirect off the locale prefix.
+- Route-protection checklist for every new route: page route to AUTHENTICATED_ROUTE_PREFIXES; API mutation to validateCSRFRequest; correct auth gate (requireOwnerAdminCenter, centerAuth, admin-access / isSuperAdminPhone, centerPermissions); webhook in PUBLIC_WEBHOOK_PREFIXES with its own HMAC; cron gated on CRON_SECRET and registered in vercel.json; new table ships its RLS policy in the same migration.
