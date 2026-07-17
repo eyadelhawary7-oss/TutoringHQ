@@ -57,7 +57,14 @@ async function dbRequest(body: Record<string, unknown>) {
     throw fetchErr;
   }
 
-  let result: { data?: unknown; error?: string | { message?: string }; count?: number };
+  let result: {
+    data?: unknown;
+    error?: string | { message?: string };
+    count?: number;
+    code?: string;
+    permanent?: boolean;
+    locked?: boolean;
+  };
   try {
     result = await res.json();
   } catch (parseErr) {
@@ -70,10 +77,38 @@ async function dbRequest(body: Record<string, unknown>) {
   }
 
   if (result.error) {
-    const err = new Error(typeof result.error === 'string' ? result.error : (result.error?.message ?? 'Unknown error'));
+    const err = new Error(
+      typeof result.error === 'string' ? result.error : (result.error?.message ?? 'Unknown error'),
+    ) as Error & { code?: string; permanent?: boolean; locked?: boolean };
+    // Surface the server's classification so callers (the offline scanner sync)
+    // can DROP a permanently-rejected item instead of retrying it forever, and can
+    // react to a lock. A permanent rejection is one the server will never accept
+    // (e.g. a scan taken while the centre was locked), distinct from a transient
+    // network/5xx failure that should keep retrying.
+    if (typeof result.code === 'string') err.code = result.code;
+    err.permanent = result.permanent === true;
+    err.locked = result.locked === true;
     return { data: null, error: err, count: result.count };
   }
   return { data: result.data, error: null, count: result.count };
+}
+
+/** True when a dbInsert/dbRequest error is a server-final rejection (never retryable). */
+export function isPermanentDbError(err: unknown): boolean {
+  return err instanceof Error && (err as { permanent?: boolean }).permanent === true;
+}
+
+/** True when a dbInsert/dbRequest error indicates the centre is locked / suspended. */
+export function isCenterLockedDbError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const code = (err as { code?: string; locked?: boolean }).code;
+  return (
+    (err as { locked?: boolean }).locked === true ||
+    code === 'CENTER_LOCKED' ||
+    code === 'CENTER_LOCKED_SCAN_REJECTED' ||
+    code === 'CENTER_SUSPENDED' ||
+    code === 'CENTER_BLACKLISTED'
+  );
 }
 
 /** SELECT query that bypasses RLS */

@@ -27,6 +27,17 @@ import { lockAtFromBillingDay } from '@/lib/billingLifecycle';
 const VALID_OPERATIONS = ['select', 'insert', 'update', 'delete', 'count'] as const;
 type Operation = (typeof VALID_OPERATIONS)[number];
 
+// Device-clock grace for the "scan taken while locked" gate (Job 3, Part 8). The only
+// signal for WHEN a scan was taken is scanned_at, which the offline scanner stamps from
+// the DEVICE clock. A phone running fast would push a genuinely pre-lock scan past the
+// lock instant and get it permanently rejected. So reject only scans stamped at least
+// this far AFTER the lock instant; a modest fast-clock skew then keeps a real lesson's
+// attendance. This is a mitigation, not a proof of intent: whatever still gets rejected
+// is dead-lettered on the client (recoverable), never destroyed. A stronger follow-up
+// (a server-received timestamp, or rejecting scans whose scanned_at is far in the
+// FUTURE of server time) is possible but is reported, not built, here.
+const LOCK_SCAN_GRACE_MS = 5 * 60 * 1000;
+
 function logError(context: string, err: unknown) {
   console.error(`[api/db] ${context}:`, err);
   if (err instanceof Error && err.stack) {
@@ -219,17 +230,22 @@ export async function POST(request: Request) {
             ? lockAtFromBillingDay(billingDay)
             : (csr.auto_suspend_at ?? null);
           const lockInstant = lockInstantIso ? new Date(lockInstantIso) : null;
+          // Grace window: reject only scans stamped at least LOCK_SCAN_GRACE_MS after
+          // the lock instant, so a fast device clock cannot destroy a real pre-lock scan.
+          const rejectThreshold = lockInstant
+            ? lockInstant.getTime() + LOCK_SCAN_GRACE_MS
+            : null;
           const rows = Array.isArray(data) ? data : [data];
           const takenWhileLocked =
-            !!lockInstant &&
+            rejectThreshold != null &&
             rows.some((r) => {
               const at = (r as { scanned_at?: unknown } | null)?.scanned_at;
               if (typeof at !== 'string' && typeof at !== 'number') return false;
               const t = new Date(at as string | number);
-              return !Number.isNaN(t.getTime()) && t >= lockInstant;
+              return !Number.isNaN(t.getTime()) && t.getTime() >= rejectThreshold;
             });
           if (takenWhileLocked) {
-            // Permanent: the offline queue must DROP this, not retry it forever.
+            // Permanent: the offline queue must dead-letter this, not retry it forever.
             return NextResponse.json(
               {
                 error: 'Attendance recorded while the center was locked is not accepted',

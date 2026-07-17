@@ -3698,6 +3698,10 @@
     "rangeSummary": "عرض {count} مسحة من {from} – {to}",
     "captureTitle": "تسجيل الحضور",
     "tabScan": "مسح QR",
+    "rejectedTitle": "مسحات سُجّلت أثناء القفل",
+    "rejectedBody": "{count} من مسحات الحضور سُجّلت أثناء قفل السنتر ولم تتم مزامنتها. إنها محفوظة على هذا الجهاز. صدّرها للاحتفاظ بسجل ثم امسحها.",
+    "rejectedExport": "تصدير",
+    "rejectedClear": "مسح",
     "tabChecklist": "قائمة الأسماء",
     "takingForGroup": "تسجيل حضور · {group}"
   },

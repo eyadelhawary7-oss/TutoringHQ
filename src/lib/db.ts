@@ -3,7 +3,7 @@ import { normalizeStudentNumber } from '@/lib/scanner/normalize';
 import { cairoDateKey, cairoYmdMinusDays } from '@/lib/cairo/day';
 
 const DB_NAME = 'centerhq-offline';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 export type TodayHistoryScanStatus = 'admitted' | 'duplicate' | 'failed' | 'error';
 
@@ -59,6 +59,13 @@ export function getDB() {
 
         if (!db.objectStoreNames.contains('scanner_meta')) {
           db.createObjectStore('scanner_meta', { keyPath: 'key' });
+        }
+
+        // Dead-letter store (Job 3, Part 8): scans the server PERMANENTLY rejected
+        // (taken while the centre was locked). Parked here instead of deleted so an
+        // operator can see and export them. Added at DB_VERSION 5.
+        if (!db.objectStoreNames.contains('rejected_scans')) {
+          db.createObjectStore('rejected_scans', { keyPath: 'deadLetterId', autoIncrement: true });
         }
       },
     });
@@ -151,6 +158,47 @@ export async function queueScan(scanData: {
 export async function deletePendingScanLocal(localId: number) {
   const db = await getDB();
   await db.delete('pending_scans', localId);
+}
+
+/** A scan the server permanently rejected, parked (not destroyed) for an operator. */
+export interface RejectedScanRecord {
+  deadLetterId?: number;
+  scan: Record<string, unknown>;
+  reason: string;
+  rejectedAt: string;
+}
+
+/**
+ * Move a permanently-rejected scan into the dead-letter store. This NEVER deletes the
+ * scan data: it is preserved here so an operator can see and export it (Job 3, Part 8;
+ * Eyad's decision was dead-letter, not drop). The caller removes it from the retry
+ * queue afterwards so it does not replay once the centre pays.
+ */
+export async function deadLetterScan(scan: unknown, reason: string): Promise<void> {
+  const db = await getDB();
+  await db.add('rejected_scans', {
+    scan: (scan ?? {}) as Record<string, unknown>,
+    reason,
+    rejectedAt: new Date().toISOString(),
+  });
+}
+
+/** All parked (dead-lettered) scans, for the operator banner and export. */
+export async function getRejectedScans(): Promise<RejectedScanRecord[]> {
+  const db = await getDB();
+  return (await db.getAll('rejected_scans')) as RejectedScanRecord[];
+}
+
+/** How many scans are currently parked in the dead-letter store. */
+export async function countRejectedScans(): Promise<number> {
+  const db = await getDB();
+  return await db.count('rejected_scans');
+}
+
+/** Clear the dead-letter store (after the operator has exported it). */
+export async function clearRejectedScans(): Promise<void> {
+  const db = await getDB();
+  await db.clear('rejected_scans');
 }
 
 export async function getUnsyncedScans() {
