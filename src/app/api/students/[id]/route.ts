@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
-import { requirePermission } from '@/lib/centerPermissions';
 import { parseBodyWithLimit } from '@/lib/validate';
 
 export const dynamic = 'force-dynamic';
@@ -62,41 +61,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (upErr) {
     console.error('[PATCH /api/students/[id]]', upErr);
     return NextResponse.json({ error: 'Update failed' }, { status: 500 });
-  }
-
-  return NextResponse.json({ ok: true });
-}
-
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireCenterAuth(request);
-  if (!auth.ok) return auth.response;
-  // Permission gate added May 12 per docs/AUDIT_center_role_gating.md
-  const permErr = requirePermission(auth, 'can_delete_students');
-  if (permErr) return permErr;
-
-  const { id } = await params;
-  const { supabaseAdmin, centerId } = auth;
-
-  const { data: scoped } = await supabaseAdmin
-    .from('students')
-    .select('id')
-    .eq('id', id)
-    .eq('center_id', centerId)
-    .maybeSingle();
-
-  if (!scoped) {
-    return new Response(null, { status: 404 });
-  }
-
-  const { error } = await supabaseAdmin
-    .from('students')
-    .update({ is_active: false })
-    .eq('id', id)
-    .eq('center_id', centerId);
-
-  if (error) {
-    console.error('[DELETE /api/students/[id]]', error);
-    return NextResponse.json({ error: 'Delete failed' }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

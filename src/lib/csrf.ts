@@ -42,7 +42,13 @@ export function validateCSRFToken(token: string, sessionId: string): boolean {
   }
 }
 
-/** When CSRF is disabled (no secret), validation passes. */
+/**
+ * True only when a well-formed 64-char hex `CSRF_SECRET` is configured. When it
+ * returns false, CSRF cannot be enforced and `validateCSRFRequest` fails CLOSED,
+ * rejecting the request with 403 in every environment rather than letting it
+ * through. (The stale prior comment claimed validation "passes" when the secret
+ * is unset; that is the opposite of the actual behaviour, as proven in PR #161.)
+ */
 export function isCSRFEnabled(): boolean {
   const secret = process.env.CSRF_SECRET;
   return !!secret && secret.length === 64 && /^[0-9a-fA-F]+$/.test(secret);
