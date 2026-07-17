@@ -69,7 +69,7 @@ The three `check:*` scripts are **build gates** - failures break `next build`. R
 1. **Direct Supabase client** (`src/lib/supabase.ts` browser, `supabase-admin.ts` service-role on server). RLS-enforced.
 2. **`POST /api/db` legacy typed proxy** (`src/lib/db-proxy.ts` → `src/app/api/db/route.ts`). Service-role under the hood; **CSRF-required on mutations**, allow-listed via `ALLOWED_TABLES`, scanner inserts rate-limited via Upstash, mutations write to `audit_log`. **Do not add new callers** - see `docs/DB_PROXY_SECURITY.md`. New domain logic should land as a narrow REST route under `src/app/api/<domain>/`.
 
-CSRF is gated by `CSRF_SECRET` (`src/lib/csrf.ts`). When unset, validation is skipped (dev only). Always set it on Vercel.
+CSRF is gated by `CSRF_SECRET` (`src/lib/csrf.ts`). It fails closed: when unset or malformed, `validateCSRFRequest` returns false and every caller returns 403, in every environment (`getKey` throws in production). Set it on Vercel or all mutations are blocked.
 
 ### Route layout (`src/app`)
 
