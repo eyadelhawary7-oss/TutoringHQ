@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendTemplateMessage } from '@/lib/whatsapp/client';
 import { formatNumber } from '@/lib/formatNumber';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { centerAccessGateResponse } from '@/lib/centerAccessGate';
 import { getStudentBalances } from '@/lib/studentBalance';
 
 async function getUserContext(request: NextRequest) {
@@ -56,6 +57,11 @@ export async function POST(request: NextRequest) {
     }
 
     const { centerId, supabaseAdmin } = ctx;
+
+    // Part 6 (CLOSE as leak): inherit the suspension / lock gate the hand-rolled
+    // auth skipped. A locked centre must not send outbound WhatsApp to parents.
+    const gate = await centerAccessGateResponse(supabaseAdmin, centerId);
+    if (gate) return gate;
 
     const { data: students } = await supabaseAdmin
       .from('students')

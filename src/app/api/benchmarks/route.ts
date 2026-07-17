@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { centerAccessGateResponse } from '@/lib/centerAccessGate';
 
 async function getUserContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -81,6 +82,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (!centerId) return NextResponse.json({ error: 'No center' }, { status: 400 });
+
+    // Part 6 (BLOCK): the hand-rolled auth here skipped the suspension / lock gate.
+    // A locked centre sees only the invoice and a pay button, not benchmarks.
+    const gate = await centerAccessGateResponse(supabaseAdmin, centerId);
+    if (gate) return gate;
 
     const { data, error } = await supabaseAdmin.rpc('get_center_benchmarks', {
       p_center_id: centerId,

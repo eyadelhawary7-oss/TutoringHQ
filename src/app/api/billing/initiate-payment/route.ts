@@ -54,6 +54,12 @@ export async function POST(request: NextRequest) {
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (ctx.user.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
+    // Part 6 (EXEMPT by decision, not omission): the billing lockout concentrates
+    // every locked centre onto the pay flow, so this route MUST stay reachable while
+    // locked. It is deliberately NOT gated by centerAccessGateResponse; the owner
+    // paying here is exactly what clears the lock. CSRF hardening for this route
+    // lands in PR E, which also fixes the lock-screen pay path.
+
     const { data: center, error: centerError } = await ctx.supabaseAdmin
       .from('centers')
       .select('id, name, plan, pricing_type, weekly_student_limit, billing_period, all_in_price, is_early_adopter, early_adopter_price')

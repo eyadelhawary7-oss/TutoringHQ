@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { isSuperAdminPhone } from '@/lib/admin-access';
 import { getStudentBalances, sumOutstanding } from '@/lib/studentBalance';
+import { centerAccessGateResponse } from '@/lib/centerAccessGate';
 
 const EMPTY_ANALYTICS_PAYLOAD = {
   mrr: 0,
@@ -100,6 +101,16 @@ export async function GET(request: NextRequest) {
       }
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Part 6 (BLOCK): a locked centre sees only the invoice and a pay button, and
+    // this finance dashboard exposes student names and parent phones. Inherit the
+    // suspension / lock gate the hand-rolled auth skipped. Super-admins bypass,
+    // matching requireCenterAuth, so cross-centre support views keep working.
+    if (!isSuperAdmin) {
+      const gate = await centerAccessGateResponse(supabaseAdmin, centerId);
+      if (gate) return gate;
+    }
+
     const now = new Date();
 
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);

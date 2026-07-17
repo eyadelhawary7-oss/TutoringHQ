@@ -5,7 +5,7 @@ import { createServerClient } from '@supabase/ssr';
 import { isSuspendedRouteExempt } from './lib/suspendedRouteExempt';
 import { isSuperAdminPhone } from './lib/admin-access';
 import { phoneFromCenterhqAuthEmail } from './lib/ownerPhone';
-import { centerIsLockedNow } from './lib/billingAccessGate';
+import { getLockoutPolicyState, isCenterLockedForEnforcement } from './lib/billingLockoutPolicy';
 
 export { isSuspendedRouteExempt as isSuspendedExempt } from './lib/suspendedRouteExempt';
 
@@ -356,19 +356,26 @@ export default async function proxy(request: NextRequest) {
           if (center?.status === 'suspended') {
             shouldRedirect = true;
             redirectUrl = `${suspendedPath}?reason=center_suspended`;
-          } else if (
-            center &&
-            centerIsLockedNow(
-              center as {
-                billing_status?: string | null;
-                next_payment_due?: string | null;
-                auto_suspend_at?: string | null;
-              },
-            )
-          ) {
-            // Single-day lock model (resolveBillingAccess), wired in via the gate.
-            shouldRedirect = true;
-            redirectUrl = `${suspendedPath}?reason=payment_overdue`;
+          } else if (center) {
+            // Single-day lock model (resolveBillingAccess), gated by the lockout
+            // policy so nothing paywalls a centre while saved-card auto-charge is
+            // inert (interlock), while first_charge_release is HELD, or while the
+            // kill switch is off. The read uses the caller's authenticated client
+            // (platform_config is readable by any authenticated user) and is cached.
+            const lockPolicy = await getLockoutPolicyState(supabase);
+            if (
+              isCenterLockedForEnforcement(
+                center as {
+                  billing_status?: string | null;
+                  next_payment_due?: string | null;
+                  auto_suspend_at?: string | null;
+                },
+                lockPolicy.active,
+              )
+            ) {
+              shouldRedirect = true;
+              redirectUrl = `${suspendedPath}?reason=payment_overdue`;
+            }
           }
 
           if (shouldRedirect && redirectUrl) {

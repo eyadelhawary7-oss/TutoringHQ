@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { PLANS, isPlanKey, type PlanKey } from '@/lib/pricing';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { centerAccessGateResponse } from '@/lib/centerAccessGate';
 
 async function getAuthContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -58,6 +59,14 @@ export async function POST(request: NextRequest) {
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { organizationId, supabaseAdmin } = ctx;
+
+    // Part 6 (CLOSE as leak): the hand-rolled auth here skipped the suspension /
+    // lock gate. A locked centre must not add branches. Gate on the caller's centre.
+    if (ctx.centerId) {
+      const gate = await centerAccessGateResponse(supabaseAdmin, ctx.centerId);
+      if (gate) return gate;
+    }
+
     if (!organizationId) {
       return NextResponse.json(
         { error: 'Multi-branch requires an organization. Your centre may need a data migration.' },
@@ -161,6 +170,13 @@ export async function GET(request: NextRequest) {
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { organizationId, userId, supabaseAdmin, centerId } = ctx;
+
+    // Part 6 (CLOSE as leak): inherit the suspension / lock gate the hand-rolled
+    // auth skipped. A locked centre sees only the invoice and a pay button.
+    if (centerId) {
+      const gate = await centerAccessGateResponse(supabaseAdmin, centerId);
+      if (gate) return gate;
+    }
 
     if (!organizationId) {
       if (centerId) {
