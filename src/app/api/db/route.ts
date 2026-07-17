@@ -20,6 +20,9 @@ import {
   findProtectedCentersWrite,
   findProtectedUsersWrite,
 } from '@/lib/dbProxyProtectedColumns';
+import { getLockoutPolicyState } from '@/lib/billingLockoutPolicy';
+import { evaluateCenterGate, type CenterGateRow } from '@/lib/centerAccessGate';
+import { lockAtFromBillingDay } from '@/lib/billingLifecycle';
 
 const VALID_OPERATIONS = ['select', 'insert', 'update', 'delete', 'count'] as const;
 type Operation = (typeof VALID_OPERATIONS)[number];
@@ -182,6 +185,70 @@ export async function POST(request: Request) {
     const actorRole =
       (userRecord as { role?: string | null } | null)?.role ?? null;
     const isSuperAdmin = !!adminRecord || isSuperAdminPhone(actorPhone);
+
+    // Part 6 (close /api/db as a leak) + Part 8 (offline scanner lock). The legacy
+    // proxy runs no suspension/lock gate, so a locked centre could keep writing
+    // attendance_scans and payments here all evening. Gate every non-super-admin
+    // STATE CHANGE by the centre's suspension / blacklist / single-day-lock status.
+    //
+    // attendance_scans is special (Part 8, keyed on when the scan was TAKEN):
+    //   - A scan taken BEFORE the lock instant syncs fine even though it arrives
+    //     after the lock (case 1: the lesson happened, the child was there).
+    //   - A scan taken WHILE locked is PERMANENTLY rejected (permanent:true) so the
+    //     offline queue drops it instead of retrying it into existence after the
+    //     centre pays (case 2). Every other locked mutation is blocked live.
+    if (isStateChange && !isSuperAdmin && actorCenterId) {
+      const { data: centerRow } = await supabaseAdmin
+        .from('centers')
+        .select('status, is_blacklisted, billing_status, next_payment_due, auto_suspend_at')
+        .eq('id', actorCenterId)
+        .maybeSingle();
+      const csr = centerRow as CenterGateRow | null;
+      const lockPolicy = await getLockoutPolicyState();
+      const block = evaluateCenterGate(csr, lockPolicy.active);
+      if (block === 'blacklisted') {
+        return NextResponse.json({ error: 'Center access blocked', code: 'CENTER_BLACKLISTED' }, { status: 403 });
+      }
+      if (block === 'suspended') {
+        return NextResponse.json({ error: 'Center access blocked', code: 'CENTER_SUSPENDED' }, { status: 403 });
+      }
+      if (block === 'locked') {
+        if (table === 'attendance_scans' && op === 'insert' && csr) {
+          const billingDay = csr.next_payment_due ? String(csr.next_payment_due).slice(0, 10) : null;
+          const lockInstantIso = billingDay
+            ? lockAtFromBillingDay(billingDay)
+            : (csr.auto_suspend_at ?? null);
+          const lockInstant = lockInstantIso ? new Date(lockInstantIso) : null;
+          const rows = Array.isArray(data) ? data : [data];
+          const takenWhileLocked =
+            !!lockInstant &&
+            rows.some((r) => {
+              const at = (r as { scanned_at?: unknown } | null)?.scanned_at;
+              if (typeof at !== 'string' && typeof at !== 'number') return false;
+              const t = new Date(at as string | number);
+              return !Number.isNaN(t.getTime()) && t >= lockInstant;
+            });
+          if (takenWhileLocked) {
+            // Permanent: the offline queue must DROP this, not retry it forever.
+            return NextResponse.json(
+              {
+                error: 'Attendance recorded while the center was locked is not accepted',
+                code: 'CENTER_LOCKED_SCAN_REJECTED',
+                permanent: true,
+                locked: true,
+              },
+              { status: 403 },
+            );
+          }
+          // Pre-lock scan (case 1): fall through and let it sync normally.
+        } else {
+          return NextResponse.json(
+            { error: 'Center payment overdue', code: 'CENTER_LOCKED', locked: true },
+            { status: 403 },
+          );
+        }
+      }
+    }
 
     // Defense-in-depth: block centre callers from writing authority-conferring
     // columns on `users` via the legacy proxy. Super-admins (admin_users/phone)

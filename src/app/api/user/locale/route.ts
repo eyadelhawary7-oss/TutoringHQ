@@ -39,6 +39,11 @@ export async function POST(request: Request) {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
+    // Part 6 (EXEMPT, explicit): this route is DELIBERATELY reachable while the
+    // centre is locked. It writes only the caller's own `preferred_locale` (no
+    // centre data, no money), and the lock screen itself must be able to honour a
+    // language switch. It is exempt from the suspension / single-day-lock gate by
+    // decision, not by omission. Do not add centerAccessGateResponse here.
     await supabaseAdmin
       .from('users')
       .update({ preferred_locale: String(locale) })

@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { getStudentBalances } from '@/lib/studentBalance';
+import { centerAccessGateResponse } from '@/lib/centerAccessGate';
 
 async function getContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -102,6 +103,13 @@ export async function GET(request: NextRequest) {
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { centerId, supabaseAdmin } = ctx;
+
+    // Part 6 (BLOCK): a locked centre sees only the invoice and a pay button, and
+    // this route exposes student PII (names, parent phones, balances). Inherit the
+    // suspension / blacklist / single-day-lock gate the hand-rolled auth skipped.
+    const gate = await centerAccessGateResponse(supabaseAdmin, centerId);
+    if (gate) return gate;
+
     const { fromTs, toTs, dayCount } = rolling7DayUtcRange();
 
     const { data: rawStudents } = await supabaseAdmin

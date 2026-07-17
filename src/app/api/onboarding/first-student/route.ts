@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { centerAccessGateResponse } from '@/lib/centerAccessGate';
 
 type CtxOk = {
   ok: true;
@@ -109,6 +110,11 @@ export async function POST(request: NextRequest) {
     if (!ctx.canManage) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+
+    // Part 6 (CLOSE as leak): inherit the suspension / lock gate the hand-rolled
+    // auth skipped. A locked centre must not create students.
+    const gate = await centerAccessGateResponse(ctx.supabaseAdmin, ctx.centerId);
+    if (gate) return gate;
 
     let body: { name?: string; phone?: string | null };
     try {

@@ -17,6 +17,7 @@ TABLE attendance_scans rls=true force_rls=false
 TABLE audit_log rls=true force_rls=false
 TABLE backup_log rls=true force_rls=false
 TABLE benchmark_snapshots rls=true force_rls=false
+TABLE billing_lockout_events rls=true force_rls=false
 TABLE billing_nudges rls=true force_rls=false
 TABLE billing_reconciliation_reports rls=true force_rls=false
 TABLE bookings rls=true force_rls=false
@@ -278,6 +279,13 @@ COLUMN benchmark_snapshots.p25_group_utilization ord=19 type=numeric notnull=fal
 COLUMN benchmark_snapshots.p50_group_utilization ord=20 type=numeric notnull=false default=∅
 COLUMN benchmark_snapshots.p75_group_utilization ord=21 type=numeric notnull=false default=∅
 COLUMN benchmark_snapshots.created_at ord=22 type=timestamp with time zone notnull=false default=now()
+COLUMN billing_lockout_events.id ord=1 type=uuid notnull=true default=gen_random_uuid()
+COLUMN billing_lockout_events.center_id ord=2 type=uuid notnull=true default=∅
+COLUMN billing_lockout_events.cairo_day ord=3 type=date notnull=true default=∅
+COLUMN billing_lockout_events.event_type ord=4 type=text notnull=true default=∅
+COLUMN billing_lockout_events.attempt_index ord=5 type=integer notnull=false default=∅
+COLUMN billing_lockout_events.succeeded ord=6 type=boolean notnull=false default=∅
+COLUMN billing_lockout_events.created_at ord=7 type=timestamp with time zone notnull=true default=now()
 COLUMN billing_nudges.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN billing_nudges.owner_type ord=2 type=text notnull=true default=∅
 COLUMN billing_nudges.owner_id ord=3 type=uuid notnull=true default=∅
@@ -1847,6 +1855,8 @@ CONSTRAINT backup_log.backup_log_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT backup_log.backup_log_status_check type=c def=CHECK ((status = ANY (ARRAY['ok'::text, 'pending'::text, 'alert'::text])))
 CONSTRAINT benchmark_snapshots.benchmark_snapshots_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT benchmark_snapshots.benchmark_snapshots_snapshot_date_district_student_count_ti_key type=u def=UNIQUE (snapshot_date, district, student_count_tier)
+CONSTRAINT billing_lockout_events.billing_lockout_events_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT billing_lockout_events.billing_lockout_events_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT billing_nudges.billing_nudges_channel_whatsapp_status_check type=c def=CHECK ((channel_whatsapp_status = ANY (ARRAY['disabled'::text, 'queued'::text, 'sent'::text, 'failed'::text, 'skipped'::text])))
 CONSTRAINT billing_nudges.billing_nudges_invoice_id_fkey type=f def=FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE SET NULL
 CONSTRAINT billing_nudges.billing_nudges_owner_type_check type=c def=CHECK ((owner_type = ANY (ARRAY['center'::text, 'teacher'::text])))
@@ -2499,6 +2509,8 @@ INDEX idx_audit_log_created_at ON audit_log def=CREATE INDEX idx_audit_log_creat
 INDEX idx_audit_log_user_id ON audit_log def=CREATE INDEX idx_audit_log_user_id ON public.audit_log USING btree (user_id)
 INDEX idx_backup_log_checked_at ON backup_log def=CREATE INDEX idx_backup_log_checked_at ON public.backup_log USING btree (checked_at DESC)
 INDEX idx_benchmark_snapshots_lookup ON benchmark_snapshots def=CREATE INDEX idx_benchmark_snapshots_lookup ON public.benchmark_snapshots USING btree (snapshot_date DESC, district, student_count_tier)
+INDEX billing_lockout_events_center_day_idx ON billing_lockout_events def=CREATE INDEX billing_lockout_events_center_day_idx ON public.billing_lockout_events USING btree (center_id, cairo_day)
+INDEX billing_lockout_events_oneshot_uq ON billing_lockout_events def=CREATE UNIQUE INDEX billing_lockout_events_oneshot_uq ON public.billing_lockout_events USING btree (center_id, cairo_day, event_type) WHERE (event_type = ANY (ARRAY['invoice_nudge'::text, 'reminder2'::text, 'lock'::text]))
 INDEX billing_nudges_invoice_idx ON billing_nudges def=CREATE INDEX billing_nudges_invoice_idx ON public.billing_nudges USING btree (invoice_id) WHERE (invoice_id IS NOT NULL)
 INDEX billing_nudges_owner_idx ON billing_nudges def=CREATE INDEX billing_nudges_owner_idx ON public.billing_nudges USING btree (owner_type, owner_id, created_at DESC)
 INDEX billing_reconciliation_open_uidx ON billing_reconciliation_reports def=CREATE UNIQUE INDEX billing_reconciliation_open_uidx ON public.billing_reconciliation_reports USING btree (kind, invoice_id) WHERE (status = 'open'::text)
