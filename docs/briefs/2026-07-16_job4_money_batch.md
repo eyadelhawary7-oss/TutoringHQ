@@ -36,7 +36,7 @@ So this "money batch" is small. Do not invent work to fill it. It introduces **n
 database migration at all** (see the merge procedure note). The decided scope is:
 fix the C1 toast bug, add the student-detail balance card (computed live), add the
 balance regression guard, add commission tests, document the manager-only
-behaviour in the code, and append money invariant 16 to the billing skill.
+behaviour in the code, and append money invariants 16 and 17 to the billing skill.
 
 ---
 
