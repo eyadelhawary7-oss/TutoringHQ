@@ -2543,6 +2543,10 @@
     "rangeSummary": "Showing {count} scans from {from} – {to}",
     "captureTitle": "Take attendance",
     "tabScan": "QR scan",
+    "rejectedTitle": "Scans recorded while locked",
+    "rejectedBody": "{count} attendance scans were recorded while the center was locked and could not be synced. They are saved on this device. Export them to keep a record, then clear.",
+    "rejectedExport": "Export",
+    "rejectedClear": "Clear",
     "tabChecklist": "Checklist",
     "takingForGroup": "Taking attendance · {group}"
   },

@@ -20,7 +20,7 @@ import {
   pruneStaleTodayHistory,
   type TodayHistoryRow,
 } from '@/lib/db';
-import { syncQueuedScans } from '@/lib/sync';
+import { syncQueuedScans, CENTER_LOCKED_EVENT } from '@/lib/sync';
 import { useNetworkStatus } from '@/lib/scanner/networkStatus';
 import { normalizeStudentNumber, isValidCanonicalStudentNumber } from '@/lib/scanner/normalize';
 import CameraScanner from '@/components/CameraScanner';
@@ -189,6 +189,16 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Paywall on next signal (Job 3, Part 8): when a sync learns the centre is locked,
+  // leave the scanner and land on the lock screen instead of queueing doomed scans.
+  useEffect(() => {
+    const onLocked = () => {
+      window.location.href = `/${locale}/suspended?reason=payment_overdue`;
+    };
+    window.addEventListener(CENTER_LOCKED_EVENT, onLocked);
+    return () => window.removeEventListener(CENTER_LOCKED_EVENT, onLocked);
+  }, [locale]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;

@@ -7,6 +7,7 @@ import { QrCode, ListChecks } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import ScanTab from '@/components/attendance/ScanTab';
 import ChecklistTab from '@/components/attendance/ChecklistTab';
+import { RejectedScansBanner } from '@/components/scanner/RejectedScansBanner';
 
 type AttendanceTab = 'scan' | 'checklist';
 
@@ -80,6 +81,8 @@ function AttendanceSurface() {
           })}
         </div>
       </div>
+
+      <RejectedScansBanner />
 
       {tab === 'scan' ? (
         <ScanTab contextGroupName={groupName} />
