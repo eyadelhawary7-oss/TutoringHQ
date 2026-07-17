@@ -7,11 +7,16 @@ none of that context can run it without opening any other file.
 Model: **Fable 5** (this touches money and auth-adjacent billing code; use the
 largest available model).
 
-Scope: the follow-up work implied by sweep items 1-4 only:
+Scope: the follow-up work implied by sweep items 1-4, plus documentation of two
+money decisions Eyad made on 2026-07-16:
 - Item 1: `students.balance_due` (B2).
 - Item 2: commission engine (clawback + reassignment + promo base).
 - Item 3: teacher annual purchase path (C1).
 - Item 4: Scale teacher overage activation (C2).
+- Plus (Task S): document two money decisions in the billing skill and the CFO
+  agent, both made 2026-07-16: promos are signup-only (this underpins item 2's
+  commission promo base), and the 20 EGP fee is revenue, never netted against
+  Paymob's cost (a separate accounting decision that traces to none of items 1-4).
 
 **Explicitly OUT of scope: saved-card auto-charge and the 30 August lockout (C3).**
 C3 is not a batch item. The August posture is decided (Eyad, 2026-07-16): the
@@ -36,7 +41,8 @@ So this "money batch" is small. Do not invent work to fill it. It introduces **n
 database migration at all** (see the merge procedure note). The decided scope is:
 fix the C1 toast bug, add the student-detail balance card (computed live), add the
 balance regression guard, add commission tests, document the manager-only
-behaviour in the code, and append money invariants 16 and 17 to the billing skill.
+behaviour in the code, append money invariants 16 and 17 to the billing skill, and
+add the matching fee-booking rule to the CFO agent.
 
 ---
 
@@ -48,8 +54,15 @@ the tasks below. Recorded here so the scope is not silently defaulted.
 - Student-detail balance: ADD it, computed live. No column, no migration.
 - Balance regression guard: ADD it.
 - Promos are SIGNUP ONLY, never on a renewal. The second commission half (T2) is
-  therefore correct as written: no fix, add tests that pin the assumption, and
-  append money invariant 16 (Task S below).
+  therefore correct as written: no fix, add tests that pin the assumption. Task S
+  records this as invariant 16, and also carries invariant 17 and the matching CFO
+  fee-booking rule (next bullet).
+- Fee booking: Eyad decided 2026-07-16 that the flat 20 EGP fee is revenue, that
+  Paymob's percentage comes out of margin as cost of sales, that the two are never
+  netted, that no percentage-based customer fee will be added, and that Paymob's
+  published 2.75% plus 3 EGP is an example and is unconfirmed as EHG's negotiated
+  rate. Recorded as invariant 17 in the billing skill and a short line in the CFO
+  agent (Task S).
 - Manager-only reassignment: KEEP the current behaviour; document it in the code as
   intended so nobody "fixes" it later.
 - Teacher annual at signup: leave it out; it belongs to the signup redesign.
@@ -74,12 +87,13 @@ the tasks below. Recorded here so the scope is not silently defaulted.
 5. **As decided (Eyad, 2026-07-16), this batch introduces NO migration**: the
    balance card computes live (no column), the regression guard is a check script,
    the commission work is tests plus a code comment, C1 is a UI/route fix, C2 is no
-   change, and invariant 16 is a documentation line. Step 3 is therefore a no-op
-   for this batch. If any future change adds a migration, this procedure applies.
+   change, and invariants 16 and 17 plus the CFO-agent line are documentation only.
+   Step 3 is therefore a no-op for this batch. If any future change adds a
+   migration, this procedure applies.
 
 ---
 
-## Task B2 - students.balance_due (mostly confirmation)
+## Task B2 - students.balance_due (add balance card + regression guard)
 
 **Verified current state (re-verify before acting; do not trust this line):**
 `students.balance_due` does not exist in the live database and no migration
