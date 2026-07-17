@@ -198,19 +198,29 @@ money rails go live the overage invoice actually collects rather than only being
 created on the manual surface. That verification belongs with the C3 go-live work,
 not this batch. Do not add an overage feature flag; none is needed.
 
-## Task S - append money invariant 16 to the billing skill
+## Task S - append money invariants 16 and 17 to the billing skill, and note the fee-booking rule in the CFO agent
 
-Eyad confirmed 2026-07-16 that promotional discounts are signup-only. That business
-rule is what makes the T2 commission half correct, yet it is invisible in the code.
-Make it explicit: append the following as invariant 16 at the end of the numbered
-"Money invariants (LOCKED)" list in
+Two locked money rules the code depends on but never states. Append both as new
+numbered lines at the end of the numbered "Money invariants (LOCKED)" list in
 `.claude/skills/automated-billing-and-fees/SKILL.md` (that list currently ends at
-invariant 15). Paste it verbatim as a new numbered line:
+invariant 15). Paste each verbatim; do not renumber or edit invariants 1 to 15.
+
+Invariant 16 records that promotional discounts are signup-only (Eyad confirmed
+2026-07-16), which is what makes the T2 commission half correct even though the
+rule is invisible in the code:
 
 16. Promotional discounts apply to the first bill only, never to a renewal. The second-half (T2) referral commission is deliberately promo-unaware, recomputed at the standing price, and is correct ONLY because of this rule. If promos are ever allowed to apply to renewals, the T2 commission base must be fixed first. Confirmed by Eyad 2026-07-16.
 
-This is a documentation line in the skill: no code, no migration. Do not renumber
-or edit invariants 1 to 15.
+Invariant 17 records how the flat 20 EGP processing fee is booked, so the gap
+between that flat fee and Paymob's percentage cost is never hidden:
+
+17. The flat 20 EGP processing fee is REVENUE, not a pass-through, and must never be booked as offsetting payment processing cost. It is VAT inclusive, so it nets 17.54. Paymob's cost is separate and scales with the invoice: their published example is 2.75% plus 3 EGP per successful transaction. That rate is NOT confirmed as EHG's negotiated rate and is an assumption until Paymob confirms it. At that rate the fee covers roughly 57% of Paymob's cost on a Solo monthly invoice, 6% on Solo annual, and 0.3% on Enterprise annual, because the fee is flat while their cost is a percentage. Eyad decided 2026-07-16 that the percentage comes out of margin and that no percentage-based customer fee will be added. Never net the two. 20 EGP in as revenue, Paymob's charge out as cost of sales, always two separate lines. Netting them hides a cost that scales with every pound billed and flatters every projection built on it.
+
+Then add the same booking rule, short, to the financial ground-truth list in
+`.claude/agents/cfo-controller.md`: the 20 EGP fee is revenue, Paymob's percentage
+is cost of sales, never netted, and the 2.75% is an unconfirmed assumption.
+
+These are documentation lines only: no code, no migration.
 
 ---
 
