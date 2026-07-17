@@ -38,6 +38,31 @@ vi.mock('@supabase/supabase-js', () => ({
             insert: studentsInsertMock,
           };
         }
+        // Suspension / single-day-lock gate (Job 3 Part 6): the route now reads the
+        // centre row and the lockout policy. Benign, non-locked centre + empty config
+        // so the gate passes through to the behaviour under test.
+        if (table === 'centers') {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: () =>
+                  Promise.resolve({
+                    data: {
+                      status: 'active',
+                      is_blacklisted: false,
+                      billing_status: 'paid',
+                      next_payment_due: null,
+                      auto_suspend_at: null,
+                    },
+                    error: null,
+                  }),
+              }),
+            }),
+          };
+        }
+        if (table === 'platform_config') {
+          return { select: () => ({ in: () => Promise.resolve({ data: [], error: null }) }) };
+        }
         throw new Error(`unexpected table in onboarding/first-student test mock: ${table}`);
       },
     };

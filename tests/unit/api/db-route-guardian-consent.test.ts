@@ -49,6 +49,31 @@ function adminFrom(table: string) {
   if (table === 'audit_log') {
     return { insert: () => Promise.resolve({ error: null }) };
   }
+  // Suspension / single-day-lock gate (Job 3 Part 6/8): the route now reads the
+  // centre row and the lockout policy. Return a benign, non-locked centre and an
+  // empty config so the gate passes through to the behaviour under test.
+  if (table === 'centers') {
+    return {
+      select: () => ({
+        eq: () => ({
+          maybeSingle: () =>
+            Promise.resolve({
+              data: {
+                status: 'active',
+                is_blacklisted: false,
+                billing_status: 'paid',
+                next_payment_due: null,
+                auto_suspend_at: null,
+              },
+              error: null,
+            }),
+        }),
+      }),
+    };
+  }
+  if (table === 'platform_config') {
+    return { select: () => ({ in: () => Promise.resolve({ data: [], error: null }) }) };
+  }
   throw new Error(`unexpected table in db-route consent test mock: ${table}`);
 }
 
