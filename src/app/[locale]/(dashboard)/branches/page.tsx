@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
+import { getCsrfHeaders } from '@/lib/csrf-client';
 import { useUser } from '@/contexts/UserContext';
 import PageHeader from '@/components/shared/PageHeader';
 import { BarChartComponent, ChartCard } from '@/components/charts';
@@ -119,6 +120,7 @@ export default function BranchesPage() {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
+          ...(await getCsrfHeaders(session.access_token)),
         },
         body: JSON.stringify({ name: newName.trim() }),
       });

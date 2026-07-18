@@ -11,6 +11,9 @@ const studentsInsertSingle = vi.fn();
 const studentsInsertMock = vi.fn((_payload?: Record<string, unknown>) => ({
   select: () => ({ single: studentsInsertSingle }),
 }));
+// CSRF is enforced on this POST (fail-closed). Default to valid so the CORE/permissions/
+// consent behaviour under test is reachable; one test flips it to prove the 403.
+const mockValidateCSRF = vi.fn(() => true);
 
 vi.mock('@supabase/supabase-js', () => ({
   createClient: vi.fn((_url: string, key: string) => {
@@ -77,6 +80,10 @@ vi.mock('@sentry/nextjs', () => ({
   captureMessage: vi.fn(),
 }));
 
+vi.mock('@/lib/csrf', () => ({
+  validateCSRFRequest: (...args: unknown[]) => mockValidateCSRF(...(args as [])),
+}));
+
 import { POST } from '@/app/api/onboarding/first-student/route';
 
 function makeRequest(
@@ -105,6 +112,8 @@ beforeEach(() => {
   studentsInsertMock.mockImplementation((_payload?: Record<string, unknown>) => ({
     select: () => ({ single: studentsInsertSingle }),
   }));
+  mockValidateCSRF.mockReset();
+  mockValidateCSRF.mockReturnValue(true);
 
   mockGetUser.mockResolvedValue({
     data: { user: { id: USER_ID, email: '201112223344@centerhq.local' } },
@@ -247,5 +256,21 @@ describe('POST /api/onboarding/first-student — Rule 151 CORE+best-effort split
     expect(res.status).toBe(200);
     expect(capturedInsert?.guardian_consent_confirmed_by).toBe(USER_ID);
     expect(typeof capturedInsert?.guardian_consent_confirmed_at).toBe('string');
+  });
+
+  it('fails closed with 403 when the CSRF token is missing/invalid (no student inserted)', async () => {
+    usersCoreMaybeSingle.mockResolvedValue({
+      data: { id: USER_ID, center_id: CENTER_ID },
+      error: null,
+    });
+    usersPermsMaybeSingle.mockResolvedValue({ data: { can_manage_students: true }, error: null });
+    mockValidateCSRF.mockReturnValue(false);
+
+    const res = await POST(makeRequest({ name: 'Ali', guardianConsentConfirmed: true }));
+    const json = await res.json();
+
+    expect(res.status).toBe(403);
+    expect(json.error).toBe('Invalid CSRF token');
+    expect(studentsInsertSingle).not.toHaveBeenCalled();
   });
 });

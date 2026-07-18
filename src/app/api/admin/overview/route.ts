@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getAdminContext } from '@/lib/admin-auth';
+import { isSuperAdminPhone } from '@/lib/admin-access';
+import { phoneFromCenterhqAuthEmail } from '@/lib/ownerPhone';
 import { PLAN_STUDENT_LIMITS } from '@/lib/plans';
 import { getImpliedMonthlyMrr, isCenterEligibleForSubscriptionMrr } from '@/lib/pricing';
 import { parseIncludeTestCenters } from '@/lib/adminIncludeTest';
@@ -57,9 +59,14 @@ export async function GET(request: Request) {
         const adminClient = createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false, autoRefreshToken: false } });
         const { data: adminUser } = await adminClient.from('admin_users').select('id, role').eq('id', userId).single();
         const { data: userRecord } = await adminClient.from('users').select('phone').eq('id', userId).single();
-        const userPhone = session.user.phone ?? userRecord?.phone ?? null;
-        const superAdminPhones = (process.env.SUPER_ADMIN_PHONES || '').split(',').map((p) => p.trim());
-        const isPhoneAdmin = !!userPhone && superAdminPhones.includes(String(userPhone).trim());
+        // Phone source: auth.users.email local-part first (`<digits>@centerhq.local`,
+        // server-set, not writable via the /api/db proxy), then auth.users.phone, then
+        // public.users.phone (centre-tenant data, defence-in-depth only). Compare with the
+        // shared normalized isSuperAdminPhone so a `+`-prefixed SUPER_ADMIN_PHONES entry still
+        // matches the digits-only email phone. Mirrors admin-auth.ts / centerAuth.ts.
+        const emailPhone = phoneFromCenterhqAuthEmail(session.user.email);
+        const userPhone = emailPhone ?? session.user.phone ?? userRecord?.phone ?? null;
+        const isPhoneAdmin = isSuperAdminPhone(userPhone);
         if (adminUser || isPhoneAdmin) {
           supabaseAdmin = adminClient;
           internalRole = isPhoneAdmin || adminUser?.role === 'super_admin' || adminUser?.role === 'admin' ? 'super_admin' : (adminUser?.role === 'internal_admin' ? 'internal_admin' : 'internal_viewer');

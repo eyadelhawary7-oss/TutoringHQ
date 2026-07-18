@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PLANS, isPlanKey, type PlanKey } from '@/lib/pricing';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { centerAccessGateResponse } from '@/lib/centerAccessGate';
+import { validateCSRFRequest } from '@/lib/csrf';
 
 async function getAuthContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -57,6 +58,12 @@ export async function POST(request: NextRequest) {
   try {
     const ctx = await getAuthContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // Fail-closed CSRF on this state-changing POST (creates a center). Same pattern as the
+    // pay route: validateCSRFRequest returns false when CSRF_SECRET is unset/malformed.
+    if (!validateCSRFRequest(request, ctx.userId)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+    }
 
     const { organizationId, supabaseAdmin } = ctx;
 

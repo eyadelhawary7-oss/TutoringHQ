@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { centerAccessGateResponse } from '@/lib/centerAccessGate';
+import { validateCSRFRequest } from '@/lib/csrf';
 
 type CtxOk = {
   ok: true;
@@ -109,6 +110,12 @@ export async function POST(request: NextRequest) {
     }
     if (!ctx.canManage) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Fail-closed CSRF on this state-changing POST (creates a student). Same pattern as the
+    // pay route: validateCSRFRequest returns false when CSRF_SECRET is unset/malformed.
+    if (!validateCSRFRequest(request, ctx.userId)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
 
     // Part 6 (CLOSE as leak): inherit the suspension / lock gate the hand-rolled

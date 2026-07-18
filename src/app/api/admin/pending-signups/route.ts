@@ -4,6 +4,8 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
+import { isSuperAdminPhone } from '@/lib/admin-access';
+import { phoneFromCenterhqAuthEmail } from '@/lib/ownerPhone';
 
 export async function GET(request: Request) {
   try {
@@ -16,6 +18,10 @@ export async function GET(request: Request) {
     }
 
     let userId: string | null = null;
+    // Capture the auth identity (email local-part is the trusted phone source; NOT
+    // public.users.phone, which is centre-tenant data writable via the /api/db proxy).
+    let authEmail: string | null = null;
+    let authSessionPhone: string | null = null;
 
     const cookieStore = await cookies();
     const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -35,12 +41,18 @@ export async function GET(request: Request) {
 
     if (session) {
       userId = session.user.id;
+      authEmail = session.user.email ?? null;
+      authSessionPhone = session.user.phone ?? null;
     } else {
       const authHeader = request.headers.get('Authorization');
       if (authHeader?.startsWith('Bearer ')) {
         const token = authHeader.substring(7);
         const { data: { user }, error } = await supabase.auth.getUser(token);
-        if (user && !error) userId = user.id;
+        if (user && !error) {
+          userId = user.id;
+          authEmail = user.email ?? null;
+          authSessionPhone = user.phone ?? null;
+        }
       }
     }
 
@@ -64,11 +76,13 @@ export async function GET(request: Request) {
       .eq('id', userId)
       .single();
 
-    const superAdminPhones = (process.env.SUPER_ADMIN_PHONES || '')
-      .split(',')
-      .map((p: string) => p.trim())
-      .filter(Boolean);
-    const isPhoneAdmin = !!userData?.phone && superAdminPhones.includes(userData.phone);
+    // Phone source: auth.users.email local-part first (`<digits>@centerhq.local`, server-set,
+    // not writable via the /api/db proxy), then auth.users.phone, then public.users.phone
+    // (centre-tenant data, defence-in-depth only). Normalized comparison via the shared
+    // isSuperAdminPhone. Mirrors admin-auth.ts / centerAuth.ts.
+    const emailPhone = phoneFromCenterhqAuthEmail(authEmail);
+    const effectivePhone = emailPhone ?? authSessionPhone ?? userData?.phone ?? null;
+    const isPhoneAdmin = isSuperAdminPhone(effectivePhone);
 
     if (!adminUser && !isPhoneAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

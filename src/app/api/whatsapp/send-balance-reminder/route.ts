@@ -5,6 +5,7 @@ import { formatNumber } from '@/lib/formatNumber';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { centerAccessGateResponse } from '@/lib/centerAccessGate';
 import { getStudentBalances } from '@/lib/studentBalance';
+import { validateCSRFRequest } from '@/lib/csrf';
 
 async function getUserContext(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -37,7 +38,7 @@ async function getUserContext(request: NextRequest) {
 
   if (!userRecord?.center_id) return null;
 
-  return { centerId: userRecord.center_id, supabaseAdmin };
+  return { centerId: userRecord.center_id, supabaseAdmin, userId: user.id };
 }
 
 const BALANCE_REMINDER_TEMPLATE = 'chq_balance_reminder';
@@ -46,6 +47,12 @@ export async function POST(request: NextRequest) {
   try {
     const ctx = await getUserContext(request);
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // Fail-closed CSRF on this state-changing POST (sends WhatsApp to parents). Same pattern
+    // as the pay route: validateCSRFRequest returns false when CSRF_SECRET is unset/malformed.
+    if (!validateCSRFRequest(request, ctx.userId)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+    }
 
     const body = (await parseBodyWithLimit(request, 65536).catch(() => ({}))) as Record<string, unknown>;
     const studentId = body.student_id as string | undefined;
