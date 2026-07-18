@@ -1,6 +1,13 @@
 # CRON_SECRET — Vault-sourced bearer for pg_cron jobs
 
-_Last updated: 2026-06 (Phase 5 — secret hygiene)_
+> Synced against the live code on 2026-07-18. `requireCronSecret.ts` and
+> `cron-deembed-secret.sql` confirmed present. The environment is still pre-go-live
+> (test data only) as of 2026-07-18, so the "known state" and "go-live rotation"
+> sections below remain applicable. The `center-hq.vercel.app` host is the Vercel
+> project deployment URL (Vercel project name `center-hq` — internal CenterHQ
+> naming kept by design); the public product domain is `tutoringhq.app`.
+
+_Last updated: 2026-06 (Phase 5 — secret hygiene); verification pass 2026-07-18_
 
 ## Summary
 

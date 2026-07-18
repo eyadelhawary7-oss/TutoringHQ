@@ -1,5 +1,7 @@
 # Safe Cleanup + Privacy Minimum — before/after for Eyad
 
+> Point-in-time snapshot as of 2026-07-02. Reviewed against the live database and code on 2026-07-18; preserved as a historical before/after record. Current live counts are in the session ground truth, not here.
+
 **Date:** 2026-07-02 · **Branch:** `claude/safe-cleanup-privacy-minimum-kzi4v0` · **No pull request opened — waiting on your review.**
 
 This is the plain-language version. The technical evidence (file/line/table/policy, every migration, every check) is in `FIX_2026-07-02_SAFE_CLEANUP_TECHNICAL.md`. Everything below is already applied to the live database and committed section by section so you can review one piece at a time.

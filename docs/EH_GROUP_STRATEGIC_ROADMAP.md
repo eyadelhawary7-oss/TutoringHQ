@@ -1,6 +1,8 @@
 # EH Group — 5-Year Strategic Roadmap
 
-> Companion document to [`EH_GROUP_MASTER_CONTEXT_v24.md`](./EH_GROUP_MASTER_CONTEXT_v24.md). This roadmap captures the phased build-out of the EH Group ecosystem, anchored on TutoringHQ (CenterHQ) as the founding venture.
+> FORWARD-LOOKING VISION DOC, not current operational state. Re-synced 2026-07-18. Two clarifications against live reality (verified 2026-07-18): (1) TutoringHQ's live monetization is a SUBSCRIPTION model — tiered all-in monthly/annual plans plus a flat 20 EGP processing fee per charge invoice, VAT-inclusive at 14% — not a "transaction-fee" model; read the "transaction-fee monetization" language below as aspirational framing, not the shipped model. (2) The Mauritius/Georgia international structure and the EHG Intelligence / treasury activation are PARKED and DRAFT, pending Adsero (company registration) and tax-advisor review; see the `ehg-algorithmic-asset-management` skill, which is explicitly marked STATUS: DRAFT. Nothing here is a committed plan of record.
+>
+> Companion document to [`EH_GROUP_MASTER_CONTEXT_v24.md`](./EH_GROUP_MASTER_CONTEXT_v24.md) (note: that in-repo copy is stale — v24; the current canonical is v46, out of repo). This roadmap captures the phased build-out of the EH Group ecosystem, anchored on TutoringHQ (CenterHQ) as the founding venture.
 
 ## Years 1–2: Foundation, Automation, and Local Dominance
 

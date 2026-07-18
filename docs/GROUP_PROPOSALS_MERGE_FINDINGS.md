@@ -1,5 +1,7 @@
 # Group Proposals — Diff Findings (before any merge)
 
+> HISTORICAL diff/decision record, synced against the live code on 2026-07-18. Option 1 (partial extraction) shipped and still holds: the shared folder `src/components/group-proposals/` exists with `types.ts`, `OfferHistory.tsx`, and `CounterOfferForm.tsx` (verified live 2026-07-18). The §3 center-vs-teacher design-token drift is the same drift referenced by `docs/CENTER_PORTAL_REPAINT_CLASSIFICATION.md` §8. Preserved as the point-in-time record.
+
 **Task:** Merge the doubled "group proposals" screen into one shared component.
 **Files diffed:**
 - Center side: `src/components/teachers/GroupProposalsTab.tsx` (731 lines)

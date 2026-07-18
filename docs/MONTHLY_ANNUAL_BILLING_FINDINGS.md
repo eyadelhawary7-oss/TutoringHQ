@@ -1,12 +1,14 @@
 # Findings — Centers billed monthly or annual only (retire the quarterly clock)
 
+> Dated record. Synced against the live database on 2026-07-18. This doc retired quarterly at the **application layer only** and deferred the schema change (see Decisions). That deferral is now **superseded**: the schema change was subsequently applied (migration `20260705050120_billing_period_monthly_default.sql`; see `docs/BILLING_PERIOD_MONTHLY_DEFAULT_FINDINGS.md`). Current live state — `centers.billing_period` CHECK `IN ('monthly','annual')` default `'monthly'`; `subscription_billing_period` CHECK `IN ('monthly','yearly')` default `'monthly'` (verified live 2026-07-18). The "as-is" schema and the deferral decision below are preserved as the point-in-time record; where they describe current state they are now false and annotated inline.
+
 Step-0 introspection before any change. Money code; surgical.
 
 ## Current center billing model (as-is)
 
-### Schema (live, project `lczmjpnbuhnsislcvzar`, Postgres 17)
-- `centers.billing_period` — `text`, **default `'quarterly'`**, CHECK `IN ('monthly','quarterly','annual')`.
-- `centers.subscription_billing_period` — `text`, **default `'quarterly'`**, CHECK `IN ('monthly','quarterly','biannual','yearly')`. Note the different vocabulary: annual is spelled **`yearly`** here, and `'annual'` is NOT allowed.
+### Schema (as-is at time of writing — now superseded; see banner)
+- `centers.billing_period` — `text`, ~~default `'quarterly'`, CHECK `IN ('monthly','quarterly','annual')`~~. **Now (verified live 2026-07-18): default `'monthly'`, CHECK `IN ('monthly','annual')`.**
+- `centers.subscription_billing_period` — `text`, ~~default `'quarterly'`, CHECK `IN ('monthly','quarterly','biannual','yearly')`~~. **Now (verified live 2026-07-18): default `'monthly'`, CHECK `IN ('monthly','yearly')`.** The vocabulary quirk survives: annual is still spelled **`yearly`** on this column, and bare `'annual'` is NOT allowed here.
 - `centers.billing_amount` — `numeric`, default `0`. **Overwritten by a BEFORE INSERT/UPDATE trigger** (`trigger_update_billing_amount` → `update_billing_amount()` → `calculate_billing_amount(plan, billing_period)`). That legacy DB function has stale hardcoded prices (starter=1000, pro=1800, enterprise=3500, else 1000; monthly = base×1.075, quarterly = base×3, yearly = base×12×0.90) and is **superseded** by the app, which explicitly re-writes `billing_amount` at activation. The trigger only fires on `UPDATE OF plan, billing_period, billing_cycle_start`, so an app UPDATE that touches only `billing_amount` is NOT clobbered.
 - `all_in_price` — `numeric`, the per-month base rate (equals `PLANS[].quarterlyAllIn`).
 
@@ -49,7 +51,7 @@ Plan: migrate both to monthly (billing_amount → monthly-equivalent = ÷3).
 4. **Test data** — the two quarterly test centers → monthly.
 
 ## Decisions & rationale (flagged for Eyad)
-- **CHECK & column defaults kept unchanged (no schema migration).** Quarterly is retired at the application layer (UI = monthly/annual only; signup route + form default monthly; both cadence fields written explicitly). A DB default flip or CHECK tightening would need a schema migration + snapshot regeneration against **Postgres 17**, which this environment cannot reproduce (PGDG apt repo is blocked by the proxy; local Postgres is 16 and the baseline migration uses PG17's `MAINTAIN` privilege, so the snapshot rebuild fails). The rule is "snapshot regenerated, never hand-edited," so a schema change is deferred. **Recommended follow-up:** in a PG17-capable context, `ALTER COLUMN billing_period/subscription_billing_period SET DEFAULT 'monthly'` and tighten the CHECKs, then regen the snapshot.
+- **CHECK & column defaults kept unchanged (no schema migration) — DECISION SUPERSEDED.** At the time, quarterly was retired only at the application layer (UI = monthly/annual only; signup route + form default monthly; both cadence fields written explicitly), and the schema change was deferred because a PG17 snapshot regen could not be reproduced in that environment. **The recommended follow-up has since been done** (verified live 2026-07-18): `billing_period`/`subscription_billing_period` defaults flipped to `'monthly'` and the CHECKs tightened to `{monthly, annual}` / `{monthly, yearly}` via migration `20260705050120_billing_period_monthly_default.sql`. See `docs/BILLING_PERIOD_MONTHLY_DEFAULT_FINDINGS.md` for the applied change.
 - **Annual left exactly as-is.** The annual recurring engine (+12 / ×10) is correct and untouched. `subscription_billing_period` is forced to monthly **only** for monthly signups; annual/quarterly keep their existing handling, so no annual code path (and no `subscription_billing_period` CHECK edge) is disturbed.
 - **Legacy DB trigger `calculate_billing_amount` left in place** — it is superseded by the app's explicit `billing_amount` writes and does not emit a quarterly amount for a monthly insert. Out of scope.
 - **Plan-upgrade confirmation label** (`handlePlanUpgradeInvoicePaid`) still hardcodes the quarterly Arabic label; that's a separate invoice flow (`plan_upgrade_difference`), not the everyday cadence. Left untouched; noted as a follow-up.

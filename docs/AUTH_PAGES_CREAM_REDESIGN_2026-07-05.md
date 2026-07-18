@@ -1,5 +1,7 @@
 # Auth pages cream redesign — findings
 
+> HISTORICAL record (2026-07-05), synced against the live database and code on 2026-07-18. The styling work landed and still holds. **One section is now stale: "Follow-up Item 2 — 6% service fee" describes a fee that has since been REMOVED** — see the dated correction inside that section. Everything else is preserved as the point-in-time record.
+
 Redesign of the last three dark auth pages (`/signup`, `/session-expired`,
 `/accept-invite`) into the cream + teal look, finishing the "zero dark anywhere"
 goal. **Styling only — every bit of auth logic stays byte-identical.**
@@ -201,6 +203,8 @@ touched** — `messages/ar.json` + `messages/en.json` values only. ar/en key par
 ---
 
 ## Follow-up Item 2 — "رسوم الخدمة 6٪" service fee (INVESTIGATION ONLY — for Eyad)
+
+> CORRECTION (verified live 2026-07-18): the 6% service fee **and** the 0.5% stamp duty described below have since been **REMOVED everywhere**. `src/lib/pricing/taxMath.ts` no longer defines `SERVICE_RATE` or any stamp constant — the only tax is **VAT 14%, inclusive** (`VAT_RATE = 0.14`, `base = inclusive / 1.14`); `platform_config.lesson_commission` = `{vat_pct:0.14, teacher_pct:0, customer_pct:0, processing_flat:0}`. The separate flat **20 EGP processing fee** (`src/lib/processingFee.ts`) is unchanged. The `signup.serviceFee` "6%" label and the cascading `1/((1-VAT)(1-STAMP)(1-SERVICE))` gross-up below reflect the code **as it was on 2026-07-05** and no longer exist. See `docs/SERVICE_FEE_REMOVAL_FINDINGS.md`. The investigation text is preserved unedited for the record.
 
 **Nothing was changed. This is money; reported for a decision.**
 

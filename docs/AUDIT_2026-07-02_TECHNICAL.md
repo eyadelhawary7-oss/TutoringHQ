@@ -1,10 +1,12 @@
 # TutoringHQ — Technical Findings Note
 
+> Point-in-time snapshot as of 2026-07-02. Reviewed against the live database and code on 2026-07-18 — findings preserved as recorded; only demonstrably-false current-state claims are annotated inline (verified live 2026-07-18). Live catalog counts drift over time; current figures are in the session ground truth, not frozen here.
+
 **Date:** 2026-07-02 · **Project:** Supabase `lczmjpnbuhnsislcvzar` (PostgreSQL 17, eu-west-2) · **Repo:** `eyadelhawary7-oss/CenterHQ`
 **Method:** READ-ONLY. Live catalog introspected via `information_schema` / `pg_catalog` / advisors; full codebase read/grepped. No code, config, migrations, or writes changed. Summer billing engine inspected only, never exercised.
 **Severity:** CRITICAL / HIGH / MEDIUM / LOW / INFO · **Fix difficulty:** Easy / Med / Hard.
 
-Ground-truth surface: 137 public tables (all with RLS enabled), 319 API routes, 42 cron routes (all `CRON_SECRET`-gated) + 1 pg_cron heartbeat, 123 pages. Rule 173 (SECURITY DEFINER lockdown) **held**; Rule 174 (no arbitrary SQL) **clean** (no `ai_execute_query` / dynamic-SQL-on-user-input function exists).
+Ground-truth surface: 137 public tables (all with RLS enabled) *(as of 2026-07-02; 142 base tables live 2026-07-18 — verified live)*, 319 API routes, 42 cron routes (all `CRON_SECRET`-gated) + 1 pg_cron heartbeat, 123 pages. Rule 173 (SECURITY DEFINER lockdown) **held**; Rule 174 (no arbitrary SQL) **clean** (no `ai_execute_query` / dynamic-SQL-on-user-input function exists).
 
 ---
 
@@ -53,7 +55,7 @@ Live: write policy = `ALL` for super_admin (`qual = admin_users.role='super_admi
 `list_migrations` returns ~230 ledger entries; repo `supabase/migrations/` holds only **18** files (all `20260625xxxx`+). Consequences:
 1. Repo is **not** the schema source of truth — everything before 2026-06-25 exists only in the live ledger; the DB cannot be reproduced from repo.
 2. Version/timestamp drift in the overlap window (e.g. repo `20260626000001_phase6a_lockdown_definer_rpcs` vs ledger `20260626134248 phase6a_lockdown_definer_rpcs`) → fragile `db push` reconciliation.
-3. **Security-relevant:** `supabase/migrations/20260701150506_drop_pin_code.sql` exists in repo but is **not** in the ledger, and `users.pin_code` **still exists** in production (confirmed via `information_schema`). The credential-column drop never reached prod.
+3. **Security-relevant:** `supabase/migrations/20260701150506_drop_pin_code.sql` exists in repo but is **not** in the ledger, and `users.pin_code` **still exists** in production (confirmed via `information_schema`). The credential-column drop never reached prod. *(Update, verified live 2026-07-18: `users.pin_code` no longer exists — the drop has since reached production. The repo also moved to a baseline-snapshot + archived-migrations model, addressing the drift half of this finding.)*
 **NOTIFY pgrst reload** pattern present in 16/18 recent repo migrations (good).
 **Fix:** backfill/ squash historical migrations into repo, reconcile versions, decide+apply the `pin_code` drop.
 
@@ -152,7 +154,7 @@ No FK on: `billing_reconciliation_reports.invoice_id`, `recurring_charge_decline
 - **Rate limiting:** all public form/OTP endpoints Upstash-limited (join/enrollment/minors, signup, all OTP, PIN reset, privacy-request, demo-request, login).
 - **Card data:** `saved_cards` = token + last4/brand/exp only (no PAN); `card_last4` CHECK `^[0-9]{4}$`; `card_charge_intents` `UNIQUE(idempotency_key)`; `saved_card_consents` exists.
 - **XSS:** `dangerouslySetInnerHTML` only in static theme script + JSON-LD (no user content). **Injection:** all DB access parameterized (supabase-js / RPC named params).
-- **DB integrity:** no Postgres enums in public (text+CHECK only); all timestamps `timestamptz`; every table has a PK; 18 zero-policy tables genuinely deny-all (server-only, correct); `audit_log` truly append-only; `pending_enrollments` (minors) deny-all + server-only; `benchmark_snapshots` has **no** center id (anonymized aggregate confirmed).
+- **DB integrity:** no Postgres enums in public (text+CHECK only); all timestamps `timestamptz`; every table has a PK; 18 zero-policy tables genuinely deny-all (server-only, correct) *(18 as of 2026-07-02; the deny-all count has since drifted up as new server-only tables landed — 22 counted live 2026-07-18, verified; state it as a live count, never a permanent number)*; `audit_log` truly append-only; `pending_enrollments` (minors) deny-all + server-only; `benchmark_snapshots` has **no** center id (anonymized aggregate confirmed).
 - **Frontend:** RTL clean (0 physical-direction utilities in app UI); no customer-facing "CenterHQ" (16 hits all comments/tokens/console); `toLocaleString` only inside `formatNumber.ts`; no `centers.owner_phone` misuse (resolves via `ownerPhone.ts`); `platform_config` used as key-value only; no secret in client bundle.
 - **Consent gate (WS6.2/6.3):** `parentNotifications.ts:82` skips sends unless `parent_consent_given` (+ `notify_on_scan`); weekly summary filters on consent; opt-out columns are per-center on `students`. **DONE.**
 - **Core loops:** center (signup → attach group → add students → offline QR scan+sync → record fee → parent WhatsApp/portal) and teacher (signup → trial → create group → attach → detach-without-approval) both complete end-to-end, no break. Center loop = **works today: YES**; teacher loop = **works today: YES**.

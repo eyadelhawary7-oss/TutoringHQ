@@ -1,5 +1,7 @@
 # Post-Launch Lint Debt
 
+> HISTORICAL lint-debt ledger, synced against the live code on 2026-07-18. The relaxed-rule list is preserved as the point-in-time state. One dead reference was corrected: `src/contexts/ThemeContext.tsx` (cited in §1) no longer exists — it was deleted in the dark-mode removal (see `docs/DEAD_CODE_REMOVED_2026-07-05.md`) (verified live 2026-07-18). The remaining file:line sites are as of the branch date and may have shifted.
+
 Rules relaxed (or disabled) in `eslint.config.mjs` to unblock CI for the pre-launch
 batches B and C. Each entry below lists the offending file:line sites and the
 "real fix" approach. Once a section is empty, re-enable the rule as `error`.
@@ -30,7 +32,7 @@ Sample sites observed during the audit:
 
 - `src/components/AdminSidebar.tsx:642` — `setMounted(true)` mount probe.
 - `src/lib/scanner/networkStatus.ts:51` — `void runProbe()` inside `useEffect`.
-- `src/contexts/ThemeContext.tsx` (around the `mounted` flag).
+- ~~`src/contexts/ThemeContext.tsx` (around the `mounted` flag)~~ — file deleted in the dark-mode removal; no longer a site (verified live 2026-07-18).
 
 The remaining sites follow the same patterns.
 

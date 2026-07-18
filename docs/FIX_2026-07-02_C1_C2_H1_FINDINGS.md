@@ -1,5 +1,7 @@
 # Findings — data-exposure holes C1, C2, H1 (2 July audit)
 
+> Point-in-time snapshot as of 2026-07-02. Reviewed against the live database and code on 2026-07-18; this is a historical fix-record for three specific findings and is preserved as recorded. Only demonstrably-false current-state claims would be annotated inline (none required).
+
 Introspected the live catalog (project `lczmjpnbuhnsislcvzar`) and the two routes before touching anything. All three are the same class of bug: data returned without checking the caller owns it.
 
 ## C2 — `content_access_log` anon cross-tenant SELECT (CRITICAL)

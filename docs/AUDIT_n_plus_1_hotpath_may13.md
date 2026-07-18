@@ -1,5 +1,7 @@
 # N+1 Hot Path Audit — Phase 15 Followup
 
+> Point-in-time snapshot as of 2026-05-13. Reviewed 2026-07-18; preserved as a historical audit. The one real N+1 it found (File 2) has since been resolved — see the dated note on that section.
+
 *Generated: 2026-05-13*
 
 ## File 1: `src/app/api/admin/billing/route.ts`
@@ -31,6 +33,8 @@ That is **one DELETE round-trip per student** (classic sequential N+1).
 **Proposed fix:** Replace the loop with a single `delete().in('student_id', studentIds)` (wrapped in the same try/catch pattern).
 
 **Estimated query reduction:** For one centre with *S* students, from *S* queries to **1** (e.g. 200 students → 200 to 1).
+
+*(Update, verified 2026-07-18: FIXED. The `parent_portal_tokens` delete was batched into a single `.in('student_id', …)`, and the `admin/centers` DELETE handler was later rewritten entirely to deactivate rather than hard-delete a center — the per-student loop is gone. Corroborated by `docs/ENTERPRISE_ARCHITECTURE_AUDIT_2026-07-07.md` §3.4 and `docs/FIX_2026-07-02_SAFE_CLEANUP_TECHNICAL.md` §H3.)*
 
 ---
 

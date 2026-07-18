@@ -1,5 +1,7 @@
 # Billing reliability hardening
 
+> Synced against the live database and code on 2026-07-18. Shipped feature; facts confirmed live are tagged (verified live 2026-07-18). The tamper trigger, both ledger tables, and the reconciliation/nudge crons exist in the live catalog and repo. Note: the two migrations cited below were folded into the baseline snapshot and now live under `supabase/migrations_archive/`, not `supabase/migrations/`.
+
 Safety net that lets the billing system run with real money: payments are never
 double-counted or silently lost, finalized invoices can't be quietly altered, and
 drift between our records and Paymob is caught automatically. Covers **both
@@ -28,8 +30,11 @@ Nothing here makes auto-charge live; it does not touch the
 The tamper trigger existed in the live DB but **was not tracked in any migration**
 and blocked *all* status/money changes unconditionally (including the legitimate
 `pending→paid` finalization), with no bypass. It is now brought into the repo
-(`20260626000000_billing_reliability_hardening.sql`) and corrected to an
-**owner-agnostic, finalized-invoice** guard (BEFORE UPDATE on `invoices`):
+(`supabase/migrations_archive/20260626000000_billing_reliability_hardening.sql` —
+archived into the baseline snapshot) and corrected to an
+**owner-agnostic, finalized-invoice** guard (BEFORE UPDATE on `invoices`). The live
+trigger is `trg_chq_prevent_invoice_tampering` (function `chq_prevent_invoice_tampering`),
+present on `public.invoices` (verified live 2026-07-18):
 
 - Owner identity (`owner_type`, `center_id`, `teacher_id`) is immutable for every
   invoice — a row can never be re-pointed to a different owner.

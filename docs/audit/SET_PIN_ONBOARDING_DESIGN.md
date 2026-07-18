@@ -1,5 +1,7 @@
 # Set-PIN onboarding (Option B) — design note
 
+> POINT-IN-TIME DESIGN NOTE (2026-05-23). Re-synced 2026-07-18. This design SHIPPED: `src/app/[locale]/set-pin/page.tsx` and `SetPinClient.tsx` exist in the tree (verified 2026-07-18). Two current-state corrections since this note was written (verified live 2026-07-18): (1) `public.users.pin_code` NO LONGER EXISTS — it was dropped by migration `20260701150506_drop_pin_code`. Every reference below to `users.pin_code` (the NULL gate, the bcrypt mirror write) is stale schema; the live credential is the Supabase Auth password and `users.pin_set_at` is the "has set a PIN" marker. (2) The Set-PIN link URLs have been corrected from the retired `centerhq.app` to the live product domain `tutoringhq.app`; the `@centerhq.local` auth-email suffix intentionally stays CenterHQ, and customer-facing brand copy should read TutoringHQ (the sample WhatsApp bodies still say "CenterHQ").
+
 **Status:** DESIGN ONLY. No code in this change.
 **Date:** 2026-05-23.
 **Author:** automated analysis, pending owner review.
@@ -49,7 +51,7 @@ Mechanism: a public POST `/api/auth/request-pin-setup-link` route. Input: `{ pho
 - Always return `{ success: true }` (anti-enumeration; matches existing `/api/auth/reset-pin` behavior at `src/app/api/auth/reset-pin/route.ts:104`).
 - Server-side: look up the owner user by phone, confirm `users.pin_code IS NULL` (i.e. the owner has not yet set a PIN — see Section 3 for why this column is the gate), confirm the center is in a paid+activated state. If all true, mint a new `pin_setup_token` row and send a Set-PIN LINK via WhatsApp (Section 7).
 
-The link format: `https://centerhq.app/{locale}/set-pin?t=<plaintext_token>`. The plaintext token is **never** stored server-side; only its SHA-256 hash lives in `pin_setup_tokens`. When the owner opens the link, the Set-PIN page (server component) hashes the URL `t` parameter and looks it up.
+The link format: `https://tutoringhq.app/{locale}/set-pin?t=<plaintext_token>`. The plaintext token is **never** stored server-side; only its SHA-256 hash lives in `pin_setup_tokens`. When the owner opens the link, the Set-PIN page (server component) hashes the URL `t` parameter and looks it up.
 
 A token from this fallback is single-use, short-TTL (Section 2), bound to exactly one user_id, and does not grant any authority until the owner submits a valid PIN to `/api/auth/set-initial-pin`.
 
@@ -259,7 +261,7 @@ Without this fix, a 6-digit PIN as sole credential is unsafe regardless of the w
 
 | # | Case | Handling |
 |---|------|----------|
-| 1 | Owner closes the browser before submitting a PIN. | The `chq_signup_session` cookie expires in 30 min; the `pin_setup_token` row expires in 15 min. The owner reopens centerhq.app, sees the login page, taps "نسيت رمز" / "forgot PIN" -> a small adjustment to that page: if the phone has `users.pin_code IS NULL`, the page sends the owner down the **fallback** path (request-pin-setup-link), not the reset path. Anti-enumeration applies: response is identical regardless. |
+| 1 | Owner closes the browser before submitting a PIN. | The `chq_signup_session` cookie expires in 30 min; the `pin_setup_token` row expires in 15 min. The owner reopens tutoringhq.app, sees the login page, taps "نسيت رمز" / "forgot PIN" -> a small adjustment to that page: if the phone has `users.pin_code IS NULL`, the page sends the owner down the **fallback** path (request-pin-setup-link), not the reset path. Anti-enumeration applies: response is identical regardless. |
 | 2 | Token replay / reuse after success. | The `UPDATE ... WHERE used_at IS NULL` atomic claim ensures the first successful submit sets `used_at`. The second request gets `rowCount === 0` and `{ error: 'token_invalid_or_used' }`. Sibling tokens for the same user are also marked used in the same transaction (Section 4.1 step 9). |
 | 3 | Token expired. | Same generic `token_invalid_or_used` response. No info leak. Owner is shown a "request a new Set-PIN link" CTA. |
 | 4 | An account that ALREADY has a PIN hits the Set-PIN flow. | Refused at Section 4.1 step 7 with `{ error: 'pin_already_set' }`. The existing PIN is NOT cleared. Resetting an existing PIN remains the job of `change-pin` (with current PIN) or `reset-pin` (with OTP). |
@@ -289,7 +291,7 @@ Suggested AR body (no em dashes, U+060C):
 Suggested EN body:
 > Hi, tap the link to set your CenterHQ PIN. Valid for 30 minutes only. Do not share: {{1}}
 
-`{{1}}` is the full Set-PIN URL `https://centerhq.app/{locale}/set-pin?t=<token>`.
+`{{1}}` is the full Set-PIN URL `https://tutoringhq.app/{locale}/set-pin?t=<token>`.
 
 ### 7.2. Approval clock
 

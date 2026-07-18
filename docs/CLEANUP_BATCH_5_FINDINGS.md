@@ -1,5 +1,7 @@
 # Cleanup Batch 5 - findings and decisions
 
+> Point-in-time snapshot (Cleanup Batch 5). Reviewed against the live database and code on 2026-07-18 — findings preserved as recorded; only demonstrably-false current-state counts are annotated inline (verified live 2026-07-18). The pin_code-dropped and CSRF-fails-closed findings below match the live state today.
+
 Held branch `claude/cleanup-batch-job-5-c4lo8q`. Do not merge without review. No
 migration in this batch was applied to production. Every database claim below was
 checked against the live catalog (information_schema, pg_catalog, pg_policy,
@@ -177,7 +179,9 @@ two ways: a `pg_class`/`pg_policy` catalog query and the Supabase advisor
 (`0008_rls_enabled_no_policy`), which agree exactly. The count has drifted up by
 three since the "18" figure was recorded.
 
-The 21 tables:
+*(Update, verified live 2026-07-18: the deny-all count is now **22**, not 21 — `billing_lockout_events` (added with the built-but-inert billing-lockout ledger) joined the set. Do not treat any figure here as permanent; recount live. The 22 tables at 2026-07-18: the 21 below plus `billing_lockout_events`.)*
+
+The 21 tables (as of this batch):
 
 attendance_overrides, billing_nudges, billing_reconciliation_reports,
 card_charge_intents, card_order_status_transitions, card_order_status_wa_dedupe,

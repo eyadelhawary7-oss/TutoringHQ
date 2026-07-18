@@ -1,5 +1,7 @@
 # Card design — owner-facing QR card orders
 
+> Synced against the live database and code on 2026-07-18. Two facts were corrected: the receipt-PDF pricing lines (service/stamp fees are gone) and the receipt filename prefix (`tutoringhq-order-…`). Load-bearing facts verified live are tagged inline.
+
 ## Style labels (B / C)
 
 **Option A** is **reserved for a future visual preset** and is **not** exposed in the order UI today.
@@ -96,10 +98,10 @@ Row-level history: `card_order_status_transitions` (trigger on `status` changes)
 - Generated server-side via `generateCardOrderReceiptPdf` → HTML from `src/lib/pdf/cardOrderReceiptTemplate.ts` → existing Puppeteer pipeline in `src/lib/generateInvoicePdf.ts`.
 - **Delivery lines** (governorate, street address, phone, notes) come from **`card_orders` at submission** — they are the legal snapshot of what was paid for.
 - **Centre display name / profile address** may still come from the live `centers` row until a dedicated billing snapshot column exists; delivery fields on the order remain authoritative for shipment.
-- Pricing uses **`buildLegalInvoiceLines`** (subtotal → service → stamp → VAT → total) for the card product; shipping is listed separately; grand total matches `total_amount`.
+- Pricing uses **`buildLegalInvoiceLines`** (subtotal → VAT → total) for the card product; shipping is listed separately; grand total matches `total_amount`. The former **service and stamp lines were removed** — the only tax line is VAT 14% inclusive (`src/lib/pricing/taxMath.ts`; base = inclusive / 1.14) (verified live 2026-07-18).
 - Footer / compliance: tax registration string from **`platform_config.ehg_tax_registration`** (placeholder until finance confirms).
 - If **`refund_status` is non-null**, the PDF includes a short refund block (status, optional payout date, amount).
-- **`GET /api/orders/[orderId]/receipt`** returns **422** while `status` is `pending_payment` or `failed`; successful PDF filename pattern **`centerhq-order-<LAST8>.pdf`**.
+- **`GET /api/orders/[orderId]/receipt`** returns **422** while `status` is `pending_payment` or `failed`; successful PDF filename pattern **`tutoringhq-order-<LAST8>.pdf`** (last 8 hex of the order id, uppercased — verified live 2026-07-18; the older `centerhq-order-…` prefix is gone).
 
 ## Notifications
 

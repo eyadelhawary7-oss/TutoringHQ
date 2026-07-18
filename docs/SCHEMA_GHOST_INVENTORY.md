@@ -1,5 +1,14 @@
 # Schema ghost inventory (Phase 0 capture)
 
+> Point-in-time record: this is the Phase-0 ghost capture. Its "at capture" counts
+> (139 tables / 106 app functions +31 pg_trgm / 41 triggers / 221 policies / 489
+> indexes / 2 views) are the Phase-0 snapshot and are preserved as history — do NOT
+> read them as current. Synced against live 2026-07-18: current live catalog holds
+> 142 base tables (all RLS-enabled) · 141 functions in `public` (52 SECURITY
+> DEFINER) · 42 triggers · 220 RLS policies · 512 indexes · 2 views (counted live
+> 2026-07-18, project lczmjpnbuhnsislcvzar). The ghost lists below (the specific
+> object names captured then) are unchanged historical fact.
+
 A **ghost** is a database object that exists in the live production database but
 was never created by a tracked migration **and** never appeared in git history.
 They accumulated because schema changes were applied directly to prod (Supabase
@@ -103,3 +112,31 @@ the two drift checks ensure they can never silently diverge again.
 > Phase 0 captures these **exactly as they are**, including any that are
 > mis-calibrated or over-permissioned. Corrections are deliberate, tracked work
 > in Phases 1–5 — never here.
+
+## Current RLS coverage — zero-policy tables (current-state addendum)
+
+Not part of the Phase-0 capture; recorded here so the zero-policy count is stated
+with its recount query rather than a bare number that goes stale. RLS is enabled on
+every base table, but some tables have RLS on with **0 policies** (locked to
+service-role only). **22 such tables live 2026-07-18** (verified live, project
+lczmjpnbuhnsislcvzar). This count moves as tables land — recount, don't trust the
+number:
+
+```sql
+WITH rls_tables AS (
+  SELECT c.relname AS tablename FROM pg_class c
+  JOIN pg_namespace n ON n.oid=c.relnamespace
+  WHERE n.nspname='public' AND c.relkind='r' AND c.relrowsecurity=true),
+policy_counts AS (
+  SELECT tablename, count(*) npol FROM pg_policies WHERE schemaname='public' GROUP BY tablename)
+SELECT count(*) FROM rls_tables r LEFT JOIN policy_counts p ON p.tablename=r.tablename
+WHERE COALESCE(p.npol,0)=0;
+```
+
+The 22 tables (2026-07-18): attendance_overrides, billing_lockout_events,
+billing_nudges, billing_reconciliation_reports, card_charge_intents,
+card_order_status_transitions, card_order_status_wa_dedupe, chargebacks,
+enrollment_otps, group_slot_proposals, pending_enrollments, pending_signups,
+phone_verifications, pin_setup_tokens, promo_code_requests, recurring_charge_declines,
+saved_card_consents, saved_card_events, saved_cards, teacher_assignments,
+teacher_signup_otps, trial_claims. (Prior notes saying 18 or 21 are stale snapshots.)

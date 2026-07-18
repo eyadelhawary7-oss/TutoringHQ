@@ -1,8 +1,12 @@
 # Guardian-consent confirmation on center-side student add
 
+> Synced against the live database and code on 2026-07-18. Both consent columns
+> (`guardian_consent_confirmed_at timestamptz`, `guardian_consent_confirmed_by uuid`)
+> confirmed present on `public.students` (verified live 2026-07-18).
+
 ## Why
 
-The center — not CenterHQ — is the party responsible for holding the guardian's
+The center — not TutoringHQ — is the party responsible for holding the guardian's
 consent to process a student's personal data. That obligation will be worded by
 Adsero in the center agreement and the data processing agreement. This feature
 records the center's confirmation **at the moment it adds or approves a
@@ -28,7 +32,7 @@ and **when**.
 ## Data model
 
 One migration (`supabase/migrations/20260702160000_guardian_consent_on_student_add.sql`)
-adds two nullable columns to `public.students`:
+adds two nullable columns to `public.students` (both verified present live 2026-07-18):
 
 - `guardian_consent_confirmed_at timestamptz` — when the confirmation was made.
 - `guardian_consent_confirmed_by uuid` — the confirming center user (`public.users.id`).

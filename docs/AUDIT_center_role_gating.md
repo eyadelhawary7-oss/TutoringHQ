@@ -2,6 +2,14 @@
 
 *Generated: Tuesday, May 12, 2026*
 
+> Point-in-time audit — snapshot of 2026-05-12. Preserved as the historical record.
+> Reviewed 2026-07-18: `requireCenterAuth` still lives in `src/lib/centerAuth.ts`
+> and the three RECOMMENDED OWNER-ONLY routes below (`referrals/payout`,
+> `card-order-cart/checkout`, `paymob/create-payment-key`) are still ungated
+> (verified live 2026-07-18 — no owner-role check present). The per-route counts and
+> the full 60-route inventory are as-of the audit date and have NOT been re-audited
+> since; treat them as historical unless re-verified against the current source.
+
 ## Notes on `requireCenterAuth`
 
 `requireCenterAuth` is defined in `src/lib/centerAuth.ts`. It validates the Bearer token, looks up `users.role` from the `users` table, and returns `{ ok: true, userId, centerId, role, supabaseAdmin }`. The `role` field maps to the value stored in `users.role` (e.g. `"owner"`, `"assistant"`, `"super_admin"`). There is **no separate `center_user_memberships` table** used; role gating checks compare `auth.role !== 'owner'` directly.
@@ -122,4 +130,4 @@ Ambiguous cases where business intent is unclear or the action spans both roles.
 | `api/students/[id]` | PATCH, DELETE | Edit student fields (name, phone, group, notification prefs) or soft-delete (set `is_active = false`) | PATCH of routine fields is assistant-safe. DELETE (deactivation) is a destructive action — consider restricting to owner. |
 | `api/students/pending/[id]/approve` | POST | Call `approve_student_rpc` to activate a pending enrollment | Approval is an administrative action that modifies enrollment status and writes an audit log entry. Likely owner-only or gated to `can_record_payments`-style flag. |
 | `api/academic` | GET, POST | Read/write academic years, periods, and holidays (CRUD via action param) | GET is clearly assistant-safe. POST write-actions (create/update/delete year, period, holiday) modify center-wide scheduling configuration — consider owner-only for mutations. |
-| `api/students/lifecycle` | PATCH | Update `lifecycle_status` (enrolled → active → at_risk → churned) | CRM-style status changes affect business logic and reporting. Could be assistant-safe if assistants actively track student health, or owner-only if lifecycle is a management concept. |
+| `api/students/lifecycle` | PATCH | Update `lifecycle_status` (full live enum, verified 2026-07-18: `enrolled`, `active`, `at_risk`, `inactive`, `churned` — the `students_lifecycle_status` CHECK constraint; this audit's original "enrolled → active → at_risk → churned" omitted `inactive`) | CRM-style status changes affect business logic and reporting. Could be assistant-safe if assistants actively track student health, or owner-only if lifecycle is a management concept. |

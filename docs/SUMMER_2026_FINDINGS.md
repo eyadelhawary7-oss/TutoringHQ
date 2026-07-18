@@ -1,5 +1,9 @@
 # Step 0 — Findings note: Summer 2026 promo & automatic free-period billing
 
+> Synced against the live database and code on 2026-07-18. This began as a pre-build Step-0 note; the summer build has since **shipped** — `src/lib/summer/` (config, dates, engine, phase, projection, referral, copy), `summerBillingCron`, migration `20260628110833_summer_2026_promo_billing.sql`, the six `summer.*` config keys, and the per-customer summer columns on `centers` and `teacher_subscriptions` all exist live (verified 2026-07-18). The "gaps to close" list at the bottom is preserved as the original plan of record. Load-bearing current-state facts are tagged (verified live 2026-07-18).
+
+**Live summer config (verified live 2026-07-18):** `summer.promo.enabled=true`, `summer.free_until=2026-08-16`, `summer.first_charge_floor=2026-08-30`, `summer.trial_days=14`, `summer.pay_window_days=1` (was drafted below as 2; the live value is **1**), `summer.first_charge_release=HELD` (nothing charges anyone while HELD). Auto-charge remains inert platform-wide because `PAYMOB_RECURRING_INTEGRATION_ID` is still a placeholder, so the whole population lands on the manual pay surface — exactly what invoice-based summer billing wants.
+
 Introspection of the live catalog (project `lczmjpnbuhnsislcvzar`) and the repo, before writing
 any code. Conclusion up front: **most of the machinery already exists.** This build extends the
 promo / trial / billing / banner / referral systems already in place; it does **not** stand up
@@ -68,15 +72,15 @@ pages, (5) the onboarding explainer, (6) surfacing referrals in the summer flow 
 
 ## 6. Usage → tier (exists — reuse for projection)
 
-- **Centers six-tier ladder** (`src/lib/pricing/plans.ts`): Solo 50 / Nano 120 / Starter 200 / Pro 500 / Business 1000 / Enterprise 2000 (+ Top Centers custom via `centers.all_in_price`). Quarterly all-in prices per tier; interval multipliers `pricing.interval.*`.
+- **Centers six-tier ladder** (`src/lib/pricing/plans.ts`): Solo 50 / Nano 120 / Starter 200 / Pro 500 / Business 1000 / Enterprise 2000 (+ Top Centers custom via `centers.all_in_price`). Interval multipliers `pricing.interval.*` (annual = monthly × 10). **Quarterly cadence has since been retired** — `centers.billing_period` CHECK is now `IN ('monthly','annual')` and `subscription_billing_period` is `IN ('monthly','yearly')` (verified live 2026-07-18); the "quarterly all-in price" framing is historical.
 - **Teachers three tiers** (`src/lib/teacherPlans.ts` + `platform_config.teacher_subscription_plan[_pro|_scale]`): Standard 499 (cap 20) / Pro 999 (cap 50) / Scale 2499 (100 base + 20/student overage). `teacherStudentCap`, `teacherHasHardCap`, `teacherOverageAmount`.
-- **Tax/fee** (`src/lib/pricing/taxMath.ts`): VAT 14% + stamp 0.5% + service 6% **cascading multiplication**; `explodeInclusive`, `buildLegalInvoiceLines`. Processing fee flat (`platform_config.processing_fee_amount`, default 20; `processing_fee_enabled`).
+- **Tax/fee** (`src/lib/pricing/taxMath.ts`): VAT **14% only, inclusive** — `VAT_RATE = 0.14`, `base = inclusive / 1.14`, `VAT = inclusive * 0.14 / 1.14` (verified live 2026-07-18). The former **6% service fee + 0.5% stamp duty were removed** (see `docs/SERVICE_FEE_REMOVAL_FINDINGS.md`); the "VAT + stamp + service cascading" model described in earlier drafts is dead. Processing fee is a separate flat 20 EGP per charge invoice (`platform_config.processing_fee_amount=20`, `processing_fee_enabled=true`), snapshotted into `invoices.processing_fee` / `invoices.metadata.processing_fee`.
 - **Gap:** a single "project my first invoice now" helper that, given a center/teacher's live usage, returns {tier, projected inclusive amount, fee + VAT lines, first_invoice_at} for display in dashboard + billing area + onboarding explainer.
 
 ## 7. `platform_config` keys today (relevant)
 
-- Existing promo/pricing: `pricing.promo.enabled=true`, `pricing.promo.discount_pct=30`, `pricing.promo.end_date="2026-08-14"`, `pricing.promo.spots_total=100`, `pricing.banner.*`, `landing.popup.*`, `pricing.interval.*`, `processing_fee_enabled=true`, `processing_fee_amount=20`, `teacher_subscription_plan*` (with `trial_days=14`), `cron_paused`, `read_only_mode`, `maintenance_mode`, `subscription_grace_period_days=7`.
-- **No summer keys yet.** **Gap — to add:** `summer.promo.enabled` (master switch), `summer.free_until` (Aug 16 2026), `summer.first_charge_floor` (Aug 30 2026), `summer.trial_days` (14), `summer.pay_window_days` (2), `summer.first_charge_release` (`HELD`|`RELEASED`, default `HELD`).
+- Existing promo/pricing: `pricing.promo.enabled=false` (drafted here as `true` at Step-0; the shared marketing promo has since been disabled — live value `false`, verified live 2026-07-18), `pricing.promo.discount_pct=30`, `pricing.promo.end_date="2026-08-14"`, `pricing.promo.spots_total=100`, `pricing.banner.*`, `landing.popup.*`, `pricing.interval.*`, `processing_fee_enabled=true`, `processing_fee_amount=20`, `teacher_subscription_plan*` (with `trial_days=14`), `cron_paused`, `read_only_mode`, `maintenance_mode`, `subscription_grace_period_days=7`.
+- **Summer keys (drafted here as a gap) have since been seeded and are live (verified live 2026-07-18):** `summer.promo.enabled=true` (master switch), `summer.free_until=2026-08-16`, `summer.first_charge_floor=2026-08-30`, `summer.trial_days=14`, `summer.pay_window_days=1` (drafted as 2; live value is **1**), `summer.first_charge_release=HELD` (`HELD`|`RELEASED`).
 
 ## 8. Pre-existing `centers.summer_mode` (do NOT repurpose)
 
@@ -95,5 +99,3 @@ pages, (5) the onboarding explainer, (6) surfacing referrals in the summer flow 
 4. **Admin** — surface the six `summer.*` controls (incl. master switch + HELD/RELEASED) in `admin/pricing`.
 5. **Frontend** — two-phase ribbon + popup (cookie-based, countdown to floor, no code chip, per-portal accent + serif) on combined, centers, and teacher landing pages; live first-invoice projection in dashboard + billing area; onboarding Paymob-step explainer during summer; referral CTA in the summer flow on both portals.
 6. **Tests** — trial-end/first-invoice/pay-window/lock formulas; held-vs-released gate; tier projection amount; referral pending→granted-on-first-paid; banner/popup phase + kill switch.
-</content>
-</invoke>

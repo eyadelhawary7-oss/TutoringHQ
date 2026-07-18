@@ -1,10 +1,12 @@
 # CenterHQ Technical Reference v21
 
+> Synced against the live database and code on 2026-07-18. Load-bearing facts verified live are marked (verified live 2026-07-18). "CenterHQ" here is the internal/repo name and is retained by design; the live product brand is TutoringHQ (tutoringhq.app).
+
 ## Migrations
 
-Apply via Supabase CLI in timestamp order — audit chain spans Prompts **1–6** (`supabase/migrations/*`). Treat `pending_signups` and pricing normalisation migrations as mandatory companions to app releases that reference those APIs.
+Migrations are **manual apply to production** (verified live 2026-07-18): Supabase Branching auto-applies migrations to preview branches only, never to production on merge. Apply by hand in timestamp order, then confirm the change in the Postgres catalog (`information_schema`) before letting code deploy — never merge and assume. Last migration in the prod ledger: `20260717130000_billing_config_flip`. Treat `pending_signups` and pricing normalisation migrations as mandatory companions to app releases that reference those APIs.
 
-## Notable API routes (Prompts 1–6)
+## Notable API routes (all verified present under `src/app/api` on 2026-07-18)
 
 | Route | Purpose |
 |-------|---------|

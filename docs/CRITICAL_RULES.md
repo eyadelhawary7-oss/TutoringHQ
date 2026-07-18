@@ -1,10 +1,12 @@
 # Critical rules
 
-Live reference for cross-cutting rules that the codebase enforces. The full rule history is preserved in the project-knowledge snapshots under `Full CenterHQ Files 18 May 2026/`. This file is the authoritative live entry for rules currently in force.
+> Synced against the live database and code on 2026-07-18. Key facts verified live are marked (verified 2026-07-18); unverifiable ones are marked (UNVERIFIED).
+
+Live reference for cross-cutting rules that the codebase enforces. This file is the authoritative live entry for rules currently in force.
 
 ## Rule 139 — Weak-PIN check on all PIN-setting flows
 
-All **5** server-side PIN-setting flows MUST call `isWeakPin(newPin)` from `src/lib/weakPins.ts:50` BEFORE persisting and BEFORE setting the Supabase Auth password. Reject the request with `400 { error: 'weak_pin' }` when the helper returns `true`. Client-side checks are advisory only — the server is authoritative.
+All **5** server-side PIN-setting flows MUST call `isWeakPin(newPin)` from `src/lib/weakPins.ts` (defined at line 50, verified live 2026-07-18) BEFORE persisting and BEFORE setting the Supabase Auth password. Reject the request with `400 { error: 'weak_pin' }` when the helper returns `true`. Client-side checks are advisory only — the server is authoritative.
 
 | # | Route | Call site |
 |---|-------|-----------|
@@ -66,7 +68,7 @@ Every protected API route MUST resolve the actor's identity in this order:
 2. Look up the actor's row in `public.users` via the admin client using `user.id` as the key.
 3. Derive all authorization decisions (role, center_id, permissions) from the `public.users` row, never from the JWT claims directly.
 
-A route that skips step 2 and reads role/center from JWT claims is a wide-select-dropped-error waiting to happen. The JWT is authentication proof only. Authorization always comes from the database row. This pattern is enforced by `requireCenterAuth` and `requireTeacherAuth` — use those helpers, do not reimplement the pattern inline.
+A route that skips step 2 and reads role/center from JWT claims is a wide-select-dropped-error waiting to happen. The JWT is authentication proof only. Authorization always comes from the database row. This pattern is enforced by `requireCenterAuth` and `requireTeacherAuth` (both in `src/lib/centerAuth.ts`, verified live 2026-07-18) — use those helpers, do not reimplement the pattern inline.
 
 ## Rule 152 — auth.users rows created via admin API require explicit empty-string token fields
 

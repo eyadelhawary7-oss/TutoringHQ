@@ -1,5 +1,7 @@
 # Step 0 — Findings: make the LIVE summer ribbon + popup match the approved mock
 
+> HISTORICAL Step-0 record, synced against the live database and code on 2026-07-18. **The master switch state has flipped since this was written:** `summer.promo.enabled` is now **true** live (verified live 2026-07-18) — the ribbon + popup gate is ON, so the sentences below stating "It is OFF now → live page stays clean" are stale (corrected inline). Still current live: `summer.first_charge_release` = **HELD**, `summer.first_charge_floor` = **2026-08-30**, `summer.pay_window_days` = **1** (verified live 2026-07-18). Component/copy findings are preserved as the point-in-time record.
+
 Introspection before any code, per the build brief. Conclusion up front: **the ribbon and
 popup components already exist and are already mounted on all three public pages.** This is a
 *styling + behaviour correction* of the existing components, not a second banner. Nothing here
@@ -65,7 +67,8 @@ added via `next/font/google` as `--font-fraunces`.
 
 The popup **is** mounted on all three pages and **is** correctly gated on the master switch
 (`useSummerPublicConfig` returns `null` while summer mode is OFF, so the component early-returns —
-which is exactly why the live page is clean today with the switch OFF). So it is not a missing
+which is why the live page was clean while the switch was OFF; the switch is **ON** as of 2026-07-18
+(see the banner and §5), so the popup now renders). So it is not a missing
 mount. What's wrong:
 
 1. **Wrong form factor.** The current popup is a **centred modal over a `bg-black/40` full-screen
@@ -99,8 +102,9 @@ reversed this: the chip is now shown on every portal ribbon. Constraints honoure
 
 ## 5. Behaviour that must NOT change (verified, preserved)
 
-- Ribbon + popup appear **only** when `summer.promo.enabled` is ON. It is **OFF** now → live page
-  stays clean. The master switch hides **both** together (single gate via `useSummerPublicConfig`).
+- Ribbon + popup appear **only** when `summer.promo.enabled` is ON. (At the time of writing it was
+  OFF; it is **ON** as of 2026-07-18 — verified live, so the ribbon + popup now render.) The master
+  switch hides/shows **both** together (single gate via `useSummerPublicConfig`).
 - No charge logic touched. The Aug-30 first-charge `HELD` flag (`summer.first_charge_release`) is
   untouched — it lives entirely server-side and is never surfaced here.
 - Africa/Cairo for all date math (countdown target via `startOfUtcInstantForCairoCalendarDay` on
@@ -151,5 +155,3 @@ Three small corrections on the same branch — front-end only, no DB/migration, 
    sits above it, and trimmed the hero's now-redundant top padding (`pt-24 md:pt-28` → `pt-8 md:pt-14`).
    Also corrected this page's ribbon/popup `portal` from `combined` → `centers`, so it shows the
    centers copy ("Run your center free all summer") as the mock intends.
-</content>
-</invoke>

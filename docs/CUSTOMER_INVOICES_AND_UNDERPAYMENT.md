@@ -1,13 +1,17 @@
 # Customer invoices page + underpayment handling (Phase 3 + 5)
 
+> Synced against the live database and code on 2026-07-18 (project `lczmjpnbuhnsislcvzar`). Verified live: `invoices` is owner-polymorphic (`owner_type` NOT NULL default `'center'`, nullable `teacher_id`, constraints `invoices_owner_type_check` + `invoices_owner_xor_check`, policies `invoices_select_own_center` + `invoices_select_own_teacher`); `invoices.amount_received` NUMERIC NOT NULL DEFAULT 0. The auto-charge path this page backstops is **built but INERT** — `PAYMOB_RECURRING_INTEGRATION_ID` is a placeholder, so every due customer lands on this manual pay surface (verified 2026-07-18). Facts verified live are tagged (verified 2026-07-18).
+
 The customer-facing payment surface where **wallet customers** and **card
 customers whose bank declined the auto-charge** see and pay what they owe. The
 Phase 2 midnight engine already routes both to an unpaid `invoices` row; this is
 where the customer sees and pays it.
 
 > Scope: centers AND teachers. The `invoices` table is **owner-polymorphic**
-> (`owner_type ∈ {center, teacher}`, see migration
-> `20260625000000_teacher_invoices_parity.sql`); teachers now get full invoice
+> (`owner_type ∈ {center, teacher}`, verified live 2026-07-18; landed via migration
+> `20260625000000_teacher_invoices_parity.sql`, now archived under
+> `supabase/migrations_archive/` and folded into `00000000000000_baseline.sql`);
+> teachers now get full invoice
 > parity through the **same** table, finalizer, Paymob pay flow, forecast and
 > underpayment machinery. The only differences are the data model (a teacher has
 > no center row; access is gated by `teacher_subscriptions`) and the teacher-scoped
@@ -66,10 +70,11 @@ rules:
 
 ### Storage (verified live before building)
 
-- `invoices.amount_received NUMERIC NOT NULL DEFAULT 0` — the single, reliably
-  stored source of truth for "how much has actually been received against this
-  invoice". `remaining = total_amount − amount_received`. Migration:
-  `supabase/migrations/20260624000000_invoice_amount_received.sql`.
+- `invoices.amount_received NUMERIC NOT NULL DEFAULT 0` (verified live 2026-07-18)
+  — the single, reliably stored source of truth for "how much has actually been
+  received against this invoice". `remaining = total_amount − amount_received`.
+  Landed via migration `20260624000000_invoice_amount_received.sql`, now archived
+  under `supabase/migrations_archive/` (folded into `00000000000000_baseline.sql`).
 - `invoices.metadata.applied_txns` — jsonb array of Paymob transaction ids already
   credited, for per-transaction idempotency.
 - `payment_amount` is **not** reused — it already carries the manual
@@ -123,12 +128,13 @@ forking a parallel `teacher_invoices` table — the entire downstream charge sta
 already keyed by `owner_type ∈ {center, teacher}`, `combined_payment_sessions`
 with `teacher_*` session types) was already built expecting teachers to flow
 through `invoices`. Migration `20260625000000_teacher_invoices_parity.sql` (additive,
-applied to an empty table; before/after fingerprint verified; ends `NOTIFY pgrst`):
+applied to an empty table; now archived under `supabase/migrations_archive/` and
+folded into `00000000000000_baseline.sql`; before/after fingerprint verified; ends `NOTIFY pgrst`):
 
 - `owner_type text NOT NULL DEFAULT 'center'` (CHECK `center|teacher`), `teacher_id
   uuid` FK → `teacher_profiles(user_id)` ON DELETE CASCADE, `center_id` relaxed to
   nullable, XOR CHECK (exactly one owner matching `owner_type`).
-- Teacher RLS `invoices_select_own_teacher` (`teacher_id = auth.uid()`), mirroring
+- Teacher RLS `invoices_select_own_teacher` (`teacher_id = auth.uid()`, policy verified live 2026-07-18), mirroring
   `teacher_subscriptions_select_own`. Existing center policy never matches teacher
   rows (`center_id IS NULL`). Service-role writes bypass RLS.
 - Teacher partial indexes on `teacher_id` and `(teacher_id, status)`.

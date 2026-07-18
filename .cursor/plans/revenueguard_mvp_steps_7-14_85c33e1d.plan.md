@@ -43,6 +43,8 @@ isProject: false
 
 # RevenueGuard MVP Implementation Plan (Steps 7-14)
 
+> OBSOLETE / HISTORICAL (banner added 2026-07-18). This is a completed early-MVP planning artifact — every todo above is `status: completed` and the product has moved well past it. Kept for the record only; do NOT use it as current guidance. Known-stale points vs. the live codebase (verified 2026-07-18): the product is **TutoringHQ** (not "RevenueGuard"/"CenterHQ" as a product name; `CenterHQ`/`centerhq.local` survive only as internal repo/auth names); middleware is **`src/proxy.ts`** (aliased `proxy.ts`), not `src/middleware.ts`; Next.js is **16.2** (not 16.1.6); and auth is **phone + PIN** (Supabase Auth password over `<digits>@centerhq.local`), not the phone-OTP + Google/Facebook OAuth flow drafted below. For current architecture see `CLAUDE.md`.
+
 ## Current State
 
 Your codebase has excellent foundations:

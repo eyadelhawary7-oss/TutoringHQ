@@ -1,5 +1,7 @@
 # Paymob Launch Readiness — Audit Report
 
+> POINT-IN-TIME AUDIT (2026-05-23). Re-synced against live code/DB on 2026-07-18. The webhook-registration and smoke-test URLs below have been corrected from the retired `centerhq.app` to the live product domain **tutoringhq.app** (verified live 2026-07-18); the internal Vercel project name (`center-hq`) and `@centerhq.local` auth emails intentionally stay CenterHQ. Launch-state note (verified live 2026-07-18): Paymob is still NOT live. `FEATURES.PAYMOB_ENABLED` resolves from `process.env.PAYMOB_ENABLED === 'true'` (`src/lib/features.ts:21`) — it is unset in the repo and `.env.example`, so it is **off by default** (the deployed Vercel value cannot be read from here). Independently, `PAYMOB_RECURRING_INTEGRATION_ID` is still a placeholder (`.env.example`), so saved-card auto-charge and the single-day billing lockout remain **inert** regardless (see `docs/findings/2026-07-15_sweep.md` item 5). The Section-1 webhook internals below were not re-verified line-by-line this pass; treat them as of the 2026-05-23 audit.
+>
 > **Status:** READ-ONLY investigation. No code changes made in this pass.
 > **Scope:** webhook canonicalisation, server-side amount enforcement, idempotency, NO-REFUNDS state-machine integrity, credential & launch-day sequencing.
 > **Authority docs:** `docs/CRITICAL_RULES.md` (NO REFUNDS, plan_key discipline, formatNumber). Note: `docs/CRITICAL_RULES.md` was not found in the working tree at audit time — the principles cited are applied from project context (CLAUDE.md) and prior audit `docs/audit/PRE_LAUNCH_LOOPHOLE_AUDIT.md`.
@@ -11,7 +13,7 @@
 
 | Section | Finding | Verdict | Action before launch |
 |---|---|---|---|
-| 1. Duplicate webhook | `/api/paymob/webhook` is the canonical handler with HMAC, idempotency, promo redemption, and all finalizers. `/api/webhooks/paymob` is a stub returning HTTP 410 Gone. | ✅ RESOLVED | Register **only** `https://centerhq.app/api/paymob/webhook` in the Paymob dashboard. Leave the 410 stub in place (it documents the rotation). |
+| 1. Duplicate webhook | `/api/paymob/webhook` is the canonical handler with HMAC, idempotency, promo redemption, and all finalizers. `/api/webhooks/paymob` is a stub returning HTTP 410 Gone. | ✅ RESOLVED | Register **only** `https://tutoringhq.app/api/paymob/webhook` in the Paymob dashboard. Leave the 410 stub in place (it documents the rotation). |
 | 2. Server-side amount enforcement | 8 of 9 routes derive the charged amount entirely from `plan_key` / DB pricing / DB invoice totals. `/api/paymob/create-payment-key` reads `amount` from the request body but cross-checks it against `card_orders.total_amount` with ±EGP 0.01 tolerance before calling Paymob. | ✅ SAFE (minor cleanup recommended, not blocking) | None blocking. Optional hardening: pass `dbTotal` (not the body `amount`) into `issueCardOrderIframePayment` to remove the 0.01 rounding band. |
 | 3. Idempotency + replay | `webhook_inbox.idempotency_key` has a **UNIQUE index** (`webhook_inbox_idempotency_key_idx`). Key is `paymob:<transaction_id>`. Combined-payment session uses an atomic RPC `try_finalize_payment_session` with status-locking. Order-level dedupe via `combined_payment_sessions.status = 'paid'` and `invoices.status = 'paid'` short-circuit. Promo redemption goes through `redeem_promo_code` RPC (atomic, denies double-redeem). | ✅ SAFE | None. |
 | 4. NO REFUNDS + state-machine integrity | No center-callable refund path. Chargeback handler `finalizeInvoiceChargeback` is webhook-only (triggered by `is_voided` / `is_refunded` HMAC fields) and moves state **backwards** (invoice → `chargeback`, center → `suspended`) — this is acceptable: refund came from Paymob/bank, not from a center action. Card-order transitions are funnelled through `applyCardOrderTransition` (validated state machine). Subscription writes use service-role only. | ✅ SAFE | None. |
@@ -73,8 +75,8 @@ This is the live handler. Key properties confirmed by reading the file:
 
 ### 1c. Verdict — which URL to register
 
-- **Canonical handler:** `https://centerhq.app/api/paymob/webhook`.
-- **Deprecated stub:** `https://centerhq.app/api/webhooks/paymob` — returns 410, must NOT be the registered URL.
+- **Canonical handler:** `https://tutoringhq.app/api/paymob/webhook`.
+- **Deprecated stub:** `https://tutoringhq.app/api/webhooks/paymob` — returns 410, must NOT be the registered URL.
 - The promo RPC is wired into `/api/paymob/webhook` ✅ — this matches the canonicalisation. No mismatch.
 - **Keep the 410 stub** until you have confirmed (via Paymob dashboard) that the rotation has happened; deleting it now would 404 any stale dashboard config and lose the documentary trail. Once you have verified in the Paymob dashboard that the canonical URL is the one registered, the stub can be deleted in a follow-up housekeeping PR.
 
@@ -277,7 +279,7 @@ export const FEATURES: { PAYMOB_ENABLED: boolean } = {
 2. **Set Preview env vars** to sandbox values (or duplicate prod if Preview is internal-only). The production guard does NOT fire on Preview (Preview is `VERCEL_ENV=preview`, not `production`), so sandbox-shaped keys are tolerated.
 
 3. **Register the webhook URL in the Paymob dashboard:**
-   - URL: `https://centerhq.app/api/paymob/webhook`
+   - URL: `https://tutoringhq.app/api/paymob/webhook`
    - Method: POST
    - Confirm the HMAC secret displayed in the dashboard matches `PAYMOB_HMAC_SECRET` in Vercel exactly.
    - **Do not register** `/api/webhooks/paymob` (returns 410).

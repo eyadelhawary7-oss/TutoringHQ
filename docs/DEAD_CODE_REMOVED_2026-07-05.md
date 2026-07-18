@@ -1,5 +1,7 @@
 # Dead Code Removed — 2026-07-05 (Cleanup Step 1)
 
+> HISTORICAL cleanup record (2026-07-05), synced against the live code on 2026-07-18. Spot-checked and still true: `contexts/ThemeContext.tsx`, `components/ThemeToggle.tsx`, and the onboarding components are gone; `/financial-intelligence` still resolves as a redirect (`src/app/[locale]/(dashboard)/financial-intelligence/page.tsx`) (verified live 2026-07-18). The "unused dependencies — left for a separate build" list is a point-in-time to-do, not a current inventory.
+
 Source of truth: `docs/CODEBASE_AUDIT_2026-07-05.md`. This build removes only files the audit proved unreferenced. **No behavior of any surviving screen changes.** No dependencies removed, no schema/DB work, no snapshot regen.
 
 **Branch:** `claude/codebase-audit-findings-n04vgu` · **Held for review — no PR.**

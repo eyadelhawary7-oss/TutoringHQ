@@ -1,5 +1,10 @@
 # Parent consent on the self-enrollment (join-by-link) flow
 
+> Synced against the live database and code on 2026-07-18. All three consent
+> concepts below are confirmed as live `public.students` columns
+> (`parent_consent_given`/`parent_consent_at`, `guardian_consent_confirmed_at`/`_by`,
+> `parent_self_enroll_consent_at`) (verified live 2026-07-18).
+
 ## Why
 
 When a parent **self-enrolls** a student through a shared join link, the parent
@@ -27,7 +32,7 @@ never be mixed up:
 ## Data model
 
 One migration (`supabase/migrations/20260702170000_parent_self_enroll_consent.sql`)
-adds one nullable column to `public.students`:
+adds one nullable column to `public.students` (confirmed present live 2026-07-18):
 
 - `parent_self_enroll_consent_at timestamptz` — the moment the self-enrolling
   parent attested. Its **presence is the proof**; NULL means no self-enrollment

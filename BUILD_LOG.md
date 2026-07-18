@@ -1,5 +1,7 @@
 # BUILD_LOG — Portal Rebuild (branch `claude/tutoring-portal-rebuild-2qfql1`)
 
+> HISTORICAL — point-in-time build record for the portal-rebuild branch, signed off and merged 2026-07-13. Preserved as-is; the numbers and SW_VERSION steps below (ending at v18) are the values recorded during that build and are NOT changed. Live state has advanced since (verified 2026-07-18): `public/sw.js` `SW_VERSION` is now **v23** (later PRs, incl. #176), and the production migration ledger runs through **`20260717130000_billing_config_flip`**. The two go-live switches noted here (`PAYMOB_RECURRING_INTEGRATION_ID`, `summer.first_charge_release`) are still pending as of 2026-07-18 — the saved-card engine remains INERT and nothing charges. See `MERGE_CHECKLIST.md` and `CLAUDE.md` for current state.
+
 Chronological log of every phase shipped and every routine default chosen. Money-track
 items are cross-referenced in `MERGE_CHECKLIST.md` under REQUIRES SIGN-OFF.
 

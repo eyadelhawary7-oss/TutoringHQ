@@ -1,5 +1,16 @@
 # Database history rebuild + `pin_code` drop — technical note
 
+> Point-in-time record of a completed job (early July 2026). Preserved as history.
+> Synced against live 2026-07-18: the job's outcome still holds — `users.pin_code`
+> is gone (dropped by migration `20260701150506_drop_pin_code`; `public.users` has
+> no `pin_code` column live, verified 2026-07-18), the baseline model is in place,
+> and the archive holds 217 migrations. The catalog counts and ledger/row totals
+> quoted below are as-of the job and have since moved: current live is 142 base
+> tables · 141 functions (52 SECURITY DEFINER) · 42 triggers · 220 policies · 512
+> indexes · 2 views, and the most recent prod-ledger migration is
+> `20260717130000_billing_config_flip` (counted live 2026-07-18). Do not read the
+> in-job numbers as current.
+
 Project: Supabase `lczmjpnbuhnsislcvzar` (PostgreSQL 17.6, eu-west-2).
 Branch: `claude/db-history-rebuild-pin-code-hnbhpv`. **No PR opened — held for review.**
 
@@ -199,9 +210,11 @@ re-runs the same rebuild on `postgres:17`.)
 
 Transitively: **rebuild-from-zero == snapshot == live**, with `pin_code` gone.
 
-Snapshot: 6187 lines · 139 tables · 1617 columns · 660 constraints · 305 indexes
-· 221 policies · 42 triggers · 111 functions · 2 views · 2850 table grants · 230
-routine grants · 5 storage policies · 5 extensions.
+Snapshot (as-of this job, not current — see banner; current live 2026-07-18 is 142
+tables / 141 functions / 42 triggers / 220 policies / 512 indexes): 6187 lines ·
+139 tables · 1617 columns · 660 constraints · 305 indexes · 221 policies · 42
+triggers · 111 functions · 2 views · 2850 table grants · 230 routine grants · 5
+storage policies · 5 extensions.
 
 **Tests / typecheck:** `npm run test:unit` → 128 files, 1081 tests pass.
 `npm run typecheck` → clean.

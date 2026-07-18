@@ -1,11 +1,22 @@
-# Saved-Card Engine (Phase 1)
+# Saved-Card Engine (Phase 1 + Phase 2)
 
-Last updated: 2026-06-24
+Last updated: 2026-07-18 (originally 2026-06-24)
 
-Card-on-file + auto-charge capability. **Built and unit-tested, but NOT yet
-wired to any cron or live payment flow.** Phase 2 wires `chargeSavedCard()` into
-the midnight billing run. Going live also depends on credentials that do not
-exist yet (see "Founder / Paymob actions").
+> Synced against live DB/code on 2026-07-18 (project `lczmjpnbuhnsislcvzar`).
+> Current state: the engine is **BUILT, unit-tested, AND wired** into the midnight
+> billing run (Phase 2, below), but **INERT** — `PAYMOB_RECURRING_INTEGRATION_ID`
+> is a placeholder (verified 2026-07-18), so `chargeSavedCard` returns
+> `recurring_integration_not_configured` and nothing is charged; every due customer
+> lands on the manual pay surface. The four tables (`saved_cards`,
+> `saved_card_consents`, `card_charge_intents`, `saved_card_events`) are live with
+> RLS on and zero user-facing policies (service-role only) — verified live
+> 2026-07-18. The Phase-1 "NOT yet wired to any cron" framing below is superseded
+> by Phase 2 in this same doc.
+
+Card-on-file + auto-charge capability. **Built, unit-tested, and wired to the
+midnight cron (Phase 2), but INERT.** Phase 2 wires `chargeSavedCard()` into the
+midnight billing run. Going live also depends on credentials that do not exist yet
+(see "Founder / Paymob actions").
 
 ## What it does
 
@@ -35,7 +46,9 @@ exist yet (see "Founder / Paymob actions").
 
 ## Schema
 
-Migration `supabase/migrations/20260624120000_saved_card_engine.sql`:
+Migration `20260624120000_saved_card_engine.sql` — now archived under
+`supabase/migrations_archive/` and folded into `00000000000000_baseline.sql` (the
+live `supabase/migrations/` dir no longer holds it):
 
 - `saved_cards` — token + display metadata only (never the PAN); one **active**
   card per owner (partial unique index).
@@ -44,13 +57,9 @@ Migration `supabase/migrations/20260624120000_saved_card_engine.sql`:
   anchor).
 - `saved_card_events` — append-only lifecycle audit.
 
-All four are **service-role only** (RLS enabled, no user-facing policies; grants
-revoked from `anon`/`authenticated`). Customers are polymorphic: `owner_type`
-(`center` | `teacher`) + `owner_id`.
-
-> The migration is committed but **applied on review** — it is a real-money
-> schema change. Run it (and `NOTIFY pgrst, 'reload schema'`, which it includes)
-> when approved.
+All four are live and **service-role only** (RLS enabled, zero user-facing
+policies; grants revoked from `anon`/`authenticated`) — verified live 2026-07-18.
+Customers are polymorphic: `owner_type` (`center` | `teacher`) + `owner_id`.
 
 ## Code
 

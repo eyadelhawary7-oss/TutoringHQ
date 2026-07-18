@@ -1,5 +1,12 @@
 # Schema baseline & drift detection
 
+> Synced against the live database and code on 2026-07-18. The schema-baseline +
+> drift-check system described here is still current. The "Phase 0 verification"
+> and "How we got here" sections are a preserved point-in-time record — their
+> counts (139 tables / 106-or-137 functions / 41 triggers / 221 policies) are the
+> Phase-0 snapshot, NOT current. Current live catalog counts (counted live
+> 2026-07-18) are stated in the Phase 0 section below and win any disagreement.
+
 ## The one rule
 
 **The production database is the source of truth. Code catches up to the
@@ -13,8 +20,9 @@ it breaks rebuilds and trips the live-drift check.
 
 ## How we got here
 
-A point-in-time audit found that ~47 of 139 tables, 41 functions and 15 triggers
-existed in production but in **no** migration and **no** git commit — including
+A point-in-time audit (Phase 0) found that ~47 of 139 tables, 41 functions and 15
+triggers existed in production but in **no** migration and **no** git commit —
+including
 core tables (`users`, `students`, `centers`, `payments`, `subscriptions`) and
 live security guards (the `chq_prevent_*_escalation` triggers, the append-only
 `audit_log` guard). There was no baseline migration; a from-scratch rebuild would
@@ -115,7 +123,10 @@ DELETE FROM supabase_migrations.schema_migrations WHERE version = '0000000000000
 The 211 pre-existing ledger rows are kept as historical record (their files now
 live in `migrations_archive/`).
 
-## Phase 0 verification (recorded)
+## Phase 0 verification (recorded — point-in-time snapshot, not current)
+
+The numbers in this section are the Phase-0 snapshot. For the current live catalog
+counts see the box at the end of this section (counted live 2026-07-18).
 
 - A database rebuilt **from the migrations alone** (baseline + the test shim) was
   introspected and diffed against the live production schema: **6169 objects, an
@@ -123,12 +134,26 @@ live in `migrations_archive/`).
   constraints, indexes, RLS policies, triggers, function signatures+bodies,
   grants and storage policies.
 - Snapshot coverage: 139 tables · 1597 columns · 613 constraints · 300 indexes ·
-  221 RLS policies · 41 triggers · 106 functions · 2 views · 2851 table grants ·
+  221 RLS policies · 41 triggers · **106 functions** · 2 views · 2851 table grants ·
   289 routine grants · 5 storage policies · 5 (non-managed) extensions.
 - CI drift gate self-test: a one-column out-of-band change makes the gate exit 1
   with the exact drift line; reverting restores exit 0.
 - Production was unchanged throughout (read-only introspection only): same 139
-  tables / 137 functions / 41 triggers / 221 policies / 211 ledger rows.
+  tables / **137 functions** / 41 triggers / 221 policies / 211 ledger rows.
+
+**The 106-vs-137 function difference is not a contradiction.** 137 was the total
+number of functions in the `public` schema at Phase 0; 106 was the app-owned
+subset the snapshot tracks. The gap is the 31 functions installed by the `pg_trgm`
+extension (106 + 31 = 137), which the snapshot deliberately excludes from
+coverage. See `SCHEMA_GHOST_INVENTORY.md` for the same 106 (+31) split.
+
+> **Current live counts (counted live 2026-07-18, project lczmjpnbuhnsislcvzar):**
+> 142 base tables (all RLS-enabled) · 141 functions in `public` (52 SECURITY
+> DEFINER) · 42 user triggers · 220 RLS policies · 512 indexes · 2 views. The
+> catalog has grown since Phase 0 — treat the Phase-0 numbers above as history, not
+> the present count. The most recent migration in the prod ledger is
+> `20260717130000_billing_config_flip`. To recount zero-policy RLS tables (22 live
+> 2026-07-18), run the query in `SCHEMA_GHOST_INVENTORY.md`.
 
 > The `MAINTAIN` privilege (Postgres 17) is captured in `baseline.sql` for
 > fidelity but does not appear in the snapshot — `information_schema` does not

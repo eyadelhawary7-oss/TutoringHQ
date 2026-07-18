@@ -3,6 +3,8 @@ name: tutoringhq-product-reference
 description: TutoringHQ design system, WhatsApp template rules, and launch sequencing. Use when building or changing any UI screen, creating or sending WhatsApp templates, or planning launch, rollout, or onboarding work.
 ---
 
+> Synced against the live database and code on 2026-07-18. Load-bearing product-state facts verified live are tagged (verified live 2026-07-18). Live product domain is tutoringhq.app; internal repo/Vercel/auth-email names stay CenterHQ by design.
+
 # Design system (center portal is the reference implementation, PR #146)
 - Light theme only. Cream background, teal primary (bg-teal-600, hover bg-teal-700), tokens from globals.css and tokens.ts. No dark: variants ever, dark mode was fully removed.
 - 8 approved page patterns, classified in docs/CENTER_PORTAL_REPAINT_CLASSIFICATION.md:
@@ -19,16 +21,17 @@ description: TutoringHQ design system, WhatsApp template rules, and launch seque
 
 # WhatsApp template rules (sync with the master checklist)
 - Every customer-facing template: Utility category, Arabic (EGY), Arabic comma U+060C.
-- Category fix needed (delete and resubmit as Utility): chq_welcome, chq_onboarding_step1, chq_onboarding_step2. chq_renewal_reminder is already Utility, do not refix.
-- Must create: chq_nudge_prebill, chq_nudge_due_today, chq_nudge_locked, chq_nudge_card_expiry, chq_fee_reminder, chq_pin_setup_link (dynamic URL button plus 15-minute token), chq_enrollment_otp. The 4 schedule templates wait until the schedule feature ships.
-- chq_pin_delivery dropped off Meta: resubmit it or remove the reset-pin code path that calls it. chq_referral_commission has a wrong language tag (says English, body is Arabic).
+- Category fix needed (delete and resubmit as Utility): chq_welcome and chq_onboarding_step1 are still MARKETING/APPROVED (verified live 2026-07-18). chq_onboarding_step2 is ALREADY Utility (IN_REVIEW) — do not refix it (older notes listing it here are stale). chq_renewal_reminder is MARKETING/APPROVED (verified live 2026-07-18), so contrary to earlier notes it DOES still need the Utility fix.
+- Already created, awaiting Meta approval (each UTILITY/PENDING, verified live 2026-07-18): chq_nudge_prebill, chq_nudge_due_today, chq_nudge_locked, chq_nudge_card_expiry, chq_fee_reminder. Do NOT recreate these — see them through approval.
+- Still must create (absent from wa_meta_templates, verified live 2026-07-18): chq_pin_setup_link (dynamic URL button plus 15-minute token), chq_enrollment_otp. The 4 schedule templates wait until the schedule feature ships.
+- chq_pin_delivery is now present as AUTHENTICATION/IN_REVIEW (verified live 2026-07-18) — the earlier "dropped off Meta" state is resolved; see it through approval or remove the reset-pin code path that calls it. chq_referral_commission (UTILITY/IN_REVIEW) reportedly has a wrong language tag (says English, body is Arabic) — UNVERIFIED: wa_meta_templates has no language column, so the tag cannot be checked from the DB.
 - Every new template needs 24 to 48 hours of Meta approval. In-app banners work without WhatsApp and are the fallback. Template sends will be gated by consent checks in the PDPL phase 2 build.
 
 # Launch sequence (order is locked, never skip a step)
 1. Adsero completes company registration.
 2. Paymob live keys arrive. No real customer before this point, ever.
 3. One real end-to-end test payment.
-4. Flip the summer first-charge gate per the written plan.
+4. Flip the summer first-charge gate per the written plan. (Currently HELD — summer.first_charge_release = HELD, summer.pay_window_days = 1; nothing charges anyone yet, verified live 2026-07-18.)
 5. WhatsApp templates approved and live.
 6. First pilot center onboarded DEEP: real student data loaded, running daily operations. Then widen.
 - External penetration test happens before any real tenant with student data.
