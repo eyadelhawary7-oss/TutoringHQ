@@ -1,5 +1,13 @@
 # Audit tracker — final disposition (v4 fallback)
 
+> Point-in-time audit-closure record (dispositions dated 2026-05-09 / 2026-05-21),
+> preserved as history — do not rewrite the findings or their dispositions. Synced
+> against live 2026-07-18: every file this doc references still exists
+> (`docs/DB_PROXY_SECURITY.md`, `docs/CARD_DESIGN.md`, `STOPPED.md`,
+> `src/lib/dbProxyScope.ts`, `src/app/api/db/route.ts`, `scripts/security-audit.ts`,
+> `scripts/i18n-backfill-stubs.ts` — all verified present 2026-07-18). No
+> current-state claim here was found false against live.
+
 **Source of truth:** internal tracker file when present (`audit_tracker.jsx`). This document is the **repo fallback** for audit closure sign-off.
 
 ## Final summary (2026-05-09)

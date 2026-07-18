@@ -1,15 +1,17 @@
 # Internationalization Setup Guide
 
-This Next.js App Router project is configured with full internationalization support using `next-intl`.
+> Synced against the live database and code on 2026-07-18. Facts verified live are marked (verified 2026-07-18).
+
+This Next.js App Router project is configured with full internationalization support using `next-intl` 4.
 
 ## Features
 
 ✅ **Arabic (ar) as default language** with RTL support
 ✅ **English (en) as secondary language**
-✅ **Google Fonts**: Cairo for Arabic, Inter for English
+✅ **Fonts** (verified live 2026-07-18 against `src/app/[locale]/layout.tsx` + `src/app/globals.css`): the product font is **IBM Plex Sans Arabic** (Arabic **and** Latin in one face, ADR 031), loaded via `next/font/google` and wired as `--font-plex` → `--font-sans`/`--font-mono`. Self-hosted **`Cairo-Arabic`** (woff2 via `next/font/local`, copied from `@fontsource/cairo` by `npm run setup-fonts`) is a unicode-range Arabic fallback while Plex loads. Display faces Playfair Display, Bodoni Moda and Fraunces (`next/font/google`) are used for marketing/summer surfaces. JetBrains Mono woff2 **is copied** to `public/fonts/` by `setup-fonts` but is **not currently wired** to any `font-family` (`--font-mono` resolves to Plex/Cairo-Arabic — grep finds zero `jetbrains` references in `src/`). No Inter font is used. `next/font` self-hosts at build, so nothing is fetched from Google Fonts at runtime.
 ✅ **Language toggle** with localStorage persistence
 ✅ **Tailwind CSS logical properties** for RTL-aware layouts
-✅ **Automatic locale detection** and routing
+✅ **Locale routing** with an always-on locale prefix (`localePrefix: 'always'`)
 
 ## Project Structure
 
@@ -22,17 +24,16 @@ This Next.js App Router project is configured with full internationalization sup
 │   │   ├── [locale]/    # Locale-specific pages
 │   │   │   └── page.tsx
 │   │   ├── layout.tsx   # Root layout with locale support
-│   │   └── globals.css
+│   │   └── globals.css  # @font-face declarations live here (verified 2026-07-18)
 │   ├── components/
-│   │   ├── LanguageToggle.tsx  # Language switcher
-│   │   └── Navbar.tsx          # Navigation with translations
+│   │   └── LanguageToggle.tsx  # Language switcher
 │   ├── i18n/
 │   │   ├── request.ts   # next-intl configuration
-│   │   └── routing.ts   # Routing configuration
-│   ├── lib/
-│   │   └── fonts.ts     # Font configurations
-│   └── middleware.ts    # Locale detection middleware
+│   │   └── routing.ts   # Routing configuration (defaultLocale 'ar', localePrefix 'always')
+│   └── proxy.ts         # Middleware — aliased `proxy.ts`, NOT `middleware.ts` (verified 2026-07-18)
 ```
+
+> Note: there is no `src/components/Navbar.tsx` and no `src/lib/fonts.ts` (both verified absent 2026-07-18). Font wiring lives in `src/app/globals.css` (`@font-face`) plus `scripts/setup-fonts.mjs` (copies woff2 from `@fontsource`).
 
 ## Usage
 
@@ -86,28 +87,29 @@ Use logical properties instead of directional properties:
 
 ### Language Toggle
 
-The `LanguageToggle` component:
+The `LanguageToggle` component (`src/components/LanguageToggle.tsx`, verified present 2026-07-18):
 - Saves the selected language to localStorage
 - Persists across page reloads
-- Located in the Navbar
 
-### Font Configuration
+### Font Configuration (verified 2026-07-18)
 
-- **Arabic**: Uses Cairo font (loaded from Google Fonts)
-- **English**: Uses Inter font (loaded from Google Fonts)
-- Fonts are automatically applied based on the active locale
+- **Primary (Arabic + Latin)**: **IBM Plex Sans Arabic** via `next/font/google` (`--font-plex`), the single product face for both scripts (ADR 031). It backs both `--font-sans` and `--font-mono` in `src/app/globals.css`.
+- **Arabic fallback**: self-hosted `Cairo-Arabic` (woff2, `next/font/local`, unicode-range restricted to Arabic glyphs) — shown only while Plex loads.
+- **Display faces**: Playfair Display, Bodoni Moda, Fraunces (`next/font/google`) for marketing/summer surfaces only.
+- **Monospace**: there is no dedicated mono face wired — `--font-mono` resolves to Plex/Cairo-Arabic. JetBrains Mono woff2 is copied into `public/fonts/` by `scripts/setup-fonts.mjs` but is **not referenced** by any `font-family` (verified: zero `jetbrains` hits in `src/`).
+- `next/font` self-hosts its fonts at build time; the self-hosted Cairo woff2 comes from `@fontsource/cairo` via `npm run setup-fonts`. Nothing is fetched from Google Fonts at runtime.
 
-## How It Works
+## How It Works (verified 2026-07-18)
 
-1. **Middleware** (`src/middleware.ts`) detects the locale from the URL
-2. **Root Layout** (`src/app/layout.tsx`) sets `dir="rtl"` for Arabic and applies the correct font
-3. **Routing** is handled by `next-intl` with locale prefixes (e.g., `/ar/dashboard`, `/en/dashboard`)
-4. **Default locale** (Arabic) doesn't show prefix in URL by default (configured as `localePrefix: 'as-needed'`)
+1. **Middleware** (`src/proxy.ts`, aliased `proxy.ts`) runs `next-intl` locale routing (plus tenancy/auth — see `CLAUDE.md`).
+2. **Root Layout** (`src/app/[locale]/layout.tsx`) sets `dir="rtl"` for Arabic and applies the correct font.
+3. **Routing** is handled by `next-intl` with locale prefixes (e.g., `/ar/dashboard`, `/en/dashboard`).
+4. **The locale prefix is ALWAYS shown** — `routing.ts` sets `localePrefix: 'always'`, so the prefix is never stripped (this deliberately prevents `/ar/login` → `/login` redirects).
 
-## URLs
+## URLs (verified 2026-07-18)
 
 - `/` → Redirects to `/ar` (default locale)
-- `/ar` → Arabic version (no prefix shown due to `as-needed` config)
+- `/ar` → Arabic version (prefix always present)
 - `/en` → English version
 - `/ar/dashboard` → Arabic dashboard
 - `/en/dashboard` → English dashboard
@@ -124,7 +126,7 @@ To add a new locale (e.g., French):
      defaultLocale: 'ar',
    });
    ```
-3. Add font configuration in `src/lib/fonts.ts` if needed
+3. Add any needed `@font-face` declarations in `src/app/globals.css` and, if pulling from `@fontsource`, extend `scripts/setup-fonts.mjs`
 4. Update layout logic for font/direction handling
 
 ## Development

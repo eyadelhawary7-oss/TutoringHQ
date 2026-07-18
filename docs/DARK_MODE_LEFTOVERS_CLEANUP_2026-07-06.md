@@ -1,5 +1,7 @@
 # Dark-mode leftovers cleanup — findings (2026-07-06)
 
+> HISTORICAL record (2026-07-06), synced against the live database and code on 2026-07-18. Its end state still holds live: `LoginThemeEffect.tsx` and `contexts/ThemeContext.tsx` are gone, `next-themes` is absent from `package.json`, and grep finds **zero Tailwind `dark:` variants in `src`** — the only residual `dark`-keyed strings are QR-code `color:{dark,light}` object props (in `students/page.tsx`, `students/print/PrintClient.tsx`, `teacher/QrCodeBlock.tsx`, `generateInvoicePdf.ts`), which are JS object keys, not Tailwind variants (verified live 2026-07-18).
+
 Dead-code removal. Dark mode was removed as a product decision (2026-07-05) and
 the three previously dark-locked auth pages (`/signup`, `/session-expired`,
 `/accept-invite`) then finished their cream redesign, dropping their

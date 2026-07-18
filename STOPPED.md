@@ -1,5 +1,7 @@
 # STOPPED — pricing rollout checkpoints
 
+> HISTORICAL — point-in-time audit checkpoints from the 2026-05-09 pricing rollout. Preserved as a record. Re-checked against live on 2026-07-18: the Enterprise price baseline (`18499` EGP/mo) is still current, but several SQL snippets below reference `public.centers` columns that **no longer exist** — see the inline notes. Do not run them as-is.
+
 ## Post-deploy verification
 
 Eyad runs manually after deploy:
@@ -11,6 +13,8 @@ WHERE plan_key = 'enterprise'
   AND is_test = false
   AND monthly_price != 18499;
 ```
+
+> ⚠️ STALE QUERY (verified 2026-07-18): `public.centers` has **no** `plan_key` column and **no** `monthly_price` column today (only `plan` and `all_in_price` exist). This exact query would error. The Enterprise baseline is still `18499` EGP/mo (verified 2026-07-18 against `pricing_plans`); to check it live, use `centers.all_in_price` and `centers.plan`, or `pricing_plans`.
 
 Any rows indicate live Enterprise centres whose stored monthly inclusive price does not match the fixed Enterprise tier (`18499` EGP/mo per pricing spec baseline). Investigate before treating pricing/MRR as authoritative.
 
@@ -43,6 +47,8 @@ If rows exist: backfill / fix invoice triggers so `next_payment_due` is set; aut
 ## Starter price normalisation (B4)
 
 Migration `20260509120001_normalize_starter_monthly_price.sql` sets `monthly_price` from 4500 → 4499 for non-test Starter centres. Confirm with Eyad if any centre should intentionally stay at 4500.
+
+> ⚠️ Historical (verified 2026-07-18): `centers.monthly_price` no longer exists (see top banner); the current Starter baseline is `4499` in `pricing_plans`. This checkpoint is a record of the 2026-05-09 rollout, not a runnable step today.
 
 ## Verification 2026-05-09 — deterministic centre UUID patterns (M7 / F-605)
 

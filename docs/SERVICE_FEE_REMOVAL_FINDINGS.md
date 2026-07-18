@@ -1,10 +1,26 @@
 # Service-fee (6%) + stamp-duty removal — findings & proof
 
-**Status: BUILT on `claude/remove-service-fee-o65jvo`, HOLD before any PR.** The
-Phase-1 investigation (below) is unchanged for the record; **Phase 2 (implemented)**
-at the end of this doc has the combined proof for the locked decisions plus the
-stamp-duty removal. Only VAT (14%) + the flat 20 EGP processing fee remain
-customer-visible.
+> Point-in-time build record. Re-synced against live code/DB on 2026-07-18: this
+> work has **SHIPPED**. Current verified state — the 6% service fee and 0.5% stamp
+> duty are **gone** from the code (no `SERVICE_RATE` / `STAMP_RATE` in
+> `src/lib/pricing/taxMath.ts`; only `VAT_RATE = 0.14` remains) and from every
+> customer surface. Only **VAT 14% (inclusive) + the flat 20 EGP processing fee**
+> are customer-visible (verified live 2026-07-18). The end-state numbers are the
+> **Phase 3 / Phase 5** figures below, NOT the intermediate Phase-1/Phase-2
+> proposals: card = **flat 60 EGP/card** (`CARD_UNIT_BASE_EGP = 60 / 1.14`),
+> referral commission divisor = **`1.14`** VAT-only (`REFERRAL_NET_REVENUE_DIVISOR
+> = 1.14`), referral payout = **(gross − 20) × 0.95** with a **1,000 EGP** minimum
+> (`REFERRAL_WITHDRAWAL_FEE_RATE = 0.05`, `REFERRAL_WITHDRAWAL_MIN_EGP = 1000`) —
+> all verified in code 2026-07-18. The "HOLD before PR / no PR until Eyad approves"
+> notes throughout are the historical record of when this was in flight; the branch
+> has since merged. Intermediate figures (e.g. Phase-2 card base 51.6, divisor
+> `1.14 × 1.004`) were **superseded within this same doc** by Phase 3/5 — preserved
+> below for the record, not current.
+
+**Original status line (historical):** BUILT on `claude/remove-service-fee-o65jvo`,
+HOLD before any PR. The Phase-1 investigation (below) is unchanged for the record;
+**Phase 2 (implemented)** at the end of this doc has the combined proof for the
+locked decisions plus the stamp-duty removal.
 
 **Phase 1** proved what removing the 6% service fee does, tier by tier, and
 surfaced the two money side-effects. Decisions were then locked by Eyad and

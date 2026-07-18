@@ -1,12 +1,14 @@
 # Audit seed (manual apply only)
 
+> Synced against the live database and code on 2026-07-18. Facts verified live are marked (verified 2026-07-18).
+
 Seeds six phone+PIN accounts and two centers for automated UI audits (e.g. Cowork). The migration file is applied **manually** — CI does not run Supabase migrations.
 
 ## Login URLs
 
 | Environment | URL |
 |-------------|-----|
-| Production | https://centerhq.app/en/login |
+| Production | https://tutoringhq.app/en/login (verified 2026-07-18 — `centerhq.app` is retired) |
 | Dev / staging | Use your dev tenant URL (same `/en/login` path pattern). |
 
 ## Phone + PIN
@@ -25,6 +27,8 @@ Auth email format (Supabase): `{digits}@centerhq.local` (e.g. `201111111111@cent
 **Phone-based super admin:** `SUPER_ADMIN_PHONES` env must include the normalized phone if you rely on `isSuperAdminPhone()` for extra privileges.
 
 ## Center UUIDs and seeded data
+
+> Note (verified 2026-07-18): `public.centers` has a `plan` column and an `all_in_price` column, but **no** `plan_key` and **no** `monthly_price` column. The "plan_key / pricing columns … when present / when columns exist" wording below is correct only in that those columns are absent today, so the seed just sets `plan`.
 
 ### `cccccccc-1111-1111-1111-111111111111` — Elite Test Center (سنتر النخبة للاختبار)
 

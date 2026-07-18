@@ -1,5 +1,7 @@
 # Findings — Flip center billing default to monthly (schema cleanup)
 
+> Dated record (Step-0 through applied change). Synced against the live database on 2026-07-18: the change described here is **live** — `centers.billing_period` CHECK is `IN ('monthly','annual')` and `subscription_billing_period` CHECK is `IN ('monthly','yearly')`, both default `'monthly'` (verified live 2026-07-18). The "Live schema (as-is)" section below is the pre-change snapshot, preserved. The migration filename below has been corrected to the one actually committed.
+
 Step-0 introspection of the live catalog (project `lczmjpnbuhnsislcvzar`, Postgres
 17.6) before any change. Money-adjacent; surgical. This is the deferred DB
 follow-up recommended in `MONTHLY_ANNUAL_BILLING_FINDINGS.md` line 52 (schema
@@ -93,7 +95,7 @@ Remaining `|| 'quarterly'` occurrences in `src/` are **reader/normalizer fallbac
 `normalizeBillingPeriod`/`pricing.ts` defaults) — none write the period columns or
 produce a quarterly row, so they are left untouched and pose no CHECK risk.
 
-### Schema migration — `supabase/migrations/20260705120000_billing_period_monthly_default.sql`
+### Schema migration — `supabase/migrations/20260705050120_billing_period_monthly_default.sql` (verified present live 2026-07-18)
 - `billing_period` / `subscription_billing_period` DEFAULT `'quarterly'` → `'monthly'`.
 - `centers_billing_period_check` → `IN ('monthly','annual')`.
 - `centers_subscription_billing_period_check` → `IN ('monthly','yearly')` (annual

@@ -1,5 +1,7 @@
 # Safe Cleanup + Privacy Minimum — Technical Note
 
+> Point-in-time snapshot as of 2026-07-02. Reviewed against the live database and code on 2026-07-18; preserved as a historical technical record. Only demonstrably-false current-state claims are annotated inline (verified live 2026-07-18).
+
 **Date:** 2026-07-02 · **Project:** Supabase `lczmjpnbuhnsislcvzar` (PostgreSQL 17, eu-west-2) · **Repo:** `eyadelhawary7-oss/CenterHQ` · **Branch:** `claude/safe-cleanup-privacy-minimum-kzi4v0`
 
 Implements the 2 July "Safe Cleanup + Privacy Minimum" brief. Every DDL block is a tracked migration ending in `NOTIFY pgrst, 'reload schema'`, applied to live, verified against the live catalog, with the snapshot regenerated from the live catalog after each section. The summer engine, pricing/financial logic and any arbitrary-SQL path were not touched.
@@ -7,7 +9,7 @@ Implements the 2 July "Safe Cleanup + Privacy Minimum" brief. Every DDL block is
 ## Method / verification harness
 
 - Local Postgres for a bare rebuild was unavailable (the pgdg apt repo is blocked by the egress proxy; the migrations use the PG17 `MAINTAIN` privilege which local PG16 can't parse). So the snapshot was **regenerated from the live catalog** via `scripts/schema/introspect.sql`'s exact projection (the file explicitly supports live introspection through the Supabase MCP).
-- **Pre-existing drift confirmed and preserved** (parked item H5, belongs to the next DB brief, NOT touched here): live carries `users.pin_code` (drop migration unapplied) and two out-of-band function bodies (`is_teacher_private_locked`, `process_due_subscriptions`). The committed snapshot is derived as *live minus these three known deltas* — i.e. exactly what a bare rebuild from `supabase/migrations/` produces — so the CI migration-rebuild drift gate stays green. Verified by reproducing the live `md5(string_agg(line ORDER BY sk,line))` from the committed snapshot before starting (`ac479ba7e0f5e66146f00f0a6faec3c0`, 6137 lines).
+- **Pre-existing drift confirmed and preserved** (parked item H5, belongs to the next DB brief, NOT touched here): live carries `users.pin_code` (drop migration unapplied) *(as of 2026-07-02; verified live 2026-07-18 the drop has since reached production — `users.pin_code` no longer exists, and the repo moved to a baseline-snapshot model, so this parked delta is closed)* and two out-of-band function bodies (`is_teacher_private_locked`, `process_due_subscriptions`). The committed snapshot is derived as *live minus these three known deltas* — i.e. exactly what a bare rebuild from `supabase/migrations/` produces — so the CI migration-rebuild drift gate stays green. Verified by reproducing the live `md5(string_agg(line ORDER BY sk,line))` from the committed snapshot before starting (`ac479ba7e0f5e66146f00f0a6faec3c0`, 6137 lines).
 - After every section, the regenerated snapshot was diffed against the prior committed snapshot and every changed line confirmed to be an intended change of that section (diffs reproduced below).
 
 ---

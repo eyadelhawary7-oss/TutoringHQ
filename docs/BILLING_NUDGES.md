@@ -1,5 +1,7 @@
 # Billing nudges / dunning — unified center + teacher engine
 
+> Synced against the live database and code on 2026-07-18. Shipped feature; `src/lib/nudges/*`, the `billing-nudges` cron, `NudgeBanner.tsx`, and the `billing_nudges` ledger table (RLS on, service-role only, 0 user policies) all exist live (verified live 2026-07-18). The ledger migration was folded into the baseline snapshot and now lives under `supabase/migrations_archive/`. Auto-charge is still inert (`PAYMOB_RECURRING_INTEGRATION_ID` placeholder), so the manual-pay population is effectively everyone.
+
 Get customers to pay on time and recover the ones who don't, through reminders
 before billing and a chase sequence after a missed/failed payment. **One engine,
 one banner component** for both centers and teachers, off the shared `invoices` +
@@ -22,7 +24,7 @@ WhatsApp. Every nudge carries a one-tap pay link into the **existing** pay flow.
 | Scheduled cron | `src/app/api/cron/billing-nudges/route.ts` (vercel `0 8 * * *`) |
 | Live banner endpoint | `src/app/api/billing/nudge-status/route.ts` |
 | Banner component (both shells) | `src/components/billing/NudgeBanner.tsx` |
-| Ledger migration | `supabase/migrations/20260626120000_billing_nudges_ledger.sql` |
+| Ledger migration | `supabase/migrations_archive/20260626120000_billing_nudges_ledger.sql` (archived into baseline) |
 
 ## The sequence
 

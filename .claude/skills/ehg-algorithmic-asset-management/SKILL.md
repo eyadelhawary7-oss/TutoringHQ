@@ -10,6 +10,8 @@ description: >
 
 STATUS: DRAFT. Not an active business function. Do not apply or extend without an explicit instruction from Eyad. International structure and treasury decisions are parked pending Adsero and tax-advisor review.
 
+> Reviewed 2026-07-18. This remains an aspirational framework with no shipped code or DB tables of its own; parameter values are placeholders. The only CenterHQ facts it borrows as analogies (the `processing_fee_enabled` kill-switch flag, Cairo-time cron discipline, append-only audit tables) are current. Nothing here to reconcile against the live catalog.
+
 # EHG Intelligence - Algorithmic Asset Management Framework
 
 **Scope:** management of EH Group's own capital (operating float, reserves,

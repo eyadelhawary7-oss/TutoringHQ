@@ -1,5 +1,7 @@
 # Dark Mode Removal — Reference Map & Findings (2026-07-05)
 
+> HISTORICAL point-in-time record (2026-07-05), synced against the live database and code on 2026-07-18. The state it describes as "current" — the `.dark` machinery KEPT to serve three still-dark auth pages — has since been SUPERSEDED: the auth pages got their cream redesign (`docs/AUTH_PAGES_CREAM_REDESIGN_2026-07-05.md`) and the dark scaffolding was then deleted (`docs/DARK_MODE_LEFTOVERS_CLEANUP_2026-07-06.md`). Live 2026-07-18: `LoginThemeEffect.tsx` and `contexts/ThemeContext.tsx` are gone, `next-themes` is absent from `package.json`, and there are **zero Tailwind `dark:` variants left in `src`** (the only `dark`-keyed strings remaining are QR-code `color:{dark,light}` object props) (verified live 2026-07-18). Read the two follow-up docs for the end state; this file is preserved as the original removal map.
+
 **Goal:** One theme, light, everywhere. Remove the dark-mode *theme system* (toggle,
 provider, persistence) and guarantee the app renders light even on a device/OS set to
 dark. Deliberate, reversible product decision. No DB schema change. Hold for Eyad's

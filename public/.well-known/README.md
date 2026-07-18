@@ -1,11 +1,15 @@
 # Digital Asset Links (`assetlinks.json`)
 
+> Synced against the live database and code on 2026-07-18. Live product domain is tutoringhq.app (verified 2026-07-18).
+
 This file is served raw at:
 
-    https://centerhq.app/.well-known/assetlinks.json
+    https://tutoringhq.app/.well-known/assetlinks.json
 
 It is what Android uses to verify the Trusted Web Activity (TWA) / Play app
 owns this domain, so the app opens URLs without the browser address bar.
+(The live product domain is `tutoringhq.app`; `centerhq.app` is retired. The
+Android package_name `app.tutoringhq` is unrelated to the retired domain.)
 
 ## Permanent application ID
 

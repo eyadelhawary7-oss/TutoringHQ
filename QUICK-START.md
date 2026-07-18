@@ -1,17 +1,18 @@
 # Quick Start Guide - Internationalization
 
-Your Next.js project is now fully configured with internationalization! 🎉
+> Synced against the live database and code on 2026-07-18. Facts verified live are marked (verified 2026-07-18).
+
+Your Next.js project is configured with internationalization.
 
 ## What's Been Set Up
 
-✅ **next-intl** library integration
+✅ **next-intl** 4 library integration
 ✅ **Arabic (ar)** as default language with RTL support
 ✅ **English (en)** as secondary language
-✅ **Google Fonts**: Cairo for Arabic, Inter for English
-✅ **Language toggle** in navbar with localStorage persistence
+✅ **Fonts** (verified live 2026-07-18): product font is **IBM Plex Sans Arabic** (Arabic + Latin, ADR 031, via `next/font/google`); self-hosted `Cairo-Arabic` is a unicode-range Arabic fallback; Playfair/Bodoni/Fraunces are display faces. JetBrains Mono is copied to `public/fonts/` by `npm run setup-fonts` but is **not wired** (`--font-mono` resolves to Plex). No Inter; `next/font` self-hosts at build, nothing fetched from Google at runtime
+✅ **Language toggle** with localStorage persistence (`src/components/LanguageToggle.tsx`)
 ✅ **Tailwind CSS** configured for logical properties (RTL-aware)
 ✅ **Translation files** in `/messages/` directory
-✅ **Example pages** demonstrating the i18n system
 
 ## Running the Project
 
@@ -93,17 +94,17 @@ Always use logical properties for RTL support:
 |------|---------|
 | `messages/ar.json` | Arabic translations |
 | `messages/en.json` | English translations |
-| `src/middleware.ts` | Locale detection |
-| `src/i18n/routing.ts` | Routing configuration |
+| `src/proxy.ts` | Middleware (locale routing + tenancy/auth) — aliased `proxy.ts`, not `middleware.ts` (verified 2026-07-18) |
+| `src/i18n/routing.ts` | Routing configuration (`defaultLocale: 'ar'`, `localePrefix: 'always'`) |
 | `src/components/LanguageToggle.tsx` | Language switcher |
-| `src/components/Navbar.tsx` | Navigation with translations |
-| `src/lib/fonts.ts` | Font configurations |
+| `src/app/globals.css` | `@font-face` font declarations (verified 2026-07-18) |
+| `scripts/setup-fonts.mjs` | Copies woff2 fonts from `@fontsource` into `public/fonts/` |
 
 ## Features Demo
 
 Check out the homepage to see:
 - ✨ RTL/LTR switching
-- ✨ Font changes (Cairo ↔ Inter)
+- ✨ Font rendering across Arabic and Latin scripts
 - ✨ Logical properties demo
 - ✨ Language toggle with persistence
 - ✨ All navigation items translated

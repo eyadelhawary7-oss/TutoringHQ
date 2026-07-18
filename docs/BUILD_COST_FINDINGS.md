@@ -1,5 +1,7 @@
 # Build-Cost & Update-Bot Findings
 
+> HISTORICAL CI-cost record, synced against the live repo on 2026-07-18. The chosen settings landed and still hold: `.github/dependabot.yml` exists (verified live 2026-07-18). The specific open-PR numbers (#104, #83, #82, #62, #60) are the point-in-time backlog that was closed and are not a current list.
+
 _Introspection of `.github/workflows/*`, dependabot, and Vercel deploy behaviour, with the chosen settings. Written before any change was made._
 
 ## What runs today

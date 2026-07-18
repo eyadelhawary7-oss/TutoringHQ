@@ -1,5 +1,7 @@
 # TutoringHQ — Full Platform Audit (plain-language report)
 
+> Point-in-time snapshot as of 2 July 2026. Reviewed against the live database and code on 2026-07-18 — the findings are preserved as recorded; only demonstrably-false current-state claims are annotated inline (verified live 2026-07-18). Current live counts live in the session ground truth, not here.
+
 **Date:** 2 July 2026 · **Scope:** database, security, backend, frontend, and every money/data loophole a customer or attacker could use · **Method:** read-only inspection of the live database and the whole codebase. Nothing was changed, no migrations were run, the summer billing engine was only looked at, never triggered.
 
 ---
@@ -29,7 +31,7 @@
 7. **Financial audit trail can be quietly edited** — the commission audit log (a money record) can be changed or deleted by a super-admin with no lock, unlike your main audit log which is properly frozen. *Needs insider access.* Medium effort.
 8. **Deleting a center or student wipes its financial and audit history** — several money/audit tables are wired to cascade-delete, so a hard delete silently destroys payments, invoices, commissions and audit records instead of preserving them. *Needs insider/admin action.* Medium effort.
 9. **The database doesn't stop negative money** — about 85 money columns (payments, invoices, commissions, credit) have no "must be ≥ 0" guard, so a bug anywhere upstream could write a negative amount and the database would accept it. *Not directly exploitable, a safety net that's missing.* Medium effort.
-10. **Your code and your live database have drifted apart** — the repo only contains the last few weeks of database migrations; everything older exists only in the live database. And a migration meant to remove the old `pin_code` login column was written but never applied, so that column still exists in production. *Operational risk if you ever rebuild.* Medium effort.
+10. **Your code and your live database have drifted apart** — the repo only contains the last few weeks of database migrations; everything older exists only in the live database. And a migration meant to remove the old `pin_code` login column was written but never applied, so that column still exists in production. *Operational risk if you ever rebuild.* Medium effort. *(Update, verified live 2026-07-18: the `pin_code` drop has since reached production — `users.pin_code` no longer exists. The migration-drift half of this item was addressed by moving to a baseline snapshot model.)*
 
 Everything below the top 10 is either polish (unreachable pages, duplicate database indexes, cosmetic cron-monitoring drift) or already-correct-and-verified (webhooks, secrets handling, rate limiting, card-data storage, CSRF).
 

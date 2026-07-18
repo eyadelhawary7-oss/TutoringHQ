@@ -1,5 +1,7 @@
 # Center Portal Repaint — Phase 1 Classification
 
+> HISTORICAL Phase-1 classification (2026-07-07), synced against the live database and code on 2026-07-18. Route classifications and the five reported bugs are the point-in-time state; the repaint/bug fixes were Phase-2 work held for review, so treat the "CONFIRMED"/"proposed fix" notes as of 2026-07-07, not as guaranteed current code. The DB fact underpinning bug #3 is re-confirmed live: `centers_billing_period_check` = `IN ('monthly','annual')` and `centers_subscription_billing_period_check` = `IN ('monthly','yearly')` — quarterly is fully retired at the DB layer (verified live 2026-07-18).
+
 **Date:** 2026-07-07 · **Branch:** `claude/center-portal-repaint-xqyshm` · **Status:** Phase 1 deliverable — held for Eyad's confirmation before any code changes.
 
 Every center-portal route was classified by reading its code (page.tsx plus the client component(s) that actually render the UI), not by crawling the live site. Pattern definitions are the 8 approved patterns from the build brief.

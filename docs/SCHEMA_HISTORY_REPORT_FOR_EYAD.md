@@ -1,5 +1,10 @@
 # Your database can now be rebuilt from scratch — plain-language report
 
+> Point-in-time record of a completed job (early July 2026), kept as history. Still
+> true as of 2026-07-18: the `pin_code` column is gone, the version mismatch is
+> fixed, and the database can be rebuilt from the code. Full technical detail and
+> the current live catalog counts are in `docs/SCHEMA_HISTORY_TECHNICAL.md`.
+
 **In one line:** your code repository can now recreate the entire live database
 from nothing, the version mismatch between the code and the database is fixed, and
 the old unused `pin_code` login column has been safely removed. Production was

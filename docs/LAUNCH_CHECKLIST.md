@@ -1,9 +1,13 @@
-# Launch checklist — CenterHQ
+# Launch checklist — TutoringHQ
+
+> Synced against the live database and code on 2026-07-18. Environment is still
+> pre-launch / test-data only (verified live 2026-07-18). Live product domain is
+> **tutoringhq.app**.
 
 ## Pre-launch (blocking)
 
 - Vodafone postpaid SIM (WhatsApp + SMS fallback).
-- Paymob **live** credentials & webhook URLs pinned to production.
+- Paymob **live** credentials & webhook URLs pinned to production. Note: `PAYMOB_RECURRING_INTEGRATION_ID` is still a **placeholder**, so the saved-card / single-day billing-lockout path is built but **inert** until a real recurring integration ID is set (verified 2026-07-18).
 - EHG registration via Adsero (commercial entity billing).
 - Vercel env: `NEXT_PUBLIC_APP_URL`, `WHATSAPP_APP_SECRET`, `BOSTA_WEBHOOK_SECRET`, `VENDOR_WHATSAPP_NUMBER`, `ADMIN_WHATSAPP_NUMBER`, `BACKUP_DRIVE_FOLDER_ID`.
 - Bosta merchant onboarding complete.

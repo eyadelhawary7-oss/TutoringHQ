@@ -1,5 +1,7 @@
 # Readiness Findings — Fixes (2026-07-03)
 
+> HISTORICAL fixes record (2026-07-03), synced against the live database and code on 2026-07-18. The WhatsApp-template submission lists were introspected on 2026-07-03 and are point-in-time — `wa_meta_templates` now has **45 rows** live (2026-07-18), so those specific "no row / not APPROVED" tallies have moved. Still current: the retired-domain safety net (code fallbacks default to `https://tutoringhq.app`, not the retired `centerhq.app`), and the `dormancy_trigger_day` (30) / `dormancy_data_retention_months` (12) config keys still exist (verified live 2026-07-18). Eyad's manual-task list is preserved as-was.
+
 One branch (`claude/readiness-findings-fixes-mh33gj`), one commit per fix, ordered smallest/safest
 first. Fix 6 was rebuilt per Eyad's final decision: **no automatic, time-based cleanup of any
 kind** — see its section. Pricing and the summer engine were not touched.

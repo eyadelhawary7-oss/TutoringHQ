@@ -1,12 +1,15 @@
 # End-to-end testing (Playwright)
 
+> Synced against the live code on 2026-07-18. Live product domain is **tutoringhq.app**
+> (centerhq.app is retired) (verified 2026-07-18).
+
 Centre-owner and optional super-admin sessions are saved under `tests/e2e/.auth/` (gitignored). Specs are split across Playwright projects so anonymous flows never reuse a logged-in cookie jar.
 
 ## Required environment variables
 
 | Variable | Purpose |
 |----------|---------|
-| `PLAYWRIGHT_BASE_URL` | Target deployment (e.g. `https://centerhq.app` or `http://localhost:3000`) |
+| `PLAYWRIGHT_BASE_URL` | Target deployment (e.g. `https://tutoringhq.app` or `http://localhost:3000`) |
 | `TEST_PHONE` | Centre owner login (**exact** phone string; no automatic leading-zero stripping) |
 | `TEST_PIN` | Centre owner PIN |
 

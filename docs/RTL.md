@@ -1,4 +1,8 @@
-# RTL and logical layout (CenterHQ)
+# RTL and logical layout (TutoringHQ)
+
+> Synced against the live code on 2026-07-18. The `--chq-slide-*` motion tokens and the
+> `admin-orders-slide-panel` keyframe are confirmed present in `src/app/globals.css`
+> (verified 2026-07-18).
 
 The app serves both LTR (`/en/...`) and RTL (`/ar/...`) locales. Prefer **logical** CSS so spacing, alignment, and positioning follow `dir="rtl"` on `<html>` (see `src/app/[locale]/layout.tsx`).
 

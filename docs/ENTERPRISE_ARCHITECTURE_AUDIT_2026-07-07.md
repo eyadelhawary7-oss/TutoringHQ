@@ -1,5 +1,7 @@
 # Enterprise Architecture Audit — EH Group
 
+> Point-in-time snapshot as of 2026-07-07. Reviewed against the live database and code on 2026-07-18 — findings preserved as recorded; only demonstrably-false current-state claims are annotated inline (verified live 2026-07-18). Live catalog counts drift; current figures are in the session ground truth.
+
 **Date:** 2026-07-07
 **Scope:** CenterHQ (TutoringHQ repo) — multi-tenancy, authorization, payment
 security, and the automated billing engine. Plus the C-Suite operating layer
@@ -63,7 +65,7 @@ the codebase, not in chat history:
 "cascading multiplication (VAT 14% + stamp 0.5% + service 6%)". Per
 `docs/PRICING_SPEC.md` (2026-05-09) that model was **removed** — tax is now 14%
 VAT only. The skills treat `PRICING_SPEC.md` as source of truth and flag the
-stale CLAUDE.md text; a follow-up should correct CLAUDE.md itself.
+stale CLAUDE.md text; a follow-up should correct CLAUDE.md itself. *(Update, verified live 2026-07-18: CLAUDE.md has since been corrected — it now states "Tax is 14% VAT only, inclusive". This follow-up is done.)*
 
 ---
 
@@ -166,6 +168,7 @@ referral bases, and tax filings disagree ~2%.
 **Fix:** standardize on the `÷1.14` inclusive split; route `explodeInclusive` /
 `calcExclusive` through it; regenerate card unit base; reconcile `PRICING_SPEC.md`
 (which currently documents both).
+*(Update, verified live 2026-07-18: B-H1 is FIXED. `src/lib/pricing/taxMath.ts` now decomposes VAT as `P × 0.14 / 1.14` via `VAT_DIVISOR = 1.14` (`baseFromInclusive` = `P / 1.14`, `explodeInclusive` uses `vatInside`), matching `processingFee.vatInsideInclusive` exactly — the two formulas no longer disagree, and the printed "VAT (14%)" line equals 14% of its own subtotal. `CARD_UNIT_BASE_EGP = 60 / 1.14`. Ground truth confirms per-invoice snapshot INV-007 vat_amount 125.26 = 1020 × 0.14 / 1.14.)*
 
 **B-H2 — Auto-suspend fires the due-day morning, not the next Cairo midnight.**
 `lockAtFromBillingDay` correctly computes 00:00 Cairo on due+1, but

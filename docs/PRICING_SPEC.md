@@ -1,5 +1,7 @@
 # CenterHQ Pricing Spec
-Last updated: 2026-07-07
+Last updated: 2026-07-18
+
+> Synced against the live database and code on 2026-07-18 (project `lczmjpnbuhnsislcvzar`). Key facts verified live are marked (verified 2026-07-18); unverifiable ones are marked (UNVERIFIED). Source of truth for pricing. Product brand is **TutoringHQ** (live domain **tutoringhq.app**); the internal name CenterHQ (GitHub repo, Vercel project, `@centerhq.local` auth emails) stays by design.
 
 ## Tax formula (internal)
 The only customer tax is **14% VAT** (plus the separate flat 20 EGP processing fee — see below). The former **6% service fee** and **0.5% stamp duty** were removed in the service-fee/stamp-duty build (`docs/SERVICE_FEE_REMOVAL_FINDINGS.md`) — they no longer exist in the math or anywhere in the UI.
@@ -12,17 +14,19 @@ Inclusive 4,499 → base 3,946.49, VAT 552.51
 Inclusive 999 → base 876.32, VAT 122.68
 Per QR card: 60 EGP inclusive → base 52.63, VAT 7.37 (base = 60 / 1.14; `CARD_UNIT_BASE_EGP` is kept unrounded as 60/1.14 so N-card multiples gross back to exactly N × 60)
 
-## Plan price table (monthly INCLUSIVE EGP)
-Plan         Monthly    Quarterly/mo    Annual/mo    Cap
-solo            999          999             833       50
-nano          1,999        1,999           1,666      120
-starter       4,499        4,499           3,749      200
-pro           7,999        7,999           6,666      500
-business     12,999       12,999          10,833    1,000
-enterprise   18,499       18,499          15,416    2,000
-top_centers   CUSTOM       CUSTOM          CUSTOM   2,000+
+## Plan price table (monthly INCLUSIVE EGP) — all_in_price (verified live 2026-07-18)
+Plan         Monthly    Annual/mo    Cap
+solo            999          833       50
+nano          1,999        1,666      120
+starter       4,499        3,749      200
+pro           7,999        6,666      500
+business     12,999       10,833    1,000
+enterprise   18,499       15,416    2,000
+top_centers   CUSTOM       CUSTOM   2,000+
 
-Monthly and quarterly bill at the SAME per-month all-in price (`all_in_price`); there is no separate monthly list price. Annual/mo = all_in_price x 10 / 12 (pay 10 months, get 12; "2 months free"), rounded to whole EGP. The former +15% monthly list price (`pricing_plans.monthly_fee`) and the `pricing.interval.monthly_multiplier` config key were removed in 2026-07 when monthly was repriced down to the all-in rate.
+Monthly-column values are the live `pricing_plans.all_in_price` (verified live 2026-07-18): solo 999 · nano 1999 · starter 4499 · pro 7999 · business 12999 · enterprise 18499 (all `is_active=true`); `top_centers.all_in_price` is NULL / `is_active=false` (custom). There is no separate monthly list price. Annual/mo = all_in_price x 10 / 12 (pay 10 months, get 12; "2 months free" — `pricing.interval.annual_multiplier` = 10, verified live), rounded to whole EGP. The former +15% monthly list price (`pricing_plans.monthly_fee`) and the `pricing.interval.monthly_multiplier` config key were removed in 2026-07 when monthly was repriced down to the all-in rate.
+
+**Quarterly is retired as a customer billing period** (verified live 2026-07-18): `centers.billing_period` CHECK is `IN ('monthly','annual')` — quarterly can no longer be selected. The term `quarterly` survives ONLY inside the code (`PLANS[].quarterlyAllIn`, `getQuarterlyAllInMonthlyRateFromCenter`, `normalizeBillingPeriod`) as the internal name for the per-month all-in rate and to price legacy rows; monthly and quarterly bill at that same per-month `all_in_price`. See the MRR section below.
 
 Enterprise is fixed-price. Top Centers is the only custom-priced tier; centers.all_in_price is source of truth, code reading top_centers MUST throw + Sentry-warn if NULL.
 
@@ -72,18 +76,15 @@ Source of truth: `src/lib/processingFee.ts` (pure helpers — `applyProcessingFe
 The fee applied to each invoice is snapshotted into **`invoices.metadata.processing_fee`** at creation, so rendered breakdowns are deterministic even if config later changes. For session-based charges (teacher subscriptions) it rides in `combined_payment_sessions.metadata.processing_fee` and is added to `paymob_amount` / `total_amount`.
 
 **Every charge invoice carries the flat 20 EGP** (one per invoice, never per line): center subscription renewals, signup first payment, parent-pack (`pack_billing`) + WhatsApp add-on (`whatsapp_addon`), teacher resubscribe / upgrade / switch-interval / overage, `plan_upgrade_difference`, summer first invoice, **reactivation** (`centers/reactivate`), **card-order `setup_fee`**, and **announcement `_cap` / `_settlement`** (added in the service-fee/stamp removal, the earlier "Deferred" list is cleared).
-**Not charged the fee (not customer charges):** `referral_payout` (money paid *out* to the referrer) and `payment_proof` (mirrors a referenced invoice; not a new charge).
+**Not charged the fee (not customer charges):** `referral_payout` (money paid *out* to the referrer — note referral withdrawals carry their own separate cash-out fee, distinct from this invoice processing fee; see `docs/SERVICE_FEE_REMOVAL_FINDINGS.md`) and `payment_proof` (mirrors a referenced invoice; not a new charge).
 
-### Late-fee / reactivation invoices (combined, single invoice)
+### Late fees — DEAD (do not document as active)
 
-A late-fee invoice is **one combined invoice** (subscription + late fee on the same bill), so it carries exactly **one** 20 EGP fee. CRITICAL math rule:
+**Late fees are removed** (verified live 2026-07-18). `platform_config` holds **zero** `late_fee_*` keys — the five keys (`late_fee_grace_days`, `late_fee_tier1_rate`, `late_fee_tier1_trigger_day`, `late_fee_tier2_rate`, `late_fee_tier2_trigger_day`) were deleted 2026-07-15..18. The single-day billing-lockout model (below) replaced them: coming back from a lock charges the **plain subscription price** only, no late-fee percentage. The `invoices` columns `late_fee_rate`, `late_fee_amount`, `days_overdue` **still physically exist** (verified live 2026-07-18) but are dead/unused, as do orphaned `platformConfig_late_fee_*` i18n label strings. There is no live late-fee combined invoice.
 
-```
-late fee  = late_fee_rate × subscription      (percentage on the SUBSCRIPTION only)
-total     = subscription + late fee + 20 flat (processing fee never inside the % base)
-```
+### Reactivation invoices (still live)
 
-The processing fee is a separate flat line; the late-fee percentage is **never** applied to it. Redesigned line order (Arabic, RTL): `قيمة الاشتراك → غرامة التأخر في السداد → رسوم المعالجة (ⓘ) → الإجمالي → ضريبة القيمة المضافة (مشمولة)`. Reactivation invoices: `رسوم إعادة التفعيل → رسوم المعالجة (ⓘ) → الإجمالي → ضريبة (مشمولة)`. Both drop the old stamp-duty / service-fee lines. Built via `buildCombinedInvoiceLines` (covered by `tests/unit/processingFee.test.ts`).
+A reactivation invoice (`api/centers/reactivate`) charges the **plain subscription price + one flat 20 EGP processing fee** (verified in code 2026-07-18: `applyProcessingFee` + `metadata.processing_fee`); there is **no** reactivation surcharge (`src/lib/reactivationFee.ts` was deleted). Line order (Arabic, RTL): `رسوم إعادة التفعيل → رسوم المعالجة (ⓘ) → الإجمالي → ضريبة (مشمولة)`. It drops the old stamp-duty / service-fee lines.
 
 Referral commission base derives from `centers.all_in_price` via `netReferralBaseFromAllInPrice`, never the invoice total (the processing fee is excluded, per brief Section 7). With the service-fee + stamp-duty removal it strips **only VAT (divisor `1.14`)**; both former slices are commissionable, so referrers earn ~6.4% more than the original (approved change; see `docs/SERVICE_FEE_REMOVAL_FINDINGS.md`).
 
@@ -95,10 +96,10 @@ Replaces the stamp-duty and service-fee lines for these invoice types. Order (Ar
 قيمة الاشتراك                       999.00 EGP   (subscription, VAT-inclusive)
 رسوم المعالجة (ⓘ)                    20.00 EGP   (processing fee; omitted when 0)
 الإجمالي                          1,019.00 EGP   (total = subscription + fee)
-ضريبة القيمة المضافة (مشمولة)        125.16 EGP   (VAT, LAST line — already inside the total, does NOT add)
+ضريبة القيمة المضافة (مشمولة)        125.14 EGP   (VAT, LAST line — already inside the total, does NOT add)
 ```
 
-VAT here is the simple VAT-inclusive 14% slice (`total × 0.14 / 1.14`); no service or stamp line is ever shown. **Card-order (`setup_fee`) and announcement invoices** render a base + VAT breakdown via `buildLegalInvoiceLines` / `exclusiveTotalsStandard` (VAT-only; the service/stamp lines were removed).
+VAT here is the simple VAT-inclusive 14% slice (`total × 0.14 / 1.14` = `1019 × 0.14 / 1.14` = 125.14); no service or stamp line is ever shown. Each invoice snapshots its own `vat_rate` / `vat_amount` / `processing_fee` into dedicated nullable `invoices` columns (verified live 2026-07-18), so it reprints at its original rate forever. Live worked example — the only invoice in the DB, **INV-007-2026-07**: base_amount 1000.00, total_amount 1020.00, `vat_rate` 0.14, `vat_amount` **125.26** (= 1020 × 0.14 / 1.14), `processing_fee` 20, `metadata.processing_fee` 20 (verified live 2026-07-18). **Card-order (`setup_fee`) and announcement invoices** render a base + VAT breakdown via `buildLegalInvoiceLines` / `exclusiveTotalsStandard` (VAT-only; the service/stamp lines were removed).
 
 The ⓘ on the processing-fee line opens an Arabic info sheet (`ProcessingFeeInfoButton`, `src/components/billing/ProcessingFeeInfo.tsx`) with a `تمام` dismiss; the PDF renders the same copy as a footnote.
 
@@ -156,14 +157,17 @@ summary lock screen.
 - **`late_payment_fee` / `reactivation_fee` invoice template blocks** — removed;
   those types now render via the generic block (legacy invoices only).
 
-### Pending / blocked (saved-card epic — Paymob Section 0)
-- The **midnight auto-charge** itself needs the saved-card MIT ("no customer
-  present") mechanism, which is unbuilt (no card token is stored). The lock model
-  above is in place and activates once auto-charge lands.
-- The **early card-expiry warning** needs the saved-card token's `expiry_month` /
-  `expiry_year` stored (Paymob exposes them on the token, but we store no token
-  today). **Paymob sends no documented pre-charge expiry signal** — the own-expiry
-  check is the only path, and it depends on first storing the token.
+### Saved-card auto-charge status (verified 2026-07-18)
+- The **midnight auto-charge** MIT ("no customer present") mechanism is now
+  **BUILT and wired** (Phase 1 + Phase 2 — see `docs/SAVED_CARD_ENGINE.md`), storing
+  the Paymob token + `expiry_month`/`expiry_year` (never the PAN). It is **INERT**:
+  `PAYMOB_RECURRING_INTEGRATION_ID` is a placeholder, so `chargeSavedCard` returns
+  `recurring_integration_not_configured` and nothing is charged — every due customer
+  lands on the manual pay surface. The single-day lock model above is in place; it
+  activates once a real recurring integration id + Paymob LIVE credentials arrive.
+- The **early card-expiry warning** rides on the stored token's `expiry_month` /
+  `expiry_year`. **Paymob sends no documented pre-charge expiry signal** — the
+  own-expiry check is the only path.
 
 ## MRR computation (admin dashboards)
 
@@ -176,7 +180,7 @@ summary lock screen.
 
 1. Plan `top_centers`: `centers.all_in_price` required (invalid/missing → `0` in aggregates; strict paths may throw elsewhere).
 2. Early adopter: `early_adopter_price` when `is_early_adopter`.
-3. Else if `all_in_price > 0`: use it (same semantics as list **quarterly/mo** in the table above — not the monthly column).
+3. Else if `all_in_price > 0`: use it (the per-month **all_in_price** — the Monthly column in the table above; internally this is `PLANS[].quarterlyAllIn`).
 4. Else: `PLANS[plan].quarterlyAllIn` for the resolved plan key (`planKeyOrStarter` maps unknown plans to `starter`).
 
 **Billing period → implied monthly MRR:** `normalizeBillingPeriod`; semi-annual / half-yearly map to **quarterly** for MRR. **Quarterly** billing: implied MRR equals that monthly all-in rate. **Monthly** / **annual**: derived via `getChargeFromQuarterlyAllIn` / annual rounding ÷ 12 (see `computeImpliedMonthlyMrrFromBase`).
@@ -188,27 +192,32 @@ summary lock screen.
 After applying the `mrr_snapshots` migration and **before** relying on the finance trend chart, trigger one snapshot so the table has at least one row:
 
 ```bash
-curl -H "Authorization: Bearer $CRON_SECRET" https://centerhq.app/api/cron/snapshot-mrr
+curl -H "Authorization: Bearer $CRON_SECRET" https://tutoringhq.app/api/cron/snapshot-mrr
 ```
 
 Without this, the finance dashboard falls back to live subscription MRR for the trend (acceptable), but historical points stay flat until the nightly cron runs (`0 22 * * *` UTC — midnight Cairo).
-## Subscription suspension grace period
+## Subscription suspension grace period — single-day lock (verified 2026-07-18)
 
-- **`platform_config.subscription_grace_period_days`** — calendar days after `next_payment_due` before automatic suspension. Seeded default **7** (migration `20260510130000_subscription_grace_platform_config.sql`).
-- **`centers.auto_suspend_at`** is computed when invoices/payments run using `autoSuspendAtFromDue(next_payment_due)` in `src/lib/billingSchedule.ts`, which defaults to **`SUBSCRIPTION_GRACE_CALENDAR_DAYS` (7)** unless callers pass a different grace length.
+- The multi-day grace is **gone**. `SUBSCRIPTION_GRACE_CALENDAR_DAYS = 1` in `src/lib/billingSchedule.ts` (verified in code 2026-07-18), and `autoSuspendAtFromDue(next_payment_due)` **ignores any grace argument** — it always sets **`centers.auto_suspend_at` = 00:00 Africa/Cairo on the day AFTER `next_payment_due`** (`lockAtFromBillingDay`, DST-safe). An unpaid center keeps full access for its billing day and locks at the next Cairo midnight.
+- **`platform_config.subscription_grace_period_days` is still seeded at 7** (verified live 2026-07-18) but is **no longer wired to auto-suspend timing** — it is a legacy/dormant config value, not the effective grace.
 - **`process-renewals`** cron (`runSubscriptionBillingCron`) suspends centres when **`auto_suspend_at`** falls on the Cairo calendar **today** (not by recomputing grace inside the cron).
 
-## Saved-card auto-charge (Phase 1 — built, not yet wired)
+## Saved-card auto-charge (built + wired, INERT) — verified 2026-07-18
 
-- A card-on-file + auto-charge capability now exists: store a Paymob card
-  **token** once (with explicit consent + a save-time validity check) and charge
-  it later, idempotently, with no customer present. **Never stores the PAN.**
-- It is **built and unit-tested but NOT wired to any cron** — Phase 2 calls
-  `chargeSavedCard()` from the midnight billing run. Live charging also waits on a
-  dedicated Paymob **recurring integration id**
-  (`PAYMOB_RECURRING_INTEGRATION_ID`, not yet issued) and Paymob LIVE credentials.
-- Full detail: `docs/SAVED_CARD_ENGINE.md`. Schema migration:
-  `supabase/migrations/20260624120000_saved_card_engine.sql` (applied live).
+- A card-on-file + auto-charge capability exists: store a Paymob card **token**
+  once (with explicit consent + a save-time validity check) and charge it later,
+  idempotently, with no customer present. **Never stores the PAN.**
+- It is **built, unit-tested, and wired** into the midnight billing run (Phase 2
+  calls `chargeSavedCard()`). It is **INERT**: live charging waits on a dedicated
+  Paymob **recurring integration id** (`PAYMOB_RECURRING_INTEGRATION_ID`, currently
+  a placeholder — verified 2026-07-18) and Paymob LIVE credentials, so nothing is
+  charged today.
+- Full detail: `docs/SAVED_CARD_ENGINE.md`. Schema landed in the tables
+  `saved_cards` / `saved_card_consents` / `card_charge_intents` / `saved_card_events`
+  (all live, RLS on, service-role only — verified 2026-07-18). The original
+  migration now lives under `supabase/migrations_archive/20260624120000_saved_card_engine.sql`
+  (folded into `00000000000000_baseline.sql`; the live `supabase/migrations/` dir
+  no longer holds it).
 
 ## Midnight billing engine (Phase 2 — wired, inert pending recurring id)
 

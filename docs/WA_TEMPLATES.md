@@ -1,12 +1,16 @@
 # WhatsApp (Meta) templates — registry
 
+> Synced against the live database and code on 2026-07-18. `wa_meta_templates` holds
+> **45 rows** (verified live 2026-07-18). Template statuses/categories below are tagged
+> where verified against the live table.
+
 Project rule: delivery uses Meta-approved templates only. Wire locations live next to WhatsApp send helpers (`src/lib/centerNotify.ts`, `src/lib/whatsapp/`) and admin tooling.
 
 ## Platform configuration
 
 | Key | Purpose |
 |-----|---------|
-| `courier_name` | JSON string label for **`{{courier_name}}`** in **`chq_vendor_new_order`** (default **`Bosta`**). Seeded in migration `20260509180000_pack_requests_fulfillment.sql`. |
+| `courier_name` | JSON string label for **`{{courier_name}}`** in **`chq_vendor_new_order`** (live value **`Bosta`**, verified live 2026-07-18). Seeded in migration `20260509180000_pack_requests_fulfillment.sql`. |
 
 ## Owner-facing catalog
 
@@ -24,10 +28,10 @@ Project rule: delivery uses Meta-approved templates only. Wire locations live ne
 | `chq_card_order_delivered` | card_orders | Same pair | Yes | `status` → `delivered` |
 | `chq_card_order_cancelled` | card_orders | Same pair | Yes | `status` → `cancelled` |
 | `chq_vendor_new_order` | vendor | Body: order ref, quantity, notes, **`{{courier_name}}`** (4th). Quick-reply button index `0` with `READY_<orderId>`. | Yes — `sendVendorNewOrder` | Card order → `notifyVendorOfNewOrder` |
-| `chq_pin_delivery` | auth | PIN / login code (see Meta). | **Registered only — unwired** | Target launch **after Vodafone postpaid SIM + SMS fallback** |
+| `chq_pin_delivery` | AUTHENTICATION | PIN / login code (see Meta). Live status **IN_REVIEW** (verified live 2026-07-18). | **Registered but unwired** | Target launch **after Vodafone postpaid SIM + SMS fallback** |
 | *(others)* | various | See Meta Business Manager & `wa_meta_templates` | Partial | See codebase grep for `template_name` |
 
-**`chq_card_order_refunded` — DEPRECATED.** Do **not** register on Meta. Card orders are non-refundable; refunds are not offered. Legacy `wa_meta_templates` rows (e.g. `PENDING`) are harmless and may be deleted manually via SQL.
+**`chq_card_order_refunded` — DEPRECATED.** Do **not** register on Meta. Card orders are non-refundable; refunds are not offered. A seed row currently exists in `wa_meta_templates` with status `PENDING` (verified live 2026-07-18) — harmless; leave it or delete manually via SQL. Do not submit it for Meta approval.
 
 ### `chq_vendor_new_order`
 
@@ -39,7 +43,7 @@ Project rule: delivery uses Meta-approved templates only. Wire locations live ne
 
 - **Status:** Registered with Meta; **no automated send path** in app yet.
 - **Milestone:** Ship after **Vodafone SIM** rollout and SMS fallback for PIN delivery.
-- **UI:** Owner surface shows a **Coming soon** tile with **Notify me** (`mailto:support@centerhq.com`).
+- **UI:** Owner surface shows a **Coming soon** tile with **Notify me** (`mailto:support@ehgintelligence.com`, from `SITE.supportEmail` in `src/config/site.ts`) (verified live 2026-07-18).
 
 ## Physical pack fulfillment (`pack_requests`)
 
@@ -71,7 +75,7 @@ Until approved, keep renewal-reminders on freeform text or rely on `sendChqRenew
 
 ## Card order status templates — registration checklist
 
-Templates seeded as **PENDING** in `wa_meta_templates` that need Meta-side registration:
+Templates seeded as **PENDING** in `wa_meta_templates` that need Meta-side registration — the **five** status rows below. (Verified live 2026-07-18: there are **7** `chq_card_order_*` seed rows total, all `status='PENDING'` — these five, plus the `chq_card_order_status_update` fallback row above and the deprecated `chq_card_order_refunded` row below.)
 
 | Template name | Variables (body parameters) |
 |---------------|----------------------------|
@@ -114,7 +118,11 @@ WhatsApp channel is gated by `NUDGE_WHATSAPP_ENABLED` (env) **and** Meta approva
 are true every due nudge is recorded `disabled` and only the in-app banner shows — the
 banner never depends on WhatsApp.
 
-### New templates to submit to Meta — **category UTILITY** (NOT Marketing)
+### Nudge templates — **category UTILITY** (NOT Marketing)
+
+All four `chq_nudge_*` rows already exist in `wa_meta_templates` as `category=UTILITY`,
+`status=PENDING` (verified live 2026-07-18) — seeded but **awaiting Meta approval**, so
+nudges stay in-app-banner-only until each flips to `APPROVED`.
 
 All Arabic (EGY), Arabic comma U+060C where punctuation is needed. Body parameters are
 positional `{{1}}…`, sent in the order shown (see `src/lib/nudges/messages.ts`).
@@ -135,7 +143,7 @@ Suggested Arabic bodies (final wording is set on Meta; keep variable order):
 
 ### Recategorize (Marketing → Utility)
 
-⚠️ **`chq_renewal_reminder`** is currently **MARKETING** in `wa_meta_templates`. It is a
+⚠️ **`chq_renewal_reminder`** is currently **MARKETING** (status `APPROVED`) in `wa_meta_templates` (verified live 2026-07-18). It is a
 billing/transactional message — Marketing category risks silent non-delivery. Recategorize
 to **Utility** on Meta (the legacy freeform renewal-reminders cron that used it is retired,
 but the registry row should still be corrected). Audit any other billing-related templates

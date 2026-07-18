@@ -1,5 +1,7 @@
 # Token Adoption — Phase 1 of the redesign
 
+> HISTORICAL Phase-1 record, synced against the live code on 2026-07-18. Its premise still holds — there is exactly one theme (cream): no `next-themes`, no `.dark` machinery, no Tailwind `dark:` variants in `src` (verified live 2026-07-18). The counts, batch log, and the §5 follow-ups (stale dark-era values in `tokens.ts`; the ~3,450 Tailwind-utility pass) are the point-in-time state on the dates shown and are preserved as-is.
+
 **Date:** 2026-07-05 (revised 2026-07-07 after syncing `master`)
 **Branch:** `claude/token-adoption-phase-1-o12pp7`
 **Source brief:** "Token Adoption (Phase 1)" — point hand-typed raw hex at the color

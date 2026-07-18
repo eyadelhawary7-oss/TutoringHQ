@@ -1,5 +1,7 @@
 # PIN-set Cleanup — Findings Note
 
+> HISTORICAL findings note, synced against the live database and code on 2026-07-18. **The end state is now live:** `public.users.pin_set_at` exists and `pin_code` has been **DROPPED** — live `public.users` has no `pin_code` column and carries `phone`, `role`, `pin_set_at` (verified live 2026-07-18). So the §4 caveat "drop_pin_code tracked but NOT applied to prod in this session" is resolved — the drop landed (migration `20260701150506_drop_pin_code`). The user-count figures below ("6 users") are point-in-time; live `public.users` now has **4 rows** (2026-07-18).
+
 Branch: `claude/pin-code-cleanup` (off latest `master`). Live catalog introspected
 first (Supabase project `lczmjpnbuhnsislcvzar`, Postgres 17).
 
@@ -96,4 +98,3 @@ placeholder). All 6 current users have `last_sign_in_at` set and are backfilled;
   double-set guard, previously inert because `pin_code` was NULL for everyone, now actually
   fires. Covered by the two updated unit tests. `request-pin-setup-link` and readiness read
   the same flag.
-</content>

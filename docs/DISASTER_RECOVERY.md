@@ -1,5 +1,11 @@
 # Disaster Recovery Plan
 
+> Synced against the live database and code on 2026-07-18. All tables/columns used by
+> the verification queries below (`centers.plan`, `student_groups`, `attendance_scans`,
+> `audit_log`, …) and the `verify-backup` npm script confirmed present (verified live
+> 2026-07-18). Supabase backup frequency/retention below are provider settings
+> (UNVERIFIED here: not readable from the app database).
+
 ## Overview
 This document outlines procedures for recovering from data loss, system failures, or security incidents.
 
@@ -262,7 +268,7 @@ If data loss occurs:
 ## Monthly Reminder
 
 Set a recurring calendar event:
-- **Title:** Verify CenterHQ Database Backup
+- **Title:** Verify TutoringHQ Database Backup
 - **Frequency:** Monthly (1st of each month)
 - **Duration:** 30 minutes
 - **Description:** Follow docs/DISASTER_RECOVERY.md monthly verification procedure. Run `npm run verify-backup` against restored test database.

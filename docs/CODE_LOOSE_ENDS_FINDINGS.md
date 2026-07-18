@@ -1,5 +1,7 @@
 # Code Loose Ends — Findings Note
 
+> HISTORICAL findings note, synced against the live database and code on 2026-07-18. **Item 3 is now superseded:** `pin_code` was flagged "keep, load-bearing" here, but the recommended follow-up (add `pin_set_at`, migrate readers, then drop) was subsequently done — see the dated note in that section and `docs/PIN_SET_CLEANUP_FINDINGS.md`. Other items are the point-in-time state on the branch date.
+
 Branch: `claude/code-loose-ends-75g5mj`. Live catalog introspected first (Supabase
 project `lczmjpnbuhnsislcvzar`, Postgres 17). Nothing here is live-affecting today —
 referrals are off at launch and the touched tables are empty — but each item would
@@ -49,6 +51,8 @@ self-enroll. The page routes are already `join/[center_code]/[group_id]` and
 `api/join/`. Client fetch URLs updated to match.
 
 ## 3. Drop dead `pin_code` column — FLAGGED, NOT dropped (load-bearing)
+
+> UPDATE (verified live 2026-07-18): this was subsequently carried out. `public.users.pin_set_at timestamptz` was added as the authoritative "PIN is set" signal, all four readers migrated to it, and `pin_code` was **DROPPED** (migration `20260701150506_drop_pin_code`). Live `public.users` has **no `pin_code` column** — it now carries `phone`, `role`, `pin_set_at` (verified live 2026-07-18). So the "recommend keeping `pin_code`" conclusion below is historical; see `docs/PIN_SET_CLEANUP_FINDINGS.md` for the execution.
 
 Introspected every reference. `pin_code` is NOT the login credential — the real PIN
 is the Supabase Auth password (`set-initial-pin` writes it via
@@ -120,5 +124,3 @@ running `npm audit fix`, which cascades into major bumps of vitest/next/sentry.
 37 errors, ~all in vendored `public/workbox/*` (generated third-party assets that
 should never be linted) plus 3 real ones in two test files. Fix: ignore
 `public/workbox/**` in `eslint.config.mjs`; fix the 3 test-file errors properly.
-</content>
-</invoke>

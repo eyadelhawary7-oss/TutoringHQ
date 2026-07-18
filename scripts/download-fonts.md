@@ -1,5 +1,7 @@
 # Local Font Setup
 
+> Synced against the live code on 2026-07-18. The six required filenames and their `@fontsource` sources below match `scripts/setup-fonts.mjs` exactly (verified 2026-07-18).
+
 Fonts are copied from `@fontsource` packages on build. To use manually downloaded fonts instead, place woff2 files in `public/fonts/` with the exact filenames below (they will override the copied files on next build).
 
 ## Quick setup (uses @fontsource)
@@ -8,7 +10,7 @@ Fonts are copied from `@fontsource` packages on build. To use manually downloade
 npm run setup-fonts
 ```
 
-This copies Cairo and JetBrains Mono from `node_modules` to `public/fonts/`. The build runs this automatically.
+This copies Cairo and JetBrains Mono from `node_modules` to `public/fonts/`. The build runs this automatically. Note (verified live 2026-07-18): the Cairo woff2 is wired as the `Cairo-Arabic` unicode-range fallback, but the copied JetBrains Mono woff2 is **not currently referenced** by any `font-family`/`@font-face` in `src/` — it is staged for a future monospace need, not in use today.
 
 ## Manual download
 

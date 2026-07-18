@@ -1,3 +1,5 @@
+> STATUS: SHIPPED / HISTORICAL RECORD. Synced against the live database and code on 2026-07-18. This batch was executed: the student-detail balance card computes live, `students.balance_due` still does NOT exist as a column (balances are recomputed via `src/lib/studentBalance.ts` — verified live 2026-07-18), and money invariants 16 and 17 are in `.claude/skills/automated-billing-and-fees/SKILL.md`. Text below is the point-in-time brief, preserved. Note two of its "verified current state" snapshots have since moved (verified live 2026-07-18): `summer.pay_window_days` is now 1 (this brief predates that change), and the five `late_fee_*` platform_config keys referenced elsewhere have since been deleted — late fees are dead.
+
 # Job 4 money batch
 
 Held for Eyad's merge. Every decision below is answered (Eyad, 2026-07-16) and the

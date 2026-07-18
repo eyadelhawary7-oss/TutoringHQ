@@ -1,5 +1,7 @@
 # Architecture Decision Records
 
+> Synced against the live database and code on 2026-07-18. These are point-in-time decision records; where a decision's stated numbers have since changed, the current live value is noted inline and dated rather than overwriting the original record. Facts re-verified against live are marked (verified live 2026-07-18).
+
 ## ADR 018 — Google Drive backup migrated to Shared Drive (May 18, 2026)
 
 Context: The weekly-backup cron has been failing every run since at least May 3, 2026 with "Service Accounts do not have storage quota. Leverage shared drives or use OAuth delegation instead." Google revoked personal storage quotas for Service Accounts. The cron's `partial` status was misleading — zero of 35+ tables were actually backed up.
@@ -49,11 +51,23 @@ student_groups.center_cut_egp is a flat EGP amount per student per lesson (not a
 
 ## ADR 034 — Teacher resubscribe rides combined_payment_sessions with teacher identity in metadata (June 11, 2026)
 
-A lapsed teacher reactivating at 299 EGP/month reuses the combined_payment_sessions table with session_type = 'teacher_resubscribe' and teacher identity stored in the metadata jsonb. center_id is nullable. No new table was added. The Paymob webhook finalizes the session and triggers apply_teacher_subscription_transition to 'active'.
+A lapsed teacher reactivating reuses the combined_payment_sessions table with session_type = 'teacher_resubscribe' and teacher identity stored in the metadata jsonb. center_id is nullable. No new table was added. The Paymob webhook finalizes the session and triggers apply_teacher_subscription_transition to 'active'.
 
-## ADR 035 — Teacher two-tier pricing locked (June 2026)
+Pricing update (verified live 2026-07-18): the 299 EGP/month figure recorded here is stale. The standard teacher plan is now **499 EGP/month gross** (`platform_config.teacher_subscription_plan`, price_gross 499). See ADR 035 for the current three-tier structure.
 
-Standard tier: 299 EGP/month, up to 8 groups, up to 60 students, 14-day trial. Pro tier: 699 EGP/month, unlimited groups and students, lifetime income history, advanced analytics, 100 EGP blast credits included monthly, student notes, CSV export. Trial is provisioned on first private group creation. Caps enforced in Phase 3. Cancel means access until current_period_end (standard SaaS end-of-period behavior).
+## ADR 035 — Teacher pricing locked (June 2026; superseded by three-tier, live 2026-07-18)
+
+Original June 2026 decision (two-tier): Standard tier 299 EGP/month (up to 8 groups, up to 60 students, 14-day trial); Pro tier 699 EGP/month (unlimited groups/students, lifetime income history, advanced analytics, 100 blast credits/month, student notes, CSV export). Trial provisioned on first private group creation; cancel means access until current_period_end.
+
+Current live pricing (verified live 2026-07-18, `platform_config.teacher_subscription_plan*`) is a **three-tier** structure, superseding the two-tier numbers above:
+
+| Tier | Key | Gross/month | Trial days | Student limit | Blast credits/mo |
+|------|-----|-------------|-----------|---------------|------------------|
+| Standard | `teacher_standard` | 499 EGP | 14 | 20 | — |
+| Pro | `teacher_pro` | 999 EGP | 0 | 50 | 100 |
+| Scale | `teacher_scale` | 2499 EGP | 0 | 100 (+20 EGP/student overage) | 100 |
+
+Cancel-until-period-end behavior and trial-on-first-private-group provisioning still hold.
 
 ## ADR 036 — Center-cut renegotiation is a teacher-initiated proposal (future feature) (June 13, 2026)
 

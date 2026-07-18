@@ -1,7 +1,10 @@
 # MERGE_CHECKLIST — Portal Rebuild
 
-Everything a human must do/verify before merging this branch to `master`. Nothing here
-has been applied to the live database; migrations are repo files only.
+> HISTORICAL — merge checklist for the portal-rebuild branch, merged 2026-07-13. Preserved as a record. Re-checked live 2026-07-18: the five migrations listed below ARE applied to production, and the two go-live switches (`PAYMOB_RECURRING_INTEGRATION_ID`, `summer.first_charge_release`) remain PENDING — the recurring integration ID is still a placeholder so the saved-card engine is INERT, and `summer.first_charge_release` is still HELD (verified 2026-07-18). The production migration ledger has since advanced to `20260717130000_billing_config_flip`.
+
+Everything a human had to do/verify before merging this branch to `master`. This branch was
+merged on 2026-07-13; the migrations below were applied to production the same day (see the
+Migrations section) — the earlier "migrations are repo files only" framing is superseded.
 
 ## Migrations — ALL APPLIED to live (2026-07-13) ✅
 All five migrations are now LIVE. The three new ones were applied in order via the Supabase
@@ -79,10 +82,11 @@ The summer trial's first invoice now uses the same period-aware helpers as the n
 | Centers-page write buttons | suspend/delete/blacklist/change-plan buttons remain visible to sales roles (API fails closed). Decide whether to hide them for sales roles (can't gate on `role==='super_admin'` alone without stripping accountant's legitimate buttons). |
 
 ## Environment / config switches (go-live, not on-branch)
-| Switch | Purpose |
-|--------|---------|
-| `PAYMOB_RECURRING_INTEGRATION_ID` (sandbox) | required for W3 saved-card save + auto-charge tests |
-| `summer.first_charge_release` HELD→RELEASED | one-time money release at go-live |
+Both remain PENDING as of 2026-07-18 (verified live) — until they flip, the saved-card engine is INERT and nothing charges.
+| Switch | Purpose | Status 2026-07-18 |
+|--------|---------|-------------------|
+| `PAYMOB_RECURRING_INTEGRATION_ID` (sandbox) | required for W3 saved-card save + auto-charge tests | still a placeholder (engine INERT) |
+| `summer.first_charge_release` HELD→RELEASED | one-time money release at go-live | still HELD |
 
 ## Cron schedule change (ships in vercel.json — auto-applies on deploy)
 | Cron | Change | Why |

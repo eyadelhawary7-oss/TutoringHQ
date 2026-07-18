@@ -1,3 +1,5 @@
+> STATUS: SHIPPED / HISTORICAL RECORD. Synced against the live database and code on 2026-07-18. This brief was executed: the three skills now live under `.claude/skills/` (automated-billing-and-fees, saas-multi-tenant-architecture, tutoringhq-product-reference), the four working rules are in `CLAUDE.md`, and the VAT-formula and domain fixes landed. Job 2 produced `docs/findings/2026-07-15_sweep.md` and the Job 4 draft (now `docs/briefs/2026-07-16_job4_money_batch.md`). Text below is preserved verbatim as the point-in-time brief; do not treat its embedded "current state" lines as live. Current-state deltas since this brief ran (verified live 2026-07-18): late fees are now fully DEAD — the five `late_fee_*` platform_config keys have been DELETED, not merely "unreachable"; the billing lockout is BUILT but INERT because `PAYMOB_RECURRING_INTEGRATION_ID` is still a placeholder; the zero-policy-RLS count is 22 (not 18), counted live 2026-07-18.
+
 # RUN THESE TWO JOBS, IN ORDER, IN THIS SESSION
 
 Two jobs. Job 1 is docs. Job 2 is read-only investigation. Neither changes any

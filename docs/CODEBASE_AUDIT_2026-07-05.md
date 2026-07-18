@@ -1,5 +1,7 @@
 # Codebase Audit — 2026-07-05
 
+> Point-in-time snapshot as of 2026-07-05. Reviewed against the live database and code on 2026-07-18; preserved as a historical read-only cleanup proposal. Spot-checked 2026-07-18: the SAFE-delete candidates `src/lib/admin-check.ts` and `/financial-intelligence` still exist (proposals not yet executed), so the findings stand as written. Route/file counts here are point-in-time.
+
 **Mode:** READ ONLY. This document changes zero application code. Every item below is a *proposal* with a risk level. Nothing here is done — each approved item becomes its own small, verified build later.
 
 **Scope:** whole repo, area by area, using `docs/PAGE_INVENTORY.md` as the map (124 page routes, 322 API routes, 177 files in `src/lib`).

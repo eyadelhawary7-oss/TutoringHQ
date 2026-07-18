@@ -1,5 +1,7 @@
 # Security Maintenance Schedule
 
+> Synced against the live database and code on 2026-07-18. Facts verified live are marked (verified live 2026-07-18); the rotation-tracking table below is operational bookkeeping, not a live-verified fact.
+
 ## Secrets Rotation
 
 ### Every 6 Months (Semi-Annual)
@@ -146,9 +148,14 @@ on the record as deliberate, not an oversight.
 ### SECURITY DEFINER RPC grants (Fix A / B / F — fixed)
 
 The over-granted business RPCs and global-recompute RPCs were locked down to
-`service_role` only (tracked migrations `20260626000001`/`20260626000002`), and
-the trigger functions had EXECUTE revoked from all roles (triggers fire as table
-owner and never need it). See `supabase/migrations/2026062600000{1,2,3}_phase6*`.
+`service_role` only, and the trigger functions had EXECUTE revoked from all roles
+(triggers fire as table owner and never need it). See the three tracked Phase 6
+migrations (filenames verified live 2026-07-18):
+`supabase/migrations/20260626134248_phase6a_lockdown_definer_rpcs.sql`,
+`supabase/migrations/20260626134256_phase6b_restrict_global_recompute.sql`,
+`supabase/migrations/20260626134308_phase6f_tighten_anon_definer_funcs.sql`.
+(The earlier `2026062600000{1,2,3}_phase6*` / `20260626000001`/`20260626000002`
+paths this doc previously cited never existed — corrected 2026-07-18.)
 
 **Intentionally still flagged by the Supabase linter** (`anon_/authenticated_security_definer_function_executable`):
 the RLS-helper functions `get_auth_center_id`, `get_auth_center_group_ids`,
@@ -179,10 +186,16 @@ warnings are therefore expected and accepted.
 Correcting the record: the "no PII in browser storage" guarantee is accurate ONLY
 for **localStorage / sessionStorage** (enforced by `src/lib/clientMemoryCache.ts`
 and `tests/unit/clientMemoryCache.test.ts`). The **offline attendance scanner
-deliberately caches roster data — student name, phone, balance_due, groups — in
-IndexedDB** (`src/lib/db.ts`, DB `centerhq-offline`, store `students`) so scanning
-keeps working with no network. This is required for the offline feature and is not
-a leak.
+deliberately caches roster data — student name, phone, groups, qr_code,
+student_number — in IndexedDB** (`src/lib/db.ts`, DB `centerhq-offline`, store
+`students`) so scanning keeps working with no network. This is required for the
+offline feature and is not a leak.
+
+> Correction (verified live 2026-07-18): the cached object does **NOT** include a
+> `balance_due` field. `students.balance_due` does not exist as a column; balances
+> are computed live via `getStudentBalance` (`src/lib/studentBalance.ts`) and are
+> never persisted or synced to IndexedDB. See the explicit note in
+> `src/lib/db.ts` (`syncStudentsToLocal`).
 
 - The cache is **wiped on EXPLICIT logout** via `clearOfflineData()` (wired into
   `signOutToLogin` in `src/lib/auth/sign-out-client.ts`), so a shared device does
@@ -195,8 +208,41 @@ a leak.
   `pending_scans`/`syncQueue` so an explicit logout never silently drops attendance
   that has not yet synced (those rows carry only ids, not roster PII).
 - **Field minimization considered, deferred.** The cached fields (`name` for the
-  scan display, `balance_due` for the offline payment check, `groups`/`fee` for the
-  per-session fee, `phone`/`parent_phone` for offline parent notification,
-  `qr_code`, `student_number`) all back offline behaviours. Dropping any is not
-  clearly safe without risking an offline feature, so per the re-audit's "pause if
-  minimization would break a feature" rule the field set is retained as-is.
+  scan display, `groups`/`fee` for the per-session fee, `phone`/`parent_phone` for
+  offline parent notification, `qr_code`, `student_number`) all back offline
+  behaviours. (There is no cached `balance_due` — see the correction above; the
+  offline balance check computes from live/synced data, not a persisted column.)
+  Dropping any is not clearly safe without risking an offline feature, so per the
+  re-audit's "pause if minimization would break a feature" rule the field set is
+  retained as-is.
+
+---
+
+## RLS coverage — zero-policy tables (recount, do not trust a bare number)
+
+Every base table in `public` has RLS **enabled**, but some carry **zero policies**
+(RLS on + no policy = deny-all to non-service-role, which is the safe default for
+service-role-only / intake tables). This count **moves as tables land** — never
+cite a permanent number. **22 zero-policy tables as counted live on 2026-07-18.**
+Recount with:
+
+```sql
+WITH rls_tables AS (
+  SELECT c.relname AS tablename FROM pg_class c
+  JOIN pg_namespace n ON n.oid = c.relnamespace
+  WHERE n.nspname = 'public' AND c.relkind = 'r' AND c.relrowsecurity = true),
+policy_counts AS (
+  SELECT tablename, count(*) npol FROM pg_policies
+  WHERE schemaname = 'public' GROUP BY tablename)
+SELECT count(*) FROM rls_tables r
+LEFT JOIN policy_counts p ON p.tablename = r.tablename
+WHERE COALESCE(p.npol, 0) = 0;
+```
+
+Every **direct**-scope `/api/db` proxy tenant table carries policies (verified
+live 2026-07-18). The one proxy table in the zero-policy set is the **indirect**
+join table `attendance_overrides` (RLS on + 0 policies = deny-all, a safe backstop
+— the proxy validates its parent rows in the handler). The rest of the zero-policy
+set is service-role-only / intake tables (e.g. `pending_signups`, `saved_cards`,
+`phone_verifications`, `billing_lockout_events`). See `docs/DB_PROXY_SECURITY.md`
+for the proxy tables.

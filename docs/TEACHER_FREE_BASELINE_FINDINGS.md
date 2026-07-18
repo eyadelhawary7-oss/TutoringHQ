@@ -1,5 +1,7 @@
 # Step 0 — Findings: Teacher non-payment → drop to free baseline (airtight)
 
+> Dated Step-0 record; the build has since shipped (migration `20260628135521_teacher_free_baseline_gate.sql`). Synced against the live database on 2026-07-18: the `teacher_subscriptions.status` CHECK is confirmed `IN ('trialing','active','past_due','suspended','cancelled')` and `billing_interval` CHECK is `IN ('monthly','annual')` (verified live 2026-07-18). The build plan (sections A–E) is preserved as the plan of record.
+
 Follow-up to the summer-2026 branch. Replaces the best-effort teacher hard-lock with a reliable
 drop-to-free-baseline whose enforcement is airtight at every layer. Centers are untouched.
 
@@ -41,4 +43,3 @@ read-only `/suspended` screen. One gate, every route.
 **E. Tests.** No-loophole route scan; `is_teacher_private_locked`/access-by-status truth table; gate-restore logic; honest-message copy has no deletion wording. Plus a SQL-level assertion (throwaway PG) that the RLS functions/policies reference the lock predicate.
 
 Conventions: text+CHECK only, `NOTIFY pgrst` after DDL, Africa/Cairo, logical CSS, snapshot regenerated + both drift alarms green.
-</content>

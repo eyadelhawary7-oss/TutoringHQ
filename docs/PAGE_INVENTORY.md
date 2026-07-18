@@ -1,4 +1,11 @@
-# TutoringHQ / CenterHQ — Full Page Inventory
+# TutoringHQ — Full Page Inventory
+
+> Synced against the live code on 2026-07-18. Route counts below were recounted from
+> `find src/app -name page.tsx` (verified 2026-07-18): **128** `page.tsx` files. Sections
+> whose route lists changed since the prior snapshot — **Settings** (now 12 routes),
+> **Super-Admin** (`/admin/sales-pipeline` removed, `/admin/staff` added), and **Auth**
+> (`/sentry-test` removed → 10 routes) — are corrected below. Area headers sum to 128.
+> Product brand is **TutoringHQ**; the GitHub repo name CenterHQ is internal and unchanged.
 
 A complete catalog of every page route in the Next.js App Router (`src/app/**/page.tsx`), grouped by product area with each page's purpose, content, features, and access level.
 
@@ -6,8 +13,8 @@ A complete catalog of every page route in the Next.js App Router (`src/app/**/pa
 
 | Metric | Value |
 |--------|-------|
-| **Page routes** | **124** |
-| **Localized URLs** (`/ar` + `/en`) | **~246** |
+| **Page routes** | **128** (counted live 2026-07-18) |
+| **Localized URLs** (`/ar` + `/en`) | **~254** (127 localized pages × 2) |
 | **Product areas** | 13 (grouped into the sections below) |
 | **Non-localized routes** | 1 (`/parent/[token]`) |
 
@@ -236,21 +243,50 @@ Old bookmark.
 
 ---
 
-## Center · Settings (6)
+## Center · Settings (12)
 
-Center configuration, team, billing and account controls.
+Center configuration, team, billing and account controls. The old single General page
+was split into a settings **hub** (`/settings/general`) plus granular sub-pages
+(verified live 2026-07-18). The former `/settings/reset-password` route is **gone**
+(PIN change now lives under `/settings/account`).
 
 ### `/settings` — Settings Index (redirect) ↪
-Routes `?tab=` to a sub-page.
-- Maps general/team/billing → dedicated routes
+Routes `?tab=` to a sub-page (verified live 2026-07-18).
+- `TAB_REDIRECTS` maps only `general` / `team` / `billing` → dedicated routes
 - Falls back to `/settings/general`
 
-### `/settings/general` — General Settings
-Core center configuration.
+### `/settings/general` — Settings Hub
+Menu / landing for all settings sub-pages.
+- Links out to account, center info, billing & money, notifications, scanner, subjects
+- Account-security summary + change-PIN entry; back-to-admin-console for staff
+
+### `/settings/account` — Account & Security
+Account controls.
+- Change PIN, logout, account-security section
+
+### `/settings/center` — Center Info
+Core center identity (~400 LOC).
 - Edit name, phone, district, governorate; upload logo
-- Subjects: add/edit/delete (owner/super_admin)
-- Toggles: daily summary, summer mode, card ordering, scanner mode
-- InstaPay number, change PIN, reset password, logout
+
+### `/settings/money` — Billing & Money
+Money-related toggles and links.
+- Billing/subscription card link, card-ordering settings, InstaPay details
+
+### `/settings/notifications` — Notifications
+Center notification toggles.
+- Daily-summary WhatsApp report toggle, summer-mode toggle
+
+### `/settings/scanner` — Scanner Settings
+Scanner behavior.
+- Default scan mode (camera / bluetooth), scanner options
+
+### `/settings/subjects` — Subjects
+Subject taxonomy management.
+- Add/edit/delete subjects (owner-only); in-use protection on delete
+
+### `/settings/support` — Support
+Support entry point.
+- Chat-on-WhatsApp contact
 
 ### `/settings/billing` — Billing & Subscription 🔒 (Owner)
 Full plan-change & billing hub (~3.1k LOC).
@@ -271,12 +307,6 @@ Center's referral dashboard.
 - Referred-center count + total earned
 - Withdrawal panel (InstaPay) + payout history PDF
 - Tiers: 25% mo.1 / 10% mo.2–12 / 5% mo.13+
-
-### `/settings/reset-password` — Change PIN
-Change 6-digit PIN.
-- Current / new / confirm masked inputs with validation
-- Maps weak-pin, wrong-pin, rate-limit errors
-- Success → redirect to `/settings`
 
 ---
 
@@ -382,9 +412,9 @@ Public signup for center-less teachers.
 
 ---
 
-## Super-Admin / Platform (31)
+## Super-Admin / Platform (30)
 
-Internal platform operations — centers, billing, finance, health, staff, pricing, and fulfillment. Phone-gated super-admin.
+Internal platform operations — centers, billing, finance, health, staff, pricing, and fulfillment. Phone-gated super-admin. (Route list reconciled live 2026-07-18: `/admin/sales-pipeline` removed, `/admin/staff` added.)
 
 ### `/admin` — Admin Overview ⚑
 Admin landing dashboard.
@@ -466,7 +496,7 @@ Review plan-change requests.
 
 ### `/admin/platform-config` — Platform Config ⚑ (Super-Admin)
 Global key/value settings editor.
-- Grouped config (late-fee/dormancy + all)
+- Grouped config (dormancy, summer, pricing + all). The late-fee group is now empty — the five `late_fee_*` keys were deleted from `platform_config` (verified live 2026-07-18); late fees are dead.
 - Boolean toggles auto-save; others per-row save
 - super_admin only; CSRF writes
 
@@ -500,11 +530,10 @@ Upcoming/overdue renewals.
 - Filter chips; record-payment modal (method, notes)
 - Manual refresh
 
-### `/admin/sales-pipeline` — Sales Pipeline (CRM) ⚑
-Lightweight lead Kanban.
-- KPIs + 4 stage columns (prospect→converted)
-- Add-lead modal, lead detail panel, change stage
-- **Note: in-memory prototype (no persistence)**
+### `/admin/staff` — Sales Staff ⚑ (Super-Admin)
+Internal sales-staff directory.
+- Staff rows with role (`sm` / `sr`), base salary, YTD commission, territory
+- Add staff; territory-mismatch flagging
 
 ### `/admin/vendors` — Card Vendors ⚑ ⚙
 Card-vendor management.
@@ -631,9 +660,9 @@ Minimal demo-request stub.
 
 ---
 
-## Auth & Account State (11)
+## Auth & Account State (10)
 
-Login, signup, PIN flows, and the lock/notice screens for suspended, expired, offline and status states.
+Login, signup, PIN flows, and the lock/notice screens for suspended, expired, offline and status states. (`/sentry-test` was removed — no longer present live 2026-07-18.)
 
 ### `/login` — Login 🌐
 Phone + 6-digit PIN login.
@@ -692,10 +721,6 @@ Public status dashboard.
 - Polls `/api/status` every 60s
 - Per-service uptime %, response time, 90-day heatmap
 - Last-5-incidents list
-
-### `/sentry-test` — Sentry Test
-Error-reporting diagnostic.
-- Button throws a test error to verify Sentry
 
 ---
 
@@ -784,8 +809,6 @@ Token-based read-only parent view (no locale segment, hardcoded Arabic RTL).
 
 ## Things worth flagging
 
-- **~246 rendered URLs** — 123 of 124 pages sit under `[locale]`, served in both `/ar` (default, RTL) and `/en`. Only `/parent/[token]` is outside the locale system (hardcoded Arabic).
-- **9 pure redirects** (legacy bookmarks): `/scan`, `/scanner`, `/checklist`, `/teachers`, `/invoices`, `/parent-whatsapp`, `/admin/dashboard`, `/admin/ceo-dashboard`, `/admin/card-orders`.
+- **~254 rendered URLs** — 127 of 128 pages sit under `[locale]`, served in both `/ar` (default, RTL) and `/en`. Only `/parent/[token]` is outside the locale system (hardcoded Arabic). (Counted live 2026-07-18.)
+- **9 pure redirects** (legacy bookmarks, all present live 2026-07-18): `/scan`, `/scanner`, `/checklist`, `/teachers`, `/invoices`, `/parent-whatsapp`, `/admin/dashboard`, `/admin/ceo-dashboard`, `/admin/card-orders`.
 - **`/financial-intelligence` is a literal alias** — it re-exports the `/analytics` page component.
-- **`/admin/sales-pipeline` is a non-persisted prototype** — leads live only in React state, no API/DB behind it.
-- **`/sentry-test`** deliberately throws an error; consider gating or removing it in production.

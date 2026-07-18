@@ -1,10 +1,12 @@
 # EH Group — Master Context v24
 
+> STALE IN-REPO COPY (v24). Re-synced 2026-07-18. This is an out-of-date snapshot of the owner's master-context file; the current canonical version (v46) is maintained in Eyad's Claude.ai project, outside this repository. Do not treat the numbered narrative below as current. Load-bearing live corrections are inline-tagged (verified live 2026-07-18); the intentional-design decisions are preserved as a record. Note: "quarterly" pricing/billing referenced in several decisions below is DEAD — `centers.billing_period` now CHECKs IN ('monthly','annual') only, quarterly removed (verified live 2026-07-18).
+
 ## Build state
 
 - **Latest commit:** post–Prompt 7 stabilization merge (see `git log -1`).
 - **Routes:** Next.js App Router — full surface documented in technical reference.
-- **Tables:** ~89 applied migrations + `pending_signups` where deployed → **90** logical entities including pending signup staging.
+- **Tables:** ~89 applied migrations + `pending_signups` where deployed → **90** logical entities including pending signup staging. **[STALE: the live public schema now has 142 base tables (all RLS-enabled), 2 views, and 141 functions, counted live 2026-07-18.]**
 
 ## Environment / schema deltas (audit)
 

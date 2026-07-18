@@ -10,6 +10,8 @@ description: >
 
 # Automated Client Onboarding — CenterHQ
 
+> Synced against the live database and code on 2026-07-18. Load-bearing money/tenant facts verified live are tagged (verified live 2026-07-18). ("CenterHQ"/"@centerhq.local" are the retained internal/company + auth-email names; the product is TutoringHQ.)
+
 ## Canonical funnel
 
 ```
@@ -35,13 +37,23 @@ Support routes: `api/signup/check-pending` (resume abandoned signups),
    subscription, or auth rows exist until payment completes. Abandoned rows
    are expected inventory for win-back — treat as a funnel metric, don't
    eagerly purge.
-3. **First payment = plan price (VAT-inclusive) + one 20 EGP processing
-   fee.** Quarterly card price is the signup baseline; the +15/−15%
-   monthly/annual toggles are marketing approximations with `.99` endings.
+3. **First payment = selected plan price (VAT-inclusive) + one flat 20 EGP
+   processing fee** (verified live 2026-07-18). Only **monthly** and
+   **annual** are offered — quarterly is DEAD (`centers.billing_period` CHECK
+   is `('monthly','annual')`, verified live 2026-07-18). The monthly baseline
+   is `pricing_plans.all_in_price` (Solo 999 … Enterprise 18,499); annual =
+   monthly × 10 ("2 months free", `pricing.interval.annual_multiplier` = 10).
+   NOTE: the signup form still carries a legacy variable named `quarterlyAllIn`
+   whose value IS that monthly price — a naming artifact, not a quarterly
+   product. There is no live +15/−15% toggle or `.99` price ending; do not
+   describe one.
 4. **`chq_parent_welcome`** WhatsApp template is approved but **manually
    sent** — do not auto-wire to approvals until ops flips it on.
-5. **`chq_pin_delivery` is a stub** until the Vodafone SIM + SMS fallback
-   exists — no live PIN blasts.
+5. **`chq_pin_delivery`**: the Meta template exists (AUTHENTICATION,
+   IN_REVIEW — verified live 2026-07-18), but PIN delivery is **not wired
+   live** — no live PIN blasts until the Vodafone SIM + SMS fallback exists.
+   (Template registration vs. delivery wiring are separate; see
+   `.claude/skills/tutoringhq-product-reference` and `docs/WA_TEMPLATES.md`.)
 6. Card style tiers: only **B (Dark)** and **C (Light)** are exposed; A is
    reserved.
 

@@ -1,5 +1,7 @@
 # WhatsApp launch-readiness audit
 
+> POINT-IN-TIME AUDIT (2026-05-23). Re-synced 2026-07-18. Webhook-registration, sync-templates, and health-check URLs below have been corrected from the retired `centerhq.app` to the live product domain `tutoringhq.app` (verified live 2026-07-18); the `@centerhq.local` auth-email suffix intentionally stays CenterHQ. Current-state note (verified 2026-07-18): the Section-1 RED finding — the auto-approve happy path minting a PIN it never delivers — has since been addressed by the set-PIN-on-first-login flow (`src/app/[locale]/set-pin/`, see `docs/audit/SET_PIN_ONBOARDING_DESIGN.md`), and `public.users.pin_code` was dropped by migration `20260701150506_drop_pin_code`, so the "bcrypt-hashed into users.pin_code" mechanics described below are stale schema (the live credential is the Supabase Auth password). `wa_sending_enabled` is true live. The env-alias and HMAC internals were not re-verified line-by-line this pass; treat them as of 2026-05-23.
+
 **Scope:** signup/login PIN delivery, env-alias hygiene, webhook HMAC integrity, Meta template gating, launch-day env + webhook checklist.
 **Date:** 2026-05-23
 **Method:** read-only code audit. No code changes.
@@ -249,12 +251,12 @@ After Meta approves, sync via `POST /api/admin/whatsapp/sync-templates` (super-a
    Mirror the same values in **Preview** (using the Meta test phone-number-id `1013787185158313` if you want preview deploys to NOT send real messages).
 4. **Redeploy** so the new env vars take effect.
 5. **In Meta App Dashboard → WhatsApp → Configuration → Webhooks**, register BOTH callback URLs (one Meta App is OK — the App Secret is shared):
-   - `https://centerhq.app/api/whatsapp/webhook` — Verify Token = the value you set in step 3. Subscribe to fields: `messages`, `message_template_status_update`, `account_alerts`, `phone_number_quality_update`.
-   - `https://centerhq.app/api/whatsapp/inbound` — Verify Token = the value you set in step 3. Subscribe to: `messages`.
+   - `https://tutoringhq.app/api/whatsapp/webhook` — Verify Token = the value you set in step 3. Subscribe to fields: `messages`, `message_template_status_update`, `account_alerts`, `phone_number_quality_update`.
+   - `https://tutoringhq.app/api/whatsapp/inbound` — Verify Token = the value you set in step 3. Subscribe to: `messages`.
    Meta will GET each URL with `hub.challenge`; both routes will echo it back.
-6. **As super-admin, run** `POST https://centerhq.app/api/admin/whatsapp/sync-templates` (Bearer = your Supabase session JWT) to mirror Meta's APPROVED state into `wa_meta_templates`. Re-run after every Meta template update.
+6. **As super-admin, run** `POST https://tutoringhq.app/api/admin/whatsapp/sync-templates` (Bearer = your Supabase session JWT) to mirror Meta's APPROVED state into `wa_meta_templates`. Re-run after every Meta template update.
 7. **Verify DB flags**: `SELECT key, value FROM platform_config WHERE key IN ('wa_sending_enabled','auto_approve_signups','pause_new_signups');` — `wa_sending_enabled` should be unset or `true`; `auto_approve_signups` flip to `true` only after step 9 passes; `pause_new_signups` must be `false`.
-8. **Sanity-check health**: `curl https://centerhq.app/api/health` — must show `wa_mode: "live"`, `wa_secret_configured: true`, `wa_verify_token_configured: true`. If `wa_mode` is `test`, `WHATSAPP_PHONE_NUMBER_ID` was not set (step 3 alias 3).
+8. **Sanity-check health**: `curl https://tutoringhq.app/api/health` — must show `wa_mode: "live"`, `wa_secret_configured: true`, `wa_verify_token_configured: true`. If `wa_mode` is `test`, `WHATSAPP_PHONE_NUMBER_ID` was not set (step 3 alias 3).
 9. **End-to-end smoke test** with a real Egyptian phone:
    a. Sign up via `/ar/signup` with the test number, complete Paymob payment in sandbox/live as configured.
    b. Confirm `chq_welcome` arrives on WhatsApp within 30 s of payment success.

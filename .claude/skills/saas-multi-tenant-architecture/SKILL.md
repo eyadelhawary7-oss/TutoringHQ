@@ -4,6 +4,8 @@ description: Tenant isolation and minors' data protection rules for TutoringHQ. 
 ---
 
 # Tenant and data safety (LOCKED)
+> Synced against the live database and code on 2026-07-18. Load-bearing tenant/RLS facts verified live are tagged (verified live 2026-07-18); the zero-policy count is stated with its date and query because it moves as tables land.
+
 Cross-tenant leakage of minors' data is an existential risk for this business. Treat any doubt as a blocker, not a judgment call.
 
 1. Every tenant-owned row carries center_id and RLS scopes by it. If you cannot point to the exact line where a query is scoped to the caller's center, that is a finding, not an assumption.
@@ -26,6 +28,6 @@ Correct facts carried forward from the previous version of this skill, verified 
 
 - CSP lives in two places: next.config.ts headers() and src/proxy.ts SECURITY_HEADERS. Adding a third-party origin (PostHog, Sentry, Paymob, Supabase realtime) means editing both.
 - Suspension enforcement, in detail: middleware loads centers.status, billing_status, auto_suspend_at, is_blacklisted plus the matching subscriptions.status per authenticated request. Suspended/overdue centers redirect to /{locale}/suspended. Blacklisted centers get 401 everywhere except /settings and /session-expired.
-- The single-day lock is implemented in src/lib/billingLifecycle.ts and gated through resolveBillingAccess (src/lib/billingAccessGate.ts). On lock, teachers drop to a free tier with data preserved via the teacher private-view path (teacher_private_access, src/lib/teacherPrivateView.ts). That free-tier drop is a separate mechanism from the teacher_center linking model in rule 3.
+- The single-day lock is implemented in src/lib/billingLifecycle.ts and gated through resolveBillingAccess (src/lib/billingAccessGate.ts). It is currently BUILT BUT INERT: PAYMOB_RECURRING_INTEGRATION_ID is a placeholder, so no saved card is charged and the auto-suspend is suppressed (verified live 2026-07-18) — the isolation code paths are wired, but no center is actually locked out today. On lock, teachers drop to a free tier with data preserved via the teacher private-view path (teacher_private_access, src/lib/teacherPrivateView.ts). That free-tier drop is a separate mechanism from the teacher_center linking model in rule 3.
 - Every user-facing path is locale-prefixed (/ar default RTL, /en) with localePrefix: 'always'. Never redirect off the locale prefix.
 - Route-protection checklist for every new route: page route to AUTHENTICATED_ROUTE_PREFIXES; API mutation to validateCSRFRequest; correct auth gate (requireOwnerAdminCenter, centerAuth, admin-access / isSuperAdminPhone, centerPermissions); webhook in PUBLIC_WEBHOOK_PREFIXES with its own HMAC; cron gated on CRON_SECRET and registered in vercel.json; new table ships its RLS policy in the same migration.
