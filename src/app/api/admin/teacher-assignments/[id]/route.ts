@@ -92,6 +92,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         const { reassignCommissions } = await import('@/lib/commissions')
         await reassignCommissions('teacher', existing.teacher_id, nextStaffId)
       } else {
+        // INTENDED, do NOT "fix" (Eyad 2026-07-16): a change to ONLY the manager
+        // (manager_staff_id) or any non-rep field does NOT recompute the override.
+        // Reassignment fires solely on a rep (staff_id) change. createCommissionsForTeacher
+        // is idempotent, so with the rep unchanged the existing rep + override rows are left
+        // exactly as they are. The override tracks the REP's reports_to, not the assignment's
+        // manager_staff_id, so a manager-only edit must not disturb commission rows here.
         const { createCommissionsForTeacher } = await import('@/lib/commissions')
         await createCommissionsForTeacher(existing.teacher_id)
       }

@@ -65,8 +65,13 @@ export default function TeacherPlanSection() {
           return;
         }
         if (res?.ok && json.paymob_disabled) {
-          toast.success(t('intervalSaved'));
-          await load();
+          // Online payment is not live yet, so the active monthly->annual switch charged
+          // and saved NOTHING (switch-interval returns paymob_disabled BEFORE writing
+          // billing_interval; the flip only happens later in the payment webhook). Do NOT
+          // report success here (that was the bug: the teacher saw "saved" while the row
+          // stayed monthly). Show an honest "coming soon" state and skip the reload —
+          // nothing changed.
+          toast.info(t('intervalComingSoon'));
           return;
         }
         if (res?.ok && json.ok) {

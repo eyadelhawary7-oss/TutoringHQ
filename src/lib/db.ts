@@ -73,7 +73,9 @@ export function getDB() {
   return dbPromise;
 }
 
-// Sync all students for a center into IndexedDB (full object: id, name, phone, groups, balance_due, qr_code, student_number)
+// Sync all students for a center into IndexedDB (full object: id, name, phone, groups, qr_code, student_number).
+// NOTE: no balance_due — that column does not exist; balances are computed live via
+// getStudentBalance (src/lib/studentBalance.ts), never persisted or synced.
 export async function syncStudentsToLocal(
   students: (Record<string, unknown> & { id: string; student_number?: string | null })[],
 ) {
