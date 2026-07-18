@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { isSuperAdminPhone } from '@/lib/admin-access';
+import { phoneFromCenterhqAuthEmail } from '@/lib/ownerPhone';
 import { getStudentBalances, sumOutstanding } from '@/lib/studentBalance';
 import { centerAccessGateResponse } from '@/lib/centerAccessGate';
 
@@ -74,7 +75,17 @@ async function getAnalyticsAuth(request: NextRequest): Promise<AnalyticsAuthCont
   // Super-admin authority comes from admin_users + SUPER_ADMIN_PHONES only.
   // Never trust `users.role` - it is the centre-tenant role and is writable by
   // centre admins (was the source of a prior privilege-escalation P0).
-  const phone = (userRecord as { phone?: string | null } | null)?.phone ?? null;
+  //
+  // Phone source: derive from the auth.users.email local-part (`<digits>@centerhq.local`),
+  // NOT public.users.phone. The email is set server-side and is not writable via the
+  // /api/db proxy; public.users.phone is centre-tenant data. Mirrors centerAuth.ts /
+  // admin-auth.ts. Fall back to auth.users.phone then public.users.phone (defence-in-depth).
+  const emailPhone = phoneFromCenterhqAuthEmail((user as { email?: string | null }).email);
+  const phone =
+    emailPhone ??
+    (user as { phone?: string | null }).phone ??
+    (userRecord as { phone?: string | null } | null)?.phone ??
+    null;
   const isSuperAdmin = !!adminRecord || isSuperAdminPhone(phone);
 
   let centerId = (userRecord as { center_id?: string | null } | null)?.center_id ?? null;

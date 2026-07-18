@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { supabase } from '@/lib/supabase';
+import { getCsrfHeaders } from '@/lib/csrf-client';
 import { MessageCircle, Loader2 } from 'lucide-react';
 
 export interface AgingRow {
@@ -47,6 +48,7 @@ export default function AgingReport({ data = [], onRefresh }: AgingReportProps) 
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
+          ...(await getCsrfHeaders(session.access_token)),
         },
         body: JSON.stringify({ student_id: studentId }),
       });
@@ -69,6 +71,7 @@ export default function AgingReport({ data = [], onRefresh }: AgingReportProps) 
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${session.access_token}`,
+            ...(await getCsrfHeaders(session.access_token)),
           },
           body: JSON.stringify({ student_id: row.student_id }),
         });

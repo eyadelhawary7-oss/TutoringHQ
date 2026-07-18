@@ -7,7 +7,8 @@ import { normalizePhone } from '@/lib/utils/phone';
 import { generateReferralCode } from '@/lib/referral';
 import { sendWelcomeTemplate } from '@/lib/centerNotify';
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchAdminAccessFlags } from '@/lib/admin-access';
+import { fetchAdminAccessFlags, isSuperAdminPhone } from '@/lib/admin-access';
+import { phoneFromCenterhqAuthEmail } from '@/lib/ownerPhone';
 import { getAdminPermissions } from '@/lib/admin-roles';
 import { getInternalScope, allowedCenterIds } from '@/lib/internalScope';
 import { PLANS, getChargeFromQuarterlyAllIn, type PlanKey } from '@/lib/pricing';
@@ -20,11 +21,6 @@ function calendarAddDays(baseYmd: string, delta: number): string {
   const t = Date.UTC(y, m - 1, d + delta);
   const dt = new Date(t);
   return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
-}
-
-function isSuperAdmin(phone: string | null): boolean {
-  const admins = process.env.SUPER_ADMIN_PHONES || '';
-  return !!phone && admins.split(',').map((p: string) => p.trim()).includes(phone);
 }
 
 async function isAdminUser(supabaseAdmin: SupabaseClient, userId: string): Promise<boolean> {
@@ -45,7 +41,7 @@ async function centerMutationRoleAllowed(
   userId: string,
   phone: string | null,
 ): Promise<boolean> {
-  if (isSuperAdmin(phone)) return true;
+  if (isSuperAdminPhone(phone)) return true;
   const { data } = await supabaseAdmin
     .from('admin_users')
     .select('role')
@@ -411,8 +407,14 @@ export async function DELETE(request: NextRequest) {
     });
 
     const { data: userRecord } = await adminSupabase.from('users').select('phone').eq('id', user.id).single();
+    // Super-admin phone from the auth identity (email local-part), not centre-tenant users.phone.
+    const authPhone =
+      phoneFromCenterhqAuthEmail((user as { email?: string | null }).email) ??
+      (user as { phone?: string | null }).phone ??
+      userRecord?.phone ??
+      null;
     // M1: deactivating a center is a lifecycle mutation — super_admin/accountant only.
-    if (!(await centerMutationRoleAllowed(adminSupabase, user.id, userRecord?.phone ?? null))) {
+    if (!(await centerMutationRoleAllowed(adminSupabase, user.id, authPhone))) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     if (!validateCSRFRequest(request, user.id)) {
@@ -521,7 +523,13 @@ export async function POST(request: Request) {
 
     const adminByTable = await isAdminUser(supabaseAdmin, user.id);
     const { data: userRecord } = await supabaseAdmin.from('users').select('phone').eq('id', user.id).single();
-    const adminByPhone = isSuperAdmin(userRecord?.phone ?? null);
+    // Super-admin phone from the auth identity (email local-part), not centre-tenant users.phone.
+    const authPhone =
+      phoneFromCenterhqAuthEmail((user as { email?: string | null }).email) ??
+      (user as { phone?: string | null }).phone ??
+      userRecord?.phone ??
+      null;
+    const adminByPhone = isSuperAdminPhone(authPhone);
 
     if (!adminByTable && !adminByPhone) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -612,9 +620,15 @@ export async function PUT(request: Request) {
     });
 
     const { data: userRecord } = await supabaseAdmin.from('users').select('phone').eq('id', user.id).single();
+    // Super-admin phone from the auth identity (email local-part), not centre-tenant users.phone.
+    const authPhone =
+      phoneFromCenterhqAuthEmail((user as { email?: string | null }).email) ??
+      (user as { phone?: string | null }).phone ??
+      userRecord?.phone ??
+      null;
     // M1: plan-change / reactivate / suspend / update-billing are lifecycle +
     // money mutations — super_admin/accountant only.
-    if (!(await centerMutationRoleAllowed(supabaseAdmin, user.id, userRecord?.phone ?? null))) {
+    if (!(await centerMutationRoleAllowed(supabaseAdmin, user.id, authPhone))) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     if (!validateCSRFRequest(request, user.id)) {

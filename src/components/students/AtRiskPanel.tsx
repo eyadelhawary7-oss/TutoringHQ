@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { ChevronDown, ChevronUp, Send, RefreshCw, Loader2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { getCsrfHeaders } from '@/lib/csrf-client';
 import type { AtRiskStudent } from '@/app/api/students/at-risk/route';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
 
@@ -50,6 +51,7 @@ export function AtRiskPanel() {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
+          ...(await getCsrfHeaders(session.access_token)),
         },
         body: JSON.stringify({ student_id: s.id }),
       });
