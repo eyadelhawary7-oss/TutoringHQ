@@ -14,8 +14,9 @@ import { KpiCard } from '@/components/shared';
 import { FamilyLinkingSection } from '@/components/students/FamilyLinkingSection';
 import { ReceiptModal } from '@/components/payments/ReceiptModal';
 import { pushRecentlyViewedStudent } from '@/lib/recentlyViewedStudents';
-import { formatDateTime, formatDate, formatNumber } from '@/lib/formatNumber';
+import { formatDateTime, formatDate, formatNumber, formatCurrency } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
+import { getStudentBalance } from '@/lib/studentBalance';
 
 type FamilyRow = { id: string; family_name: string | null; parent_phone: string | null; parent_name: string | null };
 
@@ -121,6 +122,11 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   const [loading, setLoading] = useState(true);
   const [centerId, setCenterId] = useState<string | null>(null);
   const [student, setStudent] = useState<StudentRow | null>(null);
+  // Live-computed balance (Σ chargeable center-group scans − logged payments) via the
+  // isomorphic getStudentBalance helper on the RLS-scoped browser client — the SAME
+  // source the scanner and finance views use. There is deliberately NO students.balance_due
+  // column (selecting it 400s the whole query); see STUDENT_SELECT below. null = not loaded.
+  const [balance, setBalance] = useState<number | null>(null);
   const [family, setFamily] = useState<FamilyRow | null>(null);
   const [delivered, setDelivered] = useState(false);
   const [scans, setScans] = useState<ScanRecord[]>([]);
@@ -181,6 +187,16 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         const row = raw ? normalizeStudent(raw) : null;
         if (cancelled) return;
         setStudent(row);
+
+        if (row) {
+          // Read-only live balance for the balance card. Best-effort: a hiccup must never
+          // break the page (it just leaves the card unloaded).
+          getStudentBalance(supabase, row.id)
+            .then((b) => {
+              if (!cancelled) setBalance(b);
+            })
+            .catch((err) => console.error('[student-detail] balance load failed', err));
+        }
 
         if (row && cid) {
           pushRecentlyViewedStudent(cid, { id: row.id, name: row.name });
@@ -274,6 +290,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       if (!raw) return;
       const row = normalizeStudent(raw);
       setStudent(row);
+      setBalance(await getStudentBalance(supabase, row.id));
       setFamily(await fetchFamilyForStudent(row.sibling_family_id ?? null, session.access_token));
     } catch (err) {
       console.error('[student-detail] reloadStudent failed', err);
@@ -460,6 +477,23 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         />
         <KpiCard label={tDetail('lastSeen')} value={lastSeen ? formatDate(lastSeen, locale, 'short') : '—'} />
       </div>
+
+      {/* 1b. Balance (read-only, live-computed; positive = owed, negative = credit) */}
+      {balance !== null && (
+        <div className="mt-3">
+          <KpiCard
+            label={tDetail('balance')}
+            value={
+              <span
+                className={`tabular-nums ${balance > 0 ? 'text-red-600' : balance < 0 ? 'text-green-600' : ''}`}
+                dir="ltr"
+              >
+                {formatCurrency(balance, locale)}
+              </span>
+            }
+          />
+        </div>
+      )}
 
       {/* 2. Quick actions */}
       {(canCollect || canEdit) && (

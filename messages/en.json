@@ -5598,7 +5598,8 @@
       "visits": "Visits",
       "lastSeen": "Last seen",
       "family": "Family",
-      "noFamilyLinked": "No family linked yet"
+      "noFamilyLinked": "No family linked yet",
+      "balance": "Balance"
     },
     "nav": {
       "viewCart": "View cart",
@@ -9426,6 +9427,7 @@
     "annualBadge": "2 months free",
     "annualPriceHint": "Annual: {perMonth}/mo, billed {total}/year",
     "intervalSaved": "Billing cycle updated",
+    "intervalComingSoon": "Annual billing needs online payment, which is coming soon. Your billing cycle was not changed.",
     "currentPlan": "Your current plan",
     "planStandard": "Standard",
     "planPro": "Pro",

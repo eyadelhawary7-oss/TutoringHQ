@@ -18,6 +18,12 @@ supersedes everything else, including CLAUDE.md):
   the cascade.
 - Flat 20 EGP processing fee, one per charge invoice, config-driven
   (platform_config), snapshotted into invoice metadata.
+- Fee booking (Eyad 2026-07-16): the flat 20 EGP fee is REVENUE (nets
+  17.54, VAT inclusive); Paymob's percentage is COST OF SALES. Never net
+  the two - two separate lines, always. Paymob's published 2.75% + 3 EGP
+  is an unconfirmed assumption until Paymob confirms EHG's rate. No
+  percentage-based customer fee will be added; the percentage comes out
+  of margin.
 - Customer invoices: VAT is the LAST line (Egyptian فاتورة ضريبية legal
   requirement) and is inside the total.
 - MRR: only via getImpliedMonthlyMrr (src/lib/pricing.ts); test centers

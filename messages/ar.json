@@ -4277,7 +4277,8 @@
       "visits": "مرات الحضور",
       "lastSeen": "آخر حضور",
       "family": "العائلة",
-      "noFamilyLinked": "لا توجد عائلة مرتبطة بعد"
+      "noFamilyLinked": "لا توجد عائلة مرتبطة بعد",
+      "balance": "الرصيد"
     },
     "nav": {
       "viewCart": "عرض السلة",
@@ -9426,6 +9427,7 @@
     "annualBadge": "شهران مجانًا",
     "annualPriceHint": "السنوي: {perMonth}/شهر، يُدفع {total}/سنة",
     "intervalSaved": "تم تحديث دورة الفوترة",
+    "intervalComingSoon": "الفوترة السنوية تحتاج إلى الدفع الإلكتروني، وسيتوفّر قريبًا. لم يتم تغيير دورة الفوترة.",
     "currentPlan": "خطتك الحالية",
     "planStandard": "العادية",
     "planPro": "Pro",
