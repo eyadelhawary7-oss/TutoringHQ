@@ -52,6 +52,20 @@ export const TABLE_SCOPE: Record<string, ScopeRule> = {
   whatsapp_incoming:     { kind: 'forbidden' },
 };
 
+/**
+ * Centre roles allowed to WRITE attendance (i.e. "take attendance"). Eyad's rule
+ * (2026-07-17): only owners and assistants take attendance at a centre. Teachers are
+ * already blocked from this proxy entirely (Model B, below); the higher-privilege `admin`
+ * centre role is NOT on this list either, per the rule as written - if Eyad wants admins
+ * to scan too, add 'admin' here (see the PR note). This is a positive allow-list for the
+ * INSERT that records a scan; reads are deliberately unrestricted (owners and others view
+ * attendance). Every real center-scanner write funnels through the /api/db insert this
+ * gates, so this one check covers the whole surface. The teacher private-session engine
+ * writes attendance_scans directly via the service role (never through this proxy) and is
+ * unaffected. Super-admins bypass all scoping.
+ */
+export const ATTENDANCE_WRITER_ROLES = ['owner', 'assistant'] as const;
+
 export type ScopeCtx = {
   isSuperAdmin: boolean;
   actorCenterId: string | null;
@@ -125,6 +139,24 @@ export function planScope(input: ScopeInput): ScopePlan {
       status: 403,
       code: 'NO_CENTER',
       message: 'Caller has no associated center',
+    };
+  }
+
+  // Positive allow-list for taking attendance: only owners and assistants may INSERT an
+  // attendance_scans row (Eyad's rule, 2026-07-17). Teachers were already denied above;
+  // this additionally denies the `admin` role and any unexpected/blank role. Insert-only,
+  // so reading attendance is unaffected. Placed after the super-admin bypass and the
+  // no-center deny above, so it only constrains real, centre-scoped, non-super-admin writes.
+  if (
+    table === 'attendance_scans' &&
+    operation === 'insert' &&
+    !(ATTENDANCE_WRITER_ROLES as readonly string[]).includes(ctx.role ?? '')
+  ) {
+    return {
+      kind: 'deny',
+      status: 403,
+      code: 'ATTENDANCE_ROLE_FORBIDDEN',
+      message: 'Only centre owners and assistants may record attendance',
     };
   }
 
