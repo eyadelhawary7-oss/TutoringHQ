@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { planScope, applyForcedData, TABLE_SCOPE } from '@/lib/dbProxyScope';
+import { planScope, applyForcedData, TABLE_SCOPE, ATTENDANCE_WRITER_ROLES } from '@/lib/dbProxyScope';
 
 const ACTOR = '11111111-1111-1111-1111-111111111111';
 const FOREIGN = '22222222-2222-2222-2222-222222222222';
@@ -220,6 +220,85 @@ describe('planScope — teacher deny (Model B, centre-less)', () => {
       expect(plan.column).toBe('center_id');
       expect(plan.centerId).toBe(ACTOR);
     }
+  });
+});
+
+describe('planScope — attendance write allow-list (owner/assistant only)', () => {
+  const attInsert = (role: string | null) =>
+    planScope({
+      table: 'attendance_scans',
+      operation: 'insert',
+      filters: undefined,
+      ctx: { isSuperAdmin: false, actorCenterId: ACTOR, role },
+    });
+
+  it('the allow-list is exactly {owner, assistant}', () => {
+    expect([...ATTENDANCE_WRITER_ROLES].sort()).toEqual(['assistant', 'owner']);
+  });
+
+  it('OWNER may record attendance (direct plan)', () => {
+    const plan = attInsert('owner');
+    expect(plan.kind).toBe('direct');
+    if (plan.kind === 'direct') {
+      expect(plan.column).toBe('center_id');
+      expect(plan.centerId).toBe(ACTOR);
+    }
+  });
+
+  it('ASSISTANT may record attendance (direct plan)', () => {
+    expect(attInsert('assistant').kind).toBe('direct');
+  });
+
+  it('ADMIN is denied ATTENDANCE_ROLE_FORBIDDEN (privileged elsewhere, but not on the attendance allow-list)', () => {
+    const plan = attInsert('admin');
+    expect(plan.kind).toBe('deny');
+    if (plan.kind === 'deny') {
+      expect(plan.status).toBe(403);
+      expect(plan.code).toBe('ATTENDANCE_ROLE_FORBIDDEN');
+    }
+  });
+
+  it('an unexpected or blank role is denied ATTENDANCE_ROLE_FORBIDDEN (no more anyone-but-teacher)', () => {
+    expect(attInsert(null).kind).toBe('deny');
+    const p = attInsert('');
+    expect(p.kind).toBe('deny');
+    if (p.kind === 'deny') expect(p.code).toBe('ATTENDANCE_ROLE_FORBIDDEN');
+  });
+
+  it('TEACHER is still denied earlier — TEACHER_PROXY_UNSUPPORTED takes precedence', () => {
+    const plan = attInsert('teacher');
+    expect(plan.kind).toBe('deny');
+    if (plan.kind === 'deny') expect(plan.code).toBe('TEACHER_PROXY_UNSUPPORTED');
+  });
+
+  it('SUPER-ADMIN bypasses the allow-list (can insert attendance regardless of role)', () => {
+    const plan = planScope({
+      table: 'attendance_scans',
+      operation: 'insert',
+      filters: undefined,
+      ctx: { isSuperAdmin: true, actorCenterId: ACTOR, role: 'admin' },
+    });
+    expect(plan.kind).toBe('super_admin_bypass');
+  });
+
+  it('READS are unaffected: an admin SELECT on attendance_scans still returns a direct plan', () => {
+    const asAdmin = planScope({
+      table: 'attendance_scans',
+      operation: 'select',
+      filters: undefined,
+      ctx: { isSuperAdmin: false, actorCenterId: ACTOR, role: 'admin' },
+    });
+    expect(asAdmin.kind).toBe('direct'); // reading attendance is NOT restricted to owner/assistant
+  });
+
+  it('the allow-list is attendance-specific: an assistant INSERT on students is unaffected (direct plan)', () => {
+    const plan = planScope({
+      table: 'students',
+      operation: 'insert',
+      filters: undefined,
+      ctx: { isSuperAdmin: false, actorCenterId: ACTOR, role: 'assistant' },
+    });
+    expect(plan.kind).toBe('direct');
   });
 });
 
