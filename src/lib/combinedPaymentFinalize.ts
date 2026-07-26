@@ -258,6 +258,12 @@ export async function tryFinalizeCombinedPaymentSession(
         // Monthly→annual starts a FRESH 12-month term, so it resets next_payment_due
         // (rule 2 / G7 exception). A tier upgrade keeps the existing renewal date (G7),
         // so next_payment_due is left untouched in that case.
+        //
+        // DRAIN-ONLY: /api/billing/upgrade no longer mints sessions carrying
+        // `intervalSwitchToAnnual` — interval changes moved to checkout, so this
+        // branch exists purely to finalize sessions created BEFORE that change and
+        // still pending. Do not add new writers. Remove once no pending
+        // combined_payment_sessions row has metadata.intervalSwitchToAnnual = true.
         const intervalSwitchToAnnual = meta.intervalSwitchToAnnual === true;
         const centerUpdate: Record<string, unknown> = {
           plan: newPlan,

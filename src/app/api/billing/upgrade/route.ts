@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
-import { canUpgrade, getUpgradeCost, getSwitchToAnnualCharge } from '@/lib/billingEngine';
-import { getSummerConfig, summerHoldsCharges } from '@/lib/summer/config';
+import { canUpgrade, getUpgradeCost } from '@/lib/billingEngine';
 import {
   getAnnualChargeRounded,
   getChargeFromQuarterlyAllIn,
@@ -110,29 +109,42 @@ export async function POST(request: NextRequest) {
     c.subscription_billing_period ?? c.billing_period,
   ) as BillingPeriod;
 
-  // Monthly→annual (rule 2) is an INTERVAL switch, not a tier bump: it may keep the
-  // same plan (rank unchanged), so it bypasses the tier-rank gate. It still cannot
-  // be a tier DOWNgrade (that's the downgrade flow).
-  const isSwitchToAnnual = newBp === 'annual' && periodForLimit !== 'annual';
+  // Interval changes are NOT upgrades, and they no longer live on this route:
+  //   - monthly→annual is chosen at CHECKOUT, not as a mid-cycle upgrade;
+  //   - annual→monthly is not an upgrade path at all (it reduces cadence, so it
+  //     would have to be SCHEDULED at a renewal boundary, never charged here).
+  // Rejecting both here means everything past this point is a same-interval tier
+  // upgrade: `newBp === periodForLimit` holds, so the proration below always
+  // compares like with like (one daily-rate divisor, not two).
+  if (newBp !== periodForLimit) {
+    return newBp === 'annual'
+      ? NextResponse.json(
+          {
+            error: 'Switching to annual billing is done at checkout, not as a mid-cycle upgrade.',
+            code: 'INTERVAL_SWITCH_AT_CHECKOUT',
+            i18nKey: 'billing.upgrade.intervalSwitchAtCheckout',
+          },
+          { status: 400 },
+        )
+      : NextResponse.json(
+          {
+            error: 'Switching from annual to monthly billing is not an upgrade.',
+            code: 'INTERVAL_CHANGE_NOT_UPGRADE',
+            i18nKey: 'billing.upgrade.intervalChangeNotUpgrade',
+          },
+          { status: 400 },
+        );
+  }
 
-  if (isSwitchToAnnual) {
-    if (requestedRank < currentRank) {
-      return NextResponse.json(
-        { error: 'Use the Downgrade tab for a lower plan.', code: 'USE_DOWNGRADE' },
-        { status: 400 },
-      );
-    }
-  } else {
-    const gate = canUpgrade({
-      currentPlanRank: currentRank,
-      requestedPlanRank: requestedRank,
-      upgradeCountThisPeriod: Number(c.upgrade_count_this_period ?? 0),
-      billingPeriod: periodForLimit,
-    });
+  const gate = canUpgrade({
+    currentPlanRank: currentRank,
+    requestedPlanRank: requestedRank,
+    upgradeCountThisPeriod: Number(c.upgrade_count_this_period ?? 0),
+    billingPeriod: periodForLimit,
+  });
 
-    if (!gate.allowed) {
-      return NextResponse.json({ error: gate.reason ?? 'Upgrade not allowed' }, { status: 400 });
-    }
+  if (!gate.allowed) {
+    return NextResponse.json({ error: gate.reason ?? 'Upgrade not allowed' }, { status: 400 });
   }
 
   const npd = c.next_payment_due?.slice(0, 10);
@@ -179,62 +191,34 @@ export async function POST(request: NextRequest) {
     }
   })();
 
-  // amountDue + the proration audit fields, computed per the unified rule:
-  //   - interval switch to annual  → getSwitchToAnnualCharge (annual − unused credit, fresh term)
-  //   - tier upgrade (same interval) → getUpgradeCost (daily-rate difference, renewal kept)
-  let amountDue: number;
-  let switchCredit = 0;
-  let daysRemaining: number;
-  let dailyRateDifference = 0;
-
-  if (isSwitchToAnnual) {
-    // G9: no proration credit while summer holds charges (no money has moved).
-    const summerCfg = await getSummerConfig();
-    const sw = getSwitchToAnnualCharge({
-      annualFullPrice: newPlanFullPeriodPrice,
-      currentPeriodPrice,
-      currentBillingPeriod: periodForLimit,
-      nextPaymentDue: new Date(`${npd}T12:00:00`),
-      summerHoldsCharges: summerHoldsCharges(summerCfg),
-    });
-    amountDue = sw.charge;
-    switchCredit = sw.credit;
-    daysRemaining = sw.daysRemaining;
-    // Annual is 10 months vs at most ~3 months of credit, so the charge is always
-    // positive; the floor is a G3/G4 safety net, not an expected path.
-    if (amountDue <= 0) {
-      return NextResponse.json(
-        { error: 'Nothing to charge for this switch.', code: 'NO_CHARGE' },
-        { status: 400 },
-      );
-    }
-  } else {
-    const cost = getUpgradeCost({
-      newPlanPrice: newPeriodPrice,
-      currentPlanPrice: currentPeriodPrice,
-      newBillingPeriod: newBp,
-      currentBillingPeriod: periodForLimit,
-      nextPaymentDue: new Date(`${npd}T12:00:00`),
-    });
-    daysRemaining = cost.daysRemaining;
-    dailyRateDifference = cost.dailyRateDifference;
-    const cappedProratedCost = Math.min(
-      Math.max(0, cost.amountDue),
-      Number.isFinite(newPlanFullPeriodPrice) && newPlanFullPeriodPrice > 0
-        ? newPlanFullPeriodPrice
-        : newPeriodPrice,
+  // Same-interval tier upgrade — the only shape this route serves. Charge the
+  // daily-rate difference for the days left in the paid period and keep the
+  // existing renewal date (G7).
+  const cost = getUpgradeCost({
+    newPlanPrice: newPeriodPrice,
+    currentPlanPrice: currentPeriodPrice,
+    newBillingPeriod: newBp,
+    currentBillingPeriod: periodForLimit,
+    nextPaymentDue: new Date(`${npd}T12:00:00`),
+  });
+  const daysRemaining = cost.daysRemaining;
+  const dailyRateDifference = cost.dailyRateDifference;
+  const cappedProratedCost = Math.min(
+    Math.max(0, cost.amountDue),
+    Number.isFinite(newPlanFullPeriodPrice) && newPlanFullPeriodPrice > 0
+      ? newPlanFullPeriodPrice
+      : newPeriodPrice,
+  );
+  const amountDue = Math.round(cappedProratedCost * 100) / 100;
+  if (cappedProratedCost <= 0 || amountDue <= 0) {
+    return NextResponse.json(
+      {
+        error: 'This would not increase your plan cost. Use the Downgrade tab.',
+        code: 'USE_DOWNGRADE',
+        i18nKey: 'billing.upgrade.useDowngrade',
+      },
+      { status: 400 },
     );
-    amountDue = Math.round(cappedProratedCost * 100) / 100;
-    if (cappedProratedCost <= 0 || amountDue <= 0) {
-      return NextResponse.json(
-        {
-          error: 'This would not increase your plan cost. Use the Downgrade tab.',
-          code: 'USE_DOWNGRADE',
-          i18nKey: 'billing.upgrade.useDowngrade',
-        },
-        { status: 400 },
-      );
-    }
   }
 
   // Processing-fee layout (Section 5): the prorated charge is the subscription value;
@@ -245,14 +229,9 @@ export async function POST(request: NextRequest) {
     applyProcessingFee(amountDue, feeCfg);
 
   const today = new Date().toISOString().slice(0, 10);
-  // Monthly→annual starts a FRESH 12-month term (rule 2 / G7 exception); a tier
-  // upgrade keeps the current renewal date (G7), so its invoice period ends at npd.
-  const freshTermEndYmd = (() => {
-    const d = new Date(`${today}T12:00:00.000Z`);
-    d.setUTCMonth(d.getUTCMonth() + 12);
-    return d.toISOString().slice(0, 10);
-  })();
-  const invoicePeriodEnd = isSwitchToAnnual ? freshTermEndYmd : npd;
+  // A tier upgrade keeps the current renewal date (G7), so the difference invoice
+  // covers the remainder of the CURRENT period and ends at npd.
+  const invoicePeriodEnd = npd;
   const code = (c.center_code ?? 'XXX').toString().replace(/\s+/g, '') || 'XXX';
   const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
   const invoiceNumber = `UPG-${code}-${today.slice(0, 7)}-${suffix}`;
@@ -272,16 +251,8 @@ export async function POST(request: NextRequest) {
       status: 'pending',
       discount_amount: 0,
       // processing_fee drives the redesigned totals (charge → fee → total, VAT shown
-      // as included). For monthly→annual we also render the prorated credit line.
-      metadata: isSwitchToAnnual
-        ? {
-            processing_fee: processingFee,
-            interval_switch_to_annual: true,
-            new_plan_amount: newPlanFullPeriodPrice,
-            old_plan_credit: switchCredit,
-            days_remaining: daysRemaining,
-          }
-        : { processing_fee: processingFee },
+      // as included).
+      metadata: { processing_fee: processingFee },
     })
     .select('id')
     .single();
@@ -312,13 +283,11 @@ export async function POST(request: NextRequest) {
         dailyRateDifference,
         amountCharged: chargedTotal,
         processingFee,
-        switchCredit,
         newPlanFullPeriodPrice,
-        // Monthly→annual resets the renewal clock to a fresh 12-month term; a tier
-        // upgrade keeps the existing anchor (G7). Finalize reads these.
-        intervalSwitchToAnnual: isSwitchToAnnual,
-        billingAnchorYmd: isSwitchToAnnual ? freshTermEndYmd : npd,
-        freshTermEndYmd: isSwitchToAnnual ? freshTermEndYmd : null,
+        // A tier upgrade keeps the existing renewal anchor (G7). Finalize records
+        // it as upgrade_log.billing_anchor_unchanged and the Paymob webhook uses
+        // it for the payment-confirmed WhatsApp period line.
+        billingAnchorYmd: npd,
       },
     })
     .select('id')
@@ -364,12 +333,11 @@ export async function POST(request: NextRequest) {
       breakdown: {
         daysRemaining,
         dailyRateDifference,
-        switchCredit,
         amountDue: subscriptionValue,
         processingFee,
         chargedTotal,
       },
-      newNextPaymentDue: isSwitchToAnnual ? freshTermEndYmd : npd,
+      newNextPaymentDue: npd,
       upgrade_count_this_period: Number(c.upgrade_count_this_period ?? 0),
     });
   } catch (e) {
