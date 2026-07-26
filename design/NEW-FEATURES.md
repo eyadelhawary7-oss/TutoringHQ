@@ -1,0 +1,1060 @@
+# New features in the design — build spec
+
+**Written 26 July 2026. Companion to `design/INVENTORY.md`. Nothing was built or changed.**
+Model: `claude-opus-5`.
+
+`INVENTORY.md` answers *which designs replace something live*. This document covers the other half:
+the designs that were drawn **ahead of the platform**. They are not restyles. Applied as restyles
+they render an empty screen, or worse, charge someone the wrong amount.
+
+## How to read this
+
+**Three sections, in the order you should work through them:**
+
+- **A — build, no decision needed.** The design is complete and self-consistent, the dependencies exist, nothing is waiting on anyone.
+- **B — blocked on a decision from you.** A number, a model, or a conflict between the design and what the platform charges today.
+- **C — blocked on someone outside.** Valify, Paymob, Adsero, an accountant, or the ETA.
+
+**Two kinds of feature appear here**, and the second is the dangerous one:
+
+1. **From `INVENTORY.md` list 2** — no live route at all. Obvious.
+2. **From `INVENTORY.md` list 1** — a live route exists, so it *looks* like a restyle, but the design specifies behaviour the route does not have. Ten features in this document are of that kind. They are marked **`LOOKS LIKE A RESTYLE`**. B13 is an eleventh, where I now think the `INVENTORY.md` mapping itself is wrong.
+
+**Sources.** The 26 `Merged-*.html` files, read section by section, and the live code under `src/`.
+No live database was queried — route and code existence come from the filesystem. Every column still
+has to be checked against `information_schema.columns` at build time.
+
+**Where I am not sure, I say so.** Appendix C lists eleven open questions rather than guessing at them.
+
+## Feature summary
+
+| | Feature | Touches |
+|---|---|---|
+| **A1** | Lead capture funnel — `/talk-to-us` + `/admin/demo-requests` | none |
+| **A2** | Admin teacher list and teacher account detail | money (read) |
+| **A3** | Coming Soon pattern and locked entry rows | account state |
+| **A4** | Card orders coming-soon screen | account state |
+| **A5** | Teacher student detail as its own surface | money |
+| **A6** | Teacher earnings calculator as its own screen | none |
+| **A7** | CEO centers benchmark, verified vs unverified | money (read) |
+| **A8** | Empty and loading states, row-action patterns | none |
+| **B1** | **The collection fee model** — the decision under B2–B4 | money |
+| **B2** | Online collection for centers (Collect for me) | money, account state |
+| **B3** | Online collection for teachers (Collect for you) | money, account state |
+| **B4** | Provider balance, clearing and withdrawal | money |
+| **B5** | WhatsApp Pack as a one-time top-up | money |
+| **B6** | Teacher WhatsApp screen and message allowance | money |
+| **B7** | Referral rate step-down window | money |
+| **B8** | Referral earnings: credit vs withdraw, and the minimum | money, account state |
+| **B9** | Advanced Analytics as a paid add-on | money, account state |
+| **B10** | Benchmarks as a paid add-on | money, account state |
+| **B11** | Extra team seats as a paid add-on | money |
+| **B12** | Group billing basis: per session, monthly, bundle | money |
+| **B13** | Admin Center Assignments — two features, one route name | money |
+| **B14** | Parent payment page | money |
+| **B15** | Plan naming across every screen that shows a plan | money |
+| **C1** | Identity verification (e-KYC via Valify) | auth, account state |
+| **C2** | Verified as a second account state across the platform | money, account state |
+| **C3** | Center → teacher split payouts | money |
+| **C4** | Tax documents: ETA e-receipt and e-invoice | money |
+| **C5** | Admin money ledgers for collection | money |
+| **C6** | Legal document text | none |
+| **C7** | Self-enrollment: the minor-consent question | account state |
+
+---
+
+# A. BUILD, no decision needed
+
+## A1. Lead capture funnel
+
+**What it is:** A five-field "have us call you" form at `/talk-to-us` whose submissions land in the
+existing admin queue and route to the rep who owns that area.
+
+**Designs:** `Merged-Public-Marketing` §04 (Lead Capture). The receiving end is `/admin/demo-requests`,
+which has no design at all — see Appendix B.
+
+**Exists today:** Partial, and more than expected.
+- `POST /api/demo-request` exists.
+- `/{locale}/admin/demo-requests` exists (180 lines) with `pending / contacted / approved / rejected` statuses.
+- `/{locale}/demo-request` exists as a 55-line stub: a logo, one line of copy, and a hardcoded `wa.me/201001234567` link. No form.
+- Territory data exists — `center_assignments` carries `territory_city` and `territory_override_reason`.
+
+**Has to be built:**
+- Route `/{locale}/talk-to-us` (and add the prefix to `AUTHENTICATED_ROUTE_PREFIXES`? No — it is public; confirm it is not caught by the CORS allowlist for `/api/*` mutations).
+- Five fields: name, mobile, center name, **area**, rough student count. Verify each against the live `demo_requests` columns before writing the insert — the current stub writes nothing, so the table may not have `area` or `student_count`.
+- Area → territory → rep routing on insert, reusing `territory_city`.
+- Submitted state: names the covering area back to the user, then keeps "Start free trial now" on screen.
+- Decide what happens to `/demo-request` (Appendix B) — the two cannot both be the lead door.
+- Admin side: surface the new fields in `/admin/demo-requests`, which currently shows name / phone / email / center_name / status / notes.
+
+**Touches:** none — no money, no auth, no account state.
+
+**Depends on:** nothing. This is the cleanest build in the document.
+
+**Design intent — do not "improve" these away:**
+- **It is not a demo booking.** No calendar, no time slots. The design says so twice.
+- **Area is the load-bearing field**, not a nice-to-have. It is what gives a rep's claim something to attach to. Do not make it optional or turn it into a free-text city.
+- **The submitted state keeps the free trial in front of them.** The design's stated reason: waiting for a call is the most expensive thing that can happen to a warm lead. Do not replace it with a plain "thanks, we'll be in touch".
+- **WhatsApp stays as a third door**, below the form, 10am–6pm. Do not remove it in favour of the form.
+
+## A2. Admin teacher list and teacher account detail
+
+**What it is:** The teacher half of the admin portal — a solo-teacher list beside the center list, and
+a teacher account detail page.
+
+**Designs:** `Merged-Admin-Platform` §01 (frame captioned `/admin/teachers`), `Merged-Admin-Accounts`
+§01 (frame captioned `/admin/teachers/[id]`).
+
+**Exists today:** Nothing. `/{locale}/admin/centers/page.tsx` has no `owner_type` filter and there is
+no teacher list or teacher detail under `/admin`. Note that several *other* admin pages do carry an
+owner filter (`/admin/billing`, `/admin/finance`, `/admin/renewals` all call `normalizeOwnerFilter`),
+so the data model already distinguishes the two customer types — only these two screens do not.
+
+**Has to be built:**
+- Routes `/{locale}/admin/teachers` and `/{locale}/admin/teachers/[id]`.
+- Register both under `AUTHENTICATED_ROUTE_PREFIXES` (`/admin` already covers them).
+- Filter chips: All / Active / Trial / Overdue / Unverified. **The Unverified chip depends on C1.**
+- Teacher detail: same shape as center detail minus staff and branches, which the design states teachers do not have.
+- Admin overview: split customers, revenue and students across centers and teachers; revenue mix as Subscriptions / Add-ons / WhatsApp packs.
+
+**Touches:** money (read only — MRR, revenue mix).
+
+**Depends on:** C1 for the Unverified filter only. Everything else is buildable now.
+
+**Design intent:** the overview treats centers and solo teachers as **two co-equal customer types**,
+not one main type with an exception. Every headline number is split. Do not collapse them back into a
+single total with a filter.
+
+## A3. Coming Soon pattern and locked entry rows
+
+**What it is:** One pattern for any feature that is not on yet — a calm full screen that names the
+working alternative, plus a locked list row with a "Coming soon" badge.
+
+**Designs:** `Merged-Lifecycle` §06.
+
+**Exists today:** Nothing as a pattern. Live behaviour is ad hoc: the Orders sidebar item is *hidden
+entirely* when `card_orders_enabled` is false (`src/components/Sidebar.tsx:166`), the scanner has a
+settings page but no gate screen, and `WhatsAppTemplatesClient.tsx` has its own inline coming-soon
+handling.
+
+**Has to be built:**
+- A shared `ComingSoon` screen component and a locked-row variant for settings lists.
+- Wire the four cases the design names: attendance cards, ordering, printing, card scanning.
+- Decide per case whether the entry is hidden or shown-and-locked. **The design says shown-and-locked.**
+
+**Touches:** account state (what a center can reach).
+
+**Depends on:** nothing. Belongs in Session 2 foundations, not a screen PR.
+
+**Design intent:** the full screen **always points to the working alternative** ("Take attendance with
+the checklist"). A coming-soon screen with no exit is the failure mode this pattern exists to prevent.
+Hiding the row entirely — what the sidebar does today — is explicitly not the pattern.
+
+## A4. Card orders coming-soon screen
+
+**What it is:** The teaser a center sees while card ordering is gated: card preview, four-point
+feature list, notify-me, and the notified confirmation.
+
+**Designs:** `Merged-Center-Orders` §04.
+
+**Exists today:** The gate exists (`centers.card_orders_enabled`, checked in `Sidebar.tsx:166`) but
+there is no screen — the nav item just disappears. `/{locale}/orders` itself is a full working
+ordering flow.
+
+**Has to be built:**
+- The gated state of `/{locale}/orders`, rendered when `card_orders_enabled` is false, instead of hiding the route.
+- A notify-me registration and its confirmation state. **Verify the destination table exists before writing to it** — no `card_order_waitlist` or equivalent was found.
+- WhatsApp notification when the feature launches, which needs a template.
+
+**Touches:** account state.
+
+**Depends on:** A3 for the shared pattern. Template approval if the notify-me message is a WhatsApp
+template rather than an internal list.
+
+**Design intent:** the notify-me is the whole point of the screen. Without it this is just a hidden
+nav item with extra steps.
+
+## A5. Teacher student detail as its own surface
+
+**What it is:** A teacher's view of one student — their contact, the parent's contact, an outstanding
+balance collectable in place, attendance, and recent classes.
+
+**Designs:** `Merged-Teacher-Students` §02. **`LOOKS LIKE A RESTYLE`** — `INVENTORY.md` maps it to
+`/{locale}/teacher/students`, which is true only in the sense that the live version is a modal.
+
+**Exists today:** Partial. `src/app/[locale]/teacher/AllStudentsList.tsx` opens a modal on
+`openStudentId` with a small amount of detail. The design draws a full screen reached from four
+places: Students, attendance, a session record, and a group.
+
+**Has to be built:**
+- Decide route vs modal. The design's "opens whenever a teacher taps a student's name, from Students, attendance, a session record or a group" implies a route, because a modal cannot be opened from four different screens without four wirings.
+- Collect-in-place action on the outstanding balance — the modal has no such action today.
+- Entry points from the three surfaces that do not have one.
+
+**Touches:** money (outstanding balance, collection).
+
+**Depends on:** the collect action's behaviour differs verified vs unverified (C2). The read-only
+half is buildable now.
+
+**Design intent:** the parent's contact sits beside the student's, because the parent is who gets
+chased. Do not drop it to save vertical space.
+
+## A6. Teacher earnings calculator as its own screen
+
+**What it is:** Pick a plan, set students and average fee, see estimated monthly income and how small
+the plan is as a share of it.
+
+**Designs:** `Merged-Teacher-Money` §02. **`LOOKS LIKE A RESTYLE`** — mapped in `INVENTORY.md` to
+`/{locale}/teacher` because the live version is a card on the home page.
+
+**Exists today:** Partial. `src/app/[locale]/teacher/IncomeCalculator.tsx`, rendered once at
+`teacher/(portal)/page.tsx:423`.
+
+**Has to be built:**
+- Promote to a screen, or decide it stays a card. The design draws it as a screen inside `Merged-Teacher-Money`, beside Income and Billing.
+- Plan picker driven by live plan data, not hardcoded — see **B15** on plan names.
+
+**Touches:** none — display-only arithmetic, no charge.
+
+**Depends on:** B15 (which plan names it shows).
+
+**Design intent, and it is unusually specific:** *"The percentage only ever appears as an output the
+teacher generated, and it shrinks as they grow."* The plan cost is never presented as a headline
+percentage. A builder tidying this into "your plan costs X% of income" inverts the entire argument
+the screen exists to make.
+
+## A7. CEO centers benchmark, verified vs unverified
+
+**What it is:** An internal comparison of verified against unverified centers on revenue, students,
+retention and overdue, plus the unverified centers worth chasing, ranked by MRR.
+
+**Designs:** `Merged-CEO` §03.
+
+**Exists today:** Nothing. `/{locale}/ceo/page.tsx` is 1,230 lines with sections for pipeline,
+activation, health, cash, ops and control, and **zero occurrences of "verified"**.
+
+**Has to be built:**
+- Route or `/ceo` section — the design uses the admin five-item bottom nav, so placement needs settling with the wider admin IA question (Appendix C).
+- Cohort aggregate: centers count, avg MRR, avg students, retention, overdue rate, growth MoM, split by verification.
+- Chase queue: unverified centers sorted by MRR.
+
+**Touches:** money (read only).
+
+**Depends on:** **C1.** Buildable today, but every row reads 0 / 100% until verification ships. That
+is a real dependency, not a soft one — do not build this expecting to see the design's numbers.
+
+**Design intent:** it is *"a benchmark, not a full dashboard"*. Two screens, six metrics, one ranked
+list. Do not grow it into a third exec dashboard beside `/ceo` and `/admin`.
+
+## A8. Empty and loading states, and the row-action pattern set
+
+**What it is:** Six pattern sheets covering the first hour of a real center and the second every
+screen spends waiting, plus four alternative row-interaction gestures.
+
+**Designs:** `Merged-Design-Patterns` §01 Empty States, §02 Loading States, §03 Row action patterns,
+§04 Quick menu rows, §05 Group actions, §06 Expand sheet merge.
+
+**Exists today:** Partial and inconsistent. Skeletons exist on a handful of screens
+(`animate-pulse` blocks in the teacher portal, `loading.tsx` under `whatsapp-pack`). Empty states are
+written per screen. The design's own note: the zero state *"was drawn nowhere across the other 26
+files, which meant it would have been invented separately on each screen it appears on."*
+
+**Has to be built:** the shared component set. This is **Session 2, PR 4** work from
+`START-CLAUDE-CODE.md`, not screen work, and it should land before Phase A.
+
+**Touches:** none.
+
+**Depends on:** Session 2 PRs 1–3 (tokens, type, language system).
+
+**Design intent:** §02 says explicitly *"Nothing here is new invention, it is the existing treatment
+written down so it does not get reinvented."* Match what four screens already do; do not design a new
+skeleton. §06 merges the expand-in-place and bottom-sheet patterns — build the merged one, not both.
+
+---
+
+# B. BLOCKED ON A DECISION FROM YOU
+
+## B1. The collection fee model
+
+**This is one decision, and B2, B3, B4, B14 and C5 all sit on top of it.** It is listed as a feature
+because nothing below it can be specified until it is made.
+
+**What it is:** The design specifies a three-source revenue model for online collection that does not
+appear anywhere in `docs/PRICING_SPEC.md`.
+
+**Designs:** `Merged-Center-Attendance` §02, `Merged-Center-Money` §04 §05, `Merged-Public-App` §04,
+`Merged-Teacher-Money` §04 §05, `Merged-Admin-Money` §01, `Merged-Verification-Payouts` §06,
+`Merged-Center-Groups` §02.
+
+**The numbers, as drawn:**
+
+| Component | Rate | Charged to | Where it appears |
+|---|---|---|---|
+| Collection fee | **10%** of tuition | provider | Provider keeps 90%. `Merged-Center-Attendance` §02, `Merged-Center-Money` §05 |
+| Price markup | **7.5% + 7.5 EGP** | parent | Baked into the displayed price. `Merged-Center-Groups` §02 |
+| Processing fee | **1.5% + 1.5 EGP** | parent | Shown as a separate line. `Merged-Public-App` §04 |
+
+The arithmetic is internally consistent across screens — 150 → 168.75 → 172.78, and 1,000 → 1,082.50
+→ 1,100.24 — and `Merged-Admin-Money` §01 reconciles the three sources to a single revenue figure
+(32,000 + 33,000 + 7,095 = 72,095).
+
+**Exists today:** none of it. Live money is subscription revenue only.
+
+**⚠ The name "processing fee" is already taken, and it means something else.**
+`src/lib/processingFee.ts` defines a **flat 20 EGP** fee added to every Paymob-charged **subscription
+or pack invoice**, paid by the **center or teacher**, configurable via `platform_config`
+(`processing_fee_enabled`, `processing_fee_amount`), snapshotted into `invoices.metadata.processing_fee`.
+The design's processing fee is **1.5% + 1.5 EGP charged to a parent on tuition**. Different rate,
+different payer, different invoice. A builder who sees "processing fee" and reaches for
+`resolveProcessingFeeAmount()` will charge a parent 20 EGP flat. **Name the new one something else.**
+
+The WhatsApp Pack design (`Merged-Center-WhatsApp` §02, §03) correctly uses the *existing* 20 EGP
+fee — so both meanings appear inside the same design set.
+
+**What has to be decided:**
+1. Are the three rates correct and approved? None is in `PRICING_SPEC.md`.
+2. Is the parent markup (7.5% + 7.5) disclosed to the parent, or only the final price? The design shows the final price with **no breakdown of it**, then the 1.5% + 1.5 separately with its formula.
+3. Does the 14%-VAT-inclusive rule apply, and to which components? `Merged-Admin-Money` §01 shows "VAT on our fees −8,854" as a separate cost line.
+4. What is the new fee called, given the collision above.
+
+**Touches:** money. Every part of it.
+
+**Depends on:** nothing external. This is yours to settle, and it unblocks the largest cluster in the
+document.
+
+**Design intent:** the parent sees **one price for the session** plus one separately-stated
+processing fee. The provider's cut, the markup and the platform's margin never appear on the parent's
+screen. `Merged-Public-App` §04: *"the parent is buying a session, not a bundle of fees."*
+
+## B2. Online collection for centers ("Collect for me")
+
+**What it is:** A center verifies, TutoringHQ invoices each parent, collects, and processes the money
+to the center's bank every Thursday.
+
+**Designs:** `Merged-Center-Attendance` §02 (opt-in, activated, tax status). The verified states of
+`Merged-Center-Home` §01, `Merged-Center-Students` §03, `Merged-Center-Groups` §02,
+`Merged-Center-Money` §02, `Merged-Center-Setup` §08 all assume it is on.
+
+**Exists today:** Nothing. Live payments are *recorded*, not processed — `/{locale}/payments` is a
+ledger with methods cash / instapay / vodafone_cash / orange_cash / fawry / bank_transfer, and the
+design's own note on the live model is *"The app records payments, it does not process them."*
+
+**Has to be built:**
+- Data model: center collection opt-in flag; a center balance with **Pending** and **Available** buckets; the Thursday clearing job that moves Pending → Available; per-payment split records (tuition, collection fee, markup, processing fee).
+- Routes: the opt-in screen, the activated online-collection screen, the tax-status sub-screen.
+- Logic: invoice-per-parent generation on session billing; Paymob collection against those invoices; the per-student, per-session **cash switch** taken during attendance.
+- Integrations: Paymob (collection), C4 (receipt issuance), C1 (the verification gate).
+- Tax status: registered (tax card on file → e-invoice) vs unregistered (→ e-receipt), editable at any time, switching from the next document onward.
+
+**Touches:** money, account state.
+
+**Depends on:** **B1** (the rates), **C1** (verification), **C4** (documents).
+
+**Design intent:**
+- **"Every group collects digitally, always."** There is no cash-only group and no cash-only student. Cash is a switch made for **one student in one session, while taking attendance** — nothing else. A builder adding a "cash group" type or a per-student cash flag is undoing the central decision of this feature.
+- **The center's price is untouched.** They enter their fee, they keep 90% of it, the parent pays their fee plus the markup. Do not present the markup as a discount on the center's fee.
+- **Thursday is a clearing date, not a payout.** Money moves Pending → Available on Thursday; withdrawing is always the center's own action (see B4). Do not build an automatic Thursday payout.
+- **"One fee, nothing else deducted."** The opt-in states exactly one deduction. Adding a second visible deduction breaks the promise the screen makes.
+
+## B3. Online collection for teachers ("Collect for you")
+
+**What it is:** The same product for an independent teacher, opted into from a screen that states the
+fee only in categories, never as a number.
+
+**Designs:** `Merged-Teacher-Money` §05 (opt-in), `Merged-Verification-Payouts` §02 (automated vs
+manual fee collection), and the verified halves of `Merged-Teacher-Home` §01, `Merged-Teacher-Money`
+§01, `Merged-Teacher-Setup` §01, `Merged-Teacher-Groups` §05.
+
+**Exists today:** Nothing. The teacher session flow calls `finish_class_and_bill`, which creates
+pending charges the teacher then marks paid by hand
+(`/api/teacher/private/transactions/[transactionId]/mark-paid`).
+
+**Has to be built:** the same stack as B2, plus:
+- The manual → automated transition on the fee-collection surface, with both states drawn.
+- Teacher balance, distinct from the center balance.
+
+**Touches:** money, account state.
+
+**Depends on:** **B1**, **C1**, **C4**. Also **the fee number itself is not in the design** — see below.
+
+**Design intent, and this one is deliberate and fragile:**
+- The teacher opt-in screen states the fee as **plain categories with no figures beside them** — "Card and wallet fees · Payment processing · Taxes · Support · The platform" — under a heading marked *"Private to you"*. The design note says the intent is that *"the margin stays private without inventing anything."*
+- `Merged-Verification-Payouts` §06 nevertheless shows a **10% collection fee** on the teacher expense receipt.
+- **So the number is disclosed on the receipt but withheld on the opt-in.** That is either intentional (you agree to a fee, you see it once money moves) or an inconsistency. **This needs your call**, and it is exactly the "the amount shown differs from the amount charged" case `START-CLAUDE-CODE.md` asks for adversarial review on.
+- The design is marked *"draft pending legal review"* — see C6.
+
+## B4. Provider balance, clearing and withdrawal
+
+**What it is:** How a verified center or teacher gets collected money out — a free monthly payout, a
+priced extra payout, and a priced instant payout.
+
+**Designs:** `Merged-Center-Money` §04 (center withdrawal), `Merged-Teacher-Money` §04 (teacher
+instant payout), `Merged-Center-Money` §05 (payout statements).
+
+**Exists today:** Nothing for tuition. The only withdrawal in the product is **referral credit**
+(`ReferralWithdrawalPanel`, `/admin/withdrawals`, `computeReferralPayout`), which is a different
+balance with a different fee schedule.
+
+**The fee schedule, as drawn (center):**
+
+| Case | Charge |
+|---|---|
+| One payout a month | Free, at any amount, allowance resets on the 1st |
+| Extra payout under 10,000 | 250 EGP |
+| Extra payout over 10,000 | 2% |
+| Instant, under 10,000 | 250 EGP |
+| Instant, over 10,000 | 3% |
+
+All prices stated VAT-inclusive. Instant is always charged, **even on the free monthly one**. There
+is no minimum withdrawal. The teacher screen shows a flat 300 EGP instant fee on 8,400 — which is
+3.57%, matching neither band, so **the teacher schedule is either different or the sample is loose.**
+
+**Has to be built:**
+- Balance model with Pending / Available, the Thursday clearing job, and a monthly free-payout allowance that resets on the 1st.
+- Withdrawal request → bank batch, with the fee computed and shown before confirmation.
+- The small-withdrawal guard: at 500 EGP the design shows the fee **as a share of the withdrawal** ("250 EGP, which is half of this withdrawal") with a "Leave it to build" option beside "Withdraw 250 anyway".
+- Payout statements: tuition collected, collection fee, payout charge, paid to you, downloadable.
+
+**Touches:** money.
+
+**Depends on:** **B1**, **B2**/**B3**, **C1**. The bank-batch mechanics overlap **C3**.
+
+**Design intent:**
+- **The fee is shown as a share, not a bare number, on small withdrawals.** The stated reason: *"so nobody does it by accident."* Do not replace it with a flat "250 EGP fee" line.
+- **"Our own banded cost never appears."** The design deliberately hides the platform's own banking cost and handles split-to-avoid-a-band behind the screen. Do not surface it.
+- **Withdrawing is always the provider's action.** Never automatic.
+
+## B5. WhatsApp Pack as a one-time top-up
+
+**What it is:** Replacing the per-parent monthly pack with a one-time message credit that never
+expires, in two non-fungible types.
+
+**Designs:** `Merged-Center-WhatsApp` §02 (pack), §03 (custom-amount flow). **`LOOKS LIKE A RESTYLE`**
+— `INVENTORY.md` maps both to `/{locale}/whatsapp-pack`, which exists and works.
+
+**Exists today:** A different product at the same route.
+- Live: `PACK_PRICE_PER_PARENT = 12`, `parent_pack_enabled`, `parent_pack_active_parents`, per-plan `ANNOUNCEMENT_CAPS` (nano 700 … top_centers 99999), `BLAST_PRICE_PER_PARENT`, plus a `pack_request_status` approval flow. Billed monthly, per parent.
+- Design: buy N messages once, credit never expires and carries over.
+
+**The design's price ladder:**
+
+| Notifications | Rate | Promotions | Rate |
+|---|---|---|---|
+| 200 (Mini) | 1 EGP/msg → 200 EGP | 200 | 7 EGP/msg → 1,400 EGP |
+| 1,000 (Standard) | 0.75 EGP/msg → 750 EGP | 1,000 | 7 EGP/msg → 7,000 EGP |
+| 5,000 (Plus) | 0.5 EGP/msg → 2,500 EGP | 5,000 | 7 EGP/msg → 35,000 EGP |
+| Custom | banded 1 / 0.75 / 0.5 | Custom | flat 7 |
+
+VAT inclusive, plus the **existing flat 20 EGP processing fee**, billed via Paymob. Center and
+teacher rates are identical.
+
+**Has to be built:**
+- Credit-balance data model, two separate non-fungible balances, never expiring.
+- Custom-amount flow: amount → banded rate → total → Paymob confirm → done.
+- Migration path for centers currently on the per-parent monthly pack, including anyone mid-cycle and anyone with a `pack_request_status` in flight.
+- Retire or keep `ANNOUNCEMENT_CAPS` — plan-based caps make no sense against a never-expiring purchased balance.
+
+**Touches:** money. **This changes what an existing customer is charged**, which is why it is in B.
+
+**What has to be decided:**
+1. Do you want the model change at all, or the design's layout on the current model?
+2. What happens to centers already billed per-parent — grandfathered, migrated with a credit grant, or switched at renewal?
+3. Do the plan-based announcement caps survive?
+4. The design says center and teacher rates are identical. Live has no teacher pack at all (see B6).
+
+**Design intent:**
+- **Two credit types that cannot be spent on each other.** *"so a reminder pack can't be spent on promotions."* A single pooled balance is simpler and is the wrong answer.
+- **Promotions price flat, notifications step down by volume**, because marketing messages cost more to send. Do not apply the volume ladder to promotions.
+- **Credit never expires and carries over.** This is the whole pitch — *"like topping up phone credit."*
+
+## B6. Teacher WhatsApp screen and message allowance
+
+**What it is:** The teacher portal's WhatsApp surface — balance, what used it, the template list, and
+a split between messages the platform pays for and messages the teacher pays for.
+
+**Designs:** `Merged-Teacher-WhatsApp` §01.
+
+**Exists today:** Nothing. The design's own note: *"The teacher portal had no WhatsApp screen at all,
+despite teachers getting bundled credit, buying the same packs at the same rate, and messaging
+parents every week."* No `/teacher/whatsapp` route, no teacher pack.
+
+**Has to be built:**
+- Route `/{locale}/teacher/whatsapp`.
+- **A plan-included monthly message allowance** — the design says *"Your Pro plan includes 50 a month. They reset on the 1st."* No such entitlement exists in live plan data.
+- Teacher-side pack purchase at the same rates as centers (depends on B5).
+- The platform-paid vs teacher-paid split: payment links, receipts and collected-session reminders are *"on us"* and cannot be turned off; welcome / fee reminder / session-changed come out of the teacher's balance.
+- A teacher template set, deliberately shorter than the center's.
+
+**Touches:** money.
+
+**Depends on:** **B5** (the pack model), and the allowance decision below. The platform-paid half
+depends on **B3**, since those messages only exist when the platform collects.
+
+**What has to be decided:** how many messages each teacher plan includes, and whether the allowance
+resets or accrues. The design says resets on the 1st while purchased credit never expires — two
+different behaviours in one balance, which needs to be modelled deliberately.
+
+**Design intent:** the screen **separates what we pay for from what they pay for**, so a teacher is
+never surprised by a charge. Merging the two counters back into one total defeats the screen.
+
+## B7. Referral rate step-down window
+
+**What it is:** The design shortens the 10% commission window from eleven months to five.
+
+**Designs:** `Merged-Center-Insight` §03 (Referrals), `Merged-Teacher-Insight` §02 (Teacher Referrals).
+**`LOOKS LIKE A RESTYLE`** — `/{locale}/referrals` is live and `INVENTORY.md` lists it as a restyle.
+
+**Exists today:** `src/app/api/referrals/process-commission/route.ts:105-108`:
+
+```
+months === 1        → 0.25
+months <= 12        → 0.10
+else                → 0.05
+```
+
+**The design states, on both screens:** 25% month 1 · 10% **months 2–6** · 5% **month 7+**.
+
+**This roughly halves what a referrer earns in year one.** On a 899 EGP/mo plan: live pays
+225 + (11 × 90) + … ; the design pays 225 + (5 × 90) + (6 × 45). It is a live commission change
+affecting people who have already been told a rate.
+
+**Has to be built (once decided):**
+- The rate function, in one place. Today it is inline in the cron route.
+- Per-referral rate display, monthly pay, and **days until it drops** — none of which the live screen shows.
+- A referral detail showing the exact step dates.
+- Whatever grandfathering the decision implies for existing referrals.
+
+**Touches:** money.
+
+**Depends on:** your decision. Nothing external.
+
+**Design intent:** *"New referrals start fresh at 25%. Refer more to keep the top rate flowing."*
+The decay is the mechanic, not a tax — the screen is built to make referring again the obvious move.
+The countdown ("Drops to 10% in 6 days") is what creates that pressure; removing it removes the point.
+
+## B8. Referral earnings: credit versus withdrawal
+
+**What it is:** Verified users can withdraw referral earnings to a bank **or** spend them as in-app
+credit. Unverified users can only spend as credit.
+
+**Designs:** `Merged-Center-Insight` §03, `Merged-Teacher-Insight` §02,
+`Merged-Verification-Payouts` §02 (the withdraw gate), §04 (payout details).
+
+**Exists today:** Partial, and closer than most.
+- 5% withdrawal fee exists and matches the design: `REFERRAL_WITHDRAWAL_FEE_RATE = 0.05`, and §04's "2,100 → −105 → 1,995" is exactly 5%.
+- Fee order is defined live: flat 20 EGP first, then 5% on the remainder (`computeReferralPayout`). **The design shows only the 5%** and no 20 EGP line.
+- A credits system exists (referenced as 2,000 credits = 1,000 EGP, 2:1).
+- `/admin/withdrawals` exists and approves these.
+
+**Two conflicts:**
+1. **Minimum withdrawal.** Live `REFERRAL_WITHDRAWAL_MIN_EGP = 1000`. The design says **200** (`Merged-Verification-Payouts` §04 and §06 both state it).
+2. **Payout destination.** Live stores `instapay_number` on the withdrawal row. The design stores **bank details / IBAN**, saved once, with a Bank / Mobile wallet toggle.
+
+**Has to be built:**
+- Saved payout-details record (method, account holder, IBAN or wallet), owned by the user, editable only by them.
+- The unverified state: credit-only, with withdrawal shown as locked rather than hidden, and earnings still accruing.
+- Whichever minimum you settle on, applied in one place.
+- The 20 EGP line reconciled with the design, or the design corrected.
+
+**Touches:** money, account state.
+
+**Depends on:** **C1** for the gate. The rest is decision-only.
+
+**Design intent:** *"Earnings keep accruing while unverified."* Verification gates the **withdrawal**,
+never the earning. Do not stop accrual for unverified accounts. And the locked state shows the amount
+— hiding the number removes the reason to verify.
+
+## B9. Advanced Analytics as a paid add-on
+
+**What it is:** The design turns Analytics from a permission-gated screen into a **purchased monthly
+add-on**.
+
+**Designs:** `Merged-Center-Insight` §01. **`LOOKS LIKE A RESTYLE`** — `/{locale}/analytics` is live.
+
+**Exists today:** The screen exists and is gated on `canViewRevenue`, a **permission**
+(`analytics/page.tsx:119`). There is no add-on, no purchase, no price. The design's wording — *"The
+gate is now an Advanced Analytics add-on"* — confirms it is a change, not a description.
+
+**Has to be built:**
+- Add-on entitlement model and its price.
+- Purchase flow via Paymob, and the locked/blurred preview state the design draws.
+- New content the live screen does not have: month-end forecast, projected-revenue bar, collection-rate gauge, payment-methods donut, revenue by group, P&L with CSV export, aging report with per-bucket WhatsApp reminders.
+
+**Touches:** money, account state.
+
+**What has to be decided:** the price, and whether the add-on **replaces** the `canViewRevenue`
+permission gate or stacks on top of it. Stacking means a staff member with the permission still
+cannot see a screen the center paid for — probably not what you want, but the design does not say.
+
+**Design intent:** *"A premium add-on, not a plan tier."* It is deliberately not bundled into a
+higher plan. The aging report's per-bucket **Remind** buttons spend WhatsApp credit — which ties
+this to B5.
+
+## B10. Benchmarks as a paid add-on
+
+**What it is:** Benchmarks becomes a 99 EGP/month add-on with a locked state and an enable sheet.
+
+**Designs:** `Merged-Center-Insight` §02. **`LOOKS LIKE A RESTYLE`** — `/{locale}/benchmarks` is live
+and carries a "New" badge in the sidebar.
+
+**Exists today:** The screen exists, free, gated on **data sufficiency** — the district needs enough
+centers, and short of that it renders a sample overlay (`benchmarks/page.tsx:129`, `insufficient_data`,
+`centers_needed: 10`). There is no payment anywhere near it.
+
+**Has to be built:**
+- Add-on entitlement, 99 EGP/mo, billed via Paymob, cancel anytime.
+- Locked state with the enable sheet.
+- Content the live screen lacks: overall standing percentile, local median marked per metric, "room to raise" annotation on below-median rows.
+- How the paid gate and the existing data-sufficiency gate compose — a center that pays and then has too few neighbours must not get a bill for a sample overlay.
+
+**Touches:** money, account state.
+
+**What has to be decided:** the price is drawn as 99 EGP/mo — confirm it; and whether an existing
+free user is grandfathered.
+
+**Design intent:** *"Fully anonymized. No other center sees your numbers, and you don't see theirs."*
+Percentiles and medians only, never a named competitor. This is the constraint that makes the feature
+sellable and it is the easiest one to erode.
+
+## B11. Extra team seats as a paid add-on
+
+**What it is:** Plans include a seat count; extra seats are billed monthly per seat.
+
+**Designs:** `Merged-Center-Setup` §07 (Settings Team). **`LOOKS LIKE A RESTYLE`** —
+`/{locale}/settings/team` is live at 782 lines.
+
+**Exists today:** Nothing. No seat limit, no seat count, no add-on. Live team management has no
+concept of a cap.
+
+**Has to be built:** per-plan seat allowance, seat counting, an "Add seats" purchase, and enforcement
+when the cap is hit.
+
+**Touches:** money.
+
+**What has to be decided:** **the design says the price is not set** — *"extra seats are a paid
+monthly add-on, billed per seat, price still to be set"*, and the screen renders it as `•• EGP /mo`.
+Also: how many seats each plan includes (the design shows "Growth plan includes 5 seats" — see B15
+on plan names), and what happens to a center already over the new cap.
+
+**Design intent:** the seat line sits next to the member list, not buried in billing, so the cost of
+adding someone is visible at the moment you add them.
+
+## B12. Group billing basis: per session, monthly, bundle
+
+**What it is:** A group can bill per session, monthly, or as a bundle of N sessions that draws down
+by attendance.
+
+**Designs:** `Merged-Center-Groups` §02. **`LOOKS LIKE A RESTYLE`** — `/{locale}/groups` is live at
+848 lines.
+
+**Exists today:** One basis. `student_groups.fee_per_class` is the only fee field the live groups
+page reads or writes. The design draws four groups across three bases: "Per session 150", "Monthly
+1,200", "Bundle · 8 — 1,100".
+
+**Has to be built:**
+- A billing-basis column on the group, plus whatever a bundle needs (size, remaining count per student).
+- Bundle draw-down driven by **attendance, not by date** — the design is explicit.
+- Monthly billing for a group, which the per-class charge engine does not do.
+- The group sheet showing what the parent will see, at the moment the price is set.
+
+**Touches:** money.
+
+**Depends on:** **B1** for the parent-facing figure. The basis itself could ship without online
+collection, since it changes what a parent owes either way.
+
+**What has to be decided:** whether you want three bases at all. The design says per session
+*"covers almost all real usage"* — this may be scope you do not need in the first pass.
+
+**Design intent:** *"a bundle draws down by attendance rather than by date."* A bundle that expires
+monthly is a different product and the easy thing to build by mistake. And *"The sheet shows what the
+parent will see, so the price is never set blind"* — the parent-facing figure belongs on the
+price-setting screen, not only on the parent's.
+
+## B13. Admin Center Assignments — two features under one route name
+
+**What it is:** The design and the live route at the same name are **different features**, and I am
+not certain which the design intends.
+
+**Designs:** `Merged-Admin-Accounts` §03. `INVENTORY.md` mapped this to
+`/{locale}/admin/center-assignments` as a restyle. **On closer reading that mapping is wrong or at
+least unsafe**, which is why it is here.
+
+**The design** shows teacher ↔ center linking: tabs By center / By teacher / Unassigned, a list of
+centers with their teachers, unassigned teachers, and a "New assignment" form with **Link type:
+Visiting / Permanent** — *"Visiting teachers keep their own private groups. The center only sees the
+classes they run there."* No rep, no territory, no commission.
+
+**The live route** is sales-rep attribution:
+`src/app/[locale]/(admin)/admin/center-assignments/page.tsx` carries `sourced_by: 'eyad' | 'sm' | 'sr'`,
+`is_primary`, `territory_city`, `territory_override_reason`, and error keys including
+`duplicate_primary`, `rep_required`, `rep_not_your_report`.
+
+**Two possible readings, and they lead opposite ways:**
+1. **The design is a new admin feature** — an admin view of teacher-center employment links, which today only exists center-side at `/my-teachers`. Then the live rep-attribution screen has **no design**, and belongs on the Appendix B list.
+2. **The design replaces the live screen.** Then applying it deletes the rep attribution UI — `sourced_by`, `is_primary`, territory — **weeks before reps start in September**, and while `CLAUDE-CODE-HANDOFF.md` §1.1 is still asking for a unique constraint on that exact table.
+
+**I read (1) as far more likely**, but it is a guess and the cost of guessing wrong is high.
+
+**Touches:** money (commission attribution).
+
+**Depends on:** your call. Related and separately tracked in `CLAUDE-CODE-HANDOFF.md` §1.1–§1.4: the
+missing unique constraint on the center identifier, the missing claim-expiry field, `sourced_by`
+lacking house-account and team-leader values, and the commission table gaps. Those are database work
+with a September deadline and are **not** design-driven — they should not wait behind this.
+
+## B14. Parent payment page
+
+**What it is:** One public page for paying any provider by link, no account needed.
+
+**Designs:** `Merged-Public-App` §04.
+
+**Exists today:** Nothing. `src/lib/paymob.ts:187` returns the Paymob hosted iframe URL directly, so
+today a payment link lands on Paymob's page, not ours. `/parent/[token]` is a read-only parent portal
+with no pay action (Appendix B).
+
+**Has to be built:**
+- Public route, tokenised, no auth, exempt from the CORS mutation allowlist the way webhooks are.
+- Provider header with a **Verified** badge (C1), showing whether they are a center or an independent teacher.
+- Line items: what is being paid for, the provider's price, the processing fee with its formula, the total.
+- Payment methods: Card, Mobile wallet, and **InstaPay shown as Soon** — do not enable it.
+- Confirmation state and a WhatsApp receipt.
+
+**Touches:** money.
+
+**Depends on:** **B1** (which fees show), **B2**/**B3** (there is nothing to pay without collection),
+**C1** (the badge), **C4** (the receipt).
+
+**Design intent:**
+- **"There is no breakdown of it."** The provider's price is one figure. Only the processing fee is broken out, *"stated with its formula so a parent can check it against the price in front of them, sitting where a card fee normally would."*
+- **The provider is named as the one who sets the price and teaches.** *"TutoringHQ collects the payment on her behalf."* The design calls this *"the record that the money was theirs"* — it is a legal position, not a courtesy. Do not reword it.
+- **Questions about the sessions go to the provider**, stated on the confirmation. Do not route parent support to us.
+
+## B15. Plan naming across every screen that shows a plan
+
+**What it is:** The designs use plan names the platform does not have.
+
+**Designs:** everywhere a plan appears — `Merged-Center-Setup` §07, `Merged-Center-Insight` §03,
+`Merged-Admin-Platform` §01, `Merged-CEO` §03, `Merged-Teacher-Insight` §02, `Merged-Teacher-Money`
+§02 §03.
+
+**Exists today:** `src/lib/pricing/plans.ts` defines `solo, nano, starter, pro, business,
+enterprise`, plus `top_centers` in `pricing.ts`. Arabic labels are سنتر نانو / سنتر صغير / سنتر متوسط
+/ سنتر كبير / سنتر ضخم / ميجا سنتر.
+
+**The designs say** Starter, **Growth**, **Scale** for centers and **Standard**, **Pro** for teachers.
+"Growth" and "Scale" do not exist. Teacher plan keys are `teacher_standard` and a Pro tier, so the
+teacher names are closer.
+
+**What has to be decided:** is this a rename of the live plans, a set of placeholder names in the
+design, or a new plan structure? Until it is settled, **every screen that renders a plan name is
+guessing**, and there are at least a dozen.
+
+**Touches:** money (plan names sit next to prices).
+
+**Depends on:** nothing external.
+
+---
+
+# C. BLOCKED ON SOMEONE OUTSIDE
+
+## C1. Identity verification (e-KYC via Valify)
+
+**What it is:** A one-time hosted identity check that unlocks online collection and withdrawals, and
+keeps the National ID on file for receipts.
+
+**Designs:** `Merged-Verification-Payouts` §01 (settings), §02 (in context), §03 (the hand-off and
+return). Referenced in `Merged-Center-Attendance` §02, `Merged-Teacher-Money` §05,
+`Merged-Center-Setup`, `Merged-Admin-Accounts`, `Merged-Admin-Platform`. **Valify is named 27 times
+in `Merged-Verification-Payouts` alone**; National ID appears 19 times there and 9 more in
+`Merged-Admin-Money`.
+
+**Exists today:** **Nothing.** `Valify`, `national_id` and `identity_verif*` return zero matches
+across `src/`. There is no verification flow, no verified flag, no ID storage.
+
+**Has to be built:**
+- Data model: verification status, verified-at date, National ID on file, provider reference. **This is minors-adjacent PII on a multi-tenant platform** — the `saas-multi-tenant-architecture` rules apply in full, and ID storage needs an explicit retention decision.
+- Routes: the settings verification screen (both account types, verified and not), the hand-off screen, the return screen.
+- Integration: hosted redirect to Valify and a signed return. The design states it is *"the same pattern as Paymob"* — so a callback/webhook that verifies its own signature, not a trusted redirect parameter.
+- What it unlocks, which differs by type: **centers** get online collection **and** withdrawals; **teachers** get fee collection **and** withdrawals.
+- Verified badge, surfaced on the provider-facing screens and on the parent payment page.
+
+**Touches:** auth, account state.
+
+**Depends on:** **Valify** — a vendor agreement, sandbox credentials, and their hosted flow. Nothing
+in the repo suggests this has started.
+
+**This is the single longest pole in the document. At least 21 of the 105 designs sit behind it:**
+the 12 that render a verified state (C2), plus 9 that exist only because of it —
+`Merged-Verification-Payouts` §01, §02, §03, §05, §06 · `Merged-Center-Attendance` §02 ·
+`Merged-Teacher-Money` §04, §05 · `Merged-CEO` §03. The four admin ledgers in C5 and the verified
+badges on `Merged-Public-App` §04, `Merged-Center-Insight` §03, `Merged-Teacher-Insight` §02 and
+`Merged-Admin-Platform` §01 depend on it too, in part.
+
+**Design intent:**
+- **Verification is a one-time step, about 2 minutes, and the screen says so.** Both the two-minute estimate and "one-time" appear on every entry point. They are there to reduce drop-off; do not trim them as marketing copy.
+- **The ID scan and selfie happen on Valify's side, never ours.** Do not build a capture UI.
+- **The National ID stays on file because the e-receipt needs it** — the screen explains why. That explanation is a PDPL nicety and a trust device at once; keep it.
+- **Unverified accounts keep working.** They accrue referral earnings, they record payments by hand. Verification unlocks; it never blocks what already worked.
+
+## C2. Verified as a second account state across the platform
+
+**What it is:** Verification is not one screen. It is a second state that most of the platform has to
+render.
+
+**Designs — 12 screens.** Nine carry "Verified" in their name:
+`Merged-Center-Attendance` §01 · `Merged-Center-Groups` §02 · `Merged-Center-Home` §01 ·
+`Merged-Center-Money` §02, §04, §05 · `Merged-Center-Setup` §08 · `Merged-Center-Students` §03 ·
+`Merged-Teacher-Groups` §05.
+Three more draw both states without saying so in the title:
+`Merged-Teacher-Home` §01 (*"Home in both account states"*) · `Merged-Teacher-Money` §01 (*"Income in
+both states"*) · `Merged-Teacher-Setup` §01 (payment details become payout details once verified).
+
+**Exists today:** **Ten of the twelve** have a live route working in its unverified form —
+`/dashboard`, `/students`, `/groups`, `/attendance`, `/payments`, `/settings/team`, `/teacher`,
+`/teacher/income`, `/teacher/settings`, `/teacher/groups/[groupId]/sessions/[sessionId]`. The
+remaining two — `Merged-Center-Money` §04 Center Withdrawal and §05 Center Receipts — have no route
+at all and are covered by B4 and C4.
+
+**`INVENTORY.md` lists all ten in list 1 as restyles, and that is only half true:** the unverified
+half is a restyle, the verified half is a new build on top of a product that does not exist.
+
+**Has to be built:** the verified variant of each screen, behind a flag, plus:
+- `Merged-Center-Setup` §08 introduces a permissions split the live team page does not have: **daily actions and money actions in separate groups**, with two permissions **locked to the owner and undelegatable** — moving money out, and changing where it goes.
+- `Merged-Center-Money` §05 introduces a three-tab records screen (Payments / Payouts / Tax) that does not exist at all.
+
+**Touches:** money, account state.
+
+**Depends on:** **C1**, **B1**, **B2**, **B3**.
+
+**Design intent:**
+- **The two permissions locked to the owner are not a default, they are a rule.** *"That cannot be delegated."* Do not build them as switches that happen to be off.
+- **`Merged-Center-Money` §05's three lists are deliberately not merged.** Payment confirmations are proof of payment. Payout statements are what reached the bank. Tax documents are the only items with legal standing and **cover our commission alone, never the tuition**. The design's own words: merging them *"is what would make the whole arrangement incoherent to an inspector, so the split is structural rather than cosmetic."* This is the single most likely thing for a builder to tidy into one "Receipts" list.
+
+## C3. Center → teacher split payouts
+
+**What it is:** A center sends its balance either all to itself or split directly to its teachers,
+each paid to a method the teacher maintains themselves.
+
+**Designs:** `Merged-Verification-Payouts` §05.
+
+**Exists today:** Nothing. `/my-teachers` tracks cuts, proposals and slots but has no payout action.
+
+**Has to be built:**
+- Teacher-held payout method, editable only by the teacher (*"Only you can change this"*), with a name-match rule against their verified ID.
+- Center-side split UI: teachers ready to receive vs not set up, per-teacher amounts, running total, charges, and what stays in the balance.
+- Charge model: one payout a month free, then **250 EGP per teacher after the first**. Splitting eight ways uses the free one and charges 250 × 7 = 1,750.
+- Batch send.
+
+**Touches:** money.
+
+**Depends on:** **Paymob**. The design says so outright: *"Payment method options are placeholders
+until Paymob confirms what Send actually supports."* Also **C1** (both sides verified) and **B4**
+(the balance).
+
+**Design intent:**
+- **The center never stores anyone's bank details.** Each teacher holds their own account and maintains their own method, so the center picks a name and nothing else. This is a liability decision. Do not add a convenience field letting the center type a teacher's IBAN.
+- **The cost is shown on the choice, not buried.** 1,750 EGP appears on the split option itself, before it is picked. *"Split when the convenience is worth 1,750, not by default."*
+- **Teachers with no method are shown, not hidden**, so the center can chase them.
+
+## C4. Tax documents: ETA e-receipt and e-invoice
+
+**What it is:** The tax receipt sent to the parent and filed with the ETA, the teacher subcontractor
+expense receipt, and the referral expense receipt.
+
+**Designs:** `Merged-Verification-Payouts` §06, `Merged-Center-Money` §05 (tax tab),
+`Merged-Center-Attendance` §02 (tax status), `Merged-Admin-Money` §04.
+
+**Exists today:** Partial infrastructure, no tax documents. `generateInvoicePdf.ts` and
+`invoiceTemplates.ts` produce customer invoices and referral payout receipts. There is no ETA
+integration and no e-receipt.
+
+**Has to be built:**
+- Tax status per provider: registered (tax card number on file → e-invoice) vs unregistered (→ e-receipt), changeable at any time, switching from the next document onward.
+- Parent tax e-receipt: VAT-exempt educational service line, collection fee line, VAT at 14% on the fee, total, filed with the ETA automatically.
+- Teacher subcontractor expense receipt against the verified National ID, with the design's stated rule *"no tax is withheld on payouts."*
+- Referral expense receipt, logged as a marketing expense against the referrer's National ID.
+- ETA filing integration.
+
+**Touches:** money.
+
+**Depends on:** **an accountant and legal.** Every frame in `Merged-Verification-Payouts` §06 is
+stamped **Draft** and the section note says *"pending legal and accountant review."* Also **the ETA**
+as an integration, and **C1** for the National ID.
+
+**⚠ The design's own arithmetic does not reconcile.** The teacher payout receipt shows:
+
+```
+Gross tuition base        1,000.00
+Collection fee             −92.34
+VAT (14% on fee)           −12.92
+Tuition collected         1,000.00
+Collection fee (10%)      −100.00
+Net to wallet               850.00
+```
+…and then the footnote says *"The teacher receives 900.00."* 1,000 − 100 = 900, not 850, and the two
+fee lines (92.34 + 12.92 = 105.26) are a third number. **Do not implement this receipt as drawn.**
+Get the intended figures confirmed alongside the legal review. This is precisely the failure mode
+`START-CLAUDE-CODE.md` asks for adversarial review on.
+
+**Design intent:** tax documents *"cover our commission alone, never the tuition, because the tuition
+was never our sale."* The provider issues their own document for the tuition. Getting this backwards
+is a compliance problem, not a UI one.
+
+## C5. Admin money ledgers for online collection
+
+**What it is:** The four internal screens that exist only once the platform collects money on behalf
+of providers.
+
+**Designs:** `Merged-Admin-Money` §01 (Fee Collection), §02 (Settlement), §04 (Receipts,
+frame-captioned `/admin/receipts`), §06 (Unpaid Recovery).
+
+**Exists today:** Nothing that corresponds. Two live screens are easy to mistake for these and are
+not:
+- `/{locale}/admin/finance` is **subscription MRR** — north star, unit economics, cohort retention. Not parent collection.
+- `/{locale}/admin/renewals` is **center subscription renewals**. Not parent payments.
+- `/{locale}/admin/payouts` is **internal staff salaries** (`staff_id`, `base_salary`, `period`). Not provider settlement.
+
+**Has to be built:**
+- **Fee Collection (§01):** three views — Money (collected from parents → paid out to providers → our revenue, split into collection fees / price markup / processing), Providers (one ranked list with a centre/teacher filter), Health. The design reconciles exactly; the implementation must too.
+- **Settlement (§02):** the biweekly payout run — settled-in from Paymob, paying out to providers, retained fees; the batch itself, bank first with wallet fallback, and below-minimum amounts **rolling over rather than failing**.
+- **Receipts (§04):** the log behind the write-offs, filtered by type, each tied to a verified National ID.
+- **Unpaid Recovery (§06):** every stuck payment across every provider, split by cause — declined card versus link never opened versus opened-not-completed — with a bulk remind that **excludes anyone the provider reminded in the last two days**.
+
+**Touches:** money.
+
+**Depends on:** **C1**, **C4**, **B1**, **B2**, **B3**, **B4**. §02 and §04 are additionally marked
+*"pending legal and accountant review."*
+
+**Design intent:**
+- §06's split is the feature: *"a declined card is our problem, an unopened link is the parent's, and treating them the same wastes effort on the wrong half."* A single "unpaid" list is the wrong build.
+- §06: **admin reminders come out of company credit, not the provider's.** Easy to get wrong once B5 exists.
+- §02: *"What is held for teachers stays ring-fenced from platform revenue."* This is an accounting constraint on the data model, not a display choice.
+- §01: money is *"a single top-to-bottom flow from what parents paid down to what we keep."* Do not reorganise it into independent cards.
+
+## C6. Legal document text
+
+**What it is:** The real text of the four footer documents, plus the data-rights form copy.
+
+**Designs:** `Merged-Public-Legal` §01. **`LOOKS LIKE A RESTYLE`** and mostly is — the routes and
+chrome are live.
+
+**Exists today:** The full surface is built: `/legal/privacy`, `/legal/terms`, `/legal/cookie`,
+`/legal/dpa` and `/legal/privacy-request`, with `LegalDoc.tsx`, a shared layout and footer, and
+`POST /api/privacy-request` behind the form. **Every section body is a placeholder** —
+`[This section will be completed upon legal review]` — under a draft-notice banner naming Adsero.
+
+**Has to be built:** nothing structural. The layout is a restyle. What is missing is the **text**, and
+per `IMPLEMENTATION-PLAN.md` it should be pulled from **one source** so the page and the drafts cannot
+drift apart.
+
+**Touches:** none.
+
+**Depends on:** **Adsero.**
+
+**Design intent:** *"Students and parents are sent to their center first, because the center is the
+controller and the platform is only the processor."* That routing is a legal position and it is the
+one thing on this surface that is not cosmetic. Also: **the form never asks for a PIN**.
+
+## C7. Self-enrollment: the minor-consent question
+
+**What it is:** A student proves their own number with a WhatsApp one-time code and joins a group
+**immediately, with no center approval**.
+
+**Designs:** `Merged-Public-App` §03. **`LOOKS LIKE A RESTYLE`, and it is one** — the route is live.
+
+**Exists today:** Built, and more completely than `TutoringHQ-Screen-Tracker.md` claims.
+`/{locale}/join/g/[groupId]/page.tsx` + `JoinFlowClient.tsx` render a three-step flow;
+`/api/join/g/[groupId]/send-otp` and `/verify-otp` exist against an `enrollment_otps` table with
+attempt counting; delivery is queued to `webhook_outbox` and sent by a `send_enrollment_otp_wa`
+worker.
+
+**What is not resolved:** `IMPLEMENTATION-PLAN.md` records two blockers, and neither is visible in
+the code:
+1. **The Adsero question about a minor self-enrolling without center approval.** The design collects the parent's number *"because the parent receives every receipt and every alert, and a student cannot opt his own parent out"* — but collecting a number is not consent.
+2. **Meta approval of the `chq_enrollment_otp` template.** I cannot verify template approval from the filesystem; the worker name suggests a template is referenced. **Check the live `wa_templates` state before assuming this path works.**
+
+**Touches:** account state, and minors' data.
+
+**Depends on:** **Adsero** for (1), **Meta** for (2).
+
+**Design intent:** *"The first one, `/j/[code]`, waits for the center to approve. This one does not."*
+The two join paths are deliberately different and **self-enrollment does not replace the approval
+path**. A builder consolidating them removes the center's control over its own roster. Note the design
+calls the approval path `/j/[code]`; live it is `/join/[center_code]/[group_id]`.
+
+---
+
+# Appendix A — Duplicate money surfaces
+
+Four pairs where two live routes do the same job. In each case the designs assume **one**. Deciding
+which survives is a prerequisite for the money PRs, not something to settle inside them.
+
+| Pair | What each is | The designs assume | Note |
+|---|---|---|---|
+| `/{locale}/billing` vs `/{locale}/settings/billing` | `(dashboard)/billing/page.tsx` → `BillingPageClient.tsx` (subscription, plan, past-due banner) · `settings/billing/page.tsx`, 2,629 lines (subscription, invoices, upgrades, withdrawal window, processing fee) | **Both, as separate screens.** `Merged-Center-Money` §03 "Billing" is the membership-management view; `Merged-Center-Setup` §03 "Billing & plan" is the settings view with the invoice cards. The two designs overlap heavily but are drawn as two screens. | This is the one pair the designs do *not* clearly resolve. Decide whether you want two. |
+| `/{locale}/teacher/billing` vs `/{locale}/teacher/pay` | Plan section + billing history · the shared `CustomerInvoicesView` invoice list, deliberately reachable while the account is locked | **`/teacher/billing` only.** `Merged-Teacher-Money` §03 carries invoices inside the billing screen. `/teacher/pay` has no design. | `/teacher/pay` carries a load-bearing rule no design records: it uses `requireTeacherAuth`, **not** the private-access gate, so a lapsed teacher can pay to restore access. Folding it into a gated screen locks a paying customer out of paying. |
+| `/{locale}/referrals` vs `/{locale}/settings/referrals` | Both render `ReferralWithdrawalPanel`; both list active referrals | **`/referrals` only.** `Merged-Center-Insight` §03 is the single referrals design. | `/settings/referrals` additionally has a CSV/statement download the other does not. Check before consolidating. |
+| `/{locale}/legal/*` vs `/{locale}/privacy` and `/{locale}/terms` | `legal/*` — four documents with shared chrome, footer and draft banner · `/privacy`, `/terms` — standalone placeholder pages | **`/legal/*` only.** `Merged-Public-Legal` §01 draws the four-document reader with its own contents list. | **⚠ `/terms` is not a clean duplicate.** `src/app/[locale]/terms/page.tsx` renders a **processing-fee disclosure** — heading, body with the live amount via `formatCurrency`, and a placeholder note — gated on `processing_fee_enabled` so it disappears when the fee is off. **`/legal/terms` has no such section.** Removing `/terms` without moving that disclosure first silently drops a fee disclosure from the site. Move it, then decide. |
+
+---
+
+# Appendix B — The 22 live screens with no design
+
+From `INVENTORY.md` list 3a, restated. **All are marked decision pending. Nothing here is proposed
+for deletion** — each needs a design or an explicit decision, and that decision is yours.
+
+| Route | What it does | Status |
+|---|---|---|
+| `/{locale}/pay` | Center's own invoice list with pay and PDF, on the shared `CustomerInvoicesView` | decision pending |
+| `/{locale}/teacher/pay` | Teacher's own invoices, same shared view, reachable while the account is locked so a lapsed teacher can pay | decision pending — see Appendix A |
+| `/{locale}/teacher/subscription/upgrade` | Standard → Pro upgrade surface, renders `PlanComparison` | decision pending |
+| `/{locale}/settings/money` | Center money settings — InstaPay number and card-order opt-in. The only place the InstaPay destination is set | decision pending |
+| `/{locale}/settings/referrals` | Second center referral surface, shares `ReferralWithdrawalPanel` with `/referrals`, adds a download | decision pending |
+| `/{locale}/privacy` | Placeholder privacy page reading `legal.privacy.placeholderBody` | decision pending |
+| `/{locale}/terms` | Placeholder terms page **plus the processing-fee disclosure** `/legal/terms` does not carry | decision pending — see Appendix A |
+| `/{locale}/students/print` | Printable roster; print CSS is a documented RTL exemption | decision pending |
+| `/parent/[token]` | Public parent portal by token — balance, scan history, next sessions, WhatsApp the center. Read-only, no pay action. Outside `[locale]` | decision pending — distinct from B14 |
+| `/{locale}/admin/orders` | Admin card-order queue | decision pending |
+| `/{locale}/admin/card-orders/[orderId]` | Admin card-order detail, gated against `internal_viewer` | decision pending |
+| `/{locale}/admin/payouts` | **Internal staff salary payouts** — `staff_id`, `base_salary`, `period`. Not provider settlement | decision pending — easy to confuse with C5 §02 |
+| `/{locale}/admin/commissions` | Sales-rep commission ledger, T2 eligibility window 180 days | decision pending — see B13 |
+| `/{locale}/admin/renewals` | Center subscription renewals, overdue filter, manual record-payment | decision pending |
+| `/{locale}/admin/plan-requests` | Queue of center plan-change requests | decision pending |
+| `/{locale}/admin/demo-requests` | Inbound demo-request queue — pending / contacted / approved / rejected | decision pending — **this is the receiving end of A1** |
+| `/{locale}/demo-request` | 55-line stub: logo, one line, hardcoded `wa.me/201001234567` | decision pending — **collides with A1** |
+| `/{locale}/blog` | Marketing stub | decision pending |
+| `/{locale}/compare/spreadsheets` | Marketing comparison page | decision pending |
+| `/{locale}/features/qr-attendance` | Marketing feature page | decision pending |
+| `/{locale}/features/student-management` | Marketing feature page | decision pending |
+| `/{locale}/features/whatsapp-notifications` | Marketing feature page | decision pending |
+
+The last five were recorded as "Dropped" in `TutoringHQ-Screen-Tracker.md`. The decision was written
+down; the pages are still live and still served. That is a state to resolve, not evidence either way.
+
+---
+
+# Appendix C — Where I am not sure
+
+Eleven open questions, stated rather than guessed.
+
+1. **B13, Admin Center Assignments.** The design is teacher↔center linking; the live route is sales-rep attribution. I read the design as a **new** feature, but I am not certain, and reading it the other way deletes commission attribution UI before September.
+
+2. **B12, group billing basis.** I read "Monthly 1,200" and "Bundle · 8" as new data, because live has only `fee_per_class`. It is conceivable these are display labels over an existing convention I did not find.
+
+3. **`/teacher/pricing`.** The design folds center and teacher plans into one `/pricing` page; live has two routes. `INVENTORY.md` lists it as a restyle. Consolidating is a routing change, and I do not know whether that is intended.
+
+4. **B9, Analytics add-on.** I do not know whether the add-on **replaces** the `canViewRevenue` permission gate or stacks on it. The design does not say and the two answers behave very differently for staff accounts.
+
+5. **B3, the teacher collection fee.** The opt-in screen states the fee only in categories; the expense receipt states 10%. I cannot tell whether that is deliberate staging or an inconsistency.
+
+6. **C4, the receipt arithmetic.** 1,000 − 100 = 900, but the receipt shows 850 as net and 900 in the footnote, with a third pair of fee lines summing to 105.26. I am confident this is wrong; I do not know which figure is right.
+
+7. **C7, `chq_enrollment_otp`.** The worker and API routes exist. Whether Meta has approved the template is live state I cannot read from the filesystem. Check `wa_templates` before relying on the path.
+
+8. **B6, teacher message allowance.** "Your Pro plan includes 50 a month" — I found no live entitlement. It is possible one exists in `platform_config` under a key I did not search.
+
+9. **B15, plan names.** Starter / Growth / Scale do not map onto `nano / starter / pro / business / enterprise / top_centers`. I cannot tell whether the designs rename, replace, or are simply using placeholder names.
+
+10. **The admin information architecture.** Every admin design uses a five-item bottom nav (Overview · Money · Accounts · Platform · More). Live is a 17-item sidebar. Whether the IA change is in scope decides where several of these features land, and no design states it.
+
+11. **B4, the teacher instant-payout fee.** The center schedule bands at 250 EGP / 2% / 3%. The teacher screen shows a flat 300 EGP on 8,400, which is 3.57% and matches no band. Either teachers have a different schedule or the sample is loose.
