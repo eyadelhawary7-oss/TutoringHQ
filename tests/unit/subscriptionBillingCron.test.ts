@@ -21,8 +21,8 @@ vi.mock('@/lib/billingAudit', () => ({
   logBillingEvent: async () => {},
   invoiceOwner: () => ({}),
 }));
-vi.mock('@/lib/scheduledDowngrade', () => ({
-  resolveScheduledCenterDowngrade: async () => null,
+vi.mock('@/lib/scheduledPlanChange', () => ({
+  resolveScheduledCenterPlanChange: async () => null,
 }));
 vi.mock('@sentry/nextjs', () => ({
   captureMessage: () => {},

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { todayISO } from '@/lib/parentPack';
-import { computeNextPaymentDue } from '@/lib/subscriptionAnchor';
+import { computeNextPaymentDueCatchUp } from '@/lib/subscriptionAnchor';
 import { centerRenewalPeriodMonths } from '@/lib/centerRenewal';
 import { normalizeBillingPeriod } from '@/lib/pricing';
 import { sendChqPaymentConfirmedTemplate, sendChqPaymentFailedTemplate } from '@/lib/centerNotify';
@@ -10,9 +10,9 @@ import { cairoDateKey, cairoYmdPlusDays, startOfUtcInstantForCairoCalendarDay } 
 import { logBillingEvent, invoiceOwner } from '@/lib/billingAudit';
 import * as Sentry from '@sentry/nextjs';
 import {
-  resolveScheduledCenterDowngrade,
-  applyScheduledCenterDowngrade,
-} from '@/lib/scheduledDowngrade';
+  resolveScheduledCenterPlanChange,
+  applyScheduledCenterPlanChange,
+} from '@/lib/scheduledPlanChange';
 
 // Non-subscription invoice types that legitimately reach the tail of
 // finalizeInvoicePaymentSuccess. Settling one marks the invoice paid but must
@@ -163,7 +163,12 @@ async function handleSubscriptionInvoicePaid(
   // advances +1 month (the standard non-annual cadence — the quarterly clock is
   // retired). centerRenewalPeriodMonths encodes the mapping.
   const isAnnual = normalizeBillingPeriod(c.billing_period) === 'annual';
-  const newDue = computeNextPaymentDue(
+  // Catch-up anchor: a single ordinary advance assumes at most one period was
+  // missed. A center unpaid for LONGER than that (interlock was off, cron
+  // outage) would otherwise still land in the past and re-enter the blocked
+  // state the instant it finishes paying. periodsSkipped > 0 is logged, not
+  // billed — this only moves the clock, it never charges for skipped time.
+  const { nextDue: newDue, periodsSkipped } = computeNextPaymentDueCatchUp(
     {
       next_payment_due: c.next_payment_due ?? null,
       subscription_start_date: c.subscription_start_date,
@@ -172,6 +177,22 @@ async function handleSubscriptionInvoicePaid(
     },
     centerRenewalPeriodMonths(c.billing_period),
   );
+  if (periodsSkipped > 0) {
+    console.warn('[invoicePaymob] stale next_payment_due caught up', {
+      centerId: inv.center_id,
+      periodsSkipped,
+      oldDue: c.next_payment_due,
+      newDue,
+    });
+    Sentry.withScope((scope) => {
+      scope.setTag('area', 'subscription_billing');
+      scope.setTag('center_id', inv.center_id);
+      scope.setLevel('warning');
+      Sentry.captureMessage(
+        `Stale next_payment_due caught up: skipped ${periodsSkipped} period(s) for center ${inv.center_id}`,
+      );
+    });
+  }
   // Single-day lock: auto_suspend_at = next Cairo midnight after the new due date.
   const autoSus = autoSuspendAtFromDue(newDue);
   const totalAmt = Number(inv.total_amount ?? 0);
@@ -196,17 +217,19 @@ async function handleSubscriptionInvoicePaid(
   }
   const status = typeof res === 'string' ? res : String(res ?? '');
 
-  // G1/G5: a scheduled downgrade LANDS exactly here — the renewal just rolled the
-  // period, so the center flips to the lower plan now (never sooner) and the schedule
-  // clears. The just-paid renewal invoice already billed the scheduled (lower) amount.
-  // No credit, ever (G3/G4). Skipped on an idempotent already_paid replay.
+  // G1/G5: a scheduled plan change LANDS exactly here — the renewal just rolled
+  // the period, so the center flips to whichever plan was scheduled (higher via
+  // a day-zero upgrade, or lower via a downgrade) now, never sooner, and the
+  // schedule clears. The just-paid renewal invoice already billed the scheduled
+  // amount. No credit, ever, for a downgrade (G3/G4). Skipped on an idempotent
+  // already_paid replay.
   if (status !== 'already_paid' && c.scheduled_plan) {
-    const sched = await resolveScheduledCenterDowngrade(
+    const sched = await resolveScheduledCenterPlanChange(
       supabaseAdmin,
       c.scheduled_plan,
       c.scheduled_billing_period,
     );
-    if (sched) await applyScheduledCenterDowngrade(supabaseAdmin, inv.center_id, sched);
+    if (sched) await applyScheduledCenterPlanChange(supabaseAdmin, inv.center_id, sched);
   }
 
   // Exactly-once paid confirmation. finalize_subscription_invoice_paid performs

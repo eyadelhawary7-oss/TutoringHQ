@@ -184,11 +184,16 @@ export function getUpgradeLimit(billingPeriod: 'monthly' | 'quarterly' | 'annual
   return billingPeriod === 'annual' ? 2 : 1;
 }
 
-export function canUpgrade(params: {
+/**
+ * Tier-rank portion of the upgrade gate only — no quota. Split out of
+ * canUpgrade so a caller can enforce the rank gate while bypassing the
+ * per-period quota (the day-zero upgrade rule: the period is rolling over
+ * anyway, so the quota resets with it, but the plan must still actually rank
+ * higher than the current one).
+ */
+export function checkUpgradeRankGate(params: {
   currentPlanRank: number;
   requestedPlanRank: number;
-  upgradeCountThisPeriod: number;
-  billingPeriod: 'monthly' | 'quarterly' | 'annual';
 }): { allowed: boolean; reason?: string } {
   if (params.requestedPlanRank <= params.currentPlanRank) {
     return { allowed: false, reason: 'Use the downgrade flow for lower plans' };
@@ -196,6 +201,17 @@ export function canUpgrade(params: {
   if (params.requestedPlanRank === 6) {
     return { allowed: false, reason: 'Top Centers plan requires manual approval' };
   }
+  return { allowed: true };
+}
+
+export function canUpgrade(params: {
+  currentPlanRank: number;
+  requestedPlanRank: number;
+  upgradeCountThisPeriod: number;
+  billingPeriod: 'monthly' | 'quarterly' | 'annual';
+}): { allowed: boolean; reason?: string } {
+  const rankGate = checkUpgradeRankGate(params);
+  if (!rankGate.allowed) return rankGate;
 
   const limit = getUpgradeLimit(params.billingPeriod);
   if (params.upgradeCountThisPeriod >= limit) {

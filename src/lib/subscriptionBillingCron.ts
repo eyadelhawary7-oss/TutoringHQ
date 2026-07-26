@@ -11,7 +11,7 @@ import { sendChqRenewalOverdueTemplate } from '@/lib/centerNotify';
 import { getProcessingFeeConfig, getIntervalConfig } from '@/lib/pricingConfig';
 import { applyProcessingFee, buildInvoiceTaxSnapshot } from '@/lib/processingFee';
 import { logBillingEvent } from '@/lib/billingAudit';
-import { resolveScheduledCenterDowngrade } from '@/lib/scheduledDowngrade';
+import { resolveScheduledCenterPlanChange } from '@/lib/scheduledPlanChange';
 import { centerRenewalBaseAmount, centerRenewalPeriodMonths } from '@/lib/centerRenewal';
 import { requireTopCentersAllInPrice } from '@/lib/pricing/topCentersPrice';
 import { createAction } from '@/lib/ceo';
@@ -176,11 +176,13 @@ export async function runSubscriptionBillingCron(
         .maybeSingle();
       if (existingInv) continue;
 
-      // A scheduled downgrade lands at this renewal: bill the NEW (lower) plan's
-      // amount for the upcoming period. The plan fields flip when this invoice is
-      // paid (handleSubscriptionInvoicePaid), so access stays on the old plan until
-      // then (G5).
-      const sched = await resolveScheduledCenterDowngrade(
+      // A scheduled plan change lands at this renewal: bill the NEW plan's amount
+      // for the upcoming period — direction-agnostic, so this also covers a
+      // day-zero upgrade whose renewal invoice the cron creates before the
+      // request ever reaches it. The plan fields flip when this invoice is paid
+      // (handleSubscriptionInvoicePaid), so access stays on the current plan
+      // until then (G5).
+      const sched = await resolveScheduledCenterPlanChange(
         supabase,
         c.scheduled_plan,
         c.scheduled_billing_period,
@@ -222,9 +224,9 @@ export async function runSubscriptionBillingCron(
       }
       // Period-aware renewal: annual bills monthly × 10 over a 12-month clock;
       // monthly bills the stored monthly amount over a 1-month clock (the standard
-      // non-annual cadence — the quarterly clock is retired). A scheduled downgrade
-      // supplies its own period-aware amount/period/per-month base
-      // (resolveScheduledCenterDowngrade).
+      // non-annual cadence — the quarterly clock is retired). A scheduled plan
+      // change supplies its own period-aware amount/period/per-month base
+      // (resolveScheduledCenterPlanChange), whichever direction it goes.
       const effectivePeriod = sched ? sched.billingPeriod : c.billing_period;
       const ba = centerRenewalBaseAmount({
         billingPeriod: effectivePeriod,

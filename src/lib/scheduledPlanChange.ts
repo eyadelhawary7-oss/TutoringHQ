@@ -1,9 +1,16 @@
-// Scheduled-downgrade application for CENTERS (the teacher equivalent lives in
-// midnightBillingAdapter). A downgrade is recorded on centers.scheduled_plan /
-// scheduled_billing_period by the downgrade route and LANDS only at the renewal
-// boundary (G1/G5): the renewal invoice bills the scheduled (lower) plan's amount,
-// and the center's plan fields flip to it exactly when that invoice is paid — never
-// sooner. No credit is ever involved (G3/G4).
+// Scheduled plan-change application for CENTERS (the teacher equivalent lives in
+// midnightBillingAdapter). A plan change is recorded on centers.scheduled_plan /
+// scheduled_billing_period and LANDS only at the renewal boundary (G1/G5): the
+// renewal invoice bills the scheduled plan's amount, and the center's plan
+// fields flip to it exactly when that invoice is paid — never sooner.
+//
+// Direction-agnostic: `scheduled_plan` holds whichever plan the customer most
+// recently asked for, lower (a downgrade, scheduled by the downgrade route) or
+// higher (a day-zero upgrade — see /api/billing/upgrade). A plain column write
+// is naturally last-write-wins: scheduling one overwrites whatever the other
+// had pending, since only one plan can occupy the renewal slot. A downgrade
+// carries no credit ever (G3/G4); an upgrade's day-zero rule prices the full
+// new-tier period with no proration, since there is nothing left to prorate.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
@@ -15,7 +22,7 @@ import {
   type PlanKey,
 } from '@/lib/pricing';
 
-export interface ScheduledCenterDowngrade {
+export interface ScheduledCenterPlanChange {
   plan: string;
   billingPeriod: BillingPeriod;
   allIn: number;
@@ -25,14 +32,15 @@ export interface ScheduledCenterDowngrade {
 
 /**
  * Resolve the scheduled plan's price (all_in + one-cycle billing amount) for a
- * center, or null if there is no pending downgrade. Reads pricing_plans (live) and
- * falls back to the PLANS constant.
+ * center, or null if there is no pending schedule. Reads pricing_plans (live)
+ * and falls back to the PLANS constant. Direction-agnostic: `scheduledPlan` may
+ * be higher OR lower than the center's current plan — this only prices it.
  */
-export async function resolveScheduledCenterDowngrade(
+export async function resolveScheduledCenterPlanChange(
   supabase: SupabaseClient,
   scheduledPlan: string | null | undefined,
   scheduledBillingPeriod: string | null | undefined,
-): Promise<ScheduledCenterDowngrade | null> {
+): Promise<ScheduledCenterPlanChange | null> {
   if (!scheduledPlan || !isPlanKey(scheduledPlan) || scheduledPlan === 'top_centers') return null;
   // Quarterly is retired — a stale scheduled_billing_period value coerces to
   // monthly so the apply-write below can't violate the centers CHECKs.
@@ -53,14 +61,17 @@ export async function resolveScheduledCenterDowngrade(
 }
 
 /**
- * Flip a center to its scheduled (lower) plan at the renewal moment and clear the
- * schedule. Called from the subscription-invoice-paid finalize, so the higher plan,
- * its limits and its price all stayed in force right up to this point (G5).
+ * Flip a center to its scheduled plan at the renewal moment and clear the
+ * schedule. Called from the subscription-invoice-paid finalize, so whichever
+ * plan was in force before this point — higher or lower — stayed in force
+ * right up to this moment (G5). No credit is ever involved for a downgrade
+ * (G3/G4); an upgrade's charge was already collected via the (re)priced
+ * renewal invoice itself, not here.
  */
-export async function applyScheduledCenterDowngrade(
+export async function applyScheduledCenterPlanChange(
   supabase: SupabaseClient,
   centerId: string,
-  sched: ScheduledCenterDowngrade,
+  sched: ScheduledCenterPlanChange,
 ): Promise<void> {
   await supabase
     .from('centers')
