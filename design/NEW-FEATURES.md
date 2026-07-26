@@ -38,6 +38,10 @@ below; this is the summary.
 | Referral step-down | **Live wins: 10% for twelve months.** The design's month-6 drop is wrong. | Not a build item. The rest of the screen is unblocked. → A9, Appendix D |
 | Plan names | Starter/Growth/Scale are **placeholder**. Real: centers **Solo, Nano, Starter, Pro, Business, Enterprise**; teachers **Free, Standard, Pro, Scale**. | 12 design screens to correct. Build side unblocked. → Appendix D |
 | Admin Center Assignments | The **live route is do-not-touch** commission machinery. The design is a separate feature needing its own route. | Split into A10 and a do-not-touch guardrail. → A10 |
+| **Collection fee model** | **LOCKED.** 10% collection fee · 7.5% + 7.5 markup · parent processing 1.5% + 1.5. Provider screens quote the provider price, never the parent total. | **Unblocks B2→A11, B3→A12, B4→A13, B14→A14, and the fee half of C5.** → B1 |
+| Analytics / Benchmarks add-ons | **Not decided.** Analytics keeps `canViewRevenue`; Benchmarks stays free. | Do not build either as a purchase. → B9, B10 |
+| Group billing basis | **Not decided.** Live keeps `fee_per_class` only. | → B12 |
+| Admin §07 prices, teacher Free tier, `top_centers`, the §02 fee wording | Four further design corrections. | → Appendix D5–D8 |
 
 **Appendix D collects every design edit these decisions imply**, by file and section number.
 
@@ -55,26 +59,26 @@ below; this is the summary.
 | **A8** | Empty and loading states, row-action patterns | none |
 | **A9** | Referral rate display, countdown and step-date detail | money (read) |
 | **A10** | Admin teacher ↔ center linking, on a new route | account state |
-| **B1** | **The collection fee model** — the decision under B2–B4 | money |
-| **B2** | Online collection for centers (Collect for me) | money, account state |
-| **B3** | Online collection for teachers (Collect for you) | money, account state |
-| **B4** | Provider balance, clearing and withdrawal | money |
+| ~~B1~~ | ~~The collection fee model~~ — **LOCKED 26 July**. Rate card below | money |
+| **A11** | Online collection for centers (Collect for me) — *unblocked by B1, still needs C1* | money, account state |
+| **A12** | Online collection for teachers (Collect for you) — *unblocked by B1, still needs C1* | money, account state |
+| **A13** | Provider balance, clearing and withdrawal — *unblocked by B1, still needs C1* | money |
 | **B5** | WhatsApp Pack as a one-time top-up | money |
 | **B6** | Teacher WhatsApp screen and message allowance | money |
 | ~~B7~~ | ~~Referral rate step-down window~~ — **resolved**, live wins. Build side moved to A9 | — |
 | **B8** | Referral earnings: credit vs withdraw, and the minimum | money, account state |
-| **B9** | Advanced Analytics as a paid add-on | money, account state |
-| **B10** | Benchmarks as a paid add-on | money, account state |
+| **B9** | Advanced Analytics as a paid add-on — **deferred 26 July, do not build as a purchase** | money, account state |
+| **B10** | Benchmarks as a paid add-on — **deferred 26 July, stays free** | money, account state |
 | **B11** | Extra team seats as a paid add-on | money |
-| **B12** | Group billing basis: per session, monthly, bundle | money |
+| **B12** | Group billing basis — **deferred 26 July, live keeps `fee_per_class` only** | money |
 | ~~B13~~ | ~~Admin Center Assignments~~ — **resolved**, split into A10 and a do-not-touch guardrail | — |
-| **B14** | Parent payment page | money |
+| **A14** | Parent payment page — *unblocked by B1, still needs C1* | money |
 | ~~B15~~ | ~~Plan naming~~ — **resolved**, real names confirmed. Design correction only | — |
 | **C1** | Identity verification (e-KYC via Valify) | auth, account state |
 | **C2** | Verified as a second account state across the platform | money, account state |
 | **C3** | Center → teacher split payouts | money |
 | **C4** | Tax documents: ETA e-receipt and e-invoice | money |
-| **C5** | Admin money ledgers for collection | money |
+| **C5** | Admin money ledgers for collection — *fee model locked; still needs C1 + C4* | money |
 | **C6** | Legal document text | none |
 | **C7** | Self-enrollment: the minor-consent question | account state |
 
@@ -372,31 +376,53 @@ the only thing the screen decides.
 
 # B. BLOCKED ON A DECISION FROM YOU
 
-## B1. The collection fee model
+## ~~B1. The collection fee model~~ — LOCKED 26 July
 
-**This is one decision, and B2, B3, B4, B14 and C5 all sit on top of it.** It is listed as a feature
-because nothing below it can be specified until it is made.
+> **Decided. Use exactly this. B2, B3, B4, B14 and C5 are unblocked.**
 
-**What it is:** The design specifies a three-source revenue model for online collection that does not
-appear anywhere in `docs/PRICING_SPEC.md`.
+### The rate card
 
-**Designs:** `Merged-Center-Attendance` §02, `Merged-Center-Money` §04 §05, `Merged-Public-App` §04,
-`Merged-Teacher-Money` §04 §05, `Merged-Admin-Money` §01, `Merged-Verification-Payouts` §06,
-`Merged-Center-Groups` §02.
+**One rate card. Every provider keeps 90%, the platform keeps 10%.** Three revenue lines on a
+provider fee of **X**:
 
-**The numbers, as drawn:**
+| Line | Formula | Visible to |
+|---|---|---|
+| Collection fee | `0.10 × X` | **provider** |
+| Price markup | `0.075 × X + 7.5` | **provider only — never a parent** |
+| **Parent processing fee** | `0.015 × (X + markup) + 1.5` | **parent**, with the formula shown |
 
-| Component | Rate | Charged to | Where it appears |
-|---|---|---|---|
-| Collection fee | **10%** of tuition | provider | Provider keeps 90%. `Merged-Center-Attendance` §02, `Merged-Center-Money` §05 |
-| Price markup | **7.5% + 7.5 EGP** | parent | Baked into the displayed price. `Merged-Center-Groups` §02 |
-| **Parent processing fee** | **1.5% + 1.5 EGP** | parent | Shown as a separate line. `Merged-Public-App` §04 |
+**Worked example, X = 150:**
 
-The arithmetic is internally consistent across screens — 150 → 168.75 → 172.78, and 1,000 → 1,082.50
-→ 1,100.24 — and `Merged-Admin-Money` §01 reconciles the three sources to a single revenue figure
-(32,000 + 33,000 + 7,095 = 72,095).
+```
+provider enters              150.00
+provider keeps               135.00     X − 10%
+provider price               168.75     X + markup   ← provider screens quote THIS
+parent processing fee          4.03     1.5% × 168.75 + 1.5
+parent pays                  172.78     ← provider screens NEVER show this
+```
 
-**Exists today:** none of it. Live money is subscription revenue only.
+### The presentation rule
+
+**The parent never sees the underlying fee. The provider screens quote the provider price, not the
+parent total.**
+
+> **If a screen shows a provider the parent total, that is a bug.**
+
+Provider-facing screens quote **168.75**. The parent's payment page is the only surface where
+**172.78** appears, and there the split is `168.75` + `4.03` with the formula stated. The 10%
+collection fee and the 7.5% + 7.5 markup are provider-visible; neither is ever rendered to a parent.
+
+### Standing rules that come with it
+
+- **All published subscription prices are VAT-inclusive at 14%.**
+- **Paymob's ~2.75% comes out of company margin.** Never passed on, never shown.
+- **No refunds.** Billing is post-paid, so the remedy is **void an unpaid link**, not a refund. Do not build a refund path on any screen.
+
+### What this does not change
+
+**`resolveProcessingFeeAmount()` is still the CENTER fee** — the flat 20 EGP on subscription, pack,
+card-order and reactivation invoices. The naming rule below stands unchanged. The parent processing
+fee gets its own module, its own config keys and its own snapshot field.
 
 ## ⚠ NAMING RULE — two different fees, one name, and it fails silently
 
@@ -404,46 +430,37 @@ The arithmetic is internally consistent across screens — 150 → 168.75 → 17
 which invoice they land on. Getting them confused charges the wrong party the wrong amount, and
 nothing in the type system will catch it.**
 
-| | **CENTER PROCESSING FEE** (exists, live) | **PARENT PROCESSING FEE** (design, new) |
+| | **CENTER PROCESSING FEE** (exists, live) | **PARENT PROCESSING FEE** (new, B1) |
 |---|---|---|
-| Amount | **Flat 20 EGP** | **1.5% + 1.5 EGP** |
+| Amount | **Flat 20 EGP** | **1.5% × (X + markup) + 1.5** |
 | Paid by | The **center or teacher** | The **parent** |
 | Applied to | Paymob-charged subscription, pack, card-order and reactivation invoices | Tuition collected on behalf of a provider |
-| Config | `platform_config.processing_fee_enabled` / `processing_fee_amount` | none yet |
-| Snapshot | `invoices.metadata.processing_fee` | none yet |
-| Code | `src/lib/processingFee.ts`, `resolveProcessingFeeAmount()`, `getProcessingFeeConfig()` | none yet |
-| Spec | `docs/PRICING_SPEC.md` §5 | nowhere |
+| Config | `platform_config.processing_fee_enabled` / `processing_fee_amount` | its own keys, to be added |
+| Snapshot | `invoices.metadata.processing_fee` | its own field, to be added |
+| Code | `src/lib/processingFee.ts`, `resolveProcessingFeeAmount()`, `getProcessingFeeConfig()` | its own module |
+| Spec | `docs/PRICING_SPEC.md` §5 | B1 above |
 
 > **`resolveProcessingFeeAmount()` is the CENTER fee. It must never be used for a parent charge.**
 > Nor may `getProcessingFeeConfig()`, `PROCESSING_FEE_DEFAULT_AMOUNT`, `applyProcessingFee()`, or
 > `invoices.metadata.processing_fee`. A parent charge that reaches any of them bills a flat 20 EGP
-> instead of 1.5% + 1.5, on the wrong invoice, against the wrong payer — and the amount is plausible
-> enough that nobody notices.
+> instead of the B1 formula, on the wrong invoice, against the wrong payer — and the amount is
+> plausible enough that nobody notices.
 >
 > **The parent fee needs its own module, its own config key, and its own snapshot field.** Do not
 > extend the existing one with a flag.
 
 **Throughout this document the design's fee is written PARENT PROCESSING FEE.** In the design files
-it is still called "processing fee" — Appendix D lists the five screens to rename, in both
+it is still called "processing fee" — Appendix D1 lists the five screens to rename, in both
 languages. **Both meanings appear inside the same design set**, which is what makes this dangerous:
 the WhatsApp Pack and Order Checkout designs correctly use the *existing* 20 EGP fee.
 
-**What has to be decided:**
-1. Are the three rates correct and approved? None is in `PRICING_SPEC.md`.
-2. Is the parent markup (7.5% + 7.5) disclosed to the parent, or only the final price? The design shows the final price with **no breakdown of it**, then the parent processing fee separately with its formula.
-3. Does the 14%-VAT-inclusive rule apply, and to which components? `Merged-Admin-Money` §01 shows "VAT on our fees −8,854" as a separate cost line.
-4. Confirm the customer-facing wording for the parent fee in Arabic. Live uses **رسوم المعالجة** for the center fee, and the design currently uses the same phrase for the parent one.
+**Still open, and it is wording not maths:** the customer-facing Arabic term. Live uses
+**رسوم المعالجة** for the center fee and the design uses the same phrase for the parent one.
 
-**Touches:** money. Every part of it.
+## A11 (was B2). Online collection for centers ("Collect for me")
 
-**Depends on:** nothing external. This is yours to settle, and it unblocks the largest cluster in the
-document.
-
-**Design intent:** the parent sees **one price for the session** plus one separately-stated
-parent processing fee. The provider's cut, the markup and the platform's margin never appear on the
-parent's screen. `Merged-Public-App` §04: *"the parent is buying a session, not a bundle of fees."*
-
-## B2. Online collection for centers ("Collect for me")
+> **Fee model locked 26 July (B1). Unblocked as far as the money is concerned — the remaining
+> dependency is C1, identity verification.**
 
 **What it is:** A center verifies, TutoringHQ invoices each parent, collects, and processes the money
 to the center's bank every Thursday.
@@ -473,7 +490,10 @@ design's own note on the live model is *"The app records payments, it does not p
 - **Thursday is a clearing date, not a payout.** Money moves Pending → Available on Thursday; withdrawing is always the center's own action (see B4). Do not build an automatic Thursday payout.
 - **"One fee, nothing else deducted."** The opt-in states exactly one deduction. Adding a second visible deduction breaks the promise the screen makes.
 
-## B3. Online collection for teachers ("Collect for you")
+## A12 (was B3). Online collection for teachers ("Collect for you")
+
+> **Fee model locked 26 July (B1): the teacher collection fee is 10%, same rate card as centers.
+> Remaining dependency is C1.**
 
 **What it is:** The same product for an independent teacher, opted into from a screen that states the
 fee only in categories, never as a number.
@@ -500,7 +520,7 @@ pending charges the teacher then marks paid by hand
 - **So the number is disclosed on the receipt but withheld on the opt-in.** That is either intentional (you agree to a fee, you see it once money moves) or an inconsistency. **This needs your call**, and it is exactly the "the amount shown differs from the amount charged" case `START-CLAUDE-CODE.md` asks for adversarial review on.
 - The design is marked *"draft pending legal review"* — see C6.
 
-## B4. Provider balance, clearing and withdrawal
+## A13 (was B4). Provider balance, clearing and withdrawal
 
 **What it is:** How a verified center or teacher gets collected money out — a free monthly payout, a
 priced extra payout, and a priced instant payout.
@@ -685,7 +705,13 @@ credit. Unverified users can only spend as credit.
 never the earning. Do not stop accrual for unverified accounts. And the locked state shows the amount
 — hiding the number removes the reason to verify.
 
-## B9. Advanced Analytics as a paid add-on
+## B9. Advanced Analytics as a paid add-on — DEFERRED 26 July
+
+> **Not decided. Do not build Analytics as a purchase.** `/{locale}/analytics` keeps its existing
+> `canViewRevenue` permission gate. The design's richer *content* — forecast, projected-revenue bar,
+> collection-rate gauge, methods donut, revenue by group, P&L, aging report — is not itself blocked;
+> only the add-on gate and the purchase flow are. Build the content behind the existing permission,
+> or leave the screen alone until this is decided.
 
 **What it is:** The design turns Analytics from a permission-gated screen into a **purchased monthly
 add-on**.
@@ -711,7 +737,10 @@ cannot see a screen the center paid for — probably not what you want, but the 
 higher plan. The aging report's per-bucket **Remind** buttons spend WhatsApp credit — which ties
 this to B5.
 
-## B10. Benchmarks as a paid add-on
+## B10. Benchmarks as a paid add-on — DEFERRED 26 July
+
+> **Not decided. Benchmarks stays free.** Do not build the 99 EGP/mo enable sheet or any entitlement.
+> The existing data-sufficiency gate (`insufficient_data`, `centers_needed: 10`) stands.
 
 **What it is:** Benchmarks becomes a 99 EGP/month add-on with a locked state and an enable sheet.
 
@@ -760,7 +789,11 @@ on plan names), and what happens to a center already over the new cap.
 **Design intent:** the seat line sits next to the member list, not buried in billing, so the cost of
 adding someone is visible at the moment you add them.
 
-## B12. Group billing basis: per session, monthly, bundle
+## B12. Group billing basis: per session, monthly, bundle — DEFERRED 26 July
+
+> **Not decided. Live keeps `fee_per_class` only.** Do not add a billing-basis column, monthly group
+> billing, or bundle draw-down. The design's Monthly and Bundle rows in `Merged-Center-Groups` §02 are
+> out of scope until this is decided.
 
 **What it is:** A group can bill per session, monthly, or as a bundle of N sessions that draws down
 by attendance.
@@ -832,7 +865,7 @@ missing unique constraint on the center identifier, the missing claim-expiry fie
 lacking house-account and team-leader values, and the commission table gaps. Those are database work
 with a September deadline and are **not** design-driven — they should not wait behind this.
 
-## B14. Parent payment page
+## A14 (was B14). Parent payment page
 
 **What it is:** One public page for paying any provider by link, no account needed.
 
@@ -1076,6 +1109,10 @@ is a compliance problem, not a UI one.
 
 ## C5. Admin money ledgers for online collection
 
+> **Fee model locked 26 July (B1)** — the three revenue lines these ledgers reconcile are now fixed.
+> Remaining dependencies are C1 (verification) and C4 (tax documents), plus the pending legal and
+> accountant review on §02 and §04.
+
 **What it is:** The four internal screens that exist only once the platform collects money on behalf
 of providers.
 
@@ -1295,7 +1332,73 @@ canonical 999 / 1,999 / 4,499 / 7,999 / 12,999 / 18,499.
 −12.92 lines and the 850 net; they are draft artifacts with no place in the money model. Detail in
 **C4**.
 
-## Overlap
+## D5. Replace the stale prices in `Merged-Admin-Money` §07 — 1 screen
 
-`Merged-Center-Insight` §03 appears in D2 and D3. `Merged-Admin-Money` §01 in D1 and, separately, §07
-in D3. Nineteen distinct screens across the four corrections.
+The screen shows center plans at 300 / 700 / 1,500 EGP. Those are placeholder. **The real ladders,
+confirmed 26 July:**
+
+| Center plan | Price / mo | Students / week |
+|---|---|---|
+| Solo | 999 | 50 |
+| Nano | 1,999 | 120 |
+| Starter | 4,499 | 300 |
+| Pro | 7,999 | 600 |
+| Business | 12,999 | 1,200 |
+| Enterprise | 18,499 | 2,000 |
+
+| Teacher plan | Price / mo | Students |
+|---|---|---|
+| Free | 0 | — |
+| Standard | 499 | 20 |
+| Pro | 999 | 50 |
+| Scale | 2,499 | 150, then **+16 per student above 150** |
+
+These match the canonical `PLANS` const in `Merged-Public-Marketing` §03, which already carries the
+center ladder and the Standard / Pro / Scale teacher ladder including the `over:16` overage. **The
+only thing §03 is missing is the Free tier** — see D6.
+
+## D6. Add the teacher Free tier — every teacher pricing frame
+
+**No design shows it.** The teacher ladder is drawn as Standard / Pro / Scale throughout. Free at
+0 EGP is a real plan and needs a frame wherever the teacher ladder appears:
+
+`Merged-Public-Marketing` §02 Public Audience · `Merged-Public-Marketing` §03 Public Pricing (the
+`PLANS.teacher` array) · `Merged-Public-App` §01 Public Auth · `Merged-Lifecycle` §05 Teacher
+Resubscribe · `Merged-Teacher-Money` §02 Earnings Calculator · `Merged-Teacher-Money` §03 Teacher
+Billing · `Merged-Public-Legal` §01 (the sentence *"Teachers have Standard, Pro and Scale"*).
+
+Live models the free state as the free zone (`hasPrivateAccess: false`) rather than a named plan, so
+the design work includes deciding whether Free is presented as a plan card or as the pre-plan state.
+
+## D7. Note `top_centers` so nobody deletes it — no design needed
+
+`top_centers` (ميجا سنتر) exists live as a seventh center plan: **custom-priced from
+`centers.all_in_price`, `is_active` false**. It is deliberately not in the published six and needs no
+design frame.
+
+**Recorded here so a future pass does not remove it as an orphan.** `src/lib/pricing.ts` defines it
+outside the fixed tier list (`PlanKey = SubscriptionPlanKey | 'top_centers'`), and per `CLAUDE.md`
+code must throw and Sentry-warn when `all_in_price` is NULL. Leave both behaviours in place.
+
+## D8. Reword the ambiguous fee line in `Merged-Verification-Payouts` §02 — 1 screen
+
+The teacher fee-collection frame reads *"A small processing fee applies per collection"*, EN and AR.
+**That is the collection fee — 10% — not the parent processing fee.** Reword to name it explicitly:
+
+> **EN:** "A 10% collection fee applies per collection."
+> **AR:** "يُخصم رسم تحصيل ١٠٪ من كل عملية تحصيل."
+
+This resolves the ambiguity flagged in D1, which listed the same two instances pending a decision.
+**D1's row for this screen is superseded by D8** — it is a reword, not a rename.
+
+**Knock-on:** `Merged-Teacher-Money` §05 Teacher Collect Optin deliberately states the fee only in
+categories with no figure. With 10% now named on the §02 screen, the two are inconsistent. That is
+open question 4 in Appendix C and is not resolved by this correction.
+
+## Overlap and totals
+
+`Merged-Center-Insight` §03 appears in D2 and D3. `Merged-Admin-Money` §07 appears in D3 and D5.
+`Merged-Verification-Payouts` §02 appears in D1 and D8, where **D8 supersedes the D1 row**.
+`Merged-Public-Marketing` §03 appears in D6 as the canonical ladder needing a Free tier.
+
+**Eight corrections, 26 distinct screens.** D7 is a note rather than an edit.
