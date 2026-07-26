@@ -14,6 +14,7 @@ import {
   nextAnchorDueStrictlyAfter,
 } from '@/lib/billingSchedule';
 import { grantReferralReward } from '@/lib/teacherReferral';
+import { repriceSubscriptionInvoice } from '@/lib/repriceSubscriptionInvoice';
 
 export type CombinedSessionMetadata = {
   newPlan?: string;
@@ -258,6 +259,12 @@ export async function tryFinalizeCombinedPaymentSession(
         // Monthly→annual starts a FRESH 12-month term, so it resets next_payment_due
         // (rule 2 / G7 exception). A tier upgrade keeps the existing renewal date (G7),
         // so next_payment_due is left untouched in that case.
+        //
+        // DRAIN-ONLY: /api/billing/upgrade no longer mints sessions carrying
+        // `intervalSwitchToAnnual` — interval changes moved to checkout, so this
+        // branch exists purely to finalize sessions created BEFORE that change and
+        // still pending. Do not add new writers. Remove once no pending
+        // combined_payment_sessions row has metadata.intervalSwitchToAnnual = true.
         const intervalSwitchToAnnual = meta.intervalSwitchToAnnual === true;
         const centerUpdate: Record<string, unknown> = {
           plan: newPlan,
@@ -321,6 +328,47 @@ export async function tryFinalizeCombinedPaymentSession(
           await markSessionFailed(supabase, row.id);
           await logFinalizeFailure(supabase, logErr, { sessionId: row.id, phase: 'upgrade_log' });
           return false;
+        }
+
+        // A mid-cycle upgrade keeps the renewal date (G7), so if the cron
+        // already created the renewal invoice for this same period (the
+        // next_payment_due - 7 window), it still bears the OLD tier's price.
+        // Reprice it now to the new tier so the next renewal doesn't bill the
+        // plan the customer just paid to leave. Deliberately done HERE (only
+        // once the difference charge and the plan flip have both succeeded),
+        // never at request time — an upgrade activates only after payment (G6),
+        // and repricing the renewal invoice before that would let a customer
+        // who never completes checkout see a higher renewal price they never
+        // paid for. Best-effort: the difference charge and plan flip already
+        // committed, so a reprice failure here is logged, not fatal.
+        const { data: pendingRenewal, error: renewalLookupErr } = await supabase
+          .from('invoices')
+          .select('id')
+          .eq('center_id', row.center_id)
+          .eq('invoice_type', 'subscription')
+          .eq('billing_period_start', anchorYmd)
+          .in('status', ['pending', 'overdue', 'failed'])
+          .maybeSingle();
+
+        if (renewalLookupErr) {
+          await logFinalizeFailure(supabase, renewalLookupErr, {
+            sessionId: row.id,
+            phase: 'renewal_invoice_lookup',
+          });
+        } else if (pendingRenewal?.id) {
+          const reprice = await repriceSubscriptionInvoice(supabase, {
+            invoiceId: pendingRenewal.id as string,
+            centerId: row.center_id,
+            newBase: billingAmount,
+          });
+          if (!reprice.ok) {
+            await logFinalizeFailure(supabase, new Error(`renewal reprice refused: ${reprice.code}`), {
+              sessionId: row.id,
+              phase: 'renewal_invoice_reprice',
+              invoiceId: pendingRenewal.id,
+              code: reprice.code,
+            });
+          }
         }
       }
     }

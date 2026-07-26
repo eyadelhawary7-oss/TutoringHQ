@@ -102,3 +102,49 @@ export function computeNextPaymentDue(center: AnchorCenterFields, periodMonths: 
 export function computeNextQuarterlyPaymentDue(center: AnchorCenterFields): string {
   return computeNextPaymentDue(center, 3);
 }
+
+/** Safety cap on catch-up iterations — 600 monthly periods is 50 years; no real
+ * stale-data scenario needs more, and this stops a pathological input from
+ * looping indefinitely. */
+const MAX_CATCH_UP_PERIODS = 600;
+
+export interface CatchUpResult {
+  /** First due date on or after `now`, period-aware and anchor-day-snapped. */
+  nextDue: string;
+  /** How many WHOLE periods beyond the single ordinary advance were skipped
+   * because the stored due date was more than one period stale. Zero for the
+   * ordinary case (one missed cron cycle, a payment made on the due day, etc). */
+  periodsSkipped: number;
+}
+
+/**
+ * computeNextPaymentDue, but never lands in the past. A single `+periodMonths`
+ * advance assumes at most one period was missed; if `next_payment_due` sat
+ * unpaid for LONGER than that (e.g. the auto-suspend interlock was off, or a
+ * cron outage), that one advance can still land before `now` — and the center
+ * would re-enter the blocked state the instant it finishes paying. This keeps
+ * advancing whole periods (anchor-day-snapped, same as computeNextPaymentDue)
+ * until the result is on or after `now`.
+ *
+ * Does NOT bill for the skipped periods — this only moves the clock forward.
+ * `periodsSkipped` is for the caller to log/alert on; catching up silently
+ * would hide a center that has been unpaid for an unusually long stretch.
+ */
+export function computeNextPaymentDueCatchUp(
+  center: AnchorCenterFields,
+  periodMonths: number,
+  now: Date = new Date(),
+): CatchUpResult {
+  const todayYmd = cairoDateKey(now);
+  let candidate = computeNextPaymentDue(center, periodMonths);
+  let periodsSkipped = 0;
+  let cursor: AnchorCenterFields = center;
+
+  while (candidate < todayYmd && periodsSkipped < MAX_CATCH_UP_PERIODS) {
+    periodsSkipped += 1;
+    cursor = { ...cursor, next_payment_due: candidate };
+    candidate = computeNextPaymentDue(cursor, periodMonths);
+  }
+
+  return { nextDue: candidate, periodsSkipped };
+}

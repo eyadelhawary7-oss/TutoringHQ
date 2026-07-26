@@ -5513,6 +5513,8 @@
     },
     "upgrade": {
       "useDowngrade": "This would not increase your plan cost. Use the Downgrade tab.",
+      "intervalSwitchAtCheckout": "Switching to annual billing is done at checkout, not as a mid-cycle upgrade.",
+      "intervalChangeNotUpgrade": "Switching from annual to monthly billing is not an upgrade.",
       "amountDue": "Amount due now",
       "annualSaveHint": "Save vs monthly",
       "choosePeriod": "Choose billing period",

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import * as Sentry from '@sentry/nextjs';
 import { requireCenterAuth } from '@/lib/centerAuth';
-import { canUpgrade, getUpgradeCost, getSwitchToAnnualCharge } from '@/lib/billingEngine';
-import { getSummerConfig, summerHoldsCharges } from '@/lib/summer/config';
+import { checkUpgradeRankGate, getUpgradeLimit, getUpgradeCost } from '@/lib/billingEngine';
 import {
   getAnnualChargeRounded,
   getChargeFromQuarterlyAllIn,
@@ -15,6 +16,9 @@ import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { applyProcessingFee, buildInvoiceTaxSnapshot } from '@/lib/processingFee';
+import { repriceSubscriptionInvoice } from '@/lib/repriceSubscriptionInvoice';
+import { addMonthsToDateStr } from '@/lib/subscriptionAnchor';
+import { centerRenewalPeriodMonths } from '@/lib/centerRenewal';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +31,47 @@ const PLAN_RANK: Record<string, number> = {
   enterprise: 6,
   top_centers: 7,
 };
+
+/**
+ * Mint a Paymob checkout for a specific invoice and attach it: paymob_order_id,
+ * paymob_iframe_url, and a metadata.paymob_cached_total snapshot (the amount
+ * this checkout was minted for). That snapshot is what /api/invoices/[id]/pay's
+ * cache-reuse guard compares against the invoice's CURRENT total before ever
+ * reusing a cached checkout — so a subsequent reprice (a plan change, a fee
+ * change) can never hand back a stale iframe for the wrong amount.
+ */
+async function mintCheckoutForInvoice(
+  supabaseAdmin: SupabaseClient,
+  params: {
+    invoiceId: string;
+    centerId: string;
+    amountEgp: number;
+    merchantOrderIdPrefix: string;
+    phoneDigits: string;
+    displayName: string;
+    existingMetadata: Record<string, unknown>;
+  },
+): Promise<{ paymobOrderId: string; iframeUrl: string }> {
+  const checkout = await createPaymobCheckoutEgp({
+    amountEgp: params.amountEgp,
+    merchantOrderId: `${params.merchantOrderIdPrefix}-${params.invoiceId}`,
+    itemName: 'TutoringHQ plan upgrade',
+    phoneDigits: params.phoneDigits,
+    displayName: params.displayName,
+  });
+
+  await supabaseAdmin
+    .from('invoices')
+    .update({
+      paymob_order_id: checkout.paymobOrderId,
+      paymob_iframe_url: checkout.iframeUrl,
+      metadata: { ...params.existingMetadata, paymob_cached_total: params.amountEgp },
+    })
+    .eq('id', params.invoiceId)
+    .eq('center_id', params.centerId);
+
+  return checkout;
+}
 
 export async function POST(request: NextRequest) {
   const auth = await requireCenterAuth(request);
@@ -110,29 +155,43 @@ export async function POST(request: NextRequest) {
     c.subscription_billing_period ?? c.billing_period,
   ) as BillingPeriod;
 
-  // Monthly→annual (rule 2) is an INTERVAL switch, not a tier bump: it may keep the
-  // same plan (rank unchanged), so it bypasses the tier-rank gate. It still cannot
-  // be a tier DOWNgrade (that's the downgrade flow).
-  const isSwitchToAnnual = newBp === 'annual' && periodForLimit !== 'annual';
+  // Interval changes are NOT upgrades, and they no longer live on this route:
+  //   - monthly→annual is chosen at CHECKOUT, not as a mid-cycle upgrade;
+  //   - annual→monthly is not an upgrade path at all (it reduces cadence, so it
+  //     would have to be SCHEDULED at a renewal boundary, never charged here).
+  // Rejecting both here means everything past this point is a same-interval tier
+  // upgrade: `newBp === periodForLimit` holds, so the proration below always
+  // compares like with like (one daily-rate divisor, not two).
+  if (newBp !== periodForLimit) {
+    return newBp === 'annual'
+      ? NextResponse.json(
+          {
+            error: 'Switching to annual billing is done at checkout, not as a mid-cycle upgrade.',
+            code: 'INTERVAL_SWITCH_AT_CHECKOUT',
+            i18nKey: 'billing.upgrade.intervalSwitchAtCheckout',
+          },
+          { status: 400 },
+        )
+      : NextResponse.json(
+          {
+            error: 'Switching from annual to monthly billing is not an upgrade.',
+            code: 'INTERVAL_CHANGE_NOT_UPGRADE',
+            i18nKey: 'billing.upgrade.intervalChangeNotUpgrade',
+          },
+          { status: 400 },
+        );
+  }
 
-  if (isSwitchToAnnual) {
-    if (requestedRank < currentRank) {
-      return NextResponse.json(
-        { error: 'Use the Downgrade tab for a lower plan.', code: 'USE_DOWNGRADE' },
-        { status: 400 },
-      );
-    }
-  } else {
-    const gate = canUpgrade({
-      currentPlanRank: currentRank,
-      requestedPlanRank: requestedRank,
-      upgradeCountThisPeriod: Number(c.upgrade_count_this_period ?? 0),
-      billingPeriod: periodForLimit,
-    });
-
-    if (!gate.allowed) {
-      return NextResponse.json({ error: gate.reason ?? 'Upgrade not allowed' }, { status: 400 });
-    }
+  // Rank gate only, here — no quota yet. The quota only makes sense once we
+  // know whether this is a mid-cycle upgrade (quota applies) or a day-zero
+  // upgrade (the period is rolling over anyway, so the quota resets with it —
+  // see below, once daysRemaining is known).
+  const rankGate = checkUpgradeRankGate({
+    currentPlanRank: currentRank,
+    requestedPlanRank: requestedRank,
+  });
+  if (!rankGate.allowed) {
+    return NextResponse.json({ error: rankGate.reason ?? 'Upgrade not allowed' }, { status: 400 });
   }
 
   const npd = c.next_payment_due?.slice(0, 10);
@@ -167,74 +226,196 @@ export async function POST(request: NextRequest) {
   );
   const newPeriodPrice = getChargeFromQuarterlyAllIn(newAllIn, newBp, newPlan as PlanKey);
 
-  const newPlanFullPeriodPrice = (() => {
-    switch (newBp) {
-      case 'monthly':
-        // Monthly bills at the same per-month rate as quarterly (all_in_price).
-        return newAllIn;
-      case 'annual':
-        return getAnnualChargeRounded(Number(newPlanData.all_in_price));
-      default:
-        return newAllIn;
-    }
-  })();
+  // Full one-cycle price of the new tier — the day-zero charge in full, and
+  // (same-interval only, since interval switching left this route in PR 1) an
+  // upper bound on the mid-cycle proration below.
+  const newPlanFullPeriodPrice =
+    newBp === 'annual' ? getAnnualChargeRounded(Number(newPlanData.all_in_price)) : newAllIn;
 
-  // amountDue + the proration audit fields, computed per the unified rule:
-  //   - interval switch to annual  → getSwitchToAnnualCharge (annual − unused credit, fresh term)
-  //   - tier upgrade (same interval) → getUpgradeCost (daily-rate difference, renewal kept)
-  let amountDue: number;
-  let switchCredit = 0;
-  let daysRemaining: number;
-  let dailyRateDifference = 0;
+  const cost = getUpgradeCost({
+    newPlanPrice: newPeriodPrice,
+    currentPlanPrice: currentPeriodPrice,
+    newBillingPeriod: newBp,
+    currentBillingPeriod: periodForLimit,
+    nextPaymentDue: new Date(`${npd}T12:00:00`),
+  });
+  const daysRemaining = cost.daysRemaining;
+  const dailyRateDifference = cost.dailyRateDifference;
 
-  if (isSwitchToAnnual) {
-    // G9: no proration credit while summer holds charges (no money has moved).
-    const summerCfg = await getSummerConfig();
-    const sw = getSwitchToAnnualCharge({
-      annualFullPrice: newPlanFullPeriodPrice,
-      currentPeriodPrice,
-      currentBillingPeriod: periodForLimit,
-      nextPaymentDue: new Date(`${npd}T12:00:00`),
-      summerHoldsCharges: summerHoldsCharges(summerCfg),
-    });
-    amountDue = sw.charge;
-    switchCredit = sw.credit;
-    daysRemaining = sw.daysRemaining;
-    // Annual is 10 months vs at most ~3 months of credit, so the charge is always
-    // positive; the floor is a G3/G4 safety net, not an expected path.
-    if (amountDue <= 0) {
-      return NextResponse.json(
-        { error: 'Nothing to charge for this switch.', code: 'NO_CHARGE' },
-        { status: 400 },
-      );
+  const phone = String(c.phone ?? '').replace(/\D/g, '') || '0';
+  const displayName = String(c.name ?? 'Center');
+  const code = (c.center_code ?? 'XXX').toString().replace(/\s+/g, '') || 'XXX';
+
+  // ── Day zero: on or after next_payment_due, the upgrade IS the renewal ──
+  // No separate proration charge. Reprice (or create) the pending renewal
+  // invoice to the new tier's full period price and schedule the plan change
+  // for when that invoice is paid — the SAME mechanism the downgrade route
+  // uses (scheduledPlanChange.ts is direction-agnostic; a plain column write
+  // is naturally last-write-wins, whichever direction the customer most
+  // recently asked for). The quota does not apply: the period is rolling
+  // over regardless, so it resets with it (finalize_subscription_invoice_paid
+  // already resets upgrade_count_this_period to 0 on every subscription
+  // payment) — but the rank gate above still applies unconditionally.
+  if (daysRemaining === 0) {
+    const { data: existingRenewal, error: renewalLookupErr } = await supabaseAdmin
+      .from('invoices')
+      .select('id')
+      .eq('center_id', centerId)
+      .eq('invoice_type', 'subscription')
+      .eq('billing_period_start', npd)
+      .in('status', ['pending', 'overdue', 'failed'])
+      .maybeSingle();
+
+    if (renewalLookupErr) {
+      console.error('[billing/upgrade] day-zero renewal lookup', renewalLookupErr);
+      return NextResponse.json({ error: 'Failed to look up renewal invoice' }, { status: 500 });
     }
-  } else {
-    const cost = getUpgradeCost({
-      newPlanPrice: newPeriodPrice,
-      currentPlanPrice: currentPeriodPrice,
-      newBillingPeriod: newBp,
-      currentBillingPeriod: periodForLimit,
-      nextPaymentDue: new Date(`${npd}T12:00:00`),
-    });
-    daysRemaining = cost.daysRemaining;
-    dailyRateDifference = cost.dailyRateDifference;
-    const cappedProratedCost = Math.min(
-      Math.max(0, cost.amountDue),
-      Number.isFinite(newPlanFullPeriodPrice) && newPlanFullPeriodPrice > 0
-        ? newPlanFullPeriodPrice
-        : newPeriodPrice,
-    );
-    amountDue = Math.round(cappedProratedCost * 100) / 100;
-    if (cappedProratedCost <= 0 || amountDue <= 0) {
-      return NextResponse.json(
-        {
-          error: 'This would not increase your plan cost. Use the Downgrade tab.',
-          code: 'USE_DOWNGRADE',
-          i18nKey: 'billing.upgrade.useDowngrade',
+
+    let renewalInvoiceId: string;
+    let chargedTotal: number;
+    let feeAmount: number;
+
+    if (existingRenewal?.id) {
+      const reprice = await repriceSubscriptionInvoice(supabaseAdmin, {
+        invoiceId: existingRenewal.id as string,
+        centerId,
+        newBase: newPlanFullPeriodPrice,
+      });
+      if (!reprice.ok) {
+        console.error('[billing/upgrade] day-zero reprice refused', reprice.code, reprice.message);
+        Sentry.withScope((scope) => {
+          scope.setTag('area', 'billing_upgrade_day_zero');
+          scope.setTag('center_id', centerId);
+          scope.setTag('reprice_refusal', reprice.code);
+          scope.setLevel('warning');
+          Sentry.captureMessage(`billing/upgrade day-zero reprice refused: ${reprice.code}`);
+        });
+        return NextResponse.json(
+          { error: 'Could not update the pending renewal invoice.', code: reprice.code },
+          { status: reprice.code === 'PARTIAL_PAYMENT_RECEIVED' ? 409 : 500 },
+        );
+      }
+      renewalInvoiceId = reprice.invoiceId;
+      chargedTotal = reprice.total;
+      feeAmount = reprice.fee;
+    } else {
+      // Cron outage / not yet created (should be rare — the cron creates this
+      // at next_payment_due - 7): mint it ourselves, same shape the cron uses.
+      const feeCfg = await getProcessingFeeConfig();
+      const { fee, total } = applyProcessingFee(newPlanFullPeriodPrice, feeCfg);
+      const billingEnd = addMonthsToDateStr(npd, centerRenewalPeriodMonths(newBp));
+      const invoiceNumber = `INV-${code}-${npd.slice(0, 7)}`;
+
+      const { data: created, error: createErr } = await supabaseAdmin
+        .from('invoices')
+        .insert({
+          center_id: centerId,
+          invoice_number: invoiceNumber,
+          invoice_type: 'subscription',
+          status: 'pending',
+          total_amount: total,
+          base_amount: newPlanFullPeriodPrice,
+          ...buildInvoiceTaxSnapshot({ total, fee }),
+          billing_period_start: npd,
+          billing_period_end: billingEnd,
+          due_date: npd,
+          metadata: { processing_fee: fee },
+        })
+        .select('id')
+        .single();
+
+      if (createErr || !created?.id) {
+        console.error('[billing/upgrade] day-zero renewal invoice create', createErr);
+        return NextResponse.json({ error: 'Failed to create renewal invoice' }, { status: 500 });
+      }
+      renewalInvoiceId = created.id as string;
+      chargedTotal = total;
+      feeAmount = fee;
+    }
+
+    // Last write wins: whichever plan change the customer most recently
+    // requested occupies the one renewal slot — this overwrites any pending
+    // downgrade schedule (or a prior day-zero upgrade request), never merges.
+    const { error: schedErr } = await supabaseAdmin
+      .from('centers')
+      .update({
+        scheduled_plan: newPlan,
+        scheduled_billing_period: newBp,
+      })
+      .eq('id', centerId);
+    if (schedErr) {
+      console.error('[billing/upgrade] day-zero schedule', schedErr);
+      return NextResponse.json({ error: 'Failed to schedule plan change' }, { status: 500 });
+    }
+
+    try {
+      const checkout = await mintCheckoutForInvoice(supabaseAdmin, {
+        invoiceId: renewalInvoiceId,
+        centerId,
+        amountEgp: chargedTotal,
+        merchantOrderIdPrefix: 'upg-dz',
+        phoneDigits: phone,
+        displayName,
+        existingMetadata: { processing_fee: feeAmount },
+      });
+
+      return NextResponse.json({
+        paymobUrl: checkout.iframeUrl,
+        paymobOrderId: checkout.paymobOrderId,
+        invoiceId: renewalInvoiceId,
+        dayZero: true,
+        breakdown: {
+          daysRemaining: 0,
+          amountDue: newPlanFullPeriodPrice,
+          processingFee: feeAmount,
+          chargedTotal,
         },
-        { status: 400 },
+        newNextPaymentDue: npd,
+        upgrade_count_this_period: Number(c.upgrade_count_this_period ?? 0),
+      });
+    } catch (e) {
+      // Deliberately NOT rolled back: the (re)priced invoice and the schedule
+      // are already mutually consistent (whichever plan is scheduled matches
+      // what the invoice now bills), and the invoice remains independently
+      // payable via the customer's normal invoices/pay surface even without a
+      // checkout URL from THIS request — rolling back scheduled_plan here
+      // while leaving the invoice at the new price would instead be the
+      // inconsistent state: paying that invoice would then advance the
+      // renewal WITHOUT flipping the plan the customer is being charged for.
+      console.error('[billing/upgrade] day-zero paymob', e);
+      return NextResponse.json(
+        { error: e instanceof Error ? e.message : 'Payment setup failed' },
+        { status: 500 },
       );
     }
+  }
+
+  // ── Mid-cycle: daysRemaining > 0 — the existing prorated-difference path ──
+  // The quota applies here (it did not for day-zero, above).
+  const upgradeLimit = getUpgradeLimit(periodForLimit);
+  if (Number(c.upgrade_count_this_period ?? 0) >= upgradeLimit) {
+    return NextResponse.json(
+      { error: `Upgrade limit reached for this billing period (${upgradeLimit} per period)` },
+      { status: 400 },
+    );
+  }
+
+  // Daily-rate-difference proration for the days left in the paid period,
+  // keeping the existing renewal date (G7). getUpgradeCost's own clamp bounds
+  // daysRemaining to one period's length, which for a same-interval upgrade
+  // (the only shape left on this route) already keeps amountDue <= the new
+  // plan's own full period price — no separate cap needed here.
+  const cappedProratedCost = Math.max(0, cost.amountDue);
+  const amountDue = Math.round(cappedProratedCost * 100) / 100;
+  if (cappedProratedCost <= 0 || amountDue <= 0) {
+    return NextResponse.json(
+      {
+        error: 'This would not increase your plan cost. Use the Downgrade tab.',
+        code: 'USE_DOWNGRADE',
+        i18nKey: 'billing.upgrade.useDowngrade',
+      },
+      { status: 400 },
+    );
   }
 
   // Processing-fee layout (Section 5): the prorated charge is the subscription value;
@@ -245,15 +426,9 @@ export async function POST(request: NextRequest) {
     applyProcessingFee(amountDue, feeCfg);
 
   const today = new Date().toISOString().slice(0, 10);
-  // Monthly→annual starts a FRESH 12-month term (rule 2 / G7 exception); a tier
-  // upgrade keeps the current renewal date (G7), so its invoice period ends at npd.
-  const freshTermEndYmd = (() => {
-    const d = new Date(`${today}T12:00:00.000Z`);
-    d.setUTCMonth(d.getUTCMonth() + 12);
-    return d.toISOString().slice(0, 10);
-  })();
-  const invoicePeriodEnd = isSwitchToAnnual ? freshTermEndYmd : npd;
-  const code = (c.center_code ?? 'XXX').toString().replace(/\s+/g, '') || 'XXX';
+  // A tier upgrade keeps the current renewal date (G7), so the difference invoice
+  // covers the remainder of the CURRENT period and ends at npd.
+  const invoicePeriodEnd = npd;
   const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
   const invoiceNumber = `UPG-${code}-${today.slice(0, 7)}-${suffix}`;
 
@@ -272,16 +447,8 @@ export async function POST(request: NextRequest) {
       status: 'pending',
       discount_amount: 0,
       // processing_fee drives the redesigned totals (charge → fee → total, VAT shown
-      // as included). For monthly→annual we also render the prorated credit line.
-      metadata: isSwitchToAnnual
-        ? {
-            processing_fee: processingFee,
-            interval_switch_to_annual: true,
-            new_plan_amount: newPlanFullPeriodPrice,
-            old_plan_credit: switchCredit,
-            days_remaining: daysRemaining,
-          }
-        : { processing_fee: processingFee },
+      // as included).
+      metadata: { processing_fee: processingFee },
     })
     .select('id')
     .single();
@@ -312,13 +479,13 @@ export async function POST(request: NextRequest) {
         dailyRateDifference,
         amountCharged: chargedTotal,
         processingFee,
-        switchCredit,
         newPlanFullPeriodPrice,
-        // Monthly→annual resets the renewal clock to a fresh 12-month term; a tier
-        // upgrade keeps the existing anchor (G7). Finalize reads these.
-        intervalSwitchToAnnual: isSwitchToAnnual,
-        billingAnchorYmd: isSwitchToAnnual ? freshTermEndYmd : npd,
-        freshTermEndYmd: isSwitchToAnnual ? freshTermEndYmd : null,
+        // A tier upgrade keeps the existing renewal anchor (G7). Finalize records
+        // it as upgrade_log.billing_anchor_unchanged, uses it to find and reprice
+        // any pending renewal invoice for the SAME period so the next renewal
+        // doesn't bill the old plan, and the Paymob webhook uses it for the
+        // payment-confirmed WhatsApp period line.
+        billingAnchorYmd: npd,
       },
     })
     .select('id')
@@ -333,23 +500,15 @@ export async function POST(request: NextRequest) {
   const sessionId = sess.id as string;
 
   try {
-    const phone = String(c.phone ?? '').replace(/\D/g, '') || '0';
-    const checkout = await createPaymobCheckoutEgp({
+    const checkout = await mintCheckoutForInvoice(supabaseAdmin, {
+      invoiceId,
+      centerId,
       amountEgp: chargedTotal,
-      merchantOrderId: `upg-${sessionId}`,
-      itemName: 'TutoringHQ plan upgrade',
+      merchantOrderIdPrefix: 'upg',
       phoneDigits: phone,
-      displayName: String(c.name ?? 'Center'),
+      displayName,
+      existingMetadata: { processing_fee: processingFee },
     });
-
-    await supabaseAdmin
-      .from('invoices')
-      .update({
-        paymob_order_id: checkout.paymobOrderId,
-        paymob_iframe_url: checkout.iframeUrl,
-      })
-      .eq('id', invoiceId)
-      .eq('center_id', centerId);
 
     await supabaseAdmin
       .from('combined_payment_sessions')
@@ -364,12 +523,11 @@ export async function POST(request: NextRequest) {
       breakdown: {
         daysRemaining,
         dailyRateDifference,
-        switchCredit,
         amountDue: subscriptionValue,
         processingFee,
         chargedTotal,
       },
-      newNextPaymentDue: isSwitchToAnnual ? freshTermEndYmd : npd,
+      newNextPaymentDue: npd,
       upgrade_count_this_period: Number(c.upgrade_count_this_period ?? 0),
     });
   } catch (e) {

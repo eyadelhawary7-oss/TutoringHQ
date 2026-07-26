@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { NextRequest } from 'next/server';
 import {
-  resolveScheduledCenterDowngrade,
-  applyScheduledCenterDowngrade,
-} from '@/lib/scheduledDowngrade';
+  resolveScheduledCenterPlanChange,
+  applyScheduledCenterPlanChange,
+} from '@/lib/scheduledPlanChange';
 import { getChargeFromQuarterlyAllIn, PLANS } from '@/lib/pricing';
 
 // Guardrail proofs for Unified Prorated Plan Switching. The headline is G1/G3/G4:
@@ -37,8 +37,8 @@ vi.mock('@/lib/pricingConfig', async (orig) => ({
 }));
 
 vi.mock('@sentry/nextjs', () => ({
-  withScope: (fn: (s: { setTag: (k: string, v: string) => void }) => void) =>
-    fn({ setTag: () => undefined }),
+  withScope: (fn: (s: { setTag: (k: string, v: string) => void; setLevel: (l: string) => void }) => void) =>
+    fn({ setTag: () => undefined, setLevel: () => undefined }),
   captureException: () => undefined,
   captureMessage: () => undefined,
 }));
@@ -55,6 +55,7 @@ type QueryResult = { data?: unknown; error?: { message: string; code?: string } 
 const adminQueue: Record<string, QueryResult[]> = {
   centers: [],
   pricing_plans: [],
+  invoices: [],
   teacher_subscriptions: [],
   student_groups: [],
   enrollments: [],
@@ -147,6 +148,15 @@ function makeRequest(body?: unknown): NextRequest {
     text: async () => JSON.stringify(payload),
     json: async () => payload,
   } as unknown as NextRequest;
+}
+
+// Dates computed from `now` on purpose: a hardcoded next_payment_due rots into
+// the past and silently changes which branch a test exercises — this is
+// exactly what rotted the original G6 test into a false failure.
+function ymdFromNow(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
 }
 
 /** A center row that is active, paid and on an annual subscription. */
@@ -285,7 +295,7 @@ describe('G4 — no escaping the subscription: the clock starts at full price', 
       }),
     } as never;
 
-    const sched = await resolveScheduledCenterDowngrade(supa, 'pro', 'annual');
+    const sched = await resolveScheduledCenterPlanChange(supa, 'pro', 'annual');
     expect(sched).not.toBeNull();
     // Falls back to the PLANS constant when the DB has no row, and bills the FULL
     // annual charge for Pro — not zero, not a discounted remainder.
@@ -299,7 +309,7 @@ describe('G4 — no escaping the subscription: the clock starts at full price', 
 
     // Applying the schedule flips plan/price and clears the schedule fields — the
     // clock keeps running on the new plan.
-    await applyScheduledCenterDowngrade(mockAdmin as never, 'center-1', sched!);
+    await applyScheduledCenterPlanChange(mockAdmin as never, 'center-1', sched!);
     const flip = updateCalls.find((u) => u.table === 'centers');
     expect(flip?.payload).toMatchObject({
       plan: 'pro',
@@ -310,10 +320,8 @@ describe('G4 — no escaping the subscription: the clock starts at full price', 
   });
 });
 
-describe('G6 — an upgrade activates only after payment', () => {
-  it('creates a pending invoice + session and returns a checkout URL without flipping the plan', async () => {
-    // Business center on monthly upgrading to … there is nothing above business that
-    // is cheaper; use pro → business so the daily-rate difference is positive.
+describe('interval changes are not upgrades and leave this route', () => {
+  it('monthly → annual is rejected and points at checkout, charging nothing', async () => {
     adminQueue.centers = [
       {
         data: {
@@ -322,29 +330,114 @@ describe('G6 — an upgrade activates only after payment', () => {
           subscription_billing_period: 'monthly',
           billing_period: 'monthly',
           all_in_price: PLANS.pro.quarterlyAllIn,
-          next_payment_due: '2026-07-20',
+          next_payment_due: ymdFromNow(20),
+        },
+        error: null,
+      },
+    ];
+
+    const res = await postCenterUpgrade(
+      makeRequest({ newPlan: 'business', newBillingPeriod: 'annual' }),
+    );
+
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { code?: string; i18nKey?: string };
+    expect(body.code).toBe('INTERVAL_SWITCH_AT_CHECKOUT');
+    expect(body.i18nKey).toBe('billing.upgrade.intervalSwitchAtCheckout');
+
+    // Rejected before any money or plan state moves.
+    expect(insertCalls).toEqual([]);
+    expect(updateCalls).toEqual([]);
+    expect(rpcCalls).toEqual([]);
+    // Rejected before the plan price is even read — no pricing_plans round-trip.
+    expect(tableHits).toEqual(['centers']);
+  });
+
+  it('annual → monthly is rejected outright, never priced as a proration', async () => {
+    adminQueue.centers = [
+      { data: { ...annualBusinessCenter(), next_payment_due: ymdFromNow(200) }, error: null },
+    ];
+
+    const res = await postCenterUpgrade(
+      makeRequest({ newPlan: 'enterprise', newBillingPeriod: 'monthly' }),
+    );
+
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { code?: string; i18nKey?: string };
+    expect(body.code).toBe('INTERVAL_CHANGE_NOT_UPGRADE');
+    expect(body.i18nKey).toBe('billing.upgrade.intervalChangeNotUpgrade');
+
+    expect(insertCalls).toEqual([]);
+    expect(updateCalls).toEqual([]);
+    expect(rpcCalls).toEqual([]);
+    expect(tableHits).toEqual(['centers']);
+  });
+
+  it('same-interval annual → annual tier upgrade is NOT caught by the interval gate', async () => {
+    // Guards the gate itself: it must reject only genuine interval CHANGES. An
+    // annual center upgrading tier on the annual cadence still prorates.
+    adminQueue.centers = [
+      {
+        data: {
+          ...annualBusinessCenter(),
+          plan: 'pro',
+          // Must track `plan` — annualBusinessCenter() carries the business price,
+          // which would make the tier difference zero and trip USE_DOWNGRADE.
+          all_in_price: PLANS.pro.quarterlyAllIn,
+          next_payment_due: ymdFromNow(200),
         },
         error: null,
       },
     ];
     adminQueue.pricing_plans = [
-      {
-        data: {
-          all_in_price: PLANS.business.quarterlyAllIn,
-          plan_key: 'business',
-        },
-        error: null,
-      },
+      { data: { all_in_price: PLANS.business.quarterlyAllIn, plan_key: 'business' }, error: null },
     ];
-    // invoice insert → id, then session insert → id.
     adminQueue.insert = [
       { data: { id: 'inv-1' }, error: null },
       { data: { id: 'sess-1' }, error: null },
     ];
 
     const res = await postCenterUpgrade(
-      makeRequest({ newPlan: 'business', newBillingPeriod: 'monthly' }),
+      makeRequest({ newPlan: 'business', newBillingPeriod: 'annual' }),
     );
+
+    expect(res.status).toBe(200);
+    // It got past the gate and priced the plan.
+    expect(tableHits).toContain('pricing_plans');
+    const body = (await res.json()) as { breakdown?: { daysRemaining?: number } };
+    expect(body.breakdown?.daysRemaining).toBeGreaterThan(0);
+  });
+});
+
+describe('G6 — an upgrade activates only after payment', () => {
+  // Business, monthly, pro → business throughout: nothing above business is
+  // cheaper, so pro → business keeps the daily-rate difference positive for
+  // the mid-cycle cases and gives a real full-period price for the day-zero
+  // cases. All dates below are computed from `now` — a hardcoded
+  // next_payment_due is what rotted the original version of this test.
+  function proMonthlyCenter(npd: string, overrides: Record<string, unknown> = {}) {
+    return {
+      ...annualBusinessCenter(),
+      plan: 'pro',
+      subscription_billing_period: 'monthly',
+      billing_period: 'monthly',
+      all_in_price: PLANS.pro.quarterlyAllIn,
+      next_payment_due: npd,
+      ...overrides,
+    };
+  }
+
+  const businessPriceRow = { all_in_price: PLANS.business.quarterlyAllIn, plan_key: 'business' };
+
+  it('G6a — mid-cycle (daysRemaining > 0): pending invoice + session, checkout URL, plan NOT flipped', async () => {
+    adminQueue.centers = [{ data: proMonthlyCenter(ymdFromNow(20)), error: null }];
+    adminQueue.pricing_plans = [{ data: businessPriceRow, error: null }];
+    adminQueue.insert = [
+      { data: { id: 'inv-1' }, error: null },
+      { data: { id: 'sess-1' }, error: null },
+    ];
+
+    const res = await postCenterUpgrade(makeRequest({ newPlan: 'business', newBillingPeriod: 'monthly' }));
 
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
@@ -353,22 +446,208 @@ describe('G6 — an upgrade activates only after payment', () => {
     };
     expect(body.paymobUrl).toBe('https://pay/upgrade');
 
-    // A pending invoice and a pending payment session were created.
-    expect(insertCalls.map((c) => c.table)).toContain('invoices');
-    expect(insertCalls.map((c) => c.table)).toContain('combined_payment_sessions');
-
-    // The fee is the flat 20 — there is no 6%/0.5% line in the charged total.
+    expect(insertCalls.map((c) => c.table)).toEqual(['invoices', 'combined_payment_sessions']);
     expect(body.breakdown?.processingFee).toBe(20);
-    expect(body.breakdown?.chargedTotal).toBeCloseTo(
-      (body.breakdown?.amountDue ?? 0) + 20,
-      2,
-    );
+    expect(body.breakdown?.chargedTotal).toBeCloseTo((body.breakdown?.amountDue ?? 0) + 20, 2);
 
-    // CRUCIAL: the plan is NOT activated here. No centers row is updated to the new
-    // plan — that happens only in the payment finalize after Paymob confirms.
-    const planFlip = updateCalls.find(
-      (u) => u.table === 'centers' && 'plan' in u.payload,
-    );
-    expect(planFlip).toBeUndefined();
+    // No pending-renewal lookup happens at request time for the mid-cycle path
+    // — that reprice happens at PAYMENT time (combinedPaymentFinalize), not here.
+    expect(tableHits).toEqual(['centers', 'pricing_plans']);
+
+    // CRUCIAL: the plan is NOT activated here — only at payment finalize.
+    expect(updateCalls.find((u) => u.table === 'centers' && 'plan' in u.payload)).toBeUndefined();
+  });
+
+  it('G6b — mid-cycle: the per-period quota still applies (day-zero does not bypass it here)', async () => {
+    adminQueue.centers = [
+      { data: proMonthlyCenter(ymdFromNow(20), { upgrade_count_this_period: 1 }), error: null },
+    ];
+    adminQueue.pricing_plans = [{ data: businessPriceRow, error: null }];
+
+    const res = await postCenterUpgrade(makeRequest({ newPlan: 'business', newBillingPeriod: 'monthly' }));
+
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toContain('Upgrade limit reached');
+    expect(insertCalls).toEqual([]);
+  });
+
+  it('G6c — day-zero: reprices the EXISTING pending renewal invoice, no proration, no session', async () => {
+    adminQueue.centers = [{ data: proMonthlyCenter(ymdFromNow(0)), error: null }];
+    adminQueue.pricing_plans = [{ data: businessPriceRow, error: null }];
+    // [0] route.ts's own existence check; [1] repriceSubscriptionInvoice's own fetch.
+    adminQueue.invoices = [
+      { data: { id: 'renewal-inv-1' }, error: null },
+      {
+        data: {
+          id: 'renewal-inv-1',
+          center_id: 'center-1',
+          invoice_type: 'subscription',
+          status: 'pending',
+          amount_received: 0,
+          processing_fee: 20,
+          vat_rate: 0.14,
+          metadata: { processing_fee: 20 },
+        },
+        error: null,
+      },
+    ];
+
+    const res = await postCenterUpgrade(makeRequest({ newPlan: 'business', newBillingPeriod: 'monthly' }));
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      paymobUrl?: string;
+      dayZero?: boolean;
+      invoiceId?: string;
+      breakdown?: { daysRemaining?: number; amountDue?: number; chargedTotal?: number };
+    };
+    expect(body.paymobUrl).toBe('https://pay/upgrade');
+    expect(body.dayZero).toBe(true);
+    expect(body.invoiceId).toBe('renewal-inv-1');
+    expect(body.breakdown?.daysRemaining).toBe(0);
+    // Full new-tier period price — no proration, no credit.
+    expect(body.breakdown?.amountDue).toBeCloseTo(PLANS.business.quarterlyAllIn, 2);
+
+    // No NEW invoice, no session — the EXISTING renewal invoice was repriced (updated).
+    expect(insertCalls).toEqual([]);
+    expect(updateCalls.some((u) => u.table === 'invoices')).toBe(true);
+
+    // scheduled_plan set — the plan flips only when this (re)priced invoice is paid.
+    const sched = updateCalls.find((u) => u.table === 'centers' && 'scheduled_plan' in u.payload);
+    expect(sched?.payload).toMatchObject({ scheduled_plan: 'business', scheduled_billing_period: 'monthly' });
+
+    // Never a 400 USE_DOWNGRADE for a paid-up center on its due date — the bug this whole PR fixes.
+    expect(res.status).not.toBe(400);
+  });
+
+  it('G6d — day-zero: no pending renewal invoice exists (cron outage) — creates one fresh', async () => {
+    adminQueue.centers = [{ data: proMonthlyCenter(ymdFromNow(0)), error: null }];
+    adminQueue.pricing_plans = [{ data: businessPriceRow, error: null }];
+    adminQueue.invoices = [{ data: null, error: null }]; // no existing renewal
+    adminQueue.insert = [{ data: { id: 'fresh-renewal-inv' }, error: null }];
+
+    const res = await postCenterUpgrade(makeRequest({ newPlan: 'business', newBillingPeriod: 'monthly' }));
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { invoiceId?: string; dayZero?: boolean };
+    expect(body.dayZero).toBe(true);
+    expect(body.invoiceId).toBe('fresh-renewal-inv');
+
+    expect(insertCalls).toHaveLength(1);
+    expect(insertCalls[0].table).toBe('invoices');
+    expect((insertCalls[0].payload as Record<string, unknown>).invoice_type).toBe('subscription');
+
+    const sched = updateCalls.find((u) => u.table === 'centers' && 'scheduled_plan' in u.payload);
+    expect(sched?.payload).toMatchObject({ scheduled_plan: 'business', scheduled_billing_period: 'monthly' });
+  });
+
+  it('G6e — day-zero bypasses the per-period quota (contrast with G6b)', async () => {
+    adminQueue.centers = [
+      { data: proMonthlyCenter(ymdFromNow(0), { upgrade_count_this_period: 1 }), error: null },
+    ];
+    adminQueue.pricing_plans = [{ data: businessPriceRow, error: null }];
+    adminQueue.invoices = [
+      { data: { id: 'renewal-inv-1' }, error: null },
+      {
+        data: {
+          id: 'renewal-inv-1',
+          center_id: 'center-1',
+          invoice_type: 'subscription',
+          status: 'pending',
+          amount_received: 0,
+          processing_fee: 20,
+          vat_rate: 0.14,
+          metadata: { processing_fee: 20 },
+        },
+        error: null,
+      },
+    ];
+
+    const res = await postCenterUpgrade(makeRequest({ newPlan: 'business', newBillingPeriod: 'monthly' }));
+
+    // Quota already at the monthly limit (1) — G6b shows this blocks mid-cycle.
+    // Day-zero bypasses it: the period is rolling over regardless.
+    expect(res.status).toBe(200);
+  });
+
+  it('G6f — day-zero still enforces the rank gate (quota bypass ≠ rank bypass)', async () => {
+    adminQueue.centers = [{ data: proMonthlyCenter(ymdFromNow(0)), error: null }];
+
+    const res = await postCenterUpgrade(makeRequest({ newPlan: 'starter', newBillingPeriod: 'monthly' }));
+
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toContain('downgrade');
+    // Rejected before pricing/invoices are ever touched.
+    expect(tableHits).toEqual(['centers']);
+    expect(updateCalls).toEqual([]);
+  });
+
+  it('G6g — scheduled_plan last-write-wins: a day-zero upgrade overwrites a pending downgrade schedule', async () => {
+    adminQueue.centers = [
+      {
+        data: proMonthlyCenter(ymdFromNow(0), {
+          scheduled_plan: 'solo',
+          scheduled_billing_period: 'monthly',
+        }),
+        error: null,
+      },
+    ];
+    adminQueue.pricing_plans = [{ data: businessPriceRow, error: null }];
+    adminQueue.invoices = [
+      { data: { id: 'renewal-inv-1' }, error: null },
+      {
+        data: {
+          id: 'renewal-inv-1',
+          center_id: 'center-1',
+          invoice_type: 'subscription',
+          status: 'pending',
+          amount_received: 0,
+          processing_fee: 20,
+          vat_rate: 0.14,
+          metadata: { processing_fee: 20 },
+        },
+        error: null,
+      },
+    ];
+
+    const res = await postCenterUpgrade(makeRequest({ newPlan: 'business', newBillingPeriod: 'monthly' }));
+
+    expect(res.status).toBe(200);
+    // The customer's most recent request (this upgrade) wins outright — the
+    // schedule write is a plain overwrite, never a merge with the prior 'solo'.
+    const sched = updateCalls.find((u) => u.table === 'centers' && 'scheduled_plan' in u.payload);
+    expect(sched?.payload).toEqual({ scheduled_plan: 'business', scheduled_billing_period: 'monthly' });
+  });
+
+  it('G6h — day-zero reprice refusal (partial payment already received) surfaces as an explicit error, never silent', async () => {
+    adminQueue.centers = [{ data: proMonthlyCenter(ymdFromNow(0)), error: null }];
+    adminQueue.pricing_plans = [{ data: businessPriceRow, error: null }];
+    adminQueue.invoices = [
+      { data: { id: 'renewal-inv-1' }, error: null },
+      {
+        data: {
+          id: 'renewal-inv-1',
+          center_id: 'center-1',
+          invoice_type: 'subscription',
+          status: 'pending',
+          amount_received: 500, // partial payment already on the renewal invoice
+          processing_fee: 20,
+          vat_rate: 0.14,
+          metadata: { processing_fee: 20 },
+        },
+        error: null,
+      },
+    ];
+
+    const res = await postCenterUpgrade(makeRequest({ newPlan: 'business', newBillingPeriod: 'monthly' }));
+
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as { code?: string };
+    expect(body.code).toBe('PARTIAL_PAYMENT_RECEIVED');
+
+    // Refused BEFORE scheduling anything — nothing should look "in flight".
+    expect(updateCalls.find((u) => u.table === 'centers' && 'scheduled_plan' in u.payload)).toBeUndefined();
   });
 });
