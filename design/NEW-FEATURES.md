@@ -956,6 +956,12 @@ out of scope, or an omission?
 
 ## C1. Identity verification (e-KYC via Valify)
 
+> **Scoped 26 July: see `design/C1-VERIFICATION-SCOPE.md`.** The design specifies a two-state world,
+> `not verified` and `verified`, and nothing else — no failure state, no in-progress state, no retry,
+> no expiry, anywhere in 26 files. That document lists what the design does specify (documents
+> collected, stored record, per-state gating) and the **13 decisions** needed before this can be
+> built. Blocked on Valify as a vendor *and* on those decisions.
+
 **What it is:** A one-time hosted identity check that unlocks online collection and withdrawals, and
 keeps the National ID on file for receipts.
 
