@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<!--
+================================================================
+ TutoringHQ · MERGED DESIGN REFERENCE
+ File: Merged-Public-Legal.html
+ Legal · Every document the footer opens
+
+ CONTENTS (1 screen):
+  01. Public Legal   <-  Screen-Public-Legal.html
+
+----------------------------------------------------------------
+ HOW TO READ THIS FILE WHEN IMPLEMENTING IT
+----------------------------------------------------------------
+ 1. CSS IS SCOPED. Every rule carries a .mgdN prefix so that
+    several screens can share one page without their styles
+    colliding.
+        in this file:   .mgd4 .pins{ ... }
+        in your code:   .pins{ ... }
+    Strip the .mgdN prefix. It is bookkeeping for this reference
+    file only and must never reach the codebase.
+
+ 2. ONE SECTION = ONE SCREEN. Each section bar shows its number,
+    its name, and the original screen file it came from. Use that
+    filename as the screen's identity, not the section number.
+
+ 3. FRAMES ARE STATES, NOT PAGES. Each phone inside a section is
+    one state of that screen (empty, filled, error, and so on).
+    The caption under or above each phone names the state.
+
+ 4. THE TWO LANGUAGES ARE SEPARATE SCREENS. English and Arabic
+    are never a translation overlay. Arabic frames use Eastern
+    Arabic numerals (0-9 written as Arabic-Indic) and the Arabic
+    currency mark. English frames use Western numerals and EGP.
+    Directional icons such as chevrons flip with the language.
+
+ 5. SAMPLE DATA IS PLACEHOLDER. Names, amounts, dates and phone
+    numbers are illustrative. Do not treat them as fixtures or
+    seed data.
+
+ 6. THIS IS DESIGN, NOT PRODUCTION CODE. Markup here is built to
+    be read, not shipped. Take the layout, spacing, type scale
+    and colour decisions from it. Do not copy the DOM wholesale.
+
+ 7. ANY UI OR BRANDING CHANGE BUMPS SW_VERSION in public/sw.js.
+================================================================
+-->
+
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TutoringHQ · Legal (merged)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+html{background:#d8d3c6;color-scheme:light}
+:root{color-scheme:light}
+body{margin:0;padding:0;background:#d8d3c6;-webkit-font-smoothing:antialiased}
+.mgd-top{max-width:1480px;margin:0 auto;padding:56px 28px 8px;color:#1b201d;font-family:"IBM Plex Sans",system-ui,sans-serif}
+.mgd-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5d635c;font-weight:600}
+.mgd-h1{font-size:42px;line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:12px 0 10px}
+.mgd-lede{font-size:16px;line-height:1.55;color:#5d635c;max-width:82ch;margin:0}
+.mgd-toc{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 0}
+.mgd-toc a{font-size:12.5px;font-weight:600;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:6px 12px;border-radius:999px;text-decoration:none}
+.mgd-sec{max-width:1480px;margin:0 auto;padding:0 28px;font-family:"IBM Plex Sans",system-ui,sans-serif}
+.mgd-bar{display:flex;align-items:baseline;gap:12px;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin-top:34px}
+.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a5e16;font-weight:500}
+.mgd-name{font-size:22px;font-weight:700;color:#14181a;letter-spacing:-.01em}
+.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#80827a}
+.mgd-screen{content-visibility:auto;contain-intrinsic-size:auto 1400px}
+
+/* ===== 01 Public Legal · Screen-Public-Legal.html ===== */
+.mgd1{--paper:#ECE8DF; --panel:#FFFDF8; --tile:#F2EEE5; --line:#E2DDD1; --hairline:#F0ECE2;
+    --ink:#14181A; --ink-body:#3A3F3A; --mid:#5D635C; --muted:#80827A; --faint:#A09A8E;
+    --accent:#0E6B61; --accent-deep:#0A514A; --mint:#DFEEEB; --mint-deep:#BFE3DD; --ground:#083F39;
+    --brass:#9A6B1F; --sand:#F4EBD7;
+    --en:"IBM Plex Sans",system-ui,sans-serif; --ar:"IBM Plex Sans Arabic",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;}
+.mgd1 *{box-sizing:border-box}
+.mgd1{margin:0;font-family:var(--en);color:var(--ink);background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);-webkit-font-smoothing:antialiased}
+.mgd1 .masthead{max-width:1180px;margin:0 auto 6px}
+.mgd1 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);font-weight:600}
+.mgd1 .h1{font-size:42px;line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:12px 0 10px}
+.mgd1 .lede{font-size:16px;line-height:1.55;color:var(--mid);max-width:82ch;margin:0}
+.mgd1 .phones{max-width:1400px;margin:0 auto;display:flex;gap:30px;flex-wrap:wrap;justify-content:center;padding-top:40px}
+.mgd1 .frame{width:340px;content-visibility:auto;contain-intrinsic-size:auto 800px}
+.mgd1 .phone{width:340px;background:#14181a;border-radius:44px;padding:11px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+.mgd1 .screen{background:var(--paper);border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden;position:relative;font-family:var(--en);color:var(--ink)}
+.mgd1 .screen.ar{font-family:var(--ar)}
+.mgd1 .cap{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:11px;line-height:1.5;text-align:center}
+.mgd1 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:14px;font-weight:600;flex-shrink:0;color:var(--ink)}
+.mgd1 .appbar{display:flex;align-items:center;gap:11px;padding:4px 16px 10px;flex-shrink:0}
+.mgd1 .iconbtn{width:40px;height:40px;border-radius:11px;background:var(--panel);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink-body);flex-shrink:0}
+.mgd1 .iconbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mgd1 .ttl{font-size:19px;font-weight:700;line-height:1.15}
+.mgd1 .tsub{font-size:11.5px;color:var(--muted);margin-top:2px}
+.mgd1 .globe{margin-inline-start:auto;font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:9px;padding:6px 9px;background:var(--panel)}
+.mgd1 .body{flex:1;overflow-y:auto;padding:4px 16px 20px}
+.mgd1 .intro{font-size:12.5px;color:var(--mid);line-height:1.55;margin:2px 2px 15px}
+.mgd1 .docrow{display:flex;align-items:center;gap:13px;background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:15px 14px;margin-bottom:10px}
+.mgd1 .dic{width:40px;height:40px;border-radius:12px;background:var(--mint);color:var(--accent-deep);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd1 .dic svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.mgd1 .dinfo{flex:1;min-width:0}
+.mgd1 .dname{font-size:15px;font-weight:700}
+.mgd1 .dmeta{font-size:11px;color:var(--muted);margin-top:3px;font-family:var(--mono)}
+.mgd1 .ar .dmeta{font-family:var(--ar);font-weight:500}
+.mgd1 .chev{color:#c9c4b6;flex-shrink:0}
+.mgd1 .chev svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.mgd1 .askbar{margin-top:6px;background:var(--sand);border:1px solid #ecdcbb;border-radius:13px;padding:13px 14px}
+.mgd1 .askbar b{font-size:13px;font-weight:700;color:#6f4e14}
+.mgd1 .askbar p{margin:5px 0 0;font-size:11.5px;color:#7a5a1c;line-height:1.5}
+.mgd1 .rhead{background:var(--panel);border-bottom:1px solid var(--line);padding:12px 16px;flex-shrink:0}
+.mgd1 .rtitle{font-size:16px;font-weight:700}
+.mgd1 .rver{font-size:10.5px;color:var(--muted);font-family:var(--mono);margin-top:3px}
+.mgd1 .ar .rver{font-family:var(--ar);font-weight:500}
+.mgd1 .toc{background:var(--tile);border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin:2px 0 15px}
+.mgd1 .toc b{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:7px}
+.mgd1 .toc a{display:block;font-size:12.5px;color:var(--accent-deep);text-decoration:none;padding:4px 0;border-bottom:1px solid var(--hairline)}
+.mgd1 .toc a:last-child{border-bottom:none}
+.mgd1 .rsec{font-size:14px;font-weight:700;margin:16px 2px 6px;color:var(--ink)}
+.mgd1 .rp{font-size:12.5px;line-height:1.65;color:var(--ink-body);margin:0 2px 11px}
+.mgd1 .rp b{color:var(--ink)}
+.mgd1 .rli{font-size:12.5px;line-height:1.6;color:var(--ink-body);margin:0 2px 7px;padding-inline-start:16px;position:relative}
+.mgd1 .rli:before{content:"";position:absolute;inset-inline-start:2px;top:8px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
+.mgd1 .flabel{font-size:12px;font-weight:600;color:var(--ink-body);margin:14px 2px 6px}
+.mgd1 .fhint{font-size:10.5px;color:var(--muted);font-weight:400;margin-top:2px}
+.mgd1 .fin{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:12px 13px;font-family:inherit;font-size:13.5px;color:var(--ink)}
+.mgd1 .fin.ph{color:var(--faint)}
+.mgd1 .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px}
+.mgd1 .chk{font-size:12px;font-weight:600;padding:9px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--panel);color:var(--mid)}
+.mgd1 .chk.on{border-color:var(--accent);background:var(--mint);color:var(--accent-deep)}
+.mgd1 .callout{background:var(--mint);border:1px solid var(--mint-deep);border-radius:12px;padding:12px 13px;margin:2px 2px 4px;font-size:11.5px;color:var(--accent-deep);line-height:1.55}
+.mgd1 .callout b{font-weight:700}
+.mgd1 .done{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px 26px}
+.mgd1 .dcheck{width:66px;height:66px;border-radius:50%;background:var(--mint);color:var(--accent-deep);display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+.mgd1 .dcheck svg{width:32px;height:32px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.mgd1 .dh{font-size:21px;font-weight:700;margin-bottom:9px}
+.mgd1 .dt{font-size:13px;color:var(--mid);line-height:1.6;max-width:32ch}
+.mgd1 .steps{width:100%;margin-top:22px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:4px 15px}
+.mgd1 .stp{display:flex;gap:11px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--hairline);text-align:start}
+.mgd1 .stp:last-child{border-bottom:none}
+.mgd1 .snum{width:22px;height:22px;border-radius:50%;background:var(--tile);color:var(--mid);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--mono)}
+.mgd1 .ar .snum{font-family:var(--ar)}
+.mgd1 .stx{font-size:12px;color:var(--ink-body);line-height:1.5}
+.mgd1 .foot{padding:11px 16px 18px;border-top:1px solid var(--line);background:var(--paper);flex-shrink:0}
+.mgd1 .fnote{text-align:center;font-size:10px;color:var(--muted);margin-bottom:8px;line-height:1.45}
+.mgd1 .btn{display:block;width:100%;border:none;border-radius:13px;padding:15px;font-size:15px;font-weight:700;background:var(--accent);color:var(--panel);text-align:center;font-family:inherit}
+.mgd1 .btn.ghost{background:var(--panel);color:var(--ink-body);border:1px solid var(--line)}
+.mgd1 .board{max-width:1180px;margin:0 auto;padding:48px 24px 90px}
+.mgd1 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827a;font-weight:600}
+.mgd1 .pill0{display:inline-block;margin:10px 0;padding:4px 12px;border-radius:999px;background:#dfeeeb;color:#0a514a;font-size:12px;font-weight:600}
+.mgd1 .mh{font-size:30px;margin:6px 0 8px;font-weight:700;letter-spacing:-.01em}
+.mgd1 .lead{margin:0 0 34px;color:#5d635c;font-size:16px;line-height:1.5;max-width:80ch}
+.mgd1 .phones{display:flex;gap:34px;flex-wrap:wrap;justify-content:center}
+.mgd1 .cap{font-size:13px;color:#5d635c;font-weight:600;font-family:'IBM Plex Sans',sans-serif}
+</style></head>
+<body>
+  <div class="mgd-top">
+    <div class="mgd-eyebrow">TutoringHQ · Merged reference</div>
+    <h1 class="mgd-h1">Legal · Every document the footer opens</h1>
+    <p class="mgd-lede">The index, a reader for each of the four documents, and the PDPL data-rights form with its confirmation. English and Arabic side by side.</p>
+    <div class="mgd-toc"><a href="#Merged-Legal-1">Public Legal</a></div>
+  </div>
+<div class="mgd-sec" id="Merged-Legal-1"><div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Public Legal</span><span class="mgd-src">Screen-Public-Legal.html</span></div></div>
+<div class="mgd1 mgd-screen">
+
+<div class="board">
+  <div class="eyebrow">TutoringHQ · Reference Screen</div>
+  <div class="pill0">Legal · Public · Draft</div>
+  <h1 class="mh">Every document the footer opens</h1>
+  <p class="lead">The four agreements the footer links to, each in a reader with its own contents list and version date, plus the public data-rights form and its confirmation. Students and parents are sent to their center first, because the center is the controller and the platform is only the processor. The form never asks for a PIN, and it says so on the screen, because a request form that asks for a secret is how people get phished. Thirty-day window, no charge, both stated up front. Wording follows the Adsero drafts and stays pending final legal review. English and Arabic, each standing alone. Sample data is placeholder.</p>
+  <div class="phones">
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="appbar"><div class="iconbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Legal</div><div class="tsub">Policies and your rights</div></div><span class="globe">EN · ع</span></div>
+      <div class="body">
+        <p class="intro">The agreements that govern your use of TutoringHQ. Each shows when it was last updated. All are governed by Egyptian law and pending final review by Adsero.</p>
+        <div class="docrow"><div class="dic"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></div><div class="dinfo"><div class="dname">Privacy Policy</div><div class="dmeta">Version 2.0 · 22 Jun 2026</div></div><div class="chev"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div></div>
+        <div class="docrow"><div class="dic"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div><div class="dinfo"><div class="dname">Terms and Conditions</div><div class="dmeta">Version 2.0 · 22 Jun 2026</div></div><div class="chev"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div></div>
+        <div class="docrow"><div class="dic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="14" cy="9" r="1" fill="currentColor" stroke="none"/><circle cx="14" cy="15" r="1" fill="currentColor" stroke="none"/></svg></div><div class="dinfo"><div class="dname">Cookie Policy</div><div class="dmeta">Version 2.0 · 22 Jun 2026</div></div><div class="chev"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div></div>
+        <div class="docrow"><div class="dic"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 4-3 7-8 9-5-2-8-5-8-9V7z"/></svg></div><div class="dinfo"><div class="dname">Data Processing Agreement</div><div class="dmeta">For centers and teachers</div></div><div class="chev"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div></div>
+        <div class="askbar"><b>Want your data accessed, corrected or deleted?</b><p>Students and parents: ask your center first, they hold your records. Everyone else can use the request form.</p></div>
+      </div>
+      <div class="foot"><button class="btn">Open data rights form</button></div>
+    </div></div>
+    <div class="cap">EN · legal index</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1633;&#1633;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="appbar"><div class="iconbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">القانوني</div><div class="tsub">السياسات وحقوقك</div></div><span class="globe">ع · EN</span></div>
+      <div class="body">
+        <p class="intro">الاتفاقيات اللي بتحكم استخدامك لـ TutoringHQ. كل واحدة مكتوب عليها آخر تحديث. وكلها خاضعة للقانون المصري وتحت المراجعة النهائية من Adsero.</p>
+        <div class="docrow"><div class="dic"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></div><div class="dinfo"><div class="dname">سياسة الخصوصية</div><div class="dmeta">النسخة ٢٫٠ · ٢٢ يونيو ٢٠٢٦</div></div><div class="chev"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div></div>
+        <div class="docrow"><div class="dic"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div><div class="dinfo"><div class="dname">الشروط والأحكام</div><div class="dmeta">النسخة ٢٫٠ · ٢٢ يونيو ٢٠٢٦</div></div><div class="chev"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div></div>
+        <div class="docrow"><div class="dic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="14" cy="9" r="1" fill="currentColor" stroke="none"/><circle cx="14" cy="15" r="1" fill="currentColor" stroke="none"/></svg></div><div class="dinfo"><div class="dname">سياسة الكوكيز</div><div class="dmeta">النسخة ٢٫٠ · ٢٢ يونيو ٢٠٢٦</div></div><div class="chev"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div></div>
+        <div class="docrow"><div class="dic"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 4-3 7-8 9-5-2-8-5-8-9V7z"/></svg></div><div class="dinfo"><div class="dname">اتفاقية معالجة البيانات</div><div class="dmeta">للسناتر والمدرّسين</div></div><div class="chev"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div></div>
+        <div class="askbar"><b>عايز توصل لبياناتك أو تصححها أو تمسحها؟</b><p>الطلاب وأولياء الأمور: اسألوا السنتر الأول، هو اللي ماسك سجلاتكم. أي حد تاني يقدر يستخدم النموذج.</p></div>
+      </div>
+      <div class="foot"><button class="btn">افتح نموذج حقوق البيانات</button></div>
+    </div></div>
+    <div class="cap">AR · الفهرس</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="appbar"><div class="iconbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Legal</div><div class="tsub">1 of 4 documents</div></div><span class="globe">EN · ع</span></div>
+      <div class="rhead"><div class="rtitle">Privacy Policy</div><div class="rver">Version 2.0 · Updated 22 June 2026</div></div>
+      <div class="body">
+        <div class="toc"><b>On this page</b>
+          <a>1 · What data we collect</a>
+          <a>2 · How we use it</a>
+          <a>3 · Who controls your data</a>
+          <a>4 · How long we keep it</a>
+          <a>5 · Your rights under the PDPL</a>
+          <a>6 · Contact our DPO</a>
+        </div>
+        <div class="rsec">1 · What data we collect</div>
+        <div class="rp">We collect what you give us: names, phone numbers, billing address, and a 6-digit PIN stored only as a secure hash, never in plain text. Center owners and staff also enter student and parent contact details on behalf of their center.</div>
+        <div class="rp">We do <b>not</b> process sensitive data, and we do <b>not</b> collect anything from third parties. Card details are handled entirely by Paymob, never stored by us.</div>
+        <div class="rsec">3 · Who controls your data</div>
+        <div class="rp">If you are a <b>student or a parent</b>, your tutoring center is the controller of your data. TutoringHQ only processes it on the center’s instructions, as its processor. For access, correction or deletion, contact your center first.</div>
+        <div class="rp">If your center has closed or cannot help, you may contact us directly using the data rights form.</div>
+        <div class="rsec">5 · Your rights under the PDPL</div>
+        <div class="rp">Under Egypt’s Law No. 151 of 2020, you may request access, correction, deletion, restriction, portability, or object to processing. We act on verified requests within <b>30 days</b>, at no charge, and we will never ask for your PIN to verify you.</div>
+        <div class="rp">Some data may be kept where the law requires it, or to defend a legal claim, or because it sits in a backup that is purged on its next cycle.</div>
+      </div>
+      <div class="foot"><button class="btn ghost">Back to all documents</button></div>
+    </div></div>
+    <div class="cap">EN · privacy policy</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1633;&#1633;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="appbar"><div class="iconbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">القانوني</div><div class="tsub">١ من ٤ مستندات</div></div><span class="globe">ع · EN</span></div>
+      <div class="rhead"><div class="rtitle">سياسة الخصوصية</div><div class="rver">النسخة ٢٫٠ · آخر تحديث ٢٢ يونيو ٢٠٢٦</div></div>
+      <div class="body">
+        <div class="toc"><b>في الصفحة دي</b>
+          <a>١ · البيانات اللي بنجمعها</a>
+          <a>٢ · بنستخدمها إزاي</a>
+          <a>٣ · مين المتحكم في بياناتك</a>
+          <a>٤ · بنحتفظ بيها قد إيه</a>
+          <a>٥ · حقوقك تحت القانون</a>
+          <a>٦ · تواصل مع مسؤول البيانات</a>
+        </div>
+        <div class="rsec">١ · البيانات اللي بنجمعها</div>
+        <div class="rp">بنجمع اللي إنت بتديهولنا: الأسماء وأرقام الموبايل وعنوان الفوترة، ورقم سري من ٦ أرقام بيتخزن مشفّر بس، من غير ما يتحفظ كنص واضح أبدًا. أصحاب السناتر والموظفين كمان بيدخّلوا بيانات الطلاب وأولياء الأمور نيابةً عن السنتر.</div>
+        <div class="rp">إحنا <b>مابنعالجش</b> بيانات حسّاسة، و<b>مابنجمعش</b> أي حاجة من أطراف تانية. بيانات الكارت بيتعامل معاها Paymob بالكامل، وإحنا مابنخزّنهاش.</div>
+        <div class="rsec">٣ · مين المتحكم في بياناتك</div>
+        <div class="rp">لو إنت <b>طالب أو ولي أمر</b>، السنتر بتاعك هو المتحكم في بياناتك. TutoringHQ بيعالجها بس بناءً على تعليمات السنتر، بصفته المعالِج. للوصول أو التصحيح أو المسح، كلّم السنتر الأول.</div>
+        <div class="rp">لو السنتر قفل أو مش قادر يساعد، تقدر تتواصل معانا مباشرة من خلال نموذج حقوق البيانات.</div>
+        <div class="rsec">٥ · حقوقك تحت القانون</div>
+        <div class="rp">تحت القانون المصري رقم ١٥١ لسنة ٢٠٢٠، تقدر تطلب الوصول أو التصحيح أو المسح أو التقييد أو النقل، أو تعترض على المعالجة. بنرد على الطلبات الموثّقة خلال <b>٣٠ يوم</b>، بدون رسوم، ومش هنطلب منك الرقم السري أبدًا عشان نتأكد منك.</div>
+        <div class="rp">ممكن نحتفظ ببعض البيانات لو القانون بيطلب كده، أو للدفاع عن حق قانوني، أو لأنها في نسخة احتياطية بتتمسح في دورتها الجاية.</div>
+      </div>
+      <div class="foot"><button class="btn ghost">ارجع لكل المستندات</button></div>
+    </div></div>
+    <div class="cap">AR · سياسة الخصوصية</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="appbar"><div class="iconbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Legal</div><div class="tsub">2 of 4 documents</div></div><span class="globe">EN · ع</span></div>
+      <div class="rhead"><div class="rtitle">Terms and Conditions</div><div class="rver">Version 2.0 · Updated 22 June 2026</div></div>
+      <div class="body">
+        <div class="toc"><b>On this page</b>
+          <a>1 · Subscription plans</a>
+          <a>2 · Payment and Paymob</a>
+          <a>3 · Grace period and suspension</a>
+          <a>4 · Refunds</a>
+          <a>5 · Acceptable use</a>
+          <a>6 · Liability</a>
+        </div>
+        <div class="rsec">1 · Subscription plans</div>
+        <div class="rp">TutoringHQ is a subscription service, billed in Egyptian Pounds monthly or annually. Center plans run from Solo to Enterprise. Teachers have Standard, Pro and Scale, each with a 14-day free trial. Prices may change with at least 30 days’ notice.</div>
+        <div class="rsec">2 · Payment and Paymob</div>
+        <div class="rp">All payments are processed by Paymob, our authorized Egyptian processor. We never collect or store your card details. Completing a payment authorizes Paymob to charge the applicable fees on our behalf.</div>
+        <div class="rsec">3 · Grace period and suspension</div>
+        <div class="rp">If a payment fails, your account enters a grace period and may drop to read-only. After it expires the account is suspended, and cannot reach any data or features. Accounts left suspended too long may be blacklisted.</div>
+        <div class="rsec">4 · Refunds</div>
+        <div class="rp">Subscription fees are non-refundable, except where Egyptian consumer law requires it or where we have materially failed to provide the service. If something is wrong, contact us and we will work it out.</div>
+      </div>
+      <div class="foot"><button class="btn ghost">Back to all documents</button></div>
+    </div></div>
+    <div class="cap">EN · terms and conditions</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1633;&#1633;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="appbar"><div class="iconbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">القانوني</div><div class="tsub">٢ من ٤ مستندات</div></div><span class="globe">ع · EN</span></div>
+      <div class="rhead"><div class="rtitle">الشروط والأحكام</div><div class="rver">النسخة ٢٫٠ · آخر تحديث ٢٢ يونيو ٢٠٢٦</div></div>
+      <div class="body">
+        <div class="toc"><b>في الصفحة دي</b>
+          <a>١ · باقات الاشتراك</a>
+          <a>٢ · الدفع وباي موب</a>
+          <a>٣ · فترة السماح والإيقاف</a>
+          <a>٤ · الاسترجاع</a>
+          <a>٥ · الاستخدام المقبول</a>
+          <a>٦ · المسؤولية</a>
+        </div>
+        <div class="rsec">١ · باقات الاشتراك</div>
+        <div class="rp">TutoringHQ خدمة بالاشتراك، بتتحاسب بالجنيه المصري شهري أو سنوي. باقات السناتر من Solo لـ Enterprise. المدرّسين عندهم Standard وPro وScale، وكل واحدة بتجربة مجانية ١٤ يوم. الأسعار ممكن تتغيّر بإخطار قبلها بـ ٣٠ يوم على الأقل.</div>
+        <div class="rsec">٢ · الدفع وباي موب</div>
+        <div class="rp">كل المدفوعات بتتم من خلال Paymob، معالج الدفع المصري المعتمد بتاعنا. إحنا مابنجمعش ولا بنخزّن بيانات كارتك أبدًا. إتمام الدفع بيخوّل Paymob إنه يحصّل الرسوم نيابةً عننا.</div>
+        <div class="rsec">٣ · فترة السماح والإيقاف</div>
+        <div class="rp">لو الدفع فشل، حسابك بيدخل فترة سماح وممكن يبقى قراءة بس. بعد ما تخلص، الحساب بيتوقف ومش هيقدر يوصل لأي بيانات أو مزايا. الحسابات اللي بتفضل متوقفة مدة طويلة ممكن تتحظر.</div>
+        <div class="rsec">٤ · الاسترجاع</div>
+        <div class="rp">رسوم الاشتراك غير قابلة للاسترجاع، إلا لو قانون حماية المستهلك المصري بيطلب كده أو لو إحنا قصّرنا فعليًا في تقديم الخدمة. لو في حاجة غلط، كلّمنا وهنحلّها.</div>
+      </div>
+      <div class="foot"><button class="btn ghost">ارجع لكل المستندات</button></div>
+    </div></div>
+    <div class="cap">AR · الشروط والأحكام</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="appbar"><div class="iconbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Legal</div><div class="tsub">3 of 4 documents</div></div><span class="globe">EN · ع</span></div>
+      <div class="rhead"><div class="rtitle">Cookie Policy</div><div class="rver">Version 2.0 · Updated 22 June 2026</div></div>
+      <div class="body">
+        <div class="toc"><b>On this page</b>
+          <a>1 · What cookies are</a>
+          <a>2 · Strictly necessary</a>
+          <a>3 · Analytics</a>
+          <a>4 · What we never use</a>
+          <a>5 · How to control them</a>
+        </div>
+        <div class="rsec">2 · Strictly necessary</div>
+        <div class="rp">These keep the platform working and cannot be switched off:</div>
+        <div class="rli">A session cookie that keeps you logged in after your phone and PIN, expiring after 24 hours.</div>
+        <div class="rli">A security token that blocks cross-site request forgery.</div>
+        <div class="rli">A cookie that remembers your language, Arabic or English.</div>
+        <div class="rsec">3 · Analytics</div>
+        <div class="rp">PostHog helps us see which pages are used so we can improve. Sentry catches errors. Both are aggregated, never used for advertising. You can opt out of PostHog by emailing us.</div>
+        <div class="rsec">4 · What we never use</div>
+        <div class="rp">No advertising cookies, no tracking pixels, no social-media cookies, and nothing that follows you across other websites.</div>
+      </div>
+      <div class="foot"><button class="btn ghost">Back to all documents</button></div>
+    </div></div>
+    <div class="cap">EN · cookie policy</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1633;&#1633;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="appbar"><div class="iconbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">القانوني</div><div class="tsub">٣ من ٤ مستندات</div></div><span class="globe">ع · EN</span></div>
+      <div class="rhead"><div class="rtitle">سياسة الكوكيز</div><div class="rver">النسخة ٢٫٠ · آخر تحديث ٢٢ يونيو ٢٠٢٦</div></div>
+      <div class="body">
+        <div class="toc"><b>في الصفحة دي</b>
+          <a>١ · يعني إيه كوكيز</a>
+          <a>٢ · الضرورية</a>
+          <a>٣ · التحليلات</a>
+          <a>٤ · اللي مابنستخدمهوش</a>
+          <a>٥ · إزاي تتحكم فيها</a>
+        </div>
+        <div class="rsec">٢ · الضرورية</div>
+        <div class="rp">دي بتخلّي المنصة شغّالة ومينفعش تتقفل:</div>
+        <div class="rli">كوكي جلسة بيخلّيك مسجّل دخول بعد الموبايل والرقم السري، وبينتهي بعد ٢٤ ساعة.</div>
+        <div class="rli">رمز أمان بيمنع تزوير الطلبات عبر المواقع.</div>
+        <div class="rli">كوكي بيفتكر لغتك، عربي أو إنجليزي.</div>
+        <div class="rsec">٣ · التحليلات</div>
+        <div class="rp">PostHog بيساعدنا نشوف أنهي صفحات بتتستخدم عشان نحسّن. وSentry بيرصد الأخطاء. الاتنين مجمّعين ومابيتستخدموش في الإعلانات أبدًا. تقدر تلغي PostHog لو بعتّلنا إيميل.</div>
+        <div class="rsec">٤ · اللي مابنستخدمهوش</div>
+        <div class="rp">مفيش كوكيز إعلانات، ولا بكسل تتبّع، ولا كوكيز سوشيال ميديا، ولا أي حاجة بتتبعك على مواقع تانية.</div>
+      </div>
+      <div class="foot"><button class="btn ghost">ارجع لكل المستندات</button></div>
+    </div></div>
+    <div class="cap">AR · سياسة الكوكيز</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="appbar"><div class="iconbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Legal</div><div class="tsub">4 of 4 documents</div></div><span class="globe">EN · ع</span></div>
+      <div class="rhead"><div class="rtitle">Data Processing Agreement</div><div class="rver">For centers and teachers · 22 June 2026</div></div>
+      <div class="body">
+        <div class="toc"><b>On this page</b>
+          <a>1 · Who is who</a>
+          <a>2 · What we process</a>
+          <a>3 · Our duties as processor</a>
+          <a>4 · Sub-processors</a>
+          <a>5 · Breach notice</a>
+          <a>6 · Deletion</a>
+        </div>
+        <div class="rsec">1 · Who is who</div>
+        <div class="rp">Your center is the <b>controller</b>. TutoringHQ is the <b>processor</b>, acting only on your documented instructions for the duration of your subscription.</div>
+        <div class="rsec">3 · Our duties as processor</div>
+        <div class="rp">We commit to:</div>
+        <div class="rli">Process only on your instructions, unless Egyptian law requires otherwise.</div>
+        <div class="rli">Keep everyone who touches the data under confidentiality.</div>
+        <div class="rli">Apply appropriate security to protect it.</div>
+        <div class="rsec">5 · Breach notice</div>
+        <div class="rp">If a security incident hits your data, we notify you without undue delay and, where feasible, within <b>72 hours</b>, with what we know: what happened, who is affected, and what we are doing about it.</div>
+      </div>
+      <div class="foot"><button class="btn ghost">Back to all documents</button></div>
+    </div></div>
+    <div class="cap">EN · data processing agreement</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1633;&#1633;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="appbar"><div class="iconbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">القانوني</div><div class="tsub">٤ من ٤ مستندات</div></div><span class="globe">ع · EN</span></div>
+      <div class="rhead"><div class="rtitle">اتفاقية معالجة البيانات</div><div class="rver">للسناتر والمدرّسين · ٢٢ يونيو ٢٠٢٦</div></div>
+      <div class="body">
+        <div class="toc"><b>في الصفحة دي</b>
+          <a>١ · مين هو مين</a>
+          <a>٢ · بنعالج إيه</a>
+          <a>٣ · واجباتنا كمعالِج</a>
+          <a>٤ · المعالجون الفرعيون</a>
+          <a>٥ · إخطار الاختراق</a>
+          <a>٦ · الحذف</a>
+        </div>
+        <div class="rsec">١ · مين هو مين</div>
+        <div class="rp">السنتر بتاعك هو <b>المتحكّم</b>. وTutoringHQ هو <b>المعالِج</b>، بيتصرف بس بناءً على تعليماتك الموثّقة طول مدة اشتراكك.</div>
+        <div class="rsec">٣ · واجباتنا كمعالِج</div>
+        <div class="rp">إحنا بنلتزم بإننا:</div>
+        <div class="rli">نعالج بس بناءً على تعليماتك، إلا لو القانون المصري بيطلب غير كده.</div>
+        <div class="rli">نلزم أي حد بيتعامل مع البيانات بالسرية.</div>
+        <div class="rli">نطبّق أمان مناسب لحمايتها.</div>
+        <div class="rsec">٥ · إخطار الاختراق</div>
+        <div class="rp">لو حصل حادث أمني على بياناتك، بنخطرك من غير تأخير غير مبرّر، وكل ما أمكن خلال <b>٧٢ ساعة</b>، باللي إحنا عارفينه: حصل إيه، ومين اتأثر، وإحنا بنعمل إيه.</div>
+      </div>
+      <div class="foot"><button class="btn ghost">ارجع لكل المستندات</button></div>
+    </div></div>
+    <div class="cap">AR · اتفاقية معالجة البيانات</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="appbar"><div class="iconbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Data rights request</div><div class="tsub">Under Egypt&#39;s PDPL</div></div></div>
+      <div class="body">
+        <div class="callout"><b>Student or parent?</b> Your center holds your data, so ask them first. Use this form only if your center has closed or cannot help.</div>
+        <div class="flabel">Full name</div>
+        <input class="fin ph" value="As registered with your center">
+        <div class="flabel">Mobile number</div>
+        <input class="fin ph" value="01X XXXX XXXX">
+        <div class="flabel">Email <span class="fhint">so we can send our reply</span></div>
+        <input class="fin ph" value="you@example.com">
+        <div class="flabel">You are a</div>
+        <div class="chips"><span class="chk">Center owner</span><span class="chk">Staff</span><span class="chk on">Parent</span><span class="chk">Student</span><span class="chk">Other</span></div>
+        <div class="flabel">What are you asking for</div>
+        <div class="chips"><span class="chk on">Access</span><span class="chk">Correct</span><span class="chk on">Delete</span><span class="chk">Restrict</span><span class="chk">Export</span><span class="chk">Object</span></div>
+        <div class="flabel">Details</div>
+        <input class="fin ph" style="padding-bottom:34px" value="Describe what data is involved">
+      </div>
+      <div class="foot"><div class="fnote">We never ask for your PIN. No charge to submit.</div><button class="btn">Submit request</button></div>
+    </div></div>
+    <div class="cap">EN · request form</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1633;&#1633;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="appbar"><div class="iconbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">طلب حقوق البيانات</div><div class="tsub">تحت قانون حماية البيانات</div></div></div>
+      <div class="body">
+        <div class="callout"><b>طالب أو ولي أمر؟</b> السنتر هو اللي ماسك بياناتك، فاسأله الأول. استخدم النموذج ده بس لو السنتر قفل أو مش قادر يساعد.</div>
+        <div class="flabel">الاسم بالكامل</div>
+        <input class="fin ph" value="زي ما هو مسجّل عند السنتر">
+        <div class="flabel">رقم الموبايل</div>
+        <input class="fin ph" value="&#1632;&#1633;× ×××× ××××">
+        <div class="flabel">الإيميل <span class="fhint">عشان نبعتلك الرد</span></div>
+        <input class="fin ph" value="you@example.com">
+        <div class="flabel">إنت</div>
+        <div class="chips"><span class="chk">صاحب سنتر</span><span class="chk">موظّف</span><span class="chk on">ولي أمر</span><span class="chk">طالب</span><span class="chk">غير ذلك</span></div>
+        <div class="flabel">بتطلب إيه</div>
+        <div class="chips"><span class="chk on">وصول</span><span class="chk">تصحيح</span><span class="chk on">مسح</span><span class="chk">تقييد</span><span class="chk">نقل</span><span class="chk">اعتراض</span></div>
+        <div class="flabel">التفاصيل</div>
+        <input class="fin ph" style="padding-bottom:34px" value="اوصف البيانات المطلوبة">
+      </div>
+      <div class="foot"><div class="fnote">مابنطلبش الرقم السري أبدًا. وبدون أي رسوم.</div><button class="btn">إرسال الطلب</button></div>
+    </div></div>
+    <div class="cap">AR · النموذج</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="appbar"><div class="iconbtn"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></div><div><div class="ttl">Request sent</div></div></div>
+      <div class="done">
+        <div class="dcheck"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div class="dh">We have your request</div>
+        <div class="dt">A confirmation is on its way to your phone. Here is what happens next.</div>
+        <div class="steps">
+          <div class="stp"><div class="snum">1</div><div class="stx">We acknowledge your request within <b>5 business days</b>.</div></div>
+          <div class="stp"><div class="snum">2</div><div class="stx">We verify who you are, using the details you gave. Never your PIN.</div></div>
+          <div class="stp"><div class="snum">3</div><div class="stx">We complete it within <b>30 days</b> of verifying you. No charge.</div></div>
+        </div>
+      </div>
+      <div class="foot"><button class="btn ghost">Back to legal</button></div>
+    </div></div>
+    <div class="cap">EN · submitted</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1633;&#1633;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="appbar"><div class="iconbtn"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></div><div><div class="ttl">اتبعت الطلب</div></div></div>
+      <div class="done">
+        <div class="dcheck"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div class="dh">استلمنا طلبك</div>
+        <div class="dt">تأكيد في طريقه لموبايلك دلوقتي. ده اللي هيحصل بعد كده.</div>
+        <div class="steps">
+          <div class="stp"><div class="snum">&#1633;</div><div class="stx">بنأكد استلام طلبك خلال <b>٥ أيام عمل</b>.</div></div>
+          <div class="stp"><div class="snum">&#1634;</div><div class="stx">بنتأكد من هويتك بالبيانات اللي دخّلتها. من غير الرقم السري أبدًا.</div></div>
+          <div class="stp"><div class="snum">&#1635;</div><div class="stx">بنكمّله خلال <b>٣٠ يوم</b> من التأكد منك. بدون رسوم.</div></div>
+        </div>
+      </div>
+      <div class="foot"><button class="btn ghost">ارجع للقانوني</button></div>
+    </div></div>
+    <div class="cap">AR · تم الإرسال</div>
+    </div>
+  </div>
+</div>
+
+</div>
+</body></html>

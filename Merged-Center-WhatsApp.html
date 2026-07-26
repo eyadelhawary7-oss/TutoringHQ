@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<!--
+================================================================
+ TutoringHQ · MERGED DESIGN REFERENCE
+ File: Merged-Center-WhatsApp.html
+ Center · WhatsApp
+
+ CONTENTS (3 screens):
+  01. WhatsApp   <-  Screen-WhatsApp.html
+  02. WhatsApp Pack   <-  Screen-WhatsApp-Pack.html
+  03. WhatsApp Custom Flow   <-  Screen-WhatsApp-Custom-Flow.html
+
+----------------------------------------------------------------
+ HOW TO READ THIS FILE WHEN IMPLEMENTING IT
+----------------------------------------------------------------
+ 1. CSS IS SCOPED. Every rule carries a .mgdN prefix so that
+    several screens can share one page without their styles
+    colliding.
+        in this file:   .mgd4 .pins{ ... }
+        in your code:   .pins{ ... }
+    Strip the .mgdN prefix. It is bookkeeping for this reference
+    file only and must never reach the codebase.
+
+ 2. ONE SECTION = ONE SCREEN. Each section bar shows its number,
+    its name, and the original screen file it came from. Use that
+    filename as the screen's identity, not the section number.
+
+ 3. FRAMES ARE STATES, NOT PAGES. Each phone inside a section is
+    one state of that screen (empty, filled, error, and so on).
+    The caption under or above each phone names the state.
+
+ 4. THE TWO LANGUAGES ARE SEPARATE SCREENS. English and Arabic
+    are never a translation overlay. Arabic frames use Eastern
+    Arabic numerals (0-9 written as Arabic-Indic) and the Arabic
+    currency mark. English frames use Western numerals and EGP.
+    Directional icons such as chevrons flip with the language.
+
+ 5. SAMPLE DATA IS PLACEHOLDER. Names, amounts, dates and phone
+    numbers are illustrative. Do not treat them as fixtures or
+    seed data.
+
+ 6. THIS IS DESIGN, NOT PRODUCTION CODE. Markup here is built to
+    be read, not shipped. Take the layout, spacing, type scale
+    and colour decisions from it. Do not copy the DOM wholesale.
+
+ 7. ANY UI OR BRANDING CHANGE BUMPS SW_VERSION in public/sw.js.
+================================================================
+-->
+
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Center · WhatsApp · TutoringHQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+html{background:#d8d3c6;color-scheme:light}
+:root{color-scheme:light}
+
+html,body{margin:0;padding:0}
+body{background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased}
+.mgd-top{max-width:1180px;margin:0 auto;padding:44px 24px 8px;color:#1b201d}
+.mgd-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5d635c;font-weight:600}
+.mgd-h1{font-size:42px;line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:12px 0 10px}
+.mgd-lede{font-size:16px;line-height:1.55;color:#5d635c;max-width:82ch;margin:0}
+.mgd-toc{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 0}
+.mgd-toc a{font-size:12.5px;font-weight:600;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:6px 12px;border-radius:999px;text-decoration:none}
+.mgd-sec{max-width:1180px;margin:0 auto;padding:14px 24px 0}
+.mgd-bar{display:flex;align-items:baseline;gap:12px;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin-top:34px}
+.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a5e16;font-weight:500}
+.mgd-name{font-size:22px;font-weight:700;color:#14181a;letter-spacing:-.01em}
+.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#80827a}
+/* ===== Screen-WhatsApp ===== */
+.mgd1 *{box-sizing:border-box}
+.mgd1{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd1 .num{font-variant-numeric:tabular-nums}
+.mgd1 .mono{font-family:'IBM Plex Mono',monospace}
+.mgd1 svg{display:block;flex-shrink:0}
+.mgd1 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd1 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd1 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd1 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 8px}
+.mgd1 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd1 .addbtn{width:42px;height:42px;border-radius:12px;background:#0e6b61;color:#fffdf8;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(14,107,97,.28)}
+.mgd1 .search{margin:2px 16px 4px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:9px;color:#a6a79d;font-size:14px}
+.mgd1 .body{flex:1;overflow-y:auto;padding:6px 16px 16px;display:flex;flex-direction:column;gap:10px}
+.mgd1 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px}
+.mgd1 .ok{background:#e4f0e9;color:#1a6d4d}
+.mgd1 .neutral{background:#eee7d9;color:#80827a}
+.mgd1 .trow{background:#fffdf8;border:1px solid #e2ddd1;border-radius:15px;padding:12px 13px}
+.mgd1 .ticon{width:40px;height:40px;border-radius:11px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd1 .prev{font-size:12px;color:#80827a;margin-top:2px;line-height:1.4}
+.mgd1 .var{font-family:'IBM Plex Mono',monospace;background:#e7f1ef;color:#0a514a;border-radius:5px;padding:0 4px;font-size:11.5px;direction:ltr;display:inline-block}
+.mgd1 .kb{color:#b0b1a7;flex-shrink:0}
+.mgd1 .chip{border:1px solid #e2ddd1;background:#faf7f0;border-radius:999px;padding:8px 12px;font-size:12.5px;font-weight:600;color:#5d635c;display:flex;align-items:center;gap:6px}
+.mgd1 .chip.pri{background:#0e6b61;border-color:#0e6b61;color:#fffdf8}
+.mgd1 .scrim{position:absolute;inset:0;background:rgba(20,22,20,.30)}
+.mgd1 .sheet{position:absolute;left:0;right:0;bottom:0;background:#fffdf8;border-radius:24px 24px 0 0;padding:8px 18px 20px;box-shadow:0 -10px 40px rgba(0,0,0,.16)}
+.mgd1 .grab{width:40px;height:4px;border-radius:999px;background:#d8d3c6;margin:6px auto 12px}
+.mgd1 .chatbg{background:#e9e2d6;background-image:radial-gradient(circle at 20% 10%,rgba(14,107,97,.05),transparent 40%);border-radius:14px;padding:14px 12px;display:flex;justify-content:flex-end}
+.mgd1 .wbubble{background:#dcf8c6;color:#122;border-radius:12px;border-top-right-radius:3px;padding:9px 11px 6px;font-size:13px;line-height:1.5;max-width:85%;box-shadow:0 1px 1px rgba(0,0,0,.08)}
+.mgd1 .wtime{font-size:10px;color:#5c6b52;text-align:end;margin-top:3px;display:flex;align-items:center;gap:3px;justify-content:flex-end}
+.mgd1 .togline{display:flex;align-items:center;gap:11px;padding:12px 0}
+.mgd1 .tgl{width:42px;height:25px;border-radius:999px;flex-shrink:0;position:relative}
+.mgd1 .tgl.on{background:#0e6b61}
+.mgd1 .tgl::after{content:"";position:absolute;top:3px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);right:3px}
+.mgd1 .btn-primary{width:100%;height:48px;background:#0e6b61;color:#fffdf8;border-radius:13px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28);border:none}
+.mgd1 .board{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
+.mgd1 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd1 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd1 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+/* ===== Screen-WhatsApp-Pack ===== */
+.mgd2 *{box-sizing:border-box}
+.mgd2{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#1b201d;-webkit-font-smoothing:antialiased}
+.mgd2 .board{max-width:1180px;margin:0 auto;padding:48px 24px 90px}
+.mgd2 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827a;font-weight:600}
+.mgd2 .pill{display:inline-block;margin:10px 0;padding:4px 12px;border-radius:999px;background:#dfeeeb;color:#0a514a;font-size:12px;font-weight:600}
+.mgd2 h1.mh{font-size:30px;margin:6px 0 8px;font-weight:700;letter-spacing:-.01em}
+.mgd2 .board>p.lead{margin:0 0 34px;color:#5d635c;font-size:16px;line-height:1.5;max-width:70ch}
+.mgd2 .phones{display:flex;gap:34px;flex-wrap:wrap;justify-content:center}
+.mgd2 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
+.mgd2 .cap{font-size:13px;color:#5d635c;font-weight:600}
+.mgd2 .phone{width:340px;background:#14181a;border-radius:44px;padding:11px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+.mgd2 .screen{background:#ece8df;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden}
+.mgd2 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:14px;font-weight:600;flex-shrink:0}
+.mgd2 .topbar{display:flex;align-items:center;gap:12px;padding:6px 16px 10px;flex-shrink:0}
+.mgd2 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd2 .topbtn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mgd2 .tt{font-size:17px;font-weight:700;line-height:1.2}
+.mgd2 .ts{font-size:12px;color:#80827a}
+.mgd2 .body{flex:1;overflow-y:auto;padding:2px 16px 16px}
+.mgd2 .hero{background:linear-gradient(150deg,#0f766b,#0a514a);border-radius:16px;padding:16px;color:#eef6f4;margin-bottom:14px}
+.mgd2 .hero .hl{font-size:13px;opacity:.9}
+.mgd2 .hero .hn{font-size:27px;font-weight:700;margin-top:4px}
+.mgd2 .hero .hn span{font-size:13px;font-weight:500;opacity:.85}
+.mgd2 .hint{font-size:11px;opacity:.8;margin-top:9px;line-height:1.4}
+.mgd2 .seg{display:flex;background:#f2eee5;border:1px solid #e2ddd1;border-radius:12px;padding:4px;margin-bottom:14px}
+.mgd2 .seg div{flex:1;text-align:center;padding:9px;border-radius:9px;font-size:13.5px;font-weight:600;color:#5d635c}
+.mgd2 .seg div.on{background:#fffdf8;color:#0a514a;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.mgd2 .sec{font-size:15px;font-weight:700;margin:2px 2px 3px}
+.mgd2 .sub{font-size:12.5px;color:#80827a;margin:0 2px 12px}
+.mgd2 .tier{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fffdf8;border:1.5px solid #e2ddd1;border-radius:14px;padding:13px 15px;margin-bottom:10px;cursor:pointer}
+.mgd2 .tier.on{border-color:#0e6b61;background:#f6faf9;box-shadow:0 0 0 2px rgba(14,107,97,.1)}
+.mgd2 .tn{font-size:16px;font-weight:700}
+.mgd2 .tsub{font-size:12px;color:#80827a;margin-top:2px}
+.mgd2 .badge{display:inline-block;margin-inline-start:8px;padding:2px 9px;border-radius:999px;background:#f0e6d2;color:#8a5e16;font-size:10.5px;font-weight:700;vertical-align:middle}
+.mgd2 .tp{text-align:end;white-space:nowrap}
+.mgd2 .tp b{font-size:17px;font-weight:700}
+.mgd2 .tp span{display:block;font-size:11px;color:#80827a}
+.mgd2 .custom{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#faf7f0;border:1px dashed #d8cfb8;border-radius:14px;padding:13px 15px;margin-bottom:4px}
+.mgd2 .footer{padding:12px 16px 18px;border-top:1px solid #e2ddd1;background:#ece8df;flex-shrink:0}
+.mgd2 .fnote{text-align:center;font-size:11px;color:#80827a;margin-bottom:9px}
+.mgd2 .btn{display:block;width:100%;border:none;border-radius:13px;padding:15px;font-size:15px;font-weight:700;background:#0e6b61;color:#fffdf8;text-align:center}
+/* ===== Screen-WhatsApp-Custom-Flow ===== */
+.mgd3 *{box-sizing:border-box}
+.mgd3{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd3 .num{font-variant-numeric:tabular-nums}
+.mgd3 .mono{font-family:'IBM Plex Mono',monospace}
+.mgd3 svg{display:block;flex-shrink:0}
+.mgd3 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd3 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd3 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd3 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 10px}
+.mgd3 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd3 .body{flex:1;overflow-y:auto;padding:2px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.mgd3 .sec{font-size:13px;font-weight:600;color:#80827a;margin:6px 2px -2px}
+.mgd3 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px}
+.mgd3 .ok{background:#e4f0e9;color:#1a6d4d}
+.mgd3 .card{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:14px}
+.mgd3 .hero{background:linear-gradient(150deg,#0f766b,#0a514a);border-radius:18px;padding:16px;color:#eef6f4}
+.mgd3 .ubar{height:9px;border-radius:999px;background:rgba(255,255,255,.22);margin-top:10px;overflow:hidden}
+.mgd3 .ufill{height:100%;border-radius:999px;background:#fffdf8}
+.mgd3 .scrim{position:absolute;inset:0;background:rgba(20,22,20,.32)}
+.mgd3 .sheet{position:absolute;left:0;right:0;bottom:0;background:#fffdf8;border-radius:24px 24px 0 0;padding:8px 18px 20px;box-shadow:0 -10px 40px rgba(0,0,0,.16)}
+.mgd3 .grab{width:40px;height:4px;border-radius:999px;background:#d8d3c6;margin:6px auto 12px}
+.mgd3 .tier{display:flex;align-items:center;justify-content:space-between;border:1px solid #e2ddd1;border-radius:14px;padding:12px 13px;margin-bottom:9px;position:relative}
+.mgd3 .tier.press{border-color:#0e6b61;box-shadow:0 0 0 3px rgba(14,107,97,.16);background:#f6faf9}
+.mgd3 .tap{position:absolute;inset-inline-end:14px;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;background:rgba(14,107,97,.16);border:2px solid rgba(14,107,97,.55)}
+.mgd3 .stepper{display:flex;align-items:center;justify-content:space-between;background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:12px 14px}
+.mgd3 .stbtn{width:44px;height:44px;border-radius:12px;background:#f2eee5;color:#0a514a;border:none;display:flex;align-items:center;justify-content:center}
+.mgd3 .qchip{border:1px solid #e2ddd1;background:#faf7f0;border-radius:999px;padding:7px 12px;font-size:12.5px;font-weight:600;color:#5d635c}
+.mgd3 .qchip.on{background:#0e6b61;border-color:#0e6b61;color:#fff}
+.mgd3 .rate{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:12px;border:1px solid #e2ddd1;background:#fbf8f2;margin-bottom:8px}
+.mgd3 .rate.on{border-color:#0e6b61;background:#f6faf9;box-shadow:0 0 0 2px rgba(14,107,97,.1)}
+.mgd3 .totcard{background:#083f39;color:#eef6f4;border-radius:16px;padding:14px 15px;display:flex;align-items:flex-end;justify-content:space-between}
+.mgd3 .rrow{display:flex;justify-content:space-between;font-size:14px;padding:9px 0;border-top:1px solid #f0ece2}
+.mgd3 .rrow:first-child{border-top:none}
+.mgd3 .btn-primary{width:100%;height:50px;background:#0e6b61;color:#fffdf8;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28);border:none}
+.mgd3 .btn-ghost{width:100%;height:44px;background:#f2eee5;color:#5d635c;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;border:none}
+.mgd3 .footer{padding:10px 16px 16px;border-top:1px solid #e2ddd1;background:#ece8df}
+.mgd3 .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;padding:0 26px}
+.mgd3 .tipwrap{position:relative;display:inline-flex;align-items:center}
+.mgd3 .info{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;color:#a6a79d;margin-inline-start:5px}
+.mgd3 .tip{position:absolute;bottom:calc(100% + 9px);inset-inline-start:-6px;width:198px;background:#1f2420;color:#eef0ec;font-size:11.5px;line-height:1.45;font-weight:400;text-align:start;padding:9px 11px;border-radius:10px;box-shadow:0 10px 24px rgba(20,22,20,.3);z-index:6}
+.mgd3 .tip::after{content:"";position:absolute;top:100%;inset-inline-start:14px;border:6px solid transparent;border-top-color:#1f2420}
+.mgd3 .board{max-width:1320px;margin:0 auto;padding:56px 28px 96px}
+.mgd3 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd3 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd3 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+.mgd3 .flowlabel{font-size:12px;font-weight:700;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.2);padding:5px 11px;border-radius:999px}
+</style>
+</head>
+<body>
+<div class="mgd-top">
+  <div class="mgd-eyebrow">TutoringHQ · Merged reference</div>
+  <h1 class="mgd-h1">Center · WhatsApp</h1>
+  <p class="mgd-lede">The template library parents receive, the top-up packs, and the custom-amount flow.</p>
+  <div class="mgd-toc"><a href="#Merged-Center-WhatsApp-1">WhatsApp</a><a href="#Merged-Center-WhatsApp-2">WhatsApp Pack</a><a href="#Merged-Center-WhatsApp-3">WhatsApp Custom Flow</a></div>
+</div>
+<div class="mgd-sec" id="Merged-Center-WhatsApp-1">
+  <div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">WhatsApp</span><span class="mgd-src">Screen-WhatsApp.html</span></div>
+</div>
+<div class="mgd1">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0e6b61;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:5px 11px;border-radius:999px">Lucide icons</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">WhatsApp templates</h1>
+    <p style="margin:0;max-width:74ch;font-size:17px;line-height:1.55;color:#5d635c">The message library parents receive. Each template shows a preview and whether it auto-sends; tapping opens a preview with the message in a WhatsApp bubble, the variables it uses, and an auto-send toggle. Variable tokens stay Latin. EN then Arabic mirrored.</p>
+  </div>
+  <div class="phones">
+
+    <!-- EN LIST -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · library · one expanded</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div><div style="flex:1"><div style="font-size:17px;font-weight:600">Templates</div><div style="font-size:12px;color:#80827a">Messages to parents</div></div><div class="addbtn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div></div>
+      <div class="search"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>Search templates</div>
+      <div class="body">
+
+        <!-- expanded -->
+        <div class="trow">
+          <div style="display:flex;align-items:flex-start;gap:11px"><div class="ticon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div><div style="flex:1"><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px;font-weight:600">Absence alert</span><span class="badge ok">Auto</span></div><div class="prev">Dear parent, <span class="var">{student}</span> was absent today.</div></div><div class="kb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div></div>
+          <div style="display:flex;gap:7px;margin-top:12px;flex-wrap:wrap">
+            <div class="chip pri"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</div>
+        
+            <div class="chip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>Preview</div>
+            <div class="chip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="5" width="22" height="14" rx="7"/><circle cx="16" cy="12" r="3"/></svg>Auto: on</div>
+            <div class="chip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/><circle cx="5" cy="12" r="1.6"/></svg>More</div>
+          </div>
+        </div>
+
+        <div class="trow" style="display:flex;align-items:flex-start;gap:11px"><div class="ticon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div style="flex:1"><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px;font-weight:600">Payment reminder</span><span class="badge ok">Auto</span></div><div class="prev">Reminder: <span class="var">{amount}</span> EGP is due for <span class="var">{student}</span>.</div></div><div class="kb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div></div>
+
+        <div class="trow" style="display:flex;align-items:flex-start;gap:11px"><div class="ticon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div style="flex:1"><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px;font-weight:600">Payment receipt</span><span class="badge ok">Auto</span></div><div class="prev">We received <span class="var">{amount}</span> EGP for <span class="var">{student}</span>. Thank you.</div></div><div class="kb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div></div>
+
+        <div class="trow" style="display:flex;align-items:flex-start;gap:11px"><div class="ticon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-6 0v4M5 9h14l1 12H4L5 9z"/></svg></div><div style="flex:1"><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px;font-weight:600">Welcome</span><span class="badge neutral">Manual</span></div><div class="prev">Welcome <span class="var">{student}</span> to Al-Nahda!</div></div><div class="kb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div></div>
+
+        <div class="trow" style="display:flex;align-items:flex-start;gap:11px"><div class="ticon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div style="flex:1"><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px;font-weight:600">Session reminder</span><span class="badge neutral">Off</span></div><div class="prev"><span class="var">{student}</span> has a session tomorrow at <span class="var">{time}</span>.</div></div><div class="kb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div></div>
+
+      </div>
+    </div></div></div>
+
+    <!-- EN PREVIEW SHEET -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · preview</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div><div style="flex:1"><div style="font-size:17px;font-weight:600">Templates</div><div style="font-size:12px;color:#80827a">Messages to parents</div></div></div>
+      <div class="body" style="filter:blur(1px);opacity:.5"><div class="trow" style="height:60px"></div><div class="trow" style="height:60px"></div></div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div style="display:flex;align-items:center;gap:7px;margin:0 2px 3px"><span style="font-size:18px;font-weight:700">Absence alert</span><span class="badge ok">Auto</span></div>
+        <div style="font-size:12px;color:#80827a;margin:0 2px 12px">How parents will see it</div>
+        <div class="chatbg">
+          <div class="wbubble">Dear parent, Youssef Adel was absent from today's Math session. Please follow up with them.<div class="wtime">4:12 PM <svg width="14" height="12" viewBox="0 0 24 24" fill="none" stroke="#4a9de0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 7l-8 8-2-2M22 7l-8 8"/></svg></div></div>
+        </div>
+        <div style="font-size:12px;color:#80827a;font-weight:600;margin:12px 2px 6px">Variables used</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="var">{student}</span><span class="var">{group}</span><span class="var">{date}</span></div>
+        <div class="togline" style="border-top:1px solid #f0ece2;margin-top:10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5d635c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg><div style="flex:1"><div style="font-size:14px;font-weight:500">Send automatically</div><div style="font-size:11px;color:#80827a">On absence, no action needed</div></div><div class="tgl on"></div></div>
+        <button class="btn-primary"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit template</button>
+      </div>
+    </div></div></div>
+
+    <!-- AR LIST -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">AR · RTL · القوالب</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic',sans-serif;letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div><div style="flex:1"><div style="font-size:17px;font-weight:600">القوالب</div><div style="font-size:12px;color:#80827a">رسائل لأولياء الأمور</div></div><div class="addbtn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div></div>
+      <div class="search"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>ابحث في القوالب</div>
+      <div class="body">
+        <div class="trow" style="display:flex;align-items:flex-start;gap:11px"><div class="ticon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div><div style="flex:1"><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px;font-weight:600">تنبيه غياب</span><span class="badge ok">تلقائي</span></div><div class="prev">عزيزي ولي الأمر، تغيّب <span class="var">{student}</span> اليوم.</div></div><div class="kb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div></div>
+        <div class="trow" style="display:flex;align-items:flex-start;gap:11px"><div class="ticon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div style="flex:1"><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px;font-weight:600">تذكير دفع</span><span class="badge ok">تلقائي</span></div><div class="prev">تذكير: <span class="var">{amount}</span> ج.م مستحقة على <span class="var">{student}</span>.</div></div><div class="kb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div></div>
+        <div class="trow" style="display:flex;align-items:flex-start;gap:11px"><div class="ticon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div style="flex:1"><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px;font-weight:600">إيصال دفع</span><span class="badge ok">تلقائي</span></div><div class="prev">استلمنا <span class="var">{amount}</span> ج.م عن <span class="var">{student}</span>. شكرًا.</div></div><div class="kb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div></div>
+        <div class="trow" style="display:flex;align-items:flex-start;gap:11px"><div class="ticon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-6 0v4M5 9h14l1 12H4L5 9z"/></svg></div><div style="flex:1"><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px;font-weight:600">ترحيب</span><span class="badge neutral">يدوي</span></div><div class="prev">أهلاً <span class="var">{student}</span> في مركز النهضة!</div></div><div class="kb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div></div>
+        <div class="trow" style="display:flex;align-items:flex-start;gap:11px"><div class="ticon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div style="flex:1"><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px;font-weight:600">تذكير حصة</span><span class="badge neutral">موقوف</span></div><div class="prev">لدى <span class="var">{student}</span> حصة غدًا الساعة <span class="var">{time}</span>.</div></div><div class="kb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div></div>
+      </div>
+    </div></div></div>
+
+  </div>
+</div>
+</div>
+<div class="mgd-sec" id="Merged-Center-WhatsApp-2">
+  <div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">WhatsApp Pack</span><span class="mgd-src">Screen-WhatsApp-Pack.html</span></div>
+</div>
+<div class="mgd2">
+<div class="board">
+  <div class="eyebrow">TutoringHQ · Reference Screen</div>
+  <div class="pill">WhatsApp pack · One-time top-up · Draft</div>
+  <h1 class="mh">WhatsApp pack</h1>
+  <p class="lead">A one-time recharge, like topping up phone credit. The credit never expires and carries over. Two separate types so a reminder pack can't be spent on promotions. Prices are inclusive, VAT in, billed via Paymob. English and Arabic. Sample data is placeholder.</p>
+
+  <div class="phones">
+
+    <!-- EN · NOTIFICATIONS -->
+    <div class="frame">
+    <div class="phone"><div class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">WhatsApp pack</div><div class="ts">Parent messages</div></div></div>
+      <div class="body">
+        <div class="hero"><div class="hl">Notifications balance</div><div class="hn">3,240 <span>messages left</span></div><div class="hint">Never expires · only subscribed parents receive pack messages</div></div>
+        <div class="seg"><div class="on">Notifications</div><div>Promotions</div></div>
+        <div class="sec">Recharge</div>
+        <div class="sub">Buy message credit. It never expires and carries over.</div>
+        <div class="tier"><div><div class="tn">200 messages</div><div class="tsub">Mini · 1 EGP each</div></div><div class="tp"><b>200</b><span>EGP</span></div></div>
+        <div class="tier on"><div><div class="tn">1,000 messages<span class="badge">Popular</span></div><div class="tsub">Standard · 0.75 EGP each</div></div><div class="tp"><b>750</b><span>EGP</span></div></div>
+        <div class="tier"><div><div class="tn">5,000 messages</div><div class="tsub">Plus · 0.5 EGP each</div></div><div class="tp"><b>2,500</b><span>EGP</span></div></div>
+        <div class="custom"><div><div class="tn" style="font-size:15px">Custom</div><div class="tsub">Any amount by volume</div></div><div class="tp"><b style="font-size:14px">1 – 0.5</b><span>EGP / msg</span></div></div>
+      </div>
+      <div class="footer"><div class="fnote">Prices include VAT · 20 EGP processing fee · billed via Paymob</div><button class="btn">Buy credit</button></div>
+    </div></div>
+    <div class="cap">EN · notifications</div>
+    </div>
+
+    <!-- EN · PROMOTIONS -->
+    <div class="frame">
+    <div class="phone"><div class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">WhatsApp pack</div><div class="ts">Parent messages</div></div></div>
+      <div class="body">
+        <div class="hero"><div class="hl">Promotions balance</div><div class="hn">140 <span>messages left</span></div><div class="hint">Marketing messages · separate from notifications · never expires</div></div>
+        <div class="seg"><div>Notifications</div><div class="on">Promotions</div></div>
+        <div class="sec">Recharge</div>
+        <div class="sub">Announcements and offers to parents. Priced higher because marketing messages cost more to send.</div>
+        <div class="tier"><div><div class="tn">200 messages</div><div class="tsub">7 EGP each</div></div><div class="tp"><b>1,400</b><span>EGP</span></div></div>
+        <div class="tier on"><div><div class="tn">1,000 messages<span class="badge">Popular</span></div><div class="tsub">7 EGP each</div></div><div class="tp"><b>7,000</b><span>EGP</span></div></div>
+        <div class="tier"><div><div class="tn">5,000 messages</div><div class="tsub">7 EGP each</div></div><div class="tp"><b>35,000</b><span>EGP</span></div></div>
+        <div class="custom"><div><div class="tn" style="font-size:15px">Custom</div><div class="tsub">Any amount</div></div><div class="tp"><b style="font-size:14px">7</b><span>EGP / msg</span></div></div>
+      </div>
+      <div class="footer"><div class="fnote">Prices include VAT · 20 EGP processing fee · billed via Paymob</div><button class="btn">Buy credit</button></div>
+    </div></div>
+    <div class="cap">EN · promotions</div>
+    </div>
+
+    <!-- AR · NOTIFICATIONS -->
+    <div class="frame">
+    <div class="phone"><div class="screen" dir="rtl" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="tt">باقة واتساب</div><div class="ts">رسائل أولياء الأمور</div></div></div>
+      <div class="body">
+        <div class="hero"><div class="hl">رصيد الإشعارات</div><div class="hn">٣٬٢٤٠ <span>رسالة متبقية</span></div><div class="hint">لا ينتهي · تصل رسائل الباقة للمشتركين فقط من أولياء الأمور</div></div>
+        <div class="seg"><div class="on">الإشعارات</div><div>العروض</div></div>
+        <div class="sec">شحن الرصيد</div>
+        <div class="sub">اشترِ رصيد رسائل. لا ينتهي ويُرحَّل تلقائيًا.</div>
+        <div class="tier"><div><div class="tn">٢٠٠ رسالة</div><div class="tsub">صغيرة · ١ ج.م للرسالة</div></div><div class="tp"><b>٢٠٠</b><span>ج.م</span></div></div>
+        <div class="tier on"><div><div class="tn">١٬٠٠٠ رسالة<span class="badge">شائعة</span></div><div class="tsub">قياسية · ٠٫٧٥ ج.م للرسالة</div></div><div class="tp"><b>٧٥٠</b><span>ج.م</span></div></div>
+        <div class="tier"><div><div class="tn">٥٬٠٠٠ رسالة</div><div class="tsub">بلس · ٠٫٥ ج.م للرسالة</div></div><div class="tp"><b>٢٬٥٠٠</b><span>ج.م</span></div></div>
+        <div class="custom"><div><div class="tn" style="font-size:15px">مخصصة</div><div class="tsub">أي كمية حسب الحجم</div></div><div class="tp"><b style="font-size:14px">١ – ٠٫٥</b><span>ج.م / رسالة</span></div></div>
+      </div>
+      <div class="footer"><div class="fnote">الأسعار شاملة الضريبة · رسوم معالجة ٢٠ ج.م · الدفع عبر Paymob</div><button class="btn">شراء رصيد</button></div>
+    </div></div>
+    <div class="cap">AR · الإشعارات</div>
+    </div>
+
+  </div>
+</div>
+</div>
+<div class="mgd-sec" id="Merged-Center-WhatsApp-3">
+  <div class="mgd-bar"><span class="mgd-num">03</span><span class="mgd-name">WhatsApp Custom Flow</span><span class="mgd-src">Screen-WhatsApp-Custom-Flow.html</span></div>
+</div>
+<div class="mgd3">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Flow</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0e6b61;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:5px 11px;border-radius:999px">Lucide icons</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Custom pack · the flow</h1>
+    <p style="margin:0;max-width:74ch;font-size:17px;line-height:1.55;color:#5d635c">What happens when you tap Custom: pick your amount, see the rate and total, confirm and pay through Paymob, done. One shared flow serves both portals, since center and teacher rates are identical, and both message types. Only the rate changes: notifications step down by volume, promotions price flat. Credit is a one-time top-up and never expires. Numbers are editable placeholders. English, with the confirm step also mirrored in Arabic.</p>
+  </div>
+  <div class="phones">
+
+    <!-- 1 TAP CUSTOM -->
+    <div class="frame"><span class="flowlabel">1 · Tap Custom</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div style="flex:1"><div style="font-size:17px;font-weight:600">WhatsApp pack</div><div style="font-size:12px;color:#80827a">Parent notifications</div></div></div>
+      <div class="body" style="filter:blur(1px);opacity:.5"><div class="hero"><div style="font-size:13px;font-weight:600">Parent WhatsApp</div><div class="ubar"><div class="ufill" style="width:62%"></div></div></div></div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div style="font-size:19px;font-weight:700;margin:0 2px 3px">Choose a pack</div>
+        <div style="font-size:12px;color:#80827a;margin:0 2px 13px">Notifications · one-time top-up, never expires.</div>
+        <div class="tier"><div><div class="num" style="font-size:15px;font-weight:600">200 messages</div><div style="font-size:11px;color:#80827a">Mini · 1 EGP each</div></div><div style="text-align:end"><div class="num" style="font-size:16px;font-weight:700">200</div><div style="font-size:10px;color:#80827a">EGP</div></div></div>
+        <div class="tier"><div><div style="display:flex;align-items:center;gap:7px"><span class="num" style="font-size:15px;font-weight:600">1,000 messages</span><span class="badge ok">Popular</span></div><div style="font-size:11px;color:#80827a">Standard · 0.75 EGP each</div></div><div style="text-align:end"><div class="num" style="font-size:16px;font-weight:700">750</div><div style="font-size:10px;color:#80827a">EGP</div></div></div>
+        <div class="tier"><div><div class="num" style="font-size:15px;font-weight:600">5,000 messages</div><div style="font-size:11px;color:#80827a">Plus · 0.5 EGP each</div></div><div style="text-align:end"><div class="num" style="font-size:16px;font-weight:700">2,500</div><div style="font-size:10px;color:#80827a">EGP</div></div></div>
+        <div class="tier press"><div><div style="font-size:15px;font-weight:600">Custom</div><div style="font-size:11px;color:#80827a">Any number · by volume</div></div><div class="tap"></div></div>
+        <div style="text-align:center;font-size:11px;color:#80827a;margin:8px 0 2px">Prices include VAT · 20 EGP processing fee · billed via Paymob</div>
+      </div>
+    </div></div></div>
+
+    <!-- 2 SET AMOUNT -->
+    <div class="frame"><span class="flowlabel">2 · Set amount</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div style="flex:1"><div style="font-size:17px;font-weight:600">Custom pack</div><div style="font-size:12px;color:#80827a">Set your own amount</div></div></div>
+      <div class="body">
+        <div style="font-size:12px;color:#80827a;font-weight:600;margin:2px 2px -2px">How many messages?</div>
+        <div class="stepper">
+          <button class="stbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+          <div style="text-align:center"><div class="num" style="font-size:30px;font-weight:700;letter-spacing:-.01em">3,000</div><div style="font-size:10px;color:#80827a">messages · never expire</div></div>
+          <button class="stbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        </div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap"><div class="qchip">2,000</div><div class="qchip on">3,000</div><div class="qchip">5,000</div><div class="qchip">10,000</div></div>
+        <div class="sec">Rate by volume</div>
+        <div>
+          <div class="rate"><div><div class="num" style="font-size:13px;font-weight:600">200 – 999</div><div style="font-size:11px;color:#80827a">mini rate</div></div><div class="num" style="font-size:15px;font-weight:700;color:#80827a">1 EGP<span style="font-size:10px"> /msg</span></div></div>
+          <div class="rate on"><div><div class="num" style="font-size:13px;font-weight:600">1,000 – 4,999</div><div style="font-size:11px;color:#80827a">standard rate</div></div><div class="num" style="font-size:15px;font-weight:700">0.75 EGP<span style="font-size:10px;color:#80827a"> /msg</span></div></div>
+          <div class="rate"><div><div class="num" style="font-size:13px;font-weight:600">5,000+</div><div style="font-size:11px;color:#80827a">volume discount</div></div><div class="num" style="font-size:15px;font-weight:700;color:#80827a">0.5 EGP<span style="font-size:10px"> /msg</span></div></div>
+        </div>
+        <div class="totcard"><div><div style="font-size:11px;opacity:.8">Total · VAT included</div><div class="num" style="font-size:11px;opacity:.72;margin-top:2px">3,000 × 0.75 EGP</div></div><div class="num" style="font-size:26px;font-weight:700">2,250<span style="font-size:13px;font-weight:500;opacity:.85"> EGP</span></div></div>
+      </div>
+      <div class="footer"><button class="btn-primary">Continue<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+    </div></div></div>
+
+    <!-- 2b SET AMOUNT · PROMOTIONS -->
+    <div class="frame"><span class="flowlabel">2b · Same step, promotions</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div style="flex:1"><div style="font-size:17px;font-weight:600">Custom pack</div><div style="font-size:12px;color:#80827a">Promotions</div></div></div>
+      <div class="body">
+        <div style="font-size:12px;color:#80827a;font-weight:600;margin:2px 2px -2px">How many messages?</div>
+        <div class="stepper">
+          <button class="stbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+          <div style="text-align:center"><div class="num" style="font-size:30px;font-weight:700;letter-spacing:-.01em">3,000</div><div style="font-size:10px;color:#80827a">messages · never expire</div></div>
+          <button class="stbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        </div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap"><div class="qchip">1,000</div><div class="qchip on">3,000</div><div class="qchip">5,000</div><div class="qchip">10,000</div></div>
+        <div class="sec">Rate</div>
+        <div>
+          <div class="rate on"><div><div class="num" style="font-size:13px;font-weight:600">Any volume</div><div style="font-size:11px;color:#80827a">flat rate, no discount band</div></div><div class="num" style="font-size:15px;font-weight:700">7 EGP<span style="font-size:10px;color:#80827a"> /msg</span></div></div>
+        </div>
+        <div style="background:#f4ebd7;border:1px solid rgba(138,94,22,.22);border-radius:12px;padding:10px 12px;font-size:11.5px;color:#8a5e16;line-height:1.45">Marketing messages cost more to send, so promotions price flat. This credit is separate and cannot be spent on notifications.</div>
+        <div class="totcard"><div><div style="font-size:11px;opacity:.8">Total · VAT included</div><div class="num" style="font-size:11px;opacity:.72;margin-top:2px">3,000 × 7 EGP</div></div><div class="num" style="font-size:26px;font-weight:700">21,000<span style="font-size:13px;font-weight:500;opacity:.85"> EGP</span></div></div>
+      </div>
+      <div class="footer"><button class="btn-primary">Continue<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+    </div></div></div>
+
+    <!-- 3 CONFIRM + PAY -->
+    <div class="frame"><span class="flowlabel">3 · Confirm · Paymob</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div style="flex:1"><div style="font-size:17px;font-weight:600">Confirm change</div><div style="font-size:12px;color:#80827a">Review and pay</div></div></div>
+      <div class="body">
+        <div class="sec">Your top-up</div>
+        <div class="card" style="padding:2px 14px">
+          <div class="rrow"><span style="color:#80827a">Type</span><b>Notifications</b></div>
+          <div class="rrow"><span style="color:#80827a">Messages</span><b class="num">3,000 · never expire</b></div>
+          <div class="rrow"><span style="color:#80827a">Rate</span><b class="num">0.75 EGP / msg</b></div>
+          <div class="rrow"><span style="color:#80827a">Subtotal (VAT incl)</span><b class="num">2,250 EGP</b></div>
+          <div class="rrow"><span class="tipwrap" style="color:#80827a">Processing fee<span class="info"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span><span class="tip">A standard 20 EGP fee that helps us keep offering a high-quality, reliable service.</span></span><b class="num">20 EGP</b></div>
+          <div class="rrow"><b style="font-size:15px">Total</b><b class="num" style="font-size:16px">2,270 EGP</b></div>
+        </div>
+        <div class="sec">Payment</div>
+        <div class="card" style="display:flex;align-items:center;gap:11px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg><div style="flex:1"><div style="font-size:14px;font-weight:600">Visa</div><div class="mono" dir="ltr" style="font-size:12px;color:#80827a">•••• 7937</div></div><span style="font-size:12px;font-weight:600;color:#0a514a">Change</span></div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;color:#80827a;font-size:11px;margin-top:2px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Secured by Paymob</div>
+      </div>
+      <div class="footer"><button class="btn-primary"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Confirm and pay 2,270 EGP</button></div>
+    </div></div></div>
+
+    <!-- 4 DONE -->
+    <div class="frame"><span class="flowlabel">4 · Done</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="empty">
+        <div style="width:74px;height:74px;border-radius:50%;background:#e4f0e9;color:#1a6d4d;display:flex;align-items:center;justify-content:center;margin-bottom:6px"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div style="font-size:22px;font-weight:700">Credit added</div>
+        <div style="font-size:14px;color:#80827a;line-height:1.5;max-width:30ch">Your balance is topped up. It never expires and carries over.</div>
+        <div class="card" style="width:100%;margin-top:14px;text-align:start">
+          <div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0"><span style="color:#80827a">Added</span><b class="num">3,000 messages</b></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0"><span style="color:#80827a">Paid</span><b class="num">2,270 EGP</b></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0"><span style="color:#80827a">New balance</span><b class="num">6,240 messages</b></div>
+        </div>
+      </div>
+      <div class="footer"><button class="btn-primary">Done</button></div>
+    </div></div></div>
+
+    <!-- AR CONFIRM -->
+    <div class="frame"><span class="flowlabel">AR · 3 · تأكيد</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic',sans-serif;letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div style="flex:1"><div style="font-size:17px;font-weight:600">تأكيد التغيير</div><div style="font-size:12px;color:#80827a">راجِع وادفع</div></div></div>
+      <div class="body">
+        <div class="sec">الشحن</div>
+        <div class="card" style="padding:2px 14px">
+          <div class="rrow"><span style="color:#80827a">النوع</span><b>الإشعارات</b></div>
+          <div class="rrow"><span style="color:#80827a">الرسائل</span><b class="num">٣٬٠٠٠ · لا تنتهي</b></div>
+          <div class="rrow"><span style="color:#80827a">السعر</span><b class="num">٠٫٧٥ ج.م / رسالة</b></div>
+          <div class="rrow"><span style="color:#80827a">الإجمالي الفرعي (شامل الضريبة)</span><b class="num">٢٬٢٥٠ ج.م</b></div>
+          <div class="rrow"><span class="tipwrap" style="color:#80827a">رسوم المعالجة<span class="info"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span><span class="tip">رسوم ثابتة ٢٠ ج.م تساعدنا على الاستمرار في تقديم خدمة موثوقة وعالية الجودة.</span></span><b class="num">٢٠ ج.م</b></div>
+          <div class="rrow"><b style="font-size:15px">الإجمالي</b><b class="num" style="font-size:16px">٢٬٢٧٠ ج.م</b></div>
+        </div>
+        <div class="sec">الدفع</div>
+        <div class="card" style="display:flex;align-items:center;gap:11px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg><div style="flex:1"><div style="font-size:14px;font-weight:600">Visa</div><div class="mono" dir="ltr" style="font-size:12px;color:#80827a">•••• 7937</div></div><span style="font-size:12px;font-weight:600;color:#0a514a">تغيير</span></div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;color:#80827a;font-size:11px;margin-top:2px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>محمي بواسطة Paymob</div>
+      </div>
+      <div class="footer"><button class="btn-primary"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>أكّد وادفع ٢٬٢٧٠ ج.م</button></div>
+    </div></div></div>
+
+  </div>
+</div>
+</div>
+</body></html>

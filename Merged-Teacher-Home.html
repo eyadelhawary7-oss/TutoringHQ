@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<!--
+================================================================
+ TutoringHQ · MERGED DESIGN REFERENCE
+ File: Merged-Teacher-Home.html
+ Teacher · Home and schedule
+
+ CONTENTS (2 screens):
+  01. Teacher Home   <-  Screen-Teacher-Home.html
+  02. Teacher Schedule   <-  Screen-Teacher-Schedule.html
+
+----------------------------------------------------------------
+ HOW TO READ THIS FILE WHEN IMPLEMENTING IT
+----------------------------------------------------------------
+ 1. CSS IS SCOPED. Every rule carries a .mgdN prefix so that
+    several screens can share one page without their styles
+    colliding.
+        in this file:   .mgd4 .pins{ ... }
+        in your code:   .pins{ ... }
+    Strip the .mgdN prefix. It is bookkeeping for this reference
+    file only and must never reach the codebase.
+
+ 2. ONE SECTION = ONE SCREEN. Each section bar shows its number,
+    its name, and the original screen file it came from. Use that
+    filename as the screen's identity, not the section number.
+
+ 3. FRAMES ARE STATES, NOT PAGES. Each phone inside a section is
+    one state of that screen (empty, filled, error, and so on).
+    The caption under or above each phone names the state.
+
+ 4. THE TWO LANGUAGES ARE SEPARATE SCREENS. English and Arabic
+    are never a translation overlay. Arabic frames use Eastern
+    Arabic numerals (0-9 written as Arabic-Indic) and the Arabic
+    currency mark. English frames use Western numerals and EGP.
+    Directional icons such as chevrons flip with the language.
+
+ 5. SAMPLE DATA IS PLACEHOLDER. Names, amounts, dates and phone
+    numbers are illustrative. Do not treat them as fixtures or
+    seed data.
+
+ 6. THIS IS DESIGN, NOT PRODUCTION CODE. Markup here is built to
+    be read, not shipped. Take the layout, spacing, type scale
+    and colour decisions from it. Do not copy the DOM wholesale.
+
+ 7. ANY UI OR BRANDING CHANGE BUMPS SW_VERSION in public/sw.js.
+================================================================
+-->
+
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teacher · Home and schedule · TutoringHQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+html{background:#d8d3c6;color-scheme:light}
+:root{color-scheme:light}
+
+html,body{margin:0;padding:0}
+body{background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased}
+.mgd-top{max-width:1180px;margin:0 auto;padding:44px 24px 8px;color:#1b201d}
+.mgd-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5d635c;font-weight:600}
+.mgd-h1{font-size:42px;line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:12px 0 10px}
+.mgd-lede{font-size:16px;line-height:1.55;color:#5d635c;max-width:82ch;margin:0}
+.mgd-toc{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 0}
+.mgd-toc a{font-size:12.5px;font-weight:600;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:6px 12px;border-radius:999px;text-decoration:none}
+.mgd-sec{max-width:1180px;margin:0 auto;padding:14px 24px 0}
+.mgd-bar{display:flex;align-items:baseline;gap:12px;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin-top:34px}
+.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a5e16;font-weight:500}
+.mgd-name{font-size:22px;font-weight:700;color:#14181a;letter-spacing:-.01em}
+.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#80827a}
+/* ===== Screen-Teacher-Home ===== */
+.mgd1 *{box-sizing:border-box}
+.mgd1{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd1 .num,.mgd1 .money{font-variant-numeric:tabular-nums}
+.mgd1 svg{display:block;flex-shrink:0}
+.mgd1 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd1 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd1 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 6px;font-size:13px;font-weight:600}
+.mgd1 .appbar{display:flex;align-items:center;gap:12px;padding:6px 16px 10px}
+.mgd1 .iconbtn{width:40px;height:40px;border-radius:11px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd1 .brand{display:flex;align-items:center;gap:8px}
+.mgd1 .logo{width:24px;height:24px;border-radius:7px;background:linear-gradient(150deg,#0f766b,#083f39)}
+.mgd1 .bname{font-size:16px;font-weight:700}
+.mgd1 .btag{font-size:10px;font-weight:600;color:#5d635c;background:#f2eee5;border:1px solid #e2ddd1;padding:2px 7px;border-radius:6px}
+.mgd1 .body{flex:1;overflow-y:auto;padding:8px 16px 22px}
+.mgd1 .body>*{flex-shrink:0}
+.mgd1 .greet{font-size:20px;font-weight:700;margin:6px 2px 14px}
+.mgd1 .vchip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:#1a6d4d;background:#e4f0e9;padding:3px 9px;border-radius:999px;margin-inline-start:8px;vertical-align:middle}
+.mgd1 .verify{background:#dfeeeb;border:1px solid #bfe0da;border-radius:18px;padding:16px;margin-bottom:14px}
+.mgd1 .verify .vh{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.mgd1 .vico{width:34px;height:34px;border-radius:10px;background:#0e6b61;color:#fff;display:flex;align-items:center;justify-content:center}
+.mgd1 .vt{font-size:15px;font-weight:700;color:#0a3f39}
+.mgd1 .vd{font-size:12.5px;line-height:1.5;color:#325a53;margin:0 0 12px}
+.mgd1 .vbtn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;background:#0e6b61;color:#fff;font-weight:600;font-size:14px;padding:12px;border-radius:11px}
+.mgd1 .vsub{text-align:center;font-size:11px;color:#4d6b64;margin-top:8px}
+.mgd1 .wallet{background:linear-gradient(150deg,#0e6b61,#0a3f39);border-radius:18px;padding:17px 18px;color:#eaf5f2;margin-bottom:14px}
+.mgd1 .wtop{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:#bfe0da;margin-bottom:8px}
+.mgd1 .wbig{font-size:33px;font-weight:700;letter-spacing:-.01em;line-height:1}
+.mgd1 .wlbl{font-size:11.5px;color:#a9d3cc;margin-top:5px}
+.mgd1 .wrow{display:flex;gap:10px;margin-top:15px;padding-top:14px;border-top:1px solid rgba(255,255,255,.14)}
+.mgd1 .wstat{flex:1}
+.mgd1 .wstat .k{font-size:11px;color:#a9d3cc;margin-bottom:3px}
+.mgd1 .wstat .v{font-size:15px;font-weight:600}
+.mgd1 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:14px}
+.mgd1 .card{background:#fffdf8;border:1px solid #efe9dc;border-radius:16px;padding:14px}
+.mgd1 .card .ch{display:flex;align-items:center;gap:7px;color:#5d635c;font-size:12px;font-weight:600;margin-bottom:9px}
+.mgd1 .card .ch .sp{margin-inline-start:auto;color:#a6a79d}
+.mgd1 .card .cv{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.mgd1 .card .cs{font-size:11.5px;color:#80827a;margin-top:3px}
+.mgd1 .card.sub{background:#f4ebd7;border-color:#e6d6b3}
+.mgd1 .card.sub .cv{font-size:14px;font-weight:600;line-height:1.35}
+.mgd1 .subbtn{display:block;width:100%;text-align:center;background:#9a6b1f;color:#fff;font-weight:600;font-size:12.5px;padding:10px;border-radius:10px;margin-top:11px}
+.mgd1 .sec{font-size:12px;font-weight:600;color:#5d635c;margin:4px 2px 9px}
+.mgd1 .calc{background:#fffdf8;border:1px solid #efe9dc;border-radius:18px;padding:16px;margin-bottom:6px}
+.mgd1 .calc h3{font-size:14px;font-weight:700;margin:0 0 3px;display:flex;align-items:center;gap:7px}
+.mgd1 .calc p.cx{font-size:11.5px;color:#80827a;margin:0 0 14px}
+.mgd1 .crow{margin-bottom:13px}
+.mgd1 .crow .cl{display:flex;justify-content:space-between;font-size:12px;margin-bottom:7px}
+.mgd1 .crow .cl b{font-weight:700}
+.mgd1 .track{height:6px;border-radius:999px;background:#e6e1d5;position:relative}
+.mgd1 .fill{position:absolute;inset-inline-start:0;top:0;height:6px;border-radius:999px;background:#9a6b1f}
+.mgd1 .knob{position:absolute;top:50%;width:16px;height:16px;border-radius:50%;background:#fffdf8;border:2px solid #9a6b1f;transform:translate(-50%,-50%)}
+.mgd1 .cres{background:#f2eee5;border-radius:12px;padding:13px;text-align:center;margin-top:4px}
+.mgd1 .cres .rl{font-size:11.5px;color:#5d635c;margin-bottom:2px}
+.mgd1 .cres .rv{font-size:24px;font-weight:700;color:#0a514a}
+.mgd1 .cres .rs{font-size:11px;color:#8a5e16;margin-top:4px}
+.mgd1 .payouts{background:#fffdf8;border:1px solid #efe9dc;border-radius:16px;overflow:hidden}
+.mgd1 .prow{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid #f0ece2}
+.mgd1 .prow:last-child{border-bottom:0}
+.mgd1 .pl .pd{font-size:13px;font-weight:600}
+.mgd1 .pl .pm{font-size:11px;color:#80827a;margin-top:2px}
+.mgd1 .pr{display:flex;align-items:center;gap:9px}
+.mgd1 .pr .pa{font-size:14px;font-weight:600}
+.mgd1 .paid{font-size:10.5px;font-weight:600;color:#1a6d4d;background:#e4f0e9;padding:3px 8px;border-radius:999px}
+.mgd1 .board{max-width:1560px;margin:0 auto;padding:56px 28px 96px}
+.mgd1 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd1 .phones{display:flex;gap:30px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd1 .frame{display:flex;flex-direction:column;align-items:center;gap:13px}
+.mgd1 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d635c}
+.mgd1 .tabbar{display:flex;background:#fffdf8;border-top:1px solid #e2ddd1;padding:8px 4px 11px;flex-shrink:0}
+.mgd1 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#9a9c92;font-size:9.5px;font-weight:600;text-decoration:none}
+.mgd1 .tab svg{width:23px;height:23px}
+.mgd1 .tab.on{color:#0a6b60}
+.mgd1 .globe{margin-inline-start:auto}
+/* ===== Screen-Teacher-Schedule ===== */
+.mgd2 *{box-sizing:border-box}
+.mgd2{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd2 .num{font-variant-numeric:tabular-nums}
+.mgd2 svg{display:block;flex-shrink:0}
+.mgd2 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd2 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd2 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 6px;font-size:13px;font-weight:600}
+.mgd2 .appbar{display:flex;align-items:center;gap:11px;padding:6px 16px 10px}
+.mgd2 .iconbtn{width:40px;height:40px;border-radius:11px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd2 .ttl{font-size:19px;font-weight:700}
+.mgd2 .globe{margin-inline-start:auto}
+.mgd2 .body{flex:1;overflow-y:auto;padding:6px 16px 22px}
+.mgd2 .body>*{flex-shrink:0}
+.mgd2 .subhead{display:flex;align-items:center;justify-content:space-between;margin:4px 2px 16px}
+.mgd2 .date{font-size:13px;font-weight:600;color:#5d635c}
+.mgd2 .seg{display:inline-flex;background:#f2eee5;border:1px solid #e2ddd1;border-radius:10px;padding:3px}
+.mgd2 .seg a{font-size:12.5px;font-weight:600;color:#5d635c;padding:7px 15px;border-radius:8px}
+.mgd2 .seg a.on{background:#fffdf8;color:#1b201d;box-shadow:0 1px 2px rgba(28,33,30,.07)}
+.mgd2 .cls{display:flex;align-items:center;gap:13px;background:#fffdf8;border:1px solid #efe9dc;border-radius:16px;padding:13px 14px;margin-bottom:11px}
+.mgd2 .clsbar{width:3px;align-self:stretch;background:#0e6b61;border-radius:2px;min-height:40px}
+.mgd2 .clsinfo{flex:1;min-width:0}
+.mgd2 .cn{font-size:15px;font-weight:600}
+.mgd2 .cm{font-size:11.5px;color:#80827a;margin-top:4px;display:flex;align-items:center;gap:8px}
+.mgd2 .cm .dot{width:3px;height:3px;border-radius:50%;background:#c9c4b6}
+.mgd2 .att{font-size:11.5px;font-weight:600;color:#0e6b61;background:#dfeeeb;padding:8px 12px;border-radius:9px;flex-shrink:0}
+.mgd2 .empty{text-align:center;color:#80827a;padding:26px 16px;background:#fffdf8;border:1px dashed #d8d3c6;border-radius:16px;margin-top:2px}
+.mgd2 .empty svg{margin:0 auto 12px;color:#c9c4b6}
+.mgd2 .empty .et{font-size:13px;line-height:1.5;max-width:30ch;margin:0 auto 14px}
+.mgd2 .empty a{font-size:12.5px;font-weight:600;color:#fff;background:#0a6b60;padding:10px 16px;border-radius:10px;display:inline-block}
+.mgd2 .board{max-width:820px;margin:0 auto;padding:56px 28px 96px}
+.mgd2 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd2 .phones{display:flex;gap:30px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd2 .frame{display:flex;flex-direction:column;align-items:center;gap:13px}
+.mgd2 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d635c}
+.mgd2 .tabbar{display:flex;background:#fffdf8;border-top:1px solid #e2ddd1;padding:8px 4px 11px;flex-shrink:0}
+.mgd2 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#9a9c92;font-size:9.5px;font-weight:600;text-decoration:none}
+.mgd2 .tab svg{width:23px;height:23px}
+.mgd2 .tab.on{color:#0a6b60}
+</style>
+</head>
+<body>
+<div class="mgd-top">
+  <div class="mgd-eyebrow">TutoringHQ · Merged reference</div>
+  <h1 class="mgd-h1">Teacher · Home and schedule</h1>
+  <p class="mgd-lede">The teacher's landing screen and their week.</p>
+  <div class="mgd-toc"><a href="#Merged-Teacher-Home-1">Teacher Home</a><a href="#Merged-Teacher-Home-2">Teacher Schedule</a></div>
+</div>
+<div class="mgd-sec" id="Merged-Teacher-Home-1">
+  <div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Teacher Home</span><span class="mgd-src">Screen-Teacher-Home.html</span></div>
+</div>
+<div class="mgd1">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0a514a;background:#dfeeeb;border:1px solid #bfe0da;padding:5px 11px;border-radius:999px">Teacher · Home</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Teacher home</h1>
+    <p style="margin:0;max-width:82ch;font-size:17px;line-height:1.55;color:#5d635c">Home in both account states. An <b>unverified</b> teacher self-collects (parents pay them directly, 5% on digital). A <b>verified</b> teacher lets TutoringHQ collect every payment and receive 90% automatically, with a balance and scheduled payouts. Verification is the switch between the two. English and Arabic. Design only; the collect-for-you flow is draft, pending legal review.</p>
+  </div>
+  <div class="phones">
+
+    <!-- UNVERIFIED · EN -->
+    <div class="frame"><span class="cap">EN · unverified (self-collect)</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div><div class="brand"><div class="logo"></div><span class="bname">TutoringHQ</span><span class="btag">Teacher</span></div><div class="iconbtn" style="margin-inline-start:auto"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="body">
+        <div class="greet">Good morning, Aly Shady</div>
+        <div class="verify">
+          <div class="vh"><div class="vico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l7 4v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></div><div class="vt">Let us collect for you</div></div>
+          <p class="vd">Verify your ID and TutoringHQ collects every student payment through the app, then pays you automatically. No more chasing parents.</p>
+          <div class="vbtn">Verify my ID<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+          <div class="vsub">Hassle-free · paid straight to you · we handle the tax receipt</div>
+        </div>
+        <div class="grid2">
+          <div class="card"><div class="ch"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M9 16h6"/></svg>Centers owe me<span class="sp"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span></div><div class="cv money">0 EGP</div><div class="cs">All centers settled</div></div>
+          <div class="card"><div class="ch"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>This month<span class="sp"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span></div><div class="cv money">3,600 EGP</div><div class="cs">Outstanding 900 EGP</div></div>
+          <div class="card"><div class="ch"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87"/></svg>My groups<span class="sp"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span></div><div class="cv">2 active</div><div class="cs">15 students</div></div>
+          <div class="card sub"><div class="ch" style="color:#8a5e16"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Subscription</div><div class="cv" style="color:#6f4e12">14 days left in your trial</div><div class="subbtn">Continue at 499 EGP/mo</div></div>
+        </div>
+        <div class="sec">Grow your private practice</div>
+        <div class="calc">
+          <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9a6b1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h8M8 14h4"/></svg>How much could you earn?</h3>
+          <p class="cx">Drag to estimate your monthly income.</p>
+          <div class="crow"><div class="cl"><span>Private students</span><b>15</b></div><div class="track"><div class="fill" style="width:45%"></div><div class="knob" style="inset-inline-start:45%"></div></div></div>
+          <div class="crow"><div class="cl"><span>Fee per session</span><b>350 EGP</b></div><div class="track"><div class="fill" style="width:40%"></div><div class="knob" style="inset-inline-start:40%"></div></div></div>
+          <div class="cres"><div class="rl">Estimated monthly income</div><div class="rv money">21,000 EGP</div><div class="rs">Verify and we collect it for you, paid straight to your account</div></div>
+        </div>
+      </div>
+    
+      <nav class="tabbar"><a class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4 12 4l8 7.4"/><path d="M6 10.2V20h12v-9.8"/><path d="M10 20v-5h4v5"/></svg><span>Home</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.4"/><path d="M8 3.5v3M16 3.5v3M4 9.6h16"/></svg><span>Schedule</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V5.5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1V20"/><path d="M14 20V9.5h4a1 1 0 0 1 1 1V20"/><path d="M3.5 20h17"/><path d="M8 8.5h.01M11 8.5h.01M8 12h.01M11 12h.01M8 15.5h.01M11 15.5h.01"/></svg><span>Centers</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="12" cy="12" r="2.2"/><path d="M6.4 9.6h.01M17.6 14.4h.01"/></svg><span>Income</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></nav>
+    </div></div></div>
+
+    <!-- VERIFIED · EN -->
+    <div class="frame"><span class="cap">EN · verified (we collect)</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div><div class="brand"><div class="logo"></div><span class="bname">TutoringHQ</span><span class="btag">Teacher</span></div><div class="iconbtn" style="margin-inline-start:auto"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="body">
+        <div class="greet">Good morning, Aly Shady<span class="vchip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Verified</span></div>
+        <div class="wallet">
+          <div class="wtop"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 12h.01M2 10h20"/></svg>Your balance</div>
+          <div class="wbig money">4,250 EGP</div>
+          <div class="wlbl">Available · ready for your next payout</div>
+          <div class="wrow"><div class="wstat"><div class="k">Pending</div><div class="v money">1,700 EGP</div></div><div class="wstat"><div class="k">Next processed</div><div class="v">Thu 23/07</div></div></div>
+        </div>
+        <div class="grid2">
+          <div class="card"><div class="ch"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M9 16h6"/></svg>Centers owe me<span class="sp"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span></div><div class="cv money">0 EGP</div><div class="cs">All centers settled</div></div>
+          <div class="card"><div class="ch"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>This month<span class="sp"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span></div><div class="cv money">5,950 EGP</div><div class="cs">Collected and paid to you</div></div>
+          <div class="card"><div class="ch"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87"/></svg>My groups<span class="sp"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span></div><div class="cv">2 active</div><div class="cs">15 students</div></div>
+          <div class="card sub"><div class="ch" style="color:#8a5e16"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Subscription</div><div class="cv" style="color:#6f4e12">14 days left in your trial</div><div class="subbtn">Continue at 499 EGP/mo</div></div>
+        </div>
+        <div class="sec">Recent payouts</div>
+        <div class="payouts">
+          <div class="prow"><div class="pl"><div class="pd">Bank payout</div><div class="pm">25/06/2026 · CIB ••4821</div></div><div class="pr"><span class="pa money">3,400 EGP</span><span class="paid">Paid</span></div></div>
+          <div class="prow"><div class="pl"><div class="pd">Bank payout</div><div class="pm">11/06/2026 · CIB ••4821</div></div><div class="pr"><span class="pa money">2,550 EGP</span><span class="paid">Paid</span></div></div>
+        </div>
+      </div>
+    
+      <nav class="tabbar"><a class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4 12 4l8 7.4"/><path d="M6 10.2V20h12v-9.8"/><path d="M10 20v-5h4v5"/></svg><span>Home</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.4"/><path d="M8 3.5v3M16 3.5v3M4 9.6h16"/></svg><span>Schedule</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V5.5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1V20"/><path d="M14 20V9.5h4a1 1 0 0 1 1 1V20"/><path d="M3.5 20h17"/><path d="M8 8.5h.01M11 8.5h.01M8 12h.01M11 12h.01M8 15.5h.01M11 15.5h.01"/></svg><span>Centers</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="12" cy="12" r="2.2"/><path d="M6.4 9.6h.01M17.6 14.4h.01"/></svg><span>Income</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></nav>
+    </div></div></div>
+
+    <!-- UNVERIFIED · AR -->
+    <div class="frame"><span class="cap">AR · unverified (self-collect)</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div><div class="brand"><div class="logo"></div><span class="bname">TutoringHQ</span><span class="btag">معلّم</span></div><div class="iconbtn" style="margin-inline-start:auto"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="body">
+        <div class="greet">صباح الخير يا علي شادي</div>
+        <div class="verify">
+          <div class="vh"><div class="vico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l7 4v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></div><div class="vt">خلّينا نحصّل بدلًا عنك</div></div>
+          <p class="vd">وثّق هويتك و TutoringHQ يحصّل كل مدفوعات الطلاب عبر التطبيق، ثم يحوّل لك مستحقاتك تلقائيًا. بدون مطاردة لأولياء الأمور.</p>
+          <div class="vbtn">وثّق هويتي<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:scaleX(-1)"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+          <div class="vsub">بلا عناء · يصلك مباشرة · ونصدر الإيصال الضريبي</div>
+        </div>
+        <div class="grid2">
+          <div class="card"><div class="ch"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M9 16h6"/></svg>مستحق من المراكز<span class="sp"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span></div><div class="cv money">٠ ج.م</div><div class="cs">كل المراكز مسوّاة</div></div>
+          <div class="card"><div class="ch"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>هذا الشهر<span class="sp"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span></div><div class="cv money">٣٬٦٠٠ ج.م</div><div class="cs">متبقٍّ ٩٠٠ ج.م</div></div>
+          <div class="card"><div class="ch"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87"/></svg>مجموعاتي<span class="sp"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span></div><div class="cv">٢ نشطة</div><div class="cs">١٥ طالبًا</div></div>
+          <div class="card sub"><div class="ch" style="color:#8a5e16"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>الاشتراك</div><div class="cv" style="color:#6f4e12">باقٍ ١٤ يومًا في تجربتك</div><div class="subbtn">استمر بـ ٤٩٩ ج.م/شهر</div></div>
+        </div>
+        <div class="sec">نمِّ ممارستك الخاصة</div>
+        <div class="calc">
+          <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9a6b1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h8M8 14h4"/></svg>كم يمكن أن تكسب؟</h3>
+          <p class="cx">حرّك لتقدير دخلك الشهري.</p>
+          <div class="crow"><div class="cl"><span>عدد الطلاب</span><b>١٥</b></div><div class="track"><div class="fill" style="width:45%"></div><div class="knob" style="inset-inline-start:45%"></div></div></div>
+          <div class="crow"><div class="cl"><span>سعر الحصة</span><b>٣٥٠ ج.م</b></div><div class="track"><div class="fill" style="width:40%"></div><div class="knob" style="inset-inline-start:40%"></div></div></div>
+          <div class="cres"><div class="rl">الدخل الشهري المقدّر</div><div class="rv money">٢١٬٠٠٠ ج.م</div><div class="rs">وثّق ونحن نحصّله لك، ويصلك مباشرة</div></div>
+        </div>
+      </div>
+    
+      <nav class="tabbar"><a class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4 12 4l8 7.4"/><path d="M6 10.2V20h12v-9.8"/><path d="M10 20v-5h4v5"/></svg><span>الرئيسية</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.4"/><path d="M8 3.5v3M16 3.5v3M4 9.6h16"/></svg><span>الجدول</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V5.5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1V20"/><path d="M14 20V9.5h4a1 1 0 0 1 1 1V20"/><path d="M3.5 20h17"/><path d="M8 8.5h.01M11 8.5h.01M8 12h.01M11 12h.01M8 15.5h.01M11 15.5h.01"/></svg><span>المراكز</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="12" cy="12" r="2.2"/><path d="M6.4 9.6h.01M17.6 14.4h.01"/></svg><span>الدخل</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>المزيد</span></a></nav>
+    </div></div></div>
+
+    <!-- VERIFIED · AR -->
+    <div class="frame"><span class="cap">AR · verified (we collect)</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div><div class="brand"><div class="logo"></div><span class="bname">TutoringHQ</span><span class="btag">معلّم</span></div><div class="iconbtn" style="margin-inline-start:auto"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="body">
+        <div class="greet">صباح الخير يا علي شادي<span class="vchip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>موثّق</span></div>
+        <div class="wallet">
+          <div class="wtop"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 12h.01M2 10h20"/></svg>رصيدك</div>
+          <div class="wbig money">٤٬٢٥٠ ج.م</div>
+          <div class="wlbl">متاح · جاهز لدفعتك القادمة</div>
+          <div class="wrow"><div class="wstat"><div class="k">قيد التحصيل</div><div class="v money">١٬٧٠٠ ج.م</div></div><div class="wstat"><div class="k">المعالجة القادمة</div><div class="v">الخميس ٢٣/٠٧</div></div></div>
+        </div>
+        <div class="grid2">
+          <div class="card"><div class="ch"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M9 16h6"/></svg>مستحق من المراكز<span class="sp"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span></div><div class="cv money">٠ ج.م</div><div class="cs">كل المراكز مسوّاة</div></div>
+          <div class="card"><div class="ch"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>هذا الشهر<span class="sp"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span></div><div class="cv money">٥٬٩٥٠ ج.م</div><div class="cs">محصّلة ومحوّلة إليك</div></div>
+          <div class="card"><div class="ch"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87"/></svg>مجموعاتي<span class="sp"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span></div><div class="cv">٢ نشطة</div><div class="cs">١٥ طالبًا</div></div>
+          <div class="card sub"><div class="ch" style="color:#8a5e16"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>الاشتراك</div><div class="cv" style="color:#6f4e12">باقٍ ١٤ يومًا في تجربتك</div><div class="subbtn">استمر بـ ٤٩٩ ج.م/شهر</div></div>
+        </div>
+        <div class="sec">الدفعات الأخيرة</div>
+        <div class="payouts">
+          <div class="prow"><div class="pl"><div class="pd">تحويل بنكي</div><div class="pm"><span dir="ltr" style="font-family:'IBM Plex Mono'">CIB ••4821</span> · ٢٥/٠٦/٢٠٢٦</div></div><div class="pr"><span class="pa money">٣٬٤٠٠ ج.م</span><span class="paid">مدفوع</span></div></div>
+          <div class="prow"><div class="pl"><div class="pd">تحويل بنكي</div><div class="pm"><span dir="ltr" style="font-family:'IBM Plex Mono'">CIB ••4821</span> · ١١/٠٦/٢٠٢٦</div></div><div class="pr"><span class="pa money">٢٬٥٥٠ ج.م</span><span class="paid">مدفوع</span></div></div>
+        </div>
+      </div>
+    
+      <nav class="tabbar"><a class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4 12 4l8 7.4"/><path d="M6 10.2V20h12v-9.8"/><path d="M10 20v-5h4v5"/></svg><span>الرئيسية</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.4"/><path d="M8 3.5v3M16 3.5v3M4 9.6h16"/></svg><span>الجدول</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V5.5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1V20"/><path d="M14 20V9.5h4a1 1 0 0 1 1 1V20"/><path d="M3.5 20h17"/><path d="M8 8.5h.01M11 8.5h.01M8 12h.01M11 12h.01M8 15.5h.01M11 15.5h.01"/></svg><span>المراكز</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="12" cy="12" r="2.2"/><path d="M6.4 9.6h.01M17.6 14.4h.01"/></svg><span>الدخل</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>المزيد</span></a></nav>
+    </div></div></div>
+
+  </div>
+</div>
+</div>
+<div class="mgd-sec" id="Merged-Teacher-Home-2">
+  <div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">Teacher Schedule</span><span class="mgd-src">Screen-Teacher-Schedule.html</span></div>
+</div>
+<div class="mgd2">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0a514a;background:#dfeeeb;border:1px solid #bfe0da;padding:5px 11px;border-radius:999px">Teacher · Schedule</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Teacher schedule</h1>
+    <p style="margin:0;max-width:82ch;font-size:17px;line-height:1.55;color:#5d635c">Today/Week toggle, the day's date, and today's private classes as cards with time range, student count and a quick attendance action. English and Arabic. Model-neutral. Design only.</p>
+  </div>
+  <div class="phones">
+
+    <!-- EN -->
+    <div class="frame"><span class="cap">EN</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div><div class="ttl">Schedule</div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="body">
+        <div class="subhead"><div class="date">Sunday · 20 July</div><div class="seg"><a class="on">Today</a><a>Week</a></div></div>
+        <div class="cls"><div class="clsbar"></div><div class="clsinfo"><div class="cn">Physics</div><div class="cm">9:00–11:00 AM<span class="dot"></span>1 student</div></div><div class="att">Attendance</div></div>
+        <div class="cls"><div class="clsbar" style="background:#9a6b1f"></div><div class="clsinfo"><div class="cn">Physics Sun 4PM</div><div class="cm">4:00–5:00 PM<span class="dot"></span>0 enrolled</div></div><div class="att">Attendance</div></div>
+        <div style="height:6px"></div>
+        <div class="empty">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          <div class="et">That's all for today. Add slots to your groups to fill your week.</div>
+          <a>Go to groups</a>
+        </div>
+      </div>
+    
+      <nav class="tabbar"><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4 12 4l8 7.4"/><path d="M6 10.2V20h12v-9.8"/><path d="M10 20v-5h4v5"/></svg><span>Home</span></a><a class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.4"/><path d="M8 3.5v3M16 3.5v3M4 9.6h16"/></svg><span>Schedule</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V5.5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1V20"/><path d="M14 20V9.5h4a1 1 0 0 1 1 1V20"/><path d="M3.5 20h17"/><path d="M8 8.5h.01M11 8.5h.01M8 12h.01M11 12h.01M8 15.5h.01M11 15.5h.01"/></svg><span>Centers</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="12" cy="12" r="2.2"/><path d="M6.4 9.6h.01M17.6 14.4h.01"/></svg><span>Income</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></nav>
+    </div></div></div>
+
+    <!-- AR -->
+    <div class="frame"><span class="cap">AR</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div><div class="ttl">الجدول</div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="body">
+        <div class="subhead"><div class="date">الأحد · ٢٠ يوليو</div><div class="seg"><a class="on">اليوم</a><a>الأسبوع</a></div></div>
+        <div class="cls"><div class="clsbar"></div><div class="clsinfo"><div class="cn">فيزياء</div><div class="cm">٩:٠٠–١١:٠٠ ص<span class="dot"></span>طالب واحد</div></div><div class="att">الحضور</div></div>
+        <div class="cls"><div class="clsbar" style="background:#9a6b1f"></div><div class="clsinfo"><div class="cn">فيزياء الأحد ٤م</div><div class="cm">٤:٠٠–٥:٠٠ م<span class="dot"></span>لا مسجّلين</div></div><div class="att">الحضور</div></div>
+        <div style="height:6px"></div>
+        <div class="empty">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          <div class="et">هذا كل ما في اليوم. أضف مواعيد لمجموعاتك لتملأ أسبوعك.</div>
+          <a>الذهاب إلى المجموعات</a>
+        </div>
+      </div>
+    
+      <nav class="tabbar"><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4 12 4l8 7.4"/><path d="M6 10.2V20h12v-9.8"/><path d="M10 20v-5h4v5"/></svg><span>الرئيسية</span></a><a class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.4"/><path d="M8 3.5v3M16 3.5v3M4 9.6h16"/></svg><span>الجدول</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V5.5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1V20"/><path d="M14 20V9.5h4a1 1 0 0 1 1 1V20"/><path d="M3.5 20h17"/><path d="M8 8.5h.01M11 8.5h.01M8 12h.01M11 12h.01M8 15.5h.01M11 15.5h.01"/></svg><span>المراكز</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="12" cy="12" r="2.2"/><path d="M6.4 9.6h.01M17.6 14.4h.01"/></svg><span>الدخل</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>المزيد</span></a></nav>
+    </div></div></div>
+
+  </div>
+</div>
+</div>
+</body></html>

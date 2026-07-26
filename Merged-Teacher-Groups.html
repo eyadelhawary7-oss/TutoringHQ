@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<!--
+================================================================
+ TutoringHQ · MERGED DESIGN REFERENCE
+ File: Merged-Teacher-Groups.html
+ Teacher · Groups and sessions
+
+ CONTENTS (5 screens):
+  01. Teacher Groups   <-  Screen-Teacher-Groups.html
+  02. Teacher Group Detail   <-  Screen-Teacher-Group-Detail.html
+  03. Teacher Group Invite Pending   <-  Screen-Teacher-Group-Invite-Pending.html
+  04. Teacher Class Session   <-  Screen-Teacher-Class-Session.html
+  05. Teacher Class Session Verified   <-  Screen-Teacher-Class-Session-Verified.html
+
+----------------------------------------------------------------
+ HOW TO READ THIS FILE WHEN IMPLEMENTING IT
+----------------------------------------------------------------
+ 1. CSS IS SCOPED. Every rule carries a .mgdN prefix so that
+    several screens can share one page without their styles
+    colliding.
+        in this file:   .mgd4 .pins{ ... }
+        in your code:   .pins{ ... }
+    Strip the .mgdN prefix. It is bookkeeping for this reference
+    file only and must never reach the codebase.
+
+ 2. ONE SECTION = ONE SCREEN. Each section bar shows its number,
+    its name, and the original screen file it came from. Use that
+    filename as the screen's identity, not the section number.
+
+ 3. FRAMES ARE STATES, NOT PAGES. Each phone inside a section is
+    one state of that screen (empty, filled, error, and so on).
+    The caption under or above each phone names the state.
+
+ 4. THE TWO LANGUAGES ARE SEPARATE SCREENS. English and Arabic
+    are never a translation overlay. Arabic frames use Eastern
+    Arabic numerals (0-9 written as Arabic-Indic) and the Arabic
+    currency mark. English frames use Western numerals and EGP.
+    Directional icons such as chevrons flip with the language.
+
+ 5. SAMPLE DATA IS PLACEHOLDER. Names, amounts, dates and phone
+    numbers are illustrative. Do not treat them as fixtures or
+    seed data.
+
+ 6. THIS IS DESIGN, NOT PRODUCTION CODE. Markup here is built to
+    be read, not shipped. Take the layout, spacing, type scale
+    and colour decisions from it. Do not copy the DOM wholesale.
+
+ 7. ANY UI OR BRANDING CHANGE BUMPS SW_VERSION in public/sw.js.
+================================================================
+-->
+
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teacher · Groups and sessions · TutoringHQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+html{background:#d8d3c6;color-scheme:light}
+:root{color-scheme:light}
+
+html,body{margin:0;padding:0}
+body{background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased}
+.mgd-top{max-width:1180px;margin:0 auto;padding:44px 24px 8px;color:#1b201d}
+.mgd-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5d635c;font-weight:600}
+.mgd-h1{font-size:42px;line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:12px 0 10px}
+.mgd-lede{font-size:16px;line-height:1.55;color:#5d635c;max-width:82ch;margin:0}
+.mgd-toc{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 0}
+.mgd-toc a{font-size:12.5px;font-weight:600;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:6px 12px;border-radius:999px;text-decoration:none}
+.mgd-sec{max-width:1180px;margin:0 auto;padding:14px 24px 0}
+.mgd-bar{display:flex;align-items:baseline;gap:12px;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin-top:34px}
+.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a5e16;font-weight:500}
+.mgd-name{font-size:22px;font-weight:700;color:#14181a;letter-spacing:-.01em}
+.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#80827a}
+/* ===== Screen-Teacher-Groups ===== */
+.mgd1 *{box-sizing:border-box}
+.mgd1{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd1 .num,.mgd1 .money{font-variant-numeric:tabular-nums}
+.mgd1 svg{display:block;flex-shrink:0}
+.mgd1 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd1 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd1 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 6px;font-size:13px;font-weight:600}
+.mgd1 .appbar{display:flex;align-items:center;gap:11px;padding:6px 16px 10px}
+.mgd1 .iconbtn{width:40px;height:40px;border-radius:11px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd1 .ttl{font-size:19px;font-weight:700}
+.mgd1 .globe{margin-inline-start:auto}
+.mgd1 .body{flex:1;overflow-y:auto;padding:6px 16px 22px}
+.mgd1 .body>*{flex-shrink:0}
+.mgd1 .subhead{display:flex;align-items:center;justify-content:space-between;margin:4px 2px 14px}
+.mgd1 .sh{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+.mgd1 .add{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:#fff;background:#0a6b60;padding:9px 13px;border-radius:10px}
+.mgd1 .grp{display:flex;align-items:center;gap:13px;background:#fffdf8;border:1px solid #efe9dc;border-radius:16px;padding:15px 15px;margin-bottom:11px}
+.mgd1 .gav{width:42px;height:42px;border-radius:12px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;font-size:15px}
+.mgd1 .ginfo{flex:1;min-width:0}
+.mgd1 .gn{font-size:15px;font-weight:600}
+.mgd1 .gm{font-size:11.5px;color:#80827a;margin-top:3px}
+.mgd1 .gfee{text-align:end;flex-shrink:0}
+.mgd1 .gfee .fv{font-size:14px;font-weight:700}
+.mgd1 .gfee .fl{font-size:10px;color:#a6a79d;margin-top:2px}
+.mgd1 .board{max-width:820px;margin:0 auto;padding:56px 28px 96px}
+.mgd1 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd1 .phones{display:flex;gap:30px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd1 .frame{display:flex;flex-direction:column;align-items:center;gap:13px}
+.mgd1 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d635c}
+.mgd1 .tabbar{display:flex;background:#fffdf8;border-top:1px solid #e2ddd1;padding:8px 4px 11px;flex-shrink:0}
+.mgd1 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#9a9c92;font-size:9.5px;font-weight:600;text-decoration:none}
+.mgd1 .tab svg{width:23px;height:23px}
+.mgd1 .tab.on{color:#0a6b60}
+.mgd1 .arrow{width:12px;height:12px;fill:none;stroke:#b6b1a4;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;margin-inline-start:5px;vertical-align:middle}
+/* ===== Screen-Teacher-Group-Detail ===== */
+.mgd2 *{box-sizing:border-box}
+.mgd2{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd2 .num,.mgd2 .money{font-variant-numeric:tabular-nums}
+.mgd2 .mono{font-family:'IBM Plex Mono',monospace}
+.mgd2 svg{display:block;flex-shrink:0}
+.mgd2 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd2 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd2 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 6px;font-size:13px;font-weight:600}
+.mgd2 .appbar{display:flex;align-items:center;gap:11px;padding:6px 16px 10px}
+.mgd2 .iconbtn{width:40px;height:40px;border-radius:11px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd2 .ttl{font-size:19px;font-weight:700}
+.mgd2 .globe{margin-inline-start:auto}
+.mgd2 .body{flex:1;overflow-y:auto;padding:6px 16px 22px;display:flex;flex-direction:column;gap:13px}
+.mgd2 .body>*{flex-shrink:0}
+.mgd2 .ghead{background:#fffdf8;border:1px solid #e2ddd1;border-radius:18px;padding:15px}
+.mgd2 .ghrow{display:flex;align-items:center;gap:13px}
+.mgd2 .gavb{width:52px;height:52px;border-radius:15px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:21px;flex-shrink:0}
+.mgd2 .gname{font-size:19px;font-weight:700;line-height:1.1}
+.mgd2 .gsub{font-size:12.5px;color:#80827a;margin-top:3px}
+.mgd2 .gstats{display:flex;gap:10px;margin-top:14px}
+.mgd2 .gtile{flex:1;background:#f2eee5;border-radius:12px;padding:10px 11px}
+.mgd2 .gtl{font-size:10.5px;color:#80827a}
+.mgd2 .gtv{font-size:16px;font-weight:700;margin-top:3px}
+.mgd2 .gacts{display:flex;gap:10px}
+.mgd2 .btn{flex:1;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:14px;font-weight:600}
+.mgd2 .btn.primary{background:#0a6b60;color:#fff}
+.mgd2 .btn.ghost{background:#fffdf8;border:1px solid #e2ddd1;color:#0a514a}
+.mgd2 .sec{font-size:13px;font-weight:600;color:#80827a;margin:2px 2px -2px}
+.mgd2 .stu{display:flex;align-items:center;gap:12px;background:#fffdf8;border:1px solid #efe9dc;border-radius:15px;padding:13px 14px}
+.mgd2 .sav{width:40px;height:40px;border-radius:50%;background:#f2eee5;color:#5d635c;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;font-size:15px;border:1px solid #e6e0d4}
+.mgd2 .sinfo{flex:1;min-width:0}
+.mgd2 .snm{font-size:14.5px;font-weight:600}
+.mgd2 .sph{font-size:12px;color:#80827a;margin-top:4px}
+.mgd2 .chev{color:#c9c4b6}
+.mgd2 .clist{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;overflow:hidden}
+.mgd2 .crow{display:flex;align-items:center;gap:10px;padding:12px 13px;border-top:1px solid #f0ece2}
+.mgd2 .crow:first-child{border-top:none}
+.mgd2 .cdt{flex:1;font-size:13px;font-weight:600}
+.mgd2 .cpr{font-size:12px;color:#80827a}
+.mgd2 .cmn{font-size:13px;font-weight:700;color:#0a514a}
+.mgd2 .board{max-width:820px;margin:0 auto;padding:56px 28px 96px}
+.mgd2 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd2 .phones{display:flex;gap:30px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd2 .frame{display:flex;flex-direction:column;align-items:center;gap:13px}
+.mgd2 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d635c}
+.mgd2 .tabbar{display:flex;background:#fffdf8;border-top:1px solid #e2ddd1;padding:8px 4px 11px;flex-shrink:0}
+.mgd2 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#9a9c92;font-size:9.5px;font-weight:600;text-decoration:none}
+.mgd2 .tab svg{width:23px;height:23px}
+.mgd2 .tab.on{color:#0a6b60}
+.mgd2 .arrow{width:12px;height:12px;fill:none;stroke:#b6b1a4;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;margin-inline-start:5px;vertical-align:middle}
+/* ===== Screen-Teacher-Group-Invite-Pending ===== */
+.mgd3 *{box-sizing:border-box}
+.mgd3{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#1b201d;-webkit-font-smoothing:antialiased}
+.mgd3 .board{max-width:1180px;margin:0 auto;padding:48px 24px 90px}
+.mgd3 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827a;font-weight:600}
+.mgd3 .pill0{display:inline-block;margin:10px 0;padding:4px 12px;border-radius:999px;background:#dfeeeb;color:#0a514a;font-size:12px;font-weight:600}
+.mgd3 h1.mh{font-size:30px;margin:6px 0 8px;font-weight:700;letter-spacing:-.01em}
+.mgd3 .board>p.lead{margin:0 0 34px;color:#5d635c;font-size:16px;line-height:1.5;max-width:80ch}
+.mgd3 .phones{display:flex;gap:34px;flex-wrap:wrap;justify-content:center}
+.mgd3 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
+.mgd3 .cap{font-size:13px;color:#5d635c;font-weight:600}
+.mgd3 .phone{width:340px;background:#14181a;border-radius:44px;padding:11px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+.mgd3 .screen{background:#ece8df;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden}
+.mgd3 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:14px;font-weight:600;flex-shrink:0}
+.mgd3 .topbar{display:flex;align-items:center;gap:11px;padding:4px 16px 8px;flex-shrink:0}
+.mgd3 .topbtn{width:40px;height:40px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd3 .topbtn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mgd3 .tt{font-size:16.5px;font-weight:700;line-height:1.2}
+.mgd3 .ts{font-size:11.5px;color:#80827a;margin-top:1px}
+.mgd3 .pcount{margin-inline-start:auto;min-width:26px;height:26px;padding:0 8px;border-radius:999px;background:#f4e5e2;color:#9c3322;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd3 .body{flex:1;overflow-y:auto;padding:2px 16px 16px}
+.mgd3 .linkcard{background:linear-gradient(150deg,#0f766b,#0a514a);border-radius:16px;padding:16px;color:#eef6f4;margin-bottom:12px}
+.mgd3 .lct{font-size:15px;font-weight:700;margin-bottom:4px}
+.mgd3 .lcs{font-size:12px;opacity:.9;line-height:1.45;margin-bottom:12px}
+.mgd3 .linkbox{background:rgba(255,255,255,.14);border-radius:11px;padding:11px 12px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;letter-spacing:.01em;word-break:break-all;margin-bottom:10px}
+.mgd3 .lcbtns{display:flex;gap:8px}
+.mgd3 .lcb{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:11px;padding:11px;font-size:12.5px;font-weight:700}
+.mgd3 .lcb svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.mgd3 .lcb.solid{background:#fffdf8;color:#0a514a}
+.mgd3 .lcb.ghost{background:rgba(255,255,255,.14);color:#eef6f4}
+.mgd3 .pend{display:flex;align-items:center;gap:11px;background:#f4ebd7;border:1px solid rgba(138,94,22,.25);border-radius:14px;padding:12px 13px;margin-bottom:12px}
+.mgd3 .pend svg{width:20px;height:20px;fill:none;stroke:#8a5e16;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.mgd3 .pt{font-size:13px;font-weight:700;color:#8a5e16}
+.mgd3 .ps{font-size:11px;color:#8a5e16;opacity:.85;margin-top:2px}
+.mgd3 .pb{margin-inline-start:auto;font-size:11.5px;font-weight:700;color:#fffdf8;background:#8a5e16;border-radius:9px;padding:7px 11px;flex-shrink:0}
+.mgd3 .sec{font-size:15px;font-weight:700;margin:15px 2px 3px}
+.mgd3 .sub{font-size:12px;color:#80827a;margin:0 2px 10px;line-height:1.45}
+.mgd3 .row{display:flex;align-items:center;gap:10px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:11px 12px;margin-bottom:8px}
+.mgd3 .avt{width:36px;height:36px;border-radius:11px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.mgd3 .rn{flex:1;min-width:0}
+.mgd3 .rnm{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
+.mgd3 .rnm .arrow{width:12px;height:12px;fill:none;stroke:#b6b1a4;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.mgd3 .rsub{font-size:11px;color:#80827a;margin-top:2px}
+.mgd3 .kb{width:26px;display:flex;align-items:center;justify-content:center;color:#b6b1a4;flex-shrink:0}
+.mgd3 .kb svg{width:17px;height:17px;fill:currentColor}
+.mgd3 .exp{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:11px 12px;margin-bottom:8px}
+.mgd3 .exprow{display:flex;align-items:center;gap:10px}
+.mgd3 .acts{display:flex;gap:8px;margin-top:11px;padding-top:11px;border-top:1px solid #f0ece2}
+.mgd3 .ab{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:11px;padding:11px;font-size:13px;font-weight:700}
+.mgd3 .ab svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.mgd3 .ab.ok{background:#0e6b61;color:#fffdf8}
+.mgd3 .ab.no{background:#fffdf8;border:1px solid #e2ddd1;color:#5d635c}
+.mgd3 .ab.more{flex:0 0 46px;background:#fffdf8;border:1px solid #e2ddd1;color:#80827a}
+.mgd3 .person{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:12px 13px;margin-bottom:8px}
+.mgd3 .ptop{display:flex;align-items:center;gap:10px}
+.mgd3 .pav{width:34px;height:34px;border-radius:10px;background:#f2eee5;color:#5d635c;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;flex-shrink:0}
+.mgd3 .pn2{flex:1;min-width:0}
+.mgd3 .pnm{font-size:13.5px;font-weight:600}
+.mgd3 .prol{font-size:11px;color:#80827a;margin-top:2px}
+.mgd3 .ptel{font-size:12px;color:#5d635c;margin-top:3px;font-family:'IBM Plex Mono',monospace}
+.mgd3 .pbtns{display:flex;gap:8px;margin-top:10px}
+.mgd3 .pb2{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:11px;padding:10px;font-size:12.5px;font-weight:700}
+.mgd3 .pb2 svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
+.mgd3 .pb2.call{background:#f2eee5;color:#3a3f3a;border:1px solid #e2ddd1}
+.mgd3 .pb2.wa{background:#dff3ea;color:#12684a;border:1px solid rgba(18,104,74,.2)}
+.mgd3 .card{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:4px 14px;margin-bottom:11px}
+.mgd3 .lr{display:flex;align-items:center;justify-content:space-between;padding:10px 0;font-size:13px;border-bottom:1px solid #f0ece2}
+.mgd3 .lr:last-child{border-bottom:none}
+.mgd3 .lk{color:#5d635c}
+.mgd3 .lv{font-weight:600}
+.mgd3 .quote{background:#f2eee5;border:1px solid #e2ddd1;border-radius:12px;padding:11px 12px;font-size:12.5px;color:#3a3f3a;line-height:1.5;margin-bottom:11px}
+.mgd3 .footer{padding:11px 16px 17px;border-top:1px solid #e2ddd1;background:#ece8df;flex-shrink:0}
+.mgd3 .fb{display:flex;gap:9px}
+.mgd3 .fbtn{flex:1;border:none;border-radius:13px;padding:15px;font-size:14.5px;font-weight:700;font-family:inherit;text-align:center}
+.mgd3 .fbtn.ok{background:#0e6b61;color:#fffdf8}
+.mgd3 .fbtn.no{background:#fffdf8;border:1px solid #e2ddd1;color:#5d635c}
+.mgd3 .note{background:#e3ecf6;border:1px solid #cdddf3;border-radius:12px;padding:10px 12px;font-size:11.5px;color:#274b8a;line-height:1.45;margin-bottom:4px}
+/* ===== Screen-Teacher-Class-Session ===== */
+.mgd4 *{box-sizing:border-box}
+.mgd4{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd4 .num,.mgd4 .money{font-variant-numeric:tabular-nums}
+.mgd4 svg{display:block;flex-shrink:0}
+.mgd4 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd4 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd4 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 6px;font-size:13px;font-weight:600}
+.mgd4 .appbar{display:flex;align-items:center;gap:11px;padding:6px 16px 4px}
+.mgd4 .iconbtn{width:40px;height:40px;border-radius:11px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd4 .ttl{font-size:19px;font-weight:700}
+.mgd4 .globe{margin-inline-start:auto}
+.mgd4 .subhd{font-size:12px;color:#80827a;font-weight:500;padding:0 18px 8px}
+.mgd4 .body{flex:1;overflow-y:auto;padding:6px 16px 22px}
+.mgd4 .body>*{flex-shrink:0}
+.mgd4 .primary{width:100%;text-align:center;background:#0a6b60;color:#fff;font-weight:700;font-size:15px;padding:15px;border-radius:14px;box-shadow:0 4px 12px rgba(10,107,96,.22)}
+.mgd4 .primary.tan{background:#d8c9a6;color:#8a7c5c;box-shadow:none}
+.mgd4 .sec{width:100%;text-align:center;background:#fffdf8;border:1px solid #e2ddd1;color:#3a3f3a;font-weight:600;font-size:14px;padding:13px;border-radius:13px}
+.mgd4 .box2{background:#f2eee5;border:1px solid #e6e0d4;border-radius:14px;padding:14px 15px;margin:13px 0}
+.mgd4 .b2row{display:flex;justify-content:space-between;align-items:center;font-size:13.5px}
+.mgd4 .b2row+.b2row{margin-top:10px}
+.mgd4 .b2k{color:#5d635c}
+.mgd4 .b2v{font-weight:700}
+.mgd4 .lbl{font-size:12px;font-weight:700;color:#80827a;letter-spacing:.05em;text-transform:uppercase;margin:16px 2px 10px;display:flex;align-items:center;justify-content:space-between}
+.mgd4 .lbl a{font-size:11.5px;font-weight:600;color:#0e6b61;text-transform:none;letter-spacing:0}
+.mgd4 .enr{display:inline-flex;align-items:center;gap:8px;background:#fffdf8;border:1px solid #efe9dc;border-radius:11px;padding:9px 12px;font-size:13px;font-weight:600;margin-inline-end:8px;margin-bottom:8px}
+.mgd4 .enr .dot{width:24px;height:24px;border-radius:50%;background:#f2eee5;color:#5d635c;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.mgd4 .arow{display:flex;align-items:center;gap:11px;background:#fffdf8;border:1px solid #efe9dc;border-radius:13px;padding:13px 14px;margin-bottom:9px}
+.mgd4 .arow .an{flex:1;font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px}
+.mgd4 .anq{color:#c9c4b6;flex-shrink:0}
+.mgd4 .box{width:22px;height:22px;border-radius:6px;border:1.6px solid #c9c4b6;flex-shrink:0}
+.mgd4 .box.on{background:#0e6b61;border-color:#0e6b61;display:flex;align-items:center;justify-content:center;color:#fff}
+.mgd4 .present{font-size:11.5px;color:#80827a;margin:2px 2px 0;font-weight:600}
+.mgd4 .chips{display:flex;gap:8px;margin:4px 0 6px}
+.mgd4 .chip{flex:1;text-align:center;font-size:12.5px;font-weight:600;padding:11px 6px;border-radius:11px;border:1px solid #e2ddd1;background:#fffdf8;color:#5d635c}
+.mgd4 .chip.on{background:#0a514a;color:#fff;border-color:#0a514a}
+.mgd4 .hint{font-size:11px;color:#80827a;line-height:1.5;margin:6px 2px 2px}
+.mgd4 .lock{display:flex;align-items:flex-start;gap:9px;background:#f4ebd7;border:1px solid #e6d3a9;border-radius:12px;padding:12px 13px;margin:14px 0}
+.mgd4 .lock svg{color:#8a5e16;margin-top:1px}
+.mgd4 .lock .lt{font-size:11.5px;color:#6f4e12;line-height:1.45}
+.mgd4 .lock .lt a{color:#8a5e16;font-weight:700;display:block;margin-top:3px}
+.mgd4 .banner{display:flex;align-items:center;justify-content:space-between;border-radius:13px;padding:12px 14px;margin:2px 0 14px}
+.mgd4 .banner.live{background:#e4f0e9;border:1px solid #bfe0da}
+.mgd4 .banner.done{background:#e4f0e9;border:1px solid #bfe0da}
+.mgd4 .banner .bt{display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:700;color:#0a3f39}
+.mgd4 .banner .bdot{width:9px;height:9px;border-radius:50%;background:#1a6d4d}
+.mgd4 .banner .btime{font-size:13px;font-weight:700;color:#0a514a}
+.mgd4 .bill{background:#fffdf8;border:1px solid #efe9dc;border-radius:13px;padding:13px 14px;margin-bottom:9px}
+.mgd4 .billtop{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.mgd4 .bn{font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:5px}
+.mgd4 .bnq{color:#c9c4b6;flex-shrink:0}
+.mgd4 .bamt{font-size:14.5px;font-weight:700;white-space:nowrap}
+.mgd4 .billbot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:11px}
+.mgd4 .timer{display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:#0a514a;background:#fff;border:1px solid #bfe0da;border-radius:9px;padding:5px 9px}
+.mgd4 .pill{font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:999px;white-space:nowrap}
+.mgd4 .pill.warn{color:#8a5e16;background:#f4ebd7}
+.mgd4 .pill.ok{color:#1a6d4d;background:#e4f0e9}
+.mgd4 .mark{font-size:11.5px;font-weight:700;color:#fff;background:#0a6b60;padding:8px 12px;border-radius:9px;white-space:nowrap}
+.mgd4 .paidby{font-size:11.5px;color:#80827a}
+.mgd4 .sum{background:#f2eee5;border:1px solid #e6e0d4;border-radius:14px;padding:14px 15px;margin:6px 0 14px}
+.mgd4 .sumrow{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:9px}
+.mgd4 .sumrow:last-child{margin-bottom:0}
+.mgd4 .sumrow .sk{color:#5d635c}
+.mgd4 .sumrow .sv{font-weight:700}
+.mgd4 .sv.out{color:#8a5e16}
+.mgd4 .sv.col{color:#1a6d4d}
+.mgd4 .cancel-live{text-align:center;font-size:12.5px;font-weight:600;color:#9c3322;margin-top:14px}
+.mgd4 .drow{display:flex;align-items:center;gap:11px;background:#fffdf8;border:1px solid #efe9dc;border-radius:13px;padding:14px;margin-bottom:9px}
+.mgd4 .drow.red{border-color:#e8cfc9}
+.mgd4 .drow.red .dtx{color:#9c3322}
+.mgd4 .dic{width:34px;height:34px;border-radius:10px;background:#f2eee5;color:#5d635c;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd4 .drow.red .dic{background:#f4e5e2;color:#9c3322}
+.mgd4 .dtx{flex:1;font-size:14px;font-weight:600}
+.mgd4 .field{margin-bottom:11px}
+.mgd4 .flabel{font-size:12px;font-weight:600;color:#5d635c;margin-bottom:6px}
+.mgd4 .input{width:100%;background:#f4f1ea;border:1px solid #e2ddd1;border-radius:10px;padding:11px 12px;font-size:13px;color:#3a3f3a;display:flex;align-items:center;justify-content:space-between}
+.mgd4 .input.ph{color:#a6a79d}
+.mgd4 .exp{background:#fffdf8;border:1px solid #efe9dc;border-radius:13px;padding:14px;margin-bottom:9px}
+.mgd4 .exphd{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:600;margin-bottom:13px}
+.mgd4 .sheetwrap{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;background:rgba(20,28,25,.42)}
+.mgd4 .sheet{background:#f4f1ea;border-radius:26px 26px 0 0;padding:6px 18px 22px;max-height:90%;overflow-y:auto;box-shadow:0 -10px 40px rgba(0,0,0,.22)}
+.mgd4 .grab{width:40px;height:5px;border-radius:3px;background:#cfc9bb;margin:8px auto 14px}
+.mgd4 .shead{display:flex;align-items:center;justify-content:space-between}
+.mgd4 .sh1{font-size:18px;font-weight:700}
+.mgd4 .sx{width:32px;height:32px;border-radius:50%;background:#e6e0d4;display:flex;align-items:center;justify-content:center;color:#5d635c}
+.mgd4 .ssub{font-size:12.5px;color:#80827a;margin:4px 0 16px}
+.mgd4 .amtbig{background:#fffdf8;border:1px solid #efe9dc;border-radius:13px;padding:14px;text-align:center;margin-bottom:16px}
+.mgd4 .amtbig .av{font-size:26px;font-weight:800}
+.mgd4 .amtbig .al{font-size:11.5px;color:#80827a;margin-top:2px}
+.mgd4 .send{text-align:center;background:#0a6b60;color:#fff;font-weight:700;font-size:14px;padding:13px;border-radius:12px}
+.mgd4 .board{max-width:1560px;margin:0 auto;padding:56px 28px 96px}
+.mgd4 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px;max-width:900px}
+.mgd4 .phones{display:flex;gap:30px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd4 .frame{display:flex;flex-direction:column;align-items:center;gap:13px}
+.mgd4 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d635c}
+.mgd4 .globe2{margin-inline-start:auto}
+/* ===== Screen-Teacher-Class-Session-Verified ===== */
+.mgd5 *{box-sizing:border-box}
+.mgd5{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd5 .num,.mgd5 .money{font-variant-numeric:tabular-nums}
+.mgd5 svg{display:block;flex-shrink:0}
+.mgd5 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd5 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd5 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 6px;font-size:13px;font-weight:600}
+.mgd5 .appbar{display:flex;align-items:center;gap:11px;padding:6px 16px 4px}
+.mgd5 .iconbtn{width:40px;height:40px;border-radius:11px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd5 .ttl{font-size:19px;font-weight:700;display:flex;align-items:center;gap:8px}
+.mgd5 .vchip{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;color:#1a6d4d;background:#e4f0e9;padding:3px 8px;border-radius:999px}
+.mgd5 .globe{margin-inline-start:auto}
+.mgd5 .subhd{font-size:12px;color:#80827a;font-weight:500;padding:0 18px 8px}
+.mgd5 .body{flex:1;overflow-y:auto;padding:6px 16px 22px}
+.mgd5 .body>*{flex-shrink:0}
+.mgd5 .primary{width:100%;text-align:center;background:#0a6b60;color:#fff;font-weight:700;font-size:15px;padding:15px;border-radius:14px;box-shadow:0 4px 12px rgba(10,107,96,.22)}
+.mgd5 .sec{width:100%;text-align:center;background:#fffdf8;border:1px solid #e2ddd1;color:#3a3f3a;font-weight:600;font-size:14px;padding:13px;border-radius:13px}
+.mgd5 .lbl{font-size:12px;font-weight:700;color:#80827a;letter-spacing:.05em;text-transform:uppercase;margin:16px 2px 10px;display:flex;align-items:center;justify-content:space-between}
+.mgd5 .lbl a{font-size:11.5px;font-weight:600;color:#0e6b61;text-transform:none;letter-spacing:0}
+.mgd5 .banner{display:flex;align-items:center;justify-content:space-between;border-radius:13px;padding:12px 14px;margin:2px 0 14px;background:#e4f0e9;border:1px solid #bfe0da}
+.mgd5 .banner .bt{display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:700;color:#0a3f39}
+.mgd5 .banner .bdot{width:9px;height:9px;border-radius:50%;background:#1a6d4d}
+.mgd5 .timer{display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:#0a514a;background:#fff;border:1px solid #bfe0da;border-radius:9px;padding:5px 9px}
+.mgd5 .arow{display:flex;align-items:center;gap:11px;background:#fffdf8;border:1px solid #efe9dc;border-radius:13px;padding:12px 13px;margin-bottom:9px}
+.mgd5 .box{width:22px;height:22px;border-radius:6px;border:1.6px solid #c9c4b6;flex-shrink:0}
+.mgd5 .box.on{background:#0e6b61;border-color:#0e6b61;display:flex;align-items:center;justify-content:center;color:#fff}
+.mgd5 .an{flex:1;font-size:14px;font-weight:600;min-width:0;display:flex;align-items:center;gap:6px}
+.mgd5 .anq{color:#c9c4b6;flex-shrink:0}
+.mgd5 .mode{font-size:11px;font-weight:700;padding:6px 11px;border-radius:999px;white-space:nowrap;flex-shrink:0;display:inline-flex;align-items:center;gap:5px}
+.mgd5 .mode.digital{color:#0a514a;background:#dfeeeb;border:1px solid #bfe0da}
+.mgd5 .mode.cash{color:#5d635c;background:#f2eee5;border:1px solid #e2ddd1}
+.mgd5 .crow{background:#fffdf8;border:1px solid #efe9dc;border-radius:13px;padding:12px 13px;margin-bottom:9px}
+.mgd5 .crtop{display:flex;align-items:center;gap:11px}
+.mgd5 .seg{display:flex;width:max-content;margin-top:10px;background:#f2eee5;border:1px solid #e2ddd1;border-radius:10px;padding:3px;gap:3px}
+.mgd5 .segopt{font-size:12px;font-weight:700;padding:7px 15px;border-radius:8px;color:#80827a;white-space:nowrap}
+.mgd5 .segopt.on{background:#0a6b60;color:#fff;box-shadow:0 1px 3px rgba(10,107,96,.28)}
+.mgd5 .segopt.oncash{background:#fffdf8;color:#5d635c;border:1px solid #d9d3c6}
+.mgd5 .crcap{font-size:11px;margin-top:9px;display:flex;align-items:center;gap:6px;font-weight:600}
+.mgd5 .crcap.good{color:#1a6d4d}
+.mgd5 .crcap.manual{color:#8a5e16}
+.mgd5 .present{font-size:11.5px;color:#80827a;margin:2px 2px 0;font-weight:600}
+.mgd5 .help{font-size:11.5px;color:#5d635c;line-height:1.55;background:#eef4f2;border:1px solid #dce9e5;border-radius:12px;padding:12px 13px;margin:14px 0;display:flex;gap:9px}
+.mgd5 .help svg{color:#0a514a;margin-top:1px}
+.mgd5 .lock{display:flex;align-items:flex-start;gap:9px;background:#f4ebd7;border:1px solid #e6d3a9;border-radius:12px;padding:12px 13px;margin:0 0 14px}
+.mgd5 .lock svg{color:#8a5e16;margin-top:1px}
+.mgd5 .lock .lt{font-size:11.5px;color:#6f4e12;line-height:1.45}
+.mgd5 .lock .lt a{color:#8a5e16;font-weight:700;display:block;margin-top:3px}
+.mgd5 .bill{background:#fffdf8;border:1px solid #efe9dc;border-radius:13px;padding:13px 14px;margin-bottom:9px}
+.mgd5 .billtop{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.mgd5 .bn{font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:5px}
+.mgd5 .bnq{color:#c9c4b6;flex-shrink:0}
+.mgd5 .bamt{font-size:14.5px;font-weight:700;white-space:nowrap}
+.mgd5 .billbot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:11px}
+.mgd5 .paidby{font-size:11.5px;color:#80827a}
+.mgd5 .pill{font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:999px;white-space:nowrap}
+.mgd5 .pill.warn{color:#8a5e16;background:#f4ebd7}
+.mgd5 .pill.ok{color:#1a6d4d;background:#e4f0e9}
+.mgd5 .pill.info{color:#2563eb;background:#e3ecf6}
+.mgd5 .mark{font-size:11.5px;font-weight:700;color:#fff;background:#0a6b60;padding:8px 12px;border-radius:9px;white-space:nowrap}
+.mgd5 .sum{background:#f2eee5;border:1px solid #e6e0d4;border-radius:14px;padding:14px 15px;margin:6px 0 12px}
+.mgd5 .sumrow{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:9px}
+.mgd5 .sumrow:last-child{margin-bottom:0}
+.mgd5 .sk{color:#5d635c}
+.mgd5 .sv{font-weight:700}
+.mgd5 .sv.out{color:#8a5e16}
+.mgd5 .paynote{font-size:11px;color:#5d635c;line-height:1.55;background:#eef4f2;border:1px solid #dce9e5;border-radius:11px;padding:11px 12px;margin:0 0 14px;display:flex;gap:8px}
+.mgd5 .paynote svg{color:#0a514a;margin-top:1px;flex-shrink:0}
+.mgd5 .cancel-live{text-align:center;font-size:12.5px;font-weight:600;color:#9c3322;margin-top:14px}
+.mgd5 .mono{font-family:'IBM Plex Mono',monospace}
+.mgd5 .acct{font-size:11.5px;color:#0a3f39;line-height:1.5;background:#e4f0e9;border:1px solid #bfe0da;border-radius:12px;padding:11px 13px;margin:0 0 14px;display:flex;gap:9px;align-items:center}
+.mgd5 .acct svg{color:#0a514a;flex-shrink:0}
+.mgd5 .acct .mono{font-weight:700}
+.mgd5 .sheetscreen{position:relative}
+.mgd5 .sheetdim{position:absolute;inset:0;background:rgba(20,24,22,.42)}
+.mgd5 .sheet{position:absolute;inset-inline:0;bottom:0;background:#fffdf8;border-radius:26px 26px 0 0;padding:10px 20px 24px}
+.mgd5 .grab{width:40px;height:4px;border-radius:2px;background:#d9d3c6;margin:6px auto 16px}
+.mgd5 .sheetic{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.mgd5 .sheetic.warn{background:#f4ebd7;color:#8a5e16}
+.mgd5 .sheettitle{font-size:19px;font-weight:700;text-align:center;margin-bottom:8px}
+.mgd5 .sheetsub{font-size:13px;color:#5d635c;text-align:center;line-height:1.5;margin-bottom:14px}
+.mgd5 .sheetbox{font-size:12px;color:#0a3f39;background:#e4f0e9;border:1px solid #bfe0da;border-radius:12px;padding:12px 13px;line-height:1.5;display:flex;gap:9px;margin-bottom:18px}
+.mgd5 .sheetbox svg{color:#1a6d4d;flex-shrink:0;margin-top:1px}
+.mgd5 .ghost{text-align:center;font-size:13.5px;font-weight:600;color:#8a5e16;padding:13px;margin-top:2px}
+.mgd5 .board{max-width:1560px;margin:0 auto;padding:56px 28px 96px}
+.mgd5 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px;max-width:900px}
+.mgd5 .phones{display:flex;gap:30px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd5 .frame{display:flex;flex-direction:column;align-items:center;gap:13px}
+.mgd5 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d635c}
+</style>
+</head>
+<body>
+<div class="mgd-top">
+  <div class="mgd-eyebrow">TutoringHQ · Merged reference</div>
+  <h1 class="mgd-h1">Teacher · Groups and sessions</h1>
+  <p class="mgd-lede">Groups, their per-group invite links and pending queues, and running a live class session.</p>
+  <div class="mgd-toc"><a href="#Merged-Teacher-Groups-1">Teacher Groups</a><a href="#Merged-Teacher-Groups-2">Teacher Group Detail</a><a href="#Merged-Teacher-Groups-3">Teacher Group Invite Pending</a><a href="#Merged-Teacher-Groups-4">Teacher Class Session</a><a href="#Merged-Teacher-Groups-5">Teacher Class Session Verified</a></div>
+</div>
+<div class="mgd-sec" id="Merged-Teacher-Groups-1">
+  <div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Teacher Groups</span><span class="mgd-src">Screen-Teacher-Groups.html</span></div>
+</div>
+<div class="mgd1">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0a514a;background:#dfeeeb;border:1px solid #bfe0da;padding:5px 11px;border-radius:999px">Teacher · My groups</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">My groups</h1>
+    <p style="margin:0;max-width:82ch;font-size:17px;line-height:1.55;color:#5d635c">The teacher's private groups: a header with Add group, then each group with its enrolled count and per-class fee, tappable into the group detail. English and Arabic. Model-neutral. Design only.</p>
+  </div>
+  <div class="phones">
+
+    <!-- EN -->
+    <div class="frame"><span class="cap">EN</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">My groups</div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="body">
+        <div class="subhead"><div class="sh"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a514a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87"/></svg>My private groups</div><div class="add"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Add group</div></div>
+        <div class="grp"><div class="gav">P</div><div class="ginfo"><div class="gn">Physics<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="gm">2 enrolled</div></div><div class="gfee"><div class="fv money">700 EGP</div><div class="fl">per class</div></div></div>
+        <div class="grp"><div class="gav">P</div><div class="ginfo"><div class="gn">Physics Sun 4PM<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="gm">1 enrolled</div></div><div class="gfee"><div class="fv money">500 EGP</div><div class="fl">per class</div></div></div>
+      </div>
+    
+      <nav class="tabbar"><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4 12 4l8 7.4"/><path d="M6 10.2V20h12v-9.8"/><path d="M10 20v-5h4v5"/></svg><span>Home</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.4"/><path d="M8 3.5v3M16 3.5v3M4 9.6h16"/></svg><span>Schedule</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V5.5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1V20"/><path d="M14 20V9.5h4a1 1 0 0 1 1 1V20"/><path d="M3.5 20h17"/><path d="M8 8.5h.01M11 8.5h.01M8 12h.01M11 12h.01M8 15.5h.01M11 15.5h.01"/></svg><span>Centers</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="12" cy="12" r="2.2"/><path d="M6.4 9.6h.01M17.6 14.4h.01"/></svg><span>Income</span></a><a class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></nav>
+    </div></div></div>
+
+    <!-- AR -->
+    <div class="frame"><span class="cap">AR</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl">مجموعاتي</div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="body">
+        <div class="subhead"><div class="sh"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a514a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87"/></svg>مجموعاتي الخاصة</div><div class="add"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>إضافة مجموعة</div></div>
+        <div class="grp"><div class="gav">ف</div><div class="ginfo"><div class="gn">فيزياء<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="gm">مسجّلان</div></div><div class="gfee"><div class="fv money">٧٠٠ ج.م</div><div class="fl">للحصة</div></div></div>
+        <div class="grp"><div class="gav">ف</div><div class="ginfo"><div class="gn">فيزياء الأحد ٤م<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="gm">مسجّل واحد</div></div><div class="gfee"><div class="fv money">٥٠٠ ج.م</div><div class="fl">للحصة</div></div></div>
+      </div>
+    
+      <nav class="tabbar"><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4 12 4l8 7.4"/><path d="M6 10.2V20h12v-9.8"/><path d="M10 20v-5h4v5"/></svg><span>الرئيسية</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.4"/><path d="M8 3.5v3M16 3.5v3M4 9.6h16"/></svg><span>الجدول</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V5.5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1V20"/><path d="M14 20V9.5h4a1 1 0 0 1 1 1V20"/><path d="M3.5 20h17"/><path d="M8 8.5h.01M11 8.5h.01M8 12h.01M11 12h.01M8 15.5h.01M11 15.5h.01"/></svg><span>المراكز</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="12" cy="12" r="2.2"/><path d="M6.4 9.6h.01M17.6 14.4h.01"/></svg><span>الدخل</span></a><a class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>المزيد</span></a></nav>
+    </div></div></div>
+
+  </div>
+</div>
+</div>
+<div class="mgd-sec" id="Merged-Teacher-Groups-2">
+  <div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">Teacher Group Detail</span><span class="mgd-src">Screen-Teacher-Group-Detail.html</span></div>
+</div>
+<div class="mgd2">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0a514a;background:#dfeeeb;border:1px solid #bfe0da;padding:5px 11px;border-radius:999px">Teacher · Group detail</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Group detail</h1>
+    <p style="margin:0;max-width:82ch;font-size:17px;line-height:1.55;color:#5d635c">Opening a group from My groups: a header with its student count and per-class fee, quick Add student / Edit group actions, the enrolled students (each tappable into their detail), and a short list of recent classes. English and Arabic. Model-neutral, no fee split shown. Placeholder data. Design only.</p>
+  </div>
+  <div class="phones">
+
+    <!-- EN -->
+    <div class="frame"><span class="cap">EN · Physics</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Physics</div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="body">
+        <div class="ghead">
+          <div class="ghrow"><div class="gavb">P</div><div style="flex:1"><div class="gname">Physics</div><div class="gsub">Private group · your class</div></div></div>
+          <div class="gstats">
+            <div class="gtile"><div class="gtl">Students</div><div class="gtv num">2</div></div>
+            <div class="gtile"><div class="gtl">Per class</div><div class="gtv money">700 EGP</div></div>
+          </div>
+        </div>
+
+        <div class="gacts">
+          <div class="btn primary"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Add student</div>
+          <div class="btn ghost"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit group</div>
+        </div>
+
+        <div class="sec">Enrolled · 2</div>
+        <div class="stu"><div class="sav">S</div><div class="sinfo"><div class="snm">selim<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="sph mono" dir="ltr">+20 10 3948 4833</div></div><div class="chev"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div></div>
+        <div class="stu"><div class="sav">Y</div><div class="sinfo"><div class="snm">Youssef<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="sph mono" dir="ltr">+20 12 8890 1274</div></div><div class="chev"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div></div>
+
+        <div class="sec" style="margin-top:4px">Recent classes</div>
+        <div class="clist">
+          <div class="crow"><span class="cdt">Wed · 15 Jul</span><span class="cpr">2 present</span><span class="cmn money" style="margin-inline-start:auto">1,400 EGP</span></div>
+          <div class="crow"><span class="cdt">Sun · 12 Jul</span><span class="cpr">2 present</span><span class="cmn money" style="margin-inline-start:auto">1,400 EGP</span></div>
+        </div>
+      </div>
+      <nav class="tabbar"><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4 12 4l8 7.4"/><path d="M6 10.2V20h12v-9.8"/><path d="M10 20v-5h4v5"/></svg><span>Home</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.4"/><path d="M8 3.5v3M16 3.5v3M4 9.6h16"/></svg><span>Schedule</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V5.5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1V20"/><path d="M14 20V9.5h4a1 1 0 0 1 1 1V20"/><path d="M3.5 20h17"/><path d="M8 8.5h.01M11 8.5h.01M8 12h.01M11 12h.01M8 15.5h.01M11 15.5h.01"/></svg><span>Centers</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="12" cy="12" r="2.2"/><path d="M6.4 9.6h.01M17.6 14.4h.01"/></svg><span>Income</span></a><a class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></nav>
+    </div></div></div>
+
+    <!-- AR -->
+    <div class="frame"><span class="cap">AR · RTL · فيزياء</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span class="num">&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl">فيزياء</div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="body">
+        <div class="ghead">
+          <div class="ghrow"><div class="gavb">ف</div><div style="flex:1"><div class="gname">فيزياء</div><div class="gsub">مجموعة خاصة · حصتك</div></div></div>
+          <div class="gstats">
+            <div class="gtile"><div class="gtl">الطلاب</div><div class="gtv num">٢</div></div>
+            <div class="gtile"><div class="gtl">للحصة</div><div class="gtv money">٧٠٠ ج.م</div></div>
+          </div>
+        </div>
+
+        <div class="gacts">
+          <div class="btn primary"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>إضافة طالب</div>
+          <div class="btn ghost"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>تعديل المجموعة</div>
+        </div>
+
+        <div class="sec">المسجّلون · ٢</div>
+        <div class="stu"><div class="sav">س</div><div class="sinfo"><div class="snm">سليم<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="sph mono" dir="ltr">+20 10 3948 4833</div></div><div class="chev"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div></div>
+        <div class="stu"><div class="sav">ي</div><div class="sinfo"><div class="snm">يوسف<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="sph mono" dir="ltr">+20 12 8890 1274</div></div><div class="chev"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div></div>
+
+        <div class="sec" style="margin-top:4px">آخر الحصص</div>
+        <div class="clist">
+          <div class="crow"><span class="cdt">الأربعاء · ١٥ يوليو</span><span class="cpr">حاضران</span><span class="cmn money" style="margin-inline-start:auto">١٬٤٠٠ ج.م</span></div>
+          <div class="crow"><span class="cdt">الأحد · ١٢ يوليو</span><span class="cpr">حاضران</span><span class="cmn money" style="margin-inline-start:auto">١٬٤٠٠ ج.م</span></div>
+        </div>
+      </div>
+      <nav class="tabbar"><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4 12 4l8 7.4"/><path d="M6 10.2V20h12v-9.8"/><path d="M10 20v-5h4v5"/></svg><span>الرئيسية</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.4"/><path d="M8 3.5v3M16 3.5v3M4 9.6h16"/></svg><span>الجدول</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V5.5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1V20"/><path d="M14 20V9.5h4a1 1 0 0 1 1 1V20"/><path d="M3.5 20h17"/><path d="M8 8.5h.01M11 8.5h.01M8 12h.01M11 12h.01M8 15.5h.01M11 15.5h.01"/></svg><span>المراكز</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="12" cy="12" r="2.2"/><path d="M6.4 9.6h.01M17.6 14.4h.01"/></svg><span>الدخل</span></a><a class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>المزيد</span></a></nav>
+    </div></div></div>
+
+  </div>
+</div>
+</div>
+<div class="mgd-sec" id="Merged-Teacher-Groups-3">
+  <div class="mgd-bar"><span class="mgd-num">03</span><span class="mgd-name">Teacher Group Invite Pending</span><span class="mgd-src">Screen-Teacher-Group-Invite-Pending.html</span></div>
+</div>
+<div class="mgd3">
+<div class="board">
+  <div class="eyebrow">TutoringHQ · Reference Screen</div>
+  <div class="pill0">Teacher group invite · Draft</div>
+  <h1 class="mh">Teacher group invite and pending</h1>
+  <p class="lead">A teacher's join requests belong to a group, not to the teacher, because the link itself is per group. Create a group, copy its link, share it, and anyone who uses it lands in that group's own queue. That is the opposite of the center, where one link feeds a single approval list, and it is the right shape here: a teacher already thinks in groups and the requests arrive pre-sorted. Approval is always manual, so a shared link can never quietly enrol someone. English and Arabic. Sample data is placeholder.</p>
+
+  <div class="phones">
+
+    <!-- EN · GROUP WITH LINK -->
+    <div class="frame">
+    <div class="phone"><div class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Physics · Sun 4PM</div><div class="ts">18 students · 150 EGP per session</div></div></div>
+      <div class="body">
+        <div class="linkcard">
+          <div class="lct">Invite link</div>
+          <div class="lcs">Anyone with this link can ask to join this group. Nobody is added until you approve them.</div>
+          <div class="linkbox" dir="ltr">tutoringhq.app/j/7K2M9P</div>
+          <div class="lcbtns">
+            <div class="lcb solid"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Copy</div>
+            <div class="lcb ghost"><svg viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4M12 2v13"/></svg>Share</div>
+          </div>
+        </div>
+
+        <div class="pend"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg><div><div class="pt">3 waiting to join</div><div class="ps">Oldest asked 2 days ago</div></div><div class="pb">Review</div></div>
+
+        <div class="sec">Enrolled</div>
+        <div class="sub">18 students · tap a name for their details</div>
+        <div class="row"><div class="avt" style="background:#f2eee5;color:#5d635c">MH</div><div class="rn"><div class="rnm">Mariam Hassan<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Joined 14/02</div></div><div class="kb"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div></div>
+        <div class="row"><div class="avt" style="background:#f2eee5;color:#5d635c">YA</div><div class="rn"><div class="rnm">Youssef Adel<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Joined 14/02</div></div><div class="kb"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div></div>
+        <div class="row"><div class="avt" style="background:#f2eee5;color:#5d635c">ST</div><div class="rn"><div class="rnm">Selim Tarek<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Joined 21/02</div></div><div class="kb"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div></div>
+      </div>
+    </div></div>
+    <div class="cap">EN · group and its link</div>
+    </div>
+
+    <!-- EN · PENDING FOR THIS GROUP -->
+    <div class="frame">
+    <div class="phone"><div class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Waiting to join</div><div class="ts">Physics · Sun 4PM</div></div><span class="pcount">3</span></div>
+      <div class="body">
+        <div class="note">These asked to join through this group's link. Approving adds them to Physics · Sun 4PM only.</div>
+
+        <div class="exp">
+          <div class="exprow"><div class="avt">SW</div><div class="rn"><div class="rnm">Salma Wael<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Grade 11 · asked 2 days ago</div></div></div>
+          <div class="acts">
+            <div class="ab ok"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Approve</div>
+            <div class="ab no">Decline</div>
+            <div class="ab more"><svg viewBox="0 0 24 24" style="stroke:none;fill:currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div>
+          </div>
+        </div>
+
+        <div class="row"><div class="avt">ZH</div><div class="rn"><div class="rnm">Ziad Hesham<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Grade 12 · asked yesterday</div></div><div class="kb"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div></div>
+        <div class="row"><div class="avt">MA</div><div class="rn"><div class="rnm">Malak Ashraf<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Grade 11 · asked today</div></div><div class="kb"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div></div>
+
+        <div class="note" style="margin-top:14px">Requests for your other groups sit in those groups. Each link only ever fills the group it belongs to.</div>
+      </div>
+    </div></div>
+    <div class="cap">EN · this group's queue</div>
+    </div>
+
+    <!-- EN · REQUEST DETAILS -->
+    <div class="frame">
+    <div class="phone"><div class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Salma Wael</div><div class="ts">Wants to join Physics · Sun 4PM</div></div></div>
+      <div class="body">
+        <div class="note">Not enrolled yet. Nothing here is billed and no attendance exists until you approve.</div>
+        <div class="sec">The request</div>
+        <div class="card">
+          <div class="lr"><span class="lk">Grade</span><span class="lv">11</span></div>
+          <div class="lr"><span class="lk">School</span><span class="lv">Nasr City Language School</span></div>
+          <div class="lr"><span class="lk">Asked</span><span class="lv">2 days ago</span></div>
+          <div class="lr"><span class="lk">Came via</span><span class="lv">Invite link</span></div>
+        </div>
+        <div class="sec">Note from them</div>
+        <div class="quote">&ldquo;My friend Mariam is in this group. I need help with mechanics before the November exam.&rdquo;</div>
+        <div class="sec">Contact before deciding</div>
+        <div class="sub">Reach either of them without approving first.</div>
+        <div class="person"><div class="ptop"><div class="pav">SW</div><div class="pn2"><div class="pnm">Salma Wael</div><div class="prol">Student</div><div class="ptel" dir="ltr">+20 11 4477 2210</div></div></div><div class="pbtns"><div class="pb2 call"><svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>Call</div><div class="pb2 wa"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-3.9-.9L3 21l1.9-5.6a8.4 8.4 0 0 1-.9-3.9A8.5 8.5 0 0 1 12.5 3 8.4 8.4 0 0 1 21 11.5z"/></svg>WhatsApp</div></div></div><div class="person"><div class="ptop"><div class="pav">MW</div><div class="pn2"><div class="pnm">Mostafa Wael</div><div class="prol">Parent</div><div class="ptel" dir="ltr">+20 10 3388 9100</div></div></div><div class="pbtns"><div class="pb2 call"><svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>Call</div><div class="pb2 wa"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-3.9-.9L3 21l1.9-5.6a8.4 8.4 0 0 1-.9-3.9A8.5 8.5 0 0 1 12.5 3 8.4 8.4 0 0 1 21 11.5z"/></svg>WhatsApp</div></div></div>
+      </div>
+      <div class="footer"><div class="fb"><button class="fbtn no">Decline</button><button class="fbtn ok">Approve</button></div></div>
+    </div></div>
+    <div class="cap">EN · request details</div>
+    </div>
+
+    <!-- AR · GROUP WITH LINK -->
+    <div class="frame">
+    <div class="phone"><div class="screen" dir="rtl" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="tt">فيزياء · الأحد ٤ م</div><div class="ts">١٨ طالبًا · ١٥٠ ج.م للحصة</div></div></div>
+      <div class="body">
+        <div class="linkcard">
+          <div class="lct">رابط الدعوة</div>
+          <div class="lcs">أي شخص لديه هذا الرابط يمكنه طلب الانضمام لهذه المجموعة. لا يُضاف أحد حتى توافق أنت.</div>
+          <div class="linkbox" dir="ltr">tutoringhq.app/j/7K2M9P</div>
+          <div class="lcbtns">
+            <div class="lcb solid"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>نسخ</div>
+            <div class="lcb ghost"><svg viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4M12 2v13"/></svg>مشاركة</div>
+          </div>
+        </div>
+
+        <div class="pend"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg><div><div class="pt">٣ ينتظرون الانضمام</div><div class="ps">أقدمهم طلب منذ يومين</div></div><div class="pb">مراجعة</div></div>
+
+        <div class="sec">المقيّدون</div>
+        <div class="sub">١٨ طالبًا · اضغط الاسم لتفاصيله</div>
+        <div class="row"><div class="avt" style="background:#f2eee5;color:#5d635c">مح</div><div class="rn"><div class="rnm">مريم حسن<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">انضمّت ١٤/٠٢</div></div><div class="kb"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div></div>
+        <div class="row"><div class="avt" style="background:#f2eee5;color:#5d635c">يع</div><div class="rn"><div class="rnm">يوسف عادل<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">انضمّ ١٤/٠٢</div></div><div class="kb"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div></div>
+        <div class="row"><div class="avt" style="background:#f2eee5;color:#5d635c">سط</div><div class="rn"><div class="rnm">سليم طارق<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">انضمّ ٢١/٠٢</div></div><div class="kb"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div></div>
+      </div>
+    </div></div>
+    <div class="cap">AR · المجموعة ورابطها</div>
+    </div>
+
+    <!-- AR · PENDING -->
+    <div class="frame">
+    <div class="phone"><div class="screen" dir="rtl" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="tt">ينتظرون الانضمام</div><div class="ts">فيزياء · الأحد ٤ م</div></div><span class="pcount">٣</span></div>
+      <div class="body">
+        <div class="note">طلبوا الانضمام عبر رابط هذه المجموعة. الموافقة تضيفهم إلى فيزياء · الأحد ٤ م فقط.</div>
+
+        <div class="exp">
+          <div class="exprow"><div class="avt">سو</div><div class="rn"><div class="rnm">سلمى وائل<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">الصف ١١ · طلبت منذ يومين</div></div></div>
+          <div class="acts">
+            <div class="ab ok"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>موافقة</div>
+            <div class="ab no">رفض</div>
+            <div class="ab more"><svg viewBox="0 0 24 24" style="stroke:none;fill:currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div>
+          </div>
+        </div>
+
+        <div class="row"><div class="avt">زه</div><div class="rn"><div class="rnm">زياد هشام<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">الصف ١٢ · طلب أمس</div></div><div class="kb"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div></div>
+        <div class="row"><div class="avt">مأ</div><div class="rn"><div class="rnm">ملك أشرف<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">الصف ١١ · طلبت اليوم</div></div><div class="kb"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div></div>
+
+        <div class="note" style="margin-top:14px">طلبات مجموعاتك الأخرى تبقى في مجموعاتها. كل رابط يملأ مجموعته وحدها.</div>
+      </div>
+    </div></div>
+    <div class="cap">AR · قائمة انتظار المجموعة</div>
+    </div>
+
+  </div>
+</div>
+</div>
+<div class="mgd-sec" id="Merged-Teacher-Groups-4">
+  <div class="mgd-bar"><span class="mgd-num">04</span><span class="mgd-name">Teacher Class Session</span><span class="mgd-src">Screen-Teacher-Class-Session.html</span></div>
+</div>
+<div class="mgd4">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0a514a;background:#dfeeeb;border:1px solid #bfe0da;padding:5px 11px;border-radius:999px">Teacher · Class session · Self-collect</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Class session</h1>
+    <p style="margin:0;max-width:82ch;font-size:17px;line-height:1.55;color:#5d635c">The flow opened from Schedule when a teacher runs a class: pre-class, in-progress attendance and payment, then the session record. This is the <b>self-collect (manual)</b> version, and it now closes the loop the live app was missing: an outstanding amount can be confirmed as collected from the record. English and Arabic. Design only; figures are placeholders.</p>
+  </div>
+  <div class="phones">
+
+    <!-- 1 · PRE-CLASS · EN -->
+    <div class="frame"><span class="cap">EN · pre-class</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Physics</div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="subhd">Sunday 20 Jul · 4:00–5:00 PM</div>
+      <div class="body">
+        <div class="primary">Start class</div>
+        <div class="box2">
+          <div class="b2row"><span class="b2k">Fee per class</span><span class="b2v money">700 EGP</span></div>
+          <div class="b2row"><span class="b2k">Enrolled</span><span class="b2v">2 students</span></div>
+        </div>
+        <div class="lbl">Enrolled students</div>
+        <div><span class="enr"><span class="dot">S</span>selim<svg class="anq" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span><span class="enr"><span class="dot">Y</span>Youssef<svg class="anq" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span></div>
+        <div class="lbl">Class actions</div>
+        <div class="exp">
+          <div class="exphd">Reschedule<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#80827a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></div>
+          <div class="field"><div class="flabel">New date</div><div class="input ph">Pick a date</div></div>
+          <div class="field"><div class="flabel">New time</div><div class="input">4:00 PM<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#80827a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div></div>
+          <div class="field"><div class="flabel">Note (optional)</div><div class="input ph">Tell students why</div></div>
+          <div class="primary" style="font-size:14px;padding:12px">Reschedule</div>
+        </div>
+        <div class="drow red"><div class="dic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div><div class="dtx">Cancel this class</div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c9967f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>
+      </div>
+    </div></div></div>
+
+    <!-- 2 · IN PROGRESS · EN -->
+    <div class="frame"><span class="cap">EN · in progress (mark attendance & payment)</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Physics</div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="subhd">Sunday 20 Jul · 4:00–5:00 PM</div>
+      <div class="body">
+        <div class="banner live"><span class="bt"><span class="bdot"></span>Class in progress</span><span class="timer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5"/><path d="M9.5 2.5h5"/><path d="M18.5 8l1.3-1.3"/></svg>24:18</span></div>
+        <div class="lbl">Attendance<a>Select all</a></div>
+        <div class="arow"><div class="box on"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="an">selim<svg class="anq" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div></div>
+        <div class="arow"><div class="box on"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="an">Youssef<svg class="anq" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div></div>
+        <div class="present">2 present</div>
+        <div class="lock"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div class="lt">Guest attendees are on the Pro plan<a>Upgrade your plan</a></div></div>
+        <div class="lbl">Payment method</div>
+        <div class="chips"><span class="chip on">Cash</span><span class="chip">InstaPay</span><span class="chip">Vodafone Cash</span></div>
+        <div class="hint">Set how you'll collect. You can mark who actually paid after class, including if a student pays later.</div>
+        <div style="height:8px"></div>
+        <div class="primary">End class and bill 2 students</div>
+        <div class="cancel-live">Cancel live session</div>
+      </div>
+    </div></div></div>
+
+    <!-- 3 · SESSION RECORD · EN -->
+    <div class="frame"><span class="cap">EN · session record (confirm collection)</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Physics</div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="subhd">Sunday 20 Jul · 4:00–5:00 PM</div>
+      <div class="body">
+        <div class="banner done"><span class="bt"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1a6d4d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Class ended · recorded</span><span class="timer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5"/><path d="M9.5 2.5h5"/><path d="M18.5 8l1.3-1.3"/></svg>58:20</span></div>
+        <div class="lbl">Billed<a>Remind all</a></div>
+        <div class="bill"><div class="billtop"><div class="bn">selim<svg class="bnq" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><span class="bamt money">700 EGP</span></div><div class="billbot"><span class="pill warn">To collect</span><span class="mark">Mark collected</span></div></div>
+        <div class="bill"><div class="billtop"><div class="bn">Youssef<svg class="bnq" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><span class="bamt money">700 EGP</span></div><div class="billbot"><span class="pill ok">Paid</span><span class="paidby">Cash · today</span></div></div>
+        <div class="lbl">Summary</div>
+        <div class="sum">
+          <div class="sumrow"><span class="sk">Total billed</span><span class="sv money">1,400 EGP</span></div>
+          <div class="sumrow"><span class="sk">Collected</span><span class="sv col money">700 EGP</span></div>
+          <div class="sumrow"><span class="sk">Outstanding</span><span class="sv out money">700 EGP</span></div>
+        </div>
+        <div class="sec">View in group</div>
+      </div>
+    </div></div></div>
+
+    <!-- 4 · MARK COLLECTED SHEET · EN -->
+    <div class="frame"><span class="cap">EN · mark collected</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="sheetwrap"><div class="sheet">
+        <div class="grab"></div>
+        <div class="shead"><div class="sh1">Mark as collected</div><div class="sx"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+        <div class="ssub">selim · Physics · Sunday 20 Jul</div>
+        <div class="amtbig"><div class="av money">700 EGP</div><div class="al">Amount due for this class</div></div>
+        <div class="flabel">How did they pay?</div>
+        <div class="chips"><span class="chip on">Cash</span><span class="chip">InstaPay</span><span class="chip">Vodafone Cash</span></div>
+        <div class="field" style="margin-top:12px"><div class="flabel">Date collected</div><div class="input">Today · 20 Jul<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#80827a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div></div>
+        <div class="send">Confirm collected</div>
+      </div></div>
+    </div></div></div>
+
+    <!-- 5 · PRE-CLASS · AR -->
+    <div class="frame"><span class="cap">AR · pre-class</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl">فيزياء</div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="subhd">الأحد ٢٠ يوليو · ٤:٠٠–٥:٠٠ م</div>
+      <div class="body">
+        <div class="primary">بدء الحصة</div>
+        <div class="box2">
+          <div class="b2row"><span class="b2k">سعر الحصة</span><span class="b2v money">٧٠٠ ج.م</span></div>
+          <div class="b2row"><span class="b2k">المسجّلون</span><span class="b2v">٢ طلاب</span></div>
+        </div>
+        <div class="lbl">الطلاب المسجّلون</div>
+        <div><span class="enr"><span class="dot">س</span>سليم<svg class="anq" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span><span class="enr"><span class="dot">ي</span>يوسف<svg class="anq" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span></div>
+        <div class="lbl">إجراءات الحصة</div>
+        <div class="exp">
+          <div class="exphd">إعادة جدولة<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#80827a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></div>
+          <div class="field"><div class="flabel">تاريخ جديد</div><div class="input ph">اختر تاريخًا</div></div>
+          <div class="field"><div class="flabel">وقت جديد</div><div class="input">٤:٠٠ م<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#80827a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div></div>
+          <div class="field"><div class="flabel">ملاحظة (اختياري)</div><div class="input ph">أخبر الطلاب بالسبب</div></div>
+          <div class="primary" style="font-size:14px;padding:12px">إعادة جدولة</div>
+        </div>
+        <div class="drow red"><div class="dic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div><div class="dtx">إلغاء هذه الحصة</div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c9967f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>
+      </div>
+    </div></div></div>
+
+    <!-- 6 · IN PROGRESS · AR -->
+    <div class="frame"><span class="cap">AR · in progress</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl">فيزياء</div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="subhd">الأحد ٢٠ يوليو · ٤:٠٠–٥:٠٠ م</div>
+      <div class="body">
+        <div class="banner live"><span class="bt"><span class="bdot"></span>الحصة جارية</span><span class="timer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5"/><path d="M9.5 2.5h5"/><path d="M18.5 8l1.3-1.3"/></svg>٢٤:١٨</span></div>
+        <div class="lbl">الحضور<a>تحديد الكل</a></div>
+        <div class="arow"><div class="box on"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="an">سليم<svg class="anq" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div></div>
+        <div class="arow"><div class="box on"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="an">يوسف<svg class="anq" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div></div>
+        <div class="present">٢ حاضران</div>
+        <div class="lock"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div class="lt">الحضور الضيوف في باقة Pro<a>ترقية باقتك</a></div></div>
+        <div class="lbl">طريقة الدفع</div>
+        <div class="chips"><span class="chip on">نقدًا</span><span class="chip">إنستاباي</span><span class="chip">فودافون كاش</span></div>
+        <div class="hint">حدّد كيف ستحصّل. يمكنك تحديد من دفع فعليًا بعد الحصة، حتى لو دفع الطالب لاحقًا.</div>
+        <div style="height:8px"></div>
+        <div class="primary">إنهاء الحصة وفوترة ٢ طلاب</div>
+        <div class="cancel-live">إلغاء الجلسة الجارية</div>
+      </div>
+    </div></div></div>
+
+    <!-- 7 · SESSION RECORD · AR -->
+    <div class="frame"><span class="cap">AR · session record</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl">فيزياء</div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="subhd">الأحد ٢٠ يوليو · ٤:٠٠–٥:٠٠ م</div>
+      <div class="body">
+        <div class="banner done"><span class="bt"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1a6d4d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>انتهت الحصة · مُسجّلة</span><span class="timer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5"/><path d="M9.5 2.5h5"/><path d="M18.5 8l1.3-1.3"/></svg>٥٨:٢٠</span></div>
+        <div class="lbl">المفوتر<a>تذكير الكل</a></div>
+        <div class="bill"><div class="billtop"><div class="bn">سليم<svg class="bnq" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><span class="bamt money">٧٠٠ ج.م</span></div><div class="billbot"><span class="pill warn">للتحصيل</span><span class="mark">تأكيد التحصيل</span></div></div>
+        <div class="bill"><div class="billtop"><div class="bn">يوسف<svg class="bnq" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><span class="bamt money">٧٠٠ ج.م</span></div><div class="billbot"><span class="pill ok">مدفوع</span><span class="paidby">نقدًا · اليوم</span></div></div>
+        <div class="lbl">الملخّص</div>
+        <div class="sum">
+          <div class="sumrow"><span class="sk">إجمالي الفوترة</span><span class="sv money">١٬٤٠٠ ج.م</span></div>
+          <div class="sumrow"><span class="sk">المحصّل</span><span class="sv col money">٧٠٠ ج.م</span></div>
+          <div class="sumrow"><span class="sk">المتبقّي</span><span class="sv out money">٧٠٠ ج.م</span></div>
+        </div>
+        <div class="sec">عرض في المجموعة</div>
+      </div>
+    </div></div></div>
+
+    <!-- 8 · MARK COLLECTED SHEET · AR -->
+    <div class="frame"><span class="cap">AR · mark collected</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="sheetwrap"><div class="sheet">
+        <div class="grab"></div>
+        <div class="shead"><div class="sh1">تأكيد التحصيل</div><div class="sx"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+        <div class="ssub">سليم · فيزياء · الأحد ٢٠ يوليو</div>
+        <div class="amtbig"><div class="av money">٧٠٠ ج.م</div><div class="al">المبلغ المستحق لهذه الحصة</div></div>
+        <div class="flabel">كيف دفع؟</div>
+        <div class="chips"><span class="chip on">نقدًا</span><span class="chip">إنستاباي</span><span class="chip">فودافون كاش</span></div>
+        <div class="field" style="margin-top:12px"><div class="flabel">تاريخ التحصيل</div><div class="input">اليوم · ٢٠ يوليو<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#80827a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div></div>
+        <div class="send">تأكيد التحصيل</div>
+      </div></div>
+    </div></div></div>
+
+  </div>
+</div>
+</div>
+<div class="mgd-sec" id="Merged-Teacher-Groups-5">
+  <div class="mgd-bar"><span class="mgd-num">05</span><span class="mgd-name">Teacher Class Session Verified</span><span class="mgd-src">Screen-Teacher-Class-Session-Verified.html</span></div>
+</div>
+<div class="mgd5">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#6f4e12;background:#f4ebd7;border:1px solid #e6d3a9;padding:5px 11px;border-radius:999px">Teacher · Class session · Verified · Draft</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Class session · verified</h1>
+    <p style="margin:0;max-width:82ch;font-size:17px;line-height:1.55;color:#5d635c">The same class flow for a <b>verified</b> teacher, where both models live together. Each present student is either <b>Digital</b> (TutoringHQ invoices the parent, collects it, holds it in Pending, then processes it to your account on Thursday) or <b>cash</b> you take in person, which stays yours and you confirm manually. Pre-class is identical to the self-collect flow. No percentage or fee is shown, only take-home and status. Pressing Cash needs a quick confirm (the green button keeps Digital), and the in-progress screen shows where Digital lands. English and Arabic. Design only; verified payout is draft, pending legal review.</p>
+  </div>
+  <div class="phones">
+
+    <!-- IN PROGRESS · EN -->
+    <div class="frame"><span class="cap">EN · in progress</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Physics<span class="vchip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Verified</span></div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="subhd">Sunday 20 Jul · 4:00–5:00 PM</div>
+      <div class="body">
+        <div class="banner"><span class="bt"><span class="bdot"></span>Class in progress</span><span class="timer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5"/><path d="M9.5 2.5h5"/><path d="M18.5 8l1.3-1.3"/></svg>24:18</span></div>
+        <div class="lbl">Attendance &amp; collection<a>Select all</a></div>
+        <div class="crow"><div class="crtop"><div class="box on"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="an">selim<svg class="anq" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div></div><div class="seg"><span class="segopt on">Digital</span><span class="segopt">Cash</span></div><div class="crcap good"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span>Paid to your account automatically</span></div></div>
+        <div class="crow"><div class="crtop"><div class="box on"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="an">Youssef<svg class="anq" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div></div><div class="seg"><span class="segopt">Digital</span><span class="segopt oncash">Cash</span></div><div class="crcap manual"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>You collect and confirm this one yourself</span></div></div>
+        <div class="present">2 present · Digital set for all</div>
+        <div class="help"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><div>Tick a student and they default to <b>Digital</b>, paid to your account automatically with no chasing. Use <b>Select all</b> for the whole class in one tap. Press <b>Cash</b> for someone only if they paid you in hand, and you collect and confirm that one yourself.</div></div>
+        <div class="acct"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M4 21V10l8-5 8 5v11M9 21v-6h6v6"/></svg><div>Digital lands in your <b class="mono" dir="ltr">CIB ••7890</b> account, held in Pending then processed each Thursday</div></div>
+        <div class="lock"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div class="lt">Guest attendees are on the Pro plan<a>Upgrade your plan</a></div></div>
+        <div class="primary">End class and bill 2 students</div>
+        <div class="cancel-live">Cancel live session</div>
+      </div>
+    </div></div></div>
+
+    <!-- SESSION RECORD · EN -->
+    <div class="frame"><span class="cap">EN · session record</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Physics<span class="vchip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Verified</span></div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="subhd">Sunday 20 Jul · 4:00–5:00 PM</div>
+      <div class="body">
+        <div class="banner"><span class="bt"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1a6d4d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Class ended · recorded</span><span class="timer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5"/><path d="M9.5 2.5h5"/><path d="M18.5 8l1.3-1.3"/></svg>58:20</span></div>
+        <div class="lbl">Billed</div>
+        <div class="bill"><div class="billtop"><div class="bn">selim<svg class="bnq" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><span class="bamt money">700 EGP</span></div><div class="billbot"><span class="pill info">Collecting</span><span class="paidby">Digital · invoiced for you</span></div></div>
+        <div class="bill"><div class="billtop"><div class="bn">Youssef<svg class="bnq" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><span class="bamt money">700 EGP</span></div><div class="billbot"><span class="pill warn">Cash · to collect</span><span class="mark">Mark collected</span></div></div>
+        <div class="lbl">Summary</div>
+        <div class="sum">
+          <div class="sumrow"><span class="sk">Total billed</span><span class="sv money">1,400 EGP</span></div>
+          <div class="sumrow"><span class="sk">Digital</span><span class="sv money">700 EGP</span></div>
+          <div class="sumrow"><span class="sk">Cash to collect</span><span class="sv out money">700 EGP</span></div>
+        </div>
+        <div class="paynote"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><div>Digital classes are invoiced, chased and held in Pending, then processed to your account each Thursday. Your earnings show in Income.</div></div>
+        <div class="sec">View in group</div>
+      </div>
+    </div></div></div>
+
+    <!-- IN PROGRESS · AR -->
+    <div class="frame"><span class="cap">AR · in progress</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl">فيزياء<span class="vchip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>موثّق</span></div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="subhd">الأحد ٢٠ يوليو · ٤:٠٠–٥:٠٠ م</div>
+      <div class="body">
+        <div class="banner"><span class="bt"><span class="bdot"></span>الحصة جارية</span><span class="timer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5"/><path d="M9.5 2.5h5"/><path d="M18.5 8l1.3-1.3"/></svg>٢٤:١٨</span></div>
+        <div class="lbl">الحضور والتحصيل<a>تحديد الكل</a></div>
+        <div class="crow"><div class="crtop"><div class="box on"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="an">سليم<svg class="anq" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div></div><div class="seg"><span class="segopt on">رقمي</span><span class="segopt">نقدًا</span></div><div class="crcap good"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span>يُحوَّل إلى حسابك تلقائيًا</span></div></div>
+        <div class="crow"><div class="crtop"><div class="box on"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="an">يوسف<svg class="anq" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div></div><div class="seg"><span class="segopt">رقمي</span><span class="segopt oncash">نقدًا</span></div><div class="crcap manual"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>ستُحصّل هذه بنفسك وتؤكّدها</span></div></div>
+        <div class="present">٢ حاضران · رقمي للجميع</div>
+        <div class="help"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><div>علّم حضور الطالب فيُضبط تلقائيًا على <b>رقمي</b>، ويُحوَّل إلى حسابك دون متابعة. استخدم <b>«تحديد الكل»</b> للصف بأكمله بضغطة واحدة. اضغط <b>نقدًا</b> لأحدهم فقط إذا دفع لك بيده، وعندها تُحصّله وتؤكّده بنفسك.</div></div>
+        <div class="acct"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M4 21V10l8-5 8 5v11M9 21v-6h6v6"/></svg><div>الأموال الرقمية تُحتجَز في الرصيد المعلّق ثم تُعالَج إلى حسابك <b class="mono" dir="ltr">CIB ••7890</b> كل خميس</div></div>
+        <div class="lock"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div class="lt">الحضور الضيوف في باقة Pro<a>ترقية باقتك</a></div></div>
+        <div class="primary">إنهاء الحصة وفوترة ٢ طلاب</div>
+        <div class="cancel-live">إلغاء الجلسة الجارية</div>
+      </div>
+    </div></div></div>
+
+    <!-- SESSION RECORD · AR -->
+    <div class="frame"><span class="cap">AR · session record</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl">فيزياء<span class="vchip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>موثّق</span></div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="subhd">الأحد ٢٠ يوليو · ٤:٠٠–٥:٠٠ م</div>
+      <div class="body">
+        <div class="banner"><span class="bt"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1a6d4d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>انتهت الحصة · مُسجّلة</span><span class="timer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5"/><path d="M9.5 2.5h5"/><path d="M18.5 8l1.3-1.3"/></svg>٥٨:٢٠</span></div>
+        <div class="lbl">المفوتر</div>
+        <div class="bill"><div class="billtop"><div class="bn">سليم<svg class="bnq" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><span class="bamt money">٧٠٠ ج.م</span></div><div class="billbot"><span class="pill info">قيد التحصيل</span><span class="paidby">رقمي · نُفوتر نيابةً عنك</span></div></div>
+        <div class="bill"><div class="billtop"><div class="bn">يوسف<svg class="bnq" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><span class="bamt money">٧٠٠ ج.م</span></div><div class="billbot"><span class="pill warn">نقدًا · للتحصيل</span><span class="mark">تأكيد التحصيل</span></div></div>
+        <div class="lbl">الملخّص</div>
+        <div class="sum">
+          <div class="sumrow"><span class="sk">إجمالي الفوترة</span><span class="sv money">١٬٤٠٠ ج.م</span></div>
+          <div class="sumrow"><span class="sk">رقمي</span><span class="sv money">٧٠٠ ج.م</span></div>
+          <div class="sumrow"><span class="sk">نقد للتحصيل</span><span class="sv out money">٧٠٠ ج.م</span></div>
+        </div>
+        <div class="paynote"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><div>الحصص الرقمية تُفوتَر وتُتابَع وتُحتجَز في الرصيد المعلّق ثم تُعالَج إلى حسابك كل خميس، وتظهر أرباحك في «الدخل».</div></div>
+        <div class="sec">عرض في المجموعة</div>
+      </div>
+    </div></div></div>
+
+
+    <!-- CASH CONFIRM SHEET · EN -->
+    <div class="frame"><span class="cap">EN · switching to Cash?</span>
+    <div class="phone"><div dir="ltr" class="screen sheetscreen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Physics<span class="vchip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Verified</span></div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="subhd">Sunday 20 Jul · 4:00–5:00 PM</div>
+      <div class="body">
+        <div class="banner"><span class="bt"><span class="bdot"></span>Class in progress</span><span class="timer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5"/><path d="M9.5 2.5h5"/><path d="M18.5 8l1.3-1.3"/></svg>24:18</span></div>
+        <div class="lbl">Attendance &amp; collection<a>Select all</a></div>
+      </div>
+      <div class="sheetdim"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="sheetic warn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg></div>
+        <div class="sheettitle">Take Youssef in cash?</div>
+        <div class="sheetsub">Youssef pays you 700 in person. You collect it and mark it here yourself.</div>
+        <div class="sheetbox"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><div>Digital invoices the parent and holds 700 in Pending, then processes it to your account on Thursday, no chasing.</div></div>
+        <div class="primary">Keep Digital</div>
+        <div class="ghost">Take cash instead</div>
+      </div>
+    </div></div></div>
+
+    <!-- CASH CONFIRM SHEET · AR -->
+    <div class="frame"><span class="cap">AR · switching to Cash?</span>
+    <div class="phone"><div dir="rtl" class="screen sheetscreen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span class="num">&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl">فيزياء<span class="vchip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>موثّق</span></div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="subhd">الأحد ٢٠ يوليو · ٤:٠٠–٥:٠٠ م</div>
+      <div class="body">
+        <div class="banner"><span class="bt"><span class="bdot"></span>الحصة جارية</span><span class="timer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5"/><path d="M9.5 2.5h5"/><path d="M18.5 8l1.3-1.3"/></svg>٢٤:١٨</span></div>
+        <div class="lbl">الحضور والتحصيل<a>تحديد الكل</a></div>
+      </div>
+      <div class="sheetdim"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="sheetic warn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg></div>
+        <div class="sheettitle">تأخذ يوسف نقدًا؟</div>
+        <div class="sheetsub">سيدفع لك يوسف ٧٠٠ نقدًا بيده. ستُحصّلها وتؤكّدها هنا بنفسك.</div>
+        <div class="sheetbox"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><div>الرقمي يُرسل الفاتورة لولي الأمر ويحتجز ٧٠٠ في الرصيد المعلّق ثم يعالجها إلى حسابك يوم الخميس دون متابعة.</div></div>
+        <div class="primary">الإبقاء على رقمي</div>
+        <div class="ghost">خذها نقدًا بدلًا من ذلك</div>
+      </div>
+    </div></div></div>
+  </div>
+</div>
+</div>
+</body></html>

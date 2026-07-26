@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<!--
+================================================================
+ TutoringHQ · MERGED DESIGN REFERENCE
+ File: Merged-Design-Patterns.html
+ Reference · Design patterns
+
+ CONTENTS (4 screens):
+  01. Row action patterns   <-  Screen-Row-action-patterns.html
+  02. Quick menu rows   <-  Screen-Quick-menu-rows.html
+  03. Group actions   <-  Screen-Group-actions.html
+  04. Expand sheet merge   <-  Screen-Expand-sheet-merge.html
+
+----------------------------------------------------------------
+ HOW TO READ THIS FILE WHEN IMPLEMENTING IT
+----------------------------------------------------------------
+ 1. CSS IS SCOPED. Every rule carries a .mgdN prefix so that
+    several screens can share one page without their styles
+    colliding.
+        in this file:   .mgd4 .pins{ ... }
+        in your code:   .pins{ ... }
+    Strip the .mgdN prefix. It is bookkeeping for this reference
+    file only and must never reach the codebase.
+
+ 2. ONE SECTION = ONE SCREEN. Each section bar shows its number,
+    its name, and the original screen file it came from. Use that
+    filename as the screen's identity, not the section number.
+
+ 3. FRAMES ARE STATES, NOT PAGES. Each phone inside a section is
+    one state of that screen (empty, filled, error, and so on).
+    The caption under or above each phone names the state.
+
+ 4. THE TWO LANGUAGES ARE SEPARATE SCREENS. English and Arabic
+    are never a translation overlay. Arabic frames use Eastern
+    Arabic numerals (0-9 written as Arabic-Indic) and the Arabic
+    currency mark. English frames use Western numerals and EGP.
+    Directional icons such as chevrons flip with the language.
+
+ 5. SAMPLE DATA IS PLACEHOLDER. Names, amounts, dates and phone
+    numbers are illustrative. Do not treat them as fixtures or
+    seed data.
+
+ 6. THIS IS DESIGN, NOT PRODUCTION CODE. Markup here is built to
+    be read, not shipped. Take the layout, spacing, type scale
+    and colour decisions from it. Do not copy the DOM wholesale.
+
+ 7. ANY UI OR BRANDING CHANGE BUMPS SW_VERSION in public/sw.js.
+================================================================
+-->
+
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reference · Design patterns · TutoringHQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+html{background:#d8d3c6;color-scheme:light}
+:root{color-scheme:light}
+
+html,body{margin:0;padding:0}
+body{background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased}
+.mgd-top{max-width:1180px;margin:0 auto;padding:44px 24px 8px;color:#1b201d}
+.mgd-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5d635c;font-weight:600}
+.mgd-h1{font-size:42px;line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:12px 0 10px}
+.mgd-lede{font-size:16px;line-height:1.55;color:#5d635c;max-width:82ch;margin:0}
+.mgd-toc{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 0}
+.mgd-toc a{font-size:12.5px;font-weight:600;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:6px 12px;border-radius:999px;text-decoration:none}
+.mgd-sec{max-width:1180px;margin:0 auto;padding:14px 24px 0}
+.mgd-bar{display:flex;align-items:baseline;gap:12px;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin-top:34px}
+.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a5e16;font-weight:500}
+.mgd-name{font-size:22px;font-weight:700;color:#14181a;letter-spacing:-.01em}
+.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#80827a}
+/* ===== Screen-Row-action-patterns ===== */
+.mgd1 *{box-sizing:border-box}
+.mgd1{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd1 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.mgd1 .mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.mgd1 svg{display:block;flex-shrink:0}
+.mgd1 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd1 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd1 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd1 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 10px}
+.mgd1 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd1 .body{flex:1;overflow-y:auto;padding:2px 16px 8px;display:flex;flex-direction:column;gap:10px}
+.mgd1 .hint{font-size:11px;color:#80827a;text-align:center;margin:2px 0 2px;display:flex;align-items:center;justify-content:center;gap:5px}
+.mgd1 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 9px;border-radius:999px;white-space:nowrap;flex-shrink:0}
+.mgd1 .lrow{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 2px rgba(28,33,30,.05)}
+.mgd1 .av{width:40px;height:40px;border-radius:12px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0}
+.mgd1 .nm{font-size:15px;font-weight:600}
+.mgd1 .mt{font-size:12px;color:#80827a}
+.mgd1 .kb{color:#a6a79d;flex-shrink:0}
+.mgd1 /* swipe */
+  .swrap{position:relative;overflow:hidden;border-radius:14px;box-shadow:0 1px 2px rgba(28,33,30,.05)}
+.mgd1 .sact{position:absolute;top:0;bottom:0;right:0;display:flex}
+.mgd1 .sbtn{width:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#fff;font-size:10px;font-weight:600}
+.mgd1 .srowc{position:relative;transform:translateX(-192px);background:#fffdf8;border:1px solid #e2ddd1;border-inline:none;padding:12px 14px;display:flex;align-items:center;gap:12px;height:100%}
+.mgd1 /* inline expand */
+  .expcard{background:#fffdf8;border:1px solid #0e6b61;border-radius:16px;padding:14px;box-shadow:0 0 0 2px rgba(14,107,97,.14);display:flex;flex-direction:column;gap:12px}
+.mgd1 .exphead{display:flex;align-items:center;gap:12px}
+.mgd1 .expacts{display:flex;gap:8px}
+.mgd1 .chip{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 4px;border:1px solid #e2ddd1;border-radius:12px;background:#faf7f0;font-size:11px;font-weight:600;color:#3a3f3a}
+.mgd1 .chip svg{color:#0e6b61}
+.mgd1 .chip.pri{background:#0e6b61;color:#fff;border-color:#0e6b61}
+.mgd1 .chip.pri svg{color:#fff}
+.mgd1 /* long-press popover */
+  .scrim{position:absolute;inset:0;background:rgba(20,24,22,.44)}
+.mgd1 .floatg{position:absolute;left:16px;right:16px;top:150px;z-index:5;display:flex;flex-direction:column;gap:10px}
+.mgd1 .liftrow{background:#fffdf8;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(28,33,30,.30)}
+.mgd1 .pop{background:#fffdf8;border-radius:16px;box-shadow:0 12px 40px rgba(28,33,30,.28);padding:5px 6px}
+.mgd1 .popact{display:flex;align-items:center;gap:12px;padding:11px 10px}
+.mgd1 .popact+.popact{border-top:1px solid #f2eee5}
+.mgd1 .popact svg{color:#0e6b61}
+.mgd1 .popact .pt{font-size:14px;font-weight:600}
+.mgd1 .popact.danger svg{color:#9c3322}
+.mgd1 .popact.danger .pt{color:#9c3322}
+.mgd1 /* always-on icons */
+  .minibtn{width:34px;height:34px;border-radius:10px;background:#f2eee5;display:flex;align-items:center;justify-content:center;color:#5d635c;flex-shrink:0}
+.mgd1 .minibtn.pay{background:#dfeeeb;color:#0a514a}
+.mgd1 .board{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
+.mgd1 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd1 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd1 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+/* ===== Screen-Quick-menu-rows ===== */
+.mgd2 *{box-sizing:border-box}
+.mgd2{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd2 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.mgd2 .mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.mgd2 svg{display:block;flex-shrink:0}
+.mgd2 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd2 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd2 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd2 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 10px}
+.mgd2 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd2 .body{flex:1;overflow-y:auto;padding:2px 16px 8px;display:flex;flex-direction:column;gap:10px}
+.mgd2 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 9px;border-radius:999px;white-space:nowrap;flex-shrink:0}
+.mgd2 .lrow{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 2px rgba(28,33,30,.05)}
+.mgd2 .lrow.sel{border-color:#0e6b61;box-shadow:0 0 0 2px rgba(14,107,97,.16)}
+.mgd2 .av{width:40px;height:40px;border-radius:12px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0}
+.mgd2 .timeblk{width:46px;text-align:center;flex-shrink:0}
+.mgd2 .timeblk .t1{font-size:15px;font-weight:600;line-height:1.1}
+.mgd2 .timeblk .t2{font-size:11px;color:#80827a}
+.mgd2 .kb{color:#a6a79d;flex-shrink:0}
+.mgd2 /* bottom sheet */
+  .scrim{position:absolute;inset:0;background:rgba(20,24,22,.42)}
+.mgd2 .sheet{position:absolute;left:0;right:0;bottom:0;background:#fffdf8;border-radius:24px 24px 0 0;padding:8px 16px 22px;box-shadow:0 -8px 30px rgba(28,33,30,.18)}
+.mgd2 .grab{width:38px;height:4px;border-radius:999px;background:#e2ddd1;margin:6px auto 12px}
+.mgd2 .sheet-h{display:flex;flex-direction:column;gap:3px;padding:0 2px 8px}
+.mgd2 .act{display:flex;align-items:center;gap:13px;padding:12px 4px;border-top:1px solid #f2eee5}
+.mgd2 .act .ai{width:40px;height:40px;border-radius:11px;background:#f2eee5;display:flex;align-items:center;justify-content:center;color:#0e6b61;flex-shrink:0}
+.mgd2 .act .al{flex:1}
+.mgd2 .act .al .t{font-size:15px;font-weight:600;display:flex;align-items:center;gap:7px}
+.mgd2 .act .al .s{font-size:12px;color:#80827a;margin-top:1px}
+.mgd2 .act.danger .ai{background:#f4e5e2;color:#9c3322}
+.mgd2 .act.danger .t{color:#9c3322}
+.mgd2 .mgr{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9a6b1f;background:#f4ebd7;padding:2px 6px;border-radius:6px}
+.mgd2 .chev{color:#a6a79d}
+.mgd2 .board{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
+.mgd2 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd2 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd2 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+/* ===== Screen-Group-actions ===== */
+.mgd3 *{box-sizing:border-box}
+.mgd3{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd3 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.mgd3 .mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.mgd3 svg{display:block;flex-shrink:0}
+.mgd3 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd3 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd3 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd3 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 10px}
+.mgd3 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd3 .body{flex:1;overflow-y:auto;padding:2px 16px 8px;display:flex;flex-direction:column;gap:12px}
+.mgd3 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 9px;border-radius:999px;white-space:nowrap;flex-shrink:0}
+.mgd3 .seg{display:flex;background:#f2eee5;border-radius:12px;padding:4px;gap:4px}
+.mgd3 .seg .s{flex:1;text-align:center;font-size:13px;font-weight:600;color:#5d635c;padding:8px 0;border-radius:9px}
+.mgd3 .seg .s.on{background:#fffdf8;color:#0a514a;box-shadow:0 1px 2px rgba(28,33,30,.06)}
+.mgd3 .gcard{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:14px;box-shadow:0 1px 2px rgba(28,33,30,.05);display:flex;flex-direction:column;gap:10px}
+.mgd3 .gcard.sel{border-color:#0e6b61;box-shadow:0 0 0 2px rgba(14,107,97,.16)}
+.mgd3 .capbar{height:7px;background:#f2eee5;border-radius:999px;overflow:hidden}
+.mgd3 .capbar>i{display:block;height:100%;border-radius:999px;background:#0e6b61}
+.mgd3 .tiles{display:flex;gap:10px}
+.mgd3 .tile{flex:1;background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:12px 14px}
+.mgd3 .tile .n{font-size:22px;font-weight:700;line-height:1}
+.mgd3 .tile .l{font-size:12px;color:#80827a;margin-top:4px}
+.mgd3 .mrow{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #eee7d9}
+.mgd3 .av{width:40px;height:40px;border-radius:12px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0}
+.mgd3 /* action bar */
+  .actionbar{border-top:1px solid #e2ddd1;background:#fffdf8;padding:12px 16px;display:flex;gap:10px;align-items:center;flex-shrink:0}
+.mgd3 .btn-primary{flex:1;height:50px;background:#0e6b61;color:#fffdf8;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28)}
+.mgd3 .iconbtn{width:50px;height:50px;border-radius:14px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd3 /* bottom sheet */
+  .scrim{position:absolute;inset:0;background:rgba(20,24,22,.42)}
+.mgd3 .sheet{position:absolute;left:0;right:0;bottom:0;background:#fffdf8;border-radius:24px 24px 0 0;padding:8px 16px 22px;box-shadow:0 -8px 30px rgba(28,33,30,.18)}
+.mgd3 .grab{width:38px;height:4px;border-radius:999px;background:#e2ddd1;margin:6px auto 12px}
+.mgd3 .sheet-h{display:flex;flex-direction:column;gap:3px;padding:0 2px 8px}
+.mgd3 .act{display:flex;align-items:center;gap:13px;padding:12px 4px;border-top:1px solid #f2eee5}
+.mgd3 .act .ai{width:40px;height:40px;border-radius:11px;background:#f2eee5;display:flex;align-items:center;justify-content:center;color:#0e6b61;flex-shrink:0}
+.mgd3 .act .al{flex:1}
+.mgd3 .act .al .t{font-size:15px;font-weight:600;display:flex;align-items:center;gap:7px}
+.mgd3 .act .al .s{font-size:12px;color:#80827a;margin-top:1px}
+.mgd3 .act.danger .ai{background:#f4e5e2;color:#9c3322}
+.mgd3 .act.danger .t{color:#9c3322}
+.mgd3 .mgr{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9a6b1f;background:#f4ebd7;padding:2px 6px;border-radius:6px}
+.mgd3 .board{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
+.mgd3 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd3 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd3 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+/* ===== Screen-Expand-sheet-merge ===== */
+.mgd4 *{box-sizing:border-box}
+.mgd4{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd4 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.mgd4 .mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.mgd4 svg{display:block;flex-shrink:0}
+.mgd4 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd4 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd4 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd4 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 10px}
+.mgd4 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd4 .body{flex:1;overflow-y:auto;padding:2px 16px 8px;display:flex;flex-direction:column;gap:10px}
+.mgd4 .hint{font-size:11px;color:#80827a;text-align:center;margin:2px 0;display:flex;align-items:center;justify-content:center;gap:5px}
+.mgd4 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 9px;border-radius:999px;white-space:nowrap;flex-shrink:0}
+.mgd4 .lrow{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 2px rgba(28,33,30,.05)}
+.mgd4 .av{width:40px;height:40px;border-radius:12px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0}
+.mgd4 .nm{font-size:15px;font-weight:600}
+.mgd4 .mt{font-size:12px;color:#80827a}
+.mgd4 .kb{color:#c4c4ba;flex-shrink:0}
+.mgd4 /* expand */
+  .expcard{background:#fffdf8;border:1px solid #0e6b61;border-radius:16px;padding:14px;box-shadow:0 0 0 2px rgba(14,107,97,.14);display:flex;flex-direction:column;gap:12px}
+.mgd4 .exphead{display:flex;align-items:center;gap:12px}
+.mgd4 .expacts{display:flex;gap:8px}
+.mgd4 .chip{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 4px;border:1px solid #e2ddd1;border-radius:12px;background:#faf7f0;font-size:11px;font-weight:600;color:#3a3f3a}
+.mgd4 .chip svg{color:#0e6b61}
+.mgd4 .chip.pri{background:#0e6b61;color:#fff;border-color:#0e6b61}
+.mgd4 .chip.pri svg{color:#fff}
+.mgd4 .chip.more{background:#f2eee5;border-style:dashed;color:#5d635c}
+.mgd4 .chip.more svg{color:#5d635c}
+.mgd4 /* sheet */
+  .scrim{position:absolute;inset:0;background:rgba(20,24,22,.42)}
+.mgd4 .sheet{position:absolute;left:0;right:0;bottom:0;background:#fffdf8;border-radius:24px 24px 0 0;padding:8px 16px 22px;box-shadow:0 -8px 30px rgba(28,33,30,.18)}
+.mgd4 .grab{width:38px;height:4px;border-radius:999px;background:#e2ddd1;margin:6px auto 12px}
+.mgd4 .sheet-h{display:flex;flex-direction:column;gap:3px;padding:0 2px 8px}
+.mgd4 .act{display:flex;align-items:center;gap:13px;padding:12px 4px;border-top:1px solid #f2eee5}
+.mgd4 .act .ai{width:40px;height:40px;border-radius:11px;background:#f2eee5;display:flex;align-items:center;justify-content:center;color:#0e6b61;flex-shrink:0}
+.mgd4 .act .al{flex:1}
+.mgd4 .act .al .t{font-size:15px;font-weight:600;display:flex;align-items:center;gap:7px}
+.mgd4 .act .al .s{font-size:12px;color:#80827a;margin-top:1px}
+.mgd4 .act.danger .ai{background:#f4e5e2;color:#9c3322}
+.mgd4 .act.danger .t{color:#9c3322}
+.mgd4 .mgr{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9a6b1f;background:#f4ebd7;padding:2px 6px;border-radius:6px}
+.mgd4 .chev{color:#a6a79d}
+.mgd4 .board{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
+.mgd4 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd4 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd4 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+.mgd4 .flowlink{display:flex;align-items:center;color:#9a6b1f;font-size:24px;align-self:center}
+</style>
+</head>
+<body>
+<div class="mgd-top">
+  <div class="mgd-eyebrow">TutoringHQ · Merged reference</div>
+  <h1 class="mgd-h1">Reference · Design patterns</h1>
+  <p class="mgd-lede">Row actions, quick menus, group actions and the expand-sheet. Patterns, not screens.</p>
+  <div class="mgd-toc"><a href="#Merged-Design-Patterns-1">Row action patterns</a><a href="#Merged-Design-Patterns-2">Quick menu rows</a><a href="#Merged-Design-Patterns-3">Group actions</a><a href="#Merged-Design-Patterns-4">Expand sheet merge</a></div>
+</div>
+<div class="mgd-sec" id="Merged-Design-Patterns-1">
+  <div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Row action patterns</span><span class="mgd-src">Screen-Row-action-patterns.html</span></div>
+</div>
+<div class="mgd1">
+
+<div class="board">
+
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+      <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39);box-shadow:0 2px 8px rgba(8,63,57,.35)"></div>
+      <span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Row action patterns</span>
+      <span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0e6b61;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:5px 11px;border-radius:999px">Lucide icons</span>
+    </div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Four other ways in</h1>
+    <p style="margin:0;max-width:74ch;font-size:17px;line-height:1.55;color:#5d635c">Same actions, different gesture, all on Youssef's row. <strong style="color:#1b201d;font-weight:600">Swipe</strong> reveals the top two fast. <strong style="color:#1b201d;font-weight:600">Tap to expand</strong> shows buttons in place without leaving the list. <strong style="color:#1b201d;font-weight:600">Press and hold</strong> floats a menu on the item itself. <strong style="color:#1b201d;font-weight:600">Always-on icons</strong> put the common actions on every row. Compare against the bottom sheet you already saw.</p>
+  </div>
+
+  <div class="phones">
+
+    <!-- ============ SWIPE ============ -->
+    <div class="frame">
+      <span class="mono" style="font-size:12px;color:#5d635c">Swipe actions</span>
+      <div class="phone"><div dir="ltr" class="screen">
+        <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+        <div class="topbar">
+          <div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+          <div style="flex:1"><div style="font-size:17px;font-weight:600;line-height:1.2">Students</div><div style="font-size:12px;color:#80827a">Al-Nahda · 128</div></div>
+          <div class="topbtn" style="background:#0e6b61;color:#fffdf8;border:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        </div>
+        <div class="body">
+          <div class="hint"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Youssef swiped left</div>
+          <div class="swrap" style="height:66px">
+            <div class="sact">
+              <div class="sbtn" style="background:#0e6b61"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>Pay</div>
+              <div class="sbtn" style="background:#2563eb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg>Message</div>
+              <div class="sbtn" style="background:#5d635c"><svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>More</div>
+            </div>
+            <div class="srowc"><div class="av">YA</div><div style="flex:1"><div class="nm">Youssef Adel</div><div class="mt">Grade 9 · Math</div></div><span class="badge" style="background:#f4e5e2;color:#9c3322">Owes 300</span></div>
+          </div>
+          <div class="lrow"><div class="av">MH</div><div style="flex:1"><div class="nm">Mariam Hassan</div><div class="mt">Grade 10 · Physics</div></div><span class="badge" style="background:#e4f0e9;color:#1a6d4d">Paid</span></div>
+          <div class="lrow"><div class="av">SA</div><div style="flex:1"><div class="nm">Sara Ahmed</div><div class="mt">Grade 10 · Physics</div></div><span class="badge" style="background:#f4ebd7;color:#8a5e16">At risk</span></div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ============ INLINE EXPAND ============ -->
+    <div class="frame">
+      <span class="mono" style="font-size:12px;color:#5d635c">Tap to expand in place</span>
+      <div class="phone"><div dir="ltr" class="screen">
+        <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+        <div class="topbar">
+          <div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+          <div style="flex:1"><div style="font-size:17px;font-weight:600;line-height:1.2">Students</div><div style="font-size:12px;color:#80827a">Al-Nahda · 128</div></div>
+          <div class="topbtn" style="background:#0e6b61;color:#fffdf8;border:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        </div>
+        <div class="body">
+          <div class="hint"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>Youssef tapped</div>
+          <div class="expcard">
+            <div class="exphead"><div class="av">YA</div><div style="flex:1"><div class="nm">Youssef Adel</div><div class="mt">Grade 9 · Math</div></div><span class="badge" style="background:#f4e5e2;color:#9c3322">Owes 300</span></div>
+            <div style="height:1px;background:#f2eee5;margin:0 -2px"></div>
+            <div class="expacts">
+              <div class="chip pri"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>Pay</div>
+              <div class="chip"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg>Message</div>
+              <div class="chip"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Open</div>
+              <div class="chip"><svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>More</div>
+            </div>
+          </div>
+          <div class="lrow"><div class="av">MH</div><div style="flex:1"><div class="nm">Mariam Hassan</div><div class="mt">Grade 10 · Physics</div></div><span class="badge" style="background:#e4f0e9;color:#1a6d4d">Paid</span></div>
+          <div class="lrow"><div class="av">SA</div><div style="flex:1"><div class="nm">Sara Ahmed</div><div class="mt">Grade 10 · Physics</div></div><span class="badge" style="background:#f4ebd7;color:#8a5e16">At risk</span></div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ============ LONG-PRESS FLOATING MENU ============ -->
+    <div class="frame">
+      <span class="mono" style="font-size:12px;color:#5d635c">Press and hold · floating menu</span>
+      <div class="phone"><div dir="ltr" class="screen">
+        <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+        <div class="topbar">
+          <div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+          <div style="flex:1"><div style="font-size:17px;font-weight:600;line-height:1.2">Students</div><div style="font-size:12px;color:#80827a">Al-Nahda · 128</div></div>
+          <div class="topbtn" style="background:#0e6b61;color:#fffdf8;border:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        </div>
+        <div class="body">
+          <div class="lrow"><div class="av">YA</div><div style="flex:1"><div class="nm">Youssef Adel</div><div class="mt">Grade 9 · Math</div></div><span class="badge" style="background:#f4e5e2;color:#9c3322">Owes 300</span></div>
+          <div class="lrow"><div class="av">MH</div><div style="flex:1"><div class="nm">Mariam Hassan</div><div class="mt">Grade 10 · Physics</div></div><span class="badge" style="background:#e4f0e9;color:#1a6d4d">Paid</span></div>
+          <div class="lrow"><div class="av">SA</div><div style="flex:1"><div class="nm">Sara Ahmed</div><div class="mt">Grade 10 · Physics</div></div><span class="badge" style="background:#f4ebd7;color:#8a5e16">At risk</span></div>
+        </div>
+        <div class="scrim"></div>
+        <div class="floatg">
+          <div class="liftrow"><div class="av">YA</div><div style="flex:1"><div class="nm">Youssef Adel</div><div class="mt">Grade 9 · Math</div></div><span class="badge" style="background:#f4e5e2;color:#9c3322">Owes 300</span></div>
+          <div class="pop">
+            <div class="popact"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg><span class="pt">Record payment</span></div>
+            <div class="popact"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg><span class="pt">Message parent</span></div>
+            <div class="popact"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="pt">Open student</span></div>
+            <div class="popact"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg><span class="pt">Move to group</span></div>
+            <div class="popact danger"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg><span class="pt">Remove</span></div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ============ ALWAYS-ON ICONS ============ -->
+    <div class="frame">
+      <span class="mono" style="font-size:12px;color:#5d635c">Always-on icons</span>
+      <div class="phone"><div dir="ltr" class="screen">
+        <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+        <div class="topbar">
+          <div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+          <div style="flex:1"><div style="font-size:17px;font-weight:600;line-height:1.2">Students</div><div style="font-size:12px;color:#80827a">Al-Nahda · 128</div></div>
+          <div class="topbtn" style="background:#0e6b61;color:#fffdf8;border:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        </div>
+        <div class="body">
+          <div class="hint">Common actions sit on every row</div>
+          <div class="lrow" style="gap:9px">
+            <div class="av">YA</div>
+            <div style="flex:1;min-width:0"><div class="nm">Youssef Adel</div><div class="mt" style="color:#9c3322">Grade 9 · owes 300</div></div>
+            <div class="minibtn pay"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></div>
+            <div class="minibtn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg></div>
+            <div class="minibtn"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div>
+          </div>
+          <div class="lrow" style="gap:9px">
+            <div class="av">MH</div>
+            <div style="flex:1;min-width:0"><div class="nm">Mariam Hassan</div><div class="mt">Grade 10 · paid</div></div>
+            <div class="minibtn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg></div>
+            <div class="minibtn"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div>
+          </div>
+          <div class="lrow" style="gap:9px">
+            <div class="av">SA</div>
+            <div style="flex:1;min-width:0"><div class="nm">Sara Ahmed</div><div class="mt" style="color:#8a5e16">Grade 10 · at risk</div></div>
+            <div class="minibtn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg></div>
+            <div class="minibtn"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+</div>
+
+</div>
+<div class="mgd-sec" id="Merged-Design-Patterns-2">
+  <div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">Quick menu rows</span><span class="mgd-src">Screen-Quick-menu-rows.html</span></div>
+</div>
+<div class="mgd2">
+
+<div class="board">
+
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+      <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39);box-shadow:0 2px 8px rgba(8,63,57,.35)"></div>
+      <span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Quick menu, everywhere</span>
+      <span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0e6b61;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:5px 11px;border-radius:999px">Lucide icons</span>
+    </div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">The same menu on every row</h1>
+    <p style="margin:0;max-width:74ch;font-size:17px;line-height:1.55;color:#5d635c">One sheet, one gesture. The three-dot opens it, and the actions inside change to fit the row. A <strong style="color:#1b201d;font-weight:600">student</strong> offers payment and parent contact, a <strong style="color:#1b201d;font-weight:600">session</strong> offers attendance and reschedule, a <strong style="color:#1b201d;font-weight:600">teacher</strong> offers messaging and proposals. Manager-only actions stay tagged. Shown on a student, a session, a teacher, then a student in Arabic.</p>
+  </div>
+
+  <div class="phones">
+
+    <!-- ============ EN · STUDENT ROW ============ -->
+    <div class="frame">
+      <span class="mono" style="font-size:12px;color:#5d635c">EN · student row</span>
+      <div class="phone"><div dir="ltr" class="screen">
+        <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+        <div class="topbar">
+          <div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+          <div style="flex:1"><div style="font-size:17px;font-weight:600;line-height:1.2">Students</div><div style="font-size:12px;color:#80827a">Al-Nahda · 128</div></div>
+          <div class="topbtn" style="background:#0e6b61;color:#fffdf8;border:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        </div>
+        <div class="body" style="filter:blur(.4px)">
+          <div class="lrow sel"><div class="av">YA</div><div style="flex:1"><div style="font-size:15px;font-weight:600">Youssef Adel</div><div style="font-size:12px;color:#80827a">Grade 9 · Math</div></div><span class="badge" style="background:#f4e5e2;color:#9c3322">Owes 300</span><div class="kb"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div></div>
+          <div class="lrow"><div class="av">MH</div><div style="flex:1"><div style="font-size:15px;font-weight:600">Mariam Hassan</div><div style="font-size:12px;color:#80827a">Grade 10 · Physics</div></div><span class="badge" style="background:#e4f0e9;color:#1a6d4d">Paid</span></div>
+          <div class="lrow"><div class="av">SA</div><div style="flex:1"><div style="font-size:15px;font-weight:600">Sara Ahmed</div><div style="font-size:12px;color:#80827a">Grade 10 · Physics</div></div><span class="badge" style="background:#f4ebd7;color:#8a5e16">At risk</span></div>
+        </div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="sheet-h"><div style="font-size:16px;font-weight:600">Youssef Adel</div><div style="font-size:12px;color:#80827a">Grade 9 · Math group</div></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></div><div class="al"><div class="t">Record payment</div><div class="s num">Owes 300 EGP</div></div></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg></div><div class="al"><div class="t">Message parent</div><div class="s">WhatsApp</div></div></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="al"><div class="t">Open student</div><div class="s">Profile, fees, attendance</div></div><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div><div class="al"><div class="t">Move to group</div><div class="s">Change group</div></div></div>
+          <div class="act danger"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></div><div class="al"><div class="t">Remove from center <span class="mgr">Manager</span></div><div class="s">Ends enrollment</div></div></div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ============ EN · SESSION ROW ============ -->
+    <div class="frame">
+      <span class="mono" style="font-size:12px;color:#5d635c">EN · session row</span>
+      <div class="phone"><div dir="ltr" class="screen">
+        <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+        <div class="topbar">
+          <div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+          <div style="flex:1"><div style="font-size:17px;font-weight:600;line-height:1.2">Schedule</div><div style="font-size:12px;color:#80827a">Sunday 13</div></div>
+          <div class="topbtn" style="background:#0e6b61;color:#fffdf8;border:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        </div>
+        <div class="body" style="filter:blur(.4px)">
+          <div class="lrow" style="opacity:.6"><div class="timeblk"><div class="t1 num">3:00</div><div class="t2">PM</div></div><div style="flex:1"><div style="font-size:15px;font-weight:600">Chemistry · Grade 11</div><div style="font-size:12px;color:#80827a num">Room 2 · done</div></div></div>
+          <div class="lrow sel"><div class="timeblk"><div class="t1 num">4:00</div><div class="t2">PM</div></div><div style="flex:1"><div style="font-size:15px;font-weight:600">Physics · Grade 10</div><div style="font-size:12px;color:#80827a" class="num">Room 2 · 24 students</div></div><span class="badge" style="background:#dfeeeb;color:#0a514a">● Now</span><div class="kb"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div></div>
+          <div class="lrow"><div class="timeblk"><div class="t1 num">5:30</div><div class="t2">PM</div></div><div style="flex:1"><div style="font-size:15px;font-weight:600">Math · Grade 9</div><div style="font-size:12px;color:#80827a" class="num">Room 1 · 30 students</div></div></div>
+        </div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="sheet-h"><div style="font-size:16px;font-weight:600">Physics · Grade 10</div><div style="font-size:12px;color:#80827a" class="num">Today 4:00 PM · Room 2</div></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div class="al"><div class="t">Take attendance</div><div class="s num">24 students</div></div></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></div><div class="al"><div class="t">Edit session</div><div class="s">Time or room</div></div></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg></div><div class="al"><div class="t">Message group</div><div class="s">WhatsApp to parents</div></div></div>
+          <div class="act danger"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div><div class="al"><div class="t">Cancel session <span class="mgr">Manager</span></div><div class="s">Notify parents</div></div></div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ============ EN · TEACHER ROW ============ -->
+    <div class="frame">
+      <span class="mono" style="font-size:12px;color:#5d635c">EN · teacher row</span>
+      <div class="phone"><div dir="ltr" class="screen">
+        <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+        <div class="topbar">
+          <div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+          <div style="flex:1"><div style="font-size:17px;font-weight:600;line-height:1.2">My Teachers</div><div style="font-size:12px;color:#80827a">Al-Nahda · 6</div></div>
+          <div class="topbtn" style="background:#0e6b61;color:#fffdf8;border:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        </div>
+        <div class="body" style="filter:blur(.4px)">
+          <div class="lrow sel"><div class="av" style="background:#f4ebd7;color:#9a6b1f">SA</div><div style="flex:1"><div style="font-size:15px;font-weight:600">Mr. Sherif Adel</div><div style="font-size:12px;color:#80827a">Chemistry · center 30%</div></div><div class="kb"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div></div>
+          <div class="lrow"><div class="av" style="background:#f4ebd7;color:#9a6b1f">DF</div><div style="flex:1"><div style="font-size:15px;font-weight:600">Ms. Dina Fouad</div><div style="font-size:12px;color:#80827a">English · center 25%</div></div></div>
+          <div class="lrow"><div class="av" style="background:#dfeeeb;color:#0a514a">HK</div><div style="flex:1"><div style="font-size:15px;font-weight:600">Mr. Hazem Kamal</div><div style="font-size:12px;color:#80827a">Biology · center group</div></div></div>
+        </div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="sheet-h"><div style="font-size:16px;font-weight:600">Mr. Sherif Adel</div><div style="font-size:12px;color:#80827a">Chemistry · center's cut 30%</div></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg></div><div class="al"><div class="t">Message teacher</div><div class="s">WhatsApp</div></div></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 12v6M9 15h6"/></svg></div><div class="al"><div class="t">New proposal</div><div class="s">Offer a group or slot</div></div></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="al"><div class="t">Open teacher</div><div class="s">Groups, split, history</div></div><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></div><div class="al"><div class="t">Adjust cut <span class="mgr">Manager</span></div><div class="s num">Currently 30%</div></div></div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ============ AR · STUDENT ROW ============ -->
+    <div class="frame">
+      <span class="mono" style="font-size:12px;color:#5d635c">AR · RTL · student row</span>
+      <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic',sans-serif;letter-spacing:0">
+        <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+        <div class="topbar">
+          <div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+          <div style="flex:1"><div style="font-size:17px;font-weight:600;line-height:1.2">الطلاب</div><div style="font-size:12px;color:#80827a">النهضة · ١٢٨</div></div>
+          <div class="topbtn" style="background:#0e6b61;color:#fffdf8;border:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        </div>
+        <div class="body" style="filter:blur(.4px)">
+          <div class="lrow sel"><div class="av">يع</div><div style="flex:1"><div style="font-size:15px;font-weight:600">يوسف عادل</div><div style="font-size:12px;color:#80827a">الصف التاسع · رياضيات</div></div><span class="badge" style="background:#f4e5e2;color:#9c3322">يدين ٣٠٠</span><div class="kb"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div></div>
+          <div class="lrow"><div class="av">مح</div><div style="flex:1"><div style="font-size:15px;font-weight:600">مريم حسن</div><div style="font-size:12px;color:#80827a">الصف العاشر · فيزياء</div></div><span class="badge" style="background:#e4f0e9;color:#1a6d4d">مدفوع</span></div>
+          <div class="lrow"><div class="av">سأ</div><div style="flex:1"><div style="font-size:15px;font-weight:600">سارة أحمد</div><div style="font-size:12px;color:#80827a">الصف العاشر · فيزياء</div></div><span class="badge" style="background:#f4ebd7;color:#8a5e16">متابعة</span></div>
+        </div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="sheet-h"><div style="font-size:16px;font-weight:600">يوسف عادل</div><div style="font-size:12px;color:#80827a">الصف التاسع · مجموعة الرياضيات</div></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></div><div class="al"><div class="t">تسجيل دفعة</div><div class="s num">يدين ٣٠٠ ج.م</div></div></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg></div><div class="al"><div class="t">مراسلة ولي الأمر</div><div class="s">واتساب</div></div></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="al"><div class="t">فتح ملف الطالب</div><div class="s">الرسوم والحضور</div></div><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div><div class="al"><div class="t">نقل لمجموعة</div><div class="s">تغيير المجموعة</div></div></div>
+          <div class="act danger"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></div><div class="al"><div class="t">إزالة من السنتر <span class="mgr">مدير</span></div><div class="s">إنهاء التسجيل</div></div></div>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+</div>
+
+</div>
+<div class="mgd-sec" id="Merged-Design-Patterns-3">
+  <div class="mgd-bar"><span class="mgd-num">03</span><span class="mgd-name">Group actions</span><span class="mgd-src">Screen-Group-actions.html</span></div>
+</div>
+<div class="mgd3">
+
+<div class="board">
+
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+      <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39);box-shadow:0 2px 8px rgba(8,63,57,.35)"></div>
+      <span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Group actions</span>
+      <span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0e6b61;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:5px 11px;border-radius:999px">Lucide icons</span>
+    </div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">What happens when you tap a group</h1>
+    <p style="margin:0;max-width:74ch;font-size:17px;line-height:1.55;color:#5d635c">Two ways to reach the same actions. The <strong style="color:#1b201d;font-weight:600">quick menu</strong> slides up from the row for the top four things without leaving the list. The <strong style="color:#1b201d;font-weight:600">group page</strong> opens the full record with a pinned <strong style="color:#1b201d;font-weight:600">action bar</strong>; its More button opens the same menu. Manager-only actions are tagged. Shown: list with the menu open, the group page, then the page mirrored in Arabic.</p>
+  </div>
+
+  <div class="phones">
+
+    <!-- ============ EN · LIST + QUICK MENU ============ -->
+    <div class="frame">
+      <span class="mono" style="font-size:12px;color:#5d635c">EN · row quick menu</span>
+      <div class="phone"><div dir="ltr" class="screen">
+        <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+        <div class="topbar">
+          <div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+          <div style="flex:1"><div style="font-size:17px;font-weight:600;line-height:1.2">Groups</div><div style="font-size:12px;color:#80827a">Al-Nahda</div></div>
+          <div class="topbtn" style="background:#0e6b61;color:#fffdf8;border:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        </div>
+        <div class="body" style="filter:blur(.4px)">
+          <div class="gcard sel">
+            <div style="display:flex;align-items:center"><div style="flex:1"><div style="font-size:16px;font-weight:600">Physics · Grade 10</div><div style="font-size:12px;color:#80827a">Center group · Room 2</div></div><div style="color:#a6a79d"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:#5d635c"><span class="num">24 / 30 · 6 seats</span><span class="num">300 EGP</span></div>
+            <div class="capbar"><i style="width:80%"></i></div>
+          </div>
+          <div class="gcard">
+            <div style="display:flex;align-items:center"><div style="flex:1"><div style="font-size:16px;font-weight:600">Chemistry · Grade 11</div><div style="font-size:12px;color:#80827a">Mr. Sherif · center 30%</div></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:#5d635c"><span class="num">18 / 20 · 2 seats</span><span class="num">350 EGP</span></div>
+            <div class="capbar"><i style="width:90%;background:#9a6b1f"></i></div>
+          </div>
+          <div class="gcard">
+            <div style="display:flex;align-items:center"><div style="flex:1"><div style="font-size:16px;font-weight:600">Math · Grade 9</div><div style="font-size:12px;color:#80827a">Center group · Room 1</div></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:#5d635c"><span class="num">30 / 30 · full</span><span class="num">300 EGP</span></div>
+            <div class="capbar"><i style="width:100%"></i></div>
+          </div>
+        </div>
+        <!-- sheet -->
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="sheet-h"><div style="font-size:16px;font-weight:600">Physics · Grade 10</div><div style="font-size:12px;color:#80827a" class="num">24 students · Room 2</div></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div class="al"><div class="t">Take attendance</div><div class="s num">Today 4:00 PM</div></div></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></div><div class="al"><div class="t">Collect fees</div><div class="s num">3 students owe</div></div></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg></div><div class="al"><div class="t">Message group</div><div class="s">WhatsApp to parents</div></div></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div><div class="al"><div class="t">Open group</div><div class="s">Members, sessions, history</div></div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a6a79d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+          <div class="act danger"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg></div><div class="al"><div class="t">Archive group <span class="mgr">Manager</span></div><div class="s">Hide at end of term</div></div></div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ============ EN · GROUP PAGE + ACTION BAR ============ -->
+    <div class="frame">
+      <span class="mono" style="font-size:12px;color:#5d635c">EN · group page · action bar</span>
+      <div class="phone"><div dir="ltr" class="screen">
+        <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+        <div class="topbar">
+          <div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+          <div style="flex:1"><div style="font-size:17px;font-weight:600;line-height:1.2">Physics</div><div style="font-size:12px;color:#80827a">Grade 10 · Room 2</div></div>
+          <div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div>
+        </div>
+        <div class="body">
+          <div class="gcard">
+            <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:#5d635c">Capacity</span><span class="num" style="font-weight:600">24 / 30 · 6 seats</span></div>
+            <div class="capbar"><i style="width:80%"></i></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding-top:2px"><span style="color:#5d635c">Fee</span><span class="num" style="font-weight:600">300 EGP / month · center group</span></div>
+          </div>
+          <div class="tiles">
+            <div class="tile"><div class="n num">92%</div><div class="l">Attendance</div></div>
+            <div class="tile"><div class="n num" style="color:#9c3322">3</div><div class="l">Owe fees</div></div>
+          </div>
+          <div class="seg"><div class="s on">Members</div><div class="s">Waitlist · 2</div></div>
+          <div>
+            <div class="mrow"><div class="av">YA</div><div style="flex:1"><div style="font-size:15px;font-weight:600">Youssef Adel</div><div style="font-size:12px;color:#80827a">Grade 9</div></div><span class="badge" style="background:#f4e5e2;color:#9c3322">Owes 300</span></div>
+            <div class="mrow"><div class="av">MH</div><div style="flex:1"><div style="font-size:15px;font-weight:600">Mariam Hassan</div><div style="font-size:12px;color:#80827a">Grade 10</div></div><span class="badge" style="background:#e4f0e9;color:#1a6d4d">Paid</span></div>
+            <div class="mrow" style="border-bottom:none"><div class="av">SA</div><div style="flex:1"><div style="font-size:15px;font-weight:600">Sara Ahmed</div><div style="font-size:12px;color:#80827a">Grade 10</div></div><span class="badge" style="background:#f4ebd7;color:#8a5e16">At risk</span></div>
+          </div>
+        </div>
+        <div class="actionbar">
+          <div class="btn-primary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Take attendance</div>
+          <div class="iconbtn"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></div>
+          <div class="iconbtn"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg></div>
+          <div class="iconbtn"><svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ============ AR · GROUP PAGE + ACTION BAR ============ -->
+    <div class="frame">
+      <span class="mono" style="font-size:12px;color:#5d635c">AR · RTL · group page · action bar</span>
+      <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic',sans-serif;letter-spacing:0">
+        <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+        <div class="topbar">
+          <div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+          <div style="flex:1"><div style="font-size:17px;font-weight:600;line-height:1.2">فيزياء</div><div style="font-size:12px;color:#80827a">الصف العاشر · قاعة ٢</div></div>
+          <div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div>
+        </div>
+        <div class="body">
+          <div class="gcard">
+            <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:#5d635c">السعة</span><span class="num" style="font-weight:600">٢٤ / ٣٠ · ٦ مقاعد</span></div>
+            <div class="capbar"><i style="width:80%"></i></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding-top:2px"><span style="color:#5d635c">الرسوم</span><span class="num" style="font-weight:600">٣٠٠ ج.م / شهر · مجموعة السنتر</span></div>
+          </div>
+          <div class="tiles">
+            <div class="tile"><div class="n num">٩٢٪</div><div class="l">الحضور</div></div>
+            <div class="tile"><div class="n num" style="color:#9c3322">٣</div><div class="l">متأخرون بالرسوم</div></div>
+          </div>
+          <div class="seg"><div class="s on">الأعضاء</div><div class="s">قائمة الانتظار · ٢</div></div>
+          <div>
+            <div class="mrow"><div class="av">يع</div><div style="flex:1"><div style="font-size:15px;font-weight:600">يوسف عادل</div><div style="font-size:12px;color:#80827a">الصف التاسع</div></div><span class="badge" style="background:#f4e5e2;color:#9c3322">يدين ٣٠٠</span></div>
+            <div class="mrow"><div class="av">مح</div><div style="flex:1"><div style="font-size:15px;font-weight:600">مريم حسن</div><div style="font-size:12px;color:#80827a">الصف العاشر</div></div><span class="badge" style="background:#e4f0e9;color:#1a6d4d">مدفوع</span></div>
+            <div class="mrow" style="border-bottom:none"><div class="av">سأ</div><div style="flex:1"><div style="font-size:15px;font-weight:600">سارة أحمد</div><div style="font-size:12px;color:#80827a">الصف العاشر</div></div><span class="badge" style="background:#f4ebd7;color:#8a5e16">متابعة</span></div>
+          </div>
+        </div>
+        <div class="actionbar">
+          <div class="btn-primary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>أخذ الحضور</div>
+          <div class="iconbtn"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></div>
+          <div class="iconbtn"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg></div>
+          <div class="iconbtn"><svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></div>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+</div>
+
+</div>
+<div class="mgd-sec" id="Merged-Design-Patterns-4">
+  <div class="mgd-bar"><span class="mgd-num">04</span><span class="mgd-name">Expand sheet merge</span><span class="mgd-src">Screen-Expand-sheet-merge.html</span></div>
+</div>
+<div class="mgd4">
+
+<div class="board">
+
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+      <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39);box-shadow:0 2px 8px rgba(8,63,57,.35)"></div>
+      <span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Expand + sheet</span>
+      <span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0e6b61;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:5px 11px;border-radius:999px">Lucide icons</span>
+    </div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">The two, merged</h1>
+    <p style="margin:0;max-width:74ch;font-size:17px;line-height:1.55;color:#5d635c">Tapping the row <strong style="color:#1b201d;font-weight:600">expands it in place</strong> to the three actions you reach for most, so you never leave the list. The <strong style="color:#1b201d;font-weight:600">More</strong> chip opens the <strong style="color:#1b201d;font-weight:600">full sheet</strong> with everything else. The three-dot still jumps straight to that sheet. Shown: the expanded row, the sheet More opens, then the expanded row in Arabic.</p>
+  </div>
+
+  <div class="phones">
+
+    <!-- ============ EN · EXPANDED ROW ============ -->
+    <div class="frame">
+      <span class="mono" style="font-size:12px;color:#5d635c">EN · tap · top actions inline</span>
+      <div class="phone"><div dir="ltr" class="screen">
+        <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+        <div class="topbar">
+          <div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+          <div style="flex:1"><div style="font-size:17px;font-weight:600;line-height:1.2">Students</div><div style="font-size:12px;color:#80827a">Al-Nahda · 128</div></div>
+          <div class="topbtn" style="background:#0e6b61;color:#fffdf8;border:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        </div>
+        <div class="body">
+          <div class="hint"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>Tapped Youssef</div>
+          <div class="expcard">
+            <div class="exphead"><div class="av">YA</div><div style="flex:1"><div class="nm">Youssef Adel</div><div class="mt">Grade 9 · Math</div></div><span class="badge" style="background:#f4e5e2;color:#9c3322">Owes 300</span></div>
+            <div style="height:1px;background:#f2eee5;margin:0 -2px"></div>
+            <div class="expacts">
+              <div class="chip pri"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>Pay</div>
+              <div class="chip"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg>Message</div>
+              <div class="chip"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Open</div>
+              <div class="chip more"><svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>More</div>
+            </div>
+          </div>
+          <div class="lrow"><div class="av">MH</div><div style="flex:1"><div class="nm">Mariam Hassan</div><div class="mt">Grade 10 · Physics</div></div><div class="kb"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div></div>
+          <div class="lrow"><div class="av">SA</div><div style="flex:1"><div class="nm">Sara Ahmed</div><div class="mt">Grade 10 · Physics</div></div><div class="kb"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div></div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="flowlink">→</div>
+
+    <!-- ============ EN · MORE OPENS SHEET ============ -->
+    <div class="frame">
+      <span class="mono" style="font-size:12px;color:#5d635c">EN · More · full sheet</span>
+      <div class="phone"><div dir="ltr" class="screen">
+        <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+        <div class="topbar">
+          <div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+          <div style="flex:1"><div style="font-size:17px;font-weight:600;line-height:1.2">Students</div><div style="font-size:12px;color:#80827a">Al-Nahda · 128</div></div>
+          <div class="topbtn" style="background:#0e6b61;color:#fffdf8;border:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        </div>
+        <div class="body" style="filter:blur(.4px)">
+          <div class="lrow"><div class="av">YA</div><div style="flex:1"><div class="nm">Youssef Adel</div><div class="mt">Grade 9 · Math</div></div><span class="badge" style="background:#f4e5e2;color:#9c3322">Owes 300</span></div>
+          <div class="lrow"><div class="av">MH</div><div style="flex:1"><div class="nm">Mariam Hassan</div><div class="mt">Grade 10 · Physics</div></div></div>
+          <div class="lrow"><div class="av">SA</div><div style="flex:1"><div class="nm">Sara Ahmed</div><div class="mt">Grade 10 · Physics</div></div></div>
+        </div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="sheet-h"><div style="font-size:16px;font-weight:600">Youssef Adel</div><div style="font-size:12px;color:#80827a">Grade 9 · Math group</div></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></div><div class="al"><div class="t">Record payment</div><div class="s num">Owes 300 EGP</div></div></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg></div><div class="al"><div class="t">Message parent</div><div class="s">WhatsApp</div></div></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="al"><div class="t">Open student</div><div class="s">Profile, fees, attendance</div></div><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+          <div class="act"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div><div class="al"><div class="t">Move to group</div><div class="s">Change group</div></div></div>
+          <div class="act danger"><div class="ai"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></div><div class="al"><div class="t">Remove from center <span class="mgr">Manager</span></div><div class="s">Ends enrollment</div></div></div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ============ AR · EXPANDED ROW ============ -->
+    <div class="frame">
+      <span class="mono" style="font-size:12px;color:#5d635c">AR · RTL · expanded row</span>
+      <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic',sans-serif;letter-spacing:0">
+        <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+        <div class="topbar">
+          <div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+          <div style="flex:1"><div style="font-size:17px;font-weight:600;line-height:1.2">الطلاب</div><div style="font-size:12px;color:#80827a">النهضة · ١٢٨</div></div>
+          <div class="topbtn" style="background:#0e6b61;color:#fffdf8;border:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        </div>
+        <div class="body">
+          <div class="hint"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>تم الضغط على يوسف</div>
+          <div class="expcard">
+            <div class="exphead"><div class="av">يع</div><div style="flex:1"><div class="nm">يوسف عادل</div><div class="mt">الصف التاسع · رياضيات</div></div><span class="badge" style="background:#f4e5e2;color:#9c3322">يدين ٣٠٠</span></div>
+            <div style="height:1px;background:#f2eee5;margin:0 -2px"></div>
+            <div class="expacts">
+              <div class="chip pri"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>دفع</div>
+              <div class="chip"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg>مراسلة</div>
+              <div class="chip"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>فتح</div>
+              <div class="chip more"><svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>المزيد</div>
+            </div>
+          </div>
+          <div class="lrow"><div class="av">مح</div><div style="flex:1"><div class="nm">مريم حسن</div><div class="mt">الصف العاشر · فيزياء</div></div><div class="kb"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div></div>
+          <div class="lrow"><div class="av">سأ</div><div style="flex:1"><div class="nm">سارة أحمد</div><div class="mt">الصف العاشر · فيزياء</div></div><div class="kb"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div></div>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+</div>
+
+</div>
+</body></html>

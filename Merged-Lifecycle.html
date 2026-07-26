@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<!--
+================================================================
+ TutoringHQ · MERGED DESIGN REFERENCE
+ File: Merged-Lifecycle.html
+ Shared · Lifecycle
+
+ CONTENTS (6 screens):
+  01. Lifecycle Access   <-  Screen-Lifecycle-Access.html
+  02. Lifecycle States   <-  Screen-Lifecycle-States.html
+  03. Lifecycle Status   <-  Screen-Lifecycle-Status.html
+  04. Center Resubscribe   <-  Screen-Center-Resubscribe.html
+  05. Teacher Resubscribe   <-  Screen-Teacher-Resubscribe.html
+  06. Coming Soon   <-  Screen-Coming-Soon.html
+
+----------------------------------------------------------------
+ HOW TO READ THIS FILE WHEN IMPLEMENTING IT
+----------------------------------------------------------------
+ 1. CSS IS SCOPED. Every rule carries a .mgdN prefix so that
+    several screens can share one page without their styles
+    colliding.
+        in this file:   .mgd4 .pins{ ... }
+        in your code:   .pins{ ... }
+    Strip the .mgdN prefix. It is bookkeeping for this reference
+    file only and must never reach the codebase.
+
+ 2. ONE SECTION = ONE SCREEN. Each section bar shows its number,
+    its name, and the original screen file it came from. Use that
+    filename as the screen's identity, not the section number.
+
+ 3. FRAMES ARE STATES, NOT PAGES. Each phone inside a section is
+    one state of that screen (empty, filled, error, and so on).
+    The caption under or above each phone names the state.
+
+ 4. THE TWO LANGUAGES ARE SEPARATE SCREENS. English and Arabic
+    are never a translation overlay. Arabic frames use Eastern
+    Arabic numerals (0-9 written as Arabic-Indic) and the Arabic
+    currency mark. English frames use Western numerals and EGP.
+    Directional icons such as chevrons flip with the language.
+
+ 5. SAMPLE DATA IS PLACEHOLDER. Names, amounts, dates and phone
+    numbers are illustrative. Do not treat them as fixtures or
+    seed data.
+
+ 6. THIS IS DESIGN, NOT PRODUCTION CODE. Markup here is built to
+    be read, not shipped. Take the layout, spacing, type scale
+    and colour decisions from it. Do not copy the DOM wholesale.
+
+ 7. ANY UI OR BRANDING CHANGE BUMPS SW_VERSION in public/sw.js.
+================================================================
+-->
+
+<html lang="en"><head><meta charset="utf-8">
+<meta name="color-scheme" content="light">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shared · Lifecycle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+html{background:#d8d3c6;color-scheme:light}
+:root{color-scheme:light}
+body{margin:0;padding:0;background:#d8d3c6;-webkit-font-smoothing:antialiased}
+.mgd-top{max-width:1480px;margin:0 auto;padding:56px 28px 8px;color:#1b201d;font-family:"IBM Plex Sans",system-ui,sans-serif}
+.mgd-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5d635c;font-weight:600}
+.mgd-h1{font-size:42px;line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:12px 0 10px}
+.mgd-lede{font-size:16px;line-height:1.55;color:#5d635c;max-width:82ch;margin:0}
+.mgd-toc{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 0}
+.mgd-toc a{font-size:12.5px;font-weight:600;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:6px 12px;border-radius:999px;text-decoration:none}
+.mgd-sec{max-width:1480px;margin:0 auto;padding:0 28px;font-family:"IBM Plex Sans",system-ui,sans-serif}
+.mgd-bar{display:flex;align-items:baseline;gap:12px;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin-top:34px}
+.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a5e16;font-weight:500}
+.mgd-name{font-size:22px;font-weight:700;color:#14181a;letter-spacing:-.01em}
+.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#80827a}
+.mgd-screen{content-visibility:auto;contain-intrinsic-size:auto 1400px}
+
+/* ==== 01 Lifecycle Access · Screen-Lifecycle-Access.html ==== */
+.mgd1 *{box-sizing:border-box}
+.mgd1{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd1 .num{font-variant-numeric:tabular-nums}
+.mgd1 .mono{font-family:'IBM Plex Mono',monospace}
+.mgd1 svg{display:block;flex-shrink:0}
+.mgd1 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd1 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd1 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd1 .topbar{display:flex;align-items:center;gap:12px;padding:6px 16px 8px}
+.mgd1 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd1 .h1{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.mgd1 .sub{font-size:14px;color:#5d635c;line-height:1.55}
+.mgd1 .pindots{display:flex;gap:16px;justify-content:center;margin:6px 0}
+.mgd1 .pd{width:15px;height:15px;border-radius:50%;border:2px solid #0e6b61}
+.mgd1 .pd.on{background:#0e6b61}
+.mgd1 .pindots{position:relative;align-items:center}
+.mgd1 .pineye{width:26px;height:26px;border:none;background:none;color:#a09a8e;display:grid;place-items:center;padding:0;margin-inline-start:14px;cursor:pointer}
+.mgd1 .pineye svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;
+    stroke-linecap:round;stroke-linejoin:round}
+.mgd1 .pineye.on{color:#0a514a}
+.mgd1 .pindots.show .pd{width:auto;height:auto;border:none;border-radius:0;background:none;
+    font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:500;color:#14181a;line-height:1}
+.mgd1 .pindots.show .pd::after{content:attr(data-d)}
+.mgd1 .pindots.show .pd:not(.on)::after{content:"";display:inline-block;width:15px;height:15px;
+    border-radius:50%;border:2px solid #0e6b61;box-sizing:border-box}
+.mgd1 .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:0 20px 20px}
+.mgd1 .key{height:62px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:500;background:#fffdf8;border:1px solid #e2ddd1;color:#1b201d}
+.mgd1 .key.blank{background:none;border:none}
+.mgd1 .center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px;padding:0 30px}
+.mgd1 .logo{width:70px;height:70px;border-radius:20px;background:linear-gradient(150deg,#0f766b,#083f39);box-shadow:0 8px 20px rgba(10,81,74,.3)}
+.mgd1 .rolepill{font-size:12px;font-weight:600;padding:5px 12px;border-radius:999px;background:#dfeeeb;color:#0a514a}
+.mgd1 .footer{padding:10px 16px 18px;background:#ece8df}
+.mgd1 .btn-primary{width:100%;height:50px;background:#0e6b61;color:#fffdf8;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28);border:none}
+.mgd1 .btn-ghost{width:100%;height:48px;background:none;border:none;color:#5d635c;font-size:14px;font-weight:600;margin-top:4px}
+.mgd1 .board{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
+.mgd1 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd1 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd1 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+/* ==== 02 Lifecycle States · Screen-Lifecycle-States.html ==== */
+.mgd2 *{box-sizing:border-box}
+.mgd2{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd2 .num{font-variant-numeric:tabular-nums}
+.mgd2 .mono{font-family:'IBM Plex Mono',monospace}
+.mgd2 svg{display:block;flex-shrink:0}
+.mgd2 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd2 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd2 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd2 .center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:13px;padding:0 32px}
+.mgd2 .ic{width:84px;height:84px;border-radius:24px;display:flex;align-items:center;justify-content:center}
+.mgd2 .h1{font-size:23px;font-weight:700;letter-spacing:-.01em}
+.mgd2 .sub{font-size:14px;color:#5d635c;line-height:1.55}
+.mgd2 .footer{padding:10px 16px 18px;background:#ece8df}
+.mgd2 .btn-primary{width:100%;height:50px;background:#0e6b61;color:#fffdf8;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28);border:none}
+.mgd2 .btn-ghost{width:100%;height:48px;background:none;border:none;color:#5d635c;font-size:14px;font-weight:600;margin-top:4px}
+.mgd2 .pill{font-size:11px;font-weight:600;padding:5px 11px;border-radius:999px}
+.mgd2 .board{max-width:1520px;margin:0 auto;padding:56px 28px 96px}
+.mgd2 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd2 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd2 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+/* ==== 03 Lifecycle Status · Screen-Lifecycle-Status.html ==== */
+.mgd3 *{box-sizing:border-box}
+.mgd3{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd3 .num{font-variant-numeric:tabular-nums}
+.mgd3 .mono{font-family:'IBM Plex Mono',monospace}
+.mgd3 svg{display:block;flex-shrink:0}
+.mgd3 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd3 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd3 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd3 .topbar{display:flex;align-items:center;gap:10px;padding:8px 16px}
+.mgd3 .ttl{font-size:19px;font-weight:600}
+.mgd3 .body{flex:1;overflow-y:auto;padding:6px 16px 20px;display:flex;flex-direction:column;gap:16px}
+.mgd3 .body>*{flex-shrink:0}
+.mgd3 .banner{background:#e4f0e9;border:1px solid #cbe3d6;border-radius:18px;padding:18px;display:flex;align-items:center;gap:13px}
+.mgd3 .bcheck{width:44px;height:44px;border-radius:13px;background:#1a6d4d;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd3 .glabel{font-size:12px;font-weight:600;letter-spacing:.02em;color:#80827a;margin:2px 4px -6px}
+.mgd3 .group{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;overflow:hidden}
+.mgd3 .srow{display:flex;align-items:center;gap:10px;padding:13px 14px;border-top:1px solid #f0ece2}
+.mgd3 .srow:first-child{border-top:none}
+.mgd3 .slabel{flex:1;font-size:14.5px;font-weight:500}
+.mgd3 .st-ok{font-size:12.5px;font-weight:600;color:#1a6d4d}
+.mgd3 .dot{width:9px;height:9px;border-radius:50%;background:#1a6d4d}
+.mgd3 .board{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
+.mgd3 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd3 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd3 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+/* ==== 04 Center Resubscribe · Screen-Center-Resubscribe.html ==== */
+.mgd4 *{box-sizing:border-box}
+.mgd4{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#1b201d;-webkit-font-smoothing:antialiased}
+.mgd4 .board{max-width:820px;margin:0 auto;padding:48px 24px 90px}
+.mgd4 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827a;font-weight:600}
+.mgd4 .pill{display:inline-block;margin:10px 0;padding:4px 12px;border-radius:999px;background:#dfeeeb;color:#0a514a;font-size:12px;font-weight:600}
+.mgd4 h1.mh{font-size:30px;margin:6px 0 8px;font-weight:700;letter-spacing:-.01em}
+.mgd4 .board>p.lead{margin:0 0 34px;color:#5d635c;font-size:16px;line-height:1.5;max-width:60ch}
+.mgd4 .phones{display:flex;gap:34px;flex-wrap:wrap;justify-content:center}
+.mgd4 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
+.mgd4 .cap{font-size:13px;color:#5d635c;font-weight:600}
+.mgd4 .phone{width:340px;background:#14181a;border-radius:44px;padding:11px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+.mgd4 .screen{background:#ece8df;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden}
+.mgd4 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:14px;font-weight:600;flex-shrink:0}
+.mgd4 .topbar{display:flex;align-items:center;gap:12px;padding:6px 16px 12px;flex-shrink:0}
+.mgd4 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd4 .topbtn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mgd4 .tt{font-size:18px;font-weight:700}
+.mgd4 .body{flex:1;overflow-y:auto;padding:2px 18px 18px}
+.mgd4 .wb{background:linear-gradient(150deg,#0f766b,#0a514a);border-radius:18px;padding:18px;color:#eef6f4;margin-bottom:16px}
+.mgd4 .wb h2{margin:0 0 5px;font-size:19px;font-weight:700}
+.mgd4 .wb p{margin:0;font-size:13.5px;line-height:1.5;opacity:.92}
+.mgd4 .seg{display:flex;background:#f2eee5;border:1px solid #e2ddd1;border-radius:12px;padding:4px;margin-bottom:6px}
+.mgd4 .seg div{flex:1;text-align:center;padding:9px;border-radius:9px;font-size:13.5px;font-weight:600;color:#5d635c}
+.mgd4 .seg div.on{background:#fffdf8;color:#0a514a;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.mgd4 .savenote{text-align:center;font-size:12px;font-weight:600;color:#8a5e16;margin:0 0 14px}
+.mgd4 .sec{font-size:12px;font-weight:600;color:#80827a;margin:4px 2px 8px}
+.mgd4 .plan{display:flex;align-items:center;gap:12px;background:#fffdf8;border:1.5px solid #e2ddd1;border-radius:14px;padding:13px 14px;margin-bottom:10px;cursor:pointer}
+.mgd4 .plan.sel{border-color:#0e6b61;background:#f6faf9;box-shadow:0 0 0 2px rgba(14,107,97,.1)}
+.mgd4 .radio{width:20px;height:20px;border-radius:50%;border:2px solid #b7bcb2;flex-shrink:0;position:relative}
+.mgd4 .plan.sel .radio{border-color:#0e6b61}
+.mgd4 .plan.sel .radio::after{content:"";position:absolute;inset:3px;border-radius:50%;background:#0e6b61}
+.mgd4 .pn{font-size:15px;font-weight:600}
+.mgd4 .pc{font-size:12px;color:#80827a;margin-top:2px}
+.mgd4 .pp{margin-inline-start:auto;text-align:end;font-size:15px;font-weight:700;white-space:nowrap}
+.mgd4 .pp span{font-size:11px;color:#80827a;font-weight:500}
+.mgd4 .tag{display:inline-block;margin-inline-start:8px;padding:2px 8px;border-radius:999px;background:#f0e6d2;color:#8a5e16;font-size:10.5px;font-weight:700;vertical-align:middle}
+.mgd4 .safe{font-size:12.5px;color:#80827a;line-height:1.5;padding:2px 2px 0}
+.mgd4 .footer{padding:14px 18px 20px;border-top:1px solid #e2ddd1;background:#ece8df;flex-shrink:0}
+.mgd4 .btn{display:block;width:100%;border:none;border-radius:13px;padding:15px;font-size:15px;font-weight:700;background:#0e6b61;color:#fffdf8;text-align:center}
+.mgd4 .mono{font-family:'IBM Plex Mono',monospace}
+/* ==== 05 Teacher Resubscribe · Screen-Teacher-Resubscribe.html ==== */
+.mgd5 *{box-sizing:border-box}
+.mgd5{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd5 .num,.mgd5 .money{font-variant-numeric:tabular-nums}
+.mgd5 svg{display:block;flex-shrink:0}
+.mgd5 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd5 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd5 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 6px;font-size:13px;font-weight:600}
+.mgd5 .appbar{display:flex;align-items:center;gap:11px;padding:6px 16px 8px}
+.mgd5 .iconbtn{width:40px;height:40px;border-radius:11px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd5 .ttl{font-size:19px;font-weight:700}
+.mgd5 .globe{margin-inline-start:auto}
+.mgd5 .body{flex:1;overflow-y:auto;padding:4px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.mgd5 .body>*{flex-shrink:0}
+.mgd5 .alert{background:#f4ebd7;border:1px solid #e6d3a9;border-radius:16px;padding:14px;display:flex;gap:11px}
+.mgd5 .alert svg{margin-top:1px}
+.mgd5 .alt{font-size:14.5px;font-weight:700;color:#6f4e12}
+.mgd5 .als{font-size:12px;color:#8a6a2a;margin-top:3px;line-height:1.45}
+.mgd5 .seg{display:flex;background:#e7e2d6;border-radius:12px;padding:3px}
+.mgd5 .segopt{flex:1;text-align:center;padding:9px;border-radius:9px;font-size:13px;font-weight:600;color:#5d635c;display:flex;align-items:center;justify-content:center;gap:6px}
+.mgd5 .segopt.on{background:#fffdf8;color:#1b201d;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.mgd5 .save{font-size:10px;font-weight:700;color:#0a514a;background:#dfeeeb;border-radius:999px;padding:1px 6px}
+.mgd5 .plan{background:#fffdf8;border:1.6px solid #e2ddd1;border-radius:16px;padding:14px}
+.mgd5 .plan.sel{border-color:#0a6b60;box-shadow:0 0 0 3px rgba(10,107,96,.10)}
+.mgd5 .ptop{display:flex;align-items:center;gap:11px}
+.mgd5 .pradio{width:22px;height:22px;border-radius:50%;border:2px solid #cfcabb;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff}
+.mgd5 .plan.sel .pradio{border-color:#0a6b60;background:#0a6b60}
+.mgd5 .pradio svg{opacity:0}
+.mgd5 .plan.sel .pradio svg{opacity:1}
+.mgd5 .pnm{font-size:16px;font-weight:700;flex:1;display:flex;align-items:center;gap:8px}
+.mgd5 .pop{font-size:10px;font-weight:700;color:#8a5e16;background:#f4ebd7;border-radius:999px;padding:3px 9px}
+.mgd5 .pprice{font-size:15px;font-weight:700;text-align:end;white-space:nowrap}
+.mgd5 .pprice small{font-size:11px;color:#80827a;font-weight:600}
+.mgd5 .pfeat{margin-top:11px;display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:#5d635c}
+.mgd5 .pfeat div{display:flex;align-items:center;gap:8px}
+.mgd5 .credit{display:flex;align-items:center;gap:9px;background:#dfeeeb;border:1px solid #bfe0da;border-radius:12px;padding:11px 12px;font-size:12.5px;color:#0a514a;line-height:1.4}
+.mgd5 .keep{font-size:11.5px;color:#80827a;line-height:1.5;display:flex;gap:6px;padding:0 2px}
+.mgd5 .footer{padding:10px 16px 16px;border-top:1px solid #e2ddd1;background:#ece8df}
+.mgd5 .btn-primary{width:100%;height:50px;background:#0e6b61;color:#fffdf8;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:700;box-shadow:0 2px 10px rgba(14,107,97,.28);border:none}
+.mgd5 .board{max-width:820px;margin:0 auto;padding:56px 28px 96px}
+.mgd5 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd5 .phones{display:flex;gap:30px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd5 .frame{display:flex;flex-direction:column;align-items:center;gap:13px}
+.mgd5 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d635c}
+/* ==== 06 Coming Soon · Screen-Coming-Soon.html ==== */
+.mgd6 *{box-sizing:border-box}
+.mgd6{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd6 .num{font-variant-numeric:tabular-nums}
+.mgd6 .mono{font-family:'IBM Plex Mono',monospace}
+.mgd6 svg{display:block;flex-shrink:0}
+.mgd6 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd6 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd6 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd6 .topbar{display:flex;align-items:center;gap:12px;padding:6px 16px 8px}
+.mgd6 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd6 .ttl{font-size:19px;font-weight:600}
+.mgd6 .body{flex:1;overflow-y:auto;padding:6px 16px 20px;display:flex;flex-direction:column;gap:16px}
+.mgd6 .body>*{flex-shrink:0}
+.mgd6 .center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:13px;padding:0 30px}
+.mgd6 .cs-icon{width:88px;height:88px;border-radius:26px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center}
+.mgd6 .soon-big{font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#8a5e16;background:#f4ebd7;padding:6px 13px;border-radius:999px}
+.mgd6 .h1{font-size:24px;font-weight:700;letter-spacing:-.01em}
+.mgd6 .sub{font-size:14px;color:#5d635c;line-height:1.55}
+.mgd6 .footer{padding:10px 16px 16px;border-top:1px solid #e2ddd1;background:#ece8df}
+.mgd6 .btn-primary{width:100%;height:50px;background:#0e6b61;color:#fffdf8;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28);border:none}
+.mgd6 .glabel{font-size:12px;font-weight:600;letter-spacing:.02em;color:#80827a;margin:2px 4px -6px}
+.mgd6 .group{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;overflow:hidden}
+.mgd6 .srow{display:flex;align-items:center;gap:12px;padding:13px 14px;border-top:1px solid #f0ece2}
+.mgd6 .srow:first-child{border-top:none}
+.mgd6 .srow.locked{opacity:.6}
+.mgd6 .sicon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd6 .slabel{flex:1;font-size:14.5px;font-weight:500}
+.mgd6 .soon{font-size:10.5px;font-weight:600;padding:4px 9px;border-radius:999px;background:#f4ebd7;color:#8a5e16}
+.mgd6 .board{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
+.mgd6 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd6 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd6 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+</style></head>
+<body>
+  <div class="mgd-top">
+    <div class="mgd-eyebrow">TutoringHQ · Merged reference</div>
+    <h1 class="mgd-h1">Shared · Lifecycle</h1>
+    <p class="mgd-lede">Setting a PIN, accepting an invite, the account states, status surfaces, both resubscribe paths and the coming soon placeholder.</p>
+    <div class="mgd-toc"><a href="#S-1">Lifecycle Access</a><a href="#S-2">Lifecycle States</a><a href="#S-3">Lifecycle Status</a><a href="#S-4">Center Resubscribe</a><a href="#S-5">Teacher Resubscribe</a><a href="#S-6">Coming Soon</a></div>
+  </div>
+<div class="mgd-sec" id="S-1"><div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Lifecycle Access</span><span class="mgd-src">Screen-Lifecycle-Access.html</span></div></div>
+<div class="mgd1 mgd-screen">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0e6b61;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:5px 11px;border-radius:999px">Lucide icons</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Set PIN & Invite</h1>
+    <p style="margin:0;max-width:74ch;font-size:17px;line-height:1.55;color:#5d635c">Two entry-point screens. Set a PIN locks the app with a six-digit code. Accept invite is what a teacher sees when a center adds them. English plus an Arabic Set PIN with Eastern numerals. Sample data is placeholder. Design only.</p>
+  </div>
+  <div class="phones">
+
+    <!-- SET PIN EN -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · set PIN</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div></div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:0 30px;text-align:center">
+        <div style="width:60px;height:60px;border-radius:17px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        <div class="h1">Set a PIN</div>
+        <div class="sub">Choose a 6-digit PIN to lock the app.</div>
+        <div class="pindots"><div class="pd on" data-d="4"></div><div class="pd on" data-d="8"></div><div class="pd" data-d="2"></div><div class="pd" data-d="9"></div><div class="pd" data-d="1"></div><div class="pd" data-d="7"></div><button class="pineye" aria-label="Show PIN"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+      </div>
+      <div class="keypad">
+        <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+        <div class="key">4</div><div class="key">5</div><div class="key">6</div>
+        <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+        <div class="key blank"></div><div class="key">0</div>
+        <div class="key blank" style="background:none;border:none;color:#5d635c"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM18 9l-6 6M12 9l6 6"/></svg></div>
+      </div>
+    </div></div></div>
+<div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · set PIN, revealed</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div></div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:0 30px;text-align:center">
+        <div style="width:60px;height:60px;border-radius:17px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        <div class="h1">Set a PIN</div>
+        <div class="sub">Choose a 6-digit PIN to lock the app.</div>
+        <div class="pindots show"><div class="pd on" data-d="4"></div><div class="pd on" data-d="8"></div><div class="pd" data-d="2"></div><div class="pd" data-d="9"></div><div class="pd" data-d="1"></div><div class="pd" data-d="7"></div><button class="pineye on" aria-label="Hide PIN"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7c2 0 3.7.7 5.1 1.6M22 12s-3.6 7-10 7c-2 0-3.7-.7-5.1-1.6"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/></svg></button></div>
+      </div>
+      <div class="keypad">
+        <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+        <div class="key">4</div><div class="key">5</div><div class="key">6</div>
+        <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+        <div class="key blank"></div><div class="key">0</div>
+        <div class="key blank" style="background:none;border:none;color:#5d635c"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM18 9l-6 6M12 9l6 6"/></svg></div>
+      </div>
+    </div></div></div>
+
+    <!-- ACCEPT INVITE EN -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · accept invite</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="center">
+        <div class="logo"></div>
+        <div class="rolepill">Teacher</div>
+        <div class="h1">You're invited</div>
+        <div class="sub">Ms. Dina Fouad invited you to join <strong style="color:#1b201d;font-weight:600">Al-Nahda</strong> as a teacher.</div>
+      </div>
+      <div class="footer"><button class="btn-primary"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Accept & join</button><button class="btn-ghost">Decline</button></div>
+    </div></div></div>
+
+    <!-- SET PIN AR -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">AR · RTL · رقم سري</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic',sans-serif;letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div></div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:0 30px;text-align:center">
+        <div style="width:60px;height:60px;border-radius:17px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        <div class="h1">اختر رقمًا سريًا</div>
+        <div class="sub">اختر رقمًا سريًا من ٦ خانات لقفل التطبيق.</div>
+        <div class="pindots"><div class="pd on" data-d="٤"></div><div class="pd on" data-d="٨"></div><div class="pd" data-d="٢"></div><div class="pd" data-d="٩"></div><div class="pd" data-d="١"></div><div class="pd" data-d="٧"></div><button class="pineye" aria-label="إظهار الرقم السري"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+      </div>
+      <div class="keypad">
+        <div class="key">١</div><div class="key">٢</div><div class="key">٣</div>
+        <div class="key">٤</div><div class="key">٥</div><div class="key">٦</div>
+        <div class="key">٧</div><div class="key">٨</div><div class="key">٩</div>
+        <div class="key blank"></div><div class="key">٠</div>
+        <div class="key blank" style="background:none;border:none;color:#5d635c"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="scale(-1,1)"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM18 9l-6 6M12 9l6 6"/></svg></div>
+      </div>
+    </div></div></div>
+<div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">AR · RTL · رقم سري ظاهر</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic',sans-serif;letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div></div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:0 30px;text-align:center">
+        <div style="width:60px;height:60px;border-radius:17px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        <div class="h1">اختر رقمًا سريًا</div>
+        <div class="sub">اختر رقمًا سريًا من ٦ خانات لقفل التطبيق.</div>
+        <div class="pindots show"><div class="pd on" data-d="٤"></div><div class="pd on" data-d="٨"></div><div class="pd" data-d="٢"></div><div class="pd" data-d="٩"></div><div class="pd" data-d="١"></div><div class="pd" data-d="٧"></div><button class="pineye on" aria-label="Hide PIN"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7c2 0 3.7.7 5.1 1.6M22 12s-3.6 7-10 7c-2 0-3.7-.7-5.1-1.6"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/></svg></button></div>
+      </div>
+      <div class="keypad">
+        <div class="key">١</div><div class="key">٢</div><div class="key">٣</div>
+        <div class="key">٤</div><div class="key">٥</div><div class="key">٦</div>
+        <div class="key">٧</div><div class="key">٨</div><div class="key">٩</div>
+        <div class="key blank"></div><div class="key">٠</div>
+        <div class="key blank" style="background:none;border:none;color:#5d635c"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="scale(-1,1)"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM18 9l-6 6M12 9l6 6"/></svg></div>
+      </div>
+    </div></div></div>
+
+  </div>
+</div>
+
+</div>
+<div class="mgd-sec" id="S-2"><div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">Lifecycle States</span><span class="mgd-src">Screen-Lifecycle-States.html</span></div></div>
+<div class="mgd2 mgd-screen">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0e6b61;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:5px 11px;border-radius:999px">Lucide icons</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Account states</h1>
+    <p style="margin:0;max-width:74ch;font-size:17px;line-height:1.55;color:#5d635c">The full-screen states a center can land on: suspended, paused and ready to reactivate, and signed out. One calm message and a clear next step each. English plus an Arabic suspended. Sample data is placeholder. Design only.</p>
+  </div>
+  <div class="phones">
+
+    <!-- SUSPENDED -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · suspended</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="center">
+        <div class="ic" style="background:#f4e5e2;color:#9c3322"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        <span class="pill" style="background:#f4e5e2;color:#9c3322">Suspended</span>
+        <div class="h1">Your center is paused</div>
+        <div class="sub">Access is on hold because of an unpaid balance. Settle it to bring everything back.</div>
+      </div>
+      <div class="footer"><button class="btn-primary">Go to billing<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button><button class="btn-ghost">Contact support</button></div>
+    </div></div></div>
+
+    <!-- REACTIVATE -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · reactivate</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="center">
+        <div class="ic" style="background:#dfeeeb;color:#0a514a"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></div>
+        <span class="pill" style="background:#f4ebd7;color:#8a5e16">Paused</span>
+        <div class="h1">Welcome back</div>
+        <div class="sub">Your center was paused. Reactivate to pick up right where you left off. Your data is safe.</div>
+      </div>
+      <div class="footer"><button class="btn-primary">Reactivate center<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button><button class="btn-ghost">Sign out</button></div>
+    </div></div></div>
+
+    <!-- SESSION EXPIRED -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · session expired</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="center">
+        <div class="ic" style="background:#f4ebd7;color:#8a5e16"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+        <div class="h1">Session expired</div>
+        <div class="sub">For your security, you were signed out after a period of inactivity. Sign in again to continue.</div>
+      </div>
+      <div class="footer"><button class="btn-primary">Sign in again<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg></button></div>
+    </div></div></div>
+
+    <!-- AR SUSPENDED -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">AR · RTL · موقوف</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic',sans-serif;letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="center">
+        <div class="ic" style="background:#f4e5e2;color:#9c3322"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        <span class="pill" style="background:#f4e5e2;color:#9c3322">موقوف</span>
+        <div class="h1">تم إيقاف مركزك مؤقتًا</div>
+        <div class="sub">الوصول متوقف بسبب رصيد غير مدفوع. سدّد المبلغ لاستعادة كل شيء.</div>
+      </div>
+      <div class="footer"><button class="btn-primary">الذهاب إلى الفوترة<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></button><button class="btn-ghost">تواصل مع الدعم</button></div>
+    </div></div></div>
+
+  </div>
+</div>
+
+</div>
+<div class="mgd-sec" id="S-3"><div class="mgd-bar"><span class="mgd-num">03</span><span class="mgd-name">Lifecycle Status</span><span class="mgd-src">Screen-Lifecycle-Status.html</span></div></div>
+<div class="mgd3 mgd-screen">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0e6b61;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:5px 11px;border-radius:999px">Lucide icons</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Status</h1>
+    <p style="margin:0;max-width:74ch;font-size:17px;line-height:1.55;color:#5d635c">The public status page: an overall banner, each part of the service with its state, and recent incidents. English plus an Arabic mirror. Sample data is placeholder. Design only.</p>
+  </div>
+  <div class="phones">
+
+    <!-- STATUS EN -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · status</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><div class="ttl" style="flex:1">Status</div></div>
+      <div class="body">
+        <div class="banner"><div class="bcheck"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div><div style="font-size:16px;font-weight:600;color:#0f5137">All systems operational</div><div style="font-size:12px;color:#4f7a66;margin-top:2px">Updated 2 minutes ago</div></div></div>
+
+        <div class="glabel">SERVICES</div>
+        <div class="group">
+          <div class="srow"><span class="slabel">App & dashboard</span><span class="st-ok">Operational</span><span class="dot"></span></div>
+          <div class="srow"><span class="slabel">Attendance</span><span class="st-ok">Operational</span><span class="dot"></span></div>
+          <div class="srow"><span class="slabel">Payment recording</span><span class="st-ok">Operational</span><span class="dot"></span></div>
+          <div class="srow"><span class="slabel">WhatsApp messages</span><span class="st-ok">Operational</span><span class="dot"></span></div>
+          <div class="srow"><span class="slabel">Sign-in</span><span class="st-ok">Operational</span><span class="dot"></span></div>
+        </div>
+
+        <div class="glabel">RECENT INCIDENTS</div>
+        <div class="group">
+          <div class="srow" style="align-items:flex-start"><div style="width:9px;height:9px;border-radius:50%;background:#8a5e16;margin-top:5px"></div><div style="flex:1"><div style="font-size:14px;font-weight:600">Brief delay in WhatsApp delivery</div><div style="font-size:12px;color:#80827a;margin-top:2px" class="num">Resolved · 12/06/2026</div></div></div>
+        </div>
+        <div style="font-size:11px;color:#80827a;line-height:1.5;margin:-4px 2px 0">No other incidents in the last 30 days.</div>
+      </div>
+    </div></div></div>
+
+    <!-- STATUS AR -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">AR · RTL · الحالة</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic',sans-serif;letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><div class="ttl" style="flex:1">الحالة</div></div>
+      <div class="body">
+        <div class="banner"><div class="bcheck"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div><div style="font-size:16px;font-weight:600;color:#0f5137">كل الأنظمة تعمل</div><div style="font-size:12px;color:#4f7a66;margin-top:2px">آخر تحديث قبل دقيقتين</div></div></div>
+
+        <div class="glabel">الخدمات</div>
+        <div class="group">
+          <div class="srow"><span class="slabel">التطبيق ولوحة التحكم</span><span class="st-ok">تعمل</span><span class="dot"></span></div>
+          <div class="srow"><span class="slabel">الحضور</span><span class="st-ok">تعمل</span><span class="dot"></span></div>
+          <div class="srow"><span class="slabel">تسجيل الدفعات</span><span class="st-ok">تعمل</span><span class="dot"></span></div>
+          <div class="srow"><span class="slabel">رسائل واتساب</span><span class="st-ok">تعمل</span><span class="dot"></span></div>
+          <div class="srow"><span class="slabel">تسجيل الدخول</span><span class="st-ok">تعمل</span><span class="dot"></span></div>
+        </div>
+
+        <div class="glabel">أحدث الأعطال</div>
+        <div class="group">
+          <div class="srow" style="align-items:flex-start"><div style="width:9px;height:9px;border-radius:50%;background:#8a5e16;margin-top:5px"></div><div style="flex:1"><div style="font-size:14px;font-weight:600">تأخّر بسيط في تسليم رسائل واتساب</div><div style="font-size:12px;color:#80827a;margin-top:2px" class="num">تم الحل · ١٢/٠٦/٢٠٢٦</div></div></div>
+        </div>
+        <div style="font-size:11px;color:#80827a;line-height:1.5;margin:-4px 2px 0">لا أعطال أخرى خلال آخر ٣٠ يومًا.</div>
+      </div>
+    </div></div></div>
+
+  </div>
+</div>
+
+</div>
+<div class="mgd-sec" id="S-4"><div class="mgd-bar"><span class="mgd-num">04</span><span class="mgd-name">Center Resubscribe</span><span class="mgd-src">Screen-Center-Resubscribe.html</span></div></div>
+<div class="mgd4 mgd-screen">
+<div class="board">
+  <div class="eyebrow">TutoringHQ · Reference Screen</div>
+  <div class="pill">Center · Resubscribe · Draft</div>
+  <h1 class="mh">Center resubscribe</h1>
+  <p class="lead">The reactivation screen a paused center lands on. Current price, their last plan preselected, no reactivation fee and no trial. Nothing was deleted. English and Arabic. Sample data is placeholder.</p>
+
+  <div class="phones">
+
+    <!-- EN -->
+    <div class="frame">
+    <div class="phone"><div class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar">
+        <div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div>
+        <div class="tt">Reactivate</div>
+      </div>
+      <div class="body">
+        <div class="wb"><h2>Welcome back</h2><p>Your students, teachers, groups, and full history are safe. Pick up right where you left off.</p></div>
+        <div class="seg"><div class="on">Monthly</div><div>Annual</div></div>
+        <div class="savenote">Switch to annual and get 2 months free</div>
+        <div class="sec">Choose your plan</div>
+        <div class="plan"><div class="radio"></div><div><div class="pn">Solo</div><div class="pc">Up to 50 students / week</div></div><div class="pp">999 <span>EGP/mo</span></div></div>
+        <div class="plan"><div class="radio"></div><div><div class="pn">Nano</div><div class="pc">Up to 120 students / week</div></div><div class="pp">1,999 <span>EGP/mo</span></div></div>
+        <div class="plan sel"><div class="radio"></div><div><div class="pn">Starter<span class="tag">Your last plan</span></div><div class="pc">Up to 200 students / week</div></div><div class="pp">4,499 <span>EGP/mo</span></div></div>
+        <div class="plan"><div class="radio"></div><div><div class="pn">Pro</div><div class="pc">Up to 500 students / week</div></div><div class="pp">7,999 <span>EGP/mo</span></div></div>
+        <div class="plan"><div class="radio"></div><div><div class="pn">Business</div><div class="pc">Up to 1,000 students / week</div></div><div class="pp">12,999 <span>EGP/mo</span></div></div>
+        <div class="plan"><div class="radio"></div><div><div class="pn">Enterprise</div><div class="pc">Up to 2,000 students / week</div></div><div class="pp">18,499 <span>EGP/mo</span></div></div>
+        <div class="safe">Nothing was deleted while you were paused. No reactivation fee. Billing starts today at the current price.</div>
+      </div>
+      <div class="footer"><button class="btn">Reactivate Starter · 4,499 EGP/mo</button></div>
+    </div></div>
+    <div class="cap">EN · reactivate</div>
+    </div>
+
+    <!-- AR -->
+    <div class="frame">
+    <div class="phone"><div class="screen" dir="rtl" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar">
+        <div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+        <div class="tt">إعادة التفعيل</div>
+      </div>
+      <div class="body">
+        <div class="wb"><h2>أهلًا بعودتك</h2><p>طلابك ومعلّموك ومجموعاتك وكل سجلّك محفوظة. تابع من حيث توقفت.</p></div>
+        <div class="seg"><div class="on">شهري</div><div>سنوي</div></div>
+        <div class="savenote">حوّل إلى السنوي واحصل على شهرين مجانًا</div>
+        <div class="sec">اختر باقتك</div>
+        <div class="plan"><div class="radio"></div><div><div class="pn">Solo</div><div class="pc">حتى ٥٠ طالبًا / أسبوع</div></div><div class="pp">٩٩٩ <span>ج.م/شهر</span></div></div>
+        <div class="plan"><div class="radio"></div><div><div class="pn">Nano</div><div class="pc">حتى ١٢٠ طالبًا / أسبوع</div></div><div class="pp">١٬٩٩٩ <span>ج.م/شهر</span></div></div>
+        <div class="plan sel"><div class="radio"></div><div><div class="pn">Starter<span class="tag">باقتك السابقة</span></div><div class="pc">حتى ٢٠٠ طالب / أسبوع</div></div><div class="pp">٤٬٤٩٩ <span>ج.م/شهر</span></div></div>
+        <div class="plan"><div class="radio"></div><div><div class="pn">Pro</div><div class="pc">حتى ٥٠٠ طالب / أسبوع</div></div><div class="pp">٧٬٩٩٩ <span>ج.م/شهر</span></div></div>
+        <div class="plan"><div class="radio"></div><div><div class="pn">Business</div><div class="pc">حتى ١٬٠٠٠ طالب / أسبوع</div></div><div class="pp">١٢٬٩٩٩ <span>ج.م/شهر</span></div></div>
+        <div class="plan"><div class="radio"></div><div><div class="pn">Enterprise</div><div class="pc">حتى ٢٬٠٠٠ طالب / أسبوع</div></div><div class="pp">١٨٬٤٩٩ <span>ج.م/شهر</span></div></div>
+        <div class="safe">لم يُحذف أي شيء أثناء الإيقاف. لا توجد رسوم إعادة تفعيل. تبدأ الفوترة اليوم بالسعر الحالي.</div>
+      </div>
+      <div class="footer"><button class="btn">إعادة تفعيل Starter · ٤٬٤٩٩ ج.م/شهر</button></div>
+    </div></div>
+    <div class="cap">AR · إعادة التفعيل</div>
+    </div>
+
+  </div>
+</div>
+
+</div>
+<div class="mgd-sec" id="S-5"><div class="mgd-bar"><span class="mgd-num">05</span><span class="mgd-name">Teacher Resubscribe</span><span class="mgd-src">Screen-Teacher-Resubscribe.html</span></div></div>
+<div class="mgd5 mgd-screen">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#6f4e12;background:#f4ebd7;border:1px solid #e6d3a9;padding:5px 11px;border-radius:999px">Teacher · Resubscribe</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Resubscribe</h1>
+    <p style="margin:0;max-width:82ch;font-size:17px;line-height:1.55;color:#5d635c">The screen a teacher sees after their trial or subscription lapses: a reassurance that nothing is lost, a monthly/annual toggle, the three plans with one preselected, any referral credit that will apply at checkout, and a single reactivate button. English and Arabic. Prices are placeholders. Design only.</p>
+  </div>
+  <div class="phones">
+
+    <!-- EN -->
+    <div class="frame"><span class="cap">EN · trial ended</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Resubscribe</div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="body">
+        <div class="alert">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9a6b1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+          <div><div class="alt">Your free trial has ended</div><div class="als">Your groups, students and history are saved. Pick a plan to keep teaching.</div></div>
+        </div>
+
+        <div class="seg"><div class="segopt on">Monthly</div><div class="segopt">Annual <span class="save">Save 2 months</span></div></div>
+
+        <div class="plan sel">
+          <div class="ptop"><div class="pradio"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="pnm">Standard</div><div class="pprice money">499 EGP<small>/mo</small></div></div>
+          <div class="pfeat"><div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a6b60" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Unlimited groups &amp; students</div><div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a6b60" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Attendance &amp; class records</div></div>
+        </div>
+
+        <div class="plan">
+          <div class="ptop"><div class="pradio"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="pnm">Pro <span class="pop">Popular</span></div><div class="pprice money">999 EGP<small>/mo</small></div></div>
+          <div class="pfeat"><div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a6b60" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Everything in Standard</div><div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a6b60" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Analytics &amp; verified collection</div></div>
+        </div>
+
+        <div class="plan">
+          <div class="ptop"><div class="pradio"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="pnm">Scale</div><div class="pprice money">2,499 EGP<small>/mo</small></div></div>
+          <div class="pfeat"><div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a6b60" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Everything in Pro</div><div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a6b60" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Team seats &amp; priority support</div></div>
+        </div>
+
+        <div class="credit"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0a514a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/><path d="M16 3l5 5-9 1 1-5z"/></svg><div>You have <b>900 EGP</b> referral credit. It applies at checkout.</div></div>
+        <div class="keep"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#80827a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top:1px"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Nothing is deleted while you're paused.</div>
+      </div>
+      <div class="footer"><button class="btn-primary">Reactivate Standard · <span class="money">499 EGP</span>/mo</button></div>
+    </div></div></div>
+
+    <!-- AR -->
+    <div class="frame"><span class="cap">AR · RTL · انتهاء التجربة</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span class="num">&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl">تجديد الاشتراك</div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="body">
+        <div class="alert">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9a6b1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+          <div><div class="alt">انتهت فترتك التجريبية</div><div class="als">مجموعاتك وطلابك وسجلّك محفوظة. اختر خطة لتستمر في التدريس.</div></div>
+        </div>
+
+        <div class="seg"><div class="segopt on">شهري</div><div class="segopt">سنوي <span class="save">وفّر شهرين</span></div></div>
+
+        <div class="plan sel">
+          <div class="ptop"><div class="pradio"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="pnm">Standard</div><div class="pprice money">٤٩٩ ج.م<small>/شهر</small></div></div>
+          <div class="pfeat"><div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a6b60" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>مجموعات وطلاب بلا حدود</div><div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a6b60" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>الحضور وسجلات الحصص</div></div>
+        </div>
+
+        <div class="plan">
+          <div class="ptop"><div class="pradio"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="pnm">Pro <span class="pop">الأكثر شيوعًا</span></div><div class="pprice money">٩٩٩ ج.م<small>/شهر</small></div></div>
+          <div class="pfeat"><div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a6b60" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>كل مزايا Standard</div><div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a6b60" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>التحليلات والتحصيل الموثّق</div></div>
+        </div>
+
+        <div class="plan">
+          <div class="ptop"><div class="pradio"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="pnm">Scale</div><div class="pprice money">٢٬٤٩٩ ج.م<small>/شهر</small></div></div>
+          <div class="pfeat"><div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a6b60" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>كل مزايا Pro</div><div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a6b60" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>مقاعد الفريق ودعم بأولوية</div></div>
+        </div>
+
+        <div class="credit"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0a514a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/><path d="M16 3l5 5-9 1 1-5z"/></svg><div>لديك رصيد إحالات <b>٩٠٠ ج.م</b>، يُطبّق عند الدفع.</div></div>
+        <div class="keep"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#80827a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top:1px"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>لا يُحذف أي شيء أثناء الإيقاف.</div>
+      </div>
+      <div class="footer"><button class="btn-primary">تفعيل Standard · <span class="money">٤٩٩ ج.م</span>/شهر</button></div>
+    </div></div></div>
+
+  </div>
+</div>
+
+</div>
+<div class="mgd-sec" id="S-6"><div class="mgd-bar"><span class="mgd-num">06</span><span class="mgd-name">Coming Soon</span><span class="mgd-src">Screen-Coming-Soon.html</span></div></div>
+<div class="mgd6 mgd-screen">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0e6b61;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:5px 11px;border-radius:999px">Lucide icons</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Coming Soon</h1>
+    <p style="margin:0;max-width:74ch;font-size:17px;line-height:1.55;color:#5d635c">The pattern for anything not ready yet: attendance cards, ordering, printing, and card scanning. A calm full screen that points to the working alternative, and a locked entry row with a Coming soon badge. English plus an Arabic screen. Design only.</p>
+  </div>
+  <div class="phones">
+
+    <!-- COMING SOON SCREEN EN -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · coming soon screen</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl" style="flex:1">Attendance cards</div></div>
+      <div class="center">
+        <div class="cs-icon"><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h5"/></svg></div>
+        <div class="soon-big">Coming soon</div>
+        <div class="h1">Cards & scanning</div>
+        <div class="sub">We're still perfecting the cards, printing, and scanner. This will open up soon.</div>
+      </div>
+      <div class="footer"><button class="btn-primary"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Take attendance with the checklist</button></div>
+    </div></div></div>
+
+    <!-- LOCKED ENTRY EN -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · locked entry row</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="ttl" style="flex:1">Settings</div><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div></div>
+      <div class="body">
+        <div class="glabel">CENTER</div>
+        <div class="group">
+          <div class="srow"><div class="sicon" style="background:#dfeeeb;color:#0a514a"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></div><span class="slabel">Center details</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c3c4ba" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+          <div class="srow"><div class="sicon" style="background:#f4ebd7;color:#8a5e16"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/></svg></div><span class="slabel">Subjects & grades</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c3c4ba" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+          <div class="srow locked"><div class="sicon" style="background:#f2eee5;color:#5d635c"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M3 12h18"/></svg></div><span class="slabel">Scanner</span><span class="soon" style="margin-inline-end:8px">Coming soon</span><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#a6a79d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        </div>
+        <div style="font-size:11px;color:#80827a;line-height:1.5;margin:-4px 2px 0">Locked items show a badge and cannot be opened yet.</div>
+      </div>
+    </div></div></div>
+
+    <!-- COMING SOON SCREEN AR -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">AR · RTL · قريبًا</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic',sans-serif;letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl" style="flex:1">كروت الحضور</div></div>
+      <div class="center">
+        <div class="cs-icon"><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h5"/></svg></div>
+        <div class="soon-big">قريبًا</div>
+        <div class="h1">الكروت والمسح</div>
+        <div class="sub">ما زلنا نجهّز الكروت والطباعة والماسح. ستتاح قريبًا.</div>
+      </div>
+      <div class="footer"><button class="btn-primary"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>سجّل الحضور بالقائمة</button></div>
+    </div></div></div>
+
+  </div>
+</div>
+
+</div>
+</body></html>
