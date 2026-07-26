@@ -1,142 +1,163 @@
-# Running the redesign as a loop
+# Running the redesign as a self-merging loop
 
-**Written 26 July 2026.** Companion to `IMPLEMENTATION-PLAN.md` and `START-CLAUDE-CODE.md`.
+**Revised 26 July 2026.** Supersedes the earlier version where Claude Code opened PRs and stopped.
 
-104 screens across 26 merged files. **66 of them, in 19 files, are safe to loop. 38 of them, in 7
-files, are not.** This document is the loop, its gates, and the list of what stays out of it.
-
----
-
-## Before the loop, two sessions that are not loopable
-
-### Session 1, the inventory
-
-Without it the loop guesses which designs replace a live route, which are new builds, and which live
-routes have no design at all. Prompt is in `START-CLAUDE-CODE.md`.
-
-**Read list 3 yourself before the loop starts.** Live routes with no design either get one or get
-deleted, and that is a scope decision, not a build decision.
-
-### Session 2, foundations
-
-Every one of the 66 screens inherits these. Four PRs, reviewed individually:
-
-1. Tokens. Colour, spacing, radius, shadow, as CSS variables.
-2. Type. IBM Plex Sans, Plex Sans Arabic, Plex Mono, including the rule that Mono is dropped on Arabic frames in favour of weight 600.
-3. **The language system.** Eastern Arabic numerals, Arabic currency mark, RTL, directional icons that flip. This is the one that is genuinely painful to retrofit.
-4. Shared components, from `Merged-Design-Patterns`. Row actions, quick menu rows, group actions, expand sheet, **and the empty state**.
-
-**The empty state is a component, not a per-screen drawing.** Section 01 of `Merged-Design-Patterns`
-has the pattern and the binding rules. Build it once here. If it gets reimplemented per screen you
-will end up with nineteen versions of it.
+**70 of the 105 screens run in a loop that merges itself. 35 stay manual.**
 
 ---
 
-## The 19 files the loop may touch, in order
+## Why merging is acceptable now, and when it stops being
 
-Daily loop first, because that is what a pilot center actually uses.
+The rule that nothing merges without review exists to protect customers. **There are no customers.**
+Production holds two test centers, Paymob is in test mode, and nothing charges anyone. A bad merge
+today is a revert, not an incident.
 
-```
-Merged-Center-Home            Merged-Center-Students
-Merged-Center-Groups          Merged-Center-Attendance
-Merged-Center-Insight         Merged-Center-WhatsApp
-Merged-Center-Orders          Merged-Center-Setup
-Merged-Teacher-Home           Merged-Teacher-Students
-Merged-Teacher-Groups         Merged-Teacher-Insight
-Merged-Teacher-WhatsApp       Merged-Teacher-Setup
-Merged-Public-Marketing       Merged-Public-Legal
-Merged-Admin-Accounts         Merged-Admin-Platform
-Merged-Design-Patterns
-```
+That stops being true the moment a pilot center is running their real operation on this. **When the
+first real center loads real student data, this loop goes back to opening PRs and stopping.**
 
-## The 7 files the loop must never touch
+Three things replace your review in the meantime:
 
-```
-Merged-Public-App             Merged-Center-Money
-Merged-Teacher-Money          Merged-Admin-Money
-Merged-Verification-Payouts   Merged-Lifecycle
-Merged-CEO
-```
-
-38 screens. Money, auth, account state. These go one at a time, largest model, adversarial review.
-A full day was spent on one route in this family and it turned up a live billing fault where a
-paid-up center was told to use the Downgrade tab on its due date. A loop would not have found that.
+- **CI must be green.** It is the gate. No green, no merge, no exceptions.
+- **One PR per file.** A revert is then one file, not the whole redesign.
+- **The gate after the first two files.** Cheap, and it catches a wrong pattern at file 2 rather than file 20.
 
 ---
 
-## The loop prompt
+## The split
+
+**LOOP, 20 files, 70 screens.** Claude Code builds, opens, waits for green, merges, continues.
 
 ```
-Redesign loop. You may work through the file list below without stopping between
-files, EXCEPT at the gate described in step 4.
+Merged-Center-Home          Merged-Center-Students
+Merged-Center-Groups        Merged-Center-Attendance
+Merged-Center-Insight       Merged-Center-WhatsApp
+Merged-Center-Orders        Merged-Center-Setup
+Merged-Teacher-Home         Merged-Teacher-Students
+Merged-Teacher-Groups       Merged-Teacher-Insight
+Merged-Teacher-WhatsApp     Merged-Teacher-Setup
+Merged-Public-Marketing     Merged-Public-Legal
+Merged-Admin-Accounts       Merged-Admin-Platform
+Merged-CEO                  Merged-Design-Patterns
+```
 
-BEFORE YOU START, confirm all four or stop and tell me which is missing:
+**MANUAL, 6 files, 35 screens.** Largest model, adversarial review, you merge.
+
+```
+Merged-Public-App           Merged-Center-Money
+Merged-Teacher-Money        Merged-Admin-Money
+Merged-Verification-Payouts Merged-Lifecycle
+```
+
+The line is not "shows money", it is **changes money or access**. Those six contain record payment,
+void, withdraw, approve, verify, set PIN, checkout, upgrade and downgrade. CEO displays revenue and
+has zero buttons, so it loops.
+
+A full day went on one route in that family and it turned up a live billing fault where a paid-up
+center was told to use the Downgrade tab on its own due date. That was found by adversarial review.
+A loop would have shipped it.
+
+---
+
+## Before the loop, two sessions that do not loop
+
+**The inventory.** Prompt in `START-CLAUDE-CODE.md`. Read list three yourself, live routes with no
+design, because that is a scope decision rather than a build one.
+
+**Foundations, four PRs, and you merge these yourself even though the loop merges later.** Tokens,
+type, the language system, shared components. All 70 screens inherit them, so an error here is an
+error everywhere. The language system is the one that is genuinely painful to retrofit.
+
+`Merged-Design-Patterns` sections 01 and 02 are the empty state and the loading state. Both are
+components built once in this pass, never per screen.
+
+---
+
+## The prompt
+
+```
+Self-merging redesign loop.
+
+You may build, open, merge and continue without stopping, except at the gate in
+step 9. You have merge permission for this loop. If gh cannot merge, stop and
+tell me rather than working around it.
+
+BEFORE YOU START, confirm all four or stop:
   - design/INVENTORY.md exists and I have approved it
   - the four foundation PRs are merged: tokens, type, language system, components
-  - the empty state component exists and is reusable, built from section 01 of
-    design/Merged-Design-Patterns.html
+  - the empty state and loading state components exist and are reusable, built
+    from sections 01 and 02 of design/Merged-Design-Patterns.html
   - master is green
 
-FILE ORDER (19 files, 66 screens):
+FILE ORDER, 20 files, 70 screens:
   Merged-Center-Home, Merged-Center-Students, Merged-Center-Groups,
   Merged-Center-Attendance, Merged-Center-Insight, Merged-Center-WhatsApp,
   Merged-Center-Orders, Merged-Center-Setup,
   Merged-Teacher-Home, Merged-Teacher-Students, Merged-Teacher-Groups,
   Merged-Teacher-Insight, Merged-Teacher-WhatsApp, Merged-Teacher-Setup,
   Merged-Public-Marketing, Merged-Public-Legal,
-  Merged-Admin-Accounts, Merged-Admin-Platform, Merged-Design-Patterns
+  Merged-Admin-Accounts, Merged-Admin-Platform, Merged-CEO,
+  Merged-Design-Patterns
 
-NEVER TOUCH THESE, they are money or auth and I handle them separately:
+NEVER TOUCH THESE. They change money or access and I review them myself:
   Merged-Public-App, Merged-Center-Money, Merged-Teacher-Money,
-  Merged-Admin-Money, Merged-Verification-Payouts, Merged-Lifecycle, Merged-CEO
+  Merged-Admin-Money, Merged-Verification-Payouts, Merged-Lifecycle
 
 FOR EACH FILE:
-  1. Read design/<file>.html. Its header lists every screen and the section it
-     is in. Work through them in order.
+  1. Read design/<file>.html. Its header lists every screen and its section.
   2. Use the existing tokens, type scale and components. Do not introduce new
-     ones. If a screen needs something the component set does not have, STOP and
-     ask me rather than inventing it.
-  3. Strip the .mgdN scoping prefix. It must never reach the codebase.
-  4. Do not copy the DOM. Take layout, spacing, type scale and colour, and write
-     the markup properly.
+     ones. If a screen needs something that does not exist, STOP and ask.
+  3. Strip the .mgdN prefix. It must never reach the codebase.
+  4. Do not copy the DOM. Take layout, spacing, type scale and colour.
   5. Sample data is placeholder, never fixtures or seed data.
   6. Verify every column against information_schema.columns before it enters a
-     query. Migration files are not proof.
+     query. Migration files are not proof. One SELECT per MCP call.
   7. Bump SW_VERSION in public/sw.js.
-  8. One PR per file, held branch, do not merge.
+  8. One PR per file. Wait for CI. GREEN MEANS MERGE, RED MEANS STOP AND TELL
+     ME. Never merge red, never disable a test, never change a test to go green.
+  9. THE GATE: after the first TWO files are merged, stop completely and tell
+     me. Do not start the third until I say continue.
 
-THE GATE: after the FIRST TWO files, stop the loop completely and tell me they
-are ready. Do not start the third until I say continue. If the pattern is wrong
-I would rather fix two files than nineteen.
-
-AFTER THE GATE: continue through the remaining files without stopping, but stop
-immediately and tell me if any of these happen:
+AFTER THE GATE, continue through the rest without stopping, but stop immediately
+and tell me if any of these happen:
+  - CI goes red and the cause is not obvious and trivial
   - a screen needs a component that does not exist
   - a column you need is not in the live schema
-  - a design contradicts what is already built
-  - you are about to touch one of the seven forbidden files
+  - a design contradicts something already built
+  - you are about to touch one of the six forbidden files
   - the same fix is needed in more than three files, which means it belongs in
     the foundations rather than in each screen
+  - you find yourself editing a test rather than the code
 
-Report after each file: which screens, the PR number, and anything you had to
-decide that I did not specify.
+Report after each file: which screens, the PR number, CI result, merged yes or
+no, and anything you decided that I did not specify.
+
+When all 20 are done, run the full suite on master and give me the test count.
 ```
 
 ---
 
-## What to look for at the gate
+## What to look at when the gate fires
 
-Two files, roughly seven screens. Read them properly, because everything after
-inherits whatever you accept here.
+Two files, roughly eight screens, already on master. Read them properly, because the other eighteen
+inherit whatever you accept.
 
-- **Arabic is a separate screen, not a translation layer.** Eastern numerals, Arabic currency mark, chevrons flipped. If the Arabic side is the English DOM with strings swapped, stop the loop.
-- **The empty state is the shared component**, not a fresh one written into that screen.
+- **Arabic is a separate screen, not a translation layer.** Eastern numerals, Arabic currency mark, chevrons flipped. If it is the English DOM with strings swapped, stop the loop.
+- **Empty and loading states are the shared components**, not fresh ones written into that screen.
 - **No `.mgd` anywhere** in the diff.
 - **Sample data did not become seed data.**
 - The markup is written properly rather than lifted out of the reference file.
 
-## Review burden, so you can plan the day
+---
 
-19 loop PRs plus 7 careful ones is 26 reviews. At ten minutes each that is a bit over four hours,
-and the seven money ones take longer than ten minutes. Do not try to do all of it in one sitting;
-the money files deserve fresh attention rather than whatever is left at the end.
+## The honest risk
+
+You are trading the ability to catch a mistake per file for finishing in a fraction of the time. The
+gate buys most of that back, because a wrong pattern shows up at file two rather than file twenty.
+
+What the gate does not catch is slow drift: file eleven quietly stops using the shared empty state
+and writes its own. Nothing fails, CI stays green, and you find it much later. Worth skimming the
+diffs even on files you are not formally reviewing.
+
+**The one rule with no flexibility: red CI never merges.** The moment a test gets changed to make a
+build pass, this loop has stopped being safe. That is exactly how the billing fault survived as long
+as it did, and it was found because a test was left red rather than quietly adjusted.
