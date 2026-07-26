@@ -82,6 +82,26 @@ export function getReactivationAmount(params: {
   };
 }
 
+/**
+ * Daily-rate-difference proration for a mid-cycle tier upgrade.
+ *
+ * `daysRemaining` is clamped to `getPeriodDays(currentBillingPeriod)` — the days
+ * left in a paid period can never legitimately exceed the period's own length,
+ * since `next_payment_due` resets every renewal. A stored due date further out
+ * than that is corrupt data (a stale/placeholder sentinel, e.g. a `2099-12-31`
+ * seed value), not a real remaining-time count, and must not be allowed to
+ * multiply the daily-rate difference into an arbitrarily large charge. The
+ * clamp makes that failure mode structurally impossible rather than relying on
+ * a downstream cap to catch it after the fact.
+ *
+ * This clamp does NOT bound `amountDue` below `newPlanPrice` when
+ * currentBillingPeriod !== newBillingPeriod (a cross-interval call, e.g. an
+ * annual center's daily rate compared against a monthly target's daily rate) —
+ * the two daily rates use different day divisors, so their difference scales
+ * with `getPeriodDays(currentBillingPeriod)`, not with the new plan's own
+ * period. Callers that can reach a cross-interval combination still need a
+ * cap on the returned `amountDue` (see route.ts callers).
+ */
 export function getUpgradeCost(params: {
   newPlanPrice: number;
   currentPlanPrice: number;
@@ -98,10 +118,11 @@ export function getUpgradeCost(params: {
   const dueDate = new Date(params.nextPaymentDue);
   dueDate.setHours(0, 0, 0, 0);
 
-  const daysRemaining = Math.max(
+  const rawDaysRemaining = Math.max(
     0,
     Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)),
   );
+  const daysRemaining = Math.min(rawDaysRemaining, getPeriodDays(params.currentBillingPeriod));
 
   const newDailyRate = getDailyRate(params.newPlanPrice, params.newBillingPeriod);
   const currentDailyRate = getDailyRate(params.currentPlanPrice, params.currentBillingPeriod);
