@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<!--
+================================================================
+ TutoringHQ · MERGED DESIGN REFERENCE
+ File: Merged-Center-Orders.html
+ Center · Card orders
+
+ CONTENTS (4 screens):
+  01. Orders   <-  Screen-Orders.html
+  02. Order Detail   <-  Screen-Order-Detail.html
+  03. Order Checkout   <-  Screen-Order-Checkout.html
+  04. Card Orders Coming Soon   <-  Screen-Card-Orders-Coming-Soon.html
+
+----------------------------------------------------------------
+ HOW TO READ THIS FILE WHEN IMPLEMENTING IT
+----------------------------------------------------------------
+ 1. CSS IS SCOPED. Every rule carries a .mgdN prefix so that
+    several screens can share one page without their styles
+    colliding.
+        in this file:   .mgd4 .pins{ ... }
+        in your code:   .pins{ ... }
+    Strip the .mgdN prefix. It is bookkeeping for this reference
+    file only and must never reach the codebase.
+
+ 2. ONE SECTION = ONE SCREEN. Each section bar shows its number,
+    its name, and the original screen file it came from. Use that
+    filename as the screen's identity, not the section number.
+
+ 3. FRAMES ARE STATES, NOT PAGES. Each phone inside a section is
+    one state of that screen (empty, filled, error, and so on).
+    The caption under or above each phone names the state.
+
+ 4. THE TWO LANGUAGES ARE SEPARATE SCREENS. English and Arabic
+    are never a translation overlay. Arabic frames use Eastern
+    Arabic numerals (0-9 written as Arabic-Indic) and the Arabic
+    currency mark. English frames use Western numerals and EGP.
+    Directional icons such as chevrons flip with the language.
+
+ 5. SAMPLE DATA IS PLACEHOLDER. Names, amounts, dates and phone
+    numbers are illustrative. Do not treat them as fixtures or
+    seed data.
+
+ 6. THIS IS DESIGN, NOT PRODUCTION CODE. Markup here is built to
+    be read, not shipped. Take the layout, spacing, type scale
+    and colour decisions from it. Do not copy the DOM wholesale.
+
+ 7. ANY UI OR BRANDING CHANGE BUMPS SW_VERSION in public/sw.js.
+================================================================
+-->
+
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Center · Card orders · TutoringHQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+html{background:#d8d3c6;color-scheme:light}
+:root{color-scheme:light}
+
+html,body{margin:0;padding:0}
+body{background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased}
+.mgd-top{max-width:1180px;margin:0 auto;padding:44px 24px 8px;color:#1b201d}
+.mgd-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5d635c;font-weight:600}
+.mgd-h1{font-size:42px;line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:12px 0 10px}
+.mgd-lede{font-size:16px;line-height:1.55;color:#5d635c;max-width:82ch;margin:0}
+.mgd-toc{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 0}
+.mgd-toc a{font-size:12.5px;font-weight:600;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:6px 12px;border-radius:999px;text-decoration:none}
+.mgd-sec{max-width:1180px;margin:0 auto;padding:14px 24px 0}
+.mgd-bar{display:flex;align-items:baseline;gap:12px;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin-top:34px}
+.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a5e16;font-weight:500}
+.mgd-name{font-size:22px;font-weight:700;color:#14181a;letter-spacing:-.01em}
+.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#80827a}
+/* ===== Screen-Orders ===== */
+.mgd1 *{box-sizing:border-box}
+.mgd1{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd1 .num{font-variant-numeric:tabular-nums}
+.mgd1 .mono{font-family:'IBM Plex Mono',monospace}
+.mgd1 svg{display:block;flex-shrink:0}
+.mgd1 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd1 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd1 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd1 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 10px}
+.mgd1 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd1 .addbtn{width:42px;height:42px;border-radius:12px;background:#0e6b61;color:#fffdf8;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(14,107,97,.28)}
+.mgd1 .body{flex:1;overflow-y:auto;padding:2px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.mgd1 .sec{font-size:13px;font-weight:600;color:#80827a;margin:6px 2px -2px}
+.mgd1 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px}
+.mgd1 .ok{background:#e4f0e9;color:#1a6d4d}
+.mgd1 .info{background:#e3ecf6;color:#2563eb}
+.mgd1 .warn{background:#f4ebd7;color:#8a5e16}
+.mgd1 .cta{background:#fffdf8;border:1px solid #e2ddd1;border-radius:18px;padding:14px}
+.mgd1 .idcard{background:linear-gradient(140deg,#0f766b,#083f39);border-radius:14px;padding:14px;color:#eef6f4;position:relative;overflow:hidden}
+.mgd1 .idcard::after{content:"";position:absolute;right:-24px;bottom:-24px;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.05)}
+.mgd1 .qr{width:52px;height:52px;border-radius:9px;background:#eef6f4;color:#0a514a;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd1 .btn-primary{width:100%;height:48px;background:#0e6b61;color:#fffdf8;border-radius:13px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28);border:none}
+.mgd1 .orow{display:flex;align-items:center;gap:11px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:12px 13px}
+.mgd1 .oicon{width:40px;height:40px;border-radius:11px;background:#f2eee5;color:#5d635c;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd1 .on{font-size:14px;font-weight:600}
+.mgd1 .om{font-size:11px;color:#80827a;margin-top:2px}
+.mgd1 .kb{color:#b0b1a7;flex-shrink:0}
+.mgd1 .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;padding:0 30px}
+.mgd1 .eill{width:96px;height:96px;border-radius:26px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#b9bbb0;margin-bottom:6px;box-shadow:0 4px 14px rgba(28,33,30,.06)}
+.mgd1 .board{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
+.mgd1 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd1 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd1 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+/* ===== Screen-Order-Detail ===== */
+.mgd2 *{box-sizing:border-box}
+.mgd2{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd2 .num{font-variant-numeric:tabular-nums}
+.mgd2 .mono{font-family:'IBM Plex Mono',monospace}
+.mgd2 svg{display:block;flex-shrink:0}
+.mgd2 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd2 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd2 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd2 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 10px}
+.mgd2 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd2 .body{flex:1;overflow-y:auto;padding:2px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.mgd2 .sec{font-size:13px;font-weight:600;color:#80827a;margin:6px 2px -2px}
+.mgd2 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px}
+.mgd2 .info{background:#e3ecf6;color:#2563eb}
+.mgd2 .card{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:14px}
+.mgd2 .tlrow{display:flex;gap:12px;position:relative;padding-bottom:18px}
+.mgd2 .tlrow:last-child{padding-bottom:0}
+.mgd2 .tlrow:not(:last-child)::before{content:"";position:absolute;inset-inline-start:10px;top:24px;bottom:2px;width:2px;background:#e2ddd1}
+.mgd2 .tlrow.done:not(:last-child)::before{background:#0e6b61}
+.mgd2 .tldot{width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;z-index:1}
+.mgd2 .tldot.done{background:#0e6b61;color:#fff}
+.mgd2 .tldot.cur{background:#e3ecf6;color:#2563eb;box-shadow:0 0 0 2px #2563eb inset}
+.mgd2 .tldot.todo{background:#f2eee5;color:#c9cabf}
+.mgd2 .tt{font-size:14px;font-weight:600;line-height:1.1}
+.mgd2 .tt.todo{color:#a6a79d;font-weight:500}
+.mgd2 .td{font-size:11px;color:#80827a;margin-top:2px}
+.mgd2 .idcard{width:70px;height:44px;border-radius:8px;background:linear-gradient(140deg,#0f766b,#083f39);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#eef6f4}
+.mgd2 .prow{display:flex;justify-content:space-between;font-size:13px;padding:5px 0}
+.mgd2 .btn-primary{width:100%;height:48px;background:#0e6b61;color:#fffdf8;border-radius:13px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28);border:none}
+.mgd2 .btn-ghost{width:100%;height:44px;background:#f2eee5;color:#5d635c;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:14px;font-weight:600;border:none}
+.mgd2 .board{max-width:760px;margin:0 auto;padding:56px 28px 96px}
+.mgd2 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd2 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd2 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+/* ===== Screen-Order-Checkout ===== */
+.mgd3 *{box-sizing:border-box}
+.mgd3{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd3 .num{font-variant-numeric:tabular-nums}
+.mgd3 .mono{font-family:'IBM Plex Mono',monospace}
+.mgd3 svg{display:block;flex-shrink:0}
+.mgd3 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd3 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd3 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd3 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 6px}
+.mgd3 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd3 .body{flex:1;overflow-y:auto;padding:2px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.mgd3 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px}
+.mgd3 .ok{background:#e4f0e9;color:#1a6d4d}
+.mgd3 /* step bar */
+  .steps{display:flex;align-items:center;gap:5px;padding:6px 4px 2px}
+.mgd3 .snode{width:24px;height:24px;border-radius:50%;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd3 .snode.done{background:#0e6b61;color:#fff}
+.mgd3 .snode.cur{background:#0e6b61;color:#fff;box-shadow:0 0 0 3px rgba(14,107,97,.18)}
+.mgd3 .snode.todo{background:#f2eee5;color:#a6a79d}
+.mgd3 .sline{flex:1;height:2px;background:#e2ddd1;border-radius:2px}
+.mgd3 .sline.done{background:#0e6b61}
+.mgd3 .stitle{font-size:20px;font-weight:700;letter-spacing:-.01em;margin:6px 2px 0}
+.mgd3 .scap{font-size:12px;color:#80827a;margin:2px 2px 2px}
+.mgd3 .card{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:14px}
+.mgd3 .fieldlabel{font-size:12px;color:#80827a;margin:0 2px 5px;font-weight:600}
+.mgd3 .qtybox{display:flex;align-items:center;justify-content:space-between;background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:8px 10px}
+.mgd3 .step-btn{width:38px;height:38px;border-radius:10px;background:#f2eee5;color:#0a514a;border:none;display:flex;align-items:center;justify-content:center}
+.mgd3 .idcard{background:linear-gradient(140deg,#0f766b,#083f39);border-radius:14px;padding:15px;color:#eef6f4;position:relative;overflow:hidden}
+.mgd3 .idcard.dark{background:linear-gradient(140deg,#2a2f2b,#12140f)}
+.mgd3 .idcard.brass{background:linear-gradient(140deg,#9a6b1f,#5f4212)}
+.mgd3 .idcard::after{content:"";position:absolute;right:-24px;bottom:-24px;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.05)}
+.mgd3 .qr{width:56px;height:56px;border-radius:9px;background:#eef6f4;color:#0a514a;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd3 .swatches{display:flex;gap:10px}
+.mgd3 .swatch{width:36px;height:36px;border-radius:10px}
+.mgd3 .swatch.on{box-shadow:0 0 0 2px #fffdf8,0 0 0 4px #0e6b61}
+.mgd3 .togrow{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid #f0ece2}
+.mgd3 .togrow:first-child{border-top:none}
+.mgd3 .tgl{width:42px;height:25px;border-radius:999px;flex-shrink:0;position:relative}
+.mgd3 .tgl.on{background:#0e6b61}
+.mgd3 .tgl.off{background:#d8d3c6}
+.mgd3 .tgl::after{content:"";position:absolute;top:3px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.mgd3 .tgl.on::after{right:3px}
+.mgd3 .tgl.off::after{left:3px}
+.mgd3 .rrow{display:flex;justify-content:space-between;font-size:14px;padding:8px 0;border-top:1px solid #f0ece2}
+.mgd3 .rrow:first-child{border-top:none}
+.mgd3 .prow{display:flex;justify-content:space-between;font-size:13px;padding:5px 0}
+.mgd3 .pill{border:1px solid #e2ddd1;background:#fffdf8;border-radius:999px;padding:9px 13px;font-size:13px;font-weight:600;color:#5d635c;display:flex;align-items:center;gap:6px}
+.mgd3 .pill.on{border-color:#0e6b61;background:#dfeeeb;color:#0a514a}
+.mgd3 .dot{width:8px;height:8px;border-radius:50%}
+.mgd3 .d-insta{background:#0e6b61}
+.mgd3 .d-fawry{background:#9a6b1f}
+.mgd3 .d-card{background:#2563eb}
+.mgd3 .btn-primary{width:100%;height:50px;background:#0e6b61;color:#fffdf8;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28);border:none}
+.mgd3 .btn-ghost{width:100%;height:44px;background:#f2eee5;color:#5d635c;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;border:none}
+.mgd3 .footer{padding:10px 16px 16px;border-top:1px solid #e2ddd1;background:#ece8df}
+.mgd3 .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;padding:0 26px}
+.mgd3 .tipwrap{position:relative;display:inline-flex;align-items:center}
+.mgd3 .info{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;color:#a6a79d;margin-inline-start:5px}
+.mgd3 .tip{position:absolute;bottom:calc(100% + 9px);inset-inline-start:-6px;width:198px;background:#1f2420;color:#eef0ec;font-size:11.5px;line-height:1.45;font-weight:400;text-align:start;padding:9px 11px;border-radius:10px;box-shadow:0 10px 24px rgba(20,22,20,.3);z-index:6}
+.mgd3 .tip::after{content:"";position:absolute;top:100%;inset-inline-start:14px;border:6px solid transparent;border-top-color:#1f2420}
+.mgd3 .board{max-width:1320px;margin:0 auto;padding:56px 28px 96px}
+.mgd3 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd3 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd3 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+/* ===== Screen-Card-Orders-Coming-Soon ===== */
+.mgd4 *{box-sizing:border-box}
+.mgd4{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd4 .num{font-variant-numeric:tabular-nums}
+.mgd4 svg{display:block;flex-shrink:0}
+.mgd4 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd4 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd4 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd4 .topbar{display:flex;align-items:center;gap:12px;padding:6px 16px 8px}
+.mgd4 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd4 .ttl{font-size:19px;font-weight:600}
+.mgd4 .lock{margin-inline-start:auto;width:42px;height:42px;border-radius:12px;background:#f4ebd7;color:#9a6b1f;display:flex;align-items:center;justify-content:center}
+.mgd4 .body{flex:1;overflow-y:auto;padding:14px 20px 22px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.mgd4 .body>*{flex-shrink:0}
+.mgd4 .stage{margin:14px 0 20px;height:190px;display:flex;align-items:center;justify-content:center;position:relative;width:100%}
+.mgd4 .idcard{width:212px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;box-shadow:0 10px 26px rgba(28,33,30,.16);overflow:hidden;transform:rotate(-4deg)}
+.mgd4 .idhead{height:40px;background:linear-gradient(135deg,#0f766b,#0a514a);display:flex;align-items:center;padding:0 12px;color:#eef6f4;font-size:11px;font-weight:600;letter-spacing:.04em}
+.mgd4 .idmid{display:flex;align-items:center;gap:11px;padding:12px 12px 6px;margin-top:-18px}
+.mgd4 .idphoto{width:46px;height:46px;border-radius:11px;background:#f2eee5;border:3px solid #fffdf8;display:flex;align-items:center;justify-content:center;color:#a6a79d;flex-shrink:0}
+.mgd4 .idname{font-size:13px;font-weight:600;text-align:start}
+.mgd4 .idsub{font-size:10.5px;color:#80827a;text-align:start;margin-top:1px}
+.mgd4 .idfoot{display:flex;align-items:flex-end;justify-content:space-between;padding:4px 12px 12px}
+.mgd4 .idbrand{font-size:9px;font-weight:600;letter-spacing:.1em;color:#9a6b1f;text-transform:uppercase}
+.mgd4 .pill{font-size:11px;font-weight:600;color:#8a5e16;background:#f4ebd7;border:1px solid rgba(138,94,22,.25);padding:5px 12px;border-radius:999px}
+.mgd4 h2{font-size:23px;font-weight:700;letter-spacing:-.01em;margin:12px 0 8px}
+.mgd4 .desc{font-size:14px;line-height:1.55;color:#5d635c;max-width:30ch;margin:0 0 18px}
+.mgd4 .feats{width:100%;display:flex;flex-direction:column;gap:11px;margin-bottom:20px}
+.mgd4 .feat{display:flex;align-items:center;gap:11px;text-align:start}
+.mgd4 .fic{width:30px;height:30px;border-radius:9px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd4 .ft{font-size:13px;color:#3a3f3a;line-height:1.4}
+.mgd4 .cta{width:100%;background:#0e6b61;color:#fff;font-weight:600;font-size:15px;padding:15px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px}
+.mgd4 .sub{font-size:11.5px;color:#80827a;margin-top:10px}
+.mgd4 .okwrap{margin:auto 0;display:flex;flex-direction:column;align-items:center}
+.mgd4 .okic{width:74px;height:74px;border-radius:50%;background:#e4f0e9;color:#1a6d4d;display:flex;align-items:center;justify-content:center;margin-bottom:18px}
+.mgd4 .link{margin-top:18px;font-size:13.5px;font-weight:600;color:#0e6b61}
+.mgd4 .board{max-width:1480px;margin:0 auto;padding:56px 28px 96px}
+.mgd4 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd4 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd4 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+.mgd4 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d635c}
+</style>
+</head>
+<body>
+<div class="mgd-top">
+  <div class="mgd-eyebrow">TutoringHQ · Merged reference</div>
+  <h1 class="mgd-h1">Center · Card orders</h1>
+  <p class="mgd-lede">Ordering printed QR cards, from catalogue through checkout to the order record.</p>
+  <div class="mgd-toc"><a href="#Merged-Center-Orders-1">Orders</a><a href="#Merged-Center-Orders-2">Order Detail</a><a href="#Merged-Center-Orders-3">Order Checkout</a><a href="#Merged-Center-Orders-4">Card Orders Coming Soon</a></div>
+</div>
+<div class="mgd-sec" id="Merged-Center-Orders-1">
+  <div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Orders</span><span class="mgd-src">Screen-Orders.html</span></div>
+</div>
+<div class="mgd1">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0e6b61;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:5px 11px;border-radius:999px">Lucide icons</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Card orders</h1>
+    <p style="margin:0;max-width:74ch;font-size:17px;line-height:1.55;color:#5d635c">Order the physical QR cards students scan for attendance. A hero CTA with a card preview, then Your Orders with status badges and the three-dot for tracking or reordering. Also the empty state, then Arabic mirrored.</p>
+  </div>
+  <div class="phones">
+
+    <!-- EN HUB -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · hub</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div><div style="flex:1"><div style="font-size:17px;font-weight:600">Card orders</div><div style="font-size:12px;color:#80827a">Al-Nahda</div></div><div class="addbtn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div></div>
+      <div class="body">
+        <div class="cta">
+          <div class="idcard">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+              <div><div style="font-size:13px;font-weight:700;letter-spacing:.02em">TutoringHQ</div><div style="font-size:10px;opacity:.8;margin-top:1px">Al-Nahda</div><div style="font-size:14px;font-weight:600;margin-top:14px">Youssef Adel</div><div style="font-size:10px;opacity:.8;margin-top:1px num">ID 0421 · Math G9</div></div>
+              <div class="qr"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h.01M21 21v-4M17 21h1"/></svg></div>
+            </div>
+          </div>
+          <div style="font-size:16px;font-weight:600;margin-top:12px">Order student cards</div>
+          <div style="font-size:12px;color:#80827a;margin-top:3px">Printed QR cards your students scan at the door.</div>
+          <button class="btn-primary" style="margin-top:12px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New order</button>
+        </div>
+        <div class="sec">Your orders</div>
+        <div class="orow"><div class="oicon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="12" height="12" rx="2"/></svg></div><div style="flex:1"><div class="on mono" dir="ltr">#THQ-2607</div><div class="om num">120 cards · 02/07/2026</div></div><span class="badge info">Shipped</span><div class="kb" style="margin-inline-start:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div></div>
+        <div class="orow"><div class="oicon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="12" height="12" rx="2"/></svg></div><div style="flex:1"><div class="on mono" dir="ltr">#THQ-2531</div><div class="om num">40 cards · 15/05/2026</div></div><span class="badge ok">Delivered</span><div class="kb" style="margin-inline-start:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div></div>
+        <div class="orow"><div class="oicon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="12" height="12" rx="2"/></svg></div><div style="flex:1"><div class="on mono" dir="ltr">#THQ-2498</div><div class="om num">200 cards · 20/03/2026</div></div><span class="badge ok">Delivered</span><div class="kb" style="margin-inline-start:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div></div>
+      </div>
+    </div></div></div>
+
+    <!-- EN EMPTY -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · empty state</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div><div style="flex:1"><div style="font-size:17px;font-weight:600">Card orders</div><div style="font-size:12px;color:#80827a">Al-Nahda</div></div><div class="addbtn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div></div>
+      <div class="empty">
+        <div class="eill"><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M14 9h4M14 13h2"/><rect x="6" y="8" width="5" height="5" rx="1"/></svg></div>
+        <div style="font-size:18px;font-weight:600">No orders yet</div>
+        <div style="font-size:14px;color:#80827a;line-height:1.5;max-width:32ch">Order printed QR cards so students can scan themselves in at the door.</div>
+        <button class="btn-primary" style="width:auto;padding:0 20px;margin-top:12px;height:46px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Order your first cards</button>
+      </div>
+    </div></div></div>
+
+    <!-- AR HUB -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">AR · RTL · الطلبات</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic',sans-serif;letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div><div style="flex:1"><div style="font-size:17px;font-weight:600">طلبات الكروت</div><div style="font-size:12px;color:#80827a">النهضة</div></div><div class="addbtn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div></div>
+      <div class="body">
+        <div class="cta">
+          <div class="idcard">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+              <div><div style="font-size:13px;font-weight:700;letter-spacing:.02em">TutoringHQ</div><div style="font-size:10px;opacity:.8;margin-top:1px">النهضة</div><div style="font-size:14px;font-weight:600;margin-top:14px">يوسف عادل</div><div style="font-size:10px;opacity:.8;margin-top:1px num">رقم ٠٤٢١ · رياضيات ٩</div></div>
+              <div class="qr"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h.01M21 21v-4M17 21h1"/></svg></div>
+            </div>
+          </div>
+          <div style="font-size:16px;font-weight:600;margin-top:12px">اطلب كروت الطلاب</div>
+          <div style="font-size:12px;color:#80827a;margin-top:3px">كروت مطبوعة يمسحها الطلاب عند الباب.</div>
+          <button class="btn-primary" style="margin-top:12px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>طلب جديد</button>
+        </div>
+        <div class="sec">طلباتك</div>
+        <div class="orow"><div class="oicon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="12" height="12" rx="2"/></svg></div><div style="flex:1"><div class="on mono" dir="ltr">#THQ-2607</div><div class="om num">١٢٠ كرت · ٠٢/٠٧/٢٠٢٦</div></div><span class="badge info">تم الشحن</span><div class="kb" style="margin-inline-start:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div></div>
+        <div class="orow"><div class="oicon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="12" height="12" rx="2"/></svg></div><div style="flex:1"><div class="on mono" dir="ltr">#THQ-2531</div><div class="om num">٤٠ كرت · ١٥/٠٥/٢٠٢٦</div></div><span class="badge ok">تم التسليم</span><div class="kb" style="margin-inline-start:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div></div>
+        <div class="orow"><div class="oicon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="12" height="12" rx="2"/></svg></div><div style="flex:1"><div class="on mono" dir="ltr">#THQ-2498</div><div class="om num">٢٠٠ كرت · ٢٠/٠٣/٢٠٢٦</div></div><span class="badge ok">تم التسليم</span><div class="kb" style="margin-inline-start:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div></div>
+      </div>
+    </div></div></div>
+
+  </div>
+</div>
+</div>
+<div class="mgd-sec" id="Merged-Center-Orders-2">
+  <div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">Order Detail</span><span class="mgd-src">Screen-Order-Detail.html</span></div>
+</div>
+<div class="mgd2">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0e6b61;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:5px 11px;border-radius:999px">Lucide icons</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Order detail</h1>
+    <p style="margin:0;max-width:74ch;font-size:17px;line-height:1.55;color:#5d635c">One order, tracked. A status timeline from placed to delivered with the current step highlighted, the items with a card preview, the delivery address and courier tracking, a price summary, and Track / Reorder actions. EN then Arabic mirrored.</p>
+  </div>
+  <div class="phones">
+
+    <!-- EN DETAIL -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · timeline · tracking</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div style="flex:1"><div style="font-size:17px;font-weight:600 mono" dir="ltr">#THQ-2607</div><div style="font-size:12px;color:#80827a num">120 cards · placed 02/07/2026</div></div><span class="badge info">Shipped</span></div>
+      <div class="body">
+        <div class="card">
+          <div class="tlrow done"><div class="tldot done"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div><div class="tt">Order placed</div><div class="td num">02/07/2026 · 4:12 PM</div></div></div>
+          <div class="tlrow done"><div class="tldot done"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div><div class="tt">Printing</div><div class="td num">03/07/2026</div></div></div>
+          <div class="tlrow done"><div class="tldot cur"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div><div><div class="tt">Shipped</div><div class="td num">05/07/2026 · with courier</div></div></div>
+          <div class="tlrow"><div class="tldot todo"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5 8 12 8 12s8-7 8-12a8 8 0 0 0-8-8z"/></svg></div><div><div class="tt todo">Out for delivery</div><div class="td">Est. 08/07/2026</div></div></div>
+          <div class="tlrow"><div class="tldot todo"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div><div class="tt todo">Delivered</div></div></div>
+        </div>
+        <div class="sec">Items</div>
+        <div class="card" style="display:flex;align-items:center;gap:12px">
+          <div class="idcard"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 21v-4"/></svg></div>
+          <div style="flex:1"><div style="font-size:14px;font-weight:600 num">120 student cards</div><div style="font-size:12px;color:#80827a">Standard QR · teal design</div></div>
+        </div>
+        <div class="sec">Delivery</div>
+        <div class="card">
+          <div style="font-size:14px;font-weight:600">Al-Nahda · main branch</div>
+          <div style="font-size:12px;color:#80827a;margin-top:3px;line-height:1.5">12 El-Nasr St, Nasr City, Cairo</div>
+          <div style="height:1px;background:#eee7d9;margin:11px 0"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:12px;color:#80827a">Courier · Bosta</span><span class="mono" dir="ltr" style="font-size:12px;font-weight:600">BST-88421</span></div>
+        </div>
+        <div class="sec">Summary</div>
+        <div class="card">
+          <div class="prow"><span style="color:#80827a" class="num">120 cards × 5</span><b class="num">600 EGP</b></div>
+          <div class="prow"><span style="color:#80827a">Delivery</span><b class="num">50</b></div>
+          <div style="height:1px;background:#e2ddd1;margin:4px 0"></div>
+          <div class="prow"><b>Total</b><b class="num">650 EGP</b></div>
+        </div>
+        <button class="btn-primary"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5 8 12 8 12s8-7 8-12a8 8 0 0 0-8-8z"/></svg>Track shipment</button>
+        <button class="btn-ghost"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg>Reorder</button>
+      </div>
+    </div></div></div>
+
+    <!-- AR DETAIL -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">AR · RTL · تتبع</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic',sans-serif;letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div style="flex:1"><div style="font-size:17px;font-weight:600 mono" dir="ltr">#THQ-2607</div><div style="font-size:12px;color:#80827a num">١٢٠ كرت · بتاريخ ٠٢/٠٧/٢٠٢٦</div></div><span class="badge info">تم الشحن</span></div>
+      <div class="body">
+        <div class="card">
+          <div class="tlrow done"><div class="tldot done"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div><div class="tt">تم الطلب</div><div class="td num">٠٢/٠٧/٢٠٢٦ · ٤:١٢ م</div></div></div>
+          <div class="tlrow done"><div class="tldot done"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div><div class="tt">قيد الطباعة</div><div class="td num">٠٣/٠٧/٢٠٢٦</div></div></div>
+          <div class="tlrow done"><div class="tldot cur"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div><div><div class="tt">تم الشحن</div><div class="td num">٠٥/٠٧/٢٠٢٦ · مع المندوب</div></div></div>
+          <div class="tlrow"><div class="tldot todo"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5 8 12 8 12s8-7 8-12a8 8 0 0 0-8-8z"/></svg></div><div><div class="tt todo">خارج للتوصيل</div><div class="td num">متوقّع ٠٨/٠٧/٢٠٢٦</div></div></div>
+          <div class="tlrow"><div class="tldot todo"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div><div class="tt todo">تم التسليم</div></div></div>
+        </div>
+        <div class="sec">العناصر</div>
+        <div class="card" style="display:flex;align-items:center;gap:12px">
+          <div class="idcard"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 21v-4"/></svg></div>
+          <div style="flex:1"><div style="font-size:14px;font-weight:600 num">١٢٠ كرت طالب</div><div style="font-size:12px;color:#80827a">QR قياسي · تصميم أخضر</div></div>
+        </div>
+        <div class="sec">التوصيل</div>
+        <div class="card">
+          <div style="font-size:14px;font-weight:600">النهضة · الفرع الرئيسي</div>
+          <div style="font-size:12px;color:#80827a;margin-top:3px;line-height:1.5">١٢ شارع النصر، مدينة نصر، القاهرة</div>
+          <div style="height:1px;background:#eee7d9;margin:11px 0"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:12px;color:#80827a">المندوب · Bosta</span><span class="mono" dir="ltr" style="font-size:12px;font-weight:600">BST-88421</span></div>
+        </div>
+        <div class="sec">الملخص</div>
+        <div class="card">
+          <div class="prow"><span style="color:#80827a" class="num">١٢٠ كرت × ٥</span><b class="num">٦٠٠ ج.م</b></div>
+          <div class="prow"><span style="color:#80827a">التوصيل</span><b class="num">٥٠</b></div>
+          <div style="height:1px;background:#e2ddd1;margin:4px 0"></div>
+          <div class="prow"><b>الإجمالي</b><b class="num">٦٥٠ ج.م</b></div>
+        </div>
+        <button class="btn-primary"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5 8 12 8 12s8-7 8-12a8 8 0 0 0-8-8z"/></svg>تتبّع الشحنة</button>
+        <button class="btn-ghost"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg>إعادة الطلب</button>
+      </div>
+    </div></div></div>
+
+  </div>
+</div>
+</div>
+<div class="mgd-sec" id="Merged-Center-Orders-3">
+  <div class="mgd-bar"><span class="mgd-num">03</span><span class="mgd-name">Order Checkout</span><span class="mgd-src">Screen-Order-Checkout.html</span></div>
+</div>
+<div class="mgd3">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0e6b61;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:5px 11px;border-radius:999px">Lucide icons</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Order checkout</h1>
+    <p style="margin:0;max-width:74ch;font-size:17px;line-height:1.55;color:#5d635c">A four-step wizard with a step indicator and a sticky action: Delivery (how many, where), Customize (live card preview, colour, what's printed), Review (summary + price), Payment (method + total), then a Success confirmation with the order number and ETA. One step is Arabic mirrored. Design only.</p>
+  </div>
+  <div class="phones">
+
+    <!-- STEP 1 DELIVERY -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · 1 · delivery</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div><div style="flex:1;font-size:17px;font-weight:600">New order</div></div>
+      <div style="padding:0 16px"><div class="steps"><div class="snode cur">1</div><div class="sline"></div><div class="snode todo">2</div><div class="sline"></div><div class="snode todo">3</div><div class="sline"></div><div class="snode todo">4</div></div></div>
+      <div class="body">
+        <div class="stitle">Delivery</div><div class="scap">Step 1 of 4</div>
+        <div class="fieldlabel">Cards to print</div>
+        <div class="qtybox">
+          <button class="step-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+          <div style="text-align:center"><div style="font-size:24px;font-weight:700" class="num">180</div><div style="font-size:10px;color:#80827a">matches active students</div></div>
+          <button class="step-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        </div>
+        <div class="fieldlabel" style="margin-top:6px">Deliver to</div>
+        <div class="card" style="display:flex;align-items:center;gap:12px">
+          <div style="width:38px;height:38px;border-radius:11px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M6 21V7l6-4 6 4v14"/></svg></div>
+          <div style="flex:1"><div style="font-size:14px;font-weight:600">Al-Nahda · main branch</div><div style="font-size:11px;color:#80827a">12 El-Nasr St, Nasr City, Cairo</div></div>
+          <span style="font-size:12px;font-weight:600;color:#0a514a">Change</span>
+        </div>
+        <div class="card" style="display:flex;align-items:center;gap:9px;background:#fefcf7;border-color:rgba(138,94,22,.25)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a5e16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg><span style="font-size:12px;color:#5d635c;line-height:1.4">Delivery in 5–7 working days across Egypt.</span></div>
+      </div>
+      <div class="footer"><button class="btn-primary">Continue<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+    </div></div></div>
+
+    <!-- STEP 2 CUSTOMIZE -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · 2 · customize</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div style="flex:1;font-size:17px;font-weight:600">New order</div></div>
+      <div style="padding:0 16px"><div class="steps"><div class="snode done"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="sline done"></div><div class="snode cur">2</div><div class="sline"></div><div class="snode todo">3</div><div class="sline"></div><div class="snode todo">4</div></div></div>
+      <div class="body">
+        <div class="stitle">Customize</div><div class="scap">Live preview</div>
+        <div class="idcard">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+            <div><div style="font-size:13px;font-weight:700">TutoringHQ</div><div style="font-size:10px;opacity:.8">Al-Nahda</div><div style="font-size:15px;font-weight:600;margin-top:16px">Youssef Adel</div><div style="font-size:10px;opacity:.8;margin-top:1px num">ID 0421 · Math G9</div></div>
+            <div class="qr"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h.01M21 21v-4M17 21h1"/></svg></div>
+          </div>
+        </div>
+        <div class="fieldlabel">Card colour</div>
+        <div class="swatches">
+          <div class="swatch on" style="background:linear-gradient(140deg,#0f766b,#083f39)"></div>
+          <div class="swatch" style="background:linear-gradient(140deg,#2a2f2b,#12140f)"></div>
+          <div class="swatch" style="background:linear-gradient(140deg,#9a6b1f,#5f4212)"></div>
+        </div>
+        <div class="card" style="padding:4px 14px;margin-top:4px">
+          <div class="togrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5d635c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span style="flex:1;font-size:14px;font-weight:500">Student name</span><div class="tgl on"></div></div>
+          <div class="togrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5d635c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><path d="M14 3h7v7M3 14h7v7"/></svg><span style="flex:1;font-size:14px;font-weight:500">QR code</span><div class="tgl on"></div></div>
+          <div class="togrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5d635c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><circle cx="9" cy="9" r="2"/><path d="M20 15l-5-5L5 20"/></svg><span style="flex:1;font-size:14px;font-weight:500">Student photo</span><div class="tgl off"></div></div>
+          <div class="togrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5d635c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18M3 12h18M3 19h12"/></svg><span style="flex:1;font-size:14px;font-weight:500">ID number</span><div class="tgl on"></div></div>
+        </div>
+      </div>
+      <div class="footer"><button class="btn-primary">Continue<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+    </div></div></div>
+
+    <!-- STEP 3 REVIEW -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · 3 · review</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div style="flex:1;font-size:17px;font-weight:600">New order</div></div>
+      <div style="padding:0 16px"><div class="steps"><div class="snode done"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="sline done"></div><div class="snode done"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="sline done"></div><div class="snode cur">3</div><div class="sline"></div><div class="snode todo">4</div></div></div>
+      <div class="body">
+        <div class="stitle">Review</div><div class="scap">Check before paying</div>
+        <div class="card" style="padding:4px 14px">
+          <div class="rrow"><span style="color:#80827a">Cards</span><b class="num">180 · Standard QR</b></div>
+          <div class="rrow"><span style="color:#80827a">Colour</span><span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:16px;border-radius:5px;background:linear-gradient(140deg,#0f766b,#083f39)"></span><b>Teal</b></span></div>
+          <div class="rrow"><span style="color:#80827a">Printed</span><b style="font-size:13px">Name · QR · ID</b></div>
+          <div class="rrow"><span style="color:#80827a">Deliver to</span><b style="font-size:13px;text-align:end">Al-Nahda main</b></div>
+        </div>
+        <div class="fieldlabel" style="margin-top:4px">Price</div>
+        <div class="card">
+          <div class="prow"><span style="color:#80827a" class="num">180 cards × 5</span><b class="num">900 EGP</b></div>
+          <div class="prow"><span style="color:#80827a">Delivery</span><b class="num">50</b></div>
+          <div class="prow"><span class="tipwrap" style="color:#80827a">VAT (14%)<span class="info"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span><span class="tip">Value Added Tax, 14%, applied as required in Egypt.</span></span><b class="num">133</b></div>
+          <div class="prow"><span class="tipwrap" style="color:#80827a">Processing fee<span class="info"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span></span><b class="num">20</b></div>
+          <div style="height:1px;background:#e2ddd1;margin:5px 0"></div>
+          <div class="prow"><b style="font-size:15px">Total</b><b class="num" style="font-size:16px">1,103 EGP</b></div>
+        </div>
+      </div>
+      <div class="footer"><button class="btn-primary">Continue to payment<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+    </div></div></div>
+
+    <!-- STEP 4 PAYMENT -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · 4 · payment</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div style="flex:1;font-size:17px;font-weight:600">New order</div></div>
+      <div style="padding:0 16px"><div class="steps"><div class="snode done"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="sline done"></div><div class="snode done"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="sline done"></div><div class="snode done"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="sline done"></div><div class="snode cur">4</div></div></div>
+      <div class="body">
+        <div class="stitle">Payment</div><div class="scap">How you'd like to pay</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div class="pill on"><span class="dot d-card"></span>Card</div>
+          <div class="pill"><span class="dot d-insta"></span>Instapay</div>
+          <div class="pill"><span class="dot d-fawry"></span>Fawry</div>
+        </div>
+        <div class="card">
+          <div class="fieldlabel" style="margin:0 0 8px">Card number</div>
+          <div style="background:#faf7f0;border:1px solid #e2ddd1;border-radius:12px;padding:12px 13px;font-size:15px;color:#a6a79d;display:flex;align-items:center;justify-content:space-between"><span class="mono" dir="ltr">•••• •••• •••• 7937</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
+        </div>
+        <div class="card" style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:14px;color:#80827a">Total</span><b class="num" style="font-size:18px">1,103 EGP</b></div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;color:#80827a;font-size:11px;margin-top:2px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Secured by Paymob</div>
+      </div>
+      <div class="footer"><button class="btn-primary"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Pay 1,103 EGP</button></div>
+    </div></div></div>
+
+    <!-- SUCCESS -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · success</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="empty">
+        <div style="width:74px;height:74px;border-radius:50%;background:#e4f0e9;color:#1a6d4d;display:flex;align-items:center;justify-content:center;margin-bottom:6px"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div style="font-size:22px;font-weight:700">Order placed</div>
+        <div style="font-size:14px;color:#80827a;line-height:1.5;max-width:30ch">Your 180 cards are being printed. We'll message you when they ship.</div>
+        <div class="card" style="width:100%;margin-top:14px;text-align:start">
+          <div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0"><span style="color:#80827a">Order</span><b class="mono" dir="ltr">#THQ-2612</b></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0"><span style="color:#80827a">Total</span><b class="num">1,103 EGP</b></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0"><span style="color:#80827a">Est. delivery</span><b class="num">15/07/2026</b></div>
+        </div>
+      </div>
+      <div class="footer">
+        <button class="btn-primary" style="margin-bottom:9px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5 8 12 8 12s8-7 8-12a8 8 0 0 0-8-8z"/></svg>Track order</button>
+        <button class="btn-ghost">Done</button>
+      </div>
+    </div></div></div>
+
+    <!-- AR CUSTOMIZE -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">AR · RTL · 2 · التخصيص</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic',sans-serif;letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div style="flex:1;font-size:17px;font-weight:600">طلب جديد</div></div>
+      <div style="padding:0 16px"><div class="steps"><div class="snode done"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="sline done"></div><div class="snode cur">٢</div><div class="sline"></div><div class="snode todo">٣</div><div class="sline"></div><div class="snode todo">٤</div></div></div>
+      <div class="body">
+        <div class="stitle">التخصيص</div><div class="scap">معاينة مباشرة</div>
+        <div class="idcard">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+            <div><div style="font-size:13px;font-weight:700">TutoringHQ</div><div style="font-size:10px;opacity:.8">النهضة</div><div style="font-size:15px;font-weight:600;margin-top:16px">يوسف عادل</div><div style="font-size:10px;opacity:.8;margin-top:1px num">رقم ٠٤٢١ · رياضيات ٩</div></div>
+            <div class="qr"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h.01M21 21v-4M17 21h1"/></svg></div>
+          </div>
+        </div>
+        <div class="fieldlabel">لون الكرت</div>
+        <div class="swatches">
+          <div class="swatch on" style="background:linear-gradient(140deg,#0f766b,#083f39)"></div>
+          <div class="swatch" style="background:linear-gradient(140deg,#2a2f2b,#12140f)"></div>
+          <div class="swatch" style="background:linear-gradient(140deg,#9a6b1f,#5f4212)"></div>
+        </div>
+        <div class="card" style="padding:4px 14px;margin-top:4px">
+          <div class="togrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5d635c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span style="flex:1;font-size:14px;font-weight:500">اسم الطالب</span><div class="tgl on"></div></div>
+          <div class="togrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5d635c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><path d="M14 3h7v7M3 14h7v7"/></svg><span style="flex:1;font-size:14px;font-weight:500">رمز QR</span><div class="tgl on"></div></div>
+          <div class="togrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5d635c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><circle cx="9" cy="9" r="2"/><path d="M20 15l-5-5L5 20"/></svg><span style="flex:1;font-size:14px;font-weight:500">صورة الطالب</span><div class="tgl off"></div></div>
+          <div class="togrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5d635c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18M3 12h18M3 19h12"/></svg><span style="flex:1;font-size:14px;font-weight:500">رقم الطالب</span><div class="tgl on"></div></div>
+        </div>
+      </div>
+      <div class="footer"><button class="btn-primary">متابعة<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></button></div>
+    </div></div></div>
+
+  </div>
+</div>
+</div>
+<div class="mgd-sec" id="Merged-Center-Orders-4">
+  <div class="mgd-bar"><span class="mgd-num">04</span><span class="mgd-name">Card Orders Coming Soon</span><span class="mgd-src">Screen-Card-Orders-Coming-Soon.html</span></div>
+</div>
+<div class="mgd4">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#8a5e16;background:#f4ebd7;border:1px solid rgba(138,94,22,.2);padding:5px 11px;border-radius:999px">Coming soon</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Card orders</h1>
+    <p style="margin:0;max-width:80ch;font-size:17px;line-height:1.55;color:#5d635c">The placeholder centers see while the ID-card feature is gated: a teaser for printed student cards with a scannable QR, a feature list, and a notify-me action, plus the confirmation state. The full ordering flow stays off until launch. English and Arabic. Design only.</p>
+  </div>
+  <div class="phones">
+
+    <!-- COMING SOON · EN -->
+    <div class="frame"><span class="cap">EN · coming soon</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Card orders</div><div class="lock"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div></div>
+      <div class="body">
+        <div class="stage">
+          <div class="idcard">
+            <div class="idhead">TutoringHQ</div>
+            <div class="idmid"><div class="idphoto"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg></div><div><div class="idname">Youssef Adel</div><div class="idsub">Grade 10 · #2043</div></div></div>
+            <div class="idfoot"><svg width="46" height="46" viewBox="0 0 25 25"><g fill="#1b201d"><rect x="0" y="0" width="7" height="7"/><rect x="1" y="1" width="5" height="5" fill="#fffdf8"/><rect x="2" y="2" width="3" height="3"/><rect x="18" y="0" width="7" height="7"/><rect x="19" y="1" width="5" height="5" fill="#fffdf8"/><rect x="20" y="2" width="3" height="3"/><rect x="0" y="18" width="7" height="7"/><rect x="1" y="19" width="5" height="5" fill="#fffdf8"/><rect x="2" y="20" width="3" height="3"/><rect x="9" y="1" width="1" height="1"/><rect x="11" y="2" width="1" height="1"/><rect x="13" y="0" width="1" height="1"/><rect x="15" y="2" width="1" height="1"/><rect x="10" y="4" width="1" height="1"/><rect x="9" y="9" width="1" height="1"/><rect x="11" y="9" width="1" height="1"/><rect x="13" y="10" width="1" height="1"/><rect x="15" y="9" width="1" height="1"/><rect x="17" y="11" width="1" height="1"/><rect x="20" y="10" width="1" height="1"/><rect x="22" y="12" width="1" height="1"/><rect x="10" y="12" width="1" height="1"/><rect x="9" y="14" width="1" height="1"/><rect x="12" y="15" width="1" height="1"/><rect x="14" y="17" width="1" height="1"/><rect x="16" y="14" width="1" height="1"/><rect x="18" y="19" width="1" height="1"/><rect x="20" y="18" width="1" height="1"/><rect x="22" y="20" width="1" height="1"/><rect x="19" y="22" width="1" height="1"/><rect x="21" y="16" width="1" height="1"/><rect x="16" y="21" width="1" height="1"/></g></svg><span class="idbrand">Student ID</span></div>
+          </div>
+        </div>
+        <span class="pill">Coming soon</span>
+        <h2>Student ID cards</h2>
+        <p class="desc">Order printed ID cards with a scannable QR for every student. Attendance becomes a quick scan at the door.</p>
+        <div class="feats">
+          <div class="feat"><div class="fic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M17 21h4M21 17v4"/></svg></div><div class="ft">QR attendance at the door, no app needed</div></div>
+          <div class="feat"><div class="fic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ft">Order for your whole center at once</div></div>
+          <div class="feat"><div class="fic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 2a10 10 0 1 0 0 20 2.5 2.5 0 0 0 2-4 2 2 0 0 1 2-3h1a4 4 0 0 0 4-4 10 10 0 0 0-9-9z"/></svg></div><div class="ft">Your logo and colors on every card</div></div>
+          <div class="feat"><div class="fic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7zM5.5 20a2 2 0 1 0 0-.01M18.5 20a2 2 0 1 0 0-.01"/></svg></div><div class="ft">Delivered straight to your center</div></div>
+        </div>
+        <div class="cta"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>Notify me when it launches</div>
+        <div class="sub">We'll message you on WhatsApp.</div>
+      </div>
+    </div></div></div>
+
+    <!-- NOTIFIED · EN -->
+    <div class="frame"><span class="cap">EN · notified</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Card orders</div></div>
+      <div class="body">
+        <div class="okwrap">
+          <div class="okic"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+          <h2 style="margin:0 0 8px">You're on the list</h2>
+          <p class="desc">We'll message you on WhatsApp the moment card orders go live. Nothing else to do for now.</p>
+          <div class="link">Back to dashboard</div>
+        </div>
+      </div>
+    </div></div></div>
+
+    <!-- COMING SOON · AR -->
+    <div class="frame"><span class="cap">AR · coming soon</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl">طلب البطاقات</div><div class="lock"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div></div>
+      <div class="body">
+        <div class="stage">
+          <div class="idcard" style="transform:rotate(4deg)">
+            <div class="idhead">TutoringHQ</div>
+            <div class="idmid"><div class="idphoto"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg></div><div><div class="idname">يوسف عادل</div><div class="idsub">الصف العاشر · ‏#2043</div></div></div>
+            <div class="idfoot"><svg width="46" height="46" viewBox="0 0 25 25"><g fill="#1b201d"><rect x="0" y="0" width="7" height="7"/><rect x="1" y="1" width="5" height="5" fill="#fffdf8"/><rect x="2" y="2" width="3" height="3"/><rect x="18" y="0" width="7" height="7"/><rect x="19" y="1" width="5" height="5" fill="#fffdf8"/><rect x="20" y="2" width="3" height="3"/><rect x="0" y="18" width="7" height="7"/><rect x="1" y="19" width="5" height="5" fill="#fffdf8"/><rect x="2" y="20" width="3" height="3"/><rect x="9" y="1" width="1" height="1"/><rect x="11" y="2" width="1" height="1"/><rect x="13" y="0" width="1" height="1"/><rect x="15" y="2" width="1" height="1"/><rect x="10" y="4" width="1" height="1"/><rect x="9" y="9" width="1" height="1"/><rect x="11" y="9" width="1" height="1"/><rect x="13" y="10" width="1" height="1"/><rect x="15" y="9" width="1" height="1"/><rect x="17" y="11" width="1" height="1"/><rect x="20" y="10" width="1" height="1"/><rect x="22" y="12" width="1" height="1"/><rect x="10" y="12" width="1" height="1"/><rect x="9" y="14" width="1" height="1"/><rect x="12" y="15" width="1" height="1"/><rect x="14" y="17" width="1" height="1"/><rect x="16" y="14" width="1" height="1"/><rect x="18" y="19" width="1" height="1"/><rect x="20" y="18" width="1" height="1"/><rect x="22" y="20" width="1" height="1"/><rect x="19" y="22" width="1" height="1"/><rect x="21" y="16" width="1" height="1"/><rect x="16" y="21" width="1" height="1"/></g></svg><span class="idbrand">بطاقة طالب</span></div>
+          </div>
+        </div>
+        <span class="pill">قريبًا</span>
+        <h2>بطاقات هوية الطلاب</h2>
+        <p class="desc">اطلب بطاقات هوية مطبوعة برمز QR لكل طالب. يصبح تسجيل الحضور مسحًا سريعًا عند الباب.</p>
+        <div class="feats">
+          <div class="feat"><div class="fic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M17 21h4M21 17v4"/></svg></div><div class="ft">حضور بمسح QR عند الباب، بدون تطبيق</div></div>
+          <div class="feat"><div class="fic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ft">اطلبها لكل طلاب مركزك دفعة واحدة</div></div>
+          <div class="feat"><div class="fic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 2a10 10 0 1 0 0 20 2.5 2.5 0 0 0 2-4 2 2 0 0 1 2-3h1a4 4 0 0 0 4-4 10 10 0 0 0-9-9z"/></svg></div><div class="ft">شعارك وألوانك على كل بطاقة</div></div>
+          <div class="feat"><div class="fic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7zM5.5 20a2 2 0 1 0 0-.01M18.5 20a2 2 0 1 0 0-.01"/></svg></div><div class="ft">تُوصّل مباشرة إلى مركزك</div></div>
+        </div>
+        <div class="cta"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>أبلغني عند الإطلاق</div>
+        <div class="sub">سنراسلك على واتساب.</div>
+      </div>
+    </div></div></div>
+
+    <!-- NOTIFIED · AR -->
+    <div class="frame"><span class="cap">AR · notified</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl">طلب البطاقات</div></div>
+      <div class="body">
+        <div class="okwrap">
+          <div class="okic"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+          <h2 style="margin:0 0 8px">أنت على القائمة</h2>
+          <p class="desc">سنراسلك على واتساب فور إتاحة طلب البطاقات. لا شيء آخر عليك الآن.</p>
+          <div class="link">العودة للوحة التحكم</div>
+        </div>
+      </div>
+    </div></div></div>
+
+  </div>
+</div>
+</div>
+</body></html>

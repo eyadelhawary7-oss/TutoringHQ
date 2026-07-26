@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<!--
+================================================================
+ TutoringHQ · MERGED DESIGN REFERENCE
+ File: Merged-Teacher-WhatsApp.html
+ Teacher · WhatsApp
+
+ CONTENTS (1 screen):
+  01. Teacher WhatsApp   <-  Screen-Teacher-WhatsApp.html
+
+----------------------------------------------------------------
+ HOW TO READ THIS FILE WHEN IMPLEMENTING IT
+----------------------------------------------------------------
+ 1. CSS IS SCOPED. Every rule carries a .mgdN prefix so that
+    several screens can share one page without their styles
+    colliding.
+        in this file:   .mgd4 .pins{ ... }
+        in your code:   .pins{ ... }
+    Strip the .mgdN prefix. It is bookkeeping for this reference
+    file only and must never reach the codebase.
+
+ 2. ONE SECTION = ONE SCREEN. Each section bar shows its number,
+    its name, and the original screen file it came from. Use that
+    filename as the screen's identity, not the section number.
+
+ 3. FRAMES ARE STATES, NOT PAGES. Each phone inside a section is
+    one state of that screen (empty, filled, error, and so on).
+    The caption under or above each phone names the state.
+
+ 4. THE TWO LANGUAGES ARE SEPARATE SCREENS. English and Arabic
+    are never a translation overlay. Arabic frames use Eastern
+    Arabic numerals (0-9 written as Arabic-Indic) and the Arabic
+    currency mark. English frames use Western numerals and EGP.
+    Directional icons such as chevrons flip with the language.
+
+ 5. SAMPLE DATA IS PLACEHOLDER. Names, amounts, dates and phone
+    numbers are illustrative. Do not treat them as fixtures or
+    seed data.
+
+ 6. THIS IS DESIGN, NOT PRODUCTION CODE. Markup here is built to
+    be read, not shipped. Take the layout, spacing, type scale
+    and colour decisions from it. Do not copy the DOM wholesale.
+
+ 7. ANY UI OR BRANDING CHANGE BUMPS SW_VERSION in public/sw.js.
+================================================================
+-->
+
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teacher · WhatsApp · TutoringHQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+html{background:#d8d3c6;color-scheme:light}
+:root{color-scheme:light}
+
+html,body{margin:0;padding:0}
+body{background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased}
+.mgd-top{max-width:1180px;margin:0 auto;padding:44px 24px 8px;color:#1b201d}
+.mgd-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5d635c;font-weight:600}
+.mgd-h1{font-size:42px;line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:12px 0 10px}
+.mgd-lede{font-size:16px;line-height:1.55;color:#5d635c;max-width:82ch;margin:0}
+.mgd-toc{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 0}
+.mgd-toc a{font-size:12.5px;font-weight:600;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:6px 12px;border-radius:999px;text-decoration:none}
+.mgd-sec{max-width:1180px;margin:0 auto;padding:14px 24px 0}
+.mgd-bar{display:flex;align-items:baseline;gap:12px;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin-top:34px}
+.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a5e16;font-weight:500}
+.mgd-name{font-size:22px;font-weight:700;color:#14181a;letter-spacing:-.01em}
+.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#80827a}
+/* ===== Screen-Teacher-WhatsApp ===== */
+.mgd1 *{box-sizing:border-box}
+.mgd1{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#1b201d;-webkit-font-smoothing:antialiased}
+.mgd1 .board{max-width:1180px;margin:0 auto;padding:48px 24px 90px}
+.mgd1 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;padding:38px 42px 32px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10)}
+.mgd1 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:38px}
+.mgd1 .frame{display:flex;flex-direction:column;align-items:center;gap:13px}
+.mgd1 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d635c}
+.mgd1 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd1 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column}
+.mgd1 .ar{font-family:'IBM Plex Sans Arabic',sans-serif}
+.mgd1 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd1 .topbar{display:flex;align-items:center;gap:12px;padding:6px 16px 10px}
+.mgd1 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd1 .tt{font-size:17px;font-weight:700;line-height:1.2}
+.mgd1 .ts{font-size:11.5px;color:#80827a;margin-top:2px}
+.mgd1 .body{flex:1;overflow-y:auto;padding:2px 16px 16px}
+.mgd1 .hero{background:linear-gradient(150deg,#0f766b,#0a514a);border-radius:16px;padding:16px;color:#eef6f4;margin-bottom:13px}
+.mgd1 .hl{font-size:12.5px;opacity:.9}
+.mgd1 .hn{font-size:29px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums}
+.mgd1 .hn span{font-size:13px;font-weight:500;opacity:.85}
+.mgd1 .hint{font-size:11px;opacity:.82;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.18);line-height:1.5}
+.mgd1 .sec{font-size:15px;font-weight:700;margin:15px 2px 3px}
+.mgd1 .sub{font-size:12px;color:#80827a;margin:0 2px 10px;line-height:1.45}
+.mgd1 .note{background:#e3ecf6;border:1px solid #cdddf3;border-radius:12px;padding:10px 12px;font-size:11.5px;color:#274b8a;line-height:1.5;margin-bottom:12px}
+.mgd1 .note.acc{background:#dfeeeb;border-color:rgba(14,107,97,.2);color:#0a514a}
+.mgd1 .trow{display:flex;align-items:flex-start;gap:11px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:12px 13px;margin-bottom:8px}
+.mgd1 .tic{width:34px;height:34px;border-radius:11px;background:#dff3ea;color:#12684a;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd1 .tic svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mgd1 .tic.co{background:#f0e6d2;color:#8a5e16}
+.mgd1 .tn{flex:1;min-width:0}
+.mgd1 .tnm{font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.mgd1 .tpv{font-size:11.5px;color:#5d635c;margin-top:4px;line-height:1.5}
+.mgd1 .tok{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#0a514a;background:#dfeeeb;padding:1px 5px;border-radius:5px}
+.mgd1 .pill{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:999px}
+.mgd1 .p-auto{background:#e4f0e9;color:#1a6d4d}
+.mgd1 .p-man{background:#f2eee5;color:#5d635c}
+.mgd1 .p-co{background:#f0e6d2;color:#8a5e16}
+.mgd1 .tier{display:flex;align-items:center;justify-content:space-between;background:#fffdf8;border:1.5px solid #e2ddd1;border-radius:14px;padding:13px;margin-bottom:9px}
+.mgd1 .tier.on{border-color:#0e6b61;background:#f6faf9}
+.mgd1 .tnn{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:7px}
+.mgd1 .tsub{font-size:11px;color:#80827a;margin-top:3px}
+.mgd1 .tp{text-align:end;flex-shrink:0}
+.mgd1 .tp b{font-size:19px;font-weight:700}
+.mgd1 .tp span{font-size:11px;color:#80827a;display:block}
+.mgd1 .badge{font-size:9px;font-weight:700;background:#dfeeeb;color:#0a514a;padding:2px 7px;border-radius:999px}
+.mgd1 .use{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:4px 14px;margin-bottom:11px}
+.mgd1 .ur{display:flex;align-items:center;justify-content:space-between;padding:10px 0;font-size:12.5px;border-bottom:1px solid #f0ece2}
+.mgd1 .ur:last-child{border-bottom:none}
+.mgd1 .uk{color:#5d635c}
+.mgd1 .uv{font-weight:600;font-variant-numeric:tabular-nums}
+.mgd1 .ur.sum{border-top:1.5px solid #e2ddd1}
+.mgd1 .ur.sum .uk{font-weight:700;color:#1b201d}
+.mgd1 .ur.sum .uv{font-size:15px;color:#0a514a}
+.mgd1 .footer{padding:11px 16px 17px;border-top:1px solid #e2ddd1;background:#ece8df;flex-shrink:0}
+.mgd1 .fnote{text-align:center;font-size:10.5px;color:#80827a;margin-bottom:8px;line-height:1.45}
+.mgd1 .btn{display:block;width:100%;border:none;border-radius:13px;padding:15px;font-size:15px;font-weight:700;background:#0e6b61;color:#fffdf8;text-align:center;font-family:inherit}
+.mgd1 .tabbar{display:flex;background:#fffdf8;border-top:1px solid #e2ddd1;padding:8px 4px 11px;flex-shrink:0}
+.mgd1 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#9a9c92;font-size:9.5px;font-weight:600;text-decoration:none}
+.mgd1 .tab svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.mgd1 .tab.on{color:#0a6b60}
+</style>
+</head>
+<body>
+<div class="mgd-top">
+  <div class="mgd-eyebrow">TutoringHQ · Merged reference</div>
+  <h1 class="mgd-h1">Teacher · WhatsApp</h1>
+  <p class="mgd-lede">Balance, templates and packs. Shorter than the center's list, because a teacher runs their own groups rather than a reception desk.</p>
+  <div class="mgd-toc"><a href="#Merged-Teacher-WhatsApp-1">Teacher WhatsApp</a></div>
+</div>
+<div class="mgd-sec" id="Merged-Teacher-WhatsApp-1">
+  <div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Teacher WhatsApp</span><span class="mgd-src">Screen-Teacher-WhatsApp.html</span></div>
+</div>
+<div class="mgd1">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0a514a;background:#dfeeeb;padding:5px 11px;border-radius:999px">Teacher · Draft</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Teacher WhatsApp</h1>
+    <p style="margin:0;max-width:80ch;font-size:17px;line-height:1.55;color:#5d635c">The teacher portal had no WhatsApp screen at all, despite teachers getting bundled credit, buying the same packs at the same rate, and messaging parents every week. This is that screen. A teacher's template list is genuinely shorter than a center's, because a center runs reception, branches and staff while a teacher runs their own groups. The balance leads, since running out is the thing that hurts, and the screen separates what we pay for from what they pay for so nobody is surprised by a charge. Packs are one-time top-ups that never expire. English and Arabic. Sample data is placeholder.</p>
+  </div>
+  <div class="phones">
+
+    <!-- EN · BALANCE -->
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">WhatsApp</div><div class="ts">Messages to parents</div></div></div>
+      <div class="body">
+        <div class="hero">
+          <div class="hl">Messages left</div>
+          <div class="hn">38 <span>of 50 this month</span></div>
+          <div class="hint">Your Pro plan includes 50 a month. They reset on the 1st. Buy a pack any time and it never expires.</div>
+        </div>
+
+        <div class="note acc">Payment links, receipts and reminders for collected sessions are on us. They never touch your balance.</div>
+
+        <div class="sec">Where yours went</div>
+        <div class="sub">This month</div>
+        <div class="use">
+          <div class="ur"><span class="uk">Welcome to new students</span><span class="uv">7</span></div>
+          <div class="ur"><span class="uk">Fee reminders</span><span class="uv">4</span></div>
+          <div class="ur"><span class="uk">Session changes</span><span class="uv">1</span></div>
+          <div class="ur sum"><span class="uk">Used</span><span class="uv">12</span></div>
+        </div>
+
+        <div class="use">
+          <div class="ur"><span class="uk">Sent by us, at our cost</span><span class="uv" style="color:#1a6d4d">64</span></div>
+        </div>
+      </div>
+      <div class="footer"><button class="btn">Buy a pack</button></div>
+      <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><path d="M3 10l9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Home</span></a><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg><span>Schedule</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg><span>Centers</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Income</span></a><a class="tab on"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></div>
+    </div></div>
+    <div class="cap">EN · balance</div>
+    </div>
+
+    <!-- EN · TEMPLATES -->
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Templates</div><div class="ts">What parents receive</div></div></div>
+      <div class="body">
+        <div class="sec">Your messages</div>
+        <div class="sub">These come out of your balance</div>
+
+        <div class="trow">
+          <div class="tic"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
+          <div class="tn"><div class="tnm">Welcome<span class="pill p-man">Manual</span></div>
+          <div class="tpv">Welcome <span class="tok">{student}</span> to <span class="tok">{group}</span>. Sessions are <span class="tok">{time}</span>.</div></div>
+        </div>
+        <div class="trow">
+          <div class="tic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+          <div class="tn"><div class="tnm">Fee reminder<span class="pill p-auto">Auto</span></div>
+          <div class="tpv"><span class="tok">{amount}</span> EGP is due for <span class="tok">{student}</span>.</div></div>
+        </div>
+        <div class="trow">
+          <div class="tic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></div>
+          <div class="tn"><div class="tnm">Session changed<span class="pill p-man">Manual</span></div>
+          <div class="tpv"><span class="tok">{group}</span> moves to <span class="tok">{time}</span>.</div></div>
+        </div>
+
+        <div class="sec">Sent by us</div>
+        <div class="sub">Only when a center or you collect through TutoringHQ. Free, and you cannot turn them off.</div>
+
+        <div class="trow">
+          <div class="tic co"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
+          <div class="tn"><div class="tnm">Payment link<span class="pill p-co">We pay</span></div>
+          <div class="tpv">Sent after every session you bill.</div></div>
+        </div>
+        <div class="trow">
+          <div class="tic co"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+          <div class="tn"><div class="tnm">Receipt<span class="pill p-co">We pay</span></div>
+          <div class="tpv">Sent the moment a parent pays.</div></div>
+        </div>
+      </div>
+      <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><path d="M3 10l9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Home</span></a><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg><span>Schedule</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg><span>Centers</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Income</span></a><a class="tab on"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></div>
+    </div></div>
+    <div class="cap">EN · templates</div>
+    </div>
+
+    <!-- EN · PACK -->
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Buy a pack</div><div class="ts">One-time top-up</div></div></div>
+      <div class="body">
+        <div class="note">Credit never expires and carries over. Buy once, use it whenever.</div>
+        <div class="tier"><div><div class="tnn">200 messages</div><div class="tsub">1 EGP each</div></div><div class="tp"><b>200</b><span>EGP</span></div></div>
+        <div class="tier on"><div><div class="tnn">1,000 messages<span class="badge">Most bought</span></div><div class="tsub">0.75 EGP each</div></div><div class="tp"><b>750</b><span>EGP</span></div></div>
+        <div class="tier"><div><div class="tnn">5,000 messages</div><div class="tsub">0.5 EGP each</div></div><div class="tp"><b>2,500</b><span>EGP</span></div></div>
+        <div class="note" style="margin-top:13px">Promotional messages are a separate pack at a different rate, so a reminder pack can never be spent on marketing.</div>
+      </div>
+      <div class="footer"><div class="fnote">Includes VAT · 20 EGP processing fee</div><button class="btn">Buy 1,000 for 750 EGP</button></div>
+    </div></div>
+    <div class="cap">EN · pack</div>
+    </div>
+
+    <!-- AR · BALANCE -->
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="tt">واتساب</div><div class="ts">رسائل لأولياء الأمور</div></div></div>
+      <div class="body">
+        <div class="hero">
+          <div class="hl">الرسائل الباقية</div>
+          <div class="hn">٣٨ <span>من ٥٠ هذا الشهر</span></div>
+          <div class="hint">باقة المحترف معاها ٥٠ رسالة في الشهر، بتتجدد أول كل شهر. تقدر تشتري باقة في أي وقت، ومابتنتهيش.</div>
+        </div>
+
+        <div class="note acc">روابط الدفع والإيصالات وتذكيرات الحصص المُحصَّلة علينا إحنا. مابتخصمش من رصيدك.</div>
+
+        <div class="sec">راحت فين</div>
+        <div class="sub">الشهر ده</div>
+        <div class="use">
+          <div class="ur"><span class="uk">ترحيب بطلاب جدد</span><span class="uv">٧</span></div>
+          <div class="ur"><span class="uk">تذكير بالمصروفات</span><span class="uv">٤</span></div>
+          <div class="ur"><span class="uk">تغيير مواعيد</span><span class="uv">١</span></div>
+          <div class="ur sum"><span class="uk">المستخدم</span><span class="uv">١٢</span></div>
+        </div>
+
+        <div class="use">
+          <div class="ur"><span class="uk">أرسلناها إحنا، على حسابنا</span><span class="uv" style="color:#1a6d4d">٦٤</span></div>
+        </div>
+      </div>
+      <div class="footer"><button class="btn">اشترِ باقة</button></div>
+      <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><path d="M3 10l9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>الرئيسية</span></a><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg><span>الجدول</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg><span>السناتر</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>الدخل</span></a><a class="tab on"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>المزيد</span></a></div>
+    </div></div>
+    <div class="cap">AR · الرصيد</div>
+    </div>
+
+    <!-- AR · TEMPLATES -->
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="tt">القوالب</div><div class="ts">اللي بيوصل لولي الأمر</div></div></div>
+      <div class="body">
+        <div class="sec">رسائلك</div>
+        <div class="sub">دي بتتخصم من رصيدك</div>
+
+        <div class="trow">
+          <div class="tic"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
+          <div class="tn"><div class="tnm">ترحيب<span class="pill p-man">يدوي</span></div>
+          <div class="tpv">أهلًا بـ <span class="tok">{student}</span> في <span class="tok">{group}</span>. الحصص <span class="tok">{time}</span>.</div></div>
+        </div>
+        <div class="trow">
+          <div class="tic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+          <div class="tn"><div class="tnm">تذكير بالمصروفات<span class="pill p-auto">تلقائي</span></div>
+          <div class="tpv">مستحق <span class="tok">{amount}</span> ج.م على <span class="tok">{student}</span>.</div></div>
+        </div>
+        <div class="trow">
+          <div class="tic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></div>
+          <div class="tn"><div class="tnm">تغيير موعد<span class="pill p-man">يدوي</span></div>
+          <div class="tpv"><span class="tok">{group}</span> اتنقلت لـ <span class="tok">{time}</span>.</div></div>
+        </div>
+
+        <div class="sec">بنبعتها إحنا</div>
+        <div class="sub">بس لما التحصيل يمشي عبر TutoringHQ. مجانية، ومش هتقدر تقفلها.</div>
+
+        <div class="trow">
+          <div class="tic co"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
+          <div class="tn"><div class="tnm">رابط الدفع<span class="pill p-co">علينا</span></div>
+          <div class="tpv">بيتبعت بعد كل حصة تحاسب عليها.</div></div>
+        </div>
+        <div class="trow">
+          <div class="tic co"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+          <div class="tn"><div class="tnm">إيصال<span class="pill p-co">علينا</span></div>
+          <div class="tpv">بيتبعت أول ما ولي الأمر يدفع.</div></div>
+        </div>
+      </div>
+      <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><path d="M3 10l9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>الرئيسية</span></a><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg><span>الجدول</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg><span>السناتر</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>الدخل</span></a><a class="tab on"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>المزيد</span></a></div>
+    </div></div>
+    <div class="cap">AR · القوالب</div>
+    </div>
+
+    <!-- AR · PACK -->
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="tt">اشترِ باقة</div><div class="ts">شحنة لمرة واحدة</div></div></div>
+      <div class="body">
+        <div class="note">الرصيد مابينتهيش وبيترحّل. اشتري مرة واستخدمه وقت ما تحب.</div>
+        <div class="tier"><div><div class="tnn">٢٠٠ رسالة</div><div class="tsub">١ ج.م للرسالة</div></div><div class="tp"><b>٢٠٠</b><span>ج.م</span></div></div>
+        <div class="tier on"><div><div class="tnn">١٬٠٠٠ رسالة<span class="badge">الأكثر شراءً</span></div><div class="tsub">٠٫٧٥ ج.م للرسالة</div></div><div class="tp"><b>٧٥٠</b><span>ج.م</span></div></div>
+        <div class="tier"><div><div class="tnn">٥٬٠٠٠ رسالة</div><div class="tsub">٠٫٥ ج.م للرسالة</div></div><div class="tp"><b>٢٬٥٠٠</b><span>ج.م</span></div></div>
+        <div class="note" style="margin-top:13px">الرسائل الترويجية باقة منفصلة بسعر مختلف، عشان باقة التذكيرات ماتتصرفش في الدعاية.</div>
+      </div>
+      <div class="footer"><div class="fnote">شامل الضريبة · ٢٠ ج.م رسوم معالجة</div><button class="btn">اشترِ ١٬٠٠٠ بـ ٧٥٠ ج.م</button></div>
+    </div></div>
+    <div class="cap">AR · الباقة</div>
+    </div>
+
+  </div>
+</div>
+</div>
+</body></html>

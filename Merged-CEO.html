@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<!--
+================================================================
+ TutoringHQ · MERGED DESIGN REFERENCE
+ File: Merged-CEO.html
+ CEO
+
+ CONTENTS (3 screens):
+  01. CEO Dashboard   <-  Screen-CEO-Dashboard.html
+  02. CEO Teachers   <-  Screen-CEO-Teachers.html
+  03. CEO Centers Benchmark   <-  Screen-CEO-Centers-Benchmark.html
+
+----------------------------------------------------------------
+ HOW TO READ THIS FILE WHEN IMPLEMENTING IT
+----------------------------------------------------------------
+ 1. CSS IS SCOPED. Every rule carries a .mgdN prefix so that
+    several screens can share one page without their styles
+    colliding.
+        in this file:   .mgd4 .pins{ ... }
+        in your code:   .pins{ ... }
+    Strip the .mgdN prefix. It is bookkeeping for this reference
+    file only and must never reach the codebase.
+
+ 2. ONE SECTION = ONE SCREEN. Each section bar shows its number,
+    its name, and the original screen file it came from. Use that
+    filename as the screen's identity, not the section number.
+
+ 3. FRAMES ARE STATES, NOT PAGES. Each phone inside a section is
+    one state of that screen (empty, filled, error, and so on).
+    The caption under or above each phone names the state.
+
+ 4. THE TWO LANGUAGES ARE SEPARATE SCREENS. English and Arabic
+    are never a translation overlay. Arabic frames use Eastern
+    Arabic numerals (0-9 written as Arabic-Indic) and the Arabic
+    currency mark. English frames use Western numerals and EGP.
+    Directional icons such as chevrons flip with the language.
+
+ 5. SAMPLE DATA IS PLACEHOLDER. Names, amounts, dates and phone
+    numbers are illustrative. Do not treat them as fixtures or
+    seed data.
+
+ 6. THIS IS DESIGN, NOT PRODUCTION CODE. Markup here is built to
+    be read, not shipped. Take the layout, spacing, type scale
+    and colour decisions from it. Do not copy the DOM wholesale.
+
+ 7. ANY UI OR BRANDING CHANGE BUMPS SW_VERSION in public/sw.js.
+================================================================
+-->
+
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CEO · TutoringHQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+html{background:#d8d3c6;color-scheme:light}
+:root{color-scheme:light}
+
+html,body{margin:0;padding:0}
+body{background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased}
+.mgd-top{max-width:1180px;margin:0 auto;padding:44px 24px 8px;color:#1b201d}
+.mgd-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5d635c;font-weight:600}
+.mgd-h1{font-size:42px;line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:12px 0 10px}
+.mgd-lede{font-size:16px;line-height:1.55;color:#5d635c;max-width:82ch;margin:0}
+.mgd-toc{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 0}
+.mgd-toc a{font-size:12.5px;font-weight:600;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:6px 12px;border-radius:999px;text-decoration:none}
+.mgd-sec{max-width:1180px;margin:0 auto;padding:14px 24px 0}
+.mgd-bar{display:flex;align-items:baseline;gap:12px;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin-top:34px}
+.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a5e16;font-weight:500}
+.mgd-name{font-size:22px;font-weight:700;color:#14181a;letter-spacing:-.01em}
+.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#80827a}
+/* ===== Screen-CEO-Dashboard ===== */
+.mgd1 *{box-sizing:border-box}
+.mgd1{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd1 .num{font-variant-numeric:tabular-nums}
+.mgd1 .mono{font-family:'IBM Plex Mono',monospace}
+.mgd1 svg{display:block;flex-shrink:0}
+.mgd1 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd1 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd1 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd1 .topbar{display:flex;align-items:center;gap:12px;padding:6px 16px 8px}
+.mgd1 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd1 .ttl{font-size:19px;font-weight:600}
+.mgd1 .eyebrow{margin-inline-start:auto;font-size:10px;font-weight:600;color:#8a5e16;background:#f4ebd7;padding:4px 9px;border-radius:999px}
+.mgd1 .body{flex:1;overflow-y:auto;padding:8px 16px 20px;display:flex;flex-direction:column;gap:14px}
+.mgd1 .body>*{flex-shrink:0}
+.mgd1 .hero{background:linear-gradient(155deg,#0f766b,#0a514a);border-radius:20px;padding:18px;color:#eef6f4}
+.mgd1 .herol{font-size:12px;opacity:.85}
+.mgd1 .herov{font-size:29px;font-weight:700;margin-top:3px}
+.mgd1 .trend{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;background:rgba(238,246,244,.16);padding:4px 9px;border-radius:999px;margin-top:8px}
+.mgd1 .card{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:14px}
+.mgd1 .ctt{font-size:13px;font-weight:600;margin-bottom:12px}
+.mgd1 .chart{display:flex;align-items:flex-end;gap:8px;height:104px}
+.mgd1 .cbar{flex:1;background:#dfeeeb;border-radius:6px 6px 0 0}
+.mgd1 .cbar.cur{background:#0e6b61}
+.mgd1 .clab{display:flex;gap:8px;margin-top:7px}
+.mgd1 .clab span{flex:1;text-align:center;font-size:10px;color:#80827a}
+.mgd1 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mgd1 .kpi{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:13px}
+.mgd1 .kl{font-size:11.5px;color:#80827a}
+.mgd1 .kv{font-size:18px;font-weight:700;margin-top:3px}
+.mgd1 .glabel{font-size:12px;font-weight:600;letter-spacing:.02em;color:#80827a;margin:2px 4px -6px}
+.mgd1 .seg{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:15px}
+.mgd1 .segh{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.mgd1 .sic{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd1 .sic.c{background:#dfeeeb;color:#0a514a}
+.mgd1 .sic.t{background:#f4ebd7;color:#9a6b1f}
+.mgd1 .snm{font-size:14.5px;font-weight:600}
+.mgd1 .segrow{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-top:1px solid #f0ece2}
+.mgd1 .segrow:first-of-type{border-top:none}
+.mgd1 .sk{color:#5d635c}
+.mgd1 .sv{font-weight:600;font-variant-numeric:tabular-nums}
+.mgd1 .board{max-width:1480px;margin:0 auto;padding:56px 28px 96px}
+.mgd1 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd1 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd1 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+.mgd1 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d635c}
+.mgd1 .tabbar{display:flex;background:#fffdf8;border-top:1px solid #e2ddd1;padding:8px 4px 11px;flex-shrink:0}
+.mgd1 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#9a9c92;font-size:9.5px;font-weight:600;text-decoration:none}
+.mgd1 .tab svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.mgd1 .tab.on{color:#8a5e16}
+/* ===== Screen-CEO-Teachers ===== */
+.mgd2 *{box-sizing:border-box}
+.mgd2{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd2 .num{font-variant-numeric:tabular-nums}
+.mgd2 .mono{font-family:'IBM Plex Mono',monospace}
+.mgd2 svg{display:block;flex-shrink:0}
+.mgd2 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd2 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd2 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd2 .topbar{display:flex;align-items:center;gap:12px;padding:6px 16px 8px}
+.mgd2 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd2 .ttl{font-size:19px;font-weight:600}
+.mgd2 .eyebrow{margin-inline-start:auto;font-size:10px;font-weight:600;color:#8a5e16;background:#f4ebd7;padding:4px 9px;border-radius:999px}
+.mgd2 .body{flex:1;overflow-y:auto;padding:8px 16px 20px;display:flex;flex-direction:column;gap:14px}
+.mgd2 .body>*{flex-shrink:0}
+.mgd2 .hero{background:linear-gradient(155deg,#9a6b1f,#7a5417);border-radius:20px;padding:18px;color:#f7efe2}
+.mgd2 .herol{font-size:12px;opacity:.9}
+.mgd2 .herov{font-size:29px;font-weight:700;margin-top:3px}
+.mgd2 .trend{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;background:rgba(247,239,226,.18);padding:4px 9px;border-radius:999px;margin-top:8px}
+.mgd2 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mgd2 .kpi{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:13px}
+.mgd2 .kl{font-size:11.5px;color:#80827a}
+.mgd2 .kv{font-size:18px;font-weight:700;margin-top:3px}
+.mgd2 .glabel{font-size:12px;font-weight:600;letter-spacing:.02em;color:#80827a;margin:2px 4px -6px}
+.mgd2 .card{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:14px}
+.mgd2 .plan{padding:6px 0}
+.mgd2 .pln{display:flex;justify-content:space-between;font-size:13px;margin-bottom:7px}
+.mgd2 .pln .num{color:#5d635c}
+.mgd2 .track{height:9px;border-radius:999px;background:#eceae1;overflow:hidden}
+.mgd2 .fill{height:100%;border-radius:999px;background:#0e6b61}
+.mgd2 .group{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;overflow:hidden}
+.mgd2 .srow{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid #f0ece2}
+.mgd2 .srow:first-child{border-top:none}
+.mgd2 .av{width:34px;height:34px;border-radius:50%;background:#f4ebd7;color:#9a6b1f;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+.mgd2 .sl{flex:1}
+.mgd2 .snm{font-size:14px;font-weight:500}
+.mgd2 .ss{font-size:11px;color:#80827a;margin-top:1px}
+.mgd2 .tri{text-align:end}
+.mgd2 .tv{font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.mgd2 .tlb{font-size:10px;color:#80827a}
+.mgd2 .info{background:#e3ecf6;border:1px solid #cdddf3;border-radius:14px;padding:12px 14px;font-size:12px;color:#274b8a;line-height:1.5}
+.mgd2 .board{max-width:1480px;margin:0 auto;padding:56px 28px 96px}
+.mgd2 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd2 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd2 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+.mgd2 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d635c}
+.mgd2 .arrow{width:12px;height:12px;fill:none;stroke:#b6b1a4;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;margin-inline-start:5px;vertical-align:middle}
+.mgd2 .tabbar{display:flex;background:#fffdf8;border-top:1px solid #e2ddd1;padding:8px 4px 11px;flex-shrink:0}
+.mgd2 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#9a9c92;font-size:9.5px;font-weight:600;text-decoration:none}
+.mgd2 .tab svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.mgd2 .tab.on{color:#8a5e16}
+/* ===== Screen-CEO-Centers-Benchmark ===== */
+.mgd3 *{box-sizing:border-box}
+.mgd3{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd3 .num{font-variant-numeric:tabular-nums}
+.mgd3 .mono{font-family:'IBM Plex Mono',monospace}
+.mgd3 svg{display:block;flex-shrink:0}
+.mgd3 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd3 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd3 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd3 .topbar{display:flex;align-items:center;gap:12px;padding:6px 16px 8px}
+.mgd3 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd3 .ttl{font-size:19px;font-weight:600}
+.mgd3 .eyebrow{margin-inline-start:auto;font-size:10px;font-weight:600;color:#8a5e16;background:#f4ebd7;padding:4px 9px;border-radius:999px}
+.mgd3 .body{flex:1;overflow-y:auto;padding:8px 16px 20px;display:flex;flex-direction:column;gap:14px}
+.mgd3 .body>*{flex-shrink:0}
+.mgd3 .hero{background:linear-gradient(155deg,#0f766b,#0a514a);border-radius:20px;padding:18px;color:#eef6f4}
+.mgd3 .herol{font-size:12px;opacity:.85}
+.mgd3 .herov{font-size:29px;font-weight:700;margin-top:3px}
+.mgd3 .herosub{font-size:12px;opacity:.85;margin-top:6px}
+.mgd3 .glabel{font-size:12px;font-weight:600;letter-spacing:.02em;color:#80827a;margin:2px 4px -6px}
+.mgd3 .cmp{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;overflow:hidden}
+.mgd3 .cmph{display:grid;grid-template-columns:1.25fr .9fr .9fr;padding:11px 14px;font-size:11px;font-weight:600}
+.mgd3 .cmph .h1{color:#80827a}
+.mgd3 .cmph .hv{text-align:end;color:#0a514a}
+.mgd3 .cmph .hu{text-align:end;color:#9c3322}
+.mgd3 .cmpr{display:grid;grid-template-columns:1.25fr .9fr .9fr;padding:11px 14px;border-top:1px solid #f0ece2;font-size:13px;align-items:center}
+.mgd3 .cmpr .lbl{color:#5d635c}
+.mgd3 .cmpr .v{text-align:end;font-weight:600;font-variant-numeric:tabular-nums}
+.mgd3 .cmpr .u{text-align:end;font-weight:600;font-variant-numeric:tabular-nums;color:#8a5e16}
+.mgd3 .info{background:#e3ecf6;border:1px solid #cdddf3;border-radius:14px;padding:12px 14px;font-size:12px;color:#274b8a;line-height:1.5}
+.mgd3 .group{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;overflow:hidden}
+.mgd3 .srow{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid #f0ece2}
+.mgd3 .srow:first-child{border-top:none}
+.mgd3 .av{width:34px;height:34px;border-radius:9px;background:#f2eee5;color:#5d635c;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+.mgd3 .sl{flex:1}
+.mgd3 .snm{font-size:14px;font-weight:500}
+.mgd3 .ss{font-size:11px;color:#80827a;margin-top:1px}
+.mgd3 .tri{text-align:end}
+.mgd3 .tv{font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.mgd3 .tag{font-size:10px;font-weight:600;color:#8a5e16;background:#f4ebd7;padding:3px 8px;border-radius:999px;margin-top:3px;display:inline-block}
+.mgd3 .board{max-width:1480px;margin:0 auto;padding:56px 28px 96px}
+.mgd3 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd3 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd3 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+.mgd3 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d635c}
+.mgd3 .arrow{width:12px;height:12px;fill:none;stroke:#b6b1a4;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;margin-inline-start:5px;vertical-align:middle}
+.mgd3 .tabbar{display:flex;background:#fffdf8;border-top:1px solid #e2ddd1;padding:8px 4px 11px;flex-shrink:0}
+.mgd3 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#9a9c92;font-size:9.5px;font-weight:600;text-decoration:none}
+.mgd3 .tab svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.mgd3 .tab.on{color:#8a5e16}
+</style>
+</head>
+<body>
+<div class="mgd-top">
+  <div class="mgd-eyebrow">TutoringHQ · Merged reference</div>
+  <h1 class="mgd-h1">CEO</h1>
+  <p class="mgd-lede">The three CEO screens: dashboard, teachers, and center benchmarks.</p>
+  <div class="mgd-toc"><a href="#Merged-CEO-1">CEO Dashboard</a><a href="#Merged-CEO-2">CEO Teachers</a><a href="#Merged-CEO-3">CEO Centers Benchmark</a></div>
+</div>
+<div class="mgd-sec" id="Merged-CEO-1">
+  <div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">CEO Dashboard</span><span class="mgd-src">Screen-CEO-Dashboard.html</span></div>
+</div>
+<div class="mgd1">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#8a5e16;background:#f4ebd7;border:1px solid rgba(138,94,22,.2);padding:5px 11px;border-radius:999px">Internal · CEO</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">CEO dashboard</h1>
+    <p style="margin:0;max-width:80ch;font-size:17px;line-height:1.55;color:#5d635c">The strategic snapshot: total revenue and trend, the ratios that matter, and the split between the two customer types. Operational detail lives in the Admin portal. English and Arabic. Design only.</p>
+  </div>
+  <div class="phones">
+
+    <!-- SNAPSHOT · EN -->
+    <div class="frame"><span class="cap">EN · snapshot</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="ttl">Overview</div><span class="eyebrow">CEO</span></div>
+      <div class="body">
+        <div class="hero">
+          <div class="herol">Total revenue this month</div>
+          <div class="herov num">343,494 <span style="font-size:15px;opacity:.85;font-weight:600">EGP</span></div>
+          <div class="trend"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#cde7dd" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7v8"/></svg>+13% vs last month</div>
+        </div>
+        <div class="card">
+          <div class="ctt">Revenue, last 6 months</div>
+          <div class="chart"><div class="cbar" style="height:58%"></div><div class="cbar" style="height:64%"></div><div class="cbar" style="height:71%"></div><div class="cbar" style="height:80%"></div><div class="cbar" style="height:89%"></div><div class="cbar cur" style="height:100%"></div></div>
+          <div class="clab"><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span></div>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="kl">MRR (subscriptions)</div><div class="kv num">312,000</div></div>
+          <div class="kpi"><div class="kl">Fee revenue</div><div class="kv num">31,494</div></div>
+          <div class="kpi"><div class="kl">Active accounts</div><div class="kv num">244</div></div>
+          <div class="kpi"><div class="kl">Net new</div><div class="kv num" style="color:#1a6d4d">+18</div></div>
+        </div>
+      </div>
+      <div class="tabbar"><a class="tab on"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Overview</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Money</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>Accounts</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>Platform</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></div>
+    </div></div></div>
+
+    <!-- SEGMENTS · EN -->
+    <div class="frame"><span class="cap">EN · segments</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">By segment</div></div>
+      <div class="body">
+        <div class="seg">
+          <div class="segh"><div class="sic c"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M6 21V7l6-4 6 4v14M10 21v-4h4v4"/></svg></div><div class="snm">Centers</div></div>
+          <div class="segrow"><span class="sk">Accounts</span><span class="sv num">156</span></div>
+          <div class="segrow"><span class="sk">MRR</span><span class="sv num">244,000</span></div>
+          <div class="segrow"><span class="sk">Growth</span><span class="sv num" style="color:#1a6d4d">+9%</span></div>
+        </div>
+        <div class="seg">
+          <div class="segh"><div class="sic t"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg></div><div class="snm">Teachers</div></div>
+          <div class="segrow"><span class="sk">Accounts</span><span class="sv num">88</span></div>
+          <div class="segrow"><span class="sk">MRR</span><span class="sv num">68,000</span></div>
+          <div class="segrow"><span class="sk">Fee revenue</span><span class="sv num">31,494</span></div>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="kl">Churn</div><div class="kv num">1.8%</div></div>
+          <div class="kpi"><div class="kl">ARPU</div><div class="kv num">1,280</div></div>
+        </div>
+      </div>
+      <div class="tabbar"><a class="tab on"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Overview</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Money</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>Accounts</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>Platform</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></div>
+    </div></div></div>
+
+    <!-- SNAPSHOT · AR -->
+    <div class="frame"><span class="cap">AR · snapshot</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="ttl">نظرة عامة</div><span class="eyebrow">الرئيس التنفيذي</span></div>
+      <div class="body">
+        <div class="hero">
+          <div class="herol">إجمالي الإيراد هذا الشهر</div>
+          <div class="herov num">٣٤٣٬٤٩٤ <span style="font-size:15px;opacity:.85;font-weight:600">ج.م</span></div>
+          <div class="trend"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#cde7dd" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="transform:scaleX(-1)"><path d="M7 17L17 7M17 7H9M17 7v8"/></svg>+١٣٪ عن الشهر السابق</div>
+        </div>
+        <div class="card">
+          <div class="ctt">الإيراد، آخر ٦ أشهر</div>
+          <div class="chart"><div class="cbar" style="height:58%"></div><div class="cbar" style="height:64%"></div><div class="cbar" style="height:71%"></div><div class="cbar" style="height:80%"></div><div class="cbar" style="height:89%"></div><div class="cbar cur" style="height:100%"></div></div>
+          <div class="clab"><span>٢</span><span>٣</span><span>٤</span><span>٥</span><span>٦</span><span>٧</span></div>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="kl">الإيراد المتكرر (اشتراكات)</div><div class="kv num">٣١٢٬٠٠٠</div></div>
+          <div class="kpi"><div class="kl">إيراد الرسوم</div><div class="kv num">٣١٬٤٩٤</div></div>
+          <div class="kpi"><div class="kl">حسابات نشطة</div><div class="kv num">٢٤٤</div></div>
+          <div class="kpi"><div class="kl">صافي الجديد</div><div class="kv num" style="color:#1a6d4d">+١٨</div></div>
+        </div>
+      </div>
+      <div class="tabbar"><a class="tab on"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>نظرة عامة</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>المال</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>الحسابات</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>المنصة</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>المزيد</span></a></div>
+    </div></div></div>
+
+    <!-- SEGMENTS · AR -->
+    <div class="frame"><span class="cap">AR · segments</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl">حسب الفئة</div></div>
+      <div class="body">
+        <div class="seg">
+          <div class="segh"><div class="sic c"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M6 21V7l6-4 6 4v14M10 21v-4h4v4"/></svg></div><div class="snm">المراكز</div></div>
+          <div class="segrow"><span class="sk">الحسابات</span><span class="sv num">١٥٦</span></div>
+          <div class="segrow"><span class="sk">الإيراد المتكرر</span><span class="sv num">٢٤٤٬٠٠٠</span></div>
+          <div class="segrow"><span class="sk">النمو</span><span class="sv num" style="color:#1a6d4d">+٩٪</span></div>
+        </div>
+        <div class="seg">
+          <div class="segh"><div class="sic t"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg></div><div class="snm">المعلمون</div></div>
+          <div class="segrow"><span class="sk">الحسابات</span><span class="sv num">٨٨</span></div>
+          <div class="segrow"><span class="sk">الإيراد المتكرر</span><span class="sv num">٦٨٬٠٠٠</span></div>
+          <div class="segrow"><span class="sk">إيراد الرسوم</span><span class="sv num">٣١٬٤٩٤</span></div>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="kl">معدل التسرّب</div><div class="kv num">١٫٨٪</div></div>
+          <div class="kpi"><div class="kl">متوسط الإيراد</div><div class="kv num">١٬٢٨٠</div></div>
+        </div>
+      </div>
+      <div class="tabbar"><a class="tab on"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>نظرة عامة</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>المال</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>الحسابات</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>المنصة</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>المزيد</span></a></div>
+    </div></div></div>
+
+  </div>
+</div>
+</div>
+<div class="mgd-sec" id="Merged-CEO-2">
+  <div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">CEO Teachers</span><span class="mgd-src">Screen-CEO-Teachers.html</span></div>
+</div>
+<div class="mgd2">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#8a5e16;background:#f4ebd7;border:1px solid rgba(138,94,22,.2);padding:5px 11px;border-radius:999px">Internal · CEO</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">CEO · teachers</h1>
+    <p style="margin:0;max-width:80ch;font-size:17px;line-height:1.55;color:#5d635c">The teacher segment on its own: fee revenue and payouts, verification coverage, plan mix, and the top earners driving volume. English and Arabic. Design only.</p>
+  </div>
+  <div class="phones">
+
+    <!-- OVERVIEW · EN -->
+    <div class="frame"><span class="cap">EN · overview</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="ttl">Teachers</div><span class="eyebrow">CEO</span></div>
+      <div class="body">
+        <div class="hero">
+          <div class="herol">Teacher fee revenue this month</div>
+          <div class="herov num">31,494 <span style="font-size:15px;opacity:.9;font-weight:600">EGP</span></div>
+          <div class="trend"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f0dcbd" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7v8"/></svg>+16% vs last month</div>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="kl">Active teachers</div><div class="kv num">88</div></div>
+          <div class="kpi"><div class="kl">Verified</div><div class="kv num">82</div></div>
+          <div class="kpi"><div class="kl">Paid out</div><div class="kv num">170,000</div></div>
+          <div class="kpi"><div class="kl">Classes</div><div class="kv num">200</div></div>
+        </div>
+        <div class="glabel">BY PLAN</div>
+        <div class="card">
+          <div class="plan"><div class="pln"><span>Standard · 150/mo</span><span class="num">61 teachers</span></div><div class="track"><div class="fill" style="width:69%"></div></div></div>
+          <div class="plan"><div class="pln"><span>Pro · 400/mo</span><span class="num">27 teachers</span></div><div class="track"><div class="fill" style="width:31%;background:#9a6b1f"></div></div></div>
+        </div>
+      </div>
+      <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Overview</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Money</span></a><a class="tab on"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>Accounts</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>Platform</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></div>
+    </div></div></div>
+
+    <!-- TOP · EN -->
+    <div class="frame"><span class="cap">EN · top earners</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Top earners</div></div>
+      <div class="body">
+        <div class="glabel">NET EARNED · THIS MONTH</div>
+        <div class="group">
+          <div class="srow"><div class="av">SA</div><div class="sl"><div class="snm">Sherif Adel<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Chemistry · 22 classes</div></div><div class="tri"><div class="tv">18,700</div><div class="tlb">net</div></div></div>
+          <div class="srow"><div class="av">DF</div><div class="sl"><div class="snm">Dina Fouad<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">English · 18 classes</div></div><div class="tri"><div class="tv">15,300</div><div class="tlb">net</div></div></div>
+          <div class="srow"><div class="av">KS</div><div class="sl"><div class="snm">Karim Samir<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Physics · 12 classes</div></div><div class="tri"><div class="tv">10,200</div><div class="tlb">net</div></div></div>
+          <div class="srow"><div class="av">HK</div><div class="sl"><div class="snm">Hazem Kamal<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Biology · 9 classes</div></div><div class="tri"><div class="tv">7,650</div><div class="tlb">net</div></div></div>
+          <div class="srow"><div class="av">RG</div><div class="sl"><div class="snm">Rana Gamal<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Math · 4 classes</div></div><div class="tri"><div class="tv">3,400</div><div class="tlb">net</div></div></div>
+        </div>
+        <div class="info">6 of 88 teachers are not yet verified, so their fee collection is paused until National-ID checks clear.</div>
+      </div>
+      <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Overview</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Money</span></a><a class="tab on"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>Accounts</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>Platform</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></div>
+    </div></div></div>
+
+    <!-- OVERVIEW · AR -->
+    <div class="frame"><span class="cap">AR · overview</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="ttl">المعلمون</div><span class="eyebrow">الرئيس التنفيذي</span></div>
+      <div class="body">
+        <div class="hero">
+          <div class="herol">إيراد رسوم المعلمين هذا الشهر</div>
+          <div class="herov num">٣١٬٤٩٤ <span style="font-size:15px;opacity:.9;font-weight:600">ج.م</span></div>
+          <div class="trend"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f0dcbd" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="transform:scaleX(-1)"><path d="M7 17L17 7M17 7H9M17 7v8"/></svg>+١٦٪ عن الشهر السابق</div>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="kl">معلمون نشطون</div><div class="kv num">٨٨</div></div>
+          <div class="kpi"><div class="kl">موثّقون</div><div class="kv num">٨٢</div></div>
+          <div class="kpi"><div class="kl">المدفوع لهم</div><div class="kv num">١٧٠٬٠٠٠</div></div>
+          <div class="kpi"><div class="kl">الحصص</div><div class="kv num">٢٠٠</div></div>
+        </div>
+        <div class="glabel">حسب الخطة</div>
+        <div class="card">
+          <div class="plan"><div class="pln"><span>عادي · ١٥٠/شهر</span><span class="num">٦١ معلمًا</span></div><div class="track"><div class="fill" style="width:69%"></div></div></div>
+          <div class="plan"><div class="pln"><span>احترافي · ٤٠٠/شهر</span><span class="num">٢٧ معلمًا</span></div><div class="track"><div class="fill" style="width:31%;background:#9a6b1f"></div></div></div>
+        </div>
+      </div>
+      <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>نظرة عامة</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>المال</span></a><a class="tab on"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>الحسابات</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>المنصة</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>المزيد</span></a></div>
+    </div></div></div>
+
+    <!-- TOP · AR -->
+    <div class="frame"><span class="cap">AR · top earners</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl">الأعلى دخلًا</div></div>
+      <div class="body">
+        <div class="glabel">الصافي المكتسب · هذا الشهر</div>
+        <div class="group">
+          <div class="srow"><div class="av">SA</div><div class="sl"><div class="snm">شريف عادل<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">كيمياء · ٢٢ حصة</div></div><div class="tri"><div class="tv">١٨٬٧٠٠</div><div class="tlb">صافٍ</div></div></div>
+          <div class="srow"><div class="av">DF</div><div class="sl"><div class="snm">دينا فؤاد<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">إنجليزي · ١٨ حصة</div></div><div class="tri"><div class="tv">١٥٬٣٠٠</div><div class="tlb">صافٍ</div></div></div>
+          <div class="srow"><div class="av">KS</div><div class="sl"><div class="snm">كريم سامي<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">فيزياء · ١٢ حصة</div></div><div class="tri"><div class="tv">١٠٬٢٠٠</div><div class="tlb">صافٍ</div></div></div>
+          <div class="srow"><div class="av">HK</div><div class="sl"><div class="snm">حازم كمال<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">أحياء · ٩ حصص</div></div><div class="tri"><div class="tv">٧٬٦٥٠</div><div class="tlb">صافٍ</div></div></div>
+          <div class="srow"><div class="av">RG</div><div class="sl"><div class="snm">رنا جمال<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">رياضيات · ٤ حصص</div></div><div class="tri"><div class="tv">٣٬٤٠٠</div><div class="tlb">صافٍ</div></div></div>
+        </div>
+        <div class="info">٦ من أصل ٨٨ معلمًا غير موثّقين بعد، لذا يتوقف تحصيل رسومهم حتى تكتمل مطابقة الرقم القومي.</div>
+      </div>
+      <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>نظرة عامة</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>المال</span></a><a class="tab on"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>الحسابات</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>المنصة</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>المزيد</span></a></div>
+    </div></div></div>
+
+  </div>
+</div>
+</div>
+<div class="mgd-sec" id="Merged-CEO-3">
+  <div class="mgd-bar"><span class="mgd-num">03</span><span class="mgd-name">CEO Centers Benchmark</span><span class="mgd-src">Screen-CEO-Centers-Benchmark.html</span></div>
+</div>
+<div class="mgd3">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#8a5e16;background:#f4ebd7;border:1px solid rgba(138,94,22,.2);padding:5px 11px;border-radius:999px">Internal · CEO</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Centers · verified vs unverified</h1>
+    <p style="margin:0;max-width:80ch;font-size:17px;line-height:1.55;color:#5d635c">A benchmark, not a full dashboard: how verified centers compare with unverified ones on revenue, students, retention, and overdue, plus the unverified centers worth chasing. English and Arabic. Design only.</p>
+  </div>
+  <div class="phones">
+
+    <!-- BENCHMARK · EN -->
+    <div class="frame"><span class="cap">EN · benchmark</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="ttl">Centers</div><span class="eyebrow">CEO</span></div>
+      <div class="body">
+        <div class="hero">
+          <div class="herol">Verification rate</div>
+          <div class="herov num">78%</div>
+          <div class="herosub num">122 of 156 centers verified</div>
+        </div>
+        <div class="glabel">VERIFIED VS UNVERIFIED</div>
+        <div class="cmp">
+          <div class="cmph"><span class="h1">Metric</span><span class="hv">Verified</span><span class="hu">Unverified</span></div>
+          <div class="cmpr"><span class="lbl">Centers</span><span class="v num">122</span><span class="u num">34</span></div>
+          <div class="cmpr"><span class="lbl">Avg MRR</span><span class="v num">1,720</span><span class="u num">980</span></div>
+          <div class="cmpr"><span class="lbl">Avg students</span><span class="v num">148</span><span class="u num">76</span></div>
+          <div class="cmpr"><span class="lbl">Retention</span><span class="v num">93%</span><span class="u num">79%</span></div>
+          <div class="cmpr"><span class="lbl">Overdue rate</span><span class="v num">5%</span><span class="u num">21%</span></div>
+          <div class="cmpr"><span class="lbl">Growth MoM</span><span class="v num">+11%</span><span class="u num">+3%</span></div>
+        </div>
+        <div class="info">Verified centers run larger, retain better, and fall overdue far less. Closing the verification gap is the clearest lever on center health.</div>
+      </div>
+      <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Overview</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Money</span></a><a class="tab on"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>Accounts</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>Platform</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></div>
+    </div></div></div>
+
+    <!-- UNVERIFIED · EN -->
+    <div class="frame"><span class="cap">EN · unverified queue</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Unverified centers</div></div>
+      <div class="body">
+        <div class="glabel">CHASE BY MRR</div>
+        <div class="group">
+          <div class="srow"><div class="av">NA</div><div class="sl"><div class="snm">Nile Academy<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Giza · Growth · 120 students</div></div><div class="tri"><div class="tv">11,400</div><span class="tag">Unverified</span></div></div>
+          <div class="srow"><div class="av">AM</div><div class="sl"><div class="snm">Al-Manar<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Maadi · Starter · 95 students</div></div><div class="tri"><div class="tv">7,200</div><span class="tag">Unverified</span></div></div>
+          <div class="srow"><div class="av">FS</div><div class="sl"><div class="snm">Future Scholars<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Nasr City · Starter · 60 students</div></div><div class="tri"><div class="tv">4,300</div><span class="tag">Unverified</span></div></div>
+          <div class="srow"><div class="av">RS</div><div class="sl"><div class="snm">Roqaya Study<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Alexandria · Trial · 45 students</div></div><div class="tri"><div class="tv">1,900</div><span class="tag">Unverified</span></div></div>
+        </div>
+        <div class="info">34 centers are unverified. Moving them into the verified cohort is worth an estimated +14% retention on this group.</div>
+      </div>
+      <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Overview</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Money</span></a><a class="tab on"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>Accounts</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>Platform</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></div>
+    </div></div></div>
+
+    <!-- BENCHMARK · AR -->
+    <div class="frame"><span class="cap">AR · benchmark</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="ttl">المراكز</div><span class="eyebrow">الرئيس التنفيذي</span></div>
+      <div class="body">
+        <div class="hero">
+          <div class="herol">نسبة التوثيق</div>
+          <div class="herov num">٧٨٪</div>
+          <div class="herosub num">١٢٢ من ١٥٦ مركزًا موثّقة</div>
+        </div>
+        <div class="glabel">الموثّقة مقابل غير الموثّقة</div>
+        <div class="cmp">
+          <div class="cmph"><span class="h1">المؤشر</span><span class="hv">موثّقة</span><span class="hu">غير موثّقة</span></div>
+          <div class="cmpr"><span class="lbl">المراكز</span><span class="v num">١٢٢</span><span class="u num">٣٤</span></div>
+          <div class="cmpr"><span class="lbl">متوسط الإيراد المتكرر</span><span class="v num">١٬٧٢٠</span><span class="u num">٩٨٠</span></div>
+          <div class="cmpr"><span class="lbl">متوسط الطلاب</span><span class="v num">١٤٨</span><span class="u num">٧٦</span></div>
+          <div class="cmpr"><span class="lbl">معدل البقاء</span><span class="v num">٩٣٪</span><span class="u num">٧٩٪</span></div>
+          <div class="cmpr"><span class="lbl">نسبة التأخّر</span><span class="v num">٥٪</span><span class="u num">٢١٪</span></div>
+          <div class="cmpr"><span class="lbl">النمو الشهري</span><span class="v num">+١١٪</span><span class="u num">+٣٪</span></div>
+        </div>
+        <div class="info">المراكز الموثّقة أكبر حجمًا، وأعلى بقاءً، وأقل تأخّرًا بكثير. سدّ فجوة التوثيق هو أوضح رافعة لصحة المراكز.</div>
+      </div>
+      <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>نظرة عامة</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>المال</span></a><a class="tab on"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>الحسابات</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>المنصة</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>المزيد</span></a></div>
+    </div></div></div>
+
+    <!-- UNVERIFIED · AR -->
+    <div class="frame"><span class="cap">AR · unverified queue</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl">مراكز غير موثّقة</div></div>
+      <div class="body">
+        <div class="glabel">حسب الإيراد المتكرر</div>
+        <div class="group">
+          <div class="srow"><div class="av">NA</div><div class="sl"><div class="snm">أكاديمية النيل<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">الجيزة · النمو · ١٢٠ طالبًا</div></div><div class="tri"><div class="tv">١١٬٤٠٠</div><span class="tag">غير موثّق</span></div></div>
+          <div class="srow"><div class="av">AM</div><div class="sl"><div class="snm">المنار<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">المعادي · البداية · ٩٥ طالبًا</div></div><div class="tri"><div class="tv">٧٬٢٠٠</div><span class="tag">غير موثّق</span></div></div>
+          <div class="srow"><div class="av">FS</div><div class="sl"><div class="snm">علماء المستقبل<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">مدينة نصر · البداية · ٦٠ طالبًا</div></div><div class="tri"><div class="tv">٤٬٣٠٠</div><span class="tag">غير موثّق</span></div></div>
+          <div class="srow"><div class="av">RS</div><div class="sl"><div class="snm">رقية<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">الإسكندرية · تجريبي · ٤٥ طالبًا</div></div><div class="tri"><div class="tv">١٬٩٠٠</div><span class="tag">غير موثّق</span></div></div>
+        </div>
+        <div class="info">٣٤ مركزًا غير موثّق. نقلها إلى فئة الموثّقة يعادل زيادة بقاء مقدّرة بـ +١٤٪ لهذه المجموعة.</div>
+      </div>
+      <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>نظرة عامة</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>المال</span></a><a class="tab on"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>الحسابات</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>المنصة</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>المزيد</span></a></div>
+    </div></div></div>
+
+  </div>
+</div>
+</div>
+</body></html>

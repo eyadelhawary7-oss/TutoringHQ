@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<!--
+================================================================
+ TutoringHQ · MERGED DESIGN REFERENCE
+ File: Merged-Center-Money.html
+ Center · Money
+
+ CONTENTS (5 screens):
+  01. Payments   <-  Screen-Payments.html
+  02. Center Payments Verified   <-  Screen-Center-Payments-Verified.html
+  03. Billing   <-  Screen-Billing.html
+  04. Center Withdrawal Verified   <-  Screen-Center-Withdrawal-Verified.html
+  05. Center Receipts Verified   <-  Screen-Center-Receipts-Verified.html
+
+----------------------------------------------------------------
+ HOW TO READ THIS FILE WHEN IMPLEMENTING IT
+----------------------------------------------------------------
+ 1. CSS IS SCOPED. Every rule carries a .mgdN prefix so that
+    several screens can share one page without their styles
+    colliding.
+        in this file:   .mgd4 .pins{ ... }
+        in your code:   .pins{ ... }
+    Strip the .mgdN prefix. It is bookkeeping for this reference
+    file only and must never reach the codebase.
+
+ 2. ONE SECTION = ONE SCREEN. Each section bar shows its number,
+    its name, and the original screen file it came from. Use that
+    filename as the screen's identity, not the section number.
+
+ 3. FRAMES ARE STATES, NOT PAGES. Each phone inside a section is
+    one state of that screen (empty, filled, error, and so on).
+    The caption under or above each phone names the state.
+
+ 4. THE TWO LANGUAGES ARE SEPARATE SCREENS. English and Arabic
+    are never a translation overlay. Arabic frames use Eastern
+    Arabic numerals (0-9 written as Arabic-Indic) and the Arabic
+    currency mark. English frames use Western numerals and EGP.
+    Directional icons such as chevrons flip with the language.
+
+ 5. SAMPLE DATA IS PLACEHOLDER. Names, amounts, dates and phone
+    numbers are illustrative. Do not treat them as fixtures or
+    seed data.
+
+ 6. THIS IS DESIGN, NOT PRODUCTION CODE. Markup here is built to
+    be read, not shipped. Take the layout, spacing, type scale
+    and colour decisions from it. Do not copy the DOM wholesale.
+
+ 7. ANY UI OR BRANDING CHANGE BUMPS SW_VERSION in public/sw.js.
+================================================================
+-->
+
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Center · Money · TutoringHQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+html{background:#d8d3c6;color-scheme:light}
+:root{color-scheme:light}
+
+html,body{margin:0;padding:0}
+body{background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased}
+.mgd-top{max-width:1180px;margin:0 auto;padding:44px 24px 8px;color:#1b201d}
+.mgd-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5d635c;font-weight:600}
+.mgd-h1{font-size:42px;line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:12px 0 10px}
+.mgd-lede{font-size:16px;line-height:1.55;color:#5d635c;max-width:82ch;margin:0}
+.mgd-toc{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 0}
+.mgd-toc a{font-size:12.5px;font-weight:600;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:6px 12px;border-radius:999px;text-decoration:none}
+.mgd-sec{max-width:1180px;margin:0 auto;padding:14px 24px 0}
+.mgd-bar{display:flex;align-items:baseline;gap:12px;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin-top:34px}
+.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a5e16;font-weight:500}
+.mgd-name{font-size:22px;font-weight:700;color:#14181a;letter-spacing:-.01em}
+.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#80827a}
+/* ===== Screen-Payments ===== */
+.mgd1 *{box-sizing:border-box}
+.mgd1{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd1 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.mgd1 .mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.mgd1 svg{display:block;flex-shrink:0}
+.mgd1 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd1 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd1 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd1 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 10px}
+.mgd1 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd1 .addbtn{width:42px;height:42px;border-radius:12px;background:#0e6b61;color:#fffdf8;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(14,107,97,.28);flex-shrink:0}
+.mgd1 .body{flex:1;overflow-y:auto;padding:2px 16px 8px;display:flex;flex-direction:column;gap:12px}
+.mgd1 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 9px;border-radius:999px;white-space:nowrap;flex-shrink:0}
+.mgd1 .ok{background:#e4f0e9;color:#1a6d4d}
+.mgd1 .warn{background:#f4ebd7;color:#8a5e16}
+.mgd1 /* search */
+  .search{display:flex;align-items:center;gap:9px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:12px;padding:10px 13px;color:#a6a79d;font-size:14px}
+.mgd1 /* KPI tiles */
+  .ktiles{display:flex;gap:9px}
+.mgd1 .ktile{flex:1;background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:11px 12px}
+.mgd1 .ktile .kl{font-size:11px;color:#80827a}
+.mgd1 .ktile .kv{font-size:17px;font-weight:700;margin-top:3px;line-height:1}
+.mgd1 .ktile.due .kv{color:#8a5e16}
+.mgd1 /* filter pills */
+  .pillrow{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px}
+.mgd1 .pill{flex-shrink:0;border:1px solid #e2ddd1;background:#fffdf8;border-radius:999px;padding:7px 13px;font-size:13px;font-weight:600;color:#5d635c;display:flex;align-items:center;gap:6px}
+.mgd1 .pill.on{background:#0e6b61;color:#fffdf8;border-color:#0e6b61}
+.mgd1 .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.mgd1 .d-cash{background:#1a6d4d}
+.mgd1 .d-insta{background:#0e6b61}
+.mgd1 .d-fawry{background:#9a6b1f}
+.mgd1 .d-vodafone{background:#9c3322}
+.mgd1 .d-card{background:#2563eb}
+.mgd1 /* section label */
+  .slabel{font-size:12px;font-weight:600;color:#80827a;margin:2px 2px -2px}
+.mgd1 /* payment row */
+  .prow{display:flex;align-items:center;gap:11px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:11px 13px;box-shadow:0 1px 2px rgba(28,33,30,.05)}
+.mgd1 .mchip{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd1 .nm{font-size:15px;font-weight:600;line-height:1.15}
+.mgd1 .mt{font-size:12px;color:#80827a;margin-top:2px}
+.mgd1 .amt{font-size:15px;font-weight:700}
+.mgd1 .confirm{background:#0e6b61;color:#fffdf8;border:none;border-radius:10px;padding:7px 12px;font-size:13px;font-weight:600;box-shadow:0 1px 4px rgba(14,107,97,.25)}
+.mgd1 .kb{color:#b0b1a7;flex-shrink:0}
+.mgd1 .exportchip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#9a6b1f;background:#f4ebd7;border:1px solid rgba(154,107,31,.25);border-radius:999px;padding:6px 11px}
+.mgd1 .skel{background:linear-gradient(90deg,#eae5d9 25%,#ded9cb 50%,#eae5d9 75%);background-size:200% 100%;animation:sweep 1.5s linear infinite;border-radius:8px}
+
+  @keyframes sweep{.mgd1 0%{background-position:200% 0}
+.mgd1 100%{background-position:-200% 0}}
+
+  @media (prefers-reduced-motion:reduce){.mgd1 .skel{animation:none!important}}
+.mgd1 /* sheet */
+  .scrim{position:absolute;inset:0;background:rgba(20,24,22,.42)}
+.mgd1 .sheet{position:absolute;left:0;right:0;bottom:0;background:#fffdf8;border-radius:24px 24px 0 0;padding:8px 16px 22px;box-shadow:0 -8px 30px rgba(28,33,30,.18)}
+.mgd1 .grab{width:38px;height:4px;border-radius:999px;background:#e2ddd1;margin:6px auto 12px}
+.mgd1 .sheet-h{font-size:17px;font-weight:600;padding:0 2px 10px}
+.mgd1 .field{background:#faf7f0;border:1px solid #e2ddd1;border-radius:12px;padding:12px 13px;display:flex;align-items:center;gap:9px;font-size:15px}
+.mgd1 .fieldlabel{font-size:12px;color:#80827a;margin:0 2px 5px}
+.mgd1 .amountbox{background:#faf7f0;border:1px solid #e2ddd1;border-radius:14px;padding:14px;text-align:center}
+.mgd1 .amountbox .a{font-size:30px;font-weight:700}
+.mgd1 .mgrid{display:flex;gap:8px;flex-wrap:wrap}
+.mgd1 .mpill{border:1px solid #e2ddd1;border-radius:999px;padding:8px 12px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;color:#5d635c;background:#fffdf8}
+.mgd1 .mpill.on{border-color:#0e6b61;background:#dfeeeb;color:#0a514a}
+.mgd1 .btn-primary{width:100%;height:50px;background:#0e6b61;color:#fffdf8;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28);border:none}
+.mgd1 .btn-ghost{width:100%;height:46px;background:#f2eee5;color:#5d635c;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;border:none}
+.mgd1 /* receipt */
+  .receipt{background:#faf7f0;border:1px dashed #cdb98a;border-radius:16px;padding:16px}
+.mgd1 .rrow{display:flex;justify-content:space-between;font-size:13px;padding:5px 0}
+.mgd1 .rrow .rl{color:#80827a}
+.mgd1 .rrow .rv{font-weight:600}
+.mgd1 .board{max-width:1320px;margin:0 auto;padding:56px 28px 96px}
+.mgd1 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd1 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd1 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+.mgd1 .arrow{width:12px;height:12px;fill:none;stroke:#b6b1a4;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;margin-inline-start:5px;vertical-align:middle}
+/* ===== Screen-Center-Payments-Verified ===== */
+.mgd2 *{box-sizing:border-box}
+.mgd2{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#1b201d;-webkit-font-smoothing:antialiased}
+.mgd2 .board{max-width:1180px;margin:0 auto;padding:48px 24px 90px}
+.mgd2 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827a;font-weight:600}
+.mgd2 .pill0{display:inline-block;margin:10px 0;padding:4px 12px;border-radius:999px;background:#dfeeeb;color:#0a514a;font-size:12px;font-weight:600}
+.mgd2 h1.mh{font-size:30px;margin:6px 0 8px;font-weight:700;letter-spacing:-.01em}
+.mgd2 .board>p.lead{margin:0 0 34px;color:#5d635c;font-size:16px;line-height:1.5;max-width:80ch}
+.mgd2 .phones{display:flex;gap:34px;flex-wrap:wrap;justify-content:center}
+.mgd2 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
+.mgd2 .cap{font-size:13px;color:#5d635c;font-weight:600}
+.mgd2 .phone{width:340px;background:#14181a;border-radius:44px;padding:11px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+.mgd2 .screen{background:#ece8df;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.mgd2 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:14px;font-weight:600;flex-shrink:0}
+.mgd2 .topbar{display:flex;align-items:center;gap:11px;padding:4px 16px 8px;flex-shrink:0}
+.mgd2 .topbtn{width:40px;height:40px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd2 .topbtn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mgd2 .tt{font-size:16.5px;font-weight:700;line-height:1.2}
+.mgd2 .ts{font-size:11.5px;color:#80827a;margin-top:1px}
+.mgd2 .vbadge{margin-inline-start:auto;font-size:10px;font-weight:700;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.22);padding:4px 9px;border-radius:999px;flex-shrink:0}
+.mgd2 .body{flex:1;overflow-y:auto;padding:2px 16px 16px}
+.mgd2 .bal{background:linear-gradient(150deg,#0f766b,#0a514a);border-radius:16px;padding:15px;color:#eef6f4;margin-bottom:12px}
+.mgd2 .bal .hl{font-size:12.5px;opacity:.9}
+.mgd2 .bal .hn{font-size:28px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums}
+.mgd2 .bal .hn span{font-size:13px;font-weight:500;opacity:.85}
+.mgd2 .balrow{display:flex;gap:10px;margin-top:12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.18)}
+.mgd2 .balrow div{flex:1}
+.mgd2 .balrow .bk{font-size:11px;opacity:.82}
+.mgd2 .balrow .bv{font-size:14.5px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.mgd2 .seg{display:flex;background:#f2eee5;border:1px solid #e2ddd1;border-radius:12px;padding:4px;margin-bottom:12px}
+.mgd2 .seg div{flex:1;text-align:center;padding:9px 4px;border-radius:9px;font-size:12.5px;font-weight:600;color:#5d635c}
+.mgd2 .seg div.on{background:#fffdf8;color:#0a514a;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.mgd2 .alert{display:flex;align-items:center;gap:11px;background:#f4ebd7;border:1px solid rgba(138,94,22,.25);border-radius:14px;padding:12px 13px;margin-bottom:12px}
+.mgd2 .alert svg{width:20px;height:20px;fill:none;stroke:#8a5e16;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.mgd2 .alert .at{font-size:13px;font-weight:700;color:#8a5e16}
+.mgd2 .alert .as{font-size:11px;color:#8a5e16;opacity:.85;margin-top:2px}
+.mgd2 .alert .ab{margin-inline-start:auto;font-size:11.5px;font-weight:700;color:#fffdf8;background:#8a5e16;border-radius:9px;padding:7px 11px;flex-shrink:0}
+.mgd2 .dl{font-size:11.5px;font-weight:700;letter-spacing:.03em;color:#80827a;margin:14px 3px 8px}
+.mgd2 .row{display:flex;align-items:center;gap:10px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:11px 12px;margin-bottom:8px}
+.mgd2 .avt{width:34px;height:34px;border-radius:10px;background:#f2eee5;color:#5d635c;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;flex-shrink:0}
+.mgd2 .rn{flex:1;min-width:0}
+.mgd2 .rnm{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
+.mgd2 .rnm .arrow{width:12px;height:12px;fill:none;stroke:#b6b1a4;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.mgd2 .rsub{font-size:11px;color:#80827a;margin-top:2px}
+.mgd2 .amt{text-align:end;flex-shrink:0}
+.mgd2 .amt b{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;display:block}
+.mgd2 .st{font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;display:inline-block;margin-top:3px}
+.mgd2 .sp{background:#e4f0e9;color:#1a6d4d}
+.mgd2 .sw{background:#f4ebd7;color:#8a5e16}
+.mgd2 .sf{background:#f4e5e2;color:#9c3322}
+.mgd2 .sc{background:#eceae1;color:#80827a}
+.mgd2 .mth{font-size:9.5px;font-weight:700;color:#274b8a;background:#e3ecf6;padding:2px 6px;border-radius:999px;margin-inline-end:5px}
+.mgd2 .mthc{color:#8a5e16;background:#f4ebd7}
+.mgd2 .footer{padding:11px 16px 17px;border-top:1px solid #e2ddd1;background:#ece8df;flex-shrink:0}
+.mgd2 .fnote{text-align:center;font-size:11px;color:#80827a;margin-bottom:8px}
+.mgd2 .btn{display:block;width:100%;border:none;border-radius:13px;padding:15px;font-size:15px;font-weight:700;background:#0e6b61;color:#fffdf8;text-align:center;font-family:inherit}
+.mgd2 .btn2{display:block;width:100%;background:none;border:none;text-align:center;font-size:13px;color:#5d635c;font-weight:600;padding:10px 0 0;font-family:inherit}
+.mgd2 .btnd{background:#9c3322}
+.mgd2 .scrim{position:absolute;inset:0;background:rgba(20,24,26,.42)}
+.mgd2 .sheet{position:absolute;inset-inline:0;bottom:0;background:#ece8df;border-radius:26px 26px 34px 34px;padding:10px 16px 18px}
+.mgd2 .grab{width:38px;height:4px;border-radius:999px;background:#cfcabd;margin:0 auto 13px}
+.mgd2 .sh{font-size:19px;font-weight:700;margin:0 2px 3px}
+.mgd2 .shs{font-size:12px;color:#80827a;margin:0 2px 13px;line-height:1.45}
+.mgd2 .card{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:4px 14px;margin-bottom:11px}
+.mgd2 .lr{display:flex;align-items:center;justify-content:space-between;padding:9px 0;font-size:13px;border-bottom:1px solid #f0ece2}
+.mgd2 .lr:last-child{border-bottom:none}
+.mgd2 .lk{color:#5d635c}
+.mgd2 .lv{font-weight:600;font-variant-numeric:tabular-nums}
+.mgd2 .acts{display:flex;gap:9px;margin-bottom:4px}
+.mgd2 .act{flex:1;text-align:center;background:#fffdf8;border:1px solid #e2ddd1;border-radius:12px;padding:12px 8px;font-size:12.5px;font-weight:600;color:#0a514a}
+.mgd2 .warn{background:#f4e5e2;border:1px solid rgba(156,51,34,.22);border-radius:12px;padding:10px 12px;font-size:11.5px;color:#9c3322;line-height:1.45;margin-bottom:11px}
+/* ===== Screen-Billing ===== */
+.mgd3 *{box-sizing:border-box}
+.mgd3{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd3 .num{font-variant-numeric:tabular-nums}
+.mgd3 .mono{font-family:'IBM Plex Mono',monospace}
+.mgd3 svg{display:block;flex-shrink:0}
+.mgd3 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd3 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd3 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd3 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 10px}
+.mgd3 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd3 .body{flex:1;overflow-y:auto;padding:2px 16px 20px;display:flex;flex-direction:column;gap:12px}
+.mgd3 .sec{font-size:19px;font-weight:700;letter-spacing:-.01em;margin:8px 2px 0}
+.mgd3 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px}
+.mgd3 .ok{background:#e4f0e9;color:#1a6d4d}
+.mgd3 .brass{background:#f4ebd7;color:#9a6b1f}
+.mgd3 .memcard{background:#fffdf8;border:1px solid #e2ddd1;border-radius:18px;padding:16px}
+.mgd3 .wm{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.mgd3 .wm span{color:#9a6b1f;font-weight:400;letter-spacing:.12em;font-size:15px}
+.mgd3 .strip{display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid #eee7d9}
+.mgd3 .scol{flex:1}
+.mgd3 .sl{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:#80827a}
+.mgd3 .sv{font-size:16px;font-weight:700;margin-top:5px;line-height:1.05}
+.mgd3 .sx{font-size:11px;color:#80827a;margin-top:3px}
+.mgd3 .optrow{display:flex;align-items:center;gap:13px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:14px}
+.mgd3 .opticon{width:40px;height:40px;border-radius:11px;background:#f2eee5;color:#5d635c;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd3 .ot{font-size:15px;font-weight:600;letter-spacing:.01em}
+.mgd3 .os{font-size:12px;color:#80827a;margin-top:2px}
+.mgd3 .chev{color:#c2c3b9;flex-shrink:0}
+.mgd3 .upcard{border:1px solid #e2ddd1;border-radius:18px;overflow:hidden;background:#fffdf8}
+.mgd3 .upbanner{height:104px;background:linear-gradient(150deg,#0f766b,#0a514a);position:relative;display:flex;align-items:flex-end;padding:14px;overflow:hidden}
+.mgd3 .upbanner::before{content:"";position:absolute;right:-30px;top:-30px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.06)}
+.mgd3 .upbanner::after{content:"";position:absolute;right:14px;top:16px;width:70px;height:70px;border:1px solid rgba(255,255,255,.14);border-radius:18px;transform:rotate(12deg)}
+.mgd3 .upwm{color:#eef6f4;font-size:20px;font-weight:700;position:relative}
+.mgd3 .upwm span{font-weight:400;letter-spacing:.12em;font-size:14px;opacity:.85}
+.mgd3 .upbody{padding:14px}
+.mgd3 .featrow{display:flex;align-items:flex-start;gap:9px;font-size:14px;padding:5px 0}
+.mgd3 .fcheck{width:20px;height:20px;border-radius:50%;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.mgd3 .btn-primary{width:100%;height:48px;background:#0e6b61;color:#fffdf8;border-radius:13px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28);border:none}
+.mgd3 .btn-outline{width:100%;height:46px;background:transparent;border:1.5px solid #ccc7bb;color:#5d635c;border-radius:13px;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.mgd3 .addon{display:flex;align-items:center;gap:11px;padding:11px 0;border-top:1px solid #f0ece2}
+.mgd3 .addicon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd3 .tgl{width:42px;height:25px;border-radius:999px;flex-shrink:0;position:relative}
+.mgd3 .tgl.on{background:#0e6b61}
+.mgd3 .tgl.off{background:#d8d3c6}
+.mgd3 .tgl::after{content:"";position:absolute;top:3px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.mgd3 .tgl.on::after{right:3px}
+.mgd3 .tgl.off::after{left:3px}
+.mgd3 .addbtn2{font-size:12px;font-weight:600;color:#0a514a;background:#dfeeeb;border:none;border-radius:999px;padding:7px 13px}
+.mgd3 /* modal */
+  .scrim{position:absolute;inset:0;background:rgba(20,24,22,.5)}
+.mgd3 .sheet{position:absolute;left:0;right:0;bottom:0;background:#fffdf8;border-radius:24px 24px 0 0;padding:8px 16px 22px;box-shadow:0 -8px 30px rgba(28,33,30,.18)}
+.mgd3 .grab{width:38px;height:4px;border-radius:999px;background:#e2ddd1;margin:6px auto 8px}
+.mgd3 .rcard{display:flex;align-items:center;gap:14px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:15px}
+.mgd3 .rcard.sel{border-color:#0e6b61;box-shadow:0 0 0 3px rgba(14,107,97,.12)}
+.mgd3 .radio{width:24px;height:24px;border-radius:50%;border:2px solid #c9c4b8;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.mgd3 .radio.on{border-color:#0e6b61}
+.mgd3 .radio.on::after{content:"";width:12px;height:12px;border-radius:50%;background:#0e6b61}
+.mgd3 .rt{font-size:16px;font-weight:700;letter-spacing:.02em}
+.mgd3 .rs{font-size:12px;color:#80827a;margin-top:2px;line-height:1.3}
+.mgd3 .rp{font-size:22px;font-weight:700;line-height:1}
+.mgd3 .rpm{font-size:11px;color:#80827a;margin-top:3px}
+.mgd3 .board{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
+.mgd3 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd3 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd3 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+/* ===== Screen-Center-Withdrawal-Verified ===== */
+.mgd4 *{box-sizing:border-box}
+.mgd4{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#1b201d;-webkit-font-smoothing:antialiased}
+.mgd4 .board{max-width:1180px;margin:0 auto;padding:48px 24px 90px}
+.mgd4 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827a;font-weight:600}
+.mgd4 .pill0{display:inline-block;margin:10px 0;padding:4px 12px;border-radius:999px;background:#dfeeeb;color:#0a514a;font-size:12px;font-weight:600}
+.mgd4 h1.mh{font-size:30px;margin:6px 0 8px;font-weight:700;letter-spacing:-.01em}
+.mgd4 .board>p.lead{margin:0 0 34px;color:#5d635c;font-size:16px;line-height:1.5;max-width:80ch}
+.mgd4 .phones{display:flex;gap:34px;flex-wrap:wrap;justify-content:center}
+.mgd4 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
+.mgd4 .cap{font-size:13px;color:#5d635c;font-weight:600}
+.mgd4 .phone{width:340px;background:#14181a;border-radius:44px;padding:11px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+.mgd4 .screen{background:#ece8df;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.mgd4 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:14px;font-weight:600;flex-shrink:0}
+.mgd4 .topbar{display:flex;align-items:center;gap:11px;padding:4px 16px 8px;flex-shrink:0}
+.mgd4 .topbtn{width:40px;height:40px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd4 .topbtn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mgd4 .tt{font-size:16.5px;font-weight:700;line-height:1.2}
+.mgd4 .ts{font-size:11.5px;color:#80827a;margin-top:1px}
+.mgd4 .vbadge{margin-inline-start:auto;font-size:10px;font-weight:700;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.22);padding:4px 9px;border-radius:999px;flex-shrink:0}
+.mgd4 .body{flex:1;overflow-y:auto;padding:2px 16px 16px}
+.mgd4 .bal{background:linear-gradient(150deg,#0f766b,#0a514a);border-radius:16px;padding:16px;color:#eef6f4;margin-bottom:13px}
+.mgd4 .bal .hl{font-size:12.5px;opacity:.9}
+.mgd4 .bal .hn{font-size:29px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums}
+.mgd4 .bal .hn span{font-size:13px;font-weight:500;opacity:.85}
+.mgd4 .bal .hint{font-size:11.5px;opacity:.85;margin-top:11px;padding-top:11px;border-top:1px solid rgba(255,255,255,.18);line-height:1.45}
+.mgd4 .sec{font-size:15px;font-weight:700;margin:15px 2px 3px}
+.mgd4 .sub{font-size:12px;color:#80827a;margin:0 2px 10px;line-height:1.45}
+.mgd4 .opt{display:flex;align-items:flex-start;gap:11px;background:#fffdf8;border:1.5px solid #e2ddd1;border-radius:14px;padding:13px;margin-bottom:9px}
+.mgd4 .opt.on{border-color:#0e6b61;background:#f6faf9;box-shadow:0 0 0 2px rgba(14,107,97,.1)}
+.mgd4 .oic{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd4 .oic svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mgd4 .i-free{background:#dfeeeb;color:#0a514a}
+.mgd4 .i-now{background:#f4ebd7;color:#8a5e16}
+.mgd4 .on1{flex:1;min-width:0}
+.mgd4 .ot{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.mgd4 .od{font-size:11.5px;color:#5d635c;margin-top:4px;line-height:1.45}
+.mgd4 .ocost{font-size:12px;font-weight:700;margin-top:7px}
+.mgd4 .free{color:#1a6d4d}
+.mgd4 .paid{color:#8a5e16}
+.mgd4 .tagfree{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:#e4f0e9;color:#1a6d4d}
+.mgd4 .radio{width:20px;height:20px;border-radius:50%;border:1.5px solid #d5d0c4;background:#fffdf8;flex-shrink:0;position:relative;margin-top:2px}
+.mgd4 .opt.on .radio{border-color:#0e6b61}
+.mgd4 .opt.on .radio::after{content:"";position:absolute;inset:4px;border-radius:50%;background:#0e6b61}
+.mgd4 .card{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:4px 14px;margin-bottom:11px}
+.mgd4 .lr{display:flex;align-items:center;justify-content:space-between;padding:10px 0;font-size:13px;border-bottom:1px solid #f0ece2}
+.mgd4 .lr:last-child{border-bottom:none}
+.mgd4 .lk{color:#5d635c}
+.mgd4 .lv{font-weight:600;font-variant-numeric:tabular-nums}
+.mgd4 .lr.big .lk{font-weight:700;color:#1b201d;font-size:14px}
+.mgd4 .lr.big .lv{font-size:19px;font-weight:700;color:#0a514a}
+.mgd4 .note{border-radius:12px;padding:10px 12px;font-size:11.5px;line-height:1.45;margin-bottom:11px}
+.mgd4 .n-info{background:#e3ecf6;border:1px solid #cdddf3;color:#274b8a}
+.mgd4 .n-warn{background:#f4ebd7;border:1px solid rgba(138,94,22,.22);color:#8a5e16}
+.mgd4 .n-acc{background:#dfeeeb;border:1px solid rgba(14,107,97,.2);color:#0a514a}
+.mgd4 .prices{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:4px 14px}
+.mgd4 .pr{display:flex;align-items:center;justify-content:space-between;padding:11px 0;font-size:12.5px;border-bottom:1px solid #f0ece2;gap:10px}
+.mgd4 .pr:last-child{border-bottom:none}
+.mgd4 .prk{color:#5d635c;min-width:0}
+.mgd4 .prv{font-weight:700;flex-shrink:0}
+.mgd4 .footer{padding:11px 16px 17px;border-top:1px solid #e2ddd1;background:#ece8df;flex-shrink:0}
+.mgd4 .fnote{text-align:center;font-size:11px;color:#80827a;margin-bottom:8px}
+.mgd4 .btn{display:block;width:100%;border:none;border-radius:13px;padding:15px;font-size:15px;font-weight:700;background:#0e6b61;color:#fffdf8;text-align:center;font-family:inherit}
+.mgd4 .btn2{display:block;width:100%;background:none;border:none;text-align:center;font-size:13px;color:#5d635c;font-weight:600;padding:10px 0 0;font-family:inherit}
+/* ===== Screen-Center-Receipts-Verified ===== */
+.mgd5 *{box-sizing:border-box}
+.mgd5{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#1b201d;-webkit-font-smoothing:antialiased}
+.mgd5 .board{max-width:1180px;margin:0 auto;padding:48px 24px 90px}
+.mgd5 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827a;font-weight:600}
+.mgd5 .pill0{display:inline-block;margin:10px 0;padding:4px 12px;border-radius:999px;background:#dfeeeb;color:#0a514a;font-size:12px;font-weight:600}
+.mgd5 h1.mh{font-size:30px;margin:6px 0 8px;font-weight:700;letter-spacing:-.01em}
+.mgd5 .board>p.lead{margin:0 0 34px;color:#5d635c;font-size:16px;line-height:1.5;max-width:80ch}
+.mgd5 .phones{display:flex;gap:34px;flex-wrap:wrap;justify-content:center}
+.mgd5 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
+.mgd5 .cap{font-size:13px;color:#5d635c;font-weight:600}
+.mgd5 .phone{width:340px;background:#14181a;border-radius:44px;padding:11px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+.mgd5 .screen{background:#ece8df;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden}
+.mgd5 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:14px;font-weight:600;flex-shrink:0}
+.mgd5 .topbar{display:flex;align-items:center;gap:11px;padding:4px 16px 8px;flex-shrink:0}
+.mgd5 .topbtn{width:40px;height:40px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd5 .topbtn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mgd5 .tt{font-size:16.5px;font-weight:700;line-height:1.2}
+.mgd5 .ts{font-size:11.5px;color:#80827a;margin-top:1px}
+.mgd5 .vbadge{margin-inline-start:auto;font-size:10px;font-weight:700;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.22);padding:4px 9px;border-radius:999px;flex-shrink:0}
+.mgd5 .body{flex:1;overflow-y:auto;padding:2px 16px 16px}
+.mgd5 .seg{display:flex;background:#f2eee5;border:1px solid #e2ddd1;border-radius:12px;padding:4px;margin-bottom:11px}
+.mgd5 .seg div{flex:1;text-align:center;padding:9px 3px;border-radius:9px;font-size:12px;font-weight:600;color:#5d635c}
+.mgd5 .seg div.on{background:#fffdf8;color:#0a514a;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.mgd5 .note{border-radius:12px;padding:10px 12px;font-size:11.5px;line-height:1.45;margin-bottom:12px}
+.mgd5 .n-info{background:#e3ecf6;border:1px solid #cdddf3;color:#274b8a}
+.mgd5 .n-acc{background:#dfeeeb;border:1px solid rgba(14,107,97,.2);color:#0a514a}
+.mgd5 .dl{font-size:11.5px;font-weight:700;letter-spacing:.03em;color:#80827a;margin:13px 3px 8px}
+.mgd5 .row{display:flex;align-items:center;gap:10px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:11px 12px;margin-bottom:8px}
+.mgd5 .ric{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd5 .ric svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mgd5 .i-pay{background:#dfeeeb;color:#0a514a}
+.mgd5 .i-out{background:#e4f0e9;color:#1a6d4d}
+.mgd5 .i-tax{background:#e3ecf6;color:#274b8a}
+.mgd5 .rn{flex:1;min-width:0}
+.mgd5 .rnm{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
+.mgd5 .rnm .arrow{width:12px;height:12px;fill:none;stroke:#b6b1a4;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.mgd5 .rsub{font-size:11px;color:#80827a;margin-top:2px}
+.mgd5 .amt{text-align:end;flex-shrink:0}
+.mgd5 .amt b{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;display:block}
+.mgd5 .amt span{font-size:10px;color:#80827a}
+.mgd5 .tag{font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:999px;margin-inline-end:5px}
+.mgd5 .t-inv{color:#274b8a;background:#e3ecf6}
+.mgd5 .t-rec{color:#8a5e16;background:#f4ebd7}
+.mgd5 .card{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:4px 14px;margin-bottom:11px}
+.mgd5 .lr{display:flex;align-items:center;justify-content:space-between;padding:10px 0;font-size:13px;border-bottom:1px solid #f0ece2;gap:10px}
+.mgd5 .lr:last-child{border-bottom:none}
+.mgd5 .lk{color:#5d635c}
+.mgd5 .lv{font-weight:600;font-variant-numeric:tabular-nums}
+.mgd5 .lr.big .lk{font-weight:700;color:#1b201d;font-size:14px}
+.mgd5 .lr.big .lv{font-size:18px;font-weight:700;color:#0a514a}
+.mgd5 .sec{font-size:15px;font-weight:700;margin:14px 2px 3px}
+.mgd5 .sub{font-size:12px;color:#80827a;margin:0 2px 10px;line-height:1.45}
+.mgd5 .dlbtn{display:flex;align-items:center;justify-content:center;gap:7px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:12px;padding:12px;font-size:12.5px;font-weight:700;color:#0a514a;margin-bottom:4px}
+.mgd5 .dlbtn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</head>
+<body>
+<div class="mgd-top">
+  <div class="mgd-eyebrow">TutoringHQ · Merged reference</div>
+  <h1 class="mgd-h1">Center · Money</h1>
+  <p class="mgd-lede">What came in, what was billed, what was withdrawn, and the documents behind all three.</p>
+  <div class="mgd-toc"><a href="#Merged-Center-Money-1">Payments</a><a href="#Merged-Center-Money-2">Center Payments Verified</a><a href="#Merged-Center-Money-3">Billing</a><a href="#Merged-Center-Money-4">Center Withdrawal Verified</a><a href="#Merged-Center-Money-5">Center Receipts Verified</a></div>
+</div>
+<div class="mgd-sec" id="Merged-Center-Money-1">
+  <div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Payments</span><span class="mgd-src">Screen-Payments.html</span></div>
+</div>
+<div class="mgd1">
+
+<div class="board">
+
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+      <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39);box-shadow:0 2px 8px rgba(8,63,57,.35)"></div>
+      <span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span>
+      <span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0e6b61;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:5px 11px;border-radius:999px">Lucide icons</span>
+    </div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Payments</h1>
+    <p style="margin:0;max-width:74ch;font-size:17px;line-height:1.55;color:#5d635c">The money ledger. Today / pending / month at the top, then filters by status and by <strong style="color:#1b201d;font-weight:600">method</strong> (cash, Instapay, Fawry, Vodafone, card — colour-coded). Pending rows carry an inline <strong style="color:#1b201d;font-weight:600">Confirm</strong>; every row has the three-dot for receipt and the rest. The app records payments, it does not process them. Shown as the ledger, the Record-Payment sheet, a receipt, loading, then Arabic mirrored.</p>
+  </div>
+
+  <div class="phones">
+
+    <!-- ============ EN · LEDGER ============ -->
+    <div class="frame">
+      <span class="mono" style="font-size:12px;color:#5d635c">EN · ledger · pending inline confirm</span>
+      <div class="phone"><div dir="ltr" class="screen">
+        <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+        <div class="topbar">
+          <div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+          <div style="flex:1"><div style="font-size:17px;font-weight:600;line-height:1.2">Payments</div><div style="font-size:12px;color:#80827a">Al-Nahda</div></div>
+          <div class="addbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></div>
+        </div>
+        <div class="body">
+          <div class="search"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>Search a payment or student</div>
+          <div class="ktiles">
+            <div class="ktile"><div class="kl">Today</div><div class="kv num">1,250</div></div>
+            <div class="ktile due"><div class="kl">Pending</div><div class="kv num">600</div></div>
+            <div class="ktile"><div class="kl">This month</div><div class="kv num">18,400</div></div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:11px;color:#80827a" class="num">EGP · June</span>
+            <span class="exportchip"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Export CSV · Pro</span>
+          </div>
+          <div class="pillrow">
+            <div class="pill on">All</div>
+            <div class="pill">Paid</div>
+            <div class="pill">Pending</div>
+          </div>
+          <div class="pillrow">
+            <div class="pill"><span class="dot d-cash"></span>Cash</div>
+            <div class="pill"><span class="dot d-insta"></span>Instapay</div>
+            <div class="pill"><span class="dot d-fawry"></span>Fawry</div>
+            <div class="pill"><span class="dot d-vodafone"></span>Vodafone</div>
+            <div class="pill"><span class="dot d-card"></span>Card</div>
+          </div>
+          <!-- rows -->
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="prow">
+              <div class="mchip" style="background:#e4f0e9;color:#1a6d4d"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg></div>
+              <div style="flex:1"><div class="nm">Youssef Adel<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="mt num">Cash · 4:10 PM</div></div>
+              <div style="text-align:end"><div class="amt num">300 EGP</div><span class="badge ok" style="margin-top:3px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Paid</span></div>
+              <div class="kb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div>
+            </div>
+            <div class="prow">
+              <div class="mchip" style="background:#dfeeeb;color:#0a514a"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 7l-10 6L2 7"/><rect x="2" y="5" width="20" height="14" rx="2"/></svg></div>
+              <div style="flex:1"><div class="nm">Mariam Hassan<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="mt num">Instapay · 3:20 PM</div></div>
+              <div style="text-align:end"><div class="amt num">350 EGP</div><span class="badge ok" style="margin-top:3px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Paid</span></div>
+              <div class="kb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div>
+            </div>
+            <div class="prow" style="border-color:rgba(138,94,22,.35);background:#fefcf7">
+              <div class="mchip" style="background:#f4ebd7;color:#9a6b1f"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M7 15h2"/></svg></div>
+              <div style="flex:1"><div class="nm">Sara Ahmed<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="mt num">Fawry · awaiting</div></div>
+              <div style="text-align:end"><div class="amt num">300 EGP</div></div>
+              <button class="confirm">Confirm</button>
+              <div class="kb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div>
+            </div>
+            <div class="prow">
+              <div class="mchip" style="background:#f4e5e2;color:#9c3322"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg></div>
+              <div style="flex:1"><div class="nm">Omar Khaled<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="mt num">Vodafone · yesterday</div></div>
+              <div style="text-align:end"><div class="amt num">300 EGP</div><span class="badge ok" style="margin-top:3px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Paid</span></div>
+              <div class="kb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ============ EN · COLLECT PAYMENT SHEET ============ -->
+    <div class="frame">
+      <span class="mono" style="font-size:12px;color:#5d635c">EN · Record payment</span>
+      <div class="phone"><div dir="ltr" class="screen">
+        <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+        <div class="topbar">
+          <div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+          <div style="flex:1"><div style="font-size:17px;font-weight:600;line-height:1.2">Payments</div><div style="font-size:12px;color:#80827a">Al-Nahda</div></div>
+          <div class="addbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></div>
+        </div>
+        <div class="body" style="filter:blur(.4px)">
+          <div class="ktiles"><div class="ktile"><div class="kl">Today</div><div class="kv num">1,250</div></div><div class="ktile due"><div class="kl">Pending</div><div class="kv num">600</div></div><div class="ktile"><div class="kl">This month</div><div class="kv num">18,400</div></div></div>
+        </div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="sheet-h">Record payment</div>
+          <div class="fieldlabel">Student</div>
+          <div class="field" style="justify-content:space-between;margin-bottom:12px"><span style="display:flex;align-items:center;gap:9px"><span style="width:26px;height:26px;border-radius:8px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">YA</span>Youssef Adel</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a6a79d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>
+          <div class="fieldlabel">Amount</div>
+          <div class="amountbox" style="margin-bottom:12px"><span class="a num">300</span> <span style="font-size:15px;color:#80827a;font-weight:600">EGP</span></div>
+          <div class="fieldlabel">Method</div>
+          <div class="mgrid" style="margin-bottom:18px">
+            <div class="mpill on"><span class="dot d-cash"></span>Cash</div>
+            <div class="mpill"><span class="dot d-insta"></span>Instapay</div>
+            <div class="mpill"><span class="dot d-fawry"></span>Fawry</div>
+            <div class="mpill"><span class="dot d-vodafone"></span>Vodafone</div>
+            <div class="mpill"><span class="dot d-card"></span>Card</div>
+          </div>
+          <button class="btn-primary"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Record 300 EGP</button>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ============ EN · RECEIPT ============ -->
+    <div class="frame">
+      <span class="mono" style="font-size:12px;color:#5d635c">EN · receipt</span>
+      <div class="phone"><div dir="ltr" class="screen">
+        <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+        <div class="topbar">
+          <div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+          <div style="flex:1"><div style="font-size:17px;font-weight:600;line-height:1.2">Payments</div><div style="font-size:12px;color:#80827a">Al-Nahda</div></div>
+          <div class="addbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></div>
+        </div>
+        <div class="body" style="filter:blur(.4px)"><div class="ktiles"><div class="ktile"><div class="kl">Today</div><div class="kv num">1,550</div></div><div class="ktile due"><div class="kl">Pending</div><div class="kv num">600</div></div><div class="ktile"><div class="kl">This month</div><div class="kv num">18,700</div></div></div></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div style="text-align:center;margin-bottom:6px"><div style="width:52px;height:52px;border-radius:50%;background:#e4f0e9;color:#1a6d4d;display:flex;align-items:center;justify-content:center;margin:2px auto 8px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div style="font-size:17px;font-weight:600">Payment received</div><div style="font-size:26px;font-weight:700;margin-top:2px" class="num">300 EGP</div></div>
+          <div class="receipt" style="margin:10px 0 16px">
+            <div class="rrow"><span class="rl">Student</span><span class="rv">Youssef Adel</span></div>
+            <div class="rrow"><span class="rl">Method</span><span class="rv">Cash</span></div>
+            <div class="rrow"><span class="rl">Date</span><span class="rv num">13/07/2026 · 4:10 PM</span></div>
+            <div style="height:1px;background:#e2ddd1;margin:6px 0"></div>
+            <div class="rrow"><span class="rl">Reference</span><span class="rv mono" dir="ltr">THQ-2026-0412</span></div>
+          </div>
+          <button class="btn-primary" style="margin-bottom:9px"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg>Send receipt on WhatsApp</button>
+          <button class="btn-ghost">Done</button>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ============ EN · LOADING ============ -->
+    <div class="frame">
+      <span class="mono" style="font-size:12px;color:#5d635c">EN · loading</span>
+      <div class="phone"><div dir="ltr" class="screen">
+        <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+        <div class="topbar">
+          <div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+          <div style="flex:1"><div style="font-size:17px;font-weight:600;line-height:1.2">Payments</div><div class="skel" style="width:90px;height:11px;margin-top:5px"></div></div>
+          <div class="addbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></div>
+        </div>
+        <div class="body">
+          <div class="skel" style="height:44px;border-radius:12px"></div>
+          <div class="ktiles"><div class="skel" style="flex:1;height:62px;border-radius:14px"></div><div class="skel" style="flex:1;height:62px;border-radius:14px"></div><div class="skel" style="flex:1;height:62px;border-radius:14px"></div></div>
+          <div class="pillrow"><div class="skel" style="width:56px;height:32px;border-radius:999px"></div><div class="skel" style="width:64px;height:32px;border-radius:999px"></div><div class="skel" style="width:72px;height:32px;border-radius:999px"></div></div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="prow" style="box-shadow:none"><div class="skel" style="width:38px;height:38px;border-radius:11px"></div><div style="flex:1"><div class="skel" style="width:55%;height:14px;margin-bottom:7px"></div><div class="skel" style="width:38%;height:11px"></div></div><div class="skel" style="width:56px;height:20px;border-radius:999px"></div></div>
+            <div class="prow" style="box-shadow:none"><div class="skel" style="width:38px;height:38px;border-radius:11px"></div><div style="flex:1"><div class="skel" style="width:48%;height:14px;margin-bottom:7px"></div><div class="skel" style="width:44%;height:11px"></div></div><div class="skel" style="width:56px;height:20px;border-radius:999px"></div></div>
+            <div class="prow" style="box-shadow:none"><div class="skel" style="width:38px;height:38px;border-radius:11px"></div><div style="flex:1"><div class="skel" style="width:52%;height:14px;margin-bottom:7px"></div><div class="skel" style="width:40%;height:11px"></div></div><div class="skel" style="width:56px;height:20px;border-radius:999px"></div></div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ============ AR · LEDGER ============ -->
+    <div class="frame">
+      <span class="mono" style="font-size:12px;color:#5d635c">AR · RTL · ledger</span>
+      <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic',sans-serif;letter-spacing:0">
+        <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+        <div class="topbar">
+          <div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+          <div style="flex:1"><div style="font-size:17px;font-weight:600;line-height:1.2">المدفوعات</div><div style="font-size:12px;color:#80827a">النهضة</div></div>
+          <div class="addbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></div>
+        </div>
+        <div class="body">
+          <div class="search"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>ابحث عن دفعة أو طالب</div>
+          <div class="ktiles">
+            <div class="ktile"><div class="kl">اليوم</div><div class="kv num">١٬٢٥٠</div></div>
+            <div class="ktile due"><div class="kl">معلّقة</div><div class="kv num">٦٠٠</div></div>
+            <div class="ktile"><div class="kl">هذا الشهر</div><div class="kv num">١٨٬٤٠٠</div></div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:11px;color:#80827a" class="num">ج.م · يونيو</span>
+            <span class="exportchip"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>تصدير CSV · برو</span>
+          </div>
+          <div class="pillrow">
+            <div class="pill on">الكل</div>
+            <div class="pill">مدفوعة</div>
+            <div class="pill">معلّقة</div>
+          </div>
+          <div class="pillrow">
+            <div class="pill"><span class="dot d-cash"></span>نقدي</div>
+            <div class="pill"><span class="dot d-insta"></span>إنستاباي</div>
+            <div class="pill"><span class="dot d-fawry"></span>فوري</div>
+            <div class="pill"><span class="dot d-vodafone"></span>فودافون</div>
+            <div class="pill"><span class="dot d-card"></span>بطاقة</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="prow">
+              <div class="mchip" style="background:#e4f0e9;color:#1a6d4d"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg></div>
+              <div style="flex:1"><div class="nm">يوسف عادل<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="mt num">نقدي · ٤:١٠ م</div></div>
+              <div style="text-align:start"><div class="amt num">٣٠٠ ج.م</div><span class="badge ok" style="margin-top:3px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>مدفوعة</span></div>
+              <div class="kb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div>
+            </div>
+            <div class="prow" style="border-color:rgba(138,94,22,.35);background:#fefcf7">
+              <div class="mchip" style="background:#f4ebd7;color:#9a6b1f"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M7 15h2"/></svg></div>
+              <div style="flex:1"><div class="nm">سارة أحمد<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="mt num">فوري · قيد الانتظار</div></div>
+              <div style="text-align:start"><div class="amt num">٣٠٠ ج.م</div></div>
+              <button class="confirm">تأكيد</button>
+              <div class="kb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div>
+            </div>
+            <div class="prow">
+              <div class="mchip" style="background:#dfeeeb;color:#0a514a"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 7l-10 6L2 7"/><rect x="2" y="5" width="20" height="14" rx="2"/></svg></div>
+              <div style="flex:1"><div class="nm">مريم حسن<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="mt num">إنستاباي · ٣:٢٠ م</div></div>
+              <div style="text-align:start"><div class="amt num">٣٥٠ ج.م</div><span class="badge ok" style="margin-top:3px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>مدفوعة</span></div>
+              <div class="kb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+</div>
+
+</div>
+<div class="mgd-sec" id="Merged-Center-Money-2">
+  <div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">Center Payments Verified</span><span class="mgd-src">Screen-Center-Payments-Verified.html</span></div>
+</div>
+<div class="mgd2">
+<div class="board">
+  <div class="eyebrow">TutoringHQ · Reference Screen</div>
+  <div class="pill0">Center payments · Verified · Draft</div>
+  <h1 class="mh">Center payments, verified</h1>
+  <p class="lead">The money screen once a center collects online. Unpaid leads, because chasing is the job the product removes. Every row carries its method and its status, so online and cash sit in one ledger rather than two. There is no refund flow, since billing happens after the session and the service was already delivered; what exists instead is voiding an unpaid link, which withdraws an invoice rather than returning money. English and Arabic. Sample data is placeholder.</p>
+
+  <div class="phones">
+
+    <!-- EN · LEDGER -->
+    <div class="frame">
+    <div class="phone"><div class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Payments</div><div class="ts">Nile Prep Academy</div></div><span class="vbadge">Verified</span></div>
+      <div class="body">
+        <div class="bal">
+          <div class="hl">Available now</div>
+          <div class="hn">12,480 <span>EGP</span></div>
+          <div class="balrow">
+            <div><div class="bk">Pending</div><div class="bv">8,250</div></div>
+            <div><div class="bk">Unpaid</div><div class="bv">1,350</div></div>
+            <div><div class="bk">Processed</div><div class="bv">Thursday</div></div>
+          </div>
+        </div>
+        <div class="alert"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg><div><div class="at">8 unpaid links</div><div class="as">1,350 EGP · oldest 4 days</div></div><div class="ab">Review</div></div>
+        <div class="seg"><div class="on">All</div><div>Online</div><div>Cash</div></div>
+
+        <div class="dl">TODAY</div>
+        <div class="row"><div class="avt">MH</div><div class="rn"><div class="rnm">Mariam Hassan<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub"><span class="mth">Online</span>Physics · Sun 4PM</div></div><div class="amt"><b>150</b><span class="st sp">Paid</span></div></div>
+        <div class="row"><div class="avt">YA</div><div class="rn"><div class="rnm">Youssef Adel<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub"><span class="mth">Online</span>Physics · Sun 4PM</div></div><div class="amt"><b>150</b><span class="st sp">Paid</span></div></div>
+        <div class="row"><div class="avt">ST</div><div class="rn"><div class="rnm">Selim Tarek<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub"><span class="mth">Online</span>Link sent 17:04</div></div><div class="amt"><b>150</b><span class="st sw">Unpaid</span></div></div>
+        <div class="row"><div class="avt">OK</div><div class="rn"><div class="rnm">Omar Khaled<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub"><span class="mth mthc">Cash</span>Confirmed at desk</div></div><div class="amt"><b>150</b><span class="st sp">Paid</span></div></div>
+        <div class="row"><div class="avt">HS</div><div class="rn"><div class="rnm">Habiba Sameh<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub"><span class="mth">Online</span>Card declined 17:06</div></div><div class="amt"><b>150</b><span class="st sf">Failed</span></div></div>
+
+        <div class="dl">YESTERDAY</div>
+        <div class="row"><div class="avt">FM</div><div class="rn"><div class="rnm">Farida Mostafa<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub"><span class="mth">Online</span>Chemistry · Mon 6PM</div></div><div class="amt"><b>180</b><span class="st sp">Paid</span></div></div>
+        <div class="row"><div class="avt">KF</div><div class="rn"><div class="rnm">Karim Fouad<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub"><span class="mth">Online</span>Billed in error</div></div><div class="amt"><b>180</b><span class="st sc">Voided</span></div></div>
+      </div>
+      <div class="footer"><div class="fnote">Processed to CIB ····4821 every Thursday</div><button class="btn">Withdraw 12,480 EGP</button></div>
+    </div></div>
+    <div class="cap">EN · ledger</div>
+    </div>
+
+    <!-- EN · UNPAID -->
+    <div class="frame">
+    <div class="phone"><div class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Unpaid</div><div class="ts">8 links · 1,350 EGP</div></div><span class="vbadge">Verified</span></div>
+      <div class="body">
+        <div class="alert"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg><div><div class="at">Remind all</div><div class="as">Sends one WhatsApp nudge each</div></div><div class="ab">Send</div></div>
+
+        <div class="dl">4 DAYS OVERDUE</div>
+        <div class="row"><div class="avt">NS</div><div class="rn"><div class="rnm">Nada Sherif<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">2 sessions · reminded twice</div></div><div class="amt"><b>300</b><span class="st sw">Unpaid</span></div></div>
+        <div class="row"><div class="avt">AM</div><div class="rn"><div class="rnm">Adam Magdy<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">1 session · reminded once</div></div><div class="amt"><b>150</b><span class="st sw">Unpaid</span></div></div>
+
+        <div class="dl">2 DAYS OVERDUE</div>
+        <div class="row"><div class="avt">LT</div><div class="rn"><div class="rnm">Layla Tamer<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">1 session · not reminded</div></div><div class="amt"><b>180</b><span class="st sw">Unpaid</span></div></div>
+        <div class="row"><div class="avt">HS</div><div class="rn"><div class="rnm">Habiba Sameh<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Card declined · retry sent</div></div><div class="amt"><b>150</b><span class="st sf">Failed</span></div></div>
+
+        <div class="dl">TODAY</div>
+        <div class="row"><div class="avt">ST</div><div class="rn"><div class="rnm">Selim Tarek<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">1 session · link sent 17:04</div></div><div class="amt"><b>150</b><span class="st sw">Unpaid</span></div></div>
+        <div class="row"><div class="avt">RK</div><div class="rn"><div class="rnm">Rana Kamal<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">1 session · link sent 17:04</div></div><div class="amt"><b>150</b><span class="st sw">Unpaid</span></div></div>
+        <div class="row"><div class="avt">ZH</div><div class="rn"><div class="rnm">Zeina Hany<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">1 session · link sent 17:04</div></div><div class="amt"><b>150</b><span class="st sw">Unpaid</span></div></div>
+        <div class="row"><div class="avt">MG</div><div class="rn"><div class="rnm">Mostafa Gamal<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">1 session · link sent 17:04</div></div><div class="amt"><b>120</b><span class="st sw">Unpaid</span></div></div>
+      </div>
+      <div class="footer"><div class="fnote">Reminders use your notification credit</div><button class="btn">Remind all 8</button></div>
+    </div></div>
+    <div class="cap">EN · unpaid follow-up</div>
+    </div>
+
+    <!-- EN · VOID -->
+    <div class="frame">
+    <div class="phone"><div class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Unpaid</div><div class="ts">8 links · 1,350 EGP</div></div><span class="vbadge">Verified</span></div>
+      <div class="body" style="filter:blur(1.5px);opacity:.5">
+        <div class="dl">4 DAYS OVERDUE</div>
+        <div class="row"><div class="avt">NS</div><div class="rn"><div class="rnm">Nada Sherif</div><div class="rsub">2 sessions · reminded twice</div></div><div class="amt"><b>300</b><span class="st sw">Unpaid</span></div></div>
+        <div class="row"><div class="avt">AM</div><div class="rn"><div class="rnm">Adam Magdy</div><div class="rsub">1 session · reminded once</div></div><div class="amt"><b>150</b><span class="st sw">Unpaid</span></div></div>
+      </div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="sh">Adam Magdy</div>
+        <div class="shs">Physics · Sun 4PM · billed 18/07, 1 session</div>
+        <div class="card">
+          <div class="lr"><span class="lk">Amount</span><span class="lv">150 EGP</span></div>
+          <div class="lr"><span class="lk">Your price</span><span class="lv">168.75</span></div>
+          <div class="lr"><span class="lk">Status</span><span class="lv">Link sent, unpaid</span></div>
+          <div class="lr"><span class="lk">Reminded</span><span class="lv">Once, 19/07</span></div>
+        </div>
+        <div class="acts">
+          <div class="act">Remind</div>
+          <div class="act">Mark cash</div>
+        </div>
+        <div class="warn">Void only if he was billed by mistake. No money has moved, so this withdraws the invoice rather than refunding anything. The session stays on his attendance record.</div>
+        <button class="btn btnd">Void this link</button>
+        <button class="btn2">Close</button>
+      </div>
+    </div></div>
+    <div class="cap">EN · void an unpaid link</div>
+    </div>
+
+    <!-- AR · LEDGER -->
+    <div class="frame">
+    <div class="phone"><div class="screen" dir="rtl" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="tt">المدفوعات</div><div class="ts">أكاديمية النيل</div></div><span class="vbadge">موثّق</span></div>
+      <div class="body">
+        <div class="bal">
+          <div class="hl">المتاح الآن</div>
+          <div class="hn">١٢٬٤٨٠ <span>ج.م</span></div>
+          <div class="balrow">
+            <div><div class="bk">قيد الانتظار</div><div class="bv">٨٬٢٥٠</div></div>
+            <div><div class="bk">غير مدفوع</div><div class="bv">١٬٣٥٠</div></div>
+            <div><div class="bk">المعالجة</div><div class="bv">الخميس</div></div>
+          </div>
+        </div>
+        <div class="alert"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg><div><div class="at">٨ روابط غير مدفوعة</div><div class="as">١٬٣٥٠ ج.م · أقدمها ٤ أيام</div></div><div class="ab">مراجعة</div></div>
+        <div class="seg"><div class="on">الكل</div><div>أونلاين</div><div>نقدًا</div></div>
+
+        <div class="dl">اليوم</div>
+        <div class="row"><div class="avt">مح</div><div class="rn"><div class="rnm">مريم حسن<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub"><span class="mth">أونلاين</span>فيزياء · الأحد ٤ م</div></div><div class="amt"><b>١٥٠</b><span class="st sp">مدفوع</span></div></div>
+        <div class="row"><div class="avt">يع</div><div class="rn"><div class="rnm">يوسف عادل<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub"><span class="mth">أونلاين</span>فيزياء · الأحد ٤ م</div></div><div class="amt"><b>١٥٠</b><span class="st sp">مدفوع</span></div></div>
+        <div class="row"><div class="avt">سط</div><div class="rn"><div class="rnm">سليم طارق<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub"><span class="mth">أونلاين</span>أُرسل الرابط ١٧:٠٤</div></div><div class="amt"><b>١٥٠</b><span class="st sw">غير مدفوع</span></div></div>
+        <div class="row"><div class="avt">عخ</div><div class="rn"><div class="rnm">عمر خالد<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub"><span class="mth mthc">نقدًا</span>تأكيد في الاستقبال</div></div><div class="amt"><b>١٥٠</b><span class="st sp">مدفوع</span></div></div>
+        <div class="row"><div class="avt">حس</div><div class="rn"><div class="rnm">حبيبة سامح<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub"><span class="mth">أونلاين</span>رُفضت البطاقة ١٧:٠٦</div></div><div class="amt"><b>١٥٠</b><span class="st sf">فشل</span></div></div>
+
+        <div class="dl">أمس</div>
+        <div class="row"><div class="avt">فم</div><div class="rn"><div class="rnm">فريدة مصطفى<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub"><span class="mth">أونلاين</span>كيمياء · الاثنين ٦ م</div></div><div class="amt"><b>١٨٠</b><span class="st sp">مدفوع</span></div></div>
+        <div class="row"><div class="avt">كف</div><div class="rn"><div class="rnm">كريم فؤاد<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub"><span class="mth">أونلاين</span>حُصِّل بالخطأ</div></div><div class="amt"><b>١٨٠</b><span class="st sc">مُلغى</span></div></div>
+      </div>
+      <div class="footer"><div class="fnote">تُعالَج إلى CIB ····٤٨٢١ كل خميس</div><button class="btn">سحب ١٢٬٤٨٠ ج.م</button></div>
+    </div></div>
+    <div class="cap">AR · السجل</div>
+    </div>
+
+    <!-- AR · VOID -->
+    <div class="frame">
+    <div class="phone"><div class="screen" dir="rtl" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="tt">غير المدفوع</div><div class="ts">٨ روابط · ١٬٣٥٠ ج.م</div></div><span class="vbadge">موثّق</span></div>
+      <div class="body" style="filter:blur(1.5px);opacity:.5">
+        <div class="dl">متأخر ٤ أيام</div>
+        <div class="row"><div class="avt">نش</div><div class="rn"><div class="rnm">ندى شريف</div><div class="rsub">حصتان · ذُكّر مرتين</div></div><div class="amt"><b>٣٠٠</b><span class="st sw">غير مدفوع</span></div></div>
+        <div class="row"><div class="avt">أم</div><div class="rn"><div class="rnm">آدم مجدي</div><div class="rsub">حصة · ذُكّر مرة</div></div><div class="amt"><b>١٥٠</b><span class="st sw">غير مدفوع</span></div></div>
+      </div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="sh">آدم مجدي</div>
+        <div class="shs">فيزياء · الأحد ٤ م · حُصِّل ١٨/٠٧، حصة واحدة</div>
+        <div class="card">
+          <div class="lr"><span class="lk">المبلغ</span><span class="lv">١٥٠ ج.م</span></div>
+          <div class="lr"><span class="lk">سعرك</span><span class="lv">١٦٨٫٧٥</span></div>
+          <div class="lr"><span class="lk">الحالة</span><span class="lv">أُرسل الرابط، غير مدفوع</span></div>
+          <div class="lr"><span class="lk">التذكير</span><span class="lv">مرة، ١٩/٠٧</span></div>
+        </div>
+        <div class="acts">
+          <div class="act">تذكير</div>
+          <div class="act">تحويل لنقدي</div>
+        </div>
+        <div class="warn">ألغِ فقط إذا حُصِّل بالخطأ. لم تتحرك أي أموال، لذا هذا سحب للفاتورة وليس استردادًا. تبقى الحصة في سجل حضوره.</div>
+        <button class="btn btnd">إلغاء هذا الرابط</button>
+        <button class="btn2">إغلاق</button>
+      </div>
+    </div></div>
+    <div class="cap">AR · إلغاء رابط غير مدفوع</div>
+    </div>
+
+  </div>
+</div>
+</div>
+<div class="mgd-sec" id="Merged-Center-Money-3">
+  <div class="mgd-bar"><span class="mgd-num">03</span><span class="mgd-name">Billing</span><span class="mgd-src">Screen-Billing.html</span></div>
+</div>
+<div class="mgd3">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0e6b61;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:5px 11px;border-radius:999px">Lucide icons</span></div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Billing</h1>
+    <p style="margin:0;max-width:74ch;font-size:17px;line-height:1.55;color:#5d635c">Rebuilt on the membership-management pattern. A Your-Membership card with the renewal / billed / next-renewal strip, membership-option rows, an Available Upgrade hero with a feature checklist, add-ons (Analytics is one), a downgrade option, and the switch-billing sheet. Then Arabic mirrored. Card digits stay Western LTR.</p>
+  </div>
+  <div class="phones">
+
+    <!-- EN HUB -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · membership &amp; billing</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div style="flex:1"><div style="font-size:17px;font-weight:600">Membership &amp; billing</div><div style="font-size:12px;color:#80827a">Al-Nahda</div></div></div>
+      <div class="body">
+        <div class="sec">Your membership</div>
+        <div class="memcard">
+          <div style="display:flex;align-items:center;justify-content:space-between"><div class="wm">TutoringHQ <span>GROWTH</span></div><span class="badge brass"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4-6.3-4.6L5.7 21 8 14 2 9.4h7.6z"/></svg>Early adopter</span></div>
+          <div class="strip">
+            <div class="scol"><div class="sl">Renewal</div><div class="sv num">8,990<span style="font-size:11px;color:#80827a;font-weight:600"> /yr</span></div><div class="sx">Plus tax</div></div>
+            <div class="scol"><div class="sl">Billed</div><div class="sv">Annually</div><div class="sx">Saving 17%</div></div>
+            <div class="scol"><div class="sl">Next renewal</div><div class="sv num" style="font-size:14px">01/08/2027</div></div>
+          </div>
+        </div>
+        <div class="sec">Membership options</div>
+        <div class="optrow"><div class="opticon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8l2 2 2-2"/></svg></div><div style="flex:1"><div class="ot">Manage plan</div><div class="os">Explore plans and features</div></div><div class="chev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div></div>
+        <div class="optrow"><div class="opticon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></div><div style="flex:1"><div class="ot">Switch billing plan</div><div class="os">You're saving 17%</div></div><div class="chev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div></div>
+        <div class="optrow"><div class="opticon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div><div style="flex:1"><div class="ot">Payment method</div><div class="os"><span dir="ltr">Visa ending 7937</span></div></div><div class="chev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div></div>
+        <div class="sec">Available upgrade</div>
+        <div class="upcard">
+          <div class="upbanner"><div class="upwm">TutoringHQ <span>SCALE</span></div></div>
+          <div class="upbody">
+            <div style="font-size:13px;color:#5d635c;line-height:1.5;margin-bottom:10px">For multi-branch centers that need more room and priority support.</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px">Everything on Growth, plus:</div>
+            <div class="featrow"><span class="fcheck"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>Up to 6 branches</div>
+            <div class="featrow"><span class="fcheck"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>Priority WhatsApp support</div>
+            <div class="featrow"><span class="fcheck"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>Higher student cap</div>
+            <button class="btn-primary" style="margin-top:12px">Upgrade to Scale</button>
+          </div>
+        </div>
+      </div>
+    </div></div></div>
+
+    <!-- EN MANAGE (features + add-ons + downgrade) -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · manage plan · add-ons</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div><div style="flex:1"><div style="font-size:17px;font-weight:600">Manage plan</div><div style="font-size:12px;color:#80827a">Al-Nahda</div></div></div>
+      <div class="body">
+        <div class="sec" style="margin-top:2px">Your plan</div>
+        <div class="memcard">
+          <div class="wm">TutoringHQ <span>GROWTH</span></div>
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid #eee7d9">
+            <div class="featrow"><span class="fcheck" style="background:#f2eee5;color:#5d635c"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>Everything on Starter, plus:</div>
+            <div class="featrow"><span class="fcheck"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>Up to 250 students</div>
+            <div class="featrow"><span class="fcheck"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>2 branches</div>
+            <div class="featrow"><span class="fcheck"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>WhatsApp reminders</div>
+          </div>
+        </div>
+        <div class="sec">Add-ons</div>
+        <div class="memcard" style="padding:4px 16px">
+          <div class="addon" style="border-top:none"><div class="addicon" style="background:#dfeeeb;color:#0a514a"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 9l-5 5-3-3-4 4"/></svg></div><div style="flex:1"><div style="font-size:14px;font-weight:600">Advanced Analytics</div><div style="font-size:11px;color:#80827a" class="num">+149 EGP / mo</div></div><button class="addbtn2">Add</button></div>
+          <div class="addon"><div class="addicon" style="background:#e4f0e9;color:#1a6d4d"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg></div><div style="flex:1"><div style="font-size:14px;font-weight:600">Parent WhatsApp pack</div><div style="font-size:11px;color:#80827a">Active</div></div><div class="tgl on"></div></div>
+          <div class="addon"><div class="addicon" style="background:#f4ebd7;color:#9a6b1f"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M6 21V7l6-4 6 4v14"/></svg></div><div style="flex:1"><div style="font-size:14px;font-weight:600">Extra branch</div><div style="font-size:11px;color:#80827a">Active</div></div><div class="tgl on"></div></div>
+        </div>
+        <div class="sec">Downgrade</div>
+        <div class="memcard">
+          <div class="wm">TutoringHQ <span>STARTER</span></div>
+          <div style="font-size:13px;color:#80827a;margin-top:6px">Core tools at our best price.</div>
+          <button class="btn-outline" style="margin-top:12px">Downgrade to Starter</button>
+        </div>
+      </div>
+    </div></div></div>
+
+    <!-- EN SWITCH BILLING MODAL -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · switch billing</span>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div style="flex:1"><div style="font-size:17px;font-weight:600">Membership &amp; billing</div><div style="font-size:12px;color:#80827a">Al-Nahda</div></div></div>
+      <div class="body" style="filter:blur(.4px)"><div class="memcard" style="height:120px"></div></div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div style="font-size:19px;font-weight:700;padding:4px 2px 4px">Switch billing plan</div>
+        <div style="font-size:13px;color:#80827a;padding:0 2px 14px;line-height:1.4">Nothing changes until your next renewal on 01/08/2027.</div>
+        <div class="rcard sel" style="margin-bottom:10px">
+          <div class="radio on"></div>
+          <div style="flex:1"><div class="rt">Annual</div><div class="rs">Save 17% vs monthly</div></div>
+          <div style="text-align:end"><div class="rp num">8,990</div><div class="rpm num">749 EGP/mo</div></div>
+        </div>
+        <div class="rcard" style="margin-bottom:18px">
+          <div class="radio"></div>
+          <div style="flex:1"><div class="rt">Monthly</div><div class="rs">Billed every month</div></div>
+          <div style="text-align:end"><div class="rp num">899</div><div class="rpm num">899 EGP/mo</div></div>
+        </div>
+        <button class="btn-primary" style="margin-bottom:9px">Keep annual plan</button>
+        <button class="btn-outline">Cancel</button>
+      </div>
+    </div></div></div>
+
+    <!-- AR HUB -->
+    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">AR · RTL · العضوية والفوترة</span>
+    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic',sans-serif;letter-spacing:0">
+      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div style="flex:1"><div style="font-size:17px;font-weight:600">العضوية والفوترة</div><div style="font-size:12px;color:#80827a">النهضة</div></div></div>
+      <div class="body">
+        <div class="sec">عضويتك</div>
+        <div class="memcard">
+          <div style="display:flex;align-items:center;justify-content:space-between"><div class="wm">TutoringHQ <span>GROWTH</span></div><span class="badge brass"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4-6.3-4.6L5.7 21 8 14 2 9.4h7.6z"/></svg>مشترك مبكر</span></div>
+          <div class="strip">
+            <div class="scol"><div class="sl">التجديد</div><div class="sv num">٨٬٩٩٠<span style="font-size:11px;color:#80827a;font-weight:600"> /سنة</span></div><div class="sx">+ الضريبة</div></div>
+            <div class="scol"><div class="sl">الفوترة</div><div class="sv">سنويًا</div><div class="sx">توفير ١٧٪</div></div>
+            <div class="scol"><div class="sl">التجديد القادم</div><div class="sv num" style="font-size:14px">٠١/٠٨/٢٠٢٧</div></div>
+          </div>
+        </div>
+        <div class="sec">خيارات العضوية</div>
+        <div class="optrow"><div class="opticon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8l2 2 2-2"/></svg></div><div style="flex:1"><div class="ot">إدارة الخطة</div><div class="os">استكشف الخطط والمزايا</div></div><div class="chev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div></div>
+        <div class="optrow"><div class="opticon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></div><div style="flex:1"><div class="ot">تغيير خطة الفوترة</div><div class="os">توفّر ١٧٪</div></div><div class="chev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div></div>
+        <div class="optrow"><div class="opticon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div><div style="flex:1"><div class="ot">طريقة الدفع</div><div class="os"><span dir="ltr">Visa ending 7937</span></div></div><div class="chev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div></div>
+        <div class="sec">ترقية متاحة</div>
+        <div class="upcard">
+          <div class="upbanner"><div class="upwm">TutoringHQ <span>SCALE</span></div></div>
+          <div class="upbody">
+            <div style="font-size:13px;color:#5d635c;line-height:1.5;margin-bottom:10px">للمراكز متعددة الفروع التي تحتاج مساحة أكبر ودعمًا مميزًا.</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px">كل ما في Growth، بالإضافة إلى:</div>
+            <div class="featrow"><span class="fcheck"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>حتى ٦ فروع</div>
+            <div class="featrow"><span class="fcheck"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>دعم واتساب ذو أولوية</div>
+            <div class="featrow"><span class="fcheck"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>حد أعلى للطلاب</div>
+            <button class="btn-primary" style="margin-top:12px">الترقية إلى Scale</button>
+          </div>
+        </div>
+      </div>
+    </div></div></div>
+
+  </div>
+</div>
+</div>
+<div class="mgd-sec" id="Merged-Center-Money-4">
+  <div class="mgd-bar"><span class="mgd-num">04</span><span class="mgd-name">Center Withdrawal Verified</span><span class="mgd-src">Screen-Center-Withdrawal-Verified.html</span></div>
+</div>
+<div class="mgd4">
+<div class="board">
+  <div class="eyebrow">TutoringHQ · Reference Screen</div>
+  <div class="pill0">Center withdrawal · Verified · Draft</div>
+  <h1 class="mh">Center withdrawal, verified</h1>
+  <p class="lead">One payout a month is free, so a center that takes its money once a month keeps exactly the 90% we promised. Withdrawing again in the same month is something they chose, and it is priced. Thursday is when collected money clears from Pending into Available; it is not an automatic payout, so withdrawing is always the center's own action. There is no minimum: a center can withdraw 500 if it wants to, but the fee is shown as a share of that withdrawal rather than as a bare number, so nobody does it by accident. Our own banded cost never appears, because that is our problem and splitting to avoid it is handled behind the screen. English and Arabic. Sample data is placeholder.</p>
+
+  <div class="phones">
+
+    <!-- EN · CHOOSE -->
+    <div class="frame">
+    <div class="phone"><div class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Withdraw</div><div class="ts">Nile Prep Academy</div></div><span class="vbadge">Verified</span></div>
+      <div class="body">
+        <div class="bal">
+          <div class="hl">Available now</div>
+          <div class="hn">12,480 <span>EGP</span></div>
+          <div class="hint">You have not used your free payout for July. Cleared money moves from Pending to Available every Thursday.</div>
+        </div>
+
+        <div class="sec">How fast do you want it</div>
+        <div class="sub">To CIB ····4821</div>
+
+        <div class="opt on">
+          <div class="oic i-free"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></div>
+          <div class="on1">
+            <div class="ot">Standard<span class="tagfree">Your free one for July</span></div>
+            <div class="od">Arrives in one to three working days.</div>
+            <div class="ocost free">Free</div>
+          </div>
+          <div class="radio"></div>
+        </div>
+
+        <div class="opt">
+          <div class="oic i-now"><svg viewBox="0 0 24 24"><path d="M13 2L4.09 12.97a1 1 0 0 0 .78 1.63H11l-1 7.4 8.91-10.97a1 1 0 0 0-.78-1.63H12z"/></svg></div>
+          <div class="on1">
+            <div class="ot">Instant</div>
+            <div class="od">Within minutes. Instant is always charged, even on your free one.</div>
+            <div class="ocost paid">374 EGP · 3%</div>
+          </div>
+          <div class="radio"></div>
+        </div>
+
+        <div class="sec">What payouts cost</div>
+        <div class="prices">
+          <div class="pr"><span class="prk">One payout a month</span><span class="prv free">Free</span></div>
+          <div class="pr"><span class="prk">Extra payout under 10,000</span><span class="prv">250 EGP</span></div>
+          <div class="pr"><span class="prk">Extra payout over 10,000</span><span class="prv">2%</span></div>
+          <div class="pr"><span class="prk">Instant, under 10,000</span><span class="prv">250 EGP</span></div>
+          <div class="pr"><span class="prk">Instant, over 10,000</span><span class="prv">3%</span></div>
+        </div>
+        <div class="note n-info" style="margin-top:11px">All prices include VAT. Your free monthly payout is free however much it is, and the allowance resets on the 1st.</div>
+      </div>
+      <div class="footer"><button class="btn">Continue</button></div>
+    </div></div>
+    <div class="cap">EN · free monthly payout</div>
+    </div>
+
+    <!-- EN · SMALL WITHDRAWAL WARNING -->
+    <div class="frame">
+    <div class="phone"><div class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Send it now</div><div class="ts">Second payout this month</div></div><span class="vbadge">Verified</span></div>
+      <div class="body">
+        <div class="bal">
+          <div class="hl">Withdrawing</div>
+          <div class="hn">500 <span>EGP</span></div>
+          <div class="hint">You used your free payout on 16/07. The allowance resets on 1 August.</div>
+        </div>
+
+        <div class="note n-warn"><b>250 EGP, which is half of this withdrawal.</b> Small payouts cost the same to send as large ones, so the fee does not shrink with the amount.</div>
+
+        <div class="card">
+          <div class="lr"><span class="lk">Withdrawing</span><span class="lv">500</span></div>
+          <div class="lr"><span class="lk">Fee</span><span class="lv">−250</span></div>
+          <div class="lr big"><span class="lk">You receive</span><span class="lv">250</span></div>
+        </div>
+
+        <div class="note n-acc">Letting it build and taking one larger payout later costs the same 250, so the fee weighs far less against a bigger amount.</div>
+      </div>
+      <div class="footer"><button class="btn">Leave it to build</button><button class="btn2">Withdraw 250 anyway</button></div>
+    </div></div>
+    <div class="cap">EN · fee shown as a share</div>
+    </div>
+
+    <!-- AR · CHOOSE -->
+    <div class="frame">
+    <div class="phone"><div class="screen" dir="rtl" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="tt">سحب</div><div class="ts">أكاديمية النيل</div></div><span class="vbadge">موثّق</span></div>
+      <div class="body">
+        <div class="bal">
+          <div class="hl">المتاح الآن</div>
+          <div class="hn">١٢٬٤٨٠ <span>ج.م</span></div>
+          <div class="hint">لم تستخدم تحويلك المجاني لشهر يوليو. الأموال المُحصَّلة تنتقل من قيد الانتظار إلى المتاح كل خميس.</div>
+        </div>
+
+        <div class="sec">بأي سرعة تريدها</div>
+        <div class="sub">إلى CIB ····٤٨٢١</div>
+
+        <div class="opt on">
+          <div class="oic i-free"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></div>
+          <div class="on1">
+            <div class="ot">عادي<span class="tagfree">تحويلك المجاني ليوليو</span></div>
+            <div class="od">تصل خلال يوم إلى ثلاثة أيام عمل.</div>
+            <div class="ocost free">مجانًا</div>
+          </div>
+          <div class="radio"></div>
+        </div>
+
+        <div class="opt">
+          <div class="oic i-now"><svg viewBox="0 0 24 24"><path d="M13 2L4.09 12.97a1 1 0 0 0 .78 1.63H11l-1 7.4 8.91-10.97a1 1 0 0 0-.78-1.63H12z"/></svg></div>
+          <div class="on1">
+            <div class="ot">فوري</div>
+            <div class="od">خلال دقائق. الفوري مدفوع دائمًا، حتى على تحويلك المجاني.</div>
+            <div class="ocost paid">٣٧٤ ج.م · ٣٪</div>
+          </div>
+          <div class="radio"></div>
+        </div>
+
+        <div class="sec">تكلفة التحويلات</div>
+        <div class="prices">
+          <div class="pr"><span class="prk">تحويل واحد شهريًا</span><span class="prv free">مجانًا</span></div>
+          <div class="pr"><span class="prk">تحويل إضافي أقل من ١٠٬٠٠٠</span><span class="prv">٢٥٠ ج.م</span></div>
+          <div class="pr"><span class="prk">تحويل إضافي أكثر من ١٠٬٠٠٠</span><span class="prv">٢٪</span></div>
+          <div class="pr"><span class="prk">فوري، أقل من ١٠٬٠٠٠</span><span class="prv">٢٥٠ ج.م</span></div>
+          <div class="pr"><span class="prk">فوري، أكثر من ١٠٬٠٠٠</span><span class="prv">٣٪</span></div>
+        </div>
+        <div class="note n-info" style="margin-top:11px">كل الأسعار شاملة الضريبة. تحويلك الشهري المجاني مجاني مهما كان مبلغه، والرصيد يتجدد أول كل شهر.</div>
+      </div>
+      <div class="footer"><button class="btn">متابعة</button></div>
+    </div></div>
+    <div class="cap">AR · التحويل الشهري المجاني</div>
+    </div>
+
+    <!-- AR · SMALL WITHDRAWAL -->
+    <div class="frame">
+    <div class="phone"><div class="screen" dir="rtl" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="tt">أرسلها الآن</div><div class="ts">التحويل الثاني هذا الشهر</div></div><span class="vbadge">موثّق</span></div>
+      <div class="body">
+        <div class="bal">
+          <div class="hl">تسحب</div>
+          <div class="hn">٥٠٠ <span>ج.م</span></div>
+          <div class="hint">استخدمت تحويلك المجاني في ١٦/٠٧. يتجدد في ١ أغسطس.</div>
+        </div>
+
+        <div class="note n-warn"><b>٢٥٠ ج.م، أي نصف هذا المبلغ.</b> التحويلات الصغيرة تكلّف مثل الكبيرة، فالرسم لا يقل بقلة المبلغ.</div>
+
+        <div class="card">
+          <div class="lr"><span class="lk">تسحب</span><span class="lv">٥٠٠</span></div>
+          <div class="lr"><span class="lk">الرسم</span><span class="lv">−٢٥٠</span></div>
+          <div class="lr big"><span class="lk">تستلم</span><span class="lv">٢٥٠</span></div>
+        </div>
+
+        <div class="note n-acc">ترك الرصيد يتراكم وسحبه مرة واحدة لاحقًا يكلّف نفس الـ ٢٥٠، فيصبح الرسم أخف بكثير مقابل مبلغ أكبر.</div>
+      </div>
+      <div class="footer"><button class="btn">اتركه يتراكم</button><button class="btn2">اسحب ٢٥٠ رغم ذلك</button></div>
+    </div></div>
+    <div class="cap">AR · الرسم كنسبة</div>
+    </div>
+
+  </div>
+</div>
+</div>
+<div class="mgd-sec" id="Merged-Center-Money-5">
+  <div class="mgd-bar"><span class="mgd-num">05</span><span class="mgd-name">Center Receipts Verified</span><span class="mgd-src">Screen-Center-Receipts-Verified.html</span></div>
+</div>
+<div class="mgd5">
+<div class="board">
+  <div class="eyebrow">TutoringHQ · Reference Screen</div>
+  <div class="pill0">Center receipts · Verified · Draft</div>
+  <h1 class="mh">Center receipts, verified</h1>
+  <p class="lead">Three lists, deliberately not merged. Payment confirmations record what a parent paid and how it split; they are proof of payment, not tax documents. Payout statements record what reached the center. Tax documents are the only items with legal standing, and they cover our commission alone, never the tuition, because the tuition was never our sale. Merging these into one "receipts" list is what would make the whole arrangement incoherent to an inspector, so the split is structural rather than cosmetic. The payout charge line is shown pending the decision on who bears it. English and Arabic. Sample data is placeholder.</p>
+
+  <div class="phones">
+
+    <!-- EN · PAYMENTS -->
+    <div class="frame">
+    <div class="phone"><div class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Records</div><div class="ts">Nile Prep Academy</div></div><span class="vbadge">Verified</span></div>
+      <div class="body">
+        <div class="seg"><div class="on">Payments</div><div>Payouts</div><div>Tax</div></div>
+        <div class="note n-info">Confirmation of what each parent paid and how it split. These are proof of payment, not tax documents.</div>
+
+        <div class="dl">20 JULY</div>
+        <div class="row"><div class="ric i-pay"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Mariam Hassan<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Your fee 150 · you receive 135</div></div><div class="amt"><b>168.75</b><span>Card</span></div></div>
+        <div class="row"><div class="ric i-pay"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Youssef Adel<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Your fee 150 · you receive 135</div></div><div class="amt"><b>168.75</b><span>Wallet</span></div></div>
+        <div class="row"><div class="ric i-pay"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Habiba Sameh<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Your fee 150 · you receive 135</div></div><div class="amt"><b>168.75</b><span>Card</span></div></div>
+
+        <div class="dl">19 JULY</div>
+        <div class="row"><div class="ric i-pay"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Farida Mostafa<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Your fee 180 · you receive 162</div></div><div class="amt"><b>201.00</b><span>Card</span></div></div>
+        <div class="row"><div class="ric i-pay"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Karim Fouad<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Your fee 180 · you receive 162</div></div><div class="amt"><b>201.00</b><span>Card</span></div></div>
+        <div class="row"><div class="ric i-pay"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Omar Khaled<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Cash at reception</div></div><div class="amt"><b>150</b><span>Cash</span></div></div>
+      </div>
+    </div></div>
+    <div class="cap">EN · payment confirmations</div>
+    </div>
+
+    <!-- EN · PAYOUTS -->
+    <div class="frame">
+    <div class="phone"><div class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Records</div><div class="ts">Nile Prep Academy</div></div><span class="vbadge">Verified</span></div>
+      <div class="body">
+        <div class="seg"><div>Payments</div><div class="on">Payouts</div><div>Tax</div></div>
+        <div class="note n-acc">What actually reached your bank, and how it was worked out. Only online collection is paid out; cash you took at reception never passed through us.</div>
+
+        <div class="sec">Thursday 16 July</div>
+        <div class="card">
+          <div class="lr"><span class="lk">Tuition collected online</span><span class="lv">15,200</span></div>
+          <div class="lr"><span class="lk">Collection fee (10%)</span><span class="lv">−1,520</span></div>
+          <div class="lr"><span class="lk">Payout charge</span><span class="lv">−171</span></div>
+          <div class="lr big"><span class="lk">Paid to you</span><span class="lv">13,509</span></div>
+        </div>
+        <div class="dlbtn"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 11l5 5 5-5M4 21h16"/></svg>Download statement</div>
+
+        <div class="dl">EARLIER</div>
+        <div class="row"><div class="ric i-out"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 11l5 5 5-5M4 21h16"/></svg></div><div class="rn"><div class="rnm">Thursday 9 July<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">CIB ····4821</div></div><div class="amt"><b>11,842</b><span>Paid</span></div></div>
+        <div class="row"><div class="ric i-out"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 11l5 5 5-5M4 21h16"/></svg></div><div class="rn"><div class="rnm">Thursday 2 July<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">CIB ····4821</div></div><div class="amt"><b>9,376</b><span>Paid</span></div></div>
+      </div>
+    </div></div>
+    <div class="cap">EN · payout statements</div>
+    </div>
+
+    <!-- EN · TAX -->
+    <div class="frame">
+    <div class="phone"><div class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Records</div><div class="ts">Nile Prep Academy</div></div><span class="vbadge">Verified</span></div>
+      <div class="body">
+        <div class="seg"><div>Payments</div><div>Payouts</div><div class="on">Tax</div></div>
+        <div class="note n-info">Documents issued to you by Eyad Hawary Global Intelligence, which operates TutoringHQ. These cover our commission only. Tuition is your own sale, so any tax document for it is issued by you.</div>
+
+        <div class="sec">July 2026</div>
+        <div class="card">
+          <div class="lr"><span class="lk">Collection fee (commission)</span><span class="lv">5,333.33</span></div>
+          <div class="lr"><span class="lk">VAT (14%)</span><span class="lv">746.67</span></div>
+          <div class="lr big"><span class="lk">Total</span><span class="lv">6,080</span></div>
+        </div>
+        <div class="dlbtn"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 11l5 5 5-5M4 21h16"/></svg>Download e-invoice</div>
+
+        <div class="dl">EARLIER</div>
+        <div class="row"><div class="ric i-tax"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></div><div class="rn"><div class="rnm">June 2026<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub"><span class="tag t-inv">e-invoice</span>Commission</div></div><div class="amt"><b>5,340</b><span>Issued</span></div></div>
+        <div class="row"><div class="ric i-tax"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></div><div class="rn"><div class="rnm">May 2026<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub"><span class="tag t-inv">e-invoice</span>Commission</div></div><div class="amt"><b>4,905</b><span>Issued</span></div></div>
+        <div class="note n-info" style="margin-top:13px">You receive e-invoices because your center is tax registered. Unregistered providers receive an e-receipt instead.</div>
+      </div>
+    </div></div>
+    <div class="cap">EN · tax documents</div>
+    </div>
+
+    <!-- AR · PAYMENTS -->
+    <div class="frame">
+    <div class="phone"><div class="screen" dir="rtl" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="tt">السجلات</div><div class="ts">أكاديمية النيل</div></div><span class="vbadge">موثّق</span></div>
+      <div class="body">
+        <div class="seg"><div class="on">المدفوعات</div><div>التحويلات</div><div>الضريبية</div></div>
+        <div class="note n-info">تأكيد لما دفعه كل ولي أمر وكيف انقسم. هذه إثبات دفع، وليست مستندات ضريبية.</div>
+
+        <div class="dl">٢٠ يوليو</div>
+        <div class="row"><div class="ric i-pay"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">مريم حسن<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">سعرك ١٥٠ · تستلم ١٣٥</div></div><div class="amt"><b>١٦٨٫٧٥</b><span>بطاقة</span></div></div>
+        <div class="row"><div class="ric i-pay"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">يوسف عادل<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">سعرك ١٥٠ · تستلم ١٣٥</div></div><div class="amt"><b>١٦٨٫٧٥</b><span>محفظة</span></div></div>
+        <div class="row"><div class="ric i-pay"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">حبيبة سامح<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">سعرك ١٥٠ · تستلم ١٣٥</div></div><div class="amt"><b>١٦٨٫٧٥</b><span>بطاقة</span></div></div>
+
+        <div class="dl">١٩ يوليو</div>
+        <div class="row"><div class="ric i-pay"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">فريدة مصطفى<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">سعرك ١٨٠ · تستلم ١٦٢</div></div><div class="amt"><b>٢٠١٫٠٠</b><span>بطاقة</span></div></div>
+        <div class="row"><div class="ric i-pay"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">كريم فؤاد<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">سعرك ١٨٠ · تستلم ١٦٢</div></div><div class="amt"><b>٢٠١٫٠٠</b><span>بطاقة</span></div></div>
+        <div class="row"><div class="ric i-pay"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">عمر خالد<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">نقدًا في الاستقبال</div></div><div class="amt"><b>١٥٠</b><span>نقدًا</span></div></div>
+      </div>
+    </div></div>
+    <div class="cap">AR · تأكيدات الدفع</div>
+    </div>
+
+    <!-- AR · TAX -->
+    <div class="frame">
+    <div class="phone"><div class="screen" dir="rtl" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="tt">السجلات</div><div class="ts">أكاديمية النيل</div></div><span class="vbadge">موثّق</span></div>
+      <div class="body">
+        <div class="seg"><div>المدفوعات</div><div>التحويلات</div><div class="on">الضريبية</div></div>
+        <div class="note n-info">مستندات صادرة لك من Eyad Hawary Global Intelligence، الشركة التي تُشغّل TutoringHQ. تغطي عمولتنا فقط. المصروفات بيعك أنت، فأي مستند ضريبي عنها تُصدره أنت.</div>
+
+        <div class="sec">يوليو ٢٠٢٦</div>
+        <div class="card">
+          <div class="lr"><span class="lk">رسم التحصيل (عمولة)</span><span class="lv">٥٬٣٣٣٫٣٣</span></div>
+          <div class="lr"><span class="lk">ضريبة القيمة المضافة (١٤٪)</span><span class="lv">٧٤٦٫٦٧</span></div>
+          <div class="lr big"><span class="lk">الإجمالي</span><span class="lv">٦٬٠٨٠</span></div>
+        </div>
+        <div class="dlbtn"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 11l5 5 5-5M4 21h16"/></svg>تحميل الفاتورة الإلكترونية</div>
+
+        <div class="dl">سابقًا</div>
+        <div class="row"><div class="ric i-tax"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></div><div class="rn"><div class="rnm">يونيو ٢٠٢٦<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub"><span class="tag t-inv">فاتورة إلكترونية</span>عمولة</div></div><div class="amt"><b>٥٬٣٤٠</b><span>صادرة</span></div></div>
+        <div class="row"><div class="ric i-tax"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></div><div class="rn"><div class="rnm">مايو ٢٠٢٦<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub"><span class="tag t-inv">فاتورة إلكترونية</span>عمولة</div></div><div class="amt"><b>٤٬٩٠٥</b><span>صادرة</span></div></div>
+        <div class="note n-info" style="margin-top:13px">تستلم فواتير إلكترونية لأن سنترك مسجّل ضريبيًا. مقدّمو الخدمة غير المسجّلين يستلمون إيصالًا إلكترونيًا بدلًا منها.</div>
+      </div>
+    </div></div>
+    <div class="cap">AR · المستندات الضريبية</div>
+    </div>
+
+  </div>
+</div>
+</div>
+</body></html>

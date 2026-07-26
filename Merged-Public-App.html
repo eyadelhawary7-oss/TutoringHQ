@@ -1,0 +1,2133 @@
+<!DOCTYPE html>
+<!--
+================================================================
+ TutoringHQ · MERGED DESIGN REFERENCE
+ File: Merged-Public-App.html
+ Public · Signed-out app flows
+
+ CONTENTS (6 screens):
+  01. Public Auth   <-  Screen-Public-Auth.html
+  02. Public Join   <-  Screen-Public-Join.html
+  03. Public Self Enrollment   <-  Screen-Public-Enroll.html
+  04. Parent Payment   <-  Screen-Parent-Payment.html
+  05. Referral Landing   <-  Screen-Public-Referral.html
+  06. Offline   <-  Screen-Public-Offline.html
+
+----------------------------------------------------------------
+ HOW TO READ THIS FILE WHEN IMPLEMENTING IT
+----------------------------------------------------------------
+ 1. CSS IS SCOPED. Every rule carries a .mgdN prefix so that
+    several screens can share one page without their styles
+    colliding.
+        in this file:   .mgd4 .pins{ ... }
+        in your code:   .pins{ ... }
+    Strip the .mgdN prefix. It is bookkeeping for this reference
+    file only and must never reach the codebase.
+
+ 2. ONE SECTION = ONE SCREEN. Each section bar shows its number,
+    its name, and the original screen file it came from. Use that
+    filename as the screen's identity, not the section number.
+
+ 3. FRAMES ARE STATES, NOT PAGES. Each phone inside a section is
+    one state of that screen (empty, filled, error, and so on).
+    The caption under or above each phone names the state.
+
+ 4. THE TWO LANGUAGES ARE SEPARATE SCREENS. English and Arabic
+    are never a translation overlay. Arabic frames use Eastern
+    Arabic numerals and the Arabic currency mark. English frames
+    use Western numerals and EGP. Directional icons such as
+    chevrons flip with the language.
+
+ 5. SAMPLE DATA IS PLACEHOLDER. Names, amounts, dates and phone
+    numbers are illustrative. Do not treat them as fixtures or
+    seed data.
+
+ 6. THIS IS DESIGN, NOT PRODUCTION CODE. Markup here is built to
+    be read, not shipped. Take the layout, spacing, type scale
+    and colour decisions from it. Do not copy the DOM wholesale.
+
+ 7. ANY UI OR BRANDING CHANGE BUMPS SW_VERSION in public/sw.js.
+================================================================
+-->
+
+<html lang="en"><head><meta charset="utf-8">
+<meta name="color-scheme" content="light">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Public · Signed-out app flows</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+html{background:#d8d3c6;color-scheme:light}
+:root{color-scheme:light}
+body{margin:0;padding:0;background:#d8d3c6;-webkit-font-smoothing:antialiased}
+.mgd-top{max-width:1480px;margin:0 auto;padding:56px 28px 8px;color:#1b201d;font-family:"IBM Plex Sans",system-ui,sans-serif}
+.mgd-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5d635c;font-weight:600}
+.mgd-h1{font-size:42px;line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:12px 0 10px}
+.mgd-lede{font-size:16px;line-height:1.55;color:#5d635c;max-width:82ch;margin:0}
+.mgd-toc{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 0}
+.mgd-toc a{font-size:12.5px;font-weight:600;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:6px 12px;border-radius:999px;text-decoration:none}
+.mgd-sec{max-width:1480px;margin:0 auto;padding:0 28px;font-family:"IBM Plex Sans",system-ui,sans-serif}
+.mgd-bar{display:flex;align-items:baseline;gap:12px;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin-top:34px}
+.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a5e16;font-weight:500}
+.mgd-name{font-size:22px;font-weight:700;color:#14181a;letter-spacing:-.01em}
+.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#80827a}
+.mgd-screen{content-visibility:auto;contain-intrinsic-size:auto 1400px}
+
+/* ==== 01 Public Auth · Screen-Public-Auth.html ==== */
+.mgd1{--paper:#ECE8DF; --panel:#FFFDF8; --tile:#F2EEE5; --line:#E2DDD1; --hairline:#F0ECE2;
+  --ink:#14181A; --ink-body:#3A3F3A; --mid:#5D635C; --muted:#80827A; --faint:#A09A8E;
+  --accent:#0E6B61; --accent-deep:#0A514A; --mint:#DFEEEB; --mint-deep:#BFE3DD; --ground:#083F39;
+  --brass:#9A6B1F; --brass-deep:#8A5E16; --sand:#F4EBD7; --sand-deep:#E8D7B4;
+  --good:#1A6D4D; --bad:#9C3322;
+  --en:"IBM Plex Sans",system-ui,sans-serif;
+  --ar:"IBM Plex Sans Arabic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;}
+.mgd1 *{box-sizing:border-box}
+.mgd1{margin:0;padding:44px 30px 90px;font-family:var(--en);color:var(--ink);
+  background:#d8d3c6;
+  background-image:
+    radial-gradient(1100px 700px at 82% -10%, rgba(14,107,97,.10), transparent 60%),
+    radial-gradient(1000px 700px at 8% -8%, rgba(154,107,31,.10), transparent 60%);}
+.mgd1 .head{max-width:940px;margin:0 auto 12px}
+.mgd1 .head h1{font-size:22px;font-weight:700;letter-spacing:-.02em;margin:0 0 9px}
+.mgd1 .head p{font-size:13.5px;line-height:1.65;color:var(--ink-body);margin:0 0 7px;max-width:76ch}
+.mgd1 .head code{font-family:var(--mono);font-size:12.5px;background:rgba(255,253,248,.6);padding:1px 6px;border-radius:5px}
+.mgd1 .band{max-width:1280px;margin:0 auto}
+.mgd1 .band-label{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--muted);border-bottom:1px solid rgba(20,24,26,.16);padding-bottom:10px;margin:48px 0 28px}
+.mgd1 .grid{display:flex;flex-wrap:wrap;gap:34px}
+.mgd1 .frame{width:340px}
+.mgd1 .cap{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:11px;line-height:1.5}
+.mgd1 .cap b{color:var(--ink);font-weight:500}
+.mgd1 .phone{width:340px;background:#14181a;border-radius:44px;padding:11px;
+  box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+.mgd1 .screen{background:#ece8df;border-radius:34px;height:748px;display:flex;flex-direction:column;
+  overflow:hidden;position:relative;font-family:var(--en);color:var(--ink-body)}
+.mgd1 .screen.ar{font-family:var(--ar)}
+.mgd1 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;font-size:14px;font-weight:600;flex-shrink:0;color:var(--ink)}
+.mgd1 .brand{display:flex;align-items:center;gap:8px;padding:2px 18px 12px;flex-shrink:0}
+.mgd1 .mark{width:22px;height:22px;border-radius:7px;background:linear-gradient(150deg,#0f766b,#083f39);flex-shrink:0}
+.mgd1 .wm{font-family:var(--en);font-size:15px;font-weight:700;letter-spacing:-.015em;color:var(--ink)}
+.mgd1 .sw{margin-inline-start:auto;font-family:var(--en);font-size:11.5px;font-weight:600;color:var(--muted);
+  background:var(--panel);border:1px solid var(--line);border-radius:999px;height:30px;
+  padding:0 11px;display:inline-flex;align-items:center}
+.mgd1 .back{width:40px;height:40px;margin-inline-start:-12px;display:grid;place-items:center;
+  color:var(--muted);flex-shrink:0}
+.mgd1 .body{flex:1;overflow-y:auto;padding:0 18px 16px}
+.mgd1 .footer{padding:11px 18px 18px;border-top:1px solid var(--line);background:#ece8df;flex-shrink:0}
+.mgd1 .prog{display:flex;align-items:center;gap:6px;margin:0 0 18px}
+.mgd1 .pb{height:3px;border-radius:2px;background:var(--line);flex:1}
+.mgd1 .pb.on{background:var(--accent)}
+.mgd1 .pn{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-inline-start:4px}
+.mgd1 .ar .pn{font-family:var(--ar);font-size:11px}
+.mgd1 .kick{font-family:var(--en);font-size:11px;font-weight:700;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--brass);margin-bottom:10px}
+.mgd1 .ar .kick{font-family:var(--ar);letter-spacing:.02em;text-transform:none;font-size:11.5px}
+.mgd1 .h2{font-size:23px;font-weight:700;line-height:1.28;letter-spacing:-.01em;color:var(--ink);margin:0}
+.mgd1 .ar .h2{font-size:24px;letter-spacing:0;line-height:1.38}
+.mgd1 .lead{font-size:13.5px;line-height:1.55;color:var(--ink-body);margin:9px 0 0}
+.mgd1 .gap{height:16px}
+.mgd1 .gap-s{height:11px}
+.mgd1 .flab{font-family:var(--en);font-size:11px;font-weight:600;letter-spacing:.03em;
+  text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.mgd1 .ar .flab{font-family:var(--ar);letter-spacing:.02em;text-transform:none;font-size:11.5px}
+.mgd1 .fopt{color:var(--faint);font-weight:500;margin-inline-start:5px}
+.mgd1 .field{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:13px 14px;min-height:50px;display:flex;align-items:center}
+.mgd1 .field.on{border-color:var(--accent);box-shadow:0 0 0 3px rgba(14,107,97,.11)}
+.mgd1 .fv{font-size:15px;color:var(--ink)}
+.mgd1 .fv.ph{color:#B6B1A4}
+.mgd1 .mono{font-family:var(--mono);letter-spacing:.02em}
+.mgd1 .fhint{font-size:11.5px;line-height:1.45;color:var(--muted);margin:7px 2px 0}
+.mgd1 .fhint b{color:var(--brass);font-weight:700}
+.mgd1 .pins{display:flex;gap:7px;direction:ltr}
+.mgd1 .pd{flex:1;height:52px;border:1px solid var(--line);border-radius:11px;background:var(--panel);
+  display:grid;place-items:center;font-family:var(--mono);font-size:20px;color:var(--ink)}
+.mgd1 .pd.on{border-color:var(--accent);box-shadow:0 0 0 3px rgba(14,107,97,.11)}
+.mgd1 .pd.fill::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--ink)}
+.mgd1 .otp{display:flex;gap:7px;direction:ltr}
+.mgd1 .ob{flex:1;height:52px;border:1px solid var(--line);border-radius:11px;background:var(--panel);
+  display:grid;place-items:center;font-family:var(--mono);font-size:20px;color:var(--ink)}
+.mgd1 .ob.on{border-color:var(--accent);box-shadow:0 0 0 3px rgba(14,107,97,.11)}
+.mgd1 .ob.mt{color:#CFC9BB}
+.mgd1 .why{background:var(--mint);border-radius:12px;padding:12px 13px;font-size:12px;
+  line-height:1.55;color:var(--accent-deep);margin-top:13px}
+.mgd1 .why b{font-weight:700}
+.mgd1 .why.brass{background:var(--sand);color:var(--brass-deep)}
+.mgd1 .dim{position:absolute;inset:0;background:rgba(20,24,26,.44);
+  display:flex;align-items:flex-end;justify-content:center;padding:12px}
+.mgd1 .sheet{background:var(--paper);border-radius:22px;width:100%;padding:20px 17px 17px;
+  box-shadow:0 -10px 44px rgba(20,24,26,.3)}
+.mgd1 .grab{width:38px;height:4px;border-radius:999px;background:var(--line);margin:0 auto 16px}
+.mgd1 .faded{opacity:.28}
+.mgd1 .roles{display:flex;flex-direction:column;gap:9px}
+.mgd1 .role{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;
+  display:flex;gap:11px;align-items:flex-start}
+.mgd1 .role.sel{border-color:var(--accent);background:var(--mint)}
+.mgd1 .rmk{width:19px;height:19px;border-radius:50%;border:1.5px solid #CFC9BB;flex-shrink:0;margin-top:2px}
+.mgd1 .role.sel .rmk{border:0;background:var(--accent);display:grid;place-items:center;color:#fff;font-size:11px}
+.mgd1 .rt{display:block;font-size:14.5px;font-weight:700;color:var(--ink);line-height:1.3}
+.mgd1 .rs{display:block;font-size:12px;line-height:1.45;color:var(--muted);margin-top:3px}
+.mgd1 .role.sel .rs{color:var(--accent-deep)}
+.mgd1 .plans{display:flex;flex-direction:column;gap:7px}
+.mgd1 .pl{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:13px 14px;
+  display:flex;align-items:center;gap:11px}
+.mgd1 .pl.sel{border-color:var(--accent);background:#F6FAF9;box-shadow:0 0 0 2px rgba(14,107,97,.13)}
+.mgd1 .plmk{width:19px;height:19px;border-radius:50%;border:1.5px solid #CFC9BB;flex-shrink:0}
+.mgd1 .pl.sel .plmk{border:5px solid var(--accent)}
+.mgd1 .plmid{flex:1;min-width:0}
+.mgd1 .pln{display:block;font-size:14.5px;font-weight:700;color:var(--ink);line-height:1.25}
+.mgd1 .plc{display:block;font-size:11.5px;color:var(--muted);margin-top:3px}
+.mgd1 .plp{text-align:end;flex-shrink:0;white-space:nowrap}
+.mgd1 .plv{display:block;font-family:var(--mono);font-size:15px;font-weight:500;color:var(--ink)}
+.mgd1 .ar .plv{font-family:inherit;font-weight:700;font-size:15.5px}
+.mgd1 .plu{display:block;font-size:9.5px;color:var(--faint);margin-top:2px}
+.mgd1 .seg{display:flex;gap:4px;background:var(--tile);border:1px solid var(--line);
+  border-radius:12px;padding:4px;margin:14px 0}
+.mgd1 .sg{flex:1;min-height:40px;border:0;background:transparent;border-radius:9px;font-family:inherit;
+  font-size:12.5px;font-weight:600;color:var(--mid);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;line-height:1.2;gap:1px}
+.mgd1 .sg.on{background:var(--panel);color:var(--ink);font-weight:700;box-shadow:0 1px 3px rgba(20,24,26,.09)}
+.mgd1 .sg small{font-size:9.5px;color:var(--brass);font-weight:600}
+.mgd1 .card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:3px 15px;margin-top:14px}
+.mgd1 .orow{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  padding:11px 0;border-bottom:1px solid var(--hairline)}
+.mgd1 .orow:last-child{border-bottom:0}
+.mgd1 .ok2{font-size:12px;color:var(--muted)}
+.mgd1 .ov{font-family:var(--mono);font-size:12.5px;font-weight:500;color:var(--ink);text-align:end;white-space:nowrap}
+.mgd1 .ar .ov{font-family:inherit;font-weight:700;font-size:13px}
+.mgd1 .ov.free{color:var(--good)}
+.mgd1 .tot{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  border-top:1px solid var(--line);margin-top:2px;padding:13px 0 3px}
+.mgd1 .totl{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.mgd1 .ar .totl{letter-spacing:.02em;text-transform:none;font-size:11.5px}
+.mgd1 .totv{font-family:var(--mono);font-size:22px;font-weight:500;color:var(--ink)}
+.mgd1 .ar .totv{font-family:inherit;font-weight:700;font-size:23px}
+.mgd1 .clauses{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:2px 14px;margin-top:13px}
+.mgd1 .clause{padding:13px 0;border-bottom:1px solid var(--hairline)}
+.mgd1 .clause:last-child{border-bottom:0}
+.mgd1 .ctop{display:flex;gap:9px;align-items:flex-start}
+.mgd1 .cmk{width:6px;height:6px;border-radius:50%;background:var(--brass);flex-shrink:0;margin-top:6px}
+.mgd1 .ct{display:block;font-size:14px;font-weight:700;color:var(--ink);line-height:1.35}
+.mgd1 .cs{display:block;font-size:12px;line-height:1.5;color:var(--muted);margin-top:4px;padding-inline-start:15px}
+.mgd1 .ver{background:var(--tile);border:1px solid var(--line);border-radius:11px;padding:11px 13px;
+  display:flex;align-items:center;gap:11px;margin-top:10px}
+.mgd1 .vid{display:block;font-family:var(--mono);font-size:12px;font-weight:500;color:var(--ink)}
+.mgd1 .vdate{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
+.mgd1 .ar .vdate{font-size:11px}
+.mgd1 .vlink{font-size:11.5px;font-weight:700;color:var(--accent-deep);flex-shrink:0}
+.mgd1 .checks{display:flex;flex-direction:column;gap:8px;margin-top:11px}
+.mgd1 .check{display:flex;gap:10px;align-items:flex-start;background:var(--panel);
+  border:1px solid var(--line);border-radius:12px;padding:12px 13px}
+.mgd1 .box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--muted);
+  background:var(--paper);flex-shrink:0;margin-top:1px}
+.mgd1 .ctext{font-size:12px;line-height:1.5;color:var(--ink-body)}
+.mgd1 .ctext u{color:var(--accent-deep);font-weight:700;text-decoration:none;border-bottom:1px solid var(--mint-deep)}
+.mgd1 .okwrap{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 18px 6px}
+.mgd1 .okic{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;margin-bottom:18px}
+.mgd1 .okic.ok{background:var(--mint)}
+.mgd1 .okic.pb2{background:var(--sand)}
+.mgd1 .okt{font-size:22px;font-weight:700;line-height:1.3;color:var(--ink);margin:0}
+.mgd1 .ar .okt{line-height:1.42}
+.mgd1 .oks{font-size:13.5px;line-height:1.6;color:var(--ink-body);margin:10px 0 0;max-width:31ch}
+.mgd1 .okfoot{font-size:11px;line-height:1.5;color:var(--muted);margin-top:15px;max-width:32ch}
+.mgd1 .btn{width:100%;min-height:50px;border:0;border-radius:13px;background:var(--accent);color:var(--paper);
+  font-family:inherit;font-size:15px;font-weight:700;display:flex;align-items:center;
+  justify-content:center;gap:7px;text-decoration:none}
+.mgd1 .btn.ghost{background:var(--panel);border:1px solid var(--line);color:var(--mid);
+  font-size:13.5px;font-weight:600;min-height:45px}
+.mgd1 .btn.off{background:var(--tile);color:var(--faint);border:1px solid var(--line)}
+.mgd1 .btn+.btn{margin-top:8px}
+.mgd1 .btn:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.mgd1 .fnote{font-size:10.5px;line-height:1.45;color:var(--muted);text-align:center;margin-bottom:8px}
+.mgd1 .ltr{direction:ltr;unicode-bidi:isolate}
+.mgd1 .warnbox{background:#F4E5E2;border:1px solid rgba(156,51,34,.22);border-radius:13px;padding:12px 13px;font-size:12px;color:#9C3322;line-height:1.55;margin-bottom:2px}
+.mgd1 .warnbox b{font-weight:700}
+.mgd1 .pd.err{background:#9C3322;border-color:#9C3322}
+.mgd1 .pinrow{display:flex;align-items:center;gap:14px;margin:0 2px 6px}
+.mgd1 .pinrow .flab{margin:0}
+.mgd1 .eyebtn{margin-inline-start:auto;width:32px;height:32px;flex-shrink:0;border:none;background:none;color:var(--faint);display:grid;place-items:center;padding:0;cursor:pointer}
+.mgd1 .eyebtn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.9;
+    stroke-linecap:round;stroke-linejoin:round}
+.mgd1 .eyebtn.on{color:var(--accent-deep)}
+.mgd1 .pins.show .pd.fill::after{content:attr(data-d);width:auto;height:auto;border-radius:0;
+    background:none;font-family:var(--mono);font-size:20px;font-weight:500;color:var(--ink)}
+.mgd1 .lockbox{background:#F4EBD7;border:1px solid rgba(138,94,22,.24);border-radius:13px;padding:13px;font-size:12px;color:#8A5E16;line-height:1.6}
+.mgd1 .lockt{font-size:14px;font-weight:700;margin-bottom:5px}
+/* ==== 02 Public Join · Screen-Public-Join.html ==== */
+.mgd2 *{box-sizing:border-box}
+.mgd2{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#14181a;-webkit-font-smoothing:antialiased}
+.mgd2 .board{max-width:1180px;margin:0 auto;padding:48px 24px 90px}
+.mgd2 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827a;font-weight:600}
+.mgd2 .pill0{display:inline-block;margin:10px 0;padding:4px 12px;border-radius:999px;background:#dfeeeb;color:#0a514a;font-size:12px;font-weight:600}
+.mgd2 h1.mh{font-size:30px;margin:6px 0 8px;font-weight:700;letter-spacing:-.01em}
+.mgd2 .board>p.lead{margin:0 0 34px;color:#5d635c;font-size:16px;line-height:1.5;max-width:80ch}
+.mgd2 .phones{display:flex;gap:34px;flex-wrap:wrap;justify-content:center}
+.mgd2 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
+.mgd2 .cap{font-size:13px;color:#5d635c;font-weight:600}
+.mgd2 .phone{width:340px;background:#14181a;border-radius:44px;padding:11px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+.mgd2 .screen{background:#ece8df;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.mgd2 .ar{font-family:'IBM Plex Sans Arabic',sans-serif}
+.mgd2 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:14px;font-weight:600;flex-shrink:0}
+.mgd2 .brand{display:flex;align-items:center;gap:8px;padding:2px 18px 14px;flex-shrink:0}
+.mgd2 .mark{width:22px;height:22px;border-radius:7px;background:linear-gradient(150deg,#0f766b,#083f39);flex-shrink:0}
+.mgd2 .wordmark{font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:700}
+.mgd2 .bsub{margin-inline-start:auto;font-size:10.5px;color:#80827a}
+.mgd2 .body{flex:1;overflow-y:auto;padding:0 18px 18px}
+.mgd2 .who{background:#fffdf8;border:1px solid #e2ddd1;border-radius:18px;padding:16px;margin-bottom:12px}
+.mgd2 .wtop{display:flex;align-items:center;gap:12px}
+.mgd2 .wav{width:46px;height:46px;border-radius:14px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0}
+.mgd2 .wn{flex:1;min-width:0}
+.mgd2 .wnm{font-size:16px;font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.mgd2 .vchip{font-size:9.5px;font-weight:700;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.22);padding:2px 7px;border-radius:999px}
+.mgd2 .wrole{font-size:11.5px;color:#80827a;margin-top:3px}
+.mgd2 .wdiv{height:1px;background:#f0ece2;margin:14px 0}
+.mgd2 .glab{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#9a6b1f;margin-bottom:7px}
+.mgd2 .ar .glab{letter-spacing:.02em}
+.mgd2 .gnm{font-size:19px;font-weight:700;line-height:1.3}
+.mgd2 .gmeta{display:flex;gap:14px;margin-top:10px}
+.mgd2 .gm{flex:1}
+.mgd2 .gmk{font-size:10.5px;color:#80827a}
+.mgd2 .gmv{font-size:14.5px;font-weight:700;margin-top:2px}
+.mgd2 .gmv .mono{font-family:'IBM Plex Mono',monospace;font-weight:500}
+.mgd2 .ar .gmv .mono{font-family:inherit;font-weight:700}
+.mgd2 .what{background:#f2eee5;border:1px solid #e2ddd1;border-radius:16px;padding:15px;margin-bottom:12px}
+.mgd2 .wt2{font-size:12.5px;font-weight:700;margin-bottom:11px}
+.mgd2 .wstep{display:flex;gap:11px;padding:7px 0;font-size:12.5px;color:#3a3f3a;line-height:1.45}
+.mgd2 .wnum{width:20px;height:20px;border-radius:7px;background:#14181a;color:#ece8df;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.mgd2 .ar .wnum{font-family:inherit;font-weight:600}
+.mgd2 .guard{background:#dfeeeb;border:1px solid rgba(14,107,97,.2);border-radius:14px;padding:12px 13px;font-size:11.5px;color:#0a514a;line-height:1.55;margin-bottom:12px}
+.mgd2 .flab{font-size:11px;font-weight:700;letter-spacing:.03em;color:#80827a;margin:0 3px 6px}
+.mgd2 .field{background:#fffdf8;border:1px solid #e2ddd1;border-radius:13px;padding:12px 13px;margin-bottom:10px}
+.mgd2 .fv{font-size:14.5px;font-weight:600}
+.mgd2 .fv.ph{color:#b6b1a4;font-weight:400}
+.mgd2 .fv.mono{font-family:'IBM Plex Mono',monospace;font-weight:500}
+.mgd2 .fhint{font-size:10.5px;color:#80827a;margin:-5px 3px 11px;line-height:1.45}
+.mgd2 .fhint b{color:#8a5e16;font-weight:600}
+.mgd2 .fopt{font-size:10px;font-weight:600;color:#a09a8e;margin-inline-start:6px}
+.mgd2 .footer{padding:11px 18px 18px;border-top:1px solid #e2ddd1;background:#ece8df;flex-shrink:0}
+.mgd2 .fnote{text-align:center;font-size:10.5px;color:#80827a;margin-bottom:9px;line-height:1.45}
+.mgd2 .btn{display:block;width:100%;border:none;border-radius:13px;padding:15px;font-size:15px;font-weight:700;background:#0e6b61;color:#fffdf8;text-align:center;font-family:inherit}
+.mgd2 .btn.ghost{background:#fffdf8;border:1px solid #e2ddd1;color:#5d635c;font-size:13.5px;padding:13px;margin-top:9px}
+.mgd2 .okwrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 22px;text-align:center}
+.mgd2 .okic{width:66px;height:66px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:18px}
+.mgd2 .okic.good{background:#dfeeeb;color:#0a514a}
+.mgd2 .okic.warn{background:#f4ebd7;color:#8a5e16}
+.mgd2 .okic svg{width:32px;height:32px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.mgd2 .okt{font-size:22px;font-weight:700;margin-bottom:8px;line-height:1.3}
+.mgd2 .oks{font-size:13.5px;color:#5d635c;line-height:1.6;max-width:31ch}
+.mgd2 .okcard{width:100%;background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:14px;margin-top:20px;text-align:start}
+.mgd2 .okrow{display:flex;align-items:center;justify-content:space-between;padding:8px 0;font-size:12.5px;border-bottom:1px solid #f0ece2}
+.mgd2 .okrow:last-child{border-bottom:none}
+.mgd2 .okk{color:#80827a}
+.mgd2 .okv{font-weight:600}
+.mgd2 .okfoot{font-size:11px;color:#80827a;margin-top:16px;line-height:1.55;max-width:32ch}
+/* ==== 03 Public Self Enrollment · Screen-Public-Enroll.html ==== */
+.mgd3 *{box-sizing:border-box}
+.mgd3{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#14181a;-webkit-font-smoothing:antialiased}
+.mgd3 .board{max-width:1180px;margin:0 auto;padding:48px 24px 90px}
+.mgd3 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827a;font-weight:600}
+.mgd3 .pill0{display:inline-block;margin:10px 0;padding:4px 12px;border-radius:999px;background:#dfeeeb;color:#0a514a;font-size:12px;font-weight:600}
+.mgd3 .mh{font-size:30px;margin:6px 0 8px;font-weight:700;letter-spacing:-.01em}
+.mgd3 .lead{margin:0 0 34px;color:#5d635c;font-size:16px;line-height:1.5;max-width:80ch}
+.mgd3 .phones{display:flex;gap:34px;flex-wrap:wrap;justify-content:center}
+.mgd3 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
+.mgd3 .cap{font-size:13px;color:#5d635c;font-weight:600}
+.mgd3 .phone{width:340px;background:#14181a;border-radius:44px;padding:11px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+.mgd3 .screen{background:#ece8df;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.mgd3 .screen.ar{font-family:'IBM Plex Sans Arabic',sans-serif}
+.mgd3 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:14px;font-weight:600;flex-shrink:0}
+.mgd3 .brand{display:flex;align-items:center;gap:8px;padding:2px 18px 14px;flex-shrink:0}
+.mgd3 .mark{width:22px;height:22px;border-radius:7px;background:linear-gradient(150deg,#0f766b,#083f39);flex-shrink:0}
+.mgd3 .wordmark{font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:700}
+.mgd3 .bsub{margin-inline-start:auto;font-size:10.5px;color:#80827a}
+.mgd3 .body{flex:1;overflow-y:auto;padding:0 18px 18px}
+.mgd3 .foot{padding:11px 18px 18px;border-top:1px solid #e2ddd1;flex-shrink:0}
+.mgd3 .btn{display:block;width:100%;border:none;border-radius:13px;padding:15px;font-size:15px;font-weight:700;background:#0e6b61;color:#fffdf8;text-align:center;font-family:inherit}
+.mgd3 .btn.ghost{background:#fffdf8;color:#3a3f3a;border:1px solid #e2ddd1}
+.mgd3 .sub{text-align:center;font-size:11px;color:#80827a;margin-top:10px;line-height:1.45}
+.mgd3 .kick{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a5e16;font-weight:700;margin:4px 2px 6px}
+.mgd3 .h2{font-size:22px;font-weight:700;margin:0 2px 8px;line-height:1.18}
+.mgd3 .lead2{font-size:13px;line-height:1.6;color:#5d635c;margin:0 2px 16px}
+.mgd3 .ar .lead2{line-height:1.75}
+.mgd3 .card{background:#fffdf8;border:1px solid #e2ddd1;border-radius:15px;padding:15px;margin-bottom:10px}
+.mgd3 .grp{font-size:16px;font-weight:700}
+.mgd3 .gmeta{font-size:12px;color:#80827a;margin-top:4px}
+.mgd3 .flab{font-size:12px;font-weight:600;color:#3a3f3a;margin:14px 2px 6px}
+.mgd3 .fin{width:100%;background:#fffdf8;border:1px solid #e2ddd1;border-radius:11px;padding:12px 13px;font-family:inherit;font-size:13.5px;color:#14181a}
+.mgd3 .fin.ph{color:#a09a8e}
+.mgd3 .fhint{font-size:10.5px;color:#80827a;font-weight:400;margin-top:5px;line-height:1.45}
+.mgd3 .pins{display:flex;gap:7px;direction:ltr;margin:2px 0 4px}
+.mgd3 .pd{flex:1;height:52px;border:1px solid #e2ddd1;border-radius:11px;background:#fffdf8;display:grid;place-items:center;font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:500}
+.mgd3 .pd.on{border-color:#0e6b61;box-shadow:0 0 0 3px rgba(14,107,97,.11)}
+.mgd3 .note{background:#dfeeeb;border:1px solid #bfe3dd;border-radius:12px;padding:12px 13px;font-size:11.5px;color:#0a514a;line-height:1.55;margin:2px 2px 4px}
+.mgd3 .ar .note{line-height:1.7}
+.mgd3 .warn{background:#f4ebd7;border:1px solid #ecdcbb;border-radius:12px;padding:12px 13px;font-size:11.5px;color:#7a5a1c;line-height:1.55;margin:10px 2px 0}
+.mgd3 .ar .warn{line-height:1.7}
+.mgd3 .done{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px 26px}
+.mgd3 .dchk{width:66px;height:66px;border-radius:50%;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+.mgd3 .dh{font-size:21px;font-weight:700;margin-bottom:9px}
+.mgd3 .dt{font-size:13px;color:#5d635c;line-height:1.6;max-width:32ch}
+.mgd3 .ar .dt{line-height:1.75}
+.mgd3 .steps{width:100%;margin-top:22px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:4px 15px}
+.mgd3 .stp{display:flex;gap:11px;align-items:flex-start;padding:12px 0;border-bottom:1px solid #f0ece2;text-align:start}
+.mgd3 .stp:last-child{border-bottom:none}
+.mgd3 .snum{width:22px;height:22px;border-radius:50%;background:#f2eee5;color:#5d635c;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'IBM Plex Mono',monospace}
+.mgd3 .ar .snum{font-family:'IBM Plex Sans Arabic',sans-serif}
+.mgd3 .stx{font-size:12px;color:#3a3f3a;line-height:1.5}
+.mgd3 .ar .stx{line-height:1.65}
+/* ==== 04 Parent Payment · Screen-Parent-Payment.html ==== */
+.mgd4 *{box-sizing:border-box}
+.mgd4{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#1b201d;-webkit-font-smoothing:antialiased}
+.mgd4 .board{max-width:1180px;margin:0 auto;padding:48px 24px 90px}
+.mgd4 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827a;font-weight:600}
+.mgd4 .pill0{display:inline-block;margin:10px 0;padding:4px 12px;border-radius:999px;background:#dfeeeb;color:#0a514a;font-size:12px;font-weight:600}
+.mgd4 h1.mh{font-size:30px;margin:6px 0 8px;font-weight:700;letter-spacing:-.01em}
+.mgd4 .board>p.lead{margin:0 0 34px;color:#5d635c;font-size:16px;line-height:1.5;max-width:80ch}
+.mgd4 .phones{display:flex;gap:34px;flex-wrap:wrap;justify-content:center}
+.mgd4 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
+.mgd4 .cap{font-size:13px;color:#5d635c;font-weight:600}
+.mgd4 .phone{width:340px;background:#14181a;border-radius:44px;padding:11px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+.mgd4 .screen{background:#ece8df;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden}
+.mgd4 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:14px;font-weight:600;flex-shrink:0}
+.mgd4 .brand{display:flex;align-items:center;gap:8px;padding:2px 18px 12px;flex-shrink:0}
+.mgd4 .bmark{width:22px;height:22px;border-radius:7px;background:linear-gradient(150deg,#0f766b,#083f39);flex-shrink:0}
+.mgd4 .bname{font-size:12.5px;font-weight:700;letter-spacing:.01em}
+.mgd4 .bsub{margin-inline-start:auto;font-size:10.5px;color:#80827a}
+.mgd4 .body{flex:1;overflow-y:auto;padding:0 16px 16px}
+.mgd4 .prov{display:flex;align-items:center;gap:11px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:13px;margin-bottom:12px}
+.mgd4 .pav{width:44px;height:44px;border-radius:13px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0}
+.mgd4 .pn{flex:1;min-width:0}
+.mgd4 .pnm{font-size:15.5px;font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.mgd4 .vchip{font-size:9.5px;font-weight:700;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.22);padding:2px 7px;border-radius:999px}
+.mgd4 .pr2{font-size:11.5px;color:#80827a;margin-top:3px}
+.mgd4 .what{font-size:11.5px;font-weight:700;letter-spacing:.03em;color:#80827a;margin:0 3px 8px}
+.mgd4 .amt{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:4px 14px;margin-bottom:11px}
+.mgd4 .ar{display:flex;align-items:flex-start;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0ece2;gap:12px}
+.mgd4 .ar:last-child{border-bottom:none}
+.mgd4 .al{min-width:0}
+.mgd4 .alt{font-size:13.5px;font-weight:600}
+.mgd4 .als{font-size:11px;color:#80827a;margin-top:3px;line-height:1.4}
+.mgd4 .av2{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;flex-shrink:0}
+.mgd4 .ar.tot{border-top:1.5px solid #e2ddd1}
+.mgd4 .ar.tot .alt{font-size:15px;font-weight:700}
+.mgd4 .ar.tot .av2{font-size:20px;color:#0a514a}
+.mgd4 .disc{background:#dfeeeb;border:1px solid rgba(14,107,97,.2);border-radius:14px;padding:12px 13px;font-size:11.5px;color:#0a514a;line-height:1.55;margin-bottom:13px}
+.mgd4 .disc b{font-weight:700}
+.mgd4 .mlab{font-size:11.5px;font-weight:700;letter-spacing:.03em;color:#80827a;margin:0 3px 8px}
+.mgd4 .m{display:flex;align-items:center;gap:11px;background:#fffdf8;border:1.5px solid #e2ddd1;border-radius:14px;padding:12px 13px;margin-bottom:8px}
+.mgd4 .m.on{border-color:#0e6b61;background:#f6faf9;box-shadow:0 0 0 2px rgba(14,107,97,.1)}
+.mgd4 .mic{width:36px;height:36px;border-radius:11px;background:#f2eee5;color:#5d635c;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd4 .m.on .mic{background:#dfeeeb;color:#0a514a}
+.mgd4 .mic svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mgd4 .mn{flex:1;min-width:0}
+.mgd4 .mt{font-size:14px;font-weight:600}
+.mgd4 .ms{font-size:10.5px;color:#80827a;margin-top:2px}
+.mgd4 .soon{font-size:9.5px;font-weight:700;color:#8a5e16;background:#f4ebd7;padding:2px 7px;border-radius:999px;flex-shrink:0}
+.mgd4 .radio{width:20px;height:20px;border-radius:50%;border:1.5px solid #d5d0c4;background:#fffdf8;flex-shrink:0;position:relative}
+.mgd4 .m.on .radio{border-color:#0e6b61}
+.mgd4 .m.on .radio::after{content:"";position:absolute;inset:4px;border-radius:50%;background:#0e6b61}
+.mgd4 .footer{padding:11px 16px 17px;border-top:1px solid #e2ddd1;background:#ece8df;flex-shrink:0}
+.mgd4 .fnote{text-align:center;font-size:10.5px;color:#80827a;margin-bottom:9px;line-height:1.4}
+.mgd4 .btn{display:block;width:100%;border:none;border-radius:13px;padding:16px;font-size:15.5px;font-weight:700;background:#0e6b61;color:#fffdf8;text-align:center;font-family:inherit}
+.mgd4 .okwrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 20px;text-align:center}
+.mgd4 .okic{width:64px;height:64px;border-radius:50%;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+.mgd4 .okic svg{width:32px;height:32px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.mgd4 .okt{font-size:21px;font-weight:700;margin-bottom:5px}
+.mgd4 .oks{font-size:13px;color:#5d635c;line-height:1.5;max-width:30ch}
+.mgd4 .okcard{width:100%;background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:4px 14px;margin-top:18px;text-align:start}
+.mgd4 .okrow{display:flex;align-items:flex-start;justify-content:space-between;padding:11px 0;border-bottom:1px solid #f0ece2;gap:10px;font-size:12.5px}
+.mgd4 .okrow:last-child{border-bottom:none}
+.mgd4 .okk{color:#5d635c;min-width:0}
+.mgd4 .okk b{display:block;color:#1b201d;font-weight:600;font-size:13px}
+.mgd4 .okv{font-weight:700;font-variant-numeric:tabular-nums;flex-shrink:0}
+.mgd4 .okfoot{font-size:11px;color:#80827a;margin-top:14px;line-height:1.5;max-width:32ch}
+/* ==== 05 Referral Landing · Screen-Public-Referral.html ==== */
+.mgd5 *{box-sizing:border-box}
+.mgd5{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#14181a;-webkit-font-smoothing:antialiased}
+.mgd5 .board{max-width:1180px;margin:0 auto;padding:48px 24px 90px}
+.mgd5 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827a;font-weight:600}
+.mgd5 .pill0{display:inline-block;margin:10px 0;padding:4px 12px;border-radius:999px;background:#dfeeeb;color:#0a514a;font-size:12px;font-weight:600}
+.mgd5 .mh{font-size:30px;margin:6px 0 8px;font-weight:700;letter-spacing:-.01em}
+.mgd5 .lead{margin:0 0 34px;color:#5d635c;font-size:16px;line-height:1.5;max-width:80ch}
+.mgd5 .phones{display:flex;gap:34px;flex-wrap:wrap;justify-content:center}
+.mgd5 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
+.mgd5 .cap{font-size:13px;color:#5d635c;font-weight:600}
+.mgd5 .phone{width:340px;background:#14181a;border-radius:44px;padding:11px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+.mgd5 .screen{background:#ece8df;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.mgd5 .screen.ar{font-family:'IBM Plex Sans Arabic',sans-serif}
+.mgd5 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:14px;font-weight:600;flex-shrink:0}
+.mgd5 .brand{display:flex;align-items:center;gap:8px;padding:2px 18px 14px;flex-shrink:0}
+.mgd5 .mark{width:22px;height:22px;border-radius:7px;background:linear-gradient(150deg,#0f766b,#083f39);flex-shrink:0}
+.mgd5 .wordmark{font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:700}
+.mgd5 .bsub{margin-inline-start:auto;font-size:10.5px;color:#80827a}
+.mgd5 .body{flex:1;overflow-y:auto;padding:0 18px 18px}
+.mgd5 .foot{padding:11px 18px 18px;border-top:1px solid #e2ddd1;flex-shrink:0}
+.mgd5 .btn{display:block;width:100%;border:none;border-radius:13px;padding:15px;font-size:15px;font-weight:700;background:#0e6b61;color:#fffdf8;text-align:center;font-family:inherit}
+.mgd5 .sub{text-align:center;font-size:11px;color:#80827a;margin-top:10px}
+.mgd5 .hero{background:linear-gradient(150deg,#0f766b,#0a514a);border-radius:18px;padding:22px 18px;color:#eef6f4;text-align:center;margin-bottom:16px}
+.mgd5 .hic{width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;margin:0 auto 13px}
+.mgd5 .hwho{font-size:13px;opacity:.9}
+.mgd5 .hbrand{font-size:23px;font-weight:700;margin-top:4px;font-family:'IBM Plex Sans',sans-serif}
+.mgd5 .para{font-size:14px;line-height:1.6;color:#3a3f3a;margin:0 2px 14px}
+.mgd5 .ar .para{line-height:1.7}
+.mgd5 .perk{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:15px;margin-bottom:8px;display:flex;align-items:center;gap:11px}
+.mgd5 .pic{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd5 .pic.g{background:#dfeeeb;color:#0a514a}
+.mgd5 .pic.b{background:#f4ebd7;color:#8a5e16}
+.mgd5 .ptx{font-size:13px;color:#3a3f3a}
+.mgd5 .off{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
+.mgd5 .oic{width:64px;height:64px;border-radius:50%;background:#f2eee5;color:#80827a;display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+.mgd5 .oh{font-size:21px;font-weight:700;margin-bottom:10px}
+.mgd5 .ot{font-size:13px;color:#5d635c;line-height:1.6;max-width:30ch}
+.mgd5 .ar .ot{line-height:1.7}
+.mgd5 .note{background:#dfeeeb;border:1px solid #bfe3dd;border-radius:13px;padding:13px 15px;margin-top:22px;text-align:start}
+.mgd5 .nh{font-size:12px;font-weight:700;color:#0a514a;margin-bottom:5px}
+.mgd5 .nt{font-size:11.5px;color:#0a514a;line-height:1.55}
+.mgd5 .ar .nt{line-height:1.6}
+/* ==== 06 Offline · Screen-Public-Offline.html ==== */
+.mgd6 *{box-sizing:border-box}
+.mgd6{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#14181a;-webkit-font-smoothing:antialiased}
+.mgd6 .board{max-width:1180px;margin:0 auto;padding:48px 24px 90px}
+.mgd6 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827a;font-weight:600}
+.mgd6 .pill0{display:inline-block;margin:10px 0;padding:4px 12px;border-radius:999px;background:#dfeeeb;color:#0a514a;font-size:12px;font-weight:600}
+.mgd6 .mh{font-size:30px;margin:6px 0 8px;font-weight:700;letter-spacing:-.01em}
+.mgd6 .lead{margin:0 0 34px;color:#5d635c;font-size:16px;line-height:1.5;max-width:80ch}
+.mgd6 .phones{display:flex;gap:34px;flex-wrap:wrap;justify-content:center}
+.mgd6 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
+.mgd6 .cap{font-size:13px;color:#5d635c;font-weight:600}
+.mgd6 .phone{width:340px;background:#14181a;border-radius:44px;padding:11px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+.mgd6 .screen{background:#ece8df;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.mgd6 .screen.ar{font-family:'IBM Plex Sans Arabic',sans-serif}
+.mgd6 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:14px;font-weight:600;flex-shrink:0}
+.mgd6 .brand{display:flex;align-items:center;gap:8px;padding:2px 18px 14px;flex-shrink:0}
+.mgd6 .mark{width:22px;height:22px;border-radius:7px;background:linear-gradient(150deg,#0f766b,#083f39);flex-shrink:0}
+.mgd6 .wordmark{font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:700}
+.mgd6 .bsub{margin-inline-start:auto;font-size:10.5px;color:#80827a}
+.mgd6 .body{flex:1;overflow-y:auto;padding:0 18px 18px}
+.mgd6 .foot{padding:11px 18px 18px;border-top:1px solid #e2ddd1;flex-shrink:0}
+.mgd6 .btn{display:block;width:100%;border:none;border-radius:13px;padding:15px;font-size:15px;font-weight:700;background:#0e6b61;color:#fffdf8;text-align:center;font-family:inherit}
+.mgd6 .sub{text-align:center;font-size:11px;color:#80827a;margin-top:10px}
+.mgd6 .hero{background:linear-gradient(150deg,#0f766b,#0a514a);border-radius:18px;padding:22px 18px;color:#eef6f4;text-align:center;margin-bottom:16px}
+.mgd6 .hic{width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;margin:0 auto 13px}
+.mgd6 .hwho{font-size:13px;opacity:.9}
+.mgd6 .hbrand{font-size:23px;font-weight:700;margin-top:4px;font-family:'IBM Plex Sans',sans-serif}
+.mgd6 .para{font-size:14px;line-height:1.6;color:#3a3f3a;margin:0 2px 14px}
+.mgd6 .ar .para{line-height:1.7}
+.mgd6 .perk{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:15px;margin-bottom:8px;display:flex;align-items:center;gap:11px}
+.mgd6 .pic{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd6 .pic.g{background:#dfeeeb;color:#0a514a}
+.mgd6 .pic.b{background:#f4ebd7;color:#8a5e16}
+.mgd6 .ptx{font-size:13px;color:#3a3f3a}
+.mgd6 .off{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
+.mgd6 .oic{width:64px;height:64px;border-radius:50%;background:#f2eee5;color:#80827a;display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+.mgd6 .oh{font-size:21px;font-weight:700;margin-bottom:10px}
+.mgd6 .ot{font-size:13px;color:#5d635c;line-height:1.6;max-width:30ch}
+.mgd6 .ar .ot{line-height:1.7}
+.mgd6 .note{background:#dfeeeb;border:1px solid #bfe3dd;border-radius:13px;padding:13px 15px;margin-top:22px;text-align:start}
+.mgd6 .nh{font-size:12px;font-weight:700;color:#0a514a;margin-bottom:5px}
+.mgd6 .nt{font-size:11.5px;color:#0a514a;line-height:1.55}
+.mgd6 .ar .nt{line-height:1.6}
+</style></head>
+<body>
+  <div class="mgd-top">
+    <div class="mgd-eyebrow">TutoringHQ · Merged reference</div>
+    <h1 class="mgd-h1">Public · Signed-out app flows</h1>
+    <p class="mgd-lede">Everything a stranger touches that behaves like the app rather than a web page: sign up and log in with the clickwrap, joining by link, self enrollment by one time code, the parent payment page, the referral landing and the offline fallback.</p>
+    <div class="mgd-toc"><a href="#S-1">Public Auth</a><a href="#S-2">Public Join</a><a href="#S-3">Public Self Enrollment</a><a href="#S-4">Parent Payment</a><a href="#S-5">Referral Landing</a><a href="#S-6">Offline</a></div>
+  </div>
+<div class="mgd-sec" id="S-1"><div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Public Auth</span><span class="mgd-src">Screen-Public-Auth.html</span></div></div>
+<div class="mgd1 mgd-screen">
+
+
+<div class="head">
+  <h1>Screen-Public-Auth · <code>/signup</code> · <code>/login</code></h1>
+  <p><b>One flow for both customers.</b> The old build gave centers a four step wizard and teachers a single crowded card. Now both walk the same five steps and only two of them differ: what we call you, and which plans you see.</p>
+  <p><b>A code is sent once, ever.</b> Then a PIN, which is what you log in with from that point on. This is the whole reason the PIN exists and the screen says so instead of just demanding six digits. Verified in the live database: <code>users.pin_set_at</code>, <code>pin_attempts</code>, <code>pin_locked_until</code>, and <code>pin_reset_otps</code> for the forgotten path.</p>
+</div>
+
+<div class="band">
+<div class="band-label">English · the flow</div>
+<div class="grid">
+
+<!-- S0 -->
+<div class="frame">
+  <div class="phone"><div class="screen" dir="ltr">
+    <div class="sbar"><span>9:41</span><span class="ic">••• ▾ ▮</span></div>
+    <div class="brand"><span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">عربي</span></div>
+    <div class="body faded">
+      <div class="prog"><span class="pb on"></span><span class="pb"></span><span class="pb"></span><span class="pb"></span><span class="pb"></span></div>
+      <h2 class="h2">Tell us about you</h2>
+    </div>
+    <div class="dim"><div class="sheet">
+      <div class="grab"></div>
+      <div class="kick">One question first</div>
+      <h2 class="h2">Which one are you?</h2>
+      <p class="lead">It only changes what we ask next.</p>
+      <div class="gap"></div>
+      <div class="roles">
+        <div class="role"><span class="rmk"></span><span><span class="rt">I run a center</span><span class="rs">Staff, more than one teacher, maybe branches.</span></span></div>
+        <div class="role"><span class="rmk"></span><span><span class="rt">I teach on my own</span><span class="rs">Your own groups, no staff.</span></span></div>
+      </div>
+      <div class="fnote" style="margin:14px 0 0">Both start free. This is not choosing a plan.</div>
+    </div></div>
+  </div></div>
+  <div class="cap"><b>S0</b> · The fork. No close button, because everything after depends on it.</div>
+</div>
+
+<!-- S1 -->
+<div class="frame">
+  <div class="phone"><div class="screen" dir="ltr">
+    <div class="sbar"><span>9:41</span><span class="ic">••• ▾ ▮</span></div>
+    <div class="brand"><span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">عربي</span></div>
+    <div class="body">
+      <div class="prog"><span class="pb on"></span><span class="pb"></span><span class="pb"></span><span class="pb"></span><span class="pb"></span><span class="pn">1 / 5</span></div>
+      <div class="kick">A center</div>
+      <h2 class="h2">Tell us about the center</h2>
+      <div class="gap"></div>
+      <div class="flab">Center name</div>
+      <div class="field on"><span class="fv ph">Nile Prep Academy</span></div>
+      <div class="fhint"><b>Parents see this on every payment link.</b></div>
+      <div class="gap-s"></div>
+      <div class="flab">Your name</div>
+      <div class="field"><span class="fv ph">The owner or manager</span></div>
+      <div class="gap-s"></div>
+      <div class="flab">Mobile number</div>
+      <div class="field"><span class="fv ph mono ltr">+20 1_ ____ ____</span></div>
+      <div class="gap-s"></div>
+      <div class="flab">City</div>
+      <div class="field"><span class="fv ph">Nasr City</span></div>
+      <div class="gap-s"></div>
+      <div class="flab">Referral code <span class="fopt">optional</span></div>
+      <div class="field"><span class="fv ph mono ltr">ALY653</span></div>
+      <div class="fhint">Someone sent you here? Put their code in and they get credit.</div>
+    </div>
+    <div class="footer"><button class="btn">Continue</button></div>
+  </div></div>
+  <div class="cap"><b>S1</b> · Center details. Five fields, one optional.</div>
+</div>
+
+<!-- S1b -->
+<div class="frame">
+  <div class="phone"><div class="screen" dir="ltr">
+    <div class="sbar"><span>9:41</span><span class="ic">••• ▾ ▮</span></div>
+    <div class="brand"><span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">عربي</span></div>
+    <div class="body">
+      <div class="prog"><span class="pb on"></span><span class="pb"></span><span class="pb"></span><span class="pb"></span><span class="pb"></span><span class="pn">1 / 5</span></div>
+      <div class="kick">A teacher</div>
+      <h2 class="h2">Tell us about you</h2>
+      <div class="gap"></div>
+      <div class="flab">Your name</div>
+      <div class="field on"><span class="fv ph">Aly Shady</span></div>
+      <div class="fhint"><b>Parents see this on every payment link.</b></div>
+      <div class="gap-s"></div>
+      <div class="flab">Mobile number</div>
+      <div class="field"><span class="fv ph mono ltr">+20 1_ ____ ____</span></div>
+      <div class="gap-s"></div>
+      <div class="flab">Subject <span class="fopt">optional</span></div>
+      <div class="field"><span class="fv ph">Physics</span></div>
+      <div class="gap-s"></div>
+      <div class="flab">Referral code <span class="fopt">optional</span></div>
+      <div class="field"><span class="fv ph mono ltr">ALY653</span></div>
+      <div class="fhint">Someone sent you here? Put their code in and they get credit.</div>
+    </div>
+    <div class="footer"><button class="btn">Continue</button></div>
+  </div></div>
+  <div class="cap"><b>S1b</b> · Teacher details. Same screen, four fields. The only real difference in the flow.</div>
+</div>
+
+<!-- S2 -->
+<div class="frame">
+  <div class="phone"><div class="screen" dir="ltr">
+    <div class="sbar"><span>9:41</span><span class="ic">••• ▾ ▮</span></div>
+    <div class="brand">
+      <span class="back"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span>
+      <span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">عربي</span>
+    </div>
+    <div class="body">
+      <div class="prog"><span class="pb on"></span><span class="pb on"></span><span class="pb"></span><span class="pb"></span><span class="pb"></span><span class="pn">2 / 5</span></div>
+      <div class="kick">Verify</div>
+      <h2 class="h2">Type the code</h2>
+      <p class="lead">Sent on WhatsApp to <span class="mono ltr" style="color:var(--ink)">+20 100 442 7318</span></p>
+      <div class="gap"></div>
+      <div class="otp">
+        <span class="ob">4</span><span class="ob">1</span><span class="ob">9</span>
+        <span class="ob on">|</span><span class="ob mt">·</span><span class="ob mt">·</span>
+      </div>
+      <div class="why"><b>This is the only code we will ever send you.</b> After this you log in with a PIN, so you are never waiting on a message to get into your own account.</div>
+      <div class="fhint">The code lasts 10 minutes. Only the newest one works.</div>
+      <div class="gap"></div>
+      <button class="btn ghost">Send it again in <span class="mono" style="margin-inline-start:5px">00:47</span></button>
+    </div>
+    <div class="footer"><button class="btn">Verify</button></div>
+  </div></div>
+  <div class="cap"><b>S2</b> · One code, once. The box says why, which is the point.</div>
+</div>
+
+<!-- S3 -->
+<div class="frame">
+  <div class="phone"><div class="screen" dir="ltr">
+    <div class="sbar"><span>9:41</span><span class="ic">••• ▾ ▮</span></div>
+    <div class="brand">
+      <span class="back"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span>
+      <span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">عربي</span>
+    </div>
+    <div class="body">
+      <div class="prog"><span class="pb on"></span><span class="pb on"></span><span class="pb on"></span><span class="pb"></span><span class="pb"></span><span class="pn">3 / 5</span></div>
+      <div class="kick">Your key</div>
+      <h2 class="h2">Pick a six digit PIN</h2>
+      <p class="lead">This is how you get in from now on. Number, then PIN.</p>
+      <div class="gap"></div>
+      <div class="pinrow"><span class="flab">PIN</span><button class="eyebtn" aria-label="Show PIN"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+      <div class="pins">
+        <span class="pd fill"></span><span class="pd fill"></span><span class="pd fill"></span>
+        <span class="pd on"></span><span class="pd"></span><span class="pd"></span>
+      </div>
+      <div class="gap-s"></div>
+      <div class="pinrow"><span class="flab">Type it again</span><button class="eyebtn" aria-label="Show PIN"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+      <div class="pins">
+        <span class="pd"></span><span class="pd"></span><span class="pd"></span>
+        <span class="pd"></span><span class="pd"></span><span class="pd"></span>
+      </div>
+      <div class="why brass"><b>Not your birthday, and not 123456.</b> Anyone with your PIN can see every student and every pound in your account.</div>
+      <div class="fhint">Forget it and we send a code to this number to set a new one.</div>
+    </div>
+    <div class="footer"><button class="btn">Set my PIN</button></div>
+  </div></div>
+  <div class="cap"><b>S3</b> · The PIN, explained rather than demanded. Warns without scolding.</div>
+</div>
+
+<!-- S4 -->
+<div class="frame">
+  <div class="phone"><div class="screen" dir="ltr">
+    <div class="sbar"><span>9:41</span><span class="ic">••• ▾ ▮</span></div>
+    <div class="brand">
+      <span class="back"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span>
+      <span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">عربي</span>
+    </div>
+    <div class="body">
+      <div class="prog"><span class="pb on"></span><span class="pb on"></span><span class="pb on"></span><span class="pb on"></span><span class="pb"></span><span class="pn">4 / 5</span></div>
+      <div class="kick">A center</div>
+      <h2 class="h2">How big is it?</h2>
+      <p class="lead">Same software at every size. You are only picking capacity, and you can move later.</p>
+      <div class="seg">
+        <button class="sg on">Monthly</button>
+        <button class="sg">Annual<small>2 months free</small></button>
+      </div>
+      <div class="plans">
+        <div class="pl"><span class="plmk"></span><span class="plmid"><span class="pln">Solo</span><span class="plc">50 students a week</span></span><span class="plp"><span class="plv">999</span><span class="plu">EGP / MO</span></span></div>
+        <div class="pl"><span class="plmk"></span><span class="plmid"><span class="pln">Nano</span><span class="plc">120 students a week</span></span><span class="plp"><span class="plv">1,999</span><span class="plu">EGP / MO</span></span></div>
+        <div class="pl sel"><span class="plmk"></span><span class="plmid"><span class="pln">Starter</span><span class="plc">300 a week · 15.00 a student</span></span><span class="plp"><span class="plv">4,499</span><span class="plu">EGP / MO</span></span></div>
+        <div class="pl"><span class="plmk"></span><span class="plmid"><span class="pln">Pro</span><span class="plc">600 students a week</span></span><span class="plp"><span class="plv">7,999</span><span class="plu">EGP / MO</span></span></div>
+        <div class="pl"><span class="plmk"></span><span class="plmid"><span class="pln">Business</span><span class="plc">1,200 students a week</span></span><span class="plp"><span class="plv">12,999</span><span class="plu">EGP / MO</span></span></div>
+        <div class="pl"><span class="plmk"></span><span class="plmid"><span class="pln">Enterprise</span><span class="plc">2,000 students a week</span></span><span class="plp"><span class="plv">18,499</span><span class="plu">EGP / MO</span></span></div>
+      </div>
+      <div class="fhint">Bigger than 2,000 a week? That is Top Centers, priced with you.</div>
+    </div>
+    <div class="footer"><button class="btn">Review</button></div>
+  </div></div>
+  <div class="cap"><b>S4</b> · Center plans. Widened caps. No feature ticks, because they are identical.</div>
+</div>
+
+<!-- S4b -->
+<div class="frame">
+  <div class="phone"><div class="screen" dir="ltr">
+    <div class="sbar"><span>9:41</span><span class="ic">••• ▾ ▮</span></div>
+    <div class="brand">
+      <span class="back"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span>
+      <span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">عربي</span>
+    </div>
+    <div class="body">
+      <div class="prog"><span class="pb on"></span><span class="pb on"></span><span class="pb on"></span><span class="pb on"></span><span class="pb"></span><span class="pn">4 / 5</span></div>
+      <div class="kick">A teacher</div>
+      <h2 class="h2">How many are yours?</h2>
+      <p class="lead">Teaching at centers stays free. This is only for your own groups.</p>
+      <div class="seg">
+        <button class="sg on">Monthly</button>
+        <button class="sg">Annual<small>2 months free</small></button>
+      </div>
+      <div class="plans">
+        <div class="pl sel"><span class="plmk"></span><span class="plmid"><span class="pln">Standard</span><span class="plc">20 a week · 14 day trial</span></span><span class="plp"><span class="plv">499</span><span class="plu">EGP / MO</span></span></div>
+        <div class="pl"><span class="plmk"></span><span class="plmid"><span class="pln">Pro</span><span class="plc">50 a week · analytics included</span></span><span class="plp"><span class="plv">999</span><span class="plu">EGP / MO</span></span></div>
+        <div class="pl"><span class="plmk"></span><span class="plmid"><span class="pln">Scale</span><span class="plc">150 a week, then 16 each</span></span><span class="plp"><span class="plv">2,499</span><span class="plu">EGP / MO</span></span></div>
+      </div>
+      <div class="why">Only teaching at centers and not running your own groups? <b>Skip this. You pay nothing.</b></div>
+    </div>
+    <div class="footer">
+      <button class="btn">Review</button>
+      <button class="btn ghost">I only teach at centers</button>
+    </div>
+  </div></div>
+  <div class="cap"><b>S4b</b> · Teacher plans, and a real exit for the free path.</div>
+</div>
+
+<!-- S5 -->
+<div class="frame">
+  <div class="phone"><div class="screen" dir="ltr">
+    <div class="sbar"><span>9:41</span><span class="ic">••• ▾ ▮</span></div>
+    <div class="brand">
+      <span class="back"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span>
+      <span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">عربي</span>
+    </div>
+    <div class="body">
+      <div class="prog"><span class="pb on"></span><span class="pb on"></span><span class="pb on"></span><span class="pb on"></span><span class="pb on"></span><span class="pn">5 / 5</span></div>
+      <div class="kick">Last step</div>
+      <h2 class="h2">Check it, then agree</h2>
+      <div class="card">
+        <div class="orow"><span class="ok2">Nile Prep Academy</span><span class="ov">Nasr City</span></div>
+        <div class="orow"><span class="ok2">Plan</span><span class="ov">Starter</span></div>
+        <div class="orow"><span class="ok2">Capacity</span><span class="ov">300 a week</span></div>
+        <div class="orow"><span class="ok2">Free until</span><span class="ov free">16 Aug 2026</span></div>
+        <div class="orow"><span class="ok2">First invoice</span><span class="ov">30 Aug 2026</span></div>
+        <div class="tot"><span class="totl">Today</span><span class="totv">0.00</span></div>
+      </div>
+      <div class="fhint">We will invoice you <b>4,499 EGP</b> on 30 August, VAT included. No card is stored and nothing is taken automatically. Cancel before then and no invoice is raised.</div>
+
+      <div class="clauses">
+        <div class="clause"><div class="ctop"><span class="cmk"></span><span class="ct">You set your own prices</span></div><span class="cs">We never decide what you charge.</span></div>
+        <div class="clause"><div class="ctop"><span class="cmk"></span><span class="ct">You teach, and you answer for it</span></div><span class="cs">The lesson and the promise to the parent are yours.</span></div>
+      </div>
+      <div class="ver">
+        <span style="flex:1"><span class="vid ltr">Provider Agreement v1.0</span><span class="vdate">Published 24/07/2026</span></span>
+        <span class="vlink">Read it all</span>
+      </div>
+      <div class="checks">
+        <div class="check"><span class="box"></span><span class="ctext">I accept the <u>Provider Agreement v1.0</u> and the <u>Terms</u>.</span></div>
+        <div class="check"><span class="box"></span><span class="ctext">I accept the <u>Privacy Policy</u> and how my data is handled.</span></div>
+      </div>
+    </div>
+    <div class="footer">
+      <div class="fnote">Nothing is charged today.</div>
+      <button class="btn off">Create my account</button>
+    </div>
+  </div></div>
+  <div class="cap"><b>S5</b> · Order, the two agent clauses, and consent. Boxes empty. Button inactive until both are ticked.</div>
+</div>
+
+<!-- S6 -->
+<div class="frame">
+  <div class="phone"><div class="screen" dir="ltr">
+    <div class="sbar"><span>9:41</span><span class="ic">••• ▾ ▮</span></div>
+    <div class="brand"><span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">عربي</span></div>
+    <div class="okwrap">
+      <div class="okic ok"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0A514A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+      <h2 class="okt">Nile Prep Academy is open</h2>
+      <p class="oks">Add your students, send your join link, and take an attendance. That is the whole thing.</p>
+      <div class="card">
+        <div class="orow"><span class="ok2">Log in with</span><span class="ov ltr">+20 100 442 7318</span></div>
+        <div class="orow"><span class="ok2">And your</span><span class="ov">6 digit PIN</span></div>
+      </div>
+      <p class="okfoot">No more codes. Your number and PIN get you in from any phone.</p>
+    </div>
+    <div class="footer"><button class="btn">Add my students</button></div>
+  </div></div>
+  <div class="cap"><b>S6</b> · Done. Restates the login method once, while it is still fresh.</div>
+</div>
+
+<!-- S7 -->
+<div class="frame">
+  <div class="phone"><div class="screen" dir="ltr">
+    <div class="sbar"><span>9:41</span><span class="ic">••• ▾ ▮</span></div>
+    <div class="brand"><span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">عربي</span></div>
+    <div class="body">
+      <div class="gap"></div>
+      <div class="kick">Welcome back</div>
+      <h2 class="h2">Log in</h2>
+      <p class="lead">Your number and your PIN. No waiting for a message.</p>
+      <div class="gap"></div>
+      <div class="flab">Mobile number</div>
+      <div class="field"><span class="fv mono ltr">+20 100 442 7318</span></div>
+      <div class="gap-s"></div>
+      <div class="pinrow"><span class="flab">PIN</span><button class="eyebtn" aria-label="Show PIN"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+      <div class="pins">
+        <span class="pd fill"></span><span class="pd fill"></span><span class="pd fill"></span>
+        <span class="pd fill"></span><span class="pd on"></span><span class="pd"></span>
+      </div>
+      <div class="gap"></div>
+      <button class="btn ghost">I forgot my PIN</button>
+    </div>
+    <div class="footer">
+      <button class="btn">Log in</button>
+      <button class="btn ghost">Create an account</button>
+    </div>
+  </div></div>
+  <div class="cap"><b>S7</b> · Login. Two things, no message, no cost.</div>
+</div>
+<div class="frame">
+  <div class="phone"><div class="screen" dir="ltr">
+    <div class="sbar"><span>9:41</span><span class="ic">••• ▾ ▮</span></div>
+    <div class="brand"><span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">عربي</span></div>
+    <div class="body">
+      <div class="gap"></div>
+      <div class="kick">Welcome back</div>
+      <h2 class="h2">Log in</h2>
+      <p class="lead">Your number and your PIN. No waiting for a message.</p>
+      <div class="gap"></div>
+      <div class="flab">Mobile number</div>
+      <div class="field"><span class="fv mono ltr">+20 100 442 7318</span></div>
+      <div class="gap-s"></div>
+      <div class="pinrow"><span class="flab">PIN</span><button class="eyebtn on" aria-label="Hide PIN"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7c2 0 3.7.7 5.1 1.6M22 12s-3.6 7-10 7c-2 0-3.7-.7-5.1-1.6"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/></svg></button></div>
+      <div class="pins show"><span class="pd fill" data-d="4"></span><span class="pd fill" data-d="8"></span><span class="pd fill" data-d="2"></span><span class="pd fill" data-d="9"></span><span class="pd fill" data-d="1"></span><span class="pd fill" data-d="7"></span></div>
+      <div class="gap"></div>
+      <button class="btn ghost">I forgot my PIN</button>
+    </div>
+    <div class="footer">
+      <button class="btn">Log in</button>
+      <button class="btn ghost">Create an account</button>
+    </div>
+  </div></div>
+  <div class="cap">S7a · PIN revealed. One tap on the eye hides it again.</div>
+</div>
+
+<!-- S7b -->
+<div class="frame">
+  <div class="phone"><div class="screen" dir="ltr">
+    <div class="sbar"><span>9:41</span><span class="ic">••• ▾ ▮</span></div>
+    <div class="brand">
+      <span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">عربي</span>
+    </div>
+    <div class="body">
+      <div class="gap"></div>
+      <div class="kick">Welcome back</div>
+      <h2 class="h2">Log in</h2>
+      <p class="lead">Your number and your PIN. No waiting for a message.</p>
+      <div class="gap"></div>
+      <div class="flab">Mobile number</div>
+      <div class="field"><span class="fv mono ltr">+20 100 442 7318</span></div>
+      <div class="gap-s"></div>
+      <div class="pinrow"><span class="flab">PIN</span><button class="eyebtn" aria-label="Show PIN"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+      <div class="pins">
+        <span class="pd err"></span><span class="pd err"></span><span class="pd err"></span>
+        <span class="pd err"></span><span class="pd err"></span><span class="pd err"></span>
+      </div>
+      <div class="gap-s"></div>
+      <div class="warnbox">That PIN is not right. <b>Three tries left</b> before the account locks for an hour.</div>
+      <div class="gap"></div>
+      <button class="btn ghost">I forgot my PIN</button>
+    </div>
+    <div class="footer">
+      <button class="btn">Try again</button>
+      <button class="btn ghost">Create an account</button>
+    </div>
+  </div></div>
+  <div class="cap"><b>S7b</b> · Wrong PIN. Counts down out loud, and offers the way out before the last try.</div>
+</div>
+
+<!-- S7c -->
+<div class="frame">
+  <div class="phone"><div class="screen" dir="ltr">
+    <div class="sbar"><span>9:41</span><span class="ic">••• ▾ ▮</span></div>
+    <div class="brand">
+      <span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">عربي</span>
+    </div>
+    <div class="body">
+      <div class="gap"></div>
+      <div class="kick">Too many tries</div>
+      <h2 class="h2">Locked for an hour</h2>
+      <p class="lead">Six wrong PINs in a row. This protects the money in the account, so it cannot be lifted early.</p>
+      <div class="gap"></div>
+      <div class="lockbox">
+        <div class="lockt">You can log in again at 10:41</div>
+        Or set a new PIN now. We send one code to <span class="mono ltr">+20 100 442 7318</span> and you pick a new one, which unlocks the account straight away.
+      </div>
+    </div>
+    <div class="footer">
+      <button class="btn">Set a new PIN</button>
+      <button class="btn ghost">Wait it out</button>
+    </div>
+  </div></div>
+  <div class="cap"><b>S7c</b> · Locked. Says why, says when, and the way out is the primary button.</div>
+</div>
+
+
+<!-- S8 -->
+<div class="frame">
+  <div class="phone"><div class="screen" dir="ltr">
+    <div class="sbar"><span>9:41</span><span class="ic">••• ▾ ▮</span></div>
+    <div class="brand">
+      <span class="back"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span>
+      <span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">عربي</span>
+    </div>
+    <div class="body">
+      <div class="gap"></div>
+      <div class="kick">Forgot it</div>
+      <h2 class="h2">Set a new PIN</h2>
+      <p class="lead">We send one code to <span class="mono ltr" style="color:var(--ink)">+20 100 442 7318</span>, then you pick a new one.</p>
+      <div class="gap"></div>
+      <div class="otp">
+        <span class="ob">7</span><span class="ob">2</span><span class="ob on">|</span>
+        <span class="ob mt">·</span><span class="ob mt">·</span><span class="ob mt">·</span>
+      </div>
+      <div class="fhint">The code lasts 10 minutes.</div>
+      <div class="why brass">Nobody at TutoringHQ can see your PIN or read it back to you. <b>Resetting is the only way in.</b></div>
+    </div>
+    <div class="footer"><button class="btn">Continue</button></div>
+  </div></div>
+  <div class="cap"><b>S8</b> · The one other time a code is sent. Matches <code>pin_reset_otps</code>, 10 minute expiry.</div>
+</div>
+
+<!-- S9 -->
+<div class="frame">
+  <div class="phone"><div class="screen" dir="ltr">
+    <div class="sbar"><span>9:41</span><span class="ic">••• ▾ ▮</span></div>
+    <div class="brand"><span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">عربي</span></div>
+    <div class="okwrap">
+      <div class="okic pb2"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="#9A6B1F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+      <h2 class="okt">This number has had its free trial</h2>
+      <p class="oks">One per number, once. You can still start today at the normal price.</p>
+      <div class="card">
+        <div class="orow"><span class="ok2">Number</span><span class="ov ltr">+20 100 442 7318</span></div>
+        <div class="orow"><span class="ok2">Trial used</span><span class="ov">03/2026</span></div>
+        <div class="orow"><span class="ok2">Standard</span><span class="ov">499 / month</span></div>
+      </div>
+      <p class="okfoot">VAT included. Cancel whenever; access runs to the end of what you paid for.</p>
+    </div>
+    <div class="footer">
+      <button class="btn">Start on Standard</button>
+      <button class="btn ghost">Log in instead</button>
+    </div>
+  </div></div>
+  <div class="cap"><b>S9</b> · Trial already used. States the price, no accusation.</div>
+</div>
+
+</div>
+</div>
+
+<div class="band">
+<div class="band-label">العربية · نفس المسار</div>
+<div class="grid">
+
+<!-- S0 AR -->
+<div class="frame">
+  <div class="phone"><div class="screen ar" dir="rtl">
+    <div class="sbar"><span>٩:٤١</span><span class="ic">▮ ▾ •••</span></div>
+    <div class="brand"><span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">EN</span></div>
+    <div class="body faded">
+      <div class="prog"><span class="pb on"></span><span class="pb"></span><span class="pb"></span><span class="pb"></span><span class="pb"></span></div>
+      <h2 class="h2">قولنا عنك</h2>
+    </div>
+    <div class="dim"><div class="sheet">
+      <div class="grab"></div>
+      <div class="kick">سؤال واحد بس</div>
+      <h2 class="h2">إنت مين فيهم؟</h2>
+      <p class="lead">بيغيّر السؤال اللي بعده وبس.</p>
+      <div class="gap"></div>
+      <div class="roles">
+        <div class="role"><span class="rmk"></span><span><span class="rt">عندي سنتر</span><span class="rs">موظفين، أكتر من مدرس، وممكن فروع.</span></span></div>
+        <div class="role"><span class="rmk"></span><span><span class="rt">بدرّس لوحدي</span><span class="rs">مجموعاتك إنت، من غير موظفين.</span></span></div>
+      </div>
+      <div class="fnote" style="margin:14px 0 0">الاتنين بيبدأوا مجانًا. ده مش اختيار باقة.</div>
+    </div></div>
+  </div></div>
+  <div class="cap"><b>S0</b> · سؤال الصفة</div>
+</div>
+
+<!-- S1 AR -->
+<div class="frame">
+  <div class="phone"><div class="screen ar" dir="rtl">
+    <div class="sbar"><span>٩:٤١</span><span class="ic">▮ ▾ •••</span></div>
+    <div class="brand"><span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">EN</span></div>
+    <div class="body">
+      <div class="prog"><span class="pb on"></span><span class="pb"></span><span class="pb"></span><span class="pb"></span><span class="pb"></span><span class="pn">١ / ٥</span></div>
+      <div class="kick">سنتر</div>
+      <h2 class="h2">قولنا عن السنتر</h2>
+      <div class="gap"></div>
+      <div class="flab">اسم السنتر</div>
+      <div class="field on"><span class="fv ph">أكاديمية النيل</span></div>
+      <div class="fhint"><b>أولياء الأمور بيشوفوا الاسم ده في كل رابط دفع.</b></div>
+      <div class="gap-s"></div>
+      <div class="flab">اسمك</div>
+      <div class="field"><span class="fv ph">صاحب السنتر أو المدير</span></div>
+      <div class="gap-s"></div>
+      <div class="flab">رقم الموبايل</div>
+      <div class="field"><span class="fv ph mono ltr">+20 1_ ____ ____</span></div>
+      <div class="gap-s"></div>
+      <div class="flab">المدينة</div>
+      <div class="field"><span class="fv ph">مدينة نصر</span></div>
+      <div class="gap-s"></div>
+      <div class="flab">كود الدعوة <span class="fopt">اختياري</span></div>
+      <div class="field"><span class="fv ph mono ltr">ALY653</span></div>
+      <div class="fhint">حد دلّك علينا؟ اكتب كوده وهو ياخد حقه.</div>
+    </div>
+    <div class="footer"><button class="btn">متابعة</button></div>
+  </div></div>
+  <div class="cap"><b>S1</b> · بيانات السنتر</div>
+</div>
+
+<!-- S1b AR -->
+<div class="frame">
+  <div class="phone"><div class="screen ar" dir="rtl">
+    <div class="sbar"><span>٩:٤١</span><span class="ic">▮ ▾ •••</span></div>
+    <div class="brand"><span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">EN</span></div>
+    <div class="body">
+      <div class="prog"><span class="pb on"></span><span class="pb"></span><span class="pb"></span><span class="pb"></span><span class="pb"></span><span class="pn">١ / ٥</span></div>
+      <div class="kick">مدرس</div>
+      <h2 class="h2">قولنا عنك</h2>
+      <div class="gap"></div>
+      <div class="flab">اسمك</div>
+      <div class="field on"><span class="fv ph">علي شادي</span></div>
+      <div class="fhint"><b>أولياء الأمور بيشوفوا الاسم ده في كل رابط دفع.</b></div>
+      <div class="gap-s"></div>
+      <div class="flab">رقم الموبايل</div>
+      <div class="field"><span class="fv ph mono ltr">+20 1_ ____ ____</span></div>
+      <div class="gap-s"></div>
+      <div class="flab">المادة <span class="fopt">اختياري</span></div>
+      <div class="field"><span class="fv ph">فيزياء</span></div>
+      <div class="gap-s"></div>
+      <div class="flab">كود الدعوة <span class="fopt">اختياري</span></div>
+      <div class="field"><span class="fv ph mono ltr">ALY653</span></div>
+      <div class="fhint">حد دلّك علينا؟ اكتب كوده وهو ياخد حقه.</div>
+    </div>
+    <div class="footer"><button class="btn">متابعة</button></div>
+  </div></div>
+  <div class="cap"><b>S1b</b> · بيانات المدرس</div>
+</div>
+
+<!-- S2 AR -->
+<div class="frame">
+  <div class="phone"><div class="screen ar" dir="rtl">
+    <div class="sbar"><span>٩:٤١</span><span class="ic">▮ ▾ •••</span></div>
+    <div class="brand">
+      <span class="back"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+      <span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">EN</span>
+    </div>
+    <div class="body">
+      <div class="prog"><span class="pb on"></span><span class="pb on"></span><span class="pb"></span><span class="pb"></span><span class="pb"></span><span class="pn">٢ / ٥</span></div>
+      <div class="kick">تأكيد الرقم</div>
+      <h2 class="h2">اكتب الكود</h2>
+      <p class="lead">اتبعت على واتساب لرقم <span class="mono ltr" style="color:var(--ink)">+20 100 442 7318</span></p>
+      <div class="gap"></div>
+      <div class="otp">
+        <span class="ob">4</span><span class="ob">1</span><span class="ob">9</span>
+        <span class="ob on">|</span><span class="ob mt">·</span><span class="ob mt">·</span>
+      </div>
+      <div class="why"><b>ده آخر كود هنبعتهولك.</b> بعد كده بتدخل بالرقم السري، فمش هتستنى رسالة عشان تدخل على حسابك.</div>
+      <div class="fhint">الكود بيقعد ١٠ دقايق. وآخر كود بس هو اللي بيشتغل.</div>
+      <div class="gap"></div>
+      <button class="btn ghost">ابعته تاني بعد <span class="mono ltr" style="margin-inline-start:5px">00:47</span></button>
+    </div>
+    <div class="footer"><button class="btn">تأكيد</button></div>
+  </div></div>
+  <div class="cap"><b>S2</b> · كود واحد، مرة واحدة</div>
+</div>
+
+<!-- S3 AR -->
+<div class="frame">
+  <div class="phone"><div class="screen ar" dir="rtl">
+    <div class="sbar"><span>٩:٤١</span><span class="ic">▮ ▾ •••</span></div>
+    <div class="brand">
+      <span class="back"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+      <span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">EN</span>
+    </div>
+    <div class="body">
+      <div class="prog"><span class="pb on"></span><span class="pb on"></span><span class="pb on"></span><span class="pb"></span><span class="pb"></span><span class="pn">٣ / ٥</span></div>
+      <div class="kick">مفتاحك</div>
+      <h2 class="h2">اختار رقم سري من ٦ أرقام</h2>
+      <p class="lead">ده اللي هتدخل بيه من دلوقتي. رقمك، وبعده الرقم السري.</p>
+      <div class="gap"></div>
+      <div class="pinrow"><span class="flab">الرقم السري</span><button class="eyebtn" aria-label="Show PIN"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+      <div class="pins">
+        <span class="pd fill"></span><span class="pd fill"></span><span class="pd fill"></span>
+        <span class="pd on"></span><span class="pd"></span><span class="pd"></span>
+      </div>
+      <div class="gap-s"></div>
+      <div class="pinrow"><span class="flab">اكتبه تاني</span><button class="eyebtn" aria-label="Show PIN"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+      <div class="pins">
+        <span class="pd"></span><span class="pd"></span><span class="pd"></span>
+        <span class="pd"></span><span class="pd"></span><span class="pd"></span>
+      </div>
+      <div class="why brass"><b>مش تاريخ ميلادك، ومش ١٢٣٤٥٦.</b> أي حد معاه الرقم ده يقدر يشوف كل طلابك وكل قرش في حسابك.</div>
+      <div class="fhint">لو نسيته بنبعت كود على الرقم ده وتعمل واحد جديد.</div>
+    </div>
+    <div class="footer"><button class="btn">احفظ الرقم السري</button></div>
+  </div></div>
+  <div class="cap"><b>S3</b> · الرقم السري</div>
+</div>
+
+<!-- S4 AR -->
+<div class="frame">
+  <div class="phone"><div class="screen ar" dir="rtl">
+    <div class="sbar"><span>٩:٤١</span><span class="ic">▮ ▾ •••</span></div>
+    <div class="brand">
+      <span class="back"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+      <span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">EN</span>
+    </div>
+    <div class="body">
+      <div class="prog"><span class="pb on"></span><span class="pb on"></span><span class="pb on"></span><span class="pb on"></span><span class="pb"></span><span class="pn">٤ / ٥</span></div>
+      <div class="kick">سنتر</div>
+      <h2 class="h2">السنتر كبير قد إيه؟</h2>
+      <p class="lead">نفس البرنامج في كل الأحجام. إنت بتختار السعة بس، وتقدر تغيّرها بعدين.</p>
+      <div class="seg">
+        <button class="sg on">شهري</button>
+        <button class="sg">سنوي<small>شهرين مجانًا</small></button>
+      </div>
+      <div class="plans">
+        <div class="pl"><span class="plmk"></span><span class="plmid"><span class="pln">فردي</span><span class="plc">٥٠ طالب في الأسبوع</span></span><span class="plp"><span class="plv">٩٩٩</span><span class="plu">ج.م / شهر</span></span></div>
+        <div class="pl"><span class="plmk"></span><span class="plmid"><span class="pln">سنتر نانو</span><span class="plc">١٢٠ طالب في الأسبوع</span></span><span class="plp"><span class="plv">١٬٩٩٩</span><span class="plu">ج.م / شهر</span></span></div>
+        <div class="pl sel"><span class="plmk"></span><span class="plmid"><span class="pln">أساسي</span><span class="plc">٣٠٠ في الأسبوع · ١٥٫٠٠ للطالب</span></span><span class="plp"><span class="plv">٤٬٤٩٩</span><span class="plu">ج.م / شهر</span></span></div>
+        <div class="pl"><span class="plmk"></span><span class="plmid"><span class="pln">محترف</span><span class="plc">٦٠٠ طالب في الأسبوع</span></span><span class="plp"><span class="plv">٧٬٩٩٩</span><span class="plu">ج.م / شهر</span></span></div>
+        <div class="pl"><span class="plmk"></span><span class="plmid"><span class="pln">أعمال</span><span class="plc">١٬٢٠٠ طالب في الأسبوع</span></span><span class="plp"><span class="plv">١٢٬٩٩٩</span><span class="plu">ج.م / شهر</span></span></div>
+        <div class="pl"><span class="plmk"></span><span class="plmid"><span class="pln">مؤسسات</span><span class="plc">٢٬٠٠٠ طالب في الأسبوع</span></span><span class="plp"><span class="plv">١٨٬٤٩٩</span><span class="plu">ج.م / شهر</span></span></div>
+      </div>
+      <div class="fhint">أكبر من ٢٬٠٠٠ في الأسبوع؟ دي كبار السناتر، وبنتفق عليها معاك.</div>
+    </div>
+    <div class="footer"><button class="btn">مراجعة</button></div>
+  </div></div>
+  <div class="cap"><b>S4</b> · باقات السنتر</div>
+</div>
+
+<!-- S4b AR -->
+<div class="frame">
+  <div class="phone"><div class="screen ar" dir="rtl">
+    <div class="sbar"><span>٩:٤١</span><span class="ic">▮ ▾ •••</span></div>
+    <div class="brand">
+      <span class="back"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+      <span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">EN</span>
+    </div>
+    <div class="body">
+      <div class="prog"><span class="pb on"></span><span class="pb on"></span><span class="pb on"></span><span class="pb on"></span><span class="pb"></span><span class="pn">٤ / ٥</span></div>
+      <div class="kick">مدرس</div>
+      <h2 class="h2">كام طالب بتاعك إنت؟</h2>
+      <p class="lead">التدريس في السناتر مجاني. ده بس لمجموعاتك الخاصة.</p>
+      <div class="seg">
+        <button class="sg on">شهري</button>
+        <button class="sg">سنوي<small>شهرين مجانًا</small></button>
+      </div>
+      <div class="plans">
+        <div class="pl sel"><span class="plmk"></span><span class="plmid"><span class="pln">أساسي</span><span class="plc">٢٠ في الأسبوع · تجربة ١٤ يوم</span></span><span class="plp"><span class="plv">٤٩٩</span><span class="plu">ج.م / شهر</span></span></div>
+        <div class="pl"><span class="plmk"></span><span class="plmid"><span class="pln">محترف</span><span class="plc">٥٠ في الأسبوع · تحليلات متقدمة</span></span><span class="plp"><span class="plv">٩٩٩</span><span class="plu">ج.م / شهر</span></span></div>
+        <div class="pl"><span class="plmk"></span><span class="plmid"><span class="pln">توسّع</span><span class="plc">١٥٠ في الأسبوع، وبعدها ١٦ للطالب</span></span><span class="plp"><span class="plv">٢٬٤٩٩</span><span class="plu">ج.م / شهر</span></span></div>
+      </div>
+      <div class="why">بتدرّس في سناتر بس ومعندكش مجموعات خاصة؟ <b>عدّي دي. مش هتدفع حاجة.</b></div>
+    </div>
+    <div class="footer">
+      <button class="btn">مراجعة</button>
+      <button class="btn ghost">أنا بدرّس في سناتر بس</button>
+    </div>
+  </div></div>
+  <div class="cap"><b>S4b</b> · باقات المدرس</div>
+</div>
+
+<!-- S5 AR -->
+<div class="frame">
+  <div class="phone"><div class="screen ar" dir="rtl">
+    <div class="sbar"><span>٩:٤١</span><span class="ic">▮ ▾ •••</span></div>
+    <div class="brand">
+      <span class="back"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+      <span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">EN</span>
+    </div>
+    <div class="body">
+      <div class="prog"><span class="pb on"></span><span class="pb on"></span><span class="pb on"></span><span class="pb on"></span><span class="pb on"></span><span class="pn">٥ / ٥</span></div>
+      <div class="kick">آخر خطوة</div>
+      <h2 class="h2">راجعها، وبعدين وافق</h2>
+      <div class="card">
+        <div class="orow"><span class="ok2">أكاديمية النيل</span><span class="ov">مدينة نصر</span></div>
+        <div class="orow"><span class="ok2">الباقة</span><span class="ov">أساسي</span></div>
+        <div class="orow"><span class="ok2">السعة</span><span class="ov">٣٠٠ في الأسبوع</span></div>
+        <div class="orow"><span class="ok2">مجاني لحد</span><span class="ov free">١٦ أغسطس ٢٠٢٦</span></div>
+        <div class="orow"><span class="ok2">أول فاتورة</span><span class="ov">٣٠ أغسطس ٢٠٢٦</span></div>
+        <div class="tot"><span class="totl">النهارده</span><span class="totv">٠٫٠٠</span></div>
+      </div>
+      <div class="fhint">هنبعتلك فاتورة بـ <b>٤٬٤٩٩ ج.م</b> يوم ٣٠ أغسطس، شاملة الضريبة. مفيش كارت بيتحفظ ومفيش حاجة بتتخصم لوحدها. تلغي قبلها ومش هتتعملك فاتورة أصلًا.</div>
+
+      <div class="clauses">
+        <div class="clause"><div class="ctop"><span class="cmk"></span><span class="ct">أنت من يحدد أسعارك</span></div><span class="cs">نحن لا نحدد ما تتقاضاه.</span></div>
+        <div class="clause"><div class="ctop"><span class="cmk"></span><span class="ct">أنت من يقدّم الدرس وأنت المسؤول عنه</span></div><span class="cs">الدرس وما تعد به ولي الأمر مسؤوليتك.</span></div>
+      </div>
+      <div class="ver">
+        <span style="flex:1"><span class="vid ltr">Provider Agreement v1.0</span><span class="vdate">صادرة في ٢٤/٠٧/٢٠٢٦</span></span>
+        <span class="vlink">اقرأها كاملة</span>
+      </div>
+      <div class="checks">
+        <div class="check"><span class="box"></span><span class="ctext">أوافق على <u>اتفاقية مقدّم الخدمة v1.0</u> وعلى <u>الشروط</u>.</span></div>
+        <div class="check"><span class="box"></span><span class="ctext">أوافق على <u>سياسة الخصوصية</u> وعلى طريقة التعامل مع بياناتي.</span></div>
+      </div>
+    </div>
+    <div class="footer">
+      <div class="fnote">مفيش أي خصم النهارده.</div>
+      <button class="btn off">إنشاء الحساب</button>
+    </div>
+  </div></div>
+  <div class="cap"><b>S5</b> · المراجعة والموافقة</div>
+</div>
+
+<!-- S6 AR -->
+<div class="frame">
+  <div class="phone"><div class="screen ar" dir="rtl">
+    <div class="sbar"><span>٩:٤١</span><span class="ic">▮ ▾ •••</span></div>
+    <div class="brand"><span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">EN</span></div>
+    <div class="okwrap">
+      <div class="okic ok"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0A514A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+      <h2 class="okt">أكاديمية النيل بقت شغالة</h2>
+      <p class="oks">ضيف طلابك، ابعت رابط الانضمام، وخد أول حضور. وخلاص.</p>
+      <div class="card">
+        <div class="orow"><span class="ok2">بتدخل بـ</span><span class="ov ltr">+20 100 442 7318</span></div>
+        <div class="orow"><span class="ok2">و</span><span class="ov">رقم سري من ٦ أرقام</span></div>
+      </div>
+      <p class="okfoot">مفيش أكواد تانية. رقمك والرقم السري بيدخلوك من أي موبايل.</p>
+    </div>
+    <div class="footer"><button class="btn">ضيف طلابي</button></div>
+  </div></div>
+  <div class="cap"><b>S6</b> · تمام</div>
+</div>
+
+<!-- S7 AR -->
+<div class="frame">
+  <div class="phone"><div class="screen ar" dir="rtl">
+    <div class="sbar"><span>٩:٤١</span><span class="ic">▮ ▾ •••</span></div>
+    <div class="brand"><span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">EN</span></div>
+    <div class="body">
+      <div class="gap"></div>
+      <div class="kick">أهلًا بعودتك</div>
+      <h2 class="h2">تسجيل الدخول</h2>
+      <p class="lead">رقمك والرقم السري. من غير ما تستنى رسالة.</p>
+      <div class="gap"></div>
+      <div class="flab">رقم الموبايل</div>
+      <div class="field"><span class="fv mono ltr">+20 100 442 7318</span></div>
+      <div class="gap-s"></div>
+      <div class="pinrow"><span class="flab">الرقم السري</span><button class="eyebtn" aria-label="Show PIN"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+      <div class="pins">
+        <span class="pd fill"></span><span class="pd fill"></span><span class="pd fill"></span>
+        <span class="pd fill"></span><span class="pd on"></span><span class="pd"></span>
+      </div>
+      <div class="gap"></div>
+      <button class="btn ghost">نسيت الرقم السري</button>
+    </div>
+    <div class="footer">
+      <button class="btn">دخول</button>
+      <button class="btn ghost">إنشاء حساب جديد</button>
+    </div>
+  </div></div>
+  <div class="cap"><b>S7</b> · الدخول</div>
+</div>
+<div class="frame">
+  <div class="phone"><div class="screen ar" dir="rtl">
+    <div class="sbar"><span>٩:٤١</span><span class="ic">▮ ▾ •••</span></div>
+    <div class="brand"><span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">EN</span></div>
+    <div class="body">
+      <div class="gap"></div>
+      <div class="kick">أهلًا بعودتك</div>
+      <h2 class="h2">تسجيل الدخول</h2>
+      <p class="lead">رقمك والرقم السري. من غير ما تستنى رسالة.</p>
+      <div class="gap"></div>
+      <div class="flab">رقم الموبايل</div>
+      <div class="field"><span class="fv mono ltr">+20 100 442 7318</span></div>
+      <div class="gap-s"></div>
+      <div class="pinrow"><span class="flab">الرقم السري</span><button class="eyebtn on" aria-label="Hide PIN"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7c2 0 3.7.7 5.1 1.6M22 12s-3.6 7-10 7c-2 0-3.7-.7-5.1-1.6"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/></svg></button></div>
+      <div class="pins show"><span class="pd fill" data-d="٤"></span><span class="pd fill" data-d="٨"></span><span class="pd fill" data-d="٢"></span><span class="pd fill" data-d="٩"></span><span class="pd fill" data-d="١"></span><span class="pd fill" data-d="٧"></span></div>
+      <div class="gap"></div>
+      <button class="btn ghost">نسيت الرقم السري</button>
+    </div>
+    <div class="footer">
+      <button class="btn">دخول</button>
+      <button class="btn ghost">إنشاء حساب جديد</button>
+    </div>
+  </div></div>
+  <div class="cap">S7a · الرقم السري ظاهر. ضغطة على العين تخفيه تاني.</div>
+</div>
+
+<!-- S7b AR -->
+<div class="frame">
+  <div class="phone"><div class="screen ar" dir="rtl">
+    <div class="sbar"><span>٩:٤١</span><span class="ic">▮ ▾ •••</span></div>
+    <div class="brand">
+      <span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">EN</span>
+    </div>
+    <div class="body">
+      <div class="gap"></div>
+      <div class="kick">أهلًا بعودتك</div>
+      <h2 class="h2">تسجيل الدخول</h2>
+      <p class="lead">رقمك والرقم السري. من غير ما تستنى رسالة.</p>
+      <div class="gap"></div>
+      <div class="flab">رقم الموبايل</div>
+      <div class="field"><span class="fv mono ltr">+20 100 442 7318</span></div>
+      <div class="gap-s"></div>
+      <div class="pinrow"><span class="flab">الرقم السري</span><button class="eyebtn" aria-label="Show PIN"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+      <div class="pins">
+        <span class="pd err"></span><span class="pd err"></span><span class="pd err"></span>
+        <span class="pd err"></span><span class="pd err"></span><span class="pd err"></span>
+      </div>
+      <div class="gap-s"></div>
+      <div class="warnbox">الرقم السري ده مش صح. <b>فاضل ٣ محاولات</b> قبل ما الحساب يتقفل ساعة.</div>
+      <div class="gap"></div>
+      <button class="btn ghost">نسيت الرقم السري</button>
+    </div>
+    <div class="footer">
+      <button class="btn">جرّب تاني</button>
+      <button class="btn ghost">إنشاء حساب</button>
+    </div>
+  </div></div>
+  <div class="cap"><b>S7b</b> · رقم سري غلط</div>
+</div>
+
+<!-- S7c AR -->
+<div class="frame">
+  <div class="phone"><div class="screen ar" dir="rtl">
+    <div class="sbar"><span>٩:٤١</span><span class="ic">▮ ▾ •••</span></div>
+    <div class="brand">
+      <span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">EN</span>
+    </div>
+    <div class="body">
+      <div class="gap"></div>
+      <div class="kick">محاولات كتير</div>
+      <h2 class="h2">الحساب مقفول ساعة</h2>
+      <p class="lead">ستة أرقام غلط ورا بعض. ده بيحمي الفلوس اللي في الحساب، فمش هينفع يتفتح بدري.</p>
+      <div class="gap"></div>
+      <div class="lockbox">
+        <div class="lockt">تقدر تدخل تاني الساعة ١٠:٤١</div>
+        أو غيّر الرقم السري دلوقتي. نبعت كود واحد على <span class="mono ltr">+20 100 442 7318</span> وتختار رقم جديد، والحساب يتفتح على طول.
+      </div>
+    </div>
+    <div class="footer">
+      <button class="btn">غيّر الرقم السري</button>
+      <button class="btn ghost">استنى الساعة</button>
+    </div>
+  </div></div>
+  <div class="cap"><b>S7c</b> · مقفول</div>
+</div>
+
+
+<!-- S8 AR -->
+<div class="frame">
+  <div class="phone"><div class="screen ar" dir="rtl">
+    <div class="sbar"><span>٩:٤١</span><span class="ic">▮ ▾ •••</span></div>
+    <div class="brand">
+      <span class="back"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+      <span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">EN</span>
+    </div>
+    <div class="body">
+      <div class="gap"></div>
+      <div class="kick">نسيته</div>
+      <h2 class="h2">اعمل رقم سري جديد</h2>
+      <p class="lead">بنبعت كود واحد على <span class="mono ltr" style="color:var(--ink)">+20 100 442 7318</span> وبعدها تختار واحد جديد.</p>
+      <div class="gap"></div>
+      <div class="otp">
+        <span class="ob">7</span><span class="ob">2</span><span class="ob on">|</span>
+        <span class="ob mt">·</span><span class="ob mt">·</span><span class="ob mt">·</span>
+      </div>
+      <div class="fhint">الكود بيقعد ١٠ دقايق.</div>
+      <div class="why brass">محدش في TutoringHQ يقدر يشوف رقمك السري ولا يقولهولك. <b>الطريقة الوحيدة إنك تعمل واحد جديد.</b></div>
+    </div>
+    <div class="footer"><button class="btn">متابعة</button></div>
+  </div></div>
+  <div class="cap"><b>S8</b> · نسيت الرقم السري</div>
+</div>
+
+<!-- S9 AR -->
+<div class="frame">
+  <div class="phone"><div class="screen ar" dir="rtl">
+    <div class="sbar"><span>٩:٤١</span><span class="ic">▮ ▾ •••</span></div>
+    <div class="brand"><span class="mark"></span><span class="wm">TutoringHQ</span><span class="sw">EN</span></div>
+    <div class="okwrap">
+      <div class="okic pb2"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="#9A6B1F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+      <h2 class="okt">الرقم ده خد التجربة المجانية</h2>
+      <p class="oks">واحدة لكل رقم، مرة واحدة. تقدر تبدأ دلوقتي بالسعر العادي.</p>
+      <div class="card">
+        <div class="orow"><span class="ok2">الرقم</span><span class="ov ltr">+20 100 442 7318</span></div>
+        <div class="orow"><span class="ok2">التجربة اتاخدت</span><span class="ov">٠٣/٢٠٢٦</span></div>
+        <div class="orow"><span class="ok2">الباقة الأساسية</span><span class="ov">٤٩٩ / شهر</span></div>
+      </div>
+      <p class="okfoot">شاملة الضريبة. تلغي في أي وقت والاشتراك يفضل شغال لآخر المدة المدفوعة.</p>
+    </div>
+    <div class="footer">
+      <button class="btn">ابدأ بالباقة الأساسية</button>
+      <button class="btn ghost">تسجيل الدخول</button>
+    </div>
+  </div></div>
+  <div class="cap"><b>S9</b> · التجربة اتاخدت قبل كده</div>
+</div>
+
+</div>
+</div>
+
+
+
+</div>
+<div class="mgd-sec" id="S-2"><div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">Public Join</span><span class="mgd-src">Screen-Public-Join.html</span></div></div>
+<div class="mgd2 mgd-screen">
+<div class="board">
+  <div class="eyebrow">TutoringHQ · Reference Screen</div>
+  <div class="pill0">Join by link · Public · Draft</div>
+  <h1 class="mh">Join by link</h1>
+  <p class="lead">One link per group, for centers and teachers alike. A student opens it, sees who invited them and exactly what they are joining, and sends a request that a human approves. The form asks four things and no more, because every extra field costs completed requests: student name, student phone, parent phone and an optional note. Parent phone is not optional, because that is where every payment link goes, and a student without one is a student who cannot be billed. The line about nothing being billed until approval appears on both the form and the confirmation, and it is the same sentence the approver reads on their side. English and Arabic, each standing alone. Sample data is placeholder.</p>
+
+  <div class="phones">
+
+    <!-- EN 1 · THE INVITATION -->
+    <div class="frame">
+    <div class="phone"><div class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="brand"><div class="mark"></div><span class="wordmark">TutoringHQ</span><span class="bsub">Invitation</span></div>
+      <div class="body">
+        <div class="who">
+          <div class="wtop">
+            <div class="wav">NP</div>
+            <div class="wn"><div class="wnm">Nile Prep Academy<span class="vchip">Verified</span></div><div class="wrole">Tutoring center · Nasr City</div></div>
+          </div>
+          <div class="wdiv"></div>
+          <div class="glab">You are joining</div>
+          <div class="gnm">Physics · Sunday 4PM</div>
+          <div class="gmeta">
+            <div class="gm"><div class="gmk">Teacher</div><div class="gmv">Aly Shady</div></div>
+            <div class="gm"><div class="gmk">Per session</div><div class="gmv"><span class="mono">168.75</span> EGP</div></div>
+          </div>
+        </div>
+
+        <div class="what">
+          <div class="wt2">What happens next</div>
+          <div class="wstep"><div class="wnum">1</div><div>You send a request with your name and two phone numbers.</div></div>
+          <div class="wstep"><div class="wnum">2</div><div>Nile Prep Academy sees it and approves or declines. A person decides, not a system.</div></div>
+          <div class="wstep"><div class="wnum">3</div><div>Once approved you appear on the register, and payment links start after each session you attend.</div></div>
+        </div>
+
+        <div class="guard">Nothing is billed and no attendance exists until the center approves you. Sending this request costs nothing and commits you to nothing.</div>
+      </div>
+      <div class="footer"><button class="btn">Request to join</button></div>
+    </div></div>
+    <div class="cap">EN · the invitation</div>
+    </div>
+
+    <!-- EN 2 · THE FORM -->
+    <div class="frame">
+    <div class="phone"><div class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="brand"><div class="mark"></div><span class="wordmark">TutoringHQ</span><span class="bsub">Physics · Sunday 4PM</span></div>
+      <div class="body">
+        <div class="flab">STUDENT NAME</div>
+        <div class="field"><div class="fv">Salma Wael</div></div>
+
+        <div class="flab">STUDENT PHONE</div>
+        <div class="field"><div class="fv mono" dir="ltr">+20 11 4477 2210</div></div>
+
+        <div class="flab">PARENT PHONE</div>
+        <div class="field"><div class="fv ph mono" dir="ltr">+20 1_ ____ ____</div></div>
+        <div class="fhint"><b>Required.</b> Every payment link and receipt goes to this number. A wrong one means sessions that cannot be paid for.</div>
+
+        <div class="flab">ANYTHING THEY SHOULD KNOW<span class="fopt">OPTIONAL</span></div>
+        <div class="field" style="min-height:78px"><div class="fv ph" style="font-size:13.5px;line-height:1.5">My friend Mariam is in this group. I need help with mechanics before the November exam.</div></div>
+
+        <div class="guard">Nothing is billed and no attendance exists until the center approves you.</div>
+      </div>
+      <div class="footer"><div class="fnote">Nile Prep Academy will see your name and both numbers</div><button class="btn">Send request</button></div>
+    </div></div>
+    <div class="cap">EN · the form, four fields</div>
+    </div>
+
+    <!-- EN 3 · SENT -->
+    <div class="frame">
+    <div class="phone"><div class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="brand"><div class="mark"></div><span class="wordmark">TutoringHQ</span><span class="bsub">Request sent</span></div>
+      <div class="okwrap">
+        <div class="okic good"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div class="okt">Request sent</div>
+        <div class="oks">Nile Prep Academy has it. They usually reply within a day.</div>
+        <div class="okcard">
+          <div class="okrow"><span class="okk">Student</span><span class="okv">Salma Wael</span></div>
+          <div class="okrow"><span class="okk">Group</span><span class="okv">Physics · Sun 4PM</span></div>
+          <div class="okrow"><span class="okk">Sent</span><span class="okv">Today, 9:41</span></div>
+        </div>
+        <div class="okfoot">You are not enrolled yet and nothing has been charged. If you have not heard back in a couple of days, contact the center directly.</div>
+      </div>
+      <div class="footer"><button class="btn ghost" style="margin-top:0">Message the center on WhatsApp</button></div>
+    </div></div>
+    <div class="cap">EN · request sent</div>
+    </div>
+
+    <!-- EN 4 · LINK CLOSED -->
+    <div class="frame">
+    <div class="phone"><div class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="brand"><div class="mark"></div><span class="wordmark">TutoringHQ</span><span class="bsub">Invitation</span></div>
+      <div class="okwrap">
+        <div class="okic warn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg></div>
+        <div class="okt">This link is closed</div>
+        <div class="oks">Physics · Sunday 4PM is not taking new students through this link right now.</div>
+        <div class="okcard">
+          <div class="okrow"><span class="okk">Center</span><span class="okv">Nile Prep Academy</span></div>
+          <div class="okrow"><span class="okk">Group</span><span class="okv">Physics · Sun 4PM</span></div>
+        </div>
+        <div class="okfoot">The center may have filled the group or turned the link off. Ask them for a current link, or about another group with space.</div>
+      </div>
+      <div class="footer"><button class="btn ghost" style="margin-top:0">Message the center on WhatsApp</button></div>
+    </div></div>
+    <div class="cap">EN · link closed</div>
+    </div>
+
+    <!-- EN 5 · ALREADY ENROLLED -->
+    <div class="frame">
+    <div class="phone"><div class="screen" dir="ltr">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="brand"><div class="mark"></div><span class="wordmark">TutoringHQ</span><span class="bsub">Invitation</span></div>
+      <div class="okwrap">
+        <div class="okic good"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div class="okt">You are already in this group</div>
+        <div class="oks">Nothing to do here. Session times and payment links reach you on WhatsApp.</div>
+        <div class="okcard">
+          <div class="okrow"><span class="okk">Student</span><span class="okv">Youssef Selim</span></div>
+          <div class="okrow"><span class="okk">Group</span><span class="okv">Physics · Sunday 4PM</span></div>
+          <div class="okrow"><span class="okk">Approved</span><span class="okv">12/07/2026</span></div>
+        </div>
+        <div class="okfoot">To leave the group, or to change the phone number we send links to, ask the center. They can do both in a moment.</div>
+      </div>
+      <div class="footer"><button class="btn ghost" style="margin-top:0">Message Nile Prep Academy</button></div>
+    </div></div>
+    <div class="cap">EN · already enrolled</div>
+    </div>
+
+    <!-- EN 6 · /parents TRUST PAGE -->
+    <div class="frame">
+    <div class="phone"><div class="screen" dir="ltr">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="brand"><div class="mark"></div><span class="wordmark">TutoringHQ</span><span class="bsub">For parents</span></div>
+      <div class="body">
+        <div class="eyebrow">Someone sent you a link</div>
+        <div class="mh">Who we are, before you pay anything</div>
+        <div class="lead">The link came from the tutoring center or teacher your child attends. Here is exactly what we do and what we do not.</div>
+
+        <div class="who" style="margin-top:18px">
+          <div class="wtop"><div class="wt2">
+            <div class="wnm">What TutoringHQ is</div>
+            <div class="wrole">Software that centers and teachers use to take attendance, raise invoices and collect fees. We are not a school. We do not teach.</div>
+          </div></div>
+          <div class="wdiv"></div>
+          <div class="glab">Who sets the price</div>
+          <div class="gnm">The center or the teacher</div>
+          <div class="gmeta"><div class="gm"><span class="gmk">Sets the fee</span><span class="gmv">They do</span></div><div class="gm"><span class="gmk">Teaches the lesson</span><span class="gmv">They do</span></div></div>
+        </div>
+
+        <div class="field" style="margin-top:12px"><span class="fv">Card, wallet, InstaPay or Fawry, through a licensed Egyptian gateway. Your card details never reach us.</span></div>
+        <div class="fhint"><b>A question about a session, a price or a refund?</b> Speak to the center or teacher directly. The answer is theirs, not ours.</div>
+
+        <div class="guard" style="margin-top:16px">You never need an account. Parents do not sign up and do not log in. There is nothing here for you to join.</div>
+        <div class="fnote" style="margin-top:14px">TutoringHQ is operated by EHG Intelligence Egypt, a registered Egyptian company.</div>
+      </div>
+    </div></div>
+    <div class="cap">EN · /parents trust page. No signup CTA anywhere on it, by design.</div>
+    </div>
+
+    <!-- AR 1 · THE INVITATION -->
+    <div class="frame">
+    <div class="phone"><div class="screen ar" dir="rtl">
+      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="brand"><div class="mark"></div><span class="wordmark">TutoringHQ</span><span class="bsub">دعوة</span></div>
+      <div class="body">
+        <div class="who">
+          <div class="wtop">
+            <div class="wav">أن</div>
+            <div class="wn"><div class="wnm">أكاديمية النيل<span class="vchip">موثّقة</span></div><div class="wrole">سنتر · مدينة نصر</div></div>
+          </div>
+          <div class="wdiv"></div>
+          <div class="glab">إنت بتنضم لـ</div>
+          <div class="gnm">فيزياء · الأحد ٤ م</div>
+          <div class="gmeta">
+            <div class="gm"><div class="gmk">المدرّس</div><div class="gmv">علي شادي</div></div>
+            <div class="gm"><div class="gmk">الحصة</div><div class="gmv"><span class="mono">١٦٨٫٧٥</span> ج.م</div></div>
+          </div>
+        </div>
+
+        <div class="what">
+          <div class="wt2">اللي هيحصل بعد كده</div>
+          <div class="wstep"><div class="wnum">١</div><div>بتبعت طلب فيه اسمك ورقمين تليفون.</div></div>
+          <div class="wstep"><div class="wnum">٢</div><div>أكاديمية النيل بتشوفه وتوافق أو ترفض. حد بيقرّر، مش نظام.</div></div>
+          <div class="wstep"><div class="wnum">٣</div><div>بعد الموافقة اسمك يظهر في الكشف، وروابط الدفع تبدأ بعد كل حصة تحضرها.</div></div>
+        </div>
+
+        <div class="guard">مفيش أي مبلغ بيتحسب ولا حضور بيتسجّل قبل ما السنتر يوافق. إرسال الطلب مجاني ومش بيلزمك بحاجة.</div>
+      </div>
+      <div class="footer"><button class="btn">اطلب الانضمام</button></div>
+    </div></div>
+    <div class="cap">AR · الدعوة</div>
+    </div>
+
+    <!-- AR 2 · THE FORM -->
+    <div class="frame">
+    <div class="phone"><div class="screen ar" dir="rtl">
+      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="brand"><div class="mark"></div><span class="wordmark">TutoringHQ</span><span class="bsub">فيزياء · الأحد ٤ م</span></div>
+      <div class="body">
+        <div class="flab">اسم الطالب</div>
+        <div class="field"><div class="fv">سلمى وائل</div></div>
+
+        <div class="flab">تليفون الطالب</div>
+        <div class="field"><div class="fv mono" dir="ltr">+20 11 4477 2210</div></div>
+
+        <div class="flab">تليفون ولي الأمر</div>
+        <div class="field"><div class="fv ph mono" dir="ltr">+20 1_ ____ ____</div></div>
+        <div class="fhint"><b>مطلوب.</b> كل رابط دفع وكل إيصال بيروح على الرقم ده. رقم غلط معناه حصص مش هينفع تتدفع.</div>
+
+        <div class="flab">أي حاجة لازم يعرفوها<span class="fopt">اختياري</span></div>
+        <div class="field" style="min-height:78px"><div class="fv ph" style="font-size:13.5px;line-height:1.5">صاحبتي مريم في المجموعة دي. محتاجة مساعدة في الميكانيكا قبل امتحان نوفمبر.</div></div>
+
+        <div class="guard">مفيش أي مبلغ بيتحسب ولا حضور بيتسجّل قبل ما السنتر يوافق.</div>
+      </div>
+      <div class="footer"><div class="fnote">أكاديمية النيل هتشوف اسمك والرقمين</div><button class="btn">إرسال الطلب</button></div>
+    </div></div>
+    <div class="cap">AR · الطلب، أربع خانات</div>
+    </div>
+
+    <!-- AR 3 · SENT -->
+    <div class="frame">
+    <div class="phone"><div class="screen ar" dir="rtl">
+      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="brand"><div class="mark"></div><span class="wordmark">TutoringHQ</span><span class="bsub">اتبعت</span></div>
+      <div class="okwrap">
+        <div class="okic good"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div class="okt">الطلب اتبعت</div>
+        <div class="oks">أكاديمية النيل وصلها الطلب. عادةً بيردّوا خلال يوم.</div>
+        <div class="okcard">
+          <div class="okrow"><span class="okk">الطالبة</span><span class="okv">سلمى وائل</span></div>
+          <div class="okrow"><span class="okk">المجموعة</span><span class="okv">فيزياء · الأحد ٤ م</span></div>
+          <div class="okrow"><span class="okk">اتبعت</span><span class="okv">النهارده ٩:٤١</span></div>
+        </div>
+        <div class="okfoot">لسه مش مقيّدة، ومفيش أي مبلغ اتحسب. لو مجاش ردّ خلال يومين، كلّم السنتر على طول.</div>
+      </div>
+      <div class="footer"><button class="btn ghost" style="margin-top:0">كلّم السنتر على واتساب</button></div>
+    </div></div>
+    <div class="cap">AR · الطلب اتبعت</div>
+    </div>
+
+    <!-- AR 4 · LINK CLOSED -->
+    <div class="frame">
+    <div class="phone"><div class="screen ar" dir="rtl">
+      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="brand"><div class="mark"></div><span class="wordmark">TutoringHQ</span><span class="bsub">دعوة</span></div>
+      <div class="okwrap">
+        <div class="okic warn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg></div>
+        <div class="okt">الرابط ده مقفول</div>
+        <div class="oks">فيزياء · الأحد ٤ م مش بتقبل طلاب جدد من الرابط ده دلوقتي.</div>
+        <div class="okcard">
+          <div class="okrow"><span class="okk">السنتر</span><span class="okv">أكاديمية النيل</span></div>
+          <div class="okrow"><span class="okk">المجموعة</span><span class="okv">فيزياء · الأحد ٤ م</span></div>
+        </div>
+        <div class="okfoot">يمكن المجموعة كمّلت عدد أو السنتر قفل الرابط. اطلب منهم رابط جديد، أو اسأل عن مجموعة تانية فيها مكان.</div>
+      </div>
+      <div class="footer"><button class="btn ghost" style="margin-top:0">كلّم السنتر على واتساب</button></div>
+    </div></div>
+    <div class="cap">AR · الرابط مقفول</div>
+    </div>
+
+<!-- AR 5 · ALREADY ENROLLED -->
+    <div class="frame">
+    <div class="phone"><div class="screen ar" dir="rtl">
+      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="brand"><div class="mark"></div><span class="wordmark">TutoringHQ</span><span class="bsub">دعوة</span></div>
+      <div class="okwrap">
+        <div class="okic good"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div class="okt">إنت مسجّل بالفعل في المجموعة دي</div>
+        <div class="oks">مفيش حاجة مطلوبة منك. مواعيد الحصص وروابط الدفع بتوصلك على واتساب.</div>
+        <div class="okcard">
+          <div class="okrow"><span class="okk">الطالب</span><span class="okv">يوسف سليم</span></div>
+          <div class="okrow"><span class="okk">المجموعة</span><span class="okv">فيزياء · الأحد ٤ م</span></div>
+          <div class="okrow"><span class="okk">اتوافق عليه</span><span class="okv">١٢/٠٧/٢٠٢٦</span></div>
+        </div>
+        <div class="okfoot">لو عايز تخرج من المجموعة أو تغيّر الرقم اللي بتوصله الروابط، كلّم السنتر. الاتنين بياخدوا دقيقة.</div>
+      </div>
+      <div class="footer"><button class="btn ghost" style="margin-top:0">كلّم أكاديمية النيل على واتساب</button></div>
+    </div></div>
+    <div class="cap">AR · مسجّل بالفعل</div>
+    </div>
+
+    <!-- AR 6 · /parents TRUST PAGE -->
+    <div class="frame">
+    <div class="phone"><div class="screen ar" dir="rtl">
+      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="brand"><div class="mark"></div><span class="wordmark">TutoringHQ</span><span class="bsub">لولي الأمر</span></div>
+      <div class="body">
+        <div class="eyebrow">حد بعتلك رابط</div>
+        <div class="mh">إحنا مين، قبل ما تدفع أي حاجة</div>
+        <div class="lead">الرابط جالك من السنتر أو المدرس اللي ابنك بيروحله. دي بالظبط الحاجات اللي بنعملها واللي مش بنعملها.</div>
+
+        <div class="who" style="margin-top:18px">
+          <div class="wtop"><div class="wt2">
+            <div class="wnm">TutoringHQ إيه</div>
+            <div class="wrole">برنامج بيستخدمه السناتر والمدرسين عشان يسجّلوا الحضور ويعملوا الفواتير ويحصّلوا المصاريف. إحنا مش مدرسة ومش بندرّس.</div>
+          </div></div>
+          <div class="wdiv"></div>
+          <div class="glab">مين اللي بيحدد السعر</div>
+          <div class="gnm">السنتر أو المدرس</div>
+          <div class="gmeta"><div class="gm"><span class="gmk">بيحدد السعر</span><span class="gmv">هو</span></div><div class="gm"><span class="gmk">بيدّي الدرس</span><span class="gmv">هو</span></div></div>
+        </div>
+
+        <div class="field" style="margin-top:12px"><span class="fv">بطاقة أو محفظة أو إنستاباي أو فوري، عبر بوابة دفع مصرية مرخّصة. وبيانات بطاقتك مابتوصلش لينا.</span></div>
+        <div class="fhint"><b>عندك سؤال عن حصة أو سعر أو استرداد؟</b> كلّم السنتر أو المدرس مباشرة. الإجابة عنده مش عندنا.</div>
+
+        <div class="guard" style="margin-top:16px">إنت مش محتاج حساب. ولي الأمر مابيسجّلش ومابيدخلش. مفيش هنا حاجة تنضم ليها أصلًا.</div>
+        <div class="fnote" style="margin-top:14px">منصة TutoringHQ تُشغّلها شركة EHG Intelligence Egypt، شركة مسجّلة في مصر.</div>
+      </div>
+    </div></div>
+    <div class="cap">AR · صفحة ولي الأمر. مفيش فيها أي دعوة للتسجيل، عن قصد.</div>
+    </div>
+
+      </div>
+</div>
+
+</div>
+<div class="mgd-sec" id="S-3"><div class="mgd-bar"><span class="mgd-num">03</span><span class="mgd-name">Public Self Enrollment</span><span class="mgd-src">Screen-Public-Enroll.html</span></div></div>
+<div class="mgd3 mgd-screen">
+
+<div class="board">
+  <div class="eyebrow">TutoringHQ · Reference Screen</div>
+  <div class="pill0">Self enrollment · Public · Draft</div>
+  <h1 class="mh">Join a group yourself</h1>
+  <p class="lead">The second join path. The first one, /j/[code], waits for the center to approve. This one does not: the student proves the number is his with a one time code on WhatsApp and is in the group immediately. It still collects the parent number, because the parent receives every receipt and every alert, and a student cannot opt his own parent out of that. The code is the only one the platform ever sends for joining, and the screen says so, because a family that has been told this once is much harder to phish later. English and Arabic, each standing alone. Sample data is placeholder.</p>
+  <div class="phones">
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="brand"><div class="mark"></div><span class="wordmark">TutoringHQ</span><span class="bsub">Join a group</span></div>
+      <div class="body">
+        <div class="kick">You were sent this link</div>
+        <h2 class="h2">Join Physics, Sunday 4PM</h2>
+        <div class="card"><div class="grp">Mr. Karim Samir</div><div class="gmeta">Nile Prep Academy · Giza</div></div>
+        <p class="lead2">Confirm your number and you are in the group straight away. No waiting for anyone to approve you.</p>
+        <div class="note">Your center will see your name and both numbers. Nothing is billed until your first session.</div>
+      </div>
+      <div class="foot"><button class="btn">Continue</button></div>
+    </div></div>
+    <div class="cap">EN · the invitation</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="brand"><div class="mark"></div><span class="wordmark">TutoringHQ</span><span class="bsub">Step 1 of 2</span></div>
+      <div class="body">
+        <h2 class="h2">Your details</h2>
+        <p class="lead2">Three things. Your parent gets the receipts and the reminders, so their number has to be right.</p>
+        <div class="flab">Student name</div><input class="fin ph" value="As your center knows you">
+        <div class="flab">Your mobile</div><input class="fin ph" value="01X XXXX XXXX">
+        <div class="fhint">We send a code here on WhatsApp.</div>
+        <div class="flab">Parent mobile</div><input class="fin ph" value="01X XXXX XXXX">
+        <div class="fhint">Receipts and attendance alerts go here, not to you.</div>
+      </div>
+      <div class="foot"><button class="btn">Send the code</button></div>
+    </div></div>
+    <div class="cap">EN · details, three fields</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="brand"><div class="mark"></div><span class="wordmark">TutoringHQ</span><span class="bsub">Step 2 of 2</span></div>
+      <div class="body">
+        <h2 class="h2">Type the code</h2>
+        <p class="lead2">Sent on WhatsApp to +20 100 442 7318</p>
+        <div class="pins"><span class="pd">4</span><span class="pd">1</span><span class="pd">9</span><span class="pd on"></span><span class="pd"></span><span class="pd"></span></div>
+        <div class="note">The code lasts 10 minutes. Only the newest one works.</div>
+        <div class="warn">This is the only code we send for joining. Attendance and fees never ask for a code.</div>
+      </div>
+      <div class="foot"><button class="btn">Join the group</button><div class="sub">Send it again in 00:47</div></div>
+    </div></div>
+    <div class="cap">EN · the code, six boxes</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="done"><div class="dchk"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div class="dh">You are in</div>
+        <div class="dt">Physics, Sunday 4PM at Nile Prep Academy.</div>
+        <div class="steps">
+          <div class="stp"><div class="snum">1</div><div class="stx">Your first session is <b>Sunday 4PM</b>. Turn up, that is all.</div></div>
+          <div class="stp"><div class="snum">2</div><div class="stx">Your parent gets the fee message after the session, never before.</div></div>
+          <div class="stp"><div class="snum">3</div><div class="stx">The center can remove you from the group at any time.</div></div>
+        </div>
+      </div>
+      <div class="foot"><button class="btn ghost">Done</button></div>
+    </div></div>
+    <div class="cap">EN · enrolled</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="brand"><div class="mark"></div><span class="wordmark">TutoringHQ</span><span class="bsub">انضم لمجموعة</span></div>
+      <div class="body">
+        <div class="kick">وصلك اللينك ده</div>
+        <h2 class="h2">انضم لفيزياء، الأحد ٤ م</h2>
+        <div class="card"><div class="grp">أ. كريم سمير</div><div class="gmeta">أكاديمية النيل · الجيزة</div></div>
+        <p class="lead2">أكّد رقمك وهتبقى في المجموعة على طول. من غير ما تستنى حد يوافق.</p>
+        <div class="note">السنتر هيشوف اسمك والرقمين. ومفيش أي فلوس قبل أول حصة.</div>
+      </div>
+      <div class="foot"><button class="btn">كمّل</button></div>
+    </div></div>
+    <div class="cap">AR · الدعوة</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="brand"><div class="mark"></div><span class="wordmark">TutoringHQ</span><span class="bsub">خطوة ١ من ٢</span></div>
+      <div class="body">
+        <h2 class="h2">بياناتك</h2>
+        <p class="lead2">تلات حاجات. ولي أمرك هو اللي بيوصله الإيصالات والتنبيهات، فلازم رقمه يكون صح.</p>
+        <div class="flab">اسم الطالب</div><input class="fin ph" value="زي ما السنتر عارفك">
+        <div class="flab">موبايلك</div><input class="fin ph" value="&#1632;&#1633;× ×××× ××××">
+        <div class="fhint">هنبعتلك كود هنا على واتساب.</div>
+        <div class="flab">موبايل ولي الأمر</div><input class="fin ph" value="&#1632;&#1633;× ×××× ××××">
+        <div class="fhint">الإيصالات وتنبيهات الحضور بتروح هنا، مش ليك.</div>
+      </div>
+      <div class="foot"><button class="btn">ابعت الكود</button></div>
+    </div></div>
+    <div class="cap">AR · البيانات، تلات خانات</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="brand"><div class="mark"></div><span class="wordmark">TutoringHQ</span><span class="bsub">خطوة ٢ من ٢</span></div>
+      <div class="body">
+        <h2 class="h2">اكتب الكود</h2>
+        <p class="lead2">اتبعت على واتساب لـ ٠١٠٠٤٤٢٧٣١٨</p>
+        <div class="pins"><span class="pd">&#1636;</span><span class="pd">&#1633;</span><span class="pd">&#1641;</span><span class="pd on"></span><span class="pd"></span><span class="pd"></span></div>
+        <div class="note">الكود بيقعد ١٠ دقايق. وآخر كود بس هو اللي بيشتغل.</div>
+        <div class="warn">ده الكود الوحيد اللي بنبعته للانضمام. الحضور والمصروفات عمرها ما بتطلب كود.</div>
+      </div>
+      <div class="foot"><button class="btn">انضم للمجموعة</button><div class="sub">ابعته تاني بعد ٠٠:٤٧</div></div>
+    </div></div>
+    <div class="cap">AR · الكود، ٦ خانات</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="done"><div class="dchk"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div class="dh">إنت في المجموعة</div>
+        <div class="dt">فيزياء، الأحد ٤ م في أكاديمية النيل.</div>
+        <div class="steps">
+          <div class="stp"><div class="snum">١</div><div class="stx">أول حصة ليك <b>الأحد ٤ م</b>. تعالى وبس.</div></div>
+          <div class="stp"><div class="snum">٢</div><div class="stx">ولي أمرك بيوصله رسالة المصروفات بعد الحصة، مش قبلها.</div></div>
+          <div class="stp"><div class="snum">٣</div><div class="stx">السنتر يقدر يشيلك من المجموعة في أي وقت.</div></div>
+        </div>
+      </div>
+      <div class="foot"><button class="btn ghost">تمام</button></div>
+    </div></div>
+    <div class="cap">AR · تم الانضمام</div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+<div class="mgd-sec" id="S-4"><div class="mgd-bar"><span class="mgd-num">04</span><span class="mgd-name">Parent Payment</span><span class="mgd-src">Screen-Parent-Payment.html</span></div></div>
+<div class="mgd4 mgd-screen">
+<div class="board">
+  <div class="eyebrow">TutoringHQ · Reference Screen</div>
+  <div class="pill0">Pay session fees · Public · Draft</div>
+  <h1 class="mh">Pay session fees</h1>
+  <p class="lead">One page for paying any provider, a center or an independent teacher, reached by link with no account needed. The provider sets their own price and that is the figure shown; there is no breakdown of it, because the parent is buying a session, not a bundle of fees. The only thing charged separately is a small processing fee for the payment itself, stated with its formula so a parent can check it against the price in front of them, sitting where a card fee normally would. What survives from the old design is the line naming the provider as the one who sets the price and teaches, since that is the record that the money was theirs. English and Arabic. Sample data is placeholder.</p>
+
+  <div class="phones">
+
+    <!-- EN · TEACHER -->
+    <div class="frame">
+    <div class="phone"><div class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="brand"><div class="bmark"></div><span class="bname">TutoringHQ</span><span class="bsub">Secure payment</span></div>
+      <div class="body">
+        <div class="prov">
+          <div class="pav">DF</div>
+          <div class="pn"><div class="pnm">Dina Fouad<span class="vchip">Verified</span></div><div class="pr2">English · independent teacher</div></div>
+        </div>
+
+        <div class="what">YOU ARE PAYING FOR</div>
+        <div class="amt">
+          <div class="ar"><div class="al"><div class="alt">English · 4 sessions</div><div class="als">Youssef Adel · price set by Dina Fouad</div></div><div class="av2">1,082.50</div></div>
+          <div class="ar"><div class="al"><div class="alt">Processing fee</div><div class="als">1.5% + 1.5 EGP · includes VAT</div></div><div class="av2">17.74</div></div>
+          <div class="ar tot"><div class="al"><div class="alt">Total</div></div><div class="av2">1,100.24</div></div>
+        </div>
+
+        <div class="disc"><b>Dina Fouad</b> sets this price and teaches the sessions. TutoringHQ collects the payment on her behalf. The lesson fee is hers; we charge only the processing fee.</div>
+
+        <div class="mlab">PAY WITH</div>
+        <div class="m on"><div class="mic"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div><div class="mn"><div class="mt">Card</div><div class="ms">Visa, Mastercard, Meeza</div></div><div class="radio"></div></div>
+        <div class="m"><div class="mic"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M11 18h2"/></svg></div><div class="mn"><div class="mt">Mobile wallet</div><div class="ms">Vodafone Cash, Orange, e&amp; money</div></div><div class="radio"></div></div>
+        <div class="m" style="opacity:.6"><div class="mic"><svg viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4M12 2v13"/></svg></div><div class="mn"><div class="mt">InstaPay</div></div><span class="soon">Soon</span></div>
+      </div>
+      <div class="footer"><div class="fnote">Due 15/07/2026 · you will get a receipt on WhatsApp</div><button class="btn">Pay 1,100.24 EGP</button></div>
+    </div></div>
+    <div class="cap">EN · paying a teacher</div>
+    </div>
+
+    <!-- EN · CENTER -->
+    <div class="frame">
+    <div class="phone"><div class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="brand"><div class="bmark"></div><span class="bname">TutoringHQ</span><span class="bsub">Secure payment</span></div>
+      <div class="body">
+        <div class="prov">
+          <div class="pav">NP</div>
+          <div class="pn"><div class="pnm">Nile Prep Academy<span class="vchip">Verified</span></div><div class="pr2">Tutoring center · Nasr City</div></div>
+        </div>
+
+        <div class="what">YOU ARE PAYING FOR</div>
+        <div class="amt">
+          <div class="ar"><div class="al"><div class="alt">Physics · Sun 4PM</div><div class="als">Mariam Hassan · price set by Nile Prep Academy</div></div><div class="av2">168.75</div></div>
+          <div class="ar"><div class="al"><div class="alt">Processing fee</div><div class="als">1.5% + 1.5 EGP · includes VAT</div></div><div class="av2">4.03</div></div>
+          <div class="ar tot"><div class="al"><div class="alt">Total</div></div><div class="av2">172.78</div></div>
+        </div>
+
+        <div class="disc"><b>Nile Prep Academy</b> sets this price and teaches the sessions. TutoringHQ collects the payment on their behalf. The lesson fee is theirs; we charge only the processing fee.</div>
+
+        <div class="mlab">PAY WITH</div>
+        <div class="m on"><div class="mic"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div><div class="mn"><div class="mt">Card</div><div class="ms">Visa, Mastercard, Meeza</div></div><div class="radio"></div></div>
+        <div class="m"><div class="mic"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M11 18h2"/></svg></div><div class="mn"><div class="mt">Mobile wallet</div><div class="ms">Vodafone Cash, Orange, e&amp; money</div></div><div class="radio"></div></div>
+        <div class="m" style="opacity:.6"><div class="mic"><svg viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4M12 2v13"/></svg></div><div class="mn"><div class="mt">InstaPay</div></div><span class="soon">Soon</span></div>
+      </div>
+      <div class="footer"><div class="fnote">Session on 20/07/2026 · receipt sent on WhatsApp</div><button class="btn">Pay 172.78 EGP</button></div>
+    </div></div>
+    <div class="cap">EN · paying a center</div>
+    </div>
+
+    <!-- EN · PAID -->
+    <div class="frame">
+    <div class="phone"><div class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
+      <div class="brand"><div class="bmark"></div><span class="bname">TutoringHQ</span><span class="bsub">Secure payment</span></div>
+      <div class="okwrap">
+        <div class="okic"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div class="okt">Payment sent</div>
+        <div class="oks">172.78 EGP received. Nile Prep Academy has been notified.</div>
+        <div class="okcard">
+          <div class="okrow"><span class="okk"><b>Physics · Sun 4PM</b>Nile Prep Academy</span><span class="okv">168.75</span></div>
+          <div class="okrow"><span class="okk"><b>Processing fee</b>1.5% + 1.5 EGP · TutoringHQ</span><span class="okv">4.03</span></div>
+          <div class="okrow"><span class="okk"><b>Total paid</b>Card ····4821 · 20/07/2026</span><span class="okv">172.78</span></div>
+        </div>
+        <div class="okfoot">A copy is on its way to your WhatsApp. Questions about the sessions go to Nile Prep Academy, who provide them.</div>
+      </div>
+      <div class="footer"><button class="btn">Done</button></div>
+    </div></div>
+    <div class="cap">EN · confirmation</div>
+    </div>
+
+    <!-- AR · CENTER -->
+    <div class="frame">
+    <div class="phone"><div class="screen" dir="rtl" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="brand"><div class="bmark"></div><span class="bname">TutoringHQ</span><span class="bsub">دفع آمن</span></div>
+      <div class="body">
+        <div class="prov">
+          <div class="pav">NP</div>
+          <div class="pn"><div class="pnm">أكاديمية النيل<span class="vchip">موثّقة</span></div><div class="pr2">سنتر · مدينة نصر</div></div>
+        </div>
+
+        <div class="what">أنت تدفع مقابل</div>
+        <div class="amt">
+          <div class="ar"><div class="al"><div class="alt">فيزياء · الأحد ٤ م</div><div class="als">مريم حسن · السعر تحدّده أكاديمية النيل</div></div><div class="av2">١٦٨٫٧٥</div></div>
+          <div class="ar"><div class="al"><div class="alt">رسم المعالجة</div><div class="als">١٫٥٪ + ١٫٥ ج.م · شامل الضريبة</div></div><div class="av2">٤٫٠٣</div></div>
+          <div class="ar tot"><div class="al"><div class="alt">الإجمالي</div></div><div class="av2">١٧٢٫٧٨</div></div>
+        </div>
+
+        <div class="disc"><b>أكاديمية النيل</b> هي التي تحدّد هذا السعر وتقدّم الحصص. TutoringHQ تُحصّل الدفعة نيابةً عنها. قيمة الحصة ملك لها، ونحن نتقاضى رسم المعالجة فقط.</div>
+
+        <div class="mlab">ادفع بـ</div>
+        <div class="m on"><div class="mic"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div><div class="mn"><div class="mt">بطاقة</div><div class="ms">فيزا، ماستركارد، ميزة</div></div><div class="radio"></div></div>
+        <div class="m"><div class="mic"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M11 18h2"/></svg></div><div class="mn"><div class="mt">محفظة إلكترونية</div><div class="ms">فودافون كاش، أورنج، e&amp; money</div></div><div class="radio"></div></div>
+        <div class="m" style="opacity:.6"><div class="mic"><svg viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4M12 2v13"/></svg></div><div class="mn"><div class="mt">إنستاباي</div></div><span class="soon">قريبًا</span></div>
+      </div>
+      <div class="footer"><div class="fnote">حصة ٢٠/٠٧/٢٠٢٦ · سيصلك إيصال على واتساب</div><button class="btn">ادفع ١٧٢٫٧٨ ج.م</button></div>
+    </div></div>
+    <div class="cap">AR · دفع لسنتر</div>
+    </div>
+
+    <!-- AR · PAID -->
+    <div class="frame">
+    <div class="phone"><div class="screen" dir="rtl" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
+      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
+      <div class="brand"><div class="bmark"></div><span class="bname">TutoringHQ</span><span class="bsub">دفع آمن</span></div>
+      <div class="okwrap">
+        <div class="okic"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div class="okt">تم إرسال الدفعة</div>
+        <div class="oks">تم استلام ١٧٢٫٧٨ ج.م. وأُبلغت أكاديمية النيل.</div>
+        <div class="okcard">
+          <div class="okrow"><span class="okk"><b>فيزياء · الأحد ٤ م</b>أكاديمية النيل</span><span class="okv">١٦٨٫٧٥</span></div>
+          <div class="okrow"><span class="okk"><b>رسم المعالجة</b>١٫٥٪ + ١٫٥ ج.م · TutoringHQ</span><span class="okv">٤٫٠٣</span></div>
+          <div class="okrow"><span class="okk"><b>الإجمالي المدفوع</b>بطاقة ····٤٨٢١ · ٢٠/٠٧/٢٠٢٦</span><span class="okv">١٧٢٫٧٨</span></div>
+        </div>
+        <div class="okfoot">نسخة في طريقها إلى واتساب. أي استفسار عن الحصص يوجَّه إلى أكاديمية النيل، فهي التي تقدّمها.</div>
+      </div>
+      <div class="footer"><button class="btn">تم</button></div>
+    </div></div>
+    <div class="cap">AR · التأكيد</div>
+    </div>
+
+  </div>
+</div>
+
+</div>
+<div class="mgd-sec" id="S-5"><div class="mgd-bar"><span class="mgd-num">05</span><span class="mgd-name">Referral Landing</span><span class="mgd-src">Screen-Public-Referral.html</span></div></div>
+<div class="mgd5 mgd-screen">
+
+<div class="board">
+  <div class="eyebrow">TutoringHQ · Reference Screen</div>
+  <div class="pill0">Referral landing · Public · Draft</div>
+  <h1 class="mh">Invited by a friend</h1>
+  <p class="lead">The page a new center or teacher lands on from a referral link. It names the person who invited them, states the reward plainly, and drops them straight into the free trial rather than a sign-up wall. The inviter is named because a name is the only reason a stranger trusts the link. English and Arabic, each standing alone. Sample data is placeholder.</p>
+  <div class="phones">
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="brand"><div class="mark"></div><span class="wordmark">TutoringHQ</span><span class="bsub">Invitation</span></div>
+      <div class="body">
+        <div class="hero"><div class="hic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#eef6f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg></div><div class="hwho">Karim Samir invited you to</div><div class="hbrand">TutoringHQ</div></div>
+        <p class="para">The all-in-one platform Egyptian tutoring centers and teachers use to run students, attendance and fees. Because Karim sent you, your first month comes with a welcome credit.</p>
+        <div class="perk"><div class="pic g"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="ptx">14-day free trial, no card needed</div></div>
+        <div class="perk"><div class="pic b"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-6 4 2 7-6-4-6 4 2-7-6-4h7z"/></svg></div><div class="ptx">A welcome credit on your first bill</div></div>
+      </div>
+      <div class="foot"><button class="btn">Start free trial</button><div class="sub">Already have an account? Log in</div></div>
+    </div></div>
+    <div class="cap">EN · referral landing</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1633;&#1633;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="brand"><div class="mark"></div><span class="wordmark">TutoringHQ</span><span class="bsub">دعوة</span></div>
+      <div class="body">
+        <div class="hero"><div class="hic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#eef6f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg></div><div class="hwho">كريم سمير دعاك لـ</div><div class="hbrand">TutoringHQ</div></div>
+        <p class="para">المنصة المتكاملة اللي سناتر ومدرّسين مصر بيديروا بيها الطلاب والحضور والمصروفات. وعشان كريم بعتلك، أول شهر ليك فيه رصيد ترحيبي.</p>
+        <div class="perk"><div class="pic g"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="ptx">١٤ يوم تجربة مجانية، من غير كارت</div></div>
+        <div class="perk"><div class="pic b"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-6 4 2 7-6-4-6 4 2-7-6-4h7z"/></svg></div><div class="ptx">رصيد ترحيبي على أول فاتورة</div></div>
+      </div>
+      <div class="foot"><button class="btn">ابدأ التجربة المجانية</button><div class="sub">عندك حساب بالفعل؟ سجّل دخولك</div></div>
+    </div></div>
+    <div class="cap">AR · صفحة الدعوة</div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+<div class="mgd-sec" id="S-6"><div class="mgd-bar"><span class="mgd-num">06</span><span class="mgd-name">Offline</span><span class="mgd-src">Screen-Public-Offline.html</span></div></div>
+<div class="mgd6 mgd-screen">
+
+<div class="board">
+  <div class="eyebrow">TutoringHQ · Reference Screen</div>
+  <div class="pill0">Offline · Public · Draft</div>
+  <h1 class="mh">No connection</h1>
+  <p class="lead">The fallback the app shows when the device drops offline. It says plainly that the page needs a connection, and then it says the one thing an owner in a basement classroom actually needs to hear: attendance already taken is safe on the device and syncs by itself when the signal returns. English and Arabic, each standing alone.</p>
+  <div class="phones">
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="off"><div class="oic"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l22 22M16.7 16.7A6 6 0 0 0 12 15a6 6 0 0 0-4.7 1.7M5 12.5a10 10 0 0 1 3-1.9M2 8.8a15 15 0 0 1 4.2-2.4M19.8 12.4A10 10 0 0 0 22 8.8M12 20h.01"/></svg></div>
+        <div class="oh">You are offline</div>
+        <div class="ot">TutoringHQ needs a connection for this. The moment you are back online it will load.</div>
+        <div class="note"><div class="nh">Good to know</div><div class="nt">Attendance you already took is saved on this device and will sync automatically when the connection returns.</div></div>
+      </div>
+      <div class="foot"><button class="btn">Try again</button></div>
+    </div></div>
+    <div class="cap">EN · offline</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1633;&#1633;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="off"><div class="oic"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l22 22M16.7 16.7A6 6 0 0 0 12 15a6 6 0 0 0-4.7 1.7M5 12.5a10 10 0 0 1 3-1.9M2 8.8a15 15 0 0 1 4.2-2.4M19.8 12.4A10 10 0 0 0 22 8.8M12 20h.01"/></svg></div>
+        <div class="oh">إنت غير متصل</div>
+        <div class="ot">TutoringHQ محتاج اتصال بالإنترنت للصفحة دي. أول ما ترجع أونلاين هتفتح لوحدها.</div>
+        <div class="note"><div class="nh">معلومة مفيدة</div><div class="nt">الحضور اللي سجّلته محفوظ على الجهاز ده، وهيتزامن تلقائيًا أول ما الاتصال يرجع.</div></div>
+      </div>
+      <div class="foot"><button class="btn">حاول تاني</button></div>
+    </div></div>
+    <div class="cap">AR · غير متصل</div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+</body></html>
