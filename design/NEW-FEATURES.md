@@ -18,13 +18,28 @@ they render an empty screen, or worse, charge someone the wrong amount.
 **Two kinds of feature appear here**, and the second is the dangerous one:
 
 1. **From `INVENTORY.md` list 2** — no live route at all. Obvious.
-2. **From `INVENTORY.md` list 1** — a live route exists, so it *looks* like a restyle, but the design specifies behaviour the route does not have. Ten features in this document are of that kind. They are marked **`LOOKS LIKE A RESTYLE`**. B13 is an eleventh, where I now think the `INVENTORY.md` mapping itself is wrong.
+2. **From `INVENTORY.md` list 1** — a live route exists, so it *looks* like a restyle, but the design specifies behaviour the route does not have. Eleven features in this document are of that kind. They are marked **`LOOKS LIKE A RESTYLE`**. A twelfth was `INVENTORY.md`'s Admin Center Assignments mapping, now confirmed wrong and split into A10 and a do-not-touch guardrail.
 
 **Sources.** The 26 `Merged-*.html` files, read section by section, and the live code under `src/`.
 No live database was queried — route and code existence come from the filesystem. Every column still
 has to be checked against `information_schema.columns` at build time.
 
-**Where I am not sure, I say so.** Appendix C lists eleven open questions rather than guessing at them.
+**Where I am not sure, I say so.** Appendix C lists the open questions rather than guessing at them.
+
+## Decisions applied, 26 July 2026
+
+Five of the questions this document raised have been answered. They are folded into the entries
+below; this is the summary.
+
+| | Decision | Effect |
+|---|---|---|
+| Receipt arithmetic | **Design error.** On a 1,000 fee the teacher receives 900. There is no 850 and no 105.26 in the money model. | **Do not build.** Design being corrected. → C4, Appendix D |
+| "Processing fee" collision | The design's parent-side fee is renamed **PARENT PROCESSING FEE** throughout. | Renamed here; 5 design screens to rename. → B1, Appendix D |
+| Referral step-down | **Live wins: 10% for twelve months.** The design's month-6 drop is wrong. | Not a build item. The rest of the screen is unblocked. → A9, Appendix D |
+| Plan names | Starter/Growth/Scale are **placeholder**. Real: centers **Solo, Nano, Starter, Pro, Business, Enterprise**; teachers **Free, Standard, Pro, Scale**. | 12 design screens to correct. Build side unblocked. → Appendix D |
+| Admin Center Assignments | The **live route is do-not-touch** commission machinery. The design is a separate feature needing its own route. | Split into A10 and a do-not-touch guardrail. → A10 |
+
+**Appendix D collects every design edit these decisions imply**, by file and section number.
 
 ## Feature summary
 
@@ -38,21 +53,23 @@ has to be checked against `information_schema.columns` at build time.
 | **A6** | Teacher earnings calculator as its own screen | none |
 | **A7** | CEO centers benchmark, verified vs unverified | money (read) |
 | **A8** | Empty and loading states, row-action patterns | none |
+| **A9** | Referral rate display, countdown and step-date detail | money (read) |
+| **A10** | Admin teacher ↔ center linking, on a new route | account state |
 | **B1** | **The collection fee model** — the decision under B2–B4 | money |
 | **B2** | Online collection for centers (Collect for me) | money, account state |
 | **B3** | Online collection for teachers (Collect for you) | money, account state |
 | **B4** | Provider balance, clearing and withdrawal | money |
 | **B5** | WhatsApp Pack as a one-time top-up | money |
 | **B6** | Teacher WhatsApp screen and message allowance | money |
-| **B7** | Referral rate step-down window | money |
+| ~~B7~~ | ~~Referral rate step-down window~~ — **resolved**, live wins. Build side moved to A9 | — |
 | **B8** | Referral earnings: credit vs withdraw, and the minimum | money, account state |
 | **B9** | Advanced Analytics as a paid add-on | money, account state |
 | **B10** | Benchmarks as a paid add-on | money, account state |
 | **B11** | Extra team seats as a paid add-on | money |
 | **B12** | Group billing basis: per session, monthly, bundle | money |
-| **B13** | Admin Center Assignments — two features, one route name | money |
+| ~~B13~~ | ~~Admin Center Assignments~~ — **resolved**, split into A10 and a do-not-touch guardrail | — |
 | **B14** | Parent payment page | money |
-| **B15** | Plan naming across every screen that shows a plan | money |
+| ~~B15~~ | ~~Plan naming~~ — **resolved**, real names confirmed. Design correction only | — |
 | **C1** | Identity verification (e-KYC via Valify) | auth, account state |
 | **C2** | Verified as a second account state across the platform | money, account state |
 | **C3** | Center → teacher split payouts | money |
@@ -212,11 +229,11 @@ the plan is as a share of it.
 
 **Has to be built:**
 - Promote to a screen, or decide it stays a card. The design draws it as a screen inside `Merged-Teacher-Money`, beside Income and Billing.
-- Plan picker driven by live plan data, not hardcoded — see **B15** on plan names.
+- Plan picker driven by live plan data, not hardcoded. The design's Standard / Pro / Scale ladder at 499 / 999 / 2,499 is **correct** for teachers — this is one of the nine screens that already uses the real names.
 
 **Touches:** none — display-only arithmetic, no charge.
 
-**Depends on:** B15 (which plan names it shows).
+**Depends on:** nothing. Plan naming was settled on 26 July (resolved B15).
 
 **Design intent, and it is unusually specific:** *"The percentage only ever appears as an output the
 teacher generated, and it shrinks as they grow."* The plan cost is never presented as a headline
@@ -270,6 +287,87 @@ files, which meant it would have been invented separately on each screen it appe
 written down so it does not get reinvented."* Match what four screens already do; do not design a new
 skeleton. §06 merges the expand-in-place and bottom-sheet patterns — build the merged one, not both.
 
+## A9. Referral rate display, countdown and step-date detail
+
+**What it is:** The part of the redesigned referrals screen that shows, per referral, which rate it
+is on, what it pays monthly, and how many days until it drops — plus a detail view with the exact
+step dates.
+
+**Designs:** `Merged-Center-Insight` §03 (Referrals), `Merged-Teacher-Insight` §02 (Teacher
+Referrals). **`LOOKS LIKE A RESTYLE`** for the center screen — `/{locale}/referrals` is live.
+
+**Exists today:** The screen exists with active referrals, monthly totals and lifetime earnings. It
+does **not** show the per-referral rate, the monthly figure that rate produces, a countdown to the
+next step, or a detail view with step dates. The rate function itself is inline in
+`src/app/api/referrals/process-commission/route.ts:105-108`.
+
+**⚠ Build against the LIVE rates, not the drawn ones.** Live is **25% month 1 · 10% months 2–12 ·
+5% month 13+**. The designs draw the 10% band ending at month 6. **That is a design error and the
+design is being corrected** — people have already been told a rate. Every "Drops to 10% in 6 days"
+style countdown in the design is computed off the wrong window; the mechanic is right, the number
+is not.
+
+**Has to be built:**
+- Lift the rate function out of the cron route into one place both the job and the UI read, so the screen and the payment can never disagree.
+- Per-referral row: current rate, monthly amount it produces, days until the next step.
+- A rate-decay timeline showing 25% → 10% → 5% with the **twelve-month** band.
+- Referral detail with exact step dates.
+- Sort by "ending soon", which the design uses as the default.
+
+**Touches:** money (read only — this displays a commission that is calculated elsewhere).
+
+**Depends on:** nothing. The credit-versus-withdraw block on the same screen is **B8** and stays
+blocked; build around it.
+
+**Design intent:** *"New referrals start fresh at 25%. Refer more to keep the top rate flowing."*
+The decay is a mechanic to drive more referring, not a tax. The countdown is what creates that
+pressure — it is the reason the screen was redrawn, and it survives the rate correction intact.
+
+## A10. Admin teacher ↔ center linking, on a new route
+
+**What it is:** An internal view of which teachers are linked to which centers, with an assign form
+that sets the link type.
+
+**Designs:** `Merged-Admin-Accounts` §03. **Note the design is titled "Admin Center Assignments",
+which is now a misleading name** — see the guardrail below and Appendix D.
+
+**Exists today:** Nothing at admin level. Teacher ↔ center linking exists only center-side at
+`/{locale}/my-teachers` (Teachers / Requests / Slots / Add tabs) and teacher-side at
+`/{locale}/teacher/centers`. There is no admin view of it.
+
+**Has to be built:**
+- **A new route.** `/{locale}/admin/center-assignments` is taken by unrelated commission machinery, so this needs its own path — `/{locale}/admin/teacher-links` reads clearly and does not collide. **That name is my proposal, not a decision you made.**
+- Three tabs: By center, By teacher, Unassigned.
+- Assign form: teacher, center, and **link type Visiting or Permanent** — *"Visiting teachers keep their own private groups. The center only sees the classes they run there."*
+- Verify what backs "Visiting vs Permanent" before writing a query. The center-side flow already models proposals, cuts and slots; whether a link-type column exists is a live-catalog question, not a code-reading one.
+
+**Touches:** account state (what a center can see of a teacher's groups).
+
+**Depends on:** nothing.
+
+**Design intent:** the link type is a **visibility rule**, not a label. A visiting teacher's private
+groups stay invisible to the center. Building this as a flat "assigned / not assigned" flag loses
+the only thing the screen decides.
+
+> ### ⛔ Do-not-touch: `/{locale}/admin/center-assignments`
+>
+> **The live route of that name is sales-rep commission attribution and must not be restyled,
+> refactored or touched by any redesign PR.**
+>
+> `src/app/[locale]/(admin)/admin/center-assignments/page.tsx` carries `sourced_by: 'eyad' | 'sm' |
+> 'sr'`, `is_primary`, `territory_city`, `territory_override_reason`, and error keys including
+> `duplicate_primary`, `rep_required` and `rep_not_your_report`. **Reps start in September and this
+> is the machinery that decides who gets paid.**
+>
+> It has **no design**, and that is correct — it should not get one as part of this redesign. Add it
+> to Appendix B's decision-pending list, not to any screen PR.
+>
+> Separately and with the same deadline, `CLAUDE-CODE-HANDOFF.md` §1.1–§1.4 asks for database work
+> on this exact table: the missing unique constraint on the center identifier, the missing claim
+> expiry field, `sourced_by` lacking house-account and team-leader values, and the commission table
+> gaps. **That work is real and should not wait behind the redesign** — but it is database work, not
+> screen work, and it does not belong in a design PR either.
+
 ---
 
 # B. BLOCKED ON A DECISION FROM YOU
@@ -292,7 +390,7 @@ appear anywhere in `docs/PRICING_SPEC.md`.
 |---|---|---|---|
 | Collection fee | **10%** of tuition | provider | Provider keeps 90%. `Merged-Center-Attendance` §02, `Merged-Center-Money` §05 |
 | Price markup | **7.5% + 7.5 EGP** | parent | Baked into the displayed price. `Merged-Center-Groups` §02 |
-| Processing fee | **1.5% + 1.5 EGP** | parent | Shown as a separate line. `Merged-Public-App` §04 |
+| **Parent processing fee** | **1.5% + 1.5 EGP** | parent | Shown as a separate line. `Merged-Public-App` §04 |
 
 The arithmetic is internally consistent across screens — 150 → 168.75 → 172.78, and 1,000 → 1,082.50
 → 1,100.24 — and `Merged-Admin-Money` §01 reconciles the three sources to a single revenue figure
@@ -300,22 +398,41 @@ The arithmetic is internally consistent across screens — 150 → 168.75 → 17
 
 **Exists today:** none of it. Live money is subscription revenue only.
 
-**⚠ The name "processing fee" is already taken, and it means something else.**
-`src/lib/processingFee.ts` defines a **flat 20 EGP** fee added to every Paymob-charged **subscription
-or pack invoice**, paid by the **center or teacher**, configurable via `platform_config`
-(`processing_fee_enabled`, `processing_fee_amount`), snapshotted into `invoices.metadata.processing_fee`.
-The design's processing fee is **1.5% + 1.5 EGP charged to a parent on tuition**. Different rate,
-different payer, different invoice. A builder who sees "processing fee" and reaches for
-`resolveProcessingFeeAmount()` will charge a parent 20 EGP flat. **Name the new one something else.**
+## ⚠ NAMING RULE — two different fees, one name, and it fails silently
 
-The WhatsApp Pack design (`Merged-Center-WhatsApp` §02, §03) correctly uses the *existing* 20 EGP
-fee — so both meanings appear inside the same design set.
+**Two unrelated charges are both called "processing fee". They differ in rate, in payer, and in
+which invoice they land on. Getting them confused charges the wrong party the wrong amount, and
+nothing in the type system will catch it.**
+
+| | **CENTER PROCESSING FEE** (exists, live) | **PARENT PROCESSING FEE** (design, new) |
+|---|---|---|
+| Amount | **Flat 20 EGP** | **1.5% + 1.5 EGP** |
+| Paid by | The **center or teacher** | The **parent** |
+| Applied to | Paymob-charged subscription, pack, card-order and reactivation invoices | Tuition collected on behalf of a provider |
+| Config | `platform_config.processing_fee_enabled` / `processing_fee_amount` | none yet |
+| Snapshot | `invoices.metadata.processing_fee` | none yet |
+| Code | `src/lib/processingFee.ts`, `resolveProcessingFeeAmount()`, `getProcessingFeeConfig()` | none yet |
+| Spec | `docs/PRICING_SPEC.md` §5 | nowhere |
+
+> **`resolveProcessingFeeAmount()` is the CENTER fee. It must never be used for a parent charge.**
+> Nor may `getProcessingFeeConfig()`, `PROCESSING_FEE_DEFAULT_AMOUNT`, `applyProcessingFee()`, or
+> `invoices.metadata.processing_fee`. A parent charge that reaches any of them bills a flat 20 EGP
+> instead of 1.5% + 1.5, on the wrong invoice, against the wrong payer — and the amount is plausible
+> enough that nobody notices.
+>
+> **The parent fee needs its own module, its own config key, and its own snapshot field.** Do not
+> extend the existing one with a flag.
+
+**Throughout this document the design's fee is written PARENT PROCESSING FEE.** In the design files
+it is still called "processing fee" — Appendix D lists the five screens to rename, in both
+languages. **Both meanings appear inside the same design set**, which is what makes this dangerous:
+the WhatsApp Pack and Order Checkout designs correctly use the *existing* 20 EGP fee.
 
 **What has to be decided:**
 1. Are the three rates correct and approved? None is in `PRICING_SPEC.md`.
-2. Is the parent markup (7.5% + 7.5) disclosed to the parent, or only the final price? The design shows the final price with **no breakdown of it**, then the 1.5% + 1.5 separately with its formula.
+2. Is the parent markup (7.5% + 7.5) disclosed to the parent, or only the final price? The design shows the final price with **no breakdown of it**, then the parent processing fee separately with its formula.
 3. Does the 14%-VAT-inclusive rule apply, and to which components? `Merged-Admin-Money` §01 shows "VAT on our fees −8,854" as a separate cost line.
-4. What is the new fee called, given the collision above.
+4. Confirm the customer-facing wording for the parent fee in Arabic. Live uses **رسوم المعالجة** for the center fee, and the design currently uses the same phrase for the parent one.
 
 **Touches:** money. Every part of it.
 
@@ -323,8 +440,8 @@ fee — so both meanings appear inside the same design set.
 document.
 
 **Design intent:** the parent sees **one price for the session** plus one separately-stated
-processing fee. The provider's cut, the markup and the platform's margin never appear on the parent's
-screen. `Merged-Public-App` §04: *"the parent is buying a session, not a bundle of fees."*
+parent processing fee. The provider's cut, the markup and the platform's margin never appear on the
+parent's screen. `Merged-Public-App` §04: *"the parent is buying a session, not a bundle of fees."*
 
 ## B2. Online collection for centers ("Collect for me")
 
@@ -340,7 +457,7 @@ ledger with methods cash / instapay / vodafone_cash / orange_cash / fawry / bank
 design's own note on the live model is *"The app records payments, it does not process them."*
 
 **Has to be built:**
-- Data model: center collection opt-in flag; a center balance with **Pending** and **Available** buckets; the Thursday clearing job that moves Pending → Available; per-payment split records (tuition, collection fee, markup, processing fee).
+- Data model: center collection opt-in flag; a center balance with **Pending** and **Available** buckets; the Thursday clearing job that moves Pending → Available; per-payment split records (tuition, collection fee, markup, **parent processing fee** — its own field, never `invoices.metadata.processing_fee`).
 - Routes: the opt-in screen, the activated online-collection screen, the tax-status sub-screen.
 - Logic: invoice-per-parent generation on session billing; Paymob collection against those invoices; the per-student, per-session **cash switch** taken during attendance.
 - Integrations: Paymob (collection), C4 (receipt issuance), C1 (the verification gate).
@@ -497,7 +614,18 @@ different behaviours in one balance, which needs to be modelled deliberately.
 **Design intent:** the screen **separates what we pay for from what they pay for**, so a teacher is
 never surprised by a charge. Merging the two counters back into one total defeats the screen.
 
-## B7. Referral rate step-down window
+## ~~B7. Referral rate step-down window~~ — RESOLVED 26 July, design is wrong
+
+> **Live wins: 25% month 1 · 10% months 2–12 · 5% month 13+.** People have already been told a rate,
+> so the live schedule stands and the design's month-6 drop is a **design error**.
+>
+> **This is not a build item.** Do not change `process-commission/route.ts:105-108`. The design files
+> need correcting — see Appendix D. The rest of the redesigned referrals screen is unblocked and has
+> moved to **A9**.
+>
+> Original analysis retained below for the record.
+
+### Original entry
 
 **What it is:** The design shortens the 10% commission window from eleven months to five.
 
@@ -518,19 +646,12 @@ else                → 0.05
 225 + (11 × 90) + … ; the design pays 225 + (5 × 90) + (6 × 45). It is a live commission change
 affecting people who have already been told a rate.
 
-**Has to be built (once decided):**
-- The rate function, in one place. Today it is inline in the cron route.
-- Per-referral rate display, monthly pay, and **days until it drops** — none of which the live screen shows.
-- A referral detail showing the exact step dates.
-- Whatever grandfathering the decision implies for existing referrals.
+**Outcome:** the live schedule stands. No rate change, no grandfathering question, nothing to migrate.
+The screen work that sat behind this decision — the rate function extraction, the per-referral
+display, the countdown and the step-date detail — is unblocked and specified in **A9**, against the
+twelve-month band.
 
-**Touches:** money.
-
-**Depends on:** your decision. Nothing external.
-
-**Design intent:** *"New referrals start fresh at 25%. Refer more to keep the top rate flowing."*
-The decay is the mechanic, not a tax — the screen is built to make referring again the obvious move.
-The countdown ("Drops to 10% in 6 days") is what creates that pressure; removing it removes the point.
+**Touches:** nothing any more.
 
 ## B8. Referral earnings: credit versus withdrawal
 
@@ -670,7 +791,16 @@ monthly is a different product and the easy thing to build by mistake. And *"The
 parent will see, so the price is never set blind"* — the parent-facing figure belongs on the
 price-setting screen, not only on the parent's.
 
-## B13. Admin Center Assignments — two features under one route name
+## ~~B13. Admin Center Assignments~~ — RESOLVED 26 July, split in two
+
+> **Confirmed: they are two different features that happen to share a name.**
+>
+> - **The live route is do-not-touch.** `/{locale}/admin/center-assignments` is sales-rep commission attribution. Reps start in September. It gets no design and no redesign PR. The guardrail box sits at the end of section A.
+> - **The design is a separate feature needing its own route** — admin teacher ↔ center linking, now **A10**, buildable with no further decision.
+>
+> Original analysis retained below for the record.
+
+### Original entry
 
 **What it is:** The design and the live route at the same name are **different features**, and I am
 not certain which the design intends.
@@ -715,7 +845,7 @@ with no pay action (Appendix B).
 **Has to be built:**
 - Public route, tokenised, no auth, exempt from the CORS mutation allowlist the way webhooks are.
 - Provider header with a **Verified** badge (C1), showing whether they are a center or an independent teacher.
-- Line items: what is being paid for, the provider's price, the processing fee with its formula, the total.
+- Line items: what is being paid for, the provider's price, the **parent processing fee** with its formula, the total. **Not `resolveProcessingFeeAmount()`** — see the naming rule in B1.
 - Payment methods: Card, Mobile wallet, and **InstaPay shown as Soon** — do not enable it.
 - Confirmation state and a WhatsApp receipt.
 
@@ -725,33 +855,67 @@ with no pay action (Appendix B).
 **C1** (the badge), **C4** (the receipt).
 
 **Design intent:**
-- **"There is no breakdown of it."** The provider's price is one figure. Only the processing fee is broken out, *"stated with its formula so a parent can check it against the price in front of them, sitting where a card fee normally would."*
+- **"There is no breakdown of it."** The provider's price is one figure. Only the parent processing fee is broken out, *"stated with its formula so a parent can check it against the price in front of them, sitting where a card fee normally would."*
 - **The provider is named as the one who sets the price and teaches.** *"TutoringHQ collects the payment on her behalf."* The design calls this *"the record that the money was theirs"* — it is a legal position, not a courtesy. Do not reword it.
 - **Questions about the sessions go to the provider**, stated on the confirmation. Do not route parent support to us.
 
-## B15. Plan naming across every screen that shows a plan
+## ~~B15. Plan naming~~ — RESOLVED 26 July, designs are placeholder
 
-**What it is:** The designs use plan names the platform does not have.
+> **Starter / Growth / Scale in the center designs are placeholder names.** The real plans are:
+>
+> | | Plans |
+> |---|---|
+> | **Centers** | Solo · Nano · Starter · Pro · Business · Enterprise |
+> | **Teachers** | Free · Standard · Pro · Scale |
+>
+> **The build side is unblocked** — read plan names from live plan data (`src/lib/pricing/plans.ts`
+> keys `solo, nano, starter, pro, business, enterprise`), never from the design frames. **Twelve
+> design screens need correcting**; the list is below and in Appendix D.
 
-**Designs:** everywhere a plan appears — `Merged-Center-Setup` §07, `Merged-Center-Insight` §03,
-`Merged-Admin-Platform` §01, `Merged-CEO` §03, `Merged-Teacher-Insight` §02, `Merged-Teacher-Money`
-§02 §03.
+**Nine screens already use the correct names**, and they are the customer-facing ones — the
+placeholder ladder never reached the public surface:
 
-**Exists today:** `src/lib/pricing/plans.ts` defines `solo, nano, starter, pro, business,
-enterprise`, plus `top_centers` in `pricing.ts`. Arabic labels are سنتر نانو / سنتر صغير / سنتر متوسط
-/ سنتر كبير / سنتر ضخم / ميجا سنتر.
+`Merged-Public-Marketing` §02, §03 · `Merged-Public-App` §01 · `Merged-Public-Legal` §01 ·
+`Merged-Lifecycle` §04, §05 · `Merged-Teacher-Money` §02, §03 · `Merged-Teacher-Insight` §02
 
-**The designs say** Starter, **Growth**, **Scale** for centers and **Standard**, **Pro** for teachers.
-"Growth" and "Scale" do not exist. Teacher plan keys are `teacher_standard` and a Pro tier, so the
-teacher names are closer.
+`Merged-Public-Marketing` §03 carries the canonical ladder in a `PLANS` const —
+Solo 999 · Nano 1,999 · Starter 4,499 · Pro 7,999 · Business 12,999 · Enterprise 18,499, and
+teachers Standard 499 · Pro 999 · Scale 2,499. **Use that as the reference when correcting the
+other twelve.**
 
-**What has to be decided:** is this a rename of the live plans, a set of placeholder names in the
-design, or a new plan structure? Until it is settled, **every screen that renders a plan name is
-guessing**, and there are at least a dozen.
+**Twelve screens render a wrong plan name.** Every one is internal or center-facing:
+
+| Design | What is wrong | Languages |
+|---|---|---|
+| `Merged-Admin-Accounts` §01 Admin Account Detail | Center badge "Growth"; **a solo teacher is also shown on "Growth"**, which is not a teacher plan either | EN + AR |
+| `Merged-Admin-Accounts` §03 Admin Center Assignments | Teacher "· Growth", center "· Growth" | EN + AR (النمو) |
+| `Merged-Admin-Money` §03 Admin Finance Health | "REVENUE BY PLAN — Starter / Growth / Scale" | EN + AR (البداية / النمو / التوسّع) |
+| `Merged-Admin-Money` §07 Admin Billing Pricing | "CENTER PLANS · PER MONTH — Starter 300 / Growth 700 / Scale 1,500". **The prices are wrong too** — see the note below | EN + AR |
+| `Merged-Admin-Platform` §01 Admin Overview | Center rows "Growth"; teacher row "Dina Fouad · Growth" | EN + AR |
+| `Merged-Admin-Platform` §02 Admin Analytics | "NT Nafham Tutors **Scale**" (a center on a teacher plan), "AN Al-Nahda Growth", "BY PLAN — Growth 98 / Starter 76 / Scale 44" | EN + AR |
+| `Merged-CEO` §03 CEO Centers Benchmark | Chase queue row "NA Nile Academy Giza · Growth" | EN + AR |
+| `Merged-Center-Insight` §03 Referrals | "Nafham Tutors Growth · 899", "Al-Manar Center Growth · 899", "25% of their **Growth plan**", "Roqaya Study **Scale** · 1,499" (a center on a teacher plan) | EN + AR |
+| `Merged-Center-Money` §03 Billing | "Everything on **Growth**, plus:", "**Upgrade to Scale**" | EN + AR |
+| `Merged-Center-Setup` §02 Settings | "Nasr City · **Growth plan**", "Billing & plan — Growth" | EN + AR (خطة Growth) |
+| `Merged-Center-Setup` §03 Settings Billing | "Billing & plan — **Growth** Active 8,990 EGP / year", "**Growth plan** · yearly" | EN + AR |
+| `Merged-Center-Setup` §07 Settings Team | "3 of 5 seats used — **Growth plan**", "**Growth plan** includes 5 seats" | EN + AR (خطة Growth) |
+
+**Two rules make the corrections mechanical:**
+1. **"Growth" is never a plan.** Not for centers, not for teachers. It appears in the designs only as placeholder. (Watch for false positives: "Growth MoM +11%" in `Merged-CEO` §03 and "Growth +9%" in `Merged-CEO` §01 are the English word for a metric and are correct as they stand.)
+2. **"Scale" is a teacher plan only.** It is correct on `Merged-Teacher-Money` §02/§03, `Merged-Teacher-Insight` §02, `Merged-Lifecycle` §05, `Merged-Public-App` §01, `Merged-Public-Marketing` §02/§03 and on the teacher row in `Merged-Admin-Platform` §01. It is wrong wherever it labels a center.
+
+**Two things to check while you are in there:**
+
+- **`Merged-Admin-Money` §07 also has the wrong prices.** It shows center plans at 300 / 700 / 1,500 EGP per month against the canonical ladder's 999 / 1,999 / 4,499 / 7,999 / 12,999 / 18,499. This is the screen that sets what customers are charged, so the numbers matter as much as the names.
+- **No design shows the teacher "Free" tier.** The teacher ladder is drawn as Standard / Pro / Scale throughout. Live models the free state as the "free zone" (`hasPrivateAccess: false`) rather than a named plan, so this may be intentional — but if Free is a plan, it is missing from every teacher pricing frame.
+
+**One open question, small:** live carries a seventh center plan, `top_centers` (ميجا سنتر), custom-priced
+from `centers.all_in_price`. It is not in the six you named and appears in no design. Intentionally
+out of scope, or an omission?
 
 **Touches:** money (plan names sit next to prices).
 
-**Depends on:** nothing external.
+**Depends on:** nothing. Build reads live plan data; the design edits are Appendix D.
 
 ---
 
@@ -881,20 +1045,30 @@ integration and no e-receipt.
 stamped **Draft** and the section note says *"pending legal and accountant review."* Also **the ETA**
 as an integration, and **C1** for the National ID.
 
-**⚠ The design's own arithmetic does not reconcile.** The teacher payout receipt shows:
+**⚠ RESOLVED 26 July — the teacher payout receipt is a design error. Do not build it.**
+
+`Merged-Verification-Payouts` §06, the teacher subcontractor expense receipt, shows:
 
 ```
 Gross tuition base        1,000.00
-Collection fee             −92.34
-VAT (14% on fee)           −12.92
+Collection fee             −92.34     ← not in the money model
+VAT (14% on fee)           −12.92     ← not in the money model
 Tuition collected         1,000.00
 Collection fee (10%)      −100.00
-Net to wallet               850.00
+Net to wallet               850.00    ← wrong
 ```
-…and then the footnote says *"The teacher receives 900.00."* 1,000 − 100 = 900, not 850, and the two
-fee lines (92.34 + 12.92 = 105.26) are a third number. **Do not implement this receipt as drawn.**
-Get the intended figures confirmed alongside the legal review. This is precisely the failure mode
-`START-CLAUDE-CODE.md` asks for adversarial review on.
+…with a footnote reading *"The teacher receives 900.00."*
+
+**The correct figure is 900.** On a 1,000 fee the collection fee is 10% and the teacher receives
+900. **There is no 850 and no 105.26 anywhere in the money model** — those lines are artifacts of
+the draft, not an alternative fee structure.
+
+**Do not implement this receipt as drawn, and do not try to reconcile the three numbers — there is
+nothing to reconcile.** Eyad is correcting the design. Build against 1,000 − 10% = 900 once the
+surrounding legal and accountant review lands.
+
+The same section's parent tax e-receipt and referral expense receipt were not flagged and are not
+part of this correction, but they carry the same **Draft** stamp and the same pending review.
 
 **Design intent:** tax documents *"cover our commission alone, never the tuition, because the tuition
 was never our sale."* The provider issues their own document for the tuition. Getting this backwards
@@ -998,13 +1172,18 @@ which survives is a prerequisite for the money PRs, not something to settle insi
 
 ---
 
-# Appendix B — The 22 live screens with no design
+# Appendix B — The 23 live screens with no design
 
-From `INVENTORY.md` list 3a, restated. **All are marked decision pending. Nothing here is proposed
-for deletion** — each needs a design or an explicit decision, and that decision is yours.
+From `INVENTORY.md` list 3a, restated, **plus one added on 26 July**: `/admin/center-assignments`
+moves here now that the design of that name is confirmed to be a different feature (A10).
+
+**All are marked decision pending. Nothing here is proposed for deletion** — each needs a design or
+an explicit decision, and that decision is yours. The one exception is the first row, which has
+already been decided: it is not to be touched.
 
 | Route | What it does | Status |
 |---|---|---|
+| `/{locale}/admin/center-assignments` | **Sales-rep commission attribution** — `sourced_by`, `is_primary`, `territory_city`, `duplicate_primary` / `rep_required` guards. Reps start in September | ⛔ **do not touch** — decided 26 July. No design, no redesign PR. See the guardrail after A10 |
 | `/{locale}/pay` | Center's own invoice list with pay and PDF, on the shared `CustomerInvoicesView` | decision pending |
 | `/{locale}/teacher/pay` | Teacher's own invoices, same shared view, reachable while the account is locked so a lapsed teacher can pay | decision pending — see Appendix A |
 | `/{locale}/teacher/subscription/upgrade` | Standard → Pro upgrade surface, renders `PlanComparison` | decision pending |
@@ -1035,26 +1214,88 @@ down; the pages are still live and still served. That is a state to resolve, not
 
 # Appendix C — Where I am not sure
 
-Eleven open questions, stated rather than guessed.
+**Three of the original eleven were answered on 26 July** — the receipt arithmetic, the plan names,
+and Admin Center Assignments. Eight remain, stated rather than guessed.
 
-1. **B13, Admin Center Assignments.** The design is teacher↔center linking; the live route is sales-rep attribution. I read the design as a **new** feature, but I am not certain, and reading it the other way deletes commission attribution UI before September.
+1. **B12, group billing basis.** I read "Monthly 1,200" and "Bundle · 8" as new data, because live has only `fee_per_class`. It is conceivable these are display labels over an existing convention I did not find.
 
-2. **B12, group billing basis.** I read "Monthly 1,200" and "Bundle · 8" as new data, because live has only `fee_per_class`. It is conceivable these are display labels over an existing convention I did not find.
+2. **`/teacher/pricing`.** The design folds center and teacher plans into one `/pricing` page; live has two routes. `INVENTORY.md` lists it as a restyle. Consolidating is a routing change, and I do not know whether that is intended.
 
-3. **`/teacher/pricing`.** The design folds center and teacher plans into one `/pricing` page; live has two routes. `INVENTORY.md` lists it as a restyle. Consolidating is a routing change, and I do not know whether that is intended.
+3. **B9, Analytics add-on.** I do not know whether the add-on **replaces** the `canViewRevenue` permission gate or stacks on it. The design does not say and the two answers behave very differently for staff accounts.
 
-4. **B9, Analytics add-on.** I do not know whether the add-on **replaces** the `canViewRevenue` permission gate or stacks on it. The design does not say and the two answers behave very differently for staff accounts.
+4. **B3, the teacher collection fee.** The opt-in screen states the fee only in categories; the expense receipt states 10%. I cannot tell whether that is deliberate staging or an inconsistency. **Partly narrowed by the 26 July receipt correction** — 10% is confirmed as the rate; what remains open is whether the opt-in screen should say so.
 
-5. **B3, the teacher collection fee.** The opt-in screen states the fee only in categories; the expense receipt states 10%. I cannot tell whether that is deliberate staging or an inconsistency.
+5. **C7, `chq_enrollment_otp`.** The worker and API routes exist. Whether Meta has approved the template is live state I cannot read from the filesystem. Check `wa_templates` before relying on the path.
 
-6. **C4, the receipt arithmetic.** 1,000 − 100 = 900, but the receipt shows 850 as net and 900 in the footnote, with a third pair of fee lines summing to 105.26. I am confident this is wrong; I do not know which figure is right.
+6. **B6, teacher message allowance.** "Your Pro plan includes 50 a month" — I found no live entitlement. It is possible one exists in `platform_config` under a key I did not search.
 
-7. **C7, `chq_enrollment_otp`.** The worker and API routes exist. Whether Meta has approved the template is live state I cannot read from the filesystem. Check `wa_templates` before relying on the path.
+7. **The admin information architecture.** Every admin design uses a five-item bottom nav (Overview · Money · Accounts · Platform · More). Live is a 17-item sidebar. Whether the IA change is in scope decides where several of these features land, and no design states it.
 
-8. **B6, teacher message allowance.** "Your Pro plan includes 50 a month" — I found no live entitlement. It is possible one exists in `platform_config` under a key I did not search.
+8. **B4, the teacher instant-payout fee.** The center schedule bands at 250 EGP / 2% / 3%. The teacher screen shows a flat 300 EGP on 8,400, which is 3.57% and matches no band. Either teachers have a different schedule or the sample is loose.
 
-9. **B15, plan names.** Starter / Growth / Scale do not map onto `nano / starter / pro / business / enterprise / top_centers`. I cannot tell whether the designs rename, replace, or are simply using placeholder names.
+**Two smaller ones raised by the 26 July answers**, both in the resolved B15 entry: whether the
+seventh live center plan `top_centers` is deliberately out of scope, and whether the teacher **Free**
+tier is missing from the designs or is correctly modelled as the free zone rather than a named plan.
 
-10. **The admin information architecture.** Every admin design uses a five-item bottom nav (Overview · Money · Accounts · Platform · More). Live is a 17-item sidebar. Whether the IA change is in scope decides where several of these features land, and no design states it.
+---
 
-11. **B4, the teacher instant-payout fee.** The center schedule bands at 250 EGP / 2% / 3%. The teacher screen shows a flat 300 EGP on 8,400, which is 3.57% and matches no band. Either teachers have a different schedule or the sample is loose.
+# Appendix D — Design corrections needed
+
+**Edits to the `Merged-*.html` files, not to code.** Four corrections, 19 screens. Nothing in this
+appendix is a build item; every one of them is a design file that says something the platform will
+not do.
+
+## D1. Rename the parent-side fee — 5 screens
+
+The design calls the parent's 1.5% + 1.5 EGP charge a **"processing fee"**, which is already the
+name of the live flat 20 EGP fee charged to a *center*. See the naming rule in B1. Rename to
+**parent processing fee** in both languages; the Arabic is currently **رسوم المعالجة** for both.
+
+| Design | What it shows | Instances |
+|---|---|---|
+| `Merged-Public-App` §04 Parent Payment | "Processing fee — 1.5% + 1.5 EGP · includes VAT" on the teacher frame, the center frame and the confirmation, plus AR mirrors | 6 |
+| `Merged-Admin-Money` §01 Admin Fee Collection | "Processing fees · 1.5% + 1.5 — 7,095" as one of the three revenue sources, EN + AR | 3 |
+| `Merged-Center-Attendance` §02 Center Collect ForMe | Prose: *"parents see one price plus a small processing fee"* | 1 |
+| `Merged-Center-Setup` §01 Onboarding | Prose: *"Parents see one price plus a small processing fee."* | 1 |
+| `Merged-Verification-Payouts` §02 Verification In Context | *"A small processing fee applies per collection"*, EN + AR. **Ambiguous** — reads like a deduction from the teacher rather than a parent charge. Worth deciding which it means while renaming | 2 |
+
+**Leave these four alone — they correctly use the existing center fee:**
+`Merged-Center-Orders` §03 (Order Checkout, "Processing fee 20") ·
+`Merged-Center-WhatsApp` §02 and §03 ("20 EGP processing fee") ·
+`Merged-Teacher-WhatsApp` §01 ("20 EGP processing fee").
+
+## D2. Correct the referral step-down — 2 screens
+
+Live is **25% month 1 · 10% months 2–12 · 5% month 13+**. Both screens draw the 10% band ending at
+month 6.
+
+| Design | What to change |
+|---|---|
+| `Merged-Center-Insight` §03 Referrals | The rate-decay timeline ("10% months 2–6 / 5% month 7+" → months 2–12 / month 13+), and every countdown computed off it. EN + AR |
+| `Merged-Teacher-Insight` §02 Teacher Referrals | Same timeline, same countdowns. EN + AR |
+
+The sample countdowns ("Drops to 10% in 6 days", "in 18 days", "in 41 days") are placeholder data and
+only need to be plausible against the twelve-month band.
+
+## D3. Correct the plan names — 12 screens
+
+Full table in the resolved **B15** entry above. Summary: **"Growth" is never a plan**; **"Scale" is a
+teacher plan only**. Reference ladder is the `PLANS` const in `Merged-Public-Marketing` §03.
+
+`Merged-Admin-Accounts` §01, §03 · `Merged-Admin-Money` §03, §07 · `Merged-Admin-Platform` §01, §02 ·
+`Merged-CEO` §03 · `Merged-Center-Insight` §03 · `Merged-Center-Money` §03 · `Merged-Center-Setup`
+§02, §03, §07.
+
+**`Merged-Admin-Money` §07 additionally has the wrong prices** — 300 / 700 / 1,500 against the
+canonical 999 / 1,999 / 4,499 / 7,999 / 12,999 / 18,499.
+
+## D4. Fix the teacher payout receipt — 1 screen
+
+`Merged-Verification-Payouts` §06. On a 1,000 fee the teacher receives **900**. Remove the −92.34 and
+−12.92 lines and the 850 net; they are draft artifacts with no place in the money model. Detail in
+**C4**.
+
+## Overlap
+
+`Merged-Center-Insight` §03 appears in D2 and D3. `Merged-Admin-Money` §01 in D1 and, separately, §07
+in D3. Nineteen distinct screens across the four corrections.
