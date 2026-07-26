@@ -51,7 +51,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     const { data: invoice, error: invErr } = await auth.supabaseAdmin
       .from('invoices')
       .select(
-        'id, center_id, status, invoice_type, total_amount, amount_received, paymob_order_id, paymob_iframe_url',
+        'id, center_id, status, invoice_type, total_amount, amount_received, paymob_order_id, paymob_iframe_url, metadata',
       )
       .eq('id', invoiceId.trim())
       .maybeSingle();
@@ -69,6 +69,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       amount_received: number | string | null;
       paymob_order_id: string | null;
       paymob_iframe_url: string | null;
+      metadata: unknown;
     };
 
     if (row.center_id !== auth.centerId) {
@@ -107,12 +108,23 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       return NextResponse.json({ error: 'Invoice is already paid' }, { status: 400 });
     }
 
-    // Reuse the cached iframe only when nothing has been received yet (the cached
-    // order is for the full total). Once a partial credit exists, the cached order
-    // is for the wrong amount — fall through and mint a fresh order for `remaining`.
-    // When the owner opts to save their card, never reuse a cached (non-tokenizing)
-    // key — mint a fresh key that requests the token.
-    if (received <= 0 && !saveCard && row.paymob_order_id && row.paymob_iframe_url) {
+    // Reuse the cached iframe only when: nothing has been received yet (the
+    // cached order is for the full total), the owner isn't opting into
+    // card-saving (that needs a fresh tokenizing key), AND the cached order was
+    // minted for the SAME total_amount that is due right now. A reprice (see
+    // repriceSubscriptionInvoice) changes total_amount specifically BECAUSE it
+    // also clears these two fields — but presence of the fields alone is not
+    // proof they still match what's owed, so compare against the snapshot taken
+    // at mint time instead of trusting presence. A missing/unreadable snapshot
+    // fails CLOSED (mint fresh) rather than reuse an unverified cached amount.
+    const existingMeta = (row.metadata && typeof row.metadata === 'object' ? row.metadata : {}) as Record<
+      string,
+      unknown
+    >;
+    const cachedTotal = Number(existingMeta.paymob_cached_total);
+    const cachedTotalMatches = Number.isFinite(cachedTotal) && Math.abs(cachedTotal - total) < 0.01;
+
+    if (received <= 0 && !saveCard && cachedTotalMatches && row.paymob_order_id && row.paymob_iframe_url) {
       return NextResponse.json({
         iframeUrl: row.paymob_iframe_url,
         orderId: row.paymob_order_id,
@@ -246,6 +258,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       .update({
         paymob_order_id: paymobOrderId,
         paymob_iframe_url: iframeUrl,
+        // Snapshot what this order was actually minted for. Reuse above only
+        // fires when received<=0, at which point remaining === total, so
+        // caching `total` here is the amount this order covers either way.
+        metadata: { ...existingMeta, paymob_cached_total: total },
       })
       .eq('id', row.id)
       .eq('center_id', auth.centerId)
