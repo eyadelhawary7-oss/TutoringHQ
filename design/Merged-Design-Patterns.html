@@ -3,127 +3,112 @@
 ================================================================
  TutoringHQ · MERGED DESIGN REFERENCE
  File: Merged-Design-Patterns.html
- Reference · Design patterns
+ Shared · Design patterns
 
- CONTENTS (4 screens):
-  01. Row action patterns   <-  Screen-Row-action-patterns.html
-  02. Quick menu rows   <-  Screen-Quick-menu-rows.html
-  03. Group actions   <-  Screen-Group-actions.html
-  04. Expand sheet merge   <-  Screen-Expand-sheet-merge.html
+ CONTENTS (5 screens):
+  01. Empty States   <-  Screen-Empty-States.html
+  02. Row action patterns   <-  Screen-Row-action-patterns.html
+  03. Quick menu rows   <-  Screen-Quick-menu-rows.html
+  04. Group actions   <-  Screen-Group-actions.html
+  05. Expand sheet merge   <-  Screen-Expand-sheet-merge.html
 
 ----------------------------------------------------------------
  HOW TO READ THIS FILE WHEN IMPLEMENTING IT
 ----------------------------------------------------------------
- 1. CSS IS SCOPED. Every rule carries a .mgdN prefix so that
-    several screens can share one page without their styles
-    colliding.
+ 1. CSS IS SCOPED. Every rule carries a .mgdN prefix so several
+    screens can share one page without their styles colliding.
         in this file:   .mgd4 .pins{ ... }
         in your code:   .pins{ ... }
     Strip the .mgdN prefix. It is bookkeeping for this reference
     file only and must never reach the codebase.
 
  2. ONE SECTION = ONE SCREEN. Each section bar shows its number,
-    its name, and the original screen file it came from. Use that
-    filename as the screen's identity, not the section number.
+    its name, and the original screen file it came from.
 
- 3. FRAMES ARE STATES, NOT PAGES. Each phone inside a section is
-    one state of that screen (empty, filled, error, and so on).
-    The caption under or above each phone names the state.
+ 3. FRAMES ARE STATES, NOT PAGES. Each phone is one state of that
+    screen. The caption names the state.
 
- 4. THE TWO LANGUAGES ARE SEPARATE SCREENS. English and Arabic
-    are never a translation overlay. Arabic frames use Eastern
-    Arabic numerals (0-9 written as Arabic-Indic) and the Arabic
-    currency mark. English frames use Western numerals and EGP.
-    Directional icons such as chevrons flip with the language.
+ 4. THE TWO LANGUAGES ARE SEPARATE SCREENS. Arabic uses Eastern
+    Arabic numerals and the Arabic currency mark; English uses
+    Western numerals and EGP. Chevrons flip with language.
 
- 5. SAMPLE DATA IS PLACEHOLDER. Names, amounts, dates and phone
-    numbers are illustrative. Do not treat them as fixtures or
-    seed data.
+ 5. SAMPLE DATA IS PLACEHOLDER. Not fixtures, not seed data.
 
- 6. THIS IS DESIGN, NOT PRODUCTION CODE. Markup here is built to
-    be read, not shipped. Take the layout, spacing, type scale
-    and colour decisions from it. Do not copy the DOM wholesale.
+ 6. THIS IS DESIGN, NOT PRODUCTION CODE. Take layout, spacing,
+    type scale and colour. Do not copy the DOM wholesale.
 
  7. ANY UI OR BRANDING CHANGE BUMPS SW_VERSION in public/sw.js.
+
+ NOTE ON SECTION 01: the empty states are a PATTERN, built once
+ in the foundations pass and reused. Do not reimplement them per
+ screen. The rules block at the end of that section is binding.
 ================================================================
 -->
 
-<html lang="en">
-<head>
-<meta charset="utf-8">
+<html lang="en"><head><meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Reference · Design patterns · TutoringHQ</title>
+<title>Shared · Design patterns</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 html{background:#d8d3c6;color-scheme:light}
 :root{color-scheme:light}
-
-html,body{margin:0;padding:0}
-body{background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased}
-.mgd-top{max-width:1180px;margin:0 auto;padding:44px 24px 8px;color:#1b201d}
+body{margin:0;padding:0;background:#d8d3c6;-webkit-font-smoothing:antialiased}
+.mgd-top{max-width:1480px;margin:0 auto;padding:56px 28px 8px;color:#1b201d;font-family:"IBM Plex Sans",system-ui,sans-serif}
 .mgd-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5d635c;font-weight:600}
 .mgd-h1{font-size:42px;line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:12px 0 10px}
 .mgd-lede{font-size:16px;line-height:1.55;color:#5d635c;max-width:82ch;margin:0}
 .mgd-toc{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 0}
 .mgd-toc a{font-size:12.5px;font-weight:600;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:6px 12px;border-radius:999px;text-decoration:none}
-.mgd-sec{max-width:1180px;margin:0 auto;padding:14px 24px 0}
+.mgd-sec{max-width:1480px;margin:0 auto;padding:0 28px;font-family:"IBM Plex Sans",system-ui,sans-serif}
 .mgd-bar{display:flex;align-items:baseline;gap:12px;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin-top:34px}
 .mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a5e16;font-weight:500}
 .mgd-name{font-size:22px;font-weight:700;color:#14181a;letter-spacing:-.01em}
 .mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#80827a}
-/* ===== Screen-Row-action-patterns ===== */
+.mgd-screen{content-visibility:auto;contain-intrinsic-size:auto 1400px}
+
+/* ==== 01 Empty States · Screen-Empty-States.html ==== */
 .mgd1 *{box-sizing:border-box}
-.mgd1{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
-.mgd1 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
-.mgd1 .mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
-.mgd1 svg{display:block;flex-shrink:0}
-.mgd1 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
-.mgd1 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
-.mgd1 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
-.mgd1 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 10px}
-.mgd1 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
-.mgd1 .body{flex:1;overflow-y:auto;padding:2px 16px 8px;display:flex;flex-direction:column;gap:10px}
-.mgd1 .hint{font-size:11px;color:#80827a;text-align:center;margin:2px 0 2px;display:flex;align-items:center;justify-content:center;gap:5px}
-.mgd1 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 9px;border-radius:999px;white-space:nowrap;flex-shrink:0}
-.mgd1 .lrow{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 2px rgba(28,33,30,.05)}
-.mgd1 .av{width:40px;height:40px;border-radius:12px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0}
-.mgd1 .nm{font-size:15px;font-weight:600}
-.mgd1 .mt{font-size:12px;color:#80827a}
-.mgd1 .kb{color:#a6a79d;flex-shrink:0}
-.mgd1 /* swipe */
-  .swrap{position:relative;overflow:hidden;border-radius:14px;box-shadow:0 1px 2px rgba(28,33,30,.05)}
-.mgd1 .sact{position:absolute;top:0;bottom:0;right:0;display:flex}
-.mgd1 .sbtn{width:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#fff;font-size:10px;font-weight:600}
-.mgd1 .srowc{position:relative;transform:translateX(-192px);background:#fffdf8;border:1px solid #e2ddd1;border-inline:none;padding:12px 14px;display:flex;align-items:center;gap:12px;height:100%}
-.mgd1 /* inline expand */
-  .expcard{background:#fffdf8;border:1px solid #0e6b61;border-radius:16px;padding:14px;box-shadow:0 0 0 2px rgba(14,107,97,.14);display:flex;flex-direction:column;gap:12px}
-.mgd1 .exphead{display:flex;align-items:center;gap:12px}
-.mgd1 .expacts{display:flex;gap:8px}
-.mgd1 .chip{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 4px;border:1px solid #e2ddd1;border-radius:12px;background:#faf7f0;font-size:11px;font-weight:600;color:#3a3f3a}
-.mgd1 .chip svg{color:#0e6b61}
-.mgd1 .chip.pri{background:#0e6b61;color:#fff;border-color:#0e6b61}
-.mgd1 .chip.pri svg{color:#fff}
-.mgd1 /* long-press popover */
-  .scrim{position:absolute;inset:0;background:rgba(20,24,22,.44)}
-.mgd1 .floatg{position:absolute;left:16px;right:16px;top:150px;z-index:5;display:flex;flex-direction:column;gap:10px}
-.mgd1 .liftrow{background:#fffdf8;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(28,33,30,.30)}
-.mgd1 .pop{background:#fffdf8;border-radius:16px;box-shadow:0 12px 40px rgba(28,33,30,.28);padding:5px 6px}
-.mgd1 .popact{display:flex;align-items:center;gap:12px;padding:11px 10px}
-.mgd1 .popact+.popact{border-top:1px solid #f2eee5}
-.mgd1 .popact svg{color:#0e6b61}
-.mgd1 .popact .pt{font-size:14px;font-weight:600}
-.mgd1 .popact.danger svg{color:#9c3322}
-.mgd1 .popact.danger .pt{color:#9c3322}
-.mgd1 /* always-on icons */
-  .minibtn{width:34px;height:34px;border-radius:10px;background:#f2eee5;display:flex;align-items:center;justify-content:center;color:#5d635c;flex-shrink:0}
-.mgd1 .minibtn.pay{background:#dfeeeb;color:#0a514a}
+.mgd1{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',system-ui,sans-serif;color:#14181a;-webkit-font-smoothing:antialiased}
 .mgd1 .board{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
 .mgd1 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
-.mgd1 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd1 .secbar{display:flex;align-items:baseline;gap:12px;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin:56px 0 0}
+.mgd1 .secnum{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a5e16;font-weight:500}
+.mgd1 .secname{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.mgd1 .secnote{margin:10px 0 0;font-size:14.5px;line-height:1.65;color:#5d635c;max-width:82ch}
+.mgd1 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:34px}
 .mgd1 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
-/* ===== Screen-Quick-menu-rows ===== */
+.mgd1 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d635c;text-align:center;max-width:340px;line-height:1.55}
+.mgd1 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd1 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative;font-family:'IBM Plex Sans',system-ui,sans-serif}
+.mgd1 .screen.ar{font-family:'IBM Plex Sans Arabic',system-ui,sans-serif}
+.mgd1 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600;flex-shrink:0}
+.mgd1 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 10px;flex-shrink:0}
+.mgd1 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd1 .topbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mgd1 .ttl{font-size:19px;font-weight:700;line-height:1.15}
+.mgd1 .tsub{font-size:11.5px;color:#80827a;margin-top:2px}
+.mgd1 .body{flex:1;display:flex;flex-direction:column;padding:2px 16px 8px;overflow:hidden}
+.mgd1 .es{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 20px 28px}
+.mgd1 .es-ic{width:64px;height:64px;border-radius:19px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;margin-bottom:20px;flex-shrink:0}
+.mgd1 .es-ic svg{width:29px;height:29px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.mgd1 .es-ic.quiet{background:#f2eee5;color:#80827a}
+.mgd1 .es-h{font-size:19px;font-weight:700;line-height:1.25;margin-bottom:9px}
+.mgd1 .es-t{font-size:13px;color:#5d635c;line-height:1.6;max-width:31ch}
+.mgd1 .ar .es-t{line-height:1.75}
+.mgd1 .es-act{width:100%;margin-top:24px}
+.mgd1 .btn{display:block;width:100%;border:none;border-radius:13px;padding:15px;font-size:15px;font-weight:700;background:#0e6b61;color:#fffdf8;text-align:center;font-family:inherit}
+.mgd1 .btn.ghost{background:#fffdf8;color:#3a3f3a;border:1px solid #e2ddd1;margin-top:9px}
+.mgd1 .es-alt{font-size:11.5px;color:#80827a;margin-top:13px;line-height:1.5;max-width:32ch}
+.mgd1 .ar .es-alt{line-height:1.65}
+.mgd1 .rule{background:#fffdf8;border:1px solid #e2ddd1;border-radius:18px;padding:26px 30px;margin-top:34px}
+.mgd1 .rule h3{margin:0 0 14px;font-size:16px;font-weight:700}
+.mgd1 .rule ul{margin:0;padding-inline-start:20px}
+.mgd1 .rule li{font-size:14.5px;line-height:1.7;color:#3a3f3a;margin-bottom:10px}
+.mgd1 .yes{color:#0a514a;font-weight:600}
+.mgd1 .no{color:#9C3322;font-weight:600}
+/* ==== 02 Row action patterns · Screen-Row-action-patterns.html ==== */
 .mgd2 *{box-sizing:border-box}
 .mgd2{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
 .mgd2 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
@@ -135,33 +120,41 @@ body{background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10
 .mgd2 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 10px}
 .mgd2 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
 .mgd2 .body{flex:1;overflow-y:auto;padding:2px 16px 8px;display:flex;flex-direction:column;gap:10px}
+.mgd2 .hint{font-size:11px;color:#80827a;text-align:center;margin:2px 0 2px;display:flex;align-items:center;justify-content:center;gap:5px}
 .mgd2 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 9px;border-radius:999px;white-space:nowrap;flex-shrink:0}
 .mgd2 .lrow{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 2px rgba(28,33,30,.05)}
-.mgd2 .lrow.sel{border-color:#0e6b61;box-shadow:0 0 0 2px rgba(14,107,97,.16)}
 .mgd2 .av{width:40px;height:40px;border-radius:12px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0}
-.mgd2 .timeblk{width:46px;text-align:center;flex-shrink:0}
-.mgd2 .timeblk .t1{font-size:15px;font-weight:600;line-height:1.1}
-.mgd2 .timeblk .t2{font-size:11px;color:#80827a}
+.mgd2 .nm{font-size:15px;font-weight:600}
+.mgd2 .mt{font-size:12px;color:#80827a}
 .mgd2 .kb{color:#a6a79d;flex-shrink:0}
-.mgd2 /* bottom sheet */
-  .scrim{position:absolute;inset:0;background:rgba(20,24,22,.42)}
-.mgd2 .sheet{position:absolute;left:0;right:0;bottom:0;background:#fffdf8;border-radius:24px 24px 0 0;padding:8px 16px 22px;box-shadow:0 -8px 30px rgba(28,33,30,.18)}
-.mgd2 .grab{width:38px;height:4px;border-radius:999px;background:#e2ddd1;margin:6px auto 12px}
-.mgd2 .sheet-h{display:flex;flex-direction:column;gap:3px;padding:0 2px 8px}
-.mgd2 .act{display:flex;align-items:center;gap:13px;padding:12px 4px;border-top:1px solid #f2eee5}
-.mgd2 .act .ai{width:40px;height:40px;border-radius:11px;background:#f2eee5;display:flex;align-items:center;justify-content:center;color:#0e6b61;flex-shrink:0}
-.mgd2 .act .al{flex:1}
-.mgd2 .act .al .t{font-size:15px;font-weight:600;display:flex;align-items:center;gap:7px}
-.mgd2 .act .al .s{font-size:12px;color:#80827a;margin-top:1px}
-.mgd2 .act.danger .ai{background:#f4e5e2;color:#9c3322}
-.mgd2 .act.danger .t{color:#9c3322}
-.mgd2 .mgr{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9a6b1f;background:#f4ebd7;padding:2px 6px;border-radius:6px}
-.mgd2 .chev{color:#a6a79d}
+.mgd2 .swrap{position:relative;overflow:hidden;border-radius:14px;box-shadow:0 1px 2px rgba(28,33,30,.05)}
+.mgd2 .sact{position:absolute;top:0;bottom:0;right:0;display:flex}
+.mgd2 .sbtn{width:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#fff;font-size:10px;font-weight:600}
+.mgd2 .srowc{position:relative;transform:translateX(-192px);background:#fffdf8;border:1px solid #e2ddd1;border-inline:none;padding:12px 14px;display:flex;align-items:center;gap:12px;height:100%}
+.mgd2 .expcard{background:#fffdf8;border:1px solid #0e6b61;border-radius:16px;padding:14px;box-shadow:0 0 0 2px rgba(14,107,97,.14);display:flex;flex-direction:column;gap:12px}
+.mgd2 .exphead{display:flex;align-items:center;gap:12px}
+.mgd2 .expacts{display:flex;gap:8px}
+.mgd2 .chip{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 4px;border:1px solid #e2ddd1;border-radius:12px;background:#faf7f0;font-size:11px;font-weight:600;color:#3a3f3a}
+.mgd2 .chip svg{color:#0e6b61}
+.mgd2 .chip.pri{background:#0e6b61;color:#fff;border-color:#0e6b61}
+.mgd2 .chip.pri svg{color:#fff}
+.mgd2 .scrim{position:absolute;inset:0;background:rgba(20,24,22,.44)}
+.mgd2 .floatg{position:absolute;left:16px;right:16px;top:150px;z-index:5;display:flex;flex-direction:column;gap:10px}
+.mgd2 .liftrow{background:#fffdf8;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(28,33,30,.30)}
+.mgd2 .pop{background:#fffdf8;border-radius:16px;box-shadow:0 12px 40px rgba(28,33,30,.28);padding:5px 6px}
+.mgd2 .popact{display:flex;align-items:center;gap:12px;padding:11px 10px}
+.mgd2 .popact+.popact{border-top:1px solid #f2eee5}
+.mgd2 .popact svg{color:#0e6b61}
+.mgd2 .popact .pt{font-size:14px;font-weight:600}
+.mgd2 .popact.danger svg{color:#9c3322}
+.mgd2 .popact.danger .pt{color:#9c3322}
+.mgd2 .minibtn{width:34px;height:34px;border-radius:10px;background:#f2eee5;display:flex;align-items:center;justify-content:center;color:#5d635c;flex-shrink:0}
+.mgd2 .minibtn.pay{background:#dfeeeb;color:#0a514a}
 .mgd2 .board{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
 .mgd2 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
 .mgd2 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
 .mgd2 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
-/* ===== Screen-Group-actions ===== */
+/* ==== 03 Quick menu rows · Screen-Quick-menu-rows.html ==== */
 .mgd3 *{box-sizing:border-box}
 .mgd3{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
 .mgd3 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
@@ -172,27 +165,16 @@ body{background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10
 .mgd3 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
 .mgd3 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 10px}
 .mgd3 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
-.mgd3 .body{flex:1;overflow-y:auto;padding:2px 16px 8px;display:flex;flex-direction:column;gap:12px}
+.mgd3 .body{flex:1;overflow-y:auto;padding:2px 16px 8px;display:flex;flex-direction:column;gap:10px}
 .mgd3 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 9px;border-radius:999px;white-space:nowrap;flex-shrink:0}
-.mgd3 .seg{display:flex;background:#f2eee5;border-radius:12px;padding:4px;gap:4px}
-.mgd3 .seg .s{flex:1;text-align:center;font-size:13px;font-weight:600;color:#5d635c;padding:8px 0;border-radius:9px}
-.mgd3 .seg .s.on{background:#fffdf8;color:#0a514a;box-shadow:0 1px 2px rgba(28,33,30,.06)}
-.mgd3 .gcard{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:14px;box-shadow:0 1px 2px rgba(28,33,30,.05);display:flex;flex-direction:column;gap:10px}
-.mgd3 .gcard.sel{border-color:#0e6b61;box-shadow:0 0 0 2px rgba(14,107,97,.16)}
-.mgd3 .capbar{height:7px;background:#f2eee5;border-radius:999px;overflow:hidden}
-.mgd3 .capbar>i{display:block;height:100%;border-radius:999px;background:#0e6b61}
-.mgd3 .tiles{display:flex;gap:10px}
-.mgd3 .tile{flex:1;background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:12px 14px}
-.mgd3 .tile .n{font-size:22px;font-weight:700;line-height:1}
-.mgd3 .tile .l{font-size:12px;color:#80827a;margin-top:4px}
-.mgd3 .mrow{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #eee7d9}
+.mgd3 .lrow{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 2px rgba(28,33,30,.05)}
+.mgd3 .lrow.sel{border-color:#0e6b61;box-shadow:0 0 0 2px rgba(14,107,97,.16)}
 .mgd3 .av{width:40px;height:40px;border-radius:12px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0}
-.mgd3 /* action bar */
-  .actionbar{border-top:1px solid #e2ddd1;background:#fffdf8;padding:12px 16px;display:flex;gap:10px;align-items:center;flex-shrink:0}
-.mgd3 .btn-primary{flex:1;height:50px;background:#0e6b61;color:#fffdf8;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28)}
-.mgd3 .iconbtn{width:50px;height:50px;border-radius:14px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
-.mgd3 /* bottom sheet */
-  .scrim{position:absolute;inset:0;background:rgba(20,24,22,.42)}
+.mgd3 .timeblk{width:46px;text-align:center;flex-shrink:0}
+.mgd3 .timeblk .t1{font-size:15px;font-weight:600;line-height:1.1}
+.mgd3 .timeblk .t2{font-size:11px;color:#80827a}
+.mgd3 .kb{color:#a6a79d;flex-shrink:0}
+.mgd3 .scrim{position:absolute;inset:0;background:rgba(20,24,22,.42)}
 .mgd3 .sheet{position:absolute;left:0;right:0;bottom:0;background:#fffdf8;border-radius:24px 24px 0 0;padding:8px 16px 22px;box-shadow:0 -8px 30px rgba(28,33,30,.18)}
 .mgd3 .grab{width:38px;height:4px;border-radius:999px;background:#e2ddd1;margin:6px auto 12px}
 .mgd3 .sheet-h{display:flex;flex-direction:column;gap:3px;padding:0 2px 8px}
@@ -204,11 +186,12 @@ body{background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10
 .mgd3 .act.danger .ai{background:#f4e5e2;color:#9c3322}
 .mgd3 .act.danger .t{color:#9c3322}
 .mgd3 .mgr{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9a6b1f;background:#f4ebd7;padding:2px 6px;border-radius:6px}
+.mgd3 .chev{color:#a6a79d}
 .mgd3 .board{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
 .mgd3 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
 .mgd3 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
 .mgd3 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
-/* ===== Screen-Expand-sheet-merge ===== */
+/* ==== 04 Group actions · Screen-Group-actions.html ==== */
 .mgd4 *{box-sizing:border-box}
 .mgd4{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
 .mgd4 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
@@ -219,26 +202,25 @@ body{background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10
 .mgd4 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
 .mgd4 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 10px}
 .mgd4 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
-.mgd4 .body{flex:1;overflow-y:auto;padding:2px 16px 8px;display:flex;flex-direction:column;gap:10px}
-.mgd4 .hint{font-size:11px;color:#80827a;text-align:center;margin:2px 0;display:flex;align-items:center;justify-content:center;gap:5px}
+.mgd4 .body{flex:1;overflow-y:auto;padding:2px 16px 8px;display:flex;flex-direction:column;gap:12px}
 .mgd4 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 9px;border-radius:999px;white-space:nowrap;flex-shrink:0}
-.mgd4 .lrow{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 2px rgba(28,33,30,.05)}
+.mgd4 .seg{display:flex;background:#f2eee5;border-radius:12px;padding:4px;gap:4px}
+.mgd4 .seg .s{flex:1;text-align:center;font-size:13px;font-weight:600;color:#5d635c;padding:8px 0;border-radius:9px}
+.mgd4 .seg .s.on{background:#fffdf8;color:#0a514a;box-shadow:0 1px 2px rgba(28,33,30,.06)}
+.mgd4 .gcard{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:14px;box-shadow:0 1px 2px rgba(28,33,30,.05);display:flex;flex-direction:column;gap:10px}
+.mgd4 .gcard.sel{border-color:#0e6b61;box-shadow:0 0 0 2px rgba(14,107,97,.16)}
+.mgd4 .capbar{height:7px;background:#f2eee5;border-radius:999px;overflow:hidden}
+.mgd4 .capbar>i{display:block;height:100%;border-radius:999px;background:#0e6b61}
+.mgd4 .tiles{display:flex;gap:10px}
+.mgd4 .tile{flex:1;background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:12px 14px}
+.mgd4 .tile .n{font-size:22px;font-weight:700;line-height:1}
+.mgd4 .tile .l{font-size:12px;color:#80827a;margin-top:4px}
+.mgd4 .mrow{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #eee7d9}
 .mgd4 .av{width:40px;height:40px;border-radius:12px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0}
-.mgd4 .nm{font-size:15px;font-weight:600}
-.mgd4 .mt{font-size:12px;color:#80827a}
-.mgd4 .kb{color:#c4c4ba;flex-shrink:0}
-.mgd4 /* expand */
-  .expcard{background:#fffdf8;border:1px solid #0e6b61;border-radius:16px;padding:14px;box-shadow:0 0 0 2px rgba(14,107,97,.14);display:flex;flex-direction:column;gap:12px}
-.mgd4 .exphead{display:flex;align-items:center;gap:12px}
-.mgd4 .expacts{display:flex;gap:8px}
-.mgd4 .chip{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 4px;border:1px solid #e2ddd1;border-radius:12px;background:#faf7f0;font-size:11px;font-weight:600;color:#3a3f3a}
-.mgd4 .chip svg{color:#0e6b61}
-.mgd4 .chip.pri{background:#0e6b61;color:#fff;border-color:#0e6b61}
-.mgd4 .chip.pri svg{color:#fff}
-.mgd4 .chip.more{background:#f2eee5;border-style:dashed;color:#5d635c}
-.mgd4 .chip.more svg{color:#5d635c}
-.mgd4 /* sheet */
-  .scrim{position:absolute;inset:0;background:rgba(20,24,22,.42)}
+.mgd4 .actionbar{border-top:1px solid #e2ddd1;background:#fffdf8;padding:12px 16px;display:flex;gap:10px;align-items:center;flex-shrink:0}
+.mgd4 .btn-primary{flex:1;height:50px;background:#0e6b61;color:#fffdf8;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28)}
+.mgd4 .iconbtn{width:50px;height:50px;border-radius:14px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd4 .scrim{position:absolute;inset:0;background:rgba(20,24,22,.42)}
 .mgd4 .sheet{position:absolute;left:0;right:0;bottom:0;background:#fffdf8;border-radius:24px 24px 0 0;padding:8px 16px 22px;box-shadow:0 -8px 30px rgba(28,33,30,.18)}
 .mgd4 .grab{width:38px;height:4px;border-radius:999px;background:#e2ddd1;margin:6px auto 12px}
 .mgd4 .sheet-h{display:flex;flex-direction:column;gap:3px;padding:0 2px 8px}
@@ -250,25 +232,455 @@ body{background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10
 .mgd4 .act.danger .ai{background:#f4e5e2;color:#9c3322}
 .mgd4 .act.danger .t{color:#9c3322}
 .mgd4 .mgr{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9a6b1f;background:#f4ebd7;padding:2px 6px;border-radius:6px}
-.mgd4 .chev{color:#a6a79d}
 .mgd4 .board{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
 .mgd4 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
 .mgd4 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
 .mgd4 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
-.mgd4 .flowlink{display:flex;align-items:center;color:#9a6b1f;font-size:24px;align-self:center}
-</style>
-</head>
+/* ==== 05 Expand sheet merge · Screen-Expand-sheet-merge.html ==== */
+.mgd5 *{box-sizing:border-box}
+.mgd5{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd5 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.mgd5 .mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.mgd5 svg{display:block;flex-shrink:0}
+.mgd5 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd5 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd5 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd5 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 10px}
+.mgd5 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd5 .body{flex:1;overflow-y:auto;padding:2px 16px 8px;display:flex;flex-direction:column;gap:10px}
+.mgd5 .hint{font-size:11px;color:#80827a;text-align:center;margin:2px 0;display:flex;align-items:center;justify-content:center;gap:5px}
+.mgd5 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 9px;border-radius:999px;white-space:nowrap;flex-shrink:0}
+.mgd5 .lrow{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 2px rgba(28,33,30,.05)}
+.mgd5 .av{width:40px;height:40px;border-radius:12px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0}
+.mgd5 .nm{font-size:15px;font-weight:600}
+.mgd5 .mt{font-size:12px;color:#80827a}
+.mgd5 .kb{color:#c4c4ba;flex-shrink:0}
+.mgd5 .expcard{background:#fffdf8;border:1px solid #0e6b61;border-radius:16px;padding:14px;box-shadow:0 0 0 2px rgba(14,107,97,.14);display:flex;flex-direction:column;gap:12px}
+.mgd5 .exphead{display:flex;align-items:center;gap:12px}
+.mgd5 .expacts{display:flex;gap:8px}
+.mgd5 .chip{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 4px;border:1px solid #e2ddd1;border-radius:12px;background:#faf7f0;font-size:11px;font-weight:600;color:#3a3f3a}
+.mgd5 .chip svg{color:#0e6b61}
+.mgd5 .chip.pri{background:#0e6b61;color:#fff;border-color:#0e6b61}
+.mgd5 .chip.pri svg{color:#fff}
+.mgd5 .chip.more{background:#f2eee5;border-style:dashed;color:#5d635c}
+.mgd5 .chip.more svg{color:#5d635c}
+.mgd5 .scrim{position:absolute;inset:0;background:rgba(20,24,22,.42)}
+.mgd5 .sheet{position:absolute;left:0;right:0;bottom:0;background:#fffdf8;border-radius:24px 24px 0 0;padding:8px 16px 22px;box-shadow:0 -8px 30px rgba(28,33,30,.18)}
+.mgd5 .grab{width:38px;height:4px;border-radius:999px;background:#e2ddd1;margin:6px auto 12px}
+.mgd5 .sheet-h{display:flex;flex-direction:column;gap:3px;padding:0 2px 8px}
+.mgd5 .act{display:flex;align-items:center;gap:13px;padding:12px 4px;border-top:1px solid #f2eee5}
+.mgd5 .act .ai{width:40px;height:40px;border-radius:11px;background:#f2eee5;display:flex;align-items:center;justify-content:center;color:#0e6b61;flex-shrink:0}
+.mgd5 .act .al{flex:1}
+.mgd5 .act .al .t{font-size:15px;font-weight:600;display:flex;align-items:center;gap:7px}
+.mgd5 .act .al .s{font-size:12px;color:#80827a;margin-top:1px}
+.mgd5 .act.danger .ai{background:#f4e5e2;color:#9c3322}
+.mgd5 .act.danger .t{color:#9c3322}
+.mgd5 .mgr{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9a6b1f;background:#f4ebd7;padding:2px 6px;border-radius:6px}
+.mgd5 .chev{color:#a6a79d}
+.mgd5 .board{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
+.mgd5 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd5 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd5 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+.mgd5 .flowlink{display:flex;align-items:center;color:#9a6b1f;font-size:24px;align-self:center}
+</style></head>
 <body>
-<div class="mgd-top">
-  <div class="mgd-eyebrow">TutoringHQ · Merged reference</div>
-  <h1 class="mgd-h1">Reference · Design patterns</h1>
-  <p class="mgd-lede">Row actions, quick menus, group actions and the expand-sheet. Patterns, not screens.</p>
-  <div class="mgd-toc"><a href="#Merged-Design-Patterns-1">Row action patterns</a><a href="#Merged-Design-Patterns-2">Quick menu rows</a><a href="#Merged-Design-Patterns-3">Group actions</a><a href="#Merged-Design-Patterns-4">Expand sheet merge</a></div>
+  <div class="mgd-top">
+    <div class="mgd-eyebrow">TutoringHQ · Merged reference</div>
+    <h1 class="mgd-h1">Shared · Design patterns</h1>
+    <p class="mgd-lede">The cross-cutting patterns every screen reuses: row actions, quick menu rows, group actions, the expand sheet, and the empty states each screen shows before any real data exists.</p>
+    <div class="mgd-toc"><a href="#S-1">Empty States</a><a href="#S-2">Row action patterns</a><a href="#S-3">Quick menu rows</a><a href="#S-4">Group actions</a><a href="#S-5">Expand sheet merge</a></div>
+  </div>
+<div class="mgd-sec" id="S-1"><div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Empty States</span><span class="mgd-src">Screen-Empty-States.html</span></div></div>
+<div class="mgd1 mgd-screen">
+
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+      <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39);box-shadow:0 2px 8px rgba(8,63,57,.35)"></div>
+      <span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ &middot; Empty states</span>
+      <span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0e6b61;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:5px 11px;border-radius:999px">Lucide icons</span>
+    </div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">The first thing every real center sees</h1>
+    <p style="margin:0;max-width:80ch;font-size:17px;line-height:1.6;color:#5d635c">Every center starts at zero. No students, no groups, no attendance taken, nothing collected. That state was drawn nowhere across the other 26 files, which meant it would have been invented separately on each screen it appears on. This is the pattern and every instance a center or teacher meets in their first hour. English and Arabic, each standing alone. Sample data is placeholder.</p>
+  </div>
+  <div class="secbar"><span class="secnum">01</span><span class="secname">The pattern</span></div>
+  <p class="secnote">Three parts, always in this order. What the screen is for, what happens once it is filled, and the one action that fills it. No illustration, no exclamation mark, no "Nothing here yet!". An empty screen is the one moment the product gets to explain itself, so it says the useful thing rather than the cheerful one. Where money is involved it also says that nothing is charged, because that is the question the owner is actually holding.</p>
+  <div class="phones">
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Students</div><div class="tsub">Nile Prep Academy</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg></div>
+        <div class="es-h">No students yet</div>
+        <div class="es-t">Add them and attendance, fees and parent messages all start working. Nothing is billed until a session runs.</div>
+        <div class="es-act">
+          <button class="btn">Import from a file</button>
+          <button class="btn ghost">Add one by hand</button>
+        </div>
+        <div class="es-alt">A spreadsheet with names and parent numbers is enough.</div>
+      </div></div>
+    </div></div>
+    <div class="cap">EN &middot; anatomy. Icon, purpose, consequence, one action, one quiet alternative.</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">الطلاب</div><div class="tsub">أكاديمية النيل</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg></div>
+        <div class="es-h">لسه مفيش طلاب</div>
+        <div class="es-t">ضيفهم والحضور والمصروفات ورسايل ولي الأمر هتشتغل كلها. ومفيش أي فلوس قبل ما تبدأ أول حصة.</div>
+        <div class="es-act">
+          <button class="btn">استورد من ملف</button>
+          <button class="btn ghost">ضيف واحد بإيدك</button>
+        </div>
+        <div class="es-alt">ملف فيه الأسماء وأرقام أولياء الأمور يكفي.</div>
+      </div></div>
+    </div></div>
+    <div class="cap">AR &middot; نفس البنية بالظبط، والإجراء الأساسي هو نفسه.</div>
+    </div>
+  </div>
+  <div class="secbar"><span class="secnum">02</span><span class="secname">Center &middot; the first hour</span></div>
+  <p class="secnote">What an owner meets between signing up and the first session running. Each one names the next action and each one says that nothing is charged yet. Attendance is the habit that matters, so its empty state points at the schedule rather than at a settings page.</p>
+  <div class="phones">
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Today</div><div class="tsub">Nile Prep Academy</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <div class="es-h">Nothing runs today yet</div>
+        <div class="es-t">Once students and groups exist, this shows the sessions, who is expected, and what has been collected.</div>
+        <div class="es-act">
+          <button class="btn">Add your students</button>
+        </div>
+        <div class="es-alt">About ten minutes with a file.</div>
+      </div></div>
+    </div></div>
+    <div class="cap">EN &middot; home, before anything exists</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Groups</div><div class="tsub">0 groups</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></svg></div>
+        <div class="es-h">No groups yet</div>
+        <div class="es-t">A group is one subject at one time, like Physics on Sunday at 4. Attendance and fees both hang off it.</div>
+        <div class="es-act">
+          <button class="btn">Create a group</button>
+        </div>
+        <div class="es-alt">You can add students to it after.</div>
+      </div></div>
+    </div></div>
+    <div class="cap">EN &middot; groups</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Attendance</div><div class="tsub">No session now</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <div class="es-h">Nothing scheduled right now</div>
+        <div class="es-t">When a session runs, this becomes the checklist. One tap marks the room present and sends every invoice in it.</div>
+        <div class="es-act">
+          <button class="btn">Set up the schedule</button>
+          <button class="btn ghost">See how attendance works</button>
+        </div>
+      </div></div>
+    </div></div>
+    <div class="cap">EN &middot; attendance, nothing running</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Money</div><div class="tsub">Nile Prep Academy</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <div class="es-h">Nothing collected yet</div>
+        <div class="es-t">Every fee you take, cash or online, lands here with who paid and when. Online collection switches on once your ID is verified.</div>
+        <div class="es-act">
+          <button class="btn">Verify the center</button>
+          <button class="btn ghost">Record a cash payment</button>
+        </div>
+      </div></div>
+    </div></div>
+    <div class="cap">EN &middot; money</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">WhatsApp</div><div class="tsub">0 sent this month</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-3.9-.9L3 21l2-4.9A8.4 8.4 0 0 1 21 11.5z"/></svg></div>
+        <div class="es-h">No messages sent yet</div>
+        <div class="es-t">Parents get attendance and fee messages automatically once a session runs. You never send these by hand.</div>
+        <div class="es-act">
+          <button class="btn ghost">See the message templates</button>
+        </div>
+        <div class="es-alt">Your plan includes 300 a month.</div>
+      </div></div>
+    </div></div>
+    <div class="cap">EN &middot; WhatsApp</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">اليوم</div><div class="tsub">أكاديمية النيل</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <div class="es-h">مفيش حصص النهاردة</div>
+        <div class="es-t">أول ما يبقى في طلاب ومجموعات، هتشوف هنا الحصص ومين متوقع يحضر وإيه اللي اتحصّل.</div>
+        <div class="es-act">
+          <button class="btn">ضيف طلابك</button>
+        </div>
+        <div class="es-alt">حوالي عشر دقايق بملف.</div>
+      </div></div>
+    </div></div>
+    <div class="cap">AR &middot; الرئيسية قبل أي حاجة</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">المجموعات</div><div class="tsub">٠ مجموعة</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></svg></div>
+        <div class="es-h">لسه مفيش مجموعات</div>
+        <div class="es-t">المجموعة هي مادة واحدة في ميعاد واحد، زي فيزياء الأحد ٤ م. الحضور والمصروفات الاتنين بيتعلقوا بيها.</div>
+        <div class="es-act">
+          <button class="btn">اعمل مجموعة</button>
+        </div>
+        <div class="es-alt">تقدر تحط الطلاب فيها بعدين.</div>
+      </div></div>
+    </div></div>
+    <div class="cap">AR &middot; المجموعات</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">الحضور</div><div class="tsub">مفيش حصة دلوقتي</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <div class="es-h">مفيش حصة دلوقتي</div>
+        <div class="es-t">لما الحصة تشتغل، دي بتبقى قايمة التحضير. لمسة واحدة بتسجّل القاعة كلها وبتبعت كل فاتورة فيها.</div>
+        <div class="es-act">
+          <button class="btn">اظبط الجدول</button>
+          <button class="btn ghost">شوف الحضور بيشتغل إزاي</button>
+        </div>
+      </div></div>
+    </div></div>
+    <div class="cap">AR &middot; الحضور، مفيش حصة</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">المال</div><div class="tsub">أكاديمية النيل</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <div class="es-h">لسه مفيش تحصيل</div>
+        <div class="es-t">كل مصروف بتاخده، كاش أو أونلاين، بيظهر هنا بمين دفع وإمتى. التحصيل أونلاين بيشتغل بعد ما هويتك تتأكد.</div>
+        <div class="es-act">
+          <button class="btn">وثّق السنتر</button>
+          <button class="btn ghost">سجّل دفعة كاش</button>
+        </div>
+      </div></div>
+    </div></div>
+    <div class="cap">AR &middot; المال</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">واتساب</div><div class="tsub">٠ رسالة الشهر ده</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-3.9-.9L3 21l2-4.9A8.4 8.4 0 0 1 21 11.5z"/></svg></div>
+        <div class="es-h">لسه مفيش رسايل</div>
+        <div class="es-t">أولياء الأمور بيوصلهم الحضور والمصروفات تلقائيًا أول ما الحصة تشتغل. مش هتبعتها بإيدك أبدًا.</div>
+        <div class="es-act">
+          <button class="btn ghost">شوف قوالب الرسايل</button>
+        </div>
+        <div class="es-alt">باقتك فيها ٣٠٠ رسالة في الشهر.</div>
+      </div></div>
+    </div></div>
+    <div class="cap">AR &middot; واتساب</div>
+    </div>
+  </div>
+  <div class="secbar"><span class="secnum">03</span><span class="secname">Teacher &middot; where it differs from a center</span></div>
+  <p class="secnote">A teacher runs their own groups and gets paid out rather than collecting into a center, so home and money read differently. Students and groups are the same shape as the center, so they reuse those two directly rather than being drawn twice.</p>
+  <div class="phones">
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Today</div><div class="tsub">Aly Shady</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <div class="es-h">No sessions yet</div>
+        <div class="es-t">Create a group and add your students. Attendance, fees and the messages to parents all follow from it.</div>
+        <div class="es-act">
+          <button class="btn">Create your first group</button>
+        </div>
+        <div class="es-alt">Free while you are under 20 students.</div>
+      </div></div>
+    </div></div>
+    <div class="cap">EN &middot; teacher home</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Money</div><div class="tsub">Aly Shady</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic"><svg viewBox="0 0 24 24"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></div>
+        <div class="es-h">Nothing earned yet</div>
+        <div class="es-t">What parents pay lands here, minus the platform share, and one free payout a month moves it to your bank.</div>
+        <div class="es-act">
+          <button class="btn">Add your bank account</button>
+          <button class="btn ghost">See how payouts work</button>
+        </div>
+        <div class="es-alt">You keep 90% of every fee you set.</div>
+      </div></div>
+    </div></div>
+    <div class="cap">EN &middot; teacher money, before any payout</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Insight</div><div class="tsub">Not enough yet</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic quiet"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></div>
+        <div class="es-h">Come back after a few sessions</div>
+        <div class="es-t">Attendance patterns and who is slipping need a few weeks of real sessions before they mean anything.</div>
+        <div class="es-alt">Nothing to set up. This fills itself.</div>
+      </div></div>
+    </div></div>
+    <div class="cap">EN &middot; insight, too early to be useful</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">اليوم</div><div class="tsub">علي شادي</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <div class="es-h">لسه مفيش حصص</div>
+        <div class="es-t">اعمل مجموعة وضيف طلابك. الحضور والمصروفات ورسايل أولياء الأمور كلها بتيجي بعدها.</div>
+        <div class="es-act">
+          <button class="btn">اعمل أول مجموعة</button>
+        </div>
+        <div class="es-alt">مجاني وإنت تحت ٢٠ طالب.</div>
+      </div></div>
+    </div></div>
+    <div class="cap">AR &middot; رئيسية المدرّس</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">المال</div><div class="tsub">علي شادي</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic"><svg viewBox="0 0 24 24"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></div>
+        <div class="es-h">لسه مفيش أرباح</div>
+        <div class="es-t">اللي أولياء الأمور بيدفعوه بيظهر هنا بعد خصم نصيب المنصة، وتحويل مجاني واحد في الشهر بينقله لحسابك.</div>
+        <div class="es-act">
+          <button class="btn">ضيف حسابك البنكي</button>
+          <button class="btn ghost">شوف التحويلات بتشتغل إزاي</button>
+        </div>
+        <div class="es-alt">بتاخد ٩٠٪ من كل مصروف بتحدده.</div>
+      </div></div>
+    </div></div>
+    <div class="cap">AR &middot; مال المدرّس</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">التحليلات</div><div class="tsub">لسه بدري</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic quiet"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></div>
+        <div class="es-h">ارجع بعد كام حصة</div>
+        <div class="es-t">أنماط الحضور ومين بيقل محتاجة كام أسبوع حصص حقيقية قبل ما يبقى ليها معنى.</div>
+        <div class="es-alt">مفيش حاجة تظبطها. دي بتتملي لوحدها.</div>
+      </div></div>
+    </div></div>
+    <div class="cap">AR &middot; التحليلات، بدري عليها</div>
+    </div>
+  </div>
+  <div class="secbar"><span class="secnum">04</span><span class="secname">The quiet kind &middot; empty because it is early, not because something is missing</span></div>
+  <p class="secnote">Insight and card orders are not waiting on the owner to do anything. Giving them a call to action would invent work that does not exist, so they use the muted icon and say plainly that they fill themselves. Getting this distinction wrong is the most common way an empty state becomes nagging.</p>
+  <div class="phones">
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Insight</div><div class="tsub">Nile Prep Academy</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic quiet"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></div>
+        <div class="es-h">Come back after a few weeks</div>
+        <div class="es-t">Collection rate, attendance patterns and who is slipping all need real sessions behind them before the numbers mean anything.</div>
+        <div class="es-alt">Nothing to set up. This fills itself.</div>
+      </div></div>
+    </div></div>
+    <div class="cap">EN &middot; center insight</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Card orders</div><div class="tsub">No orders</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic quiet"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 10h20"/></svg></div>
+        <div class="es-h">No cards ordered yet</div>
+        <div class="es-t">QR cards are optional. Attendance works from the phone without them, and most centers order once the term settles.</div>
+        <div class="es-act">
+          <button class="btn ghost">See what a card costs</button>
+        </div>
+        <div class="es-alt">Delivered by Bosta, usually within a week.</div>
+      </div></div>
+    </div></div>
+    <div class="cap">EN &middot; card orders</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">التحليلات</div><div class="tsub">أكاديمية النيل</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic quiet"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></div>
+        <div class="es-h">ارجع بعد كام أسبوع</div>
+        <div class="es-t">نسبة التحصيل وأنماط الحضور ومين بيقل، كلها محتاجة حصص حقيقية وراها قبل ما الأرقام يبقى ليها معنى.</div>
+        <div class="es-alt">مفيش حاجة تظبطها. دي بتتملي لوحدها.</div>
+      </div></div>
+    </div></div>
+    <div class="cap">AR &middot; تحليلات السنتر</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">طلبات الكروت</div><div class="tsub">مفيش طلبات</div></div></div>
+      <div class="body"><div class="es">
+        <div class="es-ic quiet"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 10h20"/></svg></div>
+        <div class="es-h">لسه مفيش كروت مطلوبة</div>
+        <div class="es-t">كروت الـ QR اختيارية. الحضور شغال من الموبايل من غيرها، ومعظم السناتر بتطلبها بعد ما الترم يستقر.</div>
+        <div class="es-act">
+          <button class="btn ghost">شوف الكارت بكام</button>
+        </div>
+        <div class="es-alt">بتتوصل بـ Bosta، غالبًا خلال أسبوع.</div>
+      </div></div>
+    </div></div>
+    <div class="cap">AR &middot; طلبات الكروت</div>
+    </div>
+  </div>
+  <div class="rule">
+    <h3>Rules, so these do not drift once they are built</h3>
+    <ul>
+      <li><span class="yes">One action, never two of equal weight.</span> A primary button and at most one quiet alternative. Two primaries means the screen has not decided what the person should do.</li>
+      <li><span class="yes">Say what happens once it is filled</span>, not what is absent. "Add them and attendance, fees and parent messages start working" beats "You have no students".</li>
+      <li><span class="yes">Where money could be a worry, say it is not.</span> Nothing is billed until a session runs. That sentence removes the actual hesitation.</li>
+      <li><span class="yes">Empty because it is early gets the muted icon and no button.</span> Insight and card orders are not waiting on anyone. Giving them a call to action invents work.</li>
+      <li><span class="no">No illustrations, no mascots, no exclamation marks.</span> They read as filler and they cost a screenful of space on a 748px phone.</li>
+      <li><span class="no">Never a dead end.</span> Every empty state either has an action or explains why none is needed.</li>
+      <li><span class="no">Do not reuse the same copy across screens.</span> Each one names its own screen, or it teaches nothing.</li>
+    </ul>
+  </div>
 </div>
-<div class="mgd-sec" id="Merged-Design-Patterns-1">
-  <div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Row action patterns</span><span class="mgd-src">Screen-Row-action-patterns.html</span></div>
+
+
 </div>
-<div class="mgd1">
+<div class="mgd-sec" id="S-2"><div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">Row action patterns</span><span class="mgd-src">Screen-Row-action-patterns.html</span></div></div>
+<div class="mgd2 mgd-screen">
 
 <div class="board">
 
@@ -405,11 +817,10 @@ body{background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10
   </div>
 </div>
 
+
 </div>
-<div class="mgd-sec" id="Merged-Design-Patterns-2">
-  <div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">Quick menu rows</span><span class="mgd-src">Screen-Quick-menu-rows.html</span></div>
-</div>
-<div class="mgd2">
+<div class="mgd-sec" id="S-3"><div class="mgd-bar"><span class="mgd-num">03</span><span class="mgd-name">Quick menu rows</span><span class="mgd-src">Screen-Quick-menu-rows.html</span></div></div>
+<div class="mgd3 mgd-screen">
 
 <div class="board">
 
@@ -538,11 +949,10 @@ body{background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10
   </div>
 </div>
 
+
 </div>
-<div class="mgd-sec" id="Merged-Design-Patterns-3">
-  <div class="mgd-bar"><span class="mgd-num">03</span><span class="mgd-name">Group actions</span><span class="mgd-src">Screen-Group-actions.html</span></div>
-</div>
-<div class="mgd3">
+<div class="mgd-sec" id="S-4"><div class="mgd-bar"><span class="mgd-num">04</span><span class="mgd-name">Group actions</span><span class="mgd-src">Screen-Group-actions.html</span></div></div>
+<div class="mgd4 mgd-screen">
 
 <div class="board">
 
@@ -674,11 +1084,10 @@ body{background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10
   </div>
 </div>
 
+
 </div>
-<div class="mgd-sec" id="Merged-Design-Patterns-4">
-  <div class="mgd-bar"><span class="mgd-num">04</span><span class="mgd-name">Expand sheet merge</span><span class="mgd-src">Screen-Expand-sheet-merge.html</span></div>
-</div>
-<div class="mgd4">
+<div class="mgd-sec" id="S-5"><div class="mgd-bar"><span class="mgd-num">05</span><span class="mgd-name">Expand sheet merge</span><span class="mgd-src">Screen-Expand-sheet-merge.html</span></div></div>
+<div class="mgd5 mgd-screen">
 
 <div class="board">
 
@@ -782,6 +1191,7 @@ body{background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10
 
   </div>
 </div>
+
 
 </div>
 </body></html>
