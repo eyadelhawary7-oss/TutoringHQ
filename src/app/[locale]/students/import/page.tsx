@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { formatPlainInteger } from '@/lib/formatNumber';
 import { supabase } from '@/lib/supabase';
 import { dbInsert, dbUpdate, auditLog, dbSelect } from '@/lib/db-proxy';
 import { Link } from '@/i18n/routing';
@@ -36,6 +37,7 @@ type PreviewRow = {
 };
 
 export default function ImportStudentsPage() {
+  const locale = useLocale();
   const t = useTranslations('import');
   const tCommon = useTranslations('common');
   const tsStudents = useTranslations('students');
@@ -201,6 +203,33 @@ export default function ImportStudentsPage() {
     }
     return rows;
   }, [parsedData, centerId, nameHeader, phoneHeader, parentPhoneHeader, groupHeader, notesHeader, groupMapping, centerGroups, t]);
+
+  /**
+   * Rows the import will DROP, and why.
+   *
+   * Design (Merged-Center-Students §04) splits Review into "40 ready to add /
+   * 2 need a fix" and names each bad row, because a spreadsheet that silently
+   * loses two students is worse than one that refuses to import.
+   *
+   * Live already skipped these rows — `previewRows` does `if (!name) continue`
+   * — but reported only the survivors, so a 42-row file with two blank names
+   * showed "40 students" and the two were never mentioned. This surfaces them.
+   *
+   * Missing name is the ONLY reason live skips a row. The design's other
+   * example, "Grade not recognised", has no live equivalent: grade is not an
+   * import field. Not invented here.
+   */
+  const skippedRows = useMemo((): { row: number; reason: string }[] => {
+    if (!parsedData || !nameHeader) return [];
+    const out: { row: number; reason: string }[] = [];
+    parsedData.rows.forEach((row, i) => {
+      const name = String(row[nameHeader] ?? '').trim();
+      // +2: spreadsheet rows are 1-based and row 1 is the header, so the first
+      // data row is row 2 in the file the center is looking at.
+      if (!name) out.push({ row: i + 2, reason: t('reasonMissingName') });
+    });
+    return out;
+  }, [parsedData, nameHeader, t]);
 
   const importPayloadAndMembers = useMemo(() => {
     if (!parsedData || !centerId || !nameHeader) {
@@ -529,7 +558,46 @@ export default function ImportStudentsPage() {
 
         {step === 'preview' && parsedData && (
           <div className="ch-card p-5 space-y-4">
-            <h3 className="font-bold text-[var(--color-text-primary)]">{t('importCount', { count: previewRows.length })}</h3>
+            <div>
+              <h3 className="font-bold text-[var(--color-text-primary)]">
+                {t('rowsFound', {
+                  count: formatPlainInteger(previewRows.length + skippedRows.length, locale),
+                })}
+              </h3>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <span className="inline-flex items-center rounded-full bg-emerald-500/12 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                  {t('readyToAdd', { count: formatPlainInteger(previewRows.length, locale) })}
+                </span>
+                {skippedRows.length > 0 && (
+                  <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+                    {t('needFix', { count: formatPlainInteger(skippedRows.length, locale) })}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {skippedRows.length > 0 && (
+              <div className="rounded-lg border border-amber-400/40 bg-amber-50/50 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
+                  {t('needsFixTitle')}
+                </p>
+                <ul className="mt-2 space-y-1">
+                  {skippedRows.map((s) => (
+                    <li
+                      key={s.row}
+                      className="flex flex-wrap items-baseline gap-x-2 text-sm text-[var(--color-text-primary)]"
+                    >
+                      <span className="font-medium">
+                        {t('rowLabel', { n: formatPlainInteger(s.row, locale) })}
+                      </span>
+                      <span className="text-[var(--color-text-secondary)]">{s.reason}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs text-[var(--color-text-secondary)]">{t('skippedNote')}</p>
+              </div>
+            )}
+
             <div className="overflow-x-auto max-h-96 overflow-y-auto">
               <table className="w-full text-sm" dir="auto">
                 <thead style={{ background: 'hsl(var(--muted))' }}>
