@@ -46,6 +46,7 @@ below; this is the summary.
 | **Group billing basis** | **CLOSED.** `fee_per_class` only. Build the equivalent, record the difference. Deferred, not rejected. | → B12 |
 | **The 22 undesigned routes** | **CLOSED.** Keep all, delete none, flag each for design. | → `design/NEEDS-DESIGN.md` |
 | **The four duplicate pairs** | **Facts gathered, no merge.** All eight routes stay live. | → `design/DUPLICATE-ROUTES.md` |
+| **Design shows data that does not exist** | Audited across every buildable file. **9 need a decision, 10 screens blocked on verification, 5 need a live-catalog check first.** | → `design/DATA-GAPS.md` |
 
 **Appendix D collects every design edit these decisions imply**, by file and section number.
 
@@ -1254,6 +1255,39 @@ path**. A builder consolidating them removes the center's control over its own r
 calls the approval path `/j/[code]`; live it is `/join/[center_code]/[group_id]`.
 
 ---
+
+---
+
+# The roster unpaid tile — a design showing data the roster query lacks
+
+**Logged 27 July. `Merged-Center-Students` §01, shipped in PR #188.**
+
+The design shows **"Unpaid · 14 · 4,200 EGP due"**. I shipped the **count only**, on the reasoning that
+the roster query selects `payment_status` but no balance column.
+
+**That was right about the roster's own query and wrong about the answer.**
+
+**No new column is needed. The amount is derivable, and the API for it already exists and was built
+for this exact case.** `src/lib/studentBalance.ts`:
+
+- `getStudentBalances(supabase, { centerId })` — its docstring says *"preferred for 'list many students' screens"* and *"SET-BASED: a fixed number of bulk queries regardless of how many students a screen lists, so listing many students never becomes N+1."*
+- `sumOutstanding(balances)` — *"sum of POSITIVE balances only — credits are not netted against other students' debt."*
+
+That is the design's two figures exactly: count = balances above zero, amount = `sumOutstanding()`.
+
+**It is the same helper the student-detail balance and the finance views use**, which is the point —
+*"Every screen must compute through this helper so the number can never disagree between screens."*
+The charge is the **snapshotted** `attendance_scans.charged_fee`, so history does not move when a
+group's price changes.
+
+**There is deliberately no `students.balance_due` and there should not be one** — *"it never existed —
+selecting it made PostgREST 400 the whole query."* That is the 8 July outage, recorded in the helper.
+
+**Cost:** three extra bulk queries on roster load. The helper absorbs that by design.
+
+**Recommendation: build the amount before #188 merges.** No decision needed unless you want to weigh
+the extra queries. Full audit of every other screen: `design/DATA-GAPS.md`.
+
 
 # Appendix A — Duplicate money surfaces
 
