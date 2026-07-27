@@ -971,8 +971,12 @@ out of scope, or an omission?
 > **compliance with a legal obligation, not consent**, as the basis; Valify is named as a DPA
 > sub-processor; and erasure carries a financial-skeleton carve-out.
 >
-> **Erasure:** everything erased except **ID number, legal name, amounts, dates, receipt references**,
-> held for the statutory period. Notably **not** the payout destination.
+> **Erasure — provider matter only.** For a center or teacher: everything erased except **ID number,
+> legal name, amounts, dates, receipt references**, held for the statutory period. Notably **not** the
+> payout destination. **Never cited to a parent or student** — their center is the controller, requests
+> go to it, and we act on its instruction. The fallback stands unchanged: if the center has closed or
+> cannot help, we act directly. DPA §6 now states our processor duty to erase on instruction and
+> confirm in writing.
 >
 > **Full spec: `design/VERIFICATION-SPEC.md`**, §9 for every frame the redirect decision changes.
 >
