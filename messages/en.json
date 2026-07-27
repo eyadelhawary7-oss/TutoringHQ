@@ -5904,7 +5904,10 @@
     "empty": "No notifications yet.",
     "markAllRead": "Mark all read",
     "viewAll": "View all",
-    "pageTitle": "Notifications"
+    "pageTitle": "Notifications",
+    "unreadCount": "{count} unread",
+    "groupToday": "Today",
+    "groupEarlier": "Earlier"
   },
   "recommendations": {
     "withoutCardsTitle": "Students without cards yet",

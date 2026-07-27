@@ -4583,7 +4583,10 @@
     "empty": "لا توجد إشعارات بعد.",
     "markAllRead": "تعليم الكل كمقروء",
     "viewAll": "عرض الكل",
-    "pageTitle": "الإشعارات"
+    "pageTitle": "الإشعارات",
+    "unreadCount": "{count} غير مقروءة",
+    "groupToday": "اليوم",
+    "groupEarlier": "سابقًا"
   },
   "recommendations": {
     "withoutCardsTitle": "طلاب بلا بطاقات بعد",
