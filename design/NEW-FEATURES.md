@@ -965,7 +965,7 @@ out of scope, or an omission?
 > `valify_transaction_id`, and a `payout_name_matches` boolean. **Plus the National ID number and legal
 > name, retained under a tax carve-out** (below). No document, no image, no last-4.
 >
-> **Legal amended 26 July, ahead of Adsero** — see `design/LEGAL-AMENDMENTS-2026-07-26.md`. The privacy
+> **Legal amended 26 July, ahead of Adsero** — see `design/LEGAL-CHANGE-LEDGER.md`. The privacy
 > policy's "we do not process sensitive data" and "we do not collect anything from third parties" are
 > removed in both languages; a national-ID section is added naming the ETA e-receipt purpose and
 > **compliance with a legal obligation, not consent**, as the basis; Valify is named as a DPA
@@ -975,8 +975,8 @@ out of scope, or an omission?
 > legal name, amounts, dates, receipt references**, held for the statutory period. Notably **not** the
 > payout destination. **Never cited to a parent or student** — their center is the controller, requests
 > go to it, and we act on its instruction. The fallback stands unchanged: if the center has closed or
-> cannot help, we act directly. DPA §6 now states our processor duty to erase on instruction and
-> confirm in writing.
+> cannot help, we act directly. DPA §11 already covers the processor duty; only a
+> confirm-in-writing addition is proposed (ledger L-04). DPA §8.1 is missing Valify (L-03).
 >
 > **Full spec: `design/VERIFICATION-SPEC.md`**, §9 for every frame the redirect decision changes.
 >

@@ -25,7 +25,7 @@ decision closes it.
 | What we store | An outcome — status, timestamp, provider reference (§2c) — plus the ID number and legal name for the tax skeleton. Never the document. |
 | Trust anchor | The **webhook**, never the redirect return. |
 
-**Legal amended 26 July to match: `design/LEGAL-AMENDMENTS-2026-07-26.md`.**
+**Legal amended 26 July to match: `design/LEGAL-CHANGE-LEDGER.md`.**
 **§9 specifies every frame this changes.** §1.2 and §2 below describe what the designs *said* before
 this decision; they are left intact as the record.
 
