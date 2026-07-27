@@ -956,7 +956,12 @@ out of scope, or an omission?
 
 ## C1. Identity verification (e-KYC via Valify)
 
-> **Fully specified 26 July: see `design/VERIFICATION-SPEC.md`.** The design specifies a two-state world,
+> **DECIDED 26 July: verification is a redirect to a Valify-hosted flow; the ID document never
+> touches our infrastructure; we receive an outcome and store only that.** Valify's Web Verification
+> Flow confirmed as the integration (redirect + account-level webhook; no web SDK exists, so this is
+> also the only option for a Next.js PWA). Minimum stored footprint is **four fields**.
+>
+> **Fully specified: see `design/VERIFICATION-SPEC.md`**, §9 for every frame the decision changes. The design specifies a two-state world,
 > `not verified` and `verified`, and nothing else — no failure state, no in-progress state, no retry,
 > no expiry, anywhere in 26 files. That document lists what the design does specify (documents
 > collected, stored record, per-state gating) and the **13 decisions** needed before this can be

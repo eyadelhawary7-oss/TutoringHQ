@@ -7,6 +7,27 @@ Sources: `Merged-Verification-Payouts` §01–§06 in full · every screen whose
 "Verified" · every mention of Valify or National ID across all 26 merged files ·
 `Merged-Public-Legal` §01 for the privacy conflicts.
 
+## DECISION — 26 July 2026, locked
+
+**Verification is a REDIRECT to a Valify-hosted flow. The ID document never touches our
+infrastructure. We receive an outcome and store only that.**
+
+**This is a decision, not a description of the current designs.** No design states it. §03 comes
+closest — *"the ID scan and selfie happen on their side"* — but six frames then render a full
+National ID number as if we held it, and the storage question was left open everywhere else. The
+decision closes it.
+
+| | |
+|---|---|
+| Document capture | **Never in our app.** Always on Valify's page. |
+| ID image, selfie | **Never received, never stored.** Fetchable from Valify by transaction ID if ever needed. |
+| Full National ID number | **Not stored.** See §9 for what replaces it on the frames that render it today. |
+| What we store | An outcome: status, timestamp, provider reference. See §2c. |
+| Trust anchor | The **webhook**, never the redirect return. |
+
+**§9 specifies every frame this changes.** §1.2 and §2 below describe what the designs *said* before
+this decision; they are left intact as the record.
+
 ## How to read this
 
 - **Quoted text** is what a design actually says. Where I quote, the design specifies it.
@@ -536,6 +557,185 @@ Ordered by what each one blocks.
 18. **⚠ The teacher opt-in withholds the fee that the receipt discloses.** `Merged-Teacher-Money` §05 deliberately states the fee only as categories under a *"Private to you"* heading, with *"no figures beside them"*, while `Merged-Verification-Payouts` §06 prints **Collection fee (10%)** on the expense receipt and `Merged-Center-Attendance` §02 shows centers **"Collection fee (10%) −75"** at end-of-session. Either teachers see the number at opt-in or they do not.
 
 ---
+
+---
+
+# 9. Applying the redirect decision — every frame affected
+
+## 9.0 First, a correction to the premise
+
+**`Merged-Center-Setup` and `Merged-Teacher-Setup` do not show ID uploads. Neither file has any ID
+capture UI at all.**
+
+I checked before specifying changes to them, because respecifying screens that already conform is
+wasted work:
+
+| File | upload / photo / attach / capture | ID references |
+|---|---|---|
+| `Merged-Teacher-Setup` | **zero matches** | **zero** |
+| `Merged-Center-Setup` | `camera` ×2, `scan` ×20 — **all of them the QR attendance scanner** in §06 Settings Scanner: *"SCAN INPUT · Scan with Camera · Camera Back · ON EACH SCAN · Sound · Vibrate · DUPLICATES"* | **zero** |
+
+**Swept all 26 files for in-app capture vocabulary** — `upload`, `take a photo`, `photo of`, `attach`,
+`browse`, `choose file`, `front of your`, `back of your`, `capture`, `ارفع`, `التقط`. Four hits, none
+of them ID:
+
+- `Merged-Center-Students` — *"Upload a file · Bring your student list in from a spreadsheet · CSV or Excel, up to 500 rows"*. The student import.
+- `Merged-Public-Marketing` — *"lead capture form"* and *"gives the claim something to attach to"*. Prose.
+- `Merged-Teacher-Home` — *"Drag to estimate your monthly income"*. The earnings slider.
+
+**So on document capture, the designs already match the decision.** The instinct about *Settings* was
+right — the screen is titled *"Identity verification in Settings"* — but it lives in
+`Merged-Verification-Payouts` §01, not in either Setup file, and it uploads nothing.
+
+**What actually contradicts the decision is different and narrower: the full National ID number,
+rendered on six frames across three screens, plus "on file" language on four more.**
+
+## 9.1 The pattern all verification entry points must follow
+
+Three parts, in this order. **`Merged-Verification-Payouts` §03 already is this** — it is the model,
+not a screen needing redesign.
+
+**1 · Explain what is about to happen, before leaving.**
+Already drawn correctly in §03: *"To enable payouts, we'll take you to Valify to confirm your National
+ID. It takes about 2 minutes."* Plus **WHAT YOU'LL NEED** — *"Your National ID card · A quick selfie
+in good lighting"*. Keep verbatim. Naming the document you will need at Valify is not the same as
+holding it.
+
+**2 · A button that leaves the app.**
+Already drawn: **Continue with Valify**, with the departure stated under it — *"You'll be securely
+redirected to Valify and brought back when done."* Keep. It should read as leaving, not as submitting.
+
+**3 · The states on return.** ← **this is the gap.** §03 draws exactly one: *"returned · verified"*.
+Five more are needed and none exists anywhere in the 26 files.
+
+| Return state | Trigger | What it must say | Exists? |
+|---|---|---|---|
+| **Verified** | Webhook confirms pass | Already drawn: *"Valify confirmed your identity. Payouts are now enabled on your account."* → *Set up payout details* | ✅ §03 |
+| **Pending** | User returned before the webhook landed | The check is still running; nothing is lost; we will notify. Must **not** read as rejected — today the user would land on "Not verified", which does. | ❌ new |
+| **Failed** | Webhook reports a fail | Not verified, what to do next, and whether a reason is shown (**open question 3**). Account unchanged, nothing lost. | ❌ new |
+| **Abandoned** | User left Valify without finishing | Returns to the unverified entry point, no error tone. | ❌ new |
+| **Expired** | `expires_at` elapsed before use | The link expired; start again. Valify's link API takes `expires_at`, so this state is unavoidable. | ❌ new |
+| **Provider error** | Valify unreachable or 5xx | Not the user's fault; try later. Distinct from Failed. | ❌ new |
+
+**Retry** hangs off Failed, Abandoned and Expired, and is undesigned in all three — see open
+questions 4, 5 and 6.
+
+## 9.2 Frames that render the full National ID — must change
+
+**Six frames, three screens.** Each renders `2 9805 15 01 02345` or `2 8703 22 01 04412` in full.
+
+| # | Screen | Frames | Renders today | Under the decision |
+|---|---|---|---|---|
+| 1 | `Merged-Verification-Payouts` §01 Settings Verification | EN center · verified · EN teacher · verified · AR ×2 = **4 frames** | *"National ID on file · 2 9805 15 01 02345"* | Replace the number. Options in §9.4. |
+| 2 | `Merged-Verification-Payouts` §06 Receipts | EN teacher payout · EN referral payout · AR ×2 = **4 frames** | *"Dina Fouad · National ID 2 9805 15 01 02345"* on the expense receipt | ⚠ **Blocked on the accountant** — see §9.5 |
+| 3 | `Merged-Admin-Accounts` §01 Admin Account Detail | EN center · EN teacher · AR ×2 = **4 frames** | *"National ID on file · Valify · 2 9805 15 01 02345"* | Replace the number. Internal staff have less reason to see it than the owner does. |
+
+*(Frame counts include the Arabic mirrors, which carry the same number in Western digits.)*
+
+## 9.3 Frames that assert we hold it, without rendering it — wording only
+
+Softer, but they describe a storage relationship the decision changes.
+
+| Screen | Text | Note |
+|---|---|---|
+| `Merged-Verification-Payouts` §01 | *"Your National ID is kept on file to issue electronic receipts for each withdrawal"* · lede: *"keep the National ID on file for the e-receipt"* | The user-facing justification for holding it. Rewrite to match whatever §9.4 lands on. |
+| `Merged-Verification-Payouts` §02 | *"recorded as an expense under your National ID"* | Same. |
+| `Merged-Verification-Payouts` §06 | *"Logged against the payee's verified National ID"* · *"against the center's verified National ID"* | Blocked with §9.5. |
+| `Merged-Admin-Money` §02 Admin Settlement | *"National ID on file"* as a per-teacher row label, ×3 rows, EN + AR | Becomes a verified/unverified indicator; the settlement run needs to know the payee is verified, not what their number is. |
+| `Merged-Admin-Money` §04 Admin Receipts | *"tied to a verified National ID"* · *"Expense receipts carry the verified National ID"* | Blocked with §9.5. |
+
+## 9.4 Frames that already conform — leave alone
+
+| Screen | Text | Why it is fine |
+|---|---|---|
+| `Merged-Verification-Payouts` §03 | *"WHAT YOU'LL NEED · Your National ID card · A quick selfie"* | Tells you what to bring **to Valify**. We never receive it. |
+| `Merged-Center-Attendance` §02 | *"About 2 minutes · commercial registration or National ID · secured by Valify"* | Entry CTA. Names the document, holds nothing. |
+| `Merged-Teacher-Money` §05 | *"About 2 minutes · National ID · secured by Valify"* | Same. |
+| `Merged-CEO` §02 | *"6 of 88 teachers not yet verified, so their fee collection is paused until National ID matching completes"* | Describes matching **at Valify**. |
+
+## 9.5 The one thing that may force the ID number to stay
+
+**`Merged-Verification-Payouts` §06 prints the National ID on the expense receipt**, and the stated
+reason is tax: *"Expense receipts carry the verified National ID and feed the monthly write-off"*
+(`Merged-Admin-Money` §04), *"Logged against the payee's verified National ID"*.
+
+If Egyptian tax law requires a payee's national identifier on a subcontractor expense receipt, then
+we must hold it — and the decision needs a documented carve-out for the receipt pipeline rather than a
+blanket "we never store it".
+
+**This is an accountant question, not a design one, and §06 is already stamped Draft — pending legal
+and accountant review.** Do not design around it until answered. Two shapes if the answer is yes:
+
+- **Narrow carve-out** — the ID is held encrypted, used only at receipt generation, never rendered in any UI including admin. §9.2 items 1 and 3 still change; item 2 stays.
+- **Fetch at issue time** — pull from Valify by transaction ID when a receipt is generated, store nothing. Depends on Valify's image and data retention, which is **undocumented** (§2b, question 2 to Valify).
+
+## 9.6 What replaces the number, if the answer to §9.5 is "not needed"
+
+Three options, cheapest first. **Not choosing between them — this is yours.**
+
+1. **Nothing.** Show *"Identity verified · via Valify · 12/07/2025"* and drop the identifier entirely. Nothing in the twelve Verified screens needs it (§9.7). Cleanest against PDPL §7.1 and §7.3.
+2. **Masked last-4** — *"National ID ••••2345"*. Reassures the owner that we verified the right person. Requires storing at least 4 digits, which is a smaller but non-zero footprint, and 4 digits of an Egyptian national ID are low-entropy.
+3. **A provider reference** — *"Valify ref VF-8823-0412"*. Zero personal data, auditable, meaningless to the user. Best for admin; poor for the owner-facing frame.
+
+**A reasonable split:** option 1 or 2 on the owner-facing §01, option 3 on the internal
+`Merged-Admin-Accounts` §01.
+
+## 9.7 ✅ None of the twelve Verified screens renders the National ID
+
+Checked directly. `Merged-Center-Home`, `Merged-Center-Students`, `Merged-Center-Groups`,
+`Merged-Center-Money`, `Merged-Center-Setup`, `Merged-Teacher-Groups`, `Merged-Teacher-Home`,
+`Merged-Teacher-Setup` — **zero National ID references between them.**
+
+**So the twelve need less than expected.** Against the expectation of *"a status, a timestamp, a
+provider reference, and possibly a masked last-4"*:
+
+| Field | Needed by the twelve? | Evidence |
+|---|---|---|
+| **status** | ✅ | The Verified badge on all twelve |
+| **timestamp** | ⚠️ **Not by the twelve.** Only by `§01 Settings Verification` — *"verified 12/07/2025"* — which is not one of them. Store it anyway; it is one column and the audit needs it. | |
+| **provider reference** | ✅ but **never rendered** | Required for the webhook, Transaction Inquiry and Fetch Images. Backend only. |
+| **masked last-4** | ❌ **not needed by any of the twelve** | No ID appears on any of them |
+| **name-match assertion** | ✅ **and this is the one beyond the expectation** | See below |
+
+### The one field beyond the list
+
+**`Merged-Teacher-Setup` §01 — screen 12 of the twelve — renders a name-match claim.** Its verified
+frame shows *"Account holder · Aly Shady · **Matches your verified ID**"*, and
+`Merged-Verification-Payouts` §05 states the rule: *"The name on the account has to match your
+verified ID. We cannot pay to an account we cannot confirm is yours."*
+
+That badge needs something to have been compared. Two ways, and **only the second is consistent with
+the decision**:
+
+- Store `verified_name` and compare on entry → stores a second piece of personal data from the document.
+- **Store a boolean `payout_name_matches`, computed once at the moment the provider enters the account holder, then discard the name.** Renders the badge, stores no name.
+
+**Recommendation: the boolean.** The screen shows an assertion, not a name — the name it displays is
+the one the provider typed.
+
+### Minimum set
+
+```
+verification_status          enum
+verified_at                  timestamp
+valify_transaction_id        string, backend only, never rendered
+payout_name_matches          boolean, set once at payout-details entry
+```
+
+**Four fields, one of which is never rendered.** No ID number, no last-4, no document, no image —
+unless §9.5 forces the receipt carve-out.
+
+## 9.8 ✅ Confirmed: nothing else in the 105 designs implies we hold the ID
+
+Two sweeps across all 26 files:
+
+- **In-app capture** — `upload`, `take a photo`, `photo of`, `attach`, `browse`, `choose file`, `front of your`, `back of your`, `capture`, `ارفع`, `التقط`. Four hits, all accounted for in §9.0, **none ID-related**.
+- **National ID / الرقم القومي** — 37 hits across **six files only**: `Merged-Verification-Payouts` (19), `Merged-Admin-Money` (9), `Merged-Admin-Accounts` (4), `Merged-Center-Attendance` (2), `Merged-Teacher-Money` (2), `Merged-CEO` (1). **Every one is classified in §9.2, §9.3 or §9.4.** Twenty of the 26 files never mention it.
+
+**No design anywhere shows the document itself** — no image, no thumbnail, no "view document", no
+preview. The strongest claim any design makes is *"on file"*, which is about the number, not the
+document.
+
 
 # What this document does not cover
 
