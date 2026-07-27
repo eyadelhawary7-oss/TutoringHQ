@@ -956,12 +956,27 @@ out of scope, or an omission?
 
 ## C1. Identity verification (e-KYC via Valify)
 
-> **DECIDED 26 July: verification is a redirect to a Valify-hosted flow; the ID document never
-> touches our infrastructure; we receive an outcome and store only that.** Valify's Web Verification
-> Flow confirmed as the integration (redirect + account-level webhook; no web SDK exists, so this is
-> also the only option for a Next.js PWA). Minimum stored footprint is **four fields**.
+> **DECIDED 26 July.** Verification is a **redirect** to a Valify-hosted flow; the ID document never
+> touches our infrastructure; we receive an outcome and store only that. Valify's **Web Verification
+> Flow** confirmed as the integration — redirect plus account-level webhook, and no web SDK exists, so
+> it is also the only option for a Next.js PWA.
 >
-> **Fully specified: see `design/VERIFICATION-SPEC.md`**, §9 for every frame the decision changes. The design specifies a two-state world,
+> **Storage:** four fields — `verification_status`, `verified_at`, a backend-only
+> `valify_transaction_id`, and a `payout_name_matches` boolean. **Plus the National ID number and legal
+> name, retained under a tax carve-out** (below). No document, no image, no last-4.
+>
+> **Legal amended 26 July, ahead of Adsero** — see `design/LEGAL-AMENDMENTS-2026-07-26.md`. The privacy
+> policy's "we do not process sensitive data" and "we do not collect anything from third parties" are
+> removed in both languages; a national-ID section is added naming the ETA e-receipt purpose and
+> **compliance with a legal obligation, not consent**, as the basis; Valify is named as a DPA
+> sub-processor; and erasure carries a financial-skeleton carve-out.
+>
+> **Erasure:** everything erased except **ID number, legal name, amounts, dates, receipt references**,
+> held for the statutory period. Notably **not** the payout destination.
+>
+> **Full spec: `design/VERIFICATION-SPEC.md`**, §9 for every frame the redirect decision changes.
+>
+> The design specifies a two-state world,
 > `not verified` and `verified`, and nothing else — no failure state, no in-progress state, no retry,
 > no expiry, anywhere in 26 files. That document lists what the design does specify (documents
 > collected, stored record, per-state gating) and the **13 decisions** needed before this can be

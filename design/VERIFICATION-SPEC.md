@@ -21,10 +21,11 @@ decision closes it.
 |---|---|
 | Document capture | **Never in our app.** Always on Valify's page. |
 | ID image, selfie | **Never received, never stored.** Fetchable from Valify by transaction ID if ever needed. |
-| Full National ID number | **Not stored.** See §9 for what replaces it on the frames that render it today. |
-| What we store | An outcome: status, timestamp, provider reference. See §2c. |
+| Full National ID number | **Retained under a tax carve-out**, confirmed 26 July — Egyptian tax law requires the payee ID on the ETA e-receipt. Held for the statutory period, **never rendered in any UI** (§9.2, §9.5). This is the §9.5 carve-out resolving as predicted. |
+| What we store | An outcome — status, timestamp, provider reference (§2c) — plus the ID number and legal name for the tax skeleton. Never the document. |
 | Trust anchor | The **webhook**, never the redirect return. |
 
+**Legal amended 26 July to match: `design/LEGAL-AMENDMENTS-2026-07-26.md`.**
 **§9 specifies every frame this changes.** §1.2 and §2 below describe what the designs *said* before
 this decision; they are left intact as the record.
 
