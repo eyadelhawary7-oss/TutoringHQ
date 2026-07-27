@@ -110,6 +110,137 @@ you verified.
 The design gives no signed-callback frame, no webhook, no reconciliation step. **The trust anchor is
 undefined.** This is not a styling gap; it is the security boundary of the whole feature.
 
+**✅ Resolved against the vendor on 26 July — see §2b.** Valify's hosted Web Verification Flow does
+fire a webhook alongside the redirect, so the design's Paymob comparison was correct and only its
+drawing was incomplete. The webhook's payload and authentication are not publicly documented and must
+be obtained from Valify.
+
+---
+
+# 2b. Valify's actual integration options — vendor research, 26 July
+
+**Researched from Valify's public documentation, not from the designs.** Everything in this section
+is vendor fact or explicitly marked as undocumented. Sources at the end of the section.
+
+## A hosted redirect exists. The design's assumption was right.
+
+Valify calls it the **Web Verification Flow** — *"a fully web-based verification experience that
+allows you to launch customized identity verification flows through a single API call."*
+
+| Step | Detail |
+|---|---|
+| 1 · Our backend requests a link | `POST https://verify.valifysolutions.com/api/link/v1/request/?lang=en`, header `X-Valify-Api-Key` |
+| 2 · We send | `return_url` · `reference_id` (our own customer id) · `expires_at` (token expiry) · optional `flow` (UUID of a pre-configured module set) |
+| 3 · Valify returns | `session_token` · `redirect_url` = `https://verify.valifysolutions.com/?token=<session_token>` |
+| 4 · User verifies | On **Valify's** page. Document capture and selfie never touch us. |
+| 5 · Valify returns the user | Redirects to our `return_url` |
+| 6 · **Valify calls our webhook** | Configured **at account level**, fired with the result at the same time as the redirect |
+
+**Modules are combinable** in one flow: Egyptian National ID OCR, **face match**, **liveness
+detection**, email OTP, phone OTP.
+
+### ✅ This resolves the §2 CONFLICT — and confirms the design's omission was the important half
+
+The design said the pattern is *"the same as Paymob."* **It is.** Redirect *plus* a server-side
+webhook, exactly like live `verifyHmac.ts` handling. The design drew step 5 and omitted step 6.
+**Step 6 is where verified state must be set.** The `return_url` is a UX destination, nothing more.
+
+### ⚠ And it is effectively the only option for this stack
+
+Valify's SDKs ship for **iOS, Android, Flutter and React Native**. There is **no web SDK** in their
+documentation index. TutoringHQ is a Next.js PWA. So the hosted Web Verification Flow is not one
+option among several — it is the one that fits, which is fortunate because it is also the one the
+design drew.
+
+## What comes back
+
+| Surface | Documented | Fields |
+|---|---|---|
+| Link request response | ✅ | `session_token`, `redirect_url` |
+| **Webhook payload** | ❌ **NOT PUBLICLY DOCUMENTED** | Field names, whether it carries an overall decision, and **whether it is signed or HMAC-verified**, are all absent from the public docs. **Must be obtained from Valify before build.** |
+| Transaction Inquiry (`POST /api/v1/transaction/inquiry/`) | ✅ partially | `transaction_id`, `token`, `time`, **`status`** (boolean), `service`, `data`. The contents of `data` are not public. |
+| OCR REST endpoint (`POST /api/v1/ocr/`) | ✅ | Extracted fields, plus `transaction_id` and **`trials_remaining`** |
+| Mobile SDK result (`VIDVDocumentKitResult`) | ✅ | `sessionID`, `extractedData` (name, NID number, DOB, address, expiry, gender, marital status), `captures` (base64 front/back), `hmacData` |
+
+**Responses are encrypted.** Transaction Inquiry and Fetch Images return an AES-encrypted payload plus
+an RSA-encrypted AES key; we decrypt the key with our private RSA key, then the payload. **We need an
+RSA keypair and somewhere to keep the private key** — that is infrastructure the designs never
+mention.
+
+**Two auth schemes:** `X-Valify-Api-Key` for the link API; **Bearer token + `bundle_key`** for the
+OCR and transaction APIs. Staging base is `valifystage.com`.
+
+### `trials_remaining` partially answers the retry question
+
+The OCR endpoint returns **`trials_remaining`**, so **Valify itself meters attempts per bundle**.
+That does not decide our product rules — how many we grant, cooldown, lockout, and what the user sees
+are still open questions 4 and 6 — but the counter exists at the vendor and does not need building.
+
+## ✅ We do not have to store the images
+
+Valify exposes **Fetch Images** — `POST https://<base-url>/api/v1/transaction/fetch-images/`, taking
+a **transaction ID** and a flag for original or cropped, and returning the documents **and the
+selfie**. Their own framing: *"enabling integrators to access documents and selfies without storing
+them locally."*
+
+**This closes the largest gap in §1.2.** The store-versus-discard answer the designs never gave is
+available as an architectural choice, and the privacy-preserving option is the supported one: **hold
+the transaction ID, fetch on demand, store no images.**
+
+⚠ **Undocumented and must be asked: how long Valify retains the images.** If their retention is
+shorter than our tax-record obligation, "fetch on demand" stops working and the decision reverses.
+
+---
+
+# 2c. What has to be stored on our side to render the twelve verified screens
+
+Derived from what the twelve screens actually render, not from what Valify offers. **Valify returns
+considerably more than these screens need.**
+
+## Required — the screens cannot render without these
+
+| Field | Rendered by | Evidence |
+|---|---|---|
+| `verification_status` | All twelve, via the **Verified** badge | Two states drawn; §4 of this spec argues more are needed |
+| `verified_at` | Settings Verification, Admin Account Detail | §01: *"Al-Nahda Center · verified 12/07/2025"* |
+| `national_id` | Settings Verification · Withdrawal Payout Details · Receipts · Admin Account Detail · Admin Receipts | §01: *"National ID on file · 2 9805 15 01 02345"* |
+| `verified_name` | Payout details, for the account-holder match | §05: *"The name on the account has to match your verified ID."* `Merged-Teacher-Setup` §01: *"Matches your verified ID"* |
+| `valify_transaction_id` | Nothing user-facing | Needed for Fetch Images, Transaction Inquiry, and audit. **No design mentions it; it is required anyway.** |
+
+**Five fields.** That is the whole KYC footprint of twelve screens.
+
+## Not required — Valify returns them, no screen renders them
+
+`date_of_birth` · `address` · `gender` · `marital_status` · `document_expiry` · **ID card images** ·
+**selfie image** · face-match score · liveness score.
+
+**⚠ Storing the full `extractedData` blob would be over-collection**, and it lands directly on the
+PDPL conflicts in §7 — particularly 7.1 and 7.3, where the published policy neither discloses nor
+permits any of it. The screens need a number, a name, a date and a status.
+
+## Stored alongside, but not KYC and not from Valify
+
+| Field | Screen | Note |
+|---|---|---|
+| `tax_status` + `tax_card_number` | `Merged-Center-Attendance` §02 | Provider-entered, changeable any time |
+| Payout method, `account_holder`, IBAN or wallet | §04, `Merged-Teacher-Setup` §01 | Provider-entered; validated against `verified_name` |
+
+## Still blocked on Valify, not on us
+
+1. **The webhook payload** — field names, whether it carries a decision, and how it is authenticated. This is the security boundary and it is undocumented.
+2. **Image retention period** — decides whether fetch-on-demand is viable.
+3. **Whether the flow returns a decision or only extracted data.** Transaction Inquiry has a boolean `status`, but whether that means "the transaction completed" or "the person passed" is not stated. These are very different things.
+4. **What a failed or abandoned session produces** — the public docs cover HTTP errors only, not user-facing outcomes.
+
+**Ask `techsupport@valify.me`.** Questions 1 and 3 block build; 2 blocks the storage decision.
+
+**Sources:** [Web Verification Flow](https://valify.gitbook.io/documentation/kyc/kyc-features/egy-nid-ocr) ·
+[Fetch Images](https://valify.gitbook.io/documentation/apis/fetch-images) ·
+[Transaction Inquiry](https://valify.gitbook.io/documentation/apis/transaction-inquiry) ·
+[Commercial Register OCR](https://valify.gitbook.io/documentation/kyb/know-your-business-ekyb/data-extraction-and-verifications/egy-cr-ocr) ·
+[SDK response](https://valify.gitbook.io/valify-ios-sdk-documentation/dockit/ios-native-sdk/sdk-response) ·
+[Valify eKYC](https://valify.me/e-kyc/)
+
 ---
 
 # 3. What happens on a failed check
