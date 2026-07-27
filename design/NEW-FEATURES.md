@@ -48,6 +48,14 @@ below; this is the summary.
 | **The four duplicate pairs** | **Facts gathered, no merge.** All eight routes stay live. | → `design/DUPLICATE-ROUTES.md` |
 | **Design shows data that does not exist** | Audited across every buildable file. **9 need a decision, 10 screens blocked on verification, 5 need a live-catalog check first.** | → `design/DATA-GAPS.md` |
 
+## Decisions applied, 27 July 2026
+
+| | Decision | Effect |
+|---|---|---|
+| **Benchmarks metric set** | **Design error, not a data gap.** Build the four metrics that exist and **keep group utilisation**. Drop average fee and new-students-per-month from the design. | 1 design screen to correct. Build side unblocked. → **Appendix D9** |
+| **Roster unpaid amount** | **Build it.** `getStudentBalances` + `sumOutstanding`, no new column. | Built in PR #188. Fixed an inert-column bug on the way. → `DATA-GAPS.md` §0.1, §1 |
+| **The catalog pass** | Every load-bearing column checked against `information_schema.columns`. **Four answers changed.** Decisions needed from Eyad drop 9 → 6. | → `design/DATA-GAPS.md` §0 |
+
 **Appendix D collects every design edit these decisions imply**, by file and section number.
 
 ## Feature summary
@@ -1372,7 +1380,7 @@ tier is missing from the designs or is correctly modelled as the free zone rathe
 
 # Appendix D — Design corrections needed
 
-**Edits to the `Merged-*.html` files, not to code.** Four corrections, 19 screens. Nothing in this
+**Edits to the `Merged-*.html` files, not to code.** Nine corrections, 27 screens. Nothing in this
 appendix is a build item; every one of them is a design file that says something the platform will
 not do.
 
@@ -1489,10 +1497,42 @@ This resolves the ambiguity flagged in D1, which listed the same two instances p
 categories with no figure. With 10% now named on the §02 screen, the two are inconsistent. That is
 open question 4 in Appendix C and is not resolved by this correction.
 
+## D9. Correct the Benchmarks metric set — 1 screen
+
+**Eyad's call, 27 July: this is a design error, not a data gap.** `Merged-Center-Insight` §02 draws
+five metrics. The live cohort table supplies four, and they are not the same four.
+
+**Catalog-verified** — `benchmark_snapshots` carries exactly four metric families, each with a full
+`avg` / `p25` / `p50` / `p75` band, cohorted by `district` + `student_count_tier`:
+
+| Live metric family | In the design? |
+|---|---|
+| `attendance_rate` | ✅ yes |
+| `revenue_per_student` | ✅ yes (as "Monthly revenue") |
+| `retention_rate_30d` | ✅ yes |
+| `group_utilization` | ❌ **the design drops it** |
+
+| Design metric | In the catalog? |
+|---|---|
+| Average fee | ❌ **does not exist** |
+| New students / month | ❌ **does not exist** |
+
+**The correction:**
+
+1. **Drop "Average fee"** from the design. No source, and no plan to add one.
+2. **Drop "New students per month"** from the design. Same.
+3. **Restore "Group utilisation"** to the design. It exists with full percentile bands, it is the one
+   metric here a center can act on directly — an under-filled group is a fixable problem — and losing
+   it costs a metric the platform already computes for free.
+
+Net: still five tiles becomes four, EN and AR. **Build the four; they need no decision.** The screen is
+otherwise unblocked.
+
 ## Overlap and totals
 
 `Merged-Center-Insight` §03 appears in D2 and D3. `Merged-Admin-Money` §07 appears in D3 and D5.
 `Merged-Verification-Payouts` §02 appears in D1 and D8, where **D8 supersedes the D1 row**.
 `Merged-Public-Marketing` §03 appears in D6 as the canonical ladder needing a Free tier.
+`Merged-Center-Insight` §02 is new in D9 and appears nowhere else.
 
-**Eight corrections, 26 distinct screens.** D7 is a note rather than an edit.
+**Nine corrections, 27 distinct screens.** D7 is a note rather than an edit.
