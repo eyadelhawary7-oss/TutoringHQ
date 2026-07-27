@@ -53,21 +53,32 @@ table. **Fixed in #188** — both halves of the tile now derive from the balance
 The wider question is whether the column should be dropped or backfilled. That is yours, and it is not
 urgent now that nothing reads it.
 
-## 0.2 · `auto_send` exists — my audit read the wrong table ✅
+## 0.2 · `auto_send` — the column exists, on an orphan table 🔴
 
-I marked the WhatsApp auto-send toggle 🔴 "no `auto_send` field found". There are **two** template
-tables, and I checked the one without it:
+**Corrected 27 July, second pass. My first correction was also wrong**, in the other direction, and this
+is the accurate version.
 
-| Table | Columns |
-|---|---|
-| `wa_templates` | `id, center_id, name, content, variables, created_at, updated_at` |
-| `center_message_templates` | `id, center_id, template_type, message_body, enabled, **auto_send**, created_at, updated_at` |
+I first marked the WhatsApp auto-send toggle 🔴 "no `auto_send` field found", having checked
+`wa_templates`. I then found the column on `center_message_templates` and re-marked it ✅ "needs no new
+column, move it to the build list." **That understated the problem.** There are not two template
+tables but **three**, and the one with `auto_send` is wired to nothing:
 
-`auto_send` is `boolean DEFAULT false` — verified, and defaulted safely off.
+| Table | Rows | Referenced by | Notes |
+|---|---|---|---|
+| `wa_meta_templates` | **45** | `whatsapp/page.tsx` → `WhatsAppTemplatesClient` | **The live screen.** Meta's registry: `template_name, category, status, variables_count` |
+| `center_message_templates` | **0** | **nothing in `src/`** | Has `auto_send boolean DEFAULT false`, `template_type`, `message_body`, `enabled` |
+| `wa_templates` | **0** | `googleDriveBackup.ts`, `dbProxyScope.ts` only | Never read or written by a screen |
 
-**It is still not a layout change.** Turning it on spends WhatsApp credit without a human in the loop,
-so it stays a money control and stays off the auto-merge list. But it needs no new column, which moves
-it off the decision list and onto the build list.
+`grep -rl center_message_templates src/` returns **no files**. The table is empty and orphaned.
+
+**So the toggle is not a build-list item.** The live Templates screen renders Meta's approved message
+*shapes* — a different concept from a per-center automation switch. Wiring `auto_send` in means
+adopting an unused table, deciding how it relates to the 45 Meta templates, and building the sender
+path that honours the flag. That is a feature with a design decision inside it, not a restyle.
+
+**And it still spends WhatsApp credit with no human in the loop**, so it never auto-merges regardless.
+
+**Verdict: back on the decision list.** The column existing was never the hard part.
 
 ## 0.3 · The notifications table is not called `notifications`, and the column is not `type` 🔴→✅
 
@@ -325,17 +336,19 @@ columns. **Full detail and the exact silent-failure mechanism in §0.5.**
 | 4 | Room utilisation per room | 🟡 **Derivable.** `schedule_slots.room_id` × `rooms.capacity` |
 | 5 | Teacher referral tables | 🔴 **Not found.** Every referral table is center-to-center only |
 
-## The six that still need you
+## The eight that still need you
 
-Down from nine. Benchmarks and WhatsApp auto-send are resolved; teacher referrals is confirmed rather
-than merely suspected.
+Was nine, then six, now eight. Benchmarks and the notifications vocabulary are genuinely resolved;
+WhatsApp auto-send came **back** on second inspection (§0.2), and `schedule_slots.day_of_week` is new.
 
 1. **`demo_requests` migration** (`Public-Marketing` §04) — add `area` + `student_count`, or drop both fields. Blocks the highest-value new build in Phase F
-2. **Team seats** (`Center-Setup` §07) — no seat model anywhere, and the design says the price is unset
-3. **WhatsApp pack model** (`Center-WhatsApp` §02, §03) — already deferred as B5
-4. **Group billing basis** (`Center-Groups` §02) — already deferred as B12
-5. **Card-order notify-me** (`Center-Orders` §04) — a write with no destination
-6. **Teacher referral model** (`Teacher-Insight` §02) — confirmed absent; a new schema, not a column
+2. **`schedule_slots.day_of_week` convention** — JS weekday (Sat=6) or Egypt index (Sat=0)? Two live readers disagree; one of the Schedule board or the daily-summary WhatsApp is reading the wrong day. Blocks `Center-Groups` §05
+3. **WhatsApp auto-send** (`Center-WhatsApp` §01) — the column sits on an empty, orphaned table. Adopting it is a feature with a design decision inside it. See §0.2
+4. **Team seats** (`Center-Setup` §07) — no seat model anywhere, and the design says the price is unset
+5. **WhatsApp pack model** (`Center-WhatsApp` §02, §03) — already deferred as B5
+6. **Group billing basis** (`Center-Groups` §02) — already deferred as B12
+7. **Card-order notify-me** (`Center-Orders` §04) — a write with no destination
+8. **Teacher referral model** (`Teacher-Insight` §02) — confirmed absent; a new schema, not a column
 
 Plus two route builds that need no decision, only time: **`/admin/teachers`** and
 **`/admin/teachers/[id]`** — the data exists, the routes do not.
@@ -343,9 +356,16 @@ Plus two route builds that need no decision, only time: **`/admin/teachers`** an
 ## Resolved without you
 
 - **Benchmarks** — your design correction, 27 July. Four metrics, keep group utilisation
-- **WhatsApp auto-send** — the column exists; I read the wrong table
-- **Notifications vocabulary** — nothing to conform to; naming is ours to choose
+- **Notifications vocabulary** — nothing to conform to; naming is ours to choose. Built in #190
 - **Roster unpaid amount** — built in #188, and it fixed an inert-column bug on the way
+- **Rooms in-use chip** — built in #191, weekly rather than daily, pending decision 2 above
+
+## A note on how twice-wrong entries happen
+
+`auto_send` was marked absent, then present, then "present but orphaned". Each pass was a wider search:
+code grep, then catalog, then **cross-referencing the catalog against the code that reads it**. A column
+existing is necessary and not sufficient — `students.payment_status` (§0.1) is the mirror case, a column
+that exists, is written, and is still dead. **Check the readers, not just the schema.**
 
 ## One thing to decide that was not on any list
 
