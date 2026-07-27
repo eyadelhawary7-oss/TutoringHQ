@@ -1116,16 +1116,27 @@ export default function StudentsPage() {
             ) : (
               <div className={`contents transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}>
                 <KpiCard
-                  label={ts('total_students')}
-                  value={formatNumber(studentsList.length, locale)}
-                />
-                <KpiCard
                   label={ts('active_students')}
                   value={formatNumber(
                     studentsList.filter((s) => s.lifecycle_status === 'active').length,
                     locale,
                   )}
+                  subLabel={ts('ofTotalStudents', {
+                    count: formatNumber(studentsList.length, locale),
+                  })}
                   tone="success"
+                />
+                {/* Design (Merged-Center-Students §01) leads the roster with who is behind
+                    rather than a second headcount. Count only: the roster query selects
+                    `payment_status` but no balance column, so the design's "4,200 EGP due"
+                    figure has no live source and is deliberately not shown. */}
+                <KpiCard
+                  label={ts('unpaidStudents')}
+                  value={formatNumber(
+                    studentsList.filter((s) => s.payment_status === 'unpaid').length,
+                    locale,
+                  )}
+                  tone="warning"
                 />
               </div>
             )}

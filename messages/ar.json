@@ -6733,6 +6733,8 @@
     "add_student": "إضافة طالب",
     "total_students": "إجمالي الطلاب",
     "active_students": "الطلاب النشطون",
+    "unpaidStudents": "غير مدفوع",
+    "ofTotalStudents": "من {count} إجمالًا",
     "search_placeholder": "بحث عن طالب...",
     "filter_all": "الكل",
     "filter_active": "نشط",

@@ -1593,6 +1593,8 @@
     "add_student": "Add Student",
     "total_students": "Total Students",
     "active_students": "Active Students",
+    "unpaidStudents": "Unpaid",
+    "ofTotalStudents": "of {count} total",
     "search_placeholder": "Search students...",
     "filter_all": "All",
     "filter_active": "Active",
