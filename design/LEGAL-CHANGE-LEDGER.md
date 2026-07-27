@@ -199,6 +199,21 @@ date, and existing customers need telling. The design renders the version string
 
 ---
 
+# Product decisions logged here for the record
+
+Not legal changes, recorded so the ledger is the single dated trail of what was settled on 26 July.
+
+| | Decision |
+|---|---|
+| **Analytics** | Stays on the `canViewRevenue` permission gate. Not a paid add-on. Paid add-ons **return when AI features ship** — parked, not killed. No purchase flow. |
+| **Benchmarks** | Stays free. Existing data-sufficiency gate stands. Same parking note. |
+| **Group billing basis** | `fee_per_class` only. Where a design shows per-session, monthly or bundle-of-N, build the `fee_per_class` equivalent and record the difference. **Deferred, not rejected.** |
+| **The 22 undesigned routes** | Keep every one, delete none, flag each for design → `design/NEEDS-DESIGN.md`. |
+| **The four duplicate pairs** | No merge. Facts gathered → `design/DUPLICATE-ROUTES.md`. Two carry something that must move first: the lapsed-teacher payment path on `/teacher/pay`, and the processing-fee disclosure on `/terms`. |
+| **Verification** | Stays blocked on Adsero. Where a screen has a Verified variant, **build the unverified one and leave the variant.** |
+
+---
+
 # Open questions
 
 | | Decides |

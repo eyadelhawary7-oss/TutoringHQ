@@ -42,6 +42,10 @@ below; this is the summary.
 | Analytics / Benchmarks add-ons | **Not decided.** Analytics keeps `canViewRevenue`; Benchmarks stays free. | Do not build either as a purchase. → B9, B10 |
 | Group billing basis | **Not decided.** Live keeps `fee_per_class` only. | → B12 |
 | Admin §07 prices, teacher Free tier, `top_centers`, the §02 fee wording | Four further design corrections. | → Appendix D5–D8 |
+| **Analytics / Benchmarks add-ons** | **CLOSED.** Both stay as they are. Parked until AI features ship. No purchase flow. | → B9, B10 |
+| **Group billing basis** | **CLOSED.** `fee_per_class` only. Build the equivalent, record the difference. Deferred, not rejected. | → B12 |
+| **The 22 undesigned routes** | **CLOSED.** Keep all, delete none, flag each for design. | → `design/NEEDS-DESIGN.md` |
+| **The four duplicate pairs** | **Facts gathered, no merge.** All eight routes stay live. | → `design/DUPLICATE-ROUTES.md` |
 
 **Appendix D collects every design edit these decisions imply**, by file and section number.
 
@@ -705,7 +709,16 @@ credit. Unverified users can only spend as credit.
 never the earning. Do not stop accrual for unverified accounts. And the locked state shows the amount
 — hiding the number removes the reason to verify.
 
-## B9. Advanced Analytics as a paid add-on — DEFERRED 26 July
+## ~~B9. Advanced Analytics as a paid add-on~~ — CLOSED 26 July, PARKED
+
+> **DECIDED: Analytics stays exactly as it is.** It keeps the `canViewRevenue` permission gate. It is
+> **not** a paid add-on. **Do not build a purchase flow.**
+>
+> **Parked, not killed:** paid add-ons return when AI features ship. Keep the design's richer content
+> (forecast, projected-revenue bar, collection-rate gauge, methods donut, revenue by group, P&L, aging
+> report) available to build behind the existing permission — only the gate and the purchase are off.
+>
+> Original analysis below.
 
 > **Not decided. Do not build Analytics as a purchase.** `/{locale}/analytics` keeps its existing
 > `canViewRevenue` permission gate. The design's richer *content* — forecast, projected-revenue bar,
@@ -737,7 +750,14 @@ cannot see a screen the center paid for — probably not what you want, but the 
 higher plan. The aging report's per-bucket **Remind** buttons spend WhatsApp credit — which ties
 this to B5.
 
-## B10. Benchmarks as a paid add-on — DEFERRED 26 July
+## ~~B10. Benchmarks as a paid add-on~~ — CLOSED 26 July, PARKED
+
+> **DECIDED: Benchmarks stays free.** No entitlement, no 99 EGP/mo enable sheet, **no purchase flow**.
+> The existing data-sufficiency gate (`insufficient_data`, `centers_needed: 10`) stands.
+>
+> **Parked, not killed:** paid add-ons return when AI features ship.
+>
+> Original analysis below.
 
 > **Not decided. Benchmarks stays free.** Do not build the 99 EGP/mo enable sheet or any entitlement.
 > The existing data-sufficiency gate (`insufficient_data`, `centers_needed: 10`) stands.
@@ -789,7 +809,17 @@ on plan names), and what happens to a center already over the new cap.
 **Design intent:** the seat line sits next to the member list, not buried in billing, so the cost of
 adding someone is visible at the moment you add them.
 
-## B12. Group billing basis: per session, monthly, bundle — DEFERRED 26 July
+## ~~B12. Group billing basis~~ — CLOSED 26 July, DEFERRED
+
+> **DECIDED: `fee_per_class` only, for now.** No billing-basis column, no monthly group billing, no
+> bundle draw-down.
+>
+> **Where a design shows per-session, monthly or bundle-of-N, build the `fee_per_class` equivalent and
+> record the difference in the PR.** Applies to `Merged-Center-Groups` §02, which draws all three.
+>
+> **Deferred, not rejected.** The design stands; the data model waits.
+>
+> Original analysis below.
 
 > **Not decided. Live keeps `fee_per_class` only.** Do not add a billing-basis column, monthly group
 > billing, or bundle draw-down. The design's Monthly and Bundle rows in `Merged-Center-Groups` §02 are
