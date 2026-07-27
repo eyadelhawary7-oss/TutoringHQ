@@ -1595,6 +1595,7 @@
     "active_students": "Active Students",
     "unpaidStudents": "Unpaid",
     "ofTotalStudents": "of {count} total",
+    "unpaidAmountDue": "{amount} due",
     "search_placeholder": "Search students...",
     "filter_all": "All",
     "filter_active": "Active",

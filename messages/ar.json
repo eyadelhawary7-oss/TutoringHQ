@@ -6735,6 +6735,7 @@
     "active_students": "الطلاب النشطون",
     "unpaidStudents": "غير مدفوع",
     "ofTotalStudents": "من {count} إجمالًا",
+    "unpaidAmountDue": "{amount} مستحقة",
     "search_placeholder": "بحث عن طالب...",
     "filter_all": "الكل",
     "filter_active": "نشط",
