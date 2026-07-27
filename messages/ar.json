@@ -6006,6 +6006,8 @@
     "maxCapacityValue": "السعة القصوى: {count}",
     "sessionsValue": "الجلسات: {count}",
     "scheduleCount": "الجلسات",
+    "sessionsPerWeek": "{count} في الأسبوع",
+    "freeAllWeek": "متاحة",
     "allRooms": "كل الغرف",
     "noRoomsTitle": "لا توجد قاعات بعد",
     "noRoomsDescription": "القاعات مساحات فعلية أو افتراضية حيث تُعقد الحصص. أنشئ قاعة لتبدأ الجدولة.",

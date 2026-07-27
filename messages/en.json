@@ -3173,6 +3173,8 @@
     "maxCapacityValue": "Max capacity: {count}",
     "sessionsValue": "Sessions: {count}",
     "scheduleCount": "Sessions",
+    "sessionsPerWeek": "{count} a week",
+    "freeAllWeek": "Free",
     "allRooms": "All Rooms",
     "noRoomsTitle": "No rooms yet",
     "noRoomsDescription": "Rooms are physical or virtual spaces where sessions happen. Create one to build your schedule.",

@@ -12,6 +12,23 @@ interface Room {
   id: string;
   name: string;
   capacity: number | null;
+  /**
+   * Slots booked in this room across the WHOLE WEEK, not today.
+   *
+   * The design's chip reads "3 today" / "Free today", but today cannot be
+   * computed safely yet: `schedule_slots.day_of_week` is nullable TEXT and the
+   * codebase reads it two incompatible ways. `src/lib/cairo/week.ts` documents
+   * it as a JS weekday (Saturday = 6) and the Schedule screen reads it that
+   * way; `src/lib/postgrestSafe.ts` treats it as an Egypt index (Saturday = 0,
+   * via `(jsDay + 1) % 7`) and the two daily-summary routes read it that way.
+   * For any Saturday slot one looks for `6` and the other for `0` — they cannot
+   * both be right, and the single live row (`"1"`) is Monday under one reading
+   * and Sunday under the other.
+   *
+   * A weekly count needs none of that: it is a plain count by `room_id`. So the
+   * chip is weekly and honest rather than daily and possibly wrong. Switch it
+   * to "today" once the day_of_week convention is settled.
+   */
   schedule_count?: number;
 }
 
@@ -155,6 +172,23 @@ export default function RoomsPage() {
                     ? t('maxCapacityValue', { count: formatNumber(Number(r.capacity), locale) })
                     : `${t('maxCapacity')}: -`}
                 </p>
+                {/* Design (Merged-Center-Groups §03) puts an in-use / free chip on
+                    every room card. The count was already being fetched and
+                    thrown away — see loadData. Weekly, not daily: see the note
+                    on schedule_count in the Room type. */}
+                <span
+                  className={`mt-3 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                    (r.schedule_count ?? 0) > 0
+                      ? 'bg-teal-500/12 text-teal-700'
+                      : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'
+                  }`}
+                >
+                  {(r.schedule_count ?? 0) > 0
+                    ? t('sessionsPerWeek', {
+                        count: formatNumber(Number(r.schedule_count), locale),
+                      })
+                    : t('freeAllWeek')}
+                </span>
               </div>
             ))}
           </div>
