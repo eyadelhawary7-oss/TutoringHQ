@@ -46,14 +46,19 @@ export function getAnnouncementCap(plan: string): number {
   return ANNOUNCEMENT_CAPS[plan] ?? ANNOUNCEMENT_CAPS.starter;
 }
 
-export function getDayOfWeek(date: Date, timezone = 'Africa/Cairo'): string {
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone,
-    weekday: 'long',
-  })
-    .format(date)
-    .toLowerCase();
-}
+/*
+ * `getDayOfWeek` lived here and has been REMOVED. It returned a lowercase day
+ * NAME ("monday"), and its only caller compared that against
+ * `schedule_slots.day_of_week`, which stores a JS weekday as text ("1"). The
+ * comparison matched zero rows on every run, so the parent absence alert never
+ * fired once while looking like a working feature.
+ *
+ * It had no other callers and no tests. Left in place it is an invitation to
+ * make the same mistake again, so it is gone rather than deprecated.
+ *
+ * For any `schedule_slots.day_of_week` comparison use `scheduleSlotsDayOfWeek`
+ * from `@/lib/cairo/week`, which is the writer's convention in one place.
+ */
 
 export function getTodayCairo(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' });

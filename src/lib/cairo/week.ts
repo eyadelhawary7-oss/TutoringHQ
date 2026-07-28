@@ -13,6 +13,38 @@ export function cairoYmdToJsWeekday(cairoYmd: string): number {
   return new Date(Date.UTC(y, m - 1, d, 12, 0, 0)).getUTCDay();
 }
 
+/**
+ * The value stored in `schedule_slots.day_of_week`, for a Cairo calendar date.
+ *
+ * THE WRITER DEFINES THIS, and every reader must agree with it. The chain is:
+ * `ScheduleSlotsEditor` (days 0..6, Sun..Sat) → `propose_group_slot`, which does
+ * `v_dow := p_day_of_week::text` → `confirm_group_slot` → `schedule_slots`.
+ * So the column holds a **JS weekday rendered as text**: "0" Sunday … "6"
+ * Saturday. It is `text`, not an enum, and nothing has ever written a day name.
+ *
+ * Two readers disagreed with the writer and both were wrong:
+ *   • the daily summary applied `(jsDay + 1) % 7`, an Egypt-week index, so it
+ *     matched the day AFTER the one it wanted and reported absentees off a
+ *     timetable one day out;
+ *   • the parent absence alert compared against "monday"/"sunday" day names,
+ *     which match no stored row, so it never fired once.
+ *
+ * Both now call this. Use it for every `schedule_slots.day_of_week` comparison
+ * so the convention lives in exactly one place.
+ *
+ * Pass a CAIRO calendar key (`cairoDateKey()`), never a raw UTC date: crons run
+ * in UTC, and between Cairo midnight and UTC midnight the two disagree on which
+ * day it is. `cairoDateKey` resolves the offset through the IANA zone, so
+ * Egypt's DST — UTC+3 from the last Friday of April to the last Thursday of
+ * October, UTC+2 otherwise — is applied without being hand-coded here.
+ *
+ * NOT for `group_schedule` or `group_slot_proposals`. Those are `smallint`
+ * columns on different tables and are not implicated.
+ */
+export function scheduleSlotsDayOfWeek(cairoYmd: string): string {
+  return String(cairoYmdToJsWeekday(cairoYmd));
+}
+
 /** First day (Saturday) of the Cairo week containing `cairoYmd`, as YYYY-MM-DD. */
 export function startOfCairoWeekKey(cairoYmd: string): string {
   const wd = cairoYmdToJsWeekday(cairoYmd);
