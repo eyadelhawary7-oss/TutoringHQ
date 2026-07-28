@@ -19,7 +19,8 @@ import {
 } from '@/lib/whatsapp/flows/dailySummary';
 import { tCronBackup } from '@/lib/cronBackupI18n';
 import { formatDate, formatDateTime, formatNumber } from '@/lib/formatNumber';
-import { assertIsoDateForOrFilter, orClauseDayOfWeekEgypt } from '@/lib/postgrestSafe';
+import { assertIsoDateForOrFilter } from '@/lib/postgrestSafe';
+import { scheduleSlotsDayOfWeek } from '@/lib/cairo/week';
 
 const CEO_LOCALE = 'en';
 
@@ -27,12 +28,6 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
 /** Egypt week: Sat=0, Sun=1, Mon=2, Tue=3, Wed=4, Thu=5, Fri=6. JS getDay: Sun=0..Sat=6. */
-function getEgyptDayOfWeek(dateStr: string): number {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const jsDay = new Date(y, m - 1, d).getDay();
-  return (jsDay + 1) % 7;
-}
-
 function utcTodayBounds(): { start: string; end: string; dateStr: string } {
   const d = new Date();
   const y = d.getUTCFullYear();
@@ -327,7 +322,12 @@ export async function POST(request: Request) {
 
     const yesterdayStr = assertIsoDateForOrFilter(getYesterdayCairo(), 'yesterdayStr');
     const { start: rangeStart, end: rangeEnd } = getYesterdayCairoUtcRange();
-    const egyptDay = getEgyptDayOfWeek(yesterdayStr);
+    // schedule_slots.day_of_week stores a JS weekday as text ("0" Sunday …
+    // "6" Saturday). This previously used an Egypt-week index, (jsDay + 1) % 7,
+    // which matched the day AFTER yesterday — so the absentee count below was
+    // computed from the wrong day's timetable. yesterdayStr is already a Cairo
+    // calendar date, which is what this must be derived from.
+    const slotsDayOfWeek = scheduleSlotsDayOfWeek(yesterdayStr);
 
     const { data: centers, error: centersError } = await supabase
       .from('centers')
@@ -383,7 +383,7 @@ export async function POST(request: Request) {
         .from('schedule_slots')
         .select('id, group_id, center_id')
         .in('center_id', centerIds)
-        .or(orClauseDayOfWeekEgypt(egyptDay)),
+        .eq('day_of_week', slotsDayOfWeek),
       supabase
         .from('attendance_scans')
         .select('center_id, student_id')

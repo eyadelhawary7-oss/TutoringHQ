@@ -7,11 +7,11 @@ import { isTemplateApproved } from '@/lib/centerNotify';
 import { sendTemplateMessage } from '@/lib/whatsapp/client';
 import {
   getCurrentCairoTime,
-  getDayOfWeek,
   getTodayCairo,
   toArabicNumerals,
   WA_TEMPLATES,
 } from '@/lib/parentPack';
+import { scheduleSlotsDayOfWeek } from '@/lib/cairo/week';
 import { assertIsoDateForOrFilter } from '@/lib/postgrestSafe';
 
 export const dynamic = 'force-dynamic';
@@ -44,8 +44,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const todayDayOfWeek = getDayOfWeek(new Date());
     const todayCairo = assertIsoDateForOrFilter(getTodayCairo(), 'todayCairo');
+    // Was `getDayOfWeek(new Date())`, which returns a day NAME ("monday").
+    // schedule_slots.day_of_week stores a JS weekday as text ("1"), so that
+    // comparison matched zero rows on every run since the alert shipped — the
+    // loop below never executed once. Derived from the CAIRO calendar date, not
+    // a raw UTC date, because this cron runs in UTC and the two disagree
+    // between Cairo midnight and UTC midnight.
+    const todayDayOfWeek = scheduleSlotsDayOfWeek(todayCairo);
     const { hour: currentHour, minute: currentMin } = getCurrentCairoTime();
     const sentToday = new Set<string>();
 

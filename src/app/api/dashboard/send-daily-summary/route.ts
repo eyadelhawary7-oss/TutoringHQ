@@ -6,16 +6,11 @@ import {
   getYesterdayCairoUtcRange,
   type DailySummaryData,
 } from '@/lib/whatsapp/flows/dailySummary';
-import { assertIsoDateForOrFilter, orClauseDayOfWeekEgypt } from '@/lib/postgrestSafe';
+import { assertIsoDateForOrFilter } from '@/lib/postgrestSafe';
+import { scheduleSlotsDayOfWeek } from '@/lib/cairo/week';
 import { getStudentBalances, sumOutstanding } from '@/lib/studentBalance';
 
 /** Egypt week: Sat=0..Fri=6 from Y-M-D in local calendar. */
-function getEgyptDayOfWeek(dateStr: string): number {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const jsDay = new Date(y, m - 1, d).getDay();
-  return (jsDay + 1) % 7;
-}
-
 export async function POST(request: NextRequest) {
   try {
     const auth = await requireCenterAuth(request);
@@ -56,7 +51,12 @@ export async function POST(request: NextRequest) {
 
     const yesterdayStr = assertIsoDateForOrFilter(getYesterdayCairo(), 'yesterdayStr');
     const { start: rangeStart, end: rangeEnd } = getYesterdayCairoUtcRange();
-    const egyptDay = getEgyptDayOfWeek(yesterdayStr);
+    // schedule_slots.day_of_week stores a JS weekday as text ("0" Sunday …
+    // "6" Saturday). This previously used an Egypt-week index, (jsDay + 1) % 7,
+    // which matched the day AFTER yesterday — so the absentee count below was
+    // computed from the wrong day's timetable. yesterdayStr is already a Cairo
+    // calendar date, which is what this must be derived from.
+    const slotsDayOfWeek = scheduleSlotsDayOfWeek(yesterdayStr);
 
     const [scansRangeRes, paymentsRes, balancesMap, slotsRes, sessionScansRes] = await Promise.all([
       supabaseAdmin
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         .from('schedule_slots')
         .select('id, group_id, center_id')
         .eq('center_id', centerId)
-        .or(orClauseDayOfWeekEgypt(egyptDay)),
+        .eq('day_of_week', slotsDayOfWeek),
       supabaseAdmin
         .from('attendance_scans')
         .select('center_id, student_id')

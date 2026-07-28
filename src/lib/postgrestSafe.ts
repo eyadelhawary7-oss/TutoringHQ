@@ -11,16 +11,20 @@ export function assertIsoDateForOrFilter(value: string, label: string): string {
   return value;
 }
 
-const EGYPT_DAY_KEYS = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'] as const;
-
-/** Build `day_of_week.eq.<n>,day_of_week.eq.<key>` for schedule_slots (server-derived index only). */
-export function orClauseDayOfWeekEgypt(egyptDay: number): string {
-  if (!Number.isInteger(egyptDay) || egyptDay < 0 || egyptDay > 6) {
-    throw new Error('[postgrestSafe] egyptDay must be integer 0–6');
-  }
-  const key = EGYPT_DAY_KEYS[egyptDay];
-  return `day_of_week.eq.${egyptDay},day_of_week.eq.${key}`;
-}
+/*
+ * `orClauseDayOfWeekEgypt` lived here and has been REMOVED. It built
+ * `day_of_week.eq.<n>,day_of_week.eq.<sat|sun|…>` from an Egypt-week index,
+ * `(jsDay + 1) % 7`.
+ *
+ * Both halves were wrong. The index matched the day AFTER the intended one,
+ * because `schedule_slots.day_of_week` stores a JS weekday. The day-name half
+ * matched nothing at all — no writer has ever put a day name in that column —
+ * so it read as a safety net while contributing zero rows, and its presence is
+ * part of why the off-by-one survived review.
+ *
+ * The single source of truth is now `scheduleSlotsDayOfWeek` in
+ * `@/lib/cairo/week`, and the comparison is a plain `.eq()`, not an `.or()`.
+ */
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const CENTER_LOOKUP_SLUG = /^[a-zA-Z0-9_-]{1,64}$/;
