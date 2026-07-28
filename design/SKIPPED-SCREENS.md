@@ -32,22 +32,70 @@ differently about it.
 
 | § | Screen | Reason | Detail |
 |---|---|---|---|
-| 05 | Notifications | **No storage** | The whole preference model is absent. No column anywhere for the six "notify me about" categories, the Push/Email channel split, or the quiet-hours window. The only `notify_*` columns are `students.notify_on_absence`, `notify_on_balance`, `notify_on_scan` — those are **per-student parent** toggles controlling what a *parent* receives, not what the owner does. Different feature, not a partial one |
-| 06 | Scanner | **No storage** + **Write** | `centers` carries exactly one scanner column, `scanner_default_mode` (`'camera'` default), which live already exposes. Nothing exists for camera facing, sound, vibrate, or the "ignore repeat scans within 5 min" window. Separately, **"Mark attendance automatically" changes what gets written** to `attendance_scans`, so it is Eyad's regardless of storage |
+| 05 | Notifications | **No storage** — *decided 28 July: do not build* | The whole preference model is absent. No column anywhere for the six "notify me about" categories, the Push/Email channel split, or the quiet-hours window. The only `notify_*` columns are `students.notify_on_absence`, `notify_on_balance`, `notify_on_scan` — those are **per-student parent** toggles controlling what a *parent* receives, not what the owner does. Different feature, not a partial one. Eyad: *"Do not build a preference model to satisfy a restyle."* Logged as **B15**; live screen untouched |
+| 06 | Scanner | **No storage** + **Write** — *decided 28 July: do not build* | `centers` carries exactly one scanner column, `scanner_default_mode` (`'camera'` default), which live already exposes. Nothing exists for camera facing, sound, vibrate, or the "ignore repeat scans within 5 min" window. Separately, **"Mark attendance automatically" changes what gets written** to `attendance_scans`, so it is Eyad's regardless of storage. Logged as **B16**; live screen untouched |
 | 07 | Team seats | **No storage** + **Entitlement** | No column matching `%seat%` in any table. `pricing_plans` has no seat allowance. The design itself says the price is *"still to be set"* |
 | 08 | Team Verified | **Verification** | Verified state end to end |
 
-**Buildable in this file and not yet reached:** §01 Onboarding, §02 Settings,
-§04 Center & Subjects, §09 My Teachers. §03 Settings Billing is **money**.
+#### §04 Center details & Subjects — center half is FAITHFUL, grades half is blocked
+
+Surveyed 28 July. **The Center details half needs no work.** The design asks for logo, centre name,
+area/city, contact phone; live `/{locale}/settings/center` already has logo, name, phone, **governorate
+and district** — the last two together being the design's "Area / city". It reads and writes
+`centers.district`, so the Benchmarks screen's *"set your district in settings"* prompt does lead
+somewhere real.
+
+Two design elements do not land, neither worth building:
+
+- **Street address.** The only address column is `centers.delivery_address`, and it is **`jsonb` for
+  card-order shipping**, not a display address for families. Repurposing it would be the same class of
+  mistake as reusing the parent `notify_*` toggles for owner preferences. `centers.city` exists as
+  plain text and is unexposed, but city is already covered by governorate + district.
+- **"Manage branches · 3"** — a link to `Center-Groups` §04, which is **money**: `POST /api/branches`
+  creates a billable centre.
+
+**The Subjects half is blocked.** Subjects CRUD exists and matches. **Grades do not.** The design says
+*"Only the grades you turn on show up in student sign-up"*, which needs a per-centre enabled-grades
+list. Verified: `grade_level` exists only as **free text on `students` and `group_proposals`**, plus an
+array on `teacher_profiles.grade_levels`. There is **no per-centre grades configuration anywhere** —
+nothing to turn on or off. Same shape as §05 and §06: a restyle that quietly requires a new model.
+
+**Still to survey in this file:** §01 Onboarding, §02 Settings, §09 My Teachers.
+§03 Settings Billing is **money**.
 
 ### `Merged-Center-Insight`
 
 | § | Screen | Reason | Detail |
 |---|---|---|---|
 | 01 | Analytics | **Money** | MRR, month-end forecast, projected revenue, collection rate, P&L, aging |
-| 03 | Referrals | **Ruled out** + **Money** + **Verification** | The design's rate ladder is **25% month 1 / 10% months 2–6 / 5% month 7+**. Live is **10% for twelve months**, and the 26 July decision settled it: *"People have been told a rate, so live wins and the design is wrong"* — already logged as design correction **D2**. The rest of the screen is recurring income, lifetime earned, a next-month projection, and a **withdraw-to-bank vs in-app-credit split gated on identity verification**. Almost nothing on it is layout |
+| 03 | Referrals | **Not a restyle — reclassified as a feature, 28 July** | See below |
 
 §02 Benchmarks was **built** — #189.
+
+#### §03 Referrals — out of the layout queue entirely
+
+**Eyad's ruling, 28 July:** *"With the 25/10/5 ladder stripped per D2, what remains is money plus a
+verification gate. It is not a restyle, it is a feature, and it goes to me."*
+
+It arrived in build order looking like a restyle — `/{locale}/referrals` is live and the design is a
+referrals screen. It is not one. Taking it apart:
+
+| The design shows | Status |
+|---|---|
+| Rate ladder **25% month 1 / 10% months 2–6 / 5% month 7+** | **Ruled out.** Live is **10% for twelve months**. The 26 July decision: *"People have been told a rate, so live wins and the design is wrong."* Logged as design correction **D2** |
+| Recurring this month · next month (est.) · lifetime earned | **Money** |
+| Per-referral: current %, monthly pay, days until it drops | **Money**, and the countdown is against a ladder that does not exist |
+| **Withdraw to bank vs use as in-app credit** | **Money** + **verification-gated** — *"Identity verified · withdraw to your bank or spend as credit"* vs *"Verify to unlock"* |
+| Share link and code | The only layout-shaped element on the screen |
+
+Remove what is ruled out and what is money, and one share button is left. **Building it is designing a
+new earnings product, not restyling an existing one.** It belongs with **B8** (referral earnings:
+credit versus withdrawal), which already covers the withdraw/credit half.
+
+The verified data does exist for a *display* of the live 10%/12-month arrangement —
+`referral_commissions` carries `commission_rate`, `period_month`, `months_since_activation`,
+`referred_plan_fee` and `commission_amount`. That is a money screen and Eyad's to specify, not a gap
+to fill from the design.
 
 ### `Merged-Center-Orders`
 
@@ -89,9 +137,20 @@ and none of it is available, which is why the build ran A → C/D rather than A 
 | Team seats: seat model and price | `Center-Setup` §07 |
 | Card-order notify-me: where the write goes | `Center-Orders` §04 |
 | Teacher referral model | `Teacher-Insight` §02 |
-| A notification-preference model | `Center-Setup` §05 |
-| Scanner preferences: which are per-centre and which are per-device | `Center-Setup` §06 |
+| A per-centre enabled-grades list | `Center-Setup` §04, subjects half |
 | Adsero / Valify | 10 screens across 7 files |
+
+**Answered 28 July — do not build, logged and closed:** a notification-preference model
+(`Center-Setup` §05 → **B15**) and scanner behaviour preferences (`Center-Setup` §06 → **B16**). Both
+live screens are left exactly as they are.
+
+## A pattern worth naming
+
+Four Phase D screens — §04 grades, §05, §06, and `Center-Orders` §04 — look like restyles and are not.
+Each renders one or two controls whose storage does not exist, so "make it match the design" silently
+means "design and build a new model". The tell is always the same: **a toggle or a chip with nothing
+behind it.** Checking the catalog before starting is what separates a restyle from a feature, and it
+costs one query.
 
 **Needs no decision, only time:** `/admin/teachers` and `/admin/teachers/[id]` — the
 data exists, the routes do not.
