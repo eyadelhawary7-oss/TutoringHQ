@@ -22,6 +22,7 @@ import {
   type DynamicPlanPriceMap,
 } from '@/hooks/usePublicPlanPrices';
 import { readReferralCode, clearReferralCode } from '@/lib/referralCode';
+import { normalizePhone } from '@/lib/utils/phone';
 
 const PLAYFAIR = {
   fontFamily: "var(--font-playfair), 'Playfair Display', 'Didot', 'Bodoni MT', Georgia, serif",
@@ -483,12 +484,9 @@ export default function SignupForm() {
     setPaymentSubmitting(true);
     setError('');
     try {
-      let phone = form.phone.replace(/\s/g, '').replace(/\D/g, '');
-      if (!phone.startsWith('+')) {
-        if (phone.startsWith('0')) phone = '+20' + phone.substring(1);
-        else if (!phone.startsWith('20')) phone = '+20' + phone;
-        else phone = '+' + phone;
-      }
+      // Same normalizer step 1 validated with, so the value we submit cannot
+      // differ from the value the user was told was valid.
+      const phone = normalizePhone(form.phone);
       // Promo takes priority if both exist (edge case - UI prevents this normally).
       let referralEffective = (form.referralCode.trim() || appliedReferralCode || '').trim().toUpperCase();
       if (appliedPromo && referralEffective) {

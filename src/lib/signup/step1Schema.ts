@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { toSignupIntlPhone } from '@/lib/signup/phoneIntl';
+import { normalizePhone, isValidEgyptianMobileE164 } from '@/lib/utils/phone';
 
 const CITY_IDS = [
   'cairo',
@@ -14,20 +14,32 @@ const CITY_IDS = [
   'other',
 ] as const;
 
-function phoneDigitsOk(d: string): boolean {
-  if (!/^\+20(10|11|12|15)\d{8}$/.test(d)) return false;
-  const body = d.slice(3);
+/**
+ * Signup-only policy: refuse obvious junk (all zeros, or the same digit ten
+ * times) even though it is a well-formed Egyptian mobile.
+ *
+ * Deliberately SEPARATE from `isValidEgyptianMobileE164`. That function answers
+ * "is this a valid Egyptian number", and it must have exactly one answer across
+ * the whole product. This function answers "will we open an account on it",
+ * which is a different question and only signup asks it. Folding the two
+ * together is what produced three disagreeing validators here in the first
+ * place.
+ */
+function isAcceptableSignupNumber(normalized: string): boolean {
+  const body = normalized.slice(3); // the 10 digits after "+20"
   if (/^0+$/.test(body)) return false;
   if (/^(\d)\1{9}$/.test(body)) return false;
   return true;
 }
 
-/** Step 1 - Egyptian mobile as +20… per regex; referral codes: see signupSchema (8 A–Z0–9). */
+/** Step 1 - Egyptian mobile as +20… ; referral codes: see signupSchema (8 A–Z0–9). */
 export const signupStep1Schema = z.object({
   phone: z
     .string()
-    .transform((v) => toSignupIntlPhone(v))
-    .refine((v) => phoneDigitsOk(v), { message: 'invalidPhone' }),
+    .transform((v) => normalizePhone(v))
+    .refine((v) => isValidEgyptianMobileE164(v) && isAcceptableSignupNumber(v), {
+      message: 'invalidPhone',
+    }),
   email: z.union([z.literal(''), z.string().trim().email()]),
   centerName: z.string().trim().min(2).max(80),
   ownerName: z.string().trim().min(2).max(80),

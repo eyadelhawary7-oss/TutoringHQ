@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import type { BillingPeriod } from '@/lib/pricing';
-import { toSignupIntlPhone } from '@/lib/signup/phoneIntl';
+import { normalizePhone } from '@/lib/utils/phone';
 import { memoryCacheGet, memoryCacheSet } from '@/lib/clientMemoryCache';
 
 /**
@@ -52,7 +52,7 @@ export function usePendingSignup(
   const persist = useCallback(async (snapshot: PendingSignupFormState, stage: SignupStage, lastStep: number) => {
     memoryCacheSet(PENDING_SIGNUP_KEY, { ...snapshot, stage });
     try {
-      const phone = toSignupIntlPhone(snapshot.phone);
+      const phone = normalizePhone(snapshot.phone);
       await fetch('/api/signup/persist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
