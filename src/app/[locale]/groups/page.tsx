@@ -10,7 +10,8 @@ import { Plus, BookOpen, X, Users, Search, Link as LinkIcon, ClipboardList } fro
 import { AttendanceHeatmap } from '@/components/AttendanceHeatmap';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { useToast } from '@/components/ui/ToastProvider';
-import { formatCurrency, formatNumber, formatDate, formatPercent } from '@/lib/formatNumber';
+import { formatCurrency, formatNumber, formatDate, formatPercent, formatTime } from '@/lib/formatNumber';
+import { getCairoWeekColumnOrder, getCairoWeekDays } from '@/lib/cairo/week';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { isUuid, keepValidUuids } from '@/lib/uuid';
 import * as Sentry from '@sentry/nextjs';
@@ -26,6 +27,8 @@ interface Group {
   student_count?: number;
   teacher_name?: string | null;
   max_capacity?: number | null;
+  /** Design's schedule line: ordered JS weekdays, first start time, room name. */
+  schedule?: { days: number[]; startTime: string | null; roomName: string | null };
 }
 
 interface Student {
@@ -50,6 +53,13 @@ export default function GroupsPage() {
   const { toast } = useToast();
   const locale = useLocale();
   const isRTL = locale === 'ar';
+  // Localised short weekday label per JS weekday index, from the Cairo week
+  // helper so Arabic and English both come from one place.
+  const dayLabelByWeekday = useMemo(() => {
+    const map: Record<number, string> = {};
+    for (const d of getCairoWeekDays(new Date(), locale)) map[d.jsWeekday] = d.label;
+    return map;
+  }, [locale]);
   const { user } = useUser();
   // Surface the real DB/validation reason in save toasts instead of a generic
   // "something went wrong" — a swallowed message is what hid the dropped-column
@@ -101,7 +111,7 @@ export default function GroupsPage() {
     const code = (centerInfo as { center_code?: string | null } | null)?.center_code ?? null;
     setCenterCode(code);
 
-    const [groupsRes, studentsRes, subjectsRes, slotsRes] = await Promise.all([
+    const [groupsRes, studentsRes, subjectsRes, slotsRes, roomsRes] = await Promise.all([
       dbSelect({
         table: 'student_groups',
         select: 'id, name, subject, fee_per_class, max_capacity',
@@ -120,9 +130,17 @@ export default function GroupsPage() {
         filters: [{ column: 'center_id', op: 'eq', value: cid }],
         order: { column: 'name' },
       }),
+      // day_of_week / start_time / end_time / room_id join the existing teacher
+      // lookup so the card can carry the design's "Sun · Tue · 4:00 PM · Room 2"
+      // line. All five verified present in information_schema.columns.
       dbSelect({
         table: 'schedule_slots',
-        select: 'group_id, teacher_id',
+        select: 'group_id, teacher_id, day_of_week, start_time, end_time, room_id',
+        filters: [{ column: 'center_id', op: 'eq', value: cid }],
+      }),
+      dbSelect({
+        table: 'rooms',
+        select: 'id, name',
         filters: [{ column: 'center_id', op: 'eq', value: cid }],
       }),
     ]);
@@ -130,7 +148,44 @@ export default function GroupsPage() {
     const groupsData = (groupsRes.data || []) as Group[];
     const studentsData = (studentsRes.data || []) as Student[];
     const subjectsData = (subjectsRes.data || []) as Subject[];
-    const slotsData = (slotsRes.data || []) as { group_id?: string | null; teacher_id: string }[];
+    const slotsData = (slotsRes.data || []) as {
+      group_id?: string | null;
+      teacher_id: string;
+      day_of_week?: string | null;
+      start_time?: string | null;
+      end_time?: string | null;
+      room_id?: string | null;
+    }[];
+    const roomNameById = Object.fromEntries(
+      ((roomsRes.data || []) as { id: string; name: string }[]).map((r) => [r.id, r.name]),
+    );
+
+    /**
+     * The design's per-group schedule line: "Sun · Tue · 4:00 PM · Room 2".
+     *
+     * day_of_week is read through the ONE convention set by the writer — a JS
+     * weekday as text, "0" Sunday to "6" Saturday. Anything that parses to
+     * outside 0-6 is skipped rather than guessed at, so a stray value shows no
+     * day instead of the wrong one.
+     *
+     * Days are ordered by the Cairo week (Sat→Fri), not numerically, so a
+     * Sat+Sun group reads "Sat · Sun" the way a centre says it.
+     */
+    const scheduleByGroup: Record<string, { days: number[]; startTime: string | null; roomName: string | null }> = {};
+    for (const slot of slotsData) {
+      if (!slot.group_id) continue;
+      const entry = (scheduleByGroup[slot.group_id] ??= { days: [], startTime: null, roomName: null });
+      const dow = Number(slot.day_of_week);
+      if (Number.isInteger(dow) && dow >= 0 && dow <= 6 && !entry.days.includes(dow)) {
+        entry.days.push(dow);
+      }
+      if (!entry.startTime && slot.start_time) entry.startTime = slot.start_time;
+      if (!entry.roomName && slot.room_id) entry.roomName = roomNameById[slot.room_id] ?? null;
+    }
+    const cairoDayOrder = getCairoWeekColumnOrder();
+    for (const entry of Object.values(scheduleByGroup)) {
+      entry.days.sort((a, b) => cairoDayOrder.indexOf(a) - cairoDayOrder.indexOf(b));
+    }
 
     const memberCounts = await Promise.all(
       groupsData.map(async (g) => {
@@ -168,6 +223,7 @@ export default function GroupsPage() {
         member_count: n,
         student_count: n,
         teacher_name: groupToTeacher[g.id] ?? null,
+        schedule: scheduleByGroup[g.id],
       };
     }));
     setStudents(studentsData);
@@ -532,7 +588,25 @@ export default function GroupsPage() {
                 </div>
               </div>
               <h3 className="font-semibold text-[var(--color-text-primary)] mb-1">{g.name}</h3>
-              <p className="text-sm text-[var(--color-text-secondary)] mb-3">{g.subject || tCommon('notSet')}</p>
+              <p className="text-sm text-[var(--color-text-secondary)] mb-1">{g.subject || tCommon('notSet')}</p>
+              {/* Design (§01): "Sun · Tue · 4:00 PM · Room 2". Each part is
+                  omitted when absent rather than shown as a placeholder, so a
+                  group with no slot yet simply has no line. */}
+              {(() => {
+                const sch = g.schedule;
+                if (!sch) return null;
+                const parts: string[] = [];
+                for (const d of sch.days) {
+                  const label = dayLabelByWeekday[d];
+                  if (label) parts.push(label);
+                }
+                if (sch.startTime) parts.push(formatTime(sch.startTime, locale));
+                if (sch.roomName) parts.push(sch.roomName);
+                if (parts.length === 0) return null;
+                return (
+                  <p className="text-xs text-[var(--color-text-muted)] mb-3">{parts.join(' · ')}</p>
+                );
+              })()}
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-[var(--color-text-primary)] font-mono">
                   {g.fee_per_class != null ? formatCurrency(g.fee_per_class, locale) : tCommon('notSet')}
