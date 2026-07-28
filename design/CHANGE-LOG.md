@@ -26,6 +26,7 @@ If a row ever names one, that row is a mistake.
 | PR | SHA | Date | Screens touched | Routes touched | SW_VERSION |
 |---|---|---|---|---|---|
 | [#209](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/209) | `f049df7` | 2026-07-28 | **ALL screens** — the type, radius and colour scales move under every screen at once | **ALL routes** — `src/app/tokens.css` (new) is imported by `src/app/globals.css`, which `src/app/[locale]/layout.tsx` loads for every locale-prefixed route | v26 → v27 |
+| [#210](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/210) | `d5551d3` | 2026-07-28 | none — doc only | none | v27 |
 
 ### Notes per PR
 

@@ -39,7 +39,7 @@ flagged inline with the test applied. Nothing in this section restyles a protect
 - **Exists:** `POST /api/demo-request`; `/admin/demo-requests` (180 lines, four statuses); `/demo-request` as a 55-line stub with a hardcoded `wa.me` link and no form. Territory data exists on `center_assignments.territory_city`.
 - **Build:** the `/talk-to-us` route, five fields, area→territory→rep routing on insert, the submitted state that keeps "Start free trial" on screen, and the new fields surfaced in `/admin/demo-requests`. Decide what `/demo-request` becomes — the two cannot both be the lead door.
 - **Touches:** none.
-- **Blocked by:** **the `demo_requests` migration — see D1 in §2.** The form cannot write `area` or `student_count` until those columns exist. Everything else here is ready; this is the highest-value build in the document and one small migration stands in front of it.
+- **Blocked by:** the `demo_requests` migration, **D1 — approved 28 July and written**. R1 is ready the moment that migration is applied to production by hand. Nothing else stands in front of it.
 - **Do not "improve" away:** it is not a demo booking (no calendar), area is load-bearing not optional, and WhatsApp stays as a third door below the form.
 
 ## R2 · Coming Soon pattern — the locked row half
@@ -106,10 +106,12 @@ flagged inline with the test applied. Nothing in this section restyles a protect
 
 # §2 · BLOCKED ON EYAD — one decision each
 
-## D1 · `demo_requests` needs `area` and `student_count`, or the design drops them
-- **The decision:** add both columns, or cut both fields from the lead form.
-- **Why it is stuck:** `POST /api/demo-request` exists but the live stub writes nothing, and **both columns are confirmed absent** from `information_schema`. The failure is silent — an insert naming them fails at runtime, not at build.
-- **Blocks:** R1, the highest-value new build in the document.
+## ~~D1 · `demo_requests` needs `area` and `student_count`~~ — DECIDED 28 July: add both
+- **Decision:** add both columns. Approved by Eyad, 28 July 2026.
+- **Was stuck because:** `POST /api/demo-request` exists but the live stub writes nothing, and both columns were confirmed absent from `information_schema`. The failure is silent — an insert naming them fails at runtime, not at build.
+- **Status:** migration written — `supabase/migrations/20260728120000_demo_requests_area_and_student_count.sql`. Both columns nullable on purpose; the live endpoint sends neither, and a `NOT NULL` column would 500 it the moment the migration lands. Area stays required **at the form boundary**, which is where `Merged-Public-Marketing` §04 puts it.
+- ⚠ **Manual apply.** Branching never auto-applies to production on merge. Apply by hand, confirm both columns in `information_schema.columns`, then let the code deploy.
+- **Unblocks:** R1.
 - **Source:** `DATA-GAPS.md` §0.5.
 
 ## D2 · `schedule_slots.day_of_week` — JS weekday or Egypt index?
