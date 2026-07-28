@@ -392,6 +392,17 @@ export function AdminSidebar({
           href: '/admin/centers',
         },
         {
+          // Solo teachers are the second customer type, not a filter on the
+          // first, so they get their own entry beside Centers on the same
+          // permission. Kept adjacent deliberately.
+          key: 'soloTeachers',
+          icon: GraduationCap,
+          label: t('soloTeachers'),
+          isActive: activeRoute?.startsWith('/admin/teachers') || false,
+          canShow: canSee('centers'),
+          href: '/admin/teachers',
+        },
+        {
           key: 'platformHealth',
           icon: Activity,
           label: t('platformHealth'),

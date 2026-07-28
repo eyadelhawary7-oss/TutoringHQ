@@ -227,5 +227,9 @@ on every screen rather than one), and the Referrals row (the sidebar). Design fi
 control existing and being findable, not about it sitting on the screen the mockup drew it on. Three
 diffs avoided by checking where a thing already lives before building a second one.
 
-**Needs no decision, only time:** `/admin/teachers` and `/admin/teachers/[id]` — the
-data exists, the routes do not.
+**Built 28 July:** `/admin/teachers` and `/admin/teachers/[id]` — see **A2**. Three
+pieces of those designs are still skipped and are recorded there: the **Unverified**
+filter chip and the **National ID on file** row (both C1), and the two account
+**actions** — *log in as teacher* and *suspend account* — which are impersonation and
+an account-state write. Neither action is stubbed: a disabled button that looks like
+it might work is worse than no button.

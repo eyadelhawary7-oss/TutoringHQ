@@ -3502,6 +3502,7 @@
     "errorDetailTitle": "Cron error"
   },
   "admin": {
+    "soloTeachers": "Solo teachers",
     "actionError": "Action Error",
     "orderId": "Order ID",
     "colAction": "Col Action",
@@ -9729,6 +9730,45 @@
       "cancel": "Not now",
       "cardEnding": "Card ending {last4}",
       "removeCard": "Remove saved card"
+    }
+  },
+  "adminTeachers": {
+    "title": "Solo teachers",
+    "searchPlaceholder": "Search name, phone or subject",
+    "empty": "No solo teachers yet",
+    "noMatch": "No teachers match this filter",
+    "notFound": "Teacher not found",
+    "noPlan": "No plan",
+    "testRow": "Test",
+    "soloTeacher": "Solo teacher",
+    "studentsCount": "{count} students",
+    "customerSince": "Customer since {date}",
+    "nextCharge": "Next charge",
+    "footnote": "Independent teachers who run their own tutoring on TutoringHQ. Amounts are monthly recurring in EGP. Green active, amber trial, red behind. Test accounts are hidden.",
+    "readOnlyNote": "Read-only. Identity verification is not live yet, and account actions — signing in as a teacher, suspending an account — are not available from here.",
+    "chips": {
+      "all": "All",
+      "active": "Active",
+      "trial": "Trial",
+      "overdue": "Overdue"
+    },
+    "statuses": {
+      "trial": "Trial",
+      "active": "Active",
+      "overdue": "Overdue",
+      "suspended": "Suspended",
+      "churned": "Churned",
+      "inactive": "No subscription"
+    },
+    "tiers": {
+      "standard": "Standard",
+      "pro": "Pro",
+      "scale": "Scale"
+    },
+    "kpi": {
+      "students": "Students",
+      "mrr": "MRR",
+      "groups": "Groups"
     }
   }
 }

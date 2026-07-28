@@ -302,11 +302,11 @@ columns. **Full detail and the exact silent-failure mechanism in §0.5.**
 
 | File | Notable | Status |
 |---|---|---|
-| `Merged-Admin-Accounts` §01 | `/admin/teachers/[id]` | 🔴 Route does not exist. Data does. |
+| `Merged-Admin-Accounts` §01 | `/admin/teachers/[id]` | 🟢 **Built 28 July** (read only). Verified chip and National ID row still blocked on C1; the two account actions are auth/account-state — see A2 |
 | §02 Staff | ✅ | |
 | §03 Center Assignments | ⛔ **Do not touch** — different feature, live route is rep commission machinery |
 | §04 Admin Referrals | ✅ | |
-| `Merged-Admin-Platform` §01 | `/admin/teachers` list | 🔴 Route does not exist |
+| `Merged-Admin-Platform` §01 | `/admin/teachers` list | 🟢 **Built 28 July.** Unverified chip still blocked on C1 — see A2 |
 | §02–§06 | ✅ | |
 | `Merged-CEO` §01, §02 | ✅ | |
 | §03 Centers Benchmark | Verified vs unverified cohorts, verification rate | ⛔ **Blocked.** Renders 0% until verification ships. |
@@ -350,8 +350,9 @@ WhatsApp auto-send came **back** on second inspection (§0.2), and `schedule_slo
 7. **Card-order notify-me** (`Center-Orders` §04) — a write with no destination
 8. **Teacher referral model** (`Teacher-Insight` §02) — confirmed absent; a new schema, not a column
 
-Plus two route builds that need no decision, only time: **`/admin/teachers`** and
-**`/admin/teachers/[id]`** — the data exists, the routes do not.
+The two route builds that needed no decision, only time — **`/admin/teachers`** and
+**`/admin/teachers/[id]`** — were **built on 28 July**, read only. What is still skipped in
+them is listed under **A2** in `NEW-FEATURES.md`.
 
 ## Resolved without you
 

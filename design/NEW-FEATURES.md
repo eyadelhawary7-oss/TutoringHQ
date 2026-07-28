@@ -159,6 +159,40 @@ so the data model already distinguishes the two customer types — only these tw
 not one main type with an exception. Every headline number is split. Do not collapse them back into a
 single total with a filter.
 
+### Built 28 July — the two routes, read only
+
+`/{locale}/admin/teachers` and `/{locale}/admin/teachers/[id]` exist, on `GET /api/admin/teachers`,
+gated on the **`centers`** permission (the design's own premise: whoever may list one customer type may
+list the other; a separate `teachers` key would be a roles change). A **Solo teachers** entry sits
+beside Centers in the admin sidebar, deliberately adjacent.
+
+**The fault this avoided, worth keeping.** Every existing teacher-facing admin read — renewals,
+billing — iterates `teacher_subscriptions`, which is right for a renewal and wrong for an account list.
+Verified against the live catalog on 28 July: **2 of the 3 `teacher_profiles` rows have no
+`teacher_subscriptions` row at all.** A subscription-driven list would have shown a third of the
+customer base and looked entirely correct doing it. So the list is driven by `teacher_profiles` and
+left-joined to subscriptions, and no subscription renders as tier `null`, MRR `0` and status
+`inactive` — a state, not missing data. `tests/unit/adminTeacherAccounts.test.ts` fails on the
+subscription-driven version.
+
+**Student counts** reach a teacher through their groups — `student_groups.teacher_id` →
+`student_group_members.group_id`, counted distinct. There is no `students.teacher_id`; it was checked,
+it does not exist.
+
+**Still skipped, and why:**
+
+| Design element | Reason |
+|---|---|
+| **Unverified** filter chip, per-row verified check, "National ID on file · Valify" | **C1.** No verification column exists; the chip would filter on nothing |
+| **Log in as teacher** | Admin impersonation — auth |
+| **Suspend account** | A write, and an account-state change |
+| Detail's **Attendance %** tile | Needs a definition for a teacher running groups across several centres. Shows **groups** instead — a number that means one thing |
+| MANAGE rows (Plan & billing, Add-ons, Invoices, Activity log, Internal notes) | Sub-screens that do not exist; each is its own build |
+| **Admin overview split** (customers / revenue / students across both types, revenue mix) | A change to `/admin/dashboard`, not to these two routes. Still open |
+
+The two actions are **not stubbed as disabled controls**. A greyed-out "Suspend account" reads as
+"coming soon" when the real answer is "this needs review before it exists".
+
 ## A3. Coming Soon pattern and locked entry rows
 
 **What it is:** One pattern for any feature that is not on yet — a calm full screen that names the
