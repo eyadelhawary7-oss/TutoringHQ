@@ -169,6 +169,112 @@ to fill from the design.
 
 ---
 
+## Phase E — the teacher portal, surveyed in one pass
+
+**Result: nothing to build.** 19 screens. Five are the protected `Merged-Teacher-Money`.
+Of the other 14, **every one has a live route**, and every gap is money, verification,
+a confirmed-absent model, or a routing preference. Same shape as Phase D.
+
+The live portal is `/{locale}/teacher/(portal)` — `page`, `schedule`, `students`,
+`groups`, `groups/[groupId]`, `groups/[groupId]/sessions/[sessionId]`, `analytics`,
+`settings`, `centers`, `income`, `billing`, `resubscribe`, `subscription/upgrade`.
+
+| § | Screen | Live route | Verdict |
+|---|---|---|---|
+| `Home` 01 | Teacher Home | `/teacher` | **Faithful.** Below |
+| `Home` 02 | Teacher Schedule | `/teacher/schedule` | **Faithful.** Today/week tabs, week paging, enrolled counts, live-class state, rescheduled and cancelled badges, record-attendance CTA |
+| `Students` 01 | Teacher Students | `/teacher/students` | **Faithful.** `AllStudentsList` — search, group, contact kept LTR — behind `PrivateUpsellCard` |
+| `Students` 02 | Student Detail | *(modal)* | **Routing preference, plus money.** Below |
+| `Groups` 01 | Teacher Groups | `/teacher/groups` | **Faithful.** `PrivateGroupsSection` with enrolled count and per-class fee |
+| `Groups` 02 | Group Detail | `/teacher/groups/[groupId]` | **Faithful.** 498 lines: roster, add/edit, join link, classes and schedule tabs |
+| `Groups` 03 | Invite Pending | same route | **Faithful.** The pending-approval block with approve/reject and payer student-or-parent is already in Group Detail |
+| `Groups` 04 | Class Session | `/teacher/groups/[groupId]/sessions/[sessionId]` | **Money + write.** Below |
+| `Groups` 05 | Session Verified | — | **Verification** |
+| `Insight` 01 | Analytics | `/teacher/analytics` | **Faithful.** The design frame *is* the Pro-gated state, and live is `AnalyticsView` + `LockedAnalyticsPreview` |
+| `Insight` 02 | Teacher Referrals | — | **Confirmed absent.** Below |
+| `WhatsApp` 01 | Teacher WhatsApp | — | **Confirmed absent.** Below |
+| `Setup` 01 | Teacher Settings | `/teacher/settings` | **Faithful.** 807 lines: name, phone, subject, change PIN, payment methods, subscription across all five states |
+| `Setup` 02 | Teacher Centers | `/teacher/centers` | **Money + write.** Below |
+| `Money` 01–05 | Income, Calculator, Billing, Instant Payout, Collect Opt-in | — | **Protected file.** Never touched |
+
+### Teacher Home §01 — faithful, and the rest is money
+
+Every element of the design's **unverified** half is live on `/teacher`: the greeting,
+`outstanding`, `centersTile`/`centersEmpty` ("Centers owe me / All centers settled"),
+`groupsTile`, `subscriptionTile` — richer than the design, with five states and their
+CTAs — `incomeTile`, and `IncomeCalculator`, which is exactly the design's *"Grow your
+private practice · private students × fee per session → estimated monthly income"*.
+
+Two things are not built and neither is a layout job:
+
+- **"Let us collect for you · Verify my ID"** — **verification**.
+- The **verified** half — balance, available, pending, next processed, recent bank
+  payouts — is verification *and* payouts, which is `Merged-Verification-Payouts`
+  territory, a protected file.
+
+Worth stating plainly: most of what remains on this screen is a **money figure**.
+"Centers owe me", "Outstanding 900 EGP" and "Estimated monthly income" all are, so even
+where a gap appears here it comes to Eyad rather than auto-merging.
+
+### Students §02 — a routing preference, not a data gap
+
+The design draws student detail as a full screen. Live opens it as an **in-place modal**
+from the list (`AllStudentsList`, `openStudentId` state and overlay), which is the same
+information without losing the teacher's place in the roster.
+
+It is also not purely layout: the design's *"an outstanding balance they can collect
+right here"* is a **money figure plus a collect action**. The live modal already loads
+billing per student. Turning the modal into a route is a preference; changing what it
+collects is Eyad's.
+
+### Groups §04 and Setup §02 — live, and both money-and-write
+
+`/teacher/groups/[groupId]/sessions/[sessionId]` runs the class: attendance toggling,
+present count, then **finish**, which calls `finish_class_and_bill` and renders a
+**billed total** with paid/pending status. `/teacher/centers` carries join-a-centre, my
+code, **group proposals with accept / counter / decline**, group slots, bring-group-to-
+centre, **centre cuts** and **centre earnings**.
+
+Both already match the designs. Both are also a **write** and a **money figure**, so any
+future change to either comes to Eyad regardless of how layout-shaped it looks.
+
+### Insight §02 and WhatsApp §01 — confirmed absent, and they are new models
+
+Both were verified against the catalog earlier and are recorded in `DATA-GAPS.md`:
+
+- **Teacher Referrals.** All five referral tables are **centre-to-centre only** — every
+  referrer/referred column is `*_center_id` (`referrals`, `referral_codes`,
+  `referral_commissions`, `referral_rewards`, `referral_reward_records`). No `teacher_id`,
+  no polymorphic referrer. A teacher referral model is **a new schema, not a column**.
+  The design also shows the **25/10/5 ladder**, which the 26 July decision ruled out
+  (**D2**), and credit-versus-withdraw, which is verification-blocked.
+- **Teacher WhatsApp.** `pricing_plans` has **no message-allowance column of any kind**,
+  so the design's *"Your Pro plan includes 50 a month"* and its platform-paid versus
+  teacher-paid split have nothing behind them. There is no `/teacher/whatsapp` route,
+  and adding one means designing the allowance model first.
+
+### The `/admin/teachers` decision, 28 July
+
+The two routes were built (**A2**) and then **closed unmerged on Eyad's call**:
+*"Two teacher consoles is worse than one imperfect one."* `/{locale}/ceo/teachers`
+already covers the data across five tabs, and a second home means every teacher field has
+two places to live and they eventually disagree.
+
+**The fault the build avoided was checked against `/ceo/teachers` and it does not have
+it.** `getCeoTeacherData` builds the teachers tab as `profiles.map(...)` with the
+subscription as a lookup (`ceoTeachers.ts:253`), and `total_teachers` is
+`profiles.filter((p) => !p.is_test).length` (`:345`) — both profile-driven, so a teacher
+with no `teacher_subscriptions` row still appears and still counts. The subscriptions tab
+does iterate subscriptions, which is correct for a subscriptions tab, and its five cards
+are each labelled by status rather than as a teacher total. **No live bug.**
+
+The finding it produced is kept in **A2**: an account list must be driven by
+`teacher_profiles`, because on the live catalog 2 of 3 teachers have no subscription row
+and a subscription-driven list would show a third of the customer base while looking
+entirely correct.
+
+---
+
 ## Phase B — skipped wholesale
 
 `Merged-Public-App`, `Merged-Lifecycle` and `Merged-Verification-Payouts` are three of
@@ -227,5 +333,9 @@ on every screen rather than one), and the Referrals row (the sidebar). Design fi
 control existing and being findable, not about it sitting on the screen the mockup drew it on. Three
 diffs avoided by checking where a thing already lives before building a second one.
 
-**Needs no decision, only time:** `/admin/teachers` and `/admin/teachers/[id]` — the
-data exists, the routes do not.
+**Decided 28 July — `/admin/teachers` and `/admin/teachers/[id]` will not be built.** They
+were the last "needs no decision, only time" item; Eyad ruled against a second teacher
+console. Full reasoning, and the finding worth keeping, in the Phase E section above.
+
+**With Phase D and Phase E both surveyed, the build queue is empty of layout work.**
+Everything remaining is money, verification, a decision, or a new model.
