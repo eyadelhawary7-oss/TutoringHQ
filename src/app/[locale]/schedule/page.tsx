@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/shared';
 import { Plus, Clock, X, AlertTriangle } from 'lucide-react';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { useToast } from '@/components/ui/ToastProvider';
-import { formatTime, formatNumber } from '@/lib/formatNumber';
+import { formatTime, formatNumber, formatPercent } from '@/lib/formatNumber';
 import { cairoDateKey, getCurrentCairoClock } from '@/lib/cairo/day';
 import { cairoYmdToJsWeekday, getCairoWeekColumnOrder, getCairoWeekDays } from '@/lib/cairo/week';
 
@@ -104,6 +104,9 @@ export default function SchedulePage() {
   const [formRecurring, setFormRecurring] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDay, setSelectedDay] = useState<number>(() => cairoYmdToJsWeekday(cairoDateKey()));
+  // Design (Merged-Center-Groups §05): a By time / By room toggle, so free
+  // rooms and how heavily each is used are visible, not just the time order.
+  const [dayView, setDayView] = useState<'time' | 'room'>('time');
   const [minuteTick, setMinuteTick] = useState(0);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
@@ -384,6 +387,34 @@ export default function SchedulePage() {
       return startM < hourEnd && endM > hourStart;
     });
 
+  /**
+   * Per-room breakdown of the SELECTED day.
+   *
+   * Utilisation is booked minutes over the length of the day this board
+   * actually shows (FIRST_HOUR to the last grid hour) — a room booked 3 of
+   * those 15 hours reads 20%. It is deliberately time-based, not seat-based:
+   * rooms.capacity is a seat count and student headcount per slot is not
+   * fetched here, so a seat ratio would be a figure with no source behind it.
+   *
+   * Rooms with nothing booked are kept and shown free — the design's whole
+   * reason for this view is seeing which rooms are open.
+   */
+  const dayRoomBreakdown = (() => {
+    const dayMinutes = HOURS.length * 60;
+    const slotsToday = displaySlots.filter((s) => Number(s.day_of_week) === selectedDay);
+    return rooms.map((room) => {
+      const slots = slotsToday
+        .filter((s) => s.room_id === room.id)
+        .sort((a, b) => timeToMinutes(a.start_time) - timeToMinutes(b.start_time));
+      const bookedMinutes = slots.reduce((sum, s) => {
+        const mins = timeToMinutes(s.end_time) - timeToMinutes(s.start_time);
+        return sum + (mins > 0 ? mins : 0);
+      }, 0);
+      const percent = dayMinutes > 0 ? Math.min(100, Math.round((bookedMinutes / dayMinutes) * 100)) : 0;
+      return { room, slots, percent };
+    });
+  })();
+
   const { hour: cairoHour, minute: cairoMinute } = getCurrentCairoClock();
   const nowMinutesFromGridStart = cairoHour * 60 + cairoMinute - FIRST_HOUR * 60;
   const lastRowMinutes = (22 - FIRST_HOUR + 1) * 60;
@@ -616,7 +647,68 @@ export default function SchedulePage() {
                 </button>
               ))}
             </div>
-            {displaySlots.filter((s) => Number(s.day_of_week) === selectedDay).length === 0 ? (
+            <div className="mb-3 inline-flex rounded-lg border border-[var(--color-border-subtle)] p-0.5">
+              {(['time', 'room'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setDayView(mode)}
+                  className={`min-h-[36px] rounded-md px-3 text-xs font-semibold transition-colors ${
+                    dayView === mode
+                      ? 'bg-teal-600 text-white'
+                      : 'text-[var(--color-text-secondary)]'
+                  }`}
+                >
+                  {mode === 'time' ? t('byTime') : t('byRoom')}
+                </button>
+              ))}
+            </div>
+
+            {dayView === 'room' ? (
+              rooms.length === 0 ? (
+                <p className="py-2 text-sm text-[var(--color-text-secondary)]">{t('noSessionsSelectedDay')}</p>
+              ) : (
+                dayRoomBreakdown.map(({ room, slots, percent }) => (
+                  <div
+                    key={room.id}
+                    className="mb-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3"
+                  >
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{room.name}</span>
+                      <span
+                        className={`text-xs font-semibold ${
+                          slots.length === 0 ? 'text-[var(--color-text-muted)]' : 'text-teal-700'
+                        }`}
+                      >
+                        {slots.length === 0
+                          ? t('roomFreeToday')
+                          : t('roomUtilisation', { percent: formatPercent(percent, locale) })}
+                      </span>
+                    </div>
+                    {slots.length > 0 && (
+                      <ul className="mt-2 space-y-1">
+                        {slots.map((s) => (
+                          <li key={s.id} className="flex flex-wrap items-baseline gap-x-2 text-xs">
+                            <span className="font-mono text-teal-600" dir="ltr">
+                              {formatTime(formatTimeForDisplay(s.start_time), locale)} –{' '}
+                              {formatTime(formatTimeForDisplay(s.end_time), locale)}
+                            </span>
+                            <span className="text-[var(--color-text-primary)]">
+                              {s.group_name || tCommon('notAvailable')}
+                            </span>
+                            {getConflictingSlotIds.has(s.id) && (
+                              <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 font-semibold text-amber-700">
+                                {t('conflictShort')}
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))
+              )
+            ) : displaySlots.filter((s) => Number(s.day_of_week) === selectedDay).length === 0 ? (
               <p className="py-2 text-sm text-[var(--color-text-secondary)]">{t('noSessionsSelectedDay')}</p>
             ) : (
               displaySlots
