@@ -24,7 +24,7 @@ import {
   getAnnouncementCap,
 } from '@/lib/parentPack';
 import { formatCurrency, formatNumber, formatPlainInteger } from '@/lib/formatNumber';
-import { getStudentBalances } from '@/lib/studentBalance';
+import { getStudentBalances, sumOutstanding, type StudentBalance } from '@/lib/studentBalance';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { memoryCacheGet, memoryCacheSet } from '@/lib/clientMemoryCache';
 
@@ -173,6 +173,10 @@ export default function StudentsPage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [studentGroupsMap, setStudentGroupsMap] = useState<Record<string, { names: string[]; fees: number[]; subjects: string[]; groupIds: string[] }>>({});
   const [balanceByStudent, setBalanceByStudent] = useState<Record<string, number>>({});
+  // Full balance rows, kept alongside the id→number map so the roster tile can
+  // sum through sumOutstanding() rather than re-implementing the arithmetic.
+  // null = balances have not loaded yet (distinct from "loaded, nobody owes").
+  const [balanceRows, setBalanceRows] = useState<StudentBalance[] | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('name');
   const [subjectFilter, setSubjectFilter] = useState<string | null>(null);
@@ -390,6 +394,7 @@ export default function StudentsPage() {
       const balance: Record<string, number> = {};
       for (const [sid, b] of balances) balance[sid] = b.balance;
       setBalanceByStudent(balance);
+      setBalanceRows(Array.from(balances.values()));
       } catch (err) {
         console.error('[students] loadBalanceData failed', err);
       }
@@ -453,6 +458,27 @@ export default function StudentsPage() {
 
   const studentsList = students ?? [];
   const studentsStale = Boolean(students !== null && !studentsListFresh);
+
+  /**
+   * The roster's "who is behind" tile — both halves from ONE source.
+   *
+   * Design (Merged-Center-Students §01) shows "Unpaid · 14 · 4,200 EGP due".
+   * Count and amount must describe the same students or the tile contradicts
+   * itself, so both derive from the balance helper: count = students with a
+   * positive balance, amount = sumOutstanding() over those same rows (positives
+   * only — one student's credit never cancels another's debt).
+   *
+   * NOT students.payment_status. That column defaults to 'unpaid' and no code
+   * path ever updates it (verified against the live catalog and every write
+   * site), so counting it renders "unpaid = total headcount" on every roster.
+   *
+   * null until balances load — an unknown amount is shown as unknown, never 0.
+   */
+  const unpaid = useMemo(() => {
+    if (balanceRows === null) return null;
+    const behind = balanceRows.filter((b) => b.balance > 0);
+    return { count: behind.length, amount: sumOutstanding(behind) };
+  }, [balanceRows]);
 
   const subjectCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -1116,16 +1142,36 @@ export default function StudentsPage() {
             ) : (
               <div className={`contents transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}>
                 <KpiCard
-                  label={ts('total_students')}
-                  value={formatNumber(studentsList.length, locale)}
-                />
-                <KpiCard
                   label={ts('active_students')}
                   value={formatNumber(
                     studentsList.filter((s) => s.lifecycle_status === 'active').length,
                     locale,
                   )}
+                  subLabel={ts('ofTotalStudents', {
+                    count: formatNumber(studentsList.length, locale),
+                  })}
                   tone="success"
+                />
+                {/* Design (Merged-Center-Students §01) leads the roster with who is
+                    behind rather than a second headcount. Both figures come from
+                    `unpaid` above — see that memo for why payment_status is not used. */}
+                <KpiCard
+                  label={ts('unpaidStudents')}
+                  value={
+                    unpaid === null ? (
+                      <span className="inline-block h-7 w-12 rounded bg-[var(--color-surface-2)] animate-pulse align-middle" aria-hidden />
+                    ) : (
+                      formatNumber(unpaid.count, locale)
+                    )
+                  }
+                  subLabel={
+                    unpaid === null
+                      ? undefined
+                      : ts('unpaidAmountDue', {
+                          amount: formatCurrency(Math.round(unpaid.amount), locale),
+                        })
+                  }
+                  tone="warning"
                 />
               </div>
             )}

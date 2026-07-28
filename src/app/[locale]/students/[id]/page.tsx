@@ -469,18 +469,12 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         </p>
       ) : null}
 
-      {/* 1. Stat row */}
-      <div className="mt-6 grid grid-cols-2 gap-3">
-        <KpiCard
-          label={tDetail('visits')}
-          value={<span className="tabular-nums">{formatNumber(visits, locale)}</span>}
-        />
-        <KpiCard label={tDetail('lastSeen')} value={lastSeen ? formatDate(lastSeen, locale, 'short') : '—'} />
-      </div>
-
-      {/* 1b. Balance (read-only, live-computed; positive = owed, negative = credit) */}
+      {/* 1. Balance leads (read-only, live-computed; positive = owed, negative = credit).
+          Design (Merged-Center-Students §02): "live balance front and center". It sat
+          below the visits / last-seen row, so the screen answered "how often do they
+          come" before "do they owe". Same argument as the roster tiles in §01. */}
       {balance !== null && (
-        <div className="mt-3">
+        <div className="mt-6">
           <KpiCard
             label={tDetail('balance')}
             value={
@@ -494,6 +488,15 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
           />
         </div>
       )}
+
+      {/* 2. Stat row */}
+      <div className={`${balance !== null ? 'mt-3' : 'mt-6'} grid grid-cols-2 gap-3`}>
+        <KpiCard
+          label={tDetail('visits')}
+          value={<span className="tabular-nums">{formatNumber(visits, locale)}</span>}
+        />
+        <KpiCard label={tDetail('lastSeen')} value={lastSeen ? formatDate(lastSeen, locale, 'short') : '—'} />
+      </div>
 
       {/* 2. Quick actions */}
       {(canCollect || canEdit) && (
