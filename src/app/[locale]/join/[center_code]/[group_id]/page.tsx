@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition, type FormEvent } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Globe } from 'lucide-react';
-import { useRouter, usePathname } from '@/i18n/routing';
+import { useRouter, usePathname, Link } from '@/i18n/routing';
 
 interface JoinInfo {
   center_id: string;
@@ -32,6 +32,7 @@ export default function JoinPage({ params }: PageProps) {
   const [info, setInfo] = useState<JoinInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const [studentName, setStudentName] = useState('');
   const [studentPhone, setStudentPhone] = useState('');
@@ -79,16 +80,28 @@ export default function JoinPage({ params }: PageProps) {
     return () => {
       cancelled = true;
     };
-  }, [centerCode, groupId, t]);
+  }, [centerCode, groupId, t, reloadKey]);
 
   const handleLocaleToggle = () => {
     const next = locale === 'ar' ? 'en' : 'ar';
     startTransition(() => router.replace(pathname, { locale: next }));
   };
 
+  /** Re-run the invitation fetch. The load failure is usually transient, and a
+   *  stranger on an invite link has no other route back into the product. */
+  const handleRetry = () => {
+    setError('');
+    setNotFound(false);
+    setReloadKey((k) => k + 1);
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!info) return;
+    // Guard the handler, not just the button: `submitting` reaches the disabled
+    // attribute only after a re-render, so a fast double-tap can fire twice.
+    // Mirrors the guard SignupForm already has on its own submit.
+    if (submitting) return;
     setError('');
 
     if (!studentName.trim()) {
@@ -182,6 +195,12 @@ export default function JoinPage({ params }: PageProps) {
               <p className="text-sm text-[var(--color-text-secondary)]">
                 {t('notFoundDescription')}
               </p>
+              <Link
+                href="/"
+                className="mt-4 inline-block text-xs text-[var(--color-text-muted)] underline hover:text-[var(--color-text-primary)]"
+              >
+                {t('backHome')}
+              </Link>
             </div>
           ) : submitted ? (
             <div className="chq-card-elevated p-8 text-center">
@@ -365,6 +384,19 @@ export default function JoinPage({ params }: PageProps) {
               <p className="text-sm text-[var(--color-text-secondary)]">
                 {error || t('loadError')}
               </p>
+              <button
+                type="button"
+                onClick={handleRetry}
+                className="mt-5 w-full rounded-lg bg-[var(--color-teal)] px-4 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              >
+                {t('retry')}
+              </button>
+              <Link
+                href="/"
+                className="mt-3 inline-block text-xs text-[var(--color-text-muted)] underline hover:text-[var(--color-text-primary)]"
+              >
+                {t('backHome')}
+              </Link>
             </div>
           )}
         </div>

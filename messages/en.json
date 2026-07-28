@@ -3137,6 +3137,8 @@
     "eyebrow": "Student Self-Registration",
     "loading": "Loading...",
     "loadError": "We couldn't load this invitation. Please try again later.",
+    "retry": "Try again",
+    "backHome": "Back to home",
     "notFoundTitle": "Link not valid",
     "notFoundDescription": "This invitation link is invalid or has expired. Please contact the center for a new link.",
     "studentName": "Student Name",
