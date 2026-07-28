@@ -60,8 +60,71 @@ list. Verified: `grade_level` exists only as **free text on `students` and `grou
 array on `teacher_profiles.grade_levels`. There is **no per-centre grades configuration anywhere** —
 nothing to turn on or off. Same shape as §05 and §06: a restyle that quietly requires a new model.
 
-**Still to survey in this file:** §01 Onboarding, §02 Settings, §09 My Teachers.
-§03 Settings Billing is **money**.
+#### §02 Settings — FAITHFUL, no work needed
+
+Surveyed 28 July. The hub is live at `/{locale}/settings/general` — `/settings` is a redirect shim
+into it and the sidebar links straight there. Eight rows carry the design's ten:
+
+| Design row | Live |
+|---|---|
+| Center details · Subjects & grades · Team · Scanner | present |
+| Account · Notifications · Billing & plan · Support | present |
+| **Identity verification** | **Verification**-blocked |
+| **Referrals** | reachable, from the **sidebar** (`/referrals`, owner-only) rather than the hub |
+
+The design also opens the hub with a **centre identity card** — logo, centre name, area, plan. That is
+**already in the chrome**: `BranchSwitcher` in the sidebar renders the logo, the centre name and the
+branch count under a "Center name" label on every screen, and it switches branches as well. Building
+the card would put a second copy of the same three facts two inches to its right. Not built.
+
+**The design's General sub-page is B17-shaped, not a restyle.** Five of its seven controls have no
+storage. Verified against `information_schema.columns`, whole `public` schema: no `week_start*`, no
+`time_format`, no `date_format`, no `%numeral%`, no `%text_size%`/`%font_size%` column on any table.
+What does exist is `users.preferred_locale` (`text`, default `'ar'`) and it is **fully wired** — read
+at login, written by `POST /api/user/locale`, returned by `/api/me` — and already surfaced as a
+persistent locale toggle in the chrome (`AppShell`, `MobileTopBar`, `AdminHeader`, `AdminSidebar`,
+`TeacherNav`), which beats a settings row you have to go and find. Currency is a static `EGP` label.
+
+**The design's Account sub-page** adds Name / Phone / Email rows with edit chevrons and a **two-factor
+toggle** to live's Change PIN and Sign out. No 2FA storage exists — `%two_factor%`, `%2fa%`, `%mfa%`
+and `%totp%` return zero columns. And editing the phone is editing the **login identity**, so that half
+is auth and comes to Eyad wherever it lives.
+
+#### §01 Onboarding — a different product, not a restyle
+
+Live `/{locale}/onboarding` is a four-step **activation** wizard — Student → Group → Scan → Results —
+driven by `centers.onboarding_step` (`integer`, default `0`) alongside `onboarding_started_at`,
+`onboarding_step_updated_at`, `onboarding_completed`, `onboarding_completed_at` and
+`onboarding_nudge_sent_at`, all live. The design is a **setup** wizard: welcome and language, centre
+details, subjects and grades, payment methods, done.
+
+Its content is already collected, just not in a wizard:
+
+| Design step | Where it lives today |
+|---|---|
+| Welcome + language | locale toggle in the chrome, and `/signup` has its own |
+| Centre details (name, area) | `/signup` step 1 — `centerName`, `ownerName`, `phone`, `email`, `city` |
+| Logo, district | `/settings/center`, which reads and writes both |
+| Subjects | `/settings/subjects` |
+| **Grades** | **nowhere** — same missing per-centre enabled-grades list as §04 |
+| **Payment methods** | **Money** + a Valify **verification** gate |
+
+So what is actually unbuilt is one blocked step and one money step. Swapping a live activation wizard
+for a setup wizard is a product decision, not a layout job.
+
+#### §09 My Teachers — live, and richer than the design
+
+`/{locale}/my-teachers` exists with the design's four tabs in the design's order — Teachers, Requests,
+Slots, Add (`MyTeachersPanel`, `GroupProposalsTab`, `GroupSlotsTab`, `AddTeacherPanel`). The Teachers
+tab shows **more** than the design: fees collected, centre cut earned, teacher earnings and fees
+outstanding per teacher, plus per-group fee-per-lesson and cut on expand.
+
+Everything that differs is **money**. The design shows the centre's cut as a **percentage chip**
+("center 30%") where live shows it in EGP, and a **this-month** window where live is to-date. Two money
+figures, so both are Eyad's, not a diff to file. (`/teachers` is a redirect into the teacher portal —
+a different screen entirely.)
+
+**All nine sections of this file are now surveyed.** §03 Settings Billing is **money**.
 
 ### `Merged-Center-Insight`
 
@@ -144,13 +207,25 @@ and none of it is available, which is why the build ran A → C/D rather than A 
 (`Center-Setup` §05 → **B15**) and scanner behaviour preferences (`Center-Setup` §06 → **B16**). Both
 live screens are left exactly as they are.
 
+**Logged the same way, same day, without needing an answer:** region and display preferences
+(`Center-Setup` §02's General sub-page → **B17**). It is the identical shape — five controls, no
+storage — and the two that do exist are already live in a better place. Recorded so it is not
+rediscovered.
+
 ## A pattern worth naming
 
-Four Phase D screens — §04 grades, §05, §06, and `Center-Orders` §04 — look like restyles and are not.
-Each renders one or two controls whose storage does not exist, so "make it match the design" silently
-means "design and build a new model". The tell is always the same: **a toggle or a chip with nothing
-behind it.** Checking the catalog before starting is what separates a restyle from a feature, and it
-costs one query.
+Five Phase D screens — §04 grades, §05, §06, §02's General sub-page, and `Center-Orders` §04 — look
+like restyles and are not. Each renders one or two controls whose storage does not exist, so "make it
+match the design" silently means "design and build a new model". The tell is always the same: **a
+toggle or a chip with nothing behind it.** Checking the catalog before starting is what separates a
+restyle from a feature, and it costs one query.
+
+**A second pattern, from the same survey:** three of the design's controls turned out to be live
+already, just **somewhere better than the design put them** — the app-language row (a persistent
+toggle in the chrome, not a settings row), the centre identity card (the sidebar's `BranchSwitcher`,
+on every screen rather than one), and the Referrals row (the sidebar). Design fidelity is about the
+control existing and being findable, not about it sitting on the screen the mockup drew it on. Three
+diffs avoided by checking where a thing already lives before building a second one.
 
 **Needs no decision, only time:** `/admin/teachers` and `/admin/teachers/[id]` — the
 data exists, the routes do not.

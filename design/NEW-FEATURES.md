@@ -1045,6 +1045,47 @@ would make one scanner's preference everyone's.
 
 ---
 
+## B17. Region and display preferences
+
+**What it is:** a General settings page — app language, currency, week start, time format, date
+format, Eastern Arabic numerals, larger text.
+
+**Designs:** `Merged-Center-Setup` §02, the General frame. **`LOOKS LIKE A RESTYLE`** — there is a
+live `/{locale}/settings/general`, but it is the **settings hub itself**, not this page. The design's
+General page has no live counterpart at all.
+
+**Exists today:** two of seven. Verified against `information_schema.columns` across the whole
+`public` schema on 28 July — **no** `week_start*`, `time_format`, `date_format`, `%numeral%`,
+`%text_size%` or `%font_size%` column on any table. What exists:
+
+- **App language** — `users.preferred_locale` (`text`, default `'ar'`), fully wired: read at login
+  (`/login` line 161), written by `POST /api/user/locale`, returned by `/api/me`.
+- **Currency** — a static `EGP` label in the design too. Nothing to store; the platform is
+  single-currency.
+
+**The two that exist are already live somewhere better.** `preferred_locale` is surfaced as a
+persistent locale toggle in `AppShell`, `MobileTopBar`, `AdminHeader`, `AdminSidebar` and
+`TeacherNav` — reachable from every screen, rather than three taps into settings. Building the row
+would be a worse version of a solved problem.
+
+**Two of the five gaps are not preferences either.** Eastern Arabic numerals and date format both
+change what `formatNumber.ts` emits, so they are a **formatting-layer** change reaching every number
+and date in the product, not a settings toggle — and `check:tolocale` exists precisely to keep that
+layer single-sourced. Week start reaches `src/lib/cairo/` and the schedule board's column order.
+
+**Has to be built:** a preference model (per user, given language already is), plus a formatting-layer
+change threading locale-independent format choices through every `formatNumber` call site, plus a
+week-start input to `getCairoWeekColumnOrder()`.
+
+**Touches:** every formatted number and date in the product. No money **figures** change, but the
+**presentation** of every money figure does.
+
+**Not built, 28 July.** Logged for the same reason as B15 and B16 — it is a model and a
+formatting-layer migration wearing a restyle's clothes. No decision requested; recording it so the
+next pass over §02 does not rediscover it.
+
+---
+
 # C. BLOCKED ON SOMEONE OUTSIDE
 
 ## C1. Identity verification (e-KYC via Valify)
