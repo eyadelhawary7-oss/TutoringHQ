@@ -14,7 +14,7 @@ import { ReceiptModal } from '@/components/payments/ReceiptModal';
 import { LoadingButton } from '@/components/ui/LoadingButton';
 import { useToast } from '@/components/ui/ToastProvider';
 import { LocalizedDateInput } from '@/components/forms/LocalizedDateInput';
-import { formatCurrency, formatDateTime } from '@/lib/formatNumber';
+import { formatCurrency, formatDateTime, formatNumber } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { memoryCacheGet, memoryCacheSet } from '@/lib/clientMemoryCache';
 
@@ -456,13 +456,49 @@ export default function PaymentsPage() {
       isPaymentConfirmed(r) ? tp('status_confirmed') : tp('status_pending'),
       r.recorded_by_name ?? '',
     ]);
+    /**
+     * Disclosure block, appended after the data.
+     *
+     * The export is the CURRENT VIEW, not the ledger: `filteredPayments` is
+     * already narrowed by the dateFrom/dateTo query and then again in memory by
+     * the search box, the status pill and the method pill. A file called
+     * `payments-<today>.csv` records none of that, so a month later nobody can
+     * tell whether a missing payment was never recorded or merely filtered out.
+     * That ambiguity is the whole problem with a money export.
+     *
+     * It goes AFTER the rows, separated by a blank line, so the header stays on
+     * line 1 and spreadsheet imports are unaffected.
+     *
+     * Deliberately NOT a total. A summed figure in a filtered export reads like
+     * "collected this period" and would be wrong the moment a filter is on.
+     */
+    const activeFilters: string[] = [];
+    if (statusFilter !== 'all') activeFilters.push(String(statusFilter));
+    if (methodFilter !== 'all') activeFilters.push(tp(methodTpKey(methodFilter)));
+    if (searchQuery.trim()) activeFilters.push(`"${searchQuery.trim()}"`);
+
+    const summary: string[][] = [
+      [],
+      [tp('csv_export_summary')],
+      [tp('csv_export_rows'), formatNumber(rows.length, locale)],
+      [tp('csv_export_range'), `${dateFrom} \u2192 ${dateTo}`],
+      [
+        tp('csv_export_filters'),
+        activeFilters.length > 0 ? activeFilters.join(' \u00B7 ') : tp('csv_export_filters_none'),
+      ],
+      [tp('csv_export_note')],
+    ];
+
+    const quote = (row: string[]) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',');
     const csvContent =
-      '\uFEFF' + [cols.join(','), ...rows.map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n');
+      '\uFEFF' + [cols.join(','), ...rows.map(quote), ...summary.map(quote)].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `payments-${getTodayISO()}.csv`;
+    // Filename carries the range too, so a saved file is identifiable without
+    // being opened, and two exports of different periods cannot collide.
+    a.download = `payments-${dateFrom}_to_${dateTo}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -753,7 +789,11 @@ export default function PaymentsPage() {
               onClick={handleExportCSV}
               className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)] text-sm font-semibold hover:bg-[var(--color-surface-2)] hover:border-teal-500/40 btn-press chq-focus"
             >
-              <Download size={14} /> {tCommon('exportCsv')}
+              {/* Say how many rows will leave before the click, not after. The
+                  export is the filtered view, so the count is the only signal
+                  that a filter is narrowing what gets saved. */}
+              <Download size={14} />{' '}
+              {tp('exportCountLabel', { count: formatNumber(filteredPayments.length, locale) })}
             </button>
           ) : (
             <div className="inline-flex flex-col items-start gap-1">

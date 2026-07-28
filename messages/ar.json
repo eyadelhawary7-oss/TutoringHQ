@@ -5462,7 +5462,7 @@
     "error": "حدث خطأ في الاستيراد",
     "skipRow": "تخطي الصف",
     "skipColumn": "تخطي ",
-    "rowsFound": "تم العثور على {count} صف",
+    "rowsFound": "تم العثور على {count} صفًا في ملفك.",
     "importing": "يتم الاستيراد ... ",
     "viewStudents": "عرض الطلاب",
     "generateQR": "انشاء QR Codes",
@@ -5472,7 +5472,6 @@
     "mapToNotes": "ملاحظات",
     "mapToGroup": "المجموعة",
     "importCount": "استيراد {count} طالبًا (طلاب)",
-    "rowsFound": "تم العثور على {count} صفًا في ملفك.",
     "readyToAdd": "{count} جاهز للإضافة",
     "needFix": "{count} يحتاج تصحيحًا",
     "needsFixTitle": "يحتاج تصحيحًا",
@@ -5790,7 +5789,14 @@
     "csv_col_amount": "المبلغ (ج.م)",
     "csv_col_method": "طريقة الدفع",
     "csv_col_status": "الحالة",
-    "csv_col_recorded_by": "سُجّل بواسطة"
+    "csv_col_recorded_by": "سُجّل بواسطة",
+    "csv_export_summary": "ملخص التصدير",
+    "csv_export_rows": "عدد الصفوف المصدّرة",
+    "csv_export_range": "النطاق الزمني",
+    "csv_export_filters": "عوامل التصفية المطبقة",
+    "csv_export_filters_none": "لا يوجد",
+    "csv_export_note": "هذا الملف يحتوي فقط على الصفوف المذكورة أعلاه. الصفوف خارج النطاق الزمني أو المستبعدة بعوامل التصفية غير موجودة فيه.",
+    "exportCountLabel": "تصدير {count} صف"
   },
   "print": {
     "title": "طباعة بطاقات الطالب",
