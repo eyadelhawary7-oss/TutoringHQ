@@ -102,6 +102,29 @@
   --color-brass:      #9a6b1f;  /* private/personal accent */
   --color-brass-soft: #f1e8d6;
 
+  /* ── Redesign tokens (design/tutoringhq-public-design-system.md §2) ──
+     The five values from the design-system token table that had no slot here.
+     ADDITIVE ONLY: nothing existing is re-pointed, so this file changes no
+     rendered pixel. Screens adopt these as they are restyled.
+
+     ⚠ Two near-collisions. They are DIFFERENT values, not duplicates, and
+     neither should be "tidied" into the other:
+       --color-surface-3  #eceee9  is commented "tile" but is NOT --color-tile (#f2eee5)
+       --color-text-primary #1b201d is commented "ink"  but is NOT --color-ink  (#14181a)
+     Existing screens keep the existing pair. Redesigned screens use the pair
+     below. If the two are ever reconciled, that is a deliberate visual change
+     and belongs in its own PR. */
+  --color-tile:       #f2eee5;  /* inset blocks, secondary buttons */
+  --color-hairline:   #f0ece2;  /* dividers INSIDE a card (vs --color-border between them) */
+  --color-ink:        #14181a;  /* display type, phone bezel */
+  --color-ink-body:   #3a3f3a;  /* paragraph text */
+  --color-faint:      #a09a8e;  /* placeholders, disabled */
+
+  /* Gradients named in §2. --color-teal (#0e6b61) is the flat accent; the
+     gradient start #0f766b is a distinct, slightly lighter teal. */
+  --gradient-accent-panel: linear-gradient(155deg, #0f766b, #083f39);
+  --gradient-brand-mark:   linear-gradient(150deg, #0f766b, #083f39);
+
   /* ── Semantic States (status pairs: bg / text) ──────── */
   --color-success:       #1a6d4d;
   --color-success-muted: #e4f0e9;
