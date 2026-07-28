@@ -989,6 +989,60 @@ out of scope, or an omission?
 
 **Depends on:** nothing. Build reads live plan data; the design edits are Appendix D.
 
+## B15. Owner notification preferences
+
+**What it is:** the centre owner chooses what pings them, on which channel, and when not to.
+
+**Designs:** `Merged-Center-Setup` §05 (Settings Notifications). **`LOOKS LIKE A RESTYLE`** —
+`/{locale}/settings/notifications` is live.
+
+**Exists today:** nothing. Verified against `information_schema.columns` on 28 July: there is **no
+column anywhere** for the six "notify me about" categories (payments, absences, new students, card
+orders, teacher payout requests, billing), for the Push/Email channel split, or for the quiet-hours
+window.
+
+**The near-miss worth recording.** `students.notify_on_absence`, `notify_on_balance` and
+`notify_on_scan` do exist, and they look like the model until you check who they are for. They are
+**per-student PARENT toggles** — they control what a *parent* receives about *one* student. The design
+is about what the *owner* receives about the *centre*. Same word, different feature. Reusing them
+would be wrong, not partial.
+
+**Has to be built:** a preference model (per user or per centre), a channel model, a quiet-hours
+window honoured at send time, and every notification producer taught to consult it.
+
+**Touches:** nothing that exists yet. No money, no auth.
+
+**Decision, 28 July: DO NOT BUILD.** *"Do not build a preference model to satisfy a restyle."* The
+live screen is left exactly as it is. This entry exists so the gap is recorded rather than rediscovered.
+
+---
+
+## B16. Scanner behaviour preferences
+
+**What it is:** per-centre or per-device scanner settings — camera facing, sound, vibrate, automatic
+attendance marking, and a repeat-scan suppression window.
+
+**Designs:** `Merged-Center-Setup` §06 (Settings Scanner). **`LOOKS LIKE A RESTYLE`** —
+`/{locale}/settings/scanner` is live at 134 lines.
+
+**Exists today:** one column, `centers.scanner_default_mode` (`text`, default `'camera'`), and live
+already exposes it as the camera/bluetooth toggle. Verified 28 July: **nothing exists** for camera
+facing, sound, vibrate, or the "ignore repeat scans within 5 min" window.
+
+**One of the five is not a preference at all.** *"Mark attendance automatically"* changes what gets
+**written** to `attendance_scans`. That is behaviour, not a setting, and it is Eyad's by the standing
+rule regardless of whether a column exists to hold it.
+
+**Also unresolved:** which of these are per-centre and which are per-device. Sound, vibrate and camera
+facing are properties of the phone doing the scanning, not of the business — storing them on `centers`
+would make one scanner's preference everyone's.
+
+**Has to be built:** the storage split above, plus scanner-client changes to honour it.
+
+**Touches:** attendance writes, for the auto-mark item only.
+
+**Decision, 28 July: DO NOT BUILD.** Same answer as B15 — log it, leave the live screen alone.
+
 ---
 
 # C. BLOCKED ON SOMEONE OUTSIDE
