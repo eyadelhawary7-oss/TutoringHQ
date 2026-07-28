@@ -38,7 +38,7 @@ below; this is the summary.
 | Referral step-down | **Live wins: 10% for twelve months.** The design's month-6 drop is wrong. | Not a build item. The rest of the screen is unblocked. → A9, Appendix D |
 | Plan names | Starter/Growth/Scale are **placeholder**. Real: centers **Solo, Nano, Starter, Pro, Business, Enterprise**; teachers **Free, Standard, Pro, Scale**. | 12 design screens to correct. Build side unblocked. → Appendix D |
 | Admin Center Assignments | The **live route is do-not-touch** commission machinery. The design is a separate feature needing its own route. | Split into A10 and a do-not-touch guardrail. → A10 |
-| **Collection fee model** | **LOCKED.** 10% collection fee · 7.5% + 7.5 markup · parent processing 1.5% + 1.5. Provider screens quote the provider price, never the parent total. | **Unblocks B2→A11, B3→A12, B4→A13, B14→A14, and the fee half of C5.** → B1 |
+| **Collection fee model** | **LOCKED.** 10% collection fee · 7.5% + 7.5 markup · parent processing fee 1.5% + 1.5. Provider screens quote the provider price, never the parent total. | **Unblocks B2→A11, B3→A12, B4→A13, B14→A14, and the fee half of C5.** → B1 |
 | Analytics / Benchmarks add-ons | **Not decided.** Analytics keeps `canViewRevenue`; Benchmarks stays free. | Do not build either as a purchase. → B9, B10 |
 | Group billing basis | **Not decided.** Live keeps `fee_per_class` only. | → B12 |
 | Admin §07 prices, teacher Free tier, `top_centers`, the §02 fee wording | Four further design corrections. | → Appendix D5–D8 |
@@ -1512,8 +1512,8 @@ name of the live flat 20 EGP fee charged to a *center*. See the naming rule in B
 
 | Design | What it shows | Instances |
 |---|---|---|
-| `Merged-Public-App` §04 Parent Payment | "Processing fee — 1.5% + 1.5 EGP · includes VAT" on the teacher frame, the center frame and the confirmation, plus AR mirrors | 6 |
-| `Merged-Admin-Money` §01 Admin Fee Collection | "Processing fees · 1.5% + 1.5 — 7,095" as one of the three revenue sources, EN + AR | 3 |
+| `Merged-Public-App` §04 Parent Payment | "Parent processing fee — 1.5% + 1.5 EGP · includes VAT" on the teacher frame, the center frame and the confirmation, plus AR mirrors | 6 |
+| `Merged-Admin-Money` §01 Admin Fee Collection | "Parent processing fees · 1.5% + 1.5 — 7,095" as one of the three revenue sources, EN + AR | 3 |
 | `Merged-Center-Attendance` §02 Center Collect ForMe | Prose: *"parents see one price plus a small processing fee"* | 1 |
 | `Merged-Center-Setup` §01 Onboarding | Prose: *"Parents see one price plus a small processing fee."* | 1 |
 | `Merged-Verification-Payouts` §02 Verification In Context | *"A small processing fee applies per collection"*, EN + AR. **Ambiguous** — reads like a deduction from the teacher rather than a parent charge. Worth deciding which it means while renaming | 2 |
@@ -1648,6 +1648,35 @@ five metrics. The live cohort table supplies four, and they are not the same fou
 Net: still five tiles becomes four, EN and AR. **Build the four; they need no decision.** The screen is
 otherwise unblocked.
 
+## D10. Name the two processing fees apart — 5 frames plus a code warning
+
+**Eyad's call, 28 July: this is a naming collision and a design error of mine, flagged on 26 July and
+never fixed. Both fees are correct and both stay.**
+
+| Fee | Payer | On what | Formula | Lives where |
+|---|---|---|---|---|
+| **Processing fee** | the **centre** (or teacher) | a subscription / charge invoice to TutoringHQ | **flat 20 EGP** | `src/lib/processingFee.ts`, config-driven, snapshotted into `invoices.metadata.processing_fee` |
+| **PARENT PROCESSING FEE** | the **parent** | tuition, in the collect-for-me flow | **1.5% + 1.5 EGP**, VAT inclusive | **nowhere in live code** — collect-for-me does not exist yet |
+
+They are different fees with different payers, and until now they shared a name.
+
+**The correction:** the parent one is always **both words**, "parent processing fee", never the bare
+phrase. Renamed in `Merged-Public-App` §04 (EN teacher frame, EN centre frame, EN confirmation, and
+both AR mirrors) and in `Merged-Admin-Money` §01 (EN + AR), and throughout this document.
+
+**Nothing changes in live code.** The flat-20 helper is untouched.
+
+**Why it was worth a code comment and not just a rename.** `resolveProcessingFeeAmount` now carries a
+warning that it is the *centre* fee and must never be used for a parent tuition charge. The collision
+is dangerous precisely because nothing would break: on the design's own 1,082.50 example the parent fee
+is **17.74** and that function returns **20.00** flat. No type error, no exception, no failing test —
+just a parent billed the wrong amount, on a total that still looks plausible.
+
+That is the same shape as the two faults that motivated the money rule: a single number with two
+sources, where the wrong one is silently plausible.
+
+`Merged-Public-App` §04 stays **C1-blocked** either way, so this is documentation, not a build.
+
 ## Overlap and totals
 
 `Merged-Center-Insight` §03 appears in D2 and D3. `Merged-Admin-Money` §07 appears in D3 and D5.
@@ -1655,4 +1684,5 @@ otherwise unblocked.
 `Merged-Public-Marketing` §03 appears in D6 as the canonical ladder needing a Free tier.
 `Merged-Center-Insight` §02 is new in D9 and appears nowhere else.
 
-**Nine corrections, 27 distinct screens.** D7 is a note rather than an edit.
+**Ten corrections, 28 distinct screens.** D7 is a note rather than an edit; **D10** is a rename
+plus a code warning, and changes no live behaviour.
