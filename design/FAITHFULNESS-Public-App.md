@@ -205,6 +205,23 @@ so substituting it would put a number on the screen that no later invoice reprod
 This is the same class as the upgrade fault and the balance helper, in its worst form: not one number
 with two sources, but **one number with no source at the moment of display**.
 
+**And the specific figure is the wrong one for this audience.** `168.75` is not arbitrary — it is
+the **provider price** under the locked B1 rate card: `X + markup` where markup is `0.075X + 7.5`,
+worked from `X = 150`. B1 states the 10% collection fee and the 7.5% + 7.5 markup are
+*"provider-visible; neither is ever rendered to a parent"*, and that the parent's own total —
+`172.78`, being `168.75 + 4.03` parent processing fee — appears on **the parent payment page only**.
+
+Public Join is a **parent- and student-facing** screen showing a **provider** figure. It is neither
+what the provider quotes internally nor what the parent will actually pay, so it understates the
+parent's cost by the 4.03 processing fee. B1's presentation rule names the inverse case explicitly
+(*"if a screen shows a provider the parent total, that is a bug"*) but does not cover this direction.
+**That is a gap in the rule, not a settled breach of it** — so it is Eyad's to decide, and it should
+be decided before any join screen quotes a number at all.
+
+The same 168.75 appears on `Merged-Center-Money` §05, where it is **correct**: that screen is
+provider-facing and quotes the provider price exactly as B1 requires. One figure, two screens, two
+audiences — right on one, wrong-audience on the other.
+
 ### The form contradicts the design on the field the design argues hardest for
 
 The design's lede: *"Parent phone is **not optional**, because that is where every payment link goes,
