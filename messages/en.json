@@ -3275,7 +3275,13 @@
     "noSessionsWeek": "No other sessions this week",
     "noSessionsSelectedDay": "No sessions on this day",
     "addRoomFirstTooltip": "Add a room first.",
-    "addRoomFirstLink": "Open Rooms"
+    "addRoomFirstLink": "Open Rooms",
+    "byTime": "By time",
+    "byRoom": "By room",
+    "roomUtilisation": "{percent} booked",
+    "roomFreeToday": "Free today",
+    "roomNoCapacity": "no capacity set",
+    "conflictShort": "Clash"
   },
   "setPin": {
     "header": "Set your PIN",

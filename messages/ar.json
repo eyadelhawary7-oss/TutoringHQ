@@ -1586,7 +1586,13 @@
     "viewOnly": "(عرض فقط)",
     "wed": "الأربعاء",
     "workingHours": "ساعات العمل",
-    "yourSchedule": "جدولك"
+    "yourSchedule": "جدولك",
+    "byTime": "حسب الوقت",
+    "byRoom": "حسب القاعة",
+    "roomUtilisation": "محجوزة {percent}",
+    "roomFreeToday": "متاحة اليوم",
+    "roomNoCapacity": "السعة غير محددة",
+    "conflictShort": "تعارض"
   },
   "adminHealth": {
     "statusSuccess": "ناجح",
