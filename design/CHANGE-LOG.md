@@ -42,7 +42,7 @@ legacy alias in `globals.css` now resolves through it. What moved:
 | `text-lg` | 18px | 17px |
 | `text-xl` | 20px | 22px |
 | `text-2xl` | 24px | 30px |
-| `text-3xl` | 30px | 44px |
+| `text-3xl` | 30px | 30px (unchanged — see spec correction) |
 | `rounded-sm` | 4px | 8px |
 | `rounded-md` | 8px | 12px |
 | `rounded-lg` | 12px | 16px |
@@ -64,3 +64,9 @@ Two token names changed meaning and are the ones to suspect if a colour looks wr
 `--color-accent` was the mint fill and is now the teal primary action (the old value is
 `--color-mint`); `--color-muted` was a quiet surface and is now tertiary text (the 23 `bg-muted`
 sites moved to `bg-tile` in the same commit).
+
+**Spec correction landed in this PR.** `TOKEN-SPEC.md` §2 gave `text-3xl` as 44px, derived from
+design-file mastheads. In the product that token backs KPI figures in 14 places, so 44 was a
+design-file role mapped onto a product token. Corrected to **30px** — see the dated correction
+block in `design/TOKEN-SPEC.md` §2. `text-2xl` and `text-3xl` are both 30px as a result, which
+flattens the ~20 `text-2xl md:text-3xl` responsive pairs. Nothing breaks.

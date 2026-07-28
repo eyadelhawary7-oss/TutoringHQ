@@ -51,10 +51,31 @@ Eight steps, from 38. 39% of uses shift, worst single jump 6px.
 | `text-lg` | 17 | 311 | section headings |
 | `text-xl` | 22 | 132 | screen titles |
 | `text-2xl` | 30 | 71 | display |
-| `text-3xl` | 44 | 105 | reference-file mastheads only |
+| `text-3xl` | ~~44~~ **30** | 105 | ~~reference-file mastheads only~~ **KPI values, display** — see correction below |
 
 The distribution already had peaks at these values. The halves and neighbours were noise, not
 intent.
+
+### Correction, 28 July 2026 — `text-3xl` is 30, not 44
+
+**Eyad's correction, on evidence found while wiring the token layer (PR #209).**
+
+The 44 came from 105 uses in the design files, and those uses are almost entirely reference-file
+mastheads — a thing that does not exist in the product. In the app the same token backs **KPI
+figures**, in 14 places: the Center Home headline number, Benchmarks, the four teacher income
+views, and `ScanResultScreen`. This table mapped a design-file role onto a product token and
+conflated the two.
+
+**`text-3xl` is 30px. That is the KPI value, and it is the only role this token has in the
+product.** 44 is reference-file chrome and stays in the design files where it belongs.
+
+There is deliberately **no second alias** for 44. One token, one meaning. If a real masthead ever
+appears in the product it gets its own token then, on evidence rather than on speculation.
+
+Known consequence, recorded rather than acted on: `text-2xl` and `text-3xl` are now both 30px, so
+the ~20 `text-2xl md:text-3xl` pairs stop changing at the `md` breakpoint. Nothing breaks — the
+responsive step flattens. Whether the two names collapse into one is a restyle decision, not a
+token one.
 
 **A nine-step scale was tested and rejected.** It reduced the worst jump by nothing and the widest
 buckets are at 30 and 44, where the values are one-off page titles rather than a working scale.
