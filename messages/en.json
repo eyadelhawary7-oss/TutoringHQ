@@ -1519,7 +1519,7 @@
     "error": "Import error occurred",
     "skipRow": "Skip Row",
     "skipColumn": "Skip",
-    "rowsFound": "{count} rows found",
+    "rowsFound": "{count} rows found in your file.",
     "importing": "Importing...",
     "viewStudents": "View Students",
     "generateQR": "Generate QR Codes",
@@ -1529,7 +1529,6 @@
     "mapToNotes": "Notes",
     "mapToGroup": "Group",
     "importCount": "Import {count} Students",
-    "rowsFound": "{count} rows found in your file.",
     "readyToAdd": "{count} ready to add",
     "needFix": "{count} need a fix",
     "needsFixTitle": "Needs a fix",
@@ -2525,7 +2524,14 @@
     "csv_col_amount": "Amount (EGP)",
     "csv_col_method": "Method",
     "csv_col_status": "Status",
-    "csv_col_recorded_by": "Recorded By"
+    "csv_col_recorded_by": "Recorded By",
+    "csv_export_summary": "Export summary",
+    "csv_export_rows": "Rows exported",
+    "csv_export_range": "Date range",
+    "csv_export_filters": "Filters applied",
+    "csv_export_filters_none": "none",
+    "csv_export_note": "This file contains only the rows listed above. Rows outside the date range, or excluded by the filters, are not in it.",
+    "exportCountLabel": "Export {count} rows"
   },
   "attendance": {
     "title": "Attendance History",
