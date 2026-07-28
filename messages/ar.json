@@ -6041,13 +6041,13 @@
     "maxCapacityValue": "السعة القصوى: {count}",
     "sessionsValue": "الجلسات: {count}",
     "scheduleCount": "الجلسات",
-    "sessionsPerWeek": "{count} في الأسبوع",
-    "freeAllWeek": "متاحة",
     "allRooms": "كل الغرف",
     "noRoomsTitle": "لا توجد قاعات بعد",
     "noRoomsDescription": "القاعات مساحات فعلية أو افتراضية حيث تُعقد الحصص. أنشئ قاعة لتبدأ الجدولة.",
     "deleteConfirm": "هل تريد حذف هذه الغرفة ؟",
-    "roomNameRequired": "قاعة الاسم مطلوب"
+    "roomNameRequired": "قاعة الاسم مطلوب",
+    "sessionsToday": "{count} اليوم",
+    "freeToday": "متاحة اليوم"
   },
   "scan": {
     "title": "مسح الطالب QR",

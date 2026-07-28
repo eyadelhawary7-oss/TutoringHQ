@@ -7,27 +7,20 @@ import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, auditLog } from '@/lib/db-proxy';
 import { Plus, DoorOpen, X, MoreVertical } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
+import { cairoDateKey } from '@/lib/cairo/day';
+import { scheduleSlotsDayOfWeek } from '@/lib/cairo/week';
 
 interface Room {
   id: string;
   name: string;
   capacity: number | null;
   /**
-   * Slots booked in this room across the WHOLE WEEK, not today.
+   * Slots booked in this room TODAY, in Cairo.
    *
-   * The design's chip reads "3 today" / "Free today", but today cannot be
-   * computed safely yet: `schedule_slots.day_of_week` is nullable TEXT and the
-   * codebase reads it two incompatible ways. `src/lib/cairo/week.ts` documents
-   * it as a JS weekday (Saturday = 6) and the Schedule screen reads it that
-   * way; `src/lib/postgrestSafe.ts` treats it as an Egypt index (Saturday = 0,
-   * via `(jsDay + 1) % 7`) and the two daily-summary routes read it that way.
-   * For any Saturday slot one looks for `6` and the other for `0` — they cannot
-   * both be right, and the single live row (`"1"`) is Monday under one reading
-   * and Sunday under the other.
-   *
-   * A weekly count needs none of that: it is a plain count by `room_id`. So the
-   * chip is weekly and honest rather than daily and possibly wrong. Switch it
-   * to "today" once the day_of_week convention is settled.
+   * Was a whole-week count while `schedule_slots.day_of_week` had two
+   * incompatible readers in the codebase. That is settled: the writer stores a
+   * JS weekday as text, and `scheduleSlotsDayOfWeek` is the single helper for
+   * it. So the chip now says what the design says.
    */
   schedule_count?: number;
 }
@@ -66,10 +59,16 @@ export default function RoomsPage() {
     });
 
     const roomsData = (roomsRes.data || []) as Room[];
+    // Cairo day, not the browser's: a centre open past midnight would otherwise
+    // still see the previous day's bookings.
+    const todayDow = scheduleSlotsDayOfWeek(cairoDateKey());
     const { data: slotsData } = await dbSelect({
       table: 'schedule_slots',
       select: 'room_id',
-      filters: [{ column: 'center_id', op: 'eq', value: cid }],
+      filters: [
+        { column: 'center_id', op: 'eq', value: cid },
+        { column: 'day_of_week', op: 'eq', value: todayDow },
+      ],
     });
 
     const countByRoom: Record<string, number> = {};
@@ -184,10 +183,10 @@ export default function RoomsPage() {
                   }`}
                 >
                   {(r.schedule_count ?? 0) > 0
-                    ? t('sessionsPerWeek', {
+                    ? t('sessionsToday', {
                         count: formatNumber(Number(r.schedule_count), locale),
                       })
-                    : t('freeAllWeek')}
+                    : t('freeToday')}
                 </span>
               </div>
             ))}
