@@ -350,8 +350,11 @@ WhatsApp auto-send came **back** on second inspection (§0.2), and `schedule_slo
 7. **Card-order notify-me** (`Center-Orders` §04) — a write with no destination
 8. **Teacher referral model** (`Teacher-Insight` §02) — confirmed absent; a new schema, not a column
 
-Plus two route builds that need no decision, only time: **`/admin/teachers`** and
-**`/admin/teachers/[id]`** — the data exists, the routes do not.
+The two route builds that needed no decision — **`/admin/teachers`** and
+**`/admin/teachers/[id]`** — were built on 28 July and then **closed unmerged on Eyad's
+call**: one teacher console, not two. `/ceo/teachers` already covers the data, and it was
+checked for the profile-versus-subscription fault the build avoided — it does not have it.
+See the Phase E section of `SKIPPED-SCREENS.md`.
 
 ## Resolved without you
 
