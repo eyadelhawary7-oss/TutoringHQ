@@ -129,6 +129,25 @@ export default function BenchmarksPage() {
   /** API mismatch: metrics without an unlocked district - show sample overlay only. */
   const sampleOnlyMode = !showLiveBenchmarks && hasAnyMetric(d);
 
+  /**
+   * Overall standing — design (Merged-Center-Insight §02) opens the screen with
+   * one headline rank before the per-metric detail, so the owner gets an answer
+   * without reading four cards.
+   *
+   * Derived, not stored: the mean of whichever metric percentiles the RPC
+   * returned. get_center_benchmarks returns exactly four (attendance,
+   * revenue_per_student, retention_30d, group_utilization) — verified against
+   * pg_proc — and the design's other two, average fee and new students/month,
+   * exist nowhere in benchmark_snapshots. See Appendix D9.
+   */
+  const overall = (() => {
+    const pcts = [d.attendance, d.revenue_per_student, d.retention_30d, d.group_utilization]
+      .filter((m): m is BenchmarkMetric => Boolean(m))
+      .map((m) => Math.min(100, Math.max(0, Number(m.percentile ?? 0))));
+    if (pcts.length === 0) return null;
+    return pcts.reduce((a, b) => a + b, 0) / pcts.length;
+  })();
+
   const cards: {
     key: string;
     icon: React.ElementType;
@@ -141,6 +160,36 @@ export default function BenchmarksPage() {
     { key: 'retention', icon: Users, metric: d.retention_30d, format: formatPct, descKey: 'retentionDesc' },
     { key: 'utilization', icon: BookOpen, metric: d.group_utilization, format: formatPct, descKey: 'utilizationDesc' },
   ];
+
+  const standingCard =
+    overall === null ? null : (
+      <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 card-shadow mb-6">
+        <p className="text-sm text-[var(--color-text-muted)]">{t('overallStanding')}</p>
+        <p className="text-4xl font-bold text-[var(--color-text-primary)] mt-1">
+          {t('topPercent', { percent: formatPercent(Math.round(100 - overall), locale) })}
+        </p>
+        {d.center_count != null && (
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">
+            {t('acrossCenters', { count: formatNumber(d.center_count, locale) })}
+          </p>
+        )}
+        {/* Lower / median / higher scale, per the design. The marker is the mean
+            percentile, so the midpoint genuinely is the district median. */}
+        <div className="mt-5">
+          <div className="relative h-2.5 rounded-full bg-gradient-to-r from-[var(--color-surface-3)] via-[var(--color-surface-3)] to-teal-500/40">
+            <div
+              className="absolute -top-1 h-4.5 w-1.5 rounded-full bg-teal-600 shadow"
+              style={{ insetInlineStart: `calc(${Math.min(100, Math.max(0, overall))}% - 3px)` }}
+            />
+          </div>
+          <div className="flex justify-between text-[11px] text-[var(--color-text-muted)] mt-2">
+            <span>{t('scaleLower')}</span>
+            <span>{t('scaleMedian')}</span>
+            <span>{t('scaleHigher')}</span>
+          </div>
+        </div>
+      </div>
+    );
 
   const chartGrid = (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -157,6 +206,11 @@ export default function BenchmarksPage() {
             <div className="flex items-center gap-2 text-[var(--color-text-muted)] text-sm mb-2">
               <Icon className="h-4 w-4 text-teal-600" />
               {t(key)}
+              {/* Design leads each row with the rank, not the raw value. Same
+                  fact as the sentence below, stated the way an owner reads it. */}
+              <span className="ms-auto shrink-0 rounded-full bg-teal-500/12 px-2 py-0.5 text-[11px] font-semibold text-teal-700">
+                {t('topPercent', { percent: formatPercent(Math.round(100 - pct), locale) })}
+              </span>
             </div>
             <p className="text-3xl font-bold text-[var(--color-text-primary)] mb-1">{format(yourVal)}</p>
             <p className="text-sm text-[var(--color-text-muted)] mb-4">
@@ -214,7 +268,10 @@ export default function BenchmarksPage() {
           </Link>
         </div>
         <div className="relative">
-          <div className="opacity-35 pointer-events-none select-none grayscale">{chartGrid}</div>
+          <div className="opacity-35 pointer-events-none select-none grayscale">
+            {standingCard}
+            {chartGrid}
+          </div>
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl bg-[var(--color-surface-0)]/80 backdrop-blur-[2px]">
             <p className="text-sm font-semibold text-[var(--color-text-primary)] px-4 text-center">{t('sampleOverlay')}</p>
           </div>
@@ -293,7 +350,15 @@ export default function BenchmarksPage() {
   return (
     <div className="min-h-screen w-full bg-[var(--color-surface-0)] p-6">
       <PageHeader title={t('title')} subtitle={t('subtitle')} />
+      {standingCard}
+      <h2 className="text-sm font-semibold text-[var(--color-text-secondary)] mb-3">
+        {t('howYouCompare')}
+      </h2>
       {chartGrid}
+      {/* The design closes the screen on this reassurance, and it earns its
+          place: a center is being ranked against its neighbours and wants to
+          know the ranking is not visible to them. */}
+      <p className="text-xs text-[var(--color-text-muted)] mt-6 text-center">{t('anonymityNote')}</p>
     </div>
   );
 }
