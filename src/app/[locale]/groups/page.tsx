@@ -489,12 +489,34 @@ export default function GroupsPage() {
                   <BookOpen className="w-5 h-5 text-teal-600" />
                 </div>
                 <div className="flex items-center">
-                  <span
-                    className="text-xs text-[var(--color-text-muted)] font-mono tabular-nums"
-                    title={t('studentCount')}
-                  >
-                    {formatNumber(g.student_count ?? g.member_count ?? 0, locale)}
-                  </span>
+                  {/* Design (Merged-Center-Groups §01) shows enrolment AGAINST
+                      capacity — "24/30" — not a bare headcount, because the
+                      question a center asks scanning this list is "which groups
+                      still have room". max_capacity is already selected in
+                      loadData; only the bare count was being rendered.
+                      Falls back to the plain count when no capacity is set. */}
+                  {(() => {
+                    const enrolled = g.student_count ?? g.member_count ?? 0;
+                    const cap = g.max_capacity;
+                    // 999 is the sentinel this page already treats as "no real
+                    // cap" (see the remove-member guard), so it is not a limit
+                    // worth showing a student a ratio against.
+                    const hasCap = cap != null && Number.isFinite(Number(cap)) && Number(cap) > 0 && Number(cap) < 999;
+                    const full = hasCap && enrolled >= Number(cap);
+                    return (
+                      <span
+                        className={`text-xs font-mono tabular-nums ${full ? 'font-semibold text-amber-600' : 'text-[var(--color-text-muted)]'}`}
+                        title={full ? t('groupFull') : t('studentCount')}
+                      >
+                        {hasCap
+                          ? t('enrolledOfCapacity', {
+                              count: formatNumber(enrolled, locale),
+                              capacity: formatNumber(Number(cap), locale),
+                            })
+                          : formatNumber(enrolled, locale)}
+                      </span>
+                    );
+                  })()}
                   <button
                     type="button"
                     onClick={(e) => {

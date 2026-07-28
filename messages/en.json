@@ -3056,7 +3056,9 @@
     "add": {
       "noSubjectsPlaceholder": "No subjects yet, create one first",
       "createSubjectHelper": "Create your first subject"
-    }
+    },
+    "enrolledOfCapacity": "{count} of {capacity}",
+    "groupFull": "Full"
   },
   "joinFlow": {
     "errorTitle": "This group link is no longer active.",

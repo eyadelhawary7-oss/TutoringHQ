@@ -5317,7 +5317,9 @@
     "add": {
       "noSubjectsPlaceholder": "لا توجد مواد بعد، أنشئ مادة أولاً",
       "createSubjectHelper": "أنشئ مادتك الأولى"
-    }
+    },
+    "enrolledOfCapacity": "{count} من {capacity}",
+    "groupFull": "مكتملة"
   },
   "joinFlow": {
     "errorTitle": "رابط المجموعة ده مابقاش شغال.",
