@@ -2,40 +2,55 @@
 @config "../../tailwind.config.ts";
 @plugin "tailwindcss-animate";
 
+/* The token layer (design/TOKEN-SPEC.md). Imported BEFORE the @theme block
+   below so the aliases in it can reference the tokens. Spacing, type, radii
+   and the 19 §4 colour tokens are declared THERE and nowhere else — see the
+   header of that file before adding a --text-*, --radius-* or §4 --color-*
+   line here. */
+@import "./tokens.css";
+
 @theme {
   --font-sans: var(--font-plex), 'Cairo-Arabic', system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-plex), 'Cairo-Arabic', system-ui, -apple-system, sans-serif;
   --font-bodoni-stack: 'Bodoni Moda', Georgia, "Times New Roman", serif;
   /* ADR 031: app chrome is the warm cream system (founder mock), and since the
      dark-mode removal (2026-07-05) it is the single theme. The former dark token
-     overrides were removed (2026-07-06) — nothing toggles `.dark` on <html>. */
-  --color-background: hsl(42 25% 90%);    /* paper  #ece8df */
-  --color-foreground: hsl(144 8% 12%);    /* ink    #1b201d */
-  --color-card: hsl(43 100% 99%);         /* panel  #fffdf8 */
-  --color-card-foreground: hsl(144 8% 12%);
-  --color-popover: hsl(43 100% 99%);
-  --color-popover-foreground: hsl(144 8% 12%);
-  --color-primary: hsl(174 77% 24%);      /* teal   #0e6b61 */
-  --color-primary-light: hsl(174 77% 30%);
-  --color-primary-foreground: hsl(43 100% 99%);
-  --color-secondary: hsl(40 46% 95%);     /* p2     #f8f4ec */
-  --color-secondary-foreground: hsl(144 8% 12%);
-  --color-muted: hsl(84 13% 92%);         /* tile   #eceee9 */
-  --color-muted-foreground: hsl(111 4% 37%);
-  --color-accent: hsl(168 31% 90%);       /* teal soft #dfeeeb */
-  --color-accent-foreground: hsl(174 78% 18%);
-  --color-destructive: hsl(9 53% 37%);    /* danger ink #9c3322 */
-  --color-destructive-foreground: hsl(43 100% 99%);
-  --color-border: hsl(42 23% 85%);        /* warm border #e2ddd1 */
-  --color-input: hsl(84 13% 92%);
-  --color-ring: hsl(174 77% 24%);
-  --color-sidebar: hsl(43 100% 99%);
-  --color-sidebar-foreground: hsl(144 8% 12%);
-  --color-sidebar-primary: hsl(174 77% 24%);
+     overrides were removed (2026-07-06) — nothing toggles `.dark` on <html>.
+
+     TOKEN LAYER (2026-07-28): every one of these was a hand-tuned HSL that
+     landed within a couple of points of a §4 token. They now reference the
+     token instead of restating it, so the shadcn semantic layer and the
+     design tokens cannot drift apart again. The comment on each line is the
+     value it used to hold. */
+  --color-background: var(--color-paper);          /* was hsl(42 25% 90%)  #ece8df — exact */
+  --color-foreground: var(--color-ink);            /* was hsl(144 8% 12%)  #1c211e → #14181a */
+  --color-card: var(--color-panel);                /* was hsl(43 100% 99%) #fffdfa → #fffdf8 */
+  --color-card-foreground: var(--color-ink);
+  --color-popover: var(--color-panel);
+  --color-popover-foreground: var(--color-ink);
+  --color-primary: var(--color-accent);            /* was hsl(174 77% 24%) #0e6b61 — exact */
+  --color-primary-foreground: var(--color-panel);
+  --color-secondary: var(--color-tile);            /* was hsl(40 46% 95%)  #f8f4ec → #f2eee5 */
+  --color-secondary-foreground: var(--color-ink);
+  --color-muted-foreground: var(--color-mid);      /* was hsl(111 4% 37%)  #5b625b → #5d635c */
+  --color-accent-foreground: var(--color-panel);   /* was hsl(174 78% 18%) deep teal; --color-accent
+                                                      is now the teal itself, so its foreground has
+                                                      to be the light one. 0 uses either way. */
+  --color-destructive: var(--color-danger);        /* was hsl(9 53% 37%)   #903b2c → #9c3322 */
+  --color-destructive-foreground: var(--color-panel);
+  --color-border: var(--color-line);               /* was hsl(42 23% 85%)  #e2ddd1 — exact */
+  --color-input: var(--color-tile);                /* was hsl(84 13% 92%)  #eceee9 → #f2eee5 */
+  --color-ring: var(--color-accent);
+  --color-sidebar: var(--color-panel);
+  --color-sidebar-foreground: var(--color-ink);
+  --color-sidebar-primary: var(--color-accent);
   --color-sidebar-primary-foreground: hsl(0 0% 100%);
-  --color-sidebar-accent: hsl(84 13% 92%);
-  --color-sidebar-accent-foreground: hsl(144 8% 12%);
-  --color-sidebar-border: hsl(42 23% 85%);
+  --color-sidebar-accent: var(--color-tile);
+  --color-sidebar-accent-foreground: var(--color-ink);
+  --color-sidebar-border: var(--color-line);
+  /* No §4 slot: a lighter teal used only by --gradient-primary's old stop and
+     the .primary-light utility. Logged in BUILD-AFTER-REDESIGN.md. */
+  --color-primary-light: hsl(174 77% 30%);
   --color-navy: hsl(215 28% 17%);
   --color-navy-light: hsl(215 25% 22%);
   --color-navy-foreground: hsl(210 40% 95%);
@@ -45,11 +60,9 @@
   --color-scanner-red: hsl(0 72% 51%);
   --color-scanner-yellow: hsl(48 97% 42%);
   --color-scanner-purple: hsl(263 70% 50%);
-  --radius-sm: calc(0.75rem - 4px);
-  --radius-md: calc(0.75rem - 2px);
-  --radius-lg: 0.75rem;
-  --radius-xl: calc(0.75rem + 4px);
-  --radius-2xl: calc(0.75rem + 8px);
+  /* The radius scale used to be declared twice in this block — once as
+     calc(0.75rem ± Npx) here and again 110 lines down. Both are gone; §3
+     lives in tokens.css. */
 
   /* ── Brand (Teal) ───────────────────────────────────── */
   --color-brand-50:  #f0fdfa;
@@ -88,54 +101,58 @@
   --color-gold-800: #92400e;
   --color-gold-900: #78350f;
 
-  /* ── Surface Layers (cream / ADR 031) ───────────────── */
-  --color-surface-0: #ece8df;   /* paper */
-  --color-surface-1: #fffdf8;   /* panel */
-  --color-surface-2: #f8f4ec;   /* p2: inner surfaces, list rows */
-  --color-surface-3: #eceee9;   /* tile: kpi tiles, inputs, segmented */
-  --color-surface-4: #dcd7c9;
+  /* ── Surface Layers (cream / ADR 031) ─────────────────
+     LEGACY NAMES, TOKEN VALUES. These four still have ~1,900 call sites, so
+     the names stay; every one now resolves to a §4 token. The comment is the
+     value the alias used to hold. surface-2 and surface-3 were 6 points
+     apart doing the same job and both collapse onto `tile`, which is the
+     170→18 collapse working as intended. */
+  --color-surface-0: var(--color-paper);   /* #ece8df — exact */
+  --color-surface-1: var(--color-panel);   /* #fffdf8 — exact */
+  --color-surface-2: var(--color-tile);    /* #f8f4ec → #f2eee5 */
+  --color-surface-3: var(--color-tile);    /* #eceee9 → #f2eee5 */
+  --color-surface-4: var(--color-canvas);  /* #dcd7c9 → #d8d3c6 */
 
-  /* ── Cream accents (ADR 031: no existing semantic slot) ── */
-  --color-teal:       #0e6b61;  /* primary action */
-  --color-teal-deep:  #0a514a;
-  --color-teal-soft:  #dfeeeb;  /* teal chip bg */
-  --color-brass:      #9a6b1f;  /* private/personal accent */
-  --color-brass-soft: #f1e8d6;
+  /* ── Cream accents (ADR 031) ─────────────────────────
+     Same story: the teal family were exact matches for the §4 accent tokens
+     under different names. --color-brass-soft was 3 points off `sand`. */
+  --color-teal:       var(--color-accent);       /* #0e6b61 — exact */
+  --color-teal-deep:  var(--color-accent-deep);  /* #0a514a — exact */
+  --color-teal-soft:  var(--color-mint);         /* #dfeeeb — exact */
+  --color-brass-soft: var(--color-sand);         /* #f1e8d6 → #f4ebd7 */
 
-  /* ── Redesign tokens (design/tutoringhq-public-design-system.md §2) ──
-     The five values from the design-system token table that had no slot here.
-     ADDITIVE ONLY: nothing existing is re-pointed, so this file changes no
-     rendered pixel. Screens adopt these as they are restyled.
+  /* The §4 tokens themselves — tile, hairline, ink, ink-body, faint, brass —
+     used to be declared here by PR #187. They moved to tokens.css with the
+     rest of §4. The "two near-collisions" warning that stood here is
+     resolved rather than preserved: --color-surface-3 and --color-tile are
+     now one value, and --color-text-primary is now --color-ink. That was
+     always going to be a deliberate visual change in its own PR, and this
+     is it. */
 
-     ⚠ Two near-collisions. They are DIFFERENT values, not duplicates, and
-     neither should be "tidied" into the other:
-       --color-surface-3  #eceee9  is commented "tile" but is NOT --color-tile (#f2eee5)
-       --color-text-primary #1b201d is commented "ink"  but is NOT --color-ink  (#14181a)
-     Existing screens keep the existing pair. Redesigned screens use the pair
-     below. If the two are ever reconciled, that is a deliberate visual change
-     and belongs in its own PR. */
-  --color-tile:       #f2eee5;  /* inset blocks, secondary buttons */
-  --color-hairline:   #f0ece2;  /* dividers INSIDE a card (vs --color-border between them) */
-  --color-ink:        #14181a;  /* display type, phone bezel */
-  --color-ink-body:   #3a3f3a;  /* paragraph text */
-  --color-faint:      #a09a8e;  /* placeholders, disabled */
+  /* Gradients. The old stop #0f766b was "a distinct, slightly lighter teal"
+     with no §4 slot; it is drift and maps to `accent`. */
+  --gradient-accent-panel: linear-gradient(155deg, var(--color-accent), var(--color-ground));
+  --gradient-brand-mark:   linear-gradient(150deg, var(--color-accent), var(--color-ground));
 
-  /* Gradients named in §2. --color-teal (#0e6b61) is the flat accent; the
-     gradient start #0f766b is a distinct, slightly lighter teal. */
-  --gradient-accent-panel: linear-gradient(155deg, #0f766b, #083f39);
-  --gradient-brand-mark:   linear-gradient(150deg, #0f766b, #083f39);
+  /* ── Semantic States (status pairs: bg / text) ────────
+     --color-danger moved to tokens.css (§4) and must NOT be re-declared here.
 
-  /* ── Semantic States (status pairs: bg / text) ──────── */
-  --color-success:       #1a6d4d;
-  --color-success-muted: #e4f0e9;
-  --color-warning:       #8a5e16;
-  --color-warning-muted: #f4ebd7;
-  --color-danger:        #9c3322;
-  --color-danger-muted:  #f4e5e2;
-  --color-info:          #2563eb;
-  --color-info-muted:    #e3ecf6;
-  --color-neutral-muted: #e9ebe7;
-  --color-neutral-ink:   #5a605a;
+     success and info have NO §4 slot. TOKEN-SPEC §4 says drift maps to its
+     nearest token, but the nearest token to a green "paid/present" and a
+     blue "info" is the teal accent, and collapsing them would delete the
+     distinction between a confirmed payment and a primary button. That is a
+     design decision, not a drift cleanup, so they are left alone and logged
+     in BUILD-AFTER-REDESIGN.md for Eyad. Same for the four scanner colours
+     and --color-danger-muted. */
+  --color-success:       #1a6d4d;  /* NO §4 SLOT — see above */
+  --color-success-muted: #e4f0e9;  /* NO §4 SLOT — see above */
+  --color-info:          #2563eb;  /* NO §4 SLOT — see above */
+  --color-info-muted:    #e3ecf6;  /* NO §4 SLOT — see above */
+  --color-danger-muted:  #f4e5e2;  /* NO §4 SLOT — see above */
+  --color-warning:       var(--color-brass);  /* #8a5e16 → #9a6b1f */
+  --color-warning-muted: var(--color-sand);   /* #f4ebd7 — exact */
+  --color-neutral-muted: var(--color-tile);   /* #e9ebe7 → #f2eee5 */
+  --color-neutral-ink:   var(--color-mid);    /* #5a605a → #5d635c */
 
   /* ── Shadows (cream layered-soft - intentionally override Tailwind defaults) ── */
   --shadow-xs:  0 1px 2px rgba(28,33,30,0.05);
@@ -156,23 +173,10 @@
   /* Input focus ring */
   --shadow-focus: 0 0 0 2px rgba(14,107,97,0.45);
 
-  /* ── Radius (intentionally override Tailwind defaults for dark-UI consistency) ── */
-  --radius-xs:     2px;
-  --radius-sm:     4px;
-  --radius-md:     8px;
-  --radius-lg:     12px;
-  --radius-xl:     16px;
-  --radius-2xl:    20px;
-  --radius-3xl:    24px;
-  --radius-full:   9999px;
-
-  /* Semantic aliases (ADR 031: 18px cards, 12px inner) */
-  --radius-card:   18px;
-  --radius-panel:  12px;
-  --radius-badge:  9999px;
-  --radius-button: 8px;
-  --radius-input:  8px;
-  --radius-modal:  20px;
+  /* ── Radius ──────────────────────────────────────────
+     §3 and its semantic aliases live in tokens.css. Nothing radius-shaped
+     goes in this block: a declaration here would be later in the merged
+     @theme and would silently beat the token layer. */
 
   /* ── Durations ──────────────────────────────────────── */
   --duration-instant: 80ms;
@@ -207,8 +211,11 @@
   --shadow-hover: 0 4px 10px rgba(28, 33, 30, 0.08), 0 20px 50px rgba(28, 33, 30, 0.10);
   --shadow-row: 0 1px 2px rgba(28, 33, 30, 0.05);
   --shadow-teal: 0 4px 24px rgba(14, 107, 97, 0.15);
-  --radius-card: 18px;
-  --radius-inner: 12px;
+  /* --radius-card used to be re-declared here as 18px. This :root block is
+     later in the file than the @theme output, so it was silently beating the
+     theme value on all 99 call sites. Removed — §3 owns it now.
+     --radius-inner is the same value as --radius-panel under an older name. */
+  --radius-inner: var(--radius-md);
   --transition-fast: 150ms ease;
   --transition-normal: 250ms ease;
 
@@ -216,35 +223,40 @@
   --chq-slide-dir: 1;
   --chq-slide-enter-tx: 16px;
 
-  /* ── Semantic text colors (var() only) ──────────── */
-  --color-text-primary:   #1b201d;  /* ink */
-  --color-text-secondary: #5d635c;  /* AA on paper AND panel */
-  --color-text-tertiary:  #80827a;  /* mock muted - captions/small labels */
-  --color-text-muted:     #80827a;
-  --color-text-disabled:  #a6a79d;  /* faint */
-  --color-text-inverse:   #fffdf8;
-  --color-text-brand:     #0e6b61;
-  --color-text-amber:     #8a5e16;
+  /* ── Semantic text colors (var() only) ────────────
+     LEGACY NAMES, TOKEN VALUES. ~2,600 call sites keep the names. */
+  --color-text-primary:   var(--color-ink);       /* #1b201d → #14181a */
+  --color-text-secondary: var(--color-mid);       /* #5d635c — exact */
+  --color-text-tertiary:  var(--color-muted);     /* #80827a — exact */
+  --color-text-muted:     var(--color-muted);     /* #80827a — exact */
+  --color-text-disabled:  var(--color-faint);     /* #a6a79d → #a09a8e */
+  --color-text-inverse:   var(--color-panel);     /* #fffdf8 — exact */
+  --color-text-brand:     var(--color-accent);    /* #0e6b61 — exact */
+  --color-text-amber:     var(--color-brass);     /* #8a5e16 → #9a6b1f */
 
   /* shadcn HSL tokens live in @layer base :root - do not duplicate here
      (unlayered duplicates beat layered rules). */
 
-  /* ── Semantic border colors (var() only) ─────────── */
-  --color-border:         #e2ddd1;
-  --color-border-subtle:  rgba(27, 32, 29, 0.06);
-  --color-border-default: rgba(27, 32, 29, 0.10);
-  --color-border-strong:  rgba(27, 32, 29, 0.16);
-  --color-border-brand:   rgba(14, 107, 97, 0.40);
+  /* ── Semantic border colors (var() only) ─────────
+     The alpha borders were mixed from #1b201d, the pre-token ink. Rebased on
+     #14181a so no drifted hex survives; at 6–16% alpha over cream the change
+     is not visible, it just removes a second source of truth. */
+  --color-border:         var(--color-line);      /* #e2ddd1 — exact */
+  --color-border-subtle:  rgba(20, 24, 26, 0.06);
+  --color-border-default: rgba(20, 24, 26, 0.10);
+  --color-border-strong:  rgba(20, 24, 26, 0.16);
+  --color-border-brand:   rgba(14, 107, 97, 0.40); /* accent at 40% */
 
   /* ── Overlay (var() only) ─────────────────────────── */
-  --overlay-light: rgba(27, 32, 29, 0.04);
-  --overlay-mid:   rgba(27, 32, 29, 0.08);
-  --overlay-heavy: rgba(28, 33, 30, 0.55);
+  --overlay-light: rgba(20, 24, 26, 0.04);
+  --overlay-mid:   rgba(20, 24, 26, 0.08);
+  --overlay-heavy: rgba(20, 24, 26, 0.55);
 
   /* ── Signature gradients (ADR 031) ────────────────── */
   /* Money surface: income hero, owed card */
-  --grad-money: linear-gradient(150deg, #0f766b, #083f39);
-  /* Deliberate dark accent: live/focus session panels INSIDE the cream app */
+  --grad-money: linear-gradient(150deg, var(--color-accent), var(--color-ground));
+  /* Deliberate dark accent: live/focus session panels INSIDE the cream app.
+     NO §4 SLOT — both stops are darker than `ground`. Logged for Eyad. */
   --grad-live: linear-gradient(165deg, #0c1c19, #0a1513);
 
   /* ── Backdrop blur amounts (bare px values - NO blur() wrapper) ── */
@@ -254,14 +266,16 @@
   --blur-lg:  16px;
   --blur-xl:  24px;
 
-  /* ── Semantic spacing (var() only) ───────────────── */
-  --space-page-x:        1rem;
-  --space-page-x-md:     1.5rem;
-  --space-card-padding:  1.25rem;
-  --space-section-gap:   1.5rem;
-  --space-stack-sm:      0.5rem;
-  --space-stack-md:      0.75rem;
-  --space-stack-lg:      1rem;
+  /* ── Semantic spacing (var() only) ─────────────────
+     On the §1 scale. --space-card-padding was 1.25rem (20px), which is off
+     scale; §1 rounds padding UP, so it lands on 24 rather than 16. */
+  --space-page-x:        var(--spacing-4);  /* 16 */
+  --space-page-x-md:     var(--spacing-6);  /* 24 */
+  --space-card-padding:  var(--spacing-6);  /* 20 → 24 (padding rounds up) */
+  --space-section-gap:   var(--spacing-6);  /* 24 */
+  --space-stack-sm:      var(--spacing-2);  /* 8  */
+  --space-stack-md:      var(--spacing-3);  /* 12 */
+  --space-stack-lg:      var(--spacing-4);  /* 16 */
 }
 
 /* Dark token set removed 2026-07-06: the theme toggle was removed 2026-07-05 and
@@ -361,10 +375,12 @@
   animation: page-fade-in 200ms ease forwards;
 }
 
-/* CEO / Recharts - grid lines follow theme */
+/* CEO / Recharts - grid lines follow theme.
+   --ceo-chart-grid has no §4 slot (it sits between `line` and `canvas`) and
+   chart colour is its own pass, so it is left alone and logged. */
 :root {
-  --ceo-chart-grid: #ddd8cb;
-  --ceo-chart-total-line: #0e6b61;
+  --ceo-chart-grid: #ddd8cb; /* NO §4 SLOT — chart pass */
+  --ceo-chart-total-line: var(--color-accent); /* #0e6b61 — exact */
 }
 
 /* ── 13C: Toast container (RTL-safe inline-end) ── */
@@ -572,6 +588,12 @@ html:not(.dark) textarea {
 }
 
 @layer base {
+  /* LEGACY shadcn HSL-triple shim. These are NOT the token layer — they are
+     bare `H S% L%` triples for `hsl(var(--x))` call sites, which cannot read
+     a hex token. Since the token layer landed, the only live readers are the
+     four --scanner-* colours and the tailwind.config.ts colour map (itself
+     dead: the CSS @theme wins over @config, verified in the compiled
+     output). Do not add to this block; add to tokens.css. */
   :root {
     /* ─── Brand ─── */
     --primary: 174 72% 30%;
@@ -633,9 +655,9 @@ html:not(.dark) textarea {
     --shadow-card: 0 2px 6px hsl(160 8% 11% / 0.05), 0 14px 40px hsl(160 8% 11% / 0.07);
 
     /* ─── Gradients ─── */
-    --gradient-primary: linear-gradient(135deg, #0f766b, #0a514a);
-    --gradient-navy: linear-gradient(180deg, hsl(215 28% 17%), hsl(215 28% 12%));
-    --gradient-hero: linear-gradient(150deg, #0f766b, #083f39);
+    --gradient-primary: linear-gradient(135deg, var(--color-accent), var(--color-accent-deep));
+    --gradient-navy: linear-gradient(180deg, hsl(215 28% 17%), hsl(215 28% 12%)); /* NO §4 SLOT */
+    --gradient-hero: linear-gradient(150deg, var(--color-accent), var(--color-ground));
   }
 }
 
@@ -672,17 +694,19 @@ html:not(.dark) textarea {
 
   .nav-item {
     @apply flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200;
-    color: hsl(var(--sidebar-foreground) / 0.7);
+    /* Was hsl(var(--sidebar-foreground) / 0.7) — ink at 70% over panel is
+       what `mid` already is, so this reads the token instead. */
+    color: var(--color-mid);
   }
   .nav-item:hover {
-    background-color: hsl(var(--sidebar-accent));
-    color: hsl(var(--sidebar-foreground));
+    background-color: var(--color-tile);
+    color: var(--color-ink);
   }
   .nav-item.active {
-    background-color: hsl(var(--primary) / 0.15);
-    color: hsl(var(--sidebar-primary));
-    border-inline-start: 3px solid hsl(var(--sidebar-primary));
-    padding-inline-start: calc(0.75rem - 3px);
+    background-color: rgba(14, 107, 97, 0.15); /* accent at 15% */
+    color: var(--color-accent);
+    border-inline-start: 3px solid var(--color-accent);
+    padding-inline-start: calc(var(--spacing-3) - 3px);
   }
 
   .kpi-card {
@@ -1829,7 +1853,7 @@ html:not(.dark) .panel-live .text-white {
 /* ── FINAL TEXT COLOR ENFORCEMENT ───────────────────────── */
 /* Beats Tailwind preflight + any component-level overrides  */
 html:not(.dark) {
-  color: #1b201d !important;
+  color: var(--color-ink) !important; /* was #1b201d */
 }
 
 /* ─── Native date input (admin shell only) ─── */

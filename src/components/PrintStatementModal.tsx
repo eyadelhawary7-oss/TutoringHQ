@@ -177,7 +177,7 @@ export function PrintStatementModal({
             </h3>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-muted"
+              className="p-1.5 rounded-lg hover:bg-tile"
             >
               <X size={18} className="text-[var(--color-text-secondary)]" />
             </button>
@@ -234,13 +234,13 @@ export function PrintStatementModal({
             <button
               onClick={() => window.print()}
               disabled={statementData === null}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-border hover:bg-muted disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-border hover:bg-tile disabled:opacity-50"
             >
               <Printer size={14} /> طباعة
             </button>
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-lg text-sm font-medium border border-border hover:bg-muted"
+              className="px-4 py-2 rounded-lg text-sm font-medium border border-border hover:bg-tile"
             >
               إغلاق
             </button>

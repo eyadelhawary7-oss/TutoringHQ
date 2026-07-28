@@ -1,0 +1,198 @@
+/* ==========================================================================
+   TutoringHQ token layer
+   Source of truth: design/TOKEN-SPEC.md (27 July 2026)
+
+   This file is the ONLY place the four scales are declared. It is imported
+   from globals.css (line 4) BEFORE the legacy @theme block, and every legacy
+   alias in globals.css now resolves through var(--…) references into this
+   file. If a value here changes, the whole app moves.
+
+   Do NOT re-declare --text-*, --radius-* or the §4 colour tokens anywhere
+   else. A second declaration in globals.css would silently win (later wins
+   inside the merged @theme) and this file would be decorative again.
+
+   `@theme static` (not plain `@theme`) so every token is emitted into :root
+   whether or not a utility class currently uses it. Hand-written CSS and the
+   Arabic overrides below both read these by var(), which the usage-based
+   tree-shaker cannot see.
+   ========================================================================== */
+
+@theme static {
+  /* ── §1 Spacing — 4, 8, 12, 16, 24, 32, 48 ────────────────────────────────
+     Tailwind's numeric spacing scale is `calc(var(--spacing) * N)` and it
+     backs far more than padding: w-*, h-*, size-*, inset-*, translate-*,
+     space-*, basis-*. Restricting the namespace to seven values would take
+     `w-64` and `h-96` with it, so the multiplier stays and the seven steps
+     are pinned as named tokens instead. Steps 1/2/3/4/6/8/12 already equal
+     the spec scale, so this pins the scale without moving a pixel.
+
+     Off-scale steps (2.5, 5, 7, 10, …) still compile — 1,341 uses across the
+     app today. They are drift, they are logged in BUILD-AFTER-REDESIGN.md,
+     and they come off the scale screen by screen during the restyle, not in
+     a token PR. rem, not px, so browser font-size preferences still scale. */
+  --spacing-1: 0.25rem; /* 4  */
+  --spacing-2: 0.5rem; /* 8  */
+  --spacing-3: 0.75rem; /* 12 */
+  --spacing-4: 1rem; /* 16 */
+  --spacing-6: 1.5rem; /* 24 */
+  --spacing-8: 2rem; /* 32 */
+  --spacing-12: 3rem; /* 48 */
+
+  /* ── §2 Type — 11, 12, 13, 15, 17, 22, 30, 44 ────────────────────────────
+     Replaces Tailwind's 12/14/16/18/20/24/30 defaults. `text-md` (15) does
+     not exist in Tailwind and is added here.
+
+     Sizes are rem so the user's browser font-size preference still applies;
+     the px figure in each comment is the spec value at a 16px root.
+
+     TOKEN-SPEC §2 gives no leading. These ratios were chosen to keep the
+     line box near the current vertical rhythm rather than invented from
+     scratch — e.g. text-xs was 12px/16px and is now 11px/16px, so lists do
+     not re-flow beyond the size change itself. */
+  --text-xs: 0.6875rem; /* 11 — captions, meta, timestamps */
+  --text-xs--line-height: calc(16 / 11);
+  --text-sm: 0.75rem; /* 12 — secondary text, labels */
+  --text-sm--line-height: calc(18 / 12);
+  --text-base: 0.8125rem; /* 13 — body */
+  --text-base--line-height: calc(20 / 13);
+  --text-md: 0.9375rem; /* 15 — row titles, emphasis */
+  --text-md--line-height: calc(22 / 15);
+  --text-lg: 1.0625rem; /* 17 — section headings */
+  --text-lg--line-height: calc(24 / 17);
+  --text-xl: 1.375rem; /* 22 — screen titles */
+  --text-xl--line-height: calc(28 / 22);
+  --text-2xl: 1.875rem; /* 30 — display */
+  --text-2xl--line-height: calc(36 / 30);
+
+  /* SPEC CORRECTION, 28 July 2026 (Eyad). TOKEN-SPEC §2 gives text-3xl as 44,
+     derived from 105 uses in the design files. Those uses are almost entirely
+     reference-file mastheads, a thing that does not exist in the product. In
+     the app this token backs KPI figures — 14 sites: the Center Home headline
+     number, Benchmarks, the four teacher income views, ScanResultScreen. §2
+     mapped a design-file role onto a product token and conflated the two.
+
+     So text-3xl is 30, the KPI value, and that is the only role it has here.
+     44 is reference-file chrome and stays in the design files. There is
+     deliberately NO second alias for it: one token, one meaning. If a real
+     masthead ever appears in the product it gets its own token then, on
+     evidence rather than on speculation.
+
+     Consequence worth knowing, not acted on: text-2xl and text-3xl are now
+     the same 30px, so the ~20 `text-2xl md:text-3xl` pairs stop changing at
+     the md breakpoint. Nothing breaks; the responsive step just flattens.
+     Collapsing the two names is a restyle decision, not a token one. */
+  --text-3xl: 1.875rem; /* 30 — KPI values, display */
+  --text-3xl--line-height: calc(36 / 30);
+
+  /* LEGACY, off-scale. Not part of the scale and not for new work.
+     Held at their current Tailwind values so this PR ships no layout
+     regression on the 16 sites that still use them (8 marketing heroes at
+     md:text-5xl, the 404 numeral at text-7xl, 7 assorted text-4xl). They
+     come off as Public-Marketing and the error screens are restyled, and
+     then these three lines are deleted. */
+  --text-4xl: 2.25rem; /* 36 — LEGACY */
+  --text-4xl--line-height: calc(2.5 / 2.25);
+  --text-5xl: 3rem; /* 48 — LEGACY */
+  --text-5xl--line-height: 1;
+  --text-7xl: 4.5rem; /* 72 — LEGACY */
+  --text-7xl--line-height: 1;
+
+  /* ── §3 Radii — 4, 8, 12, 16, 24, pill ───────────────────────────────────
+     px, matching the repo's existing radius convention. Every step moves:
+     sm 4→8, md 8→12, lg 12→16, xl 16→24.
+
+     Bare `rounded` is a static 0.25rem inside Tailwind and cannot be
+     re-pointed from the theme. It lands on 4px, which is radius-xs, so it
+     is on-scale by luck rather than by wiring. */
+  --radius-xs: 4px; /* inline chips, small marks */
+  --radius-sm: 8px; /* inputs, small buttons */
+  --radius-md: 12px; /* cards, rows — the default */
+  --radius-lg: 16px; /* panels, sheets */
+  --radius-xl: 24px; /* large surfaces, modals */
+  --radius-pill: 9999px; /* pills, badges, avatars */
+  --radius-full: 9999px; /* Tailwind's name for the same value; 375 uses */
+
+  /* LEGACY, off-scale. rounded-2xl was 20px — equidistant between 16 and 24,
+     resolved up because its 138 uses are large surfaces and modals, which is
+     the xl role. rounded-3xl was already 24. Both collapse onto xl. */
+  --radius-2xl: 24px; /* LEGACY → xl */
+  --radius-3xl: 24px; /* LEGACY → xl */
+
+  /* Semantic radius aliases, on-scale. --radius-card was 18px (drift) and
+     --radius-modal was 20px (drift); both now sit on the scale. */
+  --radius-card: var(--radius-lg); /* 18 → 16 */
+  --radius-panel: var(--radius-md); /* 12, unchanged */
+  --radius-button: var(--radius-sm); /* 8, unchanged */
+  --radius-input: var(--radius-sm); /* 8, unchanged */
+  --radius-modal: var(--radius-xl); /* 20 → 24 */
+  --radius-badge: var(--radius-pill); /* 9999, unchanged */
+
+  /* ── §4 Colour — the named tokens ────────────────────────────────────────
+     170 hexes collapse to these. Lowercase in code, uppercase in the spec —
+     same colour. Anything not here is drift and maps to its nearest token.
+
+     Two of these names already existed in this codebase meaning something
+     else. Both are re-pointed to the spec meaning, and both are called out
+     below because a near-match reads as close enough and is not:
+
+       --color-accent  was #dfeeeb (the mint FILL). It is now the teal
+                       PRIMARY ACTION. Zero utility uses at the time of the
+                       switch, so nothing rendered moved; the old value is
+                       still available, under its spec name, as --color-mint.
+       --color-muted   was #eceee9 (a quiet SURFACE). It is now TERTIARY
+                       TEXT. The 23 `bg-muted` sites were migrated to
+                       `bg-tile` in the same commit — grep before re-adding
+                       one. */
+
+  /* Surfaces */
+  --color-paper: #ece8df; /* app background */
+  --color-panel: #fffdf8; /* cards, raised surfaces */
+  --color-tile: #f2eee5; /* recessed surfaces, quiet fills */
+  --color-canvas: #d8d3c6; /* reference-file background only — not product UI */
+
+  /* Lines */
+  --color-line: #e2ddd1; /* borders */
+  --color-hairline: #f0ece2; /* internal dividers */
+
+  /* Text */
+  --color-ink: #14181a; /* primary text */
+  --color-ink-body: #3a3f3a; /* body text */
+  --color-mid: #5d635c; /* secondary text */
+  --color-muted: #80827a; /* tertiary text, meta — SEE NOTE ABOVE */
+  --color-faint: #a09a8e; /* placeholders, disabled */
+
+  /* Accent */
+  --color-accent: #0e6b61; /* primary action — SEE NOTE ABOVE */
+  --color-accent-deep: #0a514a; /* pressed, text on mint */
+  --color-mint: #dfeeeb; /* accent fill */
+  --color-mint-deep: #bfe3dd; /* accent border */
+  --color-ground: #083f39; /* darkest teal, gradients */
+
+  /* Attention */
+  --color-brass: #9a6b1f; /* warning, attention */
+  --color-sand: #f4ebd7; /* warning fill */
+  --color-danger: #9c3322; /* destructive, error */
+}
+
+/* ── §2 The Arabic allowance ────────────────────────────────────────────────
+   IBM Plex Sans Arabic reads smaller than IBM Plex Sans at the same px, so
+   Arabic frames take one step up for body text and below — text-xs, text-sm
+   and text-base only. text-md (15) and above are unchanged, because at 17px
+   the difference stops mattering.
+
+   This is a frame-level rule, not a per-string one: <html lang="ar"> is set
+   in src/app/[locale]/layout.tsx, and Tailwind compiles every size utility
+   to `font-size: var(--text-…)`, so re-declaring the variable here moves
+   every text-xs/sm/base on the Arabic side by inheritance. Nothing has to
+   opt in and no screen has to remember.
+
+   Leading follows the size it steps up to, so the line box stays consistent
+   with the same rendered size on the English side. */
+html[lang='ar'] {
+  --text-xs: 0.75rem; /* 11 → 12 */
+  --text-xs--line-height: calc(18 / 12);
+  --text-sm: 0.8125rem; /* 12 → 13 */
+  --text-sm--line-height: calc(20 / 13);
+  --text-base: 0.9375rem; /* 13 → 15 */
+  --text-base--line-height: calc(22 / 15);
+}

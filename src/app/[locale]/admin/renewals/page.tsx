@@ -206,7 +206,7 @@ export default function AdminRenewalsPage() {
           <button
             type="button"
             onClick={() => router.push('/admin')}
-            className="p-1.5 rounded-lg hover:bg-muted"
+            className="p-1.5 rounded-lg hover:bg-tile"
             aria-label={tCommon('back')}
           >
             <DirectionalIcon icon={ArrowLeft} className="h-5 w-5" />
@@ -292,7 +292,7 @@ export default function AdminRenewalsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-border bg-muted/50">
+                    <tr className="border-b border-border bg-tile/50">
                       <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('name')}</th>
                       <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('renewalDate')}</th>
                       <th className="text-start p-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('daysRemaining')}</th>
@@ -303,7 +303,7 @@ export default function AdminRenewalsPage() {
                   </thead>
                   <tbody>
                     {centers.map((row) => (
-                      <tr key={`${row.ownerType ?? 'center'}:${row.id}`} className="border-b border-border last:border-0 hover:bg-muted/30">
+                      <tr key={`${row.ownerType ?? 'center'}:${row.id}`} className="border-b border-border last:border-0 hover:bg-tile/30">
                         <td className="p-3 font-medium">
                           <span className="flex items-center gap-2">
                             {row.name}
@@ -369,7 +369,7 @@ export default function AdminRenewalsPage() {
           <div className="bg-[var(--color-surface-1)] rounded-xl shadow-xl max-w-md w-full p-6 border border-border">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-lg">{t('recordPayment')} - {recordModal.name}</h3>
-              <button onClick={() => setRecordModal(null)} className="p-1 rounded hover:bg-muted">
+              <button onClick={() => setRecordModal(null)} className="p-1 rounded hover:bg-tile">
                 <X size={20} />
               </button>
             </div>
@@ -411,7 +411,7 @@ export default function AdminRenewalsPage() {
             <div className="flex gap-2 mt-6">
               <button
                 onClick={() => setRecordModal(null)}
-                className="flex-1 px-4 py-2 rounded-lg border border-border hover:bg-muted"
+                className="flex-1 px-4 py-2 rounded-lg border border-border hover:bg-tile"
               >
                 {tCommon('cancel')}
               </button>
