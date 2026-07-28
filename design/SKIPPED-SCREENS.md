@@ -299,15 +299,27 @@ and none of it is available, which is why the build ran A → C/D rather than A 
 
 ## What unblocks what
 
-| Eyad decides | Releases |
-|---|---|
-| `demo_requests` migration (`area`, `student_count`) | `Public-Marketing` §04 Lead Capture |
-| WhatsApp auto-send: adopt the orphan table or drop the toggle | `Center-WhatsApp` §01 |
-| Team seats: seat model and price | `Center-Setup` §07 |
-| Card-order notify-me: where the write goes | `Center-Orders` §04 |
-| Teacher referral model | `Teacher-Insight` §02 |
-| A per-centre enabled-grades list | `Center-Setup` §04, subjects half |
-| Adsero / Valify | 10 screens across 7 files |
+**All six open decisions were answered on 28 July — five noes and one yes.** They are settled;
+do not re-raise them. A screen blocked on one gets skipped and logged, not queued behind.
+
+| Decision | Answer, 28 July | Effect |
+|---|---|---|
+| `demo_requests` migration (`area`, `student_count`) | ✅ **YES, run it** | *"Lead capture is the only inbound feed the sales machine has and Zod silently stripping those two fields makes the form useless."* Releases `Public-Marketing` §04. **The migration itself comes to Eyad** — manual apply to production, per the standing rule |
+| WhatsApp auto-send | ❌ **NO** | *"A toggle that spends credit when on needs a spend model I have not decided."* `Center-WhatsApp` §01 stays skipped |
+| Team seats | ❌ **NO** | No seat model exists and the design has the price unset. Logged as a feature; `Center-Setup` §07 stays skipped |
+| Card-order notify-me | ❌ **NO** | *"A write with no destination table."* `Center-Orders` §04 stays skipped |
+| Teacher referral model | ❌ **NO** | *"Centers are well built, teachers are not, and I am not designing a second referral model before the first has run."* `Teacher-Insight` §02 stays skipped |
+| A per-centre enabled-grades list | ❌ **NO for now** | Blocks `Center-Setup` §04's grades half and the Onboarding grades step. To be revisited *"when those matter"* |
+| Adsero / Valify | *still outside* | 10 screens across 7 files |
+
+**The five noes share one reason, in his words:** *"a design control with no model behind it is a
+feature, not a restyle."* That is the same test this file has been applying since §05 — the tell is a
+toggle or a chip with nothing behind it — now stated as policy rather than case by case.
+
+**`design/DECISION-national-id-2026-07-26.md` stays.** Decided 28 July: it records *why verification
+is a redirect*, and that is the decision that made the National ID **standard data rather than
+sensitive data**. The file is the reasoning, not a status note, and losing it would lose the basis of
+the legal position.
 
 **Answered 28 July — do not build, logged and closed:** a notification-preference model
 (`Center-Setup` §05 → **B15**) and scanner behaviour preferences (`Center-Setup` §06 → **B16**). Both

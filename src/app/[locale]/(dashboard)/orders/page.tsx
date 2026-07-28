@@ -5,6 +5,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getShippingFee, getShippingZone } from '@/lib/bostaShipping';
 import { loadBostaShippingRates } from '@/lib/loadBostaShippingRates';
 import { Link } from '@/i18n/routing';
+import { ComingSoon } from '@/components/shared';
 import OrdersPageClient, { type CardOrdersShippingQuote } from './OrdersPageClient';
 
 export default async function OrdersPage({
@@ -123,19 +124,24 @@ export default async function OrdersPage({
           (center as { card_orders_enabled?: boolean | null } | null)?.card_orders_enabled === true;
         if (!cardOrdersEnabled) {
           const tOrders = await getTranslations({ locale, namespace: 'orders' });
+          // Lifecycle §06: the shared not-yet screen. Same copy, same CTA target
+          // and the same fail-closed gate as before — only the markup moved out
+          // of here, so the next feature that is not on yet does not invent a
+          // fourth version of this card.
           return (
-            <div className="min-h-screen w-full bg-[var(--color-surface-0)] flex items-center justify-center p-6">
-              <div className="max-w-md w-full text-center space-y-4 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow p-8">
-                <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">{tOrders('disabledTitle')}</h1>
-                <p className="text-sm text-[var(--color-text-secondary)]">{tOrders('disabledMessage')}</p>
+            <ComingSoon
+              badge={tOrders('comingSoonBadge')}
+              title={tOrders('disabledTitle')}
+              description={tOrders('disabledMessage')}
+              action={
                 <Link
                   href="/settings/money"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
                 >
                   {tOrders('disabledCta')}
                 </Link>
-              </div>
-            </div>
+              }
+            />
           );
         }
 
