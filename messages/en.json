@@ -2331,6 +2331,7 @@
     "sampleOverlay": "Sample data, set district in settings to see real comparisons"
   },
   "orders": {
+    "comingSoonBadge": "Coming soon",
     "disabledTitle": "Card ordering is off",
     "disabledMessage": "Your center hasn't enabled physical QR card ordering. An owner can turn it on from Settings.",
     "disabledCta": "Go to Settings",

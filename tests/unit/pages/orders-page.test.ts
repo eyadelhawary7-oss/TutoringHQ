@@ -84,6 +84,18 @@ function renderPage(): Promise<AnyElement> {
 }
 
 /** Walk a React element tree and collect every string/number leaf. */
+/**
+ * Collect every string reachable from a returned element tree.
+ *
+ * Walks **all props**, not just `children`. The page returns unrendered
+ * elements, so when a branch delegates to a component that takes its copy as
+ * props — `<ComingSoon title={...} description={...} />` — the strings live on
+ * the element's props and never appear under `children`. A children-only walk
+ * silently found nothing there and the assertions passed vacuously in reverse:
+ * the text was present, the walker could not see it.
+ *
+ * `key`/`ref` are skipped because they are not content.
+ */
 function collectText(node: unknown, acc: string[] = []): string[] {
   if (node == null || typeof node === 'boolean') return acc;
   if (typeof node === 'string' || typeof node === 'number') {
@@ -95,7 +107,11 @@ function collectText(node: unknown, acc: string[] = []): string[] {
     return acc;
   }
   if (typeof node === 'object' && 'props' in (node as object)) {
-    collectText((node as { props?: { children?: unknown } }).props?.children, acc);
+    const props = (node as { props?: Record<string, unknown> }).props ?? {};
+    for (const [name, value] of Object.entries(props)) {
+      if (name === 'key' || name === 'ref') continue;
+      collectText(value, acc);
+    }
   }
   return acc;
 }

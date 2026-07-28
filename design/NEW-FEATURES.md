@@ -184,6 +184,31 @@ handling.
 the checklist"). A coming-soon screen with no exit is the failure mode this pattern exists to prevent.
 Hiding the row entirely — what the sidebar does today — is explicitly not the pattern.
 
+### Built 28 July — the screen, not the row
+
+`src/components/shared/ComingSoon.tsx`, exported from the `shared` barrel. Presentational only: it
+renders what it is handed and **gates nothing**, because the entitlement check belongs in the route
+where a service-role read cannot bypass it. `action` carries the working alternative and reads as the
+point of the screen rather than a footnote.
+
+**Adopted at one call site:** `/{locale}/orders` when `card_orders_enabled` is false. That branch
+already had a hand-rolled version of this exact card — title, message, CTA to `/settings/money` — so
+adopting the shared one changed the markup and nothing else. **Same copy, same CTA target, same
+fail-closed gate.**
+
+**The locked row was deliberately not built.** Its only candidate today is the Orders sidebar item,
+which `Sidebar.tsx:166` currently **hides** when `card_orders_enabled` is false. Turning that into a
+visible-but-locked row is what this entry itself calls out as the design's intent — but it is also a
+decision about **advertising a feature we do not have yet**, and it changes what a centre can see
+based on an entitlement flag. It comes to Eyad with that decision rather than ahead of it. Shipping an
+unused `LockedRow` in the meantime would be a control with nothing behind it, which is the exact thing
+this project keeps refusing to do.
+
+**Two other ad hoc treatments remain**, and converging them is a follow-up rather than part of this:
+the scanner has a settings page but no gate screen, and `WhatsAppTemplatesClient` has its own inline
+handling plus its own `whatsappTemplates.comingSoonBadge` string. There are now two badge strings
+(`orders.` and `whatsappTemplates.`) that should become one when the third site converges.
+
 ## A4. Card orders coming-soon screen
 
 **What it is:** The teaser a center sees while card ordering is gated: card preview, four-point
