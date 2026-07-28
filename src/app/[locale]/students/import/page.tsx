@@ -367,7 +367,7 @@ export default function ImportStudentsPage() {
   return (
     <div className="p-4 md:p-6 space-y-5 animate-fade-in">
       <div className="flex items-center gap-3">
-        <Link href="/students" className="p-1.5 rounded-lg hover:bg-muted" aria-label={tCommon('back')}>
+        <Link href="/students" className="p-1.5 rounded-lg hover:bg-tile" aria-label={tCommon('back')}>
           <DirectionalIcon icon={ArrowLeft} className="h-[18px] w-[18px]" />
         </Link>
         <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
@@ -412,7 +412,7 @@ export default function ImportStudentsPage() {
               <p className="text-sm text-[var(--color-text-secondary)]">{t('acceptedFormats')}</p>
             </div>
             {fileName && (
-              <div className="mt-4 p-3 rounded-lg bg-muted flex items-center justify-between gap-2">
+              <div className="mt-4 p-3 rounded-lg bg-tile flex items-center justify-between gap-2">
                 <span className="text-sm text-[var(--color-text-primary)] font-medium truncate min-w-0 flex-1">{fileName}</span>
                 <span className="text-xs text-[var(--color-text-secondary)] shrink-0">
                   {parsedData ? t('rowsFound', { count: parsedData.rows.length }) : ''}
@@ -440,7 +440,7 @@ export default function ImportStudentsPage() {
             <p className="text-xs text-[var(--color-text-secondary)]">{t('parentPhoneHint')}</p>
             <div className="overflow-x-auto">
               <table className="w-full text-sm" dir="auto">
-                <thead style={{ background: 'hsl(var(--muted))' }}>
+                <thead style={{ background: 'var(--color-tile)' }}>
                   <tr>
                     {parsedData.headers.map((header) => (
                       <th key={header} className="text-start px-3 py-2">
@@ -495,7 +495,7 @@ export default function ImportStudentsPage() {
             <h3 className="font-bold text-[var(--color-text-primary)]">{t('groupResolution')}</h3>
             <p className="text-sm text-[var(--color-text-secondary)]">{t('groupResolutionHint')}</p>
             {centerGroups.length === 0 && (
-              <div className="p-3 rounded-xl text-sm border border-border bg-muted text-[var(--color-text-primary)] space-y-2">
+              <div className="p-3 rounded-xl text-sm border border-border bg-tile text-[var(--color-text-primary)] space-y-2">
                 <p>{t('importWithoutGroupsBody')}</p>
                 {csvGroupOrder.length > 0 ? <p className="text-[var(--color-text-secondary)]">{t('noGroupsFound')}</p> : null}
               </div>
@@ -512,7 +512,7 @@ export default function ImportStudentsPage() {
                 {csvGroupOrder.map((csvVal) => (
                   <div key={csvVal} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                     <span
-                      className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium bg-muted text-[var(--color-text-primary)] max-w-full break-words"
+                      className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium bg-tile text-[var(--color-text-primary)] max-w-full break-words"
                       title={csvVal}
                     >
                       {csvVal}
@@ -600,7 +600,7 @@ export default function ImportStudentsPage() {
 
             <div className="overflow-x-auto max-h-96 overflow-y-auto">
               <table className="w-full text-sm" dir="auto">
-                <thead style={{ background: 'hsl(var(--muted))' }}>
+                <thead style={{ background: 'var(--color-tile)' }}>
                   <tr>
                     <th className="text-start px-3 py-2 font-medium text-[var(--color-text-secondary)]">{tCommon('name')}</th>
                     <th className="text-start px-3 py-2 font-medium text-[var(--color-text-secondary)]">{tCommon('phone')}</th>

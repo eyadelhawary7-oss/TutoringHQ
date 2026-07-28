@@ -346,7 +346,7 @@ function AdminCentersPageInner() {
             <button
               type="button"
               onClick={() => router.push('/admin')}
-              className="p-1.5 rounded-lg hover:bg-muted"
+              className="p-1.5 rounded-lg hover:bg-tile"
               aria-label={tCommon('back')}
             >
               <DirectionalIcon icon={ArrowLeft} className="h-5 w-5" />

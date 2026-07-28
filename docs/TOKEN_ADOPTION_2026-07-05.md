@@ -241,7 +241,12 @@ migration must be deliberate, not mechanical.
   - `not-found.tsx` (root, 5) + `global-error.tsx` (4) — inline styles →
     `colors.navy[950|50|400]`, `colors.brand[500]`; `#fff`/`#ef4444` stay drift.
   - `[locale]/not-found.tsx` (2) — within `[locale]` (globals.css loaded) →
-    `text-[var(--color-navy-50|brand-500)]`.
+    `text-[var(--color-navy-50)]` and `text-[var(--color-brand-500)]`.
+    <!-- Written out rather than pipe-abbreviated on purpose: Tailwind's source
+         scanner reads this file, and a `|` inside a class-shaped string compiles
+         to `color: var(--a|b)`, which Lightning CSS rejects. `next build` demotes
+         it to a warning, but `next dev` returns 500 on every page. -->
+
   - `[locale]/offline/page.tsx` (1) — SVG `stroke` → `{colors.gold[500]}`.
   - `[locale]/layout.tsx` (1) — viewport `themeColor` (metadata) → `colors.brand[500]`.
   - `manifest.ts` (1) — `theme_color` → `colors.brand[500]`; `background_color`

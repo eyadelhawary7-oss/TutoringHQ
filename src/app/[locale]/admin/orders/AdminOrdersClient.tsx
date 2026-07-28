@@ -379,7 +379,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
               'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
               filter === 'all'
                 ? 'bg-primary/10 text-primary'
-                : 'text-[var(--color-text-secondary)] hover:bg-muted',
+                : 'text-[var(--color-text-secondary)] hover:bg-tile',
             )}
           >
             {tCommon('all')}
@@ -395,7 +395,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                   'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
                   filter === f
                     ? 'bg-primary/10 text-primary'
-                    : 'text-[var(--color-text-secondary)] hover:bg-muted',
+                    : 'text-[var(--color-text-secondary)] hover:bg-tile',
                 )}
               >
                 {tIdCards(cfg.label)}
@@ -549,7 +549,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                     );
                   })()}
                 </div>
-                <button type="button" onClick={() => setSlideOverId(null)} className="p-1.5 rounded-lg hover:bg-muted">
+                <button type="button" onClick={() => setSlideOverId(null)} className="p-1.5 rounded-lg hover:bg-tile">
                   <X size={18} className="text-[var(--color-text-secondary)]" />
                 </button>
               </div>
