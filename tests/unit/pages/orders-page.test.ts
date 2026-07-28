@@ -83,7 +83,6 @@ function renderPage(): Promise<AnyElement> {
   }) as unknown as Promise<AnyElement>;
 }
 
-/** Walk a React element tree and collect every string/number leaf. */
 /**
  * Collect every string reachable from a returned element tree.
  *
