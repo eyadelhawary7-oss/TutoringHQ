@@ -41,7 +41,30 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-/** The fee actually applied given config: 0 when disabled or non-positive. */
+/**
+ * The fee actually applied given config: 0 when disabled or non-positive.
+ *
+ * ⚠️ THIS IS THE **CENTER SUBSCRIPTION** PROCESSING FEE — a **flat 20 EGP**
+ * added per charge invoice, paid by the centre or teacher to TutoringHQ, and
+ * snapshotted into `invoices.metadata.processing_fee`.
+ *
+ * **Never use it for a parent tuition charge.** The design's collect-for-me flow
+ * (`Merged-Public-App` §04) carries a *different* fee with a *different* payer
+ * and a *different* formula — the **PARENT PROCESSING FEE**, `1.5% + 1.5 EGP`,
+ * VAT inclusive, paid by a parent on tuition. Two fees, and until 28 July they
+ * shared a name; see design correction **D10**.
+ *
+ * The collision is dangerous precisely because nothing would break. On the
+ * design's own example — a 1,082.50 tuition charge — the parent fee is 17.74
+ * while this function returns 20.00 flat. No type error, no exception, no failed
+ * assertion: just a parent billed the wrong amount, and a total that still looks
+ * plausible on the screen.
+ *
+ * There is deliberately no percentage path here. If you are reaching for one,
+ * you want the parent fee, which **does not exist in live code yet** — the
+ * collect-for-me flow is verification-blocked (C1). Build it as its own helper
+ * rather than adding a percent branch to this one.
+ */
 export function resolveProcessingFeeAmount(cfg: ProcessingFeeConfig): number {
   if (!cfg || !cfg.enabled) return 0;
   const a = round2(Number(cfg.amount));
