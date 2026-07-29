@@ -41,7 +41,7 @@ flagged inline with the test applied. Nothing in this section restyles a protect
 - **Exists:** `POST /api/demo-request`; `/admin/demo-requests` (180 lines, four statuses); `/demo-request` as a 55-line stub with a hardcoded `wa.me` link and no form. Territory data exists on `center_assignments.territory_city`.
 - **Build:** the `/talk-to-us` route, five fields, area→territory→rep routing on insert, the submitted state that keeps "Start free trial" on screen, and the new fields surfaced in `/admin/demo-requests`. Decide what `/demo-request` becomes — the two cannot both be the lead door.
 - **Touches:** none.
-- **Blocked by:** the `demo_requests` migration, **D1 — approved 28 July and written**. R1 is ready the moment that migration is applied to production by hand. Nothing else stands in front of it.
+- **Blocked by:** ~~the `demo_requests` migration, D1.~~ ✅ **NOTHING — unblocked 29 July 2026.** Migration `20260728120000` (PR #211, `20a0d74`) was applied to production by hand. Verified in `information_schema.columns` after the apply: `area text NULL`, `student_count integer NULL`, both present on `public.demo_requests`. R1 is buildable now.
 - **Do not "improve" away:** it is not a demo booking (no calendar), area is load-bearing not optional, and WhatsApp stays as a third door below the form.
 
 ## R2 · Coming Soon pattern — the locked row half
@@ -286,6 +286,23 @@ correction is in `TOKEN-SPEC.md` §2.
 # §0 · SECURITY — ahead of everything else
 
 ## S1 · `users.teacher_group_ids` is self-writable and feeds a cross-tenant read policy
+> ### ✅ CLOSED — applied to production 29 July 2026
+> Migration `20260729010000_users_lock_self_writable_policy_inputs.sql`, PR **#213**, merged as
+> `2fc494a0`. Eyad applied it by hand; the merge came after, on verified evidence.
+>
+> Confirmed from the live catalog **after** the apply, not from the migration file:
+>
+> | | |
+> |---|---|
+> | `has_table_privilege('authenticated','public.users','UPDATE')` | `false` |
+> | `has_column_privilege('authenticated', … ,'teacher_group_ids','UPDATE')` | `false` |
+> | `has_column_privilege('anon', … ,'teacher_group_ids','UPDATE')` | `false` |
+> | `has_column_privilege('service_role', … ,'teacher_group_ids','UPDATE')` | `true` |
+> | `chq_prevent_user_escalation` body guards all four new columns | yes |
+>
+> The chain below is kept as written. It is the record of how the hole was found and why the
+> obvious fixes were wrong, and both of those stay true after the fix.
+
 - **What:** any authenticated user of any centre — including the lowest-privilege staff account — can read another centre's students.
 - **Found:** 28 July 2026, reading `pg_policies`, `information_schema.column_privileges` and the trigger body from the live catalog. Not from migration files.
 - **The chain, every link verified:**
@@ -340,7 +357,11 @@ correction is in `TOKEN-SPEC.md` §2.
 
 - Also unguarded: `is_active`, so a deactivated account can re-activate itself.
 - **Touches:** auth. Within-tenant escalation, not cross-tenant.
-- **Blocked by:** READY, same fix as S1.
+- **Blocked by:** ~~READY, same fix as S1.~~ ✅ **CLOSED 29 July 2026** — same migration as S1
+  (`20260729010000`, PR #213, `2fc494a0`). `chq_prevent_user_escalation` now raises on
+  `teacher_group_ids`, `can_manage_students`, `can_record_payments` and `is_active` beside the
+  existing `role` and `center_id`, and the table-level `UPDATE` grant is gone, so the trigger is
+  a backstop rather than the only control.
 
 ## S3 · The posture is defence in depth, and it is worth stating correctly
 - **Both layers are live.** This was checked rather than assumed, because getting it backwards in either direction leads somewhere bad.
