@@ -4,7 +4,15 @@ import { createServerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getAdminContext } from '@/lib/admin-auth';
 import { isSuperAdminPhone } from '@/lib/admin-access';
-import { fetchCustomerSplit, buildRevenueMix, fetchPaidInvoicesForMonth } from '@/lib/adminCustomerSplit';
+import {
+  fetchCustomerSplit,
+  buildRevenueMix,
+  fetchPaidInvoicesForMonth,
+  rankTopAccounts,
+  buildPlanMix,
+  isBillableTeacherStatus,
+  type TopAccount,
+} from '@/lib/adminCustomerSplit';
 import { cairoMonthBounds } from '@/lib/referralProgram';
 import { phoneFromCenterhqAuthEmail } from '@/lib/ownerPhone';
 import { PLAN_STUDENT_LIMITS } from '@/lib/plans';
@@ -433,6 +441,8 @@ export async function GET(request: Request) {
     let customerSplit = null;
     let revenueMix = null;
     let withdrawalsPendingCount = 0;
+    let topByRevenue: TopAccount[] | null = null;
+    let planMix: { plan: string; accounts: number }[] | null = null;
     try {
       const { count: centreStudentCount } = await supabaseAdmin
         .from('students')
@@ -472,10 +482,59 @@ export async function GET(request: Request) {
         .select('id', { count: 'exact', head: true })
         .eq('status', 'pending');
       withdrawalsPendingCount = pendingWithdrawals ?? 0;
+
+      // ── §02 TOP BY REVENUE and BY PLAN — both customer types in one list ──
+      const { data: teacherSubRows } = await supabaseAdmin
+        .from('teacher_subscriptions')
+        .select('teacher_id, plan_key, status, price_gross');
+      const { data: teacherProfileRows } = await supabaseAdmin
+        .from('teacher_profiles')
+        .select('user_id, display_name')
+        .eq('is_test', false);
+
+      const teacherName = new Map(
+        ((teacherProfileRows ?? []) as { user_id: string; display_name: string | null }[]).map((p) => [
+          p.user_id,
+          p.display_name,
+        ]),
+      );
+      const teacherSubs = ((teacherSubRows ?? []) as {
+        teacher_id: string;
+        plan_key: string | null;
+        status: string | null;
+        price_gross: number | string | null;
+      }[]).filter((s) => teacherName.has(s.teacher_id));
+
+      const centreAccounts: TopAccount[] = allCenters
+        .filter((c) => c.status === 'active')
+        .map((c) => ({
+          id: String(c.id),
+          name: (c.name as string) ?? null,
+          kind: 'center' as const,
+          plan: (c.plan as string) ?? null,
+          students: null,
+          mrr: Number(c.all_in_price ?? 0),
+        }));
+
+      const teacherAccounts: TopAccount[] = teacherSubs
+        .filter((s) => isBillableTeacherStatus(s.status))
+        .map((s) => ({
+          id: s.teacher_id,
+          name: teacherName.get(s.teacher_id) ?? null,
+          kind: 'teacher' as const,
+          plan: s.plan_key,
+          students: null,
+          mrr: Number(s.price_gross ?? 0),
+        }));
+
+      topByRevenue = rankTopAccounts([...centreAccounts, ...teacherAccounts]);
+      planMix = buildPlanMix(byPlan as Record<string, number>, teacherSubs);
     } catch {
       // A split failure must not take the whole overview down with it.
       customerSplit = null;
       revenueMix = null;
+      topByRevenue = null;
+      planMix = null;
     }
 
     return NextResponse.json({
@@ -512,6 +571,8 @@ export async function GET(request: Request) {
       customerSplit,
       revenueMix,
       withdrawalsPendingCount,
+      topByRevenue,
+      planMix,
     });
   } catch (error) {
     console.error('==========================================');

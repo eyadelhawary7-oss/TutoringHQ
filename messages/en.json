@@ -5141,6 +5141,28 @@
       "jumpFinance": "Finance",
       "jumpAnalytics": "Analytics",
       "jumpHealth": "Platform health"
+    },
+    "platformAnalytics": {
+      "segmentLabel": "Customer type",
+      "segment_all": "All",
+      "segment_centers": "Centers",
+      "segment_teachers": "Teachers",
+      "mrrHeading": "Monthly recurring revenue",
+      "activeAccounts": "Active accounts",
+      "newThisMonth": "New this month",
+      "churn": "Churn",
+      "arpu": "ARPU",
+      "topByRevenueHeading": "Top by revenue",
+      "byPlanHeading": "By plan",
+      "accountsCount": "{count} accounts",
+      "kindCenter": "Center",
+      "kindTeacher": "Teacher",
+      "topEmptyTitle": "No paying accounts yet",
+      "topEmptyBody": "Centers and solo teachers appear here as soon as their first subscription is active.",
+      "topEmptyAlt": "Trial accounts are not ranked.",
+      "teacherPlan_standard": "Teacher · Standard",
+      "teacherPlan_pro": "Teacher · Pro",
+      "teacherPlan_scale": "Teacher · Scale"
     }
   },
   "notFound": {

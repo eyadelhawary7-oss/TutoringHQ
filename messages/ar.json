@@ -3240,6 +3240,28 @@
       "jumpFinance": "المالية",
       "jumpAnalytics": "التحليلات",
       "jumpHealth": "حالة المنصة"
+    },
+    "platformAnalytics": {
+      "segmentLabel": "نوع العميل",
+      "segment_all": "الكل",
+      "segment_centers": "المراكز",
+      "segment_teachers": "المعلمون",
+      "mrrHeading": "الإيراد الشهري المتكرر",
+      "activeAccounts": "حسابات نشطة",
+      "newThisMonth": "جديدة هذا الشهر",
+      "churn": "معدل المغادرة",
+      "arpu": "متوسط الإيراد لكل حساب",
+      "topByRevenueHeading": "الأعلى إيرادًا",
+      "byPlanHeading": "حسب الباقة",
+      "accountsCount": "{count} حساب",
+      "kindCenter": "مركز",
+      "kindTeacher": "معلم",
+      "topEmptyTitle": "مفيش حسابات مدفوعة لسه",
+      "topEmptyBody": "المراكز والمعلمون المستقلون بيظهروا هنا أول ما أول اشتراك ليهم يبقى نشط.",
+      "topEmptyAlt": "حسابات التجربة مش داخلة في الترتيب.",
+      "teacherPlan_standard": "معلم · ستاندرد",
+      "teacherPlan_pro": "معلم · برو",
+      "teacherPlan_scale": "معلم · سكيل"
     }
   },
   "ceo": {

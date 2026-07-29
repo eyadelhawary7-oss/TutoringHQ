@@ -207,3 +207,52 @@ export async function fetchPaidInvoicesForMonth(
   if (error) return [];
   return (data ?? []) as { invoice_type: string | null; total_amount: number | string | null }[];
 }
+
+/**
+ * §02 TOP BY REVENUE and BY PLAN — both customer types in one ranking.
+ *
+ * The design's list mixes centres and solo teachers, so the rows carry a `kind`
+ * and the caller labels them. Amounts are MRR, which is what the design's
+ * column shows.
+ */
+export interface TopAccount {
+  id: string;
+  name: string | null;
+  kind: 'center' | 'teacher';
+  plan: string | null;
+  students: number | null;
+  mrr: number;
+}
+
+export interface PlanCount {
+  plan: string;
+  accounts: number;
+}
+
+export function rankTopAccounts(accounts: TopAccount[], limit = 5): TopAccount[] {
+  return [...accounts].sort((a, b) => b.mrr - a.mrr).slice(0, limit);
+}
+
+/**
+ * Plan mix across both types. Centre plans and teacher plans are different
+ * ladders (solo/nano/starter/… vs teacher_standard/teacher_pro/teacher_scale)
+ * and are NOT merged into one bucket — a "Pro" that means two different prices
+ * on two different ladders is a number nobody can act on.
+ */
+export function buildPlanMix(
+  centerPlans: Record<string, number>,
+  teacherSubs: { plan_key: string | null; status: string | null }[],
+): PlanCount[] {
+  const rows: PlanCount[] = Object.entries(centerPlans)
+    .filter(([, n]) => n > 0)
+    .map(([plan, accounts]) => ({ plan, accounts }));
+
+  const byTeacherPlan = new Map<string, number>();
+  for (const s of teacherSubs) {
+    if (!isBillableTeacherStatus(s.status) || !s.plan_key) continue;
+    byTeacherPlan.set(s.plan_key, (byTeacherPlan.get(s.plan_key) ?? 0) + 1);
+  }
+  for (const [plan, accounts] of byTeacherPlan) rows.push({ plan, accounts });
+
+  return rows.sort((a, b) => b.accounts - a.accounts);
+}

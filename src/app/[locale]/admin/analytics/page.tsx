@@ -16,6 +16,11 @@ import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { ArrowLeft } from 'lucide-react';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { KpiCard, SectionHeader } from '@/components/shared';
+import AnalyticsGrowthHeader, {
+  type TopAccountView,
+  type PlanCountView,
+} from '@/components/admin/AnalyticsGrowthHeader';
+import type { CustomerSplitView } from '@/components/admin/PlatformOverviewHeader';
 import type { CenterRow } from '@/types/admin';
 
 const BarChartComponent = dynamic(
@@ -45,6 +50,12 @@ export default function AdminAnalyticsPage() {
 
   const [centers, setCenters] = useState<CenterRow[]>([]);
   const [overviewMrr, setOverviewMrr] = useState<OverviewMrr | null>(null);
+  // Merged-Admin-Platform §02 — the growth payload, all from /api/admin/overview.
+  const [split, setSplit] = useState<CustomerSplitView | null>(null);
+  const [topByRevenue, setTopByRevenue] = useState<TopAccountView[] | null>(null);
+  const [planMix, setPlanMix] = useState<PlanCountView[] | null>(null);
+  const [mrrGrowthPct, setMrrGrowthPct] = useState<number | null>(null);
+  const [churnRatePct, setChurnRatePct] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,6 +82,12 @@ export default function AdminAnalyticsPage() {
             totalMRR: (ovData as OverviewMrr).totalMRR,
             mrr: (ovData as OverviewMrr).mrr,
           });
+          const ov = ovData as Record<string, unknown>;
+          setSplit((ov.customerSplit as CustomerSplitView | null) ?? null);
+          setTopByRevenue((ov.topByRevenue as TopAccountView[] | null) ?? null);
+          setPlanMix((ov.planMix as PlanCountView[] | null) ?? null);
+          setMrrGrowthPct(typeof ov.revenueGrowth === 'number' ? ov.revenueGrowth : null);
+          setChurnRatePct(typeof ov.churnRate === 'number' ? ov.churnRate : null);
         }
       }
 
@@ -112,6 +129,26 @@ export default function AdminAnalyticsPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  /**
+   * Centre plans and teacher plans are separate ladders. A teacher key falls
+   * back to its raw value rather than being mapped onto a centre plan name —
+   * "Pro" meaning two different prices on two different ladders is worse than
+   * an unfamiliar key.
+   */
+  const planLabelFor = useCallback(
+    (planKey: string): string => {
+      const centrePlans = ['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'];
+      if (centrePlans.includes(planKey)) {
+        return tBilling(`planNames.${planKey}` as 'planNames.solo');
+      }
+      if (planKey.startsWith('teacher_')) {
+        return t(`teacherPlan_${planKey.replace('teacher_', '')}` as 'teacherPlan_standard');
+      }
+      return planKey;
+    },
+    [tBilling, t],
+  );
 
   const planDonutData = useMemo(() => {
     const planIds = ['solo', 'nano', 'starter', 'pro', 'business', 'enterprise', 'top_centers'] as const;
@@ -242,6 +279,16 @@ export default function AdminAnalyticsPage() {
             </div>
           ) : (
             <>
+              {/* Merged-Admin-Platform §02 — the growth header the design leads with. */}
+              <AnalyticsGrowthHeader
+                split={split}
+                topByRevenue={topByRevenue}
+                planMix={planMix}
+                mrrGrowthPct={mrrGrowthPct}
+                churnRatePct={churnRatePct}
+                planLabel={planLabelFor}
+              />
+
               <div className="mb-3"><SectionHeader title={tCommon('sectionAtAGlance')} /></div>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
                 <KpiCard
