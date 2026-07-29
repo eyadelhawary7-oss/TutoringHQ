@@ -33,6 +33,10 @@ If a row ever names one, that row is a mistake.
 | [#213](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/213) | `2fc494a0` | 2026-07-29 | none — migration + schema snapshot only | none | v28 |
 | [#215](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/215) | `e4978632` | 2026-07-29 | **ALL screens** — 1098 `teal-*` utilities across 11 shades were resolving to Tailwind's default palette, not §4 | **ALL routes** — `src/app/tokens.css` and `src/app/globals.css`, both loaded by every locale-prefixed route | v28 → **v29** |
 | [#216](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/216) | `478ac860` | 2026-07-29 | `Center-Students §01`–`§04` (roster, detail, verified, import & pending) | `/{locale}/students`, `/students/[id]`, `/students/import`, `/students/pending` | v29 → **v30** |
+| [#218](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/218) | `d755a8c3` | 2026-07-29 | `Center-Groups` | `/{locale}/groups` | v30 → **v31** |
+| [#217](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/217) | `7c787fe9` | 2026-07-29 | none — billing cron | none | v31 |
+| [#219](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/219) | `90a575d1` | 2026-07-29 | none — doc only | none | v31 |
+| Design-Patterns | *(on merge)* | 2026-07-29 | `Design-Patterns §01–§06` — **ALL screens** once adopted: `EmptyState` has 11 adopters today | none yet — primitives only, adoption is per-file | v31 → **v32** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -263,3 +267,39 @@ while `Merged-Center-Home`'s `.kpi` is **12**. `KpiCard` is shared and was settl
 and one outlier in one merged file does not justify forking a shared component or adding a size
 prop. Both values sit on the §3 scale, so the token layer could not have flagged the difference —
 it is a design-file inconsistency, logged in `§5 DESIGN CORRECTIONS` rather than absorbed silently.
+
+**Design-Patterns (29 July 2026)** — the first file through the per-file method, and the first PR
+that builds rather than restyles.
+
+Structure coverage **1.5/6 → 6/6**. The 1.5 is the honest starting point: `EmptyState` existed with
+11 adopters, which is why it read as done, and five of its six parts were wrong — a bare 48px muted
+glyph instead of a 64px mint tile, no type sizes, no measure on the body, and `.es-alt` missing
+outright. §02's four loading states all existed but scattered across 9 files as ad hoc markup, not a
+named set. §03–§06 did not exist at all.
+
+New in `src/components/patterns/`:
+
+| § | primitive | what it is |
+|---|---|---|
+| §02 | `ListSkeleton`, `RecordSkeleton`, `StillWorking`, `ActionSpinner` | the four states as a named set |
+| §03 | `ListRow` | the `.lrow` row — avatar, title, meta, badge, chevron, three-dot |
+| §04 | `ActionSheet` | the bottom sheet, contents supplied by the row |
+| §05 | `RecordActionBar` | the pinned bar whose More opens the *same* sheet |
+| §06 | `ExpandableRow` | tap expands to three inline actions; More opens the sheet |
+
+**`StillWorking` deliberately offers no retry.** §02's caption is "slow, not an error" — a retry
+button invites the user to restart something that is already working, which is how one slow request
+becomes two.
+
+**`ActionSheet`'s `managerOnly` is a LABEL, not a gate.** It renders the design's brass `MGR` tag;
+the caller still does the permission check. Tagging an action the user cannot perform and letting
+them tap it would be worse than not tagging it.
+
+**The chevron swaps glyph rather than mirroring by transform.** A `ChevronRight` under `dir=rtl`
+still points right. Swapping to `ChevronLeft` is the only version of "directional icons flip with the
+language" that survives a screenshot.
+
+**Adoption is NOT in this PR** — it is per-file, and adopting where an action does not exist would
+mean inventing writes. Three screens run their own three-dot menu today and are recorded in
+`PER-FILE-PROMPT.md` with the merged file each converts under: `admin/centers` (Admin-Accounts),
+`rooms` (Center-Groups §03), `dashboard` (Center-Home §01).
