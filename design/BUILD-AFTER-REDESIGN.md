@@ -314,6 +314,30 @@ Everyone joining before 16 August waits until 16 August to start their 14 days; 
 - **Touches:** money (write), WhatsApp cost (for the reminder).
 - **Blocked by:** Eyad's call on whether to build `Mark collected` (small UI reusing an existing endpoint) and, separately, whether/how to build `Send reminder` (new, and cost-bearing).
 
+## D16 · The center-class commission engine is dormant — every teacher's "Owed" figure on `Merged-Teacher-Setup` §02 reads 0.00 EGP, live, today
+- **What:** the design's hero ("Owed to you across centers", This month / All time) and the per-center "Owed" figures are drawn as one populated block. Live, this is split across two already-shipped components — `CenterCutsSection` (`/api/teacher/center-cuts`) and `CenterEarningsSection` (`/api/teacher/center-attendance`) — and both read `transactions.kind = 'center_fee'`, which has never had a row written to it in production.
+- **Drawn in:** `Merged-Teacher-Setup` §02.
+- **Found:** 29 July 2026, building `Merged-Teacher-Setup`, via an independent verification pass then confirmed directly against the live catalog and code (not taken on the pass's word — see the standing rule on AI summaries not being evidence).
+- **Evidence, live and code, both checked:**
+  - `select count(*) from transactions where kind = 'center_fee'` → **0**, ever.
+  - The only function that would create such a row, `finish_center_class_and_bill`, exists in the database (`pg_proc` confirms it) and is fully correct — but `grep -rn "finish_center_class_and_bill" src/` finds **zero `.rpc()` call sites** anywhere in the app.
+  - Both real "finish a session" endpoints — `teacher/private/schedule/sessions/[sessionId]/finish` and `teacher/private/groups/[groupId]/sessions/[sessionId]/finish` — explicitly gate `group.kind !== 'private' → 403 not_your_session` and call the sibling function `finish_class_and_bill` instead. **No route in the app can ever finish or bill a `kind = 'center'` session.**
+  - Even if it were called, `finish_center_class_and_bill` never populates `transactions.teacher_net` / `snap_teacher_pct` — it only sets `amount_billed` (the centre's cut). The read side computes the teacher's cut from `teacher_net`, falling back to `snap_teacher_pct * amount_billed`, falling back to 0 — so it would still read 0 for center-fee rows. `src/app/api/teacher/center-cuts/route.ts` already carries its own comment saying so: *"no current write path populates it… the center-fee billing path is not yet live… When the Paymob split finalizer lands and writes teacher_net, this picks it up automatically."* This is pre-existing, self-documented product debt, not a silent regression.
+  - Separately, the design's proposal-card subtraction ("Student rate / You earn / Center keeps") reads off `student_groups.fee_per_class` and `center_cut_egp`, which **are** live and populated — a different, working negotiation model. No UI computed "You earn" for it until this PR; that display-only gap is fixed here (see the PR notes), since it is pure arithmetic on already-real values with no dependency on the broken ledger.
+- **Why it matters:** unlike V4 (dormant schema nothing reads), this is **already-shipped UI** reading a real, empty ledger. Every teacher with a center group sees "Owed: 0.00 EGP", "This month: 0.00 EGP", "All time: 0.00 EGP" and every attendance-session row shows "earned: 0.00 EGP" — for everyone, always, today, in production, independent of this redesign.
+- **Build:** pick one commission model for center-run classes — the live flat-cut negotiation model (`fee_per_class − center_cut_egp`, already surfaced in proposals) or a percentage-split model (matching the unused `teacher_net` / `snap_teacher_pct` / `teacher_split_pct` columns) — and wire a real finish-and-bill path for `kind = 'center'` sessions. Until decided, the hero and tiles are left exactly as they are: honestly reading real (zero) data rather than being restyled to look more finished than the product is.
+- **Touches:** money.
+- **Blocked by:** Eyad's decision on which commission model to build and wire.
+
+## D17 · `JoinCenterCard`'s "Share your profile" tab links to a page that does not exist
+- **What:** the "Share your profile" tab renders a link and QR code at `https://tutoringhq.app/teacher/profile/<teacherId>` for a center owner to open and add the teacher directly.
+- **Drawn in:** `Merged-Teacher-Setup` §02, "Join a center" → the second tile.
+- **Found:** 29 July 2026, building `Merged-Teacher-Setup`.
+- **Evidence:** no route matches `/teacher/profile/[id]` anywhere under `src/app/[locale]/` (checked by glob across the whole app router tree). `src/app/api/teacher/profile/route.ts` is the authenticated teacher's own profile API, not a public page. The shared link and QR both lead to a 404 today.
+- **Build:** a public, unauthenticated teacher-profile page a center owner can open from the link or QR. A new page, not a restyle — same class of hole as R9 (Teacher Link Rejection).
+- **Touches:** none to build the page itself; once it exists, whatever "add this teacher" action it offers touches account state and comes back to Eyad then.
+- **Blocked by:** Eyad's decision on whether/when to build the page. Left as-is in the meantime — it matches the design, and hiding a designed feature is itself a decision beyond restyle scope.
+
 ---
 
 # §3 · BLOCKED ON VALIFY — verification and everything downstream
@@ -588,6 +612,13 @@ Logged from the token layer (#209). None of it blocks a restyle; all of it makes
 ## F8 · `src/lib/tokens.ts` is a stale dark-theme mirror
 - **What:** its `surface[0]` is `#080f1a` and `text.primary` is `#f8fafc` — the pre-cream dark palette. Its header says "keep in sync manually" and it was not.
 - **Fix:** repoint it at the §4 tokens, or delete it if nothing depends on it. Check `chartColors` consumers first; charts are their own pass.
+
+## F9 · `student_groups.teacher_split_pct` and RPC `assign_teacher_to_group` are dead
+- **What:** a percentage-split column and its assignment RPC, apparently the abandoned predecessor or successor to the flat-cut model actually in use (`fee_per_class − center_cut_egp`, see D16).
+- **Confirmed 29 July 2026, live:** `select count(*) from student_groups where teacher_split_pct is not null` → **0** rows, ever. `grep -rn "assign_teacher_to_group" src/` → zero `.rpc()` call sites anywhere in the app.
+- **Why it likely exists:** `transactions.teacher_net` / `snap_teacher_pct` (read by `/api/teacher/center-cuts` and `/api/teacher/center-attendance`, see D16) look built for exactly this percentage model, and neither the field that would drive it nor the RPC that would set it was ever wired to anything.
+- **Drop it:** Eyad's call, deliberately not done yet, same as F5 (`custom_permissions`).
+- **Blocked by:** nothing technical. Waiting on the decision to drop.
 
 ---
 

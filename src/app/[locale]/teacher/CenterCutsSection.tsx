@@ -186,6 +186,18 @@ export default function CenterCutsSection({ canDetach = false }: { canDetach?: b
         <p className="num mt-1 text-sm text-[var(--color-teal-deep)]/80">
           {t('collectedThisMonth', { amount: formatCurrency(data.totalCollectedThisMonth, locale) })}
         </p>
+        <p className="mt-1 text-xs text-[var(--color-teal-deep)]/70">
+          {t('fromCentersCaption', { count: data.centers.length })}
+        </p>
+      </div>
+
+      <div className="mb-2 flex items-baseline justify-between gap-2">
+        <h3 className="text-sm font-semibold text-[var(--color-text-secondary)]">{t('yourCenters')}</h3>
+        <span className="text-xs font-medium text-[var(--color-text-muted)]">
+          {data.centers.length === 1
+            ? t('centersActiveCountOne', { count: 1 })
+            : t('centersActiveCount', { count: data.centers.length })}
+        </span>
       </div>
 
       <ul className="flex flex-col gap-3">
@@ -205,6 +217,10 @@ export default function CenterCutsSection({ canDetach = false }: { canDetach?: b
             </div>
             <p className="num mb-3 text-sm text-[var(--color-text-muted)]">
               {t('collectedShort')} {formatCurrency(c.collectedThisMonth, locale)}
+              {' · '}
+              {c.groups.length === 1
+                ? t('centerGroupsCountOne', { count: 1 })
+                : t('centerGroupsCount', { count: c.groups.length })}
             </p>
 
             {c.groups.length > 0 && (
