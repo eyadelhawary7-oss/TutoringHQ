@@ -9021,6 +9021,7 @@
     },
     "groups": {
       "title": "My private groups",
+      "privateGroupSubtitle": "Private group · your class",
       "add": "Add group",
       "students": "{count} enrolled",
       "pending": "{count} awaiting approval",
@@ -9130,7 +9131,17 @@
       "payerStudent": "Student pays",
       "payerParent": "Parent pays",
       "empty": "No students in this group yet. Add your first student to get going.",
-      "actionError": "Something went wrong. Try again."
+      "actionError": "Something went wrong. Try again.",
+      "asked": "Asked {ago}",
+      "gradeLabel": "Grade {grade}",
+      "sourceSelfLink": "Came via invite link",
+      "sourceWalkIn": "Added by you",
+      "sourceInherited": "Inherited",
+      "sourceImport": "Imported",
+      "contactStudent": "Student",
+      "contactParent": "Parent",
+      "callAction": "Call",
+      "messageAction": "Message on WhatsApp"
     },
     "notes": {
       "toggle": "Private note",

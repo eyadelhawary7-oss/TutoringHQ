@@ -9021,6 +9021,7 @@
     },
     "groups": {
       "title": "مجموعاتي الخاصة",
+      "privateGroupSubtitle": "مجموعة خاصة · فصلك",
       "add": "أضف مجموعة",
       "students": "{count} طالب مشترك",
       "pending": "{count} مستني الموافقة",
@@ -9130,7 +9131,17 @@
       "payerStudent": "الطالب بيدفع",
       "payerParent": "ولي الأمر بيدفع",
       "empty": "لسه مفيش طلاب في المجموعة دي. أضف أول طالب وابدأ.",
-      "actionError": "حصلت مشكلة. جرب تاني."
+      "actionError": "حصلت مشكلة. جرب تاني.",
+      "asked": "طلب {ago}",
+      "gradeLabel": "الصف {grade}",
+      "sourceSelfLink": "عن طريق رابط الدعوة",
+      "sourceWalkIn": "أضفته انت",
+      "sourceInherited": "موروث",
+      "sourceImport": "مستورد",
+      "contactStudent": "الطالب",
+      "contactParent": "ولي الأمر",
+      "callAction": "اتصال",
+      "messageAction": "رسالة واتساب"
     },
     "notes": {
       "toggle": "ملاحظة خاصة",

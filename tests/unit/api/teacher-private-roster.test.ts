@@ -253,6 +253,50 @@ describe('GET /api/teacher/private/groups/[groupId]/roster', () => {
     expect(sg).toContainEqual({ table: 'student_groups', method: 'eq', column: 'kind', value: 'private' });
     expect(filterCalls).toContainEqual({ table: 'enrollments', method: 'eq', column: 'group_id', value: GROUP_ID });
   });
+
+  it('surfaces createdAt/source and the student grade/parent phone - §03 request-detail fields', async () => {
+    queueGateGranted();
+    adminQueue.student_groups = [OWNED_GROUP];
+    adminQueue.enrollments = [
+      {
+        data: [
+          {
+            id: 'e-pending',
+            student_id: 's2',
+            status: 'pending',
+            payer: 'parent',
+            joined_at: null,
+            created_at: '2026-06-05T00:00:00Z',
+            source: 'self_link',
+          },
+        ],
+        error: null,
+      },
+    ];
+    adminQueue.students = [
+      {
+        data: [
+          { id: 's2', name: 'Mona', phone: '+201112345678', parent_phone: '+201198765432', grade_level: 'Grade 10' },
+        ],
+        error: null,
+      },
+    ];
+
+    const res = await getRoster(makeRequest(), ctx());
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      roster: {
+        createdAt: string;
+        source: string | null;
+        student: { parentPhone: string | null; gradeLevel: string | null };
+      }[];
+    };
+    expect(body.roster[0].createdAt).toBe('2026-06-05T00:00:00Z');
+    expect(body.roster[0].source).toBe('self_link');
+    expect(body.roster[0].student.parentPhone).toBe('+201198765432');
+    expect(body.roster[0].student.gradeLevel).toBe('Grade 10');
+  });
 });
 
 describe('POST /api/teacher/private/groups/[groupId]/roster (add student)', () => {

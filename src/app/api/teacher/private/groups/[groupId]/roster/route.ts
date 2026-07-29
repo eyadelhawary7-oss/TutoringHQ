@@ -15,12 +15,15 @@ type EnrollmentRow = {
   payer: string | null;
   joined_at: string | null;
   created_at: string;
+  source: string | null;
 };
 
 type StudentRow = {
   id: string;
   name: string | null;
   phone: string | null;
+  parent_phone: string | null;
+  grade_level: string | null;
 };
 
 function serverError(step: string, err: { message: string }): NextResponse {
@@ -58,7 +61,7 @@ export async function GET(
 
   const { data: enrollmentRows, error: enrollErr } = await auth.supabaseAdmin
     .from('enrollments')
-    .select('id, student_id, status, payer, joined_at, created_at')
+    .select('id, student_id, status, payer, joined_at, created_at, source')
     .eq('group_id', groupId)
     .in('status', ['pending', 'active']);
   if (enrollErr) {
@@ -70,7 +73,7 @@ export async function GET(
   if (enrollments.length > 0) {
     const { data: studentRows, error: studentsErr } = await auth.supabaseAdmin
       .from('students')
-      .select('id, name, phone')
+      .select('id, name, phone, parent_phone, grade_level')
       .in('id', enrollments.map((e) => e.student_id));
     if (studentsErr) {
       return serverError('roster_students', studentsErr);
@@ -119,11 +122,15 @@ export async function GET(
       status: e.status,
       payer: e.payer,
       joinedAt: e.joined_at,
+      createdAt: e.created_at,
+      source: e.source,
       outstanding: outstandingByStudent.get(e.student_id) ?? 0,
       student: {
         id: e.student_id,
         name: studentById.get(e.student_id)?.name ?? null,
         phone: studentById.get(e.student_id)?.phone ?? null,
+        parentPhone: studentById.get(e.student_id)?.parent_phone ?? null,
+        gradeLevel: studentById.get(e.student_id)?.grade_level ?? null,
       },
     }));
 

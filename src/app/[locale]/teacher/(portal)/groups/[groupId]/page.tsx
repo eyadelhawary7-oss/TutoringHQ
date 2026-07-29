@@ -3,7 +3,7 @@
 import { use, useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
-import { ArrowRight, ArrowLeft, Loader2, Plus, Settings2, UserRound } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Loader2, MessageCircle, Phone, Plus, Settings2, UserRound } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
@@ -17,15 +17,35 @@ import GroupClassesTab from './GroupClassesTab';
 import GroupScheduleTab from './GroupScheduleTab';
 import { fetchTeacherSubscription } from '@/components/teacher/teacherSubscriptionClient';
 import { isProOrAbove } from '@/lib/teacherPlans';
+import { initialsOf } from '@/lib/initials';
+import { formatRelativeMinutesAgo } from '@/lib/formatNumber';
 
 type RosterEntry = {
   enrollmentId: string;
   status: string;
   payer: string | null;
   joinedAt: string | null;
+  createdAt: string;
+  source: string | null;
   outstanding: number;
-  student: { id: string; name: string | null; phone: string | null };
+  student: {
+    id: string;
+    name: string | null;
+    phone: string | null;
+    parentPhone: string | null;
+    gradeLevel: string | null;
+  };
 };
+
+/** Digits, country-code-prefixed, no leading '+' - the wa.me / tel: contract used across the app. */
+function intlDigits(raw: string | null): string | null {
+  if (!raw) return null;
+  const d = raw.replace(/\D/g, '');
+  if (!d) return null;
+  if (d.startsWith('20')) return d;
+  if (d.startsWith('0')) return `20${d.slice(1)}`;
+  return `20${d}`;
+}
 
 type RosterData = {
   group: {
@@ -234,16 +254,27 @@ export default function TeacherGroupDetailPage({
           {t('back')}
         </Link>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{data.group.name}</h1>
-            <button
-              type="button"
-              onClick={() => setShowEdit(true)}
-              aria-label={tPortal('editGroup.title')}
-              className="rounded-lg border border-[var(--color-border)] p-2 text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-2)]"
+          <div className="flex items-center gap-3">
+            <span
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-mint)] text-sm font-semibold text-[var(--color-accent-deep)]"
+              aria-hidden
             >
-              <Settings2 size={16} aria-hidden />
-            </button>
+              {initialsOf(data.group.name)}
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{data.group.name}</h1>
+                <button
+                  type="button"
+                  onClick={() => setShowEdit(true)}
+                  aria-label={tPortal('editGroup.title')}
+                  className="rounded-lg border border-[var(--color-border)] p-2 text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-2)]"
+                >
+                  <Settings2 size={16} aria-hidden />
+                </button>
+              </div>
+              <p className="text-sm text-[var(--color-text-secondary)]">{tGroups('privateGroupSubtitle')}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -339,16 +370,69 @@ export default function TeacherGroupDetailPage({
                 {t('pendingTitle')}
               </h2>
               <ul className="flex flex-col gap-2">
-                {pending.map((r) => (
+                {pending.map((r) => {
+                  const studentDigits = intlDigits(r.student.phone);
+                  const parentDigits = intlDigits(r.student.parentPhone);
+                  const sourceKey =
+                    r.source === 'self_link'
+                      ? 'sourceSelfLink'
+                      : r.source === 'walk_in'
+                        ? 'sourceWalkIn'
+                        : r.source === 'inherited'
+                          ? 'sourceInherited'
+                          : r.source === 'import'
+                            ? 'sourceImport'
+                            : null;
+                  return (
                   <li
                     key={r.enrollmentId}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--color-warning)]/30 bg-[var(--color-surface-1)] px-4 py-3"
+                    className="flex flex-col gap-3 rounded-lg border border-[var(--color-warning)]/30 bg-[var(--color-surface-1)] px-4 py-3"
                   >
-                    <div>
-                      <p className="font-medium text-[var(--color-text-primary)]">{r.student.name}</p>
-                      <p className="text-sm text-[var(--color-text-muted)]" dir="ltr">
-                        {r.student.phone}
-                      </p>
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-medium text-[var(--color-text-primary)]">{r.student.name}</p>
+                        <p className="text-sm text-[var(--color-text-muted)]" dir="ltr">
+                          {r.student.phone}
+                        </p>
+                        <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                          {t('asked', { ago: formatRelativeMinutesAgo(r.createdAt, locale) })}
+                          {r.student.gradeLevel && (
+                            <span className="ms-2">
+                              {t('gradeLabel', { grade: r.student.gradeLevel })}
+                            </span>
+                          )}
+                          {sourceKey && <span className="ms-2">{t(sourceKey)}</span>}
+                        </p>
+                      </div>
+                      {(studentDigits || parentDigits) && (
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          {[
+                            { digits: studentDigits, label: t('contactStudent') },
+                            { digits: parentDigits, label: t('contactParent') },
+                          ]
+                            .filter((c) => c.digits)
+                            .map((c) => (
+                              <span key={c.label} className="flex items-center gap-1">
+                                <a
+                                  href={`tel:+${c.digits}`}
+                                  aria-label={`${c.label} - ${t('callAction')}`}
+                                  className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-teal-soft)] text-[var(--color-teal-deep)] transition-opacity hover:opacity-90"
+                                >
+                                  <Phone size={14} aria-hidden />
+                                </a>
+                                <a
+                                  href={`https://wa.me/${c.digits}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  aria-label={`${c.label} - ${t('messageAction')}`}
+                                  className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-teal-soft)] text-[var(--color-teal-deep)] transition-opacity hover:opacity-90"
+                                >
+                                  <MessageCircle size={14} aria-hidden />
+                                </a>
+                              </span>
+                            ))}
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       {decidingId === r.enrollmentId ? (
@@ -371,7 +455,8 @@ export default function TeacherGroupDetailPage({
                       )}
                     </div>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </section>
           )}

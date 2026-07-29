@@ -10,6 +10,7 @@ import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import UpgradeFlow from '@/components/teacher/UpgradeFlow';
 import { fetchTeacherSubscription } from '@/components/teacher/teacherSubscriptionClient';
 import { getTeacherPlan } from '@/lib/teacherPlans';
+import { initialsOf } from '@/lib/initials';
 
 const STANDARD_GROUP_LIMIT = 8;
 
@@ -138,16 +139,24 @@ export default function PrivateGroupsSection({
       href={`/teacher/groups/${g.id}`}
       className="flex flex-1 flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3 transition-colors hover:border-[var(--color-teal)]/40"
     >
-      <div>
-        <p className="font-medium text-[var(--color-text-primary)]">{g.name}</p>
-        <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">
-          {t('students', { count: formatNumber(g.activeStudents, locale) })}
-          {g.pendingStudents > 0 && (
-            <span className="ms-2 text-[var(--color-warning)]">
-              {t('pending', { count: formatNumber(g.pendingStudents, locale) })}
-            </span>
-          )}
-        </p>
+      <div className="flex min-w-0 items-center gap-3">
+        <span
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-mint)] text-sm font-semibold text-[var(--color-accent-deep)]"
+          aria-hidden
+        >
+          {initialsOf(g.name)}
+        </span>
+        <div className="min-w-0">
+          <p className="truncate font-medium text-[var(--color-text-primary)]">{g.name}</p>
+          <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">
+            {t('students', { count: formatNumber(g.activeStudents, locale) })}
+            {g.pendingStudents > 0 && (
+              <span className="ms-2 text-[var(--color-warning)]">
+                {t('pending', { count: formatNumber(g.pendingStudents, locale) })}
+              </span>
+            )}
+          </p>
+        </div>
       </div>
       <span className="text-sm text-[var(--color-text-secondary)]">
         {t('feePerClass')}{' '}
