@@ -184,12 +184,16 @@ Everyone joining before 16 August waits until 16 August to start their 14 days; 
 - **Blocked by:** READY.
 
 ## R6 · Referral rate display, countdown and step-date detail
+> ⚠ **No longer READY — moved to D22 in §2, 29 July 2026.** Building this surfaced that
+> `/referrals`' entire data source (`referral_reward_records`) is never written by anything live —
+> see D22. Adding a rate/countdown display on top of a permanently-empty table would dress up a
+> broken pipe as a working feature. Held for Eyad's decision on which table is canonical.
 - **What:** Per referral, which rate it is on and when that changes.
 - **Drawn in:** `Merged-Center-Insight` §03, `Merged-Teacher-Insight` §02.
 - **Exists:** `/referrals` is live and owner-only, reachable from the sidebar rather than the settings hub.
-- **Build:** the rate/countdown display against the **live** ladder — 10% for twelve months. The design's month-6 drop is wrong and is correction D2.
+- **Build:** the rate/countdown display against the **live** ladder — 25% → 10% → 5% (D2). The design's month-6 drop is wrong.
 - **Touches:** money (read only — displays a commission calculated elsewhere).
-- **Blocked by:** READY. The credit-versus-withdraw block on the same screen is **V4** and stays blocked.
+- **Blocked by:** **D22** (below). The credit-versus-withdraw block on the same screen is **V4** and stays blocked regardless.
 
 ## R7 · Admin teacher list and teacher account detail
 - **What:** The teacher half of the admin portal — a solo-teacher list beside the center list.
@@ -298,6 +302,20 @@ Everyone joining before 16 August waits until 16 August to start their 14 days; 
 ## D12 · Group billing basis
 - **Deferred 26 July.** Live keeps `fee_per_class` only. Build the `fee_per_class` equivalent and record the difference. Deferred, not rejected.
 - **Touches:** money.
+
+## D22 · The centre-facing `/referrals` page reads a table nothing live ever writes — a ticking time bomb, not yet a live wrong number only because zero referrals exist yet
+- **What:** `GET /api/referral` (feeding `/{locale}/referrals`, the screen every centre owner sees for their OWN referral earnings) reads exclusively from `referral_reward_records`. The live, monthly-scheduled commission engine (`/api/cron/referral-automation`, registered in `vercel.json`, confirmed getting `getRate()` = 25%/10%/5% right) writes exclusively to a **different** table, `referral_commissions`. Neither reads or writes the other's table anywhere.
+- **Found:** 29 July 2026, building `Merged-Center-Insight` (R6). Not a survey guess — confirmed by grepping every writer of both tables and cross-checking against `vercel.json`'s registered crons.
+- **Evidence:**
+  - `src/app/api/cron/referral-automation/route.ts` (the only cron in `vercel.json` for this feature) inserts exclusively into `referral_commissions` (line 189). This is the same table the **admin** dashboards (`/admin/referrals`, `/admin/referrals/commissions`) correctly read — the admin side is fine.
+  - `src/app/api/referral/route.ts` (the centre's own `/referrals` page) reads exclusively from `referral_reward_records` (line 41) — a **different** table.
+  - The only writer of `referral_reward_records` is `src/app/api/referrals/calculate-rewards/route.ts`. It is **not registered in any cron** (`vercel.json` has no entry for it) and has **no UI caller anywhere in `src/`** — it is reachable only by someone hitting the route directly. It has never run in production.
+  - `ReferralWithdrawalPanel.tsx` (the "Withdraw" button on the same page) calls `/api/referrals/payout`, which also reads/deducts against `referral_reward_records` — so a centre's payout request is checked against a balance that can never be anything but zero.
+  - Live counts, checked directly: `referrals` = 0 rows, `referral_commissions` = 0 rows, `referral_reward_records` = 0 rows — **matching Eyad's own inventory note that these tables start empty.** This is why the bug hasn't been seen yet: no referral has completed a first paid month, so the cron has never had a row to insert. The moment one does, `referral_commissions` gets a row and `referral_reward_records` still does not — the centre's own `/referrals` page will show 0 EGP forever while the admin dashboard correctly shows the same commission as owed.
+- **Why it matters:** this is not hypothetical or already-manifested like D16/D19 — it is a bug that will fire the first time the referral programme actually pays out, silently, with no error anywhere (every query succeeds, it just reads the wrong table). A centre owner who referred someone and is owed money will see an empty page.
+- **Build:** pick one table as canonical and repoint the other side. Repointing `/api/referral` and `/api/referrals/payout` at `referral_commissions` (matching the admin side and the live cron) is the smaller change; retiring `referral_reward_records` and `calculate-rewards` entirely is the alternative. Either way, R6's rate/countdown display should be built on top of whichever table survives this decision, not before.
+- **Touches:** money.
+- **Blocked by:** Eyad's decision on which table is canonical.
 
 ## D13 · Advanced Analytics / Benchmarks as paid add-ons
 - **Closed 26 July, parked.** Both stay as they are — Analytics keeps `canViewRevenue`, Benchmarks stays free. No purchase flow. Parked until AI features ship.
