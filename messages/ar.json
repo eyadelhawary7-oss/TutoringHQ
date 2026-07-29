@@ -3275,7 +3275,10 @@
       "slaNote": "قانون حماية البيانات بيطلب الرد خلال {days} يومًا من الطلب الموثّق. «تستحق قريبًا» بتشمل أي طلب باقي له أقل من ٥ أيام، وكمان اللي فات موعده."
     },
     "platformConfigGroupFeatures": "الميزات",
-    "platformConfigGroupSystem": "النظام"
+    "platformConfigGroupSystem": "النظام",
+    "promoSummaryActive": "نشطة",
+    "promoSummaryRedemptions": "استخدامات",
+    "promoSummaryGiven": "مُنِح"
   },
   "ceo": {
     "brandTitle": "TutoringHQ",

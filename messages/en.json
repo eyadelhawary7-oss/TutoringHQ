@@ -5176,7 +5176,10 @@
       "slaNote": "PDPL requires a response within {days} days of a verified request. Due soon flags anything under 5 days, including anything already past its date."
     },
     "platformConfigGroupFeatures": "Features",
-    "platformConfigGroupSystem": "System"
+    "platformConfigGroupSystem": "System",
+    "promoSummaryActive": "Active",
+    "promoSummaryRedemptions": "Redemptions",
+    "promoSummaryGiven": "Given"
   },
   "notFound": {
     "heading": "Page Not Found",

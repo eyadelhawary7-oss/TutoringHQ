@@ -22,7 +22,25 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to load promo codes' }, { status: 500 });
   }
 
-  return NextResponse.json({ promoCodes: rows ?? [] });
+  // Merged-Admin-Platform §05 — the three summary tiles. "Given" is the EGP
+  // actually discounted, which lives on promo_code_redemptions, not on the code
+  // itself: a code's uses_count says how often it was used, never for how much.
+  let totalGivenEgp: number | null = null;
+  try {
+    const { data: redemptions, error: redErr } = await ctx.supabaseAdmin
+      .from('promo_code_redemptions')
+      .select('discount_amount_egp');
+    if (redErr) throw redErr;
+    totalGivenEgp = ((redemptions ?? []) as { discount_amount_egp: number | string | null }[]).reduce(
+      (sum, r) => sum + Number(r.discount_amount_egp || 0),
+      0,
+    );
+  } catch {
+    // null, not 0 — "we did not read it" is not "we gave away nothing".
+    totalGivenEgp = null;
+  }
+
+  return NextResponse.json({ promoCodes: rows ?? [], totalGivenEgp });
 }
 
 export async function POST(request: NextRequest) {
