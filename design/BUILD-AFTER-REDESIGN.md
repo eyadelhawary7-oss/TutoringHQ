@@ -201,12 +201,16 @@ Everyone joining before 16 August waits until 16 August to start their 14 days; 
 - ⚠ **Built 28 July and closed unmerged on Eyad's call:** one teacher console, not two. `/ceo/teachers` already covers the data. Re-read `SKIPPED-SCREENS.md` Phase E before rebuilding this.
 
 ## R8 · Card orders coming-soon screen
+> ### ✅ CLOSED — built 29 July 2026, PR #231
+> `src/components/orders/CardOrdersTeaser.tsx` — the ID-card preview and four-point feature list,
+> swapped in for the plain shared `ComingSoon` at the `card_orders_enabled = false` gate in
+> `/orders`. The design's own "Notify me when it launches" CTA and the "Notified" confirmation
+> state were **not** built, per D7 below — the CTA slot instead carries the same, already-working
+> "enable it in Settings" link the gate showed before, unchanged.
 - **What:** The teaser a center sees while card ordering is gated.
 - **Drawn in:** `Merged-Center-Orders` §04.
-- **Exists:** the gated branch at `/orders` now renders the shared `ComingSoon`.
-- **Build:** the card preview and four-point teaser layout.
 - **Touches:** account state.
-- **Blocked by:** the notify-me registration is **D7 in §2** — it is a write with no destination. Build the screen **without** the notify-me control and log it, per the standing rule on controls that do not exist.
+- **Blocked by (the notify-me control only, not the screen):** the notify-me registration is **D7 in §2** — it is a write with no destination.
 
 ## R9 · A centre cannot see its own outgoing teacher-link requests
 - **Raised:** 29 July 2026, building R5. Out of scope for that PR and logged here instead.

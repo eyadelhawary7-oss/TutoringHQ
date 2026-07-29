@@ -69,6 +69,7 @@ vi.mock('@/app/[locale]/(dashboard)/orders/OrdersPageClient', () => ({
 
 import * as Sentry from '@sentry/nextjs';
 import OrdersPageClient from '@/app/[locale]/(dashboard)/orders/OrdersPageClient';
+import CardOrdersTeaser from '@/components/orders/CardOrdersTeaser';
 import OrdersPage from '@/app/[locale]/(dashboard)/orders/page';
 
 const USER_ID = 'user-abc';
@@ -218,7 +219,7 @@ describe('OrdersPage — Rule 151 CORE+best-effort split (fail-open bypass fix)'
     expect(usersPermsMaybeSingle).not.toHaveBeenCalled();
   });
 
-  it('card_orders_enabled = false -> disabled state, even for a privileged owner (fail CLOSED)', async () => {
+  it('card_orders_enabled = false -> disabled state (card teaser), even for a privileged owner (fail CLOSED)', async () => {
     usersCoreMaybeSingle.mockResolvedValue({
       data: { id: USER_ID, center_id: CENTER_ID, role: 'owner' },
       error: null,
@@ -232,6 +233,11 @@ describe('OrdersPage — Rule 151 CORE+best-effort split (fail-open bypass fix)'
     const texts = collectText(result);
 
     expect(result?.type).not.toBe(OrdersPageClient);
-    expect(texts).toContain('orders.disabledTitle');
+    // The teaser is its own async component (Merged-Center-Orders §04) - its
+    // copy comes from translations resolved inside its own body, which this
+    // shallow render never executes, so assert the element type + the CTA
+    // (built here in the page, so it IS in the returned tree) instead.
+    expect(result?.type).toBe(CardOrdersTeaser);
+    expect(texts).toContain('orders.disabledCta');
   });
 });
