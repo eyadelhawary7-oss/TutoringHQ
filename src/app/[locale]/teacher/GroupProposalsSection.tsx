@@ -459,6 +459,17 @@ export default function GroupProposalsSection({
                       </span>
                     </p>
                   )}
+                  {selectedJoinable.feePerClass != null && (
+                    <p>
+                      {t('youEarn')}:{' '}
+                      <span className="font-mono font-semibold text-[var(--color-teal-deep)]">
+                        {formatCurrency(
+                          selectedJoinable.feePerClass - selectedJoinable.centerCutEgp,
+                          locale,
+                        )}
+                      </span>
+                    </p>
+                  )}
                   <p>
                     {t('groupCurrentCut')}:{' '}
                     <span className="font-mono font-semibold text-[var(--color-text-primary)]">
@@ -526,6 +537,14 @@ export default function GroupProposalsSection({
               onChange={(e) => setForm((f) => ({ ...f, cut: e.target.value }))}
               className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 font-mono text-sm text-[var(--color-text-primary)]"
             />
+            {form.cut !== '' && effectiveFee > 0 && Number.isFinite(Number(form.cut)) && (
+              <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                {t('youEarn')}:{' '}
+                <span className="font-mono font-semibold text-[var(--color-teal-deep)]">
+                  {formatCurrency(effectiveFee - Number(form.cut), locale)}
+                </span>
+              </p>
+            )}
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
@@ -597,6 +616,14 @@ export default function GroupProposalsSection({
                       {t('studentRate')}:{' '}
                       <span className="font-mono font-semibold">{formatCurrency(p.feePerClass, locale)}</span>
                     </p>
+                    {p.latestOffer && (
+                      <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
+                        {t('youEarn')}:{' '}
+                        <span className="font-mono font-semibold text-[var(--color-teal-deep)]">
+                          {formatCurrency(p.feePerClass - p.latestOffer.cutEgp, locale)}
+                        </span>
+                      </p>
+                    )}
                     {p.targetGroupId && (
                       <p className="mt-1 text-xs text-[var(--color-text-muted)]">
                         {t('studentCountLabel')}:{' '}

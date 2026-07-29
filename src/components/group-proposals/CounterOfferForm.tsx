@@ -1,6 +1,7 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { formatCurrency } from '@/lib/formatNumber';
 
 /**
  * The counter-offer sub-form shared by both group-proposal screens: a cut input,
@@ -30,6 +31,7 @@ export default function CounterOfferForm({
   borderClass: string;
 }) {
   const t = useTranslations('groupProposals');
+  const locale = useLocale();
 
   return (
     <div className="mt-3 flex flex-wrap items-end gap-2 rounded-lg bg-[var(--color-surface-2)] p-3">
@@ -45,6 +47,14 @@ export default function CounterOfferForm({
           onChange={(e) => setCounterCut(e.target.value)}
           className={`w-32 rounded-lg border ${borderClass} bg-[var(--color-surface-1)] px-2 py-1.5 font-mono text-sm text-[var(--color-text-primary)]`}
         />
+        {counterCut !== '' && Number.isFinite(Number(counterCut)) && (
+          <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+            {t('youEarn')}:{' '}
+            <span className="font-mono font-semibold text-[var(--color-teal-deep)]">
+              {formatCurrency(feePerClass - Number(counterCut), locale)}
+            </span>
+          </p>
+        )}
       </div>
       <div className="min-w-0 flex-1">
         <label className="mb-1 block text-xs font-medium text-[var(--color-text-primary)]">
