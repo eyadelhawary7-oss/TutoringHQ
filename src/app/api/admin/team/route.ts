@@ -8,6 +8,10 @@ import {
 import { validateCSRFRequest } from '@/lib/csrf';
 import { verifyPasswordForSensitiveAction } from '@/lib/verify-password';
 import { parseBodyWithLimit } from '@/lib/validate';
+import {
+  fetchPermissionKeysForAdmins,
+  setAdminPermissionKeys,
+} from '@/lib/adminPermissionsStore';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,11 +20,21 @@ export async function GET(request: NextRequest) {
 
     const { data: team, error } = await ctx.supabaseAdmin
       .from('admin_users')
-      .select('id, name, email, role, phone, custom_permissions, created_at')
+      .select('id, name, email, role, phone, created_at')
       .order('created_at', { ascending: true });
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ team: team || [] });
+
+    // Grants come from `public.permissions`, the canonical store. The response
+    // field keeps the `custom_permissions` wire name so the client is unchanged.
+    const rows = (team ?? []) as { id: string }[];
+    const grants = await fetchPermissionKeysForAdmins(
+      ctx.supabaseAdmin,
+      rows.map((m) => m.id),
+    );
+    return NextResponse.json({
+      team: rows.map((m) => ({ ...m, custom_permissions: grants.get(m.id) ?? [] })),
+    });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
@@ -132,6 +146,8 @@ export async function POST(request: NextRequest) {
     const adminEmail = (email || '').trim() || `${formattedPhone}@centerhq.placeholder`;
 
     const customPerms = custom_permissions ?? [];
+    // `custom_permissions` is deliberately NOT written — `public.permissions` is
+    // the canonical store as of 2026-07-30 and there is no dual-write.
     const { error: insertError } = await ctx.supabaseAdmin
       .from('admin_users')
       .insert({
@@ -140,13 +156,25 @@ export async function POST(request: NextRequest) {
         email: adminEmail,
         phone: formattedPhone,
         role,
-        custom_permissions: customPerms,
       });
 
     if (insertError) {
       // Roll back a freshly provisioned auth user so a failed add never leaves an orphan.
       if (provisioned && userId) await ctx.supabaseAdmin.auth.admin.deleteUser(userId).catch(() => {});
       return NextResponse.json({ error: insertError.message }, { status: 500 });
+    }
+
+    // Grants go in only for a custom role; a named role derives its set from
+    // ROLE_PERMISSIONS and must not be frozen into rows that then go stale.
+    if (role === 'custom' && customPerms.length > 0) {
+      const granted = await setAdminPermissionKeys(ctx.supabaseAdmin, userId, customPerms);
+      if (!granted.ok) {
+        // The admin row exists but has no grants — roll it back rather than
+        // leave a member who silently has none of what they were invited with.
+        await ctx.supabaseAdmin.from('admin_users').delete().eq('id', userId);
+        if (provisioned && userId) await ctx.supabaseAdmin.auth.admin.deleteUser(userId).catch(() => {});
+        return NextResponse.json({ error: granted.error }, { status: 500 });
+      }
     }
 
     // Link the HR staff row (sm/sr) to this login so scoped queries (getInternalScope)
@@ -237,16 +265,20 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Cannot change super admin role' }, { status: 400 });
     }
 
-    const updatePayload: { role: string; custom_permissions?: string[] } = { role };
-    if (role === 'custom' && custom_permissions) {
-      updatePayload.custom_permissions = custom_permissions;
-    }
     const { error } = await ctx.supabaseAdmin
       .from('admin_users')
-      .update(updatePayload)
+      .update({ role })
       .eq('id', memberId);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // Grants live in `public.permissions` only. Moving OFF the custom role
+    // revokes the bespoke set — otherwise a demotion would leave the old grants
+    // enabled and the named role would silently out-grant itself.
+    const desired = role === 'custom' ? (custom_permissions ?? []) : [];
+    const granted = await setAdminPermissionKeys(ctx.supabaseAdmin, memberId, desired);
+    if (!granted.ok) return NextResponse.json({ error: granted.error }, { status: 500 });
+
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });

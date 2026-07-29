@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
-import { customPermissionsToKeys, fetchAdminAccessFlags } from '@/lib/admin-access';
+import { fetchAdminAccessFlags } from '@/lib/admin-access';
 import { getAdminPermissions } from '@/lib/admin-roles';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { parseBodyWithLimit } from '@/lib/validate';
@@ -53,15 +53,9 @@ export async function GET(request: Request) {
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { supabaseAdmin, userId } = ctx;
-    const { data: au } = await supabaseAdmin
-      .from('admin_users')
-      .select('role, custom_permissions')
-      .eq('id', userId)
-      .maybeSingle();
     const flags = await fetchAdminAccessFlags(supabaseAdmin, userId);
-    const effRole = flags.isSuperAdmin ? 'super_admin' : (au?.role ?? 'internal_viewer');
-    const keys = customPermissionsToKeys(au?.custom_permissions);
-    const perms = getAdminPermissions(effRole, keys);
+    const effRole = flags.isSuperAdmin ? 'super_admin' : (flags.adminRole ?? 'internal_viewer');
+    const perms = getAdminPermissions(effRole, flags.permissionKeys);
     if (!flags.canApproveSignups && !perms.includes('renewals')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

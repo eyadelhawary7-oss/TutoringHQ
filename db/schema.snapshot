@@ -2159,7 +2159,7 @@ CONSTRAINT pending_enrollments.pending_enrollments_student_id_fkey type=f def=FO
 CONSTRAINT pending_signups.pending_signups_phone_key type=u def=UNIQUE (phone)
 CONSTRAINT pending_signups.pending_signups_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT permissions.permissions_pkey type=p def=PRIMARY KEY (id)
-CONSTRAINT permissions.permissions_user_id_fkey type=f def=FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+CONSTRAINT permissions.permissions_user_id_fkey type=f def=FOREIGN KEY (user_id) REFERENCES admin_users(id) ON DELETE CASCADE
 CONSTRAINT permissions.permissions_user_id_permission_key type=u def=UNIQUE (user_id, permission)
 CONSTRAINT phone_verifications.phone_verifications_attempts_chk type=c def=CHECK ((attempts >= 0))
 CONSTRAINT phone_verifications.phone_verifications_enrollment_id_fkey type=f def=FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON DELETE SET NULL
@@ -2662,6 +2662,7 @@ INDEX idx_pending_enrollments_group_id ON pending_enrollments def=CREATE INDEX i
 INDEX idx_pending_enrollments_student_id ON pending_enrollments def=CREATE INDEX idx_pending_enrollments_student_id ON public.pending_enrollments USING btree (student_id)
 INDEX pending_signups_expires_idx ON pending_signups def=CREATE INDEX pending_signups_expires_idx ON public.pending_signups USING btree (expires_at) WHERE (completed_at IS NULL)
 INDEX pending_signups_phone_idx ON pending_signups def=CREATE INDEX pending_signups_phone_idx ON public.pending_signups USING btree (phone)
+INDEX permissions_user_enabled_idx ON permissions def=CREATE INDEX permissions_user_enabled_idx ON public.permissions USING btree (user_id, enabled)
 INDEX idx_phone_verifications_enrollment ON phone_verifications def=CREATE INDEX idx_phone_verifications_enrollment ON public.phone_verifications USING btree (enrollment_id)
 INDEX idx_phone_verifications_lookup ON phone_verifications def=CREATE INDEX idx_phone_verifications_lookup ON public.phone_verifications USING btree (phone, purpose)
 INDEX idx_pin_reset_otps_phone_expiry ON pin_reset_otps def=CREATE INDEX idx_pin_reset_otps_phone_expiry ON public.pin_reset_otps USING btree (phone, expires_at) WHERE (used = false)

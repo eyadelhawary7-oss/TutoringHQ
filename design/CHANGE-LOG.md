@@ -37,7 +37,8 @@ If a row ever names one, that row is a mistake.
 | [#217](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/217) | `7c787fe9` | 2026-07-29 | none — billing cron | none | v31 |
 | [#219](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/219) | `90a575d1` | 2026-07-29 | none — doc only | none | v31 |
 | [#220](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/220) | `0551992f` | 2026-07-29 | `Design-Patterns §01–§06` — **ALL screens** once adopted: `EmptyState` has 11 adopters today | none yet — primitives only, adoption is per-file | v31 → **v32** |
-| Admin-Accounts | *(on merge)* | 2026-07-29 | `Admin-Accounts §01` (centre half), `§02`, `§03` (**R5**, new route), `§04` | `/{locale}/admin/centers/[id]`, `/{locale}/admin/internal-team`, `/{locale}/admin/teacher-links` (**new**), `/{locale}/admin/referrals` | v32 → **v33** |
+| [#221](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/221) | `61d5cda4` | 2026-07-29 | `Admin-Accounts §01` (centre half), `§02`, `§03` (**R5**, new route), `§04` | `/{locale}/admin/centers/[id]`, `/{locale}/admin/internal-team`, `/{locale}/admin/teacher-links` (**new**), `/{locale}/admin/referrals` | v32 → **v33** |
+| Permissions store | *(on merge)* | 2026-07-30 | `Admin-Accounts §02` — the member sheet's toggles now persist to `public.permissions` | `/{locale}/admin/internal-team`, plus every admin gate that resolves a permission set | v33 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -369,3 +370,36 @@ read as neither name.
 **`admin/centers`' own three-dot menu was NOT converted.** `PER-FILE-PROMPT.md` lists it as an
 Admin-Accounts adopter, but it lives on the centres *list*, which is `Merged-Admin-Platform` §01,
 not a section of this file. It converts there.
+
+**Permissions store (30 July 2026)** — `public.permissions` becomes canonical for admin-portal
+permission grants. Eyad's decision, 29 July. No screens changed; this is the store underneath
+`Admin-Accounts §02`, which shipped in #221 on the old one.
+
+**Why `permissions` and not the jsonb column.** `admin_users.custom_permissions` is a blob with no
+history. `permissions` carries `enabled` and `created_at`, so a grant records who was given what and
+when — and a revoked grant is flipped to `enabled = false`, never deleted, so the trail survives the
+revocation. Both stores were empty, so nothing was lost in the switch.
+
+**One store, no dual-write.** Nothing reads `custom_permissions` any more and nothing writes it. A
+dual-read would be a dual-store with extra steps, and it would let a stale blob silently out-grant
+the audited table. `customPermissionsToKeys` was deleted rather than deprecated in place — an
+un-called normaliser for a dead column is how a dead column gets re-adopted.
+
+**A migration was needed, and it is the reason this is its own PR.** `permissions.user_id`
+referenced `users(id)` — the *centre-tenant* table. Neither `admin_users` row has a matching `users`
+row, verified in the live catalog, so the first save would have raised a foreign-key violation for
+every admin including the owner. `20260730090000_permissions_canonical_admin_store.sql` repoints the
+FK to `admin_users(id)`. Safe: 0 rows, zero code readers before this PR, and the existing RLS policy
+`user_id = auth.uid()` is unaffected because both tables key on the Supabase auth user id.
+
+⚠ **Manual apply, and it must land BEFORE the code deploys.** The read path is safe either way, but
+`setAdminPermissionKeys` writes against the new FK. Branching never auto-applies to production on
+merge.
+
+**Three gates got simpler on the way through.** `/api/admin/centers/[id]`, `/api/admin/centers` and
+`/api/admin/renewals` each re-queried `admin_users` for the role and permissions that
+`fetchAdminAccessFlags` had already returned. They now read the flags. `AdminAccessFlags.customPermissionKeys`
+is renamed `permissionKeys`.
+
+**`admin_users.custom_permissions` is DEAD and pending a drop** — Eyad's call, deliberately not done
+here. Logged in `BUILD-AFTER-REDESIGN.md` §6.

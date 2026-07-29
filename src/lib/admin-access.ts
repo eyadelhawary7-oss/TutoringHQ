@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { phoneFromCenterhqAuthEmail } from '@/lib/ownerPhone';
+import { fetchAdminPermissionKeys } from '@/lib/adminPermissionsStore';
 
 /**
  * Normalise a phone candidate to digits-only so format differences between
@@ -30,26 +31,20 @@ export function isSuperAdminPhone(phone: string | null): boolean {
     .includes(candidate);
 }
 
-/**
- * Normalize admin_users.custom_permissions: supports legacy string[] or jsonb object flags.
+/*
+ * `customPermissionsToKeys` lived here and was deleted on 2026-07-30 when
+ * `public.permissions` became the canonical admin permission store. It
+ * normalised `admin_users.custom_permissions`, which nothing reads any more.
+ * The column itself is dead and pending a drop — Eyad's call, not now. Keeping
+ * an un-called normaliser for it is how a dead column gets re-adopted.
  */
-export function customPermissionsToKeys(raw: unknown): string[] {
-  if (Array.isArray(raw)) {
-    return raw.filter((x): x is string => typeof x === 'string');
-  }
-  if (raw && typeof raw === 'object') {
-    return Object.entries(raw as Record<string, unknown>)
-      .filter(([, v]) => v === true)
-      .map(([k]) => k);
-  }
-  return [];
-}
 
 export type AdminAccessFlags = {
   isSuperAdmin: boolean;
   canApproveSignups: boolean;
   adminRole: string | null;
-  customPermissionKeys: string[];
+  /** Grants from `public.permissions` — the canonical store since 2026-07-30. */
+  permissionKeys: string[];
 };
 
 /**
@@ -102,20 +97,23 @@ export async function fetchAdminAccessFlags(
 
   const { data: adminUser } = await supabase
     .from('admin_users')
-    .select('role, custom_permissions')
+    .select('role')
     .eq('id', userId)
     .maybeSingle();
 
-  const customPermissionKeys = customPermissionsToKeys(adminUser?.custom_permissions);
+  // Canonical store. `admin_users.custom_permissions` is NOT read here and is
+  // not consulted as a fallback — a dual-read is a dual-store with extra steps,
+  // and it would let a stale blob silently out-grant the audited table.
+  const permissionKeys = await fetchAdminPermissionKeys(supabase, userId);
   const dbSuper = adminUser?.role === 'super_admin';
   const isSuperAdmin = dbSuper || phoneSuper;
-  const canApproveSignups = isSuperAdmin || customPermissionKeys.includes('can_approve_signups');
+  const canApproveSignups = isSuperAdmin || permissionKeys.includes('can_approve_signups');
 
   return {
     isSuperAdmin,
     canApproveSignups,
     adminRole: adminUser?.role ?? null,
-    customPermissionKeys,
+    permissionKeys,
   };
 }
 
@@ -129,7 +127,7 @@ export async function requireSuperAdminRow(
 ): Promise<NextResponse | null> {
   const { data: adminUser } = await supabase
     .from('admin_users')
-    .select('role, custom_permissions')
+    .select('role')
     .eq('id', userId)
     .maybeSingle();
 
