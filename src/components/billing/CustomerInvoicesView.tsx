@@ -274,7 +274,7 @@ export function CustomerInvoicesView({ endpoints }: { endpoints: CustomerInvoice
                       type="button"
                       onClick={() => void onPay(inv.id)}
                       disabled={payingId === inv.id}
-                      className="btn-press chq-focus mt-4 flex w-full items-center justify-center rounded-xl bg-amber-500 px-5 py-3 text-sm font-semibold text-black transition-colors hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="btn-press chq-focus mt-4 flex w-full items-center justify-center rounded-xl bg-amber-500 px-5 py-3 text-sm font-semibold text-black transition-colors hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {payingId === inv.id ? (
                         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />

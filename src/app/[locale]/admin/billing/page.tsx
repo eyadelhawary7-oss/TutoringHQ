@@ -439,7 +439,7 @@ export default function AdminBillingPage() {
                                       }
                                     }}
                                     disabled={actionLoading}
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50"
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 active:bg-teal-900 text-white text-sm font-semibold rounded-lg whitespace-nowrap transition-all shadow-sm hover:shadow-md disabled:opacity-50"
                                   >
                                     <CheckCircle className="w-4 h-4" />
                                     {t('approvePay')}

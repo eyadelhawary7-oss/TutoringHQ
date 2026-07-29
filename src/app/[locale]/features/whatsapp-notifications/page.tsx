@@ -108,7 +108,7 @@ export default async function WhatsappNotificationsPage({
           </p>
           <Link
             href="/signup"
-            className="mt-8 inline-flex rounded-xl bg-teal-600 px-8 py-4 text-lg font-semibold text-white transition-colors hover:bg-teal-500 btn-press chq-focus"
+            className="mt-8 inline-flex rounded-xl bg-teal-600 px-8 py-4 text-lg font-semibold text-white transition-colors hover:bg-teal-700 btn-press chq-focus"
           >
             {c.cta}
           </Link>
@@ -170,7 +170,7 @@ export default async function WhatsappNotificationsPage({
           <div className="mt-12 text-center">
             <Link
               href="/signup"
-              className="inline-flex rounded-xl bg-teal-600 px-8 py-4 text-lg font-semibold text-white transition-colors hover:bg-teal-500 btn-press chq-focus"
+              className="inline-flex rounded-xl bg-teal-600 px-8 py-4 text-lg font-semibold text-white transition-colors hover:bg-teal-700 btn-press chq-focus"
             >
               {c.cta}
             </Link>

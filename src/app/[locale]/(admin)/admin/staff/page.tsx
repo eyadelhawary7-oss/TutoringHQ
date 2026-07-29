@@ -360,7 +360,7 @@ export default function StaffPage() {
                 setEditingMember(null)
                 setShowAddModal(true)
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium transition-colors"
             >
               <Plus className="w-4 h-4" />
               {t('staff.add')}
@@ -428,7 +428,7 @@ export default function StaffPage() {
                     setEditingMember(null)
                     setShowAddModal(true)
                   }}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white rounded-lg text-sm font-semibold transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-semibold transition-colors"
                 >
                   <Plus className="w-4 h-4" aria-hidden />
                   {t('staff.empty_cta')}
@@ -674,7 +674,7 @@ export default function StaffPage() {
                   type="button"
                   onClick={() => void handleSave()}
                   disabled={saving}
-                  className="px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                  className="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
                 >
                   {saving ? t('staff.saving') : t('staff.save')}
                 </button>
@@ -743,7 +743,7 @@ export default function StaffPage() {
                   type="button"
                   onClick={() => void handleTerminate()}
                   disabled={saving}
-                  className="px-4 py-2 bg-red-700 hover:bg-red-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                  className="px-4 py-2 bg-red-700 hover:bg-red-800 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
                 >
                   {saving ? t('staff.saving') : t('staff.deactivate')}
                 </button>

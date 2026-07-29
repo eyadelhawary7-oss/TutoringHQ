@@ -131,7 +131,7 @@ export function SubscriptionOverridesPanel({
           type="button"
           disabled={busy !== null}
           onClick={() => void runExtend(30)}
-          className="rounded-lg bg-teal-600 text-white px-4 py-2 text-sm font-semibold hover:bg-teal-500 disabled:opacity-50"
+          className="rounded-lg bg-teal-600 text-white px-4 py-2 text-sm font-semibold hover:bg-teal-700 disabled:opacity-50"
         >
           {t('extend30')}
         </button>
@@ -160,7 +160,7 @@ export function SubscriptionOverridesPanel({
           type="button"
           disabled={busy !== null}
           onClick={() => void runSuspend()}
-          className="rounded-lg bg-red-600 text-white px-4 py-2 text-sm font-semibold hover:bg-red-500 disabled:opacity-50"
+          className="rounded-lg bg-red-600 text-white px-4 py-2 text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
         >
           {t('suspend')}
         </button>
@@ -202,7 +202,7 @@ export function SubscriptionOverridesPanel({
           type="button"
           disabled={busy !== null}
           onClick={() => void runOverridePrice()}
-          className="rounded-lg bg-amber-600 text-white px-4 py-2 text-sm font-semibold hover:bg-amber-500 disabled:opacity-50"
+          className="rounded-lg bg-amber-600 text-white px-4 py-2 text-sm font-semibold hover:bg-amber-700 disabled:opacity-50"
         >
           {t('overridePrice')}
         </button>

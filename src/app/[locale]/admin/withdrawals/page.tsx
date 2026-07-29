@@ -275,7 +275,7 @@ export default function AdminWithdrawalsPage() {
                                   if (!window.confirm(t('confirmPaid'))) return;
                                   void patchWithdrawal(r.id, 'mark_paid');
                                 }}
-                                className="rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-500 disabled:opacity-50"
+                                className="rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
                               >
                                 {actionId === r.id ? tCommon('loading') : t('markPaid')}
                               </button>

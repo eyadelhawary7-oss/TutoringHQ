@@ -172,6 +172,55 @@
   --color-brass: #9a6b1f; /* warning, attention */
   --color-sand: #f4ebd7; /* warning fill */
   --color-danger: #9c3322; /* destructive, error */
+
+  /* ── §4 The Tailwind teal scale, folded onto the accent family ────────────
+     1098 `teal-*` utilities across 11 shades were resolving to Tailwind's
+     DEFAULT palette, not to §4: `bg-teal-600` compiled to #009588, while the
+     accent is #0e6b61. Two utilities had been patched by hand in globals.css
+     with `!important` — `.bg-teal-600` and `.hover:bg-teal-700` — and the
+     other ~1096 uses kept rendering the wrong teal. Those patches are deleted
+     in the same commit; this block is what makes them unnecessary.
+
+     Eleven shades collapse onto five §4 tokens. That loses distinctions, so
+     the pairs that were doing real work were found first and are preserved:
+
+       teal-50 vs teal-100   a fill against its own border (analytics/page.tsx)
+                             → 50 stays `mint`, 100 moves to `mint-deep`.
+       teal-700 vs teal-800  hover against active (admin/billing/page.tsx)
+                             → 800 stays `accent-deep`, that one call site
+                               moves to `active:bg-teal-900` = `ground`.
+       teal-600 vs teal-500  a fill against its LIGHTER hover, 45 sites.
+                             → normalised to darken instead. See below.
+
+     WHY 45 BUTTONS NOW DARKEN ON HOVER INSTEAD OF LIGHTENING.
+     `bg-teal-600 hover:bg-teal-700` (45 uses) and `bg-teal-600
+     hover:bg-teal-700` (129 uses) both existed — two contradictory
+     conventions for the same gesture. §4 documents `accent-deep` as
+     "pressed, text on mint", so darker-on-interaction is the design's rule
+     and the 129 were right. The 45 were drift and were rewritten to match,
+     rather than given a lighter token §4 does not have.
+
+     A lighter accent was looked for before being ruled out. #0f766b appears
+     96 times across the merged design files — and all 96 are the stop in
+     `linear-gradient(150deg,#0f766b,#083f39)`, the logo mark. Zero solid
+     fills. Promoting a gradient stop to a button hover would have invented a
+     role the design never gave it.
+
+     Declared as the 11 numeric shades, NOT as `--color-teal-*: initial`:
+     `--color-teal`, `--color-teal-deep` and `--color-teal-soft` are §4
+     aliases living in globals.css's own @theme block, and a namespace reset
+     would take them with it and break `.btn-primary`. */
+  --color-teal-50: var(--color-mint); /* #dfeeeb — accent fill */
+  --color-teal-100: var(--color-mint-deep); /* #bfe3dd — accent border */
+  --color-teal-200: var(--color-mint-deep);
+  --color-teal-300: var(--color-mint-deep);
+  --color-teal-400: var(--color-accent); /* #0e6b61 — primary action */
+  --color-teal-500: var(--color-accent);
+  --color-teal-600: var(--color-accent);
+  --color-teal-700: var(--color-accent-deep); /* #0a514a — hover, ink on mint */
+  --color-teal-800: var(--color-accent-deep);
+  --color-teal-900: var(--color-ground); /* #083f39 — active, darkest ink */
+  --color-teal-950: var(--color-ground);
 }
 
 /* ── §2 The Arabic allowance ────────────────────────────────────────────────

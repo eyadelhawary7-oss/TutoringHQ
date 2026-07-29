@@ -151,7 +151,7 @@ export function AtRiskPanel() {
                         type="button"
                         onClick={() => handleSendReminder(s)}
                         disabled={!!sendingId}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-teal-100 text-teal-700 hover:bg-teal-200 disabled:opacity-50 transition-colors"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-teal-50 text-teal-700 hover:bg-teal-100 disabled:opacity-50 transition-colors"
                       >
                         {sendingId === s.id ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
                         {t('sendReminderToParent', { defaultValue: 'إرسال تذكير للولي' })}

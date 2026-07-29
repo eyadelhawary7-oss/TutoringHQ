@@ -604,7 +604,7 @@ export default function CenterAssignmentsPage() {
                   setError(null)
                   setBatchOpen(true)
                 }}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0"
               >
                 <Layers className="w-4 h-4 shrink-0" aria-hidden />
                 {t('centerAssignments.batch_assign')}
@@ -745,7 +745,7 @@ export default function CenterAssignmentsPage() {
                                   setPickRep(a.staff_id ?? '')
                                   setError(null)
                                 }}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs transition-colors"
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs transition-colors"
                               >
                                 <UserPlus className="w-3.5 h-3.5" />
                                 {t('centerAssignments.subassign')}
@@ -873,7 +873,7 @@ export default function CenterAssignmentsPage() {
                                 setPickRep(a.staff_id ?? '')
                                 setError(null)
                               }}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs transition-colors"
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs transition-colors"
                             >
                               <UserPlus className="w-3.5 h-3.5" />
                               {t('centerAssignments.subassign')}
@@ -988,7 +988,7 @@ export default function CenterAssignmentsPage() {
                   type="button"
                   onClick={() => void handleBatchAssign()}
                   disabled={saving || !batchManager || batchSelected.size === 0}
-                  className="px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                  className="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
                 >
                   {saving ? t('centerAssignments.saving') : t('centerAssignments.batch_submit')}
                 </button>
@@ -1045,7 +1045,7 @@ export default function CenterAssignmentsPage() {
                   type="button"
                   onClick={() => void handleSubAssign()}
                   disabled={saving || !pickRep}
-                  className="px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                  className="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
                 >
                   {saving ? t('centerAssignments.saving') : t('centerAssignments.subassign_submit')}
                 </button>
@@ -1113,7 +1113,7 @@ export default function CenterAssignmentsPage() {
                   type="button"
                   onClick={() => void handleOverride()}
                   disabled={saving}
-                  className="px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                  className="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
                 >
                   {saving ? t('centerAssignments.saving') : t('centerAssignments.save')}
                 </button>
@@ -1224,7 +1224,7 @@ export default function CenterAssignmentsPage() {
                     !form.sourced_by ||
                     (form.sourced_by !== 'eyad' && !form.staff_id)
                   }
-                  className="px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                  className="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
                 >
                   {saving ? t('centerAssignments.saving') : t('centerAssignments.save')}
                 </button>
@@ -1269,7 +1269,7 @@ export default function CenterAssignmentsPage() {
                   type="button"
                   onClick={() => void handleDisputeFlag()}
                   disabled={saving || disputeNotes.trim().length < 5}
-                  className="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
                 >
                   {saving ? t('centerAssignments.saving') : t('centerAssignments.dispute_flag')}
                 </button>

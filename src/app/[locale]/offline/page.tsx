@@ -42,7 +42,7 @@ export default function OfflinePage() {
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="rounded-xl bg-slate-700 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-slate-600 btn-press chq-focus"
+          className="rounded-xl bg-slate-700 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-slate-800 btn-press chq-focus"
         >
           {t('retry')}
         </button>

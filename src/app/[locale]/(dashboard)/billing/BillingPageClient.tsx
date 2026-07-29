@@ -413,7 +413,7 @@ export default function BillingPageClient() {
               !data.payNowInvoiceId ||
               (center.subscription_status ?? '').toLowerCase() === 'cancelled'
             }
-            className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-50"
+            className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
           >
             {paying ? t('nextPayment.paying') : t('nextPayment.payNow')}
           </button>

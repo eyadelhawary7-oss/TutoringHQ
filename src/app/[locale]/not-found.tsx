@@ -90,7 +90,7 @@ export default function NotFound() {
         <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
           <a
             href={`/${locale}`}
-            className="inline-flex w-full justify-center rounded-xl bg-teal-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-teal-500 btn-press chq-focus sm:w-auto"
+            className="inline-flex w-full justify-center rounded-xl bg-teal-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-teal-700 btn-press chq-focus sm:w-auto"
           >
             {t('backToHome')}
           </a>
