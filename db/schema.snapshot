@@ -799,6 +799,8 @@ COLUMN demo_requests.handled_at ord=9 type=timestamp with time zone notnull=fals
 COLUMN demo_requests.handled_by ord=10 type=uuid notnull=false default=∅
 COLUMN demo_requests.created_at ord=11 type=timestamp with time zone notnull=true default=now()
 COLUMN demo_requests.updated_at ord=12 type=timestamp with time zone notnull=true default=now()
+COLUMN demo_requests.area ord=13 type=text notnull=false default=∅
+COLUMN demo_requests.student_count ord=14 type=integer notnull=false default=∅
 COLUMN enrollment_otps.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN enrollment_otps.group_id ord=2 type=uuid notnull=true default=∅
 COLUMN enrollment_otps.phone ord=3 type=text notnull=true default=∅
@@ -2052,6 +2054,7 @@ CONSTRAINT demo_requests.demo_requests_assigned_to_fkey type=f def=FOREIGN KEY (
 CONSTRAINT demo_requests.demo_requests_handled_by_fkey type=f def=FOREIGN KEY (handled_by) REFERENCES auth.users(id) ON DELETE SET NULL
 CONSTRAINT demo_requests.demo_requests_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT demo_requests.demo_requests_status_check type=c def=CHECK ((status = ANY (ARRAY['pending'::text, 'contacted'::text, 'approved'::text, 'rejected'::text])))
+CONSTRAINT demo_requests.demo_requests_student_count_nonneg type=c def=CHECK ((student_count >= 0))
 CONSTRAINT enrollment_otps.enrollment_otps_group_id_fkey type=f def=FOREIGN KEY (group_id) REFERENCES student_groups(id) ON DELETE CASCADE
 CONSTRAINT enrollment_otps.enrollment_otps_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT enrollments.enrollments_approved_by_fkey type=f def=FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL
