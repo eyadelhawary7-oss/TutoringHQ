@@ -5163,6 +5163,17 @@
       "teacherPlan_standard": "Teacher · Standard",
       "teacherPlan_pro": "Teacher · Pro",
       "teacherPlan_scale": "Teacher · Scale"
+    },
+    "privacyQueue": {
+      "open": "Open",
+      "dueSoon": "Due soon",
+      "closed": "Closed",
+      "filterLabel": "Request type",
+      "filter_all": "All",
+      "filter_access": "Access",
+      "filter_deletion": "Deletion",
+      "filter_export": "Export",
+      "slaNote": "PDPL requires a response within {days} days of a verified request. Due soon flags anything under 5 days, including anything already past its date."
     }
   },
   "notFound": {

@@ -3262,6 +3262,17 @@
       "teacherPlan_standard": "معلم · ستاندرد",
       "teacherPlan_pro": "معلم · برو",
       "teacherPlan_scale": "معلم · سكيل"
+    },
+    "privacyQueue": {
+      "open": "مفتوحة",
+      "dueSoon": "تستحق قريبًا",
+      "closed": "مغلقة",
+      "filterLabel": "نوع الطلب",
+      "filter_all": "الكل",
+      "filter_access": "اطّلاع",
+      "filter_deletion": "حذف",
+      "filter_export": "تصدير",
+      "slaNote": "قانون حماية البيانات بيطلب الرد خلال {days} يومًا من الطلب الموثّق. «تستحق قريبًا» بتشمل أي طلب باقي له أقل من ٥ أيام، وكمان اللي فات موعده."
     }
   },
   "ceo": {
