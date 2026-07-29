@@ -32,6 +32,7 @@ If a row ever names one, that row is a mistake.
 | [#214](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/214) | `da69648` | 2026-07-29 | `Center-Home §01` (dashboard), `Center-Home §02` (notifications) — plus `KpiCard` and `SectionHeader`, which are shared, so treat as **ALL screens** for those two components | `/{locale}/dashboard`, `/{locale}/notifications`, and the notification bell in the dashboard chrome | v27 → **v28** |
 | [#213](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/213) | `2fc494a0` | 2026-07-29 | none — migration + schema snapshot only | none | v28 |
 | [#215](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/215) | `e4978632` | 2026-07-29 | **ALL screens** — 1098 `teal-*` utilities across 11 shades were resolving to Tailwind's default palette, not §4 | **ALL routes** — `src/app/tokens.css` and `src/app/globals.css`, both loaded by every locale-prefixed route | v28 → **v29** |
+| [#216](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/216) | `478ac860` | 2026-07-29 | `Center-Students §01`–`§04` (roster, detail, verified, import & pending) | `/{locale}/students`, `/students/[id]`, `/students/import`, `/students/pending` | v29 → **v30** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -243,3 +244,22 @@ a shimmer gradient and a fill, lines 1822–2060) moved to `var(--color-accent)`
 
 These are logged rather than fixed on purpose. Grepping `#0D9488` after this PR will still return
 hits, and that is expected, not an oversight.
+
+**Center Groups restyle (29 July 2026)** — the third Task 3 screen area. Styling only.
+
+The cleanest screen so far: only seven off-scale occurrences before the pass, against Students'
+hundred-plus. Most of what the design draws was already right, and saying so is a better outcome
+than a large diff.
+
+| | Was | Now | Why |
+|---|---|---|---|
+| Group card | `surface-1`, `rounded-xl`, `border-subtle` | `panel`, `rounded-md`, `line` | §3's 12 is the card/row default |
+| Modal | `surface-1`, `rounded-2xl` | `panel`, `rounded-xl` | `rounded-2xl` was a legacy alias already resolving to 24; naming it `xl` puts it on the scale rather than beside it |
+| Detail drawer | `surface-1` | `panel` | §4 |
+| Dividers | `border-subtle` | `line` | §4 |
+
+**Not changed, and worth recording as deliberate.** The design's `.stat` tile is radius **16**,
+while `Merged-Center-Home`'s `.kpi` is **12**. `KpiCard` is shared and was settled at 12 in #214,
+and one outlier in one merged file does not justify forking a shared component or adding a size
+prop. Both values sit on the §3 scale, so the token layer could not have flagged the difference —
+it is a design-file inconsistency, logged in `§5 DESIGN CORRECTIONS` rather than absorbed silently.

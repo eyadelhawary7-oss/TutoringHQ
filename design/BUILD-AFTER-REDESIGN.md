@@ -364,6 +364,23 @@ Nothing in this section can start until V1 lands. Ordered so that V1 unblocks th
 
 # §5 · DESIGN CORRECTIONS — edits to the merged files, not builds
 
+## D0 · The KPI/stat tile is drawn at two different radii across the merged files
+- **What:** `Merged-Center-Home` `.kpi` and `Merged-Center-Groups` `.stat` are the same component in
+  the product — a bordered figure tile on panel — but the first is drawn at **12** and the second at
+  **16**. `Merged-Center-Students` `.kpi` is also **16**.
+- **Found:** 29 July 2026, restyling Center Groups.
+- **Why the token layer could not catch it:** both 12 and 16 are on the §3 scale (`radius-md` and
+  `radius-lg`). A check can only flag values that are off the scale, not two on-scale values used for
+  one role. This is the class of drift that survives a token layer.
+- **What was done:** nothing, deliberately. `KpiCard` is shared and was settled at **12** in #214,
+  which is §3's stated "cards, rows — the default". One outlier in one file does not justify forking
+  a shared component or adding a size prop, and absorbing it silently would have hidden the
+  inconsistency.
+- **Decision needed:** pick one and correct the merged files to match. 12 is the current
+  implementation and the §3 default; 16 is what two of the three files draw.
+- **Touches:** none — a design-file edit plus, if 16 wins, a one-line change to `KpiCard`.
+
+
 These change drawings, not code. Full text in `NEW-FEATURES.md` Appendix D.
 
 | | Correction | Scope |

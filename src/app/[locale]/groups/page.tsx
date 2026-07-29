@@ -537,7 +537,7 @@ export default function GroupsPage() {
           {groups.map(g => (
             <div
               key={g.id}
-              className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-5 hover:shadow-md transition-shadow cursor-pointer group"
+              className="bg-[var(--color-panel)] rounded-md border border-[var(--color-line)] shadow-sm p-5 hover:shadow-md transition-shadow cursor-pointer group"
               onClick={() => setDetailGroup(g)}
             >
               <div className="flex items-start justify-between mb-3">
@@ -621,8 +621,8 @@ export default function GroupsPage() {
       {/* Add Group Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
-          <div className="bg-[var(--color-surface-1)] rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-6 border-b border-[var(--color-border-subtle)]">
+          <div className="bg-[var(--color-panel)] rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b border-[var(--color-line)]">
               <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('addGroup')}</h2>
               <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-[var(--color-surface-2)] rounded-lg transition-colors"><X className="w-5 h-5 text-[var(--color-text-secondary)]" /></button>
             </div>
@@ -736,7 +736,7 @@ export default function GroupsPage() {
       {detailGroup && (
         <div className="fixed inset-0 z-50" onClick={() => setDetailGroup(null)}>
           <div className="absolute inset-0 bg-black/40" />
-          <div className="absolute top-0 end-0 bottom-0 w-full max-w-md bg-[var(--color-surface-1)] border-s border-[var(--color-border)] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="absolute top-0 end-0 bottom-0 w-full max-w-md bg-[var(--color-panel)] border-s border-[var(--color-border)] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="p-5 border-b border-[var(--color-border)] flex items-center justify-between">
               <h2 className="font-bold text-[var(--color-text-primary)] text-lg">{detailGroup.name}</h2>
               <button onClick={() => setDetailGroup(null)} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-2)]"><X size={18} /></button>
