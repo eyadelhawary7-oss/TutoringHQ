@@ -17,6 +17,8 @@ actually be done, and it is the one that gets updated as the restyle hits new ga
 5. **§5 DESIGN CORRECTIONS** — edits to the merged files. Not builds.
 6. **§6 FOUNDATIONS DEBT** — what the redesign itself left behind.
 
+**§0 SECURITY sits above all of it** and is read first. It is empty in the happy case; it is not empty today.
+
 Every entry carries the same six fields: **what it is** in one sentence · **where it is drawn** ·
 **what exists today** · **what has to be built** · **touches** (money / auth / account state) ·
 **blocked by**. `READY` in the blocked field means nothing blocks it.
@@ -281,6 +283,47 @@ correction is in `TOKEN-SPEC.md` §2.
 
 ---
 
+# §0 · SECURITY — ahead of everything else
+
+## S1 · `users.teacher_group_ids` is self-writable and feeds a cross-tenant read policy
+- **What:** any authenticated user of any centre — including the lowest-privilege staff account — can read another centre's students.
+- **Found:** 28 July 2026, reading `pg_policies`, `information_schema.column_privileges` and the trigger body from the live catalog. Not from migration files.
+- **The chain, every link verified:**
+  1. `students` SELECT has two **PERMISSIVE** policies, which OR. The second, `students_teacher_select`, has no `center_id` check: `EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = students.id AND e.group_id = ANY(get_auth_teacher_group_ids()))`.
+  2. `get_auth_teacher_group_ids()` reads `users.teacher_group_ids`.
+  3. `authenticated` holds a column-level `UPDATE` grant on that column.
+  4. The RLS UPDATE policy permits it — `USING (id = auth.uid())`, `WITH CHECK (id = auth.uid() AND center_id = get_auth_center_id())`; `center_id` is unchanged so the check passes.
+  5. `chq_prevent_user_escalation` raises on `role` and `center_id` only. It never looks at this column.
+  6. The group UUID it needs is **published by design** — `GroupJoinLinkCard.tsx` builds `https://tutoringhq.app/ar/join/g/<groupId>` and centres send it to parents.
+- **Reproduce** from the browser console of an ordinary logged-in session: `supabase.from('users').update({teacher_group_ids:['<centre-B-group>']}).eq('id', myId)`, then `supabase.from('students').select('*')`.
+- **Touches:** auth, and minors' data — names, phones, parent phones.
+- **Blocked by:** READY. Nothing is waiting on anything.
+- **Fix (not applied):** `REVOKE UPDATE (teacher_group_ids, can_manage_students, can_record_payments, is_active) ON public.users FROM authenticated, anon;` plus a matching branch in the trigger, plus `AND center_id = get_auth_center_id()` on `students_teacher_select` so the second door is scoped even if the grant returns.
+
+## S2 · Three more self-writable columns feed policy decisions
+- **What:** the same root as S1. Five helpers read `public.users`; the trigger guards two columns.
+
+  | Policy input | Column | Guarded? |
+  |---|---|---|
+  | `get_auth_center_id` | `center_id` | yes — trigger **and** `WITH CHECK` |
+  | `has_center_role` | `role` | yes — trigger |
+  | `get_auth_teacher_group_ids` | `teacher_group_ids` | **no** → S1, cross-tenant |
+  | `can_manage_students_fn` | `can_manage_students` | **no** → self-grant, within tenant |
+  | `can_record_payments_fn` | `can_record_payments` | **no** → self-grant, within tenant |
+
+- Also unguarded: `is_active`, so a deactivated account can re-activate itself.
+- **Touches:** auth. Within-tenant escalation, not cross-tenant.
+- **Blocked by:** READY, same fix as S1.
+
+## S3 · The posture is defence in depth, and it is worth stating correctly
+- **Both layers are live.** This was checked rather than assumed, because getting it backwards in either direction leads somewhere bad.
+- **RLS is enforcing, not inert.** There is no `app.center_id` and **0 of 220 policies read `current_setting`**. Scope comes from `auth.uid()` — the Supabase-signed JWT — through `get_auth_center_id()`, which is `SECURITY DEFINER` with `search_path` pinned. `anon` and `authenticated` both have `rolbypassrls = false`. A browser holds the anon key and a session, so RLS is a **reachable, load-bearing boundary**, which is exactly why S1 matters.
+- **Application code is the second layer**, and it is what protects the service-role paths, where RLS is bypassed by design. `/api/db` derives `actorCenterId` from the verified token and force-applies `.eq(center_id, actorCenterId)` **after** client filters; `dbProxyScope.ts` denies unlisted tables and teachers outright.
+- **Neither layer is decorative, and neither alone is sufficient.** An auditor will ask which one is load-bearing; the answer is both, for different callers.
+- **The route audit (29 July) found no gaps** — see the note at the end of this file.
+
+---
+
 # §6 · FOUNDATIONS DEBT — what the redesign left behind
 
 Logged from the token layer (#209). None of it blocks a restyle; all of it makes one cleaner.
@@ -325,3 +368,41 @@ Logged from the token layer (#209). None of it blocks a restyle; all of it makes
 ## F8 · `src/lib/tokens.ts` is a stale dark-theme mirror
 - **What:** its `surface[0]` is `#080f1a` and `text.primary` is `#f8fafc` — the pre-cream dark palette. Its header says "keep in sync manually" and it was not.
 - **Fix:** repoint it at the §4 tokens, or delete it if nothing depends on it. Check `chartColors` consumers first; charts are their own pass.
+
+---
+
+# Appendix · Tenant-isolation route audit, 29 July 2026
+
+**Scope:** every API route touching `students`, `student_groups`, `student_group_members`,
+`attendance_scans`, `payments`, `paid_parents`, `enrollments`, `parent_portal_tokens`, `families`,
+`student_notes`. **Question:** does it scope by centre, and is that centre derived from the session
+or from something the client supplies?
+
+**Result: no gaps found.** Every route that accepts a centre identifier from the request validates it
+against the session first. No route was found that takes a centre from a request parameter and trusts it.
+
+| Family | Scoping predicate | Verdict |
+|---|---|---|
+| Centre routes | `requireCenterAuth` / `requireOwnerAdminCenter` → session `centerId` | ✅ |
+| `benchmarks` | `center_id` param honoured **only** if the caller's `organization_id` owns it, or it equals their own centre | ✅ |
+| `center-users` | `requestedCenterId !== auth.centerId && !isSuperAdmin` → 403. Carries a comment recording that it was fixed from exactly this bug | ✅ |
+| `analytics/revenue` | param honoured only `if (isSuperAdmin && qp)`; super-admin from `admin_users` + `SUPER_ADMIN_PHONES`, never `users.role` | ✅ |
+| `groups/[groupId]/attendance-heatmap` | loads the group, then `group.center_id !== userCenterId` → 403 | ✅ IDOR closed |
+| `teacher/private/*` (20 routes) | centre-less by design; `requireOwnedPrivateGroup` / `requireOwnedSession` chain on `teacher_id`, foreign ids 404, writes re-apply the predicate | ✅ |
+| `teacher/*` centre routes | `requireTeacherAuth` + link check | ✅ |
+| `admin/*`, `ceo/*` | `getAdminContext` + `requireAdminRole` / `requireSuperAdmin`; cross-tenant is intentional and gated | ✅ |
+| `cron/*` (42 routes) | all 42 import `requireCronSecret` — timing-safe compare, fails closed when the env var is unset | ✅ |
+| `/api/db` proxy | `dbProxyScope.ts`: unlisted table denies, teachers deny, forced `.eq()` applied after client filters | ✅ |
+| `join/pending-enrollment` | public by design; validates the group belongs to the supplied centre, returns `{success:true}` only | ✅ |
+| `parent/portal` | token looked up by **hash**, revoked + expiry checked, scoped to one `student_id` | ✅ |
+
+**Two false alarms worth recording, so the next audit does not re-raise them.** A grep for
+`CRON_SECRET` reports all 42 crons as unguarded — the literal lives in `requireCronSecret`, not in the
+routes. A grep for `.eq('center_id')` reports `teacher/private/*` as unscoped — those routes are
+centre-less by design and scope by `teacher_id`. **Both are artefacts of the wrong predicate, not
+findings.** Check the helper before believing the grep.
+
+**What this audit cannot prove.** It is a point-in-time read of the routes that exist today. It is
+convention, not a constraint: a new route that forgets the filter is caught by no policy, no test and
+no type error. The durable fix is a test that asserts cross-tenant denial per route family, or moving
+the remaining service-role reads behind RLS. Neither exists today. Logged, not built.
