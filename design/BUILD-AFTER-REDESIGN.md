@@ -17,6 +17,8 @@ actually be done, and it is the one that gets updated as the restyle hits new ga
 5. **§5 DESIGN CORRECTIONS** — edits to the merged files. Not builds.
 6. **§6 FOUNDATIONS DEBT** — what the redesign itself left behind.
 
+**§0 SECURITY sits above all of it** and is read first. It is empty in the happy case; it is not empty today.
+
 Every entry carries the same six fields: **what it is** in one sentence · **where it is drawn** ·
 **what exists today** · **what has to be built** · **touches** (money / auth / account state) ·
 **blocked by**. `READY` in the blocked field means nothing blocks it.
@@ -281,6 +283,91 @@ correction is in `TOKEN-SPEC.md` §2.
 
 ---
 
+# §0 · SECURITY — ahead of everything else
+
+## S1 · `users.teacher_group_ids` is self-writable and feeds a cross-tenant read policy
+- **What:** any authenticated user of any centre — including the lowest-privilege staff account — can read another centre's students.
+- **Found:** 28 July 2026, reading `pg_policies`, `information_schema.column_privileges` and the trigger body from the live catalog. Not from migration files.
+- **The chain, every link verified:**
+  1. `students` SELECT has two **PERMISSIVE** policies, which OR. The second, `students_teacher_select`, has no `center_id` check: `EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = students.id AND e.group_id = ANY(get_auth_teacher_group_ids()))`.
+  2. `get_auth_teacher_group_ids()` reads `users.teacher_group_ids`.
+  3. `authenticated` holds a column-level `UPDATE` grant on that column.
+  4. The RLS UPDATE policy permits it — `USING (id = auth.uid())`, `WITH CHECK (id = auth.uid() AND center_id = get_auth_center_id())`; `center_id` is unchanged so the check passes.
+  5. `chq_prevent_user_escalation` raises on `role` and `center_id` only. It never looks at this column.
+  6. The group UUID it needs is **published by design** — `GroupJoinLinkCard.tsx` builds `https://tutoringhq.app/ar/join/g/<groupId>` and centres send it to parents.
+- **Reproduce** from the browser console of an ordinary logged-in session: `supabase.from('users').update({teacher_group_ids:['<centre-B-group>']}).eq('id', myId)`, then `supabase.from('students').select('*')`.
+- **Touches:** auth, and minors' data — names, phones, parent phones.
+- **Blocked by:** READY. Nothing is waiting on anything.
+- **Fix (not applied):**
+  ```sql
+  REVOKE UPDATE ON public.users FROM authenticated, anon;   -- table-level, no re-grant
+  ```
+  plus matching branches in `chq_prevent_user_escalation` for `teacher_group_ids`,
+  `can_manage_students`, `can_record_payments` and `is_active`. **That is the whole fix.**
+
+  ⚠ **Do NOT add `AND center_id = get_auth_center_id()` to `students_teacher_select`.** An earlier
+  draft of this entry suggested it as extra scoping. It would break the teacher portal completely.
+  That policy exists precisely so a teacher can reach students in groups they teach at a centre
+  they do **not** belong to — Model B, teachers span centres. `users.center_id` is nullable and
+  **all teachers currently have it NULL**, so the added clause would evaluate `NULL = NULL` → NULL
+  → false and deny every teacher every student. The column feeding the policy is the problem, not
+  the policy; once `teacher_group_ids` cannot be self-written, the policy is sound as it stands.
+
+  ⚠ **A column-level revoke does NOT work here, and the first draft of this entry got it wrong.**
+  `authenticated` holds a **table-level** `UPDATE` on `public.users` (`has_table_privilege` =
+  true). In PostgreSQL a table-level privilege authorises every column, and
+  `REVOKE UPDATE (col, …)` does not remove it — the revoke would have been a silent no-op that
+  looked like a fix. The revoke has to be table-level.
+
+  **No re-grant is needed**, which was checked rather than assumed: all seven writers of
+  `public.users` are server routes on the **service-role** client — `/api/user/locale`,
+  `/api/auth/set-initial-pin`, `/api/auth/verify-pin-reset`, `/api/auth/change-pin`,
+  `/api/teacher/settings/change-pin`, `/api/settings/staff/[userId]/permissions`,
+  `/api/permissions` — plus `centerOwnerProvision`, which is an INSERT. `service_role` holds its
+  own grants and bypasses RLS, so none of them is affected. There is no browser-side write to
+  `users` anywhere in the codebase.
+
+## S2 · Three more self-writable columns feed policy decisions
+- **What:** the same root as S1. Five helpers read `public.users`; the trigger guards two columns.
+
+  | Policy input | Column | Guarded? |
+  |---|---|---|
+  | `get_auth_center_id` | `center_id` | yes — trigger **and** `WITH CHECK` |
+  | `has_center_role` | `role` | yes — trigger |
+  | `get_auth_teacher_group_ids` | `teacher_group_ids` | **no** → S1, cross-tenant |
+  | `can_manage_students_fn` | `can_manage_students` | **no** → self-grant, within tenant |
+  | `can_record_payments_fn` | `can_record_payments` | **no** → self-grant, within tenant |
+
+- Also unguarded: `is_active`, so a deactivated account can re-activate itself.
+- **Touches:** auth. Within-tenant escalation, not cross-tenant.
+- **Blocked by:** READY, same fix as S1.
+
+## S3 · The posture is defence in depth, and it is worth stating correctly
+- **Both layers are live.** This was checked rather than assumed, because getting it backwards in either direction leads somewhere bad.
+- **RLS is enforcing, not inert.** There is no `app.center_id` and **0 of 220 policies read `current_setting`**. Scope comes from `auth.uid()` — the Supabase-signed JWT — through `get_auth_center_id()`, which is `SECURITY DEFINER` with `search_path` pinned. `anon` and `authenticated` both have `rolbypassrls = false`. A browser holds the anon key and a session, so RLS is a **reachable, load-bearing boundary**, which is exactly why S1 matters.
+- **Application code is the second layer**, and it is what protects the service-role paths, where RLS is bypassed by design. `/api/db` derives `actorCenterId` from the verified token and force-applies `.eq(center_id, actorCenterId)` **after** client filters; `dbProxyScope.ts` denies unlisted tables and teachers outright.
+- **Neither layer is decorative, and neither alone is sufficient.** An auditor will ask which one is load-bearing; the answer is both, for different callers.
+- **The route audit (29 July) found no gaps** — see the note at the end of this file.
+
+## S4 · Per-family cross-tenant denial tests
+- **What:** a test per route family that asserts centre A, authenticated, gets 403/404/empty when it reaches for centre B's rows.
+- **Why:** the 29 July audit was clean, but it is a **point-in-time read of convention**. A new route that forgets the filter is caught by no policy, no test and no type error — it just returns another centre's data, and the next audit is whenever someone thinks to run one.
+- **Shape:** one fixture with two seeded centres, then per family — centre route, `[groupId]` IDOR, teacher-private, `/api/db` proxy, public join, parent portal — a case that must fail. It is the audit's table turned into CI.
+- **Touches:** auth. No production write; test-only.
+- **Blocked by:** READY. Wants a reachable test tenant, which is **F6**.
+
+## S5 · Move the remaining service-role reads back behind RLS
+- **What:** the read paths that use the service-role client — and therefore bypass RLS entirely — re-expressed as the caller's own session so the database enforces the boundary instead of the route.
+- **Why:** today RLS protects direct clients and application code protects the service-role paths. That is legitimate defence in depth, but the second half is enforced by convention. Reads carried under the user's JWT are enforced by the engine, and a forgotten filter stops being a breach.
+- **Not a rewrite:** `/api/db` is explicitly frozen (`docs/DB_PROXY_SECURITY.md`, no new callers). This is about new domain routes preferring the session client for reads, and migrating existing ones opportunistically as their screens are restyled — not a big-bang migration.
+- **Caveat:** some reads genuinely need service role (cron, webhooks, cross-tenant admin). Those stay, and the point is to shrink the set that does not need it, not to reach zero.
+- **Touches:** auth.
+- **Blocked by:** READY, but do **S4 first** — the tests are what make this safe to attempt.
+
+**Neither S4 nor S5 is urgent this week. Together they are the difference between convention and enforcement**, which is the honest summary of where tenant isolation stands.
+
+---
+
 # §6 · FOUNDATIONS DEBT — what the redesign left behind
 
 Logged from the token layer (#209). None of it blocks a restyle; all of it makes one cleaner.
@@ -325,3 +412,41 @@ Logged from the token layer (#209). None of it blocks a restyle; all of it makes
 ## F8 · `src/lib/tokens.ts` is a stale dark-theme mirror
 - **What:** its `surface[0]` is `#080f1a` and `text.primary` is `#f8fafc` — the pre-cream dark palette. Its header says "keep in sync manually" and it was not.
 - **Fix:** repoint it at the §4 tokens, or delete it if nothing depends on it. Check `chartColors` consumers first; charts are their own pass.
+
+---
+
+# Appendix · Tenant-isolation route audit, 29 July 2026
+
+**Scope:** every API route touching `students`, `student_groups`, `student_group_members`,
+`attendance_scans`, `payments`, `paid_parents`, `enrollments`, `parent_portal_tokens`, `families`,
+`student_notes`. **Question:** does it scope by centre, and is that centre derived from the session
+or from something the client supplies?
+
+**Result: no gaps found.** Every route that accepts a centre identifier from the request validates it
+against the session first. No route was found that takes a centre from a request parameter and trusts it.
+
+| Family | Scoping predicate | Verdict |
+|---|---|---|
+| Centre routes | `requireCenterAuth` / `requireOwnerAdminCenter` → session `centerId` | ✅ |
+| `benchmarks` | `center_id` param honoured **only** if the caller's `organization_id` owns it, or it equals their own centre | ✅ |
+| `center-users` | `requestedCenterId !== auth.centerId && !isSuperAdmin` → 403. Carries a comment recording that it was fixed from exactly this bug | ✅ |
+| `analytics/revenue` | param honoured only `if (isSuperAdmin && qp)`; super-admin from `admin_users` + `SUPER_ADMIN_PHONES`, never `users.role` | ✅ |
+| `groups/[groupId]/attendance-heatmap` | loads the group, then `group.center_id !== userCenterId` → 403 | ✅ IDOR closed |
+| `teacher/private/*` (20 routes) | centre-less by design; `requireOwnedPrivateGroup` / `requireOwnedSession` chain on `teacher_id`, foreign ids 404, writes re-apply the predicate | ✅ |
+| `teacher/*` centre routes | `requireTeacherAuth` + link check | ✅ |
+| `admin/*`, `ceo/*` | `getAdminContext` + `requireAdminRole` / `requireSuperAdmin`; cross-tenant is intentional and gated | ✅ |
+| `cron/*` (42 routes) | all 42 import `requireCronSecret` — timing-safe compare, fails closed when the env var is unset | ✅ |
+| `/api/db` proxy | `dbProxyScope.ts`: unlisted table denies, teachers deny, forced `.eq()` applied after client filters | ✅ |
+| `join/pending-enrollment` | public by design; validates the group belongs to the supplied centre, returns `{success:true}` only | ✅ |
+| `parent/portal` | token looked up by **hash**, revoked + expiry checked, scoped to one `student_id` | ✅ |
+
+**Two false alarms worth recording, so the next audit does not re-raise them.** A grep for
+`CRON_SECRET` reports all 42 crons as unguarded — the literal lives in `requireCronSecret`, not in the
+routes. A grep for `.eq('center_id')` reports `teacher/private/*` as unscoped — those routes are
+centre-less by design and scope by `teacher_id`. **Both are artefacts of the wrong predicate, not
+findings.** Check the helper before believing the grep.
+
+**What this audit cannot prove.** It is a point-in-time read of the routes that exist today. It is
+convention, not a constraint: a new route that forgets the filter is caught by no policy, no test and
+no type error. The durable fix is a test that asserts cross-tenant denial per route family, or moving
+the remaining service-role reads behind RLS. Neither exists today. Logged, not built.
