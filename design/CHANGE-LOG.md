@@ -38,7 +38,9 @@ If a row ever names one, that row is a mistake.
 | [#219](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/219) | `90a575d1` | 2026-07-29 | none — doc only | none | v31 |
 | [#220](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/220) | `0551992f` | 2026-07-29 | `Design-Patterns §01–§06` — **ALL screens** once adopted: `EmptyState` has 11 adopters today | none yet — primitives only, adoption is per-file | v31 → **v32** |
 | [#221](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/221) | `61d5cda4` | 2026-07-29 | `Admin-Accounts §01` (centre half), `§02`, `§03` (**R5**, new route), `§04` | `/{locale}/admin/centers/[id]`, `/{locale}/admin/internal-team`, `/{locale}/admin/teacher-links` (**new**), `/{locale}/admin/referrals` | v32 → **v33** |
-| Permissions store | *(on merge)* | 2026-07-30 | `Admin-Accounts §02` — the member sheet's toggles now persist to `public.permissions` | `/{locale}/admin/internal-team`, plus every admin gate that resolves a permission set | v33 |
+| [#222](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/222) | `6a072c80` | 2026-07-30 | `Admin-Accounts §02` — the member sheet's toggles now persist to `public.permissions` | `/{locale}/admin/internal-team`, plus every admin gate that resolves a permission set | v33 |
+| [#223](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/223) | `f129b0ca` | 2026-07-29 | `Admin-Accounts §01` — the attendance KPI, which had never computed | `/{locale}/admin/centers/[id]` | v33 |
+| Admin-Platform | *(on merge)* | 2026-07-30 | `Admin-Platform §01`–`§06` | `/{locale}/admin`, `/admin/analytics`, `/admin/platform-config`, `/admin/whatsapp-pack`, `/admin/promo-codes`, `/admin/privacy-requests` | v33 → **v34** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -403,3 +405,59 @@ is renamed `permissionKeys`.
 
 **`admin_users.custom_permissions` is DEAD and pending a drop** — Eyad's call, deliberately not done
 here. Logged in `BUILD-AFTER-REDESIGN.md` §6.
+
+**Admin-Platform (30 July 2026)** — six sections, no backlog entries, no
+decisions outstanding. Structure coverage **2.0/6 → 4.55/6**.
+
+| § | before | after | what moved |
+|---|---|---|---|
+| §01 Overview | 0.35/1 | **0.85/1** | MRR hero + MoM, the centres-vs-teachers CUSTOMERS split, four tiles, REVENUE MIX, JUMP TO |
+| §02 Analytics | 0.2/1 | **0.8/1** | All/Centers/Teachers segment, growth tiles, TOP BY REVENUE, BY PLAN |
+| §03 Platform | 0.4/1 | **0.65/1** | FEATURES and SYSTEM groups over the flat config list |
+| §04 WhatsApp Pack | 0.15/1 | **0.5/1** | the sender's Meta template list, grouped by real category |
+| §05 Promo Codes | 0.5/1 | **0.7/1** | Active / Redemptions / Given tiles |
+| §06 Privacy Requests | 0.4/1 | **0.75/1** | Open / Due soon / Closed counts and the type filter |
+
+**The overview API only ever knew about centres.** TutoringHQ serves two
+customer types and the design leads §01 with the split across both. The teacher
+half comes from `teacher_subscriptions` (accounts, MRR) and `enrollments` in the
+teacher's own `kind='private'` `student_groups` (students).
+
+**The centre student figure filters `center_id IS NOT NULL`.** `students.center_id`
+is nullable and a solo teacher's students are rows with no centre. Live data:
+2 students with a centre, 2 without. The unfiltered `totalStudents` is still
+right for the "Active students" tile, but as the centre row it would absorb the
+teacher row and double-count.
+
+**Centre plans and teacher plans stay separate ladders.** `solo/nano/starter/pro/
+business/enterprise` and `teacher_standard/teacher_pro/teacher_scale` are
+different prices; a merged "Pro" bucket is a number nobody can act on.
+
+**REVENUE MIX is paid-this-month by `invoice_type`, not a decomposition of MRR.**
+The design draws Subscriptions + Add-ons + WhatsApp packs summing to the MRR
+hero. They do not sum to it — subscriptions and the parent pack recur, WhatsApp
+packs are a one-time top-up. The caption says so on the screen.
+
+**Omitted, each with the exact reason:**
+
+| omitted | why |
+|---|---|
+| §01 Unverified filter chip | **V1**, Valify |
+| §01 `/admin/teachers` frame | **R7** — built 28 July, closed unmerged on Eyad's call, one teacher console not two |
+| §02 "Platform fees" | the processing fee lives in `invoices.metadata.processing_fee`, a jsonb key with no column or aggregate |
+| §02 per-account student counts | needs a per-centre roll-up this endpoint does not compute |
+| §03 Referrals, Attendance scanner, App version, Force update | no `platform_config` key at all |
+| §03 Card orders switch | gated per-centre on `centers.card_orders_enabled`, so a global switch is not that control |
+| §03 INTEGRATIONS + PAYMOB DETAIL | no integrations table. `vendors` is card-printing suppliers |
+| §04 the funding grouping | the design groups templates by who pays — customer credit / company paid / separate credit. No column records funding |
+| §04 per-template On/Off | `wa_meta_templates` has no enabled column; Meta's `status` is the only state |
+| §05 Fixed EGP, Free month, applies-to, first-month-only | `promo_codes` has `discount_pct` and nothing else — four absent columns |
+| §06 request-detail "WILL BE DELETED" counts | `privacy_requests` has no link to a centre or account to join them to |
+
+**§04 is the section left short at 0.5.** Its overview frame — outstanding
+credit, notifications-vs-promotions volumes, cost to send and delivered/failed
+rates — is buildable: `whatsapp_usage` carries `message_type`, `template_type`,
+`meta_cost`, `overage_charge`, `status` and `delivered_at`. It is 0 rows today,
+which is not a blocker. It was not built here because the frame also shows cost
+and margin per message class, and pricing what a message is "sold at" is a money
+decision, not a restyle.

@@ -5179,7 +5179,12 @@
     "platformConfigGroupSystem": "System",
     "promoSummaryActive": "Active",
     "promoSummaryRedemptions": "Redemptions",
-    "promoSummaryGiven": "Given"
+    "promoSummaryGiven": "Given",
+    "waTemplatesPanel": {
+      "title": "Sender templates",
+      "subtitle": "The platform WhatsApp sender's Meta templates and their approval state.",
+      "groupingNote": "Grouped by Meta category. The design groups these by who funds the message — customer credit, company paid, separate credit — but no column records funding, so that split is not shown rather than guessed."
+    }
   },
   "notFound": {
     "heading": "Page Not Found",

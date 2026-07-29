@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import type { NotificationTypes, WaPackCenter } from '@/types/whatsapp-pack'
 import AdminWaPackClient from './AdminWaPackClient'
+import WaMetaTemplatesPanel from '@/components/admin/WaMetaTemplatesPanel'
 
 /** When NEXT_PUBLIC_SITE_URL is a different host than the incoming request (preview, alt domain), server-side fetch must target this deployment. */
 function envFallbackOrigin(): string {
@@ -42,6 +43,8 @@ interface AdminPackResponse {
   notificationTypes: NotificationTypes
   stats: { totalEnabled: number; totalActiveParents: number; totalMRR: number }
   pendingRequestCount?: number
+  /** Merged-Admin-Platform §04 — the platform sender's Meta templates. */
+  metaTemplates?: { name: string; category: string; status: string }[]
 }
 
 export default async function AdminWhatsAppPackPage({
@@ -100,7 +103,12 @@ export default async function AdminWhatsAppPackPage({
   }
 
   return (
-    <AdminWaPackClient
+    <>
+      {/* Merged-Admin-Platform §04, templates frame. */}
+      <div className="px-4 pt-4 md:px-6 lg:ms-56">
+        <WaMetaTemplatesPanel templates={data.metaTemplates ?? []} />
+      </div>
+      <AdminWaPackClient
       initialCenters={Array.isArray(data.centers) ? data.centers : []}
       initialNotificationTypes={{ ...defaultNotif, ...(data.notificationTypes ?? {}) }}
       initialStats={{
@@ -108,7 +116,8 @@ export default async function AdminWhatsAppPackPage({
         totalActiveParents: Number(data.stats?.totalActiveParents),
         totalMRR: Number(data.stats?.totalMRR),
       }}
-      pendingRequestCount={Number(data.pendingRequestCount ?? 0)}
-    />
+        pendingRequestCount={Number(data.pendingRequestCount ?? 0)}
+      />
+    </>
   )
 }

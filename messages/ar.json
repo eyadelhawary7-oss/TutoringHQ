@@ -3278,7 +3278,12 @@
     "platformConfigGroupSystem": "النظام",
     "promoSummaryActive": "نشطة",
     "promoSummaryRedemptions": "استخدامات",
-    "promoSummaryGiven": "مُنِح"
+    "promoSummaryGiven": "مُنِح",
+    "waTemplatesPanel": {
+      "title": "قوالب المُرسِل",
+      "subtitle": "قوالب واتساب الخاصة بمُرسِل المنصة وحالة اعتمادها.",
+      "groupingNote": "مجمّعة حسب تصنيف ميتا. التصميم بيجمّعها حسب مين بيدفع تكلفة الرسالة — رصيد العميل، أو على حساب الشركة، أو رصيد منفصل — لكن مفيش عمود بيسجّل ده، فالتقسيم ده مش معروض بدل ما يتخمّن."
+    }
   },
   "ceo": {
     "brandTitle": "TutoringHQ",
