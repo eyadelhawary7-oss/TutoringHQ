@@ -5,10 +5,15 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  * header: the three KPI tiles and the counts the MANAGE list carries.
  *
  * Every column named here was confirmed in `information_schema` on 29 July
- * before it was queried — `students.is_active`, `groups.center_id`,
+ * before it was queried — `students.is_active`, `student_groups.center_id`,
  * `sessions.status`/`scheduled_at`, `attendance_scans.session_id`,
  * `enrollments.status`. CI has no live database, so a name that only *looks*
  * right passes every gate and fails in production.
+ *
+ * ⚠ Confirming the COLUMNS is not enough — confirm the TABLE the data actually
+ * lives in. This function first shipped reading `public.groups`, which has the
+ * right columns and zero rows; the real table is `student_groups`. Every column
+ * check passed and the metric was dead on arrival.
  *
  * NOT here, and deliberately:
  *  - **Branches.** There is no `branches` table. `branch_user_assignments`
@@ -98,7 +103,17 @@ export async function fetchCenterAccountMetrics(
       .eq('center_id', centerId)
       .eq('is_active', true),
     supabaseAdmin.from('users').select('id', { count: 'exact', head: true }).eq('center_id', centerId),
-    supabaseAdmin.from('groups').select('id').eq('center_id', centerId).eq('is_active', true),
+    // `student_groups`, NOT `groups`. `public.groups` exists with a plausible
+    // shape (id, center_id, name, is_active) and holds ZERO rows; every FK that
+    // matters — sessions.group_id, enrollments.group_id, attendance_scans.group_id
+    // — references `student_groups`. Reading `groups` returned an empty id list on
+    // every call, so the attendance rate was permanently null and the KPI tile
+    // never rendered. Confirmed against pg_constraint on 29 July.
+    supabaseAdmin
+      .from('student_groups')
+      .select('id')
+      .eq('center_id', centerId)
+      .eq('status', 'active'),
   ]);
 
   const groupIds = ((groupsRes.data ?? []) as { id: string }[]).map((g) => g.id);
