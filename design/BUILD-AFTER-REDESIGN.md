@@ -334,6 +334,7 @@ Nothing in this section can start until V1 lands. Ordered so that V1 unblocks th
 - **Drawn in:** `Merged-Center-Money` §04, `Merged-Teacher-Money` §04. **Two protected files.**
 - **Touches:** money, account state.
 - **Blocked by:** V1, V3. Bank-batch mechanics overlap X1.
+- **Groundwork already in the catalog, confirmed 29 July while building `Merged-Teacher-Home`:** `transactions.settlement_status` / `expected_settlement_at` / `settled_at` / `settlement_retry_count` all exist, and `teacher_profiles.payout_destination` (jsonb) exists. **All four are entirely dormant** — `select count(*) from transactions where settled_at is not null or settlement_retry_count > 0` returns 0, and `grep -rl "settlement_status\|payout_destination" src/` returns nothing. This is schema scaffolding for exactly this entry, not a partial implementation — nothing computes into it and nothing reads it. Recorded so whoever builds V4 checks it before adding parallel columns, and so a future survey doesn't mistake "column exists" for "feature exists" the way `public.groups` vs `student_groups` already did once (#223).
 
 ## V5 · CEO centers benchmark, verified vs unverified
 - **What:** An internal comparison of verified against unverified centers.

@@ -40,7 +40,8 @@ If a row ever names one, that row is a mistake.
 | [#221](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/221) | `61d5cda4` | 2026-07-29 | `Admin-Accounts §01` (centre half), `§02`, `§03` (**R5**, new route), `§04` | `/{locale}/admin/centers/[id]`, `/{locale}/admin/internal-team`, `/{locale}/admin/teacher-links` (**new**), `/{locale}/admin/referrals` | v32 → **v33** |
 | [#222](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/222) | `6a072c80` | 2026-07-30 | `Admin-Accounts §02` — the member sheet's toggles now persist to `public.permissions` | `/{locale}/admin/internal-team`, plus every admin gate that resolves a permission set | v33 |
 | [#223](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/223) | `f129b0ca` | 2026-07-29 | `Admin-Accounts §01` — the attendance KPI, which had never computed | `/{locale}/admin/centers/[id]` | v33 |
-| Admin-Platform | *(on merge)* | 2026-07-30 | `Admin-Platform §01`–`§06` | `/{locale}/admin`, `/admin/analytics`, `/admin/platform-config`, `/admin/whatsapp-pack`, `/admin/promo-codes`, `/admin/privacy-requests` | v33 → **v34** |
+| [#224](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/224) | `b7a49e9c` | 2026-07-30 | `Admin-Platform §01`–`§06` | `/{locale}/admin`, `/admin/analytics`, `/admin/platform-config`, `/admin/whatsapp-pack`, `/admin/promo-codes`, `/admin/privacy-requests` | v33 → **v34** |
+| Teacher-Home | *(on merge)* | 2026-07-30 | `Teacher-Home §02` — the 0-enrolled warning cue on a schedule card | `/{locale}/teacher/schedule` | v34 → **v35** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -461,3 +462,43 @@ rates — is buildable: `whatsapp_usage` carries `message_type`, `template_type`
 which is not a blocker. It was not built here because the frame also shows cost
 and margin per message class, and pricing what a message is "sold at" is a money
 decision, not a restyle.
+
+**Teacher-Home (30 July 2026)** — the first "likely done, survey first" file, and it was. Structure
+coverage: §01 (unverified/self-collect state, the only one that renders for any teacher today) **6/7**;
+§02 **now matches** after one real gap.
+
+**Independently re-verified before reporting, not just re-read.** Three agents blind to each
+other's findings compared the design against the live code from scratch, specifically hunting for
+a Center-Home-style false "already done." All three, then a fourth reconciling pass with its own
+direct `information_schema` checks, converged on the same two facts:
+
+- **Verification (V1) does not exist.** No column, no table, nothing — confirmed against the live
+  catalog, not inferred from other code's comments about it.
+- **Teacher balance/collection (V3/V4) does not exist.** No teacher-scoped payout ledger anywhere.
+  `payout_requests` is centre-scoped, `commission_payouts` is EH-staff-scoped. Neither is it.
+
+**§01's "verified (we collect)" state — the balance card, pending amount, recent payouts — is
+entirely blocked on V1/V3/V4** and was not built. It cannot render for any teacher today; building
+it would mean inventing a balance nobody can ever actually have. The one gap in the buildable
+unverified state, the "Let us collect for you / Verify my ID" promo card, is the same block — no
+verification to link to, so no card.
+
+**A real finding logged for whoever eventually builds V4:** `transactions.settlement_status` /
+`expected_settlement_at` / `settled_at` / `settlement_retry_count` and
+`teacher_profiles.payout_destination` all exist in the live schema and are entirely dormant — 0 rows
+touched, zero code references. Schema groundwork, not a partial feature. See `BUILD-AFTER-REDESIGN.md`
+V4.
+
+**§02 Teacher Schedule had exactly one real gap.** The design's second example card overrides its
+left accent bar from teal to brass specifically on the 0-enrolled class — confirmed in the raw
+markup (`style="background:#9a6b1f"` on that one card only), not a color guess. Added as a real
+warning cue: brass when `enrolled_count === 0` and the class isn't cancelled, teal otherwise.
+Everything else in §02 — Today/Week toggle, class cards, the Attendance action, the empty state —
+already matched.
+
+**Observed, not fixed:** the design's single unverified mockup shows the populated "This
+month"/"My groups" tiles and the "Grow your private practice" income calculator on the same screen.
+Live, they are mutually exclusive — the calculator is gated to `!hasPrivateAccess`, the tiles to
+`hasPrivateAccess`. No real teacher account can see both at once. This is a product-eligibility
+question (should the calculator also show for an active private teacher?), not a data gap, so it
+was not changed here.

@@ -227,55 +227,63 @@ export default function TeacherSchedulePage() {
     const muted = o.state === 'cancelled';
     const tappable = o.state !== 'cancelled';
     const cardClass = [
-      'rounded-xl border bg-[var(--color-surface-1)] p-4',
+      'flex items-stretch gap-3 rounded-xl border bg-[var(--color-surface-1)] p-4',
       muted ? 'border-[var(--color-border-subtle)] opacity-60' : 'border-[var(--color-border)]',
     ].join(' ');
+    // The design's `.clsbar` left accent: teal by default, switched to brass
+    // specifically when nobody is enrolled — a warning cue, not decoration
+    // (confirmed against the raw markup, not inferred from color alone).
+    const barClass =
+      !muted && o.slot.enrolled_count === 0 ? 'bg-[var(--color-brass)]' : 'bg-[var(--color-teal)]';
     const inner = (
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="text-start">
-          <p className="font-bold text-[var(--color-text-primary)]">{o.slot.group_name}</p>
-          <p className="mt-0.5 flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-            <Clock size={14} aria-hidden />
-            <span dir="ltr">
-              {formatTimeRange(o.effectiveTime, o.slot.duration_minutes, timeLabels)}
-            </span>
-          </p>
-          {o.state !== 'recorded' && !muted && (
-            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-[var(--color-text-muted)]">
-              <Users size={14} aria-hidden />
-              {t('enrolledCount', {
-                count: formatNumber(o.slot.enrolled_count, locale, { integerOnly: true }),
-              })}
+      <>
+        <span className={`w-[3px] shrink-0 rounded-full ${barClass}`} aria-hidden />
+        <div className="flex flex-1 flex-wrap items-center justify-between gap-2">
+          <div className="text-start">
+            <p className="font-bold text-[var(--color-text-primary)]">{o.slot.group_name}</p>
+            <p className="mt-0.5 flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+              <Clock size={14} aria-hidden />
+              <span dir="ltr">
+                {formatTimeRange(o.effectiveTime, o.slot.duration_minutes, timeLabels)}
+              </span>
             </p>
-          )}
+            {o.state !== 'recorded' && !muted && (
+              <p className="mt-0.5 flex items-center gap-1.5 text-sm text-[var(--color-text-muted)]">
+                <Users size={14} aria-hidden />
+                {t('enrolledCount', {
+                  count: formatNumber(o.slot.enrolled_count, locale, { integerOnly: true }),
+                })}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {muted && (
+              <span className="rounded-full bg-[var(--color-surface-2)] px-3 py-1 text-xs font-medium text-[var(--color-text-secondary)]">
+                {t('cancelledBadge')}
+              </span>
+            )}
+            {o.exception?.kind === 'rescheduled' && (
+              <span className="rounded-full bg-[var(--color-brass)]/15 px-3 py-1 text-xs font-medium text-[var(--color-brass)]">
+                {t('rescheduledBadge')}
+              </span>
+            )}
+            {o.state === 'live' && (
+              <span className="flex items-center gap-1.5 rounded-full bg-[var(--color-teal-soft)] px-3 py-1 text-xs font-medium text-[var(--color-teal-deep)]">
+                <span
+                  className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--color-teal)]"
+                  aria-hidden
+                />
+                {t('classLive')}
+              </span>
+            )}
+            {o.state === 'unrecorded' && (
+              <span className="text-xs font-medium text-[var(--color-brass)]">
+                {t('recordAttendanceCta')}
+              </span>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {muted && (
-            <span className="rounded-full bg-[var(--color-surface-2)] px-3 py-1 text-xs font-medium text-[var(--color-text-secondary)]">
-              {t('cancelledBadge')}
-            </span>
-          )}
-          {o.exception?.kind === 'rescheduled' && (
-            <span className="rounded-full bg-[var(--color-brass)]/15 px-3 py-1 text-xs font-medium text-[var(--color-brass)]">
-              {t('rescheduledBadge')}
-            </span>
-          )}
-          {o.state === 'live' && (
-            <span className="flex items-center gap-1.5 rounded-full bg-[var(--color-teal-soft)] px-3 py-1 text-xs font-medium text-[var(--color-teal-deep)]">
-              <span
-                className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--color-teal)]"
-                aria-hidden
-              />
-              {t('classLive')}
-            </span>
-          )}
-          {o.state === 'unrecorded' && (
-            <span className="text-xs font-medium text-[var(--color-brass)]">
-              {t('recordAttendanceCta')}
-            </span>
-          )}
-        </div>
-      </div>
+      </>
     );
     return tappable ? (
       <button
