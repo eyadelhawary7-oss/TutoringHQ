@@ -1536,6 +1536,49 @@ month 6.
 The sample countdowns ("Drops to 10% in 6 days", "in 18 days", "in 41 days") are placeholder data and
 only need to be plausible against the twelve-month band.
 
+### D2 confirmed against live values — 29 July 2026
+
+D2 was previously carried on the 26 July decision note alone. It has now been checked against the
+code that actually pays, and against what customers have already been sent. **Five independent live
+sources, all identical, all agreeing with the paragraph above:**
+
+| source | what it says | why it counts |
+|---|---|---|
+| `src/app/api/cron/referral-automation/route.ts:15–18` — `getRate()` | `1 → 0.25` · `≤12 → 0.1` · `else 0.05` | **the one that runs.** Vercel cron, 2nd of each month; it is what inserts the `referral_commissions` rows |
+| `src/app/api/referrals/process-commission/route.ts:105–107` | identical | the manual/one-off path |
+| `src/lib/generateInvoicePdf.ts:213` | `شهر 1: 25% \| شهر 2-12: 10% \| +13: 5% دائمة` | **customer-facing** — already printed on issued invoices |
+| `src/lib/invoiceTemplates.ts:504–506` | same three bands | **customer-facing** — already emailed |
+| this appendix, D2 body | "Live is 25% month 1 · 10% months 2–12 · 5% month 13+" | the correction's own text |
+
+**"10% for twelve months" is shorthand for where the 10% band ENDS, not for a flat rate.** The
+summary line in the decisions table reads "Live wins: 10% for twelve months. The design's month-6
+drop is wrong" — the thing being corrected is the *end* of the 10% band (month 6 → month 12). Month
+one is 25% in the design, in the live code, and on customer invoices; no source anywhere in the
+product has ever paid a flat 10% in month one.
+
+`Merged-Admin-Accounts` §04 is built to these five sources.
+`tests/unit/adminAccountsR5.test.ts` asserts the rendered tier table against `getRate()`'s logic at
+every month from 1 to 36, so the rail cannot drift back to the drawing — or away from live.
+
+## D11. Remove the signup reward — 1 screen
+
+**Eyad's design error, recorded as such on 29 July 2026. Not a precedent** — the standing default is
+that the design is right and the platform is short.
+
+`Merged-Admin-Accounts` §04 draws a **SIGNUP REWARD** block: "New customer credit · Applied to the
+referred account · 100 EGP", EN + AR.
+
+There is **one referral engine for every customer type: a recurring percentage commission.** A fixed
+one-time payment is a different product and does not exist. Confirmed in the catalog on 29 July —
+no column, no code path, no ledger entry, nothing in `referrals`, `referral_commissions` or
+`referral_reward_records` that could hold it.
+
+| Design | What to change |
+|---|---|
+| `Merged-Admin-Accounts` §04 Admin Referrals | Delete the SIGNUP REWARD block and its Arabic mirror (`مكافأة التسجيل` / `رصيد عميل جديد`) | 
+
+The block is already omitted from the built screen.
+
 ## D3. Correct the plan names — 12 screens
 
 Full table in the resolved **B15** entry above. Summary: **"Growth" is never a plan**; **"Scale" is a

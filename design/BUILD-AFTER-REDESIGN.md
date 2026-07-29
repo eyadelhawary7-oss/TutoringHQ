@@ -208,6 +208,22 @@ Everyone joining before 16 August waits until 16 August to start their 14 days; 
 - **Touches:** account state.
 - **Blocked by:** the notify-me registration is **D7 in §2** — it is a write with no destination. Build the screen **without** the notify-me control and log it, per the standing rule on controls that do not exist.
 
+## R9 · A centre cannot see its own outgoing teacher-link requests
+- **Raised:** 29 July 2026, building R5. Out of scope for that PR and logged here instead.
+- **What Eyad described:** "a rejected request is indistinguishable from a pending one, so a centre cannot tell whether a teacher declined or has not answered. Needs a status value and a UI state."
+- ⚠ **The premise is narrower than that, and the correction matters** — checked against the live catalog and the live components on 29 July, not against the decision note:
+
+| assumed missing | actually | evidence |
+|---|---|---|
+| a status value | **exists** | `teacher_center_requests_status_check` allows `pending \| accepted \| declined \| withdrawn`. Both respond routes write `'declined'` **with `responded_at` and `responded_by`**, so a decline is timestamped and attributed, not just distinguishable |
+| a UI state | **exists — on the teacher's side** | `src/app/[locale]/teacher/CenterRequestsTracker.tsx:93` already renders the declined branch |
+
+- **The real hole is the CENTRE side, and it is total.** `GET /api/center/teacher-links` already returns every outgoing centre-initiated request with its status and `responded_at`, and **no screen renders any of them** — pending, declined or otherwise. `/my-teachers` → "Requests" mounts `GroupProposalsTab`, which is *group proposals*, a different feature. So the centre owner types a teacher's code, gets a confirmation, and never hears anything again either way.
+- **Build:** a centre-side outgoing-requests list against the existing GET. No new column, no new status, no new write — the data is served today and thrown away by the UI.
+- **Also affected:** `/admin/teacher-links` (R5) lists pending requests only. Once the centre view exists, the admin screen should show declined alongside them for the same reason.
+- **Touches:** account state (read only).
+- **Blocked by:** READY.
+
 ---
 
 # §2 · BLOCKED ON EYAD — one decision each
