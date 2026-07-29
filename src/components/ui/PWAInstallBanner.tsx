@@ -72,7 +72,7 @@ export function PWAInstallBanner() {
         <button
           type="button"
           onClick={handleInstall}
-          className="flex-1 bg-teal-600 hover:bg-teal-500 text-white rounded-xl py-2 text-sm font-medium btn-press chq-focus transition-colors"
+          className="flex-1 bg-teal-600 hover:bg-teal-700 text-white rounded-xl py-2 text-sm font-medium btn-press chq-focus transition-colors"
         >
           {t('install')}
         </button>

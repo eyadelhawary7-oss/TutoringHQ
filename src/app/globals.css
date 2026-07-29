@@ -509,16 +509,12 @@ html:not(.dark) .text-slate-300,
 html:not(.dark) .text-slate-400 {
   color: var(--color-text-muted) !important;
 }
-html:not(.dark) .text-teal-400,
-html:not(.dark) .text-teal-300 {
-  color: var(--color-teal-deep) !important;
-}
-html:not(.dark) .bg-teal-600 {
-  background-color: var(--color-teal) !important;
-}
-html:not(.dark) .hover\:bg-teal-700:hover {
-  background-color: var(--color-teal-deep) !important;
-}
+/* The three teal !important patches that used to sit here are gone. They
+   covered `.text-teal-400/300`, `.bg-teal-600` and `.hover:bg-teal-700` — the
+   utilities someone could see were wrong — while the other ~1096 teal uses
+   kept resolving to Tailwind's default palette. The whole scale is now mapped
+   onto §4 in src/app/tokens.css, so every shade is right at the source and
+   nothing needs overriding after the fact. */
 
 /* Cream: input/select/textarea sit on tile */
 html:not(.dark) input:not([type="radio"]):not([type="checkbox"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]),

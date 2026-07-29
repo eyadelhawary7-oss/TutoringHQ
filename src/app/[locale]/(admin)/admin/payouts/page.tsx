@@ -338,7 +338,7 @@ export default function PayoutsPage() {
                 setGenerateModal(true)
                 setError(null)
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium transition-colors"
             >
               <Plus className="w-4 h-4" aria-hidden />
               {t('payouts.generate_for_month', { month: payoutGenerateMonthLabel })}
@@ -571,7 +571,7 @@ export default function PayoutsPage() {
                   type="button"
                   onClick={() => void handleGenerate()}
                   disabled={saving || !genForm.staff_id || !genForm.period}
-                  className="px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                  className="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
                 >
                   {saving ? t('payouts.creating') : t('payouts.create_action')}
                 </button>
@@ -636,7 +636,7 @@ export default function PayoutsPage() {
                     adjForm.adjustment_amount === '' ||
                     adjForm.adjustment_reason.trim().length < 5
                   }
-                  className="px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                  className="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
                 >
                   {saving ? t('payouts.applying') : t('payouts.apply')}
                 </button>

@@ -1818,7 +1818,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     type="button"
                     disabled={s1Saving}
                     onClick={() => void saveSection1()}
-                    className="rounded-lg bg-teal-600 text-white px-5 py-2.5 text-sm font-semibold hover:bg-teal-500 disabled:opacity-50"
+                    className="rounded-lg bg-teal-600 text-white px-5 py-2.5 text-sm font-semibold hover:bg-teal-700 disabled:opacity-50"
                   >
                     {s1Saving ? t('centerManagement.saving') : t('centerManagement.saveSection')}
                   </button>
@@ -1994,7 +1994,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     type="button"
                     disabled={s2Saving}
                     onClick={() => void saveSection2()}
-                    className="rounded-lg bg-teal-600 text-white px-5 py-2.5 text-sm font-semibold hover:bg-teal-500 disabled:opacity-50"
+                    className="rounded-lg bg-teal-600 text-white px-5 py-2.5 text-sm font-semibold hover:bg-teal-700 disabled:opacity-50"
                   >
                     {s2Saving ? t('centerManagement.saving') : t('centerManagement.saveSection')}
                   </button>
@@ -2128,7 +2128,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     type="button"
                     disabled={s3Saving}
                     onClick={() => void saveSection3()}
-                    className="rounded-lg bg-teal-600 text-white px-5 py-2.5 text-sm font-semibold hover:bg-teal-500 disabled:opacity-50"
+                    className="rounded-lg bg-teal-600 text-white px-5 py-2.5 text-sm font-semibold hover:bg-teal-700 disabled:opacity-50"
                   >
                     {s3Saving ? t('centerManagement.saving') : t('centerManagement.saveSection')}
                   </button>
@@ -2143,7 +2143,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                   <button
                     type="button"
                     onClick={() => openCreateModal()}
-                    className="rounded-lg bg-teal-600 text-white px-4 py-2 text-sm font-semibold hover:bg-teal-500 shrink-0"
+                    className="rounded-lg bg-teal-600 text-white px-4 py-2 text-sm font-semibold hover:bg-teal-700 shrink-0"
                   >
                     {t('centerManagement.section4.createInvoice')}
                   </button>
@@ -2400,7 +2400,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       <button
                         type="button"
                         onClick={() => void confirmMarkPaid()}
-                        className="px-4 py-2 rounded-lg bg-teal-600 text-white font-semibold hover:bg-teal-500"
+                        className="px-4 py-2 rounded-lg bg-teal-600 text-white font-semibold hover:bg-teal-700"
                       >
                         {t('centerManagement.saveSection')}
                       </button>
@@ -2493,7 +2493,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                         type="button"
                         disabled={s4CreateSaving}
                         onClick={() => void submitCreateInvoice()}
-                        className="px-4 py-2 rounded-lg bg-teal-600 text-white font-semibold hover:bg-teal-500 disabled:opacity-50"
+                        className="px-4 py-2 rounded-lg bg-teal-600 text-white font-semibold hover:bg-teal-700 disabled:opacity-50"
                       >
                         {s4CreateSaving ? t('centerManagement.saving') : t('centerManagement.saveSection')}
                       </button>
@@ -2508,7 +2508,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                   <button
                     type="button"
                     onClick={() => openRecordModal()}
-                    className="rounded-lg bg-teal-600 text-white px-4 py-2 text-sm font-semibold hover:bg-teal-500 shrink-0"
+                    className="rounded-lg bg-teal-600 text-white px-4 py-2 text-sm font-semibold hover:bg-teal-700 shrink-0"
                   >
                     {t('centerManagement.section5.recordPayment')}
                   </button>
@@ -2627,7 +2627,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                         type="button"
                         disabled={s5Saving}
                         onClick={() => void submitRecordPayment()}
-                        className="px-4 py-2 rounded-lg bg-teal-600 text-white font-semibold hover:bg-teal-500 disabled:opacity-50"
+                        className="px-4 py-2 rounded-lg bg-teal-600 text-white font-semibold hover:bg-teal-700 disabled:opacity-50"
                       >
                         {s5Saving ? t('centerManagement.saving') : t('centerManagement.saveSection')}
                       </button>
@@ -2777,7 +2777,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     type="button"
                     disabled={s6Saving}
                     onClick={() => void saveSection6()}
-                    className="rounded-lg bg-teal-600 text-white px-5 py-2.5 text-sm font-semibold hover:bg-teal-500 disabled:opacity-50"
+                    className="rounded-lg bg-teal-600 text-white px-5 py-2.5 text-sm font-semibold hover:bg-teal-700 disabled:opacity-50"
                   >
                     {s6Saving ? t('centerManagement.saving') : t('centerManagement.saveSection')}
                   </button>
@@ -2839,7 +2839,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     type="button"
                     disabled={s7Saving}
                     onClick={() => void saveSection7()}
-                    className="rounded-lg bg-teal-600 text-white px-5 py-2.5 text-sm font-semibold hover:bg-teal-500 disabled:opacity-50"
+                    className="rounded-lg bg-teal-600 text-white px-5 py-2.5 text-sm font-semibold hover:bg-teal-700 disabled:opacity-50"
                   >
                     {s7Saving ? t('centerManagement.saving') : t('centerManagement.saveSection')}
                   </button>
@@ -2921,7 +2921,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                     type="button"
                     disabled={s8Saving}
                     onClick={() => void saveSection8()}
-                    className="rounded-lg bg-teal-600 text-white px-5 py-2.5 text-sm font-semibold hover:bg-teal-500 disabled:opacity-50"
+                    className="rounded-lg bg-teal-600 text-white px-5 py-2.5 text-sm font-semibold hover:bg-teal-700 disabled:opacity-50"
                   >
                     {s8Saving ? t('centerManagement.saving') : t('centerManagement.saveSection')}
                   </button>
@@ -3309,7 +3309,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                   type="button"
                   disabled={s10Saving}
                   onClick={() => void saveReferralRewardsSection10()}
-                  className="rounded-lg bg-teal-600 text-white px-5 py-2 text-sm font-semibold hover:bg-teal-500 disabled:opacity-50 mb-6"
+                  className="rounded-lg bg-teal-600 text-white px-5 py-2 text-sm font-semibold hover:bg-teal-700 disabled:opacity-50 mb-6"
                 >
                   {s10Saving ? t('centerManagement.saving') : t('centerManagement.saveSection')}
                 </button>

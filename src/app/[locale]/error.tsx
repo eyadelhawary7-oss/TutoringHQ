@@ -75,7 +75,7 @@ export default function LocaleError({
           <button
             type="button"
             onClick={reset}
-            className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-500 btn-press chq-focus"
+            className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 btn-press chq-focus"
           >
             {t('tryAgain')}
           </button>

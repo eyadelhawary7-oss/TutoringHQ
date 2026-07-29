@@ -131,7 +131,7 @@ export function SubscriptionOverridesPanel({
           type="button"
           disabled={busy !== null}
           onClick={() => void runExtend(30)}
-          className="rounded-lg bg-teal-600 text-white px-4 py-2 text-sm font-semibold hover:bg-teal-500 disabled:opacity-50"
+          className="rounded-lg bg-teal-600 text-white px-4 py-2 text-sm font-semibold hover:bg-teal-700 disabled:opacity-50"
         >
           {t('extend30')}
         </button>

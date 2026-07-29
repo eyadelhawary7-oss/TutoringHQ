@@ -626,7 +626,7 @@ export default function AdminReferralsPage() {
                                     type="button"
                                     disabled={markingId === row.id}
                                     onClick={() => void patchMarkCommissionPaid(row.id)}
-                                    className="rounded-lg bg-teal-600 px-3 py-1 text-xs font-semibold text-white hover:bg-teal-500 disabled:opacity-50"
+                                    className="rounded-lg bg-teal-600 px-3 py-1 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
                                   >
                                     {markingId === row.id ? tCommon('loading') : tAdmin('markAsPaid')}
                                   </button>

@@ -747,7 +747,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Ad
                       }
                     }}
                     disabled={bookingCourier === slideOrder.id}
-                    className="w-full mt-1 py-2 px-4 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                    className="w-full mt-1 py-2 px-4 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                   >
                     {bookingCourier === slideOrder.id
                       ? tIdCards('bookingCourier')

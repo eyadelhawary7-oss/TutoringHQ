@@ -321,7 +321,7 @@ export default function ReferralRewardsPage() {
               type="button"
               onClick={() => void handleMarkPaid()}
               disabled={marking || selectedIds.size === 0}
-              className="px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+              className="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
             >
               {marking ? t('referralRewards.marking') : t('referralRewards.mark_paid')}
             </button>
