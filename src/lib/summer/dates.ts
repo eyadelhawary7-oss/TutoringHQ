@@ -87,6 +87,47 @@ export function computeSummerSchedule(
   };
 }
 
+/**
+ * The pay window measured from the day the invoice was ACTUALLY raised.
+ *
+ * `computeSummerSchedule` above fixes `lockDay` at ENROLMENT, from the planned
+ * `first_invoice_at`. That is correct only while the invoice goes out on its
+ * planned day. When it goes out late — a late `first_charge_release` flip, a
+ * skipped cron day, a retroactive enrolment — the planned lock day is already in
+ * the past, so the centre is invoiced and then locked on the next run, with no
+ * time to pay a bill that did not exist until now. A centre cannot pay a bill
+ * before it exists.
+ *
+ * So the window is anchored here to the issue day instead.
+ *
+ * ON-TIME BEHAVIOUR IS UNCHANGED, and that is the point. The cron fires on the
+ * first run where `todayCairo >= first_invoice_at`, so on time
+ * `issueDayCairo === firstInvoiceAt` and this returns exactly what
+ * `computeSummerSchedule` already stored. It diverges only when the invoice is
+ * genuinely late.
+ *
+ * What this deliberately does NOT move: `billing_period_start` /
+ * `billing_period_end` stay on the planned date — the trial really did end then
+ * and only the bill was late, so re-anchoring the period would hand a centre a
+ * free fortnight for an operational delay. Nor does `invoice_number`, which is
+ * keyed `SINV-<code>-<planned>` and carries the idempotency guard: keying it on
+ * the issue day would mint a duplicate invoice on a re-run a day later.
+ */
+export function resolveIssuePayWindow(
+  issueDayCairo: string,
+  cfg: Pick<SummerScheduleConfig, 'payWindowDays'>,
+): { lastPayableDay: string; lockDay: string; lockAtIso: string } {
+  const payWindowDays =
+    Number.isFinite(cfg.payWindowDays) && cfg.payWindowDays >= 1 ? Math.floor(cfg.payWindowDays) : 2;
+  const lastPayableDay = cairoYmdPlusDays(issueDayCairo, payWindowDays - 1);
+  const lockDay = cairoYmdPlusDays(issueDayCairo, payWindowDays);
+  return {
+    lastPayableDay,
+    lockDay,
+    lockAtIso: startOfUtcInstantForCairoCalendarDay(lockDay).toISOString(),
+  };
+}
+
 /** Convenience: the Cairo date (YYYY-MM-DD) for an instant (defaults to now). */
 export function signupCairoDate(d: Date = new Date()): string {
   return cairoDateKey(d);
