@@ -8855,7 +8855,17 @@
       "noPayments": "No payments yet",
       "paymentHistory": "Payment history",
       "noTransactions": "No transactions yet.",
-      "overCapWarning": "You have more than 60 students on the Standard plan. Remove students down to 60 to keep working."
+      "overCapWarning": "You have more than 60 students on the Standard plan. Remove students down to 60 to keep working.",
+      "studentCount": "{count} students",
+      "contactHeading": "Contact",
+      "studentContactLabel": "Student",
+      "parentContactLabel": "Parent",
+      "callAction": "Call",
+      "messageAction": "Message on WhatsApp",
+      "pendingClassesCount": "{count} classes not yet collected",
+      "attendanceLabel": "Attendance",
+      "attendanceFraction": "{present} of {total} present",
+      "pendingClassesCountOne": "{count} class not yet collected"
     },
     "lockedIncome": {
       "heading": "Your income dashboard",

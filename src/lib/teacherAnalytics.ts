@@ -303,6 +303,51 @@ export function attendanceRatePerGroup(
   });
 }
 
+export type StudentAttendance = {
+  finishedSessions: number;
+  present: number;
+  /** 0..1, or null when the student has no finished session yet to measure. */
+  rate: number | null;
+};
+
+/**
+ * `Merged-Teacher-Students` §02 — one student's own attendance across their
+ * private groups: finished sessions since they joined, and how many of those
+ * they were scanned present for.
+ *
+ * `enrollments` is scoped to THIS student's own group memberships (one row per
+ * group they're in), so a session is only counted once its group's `joined_at`
+ * has passed — a student cannot be marked absent for a class held before they
+ * enrolled.
+ */
+export function attendanceForStudent(
+  studentId: string,
+  enrollments: { group_id: string; joined_at: string | null }[],
+  finishedSessions: FinishedSessionRow[],
+  scans: ScanRow[],
+): StudentAttendance {
+  const joinedAtByGroup = new Map(enrollments.map((e) => [e.group_id, e.joined_at]));
+  const presentSessionIds = new Set(
+    scans.filter((s) => s.student_id === studentId && s.session_id).map((s) => s.session_id as string),
+  );
+
+  let finished = 0;
+  let present = 0;
+  for (const sess of finishedSessions) {
+    if (!sess.group_id || !joinedAtByGroup.has(sess.group_id)) continue;
+    const joinedAt = joinedAtByGroup.get(sess.group_id);
+    if (joinedAt && sess.scheduled_at && sess.scheduled_at < joinedAt) continue;
+    finished += 1;
+    if (presentSessionIds.has(sess.id)) present += 1;
+  }
+
+  return {
+    finishedSessions: finished,
+    present,
+    rate: finished > 0 ? round2(present / finished) : null,
+  };
+}
+
 export type DayOfWeekAttendance = {
   jsWeekday: number;
   sessions: number;

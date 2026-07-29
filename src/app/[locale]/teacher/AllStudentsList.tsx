@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Search, UserRound, X } from 'lucide-react';
+import { Phone, MessageCircle, Search, UserRound, X } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
-import { formatCurrency, formatDate } from '@/lib/formatNumber';
+import { formatCurrency, formatDate, formatNumber, formatPercent } from '@/lib/formatNumber';
+import { initialsOf } from '@/lib/initials';
 
 type StudentRow = {
   enrollmentId: string;
@@ -19,6 +20,8 @@ type StudentRow = {
 
 type StudentBilling = {
   outstanding: number;
+  /** Count of pending lesson charges - "N classes not yet collected" in the design. */
+  pendingCount: number;
   lastPaymentAt: string | null;
   transactions: {
     id: string;
@@ -28,6 +31,13 @@ type StudentBilling = {
     groupName: string | null;
     status: string | null;
   }[];
+};
+
+type StudentAttendance = {
+  finishedSessions: number;
+  present: number;
+  /** 0..1, or null when there is no finished session yet to measure. */
+  rate: number | null;
 };
 
 type StudentEntry = {
@@ -47,6 +57,16 @@ function maskPhone(raw: string | null): string | null {
   return `${digits.slice(0, 3)}${'•'.repeat(digits.length - 6)}${digits.slice(-3)}`;
 }
 
+/** Digits, country-code-prefixed, no leading '+' - the wa.me / tel: contract used across the app. */
+function intlDigits(raw: string | null): string | null {
+  if (!raw) return null;
+  const d = raw.replace(/\D/g, '');
+  if (!d) return null;
+  if (d.startsWith('20')) return d;
+  if (d.startsWith('0')) return `20${d.slice(1)}`;
+  return `20${d}`;
+}
+
 /**
  * All students across the teacher's private groups (PRIVATE zone). Self-fetches
  * /api/teacher/private/students; the page only mounts this when the gate is
@@ -63,6 +83,8 @@ export default function AllStudentsList() {
 
   const [students, setStudents] = useState<StudentRow[] | null>(null);
   const [billing, setBilling] = useState<Record<string, StudentBilling>>({});
+  const [parentPhones, setParentPhones] = useState<Record<string, string | null>>({});
+  const [attendance, setAttendance] = useState<Record<string, StudentAttendance>>({});
   const [overCap, setOverCap] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -95,10 +117,14 @@ export default function AllStudentsList() {
       const data = (await res.json()) as {
         students: StudentRow[];
         billingByStudent?: Record<string, StudentBilling>;
+        parentPhoneByStudent?: Record<string, string | null>;
+        attendanceByStudent?: Record<string, StudentAttendance>;
         over_cap?: boolean;
       };
       setStudents(data.students ?? []);
       setBilling(data.billingByStudent ?? {});
+      setParentPhones(data.parentPhoneByStudent ?? {});
+      setAttendance(data.attendanceByStudent ?? {});
       setOverCap(data.over_cap === true);
     } catch {
       setLoadError(true);
@@ -159,6 +185,8 @@ export default function AllStudentsList() {
     ? (entries.find((e) => e.studentId === openStudentId) ?? null)
     : null;
   const openBilling = openStudentId ? (billing[openStudentId] ?? null) : null;
+  const openParentPhone = openStudentId ? (parentPhones[openStudentId] ?? null) : null;
+  const openAttendance = openStudentId ? (attendance[openStudentId] ?? null) : null;
 
   if (loading && students === null) {
     return (
@@ -226,20 +254,53 @@ export default function AllStudentsList() {
             className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] py-2 pe-3 ps-9 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-teal-500 focus:ring-2 focus:ring-teal-500"
           />
         </div>
-        <select
-          value={groupFilter}
-          onChange={(e) => setGroupFilter(e.target.value)}
-          aria-label={tList('groupFilterLabel')}
-          className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-teal-500 focus:ring-2 focus:ring-teal-500"
-        >
-          <option value="all">{tList('allGroups')}</option>
-          {groupOptions.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.name ?? '-'}
-            </option>
-          ))}
-        </select>
       </div>
+
+      {/* Group filter as a segmented pill row - matches the design and the
+          Today/Week segment already used on /teacher/schedule, rather than a
+          plain <select>. */}
+      <div
+        role="tablist"
+        aria-label={tList('groupFilterLabel')}
+        className="flex gap-2 overflow-x-auto pb-1"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={groupFilter === 'all'}
+          onClick={() => setGroupFilter('all')}
+          className={[
+            'shrink-0 rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
+            groupFilter === 'all'
+              ? 'bg-[var(--color-teal-soft)] text-[var(--color-teal-deep)]'
+              : 'border border-[var(--color-border)] bg-[var(--color-surface-1)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]',
+          ].join(' ')}
+        >
+          {tList('allGroups')}
+        </button>
+        {groupOptions.map((g) => (
+          <button
+            key={g.id}
+            type="button"
+            role="tab"
+            aria-selected={groupFilter === g.id}
+            onClick={() => setGroupFilter(g.id)}
+            className={[
+              'shrink-0 rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
+              groupFilter === g.id
+                ? 'bg-[var(--color-teal-soft)] text-[var(--color-teal-deep)]'
+                : 'border border-[var(--color-border)] bg-[var(--color-surface-1)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]',
+            ].join(' ')}
+          >
+            {g.name ?? '-'}
+          </button>
+        ))}
+      </div>
+
+      {/* Design's "N students" count header. */}
+      <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+        {tList('studentCount', { count: formatNumber(filtered.length, locale) })}
+      </p>
 
       {filtered.length === 0 ? (
         <p className="rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-center text-sm text-[var(--color-text-secondary)]">
@@ -254,9 +315,15 @@ export default function AllStudentsList() {
                 <button
                   type="button"
                   onClick={() => setOpenStudentId(e.studentId)}
-                  className="flex w-full flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3 text-start transition-colors hover:border-[var(--color-teal)]/40"
+                  className="flex w-full flex-wrap items-center gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3 text-start transition-colors hover:border-[var(--color-teal)]/40"
                 >
-                  <div className="min-w-0">
+                  <span
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-mint)] text-sm font-semibold text-[var(--color-accent-deep)]"
+                    aria-hidden
+                  >
+                    {initialsOf(e.name)}
+                  </span>
+                  <div className="min-w-0 flex-1">
                     <p className="flex flex-wrap items-center gap-1.5 font-medium text-[var(--color-text-primary)]">
                       {e.name ?? '-'}
                       {e.groups.map((g) => (
@@ -274,7 +341,7 @@ export default function AllStudentsList() {
                       </p>
                     ) : null}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-2">
                     {outstanding > 0 && (
                       <span className="num text-sm font-semibold text-[var(--color-brass)]">
                         {formatCurrency(outstanding, locale)}
@@ -307,28 +374,79 @@ export default function AllStudentsList() {
             className="fixed inset-y-0 start-0 flex w-full max-w-sm flex-col overflow-y-auto rounded-e-[var(--radius-card)] bg-[var(--color-surface-1)] p-5 shadow-xl"
           >
             <div className="mb-4 flex items-start justify-between gap-2">
-              <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
-                {openStudent.name ?? '-'}
-              </h2>
+              <div className="flex min-w-0 items-center gap-3">
+                <span
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-mint)] text-sm font-semibold text-[var(--color-accent-deep)]"
+                  aria-hidden
+                >
+                  {initialsOf(openStudent.name)}
+                </span>
+                <h2 className="truncate text-lg font-bold text-[var(--color-text-primary)]">
+                  {openStudent.name ?? '-'}
+                </h2>
+              </div>
               <button
                 type="button"
                 onClick={() => setOpenStudentId(null)}
                 aria-label={tList('close')}
-                className="rounded-lg p-2 transition-colors hover:bg-[var(--color-surface-2)]"
+                className="shrink-0 rounded-lg p-2 transition-colors hover:bg-[var(--color-surface-2)]"
               >
                 <X className="h-5 w-5 text-[var(--color-text-secondary)]" aria-hidden />
               </button>
             </div>
 
+            {/* Design's Contact section - student + parent, each with Call and
+                Message quick actions. The displayed number stays masked exactly
+                as before; the tel:/wa.me hrefs use the real number so the links
+                still work. */}
+            <h3 className="mb-2 text-sm font-semibold text-[var(--color-text-muted)]">
+              {tList('contactHeading')}
+            </h3>
+            <div className="mb-4 flex flex-col gap-2">
+              {[
+                { label: tList('studentContactLabel'), phone: openStudent.phone },
+                { label: tList('parentContactLabel'), phone: openParentPhone },
+              ]
+                .filter((c) => c.phone)
+                .map((c) => {
+                  const digits = intlDigits(c.phone);
+                  return (
+                    <div
+                      key={c.label}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-border)] px-3 py-2"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-[var(--color-text-muted)]">{c.label}</p>
+                        <p className="text-sm text-[var(--color-text-primary)]" dir="ltr">
+                          {maskPhone(c.phone) ?? '-'}
+                        </p>
+                      </div>
+                      {digits && (
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <a
+                            href={`tel:+${digits}`}
+                            aria-label={tList('callAction')}
+                            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-teal-soft)] text-[var(--color-teal-deep)] transition-opacity hover:opacity-90"
+                          >
+                            <Phone size={16} aria-hidden />
+                          </a>
+                          <a
+                            href={`https://wa.me/${digits}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={tList('messageAction')}
+                            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-teal-soft)] text-[var(--color-teal-deep)] transition-opacity hover:opacity-90"
+                          >
+                            <MessageCircle size={16} aria-hidden />
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+
             <dl className="flex flex-col gap-3">
-              <div>
-                <dt className="text-xs font-semibold text-[var(--color-text-muted)]">
-                  {tList('phoneLabel')}
-                </dt>
-                <dd className="text-sm text-[var(--color-text-primary)]" dir="ltr">
-                  {maskPhone(openStudent.phone) ?? '-'}
-                </dd>
-              </div>
               <div>
                 <dt className="mb-1 text-xs font-semibold text-[var(--color-text-muted)]">
                   {tList('groupsLabel')}
@@ -359,6 +477,20 @@ export default function AllStudentsList() {
                 >
                   {formatCurrency(openBilling?.outstanding ?? 0, locale)}
                 </dd>
+                {/* Design's "N classes not yet collected" caption. Read-only -
+                    this count already exists (openBilling.pendingCount); the
+                    design's "Mark collected" / "Send reminder" buttons on this
+                    same card are NOT built here - flagged for Eyad, since this
+                    screen has no protected-file wall and the buttons are a
+                    money-state write with no prior write path for "Send
+                    reminder" specifically. */}
+                {(openBilling?.pendingCount ?? 0) > 0 && (
+                  <dd className="mt-0.5 text-xs text-[var(--color-text-muted)]">
+                    {tList(openBilling?.pendingCount === 1 ? 'pendingClassesCountOne' : 'pendingClassesCount', {
+                      count: formatNumber(openBilling?.pendingCount ?? 0, locale),
+                    })}
+                  </dd>
+                )}
               </div>
               <div>
                 <dt className="text-xs font-semibold text-[var(--color-text-muted)]">
@@ -370,6 +502,24 @@ export default function AllStudentsList() {
                     : tList('noPayments')}
                 </dd>
               </div>
+              {openAttendance && openAttendance.finishedSessions > 0 && (
+                <div>
+                  <dt className="text-xs font-semibold text-[var(--color-text-muted)]">
+                    {tList('attendanceLabel')}
+                  </dt>
+                  <dd className="flex items-baseline gap-2">
+                    <span className="num text-sm font-semibold text-[var(--color-text-primary)]">
+                      {formatPercent((openAttendance.rate ?? 0) * 100, locale)}
+                    </span>
+                    <span className="text-xs text-[var(--color-text-muted)]">
+                      {tList('attendanceFraction', {
+                        present: formatNumber(openAttendance.present, locale),
+                        total: formatNumber(openAttendance.finishedSessions, locale),
+                      })}
+                    </span>
+                  </dd>
+                </div>
+              )}
             </dl>
 
             <h3 className="mb-2 mt-5 text-sm font-semibold text-[var(--color-text-muted)]">

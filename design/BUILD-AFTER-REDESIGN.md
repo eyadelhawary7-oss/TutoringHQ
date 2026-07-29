@@ -305,6 +305,15 @@ Everyone joining before 16 August waits until 16 August to start their 14 days; 
 - **Drawn in:** `Merged-Teacher-Insight` §02.
 - **Touches:** money.
 
+## D15 · "Mark collected" and "Send reminder" on the teacher's student-detail balance card
+- **What:** the design's Balance card carries two buttons: `Mark collected` (the teacher confirms a parent paid them directly) and `Send reminder` (nudge the parent about an outstanding balance).
+- **Drawn in:** `Merged-Teacher-Students` §02.
+- **Found:** 30 July 2026, building `Merged-Teacher-Students`. Not built — this is a WRITE that changes money state, on a screen with no protected-file wall. Per the standing rule, behaviour decides, not filename.
+- **`Mark collected` is mostly plumbing, not a new decision.** `POST /api/teacher/private/transactions/[id]/mark-paid` already exists, is already audited (`apply_transaction_transition`, idempotent, ownership-checked), and is already called from two places today — `GroupClassesTab` and the session-detail page. Wiring a third caller from student-detail reuses it; it does not invent new money logic. The one open question is UI, not backend: the endpoint requires a `method` (`cash | instapay | vodafone_cash | other`), so a single-tap "Mark collected" button needs a small method picker, same as the two existing callers already have.
+- **`Send reminder` has no existing per-student manual trigger.** The only related code is a bulk nightly cron (`send-balance-reminder`); sending one on a teacher's tap, per student, per outstanding balance, is new functionality, not reuse. It would also spend WhatsApp cost per send, which is the same class of decision as D4/D5.
+- **Touches:** money (write), WhatsApp cost (for the reminder).
+- **Blocked by:** Eyad's call on whether to build `Mark collected` (small UI reusing an existing endpoint) and, separately, whether/how to build `Send reminder` (new, and cost-bearing).
+
 ---
 
 # §3 · BLOCKED ON VALIFY — verification and everything downstream

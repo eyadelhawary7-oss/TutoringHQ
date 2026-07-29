@@ -6,6 +6,7 @@ import {
   projectNextMonthIncome,
   computeRevenue,
   attendanceRatePerGroup,
+  attendanceForStudent,
   attendanceByDayOfWeek,
   studentsNotSeen,
   paymentRisk,
@@ -166,6 +167,54 @@ describe('attendanceRatePerGroup (#4)', () => {
     const res = attendanceRatePerGroup(groups, finished, scans, new Map([['g1', 1]]));
     // (2 + 1) / (1 × 2) = 1.5 → capped to 1
     expect(res[0].rate).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// attendanceForStudent — Merged-Teacher-Students §02 Attendance block
+// ---------------------------------------------------------------------------
+describe('attendanceForStudent', () => {
+  const enrollments = [{ group_id: 'g1', joined_at: '2026-06-01T00:00:00Z' }];
+  const finished: FinishedSessionRow[] = [
+    { id: 's1', group_id: 'g1', scheduled_at: '2026-06-06T09:00:00Z' },
+    { id: 's2', group_id: 'g1', scheduled_at: '2026-06-13T09:00:00Z' },
+    { id: 's3', group_id: 'g1', scheduled_at: '2026-06-20T09:00:00Z' },
+  ];
+
+  it('rate = present ÷ finished sessions since enrollment', () => {
+    const scans: ScanRow[] = [
+      { session_id: 's1', student_id: 'a', scanned_at: null },
+      { session_id: 's3', student_id: 'a', scanned_at: null },
+    ];
+    const res = attendanceForStudent('a', enrollments, finished, scans);
+    expect(res).toEqual({ finishedSessions: 3, present: 2, rate: 0.67 });
+  });
+
+  it('never counts a session held before the student joined', () => {
+    const lateJoin = [{ group_id: 'g1', joined_at: '2026-06-15T00:00:00Z' }];
+    // Only s3 (20 June) is on/after the join date; s1 and s2 are excluded
+    // entirely - the student cannot be marked absent for a class before they
+    // enrolled.
+    const scans: ScanRow[] = [{ session_id: 's3', student_id: 'a', scanned_at: null }];
+    const res = attendanceForStudent('a', lateJoin, finished, scans);
+    expect(res).toEqual({ finishedSessions: 1, present: 1, rate: 1 });
+  });
+
+  it('ignores another student\'s scans and a different group\'s sessions', () => {
+    const scans: ScanRow[] = [
+      { session_id: 's1', student_id: 'b', scanned_at: null }, // someone else
+    ];
+    const otherGroupSession: FinishedSessionRow[] = [
+      ...finished,
+      { id: 's9', group_id: 'g-other', scheduled_at: '2026-06-10T09:00:00Z' },
+    ];
+    const res = attendanceForStudent('a', enrollments, otherGroupSession, scans);
+    expect(res.finishedSessions).toBe(3); // g-other not counted - not this student's group
+    expect(res.present).toBe(0);
+  });
+
+  it('rate is null — not 0 — when there is no finished session yet to measure', () => {
+    expect(attendanceForStudent('a', enrollments, [], []).rate).toBeNull();
   });
 });
 

@@ -3,6 +3,12 @@ import * as Sentry from '@sentry/nextjs';
 import { requireTeacherPrivateAccess } from '@/lib/centerAuth';
 import { countActiveNonGuestStudents, studentCapForPlan } from '@/lib/teacherCap';
 import { isProOrAbove } from '@/lib/teacherPlans';
+import {
+  attendanceForStudent,
+  type FinishedSessionRow,
+  type ScanRow,
+  type StudentAttendance,
+} from '@/lib/teacherAnalytics';
 
 const ROUTE_TAG = 'api/teacher/private/students';
 
@@ -23,6 +29,8 @@ function round2(n: number): number {
 
 type StudentBilling = {
   outstanding: number;
+  /** Count of pending lesson charges — "N classes not yet collected" in §02. */
+  pendingCount: number;
   lastPaymentAt: string | null;
   transactions: {
     id: string;
@@ -57,7 +65,12 @@ export async function GET(request: NextRequest) {
   if (groupsErr) return serverError('group_list', groupsErr);
   const groups = (groupRows ?? []) as { id: string; name: string | null }[];
   if (groups.length === 0) {
-    return NextResponse.json({ students: [], billingByStudent: {} });
+    return NextResponse.json({
+      students: [],
+      billingByStudent: {},
+      parentPhoneByStudent: {},
+      attendanceByStudent: {},
+    });
   }
   const nameByGroup = new Map(groups.map((g) => [g.id, g.name]));
 
@@ -75,15 +88,23 @@ export async function GET(request: NextRequest) {
     joined_at: string | null;
   }[];
 
-  const studentById = new Map<string, { name: string | null; phone: string | null }>();
+  const studentById = new Map<
+    string,
+    { name: string | null; phone: string | null; parentPhone: string | null }
+  >();
   if (enrollments.length > 0) {
     const { data: studentRows, error: studentsErr } = await auth.supabaseAdmin
       .from('students')
-      .select('id, name, phone')
+      .select('id, name, phone, parent_phone')
       .in('id', enrollments.map((e) => e.student_id));
     if (studentsErr) return serverError('student_list', studentsErr);
-    for (const s of (studentRows ?? []) as { id: string; name: string | null; phone: string | null }[]) {
-      studentById.set(s.id, { name: s.name, phone: s.phone });
+    for (const s of (studentRows ?? []) as {
+      id: string;
+      name: string | null;
+      phone: string | null;
+      parent_phone: string | null;
+    }[]) {
+      studentById.set(s.id, { name: s.name, phone: s.phone, parentPhone: s.parent_phone });
     }
   }
 
@@ -143,12 +164,14 @@ export async function GET(request: NextRequest) {
         if (!r.student_id) continue;
         const entry = (billingByStudent[r.student_id] ??= {
           outstanding: 0,
+          pendingCount: 0,
           lastPaymentAt: null,
           transactions: [],
         });
         const amount = Number(r.amount_billed) || 0;
         if (r.status === 'pending') {
           entry.outstanding = round2(entry.outstanding + amount);
+          entry.pendingCount += 1;
         }
         if (r.status === 'paid' && r.paid_at) {
           if (!entry.lastPaymentAt || r.paid_at > entry.lastPaymentAt) {
@@ -167,6 +190,65 @@ export async function GET(request: NextRequest) {
         }
       }
     }
+  }
+
+  // Parent contact, keyed by student (one parent phone regardless of how many
+  // groups the student is in) - Merged-Teacher-Students §02 Parent contact row.
+  // Already selected alongside phone/name above; students.parent_phone is the
+  // same column the centre-side student detail page already surfaces to staff.
+  const parentPhoneByStudent: Record<string, string | null> = {};
+  for (const [studentId, s] of studentById) {
+    parentPhoneByStudent[studentId] = s.parentPhone;
+  }
+
+  // BEST-EFFORT: per-student attendance (finished sessions since enrollment,
+  // present count) for the §02 Attendance block. A failed lookup degrades to an
+  // empty map, never a 500 - the rest of the detail panel still renders.
+  const attendanceByStudent: Record<string, StudentAttendance> = {};
+  try {
+    const { data: sessionRows, error: sessErr } = await auth.supabaseAdmin
+      .from('sessions')
+      .select('id, group_id, scheduled_at')
+      .in('group_id', groups.map((g) => g.id))
+      .eq('status', 'finished');
+    if (sessErr) throw sessErr;
+    const finishedSessions = (sessionRows ?? []) as FinishedSessionRow[];
+
+    if (finishedSessions.length > 0) {
+      const { data: scanRows, error: scanErr } = await auth.supabaseAdmin
+        .from('attendance_scans')
+        .select('session_id, student_id, scanned_at')
+        .in(
+          'session_id',
+          finishedSessions.map((s) => s.id),
+        );
+      if (scanErr) throw scanErr;
+      const scans = (scanRows ?? []) as ScanRow[];
+
+      const enrollmentsByStudent = new Map<string, { group_id: string; joined_at: string | null }[]>();
+      for (const e of enrollments) {
+        const list = enrollmentsByStudent.get(e.student_id) ?? [];
+        list.push({ group_id: e.group_id, joined_at: e.joined_at });
+        enrollmentsByStudent.set(e.student_id, list);
+      }
+      for (const [studentId, studentEnrollments] of enrollmentsByStudent) {
+        attendanceByStudent[studentId] = attendanceForStudent(
+          studentId,
+          studentEnrollments,
+          finishedSessions,
+          scans,
+        );
+      }
+    }
+  } catch (attErr) {
+    Sentry.withScope((scope) => {
+      scope.setTag('route', ROUTE_TAG);
+      scope.setTag('step', 'student_attendance');
+      Sentry.captureMessage(
+        `teacher students attendance lookup failed: ${(attErr as Error).message}`,
+        'warning',
+      );
+    });
   }
 
   // Over-cap flag for the students-page warning banner. The students page is
@@ -201,6 +283,8 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     students,
     billingByStudent,
+    parentPhoneByStudent,
+    attendanceByStudent,
     over_cap: overCap,
     student_count: studentCount,
     student_limit: studentCapForPlan(planKey),
