@@ -239,7 +239,7 @@ export async function GET(request: Request) {
 
     const flags = await fetchAdminAccessFlags(adminClient, userId);
     const effRole = flags.isSuperAdmin ? 'super_admin' : (flags.adminRole ?? 'internal_viewer');
-    const perms = getAdminPermissions(effRole, flags.customPermissionKeys);
+    const perms = getAdminPermissions(effRole, flags.permissionKeys);
     if (!flags.isSuperAdmin && !flags.canApproveSignups && !perms.includes('centers')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

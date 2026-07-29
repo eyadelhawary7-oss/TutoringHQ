@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAdminContext } from '@/lib/admin-auth';
-import { customPermissionsToKeys } from '@/lib/admin-access';
+import { fetchAdminPermissionKeys } from '@/lib/adminPermissionsStore';
 
 /**
  * Lightweight admin gate for client-side routing (cookie or Bearer session).
@@ -15,11 +15,13 @@ export async function GET(request: Request) {
 
     const { data: adminUser } = await ctx.supabaseAdmin
       .from('admin_users')
-      .select('role, custom_permissions')
+      .select('role')
       .eq('id', ctx.userId)
       .maybeSingle();
 
-    const customPermissions = customPermissionsToKeys(adminUser?.custom_permissions);
+    // Canonical store since 2026-07-30. The response field keeps its wire name
+    // so existing clients are unaffected; only where the value comes from moved.
+    const customPermissions = await fetchAdminPermissionKeys(ctx.supabaseAdmin, ctx.userId);
     const role =
       ctx.internalRole === 'super_admin'
         ? 'super_admin'
