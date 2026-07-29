@@ -377,7 +377,7 @@ export default function ImportStudentsPage() {
         <Progress value={progress} className="h-2 mb-6" />
 
         {error && (
-          <div className="mb-4 p-3 rounded-xl text-sm border border-destructive/30 bg-destructive/10 text-destructive">
+          <div className="mb-4 p-3 rounded-md text-sm border border-destructive/30 bg-destructive/10 text-destructive">
             {error}
           </div>
         )}
@@ -398,7 +398,7 @@ export default function ImportStudentsPage() {
               onDragOver={handleDragOver}
               onDragLeave={() => {}}
               onClick={() => !isLoading && fileInputRef.current?.click()}
-              className={`border-2 border-dashed border-border rounded-2xl p-12 text-center hover:border-primary/50 transition-colors cursor-pointer ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`border-2 border-dashed border-border rounded-lg p-12 text-center hover:border-primary/50 transition-colors cursor-pointer ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <input
                 ref={fileInputRef}
@@ -422,7 +422,7 @@ export default function ImportStudentsPage() {
             {fileName && parsedData && (
               <button
                 onClick={() => setStep('map')}
-                className="w-full mt-4 py-3 rounded-xl text-sm font-semibold text-white"
+                className="w-full mt-4 py-3 rounded-md text-sm font-semibold text-white"
                 style={{ background: 'hsl(var(--primary))' }}
               >
                 {tCommon('next')}
@@ -481,7 +481,7 @@ export default function ImportStudentsPage() {
                 type="button"
                 onClick={handleMapNext}
                 disabled={!hasNameMapping || !centerId || isLoading}
-                className="flex-1 min-w-[8rem] py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+                className="flex-1 min-w-[8rem] py-2.5 rounded-md text-sm font-semibold text-white disabled:opacity-50"
                 style={{ background: 'hsl(var(--primary))' }}
               >
                 {tCommon('next')}
@@ -495,7 +495,7 @@ export default function ImportStudentsPage() {
             <h3 className="font-bold text-[var(--color-text-primary)]">{t('groupResolution')}</h3>
             <p className="text-sm text-[var(--color-text-secondary)]">{t('groupResolutionHint')}</p>
             {centerGroups.length === 0 && (
-              <div className="p-3 rounded-xl text-sm border border-border bg-tile text-[var(--color-text-primary)] space-y-2">
+              <div className="p-3 rounded-md text-sm border border-border bg-tile text-[var(--color-text-primary)] space-y-2">
                 <p>{t('importWithoutGroupsBody')}</p>
                 {csvGroupOrder.length > 0 ? <p className="text-[var(--color-text-secondary)]">{t('noGroupsFound')}</p> : null}
               </div>
@@ -547,7 +547,7 @@ export default function ImportStudentsPage() {
                 type="button"
                 onClick={() => setStep('preview')}
                 disabled={isLoading}
-                className="flex-1 min-w-[8rem] py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+                className="flex-1 min-w-[8rem] py-2.5 rounded-md text-sm font-semibold text-white disabled:opacity-50"
                 style={{ background: 'hsl(var(--primary))' }}
               >
                 {tCommon('next')}
@@ -641,7 +641,7 @@ export default function ImportStudentsPage() {
                 type="button"
                 onClick={handleImport}
                 disabled={previewRows.length === 0 || isLoading || !guardianConsent}
-                className="flex-1 min-w-[8rem] py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+                className="flex-1 min-w-[8rem] py-2.5 rounded-md text-sm font-semibold text-white disabled:opacity-50"
                 style={{ background: 'hsl(var(--primary))' }}
               >
                 {t('importReady')}

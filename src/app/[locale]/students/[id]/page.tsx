@@ -505,7 +505,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
             <button
               type="button"
               onClick={() => setShowCollect(true)}
-              className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+              className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
             >
               <CreditCard className="h-6 w-6 text-teal-500" aria-hidden />
               <span className="text-sm font-semibold text-[var(--color-text-primary)]">{tp('collectPayment')}</span>
@@ -515,7 +515,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
             <button
               type="button"
               onClick={openEdit}
-              className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+              className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
             >
               <Pencil className="h-6 w-6 text-teal-500" aria-hidden />
               <span className="text-sm font-semibold text-[var(--color-text-primary)]">{tCommon('edit')}</span>
@@ -527,7 +527,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       {/* 3. Parent / Family */}
       <section className="mt-6">
         <h2 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">{tDetail('family')}</h2>
-        <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4">
+        <div className="rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
           {family ? (
             <div className="space-y-1">
               <p className="text-sm font-medium text-[var(--color-text-primary)]">
@@ -553,7 +553,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         <h2 className="flex items-center gap-2 text-sm font-bold text-[var(--color-text-primary)] mb-3">
           <ClipboardList size={16} className="text-teal-600" /> {tAtt('history')}
         </h2>
-        <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] overflow-hidden">
+        <div className="rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] overflow-hidden">
           {attendanceLoading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin h-6 w-6 border-2 border-teal-500 border-t-transparent rounded-full" />
@@ -564,7 +564,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
+                  <tr className="border-b border-[var(--color-line)] bg-[var(--color-surface-0)]">
                     <th className="text-start py-2.5 px-4 text-xs font-semibold text-[var(--color-text-secondary)]">{tAtt('dateTime')}</th>
                     <th className="text-start py-2.5 px-4 text-xs font-semibold text-[var(--color-text-secondary)]">{tAtt('group')}</th>
                     <th className="text-start py-2.5 px-4 text-xs font-semibold text-[var(--color-text-secondary)]">{tAtt('result')}</th>
@@ -575,7 +575,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                     const badge = deriveResultBadge(sc, tAtt);
                     const grp = sc.group_id ? groupNameMap[sc.group_id] : null;
                     return (
-                      <tr key={sc.id} className="border-b border-[var(--color-border-subtle)] last:border-0">
+                      <tr key={sc.id} className="border-b border-[var(--color-line)] last:border-0">
                         <td className="py-2.5 px-4 text-[var(--color-text-secondary)] text-start" dir="ltr">
                           {sc.scanned_at
                             ? formatDateTime(sc.scanned_at, locale, { dateStyle: 'short', timeStyle: 'short' })
@@ -602,7 +602,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         <div className="mt-6 flex flex-col gap-3">
           {inCart ? (
             <div className="space-y-2">
-              <button type="button" disabled className="w-full py-3 rounded-xl bg-[var(--color-surface-2)] text-sm font-semibold text-[var(--color-text-muted)]">
+              <button type="button" disabled className="w-full py-3 rounded-md bg-[var(--color-surface-2)] text-sm font-semibold text-[var(--color-text-muted)]">
                 {tDetail('inCart')}
               </button>
               <Link href="/orders" className="block text-center text-sm font-semibold text-teal-600 underline">
@@ -612,7 +612,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
           ) : (
             <button
               type="button"
-              className="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold"
+              className="w-full py-3 rounded-md bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold"
               onClick={() => void onOrderCard()}
             >
               {tDetail('orderCard')}
@@ -629,7 +629,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
           role="presentation"
         >
           <div
-            className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm w-full max-w-md p-6 modal-spring-in"
+            className="bg-[var(--color-panel)] rounded-md border border-[var(--color-line)] shadow-sm w-full max-w-md p-6 modal-spring-in"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-labelledby="collect-payment-title"
@@ -648,7 +648,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                   value={collectAmount}
                   onChange={(e) => setCollectAmount(e.target.value)}
                   dir="ltr"
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] text-sm font-mono text-[var(--color-text-primary)]"
+                  className="w-full px-3 py-2 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-0)] text-sm font-mono text-[var(--color-text-primary)]"
                   placeholder="0"
                 />
               </div>
@@ -663,7 +663,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors btn-press chq-focus ${
                         collectMethod === m
                           ? 'border-teal-600 bg-teal-600/15 text-teal-700'
-                          : 'border-[var(--color-border-subtle)] text-[var(--color-text-secondary)]'
+                          : 'border-[var(--color-line)] text-[var(--color-text-secondary)]'
                       }`}
                     >
                       {methodLabel(m)}
@@ -677,7 +677,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                 type="button"
                 disabled={collectSubmitting}
                 onClick={() => setShowCollect(false)}
-                className="px-4 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm text-[var(--color-text-primary)] btn-press chq-focus disabled:opacity-50"
+                className="px-4 py-2 border border-[var(--color-line)] rounded-lg text-sm text-[var(--color-text-primary)] btn-press chq-focus disabled:opacity-50"
               >
                 {tCommon('cancel')}
               </button>
@@ -698,7 +698,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       {showEdit && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowEdit(false)}>
           <div
-            className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border-subtle)] p-6 max-w-sm w-full max-h-[90vh] overflow-y-auto"
+            className="bg-[var(--color-panel)] rounded-lg border border-[var(--color-line)] p-6 max-w-sm w-full max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
@@ -712,7 +712,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 placeholder={ts('studentName')}
-                className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] text-sm"
+                className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-0)] text-sm"
               />
               <input
                 value={editPhone}
@@ -720,7 +720,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                 placeholder={tCommon('phone')}
                 type="tel"
                 dir="ltr"
-                className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] text-sm"
+                className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-0)] text-sm"
               />
               <button
                 type="button"
@@ -738,7 +738,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                     aria-label={ts('parentPhone')}
                     type="tel"
                     dir="ltr"
-                    className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] text-sm"
+                    className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-0)] text-sm"
                   />
                   {parentPackEnabled && (
                     <label className="flex items-start gap-2 cursor-pointer">
@@ -791,7 +791,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
               <button
                 type="button"
                 onClick={() => setShowEdit(false)}
-                className="px-4 py-2 rounded-lg text-sm border border-[var(--color-border-subtle)] btn-press chq-focus"
+                className="px-4 py-2 rounded-lg text-sm border border-[var(--color-line)] btn-press chq-focus"
               >
                 {tCommon('cancel')}
               </button>
