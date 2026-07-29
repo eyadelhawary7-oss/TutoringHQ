@@ -2335,6 +2335,17 @@
     "disabledTitle": "Card ordering is off",
     "disabledMessage": "Your center hasn't enabled physical QR card ordering. An owner can turn it on from Settings.",
     "disabledCta": "Go to Settings",
+    "teaser": {
+      "badge": "Coming soon",
+      "title": "Student ID cards",
+      "description": "Order printed ID cards with a scannable QR for every student. Attendance becomes a quick scan at the door.",
+      "feature0": "QR attendance at the door, no app needed",
+      "feature1": "Order for your whole center at once",
+      "feature2": "Your logo and colors on every card",
+      "feature3": "Delivered straight to your center",
+      "sampleName": "Youssef Adel",
+      "sampleIdBadge": "Student ID"
+    },
     "card": "card",
     "cards": "cards",
     "cardStyleDark": "Dark  -  Navy + Teal",

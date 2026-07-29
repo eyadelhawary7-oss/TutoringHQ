@@ -5,7 +5,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getShippingFee, getShippingZone } from '@/lib/bostaShipping';
 import { loadBostaShippingRates } from '@/lib/loadBostaShippingRates';
 import { Link } from '@/i18n/routing';
-import { ComingSoon } from '@/components/shared';
+import CardOrdersTeaser from '@/components/orders/CardOrdersTeaser';
 import OrdersPageClient, { type CardOrdersShippingQuote } from './OrdersPageClient';
 
 export default async function OrdersPage({
@@ -129,10 +129,8 @@ export default async function OrdersPage({
           // of here, so the next feature that is not on yet does not invent a
           // fourth version of this card.
           return (
-            <ComingSoon
-              badge={tOrders('comingSoonBadge')}
-              title={tOrders('disabledTitle')}
-              description={tOrders('disabledMessage')}
+            <CardOrdersTeaser
+              locale={locale}
               action={
                 <Link
                   href="/settings/money"
