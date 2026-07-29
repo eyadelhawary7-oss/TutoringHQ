@@ -62,6 +62,11 @@ RULES THAT STILL APPLY.
     test to reach green.
   - Stop and ask if the same fix is needed in more than three files — that
     belongs in the foundations, not in this PR.
+  - SHARED PRIMITIVES ARE MANDATORY. A screen needing a row action, a quick
+    menu, a group action bar or an expand sheet USES THE SHARED PRIMITIVE
+    from src/components/patterns/. Rolling a local one is not allowed, even
+    if it is smaller. If the primitive cannot do what the screen needs,
+    STOP AND SAY SO — do not fork it, do not work around it.
   - Log the PR in design/CHANGE-LOG.md and bump SW_VERSION.
 ```
 
@@ -107,3 +112,33 @@ reach 100% today:
 
 Center-Home, Center-Students and Center-Groups need **reopening**, not continuing. They are at
 `token pass only` and their remaining work is structural.
+
+
+## The shared-primitive rule
+
+Added 29 July 2026, when `Merged-Design-Patterns` was built.
+
+`§03`–`§06` ship as primitives in `src/components/patterns/`. Without a rule, every later file
+decides for itself whether to adopt them, and that decision drifts: file eight adopts the shared
+quick menu, file eleven rolls its own, both go green, and nobody notices until there are two
+divergent menus.
+
+So: **from `Merged-Design-Patterns` onward, a screen that needs a row action, a quick menu, a group
+action bar or an expand sheet uses the shared primitive.** A local implementation is not an option.
+If the primitive cannot do what a screen needs, that is a signal the primitive is wrong — **stop and
+say so** rather than forking it. A fork is how one pattern becomes two.
+
+### Known adopters, not yet converted
+
+Three screens roll their own three-dot menu today. They predate the primitive and converting them is
+**adoption, not pattern work**, so they were deliberately left alone in the pattern PR. They are
+recorded here so they are not forgotten:
+
+| screen | file |
+|---|---|
+| Admin · centers list | `src/app/[locale]/admin/centers/page.tsx` |
+| Rooms | `src/app/[locale]/rooms/page.tsx` |
+| Center Home · dashboard | `src/app/[locale]/dashboard/page.tsx` |
+
+Each converts when its own merged file comes up: `Admin-Accounts`, `Center-Groups` §03, and
+`Center-Home` §01 respectively.
