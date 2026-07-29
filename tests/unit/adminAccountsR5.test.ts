@@ -165,3 +165,45 @@ describe('cairoMonthBounds', () => {
     expect(b.thisMonthStart.toISOString() > '2026-06-30T00:00:00.000Z').toBe(true);
   });
 });
+
+describe('fetchCenterAccountMetrics — reads student_groups, not groups', () => {
+  it('queries student_groups with status=active', async () => {
+    // Regression guard for the bug this test was added with: the function
+    // first shipped reading `public.groups`, which has the right column names
+    // and ZERO rows. Every information_schema column check passed and the
+    // attendance rate was permanently null. sessions.group_id,
+    // enrollments.group_id and attendance_scans.group_id all reference
+    // `student_groups`.
+    const seen: { table: string; filters: [string, unknown][] }[] = [];
+
+    const client = {
+      from(table: string) {
+        const rec = { table, filters: [] as [string, unknown][] };
+        seen.push(rec);
+        const b: Record<string, unknown> = {
+          select: () => b,
+          eq: (c: string, v: unknown) => {
+            rec.filters.push([c, v]);
+            return b;
+          },
+          in: () => b,
+          gte: () => b,
+          then: (res: (v: { data: never[]; count: number; error: null }) => void) =>
+            res({ data: [], count: 0, error: null }),
+        };
+        return b;
+      },
+    };
+
+    const { fetchCenterAccountMetrics } = await import('@/lib/centerAccountMetrics');
+    await fetchCenterAccountMetrics(client as never, 'c1', {}, 3);
+
+    expect(seen.map((s) => s.table)).toContain('student_groups');
+    expect(seen.map((s) => s.table)).not.toContain('groups');
+
+    const groupQuery = seen.find((s) => s.table === 'student_groups');
+    // `student_groups` has status active|archived — there is no is_active column.
+    expect(groupQuery?.filters).toContainEqual(['status', 'active']);
+    expect(groupQuery?.filters.map(([c]) => c)).not.toContain('is_active');
+  });
+});
