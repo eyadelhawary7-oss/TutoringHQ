@@ -8855,7 +8855,17 @@
       "noPayments": "مفيش مدفوعات لسه",
       "paymentHistory": "سجل المدفوعات",
       "noTransactions": "مفيش معاملات لسه.",
-      "overCapWarning": "عندك أكتر من ٦٠ طالب على باقة ستاندرد. شيل طلبة لحد ما توصل ٦٠ علشان تقدر تكمل شغلك."
+      "overCapWarning": "عندك أكتر من ٦٠ طالب على باقة ستاندرد. شيل طلبة لحد ما توصل ٦٠ علشان تقدر تكمل شغلك.",
+      "studentCount": "{count} طالب",
+      "contactHeading": "التواصل",
+      "studentContactLabel": "الطالب",
+      "parentContactLabel": "ولي الأمر",
+      "callAction": "اتصال",
+      "messageAction": "رسالة على واتساب",
+      "pendingClassesCount": "{count} حصة لم تُحصّل بعد",
+      "attendanceLabel": "الحضور",
+      "attendanceFraction": "{present} من {total} حاضر",
+      "pendingClassesCountOne": "{count} حصة واحدة لم تُحصّل بعد"
     },
     "lockedIncome": {
       "heading": "لوحة دخلك",

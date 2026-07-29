@@ -41,7 +41,8 @@ If a row ever names one, that row is a mistake.
 | [#222](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/222) | `6a072c80` | 2026-07-30 | `Admin-Accounts §02` — the member sheet's toggles now persist to `public.permissions` | `/{locale}/admin/internal-team`, plus every admin gate that resolves a permission set | v33 |
 | [#223](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/223) | `f129b0ca` | 2026-07-29 | `Admin-Accounts §01` — the attendance KPI, which had never computed | `/{locale}/admin/centers/[id]` | v33 |
 | [#224](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/224) | `b7a49e9c` | 2026-07-30 | `Admin-Platform §01`–`§06` | `/{locale}/admin`, `/admin/analytics`, `/admin/platform-config`, `/admin/whatsapp-pack`, `/admin/promo-codes`, `/admin/privacy-requests` | v33 → **v34** |
-| Teacher-Home | *(on merge)* | 2026-07-30 | `Teacher-Home §02` — the 0-enrolled warning cue on a schedule card | `/{locale}/teacher/schedule` | v34 → **v35** |
+| [#225](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/225) | `d9c37b6f` | 2026-07-30 | `Teacher-Home §02` — the 0-enrolled warning cue on a schedule card | `/{locale}/teacher/schedule` | v34 → **v35** |
+| Teacher-Students | *(on merge)* | 2026-07-30 | `Teacher-Students §01`, `§02` | `/{locale}/teacher/students` (`AllStudentsList.tsx`) | v35 → **v36** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -502,3 +503,40 @@ Live, they are mutually exclusive — the calculator is gated to `!hasPrivateAcc
 `hasPrivateAccess`. No real teacher account can see both at once. This is a product-eligibility
 question (should the calculator also show for an active private teacher?), not a data gap, so it
 was not changed here.
+
+**Teacher-Students (30 July 2026)** — the second "likely done, survey first" file. §01 was close;
+§02 (Student Detail) had real gaps, including one genuine money-touching write the design draws
+that was NOT built here.
+
+**§01 Students list — built:** the design's avatar initial per row, the "N students" count header,
+and the group filter converted from a plain `<select>` to a segmented pill row — matching both the
+design's drawn chips and the app's own Today/Week segment already on `/teacher/schedule`, rather
+than two different filter conventions in the same portal.
+
+**§02 Student Detail — built, all read-only:**
+- **Parent contact.** The design draws a Parent row alongside Student; live had none.
+  `students.parent_phone` already exists on the same row the route was already querying — one
+  column added to an existing, already-scoped select. The centre-side student detail page already
+  surfaces this same column to staff, so this is an established pattern, not a new exposure.
+- **Call / Message quick actions**, `tel:`/`wa.me` links, for both student and parent. Purely
+  client-side links; the DISPLAYED number stays masked exactly as before, only the `href` uses the
+  real digits.
+- **Attendance** — "N% · present M of N" — a genuinely new read-only computation. Added
+  `attendanceForStudent` in `teacherAnalytics.ts`, same shape as the existing `attendanceRatePerGroup`
+  (#4) but per-student: finished sessions in the student's own groups since THEIR OWN
+  `enrollments.joined_at`, so a student is never counted absent for a class held before they
+  enrolled. `rate` is `null`, not `0`, when there is nothing to measure yet.
+- **"N classes not yet collected"** — the design's caption under Outstanding. Already-computable from
+  existing per-student transaction data; added `StudentBilling.pendingCount` alongside the existing
+  `outstanding` aggregate.
+
+**⚠ NOT built, and flagged rather than silently omitted: "Mark collected" and "Send reminder".**
+The design draws both as buttons on the same Balance card. `Mark collected` would reuse the existing,
+already-audited `/api/teacher/private/transactions/[id]/mark-paid` endpoint (used today from
+`GroupClassesTab` and the session-detail page) — reusing it here is plumbing, not new money logic.
+`Send reminder` has no existing per-student manual trigger; the only related code is a bulk nightly
+cron. Both are a money-state-adjacent WRITE on a screen with no protected-file wall, which is
+exactly the class of thing that comes to Eyad regardless of file name. Not built; raised as an open
+question rather than assumed either way.
+
+Full survey, before/after fractions and the flagged question are in PR #226.
