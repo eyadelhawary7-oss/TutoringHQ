@@ -303,9 +303,15 @@ correction is in `TOKEN-SPEC.md` §2.
   REVOKE UPDATE ON public.users FROM authenticated, anon;   -- table-level, no re-grant
   ```
   plus matching branches in `chq_prevent_user_escalation` for `teacher_group_ids`,
-  `can_manage_students`, `can_record_payments` and `is_active`, plus
-  `AND center_id = get_auth_center_id()` on `students_teacher_select` so the second door is scoped
-  even if a grant ever returns.
+  `can_manage_students`, `can_record_payments` and `is_active`. **That is the whole fix.**
+
+  ⚠ **Do NOT add `AND center_id = get_auth_center_id()` to `students_teacher_select`.** An earlier
+  draft of this entry suggested it as extra scoping. It would break the teacher portal completely.
+  That policy exists precisely so a teacher can reach students in groups they teach at a centre
+  they do **not** belong to — Model B, teachers span centres. `users.center_id` is nullable and
+  **all teachers currently have it NULL**, so the added clause would evaluate `NULL = NULL` → NULL
+  → false and deny every teacher every student. The column feeding the policy is the problem, not
+  the policy; once `teacher_group_ids` cannot be self-written, the policy is sound as it stands.
 
   ⚠ **A column-level revoke does NOT work here, and the first draft of this entry got it wrong.**
   `authenticated` holds a **table-level** `UPDATE` on `public.users` (`has_table_privilege` =
