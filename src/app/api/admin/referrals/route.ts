@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
+import { buildProgramSummary, buildTopReferrers } from '@/lib/referralProgram';
 import { validateCSRFRequest } from '@/lib/csrf';
 
 export async function GET(request: NextRequest) {
@@ -54,7 +55,21 @@ export async function GET(request: NextRequest) {
       amount: byReferrer[id].total,
     }));
 
-    return NextResponse.json({ referrals: allReferrals, pendingPayouts });
+    // ── Merged-Admin-Accounts §04 · program figures + top referrers ──────────
+    //
+    // The commission ladder is READ FROM THE LIVE RULE, not from the drawing.
+    // /api/referrals/process-commission computes 25% in month 1, 10% for months
+    // 2–12 and 5% from month 13; the design's "months 2 to 6 / month 7 onward"
+    // is wrong and is design correction D2 ("live wins, 10% for twelve months").
+    //
+    // The design's SIGNUP REWARD row — "New customer credit · 100 EGP applied
+    // to the referred account" — is NOT built. No such credit exists anywhere:
+    // no column, no code path, no ledger entry. A plausible figure in the shape
+    // of a card is worse than a smaller card, so the block is omitted.
+    const program = await buildProgramSummary(ctx.supabaseAdmin);
+    const topReferrers = await buildTopReferrers(ctx.supabaseAdmin);
+
+    return NextResponse.json({ referrals: allReferrals, pendingPayouts, program, topReferrers });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }

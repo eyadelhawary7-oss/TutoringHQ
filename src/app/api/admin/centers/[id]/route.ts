@@ -9,6 +9,7 @@ import { sendFreeformMessage } from '@/lib/whatsapp/client';
 import { formatDate } from '@/lib/formatNumber';
 import { buildInvoiceTaxSnapshot } from '@/lib/processingFee';
 import { createCommissionsForCenter } from '@/lib/commissions';
+import { fetchCenterAccountMetrics } from '@/lib/centerAccountMetrics';
 import { parseBodyWithLimit } from '@/lib/validate';
 
 const STRIP = [
@@ -169,6 +170,24 @@ export async function GET(
     referralCommissions = [];
   }
 
+  // Merged-Admin-Accounts §01 MANAGE · Activity log. `audit_log` carries
+  // center_id, action, entity_type, details and created_at (confirmed in
+  // information_schema 29 July); the table is optional in some deployments,
+  // which is why the read is wrapped rather than awaited alongside the rest.
+  let activityLog: unknown[] = [];
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('audit_log')
+      .select('id, action, entity_type, details, created_at')
+      .eq('center_id', centerId)
+      .order('created_at', { ascending: false })
+      .limit(25);
+    if (error) throw error;
+    activityLog = data ?? [];
+  } catch {
+    activityLog = [];
+  }
+
   let payoutRequests: unknown[] = [];
   try {
     const { data, error } = await supabaseAdmin
@@ -181,8 +200,24 @@ export async function GET(
     payoutRequests = [];
   }
 
+  // Merged-Admin-Accounts §01 — the account-detail header's KPI tiles and the
+  // MANAGE list counts. Never fatal: a metrics failure must not take the whole
+  // management screen down with it.
+  let metrics = null;
+  try {
+    metrics = await fetchCenterAccountMetrics(
+      supabaseAdmin,
+      centerId,
+      center as { parent_pack_enabled?: boolean | null },
+      (invoicesRes.data ?? []).length,
+    );
+  } catch {
+    metrics = null;
+  }
+
   return NextResponse.json({
     center,
+    metrics,
     invoices: invoicesRes.data ?? [],
     renewalHistory: renewalRes.data ?? [],
     planRequests: planRequestsRes.data ?? [],
@@ -191,6 +226,7 @@ export async function GET(
     adminUsers: adminUsersRes.data ?? [],
     referralCommissions,
     payoutRequests,
+    activityLog,
   });
 }
 

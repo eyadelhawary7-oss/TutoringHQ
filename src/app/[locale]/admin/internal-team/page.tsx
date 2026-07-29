@@ -8,11 +8,13 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { getAdminSession, getAdminAuthHeaders } from '@/lib/adminAuth-client';
-import { ALL_ADMIN_PERMISSIONS } from '@/lib/admin-roles';
-import { RoleBadge } from '@/components/shared';
+import { ALL_ADMIN_PERMISSIONS, getPermissionsForRole } from '@/lib/admin-roles';
+import { RoleBadge, EmptyState } from '@/components/shared';
+import { ListRow } from '@/components/patterns';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
-import { formatDate } from '@/lib/formatNumber';
+import { ArrowLeft, RefreshCw, Users } from 'lucide-react';
+import { formatDate, formatNumber } from '@/lib/formatNumber';
+import { initialsOf } from '@/lib/initials';
 import { normalizePhone } from '@/lib/utils/phone';
 
 interface TeamMember {
@@ -71,9 +73,15 @@ export default function AdminInternalTeamPage() {
   const [selectedRole, setSelectedRole] = useState<RoleKey>('internal_viewer');
   const [customPerms, setCustomPerms] = useState<string[]>([]);
 
-  const [editRoleMember, setEditRoleMember] = useState<TeamMember | null>(null);
-  const [editRoleSelection, setEditRoleSelection] = useState<RoleKey>('internal_viewer');
-  const [editRolePassword, setEditRolePassword] = useState('');
+  // Merged-Admin-Accounts §02 member detail — the permission sheet the design
+  // draws behind a team row.
+  const [detailMember, setDetailMember] = useState<TeamMember | null>(null);
+  const [detailPerms, setDetailPerms] = useState<string[]>([]);
+  const [detailPassword, setDetailPassword] = useState('');
+  const [detailError, setDetailError] = useState<string | null>(null);
+  const [detailSaved, setDetailSaved] = useState(false);
+
+  const [detailRole, setDetailRole] = useState<RoleKey>('internal_viewer');
   const [deactivateMember, setDeactivateMember] = useState<TeamMember | null>(null);
   // Set-PIN link surfaced after provisioning a brand-new employee login.
   const [pinSetupLink, setPinSetupLink] = useState<string | null>(null);
@@ -157,39 +165,80 @@ export default function AdminInternalTeamPage() {
     }
   };
 
-  const openEditRole = (member: TeamMember) => {
-    setEditRoleMember(member);
-    const roleAsKey = (ROLE_OPTIONS as readonly string[]).includes(member.role)
-      ? (member.role as RoleKey)
-      : 'internal_viewer';
-    setEditRoleSelection(roleAsKey);
-    setEditRolePassword('');
+  const visibleTeam = team.filter((m) => m && typeof m.id === 'string' && m.id.length > 0);
+
+  /**
+   * The design's sub-line: the owner shows an email, everyone else shows what
+   * their role can reach. "Last active 2 hours ago" is NOT here —
+   * `admin_users` has no last-active column (id, name, email, role,
+   * created_at, phone, custom_permissions; confirmed 29 July), so the join
+   * date takes that slot rather than a number nobody could verify.
+   */
+  const memberSubline = (m: TeamMember): string => {
+    if (m.role === 'super_admin' || m.role === 'admin') {
+      return m.email || (m.phone ? normalizePhone(m.phone) : tCommon('notSet'));
+    }
+    const perms = getPermissionsForRole(m.role, m.custom_permissions ?? []);
+    return t('internalTeam.permissionSummary', { count: formatNumber(perms.length, locale) });
   };
 
-  const handleEditRoleSave = async () => {
-    if (!editRoleMember) return;
+  const openMember = (m: TeamMember) => {
+    setDetailMember(m);
+    setDetailRole((ROLE_OPTIONS as readonly string[]).includes(m.role) ? (m.role as RoleKey) : 'internal_viewer');
+    setDetailPerms(getPermissionsForRole(m.role, m.custom_permissions ?? []));
+    setDetailPassword('');
+    setDetailError(null);
+    setDetailSaved(false);
+  };
+
+  /**
+   * Ticking a box that the chosen named role does not grant is a bespoke set,
+   * and the endpoint only stores a bespoke set under the `custom` role. So the
+   * role that gets written is `custom` exactly when the toggles have drifted
+   * from what the selected role confers.
+   */
+  const roleToWrite = (): RoleKey => {
+    const fromRole = getPermissionsForRole(detailRole, detailPerms);
+    const same =
+      fromRole.length === detailPerms.length && fromRole.every((k) => detailPerms.includes(k));
+    return same ? detailRole : 'custom';
+  };
+
+  /**
+   * Permission toggles persist through the existing team PUT, which only
+   * writes `custom_permissions` when the role is `custom`. So saving a bespoke
+   * permission set moves the member to the custom role — that is the honest
+   * behaviour of the endpoint, not a shortcut around it. Role changes stay
+   * password-confirmed and super_admin stays unassignable, both enforced
+   * server-side.
+   */
+  const handleSavePermissions = async () => {
+    if (!detailMember) return;
     const headers = await getAdminAuthHeaders();
     if (!headers) return;
     setActionLoading(true);
+    setDetailError(null);
+    setDetailSaved(false);
     try {
       const res = await fetch('/api/admin/team', {
         method: 'PUT',
         headers,
         body: JSON.stringify({
-          memberId: editRoleMember.id,
-          role: editRoleSelection,
-          password: editRolePassword,
+          memberId: detailMember.id,
+          role: roleToWrite(),
+          custom_permissions: detailPerms,
+          password: detailPassword,
         }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err?.error || tCommon('errorGeneric'));
       }
-      setEditRoleMember(null);
-      setEditRolePassword('');
-      loadData();
+      setDetailSaved(true);
+      setDetailPassword('');
+      await loadData();
     } catch (e) {
-      setError(e instanceof Error ? e.message : tCommon('errorGeneric'));
+      setDetailError(e instanceof Error ? e.message : tCommon('errorGeneric'));
     } finally {
       setActionLoading(false);
     }
@@ -218,6 +267,197 @@ export default function AdminInternalTeamPage() {
       setActionLoading(false);
     }
   };
+
+  // Merged-Admin-Accounts §02, second frame: the member sheet.
+  if (detailMember) {
+    const locked = detailMember.role === 'super_admin' || detailMember.role === 'admin';
+    return (
+      <div className="flex flex-col flex-1 min-h-0 min-h-screen w-full bg-[var(--color-surface-0)]">
+        <AdminHeader />
+        <div className="flex flex-1">
+          <AdminSidebar activeRoute="/admin/internal-team" />
+          <main className="flex-1 flex flex-col min-w-0 p-4 md:p-6 overflow-auto lg:ms-56 max-w-2xl">
+            <div className="mb-4 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setDetailMember(null)}
+                className="rounded-lg p-1.5 hover:bg-tile chq-focus"
+                aria-label={tCommon('back')}
+              >
+                <DirectionalIcon icon={ArrowLeft} className="h-5 w-5" />
+              </button>
+              <h1 className="text-xl font-bold">{t('internalTeam.memberTitle')}</h1>
+            </div>
+
+            <div className="mb-5 flex items-center gap-3">
+              <span
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--color-mint)] text-base font-semibold text-[var(--color-accent-deep)]"
+                aria-hidden
+              >
+                {initialsOf(detailMember.name)}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-base font-semibold text-[var(--color-text-primary)]">
+                  {detailMember.name}
+                </p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <RoleBadge role={detailMember.role} />
+                  {detailMember.created_at && (
+                    <span className="text-xs text-[var(--color-text-muted)]">
+                      {t('internalTeam.joinedOn', { date: formatDate(detailMember.created_at, locale) })}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {!locked && (
+              <div className="mb-5">
+                <label
+                  htmlFor="member-role"
+                  className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]"
+                >
+                  {t('internalTeamRoleLabel')}
+                </label>
+                <select
+                  id="member-role"
+                  value={detailRole}
+                  onChange={(e) => {
+                    const next = e.target.value as RoleKey;
+                    setDetailRole(next);
+                    if (next !== 'custom') setDetailPerms(getPermissionsForRole(next, detailPerms));
+                  }}
+                  className="chq-focus w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                >
+                  {ROLE_OPTIONS.map((role) => (
+                    <option key={role} value={role}>
+                      {t(ROLE_LABEL_KEY[role])}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+              {t('internalTeamPermissionsHeading')}
+            </h2>
+            <div className="overflow-hidden rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)]">
+              {ALL_ADMIN_PERMISSIONS.map((p, i) => (
+                <label
+                  key={p.key}
+                  className={`flex min-h-[44px] cursor-pointer items-center justify-between gap-3 px-4 py-3 ${
+                    i > 0 ? 'border-t border-[var(--color-border-subtle)]' : ''
+                  } ${locked ? 'cursor-not-allowed opacity-60' : ''}`}
+                >
+                  <span className="text-sm text-[var(--color-text-primary)]">
+                    {locale === 'ar' ? p.labelAr : p.labelEn}
+                  </span>
+                  <input
+                    type="checkbox"
+                    disabled={locked}
+                    checked={detailPerms.includes(p.key)}
+                    onChange={(e) =>
+                      setDetailPerms((prev) =>
+                        e.target.checked ? [...prev, p.key] : prev.filter((k) => k !== p.key),
+                      )
+                    }
+                    className="chq-focus h-5 w-5 rounded border-[var(--color-border-default)] text-teal-600"
+                  />
+                </label>
+              ))}
+            </div>
+
+            {locked ? (
+              <p className="mt-3 text-xs leading-relaxed text-[var(--color-text-muted)]">
+                {t('internalTeam.lockedRoleNote')}
+              </p>
+            ) : (
+              <>
+                <p className="mt-3 text-xs leading-relaxed text-[var(--color-text-muted)]">
+                  {t('internalTeam.customRoleNote')}
+                </p>
+                <input
+                  type="password"
+                  value={detailPassword}
+                  onChange={(e) => setDetailPassword(e.target.value)}
+                  placeholder={tCommon('passwordPlaceholder')}
+                  className="mt-3 w-full rounded-lg border border-border bg-[var(--color-surface-2)] px-3 py-2.5 text-sm text-[var(--color-text-primary)]"
+                />
+                {detailError && (
+                  <p className="mt-2 text-sm text-red-600" role="alert">
+                    {detailError}
+                  </p>
+                )}
+                {detailSaved && (
+                  <p className="mt-2 text-sm text-emerald-700" role="status">
+                    {t('internalTeam.permissionsSaved')}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={handleSavePermissions}
+                  disabled={actionLoading || !detailPassword}
+                  className="btn-press chq-focus mt-3 min-h-[44px] w-full rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
+                >
+                  {actionLoading ? tCommon('saving') : t('internalTeam.savePermissions')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeactivateMember(detailMember)}
+                  disabled={actionLoading}
+                  className="btn-press chq-focus mt-2 min-h-[44px] w-full rounded-lg border border-red-300 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                >
+                  {t('internalTeam.removeAccess')}
+                </button>
+              </>
+            )}
+          </main>
+        </div>
+
+        {deactivateMember && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+            onClick={() => setDeactivateMember(null)}
+          >
+            <div
+              className="mx-4 w-full max-w-sm rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-6 shadow-sm"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="mb-3 font-bold text-[var(--color-text-primary)]">
+                {t('internalTeam.deactivateConfirmTitle')}
+              </h3>
+              <p className="mb-4 text-sm text-[var(--color-text-secondary)]">
+                {t('internalTeam.deactivateConfirmMessage')}
+              </p>
+              <p className="mb-4 text-sm font-medium text-[var(--color-text-primary)]">
+                {deactivateMember.name}
+              </p>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDeactivateMember(null)}
+                  className="rounded-lg border border-border px-4 py-2 text-sm"
+                >
+                  {tCommon('cancel')}
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await handleDeactivateConfirm();
+                    setDetailMember(null);
+                  }}
+                  disabled={actionLoading}
+                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                  {t('internalTeam.deactivateConfirmCta')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col flex-1 min-h-0 min-h-screen w-full bg-[var(--color-surface-0)]">
@@ -264,130 +504,39 @@ export default function AdminInternalTeamPage() {
               <RefreshCw className="animate-spin text-[var(--color-text-secondary)]" size={24} />
             </div>
           ) : (
-            <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
-                    <th className="text-start py-3 px-4 text-xs font-medium text-[var(--color-text-muted)] min-w-[180px]">{tCommon('name')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-medium text-[var(--color-text-muted)]">{tCommon('phone')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-medium text-[var(--color-text-muted)]">{t('internalTeamRoleLabel')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-medium text-[var(--color-text-muted)]">{t('joinedDate')}</th>
-                    <th className="text-start py-3 px-4 text-xs font-medium text-[var(--color-text-muted)] min-w-[120px]">{tCommon('actions')}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--color-border-subtle)]">
-                  {team.filter((m) => m && typeof m.id === 'string' && m.id.length > 0).length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="py-8 px-4 text-center text-[var(--color-text-secondary)] text-sm">
-                        {t('internalTeamEmptyState')}
-                      </td>
-                    </tr>
-                  ) : null}
-                  {team
-                    .filter((m) => m && typeof m.id === 'string' && m.id.length > 0)
-                    .map((m) => (
-                      <tr key={m.id} className="hover:bg-[var(--color-surface-0)] transition-colors">
-                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-primary)] font-medium min-w-[180px] max-w-[240px] truncate" title={m.name}>{m.name}</td>
-                        <td className="py-3.5 px-4 font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">
-                          {m.phone ? normalizePhone(m.phone) : (m.email ?? tCommon('notSet'))}
-                        </td>
-                        <td className="py-3.5 px-4 whitespace-nowrap">
-                          <RoleBadge role={m.role} />
-                        </td>
-                        <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)]">
-                          {m.created_at ? formatDate(m.created_at, locale) : tCommon('notSet')}
-                        </td>
-                        <td className="py-3.5 px-4">
-                          {!['super_admin', 'admin'].includes(m.role) ? (
-                            <div className="flex items-center gap-2 flex-nowrap">
-                              <button
-                                type="button"
-                                onClick={() => openEditRole(m)}
-                                disabled={actionLoading}
-                                className="px-2 py-1 rounded text-xs font-semibold border border-[var(--color-border-default)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)] disabled:opacity-50"
-                              >
-                                {t('internalTeam.editRole')}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setDeactivateMember(m)}
-                                disabled={actionLoading}
-                                className="px-2 py-1 rounded text-xs font-semibold border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50"
-                              >
-                                {t('internalTeam.deactivate')}
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-[var(--color-text-muted)]">{tCommon('notAvailable')}</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
+            <>
+              {/* Merged-Admin-Accounts §02 — the team list the design draws. */}
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+                {t('internalTeam.memberCount', { count: formatNumber(visibleTeam.length, locale) })}
+              </p>
+              {visibleTeam.length === 0 ? (
+                <EmptyState
+                  icon={Users}
+                  title={t('internalTeamEmptyState')}
+                  description={t('internalTeam.emptyBody')}
+                  alt={t('internalTeam.emptyAlt')}
+                />
+              ) : (
+                <div className="space-y-2">
+                  {visibleTeam.map((m) => (
+                    <ListRow
+                      key={m.id}
+                      avatar={initialsOf(m.name)}
+                      title={m.name}
+                      meta={memberSubline(m)}
+                      badge={<RoleBadge role={m.role} />}
+                      onOpen={() => openMember(m)}
+                    />
+                  ))}
+                </div>
+              )}
+              <p className="mt-3 text-xs leading-relaxed text-[var(--color-text-muted)]">
+                {t('internalTeam.ownerNote')}
+              </p>
+            </>
           )}
         </main>
       </div>
-
-      {editRoleMember && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={() => setEditRoleMember(null)}
-        >
-          <div
-            className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-6 max-w-sm mx-4 w-full bg-[var(--color-surface-1)]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="font-bold text-[var(--color-text-primary)] mb-4">
-              {t('internalTeam.editRoleTitle')}
-            </h3>
-            <p className="text-sm text-[var(--color-text-secondary)] mb-3">{editRoleMember.name}</p>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-                  {t('internalTeamRoleLabel')}
-                </label>
-                <select
-                  value={editRoleSelection}
-                  onChange={(e) => setEditRoleSelection(e.target.value as RoleKey)}
-                  className="w-full px-3 py-2 border border-[var(--color-border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-[var(--color-surface-2)] text-[var(--color-text-primary)]"
-                >
-                  {ROLE_OPTIONS.map((role) => (
-                    <option key={role} value={role}>
-                      {t(ROLE_LABEL_KEY[role])}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <input
-                type="password"
-                value={editRolePassword}
-                onChange={(e) => setEditRolePassword(e.target.value)}
-                placeholder={tCommon('passwordPlaceholder')}
-                className="w-full px-3 py-2.5 rounded-lg border border-border bg-[var(--color-surface-2)] text-[var(--color-text-primary)] text-sm"
-              />
-            </div>
-            <div className="flex gap-2 justify-end mt-4">
-              <button
-                type="button"
-                onClick={() => setEditRoleMember(null)}
-                className="px-4 py-2 rounded-lg text-sm border border-border"
-              >
-                {tCommon('cancel')}
-              </button>
-              <button
-                type="button"
-                onClick={handleEditRoleSave}
-                disabled={actionLoading || !editRolePassword}
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50"
-              >
-                {t('internalTeam.editRoleSave')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {deactivateMember && (
         <div

@@ -9,8 +9,12 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { getCsrfHeaders } from '@/lib/csrf-client';
-import { ArrowLeft, Gift, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Gift, CheckCircle, Users } from 'lucide-react';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
+import { EmptyState } from '@/components/shared';
+import { ListRow } from '@/components/patterns';
+import { initialsOf } from '@/lib/initials';
+import type { ProgramSummary, TopReferrer } from '@/lib/referralProgram';
 import {
   formatCurrency,
   formatDate,
@@ -115,6 +119,11 @@ export default function AdminReferralsPage() {
   const [adminPendingPayouts, setAdminPendingPayouts] = useState<PendingPayout[]>([]);
   const [referralsLoading, setReferralsLoading] = useState(true);
 
+  // Merged-Admin-Accounts §04 — the programme block and the ranked list.
+  const [program, setProgram] = useState<ProgramSummary | null>(null);
+  const [topReferrers, setTopReferrers] = useState<TopReferrer[]>([]);
+  const [referrerFilter, setReferrerFilter] = useState<'all' | 'centers' | 'teachers' | 'owed'>('all');
+
   const [commissionStatus, setCommissionStatus] = useState<'all' | 'pending' | 'paid'>('all');
   const [commissionQuarter, setCommissionQuarter] = useState(defaultQuarter);
   const [commissions, setCommissions] = useState<CommissionRow[]>([]);
@@ -123,6 +132,13 @@ export default function AdminReferralsPage() {
   const [commissionError, setCommissionError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [markingId, setMarkingId] = useState<string | null>(null);
+
+  const filteredReferrers = useMemo(() => {
+    if (referrerFilter === 'centers') return topReferrers.filter((r) => r.kind === 'center');
+    if (referrerFilter === 'teachers') return topReferrers.filter((r) => r.kind === 'teacher');
+    if (referrerFilter === 'owed') return topReferrers.filter((r) => (r.owed ?? 0) > 0);
+    return topReferrers;
+  }, [topReferrers, referrerFilter]);
 
   const getSession = useCallback(async () => {
     const {
@@ -184,9 +200,16 @@ export default function AdminReferralsPage() {
         return;
       }
       if (!res.ok) return;
-      const data = (await res.json()) as { referrals?: ReferralRow[]; pendingPayouts?: PendingPayout[] };
+      const data = (await res.json()) as {
+        referrals?: ReferralRow[];
+        pendingPayouts?: PendingPayout[];
+        program?: ProgramSummary;
+        topReferrers?: TopReferrer[];
+      };
       setAdminReferrals(data.referrals ?? []);
       setAdminPendingPayouts(data.pendingPayouts ?? []);
+      setProgram(data.program ?? null);
+      setTopReferrers(data.topReferrers ?? []);
     } finally {
       setReferralsLoading(false);
     }
@@ -350,6 +373,167 @@ export default function AdminReferralsPage() {
                 <p className="text-[var(--color-text-secondary)]">{tCommon('loading')}</p>
               ) : (
                 <>
+                  {/* ── Merged-Admin-Accounts §04, frame 1 · the programme ──────── */}
+                  {program && (
+                    <section className="mb-6 space-y-4">
+                      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 text-center">
+                        <p className="text-sm text-[var(--color-text-muted)]">{t('program.paidThisMonth')}</p>
+                        <p className="mt-1 text-3xl font-bold text-[var(--color-text-primary)]">
+                          {formatCurrency(program.paidThisMonth, locale)}
+                        </p>
+                        {program.paidGrowthPct != null && (
+                          <p
+                            className={`mt-1 text-sm font-medium ${
+                              program.paidGrowthPct >= 0 ? 'text-emerald-700' : 'text-red-600'
+                            }`}
+                          >
+                            {t('program.vsLastMonth', {
+                              change: formatPercent(Math.abs(program.paidGrowthPct), locale),
+                              direction: program.paidGrowthPct >= 0 ? '+' : '−',
+                            })}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        {[
+                          {
+                            k: 'activeReferrers',
+                            v: formatNumber(program.activeReferrers, locale),
+                            l: t('program.activeReferrers'),
+                          },
+                          {
+                            k: 'newReferrals',
+                            v: formatNumber(program.newReferralsThisMonth, locale),
+                            l: t('program.newReferrals'),
+                          },
+                          { k: 'owedNow', v: formatCurrency(program.owedNow, locale), l: t('program.owedNow') },
+                          {
+                            k: 'paidMtd',
+                            v: formatCurrency(program.paidThisMonth, locale),
+                            l: t('program.paidMtd'),
+                          },
+                        ].map((s) => (
+                          <div
+                            key={s.k}
+                            className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-1)] p-3"
+                          >
+                            <p className="text-lg font-bold text-[var(--color-text-primary)]">{s.v}</p>
+                            <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">{s.l}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div>
+                        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+                          {t('program.tiersHeading')}
+                        </h3>
+                        <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)]">
+                          {program.tiers.map((tier, i) => (
+                            <div
+                              key={tier.fromMonth}
+                              className={`flex items-center gap-3 px-4 py-3 ${
+                                i > 0 ? 'border-t border-[var(--color-border)]' : ''
+                              }`}
+                            >
+                              <span className="w-14 shrink-0 text-base font-bold text-[var(--color-accent-deep)]">
+                                {formatPercent(tier.ratePct, locale)}
+                              </span>
+                              <span className="min-w-0 flex-1 text-sm text-[var(--color-text-primary)]">
+                                {tier.toMonth === tier.fromMonth
+                                  ? t('program.tierFirstMonth')
+                                  : tier.toMonth == null
+                                    ? t('program.tierFrom', {
+                                        from: formatNumber(tier.fromMonth, locale),
+                                      })
+                                    : t('program.tierRange', {
+                                        from: formatNumber(tier.fromMonth, locale),
+                                        to: formatNumber(tier.toMonth, locale),
+                                      })}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="mt-2 text-xs leading-relaxed text-[var(--color-text-muted)]">
+                          {t('program.tiersNote')}
+                        </p>
+                        {/*
+                          The design's SIGNUP REWARD row — "New customer credit ·
+                          100 EGP applied to the referred account" — is not here.
+                          No column, no code path, no ledger entry exists for it
+                          anywhere in the product. Omitted rather than invented.
+                        */}
+                      </div>
+                    </section>
+                  )}
+
+                  {/* ── §04, frame 2 · top referrers ───────────────────────────── */}
+                  <section className="mb-6 space-y-3">
+                    <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
+                      {t('topReferrers.title')}
+                    </h2>
+                    <div className="flex flex-wrap gap-2">
+                      {(['all', 'centers', 'teachers', 'owed'] as const).map((f) => (
+                        <button
+                          key={f}
+                          type="button"
+                          onClick={() => setReferrerFilter(f)}
+                          aria-pressed={referrerFilter === f}
+                          className={`btn-press chq-focus min-h-[40px] rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                            referrerFilter === f
+                              ? 'bg-teal-600 text-white'
+                              : 'border border-[var(--color-border-default)] bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-3)]'
+                          }`}
+                        >
+                          {t(`topReferrers.filter_${f}`)}
+                        </button>
+                      ))}
+                    </div>
+
+                    {filteredReferrers.length === 0 ? (
+                      <EmptyState
+                        icon={Users}
+                        title={t('topReferrers.emptyTitle')}
+                        description={t('topReferrers.emptyBody')}
+                        alt={t('topReferrers.emptyAlt')}
+                      />
+                    ) : (
+                      <div className="space-y-2">
+                        {filteredReferrers.map((r) => (
+                          <ListRow
+                            key={`${r.kind}-${r.id}`}
+                            avatar={initialsOf(r.name ?? '')}
+                            title={r.name ?? tCommon('notSet')}
+                            meta={t('topReferrers.rowMeta', {
+                              referred: formatNumber(r.referred, locale),
+                              active: formatNumber(r.active, locale),
+                            })}
+                            badge={
+                              r.owed != null ? (
+                                <span className="shrink-0 text-sm font-semibold text-[var(--color-text-primary)]">
+                                  {t('topReferrers.owedBadge', { amount: formatCurrency(r.owed, locale) })}
+                                </span>
+                              ) : (
+                                // A teacher referrer is paid in free months, never
+                                // in cash — showing "0 owed" would read as a debt
+                                // the model never creates.
+                                <span className="shrink-0 text-sm font-semibold text-[var(--color-text-secondary)]">
+                                  {t('topReferrers.freeMonthsBadge', {
+                                    count: formatNumber(r.freeMonths ?? 0, locale),
+                                  })}
+                                </span>
+                              )
+                            }
+                            chevron={false}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-xs leading-relaxed text-[var(--color-text-muted)]">
+                      {t('topReferrers.note')}
+                    </p>
+                  </section>
+
                   <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">
                     {tAdmin('allReferrals')}
                   </h2>

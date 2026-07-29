@@ -16,6 +16,7 @@ import { Pin, Trash2 } from 'lucide-react';
 import { districtSlugFromDisplay } from '@/lib/formatDistrict';
 import { formatDate as formatDateI18n, formatDateTime, formatNumber } from '@/lib/formatNumber';
 import { LocalizedDateInput } from '@/components/forms/LocalizedDateInput';
+import AccountDetailHeader, { type AccountMetrics } from '@/components/admin/AccountDetailHeader';
 import { SubscriptionOverridesPanel } from './SubscriptionOverridesPanel';
 
 const ADMIN_LOCALIZED_DATE_CLASS =
@@ -23,6 +24,8 @@ const ADMIN_LOCALIZED_DATE_CLASS =
 
 type CenterData = {
   center: Record<string, unknown>;
+  metrics: AccountMetrics | null;
+  activityLog: Record<string, unknown>[];
   invoices: Record<string, unknown>[];
   renewalHistory: Record<string, unknown>[];
   planRequests: Record<string, unknown>[];
@@ -245,6 +248,11 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
       return tStatus(s as 'pending');
     }
     return st || tCommon('notSet');
+  };
+
+  /** MANAGE rows in the §01 header scroll to the section that owns each concern. */
+  const jumpToSection = (anchorId: string) => {
+    document.getElementById(anchorId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const [data, setData] = useState<CenterData | null>(null);
@@ -1676,7 +1684,17 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               </div>
 
-              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
+              {/* Merged-Admin-Accounts §01 — the account-detail header the design draws. */}
+              <AccountDetailHeader
+                center={data.center}
+                metrics={data.metrics}
+                planLabel={formatPlanKey(data.center.plan)}
+                statusLabel={translatedCenterAccountStatus(data.center.status, tStatus, tCommon)}
+                statusClass={statusBadgeClass(data.center.status as string | undefined)}
+                onJump={jumpToSection}
+              />
+
+              <section id="acct-profile" className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4 scroll-mt-20">
                 <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section1.title')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -1825,7 +1843,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               </section>
 
-              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
+              <section id="acct-plan" className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4 scroll-mt-20">
                 <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section2.title')}</h2>
                 {String(data.center?.status) === 'pending_cancellation' ? (
                   <div
@@ -2137,7 +2155,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
 
               <SubscriptionOverridesPanel centerId={centerId} getAuthHeaders={getAuthHeaders} />
 
-              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
+              <section id="acct-invoices" className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4 scroll-mt-20">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                   <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section4.title')}</h2>
                   <button
@@ -2636,7 +2654,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               ) : null}
 
-              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
+              <section id="acct-addons" className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4 scroll-mt-20">
                 <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerManagement.section6.title')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm text-[var(--color-text-muted)]">
                   <div>
@@ -3442,7 +3460,42 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                 </div>
               ) : null}
 
-              <section className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4">
+              {/*
+                Merged-Admin-Accounts §01 MANAGE · Activity log. Reads
+                `audit_log` filtered to this centre — the table carries
+                center_id, action, entity_type, details and created_at.
+              */}
+              <section id="acct-activity" className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4 scroll-mt-20">
+                <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">
+                  {t('accountDetail.manage.activityLog')}
+                </h2>
+                {(data.activityLog?.length ?? 0) === 0 ? (
+                  <p className="text-sm text-[var(--color-text-muted)]">{t('accountDetail.activityEmpty')}</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {data.activityLog.map((row) => (
+                      <li
+                        key={String(row.id)}
+                        className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[var(--color-border)] pb-2 last:border-0 last:pb-0"
+                      >
+                        <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                          {String(row.action ?? tCommon('notAvailable'))}
+                        </span>
+                        <span className="text-xs text-[var(--color-text-muted)]">
+                          {[
+                            row.entity_type ? String(row.entity_type) : null,
+                            row.created_at ? formatDateTime(String(row.created_at), locale) : null,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+
+              <section id="acct-notes" className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl p-4 md:p-5 mb-4 scroll-mt-20">
                 <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-4 tracking-wide">{t('centerNotes.title')}</h2>
                 {opsNotesLoading ? (
                   <p className="text-sm text-[var(--color-text-muted)]">{t('centerManagement.loading')}</p>
