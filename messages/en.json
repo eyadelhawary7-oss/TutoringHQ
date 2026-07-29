@@ -3577,7 +3577,34 @@
       "tabCommissions": "Commissions",
       "tabReferrals": "Referrals",
       "totalOwed": "Total Owed",
-      "totalPaid": "Total Paid"
+      "totalPaid": "Total Paid",
+      "program": {
+        "paidThisMonth": "Commissions paid this month",
+        "vsLastMonth": "{direction}{change} vs last month",
+        "activeReferrers": "Active referrers",
+        "newReferrals": "New referrals",
+        "owedNow": "Owed now",
+        "paidMtd": "Paid MTD",
+        "tiersHeading": "Commission tiers",
+        "tierFirstMonth": "First month — their first paid month",
+        "tierRange": "Months {from} to {to}",
+        "tierFrom": "Month {from} onward — until they leave",
+        "tiersNote": "Each month pays that percent of what the referred account actually paid the month before."
+      },
+      "topReferrers": {
+        "title": "Top referrers",
+        "filter_all": "All",
+        "filter_centers": "Centers",
+        "filter_teachers": "Teachers",
+        "filter_owed": "Owed",
+        "rowMeta": "{referred} referred · {active} active",
+        "owedBadge": "{amount} owed",
+        "freeMonthsBadge": "{count} free months",
+        "note": "Owed amounts flow to the withdrawals queue once a referrer requests a payout. Teachers earn free months, not cash.",
+        "emptyTitle": "Nobody has referred anyone yet",
+        "emptyBody": "Centers and teachers show up here the moment their first referral signs up.",
+        "emptyAlt": "Referral codes are on each account."
+      }
     },
     "withdrawalsPage": {
       "actionError": "Action failed",
@@ -4023,7 +4050,19 @@
       "pinLinkHelper": "Share this one-time link with the new team member so they can set their own PIN and sign in. It was also sent to their WhatsApp.",
       "pinLinkCopy": "Copy link",
       "pinLinkCopied": "Copied",
-      "pinLinkDone": "Done"
+      "pinLinkDone": "Done",
+      "memberCount": "{count} members",
+      "memberTitle": "Member",
+      "ownerNote": "The owner can change roles and remove access. Finance is required to approve withdrawals.",
+      "emptyBody": "Nobody else has admin access yet. Invite the first person and pick what they can reach.",
+      "emptyAlt": "Roles can be changed at any time.",
+      "permissionSummary": "{count} areas",
+      "joinedOn": "Joined {date}",
+      "customRoleNote": "Ticking anything the chosen role does not already grant saves this person as a custom role. Confirm with your own password.",
+      "lockedRoleNote": "Owner and admin permissions are fixed and cannot be edited here.",
+      "permissionsSaved": "Permissions saved.",
+      "savePermissions": "Save permissions",
+      "removeAccess": "Remove access"
     },
     "salesPipeline": "Sales Pipeline",
     "analytics": "Analytics",
@@ -5012,7 +5051,74 @@
     "privacyFindStudent": "Find student",
     "privacyNoStudentMatch": "No student matched this phone.",
     "privacyAnonymize": "Anonymize",
-    "privacyAnonymizeConfirm": "Permanently strip this student's personal data (name, phone, parent phone, notes) and set them inactive? Financial records are kept without the identity. This cannot be undone."
+    "privacyAnonymizeConfirm": "Permanently strip this student's personal data (name, phone, parent phone, notes) and set them inactive? Financial records are kept without the identity. This cannot be undone.",
+    "teacherLinks": {
+      "title": "Teacher links",
+      "subtitle": "Which teachers are linked to which centers.",
+      "assign": "Assign",
+      "assignTitle": "New assignment",
+      "teacherLabel": "Teacher",
+      "teacherPlaceholder": "Choose a teacher",
+      "centerLabel": "Center",
+      "centerPlaceholder": "Choose a center",
+      "consentNote": "Linking is two-sided. This opens a request the teacher has to accept before the center can see anything of theirs.",
+      "requestOpened": "Request opened. The teacher accepts from their own portal.",
+      "saveAssignment": "Save assignment",
+      "noSubject": "No subject set",
+      "unnamedTeacher": "Unnamed teacher",
+      "notLinked": "Not linked to a center",
+      "tab_byCenter": "By center",
+      "tab_byTeacher": "By teacher",
+      "tab_unassigned": "Unassigned",
+      "centersHeading": "Centers",
+      "teachersHeading": "Teachers",
+      "unassignedHeading": "Unassigned teachers",
+      "pendingHeading": "Waiting on the teacher",
+      "pendingBadge": "Pending",
+      "errors": {
+        "ALREADY_A_MEMBER": "That teacher already works at that center.",
+        "REQUEST_ALREADY_PENDING": "A request for that pair is already open.",
+        "TEACHER_NOT_FOUND": "No teacher with that id.",
+        "CENTER_NOT_FOUND": "No center with that id."
+      },
+      "empty": {
+        "centersTitle": "No center has a teacher yet",
+        "centersBody": "Once a teacher accepts a link, the center they joined shows up here with them under it.",
+        "centersAlt": "Open a link from Assign.",
+        "teachersTitle": "No teachers yet",
+        "teachersBody": "Teachers appear here as soon as they finish signing up, linked or not.",
+        "teachersAlt": "Solo teachers sign up from the teacher site.",
+        "unassignedTitle": "Every teacher is linked",
+        "unassignedBody": "Nobody is sitting without a center right now.",
+        "unassignedAlt": "Switch to By teacher to see all of them."
+      }
+    },
+    "accountDetail": {
+      "centerKind": "Center",
+      "customerSince": "Customer since {date}",
+      "manageHeading": "Manage",
+      "actionsHeading": "Actions",
+      "addOnsActive": "{count} active",
+      "activityEmpty": "Nothing has been logged for this account yet.",
+      "kpi": {
+        "students": "Students",
+        "mrr": "MRR",
+        "attendance": "Attendance, {days}d"
+      },
+      "manage": {
+        "profile": "Profile & details",
+        "plan": "Plan & billing",
+        "addOns": "Add-ons",
+        "invoices": "Invoices",
+        "students": "Students",
+        "staff": "Teachers & staff",
+        "activityLog": "Activity log",
+        "notes": "Internal notes"
+      },
+      "actions": {
+        "suspend": "Suspend account"
+      }
+    }
   },
   "notFound": {
     "heading": "Page Not Found",

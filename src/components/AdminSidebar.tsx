@@ -25,6 +25,7 @@ import {
   Activity,
   TrendingUp,
   MapPin,
+  Link2,
   ChevronRight,
   Tag,
   GraduationCap,
@@ -390,6 +391,16 @@ export function AdminSidebar({
           isActive: activeRoute?.startsWith('/admin/centers') || activeRoute?.includes('/admin/centers') || false,
           canShow: canSee('centers'),
           href: '/admin/centers',
+        },
+        {
+          // R5 · Merged-Admin-Accounts §03. NOT /admin/center-assignments,
+          // which is the sales-commission machinery under HR & commissions.
+          key: 'teacherLinks',
+          icon: Link2,
+          label: t('teacherLinks.title'),
+          isActive: activeRoute?.includes('admin/teacher-links') ?? false,
+          canShow: canSee('centers'),
+          href: '/admin/teacher-links',
         },
         {
           key: 'platformHealth',

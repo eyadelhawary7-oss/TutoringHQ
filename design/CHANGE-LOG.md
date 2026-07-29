@@ -36,7 +36,8 @@ If a row ever names one, that row is a mistake.
 | [#218](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/218) | `d755a8c3` | 2026-07-29 | `Center-Groups` | `/{locale}/groups` | v30 → **v31** |
 | [#217](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/217) | `7c787fe9` | 2026-07-29 | none — billing cron | none | v31 |
 | [#219](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/219) | `90a575d1` | 2026-07-29 | none — doc only | none | v31 |
-| Design-Patterns | *(on merge)* | 2026-07-29 | `Design-Patterns §01–§06` — **ALL screens** once adopted: `EmptyState` has 11 adopters today | none yet — primitives only, adoption is per-file | v31 → **v32** |
+| [#220](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/220) | `0551992f` | 2026-07-29 | `Design-Patterns §01–§06` — **ALL screens** once adopted: `EmptyState` has 11 adopters today | none yet — primitives only, adoption is per-file | v31 → **v32** |
+| Admin-Accounts | *(on merge)* | 2026-07-29 | `Admin-Accounts §01` (centre half), `§02`, `§03` (**R5**, new route), `§04` | `/{locale}/admin/centers/[id]`, `/{locale}/admin/internal-team`, `/{locale}/admin/teacher-links` (**new**), `/{locale}/admin/referrals` | v32 → **v33** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -303,3 +304,68 @@ language" that survives a screenshot.
 mean inventing writes. Three screens run their own three-dot menu today and are recorded in
 `PER-FILE-PROMPT.md` with the merged file each converts under: `admin/centers` (Admin-Accounts),
 `rooms` (Center-Groups §03), `dashboard` (Center-Home §01).
+
+**Admin-Accounts (29 July 2026)** — R5 built as a new route, then §01's centre half, §02 and §04
+restructured. Structure coverage **1/4 → 3.5/4**.
+
+The 1/4 is §03, which had nothing at this shape at all; §01, §02 and §04 each had the right route
+and most of the wrong screen. Route coverage was 4/4 the whole time, which is exactly why the gap
+was invisible.
+
+| § | before | after | what moved |
+|---|---|---|---|
+| §01 Account detail | 0.5/1 | 0.8/1 | identity header, chips, KPI tiles, MANAGE, ACTIONS — over the existing 11-section form, which is untouched underneath |
+| §02 Internal team | 0.4/1 | 1/1 | count header, design list rows, **the member sheet with permission toggles** — which did not exist |
+| §03 Teacher links | 0/1 | 0.9/1 | the whole screen: grouping control, three groupings, assign form |
+| §04 Referrals | 0.2/1 | 0.8/1 | programme block, commission ladder, top-referrer list with filter chips |
+
+**R5 is `/admin/teacher-links`, NOT `/admin/center-assignments`.** The design's title is "Center
+assignments" and the live route of that name is the sales-commission machinery (staff ↔ center).
+They share a name and nothing else. The new route reads `teacher_center` and
+`teacher_center_requests`; `center_assignments` was not opened.
+
+**The admin assign form opens a REQUEST, it does not create the membership.** Linking a teacher to a
+centre is two-sided by design — `/api/center/teacher-links` opens a pending row and the teacher's
+acceptance is what writes `teacher_center`. An admin form that inserted an active membership would
+let an internal operator attach any teacher to any centre and hand that centre the teacher's roster.
+The consent step is the control that prevents it, so the admin form opens the same pending request
+with `initiated_by='center'`. This is a deliberate divergence from the drawn "Save assignment".
+
+**The commission ladder is read from the live rule.** `/api/referrals/process-commission` computes
+25% in month 1, 10% for months 2–12 and 5% from month 13. The design draws "months 2 to 6" and
+"month 7 onward"; that is design correction **D2 — live wins, 10% for twelve months**.
+`tests/unit/adminAccountsR5.test.ts` asserts the tier table against the live rule at every month
+from 1 to 36, so the screen cannot drift back to the drawing.
+
+**Teachers are shown in free months, not EGP.** `grantReferralReward` pays +1 free month to each
+side when a referred teacher clears their first real charge. A teacher referrer never has a cash
+balance owed, so the teacher rows carry free months under their own label — "0 owed" would read as a
+debt the model never creates.
+
+**Omitted, each for a named missing column:**
+
+| omitted | why |
+|---|---|
+| §01 Verified chip + "National ID on file · Valify" | no verification column on `centers` — **V1** |
+| §01 Branches row | no `branches` table. `branch_user_assignments` records which staff see which branch, not the branches |
+| §01 "Log in as center" action | no impersonation exists anywhere in the codebase |
+| §01 attendance KPI, when null | a centre with no finished session has no rate; 0% would be a claim the data does not make |
+| §02 "Last active 2 hours ago" | `admin_users` has no last-active column. The join date takes that slot |
+| §03 "Link type · Visiting / Permanent" | `teacher_center` has no link-type column, so the control would write nowhere |
+| §04 SIGNUP REWARD — "100 EGP new customer credit" | no column, no code path, no ledger entry. Nothing in the product does this |
+
+Every one of those was checked in `information_schema` on 29 July, not inferred from a migration
+file or from other code naming the column.
+
+**Empty is not missing.** `permissions`, `referrals`, `referral_commissions` and
+`referral_reward_records` are all 0 rows in production. Every screen that reads them was built
+anyway and renders through `EmptyState`.
+
+**Shared primitives, as required.** `ListRow` and `EmptyState` from `src/components/patterns/` on
+all three list screens. `initialsOf` is new and shared — the design's `.av` mark appears on all four
+sections, and Arabic takes one glyph rather than two, because two disconnected Arabic letterforms
+read as neither name.
+
+**`admin/centers`' own three-dot menu was NOT converted.** `PER-FILE-PROMPT.md` lists it as an
+Admin-Accounts adopter, but it lives on the centres *list*, which is `Merged-Admin-Platform` §01,
+not a section of this file. It converts there.

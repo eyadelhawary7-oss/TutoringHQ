@@ -1676,7 +1676,34 @@
       "tabCommissions": "العمولات",
       "tabReferrals": "الإحالات",
       "totalOwed": "إجمالي Owed",
-      "totalPaid": "إجمالي مدفوع"
+      "totalPaid": "إجمالي مدفوع",
+      "program": {
+        "paidThisMonth": "العمولات المدفوعة هذا الشهر",
+        "vsLastMonth": "{direction}{change} عن الشهر السابق",
+        "activeReferrers": "محيلون نشطون",
+        "newReferrals": "إحالات جديدة",
+        "owedNow": "مستحق الآن",
+        "paidMtd": "مدفوع هذا الشهر",
+        "tiersHeading": "شرائح العمولة",
+        "tierFirstMonth": "الشهر الأول — أول شهر مدفوع لهم",
+        "tierRange": "الأشهر {from} إلى {to}",
+        "tierFrom": "من الشهر {from} فصاعدًا — حتى يغادروا",
+        "tiersNote": "عمولة كل شهر هي هذه النسبة مما دفعه الحساب المُحال فعليًا في الشهر السابق."
+      },
+      "topReferrers": {
+        "title": "أعلى المحيلين",
+        "filter_all": "الكل",
+        "filter_centers": "المراكز",
+        "filter_teachers": "المعلمون",
+        "filter_owed": "المستحق",
+        "rowMeta": "{referred} إحالة · {active} نشطة",
+        "owedBadge": "{amount} مستحق",
+        "freeMonthsBadge": "{count} شهور مجانية",
+        "note": "المبالغ المستحقة بتنتقل لقائمة السحوبات لما المُحيل يطلب الصرف. المعلمون بياخدوا شهور مجانية، مش كاش.",
+        "emptyTitle": "مفيش حد عمل إحالة لسه",
+        "emptyBody": "المراكز والمعلمين بيظهروا هنا أول ما أول إحالة ليهم تسجّل.",
+        "emptyAlt": "كود الإحالة موجود على كل حساب."
+      }
     },
     "withdrawalsPage": {
       "actionError": "فشل الإجراء",
@@ -2122,7 +2149,19 @@
       "pinLinkHelper": "شارك هذا الرابط لمرة واحدة مع عضو الفريق الجديد ليحدد رمزه السري ويسجّل الدخول. تم إرساله أيضاً على واتساب.",
       "pinLinkCopy": "نسخ الرابط",
       "pinLinkCopied": "تم النسخ",
-      "pinLinkDone": "تم"
+      "pinLinkDone": "تم",
+      "memberCount": "{count} أعضاء",
+      "memberTitle": "العضو",
+      "ownerNote": "المالك يقدر يغيّر الأدوار ويشيل الوصول. صلاحية المالية مطلوبة لاعتماد السحوبات.",
+      "emptyBody": "مفيش حد تاني عنده وصول للبوابة لسه. ادعُ أول شخص واختار يوصل لإيه.",
+      "emptyAlt": "الأدوار تقدر تتغيّر في أي وقت.",
+      "permissionSummary": "{count} أقسام",
+      "joinedOn": "انضم في {date}",
+      "customRoleNote": "لو فعّلت أي حاجة الدور المختار مش بيديها، الشخص ده هيتحفظ كدور مخصّص. أكّد بكلمة السر بتاعتك.",
+      "lockedRoleNote": "صلاحيات المالك والمشرف ثابتة ومش بتتعدّل من هنا.",
+      "permissionsSaved": "تم حفظ الصلاحيات.",
+      "savePermissions": "حفظ الصلاحيات",
+      "removeAccess": "إزالة الوصول"
     },
     "salesPipeline": "خط المبيعات",
     "analytics": "التحليلات",
@@ -3111,7 +3150,74 @@
     "privacyFindStudent": "البحث عن الطالب",
     "privacyNoStudentMatch": "لا يوجد طالب مطابق لهذا الرقم.",
     "privacyAnonymize": "إخفاء الهوية",
-    "privacyAnonymizeConfirm": "هل تريد حذف البيانات الشخصية لهذا الطالب نهائيًا (الاسم، الهاتف، هاتف ولي الأمر، الملاحظات) وتعطيله؟ يتم الاحتفاظ بالسجلات المالية بدون الهوية. لا يمكن التراجع عن هذا الإجراء."
+    "privacyAnonymizeConfirm": "هل تريد حذف البيانات الشخصية لهذا الطالب نهائيًا (الاسم، الهاتف، هاتف ولي الأمر، الملاحظات) وتعطيله؟ يتم الاحتفاظ بالسجلات المالية بدون الهوية. لا يمكن التراجع عن هذا الإجراء.",
+    "teacherLinks": {
+      "title": "روابط المعلمين",
+      "subtitle": "أي معلم مرتبط بأي مركز.",
+      "assign": "إسناد",
+      "assignTitle": "إسناد جديد",
+      "teacherLabel": "المعلم",
+      "teacherPlaceholder": "اختر معلمًا",
+      "centerLabel": "المركز",
+      "centerPlaceholder": "اختر مركزًا",
+      "consentNote": "الارتباط من الطرفين. ده بيفتح طلب لازم المعلم يوافق عليه قبل ما المركز يشوف أي حاجة تخصه.",
+      "requestOpened": "تم فتح الطلب. المعلم بيوافق من بوابته.",
+      "saveAssignment": "حفظ الإسناد",
+      "noSubject": "لا توجد مادة محددة",
+      "unnamedTeacher": "معلم بدون اسم",
+      "notLinked": "غير مرتبط بمركز",
+      "tab_byCenter": "حسب المركز",
+      "tab_byTeacher": "حسب المعلم",
+      "tab_unassigned": "غير مُسند",
+      "centersHeading": "المراكز",
+      "teachersHeading": "المعلمون",
+      "unassignedHeading": "معلمون غير مُسندين",
+      "pendingHeading": "في انتظار المعلم",
+      "pendingBadge": "معلّق",
+      "errors": {
+        "ALREADY_A_MEMBER": "المعلم ده شغال بالفعل في المركز ده.",
+        "REQUEST_ALREADY_PENDING": "فيه طلب مفتوح بالفعل للاتنين دول.",
+        "TEACHER_NOT_FOUND": "مفيش معلم بالمعرّف ده.",
+        "CENTER_NOT_FOUND": "مفيش مركز بالمعرّف ده."
+      },
+      "empty": {
+        "centersTitle": "مفيش مركز عنده معلم لسه",
+        "centersBody": "أول ما معلم يقبل الارتباط، المركز اللي انضم له هيظهر هنا والمعلم تحته.",
+        "centersAlt": "افتح ارتباط من صفحة الإسناد.",
+        "teachersTitle": "مفيش معلمين لسه",
+        "teachersBody": "المعلمون بيظهروا هنا أول ما يخلّصوا التسجيل، مرتبطين أو لأ.",
+        "teachersAlt": "المعلمون المستقلون بيسجّلوا من موقع المعلمين.",
+        "unassignedTitle": "كل المعلمين مرتبطين",
+        "unassignedBody": "مفيش حد قاعد من غير مركز دلوقتي.",
+        "unassignedAlt": "بدّل لـ«حسب المعلم» علشان تشوفهم كلهم."
+      }
+    },
+    "accountDetail": {
+      "centerKind": "مركز",
+      "customerSince": "عميل منذ {date}",
+      "manageHeading": "الإدارة",
+      "actionsHeading": "إجراءات",
+      "addOnsActive": "{count} مفعّلة",
+      "activityEmpty": "لسه مفيش أي نشاط مسجّل على الحساب ده.",
+      "kpi": {
+        "students": "الطلاب",
+        "mrr": "الإيراد الشهري",
+        "attendance": "الحضور، {days} يوم"
+      },
+      "manage": {
+        "profile": "الملف والتفاصيل",
+        "plan": "الباقة والفوترة",
+        "addOns": "الإضافات",
+        "invoices": "الفواتير",
+        "students": "الطلاب",
+        "staff": "المعلمون والفريق",
+        "activityLog": "سجل النشاط",
+        "notes": "ملاحظات داخلية"
+      },
+      "actions": {
+        "suspend": "تعليق الحساب"
+      }
+    }
   },
   "ceo": {
     "brandTitle": "TutoringHQ",
