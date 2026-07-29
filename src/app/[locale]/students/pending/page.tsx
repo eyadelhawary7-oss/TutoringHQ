@@ -62,7 +62,7 @@ function ContactRow({
   const waDigits = display.replace(/\D/g, '');
   if (!waDigits) return null;
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] px-3 py-2.5">
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-0)] px-3 py-2.5">
       <div className="min-w-0">
         <p className="text-sm font-medium text-[var(--color-text-primary)]">{name}</p>
         <p className="text-xs text-[var(--color-text-muted)]">
@@ -320,11 +320,11 @@ export default function PendingEnrollmentsPage() {
         </div>
 
         {list === null ? (
-          <div className="flex items-center justify-center rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] py-16">
+          <div className="flex items-center justify-center rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] py-16">
             <Loader2 size={20} className="animate-spin text-[var(--color-text-muted)]" />
           </div>
         ) : list.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] py-16 text-center">
+          <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-[var(--color-border)] bg-[var(--color-panel)] py-16 text-center">
             <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-surface-2)] text-[var(--color-text-muted)]">
               <Inbox size={22} />
             </div>
@@ -340,7 +340,7 @@ export default function PendingEnrollmentsPage() {
           </div>
         ) : (
           <>
-            <div className="hidden md:block overflow-hidden rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)]">
+            <div className="hidden md:block overflow-hidden rounded-md border border-[var(--color-line)] bg-[var(--color-panel)]">
               <table className="w-full text-sm">
                 <thead className="bg-[var(--color-surface-2)] text-xs uppercase tracking-wide text-[var(--color-text-muted)]">
                   <tr>
@@ -356,7 +356,7 @@ export default function PendingEnrollmentsPage() {
                   {list.map((p) => (
                     <tr
                       key={p.id}
-                      className="border-t border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-2)]/50"
+                      className="border-t border-[var(--color-line)] hover:bg-[var(--color-surface-2)]/50"
                     >
                       <td className="px-4 py-3 text-[var(--color-text-primary)]">
                         <span className="flex items-center gap-2.5">
@@ -408,7 +408,7 @@ export default function PendingEnrollmentsPage() {
               {list.map((p) => (
                 <div
                   key={p.id}
-                  className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4"
+                  className="rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] p-4"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-2.5">
@@ -474,7 +474,7 @@ export default function PendingEnrollmentsPage() {
             {/* Design leads the request detail with this reassurance, and it is
                 accurate: a pending row is not in any group, so no attendance can
                 be scanned against it and nothing bills until approval. */}
-            <p className="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] px-3 py-2.5 text-xs text-[var(--color-text-secondary)]">
+            <p className="rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-2)] px-3 py-2.5 text-xs text-[var(--color-text-secondary)]">
               {t('notEnrolledYet')}
             </p>
 
@@ -522,7 +522,7 @@ export default function PendingEnrollmentsPage() {
               />
             </div>
 
-            <label className="flex items-start gap-3 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] p-3">
+            <label className="flex items-start gap-3 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-0)] p-3">
               <button
                 type="button"
                 role="switch"
@@ -580,7 +580,7 @@ export default function PendingEnrollmentsPage() {
               </div>
             ) : null}
 
-            <label className="flex items-start gap-3 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] p-3 cursor-pointer">
+            <label className="flex items-start gap-3 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-0)] p-3 cursor-pointer">
               <input
                 type="checkbox"
                 required
@@ -660,7 +660,7 @@ function ReadonlyField({
         {label}
       </p>
       <div
-        className={`rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]/50 px-3 py-2 text-sm text-[var(--color-text-primary)] ${multiline ? 'whitespace-pre-wrap' : ''}`}
+        className={`rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-0)]/50 px-3 py-2 text-sm text-[var(--color-text-primary)] ${multiline ? 'whitespace-pre-wrap' : ''}`}
         dir={dir}
       >
         {value}

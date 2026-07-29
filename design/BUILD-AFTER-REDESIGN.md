@@ -35,6 +35,110 @@ Eyad regardless of how small the diff looks.
 which is not the same thing — **behaviour, not file, decides what comes to you**, and both are
 flagged inline with the test applied. Nothing in this section restyles a protected screen.
 
+## R0 · `summer.first_charge_release` is HELD — the 30 August first invoice will not fire
+- **What:** the summer trial is fully built and working. The one thing standing between it and revenue is a single config flag that is deliberately off, with no alarm attached to it.
+- **Found:** 29 July 2026, tracing the suspension gate. Read from live `platform_config`, not from code.
+- **Evidence, live:**
+
+  | key | value |
+  |---|---|
+  | `summer.promo.enabled` | `true` |
+  | `summer.free_until` | `2026-08-16` |
+  | `summer.first_charge_floor` | `2026-08-30` |
+  | `summer.trial_days` | `14` |
+  | `summer.first_charge_release` | **`HELD`** |
+
+- **Why it matters:** `firstChargeAllowed()` (`src/lib/summer/config.ts:138`) is `enabled === true && firstChargeRelease === 'RELEASED'`. While it is `HELD`, no first invoice is issued for any centre. The same flag also makes `isCenterLockedForEnforcement` return `false` globally (`billingLockoutPolicy.ts:305`), which is why nothing is currently locked and why that is not evidence the lock path works.
+- **The date:** the first invoice floor is **30 August 2026**. On that morning, either the flag is `RELEASED` and invoices issue, or nothing happens and nobody is told. It is correct today and silently wrong on the 30th.
+- **Build:** decide who flips it and when; add a check that fails loudly if `first_charge_floor` has passed while the release is still `HELD`; confirm the first invoice actually issued rather than assuming.
+- **Touches:** money. The first-charge path runs through the invoice and Paymob code, so **`Center-Money` and `Admin-Money` are in scope and this comes to Eyad** regardless of how small the flag change looks.
+- **Blocked by:** nothing technical. It is a decision plus a guard.
+
+### What HELD does today, and what RELEASED changes
+
+**Today (HELD).** `decideSummerAction` (`src/lib/summer/engine.ts:71-77`), case `enrolled`:
+`if (firstChargeReleased && ... todayCairo >= firstInvoiceAt) return issue_invoice` — else `none`.
+The code comment is explicit: *"While HELD, the customer stays enrolled, free, and active
+indefinitely."* The lock is gated on the same flag (`case 'invoiced'`), so **a HELD operator cannot
+lock anyone either**. Nothing charges, nothing locks, nothing expires. No error is raised, because
+nothing has gone wrong from the code's point of view.
+
+**On RELEASED.** The next `summer-billing` run issues a first invoice to every enrolled centre whose
+`summer_first_invoice_at` has passed, and the lock path arms.
+
+**Who flips it and where.** `platform_config.summer.first_charge_release`, value `HELD` → `RELEASED`
+(compared uppercase, `billingLockoutPolicy.ts:270`). Writable through
+`PATCH /api/admin/pricing-config` (`route.ts:275`), or by hand in SQL. Note the state is **cached
+in-process** with a TTL (`getLockoutPolicyState`), so it is not instantaneous across instances.
+
+**Cron cadence:** `/api/cron/summer-billing`, `0 23 * * *` in `vercel.json:43` — once daily, 23:00 UTC
+(01:00 Cairo). `decideSummerAction` returns **one** action per centre per run, so a centre moves
+`enrolled → invoiced` on one run and `invoiced → locked` on a later one, never both at once.
+
+### ⚠ What happens if it is flipped LATE — the answer is "they catch up, and that is the problem"
+
+**The invoices are not lost.** The condition is `todayCairo >= state.firstInvoiceAt` — **`>=`, not
+`===`**. Flip it on 2 September and the next run invoices the entire 30 August cohort at once. No
+revenue is skipped and no period is forfeited.
+
+**But the pay window collapses.** `pay_window_days` is **1** in live config, so
+`lockDay = first_invoice_at + 1`. For the 30 August cohort that lock day is **31 August — already in
+the past** by the time of a 2 September flip. The sequence becomes:
+
+| run | centre state | action |
+|---|---|---|
+| 2 Sep 01:00 Cairo | `enrolled`, invoice date passed | **issue_invoice** → `invoiced` |
+| 3 Sep 01:00 Cairo | `invoiced`, `lockDay` 31 Aug already past | **lock** |
+
+The centre is invoiced and locked on consecutive runs regardless of how late the flip is — a
+15 September flip produces the same one-run gap. The window is not measured from when they were
+actually billed, so **the later the flip, the more centres get invoiced and locked back-to-back with
+no meaningful chance to pay.** That is the risk in flipping late, not lost revenue.
+
+**Worth deciding before 30 August:** whether a late release should re-anchor `lock_at` to the actual
+invoice date rather than the originally-computed one. That is a behaviour change, not a config
+change, and it is Eyad's call.
+
+### What proves it actually fired, since the failure mode is silence
+
+Nothing today emits an alert. On **31 August** these should be true, and if they are not, the flip
+did not happen or the cron did not run:
+
+```sql
+-- 1. the flag is actually released
+select value from platform_config where key = 'summer.first_charge_release';   -- expect RELEASED
+
+-- 2. no enrolled centre is still sitting past its invoice date
+select count(*) from centers
+where summer_status = 'enrolled' and summer_first_invoice_at <= current_date;  -- expect 0
+
+-- 3. invoices exist for the cohort
+select summer_status, count(*) from centers
+where summer_first_invoice_at is not null group by summer_status;              -- expect invoiced/paid, not enrolled
+```
+
+**Build:** a guard that fails loudly when `summer.first_charge_floor` has passed while
+`first_charge_release` is still `HELD`. Today that state is indistinguishable from a healthy one.
+
+### Which protected money files the first-charge path touches
+
+`Center-Money` and `Admin-Money`. The issue-invoice step writes `invoices`
+(`summerBillingCron.ts:187`) and the pay path runs through Paymob, so the centre billing screen and
+the admin invoice views both sit on it. `Lifecycle` is adjacent — the lock action is what moves a
+centre into the suspended state those screens describe. **All three come to Eyad**, which is why the
+flag flip is not the small change it looks like.
+
+### How the trial dates actually resolve, since the design reads ambiguously
+
+`computeSummerSchedule` (`src/lib/summer/dates.ts:72`) is `trialStart = max(signupDate, freeUntil)`, then `+trial_days`, then the first invoice is floored at `first_charge_floor`. So 16 August is **not** a cutoff and the trial is **not** simply 30 days from signup:
+
+| signs up | trial starts | +14 days | first invoice |
+|---|---|---|---|
+| 20 July | 16 Aug | 30 Aug | **30 Aug** |
+| 20 Aug | 20 Aug | 3 Sep | **3 Sep** |
+
+Everyone joining before 16 August waits until 16 August to start their 14 days; everyone after gets 14 days from signup. A centre signing up on 20 August gets a full trial, not a wall.
+
 ## R1 · Lead capture funnel
 - **What:** A five-field "have us call you" form at `/talk-to-us` whose submissions land in the existing admin queue and route to the rep who owns that area.
 - **Drawn in:** `Merged-Public-Marketing` §04. Receiving end `/admin/demo-requests` has no design — see `NEW-FEATURES.md` Appendix B.

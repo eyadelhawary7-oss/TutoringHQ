@@ -33,6 +33,41 @@ import { memoryCacheGet, memoryCacheSet } from '@/lib/clientMemoryCache';
 const STUDENTS_CACHE_KEY = 'chq_students_cache';
 const STUDENTS_PAGE_SIZE = 20;
 
+/**
+ * Filter chips, Merged-Center-Students §01 (`.chip` / `.chip.on` / `.chip.sm`).
+ *
+ *   .chip    { font-size:13px; font-weight:600; padding:8px 16px; border-radius:999px;
+ *              background:#F2EEE5; color:#5D635C; border:1px solid transparent }
+ *   .chip.on { background:#DFEEEB; color:#0A514A; border-color:rgba(14,107,97,.2) }
+ *   .chip.sm { font-size:12px; padding:8px 12px }
+ *
+ * The selected chip is a MINT fill with accent-deep ink, not a solid teal with
+ * white text. On a roster where a filter is almost always active, the old solid
+ * fill made the chip row compete with the primary action for attention.
+ *
+ * `border` sits on both states, transparent when off, so selecting a chip does
+ * not change its width and the row never re-flows.
+ *
+ * Three chip rows render from these — subjects, lifecycle, and the "all groups"
+ * lead — and they had drifted into three near-identical copies of the same
+ * ternary. One definition each instead.
+ */
+const CHIP_BASE =
+  'shrink-0 rounded-pill border font-semibold transition-colors duration-150 btn-press chq-focus';
+const CHIP_OFF =
+  'bg-[var(--color-tile)] text-[var(--color-mid)] border-transparent hover:bg-[var(--color-mint)]';
+const CHIP_ON =
+  'bg-[var(--color-mint)] text-[var(--color-accent-deep)] border-[var(--color-accent)]/20';
+
+/** `.chip` — subject row. */
+function chipClass(on: boolean) {
+  return `${CHIP_BASE} px-4 py-2 text-base ${on ? CHIP_ON : CHIP_OFF}`;
+}
+/** `.chip.sm` — the lifecycle row carries six chips and needs the denser step. */
+function chipSmClass(on: boolean) {
+  return `${CHIP_BASE} px-3 py-2 text-sm ${on ? CHIP_ON : CHIP_OFF}`;
+}
+
 interface Student {
   id: string;
   name: string;
@@ -1185,11 +1220,7 @@ export default function StudentsPage() {
                   setSubjectFilter(null);
                   setFilterKey((k) => k + 1);
                 }}
-                className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 ${
-                  subjectFilter === null
-                    ? 'bg-teal-600 text-white shadow-sm'
-                    : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-3)]'
-                } btn-press chq-focus`}
+                className={chipClass(subjectFilter === null)}
               >
                 {ts('allGroups')}
               </button>
@@ -1201,11 +1232,7 @@ export default function StudentsPage() {
                     setSubjectFilter(subjectFilter === sub ? null : sub);
                     setFilterKey((k) => k + 1);
                   }}
-                  className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 ${
-                    subjectFilter === sub
-                      ? 'bg-teal-600 text-white shadow-sm'
-                      : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-3)]'
-                  } btn-press chq-focus`}
+                  className={chipClass(subjectFilter === sub)}
                 >
                   {sub}
                 </button>
@@ -1222,11 +1249,7 @@ export default function StudentsPage() {
                     setLifecycleFilter(f);
                     setFilterKey((k) => k + 1);
                   }}
-                  className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 ${
-                    lifecycleFilter === f
-                      ? 'bg-teal-600 text-white shadow-sm'
-                      : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-3)]'
-                  } btn-press chq-focus`}
+                  className={chipSmClass(lifecycleFilter === f)}
                 >
                   {ts(lifecycleFilterLabelKey(f))}
                 </button>
@@ -1610,7 +1633,7 @@ export default function StudentsPage() {
                       ]}
                     >
                       <div
-                        className="card p-4 cursor-pointer hover:border-[var(--color-brand-500)] transition-all duration-fast ease-out student-card-enter"
+                        className="cursor-pointer rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 shadow-sm transition-colors duration-fast ease-out hover:border-[var(--color-accent)] student-card-enter"
                         style={{ animationDelay: `${Math.min(index * 30, 150)}ms` }}
                         onClick={() => openQRModal(s)}
                         onKeyDown={(e) => {
@@ -1631,14 +1654,18 @@ export default function StudentsPage() {
                             onClick={(e) => e.stopPropagation()}
                             onChange={() => toggleBulkStudent(s.id)}
                           />
-                          <div className="w-9 h-9 rounded-full shrink-0 bg-[rgba(13,148,136,0.12)] text-brand-400 font-semibold text-sm flex items-center justify-center">
+                          {/* §01 `.av`: 38×38 at radius 12 — a rounded square,
+                              not a circle. The fill was an inline
+                              rgba(13,148,136,.12), the old v3 brand teal at 12%,
+                              which is not a §4 colour even after the scale fold. */}
+                          <div className="h-[38px] w-[38px] shrink-0 rounded-md bg-[var(--color-mint)] text-[var(--color-accent-deep)] font-semibold text-base flex items-center justify-center">
                             {(s.name ?? '?').charAt(0).toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <Link
                                 href={`/students/${s.id}`}
-                                className="text-sm font-semibold text-[var(--color-text-primary)] truncate btn-press chq-focus rounded outline-offset-2"
+                                className="text-md font-semibold text-[var(--color-ink)] truncate btn-press chq-focus rounded outline-offset-2"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 {s.name}
