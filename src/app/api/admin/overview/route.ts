@@ -4,6 +4,8 @@ import { createServerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getAdminContext } from '@/lib/admin-auth';
 import { isSuperAdminPhone } from '@/lib/admin-access';
+import { fetchCustomerSplit, buildRevenueMix, fetchPaidInvoicesForMonth } from '@/lib/adminCustomerSplit';
+import { cairoMonthBounds } from '@/lib/referralProgram';
 import { phoneFromCenterhqAuthEmail } from '@/lib/ownerPhone';
 import { PLAN_STUDENT_LIMITS } from '@/lib/plans';
 import { getImpliedMonthlyMrr, isCenterEligibleForSubscriptionMrr } from '@/lib/pricing';
@@ -409,6 +411,73 @@ export async function GET(request: Request) {
       );
     }
 
+    // ── Merged-Admin-Platform §01 ────────────────────────────────────────────
+    //
+    // CUSTOMERS splits accounts / students / revenue across the two customer
+    // types. TutoringHQ serves centres AND solo teachers; this API only ever
+    // knew about centres, which is why the design's lead block had nothing
+    // behind it.
+    //
+    // ⚠ The centre student figure filters `center_id is not null`.
+    // `students.center_id` is NULLABLE and a solo teacher's students are rows
+    // with no centre (private student_groups carry center_id NULL). The
+    // unfiltered `totalStudents` above is the correct TOTAL for the "Active
+    // students" tile, but using it as the centre row would absorb the teacher
+    // row and the split would double-count.
+    //
+    // "On trial" for a centre is the summer promo: centers.status has no
+    // 'trial' value (pending|active|suspended|rejected|pending_payment|dormant),
+    // and summer_status='enrolled' is the live free-trial state.
+    const { thisMonthStart, nextMonthStart } = cairoMonthBounds();
+
+    let customerSplit = null;
+    let revenueMix = null;
+    let withdrawalsPendingCount = 0;
+    try {
+      const { count: centreStudentCount } = await supabaseAdmin
+        .from('students')
+        .select('id', { count: 'exact', head: true })
+        .not('center_id', 'is', null)
+        .eq('is_active', true);
+
+      const centreNewThisMonth = allCenters.filter(
+        (c) => c.created_at && new Date(c.created_at as string) >= thisMonthStart,
+      ).length;
+
+      const { count: centreOnTrial } = await supabaseAdmin
+        .from('centers')
+        .select('id', { count: 'exact', head: true })
+        .eq('summer_status', 'enrolled')
+        .eq('is_test', false);
+
+      customerSplit = await fetchCustomerSplit(
+        supabaseAdmin,
+        {
+          accounts: counts.active,
+          students: centreStudentCount ?? 0,
+          mrr: totalMRR,
+          newThisMonth: centreNewThisMonth,
+          onTrial: centreOnTrial ?? 0,
+        },
+        thisMonthStart,
+      );
+
+      revenueMix = buildRevenueMix(
+        await fetchPaidInvoicesForMonth(supabaseAdmin, thisMonthStart, nextMonthStart),
+      );
+
+      // JUMP TO · Withdrawals carries a count in the design.
+      const { count: pendingWithdrawals } = await supabaseAdmin
+        .from('withdrawal_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      withdrawalsPendingCount = pendingWithdrawals ?? 0;
+    } catch {
+      // A split failure must not take the whole overview down with it.
+      customerSplit = null;
+      revenueMix = null;
+    }
+
     return NextResponse.json({
       totalCenters: counts.total,
       activeCenters: counts.active,
@@ -440,6 +509,9 @@ export async function GET(request: Request) {
       churnedCenters: churnedThisMonth,
       internalRole,
       centers: allCenters.slice(0, 10),
+      customerSplit,
+      revenueMix,
+      withdrawalsPendingCount,
     });
   } catch (error) {
     console.error('==========================================');

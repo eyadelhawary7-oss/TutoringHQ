@@ -3217,6 +3217,29 @@
       "actions": {
         "suspend": "تعليق الحساب"
       }
+    },
+    "platformOverview": {
+      "mrrHeading": "الإيراد الشهري المتكرر",
+      "vsLastMonth": "مقابل {amount} الشهر الماضي",
+      "customersHeading": "العملاء",
+      "centers": "المراكز",
+      "soloTeachers": "المعلمون المستقلون",
+      "studentsCount": "{count} طالب",
+      "activeStudents": "الطلاب النشطون",
+      "newAccountsThisMonth": "حسابات جديدة هذا الشهر",
+      "onTrial": "قيد التجربة",
+      "overdueAccounts": "حسابات متأخرة",
+      "revenueMixHeading": "مصادر الإيراد",
+      "mix_subscriptions": "الاشتراكات",
+      "mix_addons": "الإضافات",
+      "mix_whatsapp_packs": "باقات واتساب",
+      "mix_other": "أخرى",
+      "revenueMixNote": "المدفوع هذا الشهر، حسب المصدر. الاشتراكات والإضافات متكررة؛ باقات واتساب شحنة لمرة واحدة، فالمجموع ده مش الإيراد المتكرر.",
+      "jumpToHeading": "الانتقال إلى",
+      "jumpWithdrawals": "السحوبات",
+      "jumpFinance": "المالية",
+      "jumpAnalytics": "التحليلات",
+      "jumpHealth": "حالة المنصة"
     }
   },
   "ceo": {

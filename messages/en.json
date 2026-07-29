@@ -5118,6 +5118,29 @@
       "actions": {
         "suspend": "Suspend account"
       }
+    },
+    "platformOverview": {
+      "mrrHeading": "Monthly recurring revenue",
+      "vsLastMonth": "vs {amount} last month",
+      "customersHeading": "Customers",
+      "centers": "Centers",
+      "soloTeachers": "Solo teachers",
+      "studentsCount": "{count} students",
+      "activeStudents": "Active students",
+      "newAccountsThisMonth": "New accounts this month",
+      "onTrial": "On trial",
+      "overdueAccounts": "Overdue accounts",
+      "revenueMixHeading": "Revenue mix",
+      "mix_subscriptions": "Subscriptions",
+      "mix_addons": "Add-ons",
+      "mix_whatsapp_packs": "WhatsApp packs",
+      "mix_other": "Other",
+      "revenueMixNote": "Paid this month, by source. Subscriptions and add-ons recur; WhatsApp packs are a one-time top-up, so these do not add up to recurring revenue.",
+      "jumpToHeading": "Jump to",
+      "jumpWithdrawals": "Withdrawals",
+      "jumpFinance": "Finance",
+      "jumpAnalytics": "Analytics",
+      "jumpHealth": "Platform health"
     }
   },
   "notFound": {
