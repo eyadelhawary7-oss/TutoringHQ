@@ -186,3 +186,60 @@ correct, so they barely move. Dashboards, settings and admin move a lot.
 Declared as 11 explicit numeric shades rather than `--color-teal-*: initial`, because
 `--color-teal`, `--color-teal-deep` and `--color-teal-soft` are §4 aliases living in `globals.css`'s
 own `@theme` block and a namespace reset would have taken them with it and broken `.btn-primary`.
+
+### The full hover sweep — 64 sites, two groups, one rule
+
+Extended on Eyad's instruction after the first pass fixed only the 45 he had counted. His reasoning:
+fixing half would leave a product where some buttons darken on hover and others lighten with **no
+rule anyone could state**, which is worse than either consistent answer. The rule now stateable
+across the whole product is **interaction darkens**.
+
+**Group 1 — the accent family, 47 sites.** `hover:bg-teal-500` on a `bg-teal-600` base accounted for
+45. Two more were missed by the first pass because its predicate was "does the hover lighten"
+rather than "does the hover survive the mapping":
+
+| site | was | now |
+|---|---|---|
+| `admin/centers/[id]/centerManagementClient.tsx:3585` | `bg-teal-700 hover:bg-teal-600` | `hover:bg-teal-900` — 700 and 800 are both `accent-deep`, so the obvious next step would still have collapsed |
+| `reactivate/page.tsx:259` | `bg-teal-500 hover:bg-teal-400` | `hover:bg-teal-700` — 500 and 600 are both `accent` |
+| `students/AtRiskPanel.tsx:154` | `bg-teal-100 hover:bg-teal-200` | `bg-teal-50 hover:bg-teal-100` — 100–300 are all `mint-deep`; the base moves down so the hover has somewhere to go |
+
+**Group 2 — outside the accent family, 17 sites.** amber 7, red 6, slate 3, emerald 1. §4 says
+nothing about these: `accent-deep` being "pressed" is a rule for the accent, not for amber or red.
+They were normalised anyway, because the rule is only stateable if it holds everywhere — red was
+already internally inconsistent at 6 lightening against 10 darkening. **This group is the one to
+reverse if you disagree**; it is independent of the accent work and touches no token.
+
+**Not a collision, deliberately left alone.** `AdminWaPackClient.tsx:146` is
+`bg-teal-600/10 hover:bg-teal-600/20` — the same shade at different **alpha**. The first detector
+flagged it because it ignored the `/N` suffix. Its hover works fine and it was not touched.
+
+### `--color-brand-*` — the same bug under a second name
+
+Found while restyling the Students roster, whose row hover was on `--color-brand-500`.
+
+`globals.css` declared a ten-step `--color-brand-*` palette **inside `@theme`**, so it generated
+real utilities (`bg-brand-500`, `text-brand-400`) on top of 67 `var(--color-brand-500)` references
+across 26 files. The values were Tailwind **v3**'s teal — `brand-500` `#0D9488` (v3 teal-600),
+`brand-600` `#0f766e` (v3 teal-700), `brand-300` `#5eead4`. So the app carried **two parallel copies
+of the wrong teal**: `teal-*` on v4's defaults and `brand-*` frozen at v3's.
+
+Collision-checked the same way before mapping: **zero** elements pair two brand shades that would
+collapse, and there are **zero `hover:*brand*` utilities anywhere**, so no hover direction is
+affected. Offset one step from the teal mapping because `brand-500` is v3's 600.
+
+Six hand-written `#0D9488` literals in `globals.css` (a focus outline, two borders, a border-colour,
+a shimmer gradient and a fill, lines 1822–2060) moved to `var(--color-accent)` in the same pass.
+
+### ⚠ Where this stops, and why
+
+`#0D9488` is **still hardcoded** in files this PR deliberately does not touch:
+
+| file | why it was left |
+|---|---|
+| `lib/generateInvoicePdf.ts`, `lib/generateOrderPdf.ts`, `lib/invoiceTemplates.ts` | **money documents.** Invoice and card-order PDFs are Admin-Money / Center-Money territory and their colour is not a UI restyle decision. |
+| `components/charts/ChartTokens.ts`, `api/ceo/dashboard/route.ts`, `admin/analytics/page.tsx` | **chart series colours.** Changing these affects data legibility and series distinguishability, which is a separate decision from palette alignment. |
+| `lib/tokens.ts` | a third parallel JS copy of the brand palette. Same bug again, but it feeds the two categories above, so it moves when they do. |
+
+These are logged rather than fixed on purpose. Grepping `#0D9488` after this PR will still return
+hits, and that is expected, not an oversight.

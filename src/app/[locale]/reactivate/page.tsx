@@ -256,7 +256,7 @@ export default function ReactivatePage() {
               type="button"
               onClick={() => void onPay()}
               disabled={paying || !selected}
-              className="w-full rounded-xl bg-teal-500 px-6 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-teal-400 disabled:cursor-not-allowed disabled:bg-teal-900/40 btn-press chq-focus"
+              className="w-full rounded-xl bg-teal-500 px-6 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-teal-900/40 btn-press chq-focus"
             >
               {paying ? t('redirecting') : t('payNow')}
             </button>

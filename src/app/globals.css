@@ -64,17 +64,34 @@
      calc(0.75rem ± Npx) here and again 110 lines down. Both are gone; §3
      lives in tokens.css. */
 
-  /* ── Brand (Teal) ───────────────────────────────────── */
-  --color-brand-50:  #f0fdfa;
-  --color-brand-100: #ccfbf1;
-  --color-brand-200: #99f6e4;
-  --color-brand-300: #5eead4;
-  --color-brand-400: #2dd4bf;
-  --color-brand-500: #0D9488;
-  --color-brand-600: #0f766e;
-  --color-brand-700: #115e59;
-  --color-brand-800: #134e4a;
-  --color-brand-900: #042f2e;
+  /* ── Brand (Teal) → §4 accent family ──────────────────
+     THE SAME BUG AS THE teal-* SCALE, UNDER A DIFFERENT NAME. These ten
+     values were Tailwind **v3**'s teal palette hardcoded here — brand-500
+     was #0D9488 (v3 teal-600), brand-600 #0f766e (v3 teal-700), brand-300
+     #5eead4 (v3 teal-300). Because they sit inside @theme they generate real
+     utilities (`bg-brand-500`, `text-brand-400`) on top of 67
+     `var(--color-brand-500)` references, across 26 files.
+
+     So the app carried TWO parallel copies of the wrong teal: `teal-*`
+     resolving to Tailwind v4's defaults, and `brand-*` frozen at v3's. Both
+     now resolve to §4. Found while restyling the Students roster, whose row
+     hover was on --color-brand-500.
+
+     Offset one step from the teal scale, because brand-500 is v3's 600.
+     Collision-checked first, the same way the teal mapping was: zero
+     elements pair two brand shades that would collapse together, so nothing
+     is lost. There are also ZERO `hover:*brand*` utilities anywhere, so no
+     hover direction is affected by this block. */
+  --color-brand-50:  var(--color-mint);        /* #f0fdfa → #dfeeeb */
+  --color-brand-100: var(--color-mint);        /* #ccfbf1 → #dfeeeb */
+  --color-brand-200: var(--color-mint-deep);   /* #99f6e4 → #bfe3dd */
+  --color-brand-300: var(--color-mint-deep);   /* #5eead4 → #bfe3dd */
+  --color-brand-400: var(--color-accent);      /* #2dd4bf → #0e6b61 */
+  --color-brand-500: var(--color-accent);      /* #0d9488 → #0e6b61 */
+  --color-brand-600: var(--color-accent-deep); /* #0f766e → #0a514a */
+  --color-brand-700: var(--color-accent-deep); /* #115e59 → #0a514a */
+  --color-brand-800: var(--color-ground);      /* #134e4a → #083f39 */
+  --color-brand-900: var(--color-ground);      /* #042f2e → #083f39 */
 
   /* ── Navy ───────────────────────────────────────────── */
   --color-navy-50:  #f8fafc;
@@ -1802,7 +1819,7 @@ html:not(.dark) .panel-live .text-white {
 }
 
 .qr-card {
-  background: linear-gradient(135deg, #0f172a 0%, #0D9488 100%);
+  background: linear-gradient(135deg, #0f172a 0%, var(--color-accent) 100%);
   border-radius: 12px;
   padding: 16px;
   position: relative;
@@ -1951,7 +1968,7 @@ html:not(.dark) [data-admin="true"] textarea.admin-textarea {
 }
 
 .chq-focus:focus-visible {
-  outline: 2px solid #0D9488;
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
   border-radius: 0.375rem;
 }
@@ -1968,7 +1985,7 @@ html:not(.dark) [data-admin="true"] textarea.admin-textarea {
   content: '';
   position: absolute;
   inset: 0;
-  border: 2px solid #0D9488;
+  border: 2px solid var(--color-accent);
   border-radius: 16px;
   animation: chq-scanner-pulse 2s ease-in-out infinite;
   pointer-events: none;
@@ -1977,7 +1994,7 @@ html:not(.dark) [data-admin="true"] textarea.admin-textarea {
   position: absolute;
   width: 24px;
   height: 24px;
-  border-color: #0D9488;
+  border-color: var(--color-accent);
   border-style: solid;
 }
 /* Scanner frame corners - logical borders so the overlay tracks inline-start/end under RTL */
@@ -2027,7 +2044,7 @@ html:not(.dark) [data-admin="true"] textarea.admin-textarea {
   position: absolute;
   inset-inline: 8px;
   height: 2px;
-  background: linear-gradient(90deg, transparent, #0D9488, transparent);
+  background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
   animation: chq-scan-line 2s ease-in-out infinite;
   pointer-events: none;
   border-radius: 1px;
@@ -2040,7 +2057,7 @@ html:not(.dark) [data-admin="true"] textarea.admin-textarea {
 .chq-flash-success {
   position: fixed;
   inset: 0;
-  background: #0D9488;
+  background: var(--color-accent);
   animation: chq-flash-success 300ms ease-out forwards;
   pointer-events: none;
   z-index: 100;

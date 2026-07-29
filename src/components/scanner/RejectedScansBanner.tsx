@@ -63,7 +63,7 @@ export function RejectedScansBanner() {
         <button
           type="button"
           onClick={() => void onExport()}
-          className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-400"
+          className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-600"
         >
           {t('rejectedExport')}
         </button>

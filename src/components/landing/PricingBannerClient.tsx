@@ -17,7 +17,7 @@ const STYLE_BG: Record<BannerStyle, string> = {
 const STYLE_CTA: Record<BannerStyle, string> = {
   promo: 'bg-white text-teal-700 hover:bg-teal-50',
   info: 'bg-white text-blue-700 hover:bg-blue-50',
-  warning: 'bg-slate-900 text-amber-300 hover:bg-slate-800',
+  warning: 'bg-slate-900 text-amber-300 hover:bg-slate-950',
   success: 'bg-white text-emerald-700 hover:bg-emerald-50',
 };
 

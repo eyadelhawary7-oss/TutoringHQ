@@ -2601,7 +2601,7 @@ export default function BillingPage() {
                   cancelSubmitting || !cancelReason || cancelConfirmText !== 'CANCEL'
                 }
                 onClick={() => void handleCancelSubscription()}
-                className="order-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50 sm:order-2 btn-press chq-focus"
+                className="order-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50 sm:order-2 btn-press chq-focus"
                 style={cairoFont}
               >
                 {cancelSubmitting ? t('loadingShort') : t('cancel.submit')}

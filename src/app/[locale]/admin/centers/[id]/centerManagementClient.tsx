@@ -1853,7 +1853,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                           }
                           void patchCancellationAction('approve_cancellation');
                         }}
-                        className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50"
+                        className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
                       >
                         {s2CancellationBusy
                           ? t('centerManagement.saving')
@@ -3371,7 +3371,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                       setS11ReasonError('');
                       setS11ShowBlacklist(true);
                     }}
-                    className="rounded-lg bg-red-800 text-white px-4 py-2 text-sm font-semibold hover:bg-red-700"
+                    className="rounded-lg bg-red-800 text-white px-4 py-2 text-sm font-semibold hover:bg-red-900"
                   >
                     {t('centerManagement.section11.blacklistBtn')}
                   </button>
@@ -3582,7 +3582,7 @@ export default function CenterManagementClient({ centerId }: CenterManagementCli
                         }
                       })();
                     }}
-                    className="rounded-lg bg-teal-700 text-white px-4 py-2 text-sm font-semibold hover:bg-teal-600 disabled:opacity-50"
+                    className="rounded-lg bg-teal-700 text-white px-4 py-2 text-sm font-semibold hover:bg-teal-900 disabled:opacity-50"
                   >
                     {opsAddingNote ? t('centerNotes.adding') : t('centerNotes.add')}
                   </button>

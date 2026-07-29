@@ -602,7 +602,7 @@ export default function CommissionsPage() {
                   type="button"
                   onClick={() => void handleUnlock()}
                   disabled={unlocking || unlockReason.trim().length < 10}
-                  className="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
                 >
                   {unlocking ? t('commissions.unlock_unlocking') : t('commissions.unlock_confirm')}
                 </button>
