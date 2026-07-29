@@ -28,7 +28,8 @@
 // real live test payment.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { cairoDateKey, cairoYmdPlusDays, startOfUtcInstantForCairoCalendarDay } from '@/lib/cairo/day';
+import { cairoDateKey, startOfUtcInstantForCairoCalendarDay } from '@/lib/cairo/day';
+import { resolveIssuePayWindow } from '@/lib/summer/dates';
 import { getSummerConfig, firstChargeAllowed, type SummerConfig } from '@/lib/summer/config';
 import { decideSummerAction, type SummerCustomerState, type SummerCustomerStatus } from '@/lib/summer/engine';
 import { getProcessingFeeConfig, getIntervalConfig } from '@/lib/pricingConfig';
@@ -68,11 +69,6 @@ const EMPTY: SummerBillingResult = {
 function normStatus(v: unknown): SummerCustomerStatus {
   if (v === 'enrolled' || v === 'invoiced' || v === 'paid') return v;
   return 'none';
-}
-
-/** Last Cairo day the invoice is still payable: first_invoice_at + (payWindow − 1). */
-function lastPayableDay(firstInvoiceAt: string, cfg: SummerConfig): string {
-  return cairoYmdPlusDays(firstInvoiceAt, Math.max(0, cfg.payWindowDays - 1));
 }
 
 /** Is the given invoice id settled? */
@@ -202,7 +198,10 @@ async function runCenters(
               ...buildInvoiceTaxSnapshot({ total, fee }),
               billing_period_start: firstInvoiceAt,
               billing_period_end: billingEnd,
-              due_date: firstInvoiceAt,
+              // Due on the day the bill is actually raised, not the day it was
+              // planned for. billing_period_start/end above stay on the planned
+              // date — the trial really did end then; only the bill was late.
+              due_date: today,
               metadata: { processing_fee: fee, summer_first_invoice: true },
             })
             .select('id')
@@ -213,20 +212,30 @@ async function runCenters(
             invoiceNumber,
             invoiceType: 'subscription',
             total,
-            dueDate: firstInvoiceAt,
+            dueDate: today,
             summer: true,
           });
         }
 
         // Hand the pay-window → lock to the existing single-day lock model:
         // next_payment_due = last payable day → existing auto-suspend locks at lock_at.
+        //
+        // Anchored to `today`, the day the invoice was ACTUALLY raised, not to the
+        // enrolment-time plan. On time these are the same value — the cron fires on
+        // the first run where todayCairo >= first_invoice_at — so this is a no-op in
+        // the normal case. It matters only when the invoice is late (a late
+        // first_charge_release flip, a skipped cron day, a retroactive enrolment),
+        // where the planned lock day is already in the past and the centre would
+        // otherwise be locked on the next run with no time to pay a bill that did
+        // not exist until this morning.
+        const payWindow = resolveIssuePayWindow(today, cfg);
         await supabase
           .from('centers')
           .update({
             summer_status: 'invoiced',
             summer_first_invoice_id: invoiceId,
-            next_payment_due: lastPayableDay(firstInvoiceAt, cfg),
-            auto_suspend_at: String(raw.summer_lock_at),
+            next_payment_due: payWindow.lastPayableDay,
+            auto_suspend_at: payWindow.lockDay,
             billing_status: 'due_soon',
           })
           .eq('id', id);
