@@ -111,7 +111,7 @@ export function NotificationBell({ className }: { className?: string }) {
     <div className={cn('relative', className)} ref={wrapRef}>
       <button
         type="button"
-        className="relative flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)]"
+        className="relative flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-body)] hover:bg-[var(--color-tile)]"
         aria-label={t('bellAria')}
         aria-expanded={open}
         onClick={() => {
@@ -120,23 +120,26 @@ export function NotificationBell({ className }: { className?: string }) {
         }}
       >
         <Bell size={18} />
+        {/* §02 signals unread with the accent dot, not a red badge. Red is
+            `--color-danger` in §4 and it means money is wrong — an unread
+            count is not an error. */}
         {unread > 0 ? (
-          <span className="absolute top-1 end-1 min-w-[8px] h-2 w-2 rounded-full bg-red-500 ring-2 ring-[var(--color-surface-1)]" />
+          <span className="absolute top-1 end-1 min-w-[8px] h-2 w-2 rounded-full bg-[var(--color-accent)] ring-2 ring-[var(--color-panel)]" />
         ) : null}
       </button>
 
       {open ? (
         <div
-          className="absolute end-0 top-full z-[200] mt-2 w-[min(100vw-2rem,320px)] rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shadow-xl"
+          className="absolute end-0 top-full z-[200] mt-2 w-[min(100vw-2rem,320px)] rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] shadow-xl"
           role="menu"
         >
-          <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] px-3 py-2">
-            <p className="text-xs font-semibold text-[var(--color-text-primary)]">{t('dropdownTitle')}</p>
-            {loading ? <span className="text-[10px] text-[var(--color-text-tertiary)]">…</span> : null}
+          <div className="flex items-center justify-between border-b border-[var(--color-hairline)] px-3 py-2">
+            <p className="text-xs font-semibold text-[var(--color-ink)]">{t('dropdownTitle')}</p>
+            {loading ? <span className="text-xs text-[var(--color-faint)]">…</span> : null}
           </div>
           <ul className="max-h-[min(60vh,360px)] overflow-y-auto py-1">
             {items.length === 0 ? (
-              <li className="px-3 py-6 text-center text-xs text-[var(--color-text-secondary)]">{t('empty')}</li>
+              <li className="px-3 py-6 text-center text-xs text-[var(--color-mid)]">{t('empty')}</li>
             ) : (
               items.map((n) => {
                 const unreadRow = !n.read_at;
@@ -144,36 +147,43 @@ export function NotificationBell({ className }: { className?: string }) {
                   <li key={n.id}>
                     <button
                       type="button"
-                      className={cn(
-                        'w-full px-3 py-2.5 text-start hover:bg-[var(--color-surface-2)] min-h-[44px]',
-                        unreadRow ? 'bg-teal-500/5' : '',
-                      )}
+                      className="flex w-full min-h-[44px] items-start gap-2 px-3 py-2.5 text-start hover:bg-[var(--color-tile)]"
                       onClick={() => openRow(n)}
                     >
-                      <p className="text-sm font-medium text-[var(--color-text-primary)] line-clamp-2">{n.title}</p>
-                      {n.body ? (
-                        <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 line-clamp-2">{n.body}</p>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-semibold text-[var(--color-ink)] line-clamp-2">{n.title}</span>
+                        {n.body ? (
+                          <span className="mt-0.5 block text-xs text-[var(--color-muted)] line-clamp-2">{n.body}</span>
+                        ) : null}
+                        <span className="mt-1 block text-xs text-[var(--color-faint)]">
+                          {formatRelative(n.created_at, isAr)}
+                        </span>
+                      </span>
+                      {/* Same unread signal as the full feed — a dot, not a
+                          tinted row. Consistent between the two surfaces. */}
+                      {unreadRow ? (
+                        <span
+                          className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[var(--color-accent)]"
+                          aria-hidden
+                        />
                       ) : null}
-                      <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1">
-                        {formatRelative(n.created_at, isAr)}
-                      </p>
                     </button>
                   </li>
                 );
               })
             )}
           </ul>
-          <div className="flex flex-col gap-1 border-t border-[var(--color-border-subtle)] p-2">
+          <div className="flex flex-col gap-1 border-t border-[var(--color-hairline)] p-2">
             <button
               type="button"
-              className="min-h-[44px] w-full rounded-lg py-2 text-xs font-semibold text-teal-600 hover:bg-[var(--color-surface-2)]"
+              className="min-h-[44px] w-full rounded-sm py-2 text-xs font-semibold text-[var(--color-accent-deep)] hover:bg-[var(--color-mint)]"
               onClick={() => void markAll()}
             >
               {t('markAllRead')}
             </button>
             <button
               type="button"
-              className="min-h-[44px] w-full rounded-lg py-2 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]"
+              className="min-h-[44px] w-full rounded-sm py-2 text-xs font-semibold text-[var(--color-mid)] hover:bg-[var(--color-tile)]"
               onClick={() => {
                 setOpen(false);
                 router.push('/notifications');

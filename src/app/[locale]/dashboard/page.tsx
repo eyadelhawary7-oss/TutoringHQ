@@ -17,11 +17,11 @@ import { KpiCard, SectionHeader } from '@/components/shared';
 
 const AreaChartComponent = dynamic(
   () => import('@/components/charts').then((m) => ({ default: m.AreaChartComponent })),
-  { ssr: false, loading: () => <div className="chq-skeleton h-48 w-full rounded-xl" /> },
+  { ssr: false, loading: () => <div className="chq-skeleton h-48 w-full rounded-md" /> },
 );
 const DonutChart = dynamic(
   () => import('@/components/charts').then((m) => ({ default: m.DonutChart })),
-  { ssr: false, loading: () => <div className="chq-skeleton h-48 w-full rounded-xl" /> },
+  { ssr: false, loading: () => <div className="chq-skeleton h-48 w-full rounded-md" /> },
 );
 import { useToast } from '@/components/ui/ToastProvider';
 import { formatDate, formatGrowth, formatNumber, formatPercent, formatCurrency, formatRelativeMinutesAgo } from '@/lib/formatNumber';
@@ -956,7 +956,7 @@ export default function DashboardPage() {
 
     if (diffDays > 0 && diffDays <= 5) {
       return (
-        <div className="mb-4 p-4 rounded-xl border border-[var(--color-warning)]/40 bg-[var(--color-surface-2)] flex flex-wrap items-center justify-between gap-4" suppressHydrationWarning>
+        <div className="mb-4 p-4 rounded-md border border-[var(--color-warning)]/40 bg-[var(--color-surface-2)] flex flex-wrap items-center justify-between gap-4" suppressHydrationWarning>
           <span className="text-[var(--color-warning)] font-medium text-sm">
             {t('paymentDue', { days: diffDays, defaultValue: `Payment due in ${diffDays} days` })}
           </span>
@@ -982,7 +982,7 @@ export default function DashboardPage() {
 
       if (hoursRemaining <= 0) {
         return (
-          <div className="mb-4 p-4 rounded-xl border border-[var(--color-danger)]/40 bg-[var(--color-surface-2)] flex flex-wrap items-center justify-between gap-4" suppressHydrationWarning>
+          <div className="mb-4 p-4 rounded-md border border-[var(--color-danger)]/40 bg-[var(--color-surface-2)] flex flex-wrap items-center justify-between gap-4" suppressHydrationWarning>
             <span className="text-[var(--color-danger)] font-medium text-sm">
               {t('accountSuspended', { defaultValue: 'Account suspended due to overdue payment.' })}
             </span>
@@ -998,7 +998,7 @@ export default function DashboardPage() {
       }
 
       return (
-        <div className="mb-4 p-4 rounded-xl border border-[var(--color-danger)]/40 bg-[var(--color-surface-2)] flex flex-wrap items-center justify-between gap-4" suppressHydrationWarning>
+        <div className="mb-4 p-4 rounded-md border border-[var(--color-danger)]/40 bg-[var(--color-surface-2)] flex flex-wrap items-center justify-between gap-4" suppressHydrationWarning>
           <span className="text-[var(--color-danger)] font-medium text-sm">
             {t('paymentOverdue', {
               hours: hoursRemaining,
@@ -1042,7 +1042,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Link
             href="/attendance"
-            className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-6 text-center transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+            className="rounded-md border border-[var(--color-line)] shadow-sm bg-[var(--color-panel)] p-6 text-center transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
           >
             <QrCode className="mx-auto mb-3 h-14 w-14 text-teal-500" strokeWidth={1.5} />
             <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('action_scan')}</h2>
@@ -1050,7 +1050,7 @@ export default function DashboardPage() {
           </Link>
           <Link
             href="/payments"
-            className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-6 transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+            className="rounded-md border border-[var(--color-line)] shadow-sm bg-[var(--color-panel)] p-6 transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
           >
             <p className="text-xs font-medium text-[var(--color-text-muted)]">{t('unpaidCount')}</p>
             <p
@@ -1062,7 +1062,7 @@ export default function DashboardPage() {
             <p className="mt-2 text-sm text-teal-400">{t('goToPayments')}</p>
           </Link>
         </div>
-        <div className="mt-4 rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
+        <div className="mt-4 rounded-md border border-[var(--color-line)] shadow-sm bg-[var(--color-panel)] p-4">
           <p className="text-xs font-medium text-[var(--color-text-muted)]">{t('stats.attendance_today')}</p>
           <p
             className={`mt-1 text-2xl font-bold text-[var(--color-text-primary)] tabular-nums transition-opacity duration-300 ${kpiStale ? 'opacity-70' : 'opacity-100'}`}
@@ -1104,15 +1104,16 @@ export default function DashboardPage() {
                 <bdi dir="auto">{centerBilling?.name ?? 'TutoringHQ'}</bdi>
               </span>
             </h1>
-            <span
-              className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium text-teal-300"
-              style={{ backgroundColor: 'rgba(13,148,136,0.2)' }}
-            >
+            {/* .pill0 in Merged-Center-Home §01: mint fill, accent-deep ink.
+                Was text-teal-300 on an inline rgba(13,148,136,.2) — the old
+                brand-500 teal, which is not a §4 colour. */}
+            <span className="inline-block rounded-pill bg-[var(--color-mint)] px-3 py-1 text-xs font-semibold text-[var(--color-accent-deep)]">
               {planLabel}
             </span>
           </div>
+          {/* .ts in the design's topbar: 11px, muted. */}
           <p
-            className="mt-1 text-sm text-[var(--color-text-secondary)]"
+            className="mt-1 text-xs text-[var(--color-text-muted)]"
             suppressHydrationWarning
           >
             {formatDate(new Date(), locale, {
@@ -1138,7 +1139,7 @@ export default function DashboardPage() {
               <div className="fixed inset-0 z-10" onClick={() => setShowActionsMenu(false)} />
               <div
                 role="menu"
-                className="absolute end-0 top-full z-20 mt-2 w-52 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-1.5 shadow-lg"
+                className="absolute end-0 top-full z-20 mt-2 w-52 rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-1.5 shadow-lg"
               >
                 {exportAccess ? (
                   <button
@@ -1181,21 +1182,21 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Link
             href="/students?action=add"
-            className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+            className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
           >
             <UserPlus className="h-6 w-6 text-teal-500" aria-hidden />
             <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t('addStudent')}</span>
           </Link>
           <Link
             href="/attendance"
-            className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+            className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
           >
             <QrCode className="h-6 w-6 text-teal-500" aria-hidden />
             <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t('recordAttendance')}</span>
           </Link>
           <Link
             href="/payments?action=collect"
-            className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+            className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
           >
             <CreditCard className="h-6 w-6 text-teal-500" aria-hidden />
             <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t('collectPayment')}</span>
@@ -1204,7 +1205,7 @@ export default function DashboardPage() {
             type="button"
             onClick={() => void onSendReport()}
             disabled={sendingReport}
-            className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] disabled:opacity-50 btn-press chq-focus"
+            className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] disabled:opacity-50 btn-press chq-focus"
           >
             <Send className="h-6 w-6 text-teal-500" aria-hidden />
             <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t('sendReport')}</span>
@@ -1224,11 +1225,11 @@ export default function DashboardPage() {
 
       {data === null ? (
         <div className="max-w-6xl space-y-4" aria-busy="true">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="relative min-h-[136px] rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4"
+                className="relative min-h-[136px] rounded-md border border-[var(--color-line)] shadow-sm bg-[var(--color-panel)] p-4"
                 aria-hidden
               >
                 <div className="absolute top-4 end-4 h-4 w-4 rounded bg-[var(--color-surface-2)] animate-pulse" />
@@ -1238,12 +1239,12 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-          <div className="rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
+          <div className="rounded-md border border-[var(--color-line)] shadow-sm bg-[var(--color-panel)] p-4">
             <div className="mb-3 h-4 w-32 rounded bg-[var(--color-surface-2)] animate-pulse" />
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="mb-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2.5"
+                className="mb-2 rounded-md border border-[var(--color-line)] bg-[var(--color-tile)] px-3 py-2.5"
               >
                 <div className="flex justify-between gap-2">
                   <div className="h-4 w-36 rounded bg-[var(--color-surface-3)] animate-pulse" />
@@ -1255,15 +1256,15 @@ export default function DashboardPage() {
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
             <div className="md:col-span-3">
-              <div className="flex min-h-[200px] flex-col rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
+              <div className="flex min-h-[200px] flex-col rounded-md border border-[var(--color-line)] shadow-sm bg-[var(--color-panel)] p-4">
                 <div className="mb-3 h-4 w-40 rounded bg-[var(--color-surface-2)] animate-pulse" />
                 <div className="h-[168px] w-full rounded-lg bg-[var(--color-surface-2)] animate-pulse" />
               </div>
             </div>
             <div className="flex flex-col md:col-span-2">
-              <div className="flex min-h-[240px] flex-col rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
+              <div className="flex min-h-[240px] flex-col rounded-md border border-[var(--color-line)] shadow-sm bg-[var(--color-panel)] p-4">
                 <div className="mb-2 h-3 w-28 rounded bg-[var(--color-surface-2)] animate-pulse" />
-                <div className="min-h-0 flex-1 rounded-xl bg-[var(--color-surface-2)] animate-pulse" />
+                <div className="min-h-0 flex-1 rounded-md bg-[var(--color-tile)] animate-pulse" />
               </div>
             </div>
           </div>
@@ -1355,7 +1356,7 @@ export default function DashboardPage() {
             />
           </div>
 
-          <div className="mb-6 max-w-6xl rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
+          <div className="mb-6 max-w-6xl rounded-md border border-[var(--color-line)] shadow-sm bg-[var(--color-panel)] p-4">
             <div className="mb-1 flex items-start justify-between gap-2">
               <div>
                 <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{t('atRisk')}</h2>
@@ -1392,7 +1393,7 @@ export default function DashboardPage() {
                   return (
                     <li
                       key={student.id}
-                      className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2.5"
+                      className="rounded-md border border-[var(--color-line)] bg-[var(--color-tile)] px-3 py-2.5"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0 flex-1 text-end">
@@ -1469,7 +1470,7 @@ export default function DashboardPage() {
               </ChartCard>
             </div>
             <div className="flex flex-col md:col-span-2">
-              <div className="flex h-full min-h-[240px] flex-col rounded-xl border border-[var(--color-border-subtle)] shadow-sm bg-[var(--color-surface-1)] p-4">
+              <div className="flex h-full min-h-[240px] flex-col rounded-md border border-[var(--color-line)] shadow-sm bg-[var(--color-panel)] p-4">
                 <p className="text-xs font-medium text-[var(--color-text-muted)]">{t('paymentStatus')}</p>
                 <div className="min-h-0 flex-1">
                   {hasPaymentStatusData ? (
@@ -1499,7 +1500,7 @@ export default function DashboardPage() {
                   )}
                 </div>
                 {hasPaymentStatusData && safeData.generatedAt ? (
-                  <p className="mt-2 border-t border-[var(--color-border-subtle)] pt-2 text-xs text-[var(--color-text-muted)]">
+                  <p className="mt-2 border-t border-[var(--color-line)] pt-2 text-xs text-[var(--color-text-muted)]">
                     {t('chartLastUpdated', {
                       time: formatRelativeMinutesAgo(safeData.generatedAt, locale),
                     })}
@@ -1519,7 +1520,7 @@ export default function DashboardPage() {
           role="presentation"
         >
           <div
-            className="card rounded-2xl max-w-md w-full p-6 border-[var(--color-border-subtle)]"
+            className="card rounded-2xl max-w-md w-full p-6 border-[var(--color-line)]"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
             role="dialog"

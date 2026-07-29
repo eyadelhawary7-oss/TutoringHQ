@@ -27,6 +27,12 @@ If a row ever names one, that row is a mistake.
 |---|---|---|---|---|---|
 | [#209](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/209) | `f049df7` | 2026-07-28 | **ALL screens** — the type, radius and colour scales move under every screen at once | **ALL routes** — `src/app/tokens.css` (new) is imported by `src/app/globals.css`, which `src/app/[locale]/layout.tsx` loads for every locale-prefixed route | v26 → v27 |
 | [#210](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/210) | `d5551d3` | 2026-07-28 | none — doc only | none | v27 |
+| [#211](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/211) | `20a0d74` | 2026-07-28 | none — migration file only, and **not yet applied to production** | none | v27 |
+| [#212](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/212) | `9840c1c` | 2026-07-28 | none — doc only | none | v27 |
+| Center Home restyle | *(on merge)* | 2026-07-29 | `Center-Home §01` (dashboard), `Center-Home §02` (notifications) — plus `KpiCard` and `SectionHeader`, which are shared, so treat as **ALL screens** for those two components | `/{locale}/dashboard`, `/{locale}/notifications`, and the notification bell in the dashboard chrome | v27 → **v28** |
+
+*The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
+until the next PR fills it in. That is how `#209`'s own row was filled by `#210`.*
 
 ### Notes per PR
 
@@ -71,3 +77,45 @@ design-file mastheads. In the product that token backs KPI figures in 14 places,
 design-file role mapped onto a product token. Corrected to **30px** — see the dated correction
 block in `design/TOKEN-SPEC.md` §2. `text-2xl` and `text-3xl` are both 30px as a result, which
 flattens the ~20 `text-2xl md:text-3xl` responsive pairs. Nothing breaks.
+
+**Center Home restyle (29 July 2026)** — the first Task 3 screen area. Styling only; no route, no
+query, no calculation and no button behaviour changed.
+
+**§01 Center Dashboard.** `KpiCard` and `SectionHeader` are shared components, so this row is the
+one to suspect if a KPI tile or a section label looks wrong anywhere in the app, not just on the
+dashboard:
+
+| | Was | Now | Why |
+|---|---|---|---|
+| KPI tile | borderless, `surface-2`, `rounded-lg` | `panel` + 1px `line` border, `rounded-md` | the design's `.kpi` — the border is what makes it read as a card on paper |
+| KPI value | `text-xl md:text-2xl`, weight 500 | `text-lg` (17px), weight 700 | the design's `.kv`; the responsive pair collapsed anyway once `2xl` and `3xl` both became 30 |
+| KPI `warning` tone | Tailwind `amber-500` | `--color-brass` | amber is not in §4 |
+| KPI `danger` tone | Tailwind `red-500` | `--color-danger` | red-500 is not in §4 |
+| KPI `success` tone | `--color-success` | unchanged | §4 has no success slot — see `BUILD-AFTER-REDESIGN.md` F4 |
+| Section label | `text-xs` weight 500 | `text-md` weight 700, optional sub-label | the design's `.sec` / `.sub` |
+| Plan pill | `text-teal-300` on inline `rgba(13,148,136,.2)` | `mint` fill, `accent-deep` ink, `rounded-pill` | the old teal was `brand-500`, not a §4 colour |
+| Cards, menus, skeletons | `rounded-xl`, `border-subtle` | `rounded-md` / `rounded-lg`, `line` | §3 radii, §4 borders |
+
+**§02 Notifications.** Covers `/{locale}/notifications` and the `NotificationBell` dropdown, which
+is the same feed in a smaller frame and had drifted from it:
+
+| | Was | Now | Why |
+|---|---|---|---|
+| Unread row | tinted fill (`teal-500/5`) | accent hairline + an 8px accent dot, same `panel` fill as a read row | the design's `.nrow.unread`; a screen of unread rows now reads as a list, not one coloured block |
+| Bell badge | `bg-red-500` | `--color-accent` | red is `--color-danger` in §4 and it means money is wrong; unread is not an error |
+| Icon tints | five unrelated Tailwind palettes (`emerald`/`amber`/`teal`/`sky`) | mint-on-accent, sand-on-brass, and one neutral | the design collapses to three tints |
+| Icon chip | `rounded-full`, 32px, 15px glyph | `rounded-md`, 38px, 19px glyph | the design's `.nic` |
+| Group heading | `text-xs` uppercase, tracking-wide | `text-base` sentence case | the design's `.sec` is not uppercase, and Arabic has no case — the eyebrow treatment only ever read as intended in English |
+| Mark-all-read | bare teal text link | mint pill, `accent-deep` ink | the design's `.markall` |
+| Row age | `--color-text-muted` | `--color-faint` | the design's `.ntime` |
+
+**Deliberately not changed.** `KIND_RULES` in `NotificationsPageClient.tsx` — which notification
+kind gets which tone — is classification, not styling. One visible consequence: the design tints
+"Identity verified" as positive, while the app files anything matching `verif`/`identity` under
+`system` and renders it neutral. Reconciling that means editing the rules, so it waits for the
+feature pass.
+
+**No new controls.** The design's §01 frames show a balance card, a digital-share meter and a
+day schedule that the live dashboard has no data for, and §02 shows notification kinds nothing
+writes yet. None were rendered — no placeholder figures, no disabled shells. They are already
+logged in `BUILD-AFTER-REDESIGN.md`.
