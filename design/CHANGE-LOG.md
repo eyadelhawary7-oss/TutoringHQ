@@ -42,7 +42,8 @@ If a row ever names one, that row is a mistake.
 | [#223](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/223) | `f129b0ca` | 2026-07-29 | `Admin-Accounts §01` — the attendance KPI, which had never computed | `/{locale}/admin/centers/[id]` | v33 |
 | [#224](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/224) | `b7a49e9c` | 2026-07-30 | `Admin-Platform §01`–`§06` | `/{locale}/admin`, `/admin/analytics`, `/admin/platform-config`, `/admin/whatsapp-pack`, `/admin/promo-codes`, `/admin/privacy-requests` | v33 → **v34** |
 | [#225](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/225) | `d9c37b6f` | 2026-07-30 | `Teacher-Home §02` — the 0-enrolled warning cue on a schedule card | `/{locale}/teacher/schedule` | v34 → **v35** |
-| Teacher-Students | *(on merge)* | 2026-07-30 | `Teacher-Students §01`, `§02` | `/{locale}/teacher/students` (`AllStudentsList.tsx`) | v35 → **v36** |
+| [#226](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/226) | `0c878ab9` | 2026-07-30 | `Teacher-Students §01`, `§02` | `/{locale}/teacher/students` (`AllStudentsList.tsx`) | v35 → **v36** |
+| [#227](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/227) | `ea200f6e` | 2026-07-29 | `Teacher-Setup §01` (surveyed, already complete — no change), `§02` (You-earn figure, centre/group counts) | `/{locale}/teacher/centers`, `/{locale}/teacher/settings` (surveyed, unchanged) | v36 → **v37** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
