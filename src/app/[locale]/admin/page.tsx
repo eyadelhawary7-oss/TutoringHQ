@@ -9,6 +9,10 @@ import { ChartCard } from '@/components/charts';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { KpiCard, SectionHeader } from '@/components/shared';
+import PlatformOverviewHeader, {
+  type CustomerSplitView,
+  type RevenueMixView,
+} from '@/components/admin/PlatformOverviewHeader';
 import { useLayout } from '@/contexts/LayoutContext';
 import { getAdminSession } from '@/lib/adminAuth-client';
 import { formatChartMonthLabel } from '@/lib/chartMonthLabel';
@@ -36,7 +40,15 @@ interface OverviewData {
   recentActivity?: Array<{ id?: string; action?: string; details?: unknown; created_at?: string }>;
   totalRevenueCollected?: number;
   revenueThisMonth?: number;
+  revenueLastMonth?: number;
+  revenueGrowth?: number;
   pendingRevenue?: number;
+  overdueCentersCount?: number;
+  // Merged-Admin-Platform §01 — null when the split query failed; the header
+  // renders nothing rather than showing a half-built customer breakdown.
+  customerSplit?: CustomerSplitView | null;
+  revenueMix?: RevenueMixView[] | null;
+  withdrawalsPendingCount?: number;
 }
 
 /**
@@ -315,6 +327,16 @@ function AdminOverviewPageContent() {
 
           {overview && (
             <div className="flex-1 flex flex-col">
+              {/* Merged-Admin-Platform §01 — the header the design leads with. */}
+              <PlatformOverviewHeader
+                split={overview.customerSplit ?? null}
+                revenueMix={overview.revenueMix ?? null}
+                mrrGrowthPct={overview.revenueGrowth ?? null}
+                mrrLastMonth={overview.revenueLastMonth ?? null}
+                overdueAccounts={Number(overview.overdueCentersCount ?? 0)}
+                withdrawalsPending={Number(overview.withdrawalsPendingCount ?? 0)}
+              />
+
               <div className="mb-3">
                 <SectionHeader title={tAdmin('platformHealth')} />
               </div>

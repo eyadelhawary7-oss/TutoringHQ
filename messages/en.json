@@ -5118,6 +5118,72 @@
       "actions": {
         "suspend": "Suspend account"
       }
+    },
+    "platformOverview": {
+      "mrrHeading": "Monthly recurring revenue",
+      "vsLastMonth": "vs {amount} last month",
+      "customersHeading": "Customers",
+      "centers": "Centers",
+      "soloTeachers": "Solo teachers",
+      "studentsCount": "{count} students",
+      "activeStudents": "Active students",
+      "newAccountsThisMonth": "New accounts this month",
+      "onTrial": "On trial",
+      "overdueAccounts": "Overdue accounts",
+      "revenueMixHeading": "Revenue mix",
+      "mix_subscriptions": "Subscriptions",
+      "mix_addons": "Add-ons",
+      "mix_whatsapp_packs": "WhatsApp packs",
+      "mix_other": "Other",
+      "revenueMixNote": "Paid this month, by source. Subscriptions and add-ons recur; WhatsApp packs are a one-time top-up, so these do not add up to recurring revenue.",
+      "jumpToHeading": "Jump to",
+      "jumpWithdrawals": "Withdrawals",
+      "jumpFinance": "Finance",
+      "jumpAnalytics": "Analytics",
+      "jumpHealth": "Platform health"
+    },
+    "platformAnalytics": {
+      "segmentLabel": "Customer type",
+      "segment_all": "All",
+      "segment_centers": "Centers",
+      "segment_teachers": "Teachers",
+      "mrrHeading": "Monthly recurring revenue",
+      "activeAccounts": "Active accounts",
+      "newThisMonth": "New this month",
+      "churn": "Churn",
+      "arpu": "ARPU",
+      "topByRevenueHeading": "Top by revenue",
+      "byPlanHeading": "By plan",
+      "accountsCount": "{count} accounts",
+      "kindCenter": "Center",
+      "kindTeacher": "Teacher",
+      "topEmptyTitle": "No paying accounts yet",
+      "topEmptyBody": "Centers and solo teachers appear here as soon as their first subscription is active.",
+      "topEmptyAlt": "Trial accounts are not ranked.",
+      "teacherPlan_standard": "Teacher · Standard",
+      "teacherPlan_pro": "Teacher · Pro",
+      "teacherPlan_scale": "Teacher · Scale"
+    },
+    "privacyQueue": {
+      "open": "Open",
+      "dueSoon": "Due soon",
+      "closed": "Closed",
+      "filterLabel": "Request type",
+      "filter_all": "All",
+      "filter_access": "Access",
+      "filter_deletion": "Deletion",
+      "filter_export": "Export",
+      "slaNote": "PDPL requires a response within {days} days of a verified request. Due soon flags anything under 5 days, including anything already past its date."
+    },
+    "platformConfigGroupFeatures": "Features",
+    "platformConfigGroupSystem": "System",
+    "promoSummaryActive": "Active",
+    "promoSummaryRedemptions": "Redemptions",
+    "promoSummaryGiven": "Given",
+    "waTemplatesPanel": {
+      "title": "Sender templates",
+      "subtitle": "The platform WhatsApp sender's Meta templates and their approval state.",
+      "groupingNote": "Grouped by Meta category. The design groups these by who funds the message — customer credit, company paid, separate credit — but no column records funding, so that split is not shown rather than guessed."
     }
   },
   "notFound": {

@@ -207,3 +207,46 @@ describe('fetchCenterAccountMetrics — reads student_groups, not groups', () =>
     expect(groupQuery?.filters.map(([c]) => c)).not.toContain('is_active');
   });
 });
+
+describe('privacyQueueCounts — Merged-Admin-Platform §06', () => {
+  const now = new Date('2026-07-29T12:00:00Z');
+  const inDays = (d: number) => new Date(now.getTime() + d * 86400000).toISOString();
+
+  it('splits open from closed on the live status values', async () => {
+    const { privacyQueueCounts } = await import('@/components/admin/PrivacyQueueHeader');
+    // privacy_requests.status ∈ pending | in_progress | completed | rejected
+    const rows = [
+      { status: 'pending', due_at: inDays(20), request_types: ['access'] },
+      { status: 'in_progress', due_at: inDays(20), request_types: ['deletion'] },
+      { status: 'completed', due_at: inDays(-5), request_types: ['export'] },
+      { status: 'rejected', due_at: inDays(-9), request_types: ['access'] },
+    ];
+    expect(privacyQueueCounts(rows, now)).toEqual({ open: 2, dueSoon: 0, closed: 2 });
+  });
+
+  it('counts an already-overdue open request as due soon', async () => {
+    const { privacyQueueCounts } = await import('@/components/admin/PrivacyQueueHeader');
+    // Past its date does not stop it needing attention — excluding it would
+    // hide the very requests most at risk.
+    const rows = [
+      { status: 'pending', due_at: inDays(-3), request_types: ['deletion'] },
+      { status: 'pending', due_at: inDays(2), request_types: ['access'] },
+      { status: 'pending', due_at: inDays(25), request_types: ['access'] },
+    ];
+    expect(privacyQueueCounts(rows, now)).toEqual({ open: 3, dueSoon: 2, closed: 0 });
+  });
+
+  it('filters on request_types, which is an array per row', async () => {
+    const { filterByPrivacyType } = await import('@/components/admin/PrivacyQueueHeader');
+    const rows = [
+      { status: 'pending', due_at: null, request_types: ['access', 'export'] },
+      { status: 'pending', due_at: null, request_types: ['deletion'] },
+      { status: 'pending', due_at: null, request_types: null },
+    ];
+    expect(filterByPrivacyType(rows, 'all')).toHaveLength(3);
+    expect(filterByPrivacyType(rows, 'export')).toHaveLength(1);
+    // One row carries two types and must appear under both.
+    expect(filterByPrivacyType(rows, 'access')).toHaveLength(1);
+    expect(filterByPrivacyType(rows, 'deletion')).toHaveLength(1);
+  });
+});

@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/useToast';
 import { ArrowLeft, Tag } from 'lucide-react';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { LocalizedDateInput } from '@/components/forms/LocalizedDateInput';
-import { formatDate } from '@/lib/formatNumber';
+import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
 
 type PromoCode = {
   id: string;
@@ -64,6 +64,9 @@ export default function AdminPromoCodesPage() {
   const [adminRole, setAdminRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [codes, setCodes] = useState<PromoCode[]>([]);
+  // Merged-Admin-Platform §05 — "Given" is EGP actually discounted and lives on
+  // promo_code_redemptions. null when unreadable, never 0.
+  const [totalGivenEgp, setTotalGivenEgp] = useState<number | null>(null);
   const [requests, setRequests] = useState<PromoRequest[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -148,6 +151,7 @@ export default function AdminPromoCodesPage() {
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? 'Load failed');
     const data = await res.json();
     setCodes((data.promoCodes ?? []) as PromoCode[]);
+    setTotalGivenEgp(typeof data.totalGivenEgp === 'number' ? data.totalGivenEgp : null);
   }, [getSession]);
 
   const loadRequests = useCallback(async () => {
@@ -405,6 +409,42 @@ export default function AdminPromoCodesPage() {
               </h1>
             </div>
           </div>
+
+          {/* Merged-Admin-Platform §05 — the three summary tiles above the list. */}
+          {!managerView && codes.length > 0 ? (
+            <div className="mb-5 grid grid-cols-3 gap-3">
+              <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-1)] p-3">
+                <p className="text-lg font-bold text-[var(--color-text-primary)]">
+                  {formatNumber(codes.filter((c) => promoStatus(c) === 'active').length, locale)}
+                </p>
+                <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">{t('promoSummaryActive')}</p>
+              </div>
+              <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-1)] p-3">
+                <p className="text-lg font-bold text-[var(--color-text-primary)]">
+                  {formatNumber(
+                    codes.reduce((sum, c) => sum + Number(c.uses_count || 0), 0),
+                    locale,
+                  )}
+                </p>
+                <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
+                  {t('promoSummaryRedemptions')}
+                </p>
+              </div>
+              {/*
+                The Given tile drops out when the redemptions read failed. A 0
+                there would read as "we discounted nothing", which is a claim the
+                data did not make.
+              */}
+              {totalGivenEgp != null ? (
+                <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-1)] p-3">
+                  <p className="text-lg font-bold text-[var(--color-text-primary)]">
+                    {formatCurrency(totalGivenEgp, locale)}
+                  </p>
+                  <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">{t('promoSummaryGiven')}</p>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           {error ? (
             <div className="rounded-xl border border-destructive/30 bg-destructive/5 text-destructive px-4 py-3 mb-4">

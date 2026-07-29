@@ -64,6 +64,43 @@ function formatDraftValue(key: string, value: unknown): string {
   return String(value);
 }
 
+/**
+ * `Merged-Admin-Platform` §03 groups the switches as FEATURES and SYSTEM rather
+ * than one undifferentiated list. These are the LIVE `platform_config` keys that
+ * fill each group, read from the catalog on 29 July — not the design's labels.
+ *
+ * The design also draws Referrals, Card orders, Attendance scanner, App version
+ * and Force update. **None of them has a config key**: card ordering is
+ * per-centre (`centers.card_orders_enabled`), and referrals, the scanner and the
+ * two app-version controls have no key at all. They are omitted rather than
+ * rendered as switches that toggle nothing.
+ */
+const FEATURE_KEYS = [
+  'digital_student_fee_collection.enabled',
+  'pricing.promo.enabled',
+  'summer.promo.enabled',
+  'processing_fee_enabled',
+  'wa_sending_enabled',
+  'pack_invoice_enabled',
+  'auto_approve_pack',
+  'auto_approve_signups',
+] as const;
+
+const SYSTEM_KEYS = [
+  'pause_new_signups',
+  'maintenance_mode',
+  'read_only_mode',
+  'cron_paused',
+] as const;
+
+function isFeatureKey(key: string): boolean {
+  return (FEATURE_KEYS as readonly string[]).includes(key);
+}
+
+function isSystemKey(key: string): boolean {
+  return (SYSTEM_KEYS as readonly string[]).includes(key);
+}
+
 function isLateFeesDormancyKey(key: string): boolean {
   // The five late_fee_* keys were removed with the switch to the single-day lock
   // (Job 3, Part 4): the first late fee triggered on day 4 overdue but the lockout
@@ -276,17 +313,30 @@ export default function PlatformConfigPage() {
     [byKey, drafts, getAuthHeaders, load, t, tCommon, toast],
   );
 
-  const { lateKeys, otherKeys } = useMemo(() => {
+  const { lateKeys, featureKeys, systemKeys, otherKeys } = useMemo(() => {
     const keys = rows.map((r) => r.key);
     const late: string[] = [];
+    const feature: string[] = [];
+    const system: string[] = [];
     const other: string[] = [];
     for (const k of keys) {
       if (isLateFeesDormancyKey(k)) late.push(k);
+      else if (isFeatureKey(k)) feature.push(k);
+      else if (isSystemKey(k)) system.push(k);
       else other.push(k);
     }
     late.sort((a, b) => a.localeCompare(b));
     other.sort((a, b) => a.localeCompare(b));
-    return { lateKeys: late, otherKeys: other };
+    // FEATURES and SYSTEM keep the declared order, which is the design's — the
+    // rest stay alphabetical because there is no meaningful order for them.
+    const inDeclaredOrder = (declared: readonly string[], present: string[]) =>
+      declared.filter((k) => present.includes(k));
+    return {
+      lateKeys: late,
+      featureKeys: inDeclaredOrder(FEATURE_KEYS, feature),
+      systemKeys: inDeclaredOrder(SYSTEM_KEYS, system),
+      otherKeys: other,
+    };
   }, [rows]);
 
   const labelFor = useCallback(
@@ -442,6 +492,29 @@ export default function PlatformConfigPage() {
           <p className="text-red-600 mt-8">{error}</p>
         ) : (
           <div className="mt-8 space-y-10">
+            {/* Merged-Admin-Platform §03 — FEATURES then SYSTEM, the design's order. */}
+            {featureKeys.length > 0 ? (
+              <section>
+                <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
+                  {t('platformConfigGroupFeatures')}
+                </h2>
+                <div className="space-y-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+                  {featureKeys.map((k) => renderRow(k))}
+                </div>
+              </section>
+            ) : null}
+
+            {systemKeys.length > 0 ? (
+              <section>
+                <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
+                  {t('platformConfigGroupSystem')}
+                </h2>
+                <div className="space-y-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+                  {systemKeys.map((k) => renderRow(k))}
+                </div>
+              </section>
+            ) : null}
+
             {lateKeys.length > 0 ? (
               <section>
                 <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">

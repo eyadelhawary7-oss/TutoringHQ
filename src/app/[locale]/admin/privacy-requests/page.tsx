@@ -1,9 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { AdminSidebar } from '@/components/AdminSidebar';
+import PrivacyQueueHeader, {
+  filterByPrivacyType,
+  type PrivacyTypeFilter,
+} from '@/components/admin/PrivacyQueueHeader';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
@@ -50,6 +54,13 @@ export default function AdminPrivacyRequestsPage() {
   const { setHideShell } = useLayout();
 
   const [rows, setRows] = useState<PrivacyRequest[]>([]);
+  // Merged-Admin-Platform §06 — the design's type filter over the queue.
+  const [typeFilter, setTypeFilter] = useState<PrivacyTypeFilter>('all');
+  const [slaDays, setSlaDays] = useState(30);
+  const visibleRows = useMemo(
+    () => filterByPrivacyType(rows, typeFilter) as typeof rows,
+    [rows, typeFilter],
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -85,12 +96,18 @@ export default function AdminPrivacyRequestsPage() {
         return;
       }
       const res = await fetch('/api/admin/privacy-requests', { headers });
-      const body = (await res.json().catch(() => ({}))) as { requests?: PrivacyRequest[]; error?: string };
+      const body = (await res.json().catch(() => ({}))) as {
+        requests?: PrivacyRequest[];
+        slaDays?: number;
+        error?: string;
+      };
       if (!res.ok) {
         setError(body.error ?? tc('error'));
         return;
       }
       setRows(body.requests ?? []);
+      // The 30-day PDPL window is server-owned; the header renders whatever it says.
+      if (typeof body.slaDays === 'number') setSlaDays(body.slaDays);
     } finally {
       setLoading(false);
     }
@@ -153,9 +170,18 @@ export default function AdminPrivacyRequestsPage() {
             </div>
           )}
 
+          {!loading && rows.length > 0 && (
+            <PrivacyQueueHeader
+              rows={rows}
+              filter={typeFilter}
+              onFilter={setTypeFilter}
+              slaDays={slaDays}
+            />
+          )}
+
           {loading ? (
             <div className="text-sm text-[var(--color-text-secondary)]">{tc('loading')}</div>
-          ) : rows.length === 0 ? (
+          ) : visibleRows.length === 0 ? (
             <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-6 text-center text-sm text-[var(--color-text-secondary)]">
               {t('privacyRequestsEmpty')}
             </div>
@@ -173,7 +199,7 @@ export default function AdminPrivacyRequestsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => {
+                  {visibleRows.map((r) => {
                     const overdue = isOverdue(r.due_at, r.status);
                     const isDeletion = r.request_types?.includes('deletion');
                     const open = expanded === r.id;

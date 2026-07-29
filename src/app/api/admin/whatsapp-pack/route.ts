@@ -174,10 +174,40 @@ export async function GET(request: Request) {
   const PARENT_PACK_MONTHLY_EGP = 12
   const totalMRR = totalActiveParents * PARENT_PACK_MONTHLY_EGP
 
+  // ── Merged-Admin-Platform §04, templates frame ───────────────────────────
+  //
+  // The platform sender's Meta templates. `wa_meta_templates` carries
+  // template_name, category and status — 45 live rows — which is exactly the
+  // approval list the design draws.
+  //
+  // The design groups them NOTIFICATIONS / COLLECT FLOW / PROMOTIONS, which is a
+  // FUNDING split (customer credit vs company paid vs separate credit). No
+  // column records who funds a template, so the rows are grouped by their real
+  // `category` and the funding labels are not invented.
+  let metaTemplates: { name: string; category: string; status: string }[] = []
+  try {
+    const { data: tpl, error: tplErr } = await supabaseAdmin
+      .from('wa_meta_templates')
+      .select('template_name, category, status')
+      .order('category', { ascending: true })
+      .order('template_name', { ascending: true })
+    if (tplErr) throw tplErr
+    metaTemplates = ((tpl ?? []) as { template_name: string; category: string | null; status: string | null }[]).map(
+      (r) => ({
+        name: r.template_name,
+        category: r.category ?? 'UNCATEGORISED',
+        status: r.status ?? 'UNKNOWN',
+      }),
+    )
+  } catch {
+    metaTemplates = []
+  }
+
   return NextResponse.json({
     centers,
     notificationTypes,
     stats: { totalEnabled, totalActiveParents, totalMRR },
+    metaTemplates,
     pendingRequestCount,
   })
 }
