@@ -298,7 +298,28 @@ correction is in `TOKEN-SPEC.md` §2.
 - **Reproduce** from the browser console of an ordinary logged-in session: `supabase.from('users').update({teacher_group_ids:['<centre-B-group>']}).eq('id', myId)`, then `supabase.from('students').select('*')`.
 - **Touches:** auth, and minors' data — names, phones, parent phones.
 - **Blocked by:** READY. Nothing is waiting on anything.
-- **Fix (not applied):** `REVOKE UPDATE (teacher_group_ids, can_manage_students, can_record_payments, is_active) ON public.users FROM authenticated, anon;` plus a matching branch in the trigger, plus `AND center_id = get_auth_center_id()` on `students_teacher_select` so the second door is scoped even if the grant returns.
+- **Fix (not applied):**
+  ```sql
+  REVOKE UPDATE ON public.users FROM authenticated, anon;   -- table-level, no re-grant
+  ```
+  plus matching branches in `chq_prevent_user_escalation` for `teacher_group_ids`,
+  `can_manage_students`, `can_record_payments` and `is_active`, plus
+  `AND center_id = get_auth_center_id()` on `students_teacher_select` so the second door is scoped
+  even if a grant ever returns.
+
+  ⚠ **A column-level revoke does NOT work here, and the first draft of this entry got it wrong.**
+  `authenticated` holds a **table-level** `UPDATE` on `public.users` (`has_table_privilege` =
+  true). In PostgreSQL a table-level privilege authorises every column, and
+  `REVOKE UPDATE (col, …)` does not remove it — the revoke would have been a silent no-op that
+  looked like a fix. The revoke has to be table-level.
+
+  **No re-grant is needed**, which was checked rather than assumed: all seven writers of
+  `public.users` are server routes on the **service-role** client — `/api/user/locale`,
+  `/api/auth/set-initial-pin`, `/api/auth/verify-pin-reset`, `/api/auth/change-pin`,
+  `/api/teacher/settings/change-pin`, `/api/settings/staff/[userId]/permissions`,
+  `/api/permissions` — plus `centerOwnerProvision`, which is an INSERT. `service_role` holds its
+  own grants and bypasses RLS, so none of them is affected. There is no browser-side write to
+  `users` anywhere in the codebase.
 
 ## S2 · Three more self-writable columns feed policy decisions
 - **What:** the same root as S1. Five helpers read `public.users`; the trigger guards two columns.
