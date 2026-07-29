@@ -30,12 +30,28 @@ type Row = {
 
 type Tone = 'money' | 'warn' | 'people' | 'order' | 'system';
 
+/**
+ * Icon tints, Merged-Center-Home §02 (`.i-ok` / `.i-warn` / `.i-accent` /
+ * `.i-info` / `.i-danger`).
+ *
+ * The design collapses to three tints — mint on accent, sand on brass, and a
+ * neutral — where this file had five unrelated Tailwind palettes. `order`
+ * lands on the same mint/accent as `money` because the design's `.i-info`
+ * and `.i-ok` are byte-identical; that is deliberate there, not an oversight
+ * here.
+ *
+ * KIND_RULES below is untouched: which kind gets which tone is classification,
+ * not styling. One consequence worth naming — the design tints "Identity
+ * verified" as positive (`.i-ok`), while this file files anything matching
+ * `verif`/`identity` under `system` and renders it neutral. Reconciling that
+ * means editing the rules, so it stays for the feature pass.
+ */
 const TONE_CLASS: Record<Tone, string> = {
-  money: 'bg-emerald-500/12 text-emerald-700',
-  warn: 'bg-amber-500/15 text-amber-700',
-  people: 'bg-teal-500/12 text-teal-700',
-  order: 'bg-sky-500/12 text-sky-700',
-  system: 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]',
+  money: 'bg-[var(--color-mint)] text-[var(--color-accent)]',
+  warn: 'bg-[var(--color-sand)] text-[var(--color-brass)]',
+  people: 'bg-[var(--color-mint)] text-[var(--color-accent-deep)]',
+  order: 'bg-[var(--color-mint)] text-[var(--color-accent)]',
+  system: 'bg-[var(--color-hairline)] text-[var(--color-mid)]',
 };
 
 /**
@@ -150,19 +166,21 @@ export default function NotificationsPageClient() {
   }, [rows, t]);
 
   return (
-    <div className="max-w-xl mx-auto px-4 py-8 space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-baseline gap-2 min-w-0">
-          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('pageTitle')}</h1>
+    <div className="max-w-xl mx-auto px-4 py-8 space-y-2">
+      {/* §02 topbar: 17px title over a 12px count, Mark-all-read as a mint
+          pill rather than a bare teal link. */}
+      <div className="flex items-center justify-between gap-3 pb-2">
+        <div className="min-w-0">
+          <h1 className="text-lg font-semibold text-[var(--color-ink)]">{t('pageTitle')}</h1>
           {unreadCount > 0 && (
-            <span className="shrink-0 text-sm font-medium text-teal-600">
+            <p className="mt-1 text-sm text-[var(--color-muted)]">
               {t('unreadCount', { count: formatNumber(unreadCount, locale) })}
-            </span>
+            </p>
           )}
         </div>
         <button
           type="button"
-          className="min-h-[44px] px-3 text-sm font-semibold text-teal-600 disabled:opacity-50"
+          className="min-h-[44px] shrink-0 rounded-pill border border-[var(--color-accent)]/20 bg-[var(--color-mint)] px-3 text-sm font-semibold text-[var(--color-accent-deep)] disabled:opacity-50 btn-press chq-focus"
           onClick={() => void markAll()}
           disabled={unreadCount === 0}
         >
@@ -171,13 +189,16 @@ export default function NotificationsPageClient() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-[var(--color-text-secondary)]">…</p>
+        <p className="text-sm text-[var(--color-mid)]">…</p>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-[var(--color-text-secondary)]">{t('empty')}</p>
+        <p className="text-sm text-[var(--color-mid)]">{t('empty')}</p>
       ) : (
         groups.map((g) => (
-          <section key={g.key} className="space-y-2">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+          <section key={g.key} className="space-y-2 pt-2">
+            {/* Design's `.sec` is 13px sentence case, not an uppercase
+                eyebrow — Arabic has no case, so the tracking-wide uppercase
+                treatment only ever read as intended in English. */}
+            <h2 className="text-base font-semibold text-[var(--color-muted)]">
               {g.label}
             </h2>
             <ul className="space-y-2">
@@ -185,37 +206,49 @@ export default function NotificationsPageClient() {
                 const { Icon, tone } = decorate(n.kind);
                 return (
                   <li key={n.id}>
+                    {/* §02 `.nrow`: unread is carried by an accent hairline and
+                        a dot, not by a tinted fill. Both rows keep the same
+                        panel background, so a screen of unread rows still reads
+                        as a list rather than as one large coloured block. */}
                     <button
                       type="button"
-                      className={`flex w-full items-start gap-3 rounded-xl border border-[var(--color-border-subtle)] p-4 text-start min-h-[44px] ${
-                        !n.read_at ? 'bg-teal-500/5' : 'bg-[var(--color-surface-1)]'
+                      className={`flex w-full min-h-[44px] items-start gap-2 rounded-md border bg-[var(--color-panel)] px-4 py-3 text-start ${
+                        !n.read_at
+                          ? 'border-[var(--color-accent)]/25'
+                          : 'border-[var(--color-paper)]'
                       }`}
                       onClick={() => void openRow(n)}
                     >
                       <span
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${TONE_CLASS[tone]}`}
+                        className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md ${TONE_CLASS[tone]}`}
                         aria-hidden
                       >
-                        <Icon size={15} />
+                        <Icon size={19} />
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="flex items-baseline justify-between gap-2">
-                          <span className="font-semibold text-[var(--color-text-primary)]">
+                          <span className="text-base font-semibold leading-tight text-[var(--color-ink)]">
                             {n.title}
                           </span>
                           {/* Design puts the age on every row — "10m", "2h",
                               "Yesterday". How fresh a notification is decides
                               whether it still needs acting on. */}
-                          <span className="shrink-0 text-xs text-[var(--color-text-muted)]">
+                          <span className="shrink-0 text-xs text-[var(--color-faint)]">
                             {formatRelativeMinutesAgo(n.created_at, locale)}
                           </span>
                         </span>
                         {n.body ? (
-                          <span className="mt-1 block text-sm text-[var(--color-text-secondary)]">
+                          <span className="mt-1 block text-sm text-[var(--color-muted)]">
                             {n.body}
                           </span>
                         ) : null}
                       </span>
+                      {!n.read_at && (
+                        <span
+                          className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[var(--color-accent)]"
+                          aria-hidden
+                        />
+                      )}
                     </button>
                   </li>
                 );
