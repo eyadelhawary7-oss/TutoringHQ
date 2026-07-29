@@ -338,6 +338,41 @@ Everyone joining before 16 August waits until 16 August to start their 14 days; 
 - **Touches:** none to build the page itself; once it exists, whatever "add this teacher" action it offers touches account state and comes back to Eyad then.
 - **Blocked by:** Eyad's decision on whether/when to build the page. Left as-is in the meantime — it matches the design, and hiding a designed feature is itself a decision beyond restyle scope.
 
+## D18 · §03's "manual approval" premise doesn't happen — every enrollment auto-activates today
+- **What:** `Merged-Teacher-Groups` §03 draws a request-review screen: a pending student waits for the teacher to Approve/Decline, with request detail (grade, school, a note from the requester, how they found the group).
+- **Drawn in:** `Merged-Teacher-Groups` §03 (Teacher Group Invite Pending).
+- **Found:** 29 July 2026, building `Merged-Teacher-Groups`, via an independent verification pass, then re-confirmed directly against the live RPC and both live callers.
+- **Evidence:** `create_enrollment` (`pg_get_functiondef`, live) only lands `status = 'pending'` unless the group's `approval_mode = 'auto_cap'`. `groups/route.ts:232` hardcodes `approval_mode: 'manual'` on every group at creation, and `grep -rn "auto_cap" src/` returns zero hits — no live path ever sets a group to `auto_cap`. But **both** ways an enrollment gets created immediately promote it anyway: `roster/route.ts` (teacher walk-in add, lines 374-399) and `verify-otp/route.ts` (public self-enroll link, lines 238-257) each call `apply_enrollment_transition(..., 'active', ...)` unconditionally right after `create_enrollment` returns `'pending'`. Both carry code comments explaining this is intentional. Net effect: an enrollment only stays `pending` if that best-effort auto-activate call itself errors — §03's entire "review before they join" premise doesn't occur on the happy path for either route into the roster.
+- **Also missing, and needs new schema if the gate becomes real:** the request-detail fields the design draws. `students.grade_level` exists and is now surfaced (this PR); "school" has no column anywhere on `students`; "note from the requester" has no backing column on `enrollments` at all (its exact columns are `id, group_id, student_id, status, payer, source, approved_by, joined_at, created_at`).
+- **Why it matters:** any product narrative built on "you review who joins" is false today — a teacher who thinks pending review is protecting their roster is not being protected by it.
+- **Build:** decide whether a real review gate is wanted (set `approval_mode` per group, stop the auto-activate calls, add the missing `school`/note columns for the request-detail screen) or whether §03 should be redrawn around the reality that joining is already instant.
+- **Touches:** account state (who gets to join a teacher's group, and when).
+- **Blocked by:** Eyad's decision on which behaviour is correct.
+
+## D19 · Private-lesson commission columns are never populated — Teacher Analytics revenue reads 0.00 EGP, live, today
+- **What:** `finish_class_and_bill` (the ACTIVE, correctly-called function for finishing a teacher's own private-group session — not to be confused with `finish_center_class_and_bill` in D16) inserts every `kind = 'lesson'` charge without `teacher_commission_amt`, `teacher_net`, `platform_gross` or `platform_net` — all four stay at their `NOT NULL DEFAULT 0`.
+- **Found:** 29 July 2026, building `Merged-Teacher-Groups`, confirmed independently via `pg_get_functiondef('finish_class_and_bill')` and `pg_get_functiondef('compute_lesson_money')`.
+- **Evidence:** `compute_lesson_money(p_lesson_fee, p_method)` is a live SQL function clearly built to populate exactly these four columns (`teacher_net := lesson_fee` for cash-class methods) — but it is called by **zero** code anywhere (`grep -rn "compute_lesson_money" src/` finds nothing; it's independently listed as a "ghost" function in `docs/SCHEMA_GHOST_INVENTORY.md`). `src/lib/teacherAnalytics.ts:702-710` sums exactly `teacher_net` for `kind='lesson', status='paid'` to drive the Teacher Analytics revenue figure.
+- **Why it matters:** the Teacher Analytics page reads **EGP 0 revenue for every teacher's private-group income, always**, regardless of real collected money — a live, wrong number today, independent of this redesign. (The separate teacher Income page is correct — it reads `amount_billed`, not `teacher_net`.)
+- **Build:** wire `finish_class_and_bill` to call `compute_lesson_money` and populate the four columns, or repoint Teacher Analytics at `amount_billed` like Income already does — a money-correctness decision, not a restyle.
+- **Touches:** money (a live, wrong number).
+- **Blocked by:** Eyad's decision on which fix is correct.
+
+## D20 · Two divergent "run a class" builds exist; only one is reachable
+- **What:** `src/app/[locale]/teacher/(portal)/groups/[groupId]/sessions/[sessionId]/page.tsx` is the route `INVENTORY.md` maps §04/§05 to. It is fully built and correct, but **zero live navigation reaches it** — confirmed by grepping every `href`/`router.push`/`Link` in the teacher app for that route pattern. The actual live surface for running a class is `SlotActionSheet.tsx`, opened from `/teacher/schedule`.
+- **Found:** 29 July 2026, building `Merged-Teacher-Groups`.
+- **Why it matters:** the two implementations are not identical, and each has something the other lacks. The orphaned page has mark-collected on the session record (all four payment methods: `cash | instapay | vodafone_cash | other`) and a simpler single confirm-and-finish flow. `SlotActionSheet.tsx` has Start/Reschedule/Cancel/live-attendance/guest-attendees — materially more of the design — but its recorded-session view is **read-only**: no mark-collected button exists there at all, and its sibling `GroupClassesTab`'s inline collect only offers `cash`/`instapay` (Vodafone Cash is silently unreachable from it, despite the API/DB supporting it).
+- **Build:** decide whether to retire the orphaned page, link it in as-is, or move its mark-collected capability into `SlotActionSheet`'s recorded phase (reusing the existing, already-audited `mark-paid` endpoint — the same "mostly plumbing" shape as D15, and held for the same reason: it is a money-state write on a screen that doesn't have one yet, and behaviour decides regardless of file). Also decide whether to add Vodafone Cash to `GroupClassesTab`'s collect dropdown, which is the same category of decision for the same reason.
+- **Touches:** money (write, once either fix is chosen), and account state (which page teachers actually use to run a class).
+- **Blocked by:** Eyad's decision on which surface is canonical and whether to wire the missing collect paths.
+
+## D21 · The self-enroll join link uses the full group UUID, not the design's 6-character code
+- **What:** the design draws `tutoringhq.app/j/7K2M9P`, a short code. Live, `GroupJoinLinkCard.tsx` builds `https://tutoringhq.app/ar/join/g/<full-UUID>`.
+- **Found:** 29 July 2026, building `Merged-Teacher-Groups`.
+- **Why it matters:** shortening it is a URL-scheme change (a new short-code table or column, a lookup, and a decision on collision/rotation), not a copy change — the same class of decision as the admin teacher-link short codes elsewhere in this codebase.
+- **Touches:** none directly; a URL scheme change on an already-live, already-shared link is worth flagging before touching regardless.
+- **Blocked by:** Eyad's decision on whether the short code is worth building, given the full-UUID link already works and is already shared via QR/WhatsApp.
+
 ---
 
 # §3 · BLOCKED ON VALIFY — verification and everything downstream
@@ -612,6 +647,11 @@ Logged from the token layer (#209). None of it blocks a restyle; all of it makes
 ## F8 · `src/lib/tokens.ts` is a stale dark-theme mirror
 - **What:** its `surface[0]` is `#080f1a` and `text.primary` is `#f8fafc` — the pre-cream dark palette. Its header says "keep in sync manually" and it was not.
 - **Fix:** repoint it at the §4 tokens, or delete it if nothing depends on it. Check `chartColors` consumers first; charts are their own pass.
+
+## F10 · No ticking elapsed-time timer on a live class session
+- **What:** `Merged-Teacher-Groups` §04 draws a live session banner with a counting duration ("24:18"). Neither `SlotActionSheet.tsx` nor the orphaned session-detail page (see D20) has one — no `sessions.started_at`-equivalent timestamp is even selected by the schedule API today.
+- **Found:** 29 July 2026, building `Merged-Teacher-Groups`.
+- **Why it's here and not in §1/§2:** purely cosmetic, no money/auth/account-state involved, blocks nothing — just real, un-plumbed new surface area (a timestamp through the API, a client interval). Low priority; build opportunistically if the live-session UI gets more attention.
 
 ## F9 · `student_groups.teacher_split_pct` and RPC `assign_teacher_to_group` are dead
 - **What:** a percentage-split column and its assignment RPC, apparently the abandoned predecessor or successor to the flat-cut model actually in use (`fee_per_class − center_cut_egp`, see D16).
