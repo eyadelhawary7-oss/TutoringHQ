@@ -164,6 +164,7 @@ export async function POST(
         subject: subjectValue,
         payment_status: 'unpaid',
         is_active: false,
+        inactive_reason: 'pending_signup',
         parent_pack_opted_in: false,
         parent_consent_given: false,
         parent_self_enroll_consent_at: new Date().toISOString(),
