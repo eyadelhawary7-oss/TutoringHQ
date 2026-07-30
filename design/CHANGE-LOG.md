@@ -49,6 +49,9 @@ If a row ever names one, that row is a mistake.
 | [#233](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/233) | `52b8bc2b` | 2026-07-29 | none — doc only (**D22** logged; R6 held) | none | v39 |
 | [#235](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/235) | `4b4a1e52` | 2026-07-30 | `Center-Groups §01` (segmented tabs, stat fix), `§04` (KPI reposition), `§05` (week strip) — partial, see F11 for what's left | `/{locale}/groups`, `/{locale}/schedule`, `/{locale}/branches`, plus `/api/parent/portal` (timezone bug, unrelated to the redesign) | v39 → **v40** |
 | [#237](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/237) | `690891d6` | 2026-07-30 | none — doc only (F5 addendum: the correct future shape for centre-staff grants, `admin_user_id` proposal corrected and not built) | none | v40 |
+| [#239](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/239) | `21c1c255` | 2026-07-30 | `Center-Students §01` (roster), `§02` (student detail), `§04` (import) — plus the `/dashboard` KPI tile, payment-status donut and its Excel export (D3's other live wrong consumers, cross-file) | `/{locale}/students`, `/students/[id]`, `/students/import`, `/{locale}/dashboard` | v40 → **v41** |
+| [#242](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/242) | `3de2e3c5` | 2026-07-30 | none — migration + four route write sites (D24: `students.inactive_reason`) | `/api/join/*` (2 routes), `/api/students/pending/[id]/reject`, `/api/admin/privacy-requests/anonymize` | v41 |
+| [#240](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/240) | `55ce33c1` | 2026-07-30 | none — cron only (D25: `parent-balance-alerts` targeting/quoted amount) | `/api/cron/parent-balance-alerts` | v41 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -546,3 +549,99 @@ exactly the class of thing that comes to Eyad regardless of file name. Not built
 question rather than assumed either way.
 
 Full survey, before/after fractions and the flagged question are in PR #226.
+
+**Center-Students (30 July 2026, PR #239)** — §01/§02/§04 built; §03 (Verified) stays untouched,
+blocked on Valify (**V2**), same as every other file's Verified section.
+
+**§01 Roster — built:** `grade_level` display (mobile card + desktop row); the fake "Last Sessions"
+seven-dot indicator removed outright rather than fixed — confirmed via the CSS that it always
+rendered `attendance-dot-unknown`, never `-present`/`-absent`, so all seven dots were always
+identical grey regardless of a student's real attendance. `EmptyState` gained a second, lower-emphasis
+action ("Import from file") next to "Add student" — the shared primitive's props, not a fork.
+
+**§02 Student Detail — built:** an avatar (`initialsOf`) and a subject/grade/phone identity line
+under the name; a third stat tile, "Lifetime paid" (Σ logged payments, `getStudentBalances`'s
+`.paid`, alongside the existing Visits/Last-seen pair rather than replacing either); Call/WhatsApp
+quick actions beside the existing Collect Payment/Edit tiles; a loading skeleton that matches the
+real layout instead of a bare "Loading" line.
+
+**§04 Import — built:** the 500-row cap the upload screen's own copy already promised ("CSV or
+Excel, up to 500 rows") but never checked.
+
+**D3 follow-through — the same dead column, found in two more places.** `students.payment_status`
+(logged in `BUILD-AFTER-REDESIGN.md` D3 as "written once at creation, never updated by anything")
+turned out to have live readers well outside this file: `/dashboard`'s paid/unpaid KPI tile and its
+payment-status donut chart, and `excel-export.ts`'s `buildDashboardExcelBuffer` (the dashboard's
+Excel export — its unused sibling `exportToExcel` has zero callers and was left alone). Both fixed
+onto `getStudentBalances`, the same helper §01/§02 already use, so none of these four screens can
+ever disagree again. D3's own entry said "nothing reads it since #188" — that no longer held, so the
+entry was corrected rather than left to mislead the next reader.
+
+**The donut's "pending" slice was a second, independent bug, not just the same one twice.** It read
+`students.payment_status = 'pending'` — but the dashboard already computes a correct, live
+"pending payments" figure (`pendingInvoicesCount`, from real `payments` rows) for its own KPI card
+a few lines away. The fix repoints the donut at that existing number rather than inventing a new
+per-student "pending" concept — the balance model has none: a pending payment already counts toward
+`paid`, so there is no third bucket to draw from without re-introducing the exact overstated-debt
+problem `getStudentBalances` exists to avoid.
+
+**Flagged, not built — logged as D24/D25/F12–F15 in `BUILD-AFTER-REDESIGN.md`:** the roster's
+`is_active` filter would also hide staff-paused students, not just pending signups, because the same
+column serves both meanings and the general edit endpoint lets staff toggle it directly (**D24**);
+the `parent-balance-alerts` cron reads the same dead column to decide who gets a paid WhatsApp
+message (**D25**, see below); `pending_enrollments` cannot say whether a request came via invite
+link or self-serve sign-up despite the design drawing both as distinct badges (**F12**); `grade_level`
+has zero writers anywhere (**F13**); import doesn't enforce the design's "parent phone required" copy
+(**F14**); lifecycle status and payment standing are two status axes nothing shows together
+(**F15**).
+
+**`parent-balance-alerts` cron (30 July 2026, PR #240)** — D25 built. Same
+`payment_status`-vs-`getStudentBalances` swap, applied to who the cron messages and to the EGP figure
+it quotes (previously `students.fee`, a documented unreliable fallback, never the authoritative
+`student_groups.fee_per_class`). **Measured before building, then re-measured fresh right before
+merge:** on the next run, current logic and fixed logic both send 0 messages — every centre in
+production today has `parent_pack_enabled=false`, so the population gate is empty before
+`payment_status` is ever evaluated. The bug is real and entirely latent, the same shape as D22
+(referrals): correct only because nothing has turned the trigger on yet. This PR did not auto-merge
+— it changes who gets messaged and what they are told they owe, so it came to Eyad regardless of
+file name, same rule as every other money/write-adjacent change this session. Rebased once after
+merging behind #239/#242 (a squash-merge ancestry mismatch, not a real content conflict — verified
+the diff was byte-identical before and after).
+
+**Logged as one pattern, not six bugs (F16).** Roster, student detail, the dashboard KPI+donut, the
+dashboard Excel export, the cron's targeting and the cron's quoted amount are the same failure mode
+six times: a column written once at insert, read as if it were current. All six are now
+`getStudentBalances`. `BUILD-AFTER-REDESIGN.md` F16 records why dropping `payment_status` (D3) is
+the only fix that makes a seventh instance impossible rather than merely findable.
+
+**Roster `is_active` schema (D24, PR #242) — verified before proposing, then built.** Asked to
+propose a schema fix so a roster row can show "paused" and "pending" as distinct states. Before
+proposing, checked whether the existing `pending_enrollments` table already disambiguates them
+without a new column — the same discipline that caught the `admin_user_id` premise error earlier
+tonight. It doesn't, and the real picture is wider than "two meanings": `is_active=false` already
+carries **four** live meanings (pending signup, rejected signup, staff-paused, privacy-anonymized),
+and "staff-paused" itself has no confirmed live UI trigger today — the PATCH endpoint that could set
+it has zero callers found anywhere in this repository. The sharpest problem: rejecting a pending
+signup never touched the student row at all (confirmed by reading the entire 29-line reject route),
+so a rejected student sat at `is_active=false` forever, indistinguishable from a genuine pause under
+any query-time rule. Eyad approved the proposed shape; `students.inactive_reason text` (nullable,
+four-value `CHECK`, matching the same convention `pending_enrollments.status` already uses) is
+applied to production, confirmed live via `information_schema`/`pg_constraint` before the code
+merged. Four write sites stamped, including the reject-route fix above. `'paused'` is a valid `CHECK`
+value with **zero writers, on Eyad's explicit instruction** — no pause feature exists, and none
+should be inferred from the constraint. Full verification and the exact write-site diffs are in
+`BUILD-AFTER-REDESIGN.md` D24's addendum.
+
+**`/students/import` dead columns (R10, PR #243) — confirmed three independent ways, then fixed.**
+Surfaced while investigating the cron fix: `/students/import` sends `notes` and `group_id` on every
+row to `students` — neither is a real column (the live table has `waitlist_group_id`, not
+`group_id`; the only `notes` column in the schema is on `pending_enrollments`). Independently
+corroborated a second and third time by the D24 verification workflow, which hit the same fact from
+an unrelated angle while mapping every `students` write site. Every import failed at insert,
+unconditionally, regardless of file content. Fixed by removing both fields from the insert payload,
+the insert's own `.select()` string, `studentInsertSchema`'s pass-through, and the PATCH endpoint's
+allow-list — plus the notes-mapping UI (dropdown option, preview column, CSV template column), rather
+than leave an affordance that silently discarded whatever a user mapped to it. Group assignment was
+unaffected (`student_group_members` insert never depended on the dead key). Routing import notes
+through `student_notes` — a real, live table already used by the anonymize route — stays a separate,
+not-yet-made decision.
