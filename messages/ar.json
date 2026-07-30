@@ -957,7 +957,8 @@
     "students": {
       "title": "لا يوجد طلاب بعد",
       "description": "أضف أول طالب للبدء",
-      "action": "إضافة طالب"
+      "action": "إضافة طالب",
+      "importAction": "استيراد من ملف"
     },
     "payments": {
       "title": "لا توجد مدفوعات في هذه الفترة",
@@ -4476,6 +4477,10 @@
       "notFound": "لم يُعثر على الطالب.",
       "visits": "مرات الحضور",
       "lastSeen": "آخر حضور",
+      "lifetimePaid": "إجمالي المدفوع",
+      "gradeLabel": "الصف {grade}",
+      "callAction": "اتصال",
+      "messageAction": "رسالة واتساب",
       "family": "العائلة",
       "noFamilyLinked": "لا توجد عائلة مرتبطة بعد",
       "balance": "الرصيد"
@@ -5658,6 +5663,7 @@
     "skipRow": "تخطي الصف",
     "skipColumn": "تخطي ",
     "rowsFound": "تم العثور على {count} صفًا في ملفك.",
+    "errorTooManyRows": "هذا الملف يحتوي على {count} صف. يدعم الاستيراد حتى {max} صف في المرة الواحدة - قسّم الملف إلى ملفات أصغر واستورد على دفعات.",
     "importing": "يتم الاستيراد ... ",
     "viewStudents": "عرض الطلاب",
     "generateQR": "انشاء QR Codes",
@@ -7007,6 +7013,7 @@
     "cardOrderCartSelectedPlural": "{count} طالب مختار",
     "cardOrderCartClearAll": "إفراغ السلة",
     "addParentPhone": "إضافة رقم ولي الأمر",
+    "gradeLabel": "الصف {grade}",
     "viewQR": "عرض رمز QR",
     "prevPage": "السابق",
     "nextPage": "التالي",

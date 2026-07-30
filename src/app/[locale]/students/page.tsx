@@ -80,6 +80,7 @@ interface Student {
   payment_status: string;
   student_number?: string;
   qr_code?: string | null;
+  grade_level?: string | null;
   is_active?: boolean;
   lifecycle_status?: 'enrolled' | 'active' | 'at_risk' | 'inactive' | 'churned';
   sibling_family_id?: string | null;
@@ -368,7 +369,7 @@ export default function StudentsPage() {
         const { data } = await dbSelect({
           table: 'students',
           select:
-            'id, name, phone, parent_phone, parent_consent_given, parent_pack_opted_in, subject, fee, payment_status, student_number, qr_code, is_active, lifecycle_status, sibling_family_id, center_id',
+            'id, name, phone, parent_phone, parent_consent_given, parent_pack_opted_in, subject, fee, payment_status, student_number, qr_code, grade_level, is_active, lifecycle_status, sibling_family_id, center_id',
           filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
           order: { column: 'name' },
         });
@@ -1353,6 +1354,8 @@ export default function StudentsPage() {
               namespace="emptyStates"
               actionLabel="students.action"
               onAction={() => setShowAddModal(true)}
+              secondaryActionLabel="students.importAction"
+              onSecondaryAction={() => router.push('/students/import')}
             />
           ) : (
             <div
@@ -1461,6 +1464,11 @@ export default function StudentsPage() {
                                     <div className="mt-1">
                                       <LifecycleBadge status={s.lifecycle_status} label={ts(statusKey, { defaultValue: studentStatusLabelFallback(s.lifecycle_status) })} />
                                     </div>
+                                    {s.grade_level ? (
+                                      <p className="mt-0.5 text-xs text-[var(--color-text-tertiary)]">
+                                        {ts('gradeLabel', { grade: s.grade_level })}
+                                      </p>
+                                    ) : null}
                                   </div>
                                 </td>
                                 <td className="px-4 py-4 align-top font-mono text-[var(--color-text-primary)]" dir="ltr">
@@ -1690,6 +1698,11 @@ export default function StudentsPage() {
                                 {s.phone}
                               </p>
                             ) : null}
+                            {s.grade_level ? (
+                              <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
+                                {ts('gradeLabel', { grade: s.grade_level })}
+                              </p>
+                            ) : null}
                             <div
                               className="relative mt-2 inline-flex flex-wrap items-center gap-2"
                               onClick={(e) => e.stopPropagation()}
@@ -1779,13 +1792,6 @@ export default function StudentsPage() {
                               </div>
                             )}
                           </div>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 mb-2">
-                          <span className="text-xs text-[var(--color-text-tertiary)] me-1">{ts('last_sessions')}</span>
-                          {Array.from({ length: 7 }).map((_, i) => (
-                            <div key={i} className="attendance-dot attendance-dot-unknown" />
-                          ))}
                         </div>
 
                         {balNum > 0 ? (

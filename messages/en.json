@@ -957,7 +957,8 @@
     "students": {
       "title": "No students yet",
       "description": "Add your first student to get started",
-      "action": "Add Student"
+      "action": "Add Student",
+      "importAction": "Import from file"
     },
     "payments": {
       "title": "No payments in this period",
@@ -1520,6 +1521,7 @@
     "skipRow": "Skip Row",
     "skipColumn": "Skip",
     "rowsFound": "{count} rows found in your file.",
+    "errorTooManyRows": "This file has {count} rows. Import supports up to {max} at a time — split it into smaller files and import in batches.",
     "importing": "Importing...",
     "viewStudents": "View Students",
     "generateQR": "Generate QR Codes",
@@ -1640,6 +1642,7 @@
     "cardOrderCartSelectedPlural": "{count} students selected",
     "cardOrderCartClearAll": "Clear cart",
     "addParentPhone": "Add Parent Phone",
+    "gradeLabel": "Grade {grade}",
     "viewQR": "View QR Code",
     "prevPage": "Previous",
     "nextPage": "Next",
@@ -5832,6 +5835,10 @@
       "notFound": "Student not found.",
       "visits": "Visits",
       "lastSeen": "Last seen",
+      "lifetimePaid": "Lifetime paid",
+      "gradeLabel": "Grade {grade}",
+      "callAction": "Call",
+      "messageAction": "Message on WhatsApp",
       "family": "Family",
       "noFamilyLinked": "No family linked yet",
       "balance": "Balance"

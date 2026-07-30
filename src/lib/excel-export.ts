@@ -97,7 +97,8 @@ export interface DashboardExportData {
     phone?: string;
     parent_phone?: string;
     subject?: string;
-    payment_status: string;
+    /** charge - paid, from studentBalance.ts; <= 0 means no outstanding debt. */
+    balance: number;
     qr_code?: string;
   }[];
   attendance: { student_name: string; scanned_at: string; payment_status_at_scan?: string }[];
@@ -114,7 +115,7 @@ export async function buildDashboardExcelBuffer(data: DashboardExportData): Prom
     الهاتف: s.phone || '',
     'هاتف ولي الأمر': s.parent_phone || '',
     المادة: s.subject || '',
-    الحالة: s.payment_status === 'paid' ? 'مسدد' : 'غير مسدد',
+    الحالة: s.balance > 0 ? 'غير مسدد' : 'مسدد',
     'رمز QR': s.qr_code || '',
   }));
 
