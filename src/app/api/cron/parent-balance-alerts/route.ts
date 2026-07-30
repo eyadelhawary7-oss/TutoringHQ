@@ -6,6 +6,7 @@ import { supabaseAdmin as supabaseAdminHealth } from '@/lib/supabase-admin';
 import { isTemplateApproved } from '@/lib/centerNotify';
 import { sendTemplateMessage } from '@/lib/whatsapp/client';
 import { toArabicNumerals, WA_TEMPLATES } from '@/lib/parentPack';
+import { getStudentBalances } from '@/lib/studentBalance';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -54,24 +55,30 @@ export async function POST(request: Request) {
 
     const centerNameMap = new Map(packCenters?.map((c) => [c.id, c.name]) ?? []);
 
-    const { data: students } = await supabaseAdmin
+    // D3/D25: students.payment_status is write-once-at-insert and never updated,
+    // so it cannot say who currently owes money. Candidates come from the opt-in/
+    // active/phone/center gates only; the actual "do they owe" and "how much" both
+    // come from getStudentBalances - the same real-time balance calculation the
+    // dashboard and student screens already use, so this cron can never quote or
+    // target off a number those screens disagree with.
+    const { data: candidates } = await supabaseAdmin
       .from('students')
-      .select('id, name, parent_phone, fee, center_id')
+      .select('id, name, parent_phone, center_id')
       .eq('parent_pack_opted_in', true)
       .not('parent_phone', 'is', null)
       .eq('is_active', true)
-      .eq('payment_status', 'unpaid')
       .in('center_id', packCenterIds);
+
+    const balances = await getStudentBalances(supabaseAdmin, {
+      studentIds: (candidates ?? []).map((s) => s.id),
+    });
+    const students = (candidates ?? []).filter((s) => (balances.get(s.id)?.balance ?? 0) > 0);
 
     let sent = 0;
     let skipped = 0;
 
-    for (const student of students ?? []) {
-      const feeAmount = Number(student.fee ?? 0);
-      if (feeAmount <= 0) {
-        skipped += 1;
-        continue;
-      }
+    for (const student of students) {
+      const balance = balances.get(student.id)?.balance ?? 0;
 
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const { data: recentAlert } = await supabaseAdmin
@@ -94,7 +101,7 @@ export async function POST(request: Request) {
           await sendTemplateMessage(student.center_id as string, student.parent_phone as string, tmpl, {
             '1': student.name,
             '2': centerName,
-            '3': toArabicNumerals(Math.round(feeAmount)),
+            '3': toArabicNumerals(Math.round(balance)),
           });
           sent += 1;
         } catch (waErr) {
