@@ -98,6 +98,9 @@ describe('POST /api/join/pending-enrollment — parent consent gate', () => {
     const payload = studentsInsert.mock.calls[0][0] as Record<string, unknown>;
     expect(typeof payload.parent_self_enroll_consent_at).toBe('string');
     expect(Number.isNaN(Date.parse(payload.parent_self_enroll_consent_at as string))).toBe(false);
+    // D24: is_active=false alone is ambiguous (pending vs. paused vs. anonymized) -
+    // self-signup must stamp which one this is.
+    expect(payload.inactive_reason).toBe('pending_signup');
   });
 });
 
@@ -126,5 +129,6 @@ describe('POST /api/join/[center_code]/[group_id] — parent consent gate', () =
     const payload = studentsInsert.mock.calls[0][0] as Record<string, unknown>;
     expect(typeof payload.parent_self_enroll_consent_at).toBe('string');
     expect(Number.isNaN(Date.parse(payload.parent_self_enroll_consent_at as string))).toBe(false);
+    expect(payload.inactive_reason).toBe('pending_signup');
   });
 });

@@ -97,6 +97,7 @@ export async function POST(request: Request) {
       parent_phone_verified: false,
       parent_consent_given: false,
       is_active: false,
+      inactive_reason: 'anonymized',
     })
     .eq('id', studentId);
   if (anonErr) {

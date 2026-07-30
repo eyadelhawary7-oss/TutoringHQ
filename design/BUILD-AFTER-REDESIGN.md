@@ -232,6 +232,13 @@ Everyone joining before 16 August waits until 16 August to start their 14 days; 
 - **Touches:** account state (read only).
 - **Blocked by:** READY.
 
+## R10 · `/students/import` sends a `notes` field the `students` table has no column for — every import with a mapped Notes column fails at insert
+- **What:** `src/app/[locale]/students/import/page.tsx`'s `importPayloadAndMembers` unconditionally includes a `notes` key (real value or `null`) on every row it posts to `dbInsert({table: 'students', ...})`. `students` has **no `notes` column** — confirmed live via `information_schema.columns` (the only `notes` column anywhere in the schema is on `pending_enrollments`, a different table). `studentInsertSchema` in `src/lib/validations.ts:136` explicitly declares `notes` as a valid field and passes it straight through its `.transform()` (which only strips `fee`/`monthly_fee`), so nothing upstream of the database catches this — the row reaches `supabaseAdmin.from('students').insert(...)` in `src/app/api/db/route.ts:497` carrying a key with no matching column.
+- **Why it matters:** PostgREST rejects an insert referencing an unknown column outright (`PGRST204: Could not find the 'notes' column of 'students' in the schema cache`) — it does not silently drop it. Because the `notes` key is present on every row regardless of value, this is not a conditional edge case: **every batch of every import fails at the insert step**, whether or not any row actually has notes content. Found while investigating the cron fix below, not exercised in the live 4-student dataset (no import has been run against it since the last schema change removed/never-added this column).
+- **Build:** stop sending `notes` on the students insert — drop the field from `importPayloadAndMembers`'s row objects (and from `studentInsertSchema`'s pass-through, since nothing valid can use it). If import notes are wanted as real data, they need a real destination (no `student_notes`-style table exists either, confirmed live) — that's a separate, bigger decision; the immediate fix is just to stop constructing an insert that cannot succeed.
+- **Touches:** none (bug fix, no design judgment — matches CLAUDE.md's own "confirm it physically exists in the live schema before adding it to a query" rule, applied backwards: this is a column that stopped existing, or never did, out from under a live write path).
+- **Blocked by:** READY. Not built yet — found during tonight's cron work and flagged rather than folded into an unrelated PR; surfaced to Eyad directly.
+
 ---
 
 # §2 · BLOCKED ON EYAD — one decision each
@@ -412,6 +419,8 @@ Everyone joining before 16 August waits until 16 August to start their 14 days; 
 - **Build:** needs a decision on what `is_active=false` should mean when it is not a pending signup — a distinct "paused" state the roster surfaces with its own filter/badge, or something the roster should keep hiding. Either way it's a UI/semantics decision, not a query filter.
 - **Touches:** account state (changes which students are visible where).
 - **Blocked by:** Eyad's call on the two meanings of `is_active=false`.
+
+**Built and closed, 30 July 2026.** Before proposing, this was verified two auditors deep and turned out to be four live meanings, not two — full writeup and the definitive answer on why `pending_enrollments` alone can't disambiguate them are in the fuller addendum landing via PR #241. Eyad approved the proposed shape; `students.inactive_reason text` (nullable, `CHECK`'d to `pending_signup | rejected | paused | anonymized`) is applied to production (migration `20260730110000_students_inactive_reason.sql`), and the four real write sites are stamped — including the actual bug fix, `pending/[id]/reject` now also marking the student row instead of leaving it forever indistinguishable from a genuine pause. `'paused'` is a valid value with **no writer** — no pause feature was built, and none should be inferred from the constraint existing. See this PR's own commit message for the full list of write sites.
 
 ## D25 · `parent-balance-alerts` cron reads the dead `payment_status` column to decide who gets messaged, and a stale fee field to decide what the message says they owe
 - **What:** `src/app/api/cron/parent-balance-alerts/route.ts:63` filters candidates with `.eq('payment_status', 'unpaid')` — the same write-once-at-insert column D3 condemns. The quoted amount (lines 70, 97) reads `students.fee`, which `studentBalance.ts`'s own header documents as a "NULL-in-practice fallback for a group-less scan," not the authoritative price (`student_groups.fee_per_class` is).
@@ -721,6 +730,7 @@ Logged from the token layer (#209). None of it blocks a restyle; all of it makes
 ## F12 · `pending_enrollments` cannot say whether a request came from an invite link or self-serve sign-up — the design shows both as distinct badges
 - **What:** `Merged-Center-Students` §04's Pending screen draws two distinct origin badges ("Invite link" vs "Sign-up") on every request row, plus a "Came via" field in the request-detail view. Live, `pending_enrollments` has no column for this — confirmed both live insert call sites (`src/app/api/join/[center_code]/[group_id]/route.ts` and `src/app/api/join/pending-enrollment/route.ts`) write the identical column set (`center_id, group_id, student_id, student_name, student_phone, parent_phone, notes, status`), and the list query in `src/app/api/students/pending/route.ts` selects no origin-like field because none exists.
 - **Why it's not a display fix:** the two live endpoints are already two genuinely different entry paths — the gap is that neither writes down which one a given row came through, so the fact is lost at insert time, not just unrendered. Recovering it needs a new column and a value written by both call sites.
+- **Do not reach for `students.origin` as a shortcut — checked, it doesn't cover this.** The column exists (`text`, nullable) and does have real writers, live values `'walk_in'` and `'self_link'` — but every writer (`teacher/private/groups/[groupId]/roster`, `teacher/private/schedule/sessions/*`, `join/g/[groupId]/verify-otp`) belongs to the teacher-private subsystem (centre-less teacher groups), not the centre's own join flow. Neither `join/[center_code]/[group_id]/route.ts` nor `join/pending-enrollment/route.ts` (the two routes this finding is actually about) ever sets it — confirmed both leave it at its `NULL` default. A genuinely new column (or a new value vocabulary added to this one, stamped by the two routes that don't touch it today) is still what's needed.
 - **Found:** 30 July 2026, building `Merged-Center-Students` §04.
 - **Build:** add an origin/source column to `pending_enrollments`, stamp it at both insert sites, surface it as the badge/detail-row the design already draws.
 - **Blocked by:** nothing technical; out of scope for a display-only pass (needs a migration).
@@ -743,6 +753,21 @@ Logged from the token layer (#209). None of it blocks a restyle; all of it makes
 - **Why it's logged, not built:** no screen this pass asked for a fused badge, and inventing a combined taxonomy (does "at-risk AND unpaid" render as one badge or two?) is a design decision, not a bug fix.
 - **Found:** 30 July 2026, building `Merged-Center-Students` §01/§02.
 - **For whoever designs this next:** both axes are already independently correct and already available (`lifecycle_status` column, `getStudentBalances`) — this is purely a "how do we show both at once" question, no new data needed.
+
+## F16 · One session, six places where "one number" had two sources — the shape, not six separate bugs
+- **The pattern:** every instance below has the identical shape. A database column is written once, usually at insert, and never updated again. The real, current value is only ever obtainable by summing live rows elsewhere — here, always `attendance_scans` (charges) and `payments` (collections). Some screen or job reads the frozen column instead, because it's a single flat field rather than a join-and-sum, and it silently drifts from reality the moment anything happens after that first write. Nothing errors. Every query succeeds. It just answers a question about the moment of insert while presenting itself as the answer right now.
+- **All six tonight were `students.payment_status`, or its sibling `students.fee`, versus the real-time balance `getStudentBalances` computes** (`src/lib/studentBalance.ts` — already the one place that arithmetic lives, precisely so it can't drift between callers):
+  1. Roster (`students/page.tsx`).
+  2. Student detail (`students/[id]/page.tsx`).
+  3. `/dashboard`'s paid/unpaid KPI tile and payment-status donut chart.
+  4. `excel-export.ts`'s `buildDashboardExcelBuffer` (the dashboard's Excel export).
+  5. `parent-balance-alerts` cron — who gets messaged (`payment_status = 'unpaid'`).
+  6. The same cron — what the message says they owe (`students.fee`, documented in `studentBalance.ts` itself as a "NULL-in-practice fallback," never the authoritative `student_groups.fee_per_class`).
+
+  All six are now fixed onto `getStudentBalances`.
+- **Why one entry, not six:** every fix was the same operation — stop reading the frozen column, call the helper instead. Logging six separate bug entries would hide that this is one architectural failure mode, not six unrelated mistakes, and it will keep producing new instances wherever the next screen or cron reaches for `payment_status`/`fee` out of habit instead of the helper.
+- **What actually closes this, versus just patching tonight's six:** `payment_status` and the misleading half of `fee` are still live, `NOT NULL`, defaulted columns on `students` — nothing stops a seventh reader from being written next week. D3 already proposes dropping or backfilling `payment_status`; doing that (once the sign-off D3 is waiting on happens) is the only version of this fix that makes an eighth instance *impossible* rather than merely *found*. Until then, this entry exists so the next dead-column-vs-live-helper discovery gets logged as "instance seven of F16," not written up as if it were new.
+- **Found:** 30 July 2026, across the `Center-Students` pass and the same-night `parent-balance-alerts` follow-up.
 
 ---
 
