@@ -253,6 +253,7 @@ Everyone joining before 16 August waits until 16 August to start their 14 days; 
 ## D3 · `students.payment_status` is dead weight
 - **The decision:** drop it, or backfill and maintain it.
 - **Why it is stuck:** `NOT NULL`, defaults to `'unpaid'`, written once at creation, **never updated by anything**, and nothing reads it since #188. Leaving it is how the next screen counts it and ships the same bug.
+- **Correction, 30 July 2026:** "nothing reads it" does not hold — confirmed live, real readers exist today. Fixed this pass (all swapped to `getStudentBalances`, same helper, same math): the roster and student-detail screens, the `/dashboard` paid/unpaid KPI tile and payment-status donut chart, and `excel-export.ts`'s `buildDashboardExcelBuffer` (its sibling `exportToExcel` has zero callers and was left alone). **Not fixed, flagged instead — see D25:** the `parent-balance-alerts` cron also reads this column to decide who gets a paid WhatsApp message, and needs Eyad before it's touched. Whatever "#188" checked, it did not catch these four. The column's write behaviour is exactly as dead as described above — it was the reader count that was wrong.
 - **Source:** `DATA-GAPS.md` §0.1.
 
 ## D4 · WhatsApp auto-send
@@ -403,6 +404,23 @@ Everyone joining before 16 August waits until 16 August to start their 14 days; 
 - **Why it matters:** shortening it is a URL-scheme change (a new short-code table or column, a lookup, and a decision on collision/rotation), not a copy change — the same class of decision as the admin teacher-link short codes elsewhere in this codebase.
 - **Touches:** none directly; a URL scheme change on an already-live, already-shared link is worth flagging before touching regardless.
 - **Blocked by:** Eyad's decision on whether the short code is worth building, given the full-UUID link already works and is already shared via QR/WhatsApp.
+
+## D24 · `students.is_active` is both the pending-signup gate and a directly-editable "paused" toggle — the roster leak can't be silently filtered
+- **What:** `Merged-Center-Students` §01 (roster) draws only active, already-approved students; the design's Pending queue (§04) is a separate screen. Live, `students/page.tsx`'s roster query has no `is_active` filter at all, so students still awaiting sign-up approval (`is_active=false`, inserted by the public join flow, e.g. `src/app/api/join/[center_code]/[group_id]/route.ts`) show up mixed into the main roster before anyone has approved them.
+- **Why it's not a mechanical fix:** `is_active` is not a pure "pending" flag. `PATCH /api/students/[id]` (`src/app/api/students/[id]/route.ts:37`) has `is_active` in its allowed-fields set alongside `name`/`phone`/`notes` — center staff can toggle it directly on any existing, already-approved student, presumably to "pause" someone without losing their history. Adding a hard `is_active=true` filter to the roster query would also hide these deliberately-paused students, with no visible trace of why they disappeared.
+- **Found:** 30 July 2026, building `Merged-Center-Students` §01.
+- **Build:** needs a decision on what `is_active=false` should mean when it is not a pending signup — a distinct "paused" state the roster surfaces with its own filter/badge, or something the roster should keep hiding. Either way it's a UI/semantics decision, not a query filter.
+- **Touches:** account state (changes which students are visible where).
+- **Blocked by:** Eyad's call on the two meanings of `is_active=false`.
+
+## D25 · `parent-balance-alerts` cron reads the dead `payment_status` column to decide who gets messaged, and a stale fee field to decide what the message says they owe
+- **What:** `src/app/api/cron/parent-balance-alerts/route.ts:63` filters candidates with `.eq('payment_status', 'unpaid')` — the same write-once-at-insert column D3 condemns. The quoted amount (lines 70, 97) reads `students.fee`, which `studentBalance.ts`'s own header documents as a "NULL-in-practice fallback for a group-less scan," not the authoritative price (`student_groups.fee_per_class` is).
+- **Why it matters:** this is a live, running, WhatsApp-cost-bearing cron, not a display bug. Today it under-targets (any student whose `payment_status` wasn't left at `'unpaid'` from creation never gets a reminder no matter how much they actually owe) and the amount it quotes to a real parent is very likely wrong whenever `students.fee` doesn't match the group's real per-class fee.
+- **Why it's not a mechanical fix:** correcting the filter to real balances (`getStudentBalances`, same helper as the D3 fixes elsewhere this pass) changes who gets a paid WhatsApp message sent to them and what EGP figure they're told they owe — a messaging-cost and customer-communication change, not a pure read-path correction.
+- **Found:** 30 July 2026, building `Merged-Center-Students` (D3's other live wrong consumers).
+- **Build:** swap the filter to `balance > 0` from `getStudentBalances`, and the quoted amount to that same `balance` (rounded), scoped to `parent_pack_opted_in` centers as today.
+- **Touches:** money, messaging cost.
+- **Blocked by:** Eyad's decision to proceed with the corrected targeting/amount.
 
 ---
 
@@ -699,6 +717,32 @@ Logged from the token layer (#209). None of it blocks a restyle; all of it makes
 - **`groups/page.tsx` fetches `teacher_name` per group (a real join) and never renders it anywhere** — dead query. Showing it (the design's "Mr. Sherif · center 30%" chip) also needs `center_cut_egp` added to the list query (only selected on create today) and computed as a percentage of `fee_per_class`, since it's stored as an absolute EGP amount, not a percent.
 - **`student_groups.capacity_cap` is a second, live, constrained column (`CHECK (>0)`) with zero references anywhere in `src/`** — same shape as F9's `teacher_split_pct`, a second dead field on the same table. Logged for the same "drop or document" decision.
 - **`student_groups.kind` ('center' vs 'private') is never selected or filtered on** in the centre-side Groups list query — outside-teacher-run groups are indistinguishable from centre-run ones in this view, compounding the missing teacher chip above.
+
+## F12 · `pending_enrollments` cannot say whether a request came from an invite link or self-serve sign-up — the design shows both as distinct badges
+- **What:** `Merged-Center-Students` §04's Pending screen draws two distinct origin badges ("Invite link" vs "Sign-up") on every request row, plus a "Came via" field in the request-detail view. Live, `pending_enrollments` has no column for this — confirmed both live insert call sites (`src/app/api/join/[center_code]/[group_id]/route.ts` and `src/app/api/join/pending-enrollment/route.ts`) write the identical column set (`center_id, group_id, student_id, student_name, student_phone, parent_phone, notes, status`), and the list query in `src/app/api/students/pending/route.ts` selects no origin-like field because none exists.
+- **Why it's not a display fix:** the two live endpoints are already two genuinely different entry paths — the gap is that neither writes down which one a given row came through, so the fact is lost at insert time, not just unrendered. Recovering it needs a new column and a value written by both call sites.
+- **Found:** 30 July 2026, building `Merged-Center-Students` §04.
+- **Build:** add an origin/source column to `pending_enrollments`, stamp it at both insert sites, surface it as the badge/detail-row the design already draws.
+- **Blocked by:** nothing technical; out of scope for a display-only pass (needs a migration).
+
+## F13 · `students.grade_level` has zero writers — the display added this pass will stay blank until something writes it
+- **What:** the roster and student-detail screens now show a "Grade {n}" line when `grade_level` is set (this pass). Live, no code path (add-student, edit-student, `/students/import`) ever writes it — confirmed 0 of 4 live students have a non-null value, and grepping every students-table insert/update site for `grade_level` returns none.
+- **Why it was still wired up:** harmless and forward-compatible — the column and the design both already exist, this only stops silently dropping the value the day something starts writing it. Same "surface already-fetched-but-dropped data" pattern used elsewhere this pass.
+- **Found:** 30 July 2026, building `Merged-Center-Students` §01/§02.
+- **Build:** add `grade_level` to the add-student and edit-student forms (and optionally the import column mapper) if grade is wanted as real data going forward; otherwise it stays display-only and blank.
+
+## F14 · `/students/import` treats parent phone as fully optional; the design's copy says it's required
+- **What:** `Merged-Center-Students` §04's upload screen states "Only student name and parent phone are required" and explains why: "payment links and receipts go there by WhatsApp, so a wrong number means a student who cannot be billed." Live, `students/import/page.tsx` never validates `parent_phone` — a row with a name and nothing else imports cleanly (`previewRows`/`importPayloadAndMembers` only skip rows with a blank name).
+- **Why it's not a mechanical fix:** enforcing it would start rejecting/flagging rows that import cleanly today, for centers that may import students tracked for attendance before a parent phone is on file. A behaviour change on an existing, working import path, not a bug with one correct answer.
+- **Found:** 30 July 2026, building `Merged-Center-Students` §04.
+- **Build:** decide whether missing parent phone should join the "needs a fix" skip list (§04 already has one, for blank names) alongside a copy check, or stay optional and the design copy is what's wrong.
+- **Blocked by:** Eyad's call on which one is correct.
+
+## F15 · Two independent status axes (lifecycle vs payment standing) exist per student and are never shown together as one badge
+- **What:** a student carries two separately-computed status concepts: a lifecycle/attendance status (`active`/`at_risk`/`inactive`/`enrolled`/`churned`, driven by scan recency — the roster's `LifecycleBadge`) and a payment standing (paid/unpaid, now `getStudentBalances`-driven after this pass's fixes). Neither `Merged-Center-Students` nor live code fuses them into one badge — the roster shows a `LifecycleBadge` and a balance figure as two separate elements.
+- **Why it's logged, not built:** no screen this pass asked for a fused badge, and inventing a combined taxonomy (does "at-risk AND unpaid" render as one badge or two?) is a design decision, not a bug fix.
+- **Found:** 30 July 2026, building `Merged-Center-Students` §01/§02.
+- **For whoever designs this next:** both axes are already independently correct and already available (`lifecycle_status` column, `getStudentBalances`) — this is purely a "how do we show both at once" question, no new data needed.
 
 ---
 

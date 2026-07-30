@@ -9,14 +9,15 @@ import { getCsrfHeaders } from '@/lib/csrf-client';
 import { useCardOrderCart } from '@/hooks/useCardOrderCart';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useUser } from '@/contexts/UserContext';
-import { ArrowLeft, ClipboardList, CreditCard, Pencil, X } from 'lucide-react';
+import { ArrowLeft, ClipboardList, CreditCard, MessageCircle, Pencil, Phone, X } from 'lucide-react';
 import { KpiCard } from '@/components/shared';
 import { FamilyLinkingSection } from '@/components/students/FamilyLinkingSection';
 import { ReceiptModal } from '@/components/payments/ReceiptModal';
 import { pushRecentlyViewedStudent } from '@/lib/recentlyViewedStudents';
 import { formatDateTime, formatDate, formatNumber, formatCurrency } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
-import { getStudentBalance } from '@/lib/studentBalance';
+import { getStudentBalances } from '@/lib/studentBalance';
+import { initialsOf } from '@/lib/initials';
 
 type FamilyRow = { id: string; family_name: string | null; parent_phone: string | null; parent_name: string | null };
 
@@ -29,6 +30,8 @@ type StudentRow = {
   parent_pack_opted_in?: boolean | null;
   parent_consent_given?: boolean | null;
   sibling_family_id?: string | null;
+  subject?: string | null;
+  grade_level?: string | null;
 };
 
 type GroupRow = { id: string; name: string; subject: string | null; fee?: number };
@@ -50,7 +53,7 @@ interface ScanRecord {
 // and selecting it makes PostgREST 400 the whole query, which surfaces as
 // "student not found" for every student.
 const STUDENT_SELECT =
-  'id, name, student_number, phone, parent_phone, parent_pack_opted_in, parent_consent_given, sibling_family_id';
+  'id, name, student_number, phone, parent_phone, parent_pack_opted_in, parent_consent_given, sibling_family_id, subject, grade_level';
 
 function deriveResultBadge(scan: ScanRecord, t: (k: string) => string): { label: string; cls: string } {
   if (scan.payment_status_at_scan === 'paid') {
@@ -64,6 +67,16 @@ function deriveResultBadge(scan: ScanRecord, t: (k: string) => string): { label:
     return { label: t('resultPaid'), cls: 'bg-green-100 text-green-700' };
   }
   return { label: t('resultUnpaid'), cls: 'bg-yellow-100 text-yellow-700' };
+}
+
+/** Digits, country-code-prefixed, no leading '+' - the wa.me / tel: contract used across the app. */
+function intlDigits(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const d = raw.replace(/\D/g, '');
+  if (!d) return null;
+  if (d.startsWith('20')) return d;
+  if (d.startsWith('0')) return `20${d.slice(1)}`;
+  return `20${d}`;
 }
 
 // The list-page normalizer, copied verbatim so a typed parent phone is stored
@@ -86,6 +99,8 @@ function normalizeStudent(raw: Record<string, unknown>): StudentRow {
     parent_pack_opted_in: raw.parent_pack_opted_in === true,
     parent_consent_given: raw.parent_consent_given === true,
     sibling_family_id: (raw.sibling_family_id as string | null | undefined) ?? null,
+    subject: (raw.subject as string | null | undefined) ?? null,
+    grade_level: (raw.grade_level as string | null | undefined) ?? null,
   };
 }
 
@@ -123,10 +138,13 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   const [centerId, setCenterId] = useState<string | null>(null);
   const [student, setStudent] = useState<StudentRow | null>(null);
   // Live-computed balance (Σ chargeable center-group scans − logged payments) via the
-  // isomorphic getStudentBalance helper on the RLS-scoped browser client — the SAME
+  // isomorphic getStudentBalances helper on the RLS-scoped browser client — the SAME
   // source the scanner and finance views use. There is deliberately NO students.balance_due
   // column (selecting it 400s the whole query); see STUDENT_SELECT below. null = not loaded.
   const [balance, setBalance] = useState<number | null>(null);
+  // Lifetime paid (Σ logged payments, never negative/netted) - Merged-Center-Students
+  // §02 "Lifetime paid X since date". Same balances helper, .paid instead of .balance.
+  const [lifetimePaid, setLifetimePaid] = useState<number | null>(null);
   const [family, setFamily] = useState<FamilyRow | null>(null);
   const [delivered, setDelivered] = useState(false);
   const [scans, setScans] = useState<ScanRecord[]>([]);
@@ -189,11 +207,14 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         setStudent(row);
 
         if (row) {
-          // Read-only live balance for the balance card. Best-effort: a hiccup must never
-          // break the page (it just leaves the card unloaded).
-          getStudentBalance(supabase, row.id)
-            .then((b) => {
-              if (!cancelled) setBalance(b);
+          // Read-only live balance + lifetime paid for the balance card. Best-effort:
+          // a hiccup must never break the page (it just leaves the card unloaded).
+          getStudentBalances(supabase, { studentIds: [row.id] })
+            .then((map) => {
+              if (cancelled) return;
+              const b = map.get(row.id);
+              setBalance(b?.balance ?? 0);
+              setLifetimePaid(b?.paid ?? 0);
             })
             .catch((err) => console.error('[student-detail] balance load failed', err));
         }
@@ -290,7 +311,10 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       if (!raw) return;
       const row = normalizeStudent(raw);
       setStudent(row);
-      setBalance(await getStudentBalance(supabase, row.id));
+      const balanceMap = await getStudentBalances(supabase, { studentIds: [row.id] });
+      const b = balanceMap.get(row.id);
+      setBalance(b?.balance ?? 0);
+      setLifetimePaid(b?.paid ?? 0);
       setFamily(await fetchFamilyForStudent(row.sibling_family_id ?? null, session.access_token));
     } catch (err) {
       console.error('[student-detail] reloadStudent failed', err);
@@ -436,8 +460,21 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface-0)]">
-        <p className="text-sm text-[var(--color-text-secondary)]">{ts('loading')}</p>
+      <div className="min-h-screen px-4 py-6 max-w-lg mx-auto bg-[var(--color-surface-0)]">
+        <div className="mb-6 h-5 w-16 animate-pulse rounded bg-[var(--color-surface-2)]" />
+        <div className="flex items-center gap-3">
+          <div className="h-11 w-11 shrink-0 animate-pulse rounded-full bg-[var(--color-surface-2)]" />
+          <div className="flex-1 space-y-2">
+            <div className="h-5 w-32 animate-pulse rounded bg-[var(--color-surface-2)]" />
+            <div className="h-3.5 w-40 animate-pulse rounded bg-[var(--color-surface-2)]" />
+          </div>
+        </div>
+        <div className="mt-6 h-20 animate-pulse rounded-md bg-[var(--color-surface-2)]" />
+        <div className="mt-3 grid grid-cols-3 gap-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-16 animate-pulse rounded-md bg-[var(--color-surface-2)]" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -462,7 +499,28 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       <button type="button" className="text-sm text-teal-600 mb-6 flex items-center gap-1" onClick={() => router.back()}>
         <ArrowLeft size={16} /> {tDetail('back')}
       </button>
-      <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{student.name}</h1>
+      <div className="flex items-center gap-3">
+        <span
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-mint)] text-sm font-semibold text-[var(--color-accent-deep)]"
+          aria-hidden
+        >
+          {initialsOf(student.name)}
+        </span>
+        <div className="min-w-0">
+          <h1 className="truncate text-xl font-bold text-[var(--color-text-primary)]">{student.name}</h1>
+          {(student.subject || student.grade_level || student.phone) && (
+            <p className="truncate text-sm text-[var(--color-text-secondary)]">
+              {[
+                student.subject,
+                student.grade_level ? tDetail('gradeLabel', { grade: student.grade_level }) : null,
+                student.phone,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+          )}
+        </div>
+      </div>
       {student.student_number ? (
         <p className="text-sm font-mono text-[var(--color-text-tertiary)] mt-1" dir="ltr">
           <bdi>{formatStudentNumberForDisplay(student.student_number)}</bdi>
@@ -490,39 +548,68 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       )}
 
       {/* 2. Stat row */}
-      <div className={`${balance !== null ? 'mt-3' : 'mt-6'} grid grid-cols-2 gap-3`}>
+      <div className={`${balance !== null ? 'mt-3' : 'mt-6'} grid grid-cols-3 gap-3`}>
         <KpiCard
           label={tDetail('visits')}
           value={<span className="tabular-nums">{formatNumber(visits, locale)}</span>}
         />
         <KpiCard label={tDetail('lastSeen')} value={lastSeen ? formatDate(lastSeen, locale, 'short') : '—'} />
+        {lifetimePaid !== null && (
+          <KpiCard
+            label={tDetail('lifetimePaid')}
+            value={<span className="tabular-nums" dir="ltr">{formatCurrency(lifetimePaid, locale)}</span>}
+          />
+        )}
       </div>
 
       {/* 2. Quick actions */}
-      {(canCollect || canEdit) && (
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          {canCollect && (
-            <button
-              type="button"
-              onClick={() => setShowCollect(true)}
-              className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
-            >
-              <CreditCard className="h-6 w-6 text-teal-500" aria-hidden />
-              <span className="text-sm font-semibold text-[var(--color-text-primary)]">{tp('collectPayment')}</span>
-            </button>
-          )}
-          {canEdit && (
-            <button
-              type="button"
-              onClick={openEdit}
-              className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
-            >
-              <Pencil className="h-6 w-6 text-teal-500" aria-hidden />
-              <span className="text-sm font-semibold text-[var(--color-text-primary)]">{tCommon('edit')}</span>
-            </button>
-          )}
-        </div>
-      )}
+      {(() => {
+        const studentDigits = intlDigits(student.phone);
+        return (canCollect || canEdit || studentDigits) && (
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            {studentDigits && (
+              <a
+                href={`tel:+${studentDigits}`}
+                className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+              >
+                <Phone className="h-6 w-6 text-teal-500" aria-hidden />
+                <span className="text-sm font-semibold text-[var(--color-text-primary)]">{tDetail('callAction')}</span>
+              </a>
+            )}
+            {studentDigits && (
+              <a
+                href={`https://wa.me/${studentDigits}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+              >
+                <MessageCircle className="h-6 w-6 text-teal-500" aria-hidden />
+                <span className="text-sm font-semibold text-[var(--color-text-primary)]">{tDetail('messageAction')}</span>
+              </a>
+            )}
+            {canCollect && (
+              <button
+                type="button"
+                onClick={() => setShowCollect(true)}
+                className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+              >
+                <CreditCard className="h-6 w-6 text-teal-500" aria-hidden />
+                <span className="text-sm font-semibold text-[var(--color-text-primary)]">{tp('collectPayment')}</span>
+              </button>
+            )}
+            {canEdit && (
+              <button
+                type="button"
+                onClick={openEdit}
+                className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+              >
+                <Pencil className="h-6 w-6 text-teal-500" aria-hidden />
+                <span className="text-sm font-semibold text-[var(--color-text-primary)]">{tCommon('edit')}</span>
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       {/* 3. Parent / Family */}
       <section className="mt-6">

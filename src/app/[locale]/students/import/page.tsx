@@ -15,6 +15,9 @@ import { Progress } from '@/components/ui/progress';
 
 type ImportStep = 'upload' | 'map' | 'resolveGroups' | 'preview' | 'importing' | 'success';
 
+/** Merged-Center-Students §04 upload copy: "CSV or Excel, up to 500 rows". Live parsed any size until now. */
+const MAX_IMPORT_ROWS = 500;
+
 type ColumnMapValue = 'name' | 'phone' | 'parentPhone' | 'group' | 'notes' | 'skip';
 
 type CenterGroup = { id: string; name: string; subject: string | null };
@@ -113,6 +116,10 @@ export default function ImportStudentsPage() {
       const data = await parseFile(buffer, file.name);
       if (data.rows.length === 0) {
         setError(t('error'));
+        return;
+      }
+      if (data.rows.length > MAX_IMPORT_ROWS) {
+        setError(t('errorTooManyRows', { count: data.rows.length, max: MAX_IMPORT_ROWS }));
         return;
       }
       setParsedData(data);

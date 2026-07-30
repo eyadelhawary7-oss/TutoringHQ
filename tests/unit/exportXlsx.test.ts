@@ -11,7 +11,7 @@ describe('export xlsx (exceljs)', () => {
           phone: '+201234567890',
           parent_phone: '',
           subject: 'Math',
-          payment_status: 'paid',
+          balance: 0,
           qr_code: 'QR1',
         },
       ],

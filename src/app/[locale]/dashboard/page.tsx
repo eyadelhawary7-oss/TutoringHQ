@@ -6,6 +6,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { dbSelect } from '@/lib/db-proxy';
+import { getStudentBalances } from '@/lib/studentBalance';
 import { colors } from '@/lib/tokens';
 import { exportDashboardToExcel } from '@/lib/excel-export';
 import { hasPlanFeature } from '@/lib/plans';
@@ -327,6 +328,7 @@ export default function DashboardPage() {
         attendanceResult,
         studentsResult,
         recentPaymentsResult,
+        studentBalances,
       ] = await Promise.all([
         dbSelect({
           table: 'payments',
@@ -361,6 +363,9 @@ export default function DashboardPage() {
           order: { column: 'paid_at', ascending: false },
           limit: 10,
         }),
+        // Real per-student balances (D3: students.payment_status is write-once-at-insert,
+        // never updated after — paidCount/unpaidCount must come from here, not that column.
+        getStudentBalances(supabase, { centerId: cId }),
       ]);
 
       const paymentsData = (paymentsResult.data || []) as { amount: number; confirmed?: boolean; status?: string; method?: string; paid_at?: string; student_id?: string }[];
@@ -375,7 +380,6 @@ export default function DashboardPage() {
         return d >= new Date(todayStart) && d <= todayEnd;
       });
       const todayRevenue = todayPayments.filter(p => p.confirmed).reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
-      const studentPendingCount = students.filter(s => s.payment_status === 'pending').length;
       const allPending = paymentsData.filter(p => !p.confirmed && p.status === 'pending');
       const totalPending = allPending.reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
 
@@ -415,8 +419,9 @@ export default function DashboardPage() {
         return d >= yesterdayStart && d <= yesterdayEnd;
       }).reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
 
-      const paidCount = students.filter(s => s.payment_status === 'paid').length;
-      const unpaidCount = students.filter(s => s.payment_status === 'unpaid').length;
+      const balanceList = Array.from(studentBalances.values());
+      const unpaidCount = balanceList.filter((b) => b.balance > 0).length;
+      const paidCount = balanceList.filter((b) => b.balance <= 0).length;
 
       // Trend data: Cairo week (7d) or rolling N days
       const chartDayKeys: string[] =
@@ -554,7 +559,11 @@ export default function DashboardPage() {
         totalStudents: students.length,
         paidCount,
         unpaidCount,
-        pendingCount: studentPendingCount,
+        // Balance model has no per-student "pending" state (a pending payment already
+        // counts toward `paid`, see studentBalance.ts) - reuse the payments-level
+        // pending count the page already computes correctly, instead of the old
+        // students.payment_status === 'pending' read (same dead column as above).
+        pendingCount: pendingInvoicesCount,
         todayRevenue,
         totalPending,
         revenueByMethod,
@@ -804,10 +813,10 @@ export default function DashboardPage() {
     setIsExporting(true);
     try {
       const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
-      const [studentsRes, attendanceRes, paymentsRes] = await Promise.all([
+      const [studentsRes, attendanceRes, paymentsRes, exportBalances] = await Promise.all([
         dbSelect({
           table: 'students',
-          select: 'id, name, phone, parent_phone, subject, payment_status, qr_code',
+          select: 'id, name, phone, parent_phone, subject, qr_code',
           filters: [{ column: 'center_id', op: 'eq', value: centerId }],
           order: { column: 'name' },
         }),
@@ -831,13 +840,20 @@ export default function DashboardPage() {
           order: { column: 'paid_at', ascending: false },
           limit: 500,
         }),
+        // D3: students.payment_status never updates after insert - the exported
+        // "الحالة" column must come from real balances, same as the KPI/pie fix above.
+        getStudentBalances(supabase, { centerId }),
       ]);
-      const students = (studentsRes.data || []) as { id: string; name: string; phone?: string; parent_phone?: string; subject?: string; payment_status: string; qr_code?: string }[];
+      const students = (studentsRes.data || []) as { id: string; name: string; phone?: string; parent_phone?: string; subject?: string; qr_code?: string }[];
       const attendanceRaw = (attendanceRes.data || []) as { student_id: string; scanned_at: string }[];
       const paymentsRaw = (paymentsRes.data || []) as { student_id: string; amount: number; method: string; paid_at: string; recorded_by: string }[];
       const studentMap = new Map(students.map(s => [s.id, s]));
+      const studentsWithBalance = students.map((s) => ({
+        ...s,
+        balance: exportBalances.get(s.id)?.balance ?? 0,
+      }));
       await exportDashboardToExcel({
-        students,
+        students: studentsWithBalance,
         attendance: attendanceRaw.map(a => ({
           student_name: studentMap.get(a.student_id)?.name || '',
           scanned_at: a.scanned_at,
