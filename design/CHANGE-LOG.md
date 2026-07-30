@@ -53,7 +53,7 @@ If a row ever names one, that row is a mistake.
 | [#242](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/242) | `3de2e3c5` | 2026-07-30 | none — migration + four route write sites (D24: `students.inactive_reason`) | `/api/join/*` (2 routes), `/api/students/pending/[id]/reject`, `/api/admin/privacy-requests/anonymize` | v41 |
 | [#240](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/240) | `55ce33c1` | 2026-07-30 | none — cron only (D25: `parent-balance-alerts` targeting/quoted amount) | `/api/cron/parent-balance-alerts` | v41 |
 | [#243](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/243) | `90f18fed` | 2026-07-30 | `Center-Students §04` (import) — dead-column write removed, no visible UI change | `/{locale}/students/import` | v41 |
-| [#245](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/245) | `(on merge)` | 2026-07-30 | `Center-Home §01` (dashboard: alert row, Today KPIs, digital share, schedule), `§02` (notifications: unread-count fix) | `/{locale}/dashboard`, `/{locale}/notifications` | v41 |
+| [#245](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/245) | `89159e8b` | 2026-07-30 | `Center-Home §01` (dashboard: alert row, Today KPIs, digital share, schedule), `§02` (notifications: unread-count fix) | `/{locale}/dashboard`, `/{locale}/notifications` | v41 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
