@@ -25,9 +25,10 @@ const DonutChart = dynamic(
   { ssr: false, loading: () => <div className="chq-skeleton h-48 w-full rounded-md" /> },
 );
 import { useToast } from '@/components/ui/ToastProvider';
-import { formatDate, formatGrowth, formatNumber, formatPercent, formatCurrency, formatRelativeMinutesAgo } from '@/lib/formatNumber';
-import { getCairoWeekDayKeys, startOfCairoWeek } from '@/lib/cairo/week';
-import { cairoDateKey } from '@/lib/cairo/day';
+import { formatDate, formatGrowth, formatNumber, formatPercent, formatCurrency, formatRelativeMinutesAgo, formatTime } from '@/lib/formatNumber';
+import { getCairoWeekDayKeys, startOfCairoWeek, scheduleSlotsDayOfWeek } from '@/lib/cairo/week';
+import { cairoDateKey, startOfCairoDay, getCurrentCairoClock } from '@/lib/cairo/day';
+import { classifyTodaySchedule } from '@/lib/todayScheduleStatus';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { type InactivePeriod, type InactiveStudent } from '@/components/dashboard/InactiveList';
 import { ClientOnly } from '@/components/ClientOnly';
@@ -119,6 +120,37 @@ interface DashboardData {
   studentSparkline7d: number[];
   /** ISO timestamp when dashboard aggregate was computed (client fetch). */
   generatedAt?: string;
+  /** Merged-Center-Home §01 "Today": today's schedule_slots, Cairo day-of-week. */
+  todaySchedule: TodayScheduleRow[];
+  todaySessionsTotal: number;
+  todaySessionsDone: number;
+  /** Sum of member_count across today's schedule_slots (a student in 2 classes today counts twice, matching the design's per-seat framing). */
+  studentsExpectedToday: number;
+  /**
+   * Oldest chargeable (non-absent, non-teacher-private) scan among students who
+   * currently have balance > 0. Bounded by the 30-day attendance_scans window
+   * this page already fetches - a genuinely older unpaid charge still reads as
+   * "30 days" rather than its real age. Null when no such scan is in that window.
+   */
+  unpaidLinksOldestDays: number | null;
+}
+
+interface TodayScheduleRow {
+  id: string;
+  /** Raw "HH:MM:SS" from schedule_slots, formatted at render time. */
+  startTime: string;
+  groupName: string;
+  roomName: string;
+  teacherName: string;
+  memberCount: number;
+  /**
+   * Derived, not stored: "billed" means this slot's end_time has already
+   * passed today (schedule_slots has no per-occurrence completion/billing
+   * flag) - not a claim that money was specifically confirmed collected.
+   * "next" is the single soonest slot that has not yet ended; "later" is
+   * everything else still to come today.
+   */
+  status: 'billed' | 'next' | 'later';
 }
 
 type AtRiskRow = {
@@ -156,12 +188,20 @@ const EMPTY_DASHBOARD_DATA: DashboardData = {
   pendingInvoicesCount: 0,
   latePaymentCount: 0,
   studentSparkline7d: [],
+  todaySchedule: [],
+  todaySessionsTotal: 0,
+  todaySessionsDone: 0,
+  studentsExpectedToday: 0,
+  unpaidLinksOldestDays: null,
 };
 
 function isDashboardCacheValid(p: unknown): p is DashboardData {
   if (!p || typeof p !== 'object') return false;
   const o = p as DashboardData;
   if (!Array.isArray(o.trendData)) return false;
+  // Merged-Center-Home §01: reject a cache blob written before this field
+  // existed, rather than render it with todaySchedule undefined.
+  if (!Array.isArray(o.todaySchedule)) return false;
   if (o.trendData.length === 0) return true;
   const row = o.trendData[0];
   return (
@@ -280,7 +320,7 @@ export default function DashboardPage() {
     monthlyRevenue: { month: string; amount: number }[];
     recentActivity: { type: 'payment' | 'scan'; student: string; detail: string; time: string }[];
     enrollment_surge_active?: boolean;
-    surge_message?: string | null;
+    enrollment_surge_days?: number | null;
   } | null>(null);
   const [surgeDismissed, setSurgeDismissed] = useState(false);
   const [atRiskStudents, setAtRiskStudents] = useState<AtRiskRow[]>([]);
@@ -321,14 +361,17 @@ export default function DashboardPage() {
       const monthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59).toISOString();
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const todayCairoKey = cairoDateKey();
+      const todayDow = scheduleSlotsDayOfWeek(todayCairoKey);
 
-      // Batch 1: 4 parallel queries
+      // Batch 1: 6 parallel queries
       const [
         paymentsResult,
         attendanceResult,
         studentsResult,
         recentPaymentsResult,
         studentBalances,
+        scheduleSlotsResult,
       ] = await Promise.all([
         dbSelect({
           table: 'payments',
@@ -341,7 +384,7 @@ export default function DashboardPage() {
         }),
         dbSelect({
           table: 'attendance_scans',
-          select: 'student_id, scanned_at',
+          select: 'student_id, scanned_at, status, billable',
           filters: [
             { column: 'center_id', op: 'eq', value: cId },
             { column: 'scanned_at', op: 'gte', value: thirtyDaysAgo.toISOString() },
@@ -366,12 +409,80 @@ export default function DashboardPage() {
         // Real per-student balances (D3: students.payment_status is write-once-at-insert,
         // never updated after — paidCount/unpaidCount must come from here, not that column.
         getStudentBalances(supabase, { centerId: cId }),
+        // Merged-Center-Home §01 "Schedule": today's Cairo day-of-week only.
+        // schedule_slots.day_of_week is the JS-weekday-as-text the slot editor writes;
+        // scheduleSlotsDayOfWeek() is the one place that convention is decoded (cairo/day.ts).
+        dbSelect({
+          table: 'schedule_slots',
+          select: 'id, room_id, group_id, teacher_id, start_time, end_time',
+          filters: [
+            { column: 'center_id', op: 'eq', value: cId },
+            { column: 'day_of_week', op: 'eq', value: todayDow },
+          ],
+        }),
       ]);
 
       const paymentsData = (paymentsResult.data || []) as { amount: number; confirmed?: boolean; status?: string; method?: string; paid_at?: string; student_id?: string }[];
-      const scansData = (attendanceResult.data || []) as { student_id: string; scanned_at: string }[];
+      const scansData = (attendanceResult.data || []) as { student_id: string; scanned_at: string; status?: string | null; billable?: boolean | null }[];
       const students = (studentsResult.data || []) as { id: string; name: string; subject: string; fee: number; payment_status: string; student_number?: string; created_at: string }[];
       const recentPaymentsRaw = (recentPaymentsResult.data || []) as { id: string; student_id: string; amount: number; status: string; confirmed?: boolean; group_id?: string; students?: { name?: string; student_number?: string } | null; student_groups?: { name?: string } | null }[];
+      const scheduleSlotsToday = (scheduleSlotsResult.data || []) as {
+        id: string;
+        room_id: string | null;
+        group_id: string | null;
+        teacher_id: string | null;
+        start_time: string;
+        end_time: string;
+      }[];
+
+      // Batch 2: resolve today's schedule_slots into display names + member
+      // counts, same join pattern as /schedule (groups/page.tsx's groupToTeacher).
+      const roomIdsToday = [...new Set(scheduleSlotsToday.map((s) => s.room_id).filter((v): v is string => Boolean(v)))];
+      const groupIdsToday = [...new Set(scheduleSlotsToday.map((s) => s.group_id).filter((v): v is string => Boolean(v)))];
+      const teacherIdsToday = [...new Set(scheduleSlotsToday.map((s) => s.teacher_id).filter((v): v is string => Boolean(v)))];
+
+      const [roomsRes, groupsRes, teachersRes, membersRes] = await Promise.all([
+        roomIdsToday.length > 0
+          ? dbSelect({ table: 'rooms', select: 'id, name', filters: [{ column: 'id', op: 'in', value: roomIdsToday }] })
+          : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+        groupIdsToday.length > 0
+          ? dbSelect({ table: 'student_groups', select: 'id, name', filters: [{ column: 'id', op: 'in', value: groupIdsToday }] })
+          : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+        teacherIdsToday.length > 0
+          ? dbSelect({ table: 'users', select: 'id, name', filters: [{ column: 'id', op: 'in', value: teacherIdsToday }] })
+          : Promise.resolve({ data: [] as { id: string; name: string | null }[] }),
+        groupIdsToday.length > 0
+          ? dbSelect({ table: 'student_group_members', select: 'group_id', filters: [{ column: 'group_id', op: 'in', value: groupIdsToday }] })
+          : Promise.resolve({ data: [] as { group_id: string }[] }),
+      ]);
+
+      const roomNameById = new Map(((roomsRes.data || []) as { id: string; name: string }[]).map((r) => [r.id, r.name]));
+      const groupNameById = new Map(((groupsRes.data || []) as { id: string; name: string }[]).map((g) => [g.id, g.name]));
+      const teacherNameById = new Map(((teachersRes.data || []) as { id: string; name: string | null }[]).map((u) => [u.id, u.name]));
+      const memberCountByGroup = new Map<string, number>();
+      ((membersRes.data || []) as { group_id: string }[]).forEach((m) => {
+        memberCountByGroup.set(m.group_id, (memberCountByGroup.get(m.group_id) ?? 0) + 1);
+      });
+
+      const { hour: cairoNowHour, minute: cairoNowMinute } = getCurrentCairoClock();
+      const nowMinutes = cairoNowHour * 60 + cairoNowMinute;
+      const statusById = classifyTodaySchedule(scheduleSlotsToday, nowMinutes);
+
+      const todaySchedule: TodayScheduleRow[] = scheduleSlotsToday
+        .slice()
+        .sort((a, b) => a.start_time.localeCompare(b.start_time))
+        .map((s) => ({
+          id: s.id,
+          startTime: s.start_time,
+          groupName: (s.group_id && groupNameById.get(s.group_id)) || tCommon('notAvailable'),
+          roomName: (s.room_id && roomNameById.get(s.room_id)) || tCommon('notAvailable'),
+          teacherName: (s.teacher_id && teacherNameById.get(s.teacher_id)) || '—',
+          memberCount: (s.group_id && memberCountByGroup.get(s.group_id)) || 0,
+          status: statusById.get(s.id) ?? 'later',
+        }));
+      const todaySessionsTotal = todaySchedule.length;
+      const todaySessionsDone = todaySchedule.filter((s) => s.status === 'billed').length;
+      const studentsExpectedToday = todaySchedule.reduce((sum, s) => sum + s.memberCount, 0);
 
       // Derive KPIs from payments
       const todayPayments = paymentsData.filter(p => {
@@ -422,6 +533,25 @@ export default function DashboardPage() {
       const balanceList = Array.from(studentBalances.values());
       const unpaidCount = balanceList.filter((b) => b.balance > 0).length;
       const paidCount = balanceList.filter((b) => b.balance <= 0).length;
+
+      // Merged-Center-Home §01 alert banner: oldest chargeable scan among
+      // currently-unpaid students, same chargeability rule as studentBalance.ts
+      // (not absent, not teacher-private billable) - bounded by the 30-day
+      // scansData window already fetched above.
+      const unpaidStudentIds = new Set(balanceList.filter((b) => b.balance > 0).map((b) => b.studentId));
+      let oldestUnpaidMs: number | null = null;
+      for (const s of scansData) {
+        if (!unpaidStudentIds.has(s.student_id)) continue;
+        if (s.status === 'absent') continue;
+        if (s.billable === true) continue;
+        const ms = new Date(s.scanned_at).getTime();
+        if (Number.isNaN(ms)) continue;
+        if (oldestUnpaidMs === null || ms < oldestUnpaidMs) oldestUnpaidMs = ms;
+      }
+      const unpaidLinksOldestDays =
+        oldestUnpaidMs !== null
+          ? Math.max(0, Math.round((startOfCairoDay(new Date()).getTime() - startOfCairoDay(new Date(oldestUnpaidMs)).getTime()) / 86400000))
+          : null;
 
       // Trend data: Cairo week (7d) or rolling N days
       const chartDayKeys: string[] =
@@ -586,6 +716,11 @@ export default function DashboardPage() {
         latePaymentCount,
         studentSparkline7d,
         generatedAt: new Date().toISOString(),
+        todaySchedule,
+        todaySessionsTotal,
+        todaySessionsDone,
+        studentsExpectedToday,
+        unpaidLinksOldestDays,
       };
       setData(next);
       if (user?.id) {
@@ -876,6 +1011,22 @@ export default function DashboardPage() {
 
   const safeData = data ?? EMPTY_DASHBOARD_DATA;
 
+  // Merged-Center-Home §01 "Digital share": revenueChartData is already a
+  // Cairo-week series (range defaults to 7 and nothing in this file's UI ever
+  // changes it) - bucket its 6 real payment methods into online vs cash rather
+  // than fetch anything new.
+  const digitalShare = useMemo(() => {
+    let cash = 0;
+    let online = 0;
+    for (const d of safeData.revenueChartData) {
+      cash += d.cash;
+      online += d.instapay + d.vodafone + d.orange + d.fawry + d.bank + d.other;
+    }
+    const total = cash + online;
+    if (total <= 0) return null;
+    return { cash, online, total, pct: Math.round((online / total) * 100) };
+  }, [safeData.revenueChartData]);
+
   const monthlyRevenueRaw = statsData?.monthlyRevenue ?? [];
   const monthlyRevenueData = useMemo(
     () =>
@@ -1093,11 +1244,13 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[var(--color-surface-0)] p-4 page-enter pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:p-6 md:pb-6">
-      {showSurgeAlert && statsData?.surge_message && (
+      {showSurgeAlert && statsData?.enrollment_surge_days != null && (
         <div
           className="card mb-4 p-4 border-[var(--color-border-brand)] flex items-center justify-between gap-4"
         >
-          <span className="text-sm font-medium text-[var(--color-text-primary)]">{statsData.surge_message}</span>
+          <span className="text-sm font-medium text-[var(--color-text-primary)]">
+            {t('examSurgeAlert', { days: formatNumber(statsData.enrollment_surge_days, locale) })}
+          </span>
           <button
             type="button"
             onClick={dismissSurge}
@@ -1287,6 +1440,118 @@ export default function DashboardPage() {
         </div>
       ) : (
         <>
+          {/* Merged-Center-Home §01: alert row, Today KPIs, digital share, schedule.
+              The design's balance card and "Verified" badge are not built here -
+              both depend on the online-collection/payout model (V3/V4) and center
+              verification (V1/V6), neither of which exists yet. See design/BUILD-AFTER-REDESIGN.md. */}
+          {safeData.unpaidCount > 0 && (
+            <div className="mb-4 max-w-6xl">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[var(--color-brass)]/40 bg-[var(--color-surface-2)] p-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-[var(--color-brass)]">
+                    {t('unpaidLinksTitle', { count: formatNumber(safeData.unpaidCount, locale) })}
+                  </p>
+                  <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
+                    {safeData.unpaidLinksOldestDays != null
+                      ? t('unpaidLinksSub', {
+                          students: formatNumber(safeData.unpaidCount, locale),
+                          days: formatNumber(safeData.unpaidLinksOldestDays, locale),
+                        })
+                      : `${formatNumber(safeData.unpaidCount, locale)} ${tCommon('students')}`}
+                  </p>
+                </div>
+                <Link
+                  href="/students?filter=unpaid"
+                  className="shrink-0 rounded-lg bg-[var(--color-brass)] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-press chq-focus"
+                >
+                  {t('reviewAction')}
+                </Link>
+              </div>
+            </div>
+          )}
+
+          <div className="mb-4 max-w-6xl">
+            <SectionHeader title={tCommon('sectionToday')} />
+          </div>
+          <div className="mb-6 grid max-w-6xl grid-cols-2 gap-3">
+            <KpiCard
+              label={t('sessionsLabel')}
+              value={`${formatNumber(safeData.todaySessionsTotal, locale)} · ${t('sessionsDoneSuffix', { count: formatNumber(safeData.todaySessionsDone, locale) })}`}
+            />
+            <KpiCard label={t('studentsExpectedLabel')} value={formatNumber(safeData.studentsExpectedToday, locale)} />
+            <KpiCard label={t('collected')} value={formatCurrency(safeData.todayRevenue, locale)} />
+            <KpiCard label={t('attendanceShort')} value={formatPercent(attendancePctOfTotal, locale)} />
+          </div>
+
+          {digitalShare && (
+            <>
+              <div className="mb-1 max-w-6xl">
+                <SectionHeader title={t('digitalShareTitle')} sub={t('digitalShareSub')} />
+              </div>
+              <div className="mb-6 max-w-6xl rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-[var(--color-text-primary)]">
+                    {formatPercent(digitalShare.pct, locale)}
+                  </span>
+                  <span className="text-xs text-[var(--color-text-muted)]">
+                    {t('digitalShareTotal', { amount: formatCurrency(digitalShare.total, locale) })}
+                  </span>
+                </div>
+                <div className="mt-3 flex h-2 w-full overflow-hidden rounded-full bg-[var(--color-surface-2)]">
+                  <div className="h-full bg-[var(--color-accent)]" style={{ width: `${digitalShare.pct}%` }} />
+                  <div className="h-full bg-[var(--color-brass)]" style={{ width: `${100 - digitalShare.pct}%` }} />
+                </div>
+                <div className="mt-3 flex flex-wrap gap-4 text-xs">
+                  <span className="flex items-center gap-1.5 text-[var(--color-text-secondary)]">
+                    <span className="h-2 w-2 rounded-full bg-[var(--color-accent)]" aria-hidden />
+                    {t('online')} {formatCurrency(digitalShare.online, locale)}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[var(--color-text-secondary)]">
+                    <span className="h-2 w-2 rounded-full bg-[var(--color-brass)]" aria-hidden />
+                    {t('methodCash')} {formatCurrency(digitalShare.cash, locale)}
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {safeData.todaySchedule.length > 0 && (
+            <>
+              <div className="mb-3 max-w-6xl">
+                <SectionHeader title={t('todaySchedule')} />
+              </div>
+              <div className="mb-6 max-w-6xl space-y-2">
+                {safeData.todaySchedule.map((s) => (
+                  <div
+                    key={s.id}
+                    className="flex items-center justify-between gap-3 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-[var(--color-text-primary)]" dir="ltr">
+                        {formatTime(s.startTime.slice(0, 5), locale)}
+                      </p>
+                      <p className="mt-0.5 truncate text-sm text-[var(--color-text-primary)]">{s.groupName}</p>
+                      <p className="mt-0.5 truncate text-xs text-[var(--color-text-muted)]">
+                        {s.teacherName} · {s.roomName} · {formatNumber(s.memberCount, locale)}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-pill px-2.5 py-1 text-xs font-semibold ${
+                        s.status === 'billed'
+                          ? 'bg-[var(--color-mint)] text-[var(--color-accent-deep)]'
+                          : s.status === 'next'
+                            ? 'bg-[var(--color-accent)]/15 text-[var(--color-accent-deep)]'
+                            : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'
+                      }`}
+                    >
+                      {s.status === 'billed' ? t('chipBilled') : s.status === 'next' ? t('chipNext') : t('chipLater')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
           <div className="mb-4 max-w-6xl">
             <SectionHeader title={tCommon('sectionAtAGlance')} />
           </div>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { getStudentBalances, sumOutstanding } from '@/lib/studentBalance';
+import { startOfCairoWeek } from '@/lib/cairo/week';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,11 +16,10 @@ export async function GET(request: NextRequest) {
     todayEnd.setHours(23, 59, 59, 999);
 
     const now = new Date();
-    const dayOfWeek = now.getDay();
-    const diffToMon = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - diffToMon);
-    weekStart.setHours(0, 0, 0, 0);
+    // Egypt's operating week is Saturday->Friday, not the JS/Monday week - see
+    // cairo/week.ts. activeStudentsThisWeek (below) is real dashboard output,
+    // so it must agree with the Cairo week the rest of the dashboard already uses.
+    const weekStart = startOfCairoWeek(now);
 
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
@@ -116,9 +116,11 @@ export async function GET(request: NextRequest) {
         : 0;
     }
 
-    // Enrollment surge: within 21 days of exam period AND enrollment growth > 5% vs 3-week average
+    // Enrollment surge: within 21 days of exam period AND enrollment growth > 5% vs 3-week average.
+    // Days-to-exam only - the caller renders the localized message via t(), since
+    // this route has no reliable caller locale until the recentActivity block below.
     let enrollment_surge_active = false;
-    let surge_message: string | null = null;
+    let enrollment_surge_days: number | null = null;
     const examPeriods = periods.filter((p) => p.period_type === 'exam');
     for (const ep of examPeriods) {
       const examStart = new Date(ep.start_date + 'T12:00:00');
@@ -136,7 +138,7 @@ export async function GET(request: NextRequest) {
         const growthPct = avg3Week > 0 ? ((newLast7 - avg3Week) / avg3Week) * 100 : 0;
         if (growthPct > 5) {
           enrollment_surge_active = true;
-          surge_message = `موسم الامتحانات قادم خلال ${daysToExam} يوم`;
+          enrollment_surge_days = daysToExam;
           break;
         }
       }
@@ -234,7 +236,7 @@ export async function GET(request: NextRequest) {
       current_period_type: current_period_type,
       academic_year_average_attendance: academic_year_average_attendance,
       enrollment_surge_active: enrollment_surge_active,
-      surge_message: surge_message,
+      enrollment_surge_days: enrollment_surge_days,
     });
   } catch (error) {
     console.error('[dashboard/stats] Error:', error);
