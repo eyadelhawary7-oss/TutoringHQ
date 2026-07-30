@@ -92,6 +92,10 @@ export default function NotificationsPageClient() {
   const router = useRouter();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  // From the API's dedicated count('exact') query, not derived from `rows` -
+  // the list fetch is capped at 50, so a center with more than 50 unread
+  // notifications would otherwise undercount here.
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const load = useCallback(async () => {
     const {
@@ -104,8 +108,9 @@ export default function NotificationsPageClient() {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!res.ok) return;
-      const j = (await res.json()) as { notifications?: Row[] };
+      const j = (await res.json()) as { notifications?: Row[]; unreadCount?: number };
       setRows(j.notifications ?? []);
+      setUnreadCount(j.unreadCount ?? 0);
     } finally {
       setLoading(false);
     }
@@ -140,8 +145,6 @@ export default function NotificationsPageClient() {
     });
     void load();
   };
-
-  const unreadCount = useMemo(() => rows.filter((n) => !n.read_at).length, [rows]);
 
   /**
    * Today / Earlier, per the design's grouping.

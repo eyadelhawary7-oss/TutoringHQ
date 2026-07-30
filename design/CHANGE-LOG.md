@@ -53,6 +53,7 @@ If a row ever names one, that row is a mistake.
 | [#242](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/242) | `3de2e3c5` | 2026-07-30 | none — migration + four route write sites (D24: `students.inactive_reason`) | `/api/join/*` (2 routes), `/api/students/pending/[id]/reject`, `/api/admin/privacy-requests/anonymize` | v41 |
 | [#240](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/240) | `55ce33c1` | 2026-07-30 | none — cron only (D25: `parent-balance-alerts` targeting/quoted amount) | `/api/cron/parent-balance-alerts` | v41 |
 | [#243](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/243) | `90f18fed` | 2026-07-30 | `Center-Students §04` (import) — dead-column write removed, no visible UI change | `/{locale}/students/import` | v41 |
+| [#245](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/245) | `(on merge)` | 2026-07-30 | `Center-Home §01` (dashboard: alert row, Today KPIs, digital share, schedule), `§02` (notifications: unread-count fix) | `/{locale}/dashboard`, `/{locale}/notifications` | v41 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -646,3 +647,65 @@ than leave an affordance that silently discarded whatever a user mapped to it. G
 unaffected (`student_group_members` insert never depended on the dead key). Routing import notes
 through `student_notes` — a real, live table already used by the anonymize route — stays a separate,
 not-yet-made decision.
+
+**Center-Home (30 July 2026, PR #245) — the third and last of the three "token pass only" files,
+redone rather than continued.** Structure coverage before this pass: an alert row, four `Today` KPIs,
+a digital-share widget and a schedule list — the design's whole §01 body below the header — were
+absent from the live page entirely; the previous pass (#214) had applied the token layer's colours to
+the existing, much thinner screen and stopped there. Surveyed both sections fresh (a blind literal
+read of the design mock, a separate blind read of the live `dashboard`/`notifications` code, then
+reconciled by hand) rather than trust the prior "restyled" label or the completion table's own
+pre-analysis, which turned out to be wrong on one material point — see F17 below.
+
+**§01 Dashboard — built:** an unpaid-links alert banner (count + oldest-charge age, both from
+`getStudentBalances`/`attendance_scans` — the same real-time balance model D3/D25/F16 already
+established, not a new money computation); a `Today` KPI row (Sessions, Students expected, Collected,
+Attendance) sitting alongside the pre-existing `At a glance` row rather than replacing it — `Monthly
+Revenue`/`Active Students`/`Pending Payments` are real, permission-gated, already-used figures with a
+different (weekly/monthly) time window than the design's `Today` framing, so this is additive, the
+same choice made for Center-Students' extra stat tiles; a digital-share widget (online vs. cash split,
+this week) built entirely from `revenueChartData`, a Cairo-week series the page already computes and
+ships to the client but never renders — not a new query; and a Schedule list of today's classes. The
+design's balance card and "Verified" badge are not built — both are the same V3/V4 (online
+collection/payout) and V1/V6 (verification) blockers already logged for every other file that draws
+them, not a new finding here.
+
+**Two bugs found incidentally and fixed in the same PR, both pre-dating this pass:**
+`PlanUsageCard` referenced a `.glass` CSS class and `--text-primary`/`--text-secondary` custom
+properties that do not exist anywhere in `globals.css` — confirmed via a plain grep, not inferred. The
+card had no border, no background and inherited text colour, sitting unstyled in the middle of an
+otherwise fully token-restyled page. Fixed onto the same `--color-*` tokens and card shape every
+sibling card on this page already uses. Separately, the exam-season enrollment-surge banner
+(`/api/dashboard/stats`) built its message as a hardcoded Arabic string server-side regardless of the
+caller's locale — an English-locale owner would see Arabic. Fixed by having the route return the
+number of days only and letting the client render it through `t()`, the same as every other string on
+the page.
+
+**One more instance of the "one number, two sources" shape (F16), smaller than the six already
+logged:** `/api/dashboard/stats`'s `activeStudentsThisWeek` computed "this week" as a Monday-start JS
+week, while the same page's own `loadDashboard()` already uses the correct Saturday-start Cairo week
+(`startOfCairoWeek`) for its own trend figures — two different week boundaries on the same screen.
+Fixed the stats route onto the same Cairo helper. Left `loadDashboard()`'s own non-Cairo `startOfToday()`
+untouched — it feeds many already-shipped, already-relied-on figures well beyond this pass's scope,
+where the isolated stats-route fix touched exactly one, low-visibility, never-previously-correct field.
+
+**§02 Notifications — one correctness fix, one gap logged as a decision, not built:** the page's
+header "unread" count was undercounting for any center with more than 50 unread notifications — the
+API already computes an accurate count via a dedicated, uncapped query, but the client discarded it
+and recomputed from its own capped 50-row page. Wired the client onto the server's real number.
+**Not fixed:** the feed itself. The design draws roughly eleven notification event types; the live
+`in_app_notifications` table has exactly one real writer reachable from a center's own screen
+(`card_order_status_update`) plus one admin-only kind that never reaches this screen at all
+(`privacy_request`). Wiring the plausible remaining types (payment received/failed, fee
+collected/overdue, student absent, new student) means new write-triggers across several already-shipped
+subsystems, not a display fix — logged as **D26** for Eyad's call on scope, rather than built partially.
+
+**F17 — a stale claim in `FILE-COMPLETION-TABLE.md` corrected before it was built around.** That table
+listed `sessions` as backing Center-Home's schedule section. Checked live before building: every row
+in `sessions` has `kind='private'`, including ones attached to `kind='center'` groups — it is
+exclusively the teacher-private billing engine's table, never written for a center class. The real
+source is `schedule_slots` (a recurring weekly template, no per-occurrence status column at all) — the
+same table the live `/schedule` page already reads. The Schedule section was built from that instead;
+the design's Billed/Next/Later chip is derived at render time (end_time passed vs. not), documented as
+an interpretation in the new `src/lib/todayScheduleStatus.ts`, since no stored equivalent exists to
+read.
