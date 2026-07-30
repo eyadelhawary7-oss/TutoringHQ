@@ -1425,6 +1425,7 @@ COLUMN students.is_guest ord=35 type=boolean notnull=true default=false
 COLUMN students.guardian_consent_confirmed_at ord=36 type=timestamp with time zone notnull=false default=∅
 COLUMN students.guardian_consent_confirmed_by ord=37 type=uuid notnull=false default=∅
 COLUMN students.parent_self_enroll_consent_at ord=38 type=timestamp with time zone notnull=false default=∅
+COLUMN students.inactive_reason ord=39 type=text notnull=false default=∅
 COLUMN subjects.id ord=1 type=uuid notnull=true default=uuid_generate_v4()
 COLUMN subjects.center_id ord=2 type=uuid notnull=true default=∅
 COLUMN subjects.name ord=3 type=text notnull=true default=∅
@@ -2328,6 +2329,7 @@ CONSTRAINT student_notes.student_notes_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT student_notes.student_notes_student_id_fkey type=f def=FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
 CONSTRAINT students.students_alert_status_check type=c def=CHECK ((alert_status = ANY (ARRAY['overdue'::text, NULL::text])))
 CONSTRAINT students.students_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT students.students_inactive_reason_check type=c def=CHECK (((inactive_reason IS NULL) OR (inactive_reason = ANY (ARRAY['pending_signup'::text, 'rejected'::text, 'paused'::text, 'anonymized'::text]))))
 CONSTRAINT students.students_lifecycle_status_check type=c def=CHECK ((lifecycle_status = ANY (ARRAY['enrolled'::text, 'active'::text, 'at_risk'::text, 'inactive'::text, 'churned'::text])))
 CONSTRAINT students.students_money_nonneg type=c def=CHECK ((((fee IS NULL) OR (fee >= (0)::numeric)) AND ((balance_alert_threshold IS NULL) OR (balance_alert_threshold >= (0)::numeric))))
 CONSTRAINT students.students_origin_chk type=c def=CHECK (((origin IS NULL) OR (origin = ANY (ARRAY['self_link'::text, 'walk_in'::text, 'inherited'::text, 'import'::text]))))
@@ -3073,7 +3075,7 @@ FUNCTION apply_session_transition(p_session_id uuid, p_new_status text, p_actor_
 FUNCTION apply_student_credits(p_student_id uuid, p_teacher_id uuid, p_actor_id uuid) returns=TABLE(credits_applied integer, amount_applied numeric) lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=1d9aaeede795f375b455e9da4242bc24
 FUNCTION apply_teacher_subscription_transition(p_subscription_id uuid, p_new_status text, p_actor_id uuid) returns=teacher_subscriptions lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=6c8f14adf7bb682f065d7431eea3acc5
 FUNCTION apply_transaction_transition(p_transaction_id uuid, p_new_status text, p_actor_id uuid, p_method text) returns=transactions lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=ea0b3aad61c049e7f1d6d24315dddd0f
-FUNCTION approve_student_rpc(p_student_id uuid, p_center_id uuid, p_group_ids uuid[], p_approved_by uuid) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=0928fd2e4cc00cae1895c883ee592131
+FUNCTION approve_student_rpc(p_student_id uuid, p_center_id uuid, p_group_ids uuid[], p_approved_by uuid) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=3e458ccde7c3f7861efb96fcb78dc8f9
 FUNCTION assert_caller_center_access(p_center_id uuid) returns=void lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=526f59558e976b6d6c1c44a214510d5a
 FUNCTION assign_center_code() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=662ed863e87116cc2b347e49b649061a
 FUNCTION assign_student_number() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=09876e8b64f8972be291f42ce5062d25
