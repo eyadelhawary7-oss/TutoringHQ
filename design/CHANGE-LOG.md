@@ -47,6 +47,7 @@ If a row ever names one, that row is a mistake.
 | [#229](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/229) | `03d523b1` | 2026-07-29 | `Teacher-Groups §01`, `§02`, `§03` (avatar chips, subtitle, request-detail fields, contact buttons) | `/{locale}/teacher/groups`, `/{locale}/teacher/groups/[groupId]` | v37 → **v38** |
 | [#231](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/231) | `8c021fbf` | 2026-07-29 | `Center-Orders §04` (**R8**, card teaser) | `/{locale}/orders` (disabled-gate branch only) | v38 → **v39** |
 | [#233](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/233) | `52b8bc2b` | 2026-07-29 | none — doc only (**D22** logged; R6 held) | none | v39 |
+| [#235](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/235) | `4b4a1e52` | 2026-07-30 | `Center-Groups §01` (segmented tabs, stat fix), `§04` (KPI reposition), `§05` (week strip) — partial, see F11 for what's left | `/{locale}/groups`, `/{locale}/schedule`, `/{locale}/branches`, plus `/api/parent/portal` (timezone bug, unrelated to the redesign) | v39 → **v40** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
