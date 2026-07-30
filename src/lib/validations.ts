@@ -132,8 +132,6 @@ export const studentInsertSchema = z.object({
   // Declared here only so z.object does not silently drop it before the route
   // can read it.
   guardian_consent_confirmed: z.boolean().optional(),
-  group_id: z.string().uuid().nullable().optional(),
-  notes: z.string().max(5000).optional().nullable(),
 }).transform((data) => {
   const { fee: _f, monthly_fee: _m, ...rest } = data as Record<string, unknown> & { fee?: unknown; monthly_fee?: unknown };
   return rest;

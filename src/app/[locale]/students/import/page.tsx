@@ -18,7 +18,7 @@ type ImportStep = 'upload' | 'map' | 'resolveGroups' | 'preview' | 'importing' |
 /** Merged-Center-Students §04 upload copy: "CSV or Excel, up to 500 rows". Live parsed any size until now. */
 const MAX_IMPORT_ROWS = 500;
 
-type ColumnMapValue = 'name' | 'phone' | 'parentPhone' | 'group' | 'notes' | 'skip';
+type ColumnMapValue = 'name' | 'phone' | 'parentPhone' | 'group' | 'skip';
 
 type CenterGroup = { id: string; name: string; subject: string | null };
 
@@ -35,7 +35,6 @@ type PreviewRow = {
   name: string;
   phone: string | null;
   parent_phone: string | null;
-  notes: string | null;
   groupLabel: string | null;
 };
 
@@ -94,7 +93,6 @@ export default function ImportStudentsPage() {
     if (mapping.studentName) result[mapping.studentName] = 'name';
     if (mapping.phone) result[mapping.phone] = 'phone';
     if (mapping.parentPhone) result[mapping.parentPhone] = 'parentPhone';
-    if (mapping.notes) result[mapping.notes] = 'notes';
     if (mapping.group) result[mapping.group] = 'group';
     return result;
   }, []);
@@ -145,8 +143,8 @@ export default function ImportStudentsPage() {
   const handleDragOver = (e: React.DragEvent) => e.preventDefault();
 
   const downloadTemplate = () => {
-    const headers = 'name,phone,parent_phone,group,notes\n';
-    const example = 'محمد أحمد,01012345678,01098765432,الرياضيات,\n';
+    const headers = 'name,phone,parent_phone,group\n';
+    const example = 'محمد أحمد,01012345678,01098765432,الرياضيات\n';
     const csv = '\uFEFF' + headers + example;
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -175,11 +173,6 @@ export default function ImportStudentsPage() {
     () => Object.keys(columnMap).find((k) => columnMap[k] === 'group'),
     [columnMap],
   );
-  const notesHeader = useMemo(
-    () => Object.keys(columnMap).find((k) => columnMap[k] === 'notes'),
-    [columnMap],
-  );
-
   const previewRows = useMemo((): PreviewRow[] => {
     if (!parsedData || !centerId || !nameHeader) return [];
     const rows: PreviewRow[] = [];
@@ -192,7 +185,6 @@ export default function ImportStudentsPage() {
         const raw = String(row[parentPhoneHeader] ?? '').trim();
         parent_phone = raw ? (normalizePhone(raw) || null) : null;
       }
-      const notes = notesHeader ? String(row[notesHeader] ?? '').trim() || null : null;
       let groupLabel: string | null = null;
       if (groupHeader) {
         const csvG = String(row[groupHeader] ?? '').trim();
@@ -206,10 +198,10 @@ export default function ImportStudentsPage() {
           }
         }
       }
-      rows.push({ name, phone, parent_phone, notes, groupLabel });
+      rows.push({ name, phone, parent_phone, groupLabel });
     }
     return rows;
-  }, [parsedData, centerId, nameHeader, phoneHeader, parentPhoneHeader, groupHeader, notesHeader, groupMapping, centerGroups, t]);
+  }, [parsedData, centerId, nameHeader, phoneHeader, parentPhoneHeader, groupHeader, groupMapping, centerGroups, t]);
 
   /**
    * Rows the import will DROP, and why.
@@ -253,29 +245,25 @@ export default function ImportStudentsPage() {
         const raw = String(row[parentPhoneHeader] ?? '').trim();
         parent_phone = raw ? (normalizePhone(raw) || null) : null;
       }
-      let notes: string | null = null;
-      if (notesHeader) {
-        const n = String(row[notesHeader] ?? '').trim();
-        notes = n ? n.slice(0, 5000) : null;
-      }
       const csvG = groupHeader ? String(row[groupHeader] ?? '').trim() : '';
       const groupUuid = csvG ? groupMapping[csvG] ?? null : null;
       const subject =
         groupUuid ? (centerGroups.find((x) => x.id === groupUuid)?.subject?.trim() || null) : null;
+      // group_id is NOT a students column (group membership is a separate
+      // student_group_members insert below); groupUuid is only threaded
+      // through memberGroupIds for that insert, never onto this row.
       inserts.push({
         center_id: centerId,
         name,
         phone,
         parent_phone,
-        group_id: groupUuid,
-        notes,
         subject,
         payment_status: 'unpaid',
       });
       memberGroupIds.push(groupUuid);
     }
     return { inserts, memberGroupIds };
-  }, [parsedData, centerId, nameHeader, phoneHeader, parentPhoneHeader, groupHeader, notesHeader, groupMapping, centerGroups]);
+  }, [parsedData, centerId, nameHeader, phoneHeader, parentPhoneHeader, groupHeader, groupMapping, centerGroups]);
 
   const hasNameMapping = Object.values(columnMap).includes('name');
 
@@ -338,7 +326,7 @@ export default function ImportStudentsPage() {
         const { data: inserted, error: insertError } = await dbInsert({
           table: 'students',
           data: batch,
-          select: 'id, student_number, name, phone, parent_phone, group_id, notes, is_active, created_at',
+          select: 'id, student_number, name, phone, parent_phone, is_active, created_at',
         });
         if (insertError) throw insertError;
         const insertedList = (inserted || []) as { id: string }[];
@@ -460,7 +448,6 @@ export default function ImportStudentsPage() {
                           <option value="phone">{t('mapToPhone')}</option>
                           <option value="parentPhone">{t('mapToParentPhone')}</option>
                           <option value="group">{t('mapToGroup')}</option>
-                          <option value="notes">{t('mapToNotes')}</option>
                           <option value="skip">{t('skipColumn')}</option>
                         </select>
                       </th>
@@ -613,7 +600,6 @@ export default function ImportStudentsPage() {
                     <th className="text-start px-3 py-2 font-medium text-[var(--color-text-secondary)]">{tCommon('phone')}</th>
                     <th className="text-start px-3 py-2 font-medium text-[var(--color-text-secondary)]">{t('parentPhone')}</th>
                     <th className="text-start px-3 py-2 font-medium text-[var(--color-text-secondary)]">{t('mapToGroup')}</th>
-                    <th className="text-start px-3 py-2 font-medium text-[var(--color-text-secondary)]">{t('mapToNotes')}</th>
                     <th className="text-start px-3 py-2 font-medium text-[var(--color-text-secondary)]">{t('studentNumber')}</th>
                   </tr>
                 </thead>
@@ -624,7 +610,6 @@ export default function ImportStudentsPage() {
                       <td className="px-3 py-2 font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">{s.phone || ''}</td>
                       <td className="px-3 py-2 font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">{s.parent_phone || ''}</td>
                       <td className="px-3 py-2 text-xs text-[var(--color-text-secondary)]">{s.groupLabel ?? ''}</td>
-                      <td className="px-3 py-2 text-xs text-[var(--color-text-secondary)] max-w-[8rem] truncate" title={s.notes ?? ''}>{s.notes || ''}</td>
                       <td className="px-3 py-2 text-xs text-[var(--color-text-secondary)]">{t('studentNumberPending')}</td>
                     </tr>
                   ))}
