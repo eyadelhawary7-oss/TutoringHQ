@@ -232,12 +232,20 @@ Everyone joining before 16 August waits until 16 August to start their 14 days; 
 - **Touches:** account state (read only).
 - **Blocked by:** READY.
 
-## R10 · `/students/import` sends a `notes` field the `students` table has no column for — every import with a mapped Notes column fails at insert
-- **What:** `src/app/[locale]/students/import/page.tsx`'s `importPayloadAndMembers` unconditionally includes a `notes` key (real value or `null`) on every row it posts to `dbInsert({table: 'students', ...})`. `students` has **no `notes` column** — confirmed live via `information_schema.columns` (the only `notes` column anywhere in the schema is on `pending_enrollments`, a different table). `studentInsertSchema` in `src/lib/validations.ts:136` explicitly declares `notes` as a valid field and passes it straight through its `.transform()` (which only strips `fee`/`monthly_fee`), so nothing upstream of the database catches this — the row reaches `supabaseAdmin.from('students').insert(...)` in `src/app/api/db/route.ts:497` carrying a key with no matching column.
-- **Why it matters:** PostgREST rejects an insert referencing an unknown column outright (`PGRST204: Could not find the 'notes' column of 'students' in the schema cache`) — it does not silently drop it. Because the `notes` key is present on every row regardless of value, this is not a conditional edge case: **every batch of every import fails at the insert step**, whether or not any row actually has notes content. Found while investigating the cron fix below, not exercised in the live 4-student dataset (no import has been run against it since the last schema change removed/never-added this column).
-- **Build:** stop sending `notes` on the students insert — drop the field from `importPayloadAndMembers`'s row objects (and from `studentInsertSchema`'s pass-through, since nothing valid can use it). If import notes are wanted as real data, they need a real destination (no `student_notes`-style table exists either, confirmed live) — that's a separate, bigger decision; the immediate fix is just to stop constructing an insert that cannot succeed.
-- **Touches:** none (bug fix, no design judgment — matches CLAUDE.md's own "confirm it physically exists in the live schema before adding it to a query" rule, applied backwards: this is a column that stopped existing, or never did, out from under a live write path).
+## R10 · `/students/import` sends `notes` AND `group_id` — neither is a real column on `students` — every import fails at insert, unconditionally
+- **What:** `src/app/[locale]/students/import/page.tsx`'s `importPayloadAndMembers` unconditionally includes a `notes` key (real value or `null`) and a `group_id` key (a real group UUID, or `null`) on every row it posts to `dbInsert({table: 'students', ...})`. **Neither column exists on `students`** — confirmed live via `information_schema.columns` (the live table has `waitlist_group_id`, not `group_id`; the only `notes` column anywhere in the schema is on `pending_enrollments`, a different table). `studentInsertSchema` in `src/lib/validations.ts:136` explicitly declares `notes` as a valid field and passes it straight through its `.transform()` (which only strips `fee`/`monthly_fee`), and `group_id` isn't stripped either — nothing upstream of the database catches either one, so the row reaches `supabaseAdmin.from('students').insert(...)` in `src/app/api/db/route.ts:497` carrying two keys with no matching column.
+- **Independently corroborated twice more, not just this one check.** The `D24` verification workflow below (two blind auditors + a reconciler, tasked with a completely different question) hit this same fact from a different angle while mapping every `students` insert site, and flagged both columns unprompted. Three independent passes, same conclusion — about as verified as a finding gets.
+- **Why it matters:** PostgREST rejects an insert referencing an unknown column outright (`PGRST204: Could not find the column in the schema cache`) — it does not silently drop it. Because both keys are present on every row regardless of value, this is not a conditional edge case: **every batch of every import fails at the insert step**, whether or not any row has notes content or a matched group. Found while investigating the cron fix below, not exercised in the live 4-student dataset — this project has no evidence anyone has run an import since whatever schema change removed/never-added these columns. The regular "Add Student" modal (`students/page.tsx:979`) is unaffected — its own insert payload never included either field.
+- **Also affected, same root cause:** `src/app/api/students/[id]/route.ts`'s general PATCH endpoint lists both `notes` and `group_id` in its allowed-fields set — either would 500 if a real caller ever sent it. That endpoint currently has zero confirmed UI callers (see D24), so this is latent rather than active, but it's the same dead-column mistake in a second file.
+- **Build:** stop sending `notes` and `group_id` on the students insert — drop both fields from `importPayloadAndMembers`'s row objects, and from the insert's own `.select('id, student_number, name, phone, parent_phone, group_id, notes, is_active, created_at')` string (a `.select()` naming a nonexistent column fails the same way an insert payload does, so trimming only the payload is not the whole fix). Also drop both from `studentInsertSchema`'s pass-through and the PATCH allow-list (nothing valid can use either there either). The actual group assignment already works correctly through a separate, already-existing `student_group_members` insert right after — it never depended on the `students.group_id` key, so removing that key loses nothing. If import notes are wanted as a real, working feature, a real destination already exists — **correction, found while building the D24 migration**: `student_notes` (`student_id, center_id, author_user_id, note, is_private, created_at`) is a real, live table, already used by `admin/privacy-requests/anonymize/route.ts`. An earlier version of this entry said no such table existed; that was wrong, not re-checked hard enough the first time. Routing import notes through `student_notes` instead of dropping them is a real, buildable option — still a separate decision (one note-per-row vs. a single field, who can see it), not folded into this bug fix.
+- **Touches:** none (bug fix, no design judgment — matches CLAUDE.md's own "confirm it physically exists in the live schema before adding it to a query" rule, applied backwards: these are columns that stopped existing, or never did, out from under two live write paths).
 - **Blocked by:** READY. Not built yet — found during tonight's cron work and flagged rather than folded into an unrelated PR; surfaced to Eyad directly.
+
+**Built and closed, 30 July 2026 — see PR #243.** Both fields dropped from the insert (payload and
+`.select()` string), `studentInsertSchema`, and the PATCH allow-list. The notes-mapping UI (dropdown
+option, preview column, CSV template column) was removed rather than left silently discarding
+whatever a user mapped to it — routing import notes through `student_notes` instead stays a separate,
+not-yet-made decision.
 
 ---
 
@@ -420,7 +428,95 @@ Everyone joining before 16 August waits until 16 August to start their 14 days; 
 - **Touches:** account state (changes which students are visible where).
 - **Blocked by:** Eyad's call on the two meanings of `is_active=false`.
 
-**Built and closed, 30 July 2026.** Before proposing, this was verified two auditors deep and turned out to be four live meanings, not two — full writeup and the definitive answer on why `pending_enrollments` alone can't disambiguate them are in the fuller addendum landing via PR #241. Eyad approved the proposed shape; `students.inactive_reason text` (nullable, `CHECK`'d to `pending_signup | rejected | paused | anonymized`) is applied to production (migration `20260730110000_students_inactive_reason.sql`), and the four real write sites are stamped — including the actual bug fix, `pending/[id]/reject` now also marking the student row instead of leaving it forever indistinguishable from a genuine pause. `'paused'` is a valid value with **no writer** — no pause feature was built, and none should be inferred from the constraint existing. See this PR's own commit message for the full list of write sites.
+### Addendum, 30 July 2026 — verified before proposing anything, and the premise was narrower than stated
+
+Asked to propose a schema fix so "paused" and "pending" are distinguishable on the roster row rather
+than both hidden. Before proposing, checked whether the existing `pending_enrollments` table already
+carries enough signal to tell them apart with a query-time join and no new column — the same
+discipline that caught the `admin_user_id` premise error earlier tonight, applied again. Two
+independent auditors plus a reconciler (blind to each other, then cross-checked against the live
+catalog directly, not against each other's summaries) ran this down. It is not two meanings. It is
+at least **four**, and one of the two named here may not be a live feature at all yet.
+
+**The four real meanings of `is_active=false`, all confirmed live:**
+
+| meaning | where it's set | confirmed by |
+|---|---|---|
+| pending signup, awaiting approval | `join/[center_code]/[group_id]/route.ts:166`, `join/pending-enrollment/route.ts:86` (INSERT) | both routes read directly |
+| rejected signup | *(nothing sets it — see below)* | `pending/[id]/reject/route.ts`, full 29-line file read |
+| staff-paused | `PATCH /api/students/[id]` (`is_active` in the allow-list) | file read, allow-list confirmed |
+| privacy-erased (GDPR/PDPL) | `admin/privacy-requests/anonymize/route.ts:99`, unconditional | full update block read |
+
+**The rejection path is the sharpest problem, and it is not hypothetical.** `pending/[id]/reject/route.ts`'s
+entire body is one statement: `UPDATE pending_enrollments SET status='rejected' ... ` — the string
+`students` does not appear in the file. Rejecting a request never touches the student row. The
+student stays `is_active=false` forever, with a `pending_enrollments` row that exists but now reads
+`'rejected'`. A query-time rule of "`pending_enrollments` row at `status='pending'` ⇒ still pending,
+else ⇒ paused" reads this student as **paused** — indistinguishable from a real staff pause — the
+instant the first reject button is ever clicked. Symmetrically, `approve_student_rpc`'s live body
+(read via `pg_get_functiondef`, not a migration file) sets `is_active=true` and **never touches
+`pending_enrollments` either** — so an approved student's enrollment row stays at `'pending'`
+forever too, meaning a student paused or erased *after* approval would misread as "still awaiting
+approval." Both directions are wrong, for the same reason: approval and rejection each mutate
+exactly one of the two tables and never the other, so the tables are not lifecycle-synchronized past
+the initial signup moment. `pending_enrollments_status_check` even allows `'approved'` as a value —
+nothing has ever written it.
+
+**"Staff-paused" itself has no confirmed live UI trigger today.** `PATCH /api/students/[id]` accepts
+`is_active` with no role gate (contrast the reject route's explicit `owner`/`admin` check) — but
+grepping every `/api/students/${...}` fetch call site in `src/` returns zero matches, and no test
+targets it either. The generic `/api/db` proxy is a second, equally live, equally unrestricted path
+(`students` has no `STUDENTS_PROTECTED_COLUMNS` entry, unlike `users`/`card_orders`/`centers`), also
+with zero confirmed callers setting `is_active` today. Both routes work if called. Neither is
+wired to a button anywhere in this codebase right now. So the premise that centres can *currently*
+pause a student is unconfirmed — the capability is live and reachable, not exercised.
+
+**Every staff "add student" path already defaults to `is_active=true` and stays there** — the roster
+modal, onboarding, and CSV import (once R10 is fixed) all rely on the column default; none sets
+`false` explicitly. The two signup routes are the only inserts that ever set it `false`.
+
+**Live population, for completeness:** all four buckets are 0 today (4 total students, all
+`is_active=true`, 0 `pending_enrollments` rows of any status) — this project has too little usage
+history to have hit any of this yet. Zero live rows is not evidence the gap is safe; it is evidence
+this has never been exercised, and the very first reject click produces it.
+
+**Minimal proposed schema:**
+
+```sql
+ALTER TABLE students
+  ADD COLUMN inactive_reason text NULL DEFAULT NULL
+  CONSTRAINT students_inactive_reason_check
+    CHECK (inactive_reason IS NULL OR inactive_reason IN
+      ('pending_signup', 'rejected', 'paused', 'anonymized'));
+```
+
+One nullable `text` + `CHECK` column, matching the same convention `pending_enrollments.status`
+already uses rather than inventing a new enum type. `NULL` whenever `is_active=true`. No companion
+timestamp — `pending_enrollments.created_at` and `guardian_consent_confirmed_at` already cover the
+auditability angle, so a second date column would be scope beyond the verified gap.
+
+**Five write sites need the reason stamped alongside `is_active`, four of them one-line additions to
+statements that already run:**
+1. Both signup INSERTs — `inactive_reason: 'pending_signup'` next to the existing `is_active: false`.
+2. `approve_student_rpc` — `inactive_reason = NULL` added to the existing `UPDATE ... SET is_active = true`. This is the line that actually closes the gap: once approval clears the reason directly on `students`, the discriminator lives entirely on one table and stops depending on `pending_enrollments` staying in sync at all.
+3. The reject route — the one genuinely new write, since this route previously never touched `students`: looks up `student_id` from the `pending_enrollments` row it just updated, then sets that student's `inactive_reason = 'rejected'`.
+4. The anonymize route — `inactive_reason: 'anonymized'` added to the existing update.
+5. `'paused'` stays in the `CHECK` for completeness, with **no writer, on Eyad's explicit instruction**: "do NOT wire a button for it... If a pause feature is ever wanted it comes to me as a decision." Nothing calls this today, nothing is built to call it here. Read the constraint value as *the shape to use if that decision is ever made*, not as evidence the feature exists.
+
+**One adjacent, minimal-consequence recommendation, not scope creep:** add a `STUDENTS_PROTECTED_COLUMNS`
+entry to `src/lib/dbProxyProtectedColumns.ts` (the pattern already used for `users`/`card_orders`/`centers`)
+covering `is_active` and the new `inactive_reason`, so a future pause can only happen through a
+reviewed route rather than the currently-unrestricted `/api/db` proxy. Not done here — a recommendation, not part of this fix.
+
+With this, `pending_enrollments` keeps its existing job (group/consent metadata for the initial
+review) but stops being load-bearing for active/inactive semantics — that split becomes fully
+self-contained and correct on `students` alone.
+
+**Approved and built, 30 July 2026 — see PR #242.** Migration applied to production, confirmed live;
+`join/[center_code]/[group_id]`, `join/pending-enrollment`, `pending/[id]/reject` (the actual bug fix
+— it previously never touched the student row at all) and `admin/privacy-requests/anonymize` all
+stamp the reason now. `'paused'` has zero writers, exactly as instructed above — this is not a gap
+left for later, it is the deliberate final state unless a pause feature is separately decided on.
 
 ## D25 · `parent-balance-alerts` cron reads the dead `payment_status` column to decide who gets messaged, and a stale fee field to decide what the message says they owe
 - **What:** `src/app/api/cron/parent-balance-alerts/route.ts:63` filters candidates with `.eq('payment_status', 'unpaid')` — the same write-once-at-insert column D3 condemns. The quoted amount (lines 70, 97) reads `students.fee`, which `studentBalance.ts`'s own header documents as a "NULL-in-practice fallback for a group-less scan," not the authoritative price (`student_groups.fee_per_class` is).
