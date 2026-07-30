@@ -35,8 +35,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     'parent_phone',
     'lifecycle_status',
     'is_active',
-    'notes',
-    'group_id',
     'parent_pack_opted_in',
     'notify_on_scan',
     'notify_on_absence',
