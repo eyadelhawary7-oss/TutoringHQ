@@ -202,6 +202,32 @@ export default function BranchesPage() {
         <div className="mb-4 p-3 rounded-lg bg-[var(--color-danger-muted)] text-[var(--color-danger)] text-sm">{error}</div>
       )}
 
+      {consolidated && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+            <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
+              <TrendingUp size={16} />
+              {t('totalMrr')}
+            </div>
+            <p className="text-2xl font-bold text-[var(--color-text-primary)]">{formatNumber(consolidated.total_mrr, locale)} {tCommon('egp')}</p>
+          </div>
+          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+            <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
+              <Users size={16} />
+              {t('totalStudents')}
+            </div>
+            <p className="text-2xl font-bold text-[var(--color-text-primary)]">{formatNumber(consolidated.total_students, locale)}</p>
+          </div>
+          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+            <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
+              <DollarSign size={16} />
+              {t('totalOutstanding')}
+            </div>
+            <p className="text-2xl font-bold text-[var(--color-text-primary)]">{formatNumber(consolidated.total_outstanding, locale)} {tCommon('egp')}</p>
+          </div>
+        </div>
+      )}
+
       {isOwner && (
         <div className="mb-6 flex flex-wrap items-end gap-3">
           <div className="flex-1 min-w-[200px]">
@@ -289,32 +315,6 @@ export default function BranchesPage() {
               rtl={locale === 'ar'}
             />
           </ChartCard>
-        </div>
-      )}
-
-      {consolidated && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
-            <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
-              <TrendingUp size={16} />
-              {t('totalMrr')}
-            </div>
-            <p className="text-2xl font-bold text-[var(--color-text-primary)]">{formatNumber(consolidated.total_mrr, locale)} {tCommon('egp')}</p>
-          </div>
-          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
-            <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
-              <Users size={16} />
-              {t('totalStudents')}
-            </div>
-            <p className="text-2xl font-bold text-[var(--color-text-primary)]">{formatNumber(consolidated.total_students, locale)}</p>
-          </div>
-          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
-            <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
-              <DollarSign size={16} />
-              {t('totalOutstanding')}
-            </div>
-            <p className="text-2xl font-bold text-[var(--color-text-primary)]">{formatNumber(consolidated.total_outstanding, locale)} {tCommon('egp')}</p>
-          </div>
         </div>
       )}
     </div>

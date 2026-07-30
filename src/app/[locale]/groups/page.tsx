@@ -234,7 +234,10 @@ export default function GroupsPage() {
   useEffect(() => { loadData(); }, []);
 
   useEffect(() => {
-    if (!detailGroup) setExpandedHeatmapId(null);
+    if (!detailGroup) {
+      setExpandedHeatmapId(null);
+      setActiveTab('members');
+    }
   }, [detailGroup]);
 
   // Per-session attendance breakdown for the open group (relocated here from the
@@ -760,12 +763,10 @@ export default function GroupsPage() {
                   </p>
                 </div>
               </div>
-              {detailGroup.max_capacity != null && detailGroup.max_capacity < 999 && (
-                <div className="flex gap-1 p-1 rounded-lg bg-[var(--color-surface-2)]/50">
-                  <button type="button" onClick={() => setActiveTab('members')} className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium ${activeTab === 'members' ? 'bg-[var(--color-surface-0)] shadow text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}>{t('members')}</button>
-                  <button type="button" onClick={() => setActiveTab('waitlist')} className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium ${activeTab === 'waitlist' ? 'bg-[var(--color-surface-0)] shadow text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}>{t('waitlist', { defaultValue: 'قائمة الانتظار' })} ({formatNumber(waitlist.length, locale)})</button>
-                </div>
-              )}
+              <div className="flex gap-1 p-1 rounded-lg bg-[var(--color-surface-2)]/50">
+                <button type="button" onClick={() => setActiveTab('members')} className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium ${activeTab === 'members' ? 'bg-[var(--color-surface-0)] shadow text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}>{t('members')}</button>
+                <button type="button" onClick={() => setActiveTab('waitlist')} className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium ${activeTab === 'waitlist' ? 'bg-[var(--color-surface-0)] shadow text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}>{t('waitlist', { defaultValue: 'قائمة الانتظار' })} ({formatNumber(waitlist.length, locale)})</button>
+              </div>
               <div className="border-t border-[var(--color-border)] pt-4">
                 <button
                   type="button"
@@ -799,6 +800,10 @@ export default function GroupsPage() {
                     const sessionsCount = sessionBreakdown.length;
                     const totalPresent = sessionBreakdown.reduce((s, b) => s + b.present, 0);
                     const avg = sessionsCount > 0 ? totalPresent / sessionsCount : 0;
+                    // Attendance Rate % is present as a share of ENROLLED students,
+                    // not of the average session's headcount - the previous
+                    // present/avg formula could read over 100% on an above-average day.
+                    const enrolledCount = detailGroup.student_count ?? detailGroup.member_count ?? 0;
                     return (
                       <>
                         <div className="grid grid-cols-2 gap-3 mb-3">
@@ -834,7 +839,9 @@ export default function GroupsPage() {
                                     {formatNumber(sb.present, locale)}
                                   </td>
                                   <td className="py-2 px-3 text-start">
-                                    {avg > 0 ? formatPercent(Math.round((sb.present / avg) * 100), locale) : tCommon('notSet')}
+                                    {enrolledCount > 0
+                                      ? formatPercent(Math.round((sb.present / enrolledCount) * 100), locale)
+                                      : tCommon('notSet')}
                                   </td>
                                 </tr>
                               ))}
@@ -847,7 +854,7 @@ export default function GroupsPage() {
                 )}
               </div>
               <div className="border-t border-[var(--color-border)] pt-4">
-                {detailGroup.max_capacity != null && detailGroup.max_capacity < 999 && activeTab === 'waitlist' ? (
+                {activeTab === 'waitlist' ? (
                   <>
                     <h3 className="font-bold text-[var(--color-text-primary)] mb-3">{t('waitlist', { defaultValue: 'قائمة الانتظار' })}</h3>
                     <div className="space-y-2 mb-4">
