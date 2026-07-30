@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { hashParentPortalToken } from '@/lib/parentPortalToken';
 import { getStudentBalance } from '@/lib/studentBalance';
+import { cairoDateKey, cairoYmdPlusDays } from '@/lib/cairo/day';
+import { cairoYmdToJsWeekday } from '@/lib/cairo/week';
 
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get('token');
@@ -106,11 +108,12 @@ export async function GET(request: NextRequest) {
     const groupMap = new Map((grps ?? []).map((g: { id: string; name: string }) => [g.id, g.name]));
 
     const DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-    const nowDate = new Date();
+    const todayCairoYmd = cairoDateKey();
     for (let i = 0; i < 7; i++) {
-      const d = new Date(nowDate);
-      d.setDate(d.getDate() + i);
-      const dow = d.getDay();
+      // Cairo-anchored, not a raw server clock: between Cairo midnight and UTC
+      // midnight, new Date().getDay() still reports yesterday's weekday, which
+      // mislabels "today" in the schedule preview for that window every day.
+      const dow = cairoYmdToJsWeekday(cairoYmdPlusDays(todayCairoYmd, i));
       for (const sl of slots ?? []) {
         const s = sl as { day_of_week: number; start_time: string; group_id: string };
         const slotDow = typeof s.day_of_week === 'string' ? parseInt(s.day_of_week, 10) : s.day_of_week;

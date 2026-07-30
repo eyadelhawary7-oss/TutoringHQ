@@ -317,6 +317,15 @@ Everyone joining before 16 August waits until 16 August to start their 14 days; 
 - **Touches:** money.
 - **Blocked by:** Eyad's decision on which table is canonical.
 
+## D23 · Adding a branch silently clones the parent's full plan price — there is no "extra branch" add-on
+- **What:** `Merged-Center-Groups` §04 draws "Extra branch · 199 EGP/mo · billed via Paymob" as a flat add-on charge.
+- **Found:** 30 July 2026, building `Merged-Center-Groups`.
+- **Evidence:** `POST /api/branches` clones the parent centre's entire `billing_amount`/`all_in_price` onto the new branch's own `centers` row — a full second subscription at the org's existing plan price, not a 199 EGP add-on. Grepped `199` and "branch add-on" across `src/lib/pricing*` and `docs/PRICING_SPEC.md` — zero hits anywhere; no such price exists in the model today.
+- **Why it matters:** if the design's copy shipped verbatim it would misstate what the centre is actually billed — today a second branch is free to add but silently doubles the org's billed plan cost, the opposite problem from what the design describes.
+- **Build:** decide the real model — a flat per-branch add-on fee (matching the design), a percentage, or intentionally free — before any "extra branch" pricing copy ships.
+- **Touches:** money.
+- **Blocked by:** Eyad's decision on the add-on model and price.
+
 ## D13 · Advanced Analytics / Benchmarks as paid add-ons
 - **Closed 26 July, parked.** Both stay as they are — Analytics keeps `canViewRevenue`, Benchmarks stays free. No purchase flow. Parked until AI features ship.
 - Kept here only so a designer reading `Merged-Center-Insight` §01/§02 does not re-open it.
@@ -681,6 +690,14 @@ Logged from the token layer (#209). None of it blocks a restyle; all of it makes
 - **Why it likely exists:** `transactions.teacher_net` / `snap_teacher_pct` (read by `/api/teacher/center-cuts` and `/api/teacher/center-attendance`, see D16) look built for exactly this percentage model, and neither the field that would drive it nor the RPC that would set it was ever wired to anything.
 - **Drop it:** Eyad's call, deliberately not done yet, same as F5 (`custom_permissions`).
 - **Blocked by:** nothing technical. Waiting on the decision to drop.
+
+## F11 · `Merged-Center-Groups` — dead controls and orphaned data, not fixed in the 30 July pass
+- **Found:** 30 July 2026, building `Merged-Center-Groups` §01/§03/§04. Logged rather than fixed — each needs either a UI decision (what should the control actually do) or is a bigger build than a display fix, out of scope for this pass.
+- **`handleDeleteGroup` in `groups/page.tsx` is fully implemented — audit-logged, deletes members, updates state — and has zero call sites.** A group cannot be deleted from this UI today. Needs a kebab/more-menu entry point and a confirm step, not just a wire-up.
+- **The room "More" (three-dot) button in `rooms/page.tsx` has no `onClick`** — present, inert. Needs real edit/delete actions built, not just a handler.
+- **`groups/page.tsx` fetches `teacher_name` per group (a real join) and never renders it anywhere** — dead query. Showing it (the design's "Mr. Sherif · center 30%" chip) also needs `center_cut_egp` added to the list query (only selected on create today) and computed as a percentage of `fee_per_class`, since it's stored as an absolute EGP amount, not a percent.
+- **`student_groups.capacity_cap` is a second, live, constrained column (`CHECK (>0)`) with zero references anywhere in `src/`** — same shape as F9's `teacher_split_pct`, a second dead field on the same table. Logged for the same "drop or document" decision.
+- **`student_groups.kind` ('center' vs 'private') is never selected or filtered on** in the centre-side Groups list query — outside-teacher-run groups are indistinguishable from centre-run ones in this view, compounding the missing teacher chip above.
 
 ---
 

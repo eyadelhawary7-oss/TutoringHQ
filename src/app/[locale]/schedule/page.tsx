@@ -12,7 +12,7 @@ import { Plus, Clock, X, AlertTriangle } from 'lucide-react';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { useToast } from '@/components/ui/ToastProvider';
 import { formatTime, formatNumber, formatPercent } from '@/lib/formatNumber';
-import { cairoDateKey, getCurrentCairoClock } from '@/lib/cairo/day';
+import { cairoDateKey, getCurrentCairoClock, parseCairoYmd } from '@/lib/cairo/day';
 import { cairoYmdToJsWeekday, getCairoWeekColumnOrder, getCairoWeekDays } from '@/lib/cairo/week';
 
 interface Room {
@@ -131,6 +131,17 @@ export default function SchedulePage() {
 
   const labelForWeekday = (wd: number) =>
     weekDays.find((w) => w.jsWeekday === wd)?.label ?? String(wd);
+
+  // The week strip's date-of-month, from the same weekDays already computed
+  // for the label above - not the day's position in the strip.
+  const dateOfMonthForWeekday = (wd: number) => {
+    const dayKey = weekDays.find((w) => w.jsWeekday === wd)?.dayKey;
+    return dayKey ? parseCairoYmd(dayKey).d : null;
+  };
+
+  // Egypt's weekend - Friday (5) and Saturday (6) - muted in the week strip
+  // when not the selected day.
+  const isWeekend = (wd: number) => wd === 5 || wd === 6;
 
   const displaySlots = useMemo(() => {
     if (!isTeacher || !userId) return slots;
@@ -492,7 +503,7 @@ export default function SchedulePage() {
         <>
           <div className="hidden md:block">
             <div className="flex gap-1 bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] rounded-xl p-1 mb-4 overflow-x-auto snap-x snap-mandatory scrollbar-thin">
-              {CAIRO_COL_ORDER.map((day, idx) => (
+              {CAIRO_COL_ORDER.map((day) => (
                 <button
                   key={day}
                   type="button"
@@ -504,11 +515,17 @@ export default function SchedulePage() {
                   className={`snap-start shrink-0 flex min-h-[44px] min-w-[44px] flex-1 flex-col items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold tabular-nums transition-colors ${
                     selectedDay === day
                       ? 'bg-teal-600 text-white ring-2 ring-teal-400/40'
-                      : 'bg-[var(--color-surface-0)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'
+                      : isWeekend(day)
+                        ? 'bg-[var(--color-surface-0)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]'
+                        : 'bg-[var(--color-surface-0)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'
                   }`}
                 >
                   <span className="text-[10px] font-medium opacity-80 leading-none">{t(SHORT_DAY_KEYS[day])}</span>
-                  <span className="text-sm leading-tight mt-0.5">{formatNumber(idx + 1, locale)}</span>
+                  <span className="text-sm leading-tight mt-0.5">
+                    {dateOfMonthForWeekday(day) != null
+                      ? formatNumber(dateOfMonthForWeekday(day) as number, locale)
+                      : ''}
+                  </span>
                 </button>
               ))}
             </div>
@@ -630,7 +647,7 @@ export default function SchedulePage() {
 
           <div className={`md:hidden ${isTeacher ? 'hidden' : 'block'}`}>
             <div className="-mx-1 mb-3 flex snap-x snap-mandatory gap-1.5 overflow-x-auto px-1 pb-2">
-              {CAIRO_COL_ORDER.map((day, idx) => (
+              {CAIRO_COL_ORDER.map((day) => (
                 <button
                   key={day}
                   type="button"
@@ -639,11 +656,17 @@ export default function SchedulePage() {
                   className={`snap-start flex min-h-[44px] min-w-[44px] shrink-0 flex-col items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold tabular-nums transition-colors ${
                     selectedDay === day
                       ? 'border-teal-600 bg-teal-600 text-white'
-                      : 'border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[var(--color-text-secondary)]'
+                      : isWeekend(day)
+                        ? 'border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[var(--color-text-muted)]'
+                        : 'border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[var(--color-text-secondary)]'
                   }`}
                 >
                   <span className="text-[10px] font-medium opacity-80 leading-none">{t(SHORT_DAY_KEYS[day])}</span>
-                  <span className="text-sm leading-tight mt-0.5">{formatNumber(idx + 1, locale)}</span>
+                  <span className="text-sm leading-tight mt-0.5">
+                    {dateOfMonthForWeekday(day) != null
+                      ? formatNumber(dateOfMonthForWeekday(day) as number, locale)
+                      : ''}
+                  </span>
                 </button>
               ))}
             </div>
