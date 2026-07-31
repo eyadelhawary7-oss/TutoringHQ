@@ -35,10 +35,10 @@ interface ScanResultScreenProps {
 const PAYMENT_METHODS: { key: string; value: string; icon: string; labelKey: string }[] = [
   { key: 'cash', value: 'cash', icon: '💵', labelKey: 'cash' },
   { key: 'instapay', value: 'instapay', icon: '📱', labelKey: 'instapay' },
-  { key: 'vodafone', value: 'vodafone_cash', icon: '🔴', labelKey: 'vodafone' },
+  { key: 'vodafone', value: 'vodacash', icon: '🔴', labelKey: 'vodafone' },
   { key: 'orange', value: 'orange', icon: '🟠', labelKey: 'orange' },
   { key: 'fawry', value: 'fawry', icon: '🟡', labelKey: 'fawry' },
-  { key: 'bank', value: 'bank_transfer', icon: '🏦', labelKey: 'bankTransfer' },
+  { key: 'bank', value: 'bank', icon: '🏦', labelKey: 'bankTransfer' },
 ];
 
 function vibrate(pattern: number | number[]) {
