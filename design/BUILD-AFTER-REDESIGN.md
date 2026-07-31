@@ -183,6 +183,10 @@ Everyone joining before 16 August waits until 16 August to start their 14 days; 
 - **Touches:** account state.
 - **Blocked by:** READY.
 
+**Built and closed, 29 July 2026 — see PR #221.** `src/app/[locale]/(admin)/admin/teacher-links/page.tsx`
+confirmed live (this entry never got a closing note when the PR merged — housekeeping fix, 31 July,
+found while checking this table's own staleness before starting the next file).
+
 ## R6 · Referral rate display, countdown and step-date detail
 > ⚠ **No longer READY — moved to D22 in §2, 29 July 2026.** Building this surfaced that
 > `/referrals`' entire data source (`referral_reward_records`) is never written by anything live —

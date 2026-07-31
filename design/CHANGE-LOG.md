@@ -56,7 +56,7 @@ If a row ever names one, that row is a mistake.
 | [#245](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/245) | `89159e8b` | 2026-07-30 | `Center-Home §01` (dashboard: alert row, Today KPIs, digital share, schedule), `§02` (notifications: unread-count fix) | `/{locale}/dashboard`, `/{locale}/notifications` | v41 |
 | [#247](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/247) | `dbf7ed5d` | 2026-07-31 | `Center-Home §01` — 3 small gaps from the fraction audit (attendance denominator, schedule tap affordance, day-name subtitle) | `/{locale}/dashboard` | v41 |
 | [#248](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/248) | `81db40be` | 2026-07-31 | `Center-Groups §01` (teacher name, center's cut, member balance badges, delete), `§03` Rooms (edit/delete), `§05` Schedule (week nav, day-pill dots, named conflicts) | `/{locale}/groups`, `/{locale}/rooms`, `/{locale}/schedule` | v41 |
-| [#249](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/249) | `(on merge)` | 2026-07-31 | `Center-Students §01` (roster row balance), `§02` (student detail payment badge) | `/{locale}/students`, `/students/[id]` | v41 |
+| [#249](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/249) | `1299c867` | 2026-07-31 | `Center-Students §01` (roster row balance), `§02` (student detail payment badge) | `/{locale}/students`, `/students/[id]` | v41 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
