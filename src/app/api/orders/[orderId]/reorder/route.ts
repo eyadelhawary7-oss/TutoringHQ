@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCenterAuth } from '@/lib/centerAuth';
+import { requirePermission } from '@/lib/centerPermissions';
+import { cardOrdersDisabledResponse } from '@/lib/card-order-cart/cardOrdersGate';
 import { ensureOpenCartId, setCartActor, getCardOrderMinimumQty, buildCartPayload } from '@/lib/card-order-cart/server';
 import { CARD_ORDER_REORDER_BLOCK_STATUSES } from '@/lib/card-order-cart/cardOrderStatuses';
 import { studentIdsFromOrderStudents } from '@/lib/card-order-cart/studentIdsFromOrder';
@@ -9,6 +11,12 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest, ctx: { params: Promise<{ orderId: string }> }) {
   const auth = await requireCenterAuth(request);
   if (!auth.ok) return auth.response;
+  // Card ordering is opt-in per center (off by default) — same defense-in-depth gate
+  // checkout/route.ts and create-payment-key/route.ts already apply.
+  const disabled = await cardOrdersDisabledResponse(auth.supabaseAdmin, auth.centerId);
+  if (disabled) return disabled;
+  const permErr = requirePermission(auth, 'can_place_card_orders');
+  if (permErr) return permErr;
 
   const { orderId } = await ctx.params;
   const id = typeof orderId === 'string' ? orderId.trim() : '';

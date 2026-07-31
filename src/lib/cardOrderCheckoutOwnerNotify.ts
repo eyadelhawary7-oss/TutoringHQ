@@ -53,7 +53,7 @@ export async function notifyCheckoutSuccessOwnerOnce(
 
   const qty = Math.round(Number(row.quantity ?? 0));
   const total = Number(row.total_amount ?? 0);
-  const shortId = String(orderId).replace(/-/g, '').slice(0, 8).toUpperCase();
+  const shortId = String(orderId).replace(/-/g, '').slice(-8).toUpperCase();
 
   const lines = [
     `✅ TutoringHQ, تم تأكيد دفع طلب البطاقات`,

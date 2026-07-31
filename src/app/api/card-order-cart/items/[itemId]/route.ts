@@ -101,6 +101,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ itemId: string }> }) {
   const auth = await requireCenterAuth(request);
   if (!auth.ok) return auth.response;
+  const disabled = await cardOrdersDisabledResponse(auth.supabaseAdmin, auth.centerId);
+  if (disabled) return disabled;
 
   const { itemId } = await params;
   if (!itemId) return NextResponse.json({ error: 'Missing item id' }, { status: 400 });

@@ -12,6 +12,7 @@ import {
   getShippingFee,
   getShippingZone,
 } from '@/lib/bostaShipping';
+import { cardOrderProductInclusiveFromQty } from '@/lib/pricing/taxMath';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { CardOrderCartHeader } from '@/components/orders/CardOrderCartHeader';
 import { CardOrderCartContents } from '@/components/orders/CardOrderCartContents';
@@ -50,6 +51,8 @@ interface CardOrderRow {
   notes?: string | null;
   created_at: string;
 }
+
+const CARD_UNIT_INCLUSIVE_EGP = cardOrderProductInclusiveFromQty(1);
 
 function parseStudentLines(studentsJson: unknown): string[] {
   if (!Array.isArray(studentsJson) || studentsJson.length === 0) return [];
@@ -351,9 +354,9 @@ export default function OrdersPageClient({
             <p className="text-xs text-[var(--color-text-tertiary)]">
               {t('shippingEstimateExample', {
                 qty: 1,
-                cardTotal: formatCurrency(62, locale),
+                cardTotal: formatCurrency(CARD_UNIT_INCLUSIVE_EGP, locale),
                 ship: formatCurrency(estimateFee, locale),
-                total: formatCurrency(62 + estimateFee, locale),
+                total: formatCurrency(CARD_UNIT_INCLUSIVE_EGP + estimateFee, locale),
               })}
             </p>
           </div>
@@ -437,7 +440,7 @@ export default function OrdersPageClient({
                 const shortId = order.id.replace(/-/g, '').slice(-8).toUpperCase();
                 const expanded = expandedId === order.id;
                 const lines = parseStudentLines(order.students);
-                const pricePer = order.price_per_card ?? 62;
+                const pricePer = order.price_per_card ?? CARD_UNIT_INCLUSIVE_EGP;
                 const deliveryFee = Number(order.delivery_fee ?? 0);
                 const subtotal = Math.round(order.quantity * pricePer * 100) / 100;
                 const zoneLabel =
