@@ -3,14 +3,24 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 
-const FAQ_KEYS = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8'] as const;
-type FaqKey = (typeof FAQ_KEYS)[number];
+const DEFAULT_FAQ_KEYS = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8'] as const;
 
-export function LandingFAQ() {
-  const t = useTranslations('landing.faq');
-  const [open, setOpen] = useState<Set<FaqKey>>(new Set());
+type FaqTranslator = ReturnType<typeof useTranslations>;
 
-  function toggle(key: FaqKey) {
+interface LandingFAQProps {
+  /** Already-bound translator — the caller binds it with a literal
+   * `useTranslations('...')` (e.g. `landing.faq` on `/center`,
+   * `teacherLanding.faq` on `/teacher/landing`) so `scripts/check-i18n.ts`
+   * can still statically resolve every t() call from the call site. */
+  t: FaqTranslator;
+  /** `q{n}` keys to render, each needing `.question` and `.answer`. Default q1..q8. */
+  keys?: readonly string[];
+}
+
+export function LandingFAQ({ t, keys = DEFAULT_FAQ_KEYS }: LandingFAQProps) {
+  const [open, setOpen] = useState<Set<string>>(new Set());
+
+  function toggle(key: string) {
     setOpen((prev) => {
       const next = new Set(prev);
       if (next.has(key)) {
@@ -35,7 +45,7 @@ export function LandingFAQ() {
         </div>
 
         <div className="flex flex-col gap-3">
-          {FAQ_KEYS.map((key) => {
+          {keys.map((key) => {
             const isOpen = open.has(key);
             const contentId = `faq-content-${key}`;
             return (

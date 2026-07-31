@@ -9,20 +9,17 @@ import { TrustSignals } from '@/components/landing/TrustSignals';
 import { Link } from '@/i18n/routing';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { PLANS, ORDERED_SUBSCRIPTION_PLAN_KEYS } from '@/lib/pricing';
-import {
-  getSupportWhatsAppDisplayLabel,
-  getSupportWhatsAppWaMeBase,
-} from '@/lib/supportWhatsApp';
+import { getSupportWhatsAppWaMeBase } from '@/lib/supportWhatsApp';
 import { Menu, X } from 'lucide-react';
 import PricingBannerClient from '@/components/landing/PricingBannerClient';
 import PromoPopup from '@/components/landing/PromoPopup';
+import MarketingFooter from '@/components/landing/MarketingFooter';
 import SummerRibbon from '@/components/summer/SummerRibbon';
 import SummerPopup from '@/components/summer/SummerPopup';
 import { usePublicPlanPrices } from '@/hooks/usePublicPlanPrices';
 import { SITE } from '@/config/site';
 
 const WA_SUPPORT = getSupportWhatsAppWaMeBase();
-const WA_SUPPORT_LABEL = getSupportWhatsAppDisplayLabel();
 
 
 /**
@@ -34,7 +31,8 @@ export default function HomePageClient() {
   const t = useTranslations('landing');
   const m = useTranslations('landing.marketing');
   const tPricingTile = useTranslations('pricing.tile');
-  const footerT = useTranslations('footer');
+  const tCompare = useTranslations('landing.compare');
+  const tFaq = useTranslations('landing.faq');
   const locale = useLocale();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -334,7 +332,7 @@ export default function HomePageClient() {
         </div>
       </section>
 
-      <ComparisonTable />
+      <ComparisonTable t={tCompare} />
 
       <section
         id="features"
@@ -464,7 +462,7 @@ export default function HomePageClient() {
         </div>
       </section>
 
-      <LandingFAQ />
+      <LandingFAQ t={tFaq} />
 
       <TrustSignals />
 
@@ -517,27 +515,7 @@ export default function HomePageClient() {
         </div>
       </section>
 
-      <footer className="border-t border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-10 md:px-6">
-        <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 text-center text-sm text-[var(--color-text-secondary)]">
-          <p>{m('footerTagline')}</p>
-          <p className="text-xs">{footerT('ehgProduct')}</p>
-          {WA_SUPPORT ? (
-            <a
-              href={WA_SUPPORT}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] btn-press chq-focus rounded-lg px-2 py-1"
-            >
-              {WA_SUPPORT_LABEL
-                ? `${m('footerSupportLabel')}: ${WA_SUPPORT_LABEL}`
-                : m('footerSupportLabel')}
-            </a>
-          ) : (
-            <p className="text-[var(--color-text-muted)]">{m('footerSupportLabel')}</p>
-          )}
-          <p className="text-xs text-[var(--color-text-muted)]">{m('footerRights')}</p>
-        </div>
-      </footer>
+      <MarketingFooter createAccountHref="/signup" />
     </main>
   );
 }

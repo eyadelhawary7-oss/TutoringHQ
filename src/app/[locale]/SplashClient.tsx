@@ -14,10 +14,10 @@ import {
 } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { formatNumber, formatPercent } from '@/lib/formatNumber';
-import { SITE } from '@/config/site';
 import SummerRibbon from '@/components/summer/SummerRibbon';
 import SummerPopup from '@/components/summer/SummerPopup';
 import StartFreeChooser from '@/components/landing/StartFreeChooser';
+import MarketingFooter from '@/components/landing/MarketingFooter';
 
 const FRAUNCES = 'var(--font-fraunces), Georgia, serif';
 
@@ -52,7 +52,6 @@ export default function SplashClient() {
   const recentScans = t.raw('preview.rows') as Array<{ name: string; group: string; time: string }>;
   const faqItems = t.raw('faq.items') as Array<{ q: string; a: string }>;
   const steps = t.raw('how.steps') as Array<{ title: string; body: string }>;
-  const supportTel = `+${SITE.supportWhatsAppIntl}`;
 
   return (
     <main
@@ -258,7 +257,7 @@ export default function SplashClient() {
       </section>
 
       {/* How it works — three steps */}
-      <section ref={howItWorksRef} className="mx-auto w-full max-w-5xl scroll-mt-6 px-5 py-12 md:px-6">
+      <section id="how-it-works" ref={howItWorksRef} className="mx-auto w-full max-w-5xl scroll-mt-6 px-5 py-12 md:px-6">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--color-brass)' }}>
             {t('how.eyebrow')}
@@ -329,8 +328,8 @@ export default function SplashClient() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="mx-auto w-full max-w-5xl px-5 py-10 md:px-6">
+      {/* Footer CTA repeat */}
+      <div className="mx-auto w-full max-w-5xl px-5 pt-10 md:px-6">
         <div className="flex flex-col items-center gap-4 text-center">
           <button
             type="button"
@@ -341,27 +340,9 @@ export default function SplashClient() {
             {t('hero.startFree')}
           </button>
         </div>
-        <div className="mt-8 flex flex-col items-center gap-3 border-t border-[var(--color-border)] pt-6 text-center text-xs text-[var(--color-text-muted)]">
-          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2" aria-label={t('footerNavAria')}>
-            <Link href="/legal/privacy" className="transition-colors hover:text-[var(--color-text-primary)]">
-              {t('privacy')}
-            </Link>
-            <Link href="/legal/terms" className="transition-colors hover:text-[var(--color-text-primary)]">
-              {t('terms')}
-            </Link>
-            <Link href="/legal/cookie" className="transition-colors hover:text-[var(--color-text-primary)]">
-              {t('cookies')}
-            </Link>
-          </nav>
-          <p>
-            {t('contact')}{' '}
-            <a href={`tel:${supportTel}`} dir="ltr" className="font-semibold text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]">
-              {SITE.supportWhatsAppDisplay}
-            </a>
-          </p>
-          <p>{t('rights')}</p>
-        </div>
-      </footer>
+      </div>
+
+      <MarketingFooter onCreateAccountClick={openChooser} />
 
       <StartFreeChooser open={chooserOpen} onClose={closeChooser} />
     </main>
