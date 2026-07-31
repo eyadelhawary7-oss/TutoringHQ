@@ -93,6 +93,8 @@ If a row ever names one, that row is a mistake.
 | [#284](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/284) | `9f53375` | 2026-07-31 | `Center-Attendance` — `paidVia` i18n fix, stale-balance-display leak across consecutive scans fixed, `formatCurrency` convention fix | `/{locale}/attendance` (`ScanResultScreen.tsx`, `ScanTab.tsx`) | v42 |
 | [#285](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/285) | `569584a` | 2026-07-31 | none — doc only (#283 self-row, #284 logged, Center-Attendance surveyed) | none | v42 |
 | [#286](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/286) | `99d3f93` | 2026-07-31 | `Public-Marketing` — shared `MarketingFooter` (`/`, `/center`, `/teacher/landing`, `/pricing`), teacher-landing comparison table + FAQ, `/pricing` CTA pair, 299→499 EGP price fix | `/{locale}`, `/center`, `/teacher/landing`, `/pricing` | v42 |
+| [#287](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/287) | `7ed6bdf` | 2026-07-31 | none — doc only (#285 self-row, #286 logged, Public-Marketing surveyed, D29/D30/F25 added) | none | v42 |
+| [#288](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/288) | `4aad72d` | 2026-07-31 | `CEO` — F21 teacher-tier price fallback now sources `TEACHER_PLANS`, dead `legacyPayload` removed from `/api/ceo/dashboard` (7 unused Supabase queries/30s poll) | `/{locale}/ceo`, `/api/ceo/dashboard` | v42 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
