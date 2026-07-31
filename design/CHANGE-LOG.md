@@ -69,6 +69,7 @@ If a row ever names one, that row is a mistake.
 | [#259](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/259) | `658f53a1` | 2026-07-31 | `Teacher-Insight §01` (2 missing roadmap cards added), referral-attribution bug fixed; D14 corrected | `/{locale}/teacher/analytics`, `/{locale}/teacher/landing` | v41 |
 | [#260](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/260) | `bb2000c1` | 2026-07-31 | none — doc only (#259's SHA fill) | none | v41 |
 | [#261](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/261) | _pending_ | 2026-07-31 | none — doc only (Teacher-WhatsApp survey: D6 corrected/expanded, nothing safely buildable) | none | v41 |
+| [#262](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/262) | `bd5593aa` | 2026-07-31 | `Admin-Platform §02` — TOP BY REVENUE centre rows now carry a real per-centre active-student count | `/{locale}/admin/analytics`, `/api/admin/overview` | v41 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -1152,3 +1153,57 @@ teachers as-is.
 Full detail — including the live `wa_meta_templates` approval-status query and the `deduct_blast_credits`
 zero-callers grep — is folded into an expanded **D6** in `BUILD-AFTER-REDESIGN.md`, since every finding
 here bears directly on what building this screen would require, rather than split into separate F-items.
+
+**Admin-Platform re-verification (31 July 2026)** — asked to confirm PR #224's fraction against the
+merged file, not memory, before accepting a "done" file at face value. Read `Merged-Admin-Platform.html`
+fresh across all 6 sections against a full re-read of the live code, plus independent
+`information_schema`/`platform_config` queries against production, then reconciled by hand against
+#224's own recorded numbers rather than trusting them on sight.
+
+**Result: #224 holds up on 5 of 6 sections, and one real, already-flagged gap was still open.**
+§01, §03, §04, §05, §06 re-confirmed unchanged at exactly the fractions #224 recorded — every schema
+claim underneath them (`promo_codes`, `platform_config`, `privacy_requests`, `vendors`,
+`wa_meta_templates` column sets) re-checked live and matched. §02 was the one section #224 had marked
+short in its own omitted table ("per-account student counts — needs a per-centre roll-up this endpoint
+does not compute") without building it. Confirmed the gap was real — `src/app/api/admin/overview/route.ts`
+hardcoded `students: null` on both `centreAccounts` and `teacherAccounts` — and built it.
+
+| § | before (#224, 30 Jul) | after (confirmed 31 Jul) | what moved |
+|---|---|---|---|
+| §01 Admin Overview | 0.85/1 | 0.85/1, unchanged | re-confirmed live, no new gaps |
+| §02 Admin Analytics | 0.8/1 | **0.85/1** | TOP BY REVENUE centre rows now carry a real per-centre active-student count |
+| §03 Admin Platform | 0.65/1 | 0.65/1, unchanged | FEATURES/SYSTEM omissions re-confirmed — no `referrals`/`attendance_scanner`/`app_version`/`force_update` key exists in live `platform_config` |
+| §04 Admin WhatsApp Pack | 0.5/1 | 0.5/1, unchanged | overview frame still blocked on **D5** (credit-model pricing decision), re-confirmed, not re-attempted |
+| §05 Admin Promo Codes | 0.7/1 | 0.7/1, unchanged | `promo_codes` column set re-confirmed exactly as #224 recorded |
+| §06 Admin Privacy Requests | 0.75/1 | 0.75/1, unchanged | `privacy_requests` re-confirmed to carry no centre/account link to join against |
+| **Overall** | **4.55/6** | **4.6/6** | entirely §02's effect |
+
+**§02 built, narrowly.** `fetchCenterStudentCounts` (`src/lib/adminCustomerSplit.ts`) queries active
+student counts scoped to only the 5 ranked centre IDs actually rendered in TOP BY REVENUE — not a full
+centres scan — wired into `/api/admin/overview` and rendered in `AnalyticsGrowthHeader.tsx` as
+`'<plan> · N students'` for centre rows, leaving `'Teacher · <plan>'` unchanged for the one teacher row,
+matching the design's own centre/teacher asymmetry exactly. Kept deliberately narrow given what it sits
+next to: MRR ranking logic, a money-adjacent surface this pass had no reason to touch beyond the one
+missing field. Added `admin.platformAnalytics.studentsCount` to both `messages/en.json` and
+`messages/ar.json`; `npx tsx scripts/check-i18n.ts` confirmed parity after the add.
+
+**Every other omission in #224's table re-confirmed live, not re-asserted from memory:**
+
+| omitted | why (re-confirmed) |
+|---|---|
+| §01 Unverified filter chip | **V1** — Valify identity verification is not live, still nothing to filter on |
+| §01 `/admin/teachers` frame | **R7-CLOSED** — built 28 July, closed unmerged on Eyad's explicit call; re-building it would contradict that decision, not fill a gap |
+| §02 "Platform fees" line | `invoices.metadata.processing_fee` is still a jsonb key with no column or aggregate anywhere — confirmed live, only 2 of the dataset's rows even carry it; summing it invents a "platform fees" definition, a pricing call not a restyle |
+| §03 INTEGRATIONS + PAYMOB DETAIL | still no integrations/vendor-health table; `vendors` is confirmed card-printing suppliers only (`name`, `whatsapp_number`, `pickup_address`, `city`, `is_active`), `/admin/health` shows Paymob/WhatsApp mode only, no success rate or merchant ID — rendering Valify "Connected" would fabricate a state that isn't live |
+| §03 Referrals, Attendance scanner, App version, Force update | re-queried `platform_config` directly — no such keys exist, same conclusion as #224 |
+| §03 Card orders (global) | still per-centre (`centers.card_orders_enabled`), not a platform switch |
+| §04 overview frame (credit liability, cost/margin per category) | blocked on **D5** — the design's one-time-top-up credit model is a different charge shape than the live per-parent monthly pack; building the overview means pricing something first, not restyling |
+| §04 per-template On/Off, funding grouping | `wa_meta_templates` still has no `enabled` column and no funding-source column; grouping by real Meta category, confirmed still correct |
+| §05 Fixed EGP / Free month / applies-to / Scheduled | `promo_codes` columns re-confirmed live (`id`, `code`, `discount_pct`, `max_uses_total`, `uses_count`, `expires_at`, `is_active`, `created_at`, `created_by`) — still no target-type, discount-kind, or start-date columns |
+| §06 request-detail "WILL BE DELETED" counts | `privacy_requests` still carries only free-text requester fields, no link to count against |
+
+**Verification, not trust, on every line above:** `mcp__Supabase__execute_sql` against
+`information_schema.columns` for `promo_codes`/`platform_config`/`privacy_requests`/`vendors`/
+`wa_meta_templates`/`whatsapp_usage`/`centers`, plus a direct `select key,value from platform_config`
+for the §03 FEATURES/SYSTEM claims. `npx eslint` on the three touched files came back clean; full unit,
+E2E-smoke, i18n, bidi and build gates green on the PR. Squash-merged as `bd5593aa`.
