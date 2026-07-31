@@ -179,12 +179,18 @@ Everyone joining before 16 August waits until 16 August to start their 14 days; 
   actually measure that per-file adoption until now. Three independent read-only sweeps (every candidate
   file opened and read, none trusted from documentation) found real adoption is low, uneven across the six
   primitives, and in three cases zero:
-  - **`EmptyState`:** 7 real adopters / 73 candidate files ≈ **9.6%**. A second, different,
+  - **`EmptyState`:** 7 real adopters / 73 candidate files ≈ **9.6%** at audit time. A second, different,
     non-conforming component also named `EmptyState` (`src/components/empty-states/EmptyState.tsx`,
-    predates #220, never migrated) accounts for 4 more files that look like adoption but aren't — a naming
-    collision, not a partial adoption. The remaining 62 are fully ad hoc. This also explains #220's own
-    "11 adopters" claim: 7 real + 4 wrong-component = 11, the same number — the original count almost
-    certainly grepped the bare name without checking which component was actually imported.
+    predates #220, never migrated) accounted for 4 more files that looked like adoption but weren't — a
+    naming collision, not a partial adoption. This also explains #220's own "11 adopters" claim: 7 real +
+    4 wrong-component = 11, the same number — the original count almost certainly grepped the bare name
+    without checking which component was actually imported. **Updated 31 July 2026 (#292):** 3 of the 4
+    wrong-component files (`students`, `groups`, `schedule`) were migrated onto the canonical primitive; the
+    4th (`payments/page.tsx`) turned out to be a dead, unrendered import rather than a live wrong-component
+    instance, and is excluded rather than counted as either. Current state: **10 real adopters / 72
+    candidates ≈ 13.9%.** The remaining 62 are fully ad hoc. `payments/page.tsx`'s dead-import removal is
+    outstanding — it's a protected `Center-Money` file and needs an explicit go-ahead before even a
+    one-line deletion, so the old component can't be deleted yet.
   - **Loading states** (`ListSkeleton`/`RecordSkeleton`/`StillWorking`/`ActionSpinner`): 1 real adopter
     (`ListSkeleton`, one file) / 137 candidates ≈ **0.7%**. `RecordSkeleton`, `StillWorking`, and
     `ActionSpinner` have **zero adopters anywhere**, confirmed by grepping the exact identifiers. Every

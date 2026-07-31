@@ -6,6 +6,13 @@ per-file," and until now nothing had gone back to actually count how much of the
 `FILE-COMPLETION-TABLE.md` carried row 1 as "100% today: YES" on the strength of the primitives existing,
 not on any measurement of adoption. This document is that measurement.
 
+**Updated 31 July 2026 (#292).** 3 of the 4 `EmptyState` wrong-component files (`students/page.tsx`,
+`groups/page.tsx`, `schedule/page.tsx`) were migrated onto the canonical primitive — a direct,
+human-directed fix, not a proactive sweep of the other primitives. The 4th, `payments/page.tsx`, turned
+out on inspection to have a dead, unrendered import — not a live wrong-component instance — and is
+reclassified below accordingly. It is a protected `Center-Money` file, so even that one-line removal
+needs an explicit go-ahead before it's touched, same as the rest of this file.
+
 **Method.** Three independent read-only audits, one per primitive family, each opened and read every
 candidate file directly — no classification is based on a grep snippet alone, and none trusts
 `CHANGE-LOG.md`, `FILE-COMPLETION-TABLE.md`, or `PER-FILE-PROMPT.md`'s claims about what's already
@@ -30,7 +37,7 @@ flagged file when its own row comes up again.
 
 | Primitive | Real adopters | Denominator | Fraction |
 |---|---|---|---|
-| `EmptyState` (`shared/EmptyState.tsx`) | 7 files (9 call sites) | 73 | **9.6%** |
+| `EmptyState` (`shared/EmptyState.tsx`) | 10 files (12 call sites) | 72 | **13.9%** |
 | Loading states (`ListSkeleton`/`RecordSkeleton`/`StillWorking`/`ActionSpinner`) | 1 file (`ListSkeleton` only) | 137 | **0.7%** |
 | `ListRow` | 5 | 14 | **35.7%** |
 | `ActionSheet` | 0 | 3 | **0%** |
@@ -53,13 +60,13 @@ circle, i18n-key props (`titleKey`/`descriptionKey`) instead of literal strings,
 **Importing the second one is not a partial adoption of the primitive — it's a different component that
 happens to share a name.**
 
-**The historical "11 adopters" claim (#220's own changelog entry) is not reproducible today and was very
-likely wrong even at the time.** Total files importing *either* `EmptyState` today is exactly 11 — 7 real
-+ 4 wrong-component — the same number as the old claim. The strong read is that #220's count was produced
-by grepping the bare string `EmptyState` without checking which import path was used, silently counting
-the 4 wrong-component files as adopters of the new primitive.
+**The historical "11 adopters" claim (#220's own changelog entry) was not reproducible at the time of the
+original audit and was very likely wrong even then.** Total files importing *either* `EmptyState` before
+this pass was exactly 11 — 7 real + 4 wrong-component — the same number as the old claim. The strong read
+is that #220's count was produced by grepping the bare string `EmptyState` without checking which import
+path was used, silently counting the 4 wrong-component files as adopters of the new primitive.
 
-### Real adopters (7 files, 9 call sites)
+### Real adopters (10 files, 12 call sites, updated by #292)
 
 - `src/components/admin/AnalyticsGrowthHeader.tsx`
 - `src/app/[locale]/(admin)/admin/teacher-links/page.tsx` (3 usages — byCenter/byTeacher/unassigned tabs)
@@ -70,15 +77,19 @@ the 4 wrong-component files as adopters of the new primitive.
 - `src/app/[locale]/admin/referrals/page.tsx` — **mixed file:** its "top referrers" tab correctly uses
   `EmptyState`; its other three tabs (referrals list, pending payouts, commissions) are ad hoc (see below).
   Counted once in each bucket since it genuinely contains both.
+- `src/app/[locale]/students/page.tsx` (Center-Students §01/§03) — migrated 31 Jul, #292
+- `src/app/[locale]/groups/page.tsx` (Center-Groups §01/§02) — migrated 31 Jul, #292
+- `src/app/[locale]/schedule/page.tsx` (Center-Groups §05) — migrated 31 Jul, #292
 
-### Wrong-component (4 files — import `empty-states/EmptyState`, not the real primitive)
+### Wrong-component (0 files remaining)
 
-| File | Merged-file mapping |
-|---|---|
-| `src/app/[locale]/students/page.tsx` | Center-Students §01/§03 |
-| `src/app/[locale]/groups/page.tsx` | Center-Groups §01/§02 |
-| `src/app/[locale]/schedule/page.tsx` | Center-Groups §05 |
-| `src/app/[locale]/payments/page.tsx` | Center-Money §01/§02 |
+All 4 originally-flagged files are resolved: 3 migrated (#292, above); the 4th,
+`src/app/[locale]/payments/page.tsx`, turned out on inspection to import `empty-states/EmptyState` without
+ever rendering it anywhere in the file — a dead import, not a live wrong-component instance. Moved to
+"excluded" below; it isn't a shared-component-hygiene gap in the sense this ledger tracks, since there is
+no empty-state UI being rendered by the wrong component at all. The import removal itself is still
+outstanding — `payments/page.tsx` is `Merged-Center-Money`, a protected file, so it needs an explicit
+go-ahead before even a one-line dead-code deletion, per this project's standing protected-file rule.
 
 ### Ad hoc (62 files — hand-rolled, no shared component at all)
 
@@ -132,7 +143,12 @@ separate i18n bug), `admin/referrals/page.tsx` (Admin-Accounts §04 — see "mix
 `FounderGrowthPanel.tsx` / `CenterHealthPanel.tsx` — unreachable dead code (`(admin)/ceo-dashboard/page.tsx`
 is a hard `redirect()`, per the CEO row's own finding); `charts/MultiLineChart.tsx` / `AreaChart.tsx` — a
 generic "not enough data points" message on a low-level chart primitive, not a page-level empty state;
-`charts/DonutChart.tsx` — renders a single `—` glyph by an explicit different convention.
+`charts/DonutChart.tsx` — renders a single `—` glyph by an explicit different convention;
+`src/app/[locale]/payments/page.tsx` (Center-Money §01/§02) — imports `empty-states/EmptyState` but never
+renders it anywhere in the file (confirmed by direct grep, 31 Jul, during #292's migration work) — a dead
+import, not a live wrong-component render. Reclassified out of the "wrong-component" bucket it originally
+sat in. **Protected file (`Center-Money`) — the import removal still needs an explicit go-ahead before
+anyone, including an automated pass, touches it, even for a one-line deletion.**
 
 ---
 
