@@ -95,6 +95,13 @@ export default function GroupsPage() {
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [memberBalances, setMemberBalances] = useState<Map<string, StudentBalance>>(new Map());
   const [openCardMenuId, setOpenCardMenuId] = useState<string | null>(null);
+  // Design (§01 New group form): a "+ New" chip inline in the subject picker,
+  // so a center doesn't have to abandon group creation to add a subject first.
+  // Live only offered a link out to Settings > Subjects when the list was
+  // empty - never a way to add one mid-flow with subjects already on file.
+  const NEW_SUBJECT_VALUE = '__new__';
+  const [newSubjectInlineName, setNewSubjectInlineName] = useState('');
+  const [isCreatingSubjectInline, setIsCreatingSubjectInline] = useState(false);
 
   const loadData = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -377,7 +384,7 @@ export default function GroupsPage() {
       toast.error(tToast('error'), t('groupNameRequired', { defaultValue: 'Group name is required' }));
       return;
     }
-    if (!addForm.subjectId) {
+    if (!addForm.subjectId || addForm.subjectId === NEW_SUBJECT_VALUE) {
       toast.error(tToast('error'), t('subjectRequired', { defaultValue: 'Subject is required' }));
       return;
     }
@@ -521,6 +528,34 @@ export default function GroupsPage() {
     }));
   };
 
+  // Design (§01 New group form): the subject picker's "+ New" chip, wired the
+  // same way settings/subjects/page.tsx already creates one (dbInsert + audit
+  // log) - not a new pattern, just reached from a second place.
+  const handleCreateSubjectInline = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newSubjectInlineName.trim();
+    if (!centerId || !userId || !name) return;
+    setIsCreatingSubjectInline(true);
+    try {
+      const { data, error } = await dbInsert({ table: 'subjects', data: { center_id: centerId, name }, single: true });
+      if (error) {
+        toast.error(tToast('error'), errorDetail(error));
+        return;
+      }
+      const inserted = Array.isArray(data) ? data[0] : data;
+      if (inserted?.id) {
+        await auditLog({ centerId, userId, action: 'subject_create', entityType: 'subjects', entityId: inserted.id, details: { name: inserted.name } });
+        setSubjects(prev => [...prev, { id: inserted.id, name: inserted.name }].sort((a, b) => a.name.localeCompare(b.name)));
+        setAddForm(prev => ({ ...prev, subjectId: inserted.id }));
+        setNewSubjectInlineName('');
+      }
+    } catch (err) {
+      toast.error(tToast('error'), errorDetail(err));
+    } finally {
+      setIsCreatingSubjectInline(false);
+    }
+  };
+
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen w-full bg-[var(--color-surface-0)] space-y-6 animate-fade-in">
       {/* Page header */}
@@ -557,7 +592,23 @@ export default function GroupsPage() {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {groups.map(g => (
+          {groups.map(g => {
+            // Design (Merged-Center-Groups §01) shows enrolment AGAINST capacity
+            // — "24/30" — not a bare headcount, because the question a center
+            // asks scanning this list is "which groups still have room".
+            // max_capacity is already selected in loadData; only the bare count
+            // was being rendered. Falls back to the plain count when no capacity
+            // is set. Shared here (header badge + the design's fill bar below)
+            // so both read the same numbers.
+            const enrolled = g.student_count ?? g.member_count ?? 0;
+            const cap = g.max_capacity;
+            // 999 is the sentinel this page already treats as "no real cap"
+            // (see the remove-member guard), so it is not a limit worth showing
+            // a student a ratio against.
+            const hasCap = cap != null && Number.isFinite(Number(cap)) && Number(cap) > 0 && Number(cap) < 999;
+            const full = hasCap && enrolled >= Number(cap);
+            const fillPct = hasCap ? Math.min(100, Math.round((enrolled / Number(cap)) * 100)) : null;
+            return (
             <div
               key={g.id}
               className="bg-[var(--color-panel)] rounded-md border border-[var(--color-line)] shadow-sm p-5 hover:shadow-md transition-shadow cursor-pointer group"
@@ -568,34 +619,17 @@ export default function GroupsPage() {
                   <BookOpen className="w-5 h-5 text-teal-600" />
                 </div>
                 <div className="flex items-center">
-                  {/* Design (Merged-Center-Groups §01) shows enrolment AGAINST
-                      capacity — "24/30" — not a bare headcount, because the
-                      question a center asks scanning this list is "which groups
-                      still have room". max_capacity is already selected in
-                      loadData; only the bare count was being rendered.
-                      Falls back to the plain count when no capacity is set. */}
-                  {(() => {
-                    const enrolled = g.student_count ?? g.member_count ?? 0;
-                    const cap = g.max_capacity;
-                    // 999 is the sentinel this page already treats as "no real
-                    // cap" (see the remove-member guard), so it is not a limit
-                    // worth showing a student a ratio against.
-                    const hasCap = cap != null && Number.isFinite(Number(cap)) && Number(cap) > 0 && Number(cap) < 999;
-                    const full = hasCap && enrolled >= Number(cap);
-                    return (
-                      <span
-                        className={`text-xs font-mono tabular-nums ${full ? 'font-semibold text-amber-600' : 'text-[var(--color-text-muted)]'}`}
-                        title={full ? t('groupFull') : t('studentCount')}
-                      >
-                        {hasCap
-                          ? t('enrolledOfCapacity', {
-                              count: formatNumber(enrolled, locale),
-                              capacity: formatNumber(Number(cap), locale),
-                            })
-                          : formatNumber(enrolled, locale)}
-                      </span>
-                    );
-                  })()}
+                  <span
+                    className={`text-xs font-mono tabular-nums ${full ? 'font-semibold text-amber-600' : 'text-[var(--color-text-muted)]'}`}
+                    title={full ? t('groupFull') : t('studentCount')}
+                  >
+                    {hasCap
+                      ? t('enrolledOfCapacity', {
+                          count: formatNumber(enrolled, locale),
+                          capacity: formatNumber(Number(cap), locale),
+                        })
+                      : formatNumber(enrolled, locale)}
+                  </span>
                   <button
                     type="button"
                     onClick={(e) => {
@@ -664,9 +698,20 @@ export default function GroupsPage() {
                 }
                 if (parts.length === 0) return null;
                 return (
-                  <p className="text-xs text-[var(--color-text-muted)] mb-3">{parts.join(' · ')}</p>
+                  <p className={`text-xs text-[var(--color-text-muted)] ${fillPct != null ? 'mb-2' : 'mb-3'}`}>{parts.join(' · ')}</p>
                 );
               })()}
+              {/* Design (§01): a capacity fill bar alongside the enrolled/cap
+                  ratio - the ratio text already rendered above, the bar itself
+                  did not. Only meaningful once a real capacity is set. */}
+              {fillPct != null && (
+                <div className="mb-3 h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-surface-2)]">
+                  <div
+                    className={`h-full rounded-full ${full ? 'bg-amber-500' : 'bg-teal-600'}`}
+                    style={{ width: `${fillPct}%` }}
+                  />
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-[var(--color-text-primary)] font-mono">
                   {g.fee_per_class != null ? formatCurrency(g.fee_per_class, locale) : tCommon('notSet')}
@@ -674,7 +719,8 @@ export default function GroupsPage() {
                 <span className="text-xs text-[var(--color-text-muted)]">{t('perLesson')}</span>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -703,7 +749,6 @@ export default function GroupsPage() {
                   onChange={e => setAddForm(prev => ({ ...prev, subjectId: e.target.value }))}
                   className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm text-[var(--color-text-primary)]"
                   required
-                  disabled={subjects.length === 0}
                 >
                   {subjects.length === 0 ? (
                     <option value="" disabled>{t('add.noSubjectsPlaceholder')}</option>
@@ -711,6 +756,7 @@ export default function GroupsPage() {
                     <option value="">{tCommon('select')}</option>
                   )}
                   {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  <option value={NEW_SUBJECT_VALUE} style={{ color: '#0e6b61' }}>{t('add.newSubjectOption', { defaultValue: '+ New subject' })}</option>
                 </select>
                 {subjects.length === 0 && (
                   <RouterLink
@@ -719,6 +765,27 @@ export default function GroupsPage() {
                   >
                     {t('add.createSubjectHelper')}
                   </RouterLink>
+                )}
+                {/* Design (§01 New group form): the "+ New" chip's inline reveal
+                    - a name field and an Add button, right where it was picked,
+                    instead of leaving the form to add a subject in Settings. */}
+                {addForm.subjectId === NEW_SUBJECT_VALUE && (
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      value={newSubjectInlineName}
+                      onChange={e => setNewSubjectInlineName(e.target.value)}
+                      placeholder={t('add.newSubjectPlaceholder', { defaultValue: 'Subject name' })}
+                      className="flex-1 px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm text-[var(--color-text-primary)]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCreateSubjectInline}
+                      disabled={isCreatingSubjectInline || !newSubjectInlineName.trim()}
+                      className="px-3 py-2 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50"
+                    >
+                      {tCommon('add', { defaultValue: 'Add' })}
+                    </button>
+                  </div>
                 )}
               </div>
               <div>
@@ -827,6 +894,26 @@ export default function GroupsPage() {
                     {detailGroup.center_cut_egp != null ? formatCurrency(detailGroup.center_cut_egp, locale) : tCommon('notSet')}
                   </p>
                 </div>
+                {/* Design (§01 Detail · Members): a headline "Avg attendance"
+                    stat beside Enrolled. sessionBreakdown (attendance_scans,
+                    already fetched below for the per-session table) is the same
+                    source - this was computed per-row there but never rolled up
+                    into one figure here. Null (not 0%) until a session exists,
+                    so an unstarted group doesn't read as "0% attendance". */}
+                {(() => {
+                  const enrolledCount = detailGroup.student_count ?? detailGroup.member_count ?? 0;
+                  if (sessionBreakdown.length === 0 || enrolledCount <= 0) return null;
+                  const totalPresent = sessionBreakdown.reduce((s, b) => s + b.present, 0);
+                  const avgPct = Math.round((totalPresent / sessionBreakdown.length / enrolledCount) * 100);
+                  return (
+                    <div>
+                      <p className="text-xs text-[var(--color-text-secondary)]">{tAtt('avgAttendance')}</p>
+                      <p className="font-semibold text-[var(--color-text-primary)] font-mono tabular-nums">
+                        {formatPercent(avgPct, locale)}
+                      </p>
+                    </div>
+                  );
+                })()}
               </div>
               <div className="flex gap-1 p-1 rounded-lg bg-[var(--color-surface-2)]/50">
                 <button type="button" onClick={() => setActiveTab('members')} className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium ${activeTab === 'members' ? 'bg-[var(--color-surface-0)] shadow text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}>{t('members')}</button>

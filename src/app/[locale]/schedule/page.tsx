@@ -484,6 +484,21 @@ export default function SchedulePage() {
       ? HEADER_ROW_H + (clampedNow / 60) * ROW_PX - 1
       : null;
 
+  // Design (§05, "By time"/"By room" day views): a "● Now" badge on the
+  // in-progress session and a dimmed "done" tag on ones that already ended -
+  // absent from the mobile day lists (only the desktop week grid had a "now"
+  // line). `onToday` scopes this to the real current day, same guard as
+  // showNowLine, so a navigated week's same weekday is never marked "now".
+  const sessionTimingState = (startTime: string, endTime: string, onToday: boolean): 'now' | 'done' | null => {
+    if (!onToday) return null;
+    const nowM = cairoHour * 60 + cairoMinute;
+    const startM = timeToMinutes(startTime);
+    const endM = timeToMinutes(endTime);
+    if (nowM >= endM) return 'done';
+    if (nowM >= startM && nowM < endM) return 'now';
+    return null;
+  };
+
   return (
     <div className="min-h-screen w-full bg-[var(--color-surface-0)] space-y-5 animate-fade-in">
       <PageHeader
@@ -825,8 +840,10 @@ export default function SchedulePage() {
                     </div>
                     {slots.length > 0 && (
                       <ul className="mt-2 space-y-1">
-                        {slots.map((s) => (
-                          <li key={s.id} className="flex flex-wrap items-baseline gap-x-2 text-xs">
+                        {slots.map((s) => {
+                          const timing = sessionTimingState(s.start_time, s.end_time, selectedDay === cairoTodayWd);
+                          return (
+                          <li key={s.id} className={`flex flex-wrap items-baseline gap-x-2 text-xs ${timing === 'done' ? 'opacity-60' : ''}`}>
                             <span className="font-mono text-teal-600" dir="ltr">
                               {formatTime(formatTimeForDisplay(s.start_time), locale)} –{' '}
                               {formatTime(formatTimeForDisplay(s.end_time), locale)}
@@ -834,6 +851,14 @@ export default function SchedulePage() {
                             <span className="text-[var(--color-text-primary)]">
                               {s.group_name || tCommon('notAvailable')}
                             </span>
+                            {timing === 'now' && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-semibold text-teal-700">
+                                ● {t('now')}
+                              </span>
+                            )}
+                            {timing === 'done' && (
+                              <span className="text-[var(--color-text-muted)]">· {t('sessionDone')}</span>
+                            )}
                             {getConflictingSlotIds.has(s.id) && (
                               <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 font-semibold text-amber-700">
                                 {conflictPartnerName.get(s.id)
@@ -842,7 +867,8 @@ export default function SchedulePage() {
                               </span>
                             )}
                           </li>
-                        ))}
+                          );
+                        })}
                       </ul>
                     )}
                   </div>
@@ -853,7 +879,9 @@ export default function SchedulePage() {
             ) : (
               displaySlots
                 .filter((s) => Number(s.day_of_week) === selectedDay)
-                .map((session) => (
+                .map((session) => {
+                  const timing = sessionTimingState(session.start_time, session.end_time, selectedDay === cairoTodayWd);
+                  return (
                   <div
                     key={session.id}
                     role="button"
@@ -866,19 +894,27 @@ export default function SchedulePage() {
                       }
                     }}
                     title={tAtt('captureTitle')}
-                    className="mb-2 cursor-pointer rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3 shadow-sm transition-colors hover:bg-[var(--color-surface-2)]"
+                    className={`mb-2 cursor-pointer rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3 shadow-sm transition-colors hover:bg-[var(--color-surface-2)] ${timing === 'done' ? 'opacity-60' : ''}`}
                   >
-                    <div className="font-mono text-sm text-teal-600">
-                      <span dir="ltr">
-                        {formatTime(formatTimeForDisplay(session.start_time), locale)} –{' '}
-                        {formatTime(formatTimeForDisplay(session.end_time), locale)}
-                      </span>
+                    <div className="flex items-center gap-2">
+                      <div className="font-mono text-sm text-teal-600">
+                        <span dir="ltr">
+                          {formatTime(formatTimeForDisplay(session.start_time), locale)} –{' '}
+                          {formatTime(formatTimeForDisplay(session.end_time), locale)}
+                        </span>
+                      </div>
+                      {timing === 'now' && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-semibold text-teal-700">
+                          ● {t('now')}
+                        </span>
+                      )}
                     </div>
                     <div className="mt-0.5 text-sm font-bold text-[var(--color-text-primary)]">
                       {session.group_name || tCommon('notAvailable')}
                     </div>
                     <div className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
                       {session.room_name || tCommon('notAvailable')} • {formatMemberCount(session.member_count ?? 0)}
+                      {timing === 'done' ? ` • ${t('sessionDone')}` : ''}
                     </div>
                     {canEdit && (
                       confirmDeleteId === session.id ? (
@@ -919,7 +955,8 @@ export default function SchedulePage() {
                       )
                     )}
                   </div>
-                ))
+                  );
+                })
             )}
           </div>
 
@@ -934,26 +971,37 @@ export default function SchedulePage() {
                   {todaySessions.length === 0 && (
                     <p className="mb-3 text-xs text-[var(--color-text-secondary)]">{t('noSessionsToday')}</p>
                   )}
-                  {todaySessions.map((session) => (
+                  {todaySessions.map((session) => {
+                    const timing = sessionTimingState(session.start_time, session.end_time, true);
+                    return (
                     <div
                       key={session.id}
-                      className="mb-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3 shadow-sm"
-                      dir="rtl"
+                      className={`mb-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3 shadow-sm ${timing === 'done' ? 'opacity-60' : ''}`}
+                      dir={isRtl ? 'rtl' : 'ltr'}
                     >
-                      <div className="font-mono text-sm text-teal-600">
-                        <span dir="ltr">
-                          {formatTime(formatTimeForDisplay(session.start_time), locale)} –{' '}
-                          {formatTime(formatTimeForDisplay(session.end_time), locale)}
-                        </span>
+                      <div className="flex items-center gap-2">
+                        <div className="font-mono text-sm text-teal-600">
+                          <span dir="ltr">
+                            {formatTime(formatTimeForDisplay(session.start_time), locale)} –{' '}
+                            {formatTime(formatTimeForDisplay(session.end_time), locale)}
+                          </span>
+                        </div>
+                        {timing === 'now' && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-semibold text-teal-700">
+                            ● {t('now')}
+                          </span>
+                        )}
                       </div>
                       <div className="mt-0.5 text-sm font-bold text-[var(--color-text-primary)]">
                         {session.group_name || tCommon('notAvailable')}
                       </div>
                       <div className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
                         {session.room_name || tCommon('notAvailable')} • {formatMemberCount(session.member_count ?? 0)}
+                        {timing === 'done' ? ` • ${t('sessionDone')}` : ''}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                   <hr className="my-3 border-[var(--color-border-subtle)]" />
                   <h3 className="mb-2 text-sm font-bold text-[var(--color-text-primary)]">{t('thisWeek')}</h3>
                   {thisWeekSessions.length === 0 && (
@@ -963,7 +1011,7 @@ export default function SchedulePage() {
                     <div
                       key={session.id}
                       className="mb-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3 shadow-sm"
-                      dir="rtl"
+                      dir={isRtl ? 'rtl' : 'ltr'}
                     >
                       <div className="font-mono text-sm text-teal-600">
                         <span dir="ltr">
