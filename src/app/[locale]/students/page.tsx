@@ -7,10 +7,9 @@ import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import QRCode from 'qrcode';
 import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye, Printer, ShoppingCart, Phone, Pencil, Inbox, CircleHelp } from 'lucide-react';
-import { KpiCard, SectionHeader } from '@/components/shared';
+import { EmptyState, KpiCard, SectionHeader } from '@/components/shared';
 import { QRCard } from '@/components/QRCard';
 import { PrintStatementModal } from '@/components/PrintStatementModal';
-import EmptyState from '@/components/empty-states/EmptyState';
 import { AtRiskPanel } from '@/components/students/AtRiskPanel';
 import { LifecycleBadge } from '@/components/students/LifecycleBadge';
 import { SwipeRow } from '@/components/students/SwipeRow';
@@ -191,6 +190,7 @@ function lifecycleStatusHelpKey(f: LifecycleFilter): StatusHelpKey {
 export default function StudentsPage() {
   const locale = useLocale();
   const ts = useTranslations('students');
+  const tEmpty = useTranslations('emptyStates');
   const tCart = useTranslations('cart');
   const router = useRouter();
   const tCommon = useTranslations('common');
@@ -1348,14 +1348,27 @@ export default function StudentsPage() {
             </div>
           ) : students.length === 0 ? (
             <EmptyState
-              icon={<Users />}
-              titleKey="students.title"
-              descriptionKey="students.description"
-              namespace="emptyStates"
-              actionLabel="students.action"
-              onAction={() => setShowAddModal(true)}
-              secondaryActionLabel="students.importAction"
-              onSecondaryAction={() => router.push('/students/import')}
+              icon={Users}
+              title={tEmpty('students.title')}
+              description={tEmpty('students.description')}
+              action={
+                <div className="flex flex-col items-stretch gap-3 w-full">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(true)}
+                    className="btn-lift shrink-0 flex items-center justify-center gap-1.5 px-4 py-3 min-h-[48px] w-full bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-xl transition-all duration-150 shadow-sm btn-press chq-focus"
+                  >
+                    {tEmpty('students.action')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => router.push('/students/import')}
+                    className="btn-lift flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[40px] w-full border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow"
+                  >
+                    {tEmpty('students.importAction')}
+                  </button>
+                </div>
+              }
             />
           ) : (
             <div

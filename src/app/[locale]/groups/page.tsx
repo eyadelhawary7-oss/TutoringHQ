@@ -8,7 +8,7 @@ import { useUser } from '@/contexts/UserContext';
 import { Link as RouterLink } from '@/i18n/routing';
 import { Plus, BookOpen, X, Users, Search, Link as LinkIcon, ClipboardList, MoreVertical } from 'lucide-react';
 import { AttendanceHeatmap } from '@/components/AttendanceHeatmap';
-import EmptyState from '@/components/empty-states/EmptyState';
+import { EmptyState } from '@/components/shared';
 import { useToast } from '@/components/ui/ToastProvider';
 import { formatCurrency, formatNumber, formatDate, formatPercent, formatTime } from '@/lib/formatNumber';
 import { getCairoWeekColumnOrder, getCairoWeekDays } from '@/lib/cairo/week';
@@ -49,6 +49,7 @@ interface Subject {
 
 export default function GroupsPage() {
   const t = useTranslations('groups');
+  const tEmpty = useTranslations('emptyStates');
   const tCommon = useTranslations('common');
   const tHeatmap = useTranslations('heatmap');
   const tAtt = useTranslations('attendance');
@@ -583,12 +584,18 @@ export default function GroupsPage() {
         </div>
       ) : groups.length === 0 ? (
         <EmptyState
-          icon={<BookOpen />}
-          titleKey="groups.title"
-          descriptionKey="groups.description"
-          namespace="emptyStates"
-          actionLabel="groups.action"
-          onAction={() => setShowAddModal(true)}
+          icon={BookOpen}
+          title={tEmpty('groups.title')}
+          description={tEmpty('groups.description')}
+          action={
+            <button
+              type="button"
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center justify-center gap-2 px-4 py-2 w-full bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
+            >
+              {tEmpty('groups.action')}
+            </button>
+          }
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
