@@ -7,9 +7,8 @@ import { Link } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbDelete, auditLog } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
-import { PageHeader } from '@/components/shared';
+import { EmptyState, PageHeader } from '@/components/shared';
 import { Plus, Clock, X, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
-import EmptyState from '@/components/empty-states/EmptyState';
 import { useToast } from '@/components/ui/ToastProvider';
 import { formatTime, formatNumber, formatPercent, formatDate } from '@/lib/formatNumber';
 import { cairoDateKey, getCurrentCairoClock, parseCairoYmd } from '@/lib/cairo/day';
@@ -82,6 +81,7 @@ function formatHour(h: number): string {
 
 export default function SchedulePage() {
   const t = useTranslations('schedule');
+  const tEmpty = useTranslations('emptyStates');
   const tCommon = useTranslations('common');
   const tToast = useTranslations('toasts');
   const tAtt = useTranslations('attendance');
@@ -555,12 +555,18 @@ export default function SchedulePage() {
         </div>
       ) : rooms.length === 0 ? (
         <EmptyState
-          icon={<Clock />}
-          titleKey="rooms.title"
-          descriptionKey="rooms.description"
-          namespace="emptyStates"
-          actionLabel="rooms.action"
-          onAction={() => router.push(`/${locale}/rooms`)}
+          icon={Clock}
+          title={tEmpty('rooms.title')}
+          description={tEmpty('rooms.description')}
+          action={
+            <button
+              type="button"
+              onClick={() => router.push(`/${locale}/rooms`)}
+              className="flex items-center justify-center gap-2 px-4 py-2 w-full bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
+            >
+              {tEmpty('rooms.action')}
+            </button>
+          }
         />
       ) : (
         <>
