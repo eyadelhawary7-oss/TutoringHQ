@@ -61,6 +61,7 @@ If a row ever names one, that row is a mistake.
 | [#251](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/251) | `1a673bb9` | 2026-07-31 | none — doc only (Center-WhatsApp survey: fraction, D4/D5 re-confirmed, S6 CSRF finding) | none | v41 |
 | [#252](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/252) | `abe2c683` | 2026-07-31 | `Center-Orders §01/§02` (4 confirmed bugs fixed), `Center-Insight` survey (S7, F18 logged) | `/{locale}/orders`, `/api/orders/[orderId]/reorder`, `/api/card-order-cart/items/[itemId]` | v41 |
 | [#253](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/253) | `3e95bf19` | 2026-07-31 | none — doc only (Center-Setup survey: F19 team-management outage, S8 billing CSRF, D8 amended) | none | v41 |
+| [#254](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/254) | `0ea2dce7` | 2026-07-31 | `Public-Marketing §04` (R1 built: `/talk-to-us`), 2 confirmed sign-up-CTA bugs fixed | `/{locale}/talk-to-us` (new), `/{locale}/center`, `/{locale}/pricing`, `/api/demo-request`, `/{locale}/admin/demo-requests` | v41 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -963,3 +964,45 @@ now reads from the same config.
 | §02 Public Audience | partial evidence | `/center` broadly parallels design's `/centers` in intent (hero, comparison table, pricing teaser, FAQ, footer) but several of its own sub-components (`ComparisonTable`, `LandingFAQ`, `TrustSignals`) weren't read in full this pass, so copy/figure-level fidelity isn't confirmed either way; `/teacher/landing` (design's `/teachers` counterpart) wasn't inspected at all — out of this pass's scope, flagged for a follow-up read rather than guessed at. One confirmed bug fixed here (above). |
 | §03 Public Pricing | strong match on the money, unconfirmed on add-ons | all six center-plan prices and all three teacher-plan prices match `plans.ts`/`teacherPlans.ts` exactly (999/1,999/4,499/7,999/12,999/18,499 and 499/999/2,499); the interactive capacity-chip card design draws is instead six simultaneous cards live, a presentation difference not a data one. Design's 6-item add-ons section (extra branch 299/mo, team seat 99/mo, etc.) wasn't confirmed present on the live page — not read closely enough this pass to call it a gap with confidence, flagged as unconfirmed rather than asserted missing. One confirmed bug fixed here (above). Also noted, not fixed: the Solo "999 EGP" price is hardcoded a second and third time outside `PLANS` (JSON-LD schema, FAQ prose) — a drift risk, not touched this pass given it's cosmetic/SEO metadata rather than a charged figure. |
 | §04 Lead Capture | built, per R1 above | see the R1 entry for exactly what shipped and what didn't. |
+
+**Center-Attendance (31 July 2026) — surveyed, one confirmed bug fixed, four more found and deliberately
+left unfixed. The most severe money-integrity findings of this whole project so far are here.** Row 16,
+tagged **V6 — blocked wholesale** on identity verification (Valify/V1). Re-confirmed independently on
+both the design and the live-code side — design draws the "Verified" badge unconditionally in every
+frame with no unverified state anywhere; live code has zero verification-aware branches at all — still
+blocked exactly as V6 says, nothing new there. But surveying the live scanner surfaced something far
+more urgent than the Valify gate: **two of the six payment methods on the core scan-to-bill screen used
+by every center every day silently fail to record a payment (F20).**
+
+- **Fixed:** Vodafone Cash and Bank Transfer sent `'vodafone_cash'`/`'bank_transfer'`, which match neither
+  the live `payments_method_check` constraint nor the app's own Zod schema (both already agree on
+  `'vodacash'`/`'bank'`). The write silently failed — no error surfaced, attendance still marked present,
+  a "pending payment" WhatsApp still sent, the queue item marked synced — while the `payments` row was
+  simply never created and the student's real balance stayed outstanding. Changed the two method values
+  to match the schema exactly; this also fixed a second bug in the same file where the last-payment-method
+  label lookup used the identical wrong strings.
+- **Found, deliberately not fixed — coordinated, not sequential, fixes needed:**
+  - The main payment-insert path doesn't check its own error return (unlike every sibling `dbInsert` call
+    in the same function) — but fixing that in isolation would convert a "payment silently missing" bug
+    into a "payment retries forever, re-charging the student every cycle" bug, because there is no way to
+    dedupe a retried attendance scan. That second failure mode is not hypothetical: it is **already live**
+    for "Allow late entry," whose `payments` write uses a `method` value (`'late_entry'`) that was never
+    added to the schema, retries every ~30 seconds forever, and re-inserts a fully-charged attendance row
+    on every retry — a real, present-tense balance-inflation bug for any center that leaves a late-entry
+    tab open.
+  - Fee-exempt admissions write `payment_status_at_scan: 'admitted'` — real, load-bearing application
+    vocabulary (`EXEMPT_SCAN_STATUS` in `studentBalance.ts`, with its own exclusion logic), not a typo —
+    against a live constraint that only allows `paid`/`unpaid`. The insert should fail outright, meaning
+    an exempt student may not be marked present at all.
+  - Even the four payment methods that pass validation lose most of their intended data: Zod strips every
+    field the validator doesn't declare, so `group_id`, `paid_at`, `recorded_by`, `status`, and `confirmed`
+    all silently fall back to column defaults instead of the real values `sync.ts` sends.
+  - `payments` inserts on this path have no role/permission gate at all — any authenticated center user,
+    regardless of permissions, can record one — a gap `/api/payments/collect` was already built to close
+    for a different page, just never extended to this one.
+- **Why none of the last four were attempted:** each needs either a schema/enum decision (late-entry's
+  method value, the exempt status) or a coordinated security-plus-validation fix (the permission gate and
+  the Zod-stripping compound each other) — all real money or auth decisions, flagged per the standing
+  stop condition rather than guessed at under the pressure of "it looks like a two-line fix."
+- **Full detail, including exact file:line citations and the live-catalog queries that confirmed each
+  claim, is in `BUILD-AFTER-REDESIGN.md`'s F20.**
