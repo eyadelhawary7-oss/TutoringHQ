@@ -30,6 +30,7 @@ type StudentBilling = {
     groupId: string | null;
     groupName: string | null;
     status: string | null;
+    method: string | null;
   }[];
 };
 
@@ -66,6 +67,17 @@ function intlDigits(raw: string | null): string | null {
   if (d.startsWith('0')) return `20${d.slice(1)}`;
   return `20${d}`;
 }
+
+/** Manual collection method -> its existing teacherPortal.markPaid.* label key
+ *  (same mapping IncomeView uses for the method breakdown). Design's §02
+ *  "Paid · Cash" / "Paid · InstaPay" row caption reuses these rather than
+ *  inventing a second set of method labels. */
+const METHOD_LABEL_KEY: Record<string, string> = {
+  cash: 'markPaid.cash',
+  instapay: 'markPaid.instapay',
+  vodafone_cash: 'markPaid.vodafoneCash',
+  other: 'markPaid.other',
+};
 
 /**
  * All students across the teacher's private groups (PRIVATE zone). Self-fetches
@@ -527,32 +539,45 @@ export default function AllStudentsList() {
             </h3>
             {openBilling && openBilling.transactions.length > 0 ? (
               <ul className="flex flex-col gap-1.5">
-                {openBilling.transactions.map((txn) => (
-                  <li
-                    key={txn.id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-border)] px-3 py-2"
-                  >
-                    <div className="min-w-0">
-                      <p className="num text-sm font-semibold text-[var(--color-text-primary)]">
-                        {formatCurrency(txn.amount, locale)}
-                      </p>
-                      <p className="text-xs text-[var(--color-text-muted)]">
-                        {formatDate(txn.date, locale)}
-                        {txn.groupName ? <span className="ms-1.5">{txn.groupName}</span> : null}
-                      </p>
-                    </div>
-                    <span
-                      className={[
-                        'rounded-full px-2.5 py-0.5 text-xs font-semibold',
-                        txn.status === 'paid'
-                          ? 'bg-[var(--color-teal-soft)] text-[var(--color-teal-deep)]'
-                          : 'bg-[var(--color-warning)]/15 text-[var(--color-warning)]',
-                      ].join(' ')}
+                {openBilling.transactions.map((txn) => {
+                  const methodLabelKey = txn.method ? METHOD_LABEL_KEY[txn.method] : undefined;
+                  const methodLabel = methodLabelKey ? tPortal(methodLabelKey) : null;
+                  return (
+                    <li
+                      key={txn.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-border)] px-3 py-2"
                     >
-                      {txn.status === 'paid' ? t('statusPaid') : t('statusPendingBill')}
-                    </span>
-                  </li>
-                ))}
+                      <div className="min-w-0">
+                        <p className="num text-sm font-semibold text-[var(--color-text-primary)]">
+                          {formatCurrency(txn.amount, locale)}
+                        </p>
+                        <p className="text-xs text-[var(--color-text-muted)]">
+                          {formatDate(txn.date, locale)}
+                          {txn.groupName ? <span className="ms-1.5">{txn.groupName}</span> : null}
+                        </p>
+                        {/* Design's §02 row caption - "Not collected yet" for a
+                            pending charge, "Paid · <method>" once collected. */}
+                        <p className="text-xs text-[var(--color-text-muted)]">
+                          {txn.status === 'paid'
+                            ? methodLabel
+                              ? tList('paidVia', { method: methodLabel })
+                              : t('statusPaid')
+                            : tList('notCollectedYet')}
+                        </p>
+                      </div>
+                      <span
+                        className={[
+                          'rounded-full px-2.5 py-0.5 text-xs font-semibold',
+                          txn.status === 'paid'
+                            ? 'bg-[var(--color-teal-soft)] text-[var(--color-teal-deep)]'
+                            : 'bg-[var(--color-warning)]/15 text-[var(--color-warning)]',
+                        ].join(' ')}
+                      >
+                        {txn.status === 'paid' ? t('statusPaid') : t('statusPendingBill')}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <p className="text-sm text-[var(--color-text-secondary)]">{tList('noTransactions')}</p>

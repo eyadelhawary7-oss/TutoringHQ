@@ -8943,7 +8943,9 @@
       "pendingClassesCount": "{count} classes not yet collected",
       "attendanceLabel": "Attendance",
       "attendanceFraction": "{present} of {total} present",
-      "pendingClassesCountOne": "{count} class not yet collected"
+      "pendingClassesCountOne": "{count} class not yet collected",
+      "paidVia": "Paid · {method}",
+      "notCollectedYet": "Not collected yet"
     },
     "lockedIncome": {
       "heading": "Your income dashboard",

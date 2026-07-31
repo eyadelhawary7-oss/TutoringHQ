@@ -8943,7 +8943,9 @@
       "pendingClassesCount": "{count} حصة لم تُحصّل بعد",
       "attendanceLabel": "الحضور",
       "attendanceFraction": "{present} من {total} حاضر",
-      "pendingClassesCountOne": "{count} حصة واحدة لم تُحصّل بعد"
+      "pendingClassesCountOne": "{count} حصة واحدة لم تُحصّل بعد",
+      "paidVia": "مدفوع · {method}",
+      "notCollectedYet": "لم تُحصّل بعد"
     },
     "lockedIncome": {
       "heading": "لوحة دخلك",
