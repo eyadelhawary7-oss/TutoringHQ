@@ -306,10 +306,60 @@ resolve — this entry describes a bug that was already fixed before it was logg
 - **Re-confirmed, 31 July 2026 (Center-WhatsApp survey), with the exact live numbers.** Subscription side: `PACK_PRICE_PER_PARENT = 12` EGP/parent/month (`src/lib/parentPack.ts:8`). Blast side: `BLAST_PRICE_PER_PARENT_INCLUSIVE = 9.8` EGP/parent per announcement, capped at 2/month (hardcoded independently in three places), gated by a plan-tiered monthly allowance (`ANNOUNCEMENT_CAPS`, nano 700 through top_centers 99999). None of it maps to the design's per-message credit tiers (200 msgs/200 EGP, 1,000/750, 5,000/2,500, custom by volume) or its "never expires, carries over" balance framing. §03 (Custom Flow) is the same model's custom-amount extension and is confirmed absent from live code by exhaustive grep — building it first would mean building the custom-amount UI for a pricing model (§02) that doesn't exist yet. Also found, independent of this decision: the announcement route's own stored audit breakdown (`base_amount` 6.72 × `service_fee` 6% × `vat` 14% ≈ 8.10) does not sum to the 9.8 actually charged — a pre-existing internal inconsistency in the current model, worth a look whenever D5 is decided either way.
 
 ## D6 · Teacher WhatsApp screen and message allowance
-- **What:** Balance, what used it, the template list.
+- **What:** Balance, what used it, the template list, and a 3-tier pack purchase (200/1,000/5,000
+  messages).
+- **Surveyed for the first time, 31 July 2026.** Route coverage is genuinely 0/1 — no `/teacher/whatsapp`
+  page exists — but the design's own lede claims teachers "already get bundled credit" and "buy the
+  same packs at the same rate" as centers. Checked each claim live rather than assume it's all unbuilt.
+- **The credit balance is real and live, not a display gap — it's just never spent.**
+  `teacher_profiles.blast_credits_subscription` / `blast_credits_purchased` both exist in production
+  (confirmed via `information_schema.columns`), default 0, granted 100/month to `teacher_pro`/
+  `teacher_scale` by RPC `upgrade_teacher_to_pro`, reset monthly by a real cron
+  (`/api/cron/reset-teacher-blast-credits`). It is marketed today, in-product, on the plan comparison
+  table (`rowWhatsappCredit` → "100 EGP WhatsApp credit monthly", shown as available on Pro/Scale). But
+  the spend side, RPC `deduct_blast_credits`, has **zero callers anywhere in `src/`** — confirmed by
+  grep across the whole app. So the number can only ever go up (monthly reset) and never down, no
+  matter how many WhatsApp messages a teacher's account actually triggers, and there is nowhere in the
+  teacher portal that even shows this balance to the teacher who's supposedly earning it (it only
+  surfaces in the CEO admin view, `ceoTeachers.ts`). A marketed monetary benefit that structurally
+  cannot deplete is a product-integrity gap, not a missing screen — flagging alongside the schema
+  finding rather than as a separate item, since building the design's Balance screen on top of this
+  as-is would mean displaying a number that is already known to be permanently disconnected from real
+  usage.
+- **None of the 5 templates the design draws are actually delivering to a teacher's parents today,**
+  each for a different, independently-verified reason (checked `wa_meta_templates` live, not assumed):
+  - **Welcome** — doesn't exist for teachers at all. `chq_parent_welcome` is hard-keyed to `center_id`
+    in `studentParentPackWelcome.ts`; a teacher's center-less private students can never reach it.
+  - **Fee reminder** — the code path is real and live (`/api/cron/fee-reminders` already covers
+    teacher-billed private lessons via `transactions.teacher_id`), but `chq_fee_reminder`'s live
+    `wa_meta_templates` row is `status = 'PENDING'`, not `APPROVED`. `sendTemplateMessage()` gates on
+    `isTemplateApproved()` before every send, so this currently no-ops for centers and teachers alike —
+    a platform-wide state, not a teacher-specific gap, worth knowing before any other file's fee-reminder
+    claims are taken at face value.
+  - **Session changed** — `teacherScheduleNotifications.ts` sends `chq_schedule_changed`, plus
+    `chq_class_cancelled`/`chq_class_rescheduled`/`chq_class_reminder`, all real code — but **none of
+    the four have a `wa_meta_templates` row at all**, not even a pending one. They were never submitted
+    to Meta, one step earlier than the fee-reminder gap above.
+  - **Payment link / Receipt ("sent by us, we pay")** — this pair doesn't exist **for anyone**, center
+    or teacher. Grepped every `chq_*` template name in the codebase (54 total): the closest matches are
+    `chq_payment_confirmed`/`chq_payment_failed` (both `APPROVED` live), which confirm a **center's own
+    subscription payment** to TutoringHQ, not a parent-facing "your session was paid, here's the
+    receipt" message. The specific parent-facing payment-link-then-receipt pair the design assumes is
+    industry-standard here is unbuilt platform-wide.
+- **The pack/purchase side is unbuilt, confirmed, not just for teachers.** The only prepaid-tier
+  purchase concept in the codebase is `whatsapp-pack` (`/api/whatsapp-pack/*`), and it's center-only
+  (`requireCenterAuth`) — and it isn't even the same shape as the design's fixed 200/1,000/5,000 tiers;
+  it's an invoiced rolling balance with monthly minimums (`parentPack.ts`'s `PLAN_INVOICE_MINIMUMS`).
+  There is no fixed-tier prepaid pack anywhere to extend to teachers, for either audience.
+- **Structure coverage: 0/1**, correctly matching the table — nothing here is a display fix. Building
+  this screen means deciding, together: whether `deduct_blast_credits` gets wired to real sends (and
+  which sends count against it), whether teachers get the center's rolling-invoice pack model or a new
+  fixed-tier one, and separately, submitting the 4 unsubmitted templates and chasing the pending one
+  through Meta review (external, Meta's timeline, not a code blocker).
 - **Drawn in:** `Merged-Teacher-WhatsApp` §01.
 - **Touches:** money.
-- **Blocked by:** D5, plus the allowance decision itself.
+- **Blocked by:** D5, the allowance/spend-wiring decision, the pack-model decision, and Meta template
+  approval (external) for the messaging half.
 
 ## D7 · Card-order notify-me — a write with no destination
 - **The decision:** where does a notify-me registration go?
