@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { Search, X } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { PageHeader } from '@/components/shared';
 import {
@@ -11,6 +12,12 @@ import {
 } from '@/lib/waTemplatePreviewSamples';
 import type { WaMetaTemplateOwnerRow } from '@/types/wa-meta-owner';
 import { SITE } from '@/config/site';
+
+/** Extracts the distinct `{{var}}` tokens from a template's raw body, in order of first appearance. */
+function extractVariableTokens(rawBody: string): string[] {
+  const matches = rawBody.match(/\{\{\s*[^}]+?\s*\}\}/g) ?? [];
+  return Array.from(new Set(matches.map((m) => m.replace(/\s+/g, ''))));
+}
 
 const SUPPORT_MAIL = SITE.supportEmail;
 
@@ -47,12 +54,31 @@ export default function WhatsAppTemplatesClient({
 }) {
   const t = useTranslations('whatsappTemplates');
   const [previewName, setPreviewName] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   const previewBody = useMemo(() => {
     if (!previewName) return '';
     const raw = previewBodyForTemplate(previewName);
     return renderWaTemplatePreviewBody(raw, WA_TEMPLATE_PREVIEW_SAMPLES);
   }, [previewName]);
+
+  const previewVariables = useMemo(() => {
+    if (!previewName) return [];
+    return extractVariableTokens(previewBodyForTemplate(previewName));
+  }, [previewName]);
+
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredTemplates = useMemo(() => {
+    if (normalizedSearch === '') return templates;
+    return templates.filter((row) => {
+      const name = formatTemplateName(row.template_name).toLowerCase();
+      return (
+        name.includes(normalizedSearch) ||
+        row.template_name.toLowerCase().includes(normalizedSearch) ||
+        (row.category ?? '').toLowerCase().includes(normalizedSearch)
+      );
+    });
+  }, [templates, normalizedSearch]);
 
   const notifyHref = useMemo(() => {
     const subject = encodeURIComponent(t('pinNotifySubject'));
@@ -96,8 +122,33 @@ export default function WhatsAppTemplatesClient({
 
         <section className="space-y-4">
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">{t('templateLibrary')}</h2>
+          {templates.length > 0 ? (
+            <div className="relative">
+              <Search
+                className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-muted)] pointer-events-none"
+                aria-hidden
+              />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t('searchTemplates')}
+                className="w-full bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-lg ps-9 pe-10 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+              />
+              {search ? (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  className="absolute end-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+                  aria-label={t('clearSearch')}
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden />
+                </button>
+              ) : null}
+            </div>
+          ) : null}
           <div className="grid gap-3 sm:grid-cols-2">
-            {templates.map((row) => (
+            {filteredTemplates.map((row) => (
               <article
                 key={row.template_name}
                 className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 shadow-sm flex flex-col gap-3"
@@ -132,6 +183,8 @@ export default function WhatsAppTemplatesClient({
           </div>
           {templates.length === 0 ? (
             <p className="text-sm text-[var(--color-text-tertiary)]">{t('noTemplates')}</p>
+          ) : filteredTemplates.length === 0 ? (
+            <p className="text-sm text-[var(--color-text-tertiary)]">{t('noSearchResults')}</p>
           ) : null}
         </section>
       </div>
@@ -161,12 +214,40 @@ export default function WhatsAppTemplatesClient({
               </button>
             </div>
             <p className="text-xs text-[var(--color-text-tertiary)] mb-3">{t('previewSampleNote')}</p>
-            <pre
-              className="whitespace-pre-wrap rounded-lg bg-[var(--color-surface-0)] border border-[var(--color-border-subtle)] p-4 text-sm leading-relaxed text-[var(--color-text-primary)]"
-              dir="rtl"
+            <p className="text-xs font-semibold text-[var(--color-text-tertiary)] mb-2">{t('howParentsSeeIt')}</p>
+            <div
+              className="rounded-lg p-4"
+              style={{
+                background: 'var(--color-surface-2)',
+                backgroundImage: 'radial-gradient(circle at 20% 10%, rgba(14,107,97,.06), transparent 40%)',
+              }}
             >
-              {previewBody}
-            </pre>
+              <div className="flex justify-end" dir="ltr">
+                <div
+                  className="max-w-[85%] whitespace-pre-wrap rounded-xl rounded-se-sm bg-[var(--color-surface-1)] px-3 py-2.5 text-sm leading-relaxed text-[var(--color-text-primary)] shadow-sm"
+                  dir="rtl"
+                >
+                  {previewBody}
+                </div>
+              </div>
+            </div>
+            {previewVariables.length > 0 ? (
+              <>
+                <p className="text-xs font-semibold text-[var(--color-text-tertiary)] mt-4 mb-2">
+                  {t('variablesUsed')}
+                </p>
+                <div className="flex flex-wrap gap-1.5" dir="ltr">
+                  {previewVariables.map((token) => (
+                    <span
+                      key={token}
+                      className="font-mono text-[11px] rounded bg-[var(--color-surface-2)] text-teal-700 px-1.5 py-0.5"
+                    >
+                      {token}
+                    </span>
+                  ))}
+                </div>
+              </>
+            ) : null}
           </div>
         </div>
       ) : null}
