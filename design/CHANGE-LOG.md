@@ -97,6 +97,8 @@ If a row ever names one, that row is a mistake.
 | [#288](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/288) | `4aad72d` | 2026-07-31 | `CEO` — F21 teacher-tier price fallback now sources `TEACHER_PLANS`, dead `legacyPayload` removed from `/api/ceo/dashboard` (7 unused Supabase queries/30s poll) | `/{locale}/ceo`, `/api/ceo/dashboard` | v42 |
 | [#289](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/289) | `7faa5c9` | 2026-07-31 | none — doc only (#287 self-row, #288 logged, CEO surveyed, F21 closed) | none | v42 |
 | [#290](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/290) | `e8ccd86` | 2026-07-31 | none — doc only (#289 self-row, Teacher-Insight/Teacher-WhatsApp surveyed, D6 corrected — closes the batch-4 9-file sweep) | none | v42 |
+| [#291](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/291) | `e7b7b3f` | 2026-07-31 | none — doc only (#290 self-row, Design-Patterns adoption audit — row 1 corrected, `PATTERN-ADOPTION-LEDGER.md` added) | none | v42 |
+| [#292](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/292) | `b96cb31` | 2026-07-31 | `students`/`groups`/`schedule` — migrated off the wrong `EmptyState` component onto the canonical one from `#220` | `/{locale}/students`, `/{locale}/groups`, `/{locale}/schedule` | v42 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -1492,3 +1494,26 @@ skipped).
 **No code changed by this pass — it is exclusively a measurement, and the ~200 files it found are each a
 legitimate, individually-logged conversion opportunity for whenever that file's own row comes up again,
 not a to-do list to batch through at once.**
+
+**EmptyState migration, 31 July 2026 (#292) — a direct, human-directed fix, not a proactive sweep.**
+Eyad asked directly for the duplicate `EmptyState` to be dealt with: confirm the canonical component,
+migrate the wrong-component files onto it, delete the old one. 3 of the 4 flagged files
+(`students/page.tsx`, `groups/page.tsx`, `schedule/page.tsx`) were migrated — same copy, same click
+handlers, same translation keys, just resolved through the canonical component's contract instead of the
+old one's. Independently adversarially verified against the live diff (not the implementer's self-report)
+before merge: icon prop shape, import path, byte-identical behavior and copy, dual-action order on
+`students/page.tsx`, no invented `alt` text, no scope creep — all confirmed. One inaccuracy did surface
+in the PR's own description (a claim that `OrdersPageClient.tsx` also still imported the old component)
+— checked directly and found false, corrected before merge. Notably, the adversarial verifier's own
+report repeated the same wrong claim rather than independently re-checking it — the exact failure shape
+this session keeps finding (a claim repeated because it sounds plausible, not because someone checked),
+caught only because it was checked a third time outside both agents.
+
+**The 4th file, `payments/page.tsx`, is not migrated — it doesn't need to be.** Its `EmptyState` import
+turned out to be dead code, never rendered anywhere in the file. Removing it is a one-line change, but the
+file is `Merged-Center-Money`, one of six protected files this project never lets automation touch — a
+workflow sub-agent attempting the edit was correctly blocked by a safety check, since "migrate the 4
+files" was never an explicit, named exception to that standing rule. Deleting
+`src/components/empty-states/EmptyState.tsx` itself waits on that one import being removed first.
+`design/PATTERN-ADOPTION-LEDGER.md` and **R4** updated to match: `EmptyState` real adoption 7/73 (9.6%) →
+10/72 (13.9%); `payments/page.tsx` reclassified from "wrong-component" to "excluded, dead import."
