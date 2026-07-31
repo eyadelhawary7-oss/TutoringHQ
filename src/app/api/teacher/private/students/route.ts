@@ -39,6 +39,9 @@ type StudentBilling = {
     groupId: string | null;
     groupName: string | null;
     status: string | null;
+    /** Manual collection method (cash/instapay/vodafone_cash/other), set only
+     *  once paid. §02 "Paid · Cash" / "Paid · InstaPay" row caption. */
+    method: string | null;
   }[];
 };
 
@@ -135,7 +138,7 @@ export async function GET(request: NextRequest) {
     const studentIds = Array.from(new Set(enrollments.map((e) => e.student_id)));
     const { data: txnRows, error: txnErr } = await auth.supabaseAdmin
       .from('transactions')
-      .select('id, student_id, group_id, amount_billed, status, created_at, paid_at')
+      .select('id, student_id, group_id, amount_billed, status, created_at, paid_at, method')
       .eq('teacher_id', auth.userId)
       .eq('kind', 'lesson')
       .eq('is_test', false)
@@ -160,6 +163,7 @@ export async function GET(request: NextRequest) {
         status: string | null;
         created_at: string;
         paid_at: string | null;
+        method: string | null;
       }[]) {
         if (!r.student_id) continue;
         const entry = (billingByStudent[r.student_id] ??= {
@@ -186,6 +190,7 @@ export async function GET(request: NextRequest) {
             groupId: r.group_id,
             groupName: r.group_id ? (nameByGroup.get(r.group_id) ?? null) : null,
             status: r.status,
+            method: r.method,
           });
         }
       }
