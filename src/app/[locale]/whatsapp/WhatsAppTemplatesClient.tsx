@@ -224,7 +224,7 @@ export default function WhatsAppTemplatesClient({
             >
               <div className="flex justify-end" dir="ltr">
                 <div
-                  className="max-w-[85%] whitespace-pre-wrap rounded-xl rounded-te-sm bg-[var(--color-surface-1)] px-3 py-2.5 text-sm leading-relaxed text-[var(--color-text-primary)] shadow-sm"
+                  className="max-w-[85%] whitespace-pre-wrap rounded-xl rounded-se-sm bg-[var(--color-surface-1)] px-3 py-2.5 text-sm leading-relaxed text-[var(--color-text-primary)] shadow-sm"
                   dir="rtl"
                 >
                   {previewBody}
