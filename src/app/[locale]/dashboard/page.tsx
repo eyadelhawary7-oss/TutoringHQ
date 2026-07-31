@@ -15,6 +15,7 @@ import { Link } from '@/i18n/routing';
 import PlanUsageCard from '@/components/dashboard/PlanUsageCard';
 import { ChartCard, SparklineChart } from '@/components/charts';
 import { KpiCard, SectionHeader } from '@/components/shared';
+import ListRow from '@/components/patterns/ListRow';
 
 const AreaChartComponent = dynamic(
   () => import('@/components/charts').then((m) => ({ default: m.AreaChartComponent })),
@@ -139,6 +140,8 @@ interface TodayScheduleRow {
   id: string;
   /** Raw "HH:MM:SS" from schedule_slots, formatted at render time. */
   startTime: string;
+  /** Null for a slot with no group assigned - the row renders non-interactive (no ListRow onOpen/chevron) in that case. */
+  groupId: string | null;
   groupName: string;
   roomName: string;
   teacherName: string;
@@ -474,6 +477,7 @@ export default function DashboardPage() {
         .map((s) => ({
           id: s.id,
           startTime: s.start_time,
+          groupId: s.group_id,
           groupName: (s.group_id && groupNameById.get(s.group_id)) || tCommon('notAvailable'),
           roomName: (s.room_id && roomNameById.get(s.room_id)) || tCommon('notAvailable'),
           teacherName: (s.teacher_id && teacherNameById.get(s.teacher_id)) || '—',
@@ -1113,6 +1117,14 @@ export default function DashboardPage() {
     safeData.totalStudents > 0
       ? Math.min(100, Math.round((attendanceTodayCount / safeData.totalStudents) * 10000) / 100)
       : 0;
+  // Merged-Center-Home §01 "Today" tile: the design's "Attendance 94%" is scanned-today
+  // over EXPECTED today (todaySchedule's member count), not over the whole roster -
+  // a different denominator than the pre-existing "At a glance" tile above, which is
+  // intentionally left alone since it's already relied on and out of this pass's scope.
+  const attendancePctOfExpectedToday =
+    safeData.studentsExpectedToday > 0
+      ? Math.min(100, Math.round((attendanceTodayCount / safeData.studentsExpectedToday) * 10000) / 100)
+      : 0;
 
   const paymentDueBanner = (() => {
     if (!centerBilling?.payment_due_date || centerBilling.billing_status === 'paid') return null;
@@ -1480,7 +1492,7 @@ export default function DashboardPage() {
             />
             <KpiCard label={t('studentsExpectedLabel')} value={formatNumber(safeData.studentsExpectedToday, locale)} />
             <KpiCard label={t('collected')} value={formatCurrency(safeData.todayRevenue, locale)} />
-            <KpiCard label={t('attendanceShort')} value={formatPercent(attendancePctOfTotal, locale)} />
+            <KpiCard label={t('attendanceShort')} value={formatPercent(attendancePctOfExpectedToday, locale)} />
           </div>
 
           {digitalShare && (
@@ -1518,35 +1530,41 @@ export default function DashboardPage() {
           {safeData.todaySchedule.length > 0 && (
             <>
               <div className="mb-3 max-w-6xl">
-                <SectionHeader title={t('todaySchedule')} />
+                <SectionHeader
+                  title={t('todaySchedule')}
+                  sub={formatDate(new Date(), locale, { weekday: 'long' })}
+                />
               </div>
               <div className="mb-6 max-w-6xl space-y-2">
                 {safeData.todaySchedule.map((s) => (
-                  <div
+                  <ListRow
                     key={s.id}
-                    className="flex items-center justify-between gap-3 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-[var(--color-text-primary)]" dir="ltr">
-                        {formatTime(s.startTime.slice(0, 5), locale)}
-                      </p>
-                      <p className="mt-0.5 truncate text-sm text-[var(--color-text-primary)]">{s.groupName}</p>
-                      <p className="mt-0.5 truncate text-xs text-[var(--color-text-muted)]">
-                        {s.teacherName} · {s.roomName} · {formatNumber(s.memberCount, locale)}
-                      </p>
-                    </div>
-                    <span
-                      className={`shrink-0 rounded-pill px-2.5 py-1 text-xs font-semibold ${
-                        s.status === 'billed'
-                          ? 'bg-[var(--color-mint)] text-[var(--color-accent-deep)]'
-                          : s.status === 'next'
-                            ? 'bg-[var(--color-accent)]/15 text-[var(--color-accent-deep)]'
-                            : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'
-                      }`}
-                    >
-                      {s.status === 'billed' ? t('chipBilled') : s.status === 'next' ? t('chipNext') : t('chipLater')}
-                    </span>
-                  </div>
+                    title={s.groupName}
+                    meta={
+                      <>
+                        <span className="block font-semibold text-[var(--color-ink)]" dir="ltr">
+                          {formatTime(s.startTime.slice(0, 5), locale)}
+                        </span>
+                        <span className="block">
+                          {s.teacherName} · {s.roomName} · {formatNumber(s.memberCount, locale)}
+                        </span>
+                      </>
+                    }
+                    onOpen={s.groupId ? () => router.push(`/attendance?group=${s.groupId}&date=${cairoDateKey()}&tab=scan`) : undefined}
+                    badge={
+                      <span
+                        className={`shrink-0 rounded-pill px-2.5 py-1 text-xs font-semibold ${
+                          s.status === 'billed'
+                            ? 'bg-[var(--color-mint)] text-[var(--color-accent-deep)]'
+                            : s.status === 'next'
+                              ? 'bg-[var(--color-accent)]/15 text-[var(--color-accent-deep)]'
+                              : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'
+                        }`}
+                      >
+                        {s.status === 'billed' ? t('chipBilled') : s.status === 'next' ? t('chipNext') : t('chipLater')}
+                      </span>
+                    }
+                  />
                 ))}
               </div>
             </>
