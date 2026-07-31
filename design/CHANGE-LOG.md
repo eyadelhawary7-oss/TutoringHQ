@@ -70,7 +70,9 @@ If a row ever names one, that row is a mistake.
 | [#260](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/260) | `bb2000c1` | 2026-07-31 | none — doc only (#259's SHA fill) | none | v41 |
 | [#261](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/261) | _pending_ | 2026-07-31 | none — doc only (Teacher-WhatsApp survey: D6 corrected/expanded, nothing safely buildable) | none | v41 |
 | [#262](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/262) | `bd5593aa` | 2026-07-31 | `Admin-Platform §02` — TOP BY REVENUE centre rows now carry a real per-centre active-student count | `/{locale}/admin/analytics`, `/api/admin/overview` | v41 |
-| [#266](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/266) | _pending_ | 2026-07-31 | none — doc only (Teacher-Home re-verification: #225's fraction reconfirmed unchanged, no new gaps) | none | v41 |
+| [#264](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/264) | `827e2333` | 2026-07-31 | `Teacher-Students §02` — payment-history row caption ("Not collected yet" / "Paid · &lt;method&gt;") | `/{locale}/teacher/students` (`AllStudentsList.tsx`), `/api/teacher/private/students` | v41 → **v42** |
+| [#266](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/266) | _pending_ | 2026-07-31 | none — doc only (Teacher-Home re-verification: #225's fraction reconfirmed unchanged, no new gaps) | none | v42 |
+| [#268](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/268) | _pending_ | 2026-07-31 | none — doc only (Teacher-Students re-verification: §02 payment-caption gap logged, D15 re-confirmed unchanged) | none | v42 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -1247,3 +1249,51 @@ references.
 **No new safely-buildable gap found, no code changed.** The only remaining gaps are the same two
 blocks already logged as **V1** and **V3/V4** in `BUILD-AFTER-REDESIGN.md`. This entry documents a
 confirmed-unchanged fraction, not a build — no code PR accompanies it.
+
+**Teacher-Students re-verification (31 July 2026) — re-checked #226's "close" call against the merged
+file, not memory, and logs #264 (`827e2333`), which this table had not caught up to yet.** Read
+`Merged-Teacher-Students.html` fresh across both sections against a full re-read of the live route, API
+and component (`teacher/students/page.tsx`, `AllStudentsList.tsx`,
+`/api/teacher/private/students/route.ts`), plus `BUILD-AFTER-REDESIGN.md`'s D15 entry, before touching
+anything.
+
+**Table correction: the row above for #266 previously read `v41`.** It should have read `v42` — #264
+(chronologically earlier: `827e2333` merged before `28bc257a`/#265 and `71fefa05`/#266) bumped
+`SW_VERSION` and had simply never been logged as a row, so every SW_VERSION cell after it inherited the
+stale value. Fixed by adding #264's row in place and correcting #266's cell, same discipline as D14's
+and D3's prior corrections in this log.
+
+**§01 holds up exactly as #226 recorded.** Every drawn element is live, confirmed by grep against
+current source: search input, the segmented group-filter chip row, the "N students" count header, and
+avatar-initials + name + group tag + phone on each row. Nothing moved.
+
+**§02 had one real gap #226 missed: the payment-history row had no caption.** The design draws "Not
+collected yet" for a pending charge and "Paid · Cash" / "Paid · InstaPay" for a paid one; live showed
+only date, group and a bare Paid/Pending pill. Confirmed absent before touching anything — grepping
+`src/` and `messages/` for "Not collected" / "paidVia" / "Paid ·" returned zero matches.
+
+**Closed with no schema change.** `transactions.method` already exists in production — confirmed live
+via `information_schema.columns` — and is already populated by the existing mark-paid RPC path
+(`apply_transaction_transition` sets it; `MANUAL_METHODS` = `cash | instapay | vodafone_cash | other`,
+confirmed by reading the mark-paid route). The students API route's `.select()` simply wasn't asking
+for it. Added `method` to the select, threaded `method: string | null` through
+`StudentBilling.transactions` in both the route and `AllStudentsList.tsx`, and rendered the caption
+reusing the existing `teacherPortal.markPaid.*` labels — the same mapping `IncomeView.tsx` already
+uses — rather than inventing new copy. Two new keys (`teacherPortal.studentsList.paidVia`,
+`.notCollectedYet`), en+ar, parity-checked (`npx tsx scripts/check-i18n.ts` → OK, 4129 resolved keys).
+
+**D15 re-confirmed, not re-attempted.** The Balance card's `Mark collected` and `Send reminder` buttons
+are unchanged from 30 July. `Mark collected` is wireable today — the mark-paid endpoint is already live
+and already called from `GroupClassesTab` and the session-detail page, it simply has no caller from
+student-detail — but it is still a money-state write with no decision from Eyad on exposing it from
+this screen. `Send reminder` is genuinely new functionality (only the nightly `send-balance-reminder`
+cron exists today) that spends WhatsApp cost per send. Neither was built, for the same reason D15 was
+originally held, re-verified live rather than re-asserted from memory.
+
+| § | before (#226, 30 Jul) | after (confirmed 31 Jul) | what moved |
+|---|---|---|---|
+| §01 Teacher Students (list) | "close" — search, group-filter chips, count header, avatar+name+group+phone all built | unchanged, confirmed live | nothing |
+| §02 Teacher Student Detail | "built, all read-only", D15 blocked | payment-history row caption closed; D15 re-confirmed, still correctly blocked | §02's one real gap |
+
+Full detail on the caption fix is in **#264** (`827e2333`); D15 itself is unchanged in
+`BUILD-AFTER-REDESIGN.md`. No new decision needed from Eyad beyond D15's existing two items.
