@@ -834,3 +834,53 @@ standing-rule violation (`saas-multi-tenant-architecture` skill, locked rule 6: 
 fails closed) independent of the design-restructure work, and money-adjacent (the announcement route
 moves real balance and can create real invoices) — flagged for Eyad rather than silently patched
 mid-loop, per the standing stop condition on anything touching money or auth.
+
+**Center-Setup (31 July 2026) — surveyed, no build. The most consequential findings of this whole
+project so far are here, and they are not design-fidelity gaps.** Row 14, 9 sections, never surveyed.
+Leading with what matters most before the fraction:
+
+**Team management is broken in production, three separate ways (F19).** Verified directly against
+the live schema, not migration history:
+1. **Inviting a team member fails every time.** `center_invites` is missing the `status` column the
+   Team page reads and the `status`/`invited_name` columns *and* the `(center_id, phone)` unique
+   constraint that `POST /api/invite-user`'s upsert depends on. Every invite attempt 500s. The primary
+   button on the Team settings page does not work.
+2. **Activating or deactivating a team member always fails.** The client never sends a password/PIN;
+   the server unconditionally requires one for any `/api/permissions` call. The sibling
+   granular-permission-edit path works only because it routes through `PasswordConfirmModal` first —
+   the activate/deactivate button was never wired the same way.
+3. **The seat limit is dead code.** `centers.max_teachers`/`max_students` don't exist live. Both
+   `/api/settings/limits` and `/api/invite-user`'s own cap check fail silently and fall back to a
+   hardcoded 2-seat cap — **every center is invisibly capped at 2 team members regardless of plan.**
+   This directly amends **D8**: deciding an extra-seat add-on price is premature while the *included*
+   seat count is reading columns that were never created.
+
+None of the three was fixed here. (1) and (3) need a schema migration — manual-apply-to-production per
+this repo's own migration rule, not something to merge-and-assume. (2) is schema-free but changes
+account state (a person's access), a standing stop condition. All three need Eyad's go-ahead.
+
+**Second finding: no CSRF on any subscription-billing mutation, plus two misleading money figures on
+the same screen (S8).** Upgrade, downgrade, reactivate, withdrawal, cancel, pack-request, and invoice-pay
+all skip `validateCSRFRequest` — same class as S6/S7, now on the biggest money surface yet. Separately,
+not a CSRF issue: the downgrade screen shows a client-computed "credits earned" figure the server
+*never grants* (`creditEarned: 0` always, by the server's own design comment), and the reactivation
+modal still branches on a retired tiered-penalty model whose two possible rows both always show 0 EGP.
+
+**Structure coverage, section by section (surveyed properly, not taken on the table's word):**
+
+| § | fraction | notes |
+|---|---|---|
+| §01 Onboarding | not scored — different flow | the design draws a center-configuration wizard (name/area → subjects/grades → payment methods → done); live's 4-step wizard is a value-demo flow (add first student → create first group → simulate a scan → ROI summary). Neither is a subset of the other — flagging the divergence rather than forcing a fraction against a screen the live flow was never trying to be. |
+| §02 Settings hub | ~2.5/5 | the hub itself is close (most rows present); **"General" doesn't exist as a screen at all** — the route `/settings/general` is actually the settings menu hub, not the design's language/region/display screen (**D11**); the live **Account** page is far thinner than drawn — just Change PIN + Log out, no personal-info display, no 2FA toggle |
+| §03 Billing | ~4/5 (coverage) — see S8 for correctness | nearly every design element has a live counterpart (plan hero, upgrade/downgrade, credits, withdrawal, pack, invoices, plan history, cancel) — the gaps here are correctness bugs (S8), not missing structure |
+| §04 Center + Subjects | ~4.5/5 | closely matches: logo/name/phone/district/governorate, subjects/grades chip management with add/edit/delete |
+| §05 Notifications & Support | ~1.5/5, mostly by decision | the rich notification-preference model (6 category toggles, push/email, quiet hours) is correctly **not** built — **D9**, closed 28 July; what exists (`daily_summary_enabled`, `summer_mode`) is unrelated to that decision. Support is genuinely thin against the drawing though (WhatsApp + email only vs. the design's 7 rows), not decision-blocked |
+| §06 Scanner | ~2/5 | the one real column (camera/Bluetooth input) is exposed; Sound/Vibrate toggles and the duplicate-scan window aren't built and aren't covered by **D10**'s decision text either (D10 only speaks to `scanner_default_mode` and "mark attendance automatically") — a genuine small gap, not a re-litigation of D10 |
+| §07 Team | structural ~4/5, functional ~1.5/5 | looks complete (seat bar, member list, invite modal, permission editing) but two of its three core actions don't work in production — see F19. Structure coverage and "does it work" are different axes here, worth reporting as both |
+| §08 Team Verified | ~1/5 | this is the same live file as §07, not a separate screen — the design's money-safe permission split (DAILY vs. MONEY groups, two non-delegable owner-only locked actions for withdraw-money/change-payout-account) has no live counterpart; the live permission model is a flat set of generic toggles with no such grouping |
+| §09 My Teachers | ~3.5/5, partial evidence | the 4-tab shell and two of its four tab bodies (Requests, Slots) check out cleanly against the design and against the live schema with no breakage found; the other two tab bodies (`MyTeachersPanel`, `AddTeacherPanel`) were out of this pass's read scope — flagged rather than guessed at, a follow-up read closes this |
+
+**D9/D10/D11 all re-confirmed live, D11 gaining the route-identity gap above.** No new decisions opened
+by this survey beyond the D8 amendment (F19) — everything else found is either already-decided (D9/D10),
+a correctness bug independent of any design question (F19, S8), or a genuine small display gap (§06,
+§08, Support half of §05).
