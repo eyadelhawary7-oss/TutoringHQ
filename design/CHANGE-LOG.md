@@ -54,6 +54,8 @@ If a row ever names one, that row is a mistake.
 | [#240](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/240) | `55ce33c1` | 2026-07-30 | none — cron only (D25: `parent-balance-alerts` targeting/quoted amount) | `/api/cron/parent-balance-alerts` | v41 |
 | [#243](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/243) | `90f18fed` | 2026-07-30 | `Center-Students §04` (import) — dead-column write removed, no visible UI change | `/{locale}/students/import` | v41 |
 | [#245](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/245) | `89159e8b` | 2026-07-30 | `Center-Home §01` (dashboard: alert row, Today KPIs, digital share, schedule), `§02` (notifications: unread-count fix) | `/{locale}/dashboard`, `/{locale}/notifications` | v41 |
+| [#247](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/247) | `dbf7ed5d` | 2026-07-31 | `Center-Home §01` — 3 small gaps from the fraction audit (attendance denominator, schedule tap affordance, day-name subtitle) | `/{locale}/dashboard` | v41 |
+| [#248](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/248) | `(on merge)` | 2026-07-31 | `Center-Groups §01` (teacher name, center's cut, member balance badges, delete), `§03` Rooms (edit/delete), `§05` Schedule (week nav, day-pill dots, named conflicts) | `/{locale}/groups`, `/{locale}/rooms`, `/{locale}/schedule` | v41 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -709,3 +711,60 @@ same table the live `/schedule` page already reads. The Schedule section was bui
 the design's Billed/Next/Later chip is derived at render time (end_time passed vs. not), documented as
 an interpretation in the new `src/lib/todayScheduleStatus.ts`, since no stored equivalent exists to
 read.
+
+**The fraction, not "done" — an adversarial re-audit of Center-Home §01, 31 July 2026.** Asked for the
+exact before/after fraction of the five §01 elements rather than a completion claim. Ran two
+independent blind auditors per file plus a reconciler that re-verifies every disagreement against live
+code — not a vote — across three files at once (Center-Home, Center-Students, Center-Groups), since
+the same discipline that caught the false "done" on Center-Home was worth applying everywhere at once
+rather than one file at a time.
+
+**Center-Home §01: 4/5 built** (alert banner, Today KPIs, digital share, schedule), **1/5 not**
+(balance card). The omission is missing data — `transactions.settlement_status`/`settled_at`/
+`settlement_retry_count` all exist as columns but 0 of 3 live rows have them populated and zero
+application code reads them, confirmed live — and that data is missing *because* the feature it would
+come from (online collection/payout, V3/V4) is gated behind identity verification (V1) shipping.
+Missing data and blocked-on-Valify are the same fact, not two. The audit also found three small,
+real deltas in the built elements: the Attendance tile divided by the whole roster instead of today's
+expected headcount, the Schedule rows had no tap affordance, and the section header was missing its
+day-name subtitle — all three closed in **PR #247**, including adopting `ListRow` (`Merged-Design-Patterns`
+§03/§04) for the schedule rows instead of a bespoke div.
+
+**Center-Students, re-scored honestly: ~51% overall, not the ~90%+ a glance at PR #239 alone would
+suggest.** §01 Roster 0.75/1, §02 Student Detail 0.5/1 (five fully absent elements: kebab menu,
+payment-standing badge, tinted/overdue balance card, per-member family list, sticky action bar), §03
+Verified 0.05/1 (correctly deferred, Valify), §04 Import 0.75/1. #239 was real engineering, not a
+restyle, and is not being redone — but §02 in particular has real gaps logged for whenever that file
+comes back around.
+
+**Center-Groups: 2.1/5 (~42%), genuinely the least-done of the three token-pass files** — §01 Groups
+0.55/1, §02 Verified 0.05/1 (deferred, **D12** billing-basis decision), §03 Rooms 0.7/1, §04 Branches
+0.2/1, §05 Schedule 0.6/1. One finding surfaced regardless of file order: **D23** (a branch silently
+clones the parent center's full plan price instead of charging the design's flat add-on fee) is
+live, real, and money-touching — re-confirmed independently by this audit, not fixed, waiting on
+Eyad's call on the add-on model.
+
+**Center-Groups rebuild (31 July 2026, PR #248)** — the safely-buildable gaps across §01/§03/§05,
+explicitly not touching §02 (blocked on D12) or §04 (its Add-branch flow sits directly on the
+unresolved D23 billing bug, so left alone rather than partially rebuilt on top of it).
+
+- **§01 Groups:** `handleDeleteGroup` was fully implemented — audit-logged, deletes members, updates
+  state — with zero call sites; now reachable from a kebab menu with an inline confirm. `teacher_name`
+  (a real join, fetched every load) and `center_cut_egp` (written on creation) were both computed and
+  discarded; both now render — the cut as the absolute EGP figure it's actually stored as, not
+  converted to a percentage as **F11**'s original text speculated the design wanted, since that
+  conversion is a formatting choice with no evidence behind it either way. Member rows gained an
+  avatar and a real-time balance badge (`getStudentBalances`, the same helper as everywhere else this
+  balance model is read — never a new per-student payment concept). `capacity_cap` and `kind` remain
+  confirmed dead, same decision as before, not resolved here.
+- **§03 Rooms:** the "More" kebab existed with no `onClick` — now opens working edit and delete. Delete
+  warns explicitly that scheduled classes in that room are removed too, since `schedule_slots.room_id`
+  and `bookings.room_id` are both `ON DELETE CASCADE` — checked live via `pg_constraint`, not assumed,
+  before writing the confirm copy.
+- **§05 Schedule:** added prev/next week navigation with a date-range label (the grid was permanently
+  pinned to the current week); day-pill load dots; and conflict copy that names the clashing session
+  ("Overlaps Math 5:30") instead of a bare "conflict" chip. **D2** (`schedule_slots.day_of_week`
+  convention) was re-checked and found stale: the fix shipped in commit `ae352f94` (28 July) a full day
+  *before* D2 was even written into this doc (29 July) and was simply never marked resolved — confirmed
+  via both cron call sites (`daily-summary`, `parent-absence-alerts`) already calling the single
+  canonical `scheduleSlotsDayOfWeek()` helper.
