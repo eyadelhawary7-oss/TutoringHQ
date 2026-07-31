@@ -9364,6 +9364,8 @@
       "dropoutTitle": "Dropout rate per group",
       "trendingTitle": "Enrolment trend per group",
       "missingTitle": "Students who often miss class",
+      "avgSessionTitle": "Average session time",
+      "missedIncomeTitle": "Income missed to absences",
       "proOnly": "Analytics is a Pro plan feature.",
       "proOnlyBody": "Upgrade to Pro to unlock forecasts, attendance insights and payment-risk alerts.",
       "upgradeCta": "Upgrade to Pro",

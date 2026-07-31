@@ -19,6 +19,11 @@ export async function generateMetadata({
   };
 }
 
-export default function TeacherLandingPage() {
-  return <TeacherLandingClient />;
+export default async function TeacherLandingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ref?: string }>;
+}) {
+  const { ref } = await searchParams;
+  return <TeacherLandingClient referralCode={ref ?? null} />;
 }

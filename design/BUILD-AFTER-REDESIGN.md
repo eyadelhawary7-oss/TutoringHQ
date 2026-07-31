@@ -381,8 +381,36 @@ whose core Add-branch flow sits on top of this unresolved billing question.
 - **Re-confirmed, 31 July 2026 (Center-Insight survey).** Read both routes in full: `/analytics` still gates purely on `canViewRevenue` (role/permission), `/benchmarks` still has no gate beyond normal center auth plus the data-sufficiency check (`insufficient_data`, 10-center district threshold). Neither has a paywall, an "Enable" sheet, or a Paymob purchase call anywhere in the route or its API. Matches this entry exactly, nothing to reopen.
 
 ## D14 · Teacher referral model
-- **The decision:** a new schema, not a column.
-- **Why it is stuck:** **every referral table is center-to-center only.** Confirmed absent, not merely unfound.
+- **The decision:** which reward model ships — extend, replace, or leave alone.
+- **Corrected 31 July 2026 (Teacher-Insight survey) — the original premise was wrong, not stale.**
+  The entry's own text said "every referral table is center-to-center only, confirmed absent, not
+  merely unfound." Live-checked fresh: that is false. `teacher_profiles.referral_code` (unique) and
+  `teacher_profiles.referred_by_teacher_id`, plus `teacher_subscriptions.free_months_credit` and
+  `referral_rewarded_at`, all exist in production today — confirmed directly against
+  `information_schema.columns`, not a migration file. `src/lib/teacherReferral.ts`'s
+  `grantReferralReward` is genuinely wired into `combinedPaymentFinalize.ts` on both the
+  `teacher_resubscribe` and `teacher_upgrade` paths, idempotent (`referral_rewarded_at IS NULL` guard),
+  and blocks self-referral. It is live-but-thin: 3 teachers have an issued code, 0 have
+  `referred_by_teacher_id` set, so the loop has never actually paid out — same shape as several other
+  findings this session (D25, D22): correct because nothing has exercised it yet, not because it's
+  broken.
+- **Why it's still a decision, just not this one.** What exists is a **flat, one-time +1 free month
+  to both sides on the referee's first cleared charge** — explicitly not a percentage
+  (`src/lib/referralProgram.ts`'s own comment: "Teachers do not earn commission... a teacher referrer
+  has free months earned, never an EGP balance owed"). `Merged-Teacher-Insight` §02 draws a full copy
+  of the **center** program instead: a 25%/10%/5% time-decaying recurring commission on the referred
+  teacher's own subscription fee, a monthly aggregate income figure with a next-month projection, a
+  per-referral earnings/countdown list, and bank-withdrawal gated on the teacher's identity-verification
+  status. Building that means either replacing the working free-month loop or running a second reward
+  system alongside it — a product and money decision, not a schema gap to fill in.
+- **Also found, fixed in this pass (no decision needed):** `ReferralCard`'s share link points to
+  `/teacher/landing?ref={code}`, but `TeacherLandingClient.tsx` never read the query string — every
+  "Sign up" button on that page was a static `href="/teacher/signup"` with no `ref` forwarded, so a
+  referred teacher who clicked through from the landing page (rather than typing the code by hand)
+  would silently lose attribution. Fixed by having `teacher/landing/page.tsx` read `searchParams.ref`
+  server-side and thread it into the client component's 5 signup CTAs as `?ref=` — no client-side
+  `useSearchParams()`, since that would need a Suspense boundary this page doesn't have and risks
+  breaking static rendering.
 - **Drawn in:** `Merged-Teacher-Insight` §02.
 - **Touches:** money.
 

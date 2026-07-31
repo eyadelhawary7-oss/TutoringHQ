@@ -9364,6 +9364,8 @@
       "dropoutTitle": "نسبة التسرّب لكل مجموعة",
       "trendingTitle": "اتجاه الاشتراكات لكل مجموعة",
       "missingTitle": "طلاب بيغيبوا كتير",
+      "avgSessionTitle": "متوسط مدة الحصة",
+      "missedIncomeTitle": "الدخل الضايع من الغياب",
       "proOnly": "التحليلات ميزة في باقة Pro.",
       "proOnlyBody": "اشترك في Pro علشان تفتح التوقّعات وتحليلات الحضور وتنبيهات مخاطر التحصيل.",
       "upgradeCta": "اشترك في Pro",
