@@ -67,6 +67,8 @@ If a row ever names one, that row is a mistake.
 | [#257](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/257) | `a363f4b4` | 2026-07-31 | none — doc only (Center-Students re-verification: fraction reconciled against the merged file post-#249, F22 logged) | none | v41 |
 | [#258](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/258) | `b9a9b61c` | 2026-07-31 | none — doc only (#257's SHA fill) | none | v41 |
 | [#259](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/259) | `658f53a1` | 2026-07-31 | `Teacher-Insight §01` (2 missing roadmap cards added), referral-attribution bug fixed; D14 corrected | `/{locale}/teacher/analytics`, `/{locale}/teacher/landing` | v41 |
+| [#260](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/260) | `bb2000c1` | 2026-07-31 | none — doc only (#259's SHA fill) | none | v41 |
+| [#261](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/261) | _pending_ | 2026-07-31 | none — doc only (Teacher-WhatsApp survey: D6 corrected/expanded, nothing safely buildable) | none | v41 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -1110,3 +1112,43 @@ breaking static rendering.
 | §01 Analytics | 0.9/1 | upsell messaging/CTA matches in intent (styled differently — brass banner vs. the design's teal-gradient card with a lock icon and "Pro" pill, a restyle item, not a structural one); all 5 roadmap cards now present. The design has no frame for the actual Pro-unlocked dashboard, so nothing to score there — live's version is a superset |
 | §02 Referrals | 0.1/1, correctly still blocked | the only fragments that exist (a share-link card on the teacher home page, a bare-code display in Settings/Centers) are real but serve a different, simpler mechanism than the one drawn; the hero card, rate-decay timeline, per-referral earnings list and verification-gated withdraw/credit UI are all absent, same conclusion as before — now for the right reason |
 | **Overall** | **~50%** | first survey — no prior fraction to compare against |
+
+**Teacher-WhatsApp (31 July 2026) — surveyed, nothing built, no PR for code (docs only).** Row 19,
+blocked by **D6**, previously a two-line placeholder ("Balance, what used it, the template list" /
+"every referral table is center-to-center only" — no, that's D14; D6's own text was just as thin:
+"Blocked by D5, plus the allowance decision itself"). Route coverage is genuinely 0/1 — no
+`/teacher/whatsapp` page exists — matching the table exactly. But the design's own lede claims
+teachers "already get bundled credit" and "buy the same packs at the same rate" as centers, so each
+claim was checked live rather than assumed folded into "0/1, nothing to see."
+
+**The credit balance is real, live and marketed — and structurally can never go down.**
+`teacher_profiles.blast_credits_subscription`/`blast_credits_purchased` exist in production
+(confirmed via `information_schema.columns`), granted 100/month to Pro/Scale teachers by a real RPC,
+reset by a real cron, and marketed today on the plan-comparison table ("100 EGP WhatsApp credit
+monthly"). The spend side, RPC `deduct_blast_credits`, has **zero callers anywhere in `src/`** —
+confirmed by grep. The number only ever goes up. Nowhere in the teacher portal shows it to the teacher
+either — it only appears in the CEO admin view. A marketed monetary benefit that cannot deplete is a
+product-integrity finding, not a missing screen.
+
+**None of the design's 5 templates are delivering to a teacher's parents today, for five different,
+independently live-checked reasons:** Welcome doesn't exist for teachers (hard-keyed to `center_id`);
+Fee reminder's code path is real (the cron already covers teacher-billed lessons) but its Meta template
+is `PENDING`, not `APPROVED` — a platform-wide gap, not teacher-specific, confirmed live via
+`wa_meta_templates`; the three schedule-change templates have real send code but **no Meta template
+row at all**, not even pending; and Payment link/Receipt — the "sent by us, we pay" pair — doesn't
+exist **for anyone**, center or teacher. Grepped all 54 `chq_*` template names in the codebase; the
+closest match, `chq_payment_confirmed`, confirms a center's own subscription bill to TutoringHQ, not a
+parent-facing session receipt.
+
+**The pack/purchase side is unbuilt, confirmed, not just thin.** The only prepaid-tier concept
+anywhere (`whatsapp-pack`) is center-only and isn't even the same shape as the design's fixed
+200/1,000/5,000 tiers — it's an invoiced rolling balance with monthly minimums. Nothing to extend to
+teachers as-is.
+
+| § | fraction | notes |
+|---|---|---|
+| §01 Teacher WhatsApp | 0/1, correctly blocked | matches route coverage exactly; the underlying credit-balance columns are real but disconnected from spend, and 0 of 5 drawn templates are actually delivering today (for 5 different, independently-verified reasons — one platform-wide Meta-approval gap, three never-submitted templates, one pair that doesn't exist for anyone) |
+
+Full detail — including the live `wa_meta_templates` approval-status query and the `deduct_blast_credits`
+zero-callers grep — is folded into an expanded **D6** in `BUILD-AFTER-REDESIGN.md`, since every finding
+here bears directly on what building this screen would require, rather than split into separate F-items.
