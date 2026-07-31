@@ -63,6 +63,8 @@ If a row ever names one, that row is a mistake.
 | [#253](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/253) | `3e95bf19` | 2026-07-31 | none — doc only (Center-Setup survey: F19 team-management outage, S8 billing CSRF, D8 amended) | none | v41 |
 | [#254](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/254) | `0ea2dce7` | 2026-07-31 | `Public-Marketing §04` (R1 built: `/talk-to-us`), 2 confirmed sign-up-CTA bugs fixed | `/{locale}/talk-to-us` (new), `/{locale}/center`, `/{locale}/pricing`, `/api/demo-request`, `/{locale}/admin/demo-requests` | v41 |
 | [#255](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/255) | `dfd3e6a1` | 2026-07-31 | `Center-Attendance` (F20: fixed silent payment-recording failure), V6 re-confirmed | `/{locale}/attendance` (`ScanResultScreen.tsx`) | v41 |
+| [#256](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/256) | `797b7709` | 2026-07-31 | `CEO §01` (3 confirmed bugs fixed: currency formatting, missing confirm dialog, silent config-save failure), S9/F21/second-dashboard findings logged | `/{locale}/ceo` | v41 |
+| [#257](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/257) | _pending_ | 2026-07-31 | none — doc only (Center-Students re-verification: fraction reconciled against the merged file post-#249, F22 logged) | none | v41 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -1034,3 +1036,27 @@ platform-config sections) rather than the design's single dashboard + one drill-
 - **Section H of `/ceo`** is a hardcoded client-side "password" (`'CENTERHQ-ADMIN'`, visible in the shipped bundle) gating 4 buttons that set the exact same config keys Section G already exposes as plain checkboxes — dead weight giving a false sense of an extra security layer, not a real one. Likely worth deleting outright; not done here since removing a whole section is a product call, not a bug fix.
 - A dead `legacyPayload` in `/api/ceo/dashboard` drives real extra Supabase queries every 30-second poll for a response nothing reads — a cost/performance cleanup, not a correctness bug.
 - The sales-lead form hardcodes `governorate: 'cairo'` for every lead regardless of where the center actually is — needs a real selector, not a one-line fix.
+
+**Center-Students re-verification (31 July 2026) — asked to confirm the fraction against the merged
+file, not memory, after the file had already been surveyed twice (#239, #249).** Ran two independent
+fresh reads — a granular line-by-line checklist of every frame in `Merged-Center-Students.html`, and a
+full re-read of all four live page files — and reconciled them by hand against what #239/#249 had
+already recorded, rather than trusting the prior ~51% figure on its own.
+
+**Result: the prior work holds up.** Nearly every gap this fresh pass found was already on record —
+independent re-derivation landed on **F12, F14, F15, F16**, and the exact §02 attendance-badge/attendance-ratio
+calls from #249's own notes, without having read those notes first. That is the outcome "verify, don't
+trust" is supposed to produce: not new alarms, confirmation that the earlier audit was accurate.
+
+| § | before (post-#239, pre-#249) | after (confirmed today, post-#249) | what moved |
+|---|---|---|---|
+| §01 Roster | 0.75/1 | **0.8/1** | #249's mobile "owes X EGP" line confirmed live. Residual: **F15** (lifecycle chips vs. the design's payment-standing chips are two taxonomies, unfused) re-confirmed; one new small item — the design's header/KPI assume a multi-branch rollup ("128 active · 3 branches"), live shows a total count only, no branch breakdown |
+| §02 Student Detail | 0.5/1 (5 named gaps: kebab menu, payment-standing badge, tinted balance card, per-member family list, sticky action bar) | **0.55/1** | #249's payment-standing badge confirmed live, closing 1 of 5. The other 4 confirmed still absent, unchanged. Two new items surfaced: no aging/next-due sub-line under the balance figure at all, and no "ID card" quick-action tile (live's 4 tiles are Call/Message/Collect payment/Edit) |
+| §03 Verified | 0.05/1 | **0.05/1, unchanged** | confirmed nothing overlaps functionally — the one shared UI shape (Call/WhatsApp contact cards) lives on `/students/pending`, a different feature (signup approval, not payment tracking), so it isn't partial credit toward this section |
+| §04 Import & Pending | 0.75/1 | **0.75/1, unchanged** | **F12** and **F14** both re-confirmed live exactly as logged. One adjacent nuance not previously called out: the Review step's flagged rows are skip-only in code (design shows a per-row "Fix" button to correct in place) |
+| **Overall** | **~51%** | **~54%** | entirely #249's effect — no section moved down on re-check |
+
+Full detail on the two new small gaps (§01 branches rollup, §02 balance-aging sub-line, §02 ID-card
+tile, §04 inline-fix) is logged as **F22** in `BUILD-AFTER-REDESIGN.md`, grouped as one entry since all
+four are the same shape: real, low-severity, display-only gaps found while re-verifying already-shipped
+work, none touching money computation or write paths.
