@@ -1781,7 +1781,8 @@
     "amountAddedToBalance": "{amount} added to balance",
     "payPrefix": "Pay",
     "sessionFeeLabel": "Session fee",
-    "pendingAmountLabel": "Amount due"
+    "pendingAmountLabel": "Amount due",
+    "paidVia": "via {method}"
   },
   "scanner": {
     "title": "QR Scanner",

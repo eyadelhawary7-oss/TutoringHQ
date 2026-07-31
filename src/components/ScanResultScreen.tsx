@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef, type ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { CheckCircle, XCircle, AlertTriangle, Clock, Loader2 } from 'lucide-react';
+import { formatCurrency } from '@/lib/formatNumber';
 
 interface Student {
   id: string;
@@ -82,6 +83,7 @@ export default function ScanResultScreen({
   const tsScan = useTranslations('scanner');
   const tAllow = useTranslations('scanner.allowEntry');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   const selectedGroup = selectedGroupProp ?? student.groups?.[0] ?? null;
   const hasVibrated = useRef(false);
 
@@ -122,7 +124,7 @@ export default function ScanResultScreen({
     };
   }, [isPaid, isPending, isLateEntryGranted]);
 
-  const egp = (amount: number) => `${amount} ${tCommon('egp')}`;
+  const egp = (amount: number) => formatCurrency(amount, locale);
 
   // ─── GREEN (paid) ───
   if (isPaid) {
@@ -209,7 +211,7 @@ export default function ScanResultScreen({
             <p className="text-sm text-[var(--color-text-secondary)]">{t('pendingAmountLabel')}</p>
             <p className="text-3xl font-bold font-mono text-[var(--color-text-primary)]">{egp(addedAmount || balanceDue)}</p>
             <p className="text-sm text-[var(--color-text-tertiary)] mt-1 capitalize">
-              via {t(methodLabel as 'cash')}
+              {t('paidVia', { method: t(methodLabel as 'cash') })}
             </p>
           </div>
           <button
