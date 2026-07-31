@@ -9,7 +9,6 @@ import { getCsrfHeaders } from '@/lib/csrf-client';
 import { Download, Search } from 'lucide-react';
 import { KpiCard, SectionHeader } from '@/components/shared';
 import { useRouter, useSearchParams } from 'next/navigation';
-import EmptyState from '@/components/empty-states/EmptyState';
 import { ReceiptModal } from '@/components/payments/ReceiptModal';
 import { LoadingButton } from '@/components/ui/LoadingButton';
 import { useToast } from '@/components/ui/ToastProvider';
