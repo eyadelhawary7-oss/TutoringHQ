@@ -239,6 +239,11 @@ export default function TeacherGroupDetailPage({
   const pending = data.roster.filter((r) => r.status === 'pending');
   const active = data.roster.filter((r) => r.status === 'active');
   const archived = data.group.status === 'archived';
+  // Oldest pending request's createdAt, for the Overview "waiting to join" banner.
+  const oldestPendingCreatedAt = pending.reduce<string | null>(
+    (oldest, r) => (oldest === null || new Date(r.createdAt) < new Date(oldest) ? r.createdAt : oldest),
+    null,
+  );
 
   const payerLabel = (payer: string | null) =>
     payer === 'parent' ? t('payerParent') : payer === 'student' ? t('payerStudent') : null;
@@ -315,6 +320,32 @@ export default function TeacherGroupDetailPage({
       {/* OVERVIEW */}
       {tab === 'overview' && (
         <div className="flex flex-col gap-4">
+          {pending.length > 0 && (
+            <div className="flex items-center gap-3 rounded-xl border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/10 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-[var(--color-warning)]">
+                  {tTabs('pendingBanner', {
+                    count: formatNumber(pending.length, locale, { integerOnly: true }),
+                  })}
+                </p>
+                {oldestPendingCreatedAt && (
+                  <p className="mt-0.5 text-xs text-[var(--color-warning)]/85">
+                    {tTabs('pendingBannerOldest', {
+                      ago: formatRelativeMinutesAgo(oldestPendingCreatedAt, locale),
+                    })}
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => changeTab('students')}
+                className="shrink-0 rounded-lg bg-[var(--color-warning)] px-3 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+              >
+                {tTabs('reviewCta')}
+              </button>
+            </div>
+          )}
+
           <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
             <dl className="flex flex-col gap-3 text-sm">
               <div className="flex items-center justify-between gap-2">
@@ -389,20 +420,28 @@ export default function TeacherGroupDetailPage({
                     className="flex flex-col gap-3 rounded-lg border border-[var(--color-warning)]/30 bg-[var(--color-surface-1)] px-4 py-3"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-medium text-[var(--color-text-primary)]">{r.student.name}</p>
-                        <p className="text-sm text-[var(--color-text-muted)]" dir="ltr">
-                          {r.student.phone}
-                        </p>
-                        <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-                          {t('asked', { ago: formatRelativeMinutesAgo(r.createdAt, locale) })}
-                          {r.student.gradeLevel && (
-                            <span className="ms-2">
-                              {t('gradeLabel', { grade: r.student.gradeLevel })}
-                            </span>
-                          )}
-                          {sourceKey && <span className="ms-2">{t(sourceKey)}</span>}
-                        </p>
+                      <div className="flex min-w-0 items-start gap-3">
+                        <span
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-mint)] text-xs font-semibold text-[var(--color-accent-deep)]"
+                          aria-hidden
+                        >
+                          {initialsOf(r.student.name)}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="font-medium text-[var(--color-text-primary)]">{r.student.name}</p>
+                          <p className="text-sm text-[var(--color-text-muted)]" dir="ltr">
+                            {r.student.phone}
+                          </p>
+                          <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                            {t('asked', { ago: formatRelativeMinutesAgo(r.createdAt, locale) })}
+                            {r.student.gradeLevel && (
+                              <span className="ms-2">
+                                {t('gradeLabel', { grade: r.student.gradeLevel })}
+                              </span>
+                            )}
+                            {sourceKey && <span className="ms-2">{t(sourceKey)}</span>}
+                          </p>
+                        </div>
                       </div>
                       {(studentDigits || parentDigits) && (
                         <div className="flex shrink-0 items-center gap-1.5">
@@ -489,16 +528,24 @@ export default function TeacherGroupDetailPage({
                     className="flex flex-col gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <p className="font-medium text-[var(--color-text-primary)]">{r.student.name}</p>
-                        <p className="text-sm text-[var(--color-text-muted)]" dir="ltr">
-                          {r.student.phone}
-                        </p>
-                        {payerLabel(r.payer) && (
-                          <span className="mt-1 inline-block rounded-full bg-[var(--color-surface-2)] px-2.5 py-0.5 text-xs text-[var(--color-text-secondary)]">
-                            {payerLabel(r.payer)}
-                          </span>
-                        )}
+                      <div className="flex items-center gap-3">
+                        <span
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-mint)] text-xs font-semibold text-[var(--color-accent-deep)]"
+                          aria-hidden
+                        >
+                          {initialsOf(r.student.name)}
+                        </span>
+                        <div>
+                          <p className="font-medium text-[var(--color-text-primary)]">{r.student.name}</p>
+                          <p className="text-sm text-[var(--color-text-muted)]" dir="ltr">
+                            {r.student.phone}
+                          </p>
+                          {payerLabel(r.payer) && (
+                            <span className="mt-1 inline-block rounded-full bg-[var(--color-surface-2)] px-2.5 py-0.5 text-xs text-[var(--color-text-secondary)]">
+                              {payerLabel(r.payer)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex flex-col items-end gap-1.5">
                         {r.outstanding > 0 && (
