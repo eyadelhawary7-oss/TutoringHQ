@@ -62,6 +62,7 @@ If a row ever names one, that row is a mistake.
 | [#252](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/252) | `abe2c683` | 2026-07-31 | `Center-Orders §01/§02` (4 confirmed bugs fixed), `Center-Insight` survey (S7, F18 logged) | `/{locale}/orders`, `/api/orders/[orderId]/reorder`, `/api/card-order-cart/items/[itemId]` | v41 |
 | [#253](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/253) | `3e95bf19` | 2026-07-31 | none — doc only (Center-Setup survey: F19 team-management outage, S8 billing CSRF, D8 amended) | none | v41 |
 | [#254](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/254) | `0ea2dce7` | 2026-07-31 | `Public-Marketing §04` (R1 built: `/talk-to-us`), 2 confirmed sign-up-CTA bugs fixed | `/{locale}/talk-to-us` (new), `/{locale}/center`, `/{locale}/pricing`, `/api/demo-request`, `/{locale}/admin/demo-requests` | v41 |
+| [#255](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/255) | `dfd3e6a1` | 2026-07-31 | `Center-Attendance` (F20: fixed silent payment-recording failure), V6 re-confirmed | `/{locale}/attendance` (`ScanResultScreen.tsx`) | v41 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -1006,3 +1007,30 @@ by every center every day silently fail to record a payment (F20).**
   stop condition rather than guessed at under the pressure of "it looks like a two-line fix."
 - **Full detail, including exact file:line citations and the live-catalog queries that confirmed each
   claim, is in `BUILD-AFTER-REDESIGN.md`'s F20.**
+
+**CEO (31 July 2026) — surveyed, 3 small confirmed bugs fixed, several more logged.** Row 17, tagged
+**V5 — blocked on Valify**, re-confirmed fresh (zero "verified" matches anywhere in `/ceo` or
+`/ceo/teachers`, independently reproducing the existing claim). Live `/ceo` turned out to be a far
+bigger, differently-shaped surface than the design's simple "strategic snapshot" — an 8-section ops
+command center (KPIs, trials watch, combined revenue, center health tiers, action queue, sales
+pipeline, activation funnel, a center-health table with a suspend action, cash, and two overlapping
+platform-config sections) rather than the design's single dashboard + one drill-down.
+
+| § | fraction | notes |
+|---|---|---|
+| §01 CEO Dashboard | structural superset, unconfirmed on the chart | live delivers the design's strategic-snapshot intent and far more (health tiers, actions, pipeline, activation, cash — none drawn in the mock); the design's specific 6-month revenue bar chart wasn't confirmed present on live `/ceo` in this pass — flagged as unconfirmed, not asserted missing, since a live equivalent may exist under a component name this pass didn't recognize |
+| §02 CEO Teachers | real divergence | design wants an overview (hero, KPI grid, plan-mix bars) plus a top-earners leaderboard and a verification-gate banner; live's `/ceo/teachers` is organized around 5 different tabs (Subscriptions/Referrals/Teachers/Attachments/Credits) with no top-earners list and no verification banner — a different information architecture, not a partial build of the drawn one. Live's referrals/attachments/credits views are real, valuable, and not in the design at all. |
+| §03 CEO Centers Benchmark | 0/2, correctly blocked | confirmed absent, matches **V5** exactly, re-confirmed independently this pass |
+
+**Three small, confirmed bugs fixed:**
+- **`/ceo` bypassed `formatCurrency` in 4 places**, hardcoding `` `EGP ${number}` `` instead — on Arabic, this would show Western digits and the English word "EGP" instead of Arabic-Indic digits and "ج.م", inconsistent with the same page's own "Combined revenue" section three lines away, which already used the correct helper. Fixed all 4 sites.
+- **Two of the platform-wide kill-switches (`read_only_mode`, `cron_paused`) fired immediately on checkbox click with zero confirmation**, while their two neighbors (`maintenance_mode`, `wa_sending_enabled`) already required a confirm dialog — the least-friction path to any control on the page led straight to the two most disruptive ones. Widened the existing confirm-dialog gate to cover all four keys uniformly, matching the pattern already established for the other two.
+- **`patchPlatformConfig` never checked its own response**, so a failed platform-config change (e.g., a 403) failed completely silently with no indication to the operator. Added a check and a plain error alert, matching the same "check response, alert on failure" pattern already used elsewhere in the codebase (Settings → Team's activate/deactivate handler).
+
+**Found, logged, not fixed — each flagged with why:**
+- **S9**: no CSRF on 4 CEO/admin mutation routes, including the platform-config kill-switch endpoint and the center-mutation endpoint that handles invoices/blacklisting/plan overrides — the fourth CSRF gap of this kind found this session (after S6/S7/S8). Needs a coordinated client+server fix, not a server-only patch, since the client never sends the CSRF headers today.
+- **F21**: a teacher-tier price fallback (`ceoTeachers.ts`) hardcodes the same figures `teacherPlans.ts` already exports as "the single source of truth" — values agree today, nothing enforces they stay that way.
+- **A second CEO dashboard** (`/ceo-dashboard`, its own client + API routes, never called by `/ceo`) exists alongside this one — the same shape as the four pairs already tracked in `DUPLICATE-ROUTES.md`, not added there yet since its own client wasn't read in full this pass.
+- **Section H of `/ceo`** is a hardcoded client-side "password" (`'CENTERHQ-ADMIN'`, visible in the shipped bundle) gating 4 buttons that set the exact same config keys Section G already exposes as plain checkboxes — dead weight giving a false sense of an extra security layer, not a real one. Likely worth deleting outright; not done here since removing a whole section is a product call, not a bug fix.
+- A dead `legacyPayload` in `/api/ceo/dashboard` drives real extra Supabase queries every 30-second poll for a response nothing reads — a cost/performance cleanup, not a correctness bug.
+- The sales-lead form hardcodes `governorate: 'cairo'` for every lead regardless of where the center actually is — needs a real selector, not a one-line fix.

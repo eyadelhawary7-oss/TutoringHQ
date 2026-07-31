@@ -6957,6 +6957,7 @@
       "announcementLabel": "Announcement banner",
       "confirmToggleTitle": "Confirm change",
       "confirmToggleBody": "Continue with this change?",
+      "configUpdateFailed": "Couldn't save this change. Try again.",
       "configKeys": {
         "maintenance_mode": "Maintenance mode",
         "wa_sending_enabled": "WhatsApp sending",
