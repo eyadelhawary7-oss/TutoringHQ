@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       const msg = parsed.error.issues[0]?.message ?? 'Invalid input';
       return NextResponse.json({ error: msg, details: parsed.error.flatten() }, { status: 400 });
     }
-    const { name, phone, email, centerName } = parsed.data;
+    const { name, phone, email, centerName, area, studentCount } = parsed.data;
 
     // Rate limit: keyed by phone (the dedupe-worthy identity) when present, else
     // by IP. 5 requests / hour — generous for a human submitting a demo request,
@@ -50,6 +50,8 @@ export async function POST(request: Request) {
         phone: String(phone).trim().replace(/\s/g, ''),
         email: email ? String(email).trim() : null,
         center_name: centerName ? String(centerName).trim() : null,
+        area: area ? String(area).trim() : null,
+        student_count: studentCount ?? null,
         status: 'pending',
       });
 

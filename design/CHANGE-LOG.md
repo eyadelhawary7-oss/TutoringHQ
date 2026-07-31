@@ -59,6 +59,8 @@ If a row ever names one, that row is a mistake.
 | [#249](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/249) | `1299c867` | 2026-07-31 | `Center-Students §01` (roster row balance), `§02` (student detail payment badge) | `/{locale}/students`, `/students/[id]` | v41 |
 | [#250](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/250) | `d2cf22a2` | 2026-07-31 | none — doc only (#249's SHA fill; R5 closed — built via #221, never marked closed) | none | v41 |
 | [#251](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/251) | `1a673bb9` | 2026-07-31 | none — doc only (Center-WhatsApp survey: fraction, D4/D5 re-confirmed, S6 CSRF finding) | none | v41 |
+| [#252](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/252) | `abe2c683` | 2026-07-31 | `Center-Orders §01/§02` (4 confirmed bugs fixed), `Center-Insight` survey (S7, F18 logged) | `/{locale}/orders`, `/api/orders/[orderId]/reorder`, `/api/card-order-cart/items/[itemId]` | v41 |
+| [#253](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/253) | `3e95bf19` | 2026-07-31 | none — doc only (Center-Setup survey: F19 team-management outage, S8 billing CSRF, D8 amended) | none | v41 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -923,3 +925,41 @@ modal still branches on a retired tiered-penalty model whose two possible rows b
 by this survey beyond the D8 amendment (F19) — everything else found is either already-decided (D9/D10),
 a correctness bug independent of any design question (F19, S8), or a genuine small display gap (§06,
 §08, Support half of §05).
+
+**Public-Marketing (31 July 2026) — R1 built, two live bugs fixed, one structural divergence logged.**
+Row 15, never surveyed. `FILE-COMPLETION-TABLE.md` already had this as **R1 — unblocked 29 July**, and
+the migration (`20260728120000`) was independently re-verified live rather than trusted from the doc —
+still holds exactly as R1 said.
+
+**Built: `/talk-to-us`, R1's lead-capture form.** Five fields (name, mobile, center name, area, rough
+student count), submits to the existing `POST /api/demo-request` (schema and insert extended to carry
+`area`/`student_count`), a submitted state that echoes the area back and keeps "Start free trial now"
+on screen per the design's own stated rationale, and `/admin/demo-requests` now renders both new
+columns it was already silently selecting. **Area is a `<select>` over the existing `EGYPT_GOVERNORATES`
+list, not free text** — the migration's own column comment says "the form offers a fixed list," read as
+an instruction. **Not built: automatic area→territory→rep routing.** `center_assignments.territory_city`
+— the join target — turned out to be a plain free-text admin input with no shared vocabulary against
+the governorate list at all (checked live, not assumed). Matching a fixed list against unconstrained
+free text is the same shape as **F19**: it would look wired and quietly match nothing. Flagged in the
+amended R1 entry rather than shipped as a silent no-op. `/demo-request`'s fate — R1's own "the two
+cannot both be the lead door" question — is untouched and still Eyad's call.
+
+**Two real, confirmed bugs fixed, found while reading the header nav on `/center` and `/pricing`:**
+the persistent header "Start free"/sign-up button on **both** pages pointed at `/teacher/signup`
+regardless of context. On `/center` — a page with zero teacher content — this sent every center visitor
+who used the header CTA into the teacher signup flow instead of the center one (the page's own hero and
+final-CTA buttons already correctly point at `/signup`; only the header nav, in two places, desktop and
+mobile, had the wrong target). On `/pricing`, which has a real center/teacher audience toggle, the
+header CTA ignored that toggle entirely — now routes to `/signup` or `/teacher/signup` based on which
+audience is selected, matching the toggle it already tracks in state. Also fixed: `/demo-request`'s
+hardcoded WhatsApp number didn't match the site-wide `SITE.supportWhatsAppIntl` used everywhere else —
+now reads from the same config.
+
+**Structure coverage, section by section:**
+
+| § | fraction | notes |
+|---|---|---|
+| §01 Public Landing | not scored — structural divergence | design draws a single unified "one object" page (promo banner + code, an animated attendance→payment demo widget, paired center/teacher comparison cards, one FAQ, one footer); live's `SplashClient.tsx` is an older, simpler shape — static sample dashboard preview, generic feature tiles, and two persona cards routing out to separate `/center`/`/teacher/landing` pages instead of showing both audiences on one page. Neither is a subset of the other; rewriting the flagship landing page is a bigger call than this pass's scope, so logged rather than attempted. |
+| §02 Public Audience | partial evidence | `/center` broadly parallels design's `/centers` in intent (hero, comparison table, pricing teaser, FAQ, footer) but several of its own sub-components (`ComparisonTable`, `LandingFAQ`, `TrustSignals`) weren't read in full this pass, so copy/figure-level fidelity isn't confirmed either way; `/teacher/landing` (design's `/teachers` counterpart) wasn't inspected at all — out of this pass's scope, flagged for a follow-up read rather than guessed at. One confirmed bug fixed here (above). |
+| §03 Public Pricing | strong match on the money, unconfirmed on add-ons | all six center-plan prices and all three teacher-plan prices match `plans.ts`/`teacherPlans.ts` exactly (999/1,999/4,499/7,999/12,999/18,499 and 499/999/2,499); the interactive capacity-chip card design draws is instead six simultaneous cards live, a presentation difference not a data one. Design's 6-item add-ons section (extra branch 299/mo, team seat 99/mo, etc.) wasn't confirmed present on the live page — not read closely enough this pass to call it a gap with confidence, flagged as unconfirmed rather than asserted missing. One confirmed bug fixed here (above). Also noted, not fixed: the Solo "999 EGP" price is hardcoded a second and third time outside `PLANS` (JSON-LD schema, FAQ prose) — a drift risk, not touched this pass given it's cosmetic/SEO metadata rather than a charged figure. |
+| §04 Lead Capture | built, per R1 above | see the R1 entry for exactly what shipped and what didn't. |

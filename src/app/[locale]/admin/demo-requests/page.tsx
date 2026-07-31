@@ -6,8 +6,9 @@ import { usePathname } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
-import { formatDate } from '@/lib/formatNumber';
+import { formatDate, formatNumber } from '@/lib/formatNumber';
 import { normalizePhone } from '@/lib/utils/phone';
+import { EGYPT_GOVERNORATES, governorateLabel } from '@/lib/egyptGovernorates';
 
 interface DemoRequestRow {
   id: string;
@@ -19,6 +20,8 @@ interface DemoRequestRow {
   notes: string | null;
   created_at: string | null;
   updated_at: string | null;
+  area: string | null;
+  student_count: number | null;
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -75,6 +78,14 @@ export default function AdminDemoRequestsPage() {
     void loadRequests();
   }, [loadRequests]);
 
+  const areaLabel = useCallback(
+    (value: string) => {
+      const g = EGYPT_GOVERNORATES.find((opt) => opt.value === value);
+      return g ? governorateLabel(g, isRTL ? 'ar' : 'en') : value;
+    },
+    [isRTL]
+  );
+
   return (
     <div
       className="flex flex-col flex-1 min-h-0 min-h-screen w-full bg-[var(--color-surface-0)]"
@@ -119,6 +130,12 @@ export default function AdminDemoRequestsPage() {
                   <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">
                     {tAdmin('center')}
                   </th>
+                  <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">
+                    {tAdmin('area')}
+                  </th>
+                  <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider hidden md:table-cell">
+                    {tAdmin('studentCount')}
+                  </th>
                   <th className="text-start py-3 px-4 text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
                     {tCommon('status')}
                   </th>
@@ -130,13 +147,13 @@ export default function AdminDemoRequestsPage() {
               <tbody className="divide-y divide-[var(--color-border-subtle)]">
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="py-8 px-4 text-center text-[var(--color-text-secondary)]">
+                    <td colSpan={8} className="py-8 px-4 text-center text-[var(--color-text-secondary)]">
                       {tCommon('loading')}
                     </td>
                   </tr>
                 ) : rows.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 px-4 text-center text-[var(--color-text-secondary)]">
+                    <td colSpan={8} className="py-8 px-4 text-center text-[var(--color-text-secondary)]">
                       {tAdmin('demoRequestsEmpty')}
                     </td>
                   </tr>
@@ -154,6 +171,12 @@ export default function AdminDemoRequestsPage() {
                       </td>
                       <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">
                         {r.center_name ?? tCommon('notSet')}
+                      </td>
+                      <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">
+                        {r.area ? areaLabel(r.area) : tCommon('notSet')}
+                      </td>
+                      <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">
+                        {r.student_count != null ? formatNumber(r.student_count, locale) : tCommon('notSet')}
                       </td>
                       <td className="py-3.5 px-4">
                         <span
