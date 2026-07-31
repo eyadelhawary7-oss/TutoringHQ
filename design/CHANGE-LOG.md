@@ -64,7 +64,7 @@ If a row ever names one, that row is a mistake.
 | [#254](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/254) | `0ea2dce7` | 2026-07-31 | `Public-Marketing §04` (R1 built: `/talk-to-us`), 2 confirmed sign-up-CTA bugs fixed | `/{locale}/talk-to-us` (new), `/{locale}/center`, `/{locale}/pricing`, `/api/demo-request`, `/{locale}/admin/demo-requests` | v41 |
 | [#255](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/255) | `dfd3e6a1` | 2026-07-31 | `Center-Attendance` (F20: fixed silent payment-recording failure), V6 re-confirmed | `/{locale}/attendance` (`ScanResultScreen.tsx`) | v41 |
 | [#256](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/256) | `797b7709` | 2026-07-31 | `CEO §01` (3 confirmed bugs fixed: currency formatting, missing confirm dialog, silent config-save failure), S9/F21/second-dashboard findings logged | `/{locale}/ceo` | v41 |
-| [#257](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/257) | _pending_ | 2026-07-31 | none — doc only (Center-Students re-verification: fraction reconciled against the merged file post-#249, F22 logged) | none | v41 |
+| [#257](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/257) | `a363f4b4` | 2026-07-31 | none — doc only (Center-Students re-verification: fraction reconciled against the merged file post-#249, F22 logged) | none | v41 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
