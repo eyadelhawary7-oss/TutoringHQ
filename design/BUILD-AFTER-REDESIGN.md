@@ -292,6 +292,7 @@ resolve — this entry describes a bug that was already fixed before it was logg
 - **Why it is stuck:** `center_message_templates.auto_send boolean DEFAULT false` **exists**, but on an empty, orphaned table. Adopting it is a feature with a design decision inside it, and it spends credit unattended.
 - **Touches:** money.
 - **Source:** `DATA-GAPS.md` §0.2. Marked absent, then present, then present-but-orphaned — **check the readers, not just the schema.**
+- **Re-confirmed, 31 July 2026 (Center-WhatsApp survey).** `center_message_templates` still has zero application-code references anywhere in `src` — grepped fresh, not assumed. The live `/whatsapp` route reads `wa_meta_templates` instead (a different table entirely — Meta's own approval mirror, `status` CHECK-constrained to PENDING/APPROVED/REJECTED/IN_REVIEW, no `enabled`/`auto_send` column at all). Still stuck exactly as described; nothing to build until this decision lands.
 
 ## D5 · WhatsApp Pack as a one-time top-up
 - **What:** Replace the per-parent monthly pack with a one-time credit that never expires.
@@ -299,6 +300,7 @@ resolve — this entry describes a bug that was already fixed before it was logg
 - **Exists:** a per-parent monthly pack. A different model, not a partial one.
 - **Touches:** money. **This changes what an existing customer is charged.**
 - **Blocks:** D6.
+- **Re-confirmed, 31 July 2026 (Center-WhatsApp survey), with the exact live numbers.** Subscription side: `PACK_PRICE_PER_PARENT = 12` EGP/parent/month (`src/lib/parentPack.ts:8`). Blast side: `BLAST_PRICE_PER_PARENT_INCLUSIVE = 9.8` EGP/parent per announcement, capped at 2/month (hardcoded independently in three places), gated by a plan-tiered monthly allowance (`ANNOUNCEMENT_CAPS`, nano 700 through top_centers 99999). None of it maps to the design's per-message credit tiers (200 msgs/200 EGP, 1,000/750, 5,000/2,500, custom by volume) or its "never expires, carries over" balance framing. §03 (Custom Flow) is the same model's custom-amount extension and is confirmed absent from live code by exhaustive grep — building it first would mean building the custom-amount UI for a pricing model (§02) that doesn't exist yet. Also found, independent of this decision: the announcement route's own stored audit breakdown (`base_amount` 6.72 × `service_fee` 6% × `vat` 14% ≈ 8.10) does not sum to the 9.8 actually charged — a pre-existing internal inconsistency in the current model, worth a look whenever D5 is decided either way.
 
 ## D6 · Teacher WhatsApp screen and message allowance
 - **What:** Balance, what used it, the template list.
@@ -779,6 +781,13 @@ correction is in `TOKEN-SPEC.md` §2.
 - **Blocked by:** READY, but do **S4 first** — the tests are what make this safe to attempt.
 
 **Neither S4 nor S5 is urgent this week. Together they are the difference between convention and enforcement**, which is the honest summary of where tenant isolation stands.
+
+## S6 · No CSRF on any WhatsApp-Pack mutation
+- **What:** all five mutation routes behind `/whatsapp-pack` — `POST /api/parent-pack/announcement`, `POST /api/parent-pack/request`, `PATCH /api/settings/parent-pack`, `PATCH /api/parent-pack/student/[id]`, `PATCH /api/parent-pack/toggle` — authenticate via `requireOwnerAdminCenter`/`requireCenterAuth` (bearer session + role + tenant gate) but none of them call `validateCSRFRequest`. Confirmed by grep across all five route files plus both auth helpers themselves (`requireOwnerAdminCenter.ts`, `centerAuth.ts` — neither calls it on the routes' behalf).
+- **Why it matters now:** found during the Center-WhatsApp survey (31 July 2026), not the redesign work itself. `/api/parent-pack/announcement` debits `centers.announcement_balance` and can issue a real `invoices` row — a same-origin form or fetch from a malicious page, riding an owner/admin's existing session cookie, could trigger it. `src/lib/csrf.ts`'s own doc comment claims this exact protection is already applied "the same...rule the Paymob/WhatsApp/Bosta webhooks already apply" — that claim does not hold for these five routes.
+- **Touches:** auth, and money (the announcement route moves balance and can create invoices).
+- **Fix shape:** the same `if (!validateCSRFRequest(...)) return 403` pattern already used by every other mutation-bearing domain route — mechanical, no schema change, no behavior change for a legitimate same-origin caller carrying the token. Not done in this pass — flagged per the standing stop condition on anything touching money or auth, and because it is a 5-file change under active review discipline, not a single-file design-fidelity fix.
+- **Blocked by:** nothing technical. Waiting on Eyad's go-ahead to land it as its own PR, separate from the design-restructure chain.
 
 ---
 

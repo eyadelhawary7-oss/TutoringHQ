@@ -57,6 +57,7 @@ If a row ever names one, that row is a mistake.
 | [#247](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/247) | `dbf7ed5d` | 2026-07-31 | `Center-Home §01` — 3 small gaps from the fraction audit (attendance denominator, schedule tap affordance, day-name subtitle) | `/{locale}/dashboard` | v41 |
 | [#248](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/248) | `81db40be` | 2026-07-31 | `Center-Groups §01` (teacher name, center's cut, member balance badges, delete), `§03` Rooms (edit/delete), `§05` Schedule (week nav, day-pill dots, named conflicts) | `/{locale}/groups`, `/{locale}/rooms`, `/{locale}/schedule` | v41 |
 | [#249](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/249) | `1299c867` | 2026-07-31 | `Center-Students §01` (roster row balance), `§02` (student detail payment badge) | `/{locale}/students`, `/students/[id]` | v41 |
+| [#250](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/250) | `d2cf22a2` | 2026-07-31 | none — doc only (#249's SHA fill; R5 closed — built via #221, never marked closed) | none | v41 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -793,3 +794,43 @@ audit's §01/§02 findings, everything else logged rather than guessed at.
   the design draws — changing that meaning would remove information already shown, not add it, so left
   alone. `BottomTabBar`'s 3 tabs vs. the design's 4 (adding "Fees") is a shared, app-wide navigation
   component, not a Center-Students-scoped fix — not touched here for that reason.
+
+**Center-WhatsApp (31 July 2026) — surveyed, nothing built, no PR.** `FILE-COMPLETION-TABLE.md`
+row 10 already marked this file "Buildable now: —", blocked entirely by **D4** and **D5**. This pass
+read both live routes in full against all three design sections to confirm that call and put honest
+fractions on it, the same discipline applied to the three token-pass files. Structure coverage
+**2.5/5 → 2.5/5 (§01), 0/5 → 0/5 (§02), 0/4 → 0/4 (§03) — unchanged, nothing safely buildable found.**
+
+| § | fraction | what's built | what's missing |
+|---|---|---|---|
+| §01 Templates | 2.5/5 | template list with preview text (`wa_meta_templates`, real `status`/`category`), a preview modal showing sample variables, full EN/AR mirroring | per-template Auto/Manual/Off toggle (**D4**), an Edit-template action (templates are Meta-managed via hourly cron sync, not center-editable), the preview sheet's "Send automatically" control |
+| §02 Pack | 0/5 | *(built, but for a different model — see below)* | message-credit balance ("N messages left, never expires"), the segmented Notifications/Promotions credit balances, the three fixed recharge tiers with declining per-message rate, a "Buy credit" → Paymob purchase action |
+| §03 Custom Flow | 0/4 | none | tap-Custom → set-amount (live rate + total) → confirm-and-pay (Paymob) → done, entirely — confirmed absent by exhaustive grep, matching the project's own prior claim |
+
+**§02 is not "half-built" — it's a different business model, confirmed live, not inferred.** The design
+draws a one-time message-credit top-up (buy 200/1,000/5,000 messages, or a custom amount, at a
+declining per-message rate; credit never expires). Live code implements a monthly per-parent
+subscription (`PACK_PRICE_PER_PARENT = 12` EGP/parent/month) plus a separate per-blast charge
+(`BLAST_PRICE_PER_PARENT_INCLUSIVE = 9.8` EGP/parent, capped at 2 announcements/month, gated by a
+plan-tiered monthly allowance). Real, working, money-moving code — `sendAnnouncementBlast` charges
+real parents and writes real invoices — but it answers a different question than the screen this
+file's design draws. This is exactly what **D5** already says ("`LOOKS LIKE A RESTYLE`... a different
+model, not a partial one... this changes what an existing customer is charged") — re-confirmed, not
+newly found. Building toward the design here means migrating existing customers' billing model, which
+is Eyad's call, not a display fix. **D4** re-confirmed the same way: `center_message_templates.auto_send`
+still has zero application-code readers or writers anywhere in `src` (grepped fresh this pass) — the
+column exists on an orphaned table, adopting it is what D4 already says it is.
+
+**A second, independent finding, not part of the design fraction: no CSRF on any WhatsApp-Pack
+mutation.** All five mutation routes behind `/whatsapp-pack` — `POST /api/parent-pack/announcement`
+(the one that debits `announcement_balance` and can issue an invoice), `POST .../request`,
+`PATCH /api/settings/parent-pack`, `PATCH /api/parent-pack/student/[id]`, `PATCH /api/parent-pack/toggle`
+— authenticate via `requireOwnerAdminCenter`/`requireCenterAuth` (bearer session + role + tenant gate)
+but none of them call `validateCSRFRequest`, and neither `requireOwnerAdminCenter.ts` nor `centerAuth.ts`
+call it on their behalf. `src/lib/csrf.ts`'s own doc comment claims this exact protection is already
+applied "the same...rule the Paymob/WhatsApp/Bosta webhooks already apply" — that claim does not hold
+for these five routes, confirmed by grep across all five files plus both auth helpers. This is a
+standing-rule violation (`saas-multi-tenant-architecture` skill, locked rule 6: mutations require CSRF,
+fails closed) independent of the design-restructure work, and money-adjacent (the announcement route
+moves real balance and can create real invoices) — flagged for Eyad rather than silently patched
+mid-loop, per the standing stop condition on anything touching money or auth.
