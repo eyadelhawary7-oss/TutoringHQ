@@ -6,6 +6,7 @@ import { useRouter } from '@/i18n/routing';
 import { Bell } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
+import { formatRelativeMinutesAgo } from '@/lib/formatNumber';
 
 type NotificationRow = {
   id: string;
@@ -17,24 +18,9 @@ type NotificationRow = {
   created_at: string;
 };
 
-function formatRelative(iso: string, isAr: boolean): string {
-  const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return '';
-  const diff = Date.now() - t;
-  const sec = Math.floor(diff / 1000);
-  if (sec < 60) return isAr ? 'الآن' : 'now';
-  const min = Math.floor(sec / 60);
-  if (min < 60) return isAr ? `منذ ${min} د` : `${min}m ago`;
-  const hr = Math.floor(min / 60);
-  if (hr < 48) return isAr ? `منذ ${hr} س` : `${hr}h ago`;
-  const d = Math.floor(hr / 24);
-  return isAr ? `منذ ${d} يوم` : `${d}d ago`;
-}
-
 export function NotificationBell({ className }: { className?: string }) {
   const t = useTranslations('notifications');
   const locale = useLocale();
-  const isAr = locale === 'ar' || locale.startsWith('ar-');
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotificationRow[]>([]);
@@ -156,7 +142,7 @@ export function NotificationBell({ className }: { className?: string }) {
                           <span className="mt-0.5 block text-xs text-[var(--color-muted)] line-clamp-2">{n.body}</span>
                         ) : null}
                         <span className="mt-1 block text-xs text-[var(--color-faint)]">
-                          {formatRelative(n.created_at, isAr)}
+                          {formatRelativeMinutesAgo(n.created_at, locale)}
                         </span>
                       </span>
                       {/* Same unread signal as the full feed — a dot, not a
