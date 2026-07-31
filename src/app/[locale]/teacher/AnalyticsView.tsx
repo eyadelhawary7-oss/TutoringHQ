@@ -567,7 +567,13 @@ function RevenueSection({
  */
 function PileBPlaceholders() {
   const t = useTranslations('teacherPortal.analytics');
-  const titles = ['dropoutTitle', 'trendingTitle', 'missingTitle'] as const;
+  const titles = [
+    'dropoutTitle',
+    'trendingTitle',
+    'missingTitle',
+    'avgSessionTitle',
+    'missedIncomeTitle',
+  ] as const;
   return (
     <section>
       <SectionHeading>{t('collectingTitle')}</SectionHeading>

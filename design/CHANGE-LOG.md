@@ -65,6 +65,8 @@ If a row ever names one, that row is a mistake.
 | [#255](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/255) | `dfd3e6a1` | 2026-07-31 | `Center-Attendance` (F20: fixed silent payment-recording failure), V6 re-confirmed | `/{locale}/attendance` (`ScanResultScreen.tsx`) | v41 |
 | [#256](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/256) | `797b7709` | 2026-07-31 | `CEO §01` (3 confirmed bugs fixed: currency formatting, missing confirm dialog, silent config-save failure), S9/F21/second-dashboard findings logged | `/{locale}/ceo` | v41 |
 | [#257](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/257) | `a363f4b4` | 2026-07-31 | none — doc only (Center-Students re-verification: fraction reconciled against the merged file post-#249, F22 logged) | none | v41 |
+| [#258](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/258) | `b9a9b61c` | 2026-07-31 | none — doc only (#257's SHA fill) | none | v41 |
+| [#259](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/259) | _pending_ | 2026-07-31 | `Teacher-Insight §01` (2 missing roadmap cards added), referral-attribution bug fixed; D14 corrected | `/{locale}/teacher/analytics`, `/{locale}/teacher/landing` | v41 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -1060,3 +1062,51 @@ Full detail on the two new small gaps (§01 branches rollup, §02 balance-aging 
 tile, §04 inline-fix) is logged as **F22** in `BUILD-AFTER-REDESIGN.md`, grouped as one entry since all
 four are the same shape: real, low-severity, display-only gaps found while re-verifying already-shipped
 work, none touching money computation or write paths.
+
+**Teacher-Insight (31 July 2026) — first survey, and a factual correction to D14, not just a build.**
+Row 18, previously "not surveyed," blocked by **D14** ("teacher referral model... every referral table
+is center-to-center only, confirmed absent, not merely unfound"). Read `Merged-Teacher-Insight.html`
+fresh (2 sections: Analytics, Referrals) against a full re-read of the live code, independently, then
+reconciled.
+
+**D14's stated reason was wrong, not stale — verified live before touching anything.** A complete,
+working teacher-to-teacher referral loop already exists: `teacher_profiles.referral_code` (unique) and
+`referred_by_teacher_id`, plus `teacher_subscriptions.free_months_credit`/`referral_rewarded_at` — all
+four confirmed directly against `information_schema.columns` on the production database, not inferred
+from a migration file. `grantReferralReward` is genuinely wired into `combinedPaymentFinalize.ts`,
+idempotent, blocks self-referral. It has just never fired yet — 3 teachers hold an issued code, 0 have
+`referred_by_teacher_id` set, confirmed by a live count query. **What it is NOT is a percentage
+commission**: the code's own comment is explicit that "teachers do not earn commission" — the reward is
+a flat one-time +1 free month to both sides, nothing recurring, nothing decaying, no cash. The design
+draws a full copy of the **center** program instead — 25%/10%/5% recurring commission on the referred
+teacher's subscription fee, monthly aggregate income, a per-referral earnings/countdown list, and
+bank-withdrawal gated on identity verification. Building that means replacing the working free-month
+loop or running two reward systems side by side — genuinely still a decision, just not the one D14
+used to describe. Corrected rather than left to mislead the next reader, same discipline as D3's
+correction in this log.
+
+**§01 Analytics — built:** the design's single drawn frame ("the Pro-gated state a Standard teacher
+sees") promises 5 "what you'll unlock" roadmap cards; live's `PileBPlaceholders` only had 3
+(dropout rate, enrolment trend, students who often miss class) despite matching those 3 by name
+exactly. Added the missing 2 (`avgSessionTitle`, `missedIncomeTitle`) as the same honest
+"collecting data" placeholder already used for the other 3 — zero new computation, matching the
+existing component's own pattern, not a new metric being promised. Nothing else was built here: the
+live Pro dashboard behind this gate is already a full, sophisticated, real analytics suite (live
+revenue by group, 6-month trend, attendance by weekday, payment-risk list, all through
+`getStudentBalances`/`transactions.teacher_net`/`ar_by_student`, never a hand-rolled figure) — far
+beyond what this design file even draws, since the mock only shows the locked teaser, not the
+unlocked view.
+
+**Referral-attribution bug found and fixed, independent of D14.** `ReferralCard`'s share link points to
+`/teacher/landing?ref={code}`, but `TeacherLandingClient.tsx` never read the query string — all 5
+"Sign up" CTAs on that page were a static `href="/teacher/signup"`, silently dropping `ref` for anyone
+who clicked through instead of retyping the code. Fixed by having `teacher/landing/page.tsx` read
+`searchParams.ref` server-side and thread it into the client component as a prop — not
+`useSearchParams()` client-side, which would need a Suspense boundary this page doesn't have and risks
+breaking static rendering.
+
+| § | fraction | notes |
+|---|---|---|
+| §01 Analytics | 0.9/1 | upsell messaging/CTA matches in intent (styled differently — brass banner vs. the design's teal-gradient card with a lock icon and "Pro" pill, a restyle item, not a structural one); all 5 roadmap cards now present. The design has no frame for the actual Pro-unlocked dashboard, so nothing to score there — live's version is a superset |
+| §02 Referrals | 0.1/1, correctly still blocked | the only fragments that exist (a share-link card on the teacher home page, a bare-code display in Settings/Centers) are real but serve a different, simpler mechanism than the one drawn; the hero card, rate-decay timeline, per-referral earnings list and verification-gated withdraw/credit UI are all absent, same conclusion as before — now for the right reason |
+| **Overall** | **~50%** | first survey — no prior fraction to compare against |

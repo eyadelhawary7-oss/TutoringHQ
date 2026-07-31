@@ -16,13 +16,20 @@ const WA_SUPPORT = getSupportWhatsAppWaMeBase();
  * Fresh teacher-specific copy - NOT ported from the center page. Cream
  * throughout; brass identity for the private engine, teal for center features.
  */
-export default function TeacherLandingClient() {
+export default function TeacherLandingClient({
+  referralCode = null,
+}: {
+  referralCode?: string | null;
+}) {
   const t = useTranslations('teacherLanding');
   const tp = useTranslations('pricingPage.teacher'); // shared teacher pricing card copy
   const f = useTranslations('splash'); // shared footer/legal links
   const locale = useLocale();
   const isAr = locale === 'ar';
   const [mobileOpen, setMobileOpen] = useState(false);
+  const signupHref = referralCode
+    ? `/teacher/signup?ref=${encodeURIComponent(referralCode)}`
+    : '/teacher/signup';
 
   const features = [
     { title: t('features.f1.title'), body: t('features.f1.body'), accent: 'teal' as const, Icon: Building2 },
@@ -112,7 +119,7 @@ export default function TeacherLandingClient() {
                 {t('login')}
               </Link>
               <Link
-                href="/teacher/signup"
+                href={signupHref}
                 className="inline-flex rounded-xl px-5 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-press chq-focus"
                 style={{ background: 'var(--color-brass)' }}
               >
@@ -158,7 +165,7 @@ export default function TeacherLandingClient() {
                 {t('login')}
               </Link>
               <Link
-                href="/teacher/signup"
+                href={signupHref}
                 className="mt-2 rounded-xl py-3 text-center font-semibold text-white btn-press chq-focus"
                 style={{ background: 'var(--color-brass)' }}
                 onClick={() => setMobileOpen(false)}
@@ -185,7 +192,7 @@ export default function TeacherLandingClient() {
             </p>
             <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center md:justify-start">
               <Link
-                href="/teacher/signup"
+                href={signupHref}
                 className="rounded-xl bg-[var(--color-brass)] px-7 py-3.5 text-center text-base font-semibold text-white transition-opacity hover:opacity-90"
               >
                 {t('ctaPrimary')}
@@ -325,7 +332,7 @@ export default function TeacherLandingClient() {
             {tp('freeNote')}
           </p>
           <Link
-            href="/teacher/signup"
+            href={signupHref}
             className="mt-6 inline-flex w-full justify-center rounded-xl px-6 py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-press chq-focus"
             style={{ background: 'var(--color-brass)' }}
           >
@@ -347,7 +354,7 @@ export default function TeacherLandingClient() {
         <h2 className="text-xl font-bold text-[var(--color-text-primary)] md:text-2xl">{t('finalCta.title')}</h2>
         <div className="mt-6 flex justify-center">
           <Link
-            href="/teacher/signup"
+            href={signupHref}
             className="rounded-xl bg-[var(--color-brass)] px-8 py-4 text-center text-base font-semibold text-white transition-opacity hover:opacity-90"
           >
             {t('ctaPrimary')}
