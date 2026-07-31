@@ -20,12 +20,18 @@ import type {
   CeoTeacherSubscriptionRow,
 } from '@/types/ceoTeachers';
 import type { CeoTeacherCombined } from '@/types/ceo';
+import { TEACHER_PLANS } from '@/lib/teacherPlans';
 
-/** Monthly gross price per teacher tier (matches platform_config; price_gross is preferred when present). */
+/**
+ * Monthly gross price per teacher tier, used only when a subscription row has
+ * no snapshotted price_gross. Sourced from teacherPlans.ts (the single source
+ * of truth for the teacher subscription ladder) rather than duplicated here —
+ * see F21 in BUILD-AFTER-REDESIGN.md for why this used to drift silently.
+ */
 const TIER_MONTHLY_GROSS: Record<string, number> = {
-  teacher_standard: 499,
-  teacher_pro: 999,
-  teacher_scale: 2499,
+  teacher_standard: TEACHER_PLANS.teacher_standard.priceGross,
+  teacher_pro: TEACHER_PLANS.teacher_pro.priceGross,
+  teacher_scale: TEACHER_PLANS.teacher_scale.priceGross,
 };
 
 /** A teacher subscription contributes to MRR while it is being billed. Mirrors the center rule (['active','overdue']). */
