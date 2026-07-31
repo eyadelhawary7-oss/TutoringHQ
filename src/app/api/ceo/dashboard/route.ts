@@ -1,6 +1,5 @@
 import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
 import { getActionQueue, getPipelineSummary } from '@/lib/ceo';
-import { DEFAULT_RANGE, resolveRange } from '@/lib/ceo-time-range';
 import { getCurrentBillingMonth } from '@/lib/parent-pack';
 import type {
   CeoActivationCenter,
@@ -22,16 +21,6 @@ export async function GET(request: NextRequest) {
   const denied = requireAdminRole(ctx, ['super_admin', 'accountant']);
   if (denied) return denied;
 
-  const url = new URL(request.url);
-  const rawFrom = url.searchParams.get('from');
-  const rawTo = url.searchParams.get('to');
-  const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-  const fallback = resolveRange(DEFAULT_RANGE);
-
-  const fromDate: string =
-    rawFrom !== null && DATE_RE.test(rawFrom) ? rawFrom : fallback.from;
-  const toDate: string = rawTo !== null && DATE_RE.test(rawTo) ? rawTo : fallback.to;
-
   const supabase = ctx.supabaseAdmin;
   const now = new Date();
   const todayIso = now.toISOString().split('T')[0];
@@ -44,25 +33,9 @@ export async function GET(request: NextRequest) {
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const currentBillingMonth = getCurrentBillingMonth();
 
-  const monthStartDateStr = monthStart.slice(0, 10);
-  const thirtyDaysAgoStr = thirtyDaysAgo.slice(0, 10);
-
   const results = await Promise.all([
     supabase.from('centers').select('id, created_at, subscription_status, subscription_monthly_fee, early_adopter_price, billing_amount, billing_period, all_in_price, plan', { count: 'exact', head: false }).in('subscription_status', ['active', 'overdue']).eq('status', 'active').eq('is_test', false),
     supabase.from('mrr_snapshots').select('total_mrr, active_centers').order('snapshot_date', { ascending: false }).limit(1).maybeSingle(),
-    supabase.from('centers').select('id').eq('status', 'active').eq('is_test', false).gte('created_at', new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).toISOString()).lt('created_at', new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()),
-    supabase.from('centers').select('id').in('subscription_status', ['suspended', 'cancelled']).eq('is_test', false).gte('updated_at', monthStartDateStr),
-    supabase.from('payments').select('amount, status, confirmed').gte('paid_at', monthStartDateStr),
-    supabase.from('referrals').select('id').not('referrer_center_id', 'is', null),
-    supabase.from('centers').select('id, created_at, subscription_status').eq('status', 'active').eq('is_test', false),
-    supabase
-      .from('centers')
-      .select('id, created_at, subscription_status')
-      .eq('status', 'active')
-      .eq('is_test', false)
-      .gte('created_at', `${fromDate}T00:00:00Z`)
-      .lte('created_at', `${toDate}T23:59:59Z`),
-    supabase.from('centers').select('health_score_band').eq('status', 'active').eq('is_test', false).not('health_score_band', 'is', null),
     supabase
       .from('centers')
       .select(
@@ -95,13 +68,6 @@ export async function GET(request: NextRequest) {
   const [
     activeCentersRes,
     mrrSnapshotRes,
-    newYesterdayRes,
-    churnedRes,
-    paymentsRes,
-    referralsRes,
-    cohortRes,
-    cohortTableFilteredRes,
-    healthRes,
     centersResult,
     cashMtdResult,
     cashQtdResult,
@@ -119,13 +85,6 @@ export async function GET(request: NextRequest) {
   const dashboardQueryLabels = [
     'activeCenters',
     'mrrSnapshot',
-    'newYesterday',
-    'churned',
-    'payments',
-    'referrals',
-    'cohort',
-    'cohortTableFiltered',
-    'healthBands',
     'centersHealthList',
     'cashMtd',
     'cashQtd',
@@ -148,17 +107,6 @@ export async function GET(request: NextRequest) {
 
   const centers = (activeCentersRes.data ?? []) as { id: string; subscription_monthly_fee: number | null; early_adopter_price: number | null; billing_amount: number | null; billing_period?: string | null; all_in_price?: number | null; plan: string | null }[];
   const mrrSnapshot = mrrSnapshotRes.data as { total_mrr?: number; active_centers?: number } | null;
-  const newYesterday = (newYesterdayRes.data ?? []).length;
-  const churned = (churnedRes.data ?? []).length;
-  const payments = (paymentsRes.data ?? []) as { amount: number; status: string; confirmed: boolean }[];
-  const referrals = (referralsRes.data ?? []) as { id: string }[];
-  const cohortCenters = (cohortRes.data ?? []) as { id: string; created_at: string; subscription_status: string }[];
-  const cohortTableCenters = (cohortTableFilteredRes.data ?? []) as {
-    id: string;
-    created_at: string;
-    subscription_status: string;
-  }[];
-  const healthBands = (healthRes.data ?? []) as { health_score_band: string | null }[];
 
   const mrr = Number(mrrSnapshot?.total_mrr ?? centers.reduce((s, c) => {
     const pk: PlanKey = isPlanKey(c.plan) ? (c.plan as PlanKey) : 'starter';
@@ -176,55 +124,6 @@ export async function GET(request: NextRequest) {
     const fee = getImpliedMonthlyMrr(baseQ, period, pk);
     return s + Number(fee);
   }, 0));
-  const arr = mrr * 12;
-  const activeCount = centers.length;
-
-  const netNew30d = cohortCenters.filter((c) => c.created_at >= thirtyDaysAgoStr && ['active', 'overdue'].includes(c.subscription_status ?? '')).length
-    - cohortCenters.filter((c) => c.created_at < thirtyDaysAgoStr && ['suspended', 'cancelled'].includes(c.subscription_status ?? '')).length;
-
-  const lastMonthActive = cohortCenters.filter((c) => c.created_at < monthStartDateStr && ['active', 'overdue'].includes(c.subscription_status ?? '')).length;
-  const monthlyChurnRate = lastMonthActive > 0 ? (churned / lastMonthActive) * 100 : 0;
-
-  const confirmedPayments = payments.filter((p) => p.status === 'confirmed' || p.status === 'paid' || p.confirmed);
-  const collected = confirmedPayments.reduce((s, p) => s + Number(p.amount ?? 0), 0);
-  const expectedMrr = mrr;
-  const collectionRate = expectedMrr > 0 ? (collected / expectedMrr) * 100 : 100;
-
-  const referralRate = activeCount > 0 ? (referrals.length / activeCount) * 100 : 0;
-
-  const bandCounts: Record<string, number> = { Healthy: 0, Engaged: 0, 'At Risk': 0, Critical: 0 };
-  for (const b of healthBands) {
-    const band = b.health_score_band ?? 'Unknown';
-    if (band in bandCounts) bandCounts[band]++;
-  }
-
-  const cohortByMonth: Record<string, { total: number; activeByMonth: Record<number, number> }> = {};
-  for (const c of cohortTableCenters) {
-    const signupMonth = c.created_at.slice(0, 7);
-    if (!cohortByMonth[signupMonth]) {
-      cohortByMonth[signupMonth] = { total: 0, activeByMonth: {} };
-    }
-    cohortByMonth[signupMonth].total++;
-    const isActive = ['active', 'overdue'].includes(c.subscription_status ?? '');
-    if (isActive) {
-      const monthsSinceSignup = Math.floor((now.getTime() - new Date(c.created_at).getTime()) / (30 * 24 * 60 * 60 * 1000));
-      for (let m = 0; m <= Math.min(monthsSinceSignup, 12); m++) {
-        cohortByMonth[signupMonth].activeByMonth[m] = (cohortByMonth[signupMonth].activeByMonth[m] ?? 0) + 1;
-      }
-    }
-  }
-
-  const cohortTable = Object.entries(cohortByMonth)
-    .sort(([a], [b]) => b.localeCompare(a))
-    .slice(0, 12)
-    .map(([month, data]) => {
-      const row: { month: string; total: number; [k: string]: number | string } = { month, total: data.total };
-      for (let m = 0; m <= 6; m++) {
-        row[`m${m}`] = data.total > 0 ? Math.round(((data.activeByMonth[m] ?? 0) / data.total) * 100) : 0;
-      }
-      return row;
-    });
-
   const scansTodayMap = new Map<string, number>();
   for (const row of (scansTodayResult.data ?? []) as { center_id: string }[]) {
     scansTodayMap.set(row.center_id, (scansTodayMap.get(row.center_id) ?? 0) + 1);
@@ -423,28 +322,5 @@ export async function GET(request: NextRequest) {
     teacher_combined: teacherCombined,
   };
 
-  const legacyPayload = {
-    totalActiveCenters: activeCount,
-    mrr,
-    arr,
-    netNew30d,
-    monthlyChurnRate,
-    collectionRate,
-    referralRate,
-    newYesterday,
-    churned,
-    atRisk: bandCounts['At Risk'] + bandCounts.Critical,
-    healthDistribution: [
-      { name: 'Healthy', value: bandCounts.Healthy, color: '#10b981' },
-      { name: 'Engaged', value: bandCounts.Engaged, color: '#0d9488' },
-      { name: 'At Risk', value: bandCounts['At Risk'], color: '#f59e0b' },
-      { name: 'Critical', value: bandCounts.Critical, color: '#ef4444' },
-    ].filter((d) => d.value > 0),
-    cohortTable,
-  };
-
-  return NextResponse.json({
-    ...legacyPayload,
-    ...newDashboardFields,
-  });
+  return NextResponse.json(newDashboardFields);
 }
