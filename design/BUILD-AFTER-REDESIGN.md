@@ -994,6 +994,33 @@ doc and `db/schema.snapshot`, same "drop or document" decision as before, not re
 - **Touches:** money (read-only, display).
 - **Found:** 31 July 2026, CEO survey.
 
+## F22 · Center-Students re-verification — four small, previously-unlogged display gaps
+- **What, found together, 31 July 2026, re-verifying `Merged-Center-Students.html` against live code
+  fresh (post-#239/#249), not from memory:**
+  1. **§01 Roster:** the design's header/KPI assume a multi-branch rollup — subtitle "128 active ·
+     **3 branches**", KPI sub "across 3 branches". Live shows a total student count only, no branch
+     breakdown, even though branch selection is a real, live concept elsewhere in the app
+     (`src/stores/branchStore.ts`).
+  2. **§02 Student Detail:** no aging/next-due sub-line under the balance figure at all. The design
+     shows "12 days overdue · since 01/07/2026" (owes state) or "Next due 01/08/2026 · 400 EGP" (paid
+     state); live's `KpiCard` renders the number and a red/green tint, nothing else.
+  3. **§02 Student Detail:** no "ID card" quick-action tile. The design's 4 quick actions are
+     Message/Call/ID card/Edit; live's 4 conditional tiles are Call/Message/Collect payment/Edit —
+     viewing or printing this student's QR card is reachable only from the roster page, not from their
+     own detail page.
+  4. **§04 Import:** the Review step's flagged rows are skip-only. The design shows a per-row "Fix"
+     button letting staff correct a problem (missing phone, unrecognized grade) in place before
+     import; live only lists the row, the reason, and drops it — correcting it means fixing the source
+     file and re-uploading.
+- **Why one entry, not four:** all four are the same shape — real, low-severity, purely-display gaps
+  surfaced while re-verifying already-shipped work, none touching a write path or a money computation.
+  None was found in the two prior passes (#239, #249) or their audits.
+- **Not built this pass:** this was a verification-only pass (Eyad asked for the fraction reconciled
+  against the merged file, not a build); these four are logged for whenever `Center-Students` comes
+  back around, same convention as F12–F15 above.
+- **Touches:** none — display only.
+- **Found:** 31 July 2026, Center-Students re-verification.
+
 ## Found, not yet formally logged — CEO survey findings needing a closer look
 - **A second CEO dashboard exists.** `/ceo` (surveyed here) and a separate `/ceo-dashboard` (`src/app/[locale]/(admin)/ceo-dashboard/CeoDashboardClient.tsx`, backed by its own `/api/ceo/financials`, `/api/ceo/growth-panel`, `/api/ceo/health-panel`, `/api/ceo/mrr`, `/api/ceo/command-strip` routes — none of which `/ceo` calls) both live behind the same middleware wall and the same `AdminSidebar` entry points. This is the same shape as the four pairs already tracked in `DUPLICATE-ROUTES.md` ("facts for a decision, nothing merged or deleted") — not added there yet since `/ceo-dashboard`'s own client wasn't read in full this pass; flagging for a follow-up read to do that comparison justice rather than guessing at what it uniquely carries.
 - **Section H of `/ceo` is dead weight, not a security control.** A hardcoded client-side string (`'CENTERHQ-ADMIN'`, visible in the shipped JS) gates 4 "danger" buttons that set the exact same `platform_config` keys already exposed as plain checkboxes in Section G — the real protection, `requireSuperAdminApi`, is server-side and identical either way. Section H adds confusion (a fake sense of an extra security layer) without adding any actual one. Likely worth deleting outright rather than "fixing" — a product call on whether Section H should exist at all, not made here.
