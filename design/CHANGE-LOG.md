@@ -96,6 +96,7 @@ If a row ever names one, that row is a mistake.
 | [#287](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/287) | `7ed6bdf` | 2026-07-31 | none — doc only (#285 self-row, #286 logged, Public-Marketing surveyed, D29/D30/F25 added) | none | v42 |
 | [#288](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/288) | `4aad72d` | 2026-07-31 | `CEO` — F21 teacher-tier price fallback now sources `TEACHER_PLANS`, dead `legacyPayload` removed from `/api/ceo/dashboard` (7 unused Supabase queries/30s poll) | `/{locale}/ceo`, `/api/ceo/dashboard` | v42 |
 | [#289](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/289) | `7faa5c9` | 2026-07-31 | none — doc only (#287 self-row, #288 logged, CEO surveyed, F21 closed) | none | v42 |
+| [#290](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/290) | `e8ccd86` | 2026-07-31 | none — doc only (#289 self-row, Teacher-Insight/Teacher-WhatsApp surveyed, D6 corrected — closes the batch-4 9-file sweep) | none | v42 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -1459,3 +1460,35 @@ re-verifications, but both forked before the other's fixes landed and neither co
 self-detect the resulting GitHub-level content conflict (`mergeable_state: dirty`) since it doesn't
 fail CI — both were closed and their content consolidated here, rebuilt on top of current master in
 one pass. No content changed from either original PR, only the base.
+
+**Design-Patterns adoption audit (31 July 2026, doc only) — row 1 corrected from an assumption to a
+measurement.** `FILE-COMPLETION-TABLE.md` had carried row 1 as "100% today: YES" since PR #220 shipped
+the six shared primitives on 29 July, on the strength of the primitives existing — #220's own note said
+adoption was separate, per-file work, and nothing had gone back to actually count it since. Asked to do
+that count for real rather than continue assuming it, not because a specific screen's PR surfaced a
+suspicion this time.
+
+Three independent, read-only, full-codebase audits — every candidate file opened and read directly, none
+trusting this log's, `FILE-COMPLETION-TABLE.md`'s, or `PER-FILE-PROMPT.md`'s existing claims — measured
+real adoption per primitive: `EmptyState` 7/73 (9.6%), loading states 1/137 (0.7%), `ListRow` 5/14
+(35.7%), `ActionSheet`/`RecordActionBar`/`ExpandableRow` 0% each (zero adopters anywhere in the app for
+all three). Full per-file detail lives in the new `design/PATTERN-ADOPTION-LEDGER.md`; the corrected
+finding lives in **R4** in `BUILD-AFTER-REDESIGN.md`; row 1 in `FILE-COMPLETION-TABLE.md` is corrected
+from "100% today: YES" to "no," which the not-surveyed count reflects (8 → 7 — row 1 is now measured, not
+skipped).
+
+**Two findings surfaced by the audit that are bigger than a low fraction:**
+- A second, different, non-conforming component also named `EmptyState` (`src/components/empty-states/EmptyState.tsx`,
+  predates #220, never migrated) accounts for 4 of the files that look like adoption but aren't. This
+  also explains #220's own "11 adopters" claim: 7 real + 4 wrong-component = 11, the same number — the
+  original count was very likely a bare-name grep that didn't check which component was actually
+  imported, not 11 genuine adopters even at the time.
+- `admin/centers` and `rooms` were flagged as `ActionSheet`/`ListRow` non-adopters back in `PER-FILE-PROMPT.md`
+  at #220 time. `rooms`' kebab menu was wired to real `onClick` handlers by #248 earlier today — genuinely
+  fixed, and worth being precise about what that fix was: it made the existing hand-rolled dropdown
+  *functional*, not *converted* to the shared primitive. Both facts are true and are different facts;
+  re-verified directly against the live file rather than assumed from the change-log entry for #248.
+
+**No code changed by this pass — it is exclusively a measurement, and the ~200 files it found are each a
+legitimate, individually-logged conversion opportunity for whenever that file's own row comes up again,
+not a to-do list to batch through at once.**

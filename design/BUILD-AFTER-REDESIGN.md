@@ -172,10 +172,48 @@ Everyone joining before 16 August waits until 16 August to start their 14 days; 
 ## R4 · Empty states, loading states and row-action patterns
 - **What:** Six pattern sheets covering the first hour of a real center and the second every day after.
 - **Drawn in:** `Merged-Design-Patterns` §01–§06.
-- **Exists:** ad hoc per screen.
-- **Build:** the pattern set as shared components, then adopt screen by screen.
+- **Built, 29 July 2026 (#220):** all six primitives shipped in `src/components/patterns/` plus the
+  corrected `shared/EmptyState.tsx`. #220's own note was explicit that adoption was a separate, per-file
+  effort: *"Adoption is NOT in this PR — it is per-file."*
+- **Corrected 31 July 2026 — a full-codebase adoption audit, not an assumption.** Nothing had gone back to
+  actually measure that per-file adoption until now. Three independent read-only sweeps (every candidate
+  file opened and read, none trusted from documentation) found real adoption is low, uneven across the six
+  primitives, and in three cases zero:
+  - **`EmptyState`:** 7 real adopters / 73 candidate files ≈ **9.6%**. A second, different,
+    non-conforming component also named `EmptyState` (`src/components/empty-states/EmptyState.tsx`,
+    predates #220, never migrated) accounts for 4 more files that look like adoption but aren't — a naming
+    collision, not a partial adoption. The remaining 62 are fully ad hoc. This also explains #220's own
+    "11 adopters" claim: 7 real + 4 wrong-component = 11, the same number — the original count almost
+    certainly grepped the bare name without checking which component was actually imported.
+  - **Loading states** (`ListSkeleton`/`RecordSkeleton`/`StillWorking`/`ActionSpinner`): 1 real adopter
+    (`ListSkeleton`, one file) / 137 candidates ≈ **0.7%**. `RecordSkeleton`, `StillWorking`, and
+    `ActionSpinner` have **zero adopters anywhere**, confirmed by grepping the exact identifiers. Every
+    ad hoc convention #220 was built to replace (9 `chq-skeleton` files, 11 route `loading.tsx` files,
+    `LoadingButton` for in-flight actions) is still fully intact today, alongside a previously-uncatalogued
+    37-file teacher-portal-only convention and a second competing CSS shimmer class (`.skeleton`) nobody
+    had named before.
+  - **`ListRow`:** 5/14 ≈ **35.7%** — the only primitive with meaningful uptake, and every adopter landed
+    incidentally as part of some other file's own sweep this session (e.g. `dashboard.tsx`'s schedule rows
+    via #247), not a dedicated adoption pass.
+  - **`ActionSheet`, `RecordActionBar`, `ExpandableRow`: zero adopters anywhere in the app** (0/3, 0/4,
+    0/1). All three known non-adopters flagged in `PER-FILE-PROMPT.md` at #220 time (`admin/centers`,
+    `rooms`, `dashboard`) were re-verified directly: `dashboard`'s row-level menu is genuinely gone
+    (replaced by `ListRow` navigation), but `admin/centers` and `rooms` are both still fully ad hoc —
+    `rooms`' kebab menu was made *functional* by #248 this session, which is not the same fact as
+    *converted*.
+  - One high-leverage fix identified: `src/components/charts/ChartCard.tsx`'s loading spinner is shared by
+    6 screens (`ceo`, `dashboard`, `branches`, `admin`, `admin/analytics`, `analytics`) — converting this
+    one file moves 6 screens at once, unlike almost everything else on this list.
+  - Full per-file breakdown — every adopter and every non-adopter named individually, none folded into a
+    summary — is `design/PATTERN-ADOPTION-LEDGER.md`.
+- **This is a live, continuous gap, not a one-shot close.** Each file on the ledger is logged as its own
+  gap, the same standard as a missing structural element elsewhere in this table. "The primitive shipped,
+  so adoption is happening" is disproved as a general claim by this audit — it happened, incidentally, for
+  a handful of `ListRow` sites; it has not happened at all for three of the other five primitives.
 - **Touches:** none.
-- **Blocked by:** READY — the token layer landed in #209, which was its only dependency.
+- **Blocked by:** nothing external. Every remaining file is buildable today, the same as before — the gap
+  is that adoption was never actually tracked as a number until this audit, not that anything stands in
+  its way.
 
 ## R5 · Admin teacher ↔ center linking, on a new route
 - **What:** An internal view of which teachers are linked to which centers, with an assign form.
