@@ -695,6 +695,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
           studentId: st.id,
           timestamp: Date.now(),
         });
+        setAddedAmountToBalance(0);
         setScannedStudent(studentForDisplay);
         await queueScan({
           student_id: st.id,
@@ -790,6 +791,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
         setPaymentModalHeadline(
           bal > 0 ? `${t('payPrefix')} ${formatNumber(bal, locale)}\u00A0${tCommon('egp')}, ${st.name}` : null,
         );
+        setAddedAmountToBalance(0);
         setScannedStudent(studentForDisplay);
         if (modeRef.current === 'manual') {
           setManualIdInput('');
@@ -912,6 +914,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
         studentId: student.id,
         timestamp: Date.now(),
       });
+      setAddedAmountToBalance(0);
       setScannedStudent(studentForDisplay);
       await queueScan({
         student_id: student.id,
@@ -1008,6 +1011,7 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
       setPaymentModalHeadline(
         bal > 0 ? `${t('payPrefix')} ${formatNumber(bal, locale)}\u00A0${tCommon('egp')}, ${student.name}` : null,
       );
+      setAddedAmountToBalance(0);
       setScannedStudent(studentForDisplay);
       if (mode === 'manual') {
         setManualIdInput('');

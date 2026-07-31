@@ -6363,7 +6363,8 @@
     "amountAddedToBalance": "تمت إضافة {amount} إلى الرصيد",
     "payPrefix": "ادفع",
     "sessionFeeLabel": "رسوم الحصة",
-    "pendingAmountLabel": "المبلغ المستحق"
+    "pendingAmountLabel": "المبلغ المستحق",
+    "paidVia": "عبر {method}"
   },
   "scanner": {
     "title": "ماسح QR",
