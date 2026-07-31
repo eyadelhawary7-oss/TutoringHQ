@@ -99,6 +99,8 @@ If a row ever names one, that row is a mistake.
 | [#290](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/290) | `e8ccd86` | 2026-07-31 | none — doc only (#289 self-row, Teacher-Insight/Teacher-WhatsApp surveyed, D6 corrected — closes the batch-4 9-file sweep) | none | v42 |
 | [#291](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/291) | `e7b7b3f` | 2026-07-31 | none — doc only (#290 self-row, Design-Patterns adoption audit — row 1 corrected, `PATTERN-ADOPTION-LEDGER.md` added) | none | v42 |
 | [#292](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/292) | `b96cb31` | 2026-07-31 | `students`/`groups`/`schedule` — migrated off the wrong `EmptyState` component onto the canonical one from `#220` | `/{locale}/students`, `/{locale}/groups`, `/{locale}/schedule` | v42 |
+| [#293](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/293) | `83cfa17` | 2026-07-31 | none — doc only (#291 self-row, #292 logged, EmptyState fraction updated 9.6%→13.9%) | none | v42 |
+| [#294](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/294) | `2bde01e` | 2026-07-31 | `payments` (dead-import removal, protected file, merged by Eyad directly) + `OrdersPageClient` — migrated off the wrong `EmptyState` component; old `empty-states/EmptyState.tsx` deleted | `/{locale}/payments`, `/{locale}/orders` | v42 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -1495,25 +1497,43 @@ skipped).
 legitimate, individually-logged conversion opportunity for whenever that file's own row comes up again,
 not a to-do list to batch through at once.**
 
-**EmptyState migration, 31 July 2026 (#292) — a direct, human-directed fix, not a proactive sweep.**
-Eyad asked directly for the duplicate `EmptyState` to be dealt with: confirm the canonical component,
-migrate the wrong-component files onto it, delete the old one. 3 of the 4 flagged files
-(`students/page.tsx`, `groups/page.tsx`, `schedule/page.tsx`) were migrated — same copy, same click
-handlers, same translation keys, just resolved through the canonical component's contract instead of the
-old one's. Independently adversarially verified against the live diff (not the implementer's self-report)
-before merge: icon prop shape, import path, byte-identical behavior and copy, dual-action order on
-`students/page.tsx`, no invented `alt` text, no scope creep — all confirmed. One inaccuracy did surface
-in the PR's own description (a claim that `OrdersPageClient.tsx` also still imported the old component)
-— checked directly and found false, corrected before merge. Notably, the adversarial verifier's own
-report repeated the same wrong claim rather than independently re-checking it — the exact failure shape
-this session keeps finding (a claim repeated because it sounds plausible, not because someone checked),
-caught only because it was checked a third time outside both agents.
+**EmptyState migration, 31 July 2026 (#292, #294) — a direct, human-directed fix, not a proactive sweep,
+plus a genuine error found and fixed in the same pass.** Eyad asked directly for the duplicate
+`EmptyState` to be dealt with: confirm the canonical component, migrate the wrong-component files onto
+it, delete the old one.
 
-**The 4th file, `payments/page.tsx`, is not migrated — it doesn't need to be.** Its `EmptyState` import
-turned out to be dead code, never rendered anywhere in the file. Removing it is a one-line change, but the
-file is `Merged-Center-Money`, one of six protected files this project never lets automation touch — a
-workflow sub-agent attempting the edit was correctly blocked by a safety check, since "migrate the 4
-files" was never an explicit, named exception to that standing rule. Deleting
-`src/components/empty-states/EmptyState.tsx` itself waits on that one import being removed first.
-`design/PATTERN-ADOPTION-LEDGER.md` and **R4** updated to match: `EmptyState` real adoption 7/73 (9.6%) →
-10/72 (13.9%); `payments/page.tsx` reclassified from "wrong-component" to "excluded, dead import."
+**#292 — 3 of the then-known 4 flagged files migrated.** `students/page.tsx`, `groups/page.tsx`,
+`schedule/page.tsx` moved onto the canonical component — same copy, same click handlers, same
+translation keys, just resolved through the canonical contract instead of the old one's. Independently
+adversarially verified against the live diff (not the implementer's self-report) before merge: icon prop
+shape, import path, byte-identical behavior and copy, dual-action order on `students/page.tsx`, no
+invented `alt` text, no scope creep — all confirmed.
+
+**A wrong correction was made to #292's own description after merge, then itself corrected.** The PR
+body originally said `OrdersPageClient.tsx` was one of the files still importing the old component
+(alongside `payments/page.tsx`) as the reason the old component couldn't be deleted yet — a claim the
+implementer and its adversarial verifier both made. That claim was **true**. A grep run to double-check
+it returned no matches, and that empty result was trusted at face value to "correct" the PR body and this
+log to say the claim was false — without a second check. There is no fully confirmed explanation for why
+the first grep came back empty; re-running the identical command afterward found the import and its
+render immediately (`empty-states/EmptyState` at lines 23/432). The original 3-agent EmptyState audit had
+also independently miscategorized this same file as "ad hoc" despite claiming to have read it in full —
+so it was missed twice before being caught a third time, and the "correction" made it worse, not better,
+for one round. `#292`'s description has since been edited to state this plainly rather than leave the
+wrong correction standing.
+
+**#294 fixed the real situation.** `payments/page.tsx`'s `EmptyState` import turned out to be genuinely
+dead code (confirmed independently: ESLint itself flags the same line as unused on master) — a one-line
+removal, but the file is `Merged-Center-Money`, one of six protected files this project never lets
+automation touch. A workflow sub-agent that attempted the edit was correctly blocked by a safety check,
+since "migrate the 4 files" was never an explicit, named exception to that standing rule — Eyad gave that
+exception directly for this one file, and the fix (plus `OrdersPageClient.tsx`'s real migration, plus the
+resulting safe deletion of `src/components/empty-states/EmptyState.tsx`) was done personally rather than
+via another agent, then merged by Eyad himself per the protected-file routing rule, not auto-merged on
+green CI like the rest of tonight's PRs.
+
+**Final state, both PRs landed:** `EmptyState` real adoption 7/73 (9.6%, original audit) → 11/72 (15.3%,
+final) — `students`, `groups`, `schedule`, and `OrdersPageClient.tsx` all migrated; `payments/page.tsx`'s
+dead import removed; the old, non-conforming component deleted entirely, confirmed by a clean grep across
+the whole `src` tree showing zero remaining importers before the deletion landed.
+`design/PATTERN-ADOPTION-LEDGER.md` and **R4** updated to match.

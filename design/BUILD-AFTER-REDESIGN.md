@@ -184,13 +184,14 @@ Everyone joining before 16 August waits until 16 August to start their 14 days; 
     predates #220, never migrated) accounted for 4 more files that looked like adoption but weren't — a
     naming collision, not a partial adoption. This also explains #220's own "11 adopters" claim: 7 real +
     4 wrong-component = 11, the same number — the original count almost certainly grepped the bare name
-    without checking which component was actually imported. **Updated 31 July 2026 (#292):** 3 of the 4
-    wrong-component files (`students`, `groups`, `schedule`) were migrated onto the canonical primitive; the
-    4th (`payments/page.tsx`) turned out to be a dead, unrendered import rather than a live wrong-component
-    instance, and is excluded rather than counted as either. Current state: **10 real adopters / 72
-    candidates ≈ 13.9%.** The remaining 62 are fully ad hoc. `payments/page.tsx`'s dead-import removal is
-    outstanding — it's a protected `Center-Money` file and needs an explicit go-ahead before even a
-    one-line deletion, so the old component can't be deleted yet.
+    without checking which component was actually imported. **Migrated and closed, 31 July 2026 (#292,
+    #294).** `students`, `groups`, and `schedule` were migrated in #292. A 5th wrong-component file the
+    original audit had missed — `(dashboard)/orders/OrdersPageClient.tsx`, independently miscategorized as
+    "ad hoc" despite the audit claiming to have read it in full — surfaced during a follow-up check and was
+    migrated in #294, alongside `payments/page.tsx`'s dead, unrendered import (removed, never a live
+    wrong-component instance) and the resulting deletion of `src/components/empty-states/EmptyState.tsx`
+    once a clean grep confirmed zero remaining importers anywhere. **Final state: 11 real adopters / 72
+    candidates ≈ 15.3%.** The remaining 61 are fully ad hoc. The old component no longer exists.
   - **Loading states** (`ListSkeleton`/`RecordSkeleton`/`StillWorking`/`ActionSpinner`): 1 real adopter
     (`ListSkeleton`, one file) / 137 candidates ≈ **0.7%**. `RecordSkeleton`, `StillWorking`, and
     `ActionSpinner` have **zero adopters anywhere**, confirmed by grepping the exact identifiers. Every
