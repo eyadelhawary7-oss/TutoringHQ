@@ -109,6 +109,7 @@ export default function ImportStudentsPage() {
     setCenterGroups([]);
     setGroupMapping({});
     setCsvGroupOrder([]);
+    setNameFixes({});
     try {
       const buffer = await file.arrayBuffer();
       const data = await parseFile(buffer, file.name);
@@ -173,12 +174,34 @@ export default function ImportStudentsPage() {
     () => Object.keys(columnMap).find((k) => columnMap[k] === 'group'),
     [columnMap],
   );
+
+  /**
+   * Per-row name correction, keyed by the row's index in `parsedData.rows`.
+   *
+   * Design (Merged-Center-Students §04) draws a per-row "Fix" affordance on the
+   * Review step's flagged rows, letting staff correct a problem in place before
+   * import instead of re-uploading the whole file. Missing name is the only
+   * skip reason that exists live (see skippedRows below), so this is scoped to
+   * that one field - typing a name here reclassifies the row from "needs a fix"
+   * to "ready to add" without touching the source file.
+   */
+  const [nameFixes, setNameFixes] = useState<Record<number, string>>({});
+
+  const effectiveName = useCallback(
+    (row: Record<string, unknown>, index: number): string => {
+      const fixed = nameFixes[index]?.trim();
+      if (fixed) return fixed;
+      return nameHeader ? String(row[nameHeader] ?? '').trim() : '';
+    },
+    [nameHeader, nameFixes],
+  );
+
   const previewRows = useMemo((): PreviewRow[] => {
     if (!parsedData || !centerId || !nameHeader) return [];
     const rows: PreviewRow[] = [];
-    for (const row of parsedData.rows) {
-      const name = String(row[nameHeader] ?? '').trim();
-      if (!name) continue;
+    parsedData.rows.forEach((row, i) => {
+      const name = effectiveName(row, i);
+      if (!name) return;
       const phone = phoneHeader ? String(row[phoneHeader] ?? '').trim() || null : null;
       let parent_phone: string | null = null;
       if (parentPhoneHeader) {
@@ -199,9 +222,9 @@ export default function ImportStudentsPage() {
         }
       }
       rows.push({ name, phone, parent_phone, groupLabel });
-    }
+    });
     return rows;
-  }, [parsedData, centerId, nameHeader, phoneHeader, parentPhoneHeader, groupHeader, groupMapping, centerGroups, t]);
+  }, [parsedData, centerId, nameHeader, phoneHeader, parentPhoneHeader, groupHeader, groupMapping, centerGroups, t, effectiveName]);
 
   /**
    * Rows the import will DROP, and why.
@@ -216,19 +239,20 @@ export default function ImportStudentsPage() {
    *
    * Missing name is the ONLY reason live skips a row. The design's other
    * example, "Grade not recognised", has no live equivalent: grade is not an
-   * import field. Not invented here.
+   * import field. Not invented here. `index` threads through to the inline
+   * "Fix" input below.
    */
-  const skippedRows = useMemo((): { row: number; reason: string }[] => {
+  const skippedRows = useMemo((): { index: number; row: number; reason: string }[] => {
     if (!parsedData || !nameHeader) return [];
-    const out: { row: number; reason: string }[] = [];
+    const out: { index: number; row: number; reason: string }[] = [];
     parsedData.rows.forEach((row, i) => {
-      const name = String(row[nameHeader] ?? '').trim();
+      const name = effectiveName(row, i);
       // +2: spreadsheet rows are 1-based and row 1 is the header, so the first
       // data row is row 2 in the file the center is looking at.
-      if (!name) out.push({ row: i + 2, reason: t('reasonMissingName') });
+      if (!name) out.push({ index: i, row: i + 2, reason: t('reasonMissingName') });
     });
     return out;
-  }, [parsedData, nameHeader, t]);
+  }, [parsedData, nameHeader, t, effectiveName]);
 
   const importPayloadAndMembers = useMemo(() => {
     if (!parsedData || !centerId || !nameHeader) {
@@ -236,9 +260,9 @@ export default function ImportStudentsPage() {
     }
     const inserts: Record<string, unknown>[] = [];
     const memberGroupIds: (string | null)[] = [];
-    for (const row of parsedData.rows) {
-      const name = String(row[nameHeader] ?? '').trim();
-      if (!name) continue;
+    parsedData.rows.forEach((row, i) => {
+      const name = effectiveName(row, i);
+      if (!name) return;
       const phone = phoneHeader ? String(row[phoneHeader] ?? '').trim() || null : null;
       let parent_phone: string | null = null;
       if (parentPhoneHeader) {
@@ -261,9 +285,9 @@ export default function ImportStudentsPage() {
         payment_status: 'unpaid',
       });
       memberGroupIds.push(groupUuid);
-    }
+    });
     return { inserts, memberGroupIds };
-  }, [parsedData, centerId, nameHeader, phoneHeader, parentPhoneHeader, groupHeader, groupMapping, centerGroups]);
+  }, [parsedData, centerId, nameHeader, phoneHeader, parentPhoneHeader, groupHeader, groupMapping, centerGroups, effectiveName]);
 
   const hasNameMapping = Object.values(columnMap).includes('name');
 
@@ -575,16 +599,30 @@ export default function ImportStudentsPage() {
                 <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
                   {t('needsFixTitle')}
                 </p>
-                <ul className="mt-2 space-y-1">
+                <ul className="mt-2 space-y-2">
                   {skippedRows.map((s) => (
-                    <li
-                      key={s.row}
-                      className="flex flex-wrap items-baseline gap-x-2 text-sm text-[var(--color-text-primary)]"
-                    >
-                      <span className="font-medium">
-                        {t('rowLabel', { n: formatPlainInteger(s.row, locale) })}
+                    <li key={s.row} className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+                      <span className="flex shrink-0 flex-wrap items-baseline gap-x-2 text-sm text-[var(--color-text-primary)]">
+                        <span className="font-medium">
+                          {t('rowLabel', { n: formatPlainInteger(s.row, locale) })}
+                        </span>
+                        <span className="text-[var(--color-text-secondary)]">{s.reason}</span>
                       </span>
-                      <span className="text-[var(--color-text-secondary)]">{s.reason}</span>
+                      {/* Design (§04 Review step): a per-row "Fix" affordance so a
+                          flagged row can be corrected in place instead of the
+                          whole file being re-uploaded. Scoped to the one reason
+                          live can actually produce (missing name) - typing here
+                          moves the row into "ready to add" above immediately. */}
+                      <input
+                        type="text"
+                        value={nameFixes[s.index] ?? ''}
+                        onChange={(e) =>
+                          setNameFixes((prev) => ({ ...prev, [s.index]: e.target.value }))
+                        }
+                        placeholder={t('fixNamePlaceholder')}
+                        dir="auto"
+                        className="min-w-0 flex-1 rounded-lg border border-amber-300 bg-[var(--color-surface-0)] px-2.5 py-1.5 text-sm text-[var(--color-text-primary)]"
+                      />
                     </li>
                   ))}
                 </ul>

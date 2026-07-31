@@ -1542,7 +1542,8 @@
     "needsFixTitle": "Needs a fix",
     "rowLabel": "Row {n}",
     "reasonMissingName": "Missing student name",
-    "skippedNote": "Rows with issues are skipped unless you fix them in the file and upload again.",
+    "skippedNote": "Type a name below to include a row, or fix it in the file and upload again.",
+    "fixNamePlaceholder": "Student's name",
     "stepUpload": "Upload",
     "stepMap": "Map Columns",
     "stepPreview": "Preview & Import",
@@ -5882,7 +5883,11 @@
       "noFamilyLinked": "No family linked yet",
       "balance": "Balance",
       "overdue": "Overdue",
-      "paidUp": "Paid up"
+      "paidUp": "Paid up",
+      "idCardAction": "ID card",
+      "parentRole": "Parent",
+      "siblingRole": "Sibling",
+      "sinceEnrolled": "since {date}"
     },
     "nav": {
       "viewCart": "View cart",

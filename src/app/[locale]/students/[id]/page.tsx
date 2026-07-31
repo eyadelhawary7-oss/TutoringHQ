@@ -9,8 +9,21 @@ import { getCsrfHeaders } from '@/lib/csrf-client';
 import { useCardOrderCart } from '@/hooks/useCardOrderCart';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useUser } from '@/contexts/UserContext';
-import { ArrowLeft, ClipboardList, CreditCard, MessageCircle, Pencil, Phone, X } from 'lucide-react';
+import QRCode from 'qrcode';
+import {
+  ArrowLeft,
+  ClipboardList,
+  CreditCard,
+  Download,
+  IdCard,
+  MessageCircle,
+  Pencil,
+  Phone,
+  Printer,
+  X,
+} from 'lucide-react';
 import { KpiCard } from '@/components/shared';
+import { QRCard } from '@/components/QRCard';
 import { FamilyLinkingSection } from '@/components/students/FamilyLinkingSection';
 import { ReceiptModal } from '@/components/payments/ReceiptModal';
 import { pushRecentlyViewedStudent } from '@/lib/recentlyViewedStudents';
@@ -32,9 +45,19 @@ type StudentRow = {
   sibling_family_id?: string | null;
   subject?: string | null;
   grade_level?: string | null;
+  qr_code?: string | null;
+  created_at?: string | null;
 };
 
+/** Another student sharing this one's `sibling_family_id` - Merged-Center-Students
+ * §02 "Family" card lists the parent AND each sibling as its own contact row.
+ * Live previously rendered only the `families` row (one line for the whole
+ * household); this is the missing per-member half. */
+type SiblingRow = { id: string; name: string; subject: string | null; grade_level: string | null };
+
 type GroupRow = { id: string; name: string; subject: string | null; fee?: number };
+
+type CenterInfo = { name: string; logo_url: string | null };
 
 type CollectMethod = 'cash' | 'instapay' | 'bank_transfer';
 
@@ -53,7 +76,7 @@ interface ScanRecord {
 // and selecting it makes PostgREST 400 the whole query, which surfaces as
 // "student not found" for every student.
 const STUDENT_SELECT =
-  'id, name, student_number, phone, parent_phone, parent_pack_opted_in, parent_consent_given, sibling_family_id, subject, grade_level';
+  'id, name, student_number, phone, parent_phone, parent_pack_opted_in, parent_consent_given, sibling_family_id, subject, grade_level, qr_code, created_at';
 
 function deriveResultBadge(scan: ScanRecord, t: (k: string) => string): { label: string; cls: string } {
   if (scan.payment_status_at_scan === 'paid') {
@@ -101,7 +124,33 @@ function normalizeStudent(raw: Record<string, unknown>): StudentRow {
     sibling_family_id: (raw.sibling_family_id as string | null | undefined) ?? null,
     subject: (raw.subject as string | null | undefined) ?? null,
     grade_level: (raw.grade_level as string | null | undefined) ?? null,
+    qr_code: (raw.qr_code as string | null | undefined) ?? null,
+    created_at: (raw.created_at as string | null | undefined) ?? null,
   };
+}
+
+// Every OTHER student sharing this one's family - the per-member half of the
+// Family card the `families` row alone cannot provide. Scoped to center_id
+// (same RLS-bearing filter every other query on this page uses) and excludes
+// the current student. No families share a member today (checked live), so
+// this stays empty-but-ready until FamilyLinkingSection links a second child -
+// same "surface already-fetched-but-dropped data" pattern as F13 (grade_level).
+async function fetchSiblings(
+  siblingFamilyId: string | null,
+  centerId: string,
+  excludeStudentId: string,
+): Promise<SiblingRow[]> {
+  if (!siblingFamilyId) return [];
+  const { data } = await dbSelect({
+    table: 'students',
+    select: 'id, name, subject, grade_level',
+    filters: [
+      { column: 'sibling_family_id', op: 'eq', value: siblingFamilyId },
+      { column: 'center_id', op: 'eq', value: centerId },
+    ],
+    order: { column: 'name' },
+  });
+  return ((data ?? []) as SiblingRow[]).filter((s) => s.id !== excludeStudentId);
 }
 
 // Resolve the linked family via the same GET /api/families the edit modal uses,
@@ -146,12 +195,21 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   // §02 "Lifetime paid X since date". Same balances helper, .paid instead of .balance.
   const [lifetimePaid, setLifetimePaid] = useState<number | null>(null);
   const [family, setFamily] = useState<FamilyRow | null>(null);
+  const [siblings, setSiblings] = useState<SiblingRow[]>([]);
   const [delivered, setDelivered] = useState(false);
   const [scans, setScans] = useState<ScanRecord[]>([]);
   const [groupNameMap, setGroupNameMap] = useState<Record<string, string>>({});
   const [groups, setGroups] = useState<GroupRow[]>([]);
   const [memberGroupIds, setMemberGroupIds] = useState<string[]>([]);
   const [attendanceLoading, setAttendanceLoading] = useState(true);
+  const [centerInfo, setCenterInfo] = useState<CenterInfo | null>(null);
+
+  // ID card quick action (Merged-Center-Students §02: Message / Call / ID card /
+  // Edit). Live had Call/Message/Collect payment/Edit - viewing or printing this
+  // student's own QR card was reachable only from the roster page. Same
+  // QRCode-generation + QRCard-render pattern the roster page already uses.
+  const [showIdCard, setShowIdCard] = useState(false);
+  const [idCardDataUrl, setIdCardDataUrl] = useState<string | null>(null);
 
   // Collect Payment modal (student is fixed to this page's student).
   const [showCollect, setShowCollect] = useState(false);
@@ -192,6 +250,11 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         if (!cid) return;
         if (cancelled) return;
         setCenterId(cid);
+        setCenterInfo(
+          meData?.user?.center
+            ? { name: meData.user.center.name ?? 'TutoringHQ', logo_url: meData.user.center.logo_url ?? null }
+            : null,
+        );
 
         const sel = await dbSelect({
           table: 'students',
@@ -226,6 +289,8 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         if (row) {
           const fam = await fetchFamilyForStudent(row.sibling_family_id ?? null, session.access_token);
           if (!cancelled) setFamily(fam);
+          const sibs = await fetchSiblings(row.sibling_family_id ?? null, cid, row.id);
+          if (!cancelled) setSiblings(sibs);
         }
 
         // Per-student attendance history + the center's groups (reused for the
@@ -316,6 +381,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       setBalance(b?.balance ?? 0);
       setLifetimePaid(b?.paid ?? 0);
       setFamily(await fetchFamilyForStudent(row.sibling_family_id ?? null, session.access_token));
+      setSiblings(await fetchSiblings(row.sibling_family_id ?? null, centerId, row.id));
     } catch (err) {
       console.error('[student-detail] reloadStudent failed', err);
     }
@@ -329,6 +395,88 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
     } catch {
       toast.error(tToast('error'));
     }
+  };
+
+  // ID card quick action: generate the QR once (persisted on students.qr_code,
+  // same column/shape the roster page already writes) then show it in the same
+  // QRCard preview used there.
+  const openIdCard = async () => {
+    if (!student) return;
+    setShowIdCard(true);
+    setIdCardDataUrl(student.qr_code ?? null);
+    if (student.qr_code) return;
+    try {
+      const dataUrl = await QRCode.toDataURL(student.id, {
+        width: 300,
+        margin: 2,
+        color: { dark: '#000000', light: '#FFFFFF' },
+      });
+      await dbUpdate({
+        table: 'students',
+        data: { qr_code: dataUrl },
+        filters: [{ column: 'id', op: 'eq', value: student.id }],
+      });
+      setStudent((prev) => (prev ? { ...prev, qr_code: dataUrl } : prev));
+      setIdCardDataUrl(dataUrl);
+    } catch (err) {
+      console.error('[student-detail] QR generation failed', err);
+    }
+  };
+
+  const downloadIdCard = () => {
+    if (!idCardDataUrl || !student) return;
+    const link = document.createElement('a');
+    const numForFile = (student.student_number || student.id).replace(/^#/, '');
+    link.download = `QR-${student.name}-${numForFile}.png`;
+    link.href = idCardDataUrl;
+    link.click();
+  };
+
+  const printIdCard = () => {
+    if (!idCardDataUrl || !student) return;
+    const esc = (s: string) =>
+      String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    const logoHtml = centerInfo?.logo_url
+      ? `<img src="${esc(centerInfo.logo_url)}" alt="" style="height:7mm;width:auto;max-width:12mm;object-fit:contain" />`
+      : '';
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <!DOCTYPE html><html dir="ltr">
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { margin: 0; padding: 10mm; font-family: system-ui, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .card { width: 85.6mm; height: 54mm; background: linear-gradient(135deg, #0D9488 0%, #1E293B 100%); position: relative; overflow: hidden; color: white; }
+          .top-bar { position: absolute; top: 0; inset-inline-start: 0; inset-inline-end: 0; display: flex; align-items: center; justify-content: space-between; padding: 2.5mm 3mm; background: rgba(0,0,0,0.35); }
+          .center-name { font-size: 9px; font-weight: 500; opacity: 0.9; }
+          .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+          .qr-wrap { width: 25mm; height: 25mm; background: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+          .qr-wrap img { width: 20mm; height: 20mm; }
+          .name { font-size: 14px; font-weight: bold; margin-top: 2.5mm; text-align: center; }
+          .num { font-size: 10px; opacity: 0.7; margin-top: 0.5mm; font-family: monospace; }
+          .bottom { position: absolute; bottom: 0; inset-inline-start: 0; inset-inline-end: 0; padding: 1.5mm; border-top: 1px solid rgba(255,255,255,0.2); text-align: center; font-size: 7px; opacity: 0.3; font-family: monospace; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="top-bar">${logoHtml}<span class="center-name">${esc(centerInfo?.name || 'TutoringHQ')}</span></div>
+          <div class="center">
+            <div class="qr-wrap"><img src="${idCardDataUrl}" alt="QR" /></div>
+            <div class="name">${esc(student.name)}</div>
+            <div class="num">${esc(formatStudentNumberForDisplay(student.student_number))}</div>
+          </div>
+          <div class="bottom">TutoringHQ</div>
+        </div>
+      </body></html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
   };
 
   const methodLabel = (m: CollectMethod) =>
@@ -545,18 +693,26 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
           below the visits / last-seen row, so the screen answered "how often do they
           come" before "do they owe". Same argument as the roster tiles in §01. */}
       {balance !== null && (
-        <div className="mt-6">
-          <KpiCard
-            label={tDetail('balance')}
-            value={
-              <span
-                className={`tabular-nums ${balance > 0 ? 'text-red-600' : balance < 0 ? 'text-green-600' : ''}`}
-                dir="ltr"
-              >
-                {formatCurrency(balance, locale)}
-              </span>
-            }
-          />
+        <div
+          className={`mt-6 rounded-md border px-4 py-3.5 ${
+            balance > 0
+              ? 'border-[var(--color-danger)]/20 bg-[var(--color-danger-muted)]'
+              : 'border-[var(--color-success)]/20 bg-[var(--color-success-muted)]'
+          }`}
+        >
+          <p
+            className={`text-xs font-semibold ${balance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'}`}
+          >
+            {tDetail('balance')}
+          </p>
+          <p
+            className={`num mt-1.5 text-3xl font-bold leading-none tabular-nums ${
+              balance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'
+            }`}
+            dir="ltr"
+          >
+            {formatCurrency(balance, locale)}
+          </p>
         </div>
       )}
 
@@ -571,24 +727,28 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
           <KpiCard
             label={tDetail('lifetimePaid')}
             value={<span className="tabular-nums" dir="ltr">{formatCurrency(lifetimePaid, locale)}</span>}
+            // Design (§02): "Lifetime paid 3,400 EGP · since Sep 2025" - the
+            // enrollment month, read straight off students.created_at (NOT
+            // NULL live, confirmed via information_schema).
+            subLabel={
+              student.created_at
+                ? tDetail('sinceEnrolled', {
+                    date: formatDate(student.created_at, locale, { month: 'short', year: 'numeric' }),
+                  })
+                : undefined
+            }
           />
         )}
       </div>
 
-      {/* 2. Quick actions */}
+      {/* 2. Quick actions. Design (§02) draws Message / Call / ID card / Edit -
+          live order matched, and "ID card" (view/print this student's own QR,
+          same pattern as the roster page's Eye action) is added alongside the
+          existing Collect payment tile rather than replacing it. */}
       {(() => {
         const studentDigits = intlDigits(student.phone);
         return (canCollect || canEdit || studentDigits) && (
           <div className="mt-4 grid grid-cols-2 gap-3">
-            {studentDigits && (
-              <a
-                href={`tel:+${studentDigits}`}
-                className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
-              >
-                <Phone className="h-6 w-6 text-teal-500" aria-hidden />
-                <span className="text-sm font-semibold text-[var(--color-text-primary)]">{tDetail('callAction')}</span>
-              </a>
-            )}
             {studentDigits && (
               <a
                 href={`https://wa.me/${studentDigits}`}
@@ -600,6 +760,23 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                 <span className="text-sm font-semibold text-[var(--color-text-primary)]">{tDetail('messageAction')}</span>
               </a>
             )}
+            {studentDigits && (
+              <a
+                href={`tel:+${studentDigits}`}
+                className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+              >
+                <Phone className="h-6 w-6 text-teal-500" aria-hidden />
+                <span className="text-sm font-semibold text-[var(--color-text-primary)]">{tDetail('callAction')}</span>
+              </a>
+            )}
+            <button
+              type="button"
+              onClick={() => void openIdCard()}
+              className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+            >
+              <IdCard className="h-6 w-6 text-teal-500" aria-hidden />
+              <span className="text-sm font-semibold text-[var(--color-text-primary)]">{tDetail('idCardAction')}</span>
+            </button>
             {canCollect && (
               <button
                 type="button"
@@ -624,27 +801,60 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         );
       })()}
 
-      {/* 3. Parent / Family */}
+      {/* 3. Parent / Family. Design (§02) lists the parent AND every sibling as
+          their own contact row (name, role, phone/subject). Live previously
+          rendered only the single `families` summary row - the sibling half
+          (other students sharing this one's sibling_family_id) is added below,
+          same-center scoped, excluding this student. */}
       <section className="mt-6">
         <h2 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">{tDetail('family')}</h2>
-        <div className="rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+        <div className="rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] divide-y divide-[var(--color-line)]">
           {family ? (
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                {family.family_name || family.parent_name || tCommon('notAvailable')}
-              </p>
-              {family.parent_name && family.family_name ? (
-                <p className="text-xs text-[var(--color-text-secondary)]">{family.parent_name}</p>
-              ) : null}
+            <div className="flex items-center gap-3 p-4">
+              <span
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[var(--color-tile)] text-xs font-semibold text-[var(--color-text-secondary)]"
+                aria-hidden
+              >
+                {initialsOf(family.parent_name || family.family_name || '?')}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-[var(--color-text-primary)]">
+                  {family.parent_name || family.family_name || tCommon('notAvailable')}
+                </p>
+                <p className="text-xs text-[var(--color-text-secondary)]">{tDetail('parentRole')}</p>
+              </div>
               {family.parent_phone ? (
-                <p className="text-xs font-mono text-[var(--color-text-tertiary)]" dir="ltr">
+                <p className="shrink-0 text-xs font-mono text-[var(--color-text-tertiary)]" dir="ltr">
                   {family.parent_phone}
                 </p>
               ) : null}
             </div>
           ) : (
-            <p className="text-sm text-[var(--color-text-secondary)]">{tDetail('noFamilyLinked')}</p>
+            <p className="p-4 text-sm text-[var(--color-text-secondary)]">{tDetail('noFamilyLinked')}</p>
           )}
+          {siblings.map((sib) => (
+            <div key={sib.id} className="flex items-center gap-3 p-4">
+              <span
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[var(--color-mint)] text-xs font-semibold text-[var(--color-accent-deep)]"
+                aria-hidden
+              >
+                {initialsOf(sib.name)}
+              </span>
+              <div className="min-w-0 flex-1">
+                <Link
+                  href={`/students/${sib.id}`}
+                  className="block truncate text-sm font-medium text-[var(--color-text-primary)] hover:underline"
+                >
+                  {sib.name}
+                </Link>
+                <p className="truncate text-xs text-[var(--color-text-secondary)]">
+                  {[tDetail('siblingRole'), sib.subject, sib.grade_level ? tDetail('gradeLabel', { grade: sib.grade_level }) : null]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -902,6 +1112,74 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                 className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 transition-colors disabled:opacity-50 btn-press chq-focus"
               >
                 {isSavingEdit ? tCommon('loading') : tCommon('save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ID card quick action modal — same QRCard preview + download/print pair
+          the roster page's View QR modal already uses. */}
+      {showIdCard && student && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+          onClick={() => {
+            setShowIdCard(false);
+            setIdCardDataUrl(null);
+          }}
+          role="presentation"
+        >
+          <div
+            className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border)] p-6 max-w-sm mx-4 w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-bold text-[var(--color-text-primary)]">{ts('viewQR')}</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowIdCard(false);
+                  setIdCardDataUrl(null);
+                }}
+                className="p-1.5 rounded-lg hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+              >
+                <X size={18} className="text-[var(--color-text-secondary)]" />
+              </button>
+            </div>
+            <div className="flex justify-center mb-5">
+              <div className="w-full max-w-[320px] rounded-2xl overflow-hidden shadow-xl">
+                <QRCard
+                  student={student}
+                  qrDataUrl={idCardDataUrl}
+                  centerLogo={centerInfo?.logo_url ?? null}
+                  centerName={centerInfo?.name ?? 'TutoringHQ'}
+                  scale={1.2}
+                  variant="preview"
+                />
+              </div>
+            </div>
+            <div className="text-center mb-4">
+              <div className="font-bold text-[var(--color-text-primary)]">{student.name}</div>
+              <div className="font-mono text-sm text-[var(--color-text-secondary)]">
+                {formatStudentNumberForDisplay(student.student_number)}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={downloadIdCard}
+                disabled={!idCardDataUrl}
+                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium border border-[var(--color-border)] hover:bg-[var(--color-surface-2)] transition-colors disabled:opacity-50 btn-press chq-focus"
+              >
+                <Download size={14} /> {tCommon('download')}
+              </button>
+              <button
+                type="button"
+                onClick={printIdCard}
+                disabled={!idCardDataUrl}
+                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 transition-colors disabled:opacity-50 btn-press chq-focus"
+              >
+                <Printer size={14} /> {tCommon('print')}
               </button>
             </div>
           </div>
