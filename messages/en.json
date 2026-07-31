@@ -7237,7 +7237,12 @@
     "previewModalTitle": "Template preview",
     "previewSampleNote": "Sample variables, actual Meta copy may differ slightly.",
     "close": "Close",
-    "noTemplates": "No templates loaded yet. Ask super-admin to sync from Meta."
+    "noTemplates": "No templates loaded yet. Ask super-admin to sync from Meta.",
+    "searchTemplates": "Search templates",
+    "clearSearch": "Clear search",
+    "noSearchResults": "No templates match your search.",
+    "howParentsSeeIt": "How parents will see it",
+    "variablesUsed": "Variables used"
   },
   "mobileShell": {
     "tab_bar_label": "Primary navigation",

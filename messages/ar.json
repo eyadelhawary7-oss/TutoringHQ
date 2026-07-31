@@ -3686,7 +3686,12 @@
     "previewModalTitle": "معاينة القالب",
     "previewSampleNote": "متغيرات تجريبية، قد يختلف النص النهائي قليلاً في Meta.",
     "close": "إغلاق",
-    "noTemplates": "لم تُحمَّل قوالب بعد. اطلب من المشرف المزامنة من Meta."
+    "noTemplates": "لم تُحمَّل قوالب بعد. اطلب من المشرف المزامنة من Meta.",
+    "searchTemplates": "ابحث في القوالب",
+    "clearSearch": "مسح البحث",
+    "noSearchResults": "لا توجد قوالب تطابق بحثك.",
+    "howParentsSeeIt": "كيف سيراها أولياء الأمور",
+    "variablesUsed": "المتغيرات المستخدمة"
   },
   "mobileShell": {
     "tab_bar_label": "التنقل الرئيسي",
