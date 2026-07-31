@@ -45,8 +45,8 @@ auto-merge — they come to Eyad. That is a routing rule, not a difficulty ratin
 | 6 | **Teacher-Setup** | 2/2 | **14/16** (survey #227, 29 Jul; re-confirmed + 1 gap corrected 31 Jul) | D16, D17, V1 | counter-offer autonote (this pass) | **V1** collect-payments toggle + verified-state payout details (Valify not live) · **D16** center-class commission engine dormant, "Owed" reads 0.00 EGP · **D17** "Share your profile" links to a route that does not exist | no — V1, D16, D17 |
 | 7 | **Teacher-Groups** | 5/5 | **~2.2/5** (section-level survey, 31 Jul — §01/§02 largely intact, §03's review-gate structure absent, §04 missing mark-collected/Vodafone Cash, §05 unbuilt; coarser than rows 2–6's sub-element counts, see notes) | D18, D19, D20, D21 | roster avatars + pending-count banner (this pass, #273) | **D18** §03 review gate doesn't exist — every enrollment auto-activates, no schema for school/note fields · **D19** `finish_class_and_bill` never populates commission/net columns · **D20** `SlotActionSheet` recorded phase is read-only (no mark-collected, no Vodafone Cash) · **D21** join link is a full UUID, not the design's 6-char code · §05 (Class Session Verified — Digital/Cash split, CIB payout) is entirely unbuilt and the design's own caption marks it "draft, pending legal review" — money/legal-adjacent, left untouched like the protected files | no — D18, D19, D20, D21, §05 |
 | 8 | **Center-Orders** | 4/4 | **3.5/4** (survey, 31 Jul) | **R8** (built, #231), D7, F18 | Arabic `ordersEmpty` string fixed + §01 empty-state illustration built (this pass, #272) | **F18** Customize step has no per-field print toggle (`card_order_carts` has only `card_style`/`vendor_notes` — schema change) · **D7** notify-me has no destination table | no — F18, D7 |
-| 9 | **Center-Insight** | 3/3 | not surveyed | **R6**, D13 | R6 | **D13** paid add-on model | no — one decision |
-| 10 | **Center-WhatsApp** | 3/3 | not surveyed | D4, D5 | — | **D4** auto-send · **D5** pack top-up | no |
+| 9 | **Center-Insight** | 3/3 | **≈3.3/5** (§01 4/5, §02 4.5/5, §03 1.5/5 — survey #252, 31 Jul; re-confirmed unchanged by batch-3's survey-Center-Insight agent, same day) | D13-CLOSED, D9-CLOSED, D22, S7 | — | **D22** §03's KPIs and R6's rate/countdown UI all read `referral_reward_records`, a table with zero live writers, instead of the real cron target `referral_commissions` — Eyad's call on which table is canonical · **S7** no CSRF on `/api/referrals/payout` (money-adjacent, low-blast-radius only because D22 keeps the balance at 0) · forecast tile needs a decided extrapolation methodology, not just data · D13/D9 are **closed** decisions (paid-add-on gate parked, benchmark metric drawing corrected 4-not-5) — correctly not built, not a re-open | no — D22, S7, forecast methodology (D13/D9 are resolved, not gaps) |
+| 10 | **Center-WhatsApp** | 3/3 | **§01 3/5, §02 0/5, §03 0/4** (§01 built this pass, #275; §02/§03 re-confirmed unchanged) | D4, D5 | search + WhatsApp-style preview + variables-used (this pass, #275) | **D4** per-template auto-send toggle — schema exists (`center_message_templates.auto_send`), 0 rows, zero readers, unmade product decision that spends WhatsApp credit unattended · **D5** §02/§03 are a different, already-shipped billing model (monthly per-parent pack + capped blasts) vs. the design's one-time credit top-up — building the design changes what existing customers are charged | no — D4, D5 |
 | 11 | **Center-Groups** | 5/5 | **token pass only** | D2, D12 | week strip, segmented control, stat row | **D2** weekday index · **D12** billing basis · §02 is Verified → **V2** | no |
 | 12 | **Center-Students** | 4/4 | **token pass only** | D3 | §02–§04 structure | **D3** dead column · §03 is Verified → **V2** | no |
 | 13 | **Center-Home** | 2/2 | **token pass only** | — | alert row, 4 Today KPIs, digital share, schedule | balance card → **V3/V4** · §01 is Verified → **V6** | no |
@@ -85,9 +85,14 @@ confirmed the "probably fine" read. `Teacher-Students` came back nearly clean (o
 than the "probably in the same class" this row used to carry. Route coverage alone would never have
 surfaced that; it took reading the screen against the drawing.
 
-**8 is now surveyed too** (Center-Orders, 3.5/4, PR #272) and stays one decision away — F18 and D7,
-its only two gaps, are both schema/decision items, not survey unknowns. **9–10 remain un-surveyed**
-and are otherwise fully routed and unblocked pending their own decisions (D13, D4/D5).
+**8–10 are all surveyed now too.** Center-Orders (3.5/4, PR #272) stays one decision away — F18 and
+D7, its only two gaps, are both schema/decision items, not survey unknowns. Center-Insight (≈3.3/5,
+PR #252, re-confirmed by batch-3) turned out to already carry a real, if closed, blocker set — most
+of its shortfall is one root cause (D22's dead referral table) plus a CSRF gap (S7) that rides along
+with it, not the "one decision" (D13) the original row implied; D13 and D9 turned out to be resolved
+decisions correctly reflected in what's *not* built, not open questions. Center-WhatsApp (§01 3/5 after
+this pass's search/preview build, §02 0/5, §03 0/4, PR #275) is the cleanest of the three — D4 and D5
+are exactly the two decisions the original row named, nothing else surfaced.
 
 **11–13 are the three I already touched**, and they sit here rather than near the top precisely
 because route coverage flattered them. Center-Home is the worst: four of its five design sections
@@ -117,5 +122,5 @@ are buildable from data that exists today — `sessions`, `payments.method`, `en
   found on a full re-read); §03 and §04 each carry one confirmed gap (F18's print toggle, D7's notify
   destination) and are counted at 0.75 each, per PR #272.
 
-**Not measured:** structure coverage for the 16 remaining files marked *not surveyed*. Producing that
+**Not measured:** structure coverage for the 14 remaining files marked *not surveyed*. Producing that
 number is step 1 of the per-file prompt, by design — see `PER-FILE-PROMPT.md`.
