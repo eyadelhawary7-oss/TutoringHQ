@@ -13,13 +13,14 @@ import {
   getShippingZone,
 } from '@/lib/bostaShipping';
 import { cardOrderProductInclusiveFromQty } from '@/lib/pricing/taxMath';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, IdCard } from 'lucide-react';
 import { CardOrderCartHeader } from '@/components/orders/CardOrderCartHeader';
 import { CardOrderCartContents } from '@/components/orders/CardOrderCartContents';
 import { CardOrderMobileStickyFooter } from '@/components/orders/CardOrderMobileStickyFooter';
 import { useCardOrderCart } from '@/hooks/useCardOrderCart';
 import { useToast } from '@/components/ui/ToastProvider';
 import { SectionHeader } from '@/components/shared';
+import EmptyState from '@/components/empty-states/EmptyState';
 
 export type CardOrdersShippingQuote = {
   hasGovernorate: boolean;
@@ -362,8 +363,10 @@ export default function OrdersPageClient({
           </div>
         ) : null}
 
-        <CardOrderCartHeader />
-        <CardOrderCartContents studentsForPicker={students} centerId={centerId} />
+        <div id="card-order-new-order">
+          <CardOrderCartHeader />
+          <CardOrderCartContents studentsForPicker={students} centerId={centerId} />
+        </div>
         <CardOrderMobileStickyFooter />
 
         <div className="mt-10 border-t border-[var(--color-border-subtle)] pt-8">
@@ -426,9 +429,16 @@ export default function OrdersPageClient({
               ))}
             </div>
           ) : trulyNoOrders && !histLoading ? (
-            <div className="card p-8 text-center border border-[var(--color-border-subtle)]">
-              <p className="text-sm text-[var(--color-text-secondary)]">{t('ordersEmpty')}</p>
-            </div>
+            <EmptyState
+              icon={<IdCard />}
+              titleKey="cardOrders.title"
+              descriptionKey="cardOrders.description"
+              namespace="emptyStates"
+              actionLabel="cardOrders.action"
+              onAction={() =>
+                document.getElementById('card-order-new-order')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+            />
           ) : orders.length === 0 && !histLoading ? (
             <div className="card p-8 text-center border border-[var(--color-border-subtle)]">
               <p className="text-sm text-[var(--color-text-secondary)]">{tHist('emptyFiltered')}</p>

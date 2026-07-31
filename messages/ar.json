@@ -985,6 +985,11 @@
       "title": "لا توجد قاعات بعد",
       "description": "القاعات مساحات فعلية أو افتراضية حيث تُعقد الحصص. أضف قاعة لتعيين الجدول.",
       "action": "عرض القاعات"
+    },
+    "cardOrders": {
+      "title": "لا توجد طلبات بعد",
+      "description": "اطلب كروت QR مطبوعة ليسجّل الطلاب حضورهم بأنفسهم عند الباب.",
+      "action": "اطلب أول كروت لك"
     }
   },
   "validation": {
@@ -4907,7 +4912,7 @@
     "orderHistorySection": "سجل الطلبات",
     "viewOrder": "عرض الطلب",
     "ordersSubtitle": "تتبع وإدارة طلبات بطاقتك",
-    "ordersEmpty": "No orders yet. Place your first card order.",
+    "ordersEmpty": "لا توجد طلبات بعد. اطلب أول طلبية كروت لك.",
     "ordersNav": "الطلبات",
     "loadTimeout": "التحميل يستغرق وقتاً طويلاً. يرجى تحديث الصفحة.",
     "loadFailed": "تعذر تحميل الطلبات. حاول مرة أخرى.",
