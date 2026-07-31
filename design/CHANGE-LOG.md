@@ -71,6 +71,7 @@ If a row ever names one, that row is a mistake.
 | [#261](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/261) | _pending_ | 2026-07-31 | none — doc only (Teacher-WhatsApp survey: D6 corrected/expanded, nothing safely buildable) | none | v41 |
 | [#262](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/262) | `bd5593aa` | 2026-07-31 | `Admin-Platform §02` — TOP BY REVENUE centre rows now carry a real per-centre active-student count | `/{locale}/admin/analytics`, `/api/admin/overview` | v41 |
 | [#266](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/266) | _pending_ | 2026-07-31 | none — doc only (Teacher-Home re-verification: #225's fraction reconfirmed unchanged, no new gaps) | none | v41 |
+| [#267](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/267) | _pending_ | 2026-07-31 | none — doc only (Admin-Accounts re-verification: §01–§04 fractions reconfirmed, R7-CLOSED corrected, two new blocked-gap findings logged) | none | v41 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -1247,3 +1248,58 @@ references.
 **No new safely-buildable gap found, no code changed.** The only remaining gaps are the same two
 blocks already logged as **V1** and **V3/V4** in `BUILD-AFTER-REDESIGN.md`. This entry documents a
 confirmed-unchanged fraction, not a build — no code PR accompanies it.
+
+**Admin-Accounts re-verification (31 July 2026)** — asked to confirm PRs #221–#223's fractions
+against the merged file, not memory, before accepting a "done" file at face value. Read
+`Merged-Admin-Accounts.html` fresh across all four sections (five, counting the teacher half of §01
+separately) against a full re-read of the live code, plus independent `information_schema` queries
+against production, then reconciled by hand rather than trusting FILE-COMPLETION-TABLE.md's row 2
+("100% today? YES") on sight.
+
+**Result: three of four tracked sections hold exactly at their #221–#223 fractions; the fourth was
+never tracked as its own number and turns out to be permanently zero.** §02 Admin Staff re-confirmed
+1/1 — list and member-detail permission sheet still wired to `public.permissions`. §03 Admin Center
+Assignments re-confirmed 0.9/1 — the route itself (**R5**) is built and live at
+`/admin/teacher-links`; the one gap, a Link-type (Visiting/Permanent) segmented control, is still
+schema-absent (`teacher_center_requests` carries `id, teacher_id, center_id, status, message,
+created_at, updated_at, responded_at, responded_by, initiated_by` — no link-type column, confirmed
+live). §04 Admin Referrals re-confirmed 0.8/1 — the SIGNUP REWARD block still has no ledger, column,
+or code path anywhere (grepped referral libs/routes for credit/reward code, nothing). §01 centre half
+re-confirmed 0.8/1 (16/20 design elements), unchanged from #223.
+
+**§01 teacher half is not a fraction that ever moved — it is R7, and R7 is closed.**
+FILE-COMPLETION-TABLE.md still listed R7 under "Buildable now," which is stale: R7 was built 28 July
+2026 (a full `/admin/teachers`, `/admin/teachers/[id]` pair) and then closed unmerged on Eyad's own
+call — "one teacher console, not two" — with `/ceo/teachers` covering that data instead. Grepped
+`admin/teachers` across `src`: only two comments, in `AccountDetailHeader.tsx` and
+`PlatformOverviewHeader.tsx`, documenting that closure; no live route or files exist under an admin
+teacher-detail path. This is a resolved decision against building it this way, not a pending gap —
+recorded here as **R7-CLOSED**, the same code #224's table already uses for Admin-Platform.
+
+**Two more gaps confirmed genuinely blocked, not previously broken out on their own:**
+
+| item | why |
+|---|---|
+| Verified chip + "National ID on file · Valify" row (both frames) | **V1** — no verification column on `centers`, confirmed live (`information_schema.columns`, zero rows matching `%verif%`/`%valify%`) |
+| Branches row in MANAGE group (with count) | no `branches` table exists — only `branch_user_assignments` (staff↔branch visibility, not the branches themselves), confirmed via `information_schema.tables` |
+| ACTIONS: "Log in as center" / "Log in as teacher" | no impersonation mechanism exists anywhere — grep for `impersonat\|login_as\|loginAsCenter` returns only the two comments documenting its absence; this needs a new auth primitive, not a UI row |
+
+**No code changed, no PR opened for the file itself.** `AccountDetailHeader.tsx` has exactly one call
+site (`centerManagementClient.tsx:1688`), all 8 anchors present and wired (`acct-profile`/`plan`/
+`addons`/`invoices`/`activity`/`notes` at lines 1697, 1846, 2158, 2657, 3468, 3498). i18n parity
+checked and holds: `admin.accountDetail` (9/9), `admin.teacherLinks` (24/24),
+`admin.referralsAdminPage` (31/31), `admin.internalTeam` (25/25) — no stubs. None of the six
+remaining gaps was safely buildable this pass — three on absent schema, one on Valify, one on
+missing auth infrastructure, one on Eyad's own resolved decision.
+
+| § | before (#221–#223, 29 Jul) | after (confirmed 31 Jul) | what moved |
+|---|---|---|---|
+| §01 Admin Account Detail — centre half | 0.8/1 | 0.8/1, unchanged | 16/20 design elements, same single-call-site wiring re-confirmed |
+| §01 Admin Account Detail — teacher half | not tracked separately (R7) | 0/1 | does not exist; R7 built 28 Jul, closed unmerged on Eyad's decision |
+| §02 Admin Staff | 1/1 | 1/1, unchanged | list + member-detail permission sheet still wired to `public.permissions` |
+| §03 Admin Center Assignments | 0.9/1 | 0.9/1, unchanged | only gap is the Link-type control, still schema-absent |
+| §04 Admin Referrals | 0.8/1 | 0.8/1, unchanged | only gap is the SIGNUP REWARD block, still no ledger/column |
+| **Overall (tracked sections)** | **3.5/4** | **3.5/4** | nothing moved; teacher half was never in this denominator and stays 0/1 on its own |
+
+`FILE-COMPLETION-TABLE.md` row 2 updated in this same PR: structure coverage recorded, "Buildable
+now" cleared of the closed R7, and "100% today?" corrected from **YES** to **no**.
