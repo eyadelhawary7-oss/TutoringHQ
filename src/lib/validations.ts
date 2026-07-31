@@ -170,6 +170,8 @@ export const demoRequestSchema = z.object({
   phone: z.string().refine((v) => /^\d{10,15}$/.test(v.replace(/\D/g, '')), 'Invalid phone'),
   email: z.string().email().optional().or(z.literal('')),
   centerName: z.string().max(200).optional().or(z.literal('')),
+  area: z.string().max(50).optional().or(z.literal('')),
+  studentCount: z.coerce.number().int().min(0).max(100000).optional(),
 });
 
 /** Invite team member */

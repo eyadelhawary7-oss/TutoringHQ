@@ -2,8 +2,9 @@
 
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
+import { supportWhatsAppLink } from '@/config/site';
 
-const WHATSAPP_URL = 'https://wa.me/201001234567';
+const WHATSAPP_URL = supportWhatsAppLink();
 
 export default function DemoRequestPage() {
   const t = useTranslations('demoRequest.stub');

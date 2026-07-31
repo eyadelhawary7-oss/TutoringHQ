@@ -5082,6 +5082,7 @@
     "finance": "Finance",
     "demoRequestsTitle": "Demo Requests",
     "demoRequestsEmpty": "No demo requests yet",
+    "studentCount": "Students",
     "errors": {
       "forbidden": "You don't have permission to perform this action."
     },
@@ -8708,6 +8709,29 @@
       "message": "Our demo request form is coming soon. For now, please contact us on WhatsApp and we'll arrange a walkthrough within 24 hours.",
       "whatsappCta": "Contact us on WhatsApp"
     }
+  },
+  "talkToUs": {
+    "title": "Have us call you",
+    "lede": "Five things, then someone who knows your area calls you back. Usually the same day, always within one working day.",
+    "nameLabel": "Your name",
+    "phoneLabel": "Mobile",
+    "phoneHint": "We call this number. We do not put you on a list.",
+    "centerNameLabel": "Center name",
+    "areaLabel": "Area",
+    "areaHint": "This decides who calls you, so keep it specific.",
+    "areaPlaceholder": "Select your governorate",
+    "studentCountLabel": "Roughly how many students",
+    "submitCta": "Ask for a call",
+    "whatsappFallback": "Or message us on WhatsApp, 10am to 6pm",
+    "submitError": "Something went wrong. Please try again or message us on WhatsApp.",
+    "submittedTitle": "We will call you",
+    "submittedSubtitle": "Someone who covers {area} has it now.",
+    "submittedSubtitleGeneric": "Your request is in.",
+    "step1": "A call from a Cairo number, within one working day.",
+    "step2": "They walk your center through it. No slides, no demo booking.",
+    "step3": "You can start the free trial before they call. It costs nothing either way.",
+    "startFreeTrialCta": "Start free trial now",
+    "startFreeTrialHint": "You do not have to wait for the call"
   },
   "teacherPortal": {
     "headerTitle": "Teacher portal",
