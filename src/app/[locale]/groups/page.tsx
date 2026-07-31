@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbDelete, auditLog } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
 import { Link as RouterLink } from '@/i18n/routing';
-import { Plus, BookOpen, X, Users, Search, Link as LinkIcon, ClipboardList } from 'lucide-react';
+import { Plus, BookOpen, X, Users, Search, Link as LinkIcon, ClipboardList, MoreVertical } from 'lucide-react';
 import { AttendanceHeatmap } from '@/components/AttendanceHeatmap';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -14,6 +14,8 @@ import { formatCurrency, formatNumber, formatDate, formatPercent, formatTime } f
 import { getCairoWeekColumnOrder, getCairoWeekDays } from '@/lib/cairo/week';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { isUuid, keepValidUuids } from '@/lib/uuid';
+import { initialsOf } from '@/lib/initials';
+import { getStudentBalances, type StudentBalance } from '@/lib/studentBalance';
 import * as Sentry from '@sentry/nextjs';
 
 interface Group {
@@ -21,6 +23,8 @@ interface Group {
   name: string;
   subject: string | null;
   fee_per_class?: number;
+  /** Center's share of fee_per_class - written on insert, previously never selected back or shown. */
+  center_cut_egp?: number | null;
   /** Member count (same as student_count; kept for mutations). */
   member_count?: number;
   /** Display count for UI (synced with member_count). */
@@ -89,6 +93,8 @@ export default function GroupsPage() {
   const [activeTab, setActiveTab] = useState<'members' | 'waitlist'>('members');
   const [sessionBreakdown, setSessionBreakdown] = useState<{ date: string; present: number }[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [memberBalances, setMemberBalances] = useState<Map<string, StudentBalance>>(new Map());
+  const [openCardMenuId, setOpenCardMenuId] = useState<string | null>(null);
 
   const loadData = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -114,7 +120,7 @@ export default function GroupsPage() {
     const [groupsRes, studentsRes, subjectsRes, slotsRes, roomsRes] = await Promise.all([
       dbSelect({
         table: 'student_groups',
-        select: 'id, name, subject, fee_per_class, max_capacity',
+        select: 'id, name, subject, fee_per_class, center_cut_egp, max_capacity',
         filters: [{ column: 'center_id', op: 'eq', value: cid }],
         order: { column: 'name' },
       }),
@@ -233,6 +239,16 @@ export default function GroupsPage() {
 
   useEffect(() => { loadData(); }, []);
 
+  const cardMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!openCardMenuId) return;
+    const onClickAway = (e: MouseEvent) => {
+      if (cardMenuRef.current && !cardMenuRef.current.contains(e.target as Node)) setOpenCardMenuId(null);
+    };
+    document.addEventListener('mousedown', onClickAway);
+    return () => document.removeEventListener('mousedown', onClickAway);
+  }, [openCardMenuId]);
+
   useEffect(() => {
     if (!detailGroup) {
       setExpandedHeatmapId(null);
@@ -287,7 +303,7 @@ export default function GroupsPage() {
   }, []);
 
   useEffect(() => {
-    if (!detailGroup) { setMembers([]); setStudentOtherGroups({}); setWaitlist([]); return; }
+    if (!detailGroup) { setMembers([]); setStudentOtherGroups({}); setWaitlist([]); setMemberBalances(new Map()); return; }
     const loadMembers = async () => {
       const { data: membersData } = await dbSelect({
         table: 'student_group_members',
@@ -300,6 +316,10 @@ export default function GroupsPage() {
         const s = students.find(st => st.id === id);
         return { student_id: id, student_name: s?.name || '', student_number: s?.student_number ?? undefined };
       }));
+      // Merged-Center-Groups §01 member row: a per-member balance badge, same
+      // real-time helper the roster/detail pages already use - not a new
+      // per-student payment concept.
+      setMemberBalances(ids.length > 0 ? await getStudentBalances(supabase, { studentIds: ids }) : new Map());
 
       const groupIds = groups.map(g => g.id);
       const { data: allMemberships } = await dbSelect({
@@ -399,7 +419,7 @@ export default function GroupsPage() {
           await dbInsert({ table: 'student_group_members', data: { group_id: inserted.id, student_id: sid }, select: false });
         }
         const addN = memberIds.length;
-        setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, subject: subjectName, fee_per_class: fee, member_count: addN, student_count: addN, teacher_name: null, max_capacity: maxCap }]);
+        setGroups(prev => [...prev, { id: inserted.id, name: inserted.name, subject: subjectName, fee_per_class: fee, center_cut_egp: centerCut, member_count: addN, student_count: addN, teacher_name: null, max_capacity: maxCap }]);
         setShowAddModal(false);
         setAddForm({ name: '', subjectId: '', fee_per_class: '', centerCut: '', studentIds: [], maxCapacity: '' });
         toast.success(tToast('saved'));
@@ -588,6 +608,39 @@ export default function GroupsPage() {
                   >
                     <LinkIcon size={16} />
                   </button>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenCardMenuId((v) => (v === g.id ? null : g.id));
+                      }}
+                      className="ms-1 p-1 text-[var(--color-text-muted)] hover:text-[var(--color-teal)] transition-colors"
+                      aria-label={t('moreActions', { defaultValue: 'More' })}
+                    >
+                      <MoreVertical size={16} />
+                    </button>
+                    {openCardMenuId === g.id && (
+                      <div
+                        ref={cardMenuRef}
+                        role="menu"
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute end-0 top-8 z-10 w-32 rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-1 shadow-lg"
+                      >
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setOpenCardMenuId(null);
+                            handleDeleteGroup(g.id);
+                          }}
+                          className="block w-full rounded-md px-3 py-2 text-start text-sm font-medium text-[var(--color-danger)] hover:bg-[var(--color-surface-2)]"
+                        >
+                          {t('deleteGroup', { defaultValue: 'Delete group' })}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <h3 className="font-semibold text-[var(--color-text-primary)] mb-1">{g.name}</h3>
@@ -597,14 +650,18 @@ export default function GroupsPage() {
                   group with no slot yet simply has no line. */}
               {(() => {
                 const sch = g.schedule;
-                if (!sch) return null;
                 const parts: string[] = [];
-                for (const d of sch.days) {
-                  const label = dayLabelByWeekday[d];
-                  if (label) parts.push(label);
+                // Teacher name is fetched (groupToTeacher in loadData) but was
+                // never rendered anywhere - the design's own row leads with it.
+                if (g.teacher_name) parts.push(g.teacher_name);
+                if (sch) {
+                  for (const d of sch.days) {
+                    const label = dayLabelByWeekday[d];
+                    if (label) parts.push(label);
+                  }
+                  if (sch.startTime) parts.push(formatTime(sch.startTime, locale));
+                  if (sch.roomName) parts.push(sch.roomName);
                 }
-                if (sch.startTime) parts.push(formatTime(sch.startTime, locale));
-                if (sch.roomName) parts.push(sch.roomName);
                 if (parts.length === 0) return null;
                 return (
                   <p className="text-xs text-[var(--color-text-muted)] mb-3">{parts.join(' · ')}</p>
@@ -745,7 +802,7 @@ export default function GroupsPage() {
               <button onClick={() => setDetailGroup(null)} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-2)]"><X size={18} /></button>
             </div>
             <div className="p-5 space-y-4">
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div><p className="text-xs text-[var(--color-text-secondary)]">{t('subject')}</p><p className="font-semibold text-[var(--color-text-primary)]">{detailGroup.subject || tCommon('notSet')}</p></div>
                 <div>
                   <p className="text-xs text-[var(--color-text-secondary)]">{t('feePerLesson')}</p>
@@ -760,6 +817,14 @@ export default function GroupsPage() {
                     {detailGroup.max_capacity != null && detailGroup.max_capacity < 999
                       ? ` / ${formatNumber(detailGroup.max_capacity, locale)}`
                       : ''}
+                  </p>
+                </div>
+                {/* Written on group creation (handleAddGroup) but never selected
+                    back or shown anywhere until now. */}
+                <div>
+                  <p className="text-xs text-[var(--color-text-secondary)]">{t('centerCutLabel', { defaultValue: "Center's cut" })}</p>
+                  <p className="font-semibold text-[var(--color-text-primary)] font-mono">
+                    {detailGroup.center_cut_egp != null ? formatCurrency(detailGroup.center_cut_egp, locale) : tCommon('notSet')}
                   </p>
                 </div>
               </div>
@@ -896,21 +961,39 @@ export default function GroupsPage() {
                   <>
                 <h3 className="font-bold text-[var(--color-text-primary)] mb-3 flex items-center gap-2"><Users size={16} /> {t('members')}</h3>
                 <div className="space-y-2 mb-4">
-                  {members.map(m => (
-                    <div key={m.student_id} className="flex items-center justify-between py-2 border-b border-[var(--color-border)] last:border-0">
-                      <div>
-                        <div className="text-sm font-medium text-[var(--color-text-primary)]">{m.student_name}</div>
-                        {m.student_number ? (
-                          <div className="text-xs text-[var(--color-text-muted)] mt-0.5" dir="ltr">{formatStudentNumberForDisplay(m.student_number)}</div>
-                        ) : (
-                          <div className="text-xs text-[var(--color-text-secondary)] font-mono mt-0.5" dir="ltr">-</div>
-                        )}
+                  {members.map(m => {
+                    const balance = memberBalances.get(m.student_id)?.balance ?? 0;
+                    const owes = balance > 0;
+                    return (
+                      <div key={m.student_id} className="flex items-center gap-3 py-2 border-b border-[var(--color-border)] last:border-0">
+                        <span
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[var(--color-mint,#DFEEEB)] text-xs font-semibold text-[var(--color-accent-deep,#0A514A)]"
+                          aria-hidden
+                        >
+                          {initialsOf(m.student_name)}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium text-[var(--color-text-primary)] truncate">{m.student_name}</div>
+                          {m.student_number ? (
+                            <div className="text-xs text-[var(--color-text-muted)] mt-0.5" dir="ltr">{formatStudentNumberForDisplay(m.student_number)}</div>
+                          ) : (
+                            <div className="text-xs text-[var(--color-text-secondary)] font-mono mt-0.5" dir="ltr">-</div>
+                          )}
+                        </div>
+                        {/* Same real-time balance model as the roster/detail pages (getStudentBalances) - never a per-student payment_status read. */}
+                        <span
+                          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            owes ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
+                          }`}
+                        >
+                          {owes ? t('memberOwes', { amount: formatCurrency(balance, locale) }) : t('memberPaid')}
+                        </span>
+                        <button type="button" onClick={() => handleRemoveMember(m.student_id)} className="shrink-0 text-xs text-[var(--color-danger)] hover:opacity-80 font-medium">
+                          {t('remove')}
+                        </button>
                       </div>
-                      <button type="button" onClick={() => handleRemoveMember(m.student_id)} className="text-xs text-[var(--color-danger)] hover:opacity-80 font-medium">
-                        {t('remove')}
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {members.length === 0 && <p className="text-sm text-[var(--color-text-secondary)]">{t('noMembers')}</p>}
                 </div>
                 <h4 className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">{t('addStudent')}</h4>

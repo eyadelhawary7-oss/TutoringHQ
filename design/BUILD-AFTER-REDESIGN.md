@@ -265,6 +265,18 @@ not-yet-made decision.
 - **Blocks:** `Center-Groups` §05 Schedule.
 - **Touches:** this is a live correctness bug, not only a design blocker.
 
+**Resolved — stale by the time this entry was even written, confirmed 31 July 2026.** Commit
+`ae352f94` ("fix: both day_of_week readers now use the writer's convention (#194)") landed 28 July
+2026, one day *before* this entry was added to the doc (29 July, commit `d5551d3`) — the entry was
+never struck through despite the fix already being live. The convention is JS weekday as text (Sat =
+`"6"`), decoded in exactly one place, `scheduleSlotsDayOfWeek()` in `src/lib/cairo/day.ts`, whose own
+doc comment names the two readers that used to disagree (the daily-summary cron's `(jsDay+1)%7`
+Egypt-index bug, and the parent-absence-alert's day-name string comparison) and states "Both now call
+this." Confirmed directly: `src/app/api/cron/daily-summary/route.ts` and
+`src/app/api/cron/parent-absence-alerts/route.ts` both call the shared helper; `Center-Home`'s own new
+Schedule section and `Center-Groups` §05 itself both use it too. No outstanding disagreement to
+resolve — this entry describes a bug that was already fixed before it was logged.
+
 ## D3 · `students.payment_status` is dead weight
 - **The decision:** drop it, or backfill and maintain it.
 - **Why it is stuck:** `NOT NULL`, defaults to `'unpaid'`, written once at creation, **never updated by anything**, and nothing reads it since #188. Leaving it is how the next screen counts it and ships the same bug.
@@ -341,6 +353,13 @@ not-yet-made decision.
 - **Build:** decide the real model — a flat per-branch add-on fee (matching the design), a percentage, or intentionally free — before any "extra branch" pricing copy ships.
 - **Touches:** money.
 - **Blocked by:** Eyad's decision on the add-on model and price.
+
+**Re-confirmed live, 31 July 2026, independently of this entry.** Re-read `POST /api/branches` from
+scratch while surveying `Center-Groups` §04 for the redo pass — same finding, unchanged: the route
+still clones `billing_amount`/`all_in_price` onto every new branch wholesale. Not touched this pass;
+§04's other structural gaps (no "Current" branch indicator, no per-branch action chips, no address
+field, wrong KPI-tile count) were deliberately left alone too rather than partially rebuild a screen
+whose core Add-branch flow sits on top of this unresolved billing question.
 
 ## D13 · Advanced Analytics / Benchmarks as paid add-ons
 - **Closed 26 July, parked.** Both stay as they are — Analytics keeps `canViewRevenue`, Benchmarks stays free. No purchase flow. Parked until AI features ship.
@@ -832,6 +851,16 @@ Logged from the token layer (#209). None of it blocks a restyle; all of it makes
 - **`groups/page.tsx` fetches `teacher_name` per group (a real join) and never renders it anywhere** — dead query. Showing it (the design's "Mr. Sherif · center 30%" chip) also needs `center_cut_egp` added to the list query (only selected on create today) and computed as a percentage of `fee_per_class`, since it's stored as an absolute EGP amount, not a percent.
 - **`student_groups.capacity_cap` is a second, live, constrained column (`CHECK (>0)`) with zero references anywhere in `src/`** — same shape as F9's `teacher_split_pct`, a second dead field on the same table. Logged for the same "drop or document" decision.
 - **`student_groups.kind` ('center' vs 'private') is never selected or filtered on** in the centre-side Groups list query — outside-teacher-run groups are indistinguishable from centre-run ones in this view, compounding the missing teacher chip above.
+
+**Partially built, 31 July 2026 — see the Center-Groups rebuild PR.** `handleDeleteGroup` now has a
+kebab entry point with an inline confirm; the room "More" button now opens a real edit/delete menu
+(delete warns about the `ON DELETE CASCADE` onto `schedule_slots`/`bookings`, since that was checked
+live and confirmed, not assumed). `teacher_name` and `center_cut_egp` are both rendered now — the
+latter as the absolute EGP figure it's actually stored as (`groups.detail`'s stat grid), not converted
+to a percentage of `fee_per_class` as this entry originally speculated the design wants; that
+conversion is a display-formatting choice, not a data gap, and was left alone rather than guessed at.
+`capacity_cap` and `kind` remain unbuilt — re-confirmed still zero references in `src/` outside this
+doc and `db/schema.snapshot`, same "drop or document" decision as before, not resolved here.
 
 ## F12 · `pending_enrollments` cannot say whether a request came from an invite link or self-serve sign-up — the design shows both as distinct badges
 - **What:** `Merged-Center-Students` §04's Pending screen draws two distinct origin badges ("Invite link" vs "Sign-up") on every request row, plus a "Came via" field in the request-detail view. Live, `pending_enrollments` has no column for this — confirmed both live insert call sites (`src/app/api/join/[center_code]/[group_id]/route.ts` and `src/app/api/join/pending-enrollment/route.ts`) write the identical column set (`center_id, group_id, student_id, student_name, student_phone, parent_phone, notes, status`), and the list query in `src/app/api/students/pending/route.ts` selects no origin-like field because none exists.

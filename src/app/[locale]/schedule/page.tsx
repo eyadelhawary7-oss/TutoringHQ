@@ -8,10 +8,10 @@ import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbDelete, auditLog } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
 import { PageHeader } from '@/components/shared';
-import { Plus, Clock, X, AlertTriangle } from 'lucide-react';
+import { Plus, Clock, X, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import EmptyState from '@/components/empty-states/EmptyState';
 import { useToast } from '@/components/ui/ToastProvider';
-import { formatTime, formatNumber, formatPercent } from '@/lib/formatNumber';
+import { formatTime, formatNumber, formatPercent, formatDate } from '@/lib/formatNumber';
 import { cairoDateKey, getCurrentCairoClock, parseCairoYmd } from '@/lib/cairo/day';
 import { cairoYmdToJsWeekday, getCairoWeekColumnOrder, getCairoWeekDays } from '@/lib/cairo/week';
 
@@ -109,6 +109,11 @@ export default function SchedulePage() {
   const [dayView, setDayView] = useState<'time' | 'room'>('time');
   const [minuteTick, setMinuteTick] = useState(0);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  // Design (Merged-Center-Groups §05): prev/next week nav + a "13 - 19 July"
+  // label. schedule_slots is a recurring weekly template with no per-occurrence
+  // date, so every week shows the same pattern - navigating only changes which
+  // calendar dates the strip's pills show, not which slots render.
+  const [weekOffset, setWeekOffset] = useState(0);
 
   const gridScrollRef = useRef<HTMLDivElement>(null);
   const didScrollAnchorRef = useRef(false);
@@ -116,6 +121,9 @@ export default function SchedulePage() {
   const isReadOnly = user?.role === 'teacher' || user?.role === 'assistant';
   const isTeacher = user?.role === 'teacher';
   const canEdit = user?.role === 'owner' || user?.role === 'admin' || user?.role === 'super_admin';
+  const isRtl = locale === 'ar' || locale.startsWith('ar-');
+  const PrevIcon = isRtl ? ChevronRight : ChevronLeft;
+  const NextIcon = isRtl ? ChevronLeft : ChevronRight;
 
   const formatMemberCount = (n: number) =>
     `${formatNumber(n, locale)} ${n === 1 ? tCommon('student') : tCommon('students')}`;
@@ -127,7 +135,20 @@ export default function SchedulePage() {
     router.push(`/${locale}/attendance?group=${groupId}&date=${cairoDateKey()}&tab=scan`);
   };
 
-  const weekDays = useMemo(() => getCairoWeekDays(new Date(), locale), [locale]);
+  const weekAnchorDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + weekOffset * 7);
+    return d;
+  }, [weekOffset]);
+  const weekDays = useMemo(() => getCairoWeekDays(weekAnchorDate, locale), [weekAnchorDate, locale]);
+  const weekRangeLabel = useMemo(() => {
+    if (weekDays.length === 0) return '';
+    const first = parseCairoYmd(weekDays[0]!.dayKey);
+    const last = parseCairoYmd(weekDays[weekDays.length - 1]!.dayKey);
+    const firstStr = formatDate(`${first.y}-${String(first.m).padStart(2, '0')}-${String(first.d).padStart(2, '0')}`, locale, { day: 'numeric', month: first.m === last.m ? undefined : 'short' });
+    const lastStr = formatDate(`${last.y}-${String(last.m).padStart(2, '0')}-${String(last.d).padStart(2, '0')}`, locale, { day: 'numeric', month: 'short' });
+    return `${firstStr} – ${lastStr}`;
+  }, [weekDays, locale]);
 
   const labelForWeekday = (wd: number) =>
     weekDays.find((w) => w.jsWeekday === wd)?.label ?? String(wd);
@@ -142,6 +163,10 @@ export default function SchedulePage() {
   // Egypt's weekend - Friday (5) and Saturday (6) - muted in the week strip
   // when not the selected day.
   const isWeekend = (wd: number) => wd === 5 || wd === 6;
+
+  // Design's day-pill load dots: how many classes that day carries, at a
+  // glance, before tapping in. Same displaySlots the grid itself renders.
+  const slotCountForDay = (wd: number) => displaySlots.filter((s) => Number(s.day_of_week) === wd).length;
 
   const displaySlots = useMemo(() => {
     if (!isTeacher || !userId) return slots;
@@ -298,6 +323,28 @@ export default function SchedulePage() {
     return conflictIds;
   }, [slots]);
 
+  // Design (§05): conflict copy names the clashing session ("Overlaps Math
+  // 5:30") instead of a bare "conflict" chip. First partner found per slot.
+  const conflictPartnerName = useMemo(() => {
+    const partner = new Map<string, string>();
+    for (const s1 of slots) {
+      for (const s2 of slots) {
+        if (s1.id === s2.id) continue;
+        if (s1.room_id !== s2.room_id) continue;
+        if (Number(s1.day_of_week) !== Number(s2.day_of_week)) continue;
+        const a1 = timeToMinutes(s1.start_time);
+        const b1 = timeToMinutes(s1.end_time);
+        const a2 = timeToMinutes(s2.start_time);
+        const b2 = timeToMinutes(s2.end_time);
+        if (a1 < b2 && a2 < b1 && !partner.has(s1.id)) {
+          const name = s2.group_name || tCommon('notAvailable');
+          partner.set(s1.id, `${name} ${formatTime(formatTimeForDisplay(s2.start_time), locale)}`);
+        }
+      }
+    }
+    return partner;
+  }, [slots, locale, tCommon]);
+
   const handleAddSlot = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!centerId || !userId || !formGroupId || !formRoomId) {
@@ -430,7 +477,8 @@ export default function SchedulePage() {
   const nowMinutesFromGridStart = cairoHour * 60 + cairoMinute - FIRST_HOUR * 60;
   const lastRowMinutes = (22 - FIRST_HOUR + 1) * 60;
   const clampedNow = Math.max(0, Math.min(lastRowMinutes, nowMinutesFromGridStart));
-  const showNowLine = selectedDay === cairoTodayWd;
+  // Only the real current week - a navigated week's same weekday is not "now".
+  const showNowLine = weekOffset === 0 && selectedDay === cairoTodayWd;
   const nowLineTop =
     showNowLine && nowMinutesFromGridStart >= 0 && nowMinutesFromGridStart <= lastRowMinutes
       ? HEADER_ROW_H + (clampedNow / 60) * ROW_PX - 1
@@ -501,6 +549,44 @@ export default function SchedulePage() {
         />
       ) : (
         <>
+          {/* Design (§05): "13 - 19 July" + prev/next week nav. The grid always
+              shows the same recurring weekly pattern; this only moves which
+              calendar dates the pills above it label. Hidden on the teacher's
+              mobile Today/This-week list (a separate layout below that isn't
+              driven by weekDays), shown on its desktop grid same as everyone. */}
+          <div className={`mb-3 items-center justify-between gap-2 ${isTeacher ? 'hidden md:flex' : 'flex'}`}>
+            <button
+              type="button"
+              onClick={() => setWeekOffset((v) => v - 1)}
+              aria-label={t('previousWeek', { defaultValue: 'Previous week' })}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+            >
+              <PrevIcon size={16} aria-hidden />
+            </button>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-[var(--color-text-primary)]" dir="ltr">
+                {weekRangeLabel}
+              </span>
+              {weekOffset !== 0 && (
+                <button
+                  type="button"
+                  onClick={() => setWeekOffset(0)}
+                  className="text-xs font-semibold text-teal-600 hover:underline"
+                >
+                  {t('thisWeek')}
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setWeekOffset((v) => v + 1)}
+              aria-label={t('nextWeek', { defaultValue: 'Next week' })}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+            >
+              <NextIcon size={16} aria-hidden />
+            </button>
+          </div>
+
           <div className="hidden md:block">
             <div className="flex gap-1 bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] rounded-xl p-1 mb-4 overflow-x-auto snap-x snap-mandatory scrollbar-thin">
               {CAIRO_COL_ORDER.map((day) => (
@@ -526,6 +612,17 @@ export default function SchedulePage() {
                       ? formatNumber(dateOfMonthForWeekday(day) as number, locale)
                       : ''}
                   </span>
+                  {/* Design's day-pill load dots - up to 3, one per session that day. */}
+                  {slotCountForDay(day) > 0 && (
+                    <span className="mt-0.5 flex gap-0.5" aria-hidden>
+                      {Array.from({ length: Math.min(3, slotCountForDay(day)) }).map((_, i) => (
+                        <span
+                          key={i}
+                          className={`h-1 w-1 rounded-full ${selectedDay === day ? 'bg-white/80' : 'bg-teal-500/70'}`}
+                        />
+                      ))}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -589,9 +686,17 @@ export default function SchedulePage() {
                                       : 'bg-[var(--color-surface-1)] hover:bg-[var(--color-surface-2)] border-[var(--color-border-subtle)]'
                                   }`}
                                 >
-                                  {isConflict && (
-                                    <AlertTriangle className="w-3.5 h-3.5 absolute top-1 end-1 text-red-500" />
-                                  )}
+                                  {isConflict && (() => {
+                                    const partnerName = conflictPartnerName.get(slot.id);
+                                    return (
+                                      <span
+                                        className="absolute top-1 end-1"
+                                        title={partnerName ? t('conflictWith', { name: partnerName }) : t('conflictShort')}
+                                      >
+                                        <AlertTriangle className="w-3.5 h-3.5 text-red-500" aria-hidden />
+                                      </span>
+                                    );
+                                  })()}
                                   <p
                                     className={`text-xs font-semibold truncate pe-5 ${
                                       isConflict ? 'text-red-800' : 'text-[var(--color-text-primary)]'
@@ -667,6 +772,16 @@ export default function SchedulePage() {
                       ? formatNumber(dateOfMonthForWeekday(day) as number, locale)
                       : ''}
                   </span>
+                  {slotCountForDay(day) > 0 && (
+                    <span className="mt-0.5 flex gap-0.5" aria-hidden>
+                      {Array.from({ length: Math.min(3, slotCountForDay(day)) }).map((_, i) => (
+                        <span
+                          key={i}
+                          className={`h-1 w-1 rounded-full ${selectedDay === day ? 'bg-white/80' : 'bg-teal-500/70'}`}
+                        />
+                      ))}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -721,7 +836,9 @@ export default function SchedulePage() {
                             </span>
                             {getConflictingSlotIds.has(s.id) && (
                               <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 font-semibold text-amber-700">
-                                {t('conflictShort')}
+                                {conflictPartnerName.get(s.id)
+                                  ? t('conflictWith', { name: conflictPartnerName.get(s.id) as string })
+                                  : t('conflictShort')}
                               </span>
                             )}
                           </li>
