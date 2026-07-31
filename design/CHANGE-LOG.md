@@ -80,6 +80,8 @@ If a row ever names one, that row is a mistake.
 | [#271](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/271) | `b4f3ea3` | 2026-07-31 | none — doc only (consolidates #267+#270: Admin-Accounts re-verification + Teacher-Setup re-verification, both rebased onto current master) | none | v42 |
 | [#272](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/272) | `42e5607` | 2026-07-31 | `Center-Orders §01` — Arabic `ordersEmpty` string fixed, empty-state illustration built (`EmptyState`) | `/{locale}/orders` | v42 |
 | [#273](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/273) | `d7c2be6` | 2026-07-31 | `Teacher-Groups §02`/`§03` — roster-row avatar circles (pending + active), "N waiting to join" banner with Review CTA | `/{locale}/teacher/groups/[groupId]` | v42 |
+| [#274](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/274) | `2990e90` | 2026-07-31 | none — doc only (#261/#271 SHA-fill, missing #263 row added, #272/#273 logged, Teacher-Groups + Center-Orders rows surveyed) | none | v42 |
+| [#275](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/275) | `30de6ad` | 2026-07-31 | `Center-WhatsApp §01` — template search, WhatsApp-style preview bubble, "Variables used" chips | `/{locale}/whatsapp` | v42 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -894,6 +896,18 @@ as WhatsApp-Pack's S6 — `requireCenterAuth` + a permission flag guard it, `val
 not. Currently low-blast-radius only *because* of D22 (the balance it guards is always 0 in production
 today) — flagged now, together with D22, so the two get decided as one problem rather than the CSRF
 gap being deprioritized on the mistaken belief that "it can't move money yet" stays true forever.
+
+**Independently re-confirmed same day, batch-3 sweep (agent: survey-Center-Insight).** All three
+fractions (4/5, 4.5/5, 1.5/5) held unchanged; D13, D9, D22 and S7 all re-verified live rather than
+trusted from this entry — D22 via a fresh row-count check against `referral_reward_records`,
+`referral_commissions`, `referrals` and `payout_requests` (all 0, matching exactly), D9 via
+`pg_get_functiondef(get_center_benchmarks)` read cold. One question re-examined under the stricter
+100%-or-blocked bar and still found not safely buildable: the "Projected · month-end" forecast tile —
+the data exists (`mrr_trend`), but a naive linear pace-extrapolation is genuinely misleading early in a
+month (a single day-1 payment would project an absurd month-end figure for a real business), so it
+needs Eyad's call on methodology before wiring it, not just a display change. No code changed, no PR
+opened. `FILE-COMPLETION-TABLE.md` row 9 updated in this same PR — it had never been updated after this
+same-day survey and still read "not surveyed."
 
 **Center-Setup (31 July 2026) — surveyed, no build. The most consequential findings of this whole
 project so far are here, and they are not design-fidelity gaps.** Row 14, 9 sections, never surveyed.
