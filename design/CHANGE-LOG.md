@@ -82,6 +82,9 @@ If a row ever names one, that row is a mistake.
 | [#273](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/273) | `d7c2be6` | 2026-07-31 | `Teacher-Groups §02`/`§03` — roster-row avatar circles (pending + active), "N waiting to join" banner with Review CTA | `/{locale}/teacher/groups/[groupId]` | v42 |
 | [#274](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/274) | `2990e90` | 2026-07-31 | none — doc only (#261/#271 SHA-fill, missing #263 row added, #272/#273 logged, Teacher-Groups + Center-Orders rows surveyed) | none | v42 |
 | [#275](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/275) | `30de6ad` | 2026-07-31 | `Center-WhatsApp §01` — template search, WhatsApp-style preview bubble, "Variables used" chips | `/{locale}/whatsapp` | v42 |
+| [#276](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/276) | `f9c5342` | 2026-07-31 | none — doc only (batch-3 wrap-up: #275 logged, Center-Insight/Center-WhatsApp rows surveyed) | none | v42 |
+| [#277](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/277) | `726e928` | 2026-07-31 | `Center-Students §02`/`§04` — ID card tile, tinted balance card, sibling rows, lifetime-paid-since, import inline Fix | `/{locale}/students/[id]`, `/students/import` | v42 |
+| [#278](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/278) | `df8c42d` | 2026-07-31 | `Center-Groups §01` (fill bar, avg attendance, inline new-subject), `§04` (Current badge), `§05` (Now/Done badges) — plus `AttendanceHeatmap.tsx` i18n bug fix (hardcoded Arabic shown to English-locale users) | `/{locale}/groups`, `/{locale}/branches`, `/{locale}/schedule` | v42 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
