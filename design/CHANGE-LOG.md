@@ -72,7 +72,7 @@ If a row ever names one, that row is a mistake.
 | [#262](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/262) | `bd5593aa` | 2026-07-31 | `Admin-Platform §02` — TOP BY REVENUE centre rows now carry a real per-centre active-student count | `/{locale}/admin/analytics`, `/api/admin/overview` | v41 |
 | [#264](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/264) | `827e2333` | 2026-07-31 | `Teacher-Students §02` — payment-history row caption ("Not collected yet" / "Paid · &lt;method&gt;") | `/{locale}/teacher/students` (`AllStudentsList.tsx`), `/api/teacher/private/students` | v41 → **v42** |
 | [#266](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/266) | _pending_ | 2026-07-31 | none — doc only (Teacher-Home re-verification: #225's fraction reconfirmed unchanged, no new gaps) | none | v42 |
-| [#267](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/267) | _pending_ | 2026-07-31 | none — doc only (Teacher-Students re-verification: §02 payment-caption gap logged, D15 re-confirmed unchanged) | none | v42 |
+| [#268](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/268) | _pending_ | 2026-07-31 | none — doc only (Teacher-Students re-verification: §02 payment-caption gap logged, D15 re-confirmed unchanged) | none | v42 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
