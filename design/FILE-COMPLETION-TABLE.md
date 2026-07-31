@@ -38,7 +38,7 @@ auto-merge — they come to Eyad. That is a routing rule, not a difficulty ratin
 | # | File | Route cov. | Structure cov. | Entries that belong here | Buildable now | Blocked by | 100% today? |
 |---|---|---|---|---|---|---|---|
 | 1 | **Design-Patterns** | 0/6 | not surveyed | **R4** | R4 | — | **YES** |
-| 2 | **Admin-Accounts** | 4/4 | not surveyed | **R5**, **R7** | R5, R7 | — | **YES** |
+| 2 | **Admin-Accounts** | 4/4 | **3.5/4** (survey, 31 Jul; teacher half of §01 excluded, see below) | R5 (built, #221) | — | **V1** verified chip/Valify · no `branches` table · no impersonation mechanism (needs a new auth primitive) · **R7-CLOSED** — built 28 Jul, closed unmerged on Eyad's call ("one teacher console, not two") | no — V1, two schema-absence gaps, an auth-infra gap, and R7-CLOSED |
 | 3 | **Admin-Platform** | 6/6 | **4.6/6** (survey, 31 Jul) | V1, D5, R7-CLOSED | §02 done (this pass) | **V1** unverified filter · **D5** WhatsApp-pack overview pricing · R7-CLOSED · 6 confirmed schema-absence gaps (no dedicated code) | no — V1, D5 |
 | 4 | **Teacher-Home** | 2/2 | **12/16** (survey #225, 30 Jul; re-confirmed unchanged 31 Jul) | V1, V3, V4 | — | **V1** unverified promo card, "Let us collect for you / Verify my ID" (Valify identity verification not live) · **V3/V4** verified-state wallet card + recent payouts (no teacher-scoped payout ledger exists) | no — V1, V3/V4 |
 | 5 | **Teacher-Students** | 2/2 | **confirmed complete except D15** (survey, 31 Jul; §01 unchanged from #226, §02's one gap closed via #264) | D15 | — (gap closed this pass) | **D15** Balance card "Mark collected" / "Send reminder" — money-state write + per-send WhatsApp cost, no decision from Eyad | no — D15 |
