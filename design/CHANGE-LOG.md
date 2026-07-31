@@ -73,6 +73,8 @@ If a row ever names one, that row is a mistake.
 | [#264](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/264) | `827e2333` | 2026-07-31 | `Teacher-Students §02` — payment-history row caption ("Not collected yet" / "Paid · &lt;method&gt;") | `/{locale}/teacher/students` (`AllStudentsList.tsx`), `/api/teacher/private/students` | v41 → **v42** |
 | [#266](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/266) | _pending_ | 2026-07-31 | none — doc only (Teacher-Home re-verification: #225's fraction reconfirmed unchanged, no new gaps) | none | v42 |
 | [#268](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/268) | _pending_ | 2026-07-31 | none — doc only (Teacher-Students re-verification: §02 payment-caption gap logged, D15 re-confirmed unchanged) | none | v42 |
+| [#265](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/265) | `28bc257a` | 2026-07-31 | `Teacher-Setup §02` (group-proposal counter-offer autonote) | `/{locale}/teacher/centers` | v42 |
+| [#270](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/270) | _pending_ | 2026-07-31 | none — doc only (Teacher-Setup re-verification: #227's claim corrected, D16/D17 reconfirmed) | none | v42 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -1297,3 +1299,53 @@ originally held, re-verified live rather than re-asserted from memory.
 
 Full detail on the caption fix is in **#264** (`827e2333`); D15 itself is unchanged in
 `BUILD-AFTER-REDESIGN.md`. No new decision needed from Eyad beyond D15's existing two items.
+
+**Teacher-Setup re-verification (31 July 2026)** — asked to confirm PR #227's "already complete —
+no change" claim against the merged file, not memory, before accepting a "done" claim at face
+value. Read `Merged-Teacher-Setup.html` fresh across both sections against a full re-read of the
+live code (`teacher/(portal)/settings/page.tsx`, `GroupProposalsSection.tsx`, `CenterCutsSection`,
+`CenterEarningsSection`, `JoinCenterCard`), plus independent `information_schema` and
+transaction-count queries against production, then reconciled by hand against #227's own claim
+rather than trusting it on sight.
+
+**Result: #227's claim was one gap too generous — the same shape as D3/D14's prior corrections, not
+a regression.** §01's "already complete" verdict silently folded in a "Collect payments for me"
+toggle and its verified-state Payout details section that do not exist in the live code at all —
+0/2, never itemized before. The rest of §01 (Account 3/3; Payment details/unverified, My code,
+Change PIN, Your account, Manage billing 5/5) is genuinely complete, confirmed live. §02 Teacher
+Centers is 6/6 structurally present, unchanged since #227's fix, but its hero/per-center "Owed"
+figures still read 0.00 EGP live (**D16**) and "Share your profile" still 404s (**D17**) — both
+pre-existing, re-confirmed, not new.
+
+| § | before (#227's claim, 29 Jul) | after (confirmed 31 Jul) | what moved |
+|---|---|---|---|
+| §01 Account (name/subject/save) | "already complete" | **3/3** | confirmed live, unchanged |
+| §01 Collect-payments toggle + Payout details (verified state) | folded into "already complete" | **0/2**, confirmed blocked | genuinely absent — no `verification_status` column on `teacher_profiles`, confirmed via `information_schema.columns`; matches `DECISION-national-id-2026-07-26.md` and `VERIFICATION-SPEC.md` |
+| §01 Payment details (unverified), My code, Change PIN, Your account, Manage billing | "already complete" | **5/5** | confirmed live; Manage-billing is a superset inline section, not the design's compact row — noted, not rebuilt |
+| §02 Teacher Centers (hero, centers list, group proposals, class times, join-a-center, counter sheet) | you-earn figure + centre/group counts fixed by #227 | **6/6** structurally present | hero/owed figures still 0.00 EGP (**D16**, re-confirmed: `select count(*) from transactions where kind='center_fee'` = 0) · "Share your profile" still 404s (**D17**, re-confirmed by route glob) — both pre-existing, unchanged, blocked on Eyad |
+| **Overall structure** | claimed complete | **14/16** | the 0/2 gap was never itemized before — a correction, not a regression |
+
+**Built, narrowly: one counter-offer autonote.** `GroupProposalsSection.tsx` gets the design's
+"Student rate stays X · center would keep Y" line under a counter-offer, computed from already-live
+`feePerClass`/`center_cut_egp` data — pure display arithmetic on real values already surfacing
+correctly elsewhere (see D16's own note on this exact field), no new write path, no schema change.
+Added `groupProposals.counterAutonote` to both `messages/en.json` and `messages/ar.json`;
+`npx tsx scripts/check-i18n.ts` confirmed parity.
+
+**Declined, deliberately: the richer `CounterOfferForm`/`OfferHistory` redesign.** The design's
+stepper control, "Their offer" summary box and full bottom-sheet layout would touch components
+shared with the center console's own `GroupProposalsTab.tsx` (Center-Groups) — confirmed live by
+`grep -rln "CounterOfferForm\|OfferHistory" src --include=*.tsx`, two consumers. Changing shared
+copy or behavior for this file's design without checking it against Center-Groups' own design is
+exactly the mistake the shared-component discipline exists to prevent — left alone, not rebuilt.
+
+**Verification, not trust, on every blocked line.**
+`grep -rn "Collect payments for me\|Payout details" "src/app/[locale]/teacher"` → no matches
+(genuinely absent, not merely unfound). `select column_name from information_schema.columns where
+table_name='teacher_profiles' and (column_name ilike '%verif%' or ilike '%payout%' or ilike
+'%collect%')` → only `payout_destination`, no `verification_status`. `select count(*) from
+transactions where kind='center_fee'` → 0, same as D16's original finding. No route matches
+`/teacher/profile/[id]` anywhere under `src/app/[locale]/`, same as D17's original finding. Full
+unit, E2E-smoke, i18n, bidi and build gates green on the PR (Security audit harness and Vercel
+Preview Comments included; Supabase Preview and Playwright E2E informational skipped as not
+applicable to this diff). Squash-merged as `28bc257a`.
