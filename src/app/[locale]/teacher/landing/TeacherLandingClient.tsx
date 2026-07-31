@@ -7,6 +7,11 @@ import { Link } from '@/i18n/routing';
 import { getSupportWhatsAppWaMeBase } from '@/lib/supportWhatsApp';
 import SummerRibbon from '@/components/summer/SummerRibbon';
 import SummerPopup from '@/components/summer/SummerPopup';
+import MarketingFooter from '@/components/landing/MarketingFooter';
+import { ComparisonTable } from '@/components/landing/ComparisonTable';
+import { LandingFAQ } from '@/components/landing/LandingFAQ';
+
+const TEACHER_FAQ_KEYS = ['q1', 'q2'] as const;
 
 const WA_SUPPORT = getSupportWhatsAppWaMeBase();
 
@@ -23,7 +28,9 @@ export default function TeacherLandingClient({
 }) {
   const t = useTranslations('teacherLanding');
   const tp = useTranslations('pricingPage.teacher'); // shared teacher pricing card copy
-  const f = useTranslations('splash'); // shared footer/legal links
+  const tCompare = useTranslations('teacherLanding.compare');
+  const tFaq = useTranslations('teacherLanding.faq');
+  const f = useTranslations('splash'); // shared locale-switch aria label
   const locale = useLocale();
   const isAr = locale === 'ar';
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -261,6 +268,8 @@ export default function TeacherLandingClient({
         </div>
       </section>
 
+      <ComparisonTable t={tCompare} rowCount={6} />
+
       {/* Features (6 tiles, 2 columns desktop) */}
       <section id="features" className="scroll-mt-20 border-t border-[var(--color-border)] bg-[var(--color-surface-1)] px-5 py-16 md:px-6 md:py-24">
         <div className="mx-auto max-w-5xl">
@@ -349,6 +358,8 @@ export default function TeacherLandingClient({
         </div>
       </section>
 
+      <LandingFAQ t={tFaq} keys={TEACHER_FAQ_KEYS} />
+
       {/* Final CTA (repeat free-trial button + trial terms line) */}
       <section className="mx-auto w-full max-w-3xl px-5 pb-16 text-center md:px-6">
         <h2 className="text-xl font-bold text-[var(--color-text-primary)] md:text-2xl">{t('finalCta.title')}</h2>
@@ -365,17 +376,7 @@ export default function TeacherLandingClient({
         </p>
       </section>
 
-      {/* Footer (shared with splash) */}
-      <footer className="mx-auto mt-auto w-full max-w-5xl px-5 py-8 md:px-6">
-        <div className="flex flex-col items-center gap-3 border-t border-[var(--color-border)] pt-6 text-center text-xs text-[var(--color-text-muted)]">
-          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2" aria-label={f('footerNavAria')}>
-            <Link href="/legal/privacy" className="transition-colors hover:text-[var(--color-text-primary)]">{f('privacy')}</Link>
-            <Link href="/legal/terms" className="transition-colors hover:text-[var(--color-text-primary)]">{f('terms')}</Link>
-            <Link href="/legal/cookie" className="transition-colors hover:text-[var(--color-text-primary)]">{f('cookies')}</Link>
-          </nav>
-          <p>{f('rights')}</p>
-        </div>
-      </footer>
+      <MarketingFooter createAccountHref={signupHref} />
     </main>
   );
 }

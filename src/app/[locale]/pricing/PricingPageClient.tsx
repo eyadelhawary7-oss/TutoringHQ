@@ -15,6 +15,7 @@ import type { SubscriptionPlanKey } from '@/lib/pricing';
 import { TEACHER_PLANS } from '@/lib/teacherPlans';
 import { Menu, X, Check } from 'lucide-react';
 import PricingBannerClient from '@/components/landing/PricingBannerClient';
+import MarketingFooter from '@/components/landing/MarketingFooter';
 import PublicLocaleToggle from '@/components/PublicLocaleToggle';
 import PlanComparisonTable from '@/components/teacher/PlanComparisonTable';
 import { usePublicPlanPrices } from '@/hooks/usePublicPlanPrices';
@@ -497,12 +498,28 @@ export default function PricingPageClient() {
               <PlanComparisonTable interval={interval} />
             </div>
           )}
+
+          <div className="mx-auto mt-12 flex max-w-md flex-col items-stretch gap-3 text-center">
+            <Link
+              href={audience === 'teacher' ? '/teacher/signup' : '/signup'}
+              className="rounded-xl bg-[var(--color-teal)] px-8 py-4 text-center text-base font-semibold text-white transition-colors hover:bg-[var(--color-teal-deep)] btn-press chq-focus"
+            >
+              {m('finalCtaButton')}
+            </Link>
+            <Link
+              href="/talk-to-us"
+              className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] px-8 py-4 text-center text-base font-semibold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] btn-press chq-focus"
+            >
+              {t('talkToSomeoneCta')}
+            </Link>
+          </div>
+          <p className="mx-auto mt-6 max-w-4xl text-center text-xs text-[var(--color-text-muted)]">
+            {t('footerNote')}
+          </p>
         </div>
       </section>
 
-      <footer className="border-t border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-8 md:px-6">
-        <p className="mx-auto max-w-4xl text-center text-xs text-[var(--color-text-muted)]">{t('footerNote')}</p>
-      </footer>
+      <MarketingFooter createAccountHref={audience === 'teacher' ? '/teacher/signup' : '/signup'} />
 
       {contactOpen ? (
         <div

@@ -2,19 +2,6 @@
 
 import { useTranslations } from 'next-intl';
 
-const ROW_KEYS = [
-  'row1',
-  'row2',
-  'row3',
-  'row4',
-  'row5',
-  'row6',
-  'row7',
-  'row8',
-] as const;
-
-type RowKey = (typeof ROW_KEYS)[number];
-
 function cellVariant(val: string): 'pos' | 'neg' | 'partial' | 'neutral' {
   if (val.startsWith('✓')) return 'pos';
   if (val.startsWith('✗')) return 'neg';
@@ -43,13 +30,26 @@ const CHQ_CELL_STYLE = {
   background: 'rgba(14,107,97,0.05)',
 } as const;
 
+type ComparisonTranslator = ReturnType<typeof useTranslations>;
+
+interface ComparisonTableProps {
+  /** Already-bound translator for the heading/subheading/col.../row... keys —
+   * the caller binds it with a literal `useTranslations('...')` (e.g.
+   * `landing.compare` on `/center`, `teacherLanding.compare` on
+   * `/teacher/landing`) so `scripts/check-i18n.ts` can still statically
+   * resolve every t() call from the call site. */
+  t: ComparisonTranslator;
+  /** How many `row{n}.{criterion,spreadsheet,paper,centerhq}` groups to render. Default 8. */
+  rowCount?: number;
+}
+
 /**
- * Desktop: 4-column table (criterion | Spreadsheet | Paper | CenterHQ).
+ * Desktop: 4-column table (criterion | Spreadsheet | Paper/Notebook | TutoringHQ).
  * Mobile: each row as a stacked card with labelled sub-rows.
- * CenterHQ column is visually emphasised with teal accent.
+ * TutoringHQ column is visually emphasised with teal accent.
  */
-export function ComparisonTable() {
-  const t = useTranslations('landing.compare');
+export function ComparisonTable({ t, rowCount = 8 }: ComparisonTableProps) {
+  const rowKeys = Array.from({ length: rowCount }, (_, i) => `row${i + 1}`);
 
   return (
     <section className="border-t border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-16 md:px-6 md:py-24">
@@ -111,7 +111,7 @@ export function ComparisonTable() {
               </tr>
             </thead>
             <tbody>
-              {ROW_KEYS.map((key) => {
+              {rowKeys.map((key) => {
                 const criterion   = t(`${key}.criterion`   as 'row1.criterion');
                 const spreadsheet = t(`${key}.spreadsheet` as 'row1.spreadsheet');
                 const paper       = t(`${key}.paper`       as 'row1.paper');
@@ -154,7 +154,7 @@ export function ComparisonTable() {
 
         {/* ── Mobile card stack ── */}
         <div className="flex flex-col gap-4 md:hidden">
-          {ROW_KEYS.map((key) => {
+          {rowKeys.map((key) => {
             const criterion   = t(`${key}.criterion`   as 'row1.criterion');
             const spreadsheet = t(`${key}.spreadsheet` as 'row1.spreadsheet');
             const paper       = t(`${key}.paper`       as 'row1.paper');

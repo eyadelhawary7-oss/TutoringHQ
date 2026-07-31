@@ -53,6 +53,7 @@
     "topCentersSubtitle": "كبار السناتر",
     "topCentersStudents": "2,000+ students/week",
     "topCentersCta": "Custom pricing →",
+    "talkToSomeoneCta": "Talk to someone first",
     "footerNote": "Questions? Email support@ehgintelligence.com",
     "contactModalTitle": "Contact us about Top Centers",
     "contactModalBody": "Tell us about your scale and we will follow up with a tailored quote.",
@@ -9782,7 +9783,63 @@
     "finalCta": {
       "title": "Ready to keep all your income in one place?"
     },
-    "trialTerms": "14-day free trial for the private engine · then EGP 299/month · no card now · center tracking always free"
+    "trialTerms": "14-day free trial for the private engine · then EGP 499/month · no card now · center tracking always free",
+    "compare": {
+      "heading": "Why teachers switch.",
+      "subheading": "A notebook records. It cannot send.",
+      "colCriterion": "Criterion",
+      "colSpreadsheet": "Spreadsheet",
+      "colPaper": "Notebook",
+      "colCenterhq": "TutoringHQ",
+      "row1": {
+        "criterion": "Knowing what a center owes you",
+        "spreadsheet": "You work it out yourself, each month",
+        "paper": "You work it out yourself, each month",
+        "centerhq": "✓ Read from the attendance, as it happens"
+      },
+      "row2": {
+        "criterion": "Telling a student what they owe",
+        "spreadsheet": "You message them one by one",
+        "paper": "You mention it, and hope",
+        "centerhq": "✓ Sent on WhatsApp when the class ends"
+      },
+      "row3": {
+        "criterion": "Sending a way to pay",
+        "spreadsheet": "✗ It cannot",
+        "paper": "✗ It cannot",
+        "centerhq": "✓ A link with every invoice, card or wallet"
+      },
+      "row4": {
+        "criterion": "Center income beside your own",
+        "spreadsheet": "Only if you build it and maintain it",
+        "paper": "Two books, and neither one adds up",
+        "centerhq": "✓ Two numbers, one total, one screen"
+      },
+      "row5": {
+        "criterion": "If it is lost",
+        "spreadsheet": "✗ Whatever you last remembered to save",
+        "paper": "✗ Gone",
+        "centerhq": "✓ Backed up every night, kept seven days"
+      },
+      "row6": {
+        "criterion": "Proving a student paid",
+        "spreadsheet": "A cell that says paid",
+        "paper": "A tick, if you made one",
+        "centerhq": "✓ A numbered receipt you can send again"
+      }
+    },
+    "faq": {
+      "heading": "Before you start",
+      "subheading": "What teachers ask first.",
+      "q1": {
+        "question": "Will my center see my private students?",
+        "answer": "No. Your own groups are yours alone. A center you teach at sees only the groups it runs, and never your private income."
+      },
+      "q2": {
+        "question": "I only teach at centers. What do I pay?",
+        "answer": "Nothing, and that is not a trial. Watching your cut from the centers you teach at is free permanently. You pay only if you start running your own groups."
+      }
+    }
   },
   "teacherBilling": {
     "pageTitle": "Billing and plan",
@@ -10044,5 +10101,22 @@
       "cardEnding": "Card ending {last4}",
       "removeCard": "Remove saved card"
     }
+  },
+  "publicFooter": {
+    "productHeading": "Product",
+    "pricing": "Pricing",
+    "forCenters": "For centers",
+    "forTeachers": "For teachers",
+    "accountHeading": "Your account",
+    "createAccount": "Create an account",
+    "login": "Log in",
+    "legalHeading": "Legal",
+    "privacy": "Privacy Policy",
+    "terms": "Terms and Conditions",
+    "cookies": "Cookie Policy",
+    "talkHeading": "Talk to us",
+    "whatsappHours": "WhatsApp, 10am to 6pm",
+    "legalLine": "TutoringHQ is operated by EHG Intelligence Egypt, a registered Egyptian company.",
+    "rightsLine": "© 2026 All rights reserved."
   }
 }
