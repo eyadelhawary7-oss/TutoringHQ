@@ -1703,6 +1703,15 @@ export default function StudentsPage() {
                                 {ts('gradeLabel', { grade: s.grade_level })}
                               </p>
                             ) : null}
+                            {/* Design (Merged-Center-Students §01): the row meta line
+                                is "owes 300 EGP" - real-time balance, same helper
+                                (getStudentBalances) already backing this page's own
+                                KPI tiles and sort-by-balance, not a new computation. */}
+                            {balNum > 0 && (
+                              <p className="text-xs font-semibold text-amber-700 mt-0.5">
+                                {ts('owesAmount', { amount: formatCurrency(balNum, locale) })}
+                              </p>
+                            )}
                             <div
                               className="relative mt-2 inline-flex flex-wrap items-center gap-2"
                               onClick={(e) => e.stopPropagation()}

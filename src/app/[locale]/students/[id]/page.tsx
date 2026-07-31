@@ -507,7 +507,20 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
           {initialsOf(student.name)}
         </span>
         <div className="min-w-0">
-          <h1 className="truncate text-xl font-bold text-[var(--color-text-primary)]">{student.name}</h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="truncate text-xl font-bold text-[var(--color-text-primary)]">{student.name}</h1>
+            {/* Design (§02): a payment-standing badge beside the name. Same
+                real-time balance the KPI card below reads - not a new figure. */}
+            {balance !== null && (
+              <span
+                className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                  balance > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+                }`}
+              >
+                {balance > 0 ? tDetail('overdue') : tDetail('paidUp')}
+              </span>
+            )}
+          </div>
           {(student.subject || student.grade_level || student.phone) && (
             <p className="truncate text-sm text-[var(--color-text-secondary)]">
               {[

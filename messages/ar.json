@@ -4487,7 +4487,9 @@
       "messageAction": "رسالة واتساب",
       "family": "العائلة",
       "noFamilyLinked": "لا توجد عائلة مرتبطة بعد",
-      "balance": "الرصيد"
+      "balance": "الرصيد",
+      "overdue": "متأخر",
+      "paidUp": "مسدد بالكامل"
     },
     "nav": {
       "viewCart": "عرض السلة",
@@ -7028,6 +7030,7 @@
     "no_balance": "لا يوجد رصيد",
     "last_sessions": "الجلسات الأخيرة",
     "balance_due": "الرصيد المستحق",
+    "owesAmount": "مستحق {amount}",
     "parentPackOptIn": "باقة واتساب",
     "addToCardOrder": "إضافة لطلب البطاقات",
     "swipe_edit": "تعديل",

@@ -1628,6 +1628,7 @@
     "no_balance": "No balance",
     "last_sessions": "Last Sessions",
     "balance_due": "Balance Due",
+    "owesAmount": "Owes {amount}",
     "parentPackOptIn": "WhatsApp Pack",
     "addToCardOrder": "Add to Card Order",
     "swipe_edit": "Edit",
@@ -5871,7 +5872,9 @@
       "messageAction": "Message on WhatsApp",
       "family": "Family",
       "noFamilyLinked": "No family linked yet",
-      "balance": "Balance"
+      "balance": "Balance",
+      "overdue": "Overdue",
+      "paidUp": "Paid up"
     },
     "nav": {
       "viewCart": "View cart",
