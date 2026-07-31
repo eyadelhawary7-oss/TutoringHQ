@@ -95,6 +95,7 @@ If a row ever names one, that row is a mistake.
 | [#286](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/286) | `99d3f93` | 2026-07-31 | `Public-Marketing` — shared `MarketingFooter` (`/`, `/center`, `/teacher/landing`, `/pricing`), teacher-landing comparison table + FAQ, `/pricing` CTA pair, 299→499 EGP price fix | `/{locale}`, `/center`, `/teacher/landing`, `/pricing` | v42 |
 | [#287](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/287) | `7ed6bdf` | 2026-07-31 | none — doc only (#285 self-row, #286 logged, Public-Marketing surveyed, D29/D30/F25 added) | none | v42 |
 | [#288](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/288) | `4aad72d` | 2026-07-31 | `CEO` — F21 teacher-tier price fallback now sources `TEACHER_PLANS`, dead `legacyPayload` removed from `/api/ceo/dashboard` (7 unused Supabase queries/30s poll) | `/{locale}/ceo`, `/api/ceo/dashboard` | v42 |
+| [#289](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/289) | `7faa5c9` | 2026-07-31 | none — doc only (#287 self-row, #288 logged, CEO surveyed, F21 closed) | none | v42 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -1190,6 +1191,26 @@ teachers as-is.
 Full detail — including the live `wa_meta_templates` approval-status query and the `deduct_blast_credits`
 zero-callers grep — is folded into an expanded **D6** in `BUILD-AFTER-REDESIGN.md`, since every finding
 here bears directly on what building this screen would require, rather than split into separate F-items.
+
+**Teacher-Insight / Teacher-WhatsApp, batch-4 sweep re-confirmation (31 July 2026, doc only).** Rows 18
+and 19 were still marked "not surveyed" in `FILE-COMPLETION-TABLE.md` despite the same-day survey data
+above (`#259`, `#261`) — the recurring docs-sync gap this session keeps finding and fixing. Both files
+were independently re-read fresh rather than the table simply copied forward: Teacher-Insight's §01 0.9/1
+/ §02 0.1/1 and Teacher-WhatsApp's 0/1 both re-confirmed unchanged, D14 and D6 both still the correct
+blockers, nothing newly buildable.
+
+**Correction to D6, found during this re-confirmation, not in the original survey.** The claim above that
+the WhatsApp credit balance is "nowhere shown to the teacher... it only appears in the CEO admin view" is
+wrong — checked fresh against the live component tree. `TeacherPlanSection.tsx:157–172` already renders
+both `blast_credits_subscription` and `blast_credits_purchased` on `/teacher/billing` for Pro/Scale
+teachers today. It still also appears in the CEO admin view, so the original claim wasn't a total
+fabrication, just not exclusive — but the correction matters: this is not a number sitting unseen in an
+internal tool, it is a balance a paying teacher can already see on their own billing page, permanently
+disconnected from real usage. Separately, `wa_message_queue` — the send log any "what used it" screen
+would have to read — was confirmed to have no `teacher_id` column at all (FK'd only to `centers(id)`),
+so even a scaled-back read-only usage report needs a schema change first, not just the spend-wiring
+decision D6 already named. Both corrections applied directly to D6's entry in `BUILD-AFTER-REDESIGN.md`
+rather than left for a reader to reconcile against this log.
 
 **Admin-Platform re-verification (31 July 2026)** — asked to confirm PR #224's fraction against the
 merged file, not memory, before accepting a "done" file at face value. Read `Merged-Admin-Platform.html`
