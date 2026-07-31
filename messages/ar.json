@@ -4502,7 +4502,11 @@
       "noFamilyLinked": "لا توجد عائلة مرتبطة بعد",
       "balance": "الرصيد",
       "overdue": "متأخر",
-      "paidUp": "مسدد بالكامل"
+      "paidUp": "مسدد بالكامل",
+      "idCardAction": "بطاقة",
+      "parentRole": "ولي الأمر",
+      "siblingRole": "شقيق/شقيقة",
+      "sinceEnrolled": "منذ {date}"
     },
     "nav": {
       "viewCart": "عرض السلة",
@@ -5719,7 +5723,8 @@
     "needsFixTitle": "يحتاج تصحيحًا",
     "rowLabel": "الصف {n}",
     "reasonMissingName": "اسم الطالب مفقود",
-    "skippedNote": "الصفوف التي بها مشاكل يتم تخطيها ما لم تصححها في الملف وترفعه مرة أخرى.",
+    "skippedNote": "اكتب اسمًا أدناه لتضمين الصف، أو صححه في الملف وارفعه مرة أخرى.",
+    "fixNamePlaceholder": "اسم الطالب",
     "stepUpload": "تحميل",
     "stepMap": "أعمدة الخريطة",
     "stepPreview": "الاطلاع على الاستيراد",
