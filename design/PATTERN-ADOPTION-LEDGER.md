@@ -6,12 +6,16 @@ per-file," and until now nothing had gone back to actually count how much of the
 `FILE-COMPLETION-TABLE.md` carried row 1 as "100% today: YES" on the strength of the primitives existing,
 not on any measurement of adoption. This document is that measurement.
 
-**Updated 31 July 2026 (#292).** 3 of the 4 `EmptyState` wrong-component files (`students/page.tsx`,
-`groups/page.tsx`, `schedule/page.tsx`) were migrated onto the canonical primitive — a direct,
-human-directed fix, not a proactive sweep of the other primitives. The 4th, `payments/page.tsx`, turned
-out on inspection to have a dead, unrendered import — not a live wrong-component instance — and is
-reclassified below accordingly. It is a protected `Center-Money` file, so even that one-line removal
-needs an explicit go-ahead before it's touched, same as the rest of this file.
+**Updated 31 July 2026 (#292, #294) — the migration is complete, the old component is deleted.**
+`students/page.tsx`, `groups/page.tsx`, and `schedule/page.tsx` were migrated in #292. A 5th
+wrong-component file the original audit had missed, `(dashboard)/orders/OrdersPageClient.tsx`, was found
+and migrated in #294, alongside `payments/page.tsx`'s dead, unrendered import (removed — it was never a
+live wrong-component instance, so it's excluded rather than counted as a migration) and the resulting
+deletion of `src/components/empty-states/EmptyState.tsx` once a clean grep confirmed zero remaining
+importers anywhere. See `CHANGE-LOG.md`'s `#292`/`#294` entries for how `OrdersPageClient.tsx` was missed
+twice (once by the original audit, once by a follow-up check that trusted an empty grep result without a
+second look) before being caught a third time — this is a direct, human-directed fix, not a proactive
+sweep of the other five primitives, which stay untouched below.
 
 **Method.** Three independent read-only audits, one per primitive family, each opened and read every
 candidate file directly — no classification is based on a grep snippet alone, and none trusts
@@ -37,7 +41,7 @@ flagged file when its own row comes up again.
 
 | Primitive | Real adopters | Denominator | Fraction |
 |---|---|---|---|
-| `EmptyState` (`shared/EmptyState.tsx`) | 10 files (12 call sites) | 72 | **13.9%** |
+| `EmptyState` (`shared/EmptyState.tsx`) | 11 files (13 call sites) | 72 | **15.3%** |
 | Loading states (`ListSkeleton`/`RecordSkeleton`/`StillWorking`/`ActionSpinner`) | 1 file (`ListSkeleton` only) | 137 | **0.7%** |
 | `ListRow` | 5 | 14 | **35.7%** |
 | `ActionSheet` | 0 | 3 | **0%** |
@@ -66,7 +70,7 @@ this pass was exactly 11 — 7 real + 4 wrong-component — the same number as t
 is that #220's count was produced by grepping the bare string `EmptyState` without checking which import
 path was used, silently counting the 4 wrong-component files as adopters of the new primitive.
 
-### Real adopters (10 files, 12 call sites, updated by #292)
+### Real adopters (11 files, 13 call sites — final, #292 + #294)
 
 - `src/components/admin/AnalyticsGrowthHeader.tsx`
 - `src/app/[locale]/(admin)/admin/teacher-links/page.tsx` (3 usages — byCenter/byTeacher/unassigned tabs)
@@ -80,18 +84,20 @@ path was used, silently counting the 4 wrong-component files as adopters of the 
 - `src/app/[locale]/students/page.tsx` (Center-Students §01/§03) — migrated 31 Jul, #292
 - `src/app/[locale]/groups/page.tsx` (Center-Groups §01/§02) — migrated 31 Jul, #292
 - `src/app/[locale]/schedule/page.tsx` (Center-Groups §05) — migrated 31 Jul, #292
+- `src/app/[locale]/(dashboard)/orders/OrdersPageClient.tsx` (Center-Orders §01) — a 5th wrong-component
+  file the original audit missed (see `CHANGE-LOG.md`'s `#292`/`#294` entries); migrated 31 Jul, #294
 
-### Wrong-component (0 files remaining)
+### Wrong-component (0 files remaining — resolved)
 
-All 4 originally-flagged files are resolved: 3 migrated (#292, above); the 4th,
-`src/app/[locale]/payments/page.tsx`, turned out on inspection to import `empty-states/EmptyState` without
-ever rendering it anywhere in the file — a dead import, not a live wrong-component instance. Moved to
-"excluded" below; it isn't a shared-component-hygiene gap in the sense this ledger tracks, since there is
-no empty-state UI being rendered by the wrong component at all. The import removal itself is still
-outstanding — `payments/page.tsx` is `Merged-Center-Money`, a protected file, so it needs an explicit
-go-ahead before even a one-line dead-code deletion, per this project's standing protected-file rule.
+All 5 wrong-component files found across both passes are resolved: `students/page.tsx`,
+`groups/page.tsx`, `schedule/page.tsx` (#292), and `OrdersPageClient.tsx` (#294, found after #292's own
+audit missed it) are migrated. `payments/page.tsx`'s `EmptyState` import turned out to import
+`empty-states/EmptyState` without ever rendering it anywhere in the file — a dead import, not a live
+wrong-component instance — and was removed rather than migrated (#294). `src/components/empty-states/EmptyState.tsx`
+itself is deleted, confirmed safe by a clean grep across the whole `src` tree showing zero remaining
+importers.
 
-### Ad hoc (62 files — hand-rolled, no shared component at all)
+### Ad hoc (61 files — hand-rolled, no shared component at all)
 
 **Teacher portal (14):** `teacher/GroupProposalsSection.tsx` (Teacher-Setup §02), `teacher/AllStudentsList.tsx`
 (Teacher-Students §01), `teacher/AnalyticsView.tsx` (Teacher-Insight §01, local `EmptyLine()` helper reused
@@ -103,15 +109,15 @@ go-ahead before even a one-line dead-code deletion, per this project's standing 
 §04/§05), `teacher/(portal)/groups/[groupId]/GroupClassesTab.tsx` (Teacher-Groups §02),
 `components/teacher/schedule/SlotActionSheet.tsx` (Teacher-Home §02 or Teacher-Groups §04/§05 — ambiguous).
 
-**Center (27):** `dashboard/page.tsx` (Center-Home §01, "At Risk" panel), `rooms/page.tsx` (Center-Groups
+**Center (26):** `dashboard/page.tsx` (Center-Home §01, "At Risk" panel), `rooms/page.tsx` (Center-Groups
 §03), `(dashboard)/notifications/NotificationsPageClient.tsx` (Center-Home §02), `students/[id]/page.tsx`
 (Center-Students §02, attendance sub-tab), `students/pending/page.tsx` (Center-Students §04),
 `students/print/PrintClient.tsx` (no merged file — `NEEDS-DESIGN.md`), `settings/billing/page.tsx`
 (Center-Setup §03), `settings/team/page.tsx` (Center-Setup §07/§08), `settings/referrals/page.tsx`
 (duplicate route, `DUPLICATE-ROUTES.md` marks "probably delete"), `referrals/page.tsx` (Center-Insight §03,
 the canonical route), `whatsapp/WhatsAppTemplatesClient.tsx` (Center-WhatsApp §01),
-`(dashboard)/whatsapp-pack/WhatsAppPackClient.tsx` (Center-WhatsApp §02/§03), `(dashboard)/orders/OrdersPageClient.tsx`
-(Center-Orders §01), `(dashboard)/billing/BillingPageClient.tsx` (Center-Money §03),
+`(dashboard)/whatsapp-pack/WhatsAppPackClient.tsx` (Center-WhatsApp §02/§03),
+`(dashboard)/billing/BillingPageClient.tsx` (Center-Money §03),
 `components/notifications/NotificationBell.tsx` (Center-Home §02), `components/teachers/GroupProposalsTab.tsx`
 (Center-Setup §09), `components/teachers/GroupSlotsTab.tsx` (Center-Setup §09), `components/teachers/MyTeachersPanel.tsx`
 (Center-Setup §09), `components/settings/TeacherJoinRequests.tsx` (Center-Setup §07/§08),
@@ -144,11 +150,11 @@ separate i18n bug), `admin/referrals/page.tsx` (Admin-Accounts §04 — see "mix
 is a hard `redirect()`, per the CEO row's own finding); `charts/MultiLineChart.tsx` / `AreaChart.tsx` — a
 generic "not enough data points" message on a low-level chart primitive, not a page-level empty state;
 `charts/DonutChart.tsx` — renders a single `—` glyph by an explicit different convention;
-`src/app/[locale]/payments/page.tsx` (Center-Money §01/§02) — imports `empty-states/EmptyState` but never
-renders it anywhere in the file (confirmed by direct grep, 31 Jul, during #292's migration work) — a dead
-import, not a live wrong-component render. Reclassified out of the "wrong-component" bucket it originally
-sat in. **Protected file (`Center-Money`) — the import removal still needs an explicit go-ahead before
-anyone, including an automated pass, touches it, even for a one-line deletion.**
+`src/app/[locale]/payments/page.tsx` (Center-Money §01/§02) — had imported `empty-states/EmptyState`
+without ever rendering it anywhere in the file (confirmed by direct grep, 31 Jul, during #292's migration
+work) — a dead import, not a live wrong-component render, so it was never counted in the
+"wrong-component" bucket it originally sat in. **Protected file (`Center-Money`)** — Eyad gave explicit
+approval for this specific one-line removal (#294), which is now done; the import no longer exists.
 
 ---
 
