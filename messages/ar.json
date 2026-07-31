@@ -6616,7 +6616,7 @@
     "inviteName": "الاسم",
     "tempPassword": "كلمة مرور مؤقتة",
     "inviteSuccess": "تمت الدعوة بنجاح",
-    "passwordIs": "كلمة <g id=\"1\">المرور:</g> Password<g id=\"2\">.</g>",
+    "passwordIs": "كلمة المرور: {password}",
     "noTeamMembers": "لا يوجد أعضاء في الفريق حتى الآن",
     "invalidPhone": "يجب أن يتكون الهاتف من 11 رقمًا بدءًا من 01",
     "financialSettingsTitle": "الإعدادات المالية",
@@ -6788,6 +6788,9 @@
     "billingMoneyTitle": "الفواتير والمال",
     "supportTitle": "الدعم",
     "accountSecurityTitle": "الحساب والأمان",
+    "personalInfoTitle": "المعلومات الشخصية",
+    "emailSupportTitle": "الدعم عبر البريد الإلكتروني",
+    "legalTitle": "قانوني",
     "menu": {
       "centerInfoDesc": "الاسم، الهاتف، الحي، المحافظة، الشعار",
       "subjectsDesc": "إدارة المواد التي يتم تدريسها",
