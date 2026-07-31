@@ -70,7 +70,7 @@ If a row ever names one, that row is a mistake.
 | [#260](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/260) | `bb2000c1` | 2026-07-31 | none — doc only (#259's SHA fill) | none | v41 |
 | [#261](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/261) | _pending_ | 2026-07-31 | none — doc only (Teacher-WhatsApp survey: D6 corrected/expanded, nothing safely buildable) | none | v41 |
 | [#262](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/262) | `bd5593aa` | 2026-07-31 | `Admin-Platform §02` — TOP BY REVENUE centre rows now carry a real per-centre active-student count | `/{locale}/admin/analytics`, `/api/admin/overview` | v41 |
-| [#PRNUM](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/PRNUM) | _pending_ | 2026-07-31 | none — doc only (Teacher-Home re-verification: #225's fraction reconfirmed unchanged, no new gaps) | none | v41 |
+| [#266](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/266) | _pending_ | 2026-07-31 | none — doc only (Teacher-Home re-verification: #225's fraction reconfirmed unchanged, no new gaps) | none | v41 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
