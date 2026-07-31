@@ -2929,6 +2929,9 @@
     "billingMoneyTitle": "Billing & Money",
     "supportTitle": "Support",
     "accountSecurityTitle": "Account & Security",
+    "personalInfoTitle": "Personal info",
+    "emailSupportTitle": "Email support",
+    "legalTitle": "Legal",
     "menu": {
       "centerInfoDesc": "Name, phone, district, governorate, logo",
       "subjectsDesc": "Manage the subjects you teach",
