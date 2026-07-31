@@ -39,7 +39,7 @@ auto-merge — they come to Eyad. That is a routing rule, not a difficulty ratin
 |---|---|---|---|---|---|---|---|
 | 1 | **Design-Patterns** | 0/6 | not surveyed | **R4** | R4 | — | **YES** |
 | 2 | **Admin-Accounts** | 4/4 | not surveyed | **R5**, **R7** | R5, R7 | — | **YES** |
-| 3 | **Admin-Platform** | 6/6 | not surveyed | — | — | — | **YES** (restyle only) |
+| 3 | **Admin-Platform** | 6/6 | **4.6/6** (survey, 31 Jul) | V1, D5, R7-CLOSED | §02 done (this pass) | **V1** unverified filter · **D5** WhatsApp-pack overview pricing · R7-CLOSED · 6 confirmed schema-absence gaps (no dedicated code) | no — V1, D5 |
 | 4 | **Teacher-Home** | 2/2 | not surveyed | — | — | — | likely — survey first |
 | 5 | **Teacher-Students** | 2/2 | not surveyed | — | — | — | likely — survey first |
 | 6 | **Teacher-Setup** | 2/2 | not surveyed | — | — | — | likely — survey first |
