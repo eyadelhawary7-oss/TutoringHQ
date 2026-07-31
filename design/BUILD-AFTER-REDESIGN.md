@@ -319,13 +319,27 @@ resolve — this entry describes a bug that was already fixed before it was logg
   table (`rowWhatsappCredit` → "100 EGP WhatsApp credit monthly", shown as available on Pro/Scale). But
   the spend side, RPC `deduct_blast_credits`, has **zero callers anywhere in `src/`** — confirmed by
   grep across the whole app. So the number can only ever go up (monthly reset) and never down, no
-  matter how many WhatsApp messages a teacher's account actually triggers, and there is nowhere in the
-  teacher portal that even shows this balance to the teacher who's supposedly earning it (it only
-  surfaces in the CEO admin view, `ceoTeachers.ts`). A marketed monetary benefit that structurally
-  cannot deplete is a product-integrity gap, not a missing screen — flagging alongside the schema
-  finding rather than as a separate item, since building the design's Balance screen on top of this
-  as-is would mean displaying a number that is already known to be permanently disconnected from real
-  usage.
+  matter how many WhatsApp messages a teacher's account actually triggers. **Correction, batch-4 sweep,
+  31 July 2026 — the claim that "there is nowhere in the teacher portal that even shows this balance to
+  the teacher" was checked fresh and is wrong.** `TeacherPlanSection.tsx:157-172` already renders both
+  `blast_credits_subscription` and `blast_credits_purchased` live on `/teacher/billing` for Pro/Scale
+  teachers (confirmed by reading the component and its one usage site). It also still surfaces
+  separately in the CEO admin view (`ceoTeachers.ts`) — that part was correct, just not exclusive. This
+  raises the severity of the underlying gap rather than lowering it: it is not a latent number sitting
+  in an admin-only view, it is a balance a paying teacher already sees on their own billing page today,
+  going up every month and never down no matter how many messages they actually send. A marketed
+  monetary benefit that structurally cannot deplete is a product-integrity gap, not a missing screen —
+  flagging alongside the schema finding rather than as a separate item, since building the design's
+  Balance screen on top of this as-is would mean displaying the same permanently-disconnected number in
+  a second place.
+- **Addendum, batch-4 sweep, 31 July 2026 — even a scaled-back read-only usage report needs a schema
+  change, not just a spend-wiring decision.** `wa_message_queue` (the send log a "what used it" screen
+  would have to read) has no `teacher_id` column at all — confirmed against
+  `information_schema.columns` — and its only foreign key is `center_id → centers(id)` (confirmed
+  against the live FK constraints). It has no way today to attribute a queued or sent message to the
+  teacher whose credit it should have drawn from. Wiring `deduct_blast_credits` to real sends is
+  necessary but not sufficient — the log table itself needs a teacher-attributable column before any
+  per-teacher usage history can be shown at all.
 - **None of the 5 templates the design draws are actually delivering to a teacher's parents today,**
   each for a different, independently-verified reason (checked `wa_meta_templates` live, not assumed):
   - **Welcome** — doesn't exist for teachers at all. `chq_parent_welcome` is hard-keyed to `center_id`
