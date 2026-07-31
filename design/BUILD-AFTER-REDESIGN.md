@@ -198,6 +198,7 @@ found while checking this table's own staleness before starting the next file).
 - **Build:** the rate/countdown display against the **live** ladder — 25% → 10% → 5% (D2). The design's month-6 drop is wrong.
 - **Touches:** money (read only — displays a commission calculated elsewhere).
 - **Blocked by:** **D22** (below). The credit-versus-withdraw block on the same screen is **V4** and stays blocked regardless.
+- **Re-confirmed independently, 31 July 2026 (Center-Insight survey).** Read `/api/referral/route.ts` and `/api/referrals/payout/route.ts` fresh, without re-reading this entry first: both still read/deduct exclusively against `referral_reward_records`. Same table, same finding, arrived at cold — still blocked, still correct. Also found in the same pass: the payout route has no CSRF check (**S6**-class gap, logged separately as **S7**), currently low-blast-radius only because this table's balance is always 0 in production.
 
 ## R7 · Admin teacher list and teacher account detail
 - **What:** The teacher half of the admin portal — a solo-teacher list beside the center list.
@@ -312,6 +313,7 @@ resolve — this entry describes a bug that was already fixed before it was logg
 - **The decision:** where does a notify-me registration go?
 - **Why it is stuck:** the only waitlist table is `waitlist_notifications (student_id, group_id, …)`, which is about group waitlists, not card orders.
 - **Blocks:** the notify-me control in R8 only. The screen itself can ship without it.
+- **Re-confirmed, 31 July 2026 (Center-Orders survey).** `CardOrdersTeaser.tsx`'s own JSDoc documents the omission explicitly: the design's "Notify me when it launches" CTA was left out on purpose because it has no backing table, and the component's `action` prop instead carries a real "enable in Settings" link. Intentional, documented, not dead code — still waiting on this decision, nothing new to add.
 
 ## D8 · Team seats as a paid add-on
 - **The decision:** the seat model, and the price.
@@ -370,6 +372,7 @@ whose core Add-branch flow sits on top of this unresolved billing question.
 ## D13 · Advanced Analytics / Benchmarks as paid add-ons
 - **Closed 26 July, parked.** Both stay as they are — Analytics keeps `canViewRevenue`, Benchmarks stays free. No purchase flow. Parked until AI features ship.
 - Kept here only so a designer reading `Merged-Center-Insight` §01/§02 does not re-open it.
+- **Re-confirmed, 31 July 2026 (Center-Insight survey).** Read both routes in full: `/analytics` still gates purely on `canViewRevenue` (role/permission), `/benchmarks` still has no gate beyond normal center auth plus the data-sufficiency check (`insufficient_data`, 10-center district threshold). Neither has a paywall, an "Enable" sheet, or a Paymob purchase call anywhere in the route or its API. Matches this entry exactly, nothing to reopen.
 
 ## D14 · Teacher referral model
 - **The decision:** a new schema, not a column.
@@ -789,6 +792,13 @@ correction is in `TOKEN-SPEC.md` §2.
 - **Fix shape:** the same `if (!validateCSRFRequest(...)) return 403` pattern already used by every other mutation-bearing domain route — mechanical, no schema change, no behavior change for a legitimate same-origin caller carrying the token. Not done in this pass — flagged per the standing stop condition on anything touching money or auth, and because it is a 5-file change under active review discipline, not a single-file design-fidelity fix.
 - **Blocked by:** nothing technical. Waiting on Eyad's go-ahead to land it as its own PR, separate from the design-restructure chain.
 
+## S7 · No CSRF on the referral payout route
+- **What:** `POST /api/referrals/payout` (`ReferralWithdrawalPanel.tsx`, `Merged-Center-Insight` §03) has no `validateCSRFRequest` call — confirmed by direct read of the full route plus a repo-wide grep. Gating today is `requireCenterAuth` (bearer token) + `requirePermission(auth, 'can_request_referral_payouts')` + `src/proxy.ts`'s CORS-origin check — none of which is CSRF-token validation.
+- **Why it matters, with the caveat that matters more:** this creates a real `payout_requests` row against a center's referral commission balance — the same class of gap as **S6**. The blast radius today is small because of **D22** below: the balance it checks is always read from `referral_reward_records`, a table with zero live writers, so `available` is always 0 in production and the route 400s before anything is created. If D22 is ever resolved by repointing reads at `referral_commissions` (the table the real cron writes), this route inherits real money exposure the moment that happens — so the CSRF fix and D22 are worth landing together, not treating this one as low-priority because of the other.
+- **Contrast case, found the same pass:** `POST /api/whatsapp/send-balance-reminder` (used one screen over, on Analytics' Aging report) does call `validateCSRFRequest` correctly, and its client caller (`AgingReport.tsx`) correctly attaches `X-CSRF-Token`/`X-Session-ID` via `getCsrfHeaders()`. Whatever pattern protects that route was not extended to this one.
+- **Touches:** auth, and money.
+- **Blocked by:** nothing technical. Waiting on Eyad's go-ahead, same as S6.
+
 ---
 
 # §6 · FOUNDATIONS DEBT — what the redesign left behind
@@ -923,6 +933,13 @@ doc and `db/schema.snapshot`, same "drop or document" decision as before, not re
 - **Consequence for what was built:** Center-Home's Schedule section is built from `schedule_slots` (today's Cairo day-of-week only), joined to room/teacher names and `student_group_members` counts the same way `/schedule`'s own `groupToTeacher` already does. The design's Billed/Next/Later status chip has no stored equivalent to read, so it's derived at render time — end_time already passed = billed, the single soonest not-yet-ended slot = next, everything else = later — documented as an interpretation in `src/lib/todayScheduleStatus.ts`'s own comment, not a claim that money was specifically confirmed collected for that slot.
 - **Found:** 30 July 2026, building Center-Home's Schedule section.
 - **Touches:** none — read-only display, no schema change, no new table.
+
+## F18 · Card-order Customize step has no per-field print toggle
+- **What:** `Merged-Center-Orders` §03 (Customize step) draws four on/off toggles for what prints on the card — Student name (on), QR code (on), Student photo (**off**, deliberately, in the reference frame), ID number (on). Live's `checkout/customize/page.tsx` only offers a card-**style** toggle (dark/light) plus a freeform `vendor_notes` text field — there is no per-field print control anywhere in the cart/order model.
+- **Why not built this pass:** `card_orders`/`card_order_cart` carry `card_style` and `vendor_notes`, nothing resembling `print_name`/`print_qr`/`print_photo`/`print_id_number`. Adding the toggles means adding new columns (or a jsonb field) to persist the choice through cart → order → the print vendor's actual production instructions — a schema change, not a display fix.
+- **Touches:** none live (nothing reads a photo/name/QR toggle today), but the build is a new-column item.
+- **Found:** 31 July 2026, Center-Orders survey.
+- **Blocked by:** nothing technical — needs Eyad's call on whether per-field print control ships, since `vendor_notes` (freeform text to the print vendor) is arguably already an escape hatch for the one case this would matter (omitting a student photo), just not a structured one.
 
 ---
 

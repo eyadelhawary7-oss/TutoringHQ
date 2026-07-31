@@ -58,6 +58,7 @@ If a row ever names one, that row is a mistake.
 | [#248](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/248) | `81db40be` | 2026-07-31 | `Center-Groups §01` (teacher name, center's cut, member balance badges, delete), `§03` Rooms (edit/delete), `§05` Schedule (week nav, day-pill dots, named conflicts) | `/{locale}/groups`, `/{locale}/rooms`, `/{locale}/schedule` | v41 |
 | [#249](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/249) | `1299c867` | 2026-07-31 | `Center-Students §01` (roster row balance), `§02` (student detail payment badge) | `/{locale}/students`, `/students/[id]` | v41 |
 | [#250](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/250) | `d2cf22a2` | 2026-07-31 | none — doc only (#249's SHA fill; R5 closed — built via #221, never marked closed) | none | v41 |
+| [#251](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/251) | `1a673bb9` | 2026-07-31 | none — doc only (Center-WhatsApp survey: fraction, D4/D5 re-confirmed, S6 CSRF finding) | none | v41 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -834,3 +835,41 @@ standing-rule violation (`saas-multi-tenant-architecture` skill, locked rule 6: 
 fails closed) independent of the design-restructure work, and money-adjacent (the announcement route
 moves real balance and can create real invoices) — flagged for Eyad rather than silently patched
 mid-loop, per the standing stop condition on anything touching money or auth.
+
+**Center-Orders (31 July 2026) — the best-built file surveyed so far, plus four small confirmed bugs
+fixed.** `FILE-COMPLETION-TABLE.md` row 8 already had **R8** built (#231, the §04 teaser) with only
+**D7** (notify-me destination) unresolved. Structure coverage, surveyed properly this pass rather than
+taken on the table's word: **§01 Orders 4/5, §02 Order Detail 5/5, §03 Checkout 4/5, §04 Coming Soon
+4/5 — ≈4.25/5 overall (~85%).**
+
+| § | fraction | notes |
+|---|---|---|
+| §01 Orders | 4/5 | order history is richer than the design (search/filter/sort/paginate vs. a flat 3-row list) and the cart-based flow functionally covers "New order," but the design's hero ID-card-preview entry point isn't there — replaced by going straight into the cart, a different but not worse presentation |
+| §02 Order Detail | 5/5 | matches and exceeds: an 8-stage state machine vs. the design's 5 steps, added terminal banners for cancelled/refunded/failed states the design doesn't draw, a full VAT/processing-fee/shipping breakdown, real receipt download and cancel/mark-issued actions |
+| §03 Checkout | 4/5 | the 4-step wizard (delivery → customize → review → payment) plus success matches closely, VAT (14%) and the 20 EGP processing fee both present and correct; missing the Customize step's per-field print toggles (name/QR/photo/ID on/off) — logged as **F18**, needs new columns |
+| §04 Coming Soon | 4/5 | teaser + feature list built (#231); notify-me + confirmation state still blocked on **D7**, re-confirmed this pass — `CardOrdersTeaser.tsx`'s own JSDoc documents the omission as deliberate, not dead code |
+
+**Four small, confirmed bugs fixed, all mechanical, none touching schema or money flow:**
+- **Hardcoded `62` EGP/card**, in two spots (`OrdersPageClient.tsx`'s shipping-estimate example banner and the `price_per_card` display fallback) — stale relative to `taxMath.ts`'s real `CARD_UNIT_BASE_EGP` constant, which grosses to exactly 60 EGP/card inclusive. Both now derive from `cardOrderProductInclusiveFromQty(1)` instead of a second, disagreeing hardcode.
+- **WhatsApp order-confirmation short-ref mismatch**: every UI surface and the receipt itself derives the human order reference as `id.replace(/-/g,'').slice(-8)` (**last** 8 hex chars) except `cardOrderCheckoutOwnerNotify.ts`, which used `.slice(0,8)` (**first** 8) for the one-time owner WhatsApp message — the confirmation text showed a different reference than every screen and PDF the owner could see it against. Now consistent.
+- **`/api/orders/[orderId]/reorder`** was missing the `cardOrdersDisabledResponse` gate and the `can_place_card_orders` permission check that its sibling routes (`checkout`, `create-payment-key`) both already enforce — added, matching the exact pattern. Zero functional impact on legitimate users: checkout itself already required the same permission, so this only closes a defense-in-depth gap (populating a cart via reorder without ever being able to complete purchase).
+- **`DELETE /api/card-order-cart/items/[itemId]`** was missing the same `cardOrdersDisabledResponse` gate its sibling `PATCH` in the same file already has — added for consistency.
+
+**Not built, each flagged for a specific reason:** the §01 hero visual (a presentation choice, not a missing capability — logged, not treated as a gap to close); the §03 print-field toggles (**F18**, needs new columns, Eyad's call); the Sidebar's `can_manage_students` vs. the page/API's `can_place_card_orders` nav-permission mismatch (a role could see the "Orders" nav item then land on a blocked page — reads as a policy question of which permission should gate nav visibility, not an unambiguous bug, so flagged rather than changed); a redundant no-op branch in `CardOrderCartItemRow.tsx`'s touch handler (dead code, zero behavior change, left alone per the no-unrequested-cleanup rule).
+
+**Center-Insight (31 July 2026) — surveyed, no build.** Row 9 had never been surveyed for structure.
+**§01 Analytics 4/5, §02 Benchmarks 4.5/5, §03 Referrals 1.5/5 — ≈3.3/5 overall (~66%)**, dragged down
+almost entirely by one already-known, independently re-confirmed finding in §03, not by anything new
+and undecided.
+
+| § | fraction | notes |
+|---|---|---|
+| §01 Analytics | 4/5 | KPI tiles, the revenue chart, payment-methods donut, revenue-by-group, P&L (with CSV export) and the aging report (with **correctly CSRF-protected** WhatsApp reminders) are all real and live; missing the "Projected · month-end" forecast tile and its dashed projection bar — logged, not built, since it needs a pace-extrapolation formula added to `/api/analytics/revenue`, not just a display change. The design's paid-add-on gate (Frame 3) is correctly **not** built — **D13**, closed 26 July, re-confirmed this pass. |
+| §02 Benchmarks | 4.5/5 | once corrected for an **already-decided design error** — `NEW-FEATURES.md` Appendix D9, 27 July: the design draws 5 metrics, the live cohort table supports 4, and Eyad's call was to build the 4 real ones and fix the drawing, not add "average fee"/"new students per month" as new metrics — Benchmarks is essentially complete: the data-sufficiency lock state, all 4 metric cards with percentile bars and median ticks, the Refer & Earn cross-link, the anonymity footer. The design's paywall (99 EGP/mo) is correctly **not** built, same **D13**. |
+| §03 Referrals | 1.5/5 | the KPI tiles and two data tables are built and functional for *reading*, but every figure they show comes from `referral_reward_records` — a table **already found dead on 29 July (D22)** and **independently re-confirmed this pass**, reading the code cold rather than re-reading D22 first: the real monthly commission cron writes exclusively to a different table, `referral_commissions`, and nothing ever reconciles the two. The design's richer per-referral rate-decay/countdown cards and its dedicated referral-detail sub-page (**R6**) are correctly **not** built — already logged as blocked by D22, re-confirmed, not re-opened. |
+
+**New finding, independent of the fraction: S7, no CSRF on `/api/referrals/payout`.** Same class of gap
+as WhatsApp-Pack's S6 — `requireCenterAuth` + a permission flag guard it, `validateCSRFRequest` does
+not. Currently low-blast-radius only *because* of D22 (the balance it guards is always 0 in production
+today) — flagged now, together with D22, so the two get decided as one problem rather than the CSRF
+gap being deprioritized on the mistaken belief that "it can't move money yet" stays true forever.
