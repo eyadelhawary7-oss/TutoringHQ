@@ -657,6 +657,13 @@ left for later, it is the deliberate final state unless a pause feature is separ
 - **Touches:** `cardOrderNotifications.ts`, messaging copy, no schema.
 - **Blocked by:** Eyad's call on which composition pattern to standardize on before any writer (this one or a future D26 one) uses it.
 
+## D28 · Center-Setup Onboarding (§01) is a structural product divergence, not an unbuilt design
+- **What:** `Merged-Center-Setup` §01 draws a center-configuration wizard (name/area → subjects/grades → payment methods → done). Live's onboarding is a value-demo wizard (add first student → create first group → simulate a scan → ROI summary) — a genuinely different flow with a different purpose, not a partial or outdated build of the drawn one.
+- **Why this needs its own entry:** `CHANGE-LOG.md` already carries a narrative note calling this "not scored — different flow," but until now `BUILD-AFTER-REDESIGN.md` had nothing under a code, so a future re-verification pass could easily mistake this for "not yet gotten to" and either try to force a fraction onto it or attempt to rebuild it into the design's shape by default.
+- **Blocked by:** a product-scope decision, not a display fix — is the config wizard the direction to build toward, is the value-demo flow staying as the real onboarding with the design corrected to match it, or do both need to coexist for different moments (e.g. first-run vs. re-entering setup later)?
+- **Found:** narratively, 31 July 2026 (Center-Setup survey); formally logged with a code, 31 July 2026, PR #282.
+- **Touches:** none yet — this is the decision point.
+
 ---
 
 # §3 · BLOCKED ON VALIFY — verification and everything downstream
@@ -1121,6 +1128,15 @@ doc and `db/schema.snapshot`, same "drop or document" decision as before, not re
 - **Why not fixed where found:** the actual fix lives entirely in `students/page.tsx`, which is `Center-Students`' claimed file territory (its own sweep pass landed the same day, PR #277) — logging for whoever next has `Center-Students` open rather than a `Center-Home` agent colliding on another file's claimed lock.
 - **Found:** 31 July 2026, Center-Home re-verification (PR #280).
 - **Touches:** `src/app/[locale]/students/page.tsx` only. No schema, no protected file, no decision needed — reading `filter`/`action` and opening the matching filter/modal on load is mechanical once someone is in that file.
+
+## F24 · My Teachers §09 Slots tab is a different feature than the design draws
+- **What:** Live (`/api/center/group-slots`, `/api/teacher/group-slots`) is: a teacher who already has a negotiated, attached group proposes a specific weekly meeting time; the center confirms it and optionally assigns a room ("the slot step sits after cut-agreed," per the route's own comment). `Merged-Center-Setup` §09 draws a marketplace: the center posts an open, teacher-less time slot; multiple teachers propose to fill it; the center picks a winner and sets the cut.
+- **Why this is structural, not a display gap:** no open-slot/multi-proposal-per-slot mechanism exists anywhere live — there is no table or endpoint for an unattached slot that multiple teachers can bid on. Building it means a new table, a notification fan-out to eligible teachers, and a winner-selection UI, not a restyle of the existing confirm-a-proposed-time flow.
+- **Found:** 31 July 2026, Center-Setup re-verification (PR #282).
+- **Touches:** none yet — this is a scope decision (does the marketplace model replace or sit alongside the attached-group model?), not a mechanical build.
+
+## Found, not yet formally logged — cross-file i18n data-quality audit
+- **Dozens of `ar.json` values across many top-level namespaces are literal English placeholders or half machine-translated** ("Confirmed", "Last30Days", "Sparkline عنوان", "Trend صعود Suffix", etc.) — found while surveying `Center-Setup` (PR #282), where several of the worst examples turned out to be **mis-homed under the `settings` namespace but actually rendered by `Center-Home`'s dashboard widgets** (`PlanUsageCard`, `/dashboard`), not any Center-Setup screen. Left untouched by that pass (out of `Center-Setup`'s file territory, and touching them risked colliding with `Center-Home`'s own concurrent PR). Not yet scoped to a single file or given a code — worth a dedicated cross-file i18n audit rather than folding piecemeal into whichever file's sweep happens to trip over the next instance.
 
 ## Found, not yet formally logged — CEO survey findings needing a closer look
 - **A second CEO dashboard exists.** `/ceo` (surveyed here) and a separate `/ceo-dashboard` (`src/app/[locale]/(admin)/ceo-dashboard/CeoDashboardClient.tsx`, backed by its own `/api/ceo/financials`, `/api/ceo/growth-panel`, `/api/ceo/health-panel`, `/api/ceo/mrr`, `/api/ceo/command-strip` routes — none of which `/ceo` calls) both live behind the same middleware wall and the same `AdminSidebar` entry points. This is the same shape as the four pairs already tracked in `DUPLICATE-ROUTES.md` ("facts for a decision, nothing merged or deleted") — not added there yet since `/ceo-dashboard`'s own client wasn't read in full this pass; flagging for a follow-up read to do that comparison justice rather than guessing at what it uniquely carries.

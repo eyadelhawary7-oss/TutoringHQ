@@ -87,6 +87,8 @@ If a row ever names one, that row is a mistake.
 | [#278](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/278) | `df8c42d` | 2026-07-31 | `Center-Groups §01` (fill bar, avg attendance, inline new-subject), `§04` (Current badge), `§05` (Now/Done badges) — plus `AttendanceHeatmap.tsx` i18n bug fix (hardcoded Arabic shown to English-locale users) | `/{locale}/groups`, `/{locale}/branches`, `/{locale}/schedule` | v42 |
 | [#279](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/279) | `7836769` | 2026-07-31 | none — doc only (#276 self-row, #277/#278 logged and surveyed) | none | v42 |
 | [#280](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/280) | `db28ae2` | 2026-07-31 | none visible — `NotificationBell.tsx` relative-time dedup (shared dashboard-chrome component, no design-facing change beyond consistent wording); D27/F23 logged | notification bell in the dashboard chrome (all locale-prefixed routes that render it) | v42 |
+| [#281](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/281) | `8e07773` | 2026-07-31 | none — doc only (#280 logged, Center-Home surveyed, D27/F23 added) | none | v42 |
+| [#282](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/282) | `aece65a` | 2026-07-31 | `Center-Setup §02` (Account personal-info card), `§05` (Support email + Legal links), `§07` (`passwordIs` i18n fix) | `/{locale}/settings/account`, `/settings/support` | v42 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
