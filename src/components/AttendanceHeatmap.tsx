@@ -95,10 +95,20 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
     if (present === undefined || present === 0) {
       return `${formattedDate} - ${t('legend.none')}`;
     }
-    return `${formattedDate} - ${formatNumber(present, locale)} طالب حضر`;
+    return `${formattedDate} - ${t('presentOfTotal', { present: formatNumber(present, locale), total: formatNumber(groupSize, locale) })}`;
   }
 
-  const dayHeaders = ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'];
+  const isRTL = locale === 'ar';
+  const dir = isRTL ? 'rtl' : 'ltr';
+  // Narrow weekday labels (Sun..Sat, matching startDayOfWeek's JS getDay() order)
+  // computed per-locale via Intl rather than a hardcoded Arabic-only array, so
+  // English renders never showed an Arabic calendar header.
+  const dayHeaders = Array.from({ length: 7 }, (_, i) =>
+    new Date(Date.UTC(2023, 0, 1 + i)).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US', {
+      weekday: 'narrow',
+      timeZone: 'UTC',
+    })
+  );
 
   if (loading) {
     return (
@@ -120,7 +130,7 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
 
   if (error) {
     return (
-      <div className="text-xs text-[var(--color-text-muted)] p-2" dir="rtl">
+      <div className="text-xs text-[var(--color-text-muted)] p-2" dir={dir}>
         {t('error')}
       </div>
     );
@@ -128,7 +138,7 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
 
   if (cells.length === 0) {
     return (
-      <div className="text-xs text-[var(--color-text-muted)] p-2" dir="rtl">
+      <div className="text-xs text-[var(--color-text-muted)] p-2" dir={dir}>
         {t('noData')}
       </div>
     );
@@ -137,9 +147,9 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
   const allCells: (string | null)[] = [...paddingCells, ...allDays];
 
   return (
-    <div className="p-2 space-y-2" dir="ltr">
-      <p className="text-xs font-medium text-[var(--color-text-secondary)] text-end" dir="rtl">
-        الحضور - آخر {weeks} أسابيع
+    <div className="p-2 space-y-2" dir={dir}>
+      <p className="text-xs font-medium text-[var(--color-text-secondary)] text-end">
+        {t('attendanceLastWeeks', { weeks: formatNumber(weeks, locale) })}
       </p>
 
       <div className="flex gap-1">
@@ -164,7 +174,7 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
         )}
       </div>
 
-      <div className="flex gap-3 flex-wrap" dir="rtl">
+      <div className="flex gap-3 flex-wrap">
         {[
           { color: 'bg-[var(--color-surface-2)]', label: t('legend.none') },
           { color: 'bg-teal-100', label: t('legend.low') },

@@ -1005,6 +1005,8 @@
     "hide": "إخفاء الحضور",
     "noData": "لا توجد بيانات حضور بعد",
     "error": "تعذر تحميل بيانات الحضور",
+    "attendanceLastWeeks": "الحضور · آخر {weeks} أسابيع",
+    "presentOfTotal": "{present}/{total} حاضر",
     "legend": {
       "none": "لا توجد بيانات",
       "low": "أقل من 50٪",
@@ -1602,7 +1604,9 @@
     "roomUtilisation": "محجوزة {percent}",
     "roomFreeToday": "متاحة اليوم",
     "roomNoCapacity": "السعة غير محددة",
-    "conflictShort": "تعارض"
+    "conflictShort": "تعارض",
+    "now": "الآن",
+    "sessionDone": "انتهت"
   },
   "adminHealth": {
     "statusSuccess": "ناجح",
@@ -4431,7 +4435,8 @@
     "totalStudents": "إجمالي الطلاب",
     "totalOutstanding": "إجمالي المبلغ المستحق",
     "studentsByBranch": "الطلاب حسب الفرع",
-    "revenueByBranch": "الإيرادات حسب الفرع"
+    "revenueByBranch": "الإيرادات حسب الفرع",
+    "current": "الحالي"
   },
   "cart": {
     "title": "سلة البطاقات",
@@ -5561,7 +5566,9 @@
     },
     "add": {
       "noSubjectsPlaceholder": "لا توجد مواد بعد، أنشئ مادة أولاً",
-      "createSubjectHelper": "أنشئ مادتك الأولى"
+      "createSubjectHelper": "أنشئ مادتك الأولى",
+      "newSubjectOption": "+ مادة جديدة",
+      "newSubjectPlaceholder": "اسم المادة"
     },
     "enrolledOfCapacity": "{count} من {capacity}",
     "groupFull": "مكتملة"

@@ -265,7 +265,20 @@ export default function BranchesPage() {
           <tbody>
             {branches.map((b) => (
               <tr key={b.id} className="border-b last:border-0 hover:bg-[var(--color-surface-0)]/50">
-                <td className="px-4 py-3 font-medium text-[var(--color-text-primary)]">{b.name}</td>
+                <td className="px-4 py-3 font-medium text-[var(--color-text-primary)]">
+                  <span className="inline-flex items-center gap-2">
+                    {b.name}
+                    {/* Design (Merged-Center-Groups §04): the branch matching the
+                        signed-in user's own center is flagged "Current" - was
+                        drawn nowhere in the table, though user.center_id was
+                        already available via useUser(). */}
+                    {user?.center_id === b.id && (
+                      <span className="shrink-0 rounded-full bg-teal-500/12 px-2 py-0.5 text-xs font-semibold text-teal-700">
+                        {t('current')}
+                      </span>
+                    )}
+                  </span>
+                </td>
                 <td className="px-4 py-3 text-[var(--color-text-secondary)]">{formatNumber(b.students, locale)}</td>
                 <td className="px-4 py-3 text-[var(--color-text-secondary)]">{formatNumber(b.mrr, locale)} {tCommon('egp')}</td>
                 <td className="px-4 py-3 text-[var(--color-text-secondary)]">{formatNumber(b.outstanding, locale)} {tCommon('egp')}</td>

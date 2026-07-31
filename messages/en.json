@@ -1005,6 +1005,8 @@
     "hide": "Hide attendance",
     "noData": "No attendance data yet",
     "error": "Failed to load attendance data",
+    "attendanceLastWeeks": "Attendance · last {weeks} weeks",
+    "presentOfTotal": "{present}/{total} present",
     "legend": {
       "none": "No data",
       "low": "Below 50%",
@@ -2409,7 +2411,8 @@
     "totalStudents": "Total Students",
     "totalOutstanding": "Total Outstanding",
     "studentsByBranch": "Students by Branch",
-    "revenueByBranch": "Revenue by Branch"
+    "revenueByBranch": "Revenue by Branch",
+    "current": "Current"
   },
   "academic": {
     "title": "Academic Year",
@@ -3124,7 +3127,9 @@
     },
     "add": {
       "noSubjectsPlaceholder": "No subjects yet, create one first",
-      "createSubjectHelper": "Create your first subject"
+      "createSubjectHelper": "Create your first subject",
+      "newSubjectOption": "+ New subject",
+      "newSubjectPlaceholder": "Subject name"
     },
     "enrolledOfCapacity": "{count} of {capacity}",
     "groupFull": "Full"
@@ -3336,7 +3341,9 @@
     "roomUtilisation": "{percent} booked",
     "roomFreeToday": "Free today",
     "roomNoCapacity": "no capacity set",
-    "conflictShort": "Clash"
+    "conflictShort": "Clash",
+    "now": "Now",
+    "sessionDone": "done"
   },
   "setPin": {
     "header": "Set your PIN",
