@@ -41,7 +41,7 @@ auto-merge — they come to Eyad. That is a routing rule, not a difficulty ratin
 | 2 | **Admin-Accounts** | 4/4 | not surveyed | **R5**, **R7** | R5, R7 | — | **YES** |
 | 3 | **Admin-Platform** | 6/6 | **4.6/6** (survey, 31 Jul) | V1, D5, R7-CLOSED | §02 done (this pass) | **V1** unverified filter · **D5** WhatsApp-pack overview pricing · R7-CLOSED · 6 confirmed schema-absence gaps (no dedicated code) | no — V1, D5 |
 | 4 | **Teacher-Home** | 2/2 | **12/16** (survey #225, 30 Jul; re-confirmed unchanged 31 Jul) | V1, V3, V4 | — | **V1** unverified promo card, "Let us collect for you / Verify my ID" (Valify identity verification not live) · **V3/V4** verified-state wallet card + recent payouts (no teacher-scoped payout ledger exists) | no — V1, V3/V4 |
-| 5 | **Teacher-Students** | 2/2 | not surveyed | — | — | — | likely — survey first |
+| 5 | **Teacher-Students** | 2/2 | **confirmed complete except D15** (survey, 31 Jul; §01 unchanged from #226, §02's one gap closed via #264) | D15 | — (gap closed this pass) | **D15** Balance card "Mark collected" / "Send reminder" — money-state write + per-send WhatsApp cost, no decision from Eyad | no — D15 |
 | 6 | **Teacher-Setup** | 2/2 | not surveyed | — | — | — | likely — survey first |
 | 7 | **Teacher-Groups** | 5/5 | not surveyed | — | — | — | likely — survey first |
 | 8 | **Center-Orders** | 4/4 | not surveyed | **R8**, D7 | R8 | **D7** notify-me has no destination | no — one decision |
