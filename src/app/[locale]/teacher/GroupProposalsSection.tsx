@@ -728,16 +728,26 @@ export default function GroupProposalsSection({
                 )}
 
                 {counterFor === p.id && p.status === 'open' && (
-                  <CounterOfferForm
-                    counterCut={counterCut}
-                    setCounterCut={setCounterCut}
-                    counterNote={counterNote}
-                    setCounterNote={setCounterNote}
-                    onSend={() => respond(p.id, 'counter', Number(counterCut), counterNote)}
-                    busy={busy}
-                    feePerClass={p.feePerClass}
-                    borderClass="border-[var(--color-border)]"
-                  />
+                  <>
+                    <CounterOfferForm
+                      counterCut={counterCut}
+                      setCounterCut={setCounterCut}
+                      counterNote={counterNote}
+                      setCounterNote={setCounterNote}
+                      onSend={() => respond(p.id, 'counter', Number(counterCut), counterNote)}
+                      busy={busy}
+                      feePerClass={p.feePerClass}
+                      borderClass="border-[var(--color-border)]"
+                    />
+                    {counterCut !== '' && Number.isFinite(Number(counterCut)) && (
+                      <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                        {t('counterAutonote', {
+                          fee: formatCurrency(p.feePerClass, locale),
+                          keep: formatCurrency(Number(counterCut), locale),
+                        })}
+                      </p>
+                    )}
+                  </>
                 )}
               </li>
             );
