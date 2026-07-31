@@ -19,8 +19,7 @@ import { CardOrderCartContents } from '@/components/orders/CardOrderCartContents
 import { CardOrderMobileStickyFooter } from '@/components/orders/CardOrderMobileStickyFooter';
 import { useCardOrderCart } from '@/hooks/useCardOrderCart';
 import { useToast } from '@/components/ui/ToastProvider';
-import { SectionHeader } from '@/components/shared';
-import EmptyState from '@/components/empty-states/EmptyState';
+import { EmptyState, SectionHeader } from '@/components/shared';
 
 export type CardOrdersShippingQuote = {
   hasGovernorate: boolean;
@@ -140,6 +139,7 @@ export default function OrdersPageClient({
   const tOrders = useTranslations('orders');
   const tCheckoutErr = useTranslations('checkout.errors');
   const tCommon = useTranslations('common');
+  const tEmpty = useTranslations('emptyStates');
   const locale = useLocale();
   const router = useRouter();
   const { toast } = useToast();
@@ -430,13 +430,19 @@ export default function OrdersPageClient({
             </div>
           ) : trulyNoOrders && !histLoading ? (
             <EmptyState
-              icon={<IdCard />}
-              titleKey="cardOrders.title"
-              descriptionKey="cardOrders.description"
-              namespace="emptyStates"
-              actionLabel="cardOrders.action"
-              onAction={() =>
-                document.getElementById('card-order-new-order')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              icon={IdCard}
+              title={tEmpty('cardOrders.title')}
+              description={tEmpty('cardOrders.description')}
+              action={
+                <button
+                  type="button"
+                  onClick={() =>
+                    document.getElementById('card-order-new-order')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  }
+                  className="w-full flex items-center justify-center gap-1.5 px-4 py-3 min-h-[48px] bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-xl transition-all duration-150 shadow-sm"
+                >
+                  {tEmpty('cardOrders.action')}
+                </button>
               }
             />
           ) : orders.length === 0 && !histLoading ? (
