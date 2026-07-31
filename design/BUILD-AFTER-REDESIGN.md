@@ -664,6 +664,20 @@ left for later, it is the deliberate final state unless a pause feature is separ
 - **Found:** narratively, 31 July 2026 (Center-Setup survey); formally logged with a code, 31 July 2026, PR #282.
 - **Touches:** none yet — this is the decision point.
 
+## D29 · `Merged-Public-Marketing` §03's add-ons section is mostly fabricated pricing
+- **What:** the design draws 6 add-on line items on `/pricing` (extra branch 299/mo, team seat 99/mo, a standalone "Advanced analytics" purchase at 149/mo, "Instant payout" per use, and two WhatsApp-pack tiers). Grepped `src/lib/pricing*.ts` and `docs/PRICING_SPEC.md`: only **"Parent WhatsApp pack" (12 EGP/parent/mo)** has a real, matching config value (`pricingConfig.ts`'s `whatsappParentPack: 12`). The other five have zero backing pricing config or billing logic anywhere in the codebase.
+- **Why it's not a display fix:** "WhatsApp packs — from 200, bought when needed, don't expire" directly conflicts with the live billing model (`PACK_PRICE_PER_PARENT` is a monthly per-parent subscription, not a purchasable non-expiring credit block) — the same root cause as the already-logged **D5** (Center-WhatsApp). Showing these five items as real prices would be advertising SKUs that don't exist; showing correct numbers means either building the SKUs or rewriting the drawing.
+- **Found:** 31 July 2026, Public-Marketing re-verification (PR #286) — the prior same-day survey (#254) had flagged this section as "unconfirmed" rather than asserted-missing; this pass closed that gap with a definitive answer.
+- **Touches:** none yet — this is a decision point (which add-ons become real SKUs, at what price) before any pricing-page copy or billing code changes.
+- **Blocked by:** Eyad's call on which add-ons ship as real, chargeable products.
+
+## D30 · A marketing claim the design's own header calls "banned by your own rules" is still live
+- **What:** `ComparisonTable`'s row8 (the default 8-row set rendered on `/center`) shows an unsourced "8–12 hours saved" admin-time claim. `Merged-Public-Marketing.html`'s own header copy for this section explicitly states this class of claim was removed as "banned by your own rules" — implying a prior decision against unverified time-savings claims that the live row still contradicts.
+- **Why this needs a decision, not a mechanical fix:** removing or rewriting the row is a copy/compliance call (what, if anything, replaces it), not a bug fix — the row is intentional-looking content, not a leftover.
+- **Found:** 31 July 2026, Public-Marketing re-verification (PR #286).
+- **Touches:** `messages/en.json`/`messages/ar.json`'s `landing.compare.row8`, no schema, no protected file.
+- **Blocked by:** Eyad's call on whether to remove the row, replace it with a sourced claim, or keep it and treat the design's own "banned" note as no longer applicable.
+
 ---
 
 # §3 · BLOCKED ON VALIFY — verification and everything downstream
@@ -1134,6 +1148,13 @@ doc and `db/schema.snapshot`, same "drop or document" decision as before, not re
 - **Why this is structural, not a display gap:** no open-slot/multi-proposal-per-slot mechanism exists anywhere live — there is no table or endpoint for an unattached slot that multiple teachers can bid on. Building it means a new table, a notification fan-out to eligible teachers, and a winner-selection UI, not a restyle of the existing confirm-a-proposed-time flow.
 - **Found:** 31 July 2026, Center-Setup re-verification (PR #282).
 - **Touches:** none yet — this is a scope decision (does the marketplace model replace or sit alongside the attached-group model?), not a mechanical build.
+
+## F25 · Two parallel WhatsApp support-number config sources, used inconsistently
+- **What:** `SITE.supportWhatsAppIntl` (`src/config/site.ts`) and `NEXT_PUBLIC_SUPPORT_WHATSAPP` (a separate env var) are both read as "the" support WhatsApp number, by different call sites across the public marketing pages, with no single source of truth.
+- **Why it matters:** whichever page reads the one that's unset silently disables its WhatsApp CTA (the button/link simply doesn't render, per the existing `if (WA_SUPPORT)` guard pattern) rather than falling back to the other source — a support channel can go quietly missing on some pages but not others depending only on which env var happens to be configured.
+- **Found:** 31 July 2026, Public-Marketing re-verification (PR #286).
+- **Touches:** `src/config/site.ts`, `src/lib/supportWhatsApp.ts`, and every call site currently reading either source directly. No schema, no protected file.
+- **Blocked by:** nothing product-level — this is mechanical (pick one source, repoint every reader), but wasn't attempted in-pass since it touches multiple files beyond `Public-Marketing`'s own territory.
 
 ## Found, not yet formally logged — cross-file i18n data-quality audit
 - **Dozens of `ar.json` values across many top-level namespaces are literal English placeholders or half machine-translated** ("Confirmed", "Last30Days", "Sparkline عنوان", "Trend صعود Suffix", etc.) — found while surveying `Center-Setup` (PR #282), where several of the worst examples turned out to be **mis-homed under the `settings` namespace but actually rendered by `Center-Home`'s dashboard widgets** (`PlanUsageCard`, `/dashboard`), not any Center-Setup screen. Left untouched by that pass (out of `Center-Setup`'s file territory, and touching them risked colliding with `Center-Home`'s own concurrent PR). Not yet scoped to a single file or given a code — worth a dedicated cross-file i18n audit rather than folding piecemeal into whichever file's sweep happens to trip over the next instance.
