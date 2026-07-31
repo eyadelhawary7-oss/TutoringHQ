@@ -5404,6 +5404,7 @@
     "withdraw": "اسحب العرض",
     "counterCutLabel": "الخصم الجديد (جنيه)",
     "noteLabel": "ملحوظة (اختياري)",
+    "counterAutonote": "سعر الطالب يبقى {fee} · يحتفظ المركز بـ {keep}",
     "send": "ابعت",
     "expiresOn": "بينتهي {date}",
     "teacherLabel": "المدرس",

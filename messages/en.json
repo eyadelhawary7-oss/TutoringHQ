@@ -2972,6 +2972,7 @@
     "withdraw": "Withdraw",
     "counterCutLabel": "New cut (EGP)",
     "noteLabel": "Note (optional)",
+    "counterAutonote": "Student rate stays {fee} · center would keep {keep}",
     "send": "Send",
     "expiresOn": "Expires {date}",
     "teacherLabel": "Teacher",
