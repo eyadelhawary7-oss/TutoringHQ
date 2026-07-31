@@ -985,6 +985,11 @@
       "title": "No rooms yet",
       "description": "Rooms are physical or virtual spaces where sessions happen. Add one to assign schedule slots.",
       "action": "View Rooms"
+    },
+    "cardOrders": {
+      "title": "No orders yet",
+      "description": "Order printed QR cards so students can scan themselves in at the door.",
+      "action": "Order your first cards"
     }
   },
   "validation": {
