@@ -55,7 +55,8 @@ If a row ever names one, that row is a mistake.
 | [#243](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/243) | `90f18fed` | 2026-07-30 | `Center-Students §04` (import) — dead-column write removed, no visible UI change | `/{locale}/students/import` | v41 |
 | [#245](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/245) | `89159e8b` | 2026-07-30 | `Center-Home §01` (dashboard: alert row, Today KPIs, digital share, schedule), `§02` (notifications: unread-count fix) | `/{locale}/dashboard`, `/{locale}/notifications` | v41 |
 | [#247](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/247) | `dbf7ed5d` | 2026-07-31 | `Center-Home §01` — 3 small gaps from the fraction audit (attendance denominator, schedule tap affordance, day-name subtitle) | `/{locale}/dashboard` | v41 |
-| [#248](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/248) | `(on merge)` | 2026-07-31 | `Center-Groups §01` (teacher name, center's cut, member balance badges, delete), `§03` Rooms (edit/delete), `§05` Schedule (week nav, day-pill dots, named conflicts) | `/{locale}/groups`, `/{locale}/rooms`, `/{locale}/schedule` | v41 |
+| [#248](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/248) | `81db40be` | 2026-07-31 | `Center-Groups §01` (teacher name, center's cut, member balance badges, delete), `§03` Rooms (edit/delete), `§05` Schedule (week nav, day-pill dots, named conflicts) | `/{locale}/groups`, `/{locale}/rooms`, `/{locale}/schedule` | v41 |
+| [#249](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/249) | `(on merge)` | 2026-07-31 | `Center-Students §01` (roster row balance), `§02` (student detail payment badge) | `/{locale}/students`, `/students/[id]` | v41 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -768,3 +769,27 @@ unresolved D23 billing bug, so left alone rather than partially rebuilt on top o
   *before* D2 was even written into this doc (29 July) and was simply never marked resolved — confirmed
   via both cron call sites (`daily-summary`, `parent-absence-alerts`) already calling the single
   canonical `scheduleSlotsDayOfWeek()` helper.
+
+**Center-Students follow-up (31 July 2026, PR #249)** — the two clearest, lowest-risk wins from the
+audit's §01/§02 findings, everything else logged rather than guessed at.
+
+- **§01 Roster:** the mobile card's meta line showed `student_number`/`phone`/`grade_level` but never
+  the design's "owes 300 EGP" — `balanceByStudent` was already computed for this exact page's own KPI
+  tiles and balance-sort option, just never reached the card. Now it does, additively (existing lines
+  kept).
+- **§02 Student Detail:** a payment-standing badge ("Overdue"/"Paid up") now sits beside the student's
+  name, from the same real-time `balance` the KPI card below it already reads.
+- **Flagged, not built, each for a specific reason:** a kebab/more menu in the detail top bar (the
+  design draws one; what it should contain — delete student? deactivate? — isn't evidenced by the
+  audit and reads as a decision, not a display fix); a tinted balance-card background (the shared
+  `KpiCard` component has no background-tint capability, and forking it or adding one wasn't done here
+  given `KpiCard`'s own docblock already flags an unrelated pending radius decision — **D0** — as
+  explicitly "not forked... settle deliberately"); the design's per-member family list, replacing the
+  current one-line family summary (real data exists — `sibling_family_id` is already selected — but
+  the UI shape change is bigger than this pass's two clear wins); a sticky bottom action bar (a layout
+  change to already-working quick-action tiles, not a gap); an "attendance ratio this term" stat tile
+  (no live concept of "term" boundaries was confirmed available to compute against safely); and the
+  attendance-history badges reading payment result (paid/pending/unpaid) rather than present/absent as
+  the design draws — changing that meaning would remove information already shown, not add it, so left
+  alone. `BottomTabBar`'s 3 tabs vs. the design's 4 (adding "Fees") is a shared, app-wide navigation
+  component, not a Center-Students-scoped fix — not touched here for that reason.
