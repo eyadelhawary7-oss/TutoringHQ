@@ -687,10 +687,11 @@ Nothing in this section can start until V1 lands. Ordered so that V1 unblocks th
 - **Blocked by:** V1 — technically buildable today, but **every row reads 0 / 100% until verification ships**, which is worse than not having it.
 - **Re-confirmed, 31 July 2026 (CEO survey).** Fresh `grep -i verified` across `/ceo`, `/ceo/teachers`, and both translation namespaces: zero matches, independently reproducing this entry's own claim rather than trusting it. Still holds exactly as written.
 
-## V6 · `Center-Setup` §08 Team Verified · `Center-Home` §01 verified dashboard · `Center-Attendance` §01–§02
+## V6 · `Center-Setup` §08 Team Verified · `Center-Home` §01 verified dashboard · `Center-Attendance` §01–§02 · `Center-Students` §03
 - Verified state end to end. `Center-Attendance` is blocked **wholesale** — worth knowing before it comes up in the restyle order.
 - **Blocked by:** V1.
 - **Re-confirmed, 31 July 2026 (Center-Attendance survey), independently on both sides.** Design side: both of `Merged-Center-Attendance.html`'s sections draw the **"Verified"** badge unconditionally in every single frame (5 of 5 in §01, plain "Active · verified" subtitle text in §02) — there is no unverified/locked/pending frame anywhere in the file for either section; a grep for "unverified"/"pending verification" across the whole mock returns zero hits. Live side: re-derived Valify's status from scratch (repo grep, live-schema check, live-catalog table-name search) without re-reading this entry first — same conclusion, nothing new: no `national_id`/`verification_status`/`kyc` column anywhere, no Valify SDK or route, `/attendance`'s own code has zero verification-aware branches (it renders identically for every center, gated only on subscription/billing status, a different axis entirely). Still blocked, still wholesale, still V1.
+- **Added, 31 July 2026 (Center-Students survey, PR #277).** `Merged-Center-Students` §03 (Center Students Verified) draws the identical unconditional "Verified"/"موثّق" badge in every one of its frames (roster header, both detail frames, recipient sheet) with zero unverified-state frames anywhere — the same diagnostic test as the other three files above, and it hadn't been named here yet even though it was already logged as blocked in `FILE-COMPLETION-TABLE.md`/`CHANGE-LOG.md`. Same root cause, same V1 dependency, folded in rather than left as an undocumented fourth instance.
 
 ---
 
@@ -1075,29 +1076,36 @@ doc and `db/schema.snapshot`, same "drop or document" decision as before, not re
 ## F22 · Center-Students re-verification — four small, previously-unlogged display gaps
 - **What, found together, 31 July 2026, re-verifying `Merged-Center-Students.html` against live code
   fresh (post-#239/#249), not from memory:**
-  1. **§01 Roster:** the design's header/KPI assume a multi-branch rollup — subtitle "128 active ·
-     **3 branches**", KPI sub "across 3 branches". Live shows a total student count only, no branch
-     breakdown, even though branch selection is a real, live concept elsewhere in the app
-     (`src/stores/branchStore.ts`).
-  2. **§02 Student Detail:** no aging/next-due sub-line under the balance figure at all. The design
-     shows "12 days overdue · since 01/07/2026" (owes state) or "Next due 01/08/2026 · 400 EGP" (paid
-     state); live's `KpiCard` renders the number and a red/green tint, nothing else.
-  3. **§02 Student Detail:** no "ID card" quick-action tile. The design's 4 quick actions are
-     Message/Call/ID card/Edit; live's 4 conditional tiles are Call/Message/Collect payment/Edit —
-     viewing or printing this student's QR card is reachable only from the roster page, not from their
-     own detail page.
-  4. **§04 Import:** the Review step's flagged rows are skip-only. The design shows a per-row "Fix"
-     button letting staff correct a problem (missing phone, unrecognized grade) in place before
-     import; live only lists the row, the reason, and drops it — correcting it means fixing the source
-     file and re-uploading.
-- **Why one entry, not four:** all four are the same shape — real, low-severity, purely-display gaps
-  surfaced while re-verifying already-shipped work, none touching a write path or a money computation.
-  None was found in the two prior passes (#239, #249) or their audits.
-- **Not built this pass:** this was a verification-only pass (Eyad asked for the fraction reconciled
-  against the merged file, not a build); these four are logged for whenever `Center-Students` comes
-  back around, same convention as F12–F15 above.
-- **Touches:** none — display only.
-- **Found:** 31 July 2026, Center-Students re-verification.
+  1. **§01 Roster — still open.** The design's header/KPI assume a multi-branch rollup — subtitle "128
+     active · **3 branches**", KPI sub "across 3 branches". Live shows a total student count only, no
+     branch breakdown. **Sharpened, 31 July (PR #277):** this isn't a missing field, it's a genuinely
+     different aggregate. `src/stores/branchStore.ts`/`BranchSwitcher.tsx` swap the *single active*
+     `center_id` between separate, fully independent `centers` rows one at a time
+     (`setActiveCenterId(b.id)`) — there is no cross-center rollup query anywhere (`grep -n 'branch'
+     src/app/[locale]/students/page.tsx` → zero matches). A combined count needs a real
+     sum-across-every-`center_id`-an-owner-can-see query, plus a decision on whether RLS should ever
+     let one view span multiple tenants — a bigger question than this file's redesign pass.
+  2. **§02 Student Detail — still open.** No aging/next-due sub-line under the balance figure at all.
+     The design shows "12 days overdue · since 01/07/2026" (owes state) or "Next due 01/08/2026 · 400
+     EGP" (paid state). **Confirmed why, 31 July (PR #277):** `getStudentBalances()` is a running
+     aggregate (Σ charges − Σ payments), not a per-invoice/per-session ledger — there is no single
+     "oldest unpaid session" or "next due date" fact to read. Needs a product decision on what those
+     mean under an aggregate-balance model, not a display fix.
+  3. **§02 Student Detail — closed, PR #277.** "ID card" quick-action tile built (view/print this
+     student's own QR via the existing `QRCard` component + the roster page's own
+     `QRCode.toDataURL`/`students.qr_code` pattern), alongside the existing Collect payment tile.
+  4. **§04 Import — closed, PR #277.** Flagged rows now get an inline "Fix" text input for the one skip
+     reason live can actually produce (missing name); typing a name reclassifies the row from "needs a
+     fix" to "ready to add" without re-uploading the file. (The design's other example, "Grade not
+     recognised," has no live equivalent — grade isn't an import field — and was correctly not
+     invented.)
+- **Why one entry, not four:** all four were the same shape when first found — real, low-severity,
+  purely-display gaps surfaced while re-verifying already-shipped work, none touching a write path or a
+  money computation. Kept as one entry with per-item status rather than splitting, so the "found
+  together" context isn't lost.
+- **Touches:** none — display/UX only, no schema, no protected file.
+- **Found:** 31 July 2026, Center-Students re-verification (#257). Items 3–4 built, item 1's reasoning
+  sharpened, item 2 confirmed correctly blocked: 31 July 2026, PR #277.
 
 ## Found, not yet formally logged — CEO survey findings needing a closer look
 - **A second CEO dashboard exists.** `/ceo` (surveyed here) and a separate `/ceo-dashboard` (`src/app/[locale]/(admin)/ceo-dashboard/CeoDashboardClient.tsx`, backed by its own `/api/ceo/financials`, `/api/ceo/growth-panel`, `/api/ceo/health-panel`, `/api/ceo/mrr`, `/api/ceo/command-strip` routes — none of which `/ceo` calls) both live behind the same middleware wall and the same `AdminSidebar` entry points. This is the same shape as the four pairs already tracked in `DUPLICATE-ROUTES.md` ("facts for a decision, nothing merged or deleted") — not added there yet since `/ceo-dashboard`'s own client wasn't read in full this pass; flagging for a follow-up read to do that comparison justice rather than guessing at what it uniquely carries.
