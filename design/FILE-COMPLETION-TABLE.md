@@ -37,7 +37,7 @@ auto-merge — they come to Eyad. That is a routing rule, not a difficulty ratin
 
 | # | File | Route cov. | Structure cov. | Entries that belong here | Buildable now | Blocked by | 100% today? |
 |---|---|---|---|---|---|---|---|
-| 1 | **Design-Patterns** | 0/6 | not surveyed | **R4** | R4 | — | **YES** |
+| 1 | **Design-Patterns** | 0/6 | **primitives 6/6 built (#220); live adoption audited 31 Jul — `EmptyState` 9.6%, loading states 0.7%, `ListRow` 35.7%, `ActionSheet`/`RecordActionBar`/`ExpandableRow` 0%** | R4 (corrected) | primitives only (#220) | not external — ~200 individual per-file conversions outstanding across the six primitives, none blocked, see **R4** / `PATTERN-ADOPTION-LEDGER.md` | **no — was wrongly marked YES, corrected 31 Jul** |
 | 2 | **Admin-Accounts** | 4/4 | **3.5/4** (survey, 31 Jul; teacher half of §01 excluded, see below) | R5 (built, #221) | — | **V1** verified chip/Valify · no `branches` table · no impersonation mechanism (needs a new auth primitive) · **R7-CLOSED** — built 28 Jul, closed unmerged on Eyad's call ("one teacher console, not two") | no — V1, two schema-absence gaps, an auth-infra gap, and R7-CLOSED |
 | 3 | **Admin-Platform** | 6/6 | **4.6/6** (survey, 31 Jul) | V1, D5, R7-CLOSED | §02 done (this pass) | **V1** unverified filter · **D5** WhatsApp-pack overview pricing · R7-CLOSED · 6 confirmed schema-absence gaps (no dedicated code) | no — V1, D5 |
 | 4 | **Teacher-Home** | 2/2 | **12/16** (survey #225, 30 Jul; re-confirmed unchanged 31 Jul) | V1, V3, V4 | — | **V1** unverified promo card, "Let us collect for you / Verify my ID" (Valify identity verification not live) · **V3/V4** verified-state wallet card + recent payouts (no teacher-scoped payout ledger exists) | no — V1, V3/V4 |
@@ -134,5 +134,14 @@ even means under a running-balance model, not a missing field.
   marketplace multiple teachers can bid on) — logged as **F24**. Lowered to ~2.5/5 rather than left at
   the stale credit, since "checks out cleanly" was the specific claim this pass disproved.
 
-**Not measured:** structure coverage for the 8 remaining files marked *not surveyed*. Producing that
+**Not measured:** structure coverage for the 7 remaining files marked *not surveyed*. Producing that
 number is step 1 of the per-file prompt, by design — see `PER-FILE-PROMPT.md`.
+
+- **Design-Patterns (row 1)** moved from "not surveyed" to a measured adoption fraction, not a
+  structure-coverage survey in the usual sense — there is no single live screen to read against the
+  drawing, since this file is six shared components consumed across the other 25. "Surveyed" here means a
+  full-codebase, per-file audit of which screens actually use each primitive versus rolling their own
+  equivalent. See **R4** and `PATTERN-ADOPTION-LEDGER.md` for the full per-file breakdown — 200+
+  individual files, none blocked, none built. This does not change any other row's own recorded fraction;
+  a file can be structurally complete in its own row while still appearing on that ledger as a
+  pattern-adoption non-adopter, since the two are different measurements.
