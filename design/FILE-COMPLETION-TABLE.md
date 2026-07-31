@@ -43,8 +43,8 @@ auto-merge — they come to Eyad. That is a routing rule, not a difficulty ratin
 | 4 | **Teacher-Home** | 2/2 | **12/16** (survey #225, 30 Jul; re-confirmed unchanged 31 Jul) | V1, V3, V4 | — | **V1** unverified promo card, "Let us collect for you / Verify my ID" (Valify identity verification not live) · **V3/V4** verified-state wallet card + recent payouts (no teacher-scoped payout ledger exists) | no — V1, V3/V4 |
 | 5 | **Teacher-Students** | 2/2 | **confirmed complete except D15** (survey, 31 Jul; §01 unchanged from #226, §02's one gap closed via #264) | D15 | — (gap closed this pass) | **D15** Balance card "Mark collected" / "Send reminder" — money-state write + per-send WhatsApp cost, no decision from Eyad | no — D15 |
 | 6 | **Teacher-Setup** | 2/2 | **14/16** (survey #227, 29 Jul; re-confirmed + 1 gap corrected 31 Jul) | D16, D17, V1 | counter-offer autonote (this pass) | **V1** collect-payments toggle + verified-state payout details (Valify not live) · **D16** center-class commission engine dormant, "Owed" reads 0.00 EGP · **D17** "Share your profile" links to a route that does not exist | no — V1, D16, D17 |
-| 7 | **Teacher-Groups** | 5/5 | not surveyed | — | — | — | likely — survey first |
-| 8 | **Center-Orders** | 4/4 | not surveyed | **R8**, D7 | R8 | **D7** notify-me has no destination | no — one decision |
+| 7 | **Teacher-Groups** | 5/5 | **~2.2/5** (section-level survey, 31 Jul — §01/§02 largely intact, §03's review-gate structure absent, §04 missing mark-collected/Vodafone Cash, §05 unbuilt; coarser than rows 2–6's sub-element counts, see notes) | D18, D19, D20, D21 | roster avatars + pending-count banner (this pass, #273) | **D18** §03 review gate doesn't exist — every enrollment auto-activates, no schema for school/note fields · **D19** `finish_class_and_bill` never populates commission/net columns · **D20** `SlotActionSheet` recorded phase is read-only (no mark-collected, no Vodafone Cash) · **D21** join link is a full UUID, not the design's 6-char code · §05 (Class Session Verified — Digital/Cash split, CIB payout) is entirely unbuilt and the design's own caption marks it "draft, pending legal review" — money/legal-adjacent, left untouched like the protected files | no — D18, D19, D20, D21, §05 |
+| 8 | **Center-Orders** | 4/4 | **3.5/4** (survey, 31 Jul) | **R8** (built, #231), D7, F18 | Arabic `ordersEmpty` string fixed + §01 empty-state illustration built (this pass, #272) | **F18** Customize step has no per-field print toggle (`card_order_carts` has only `card_style`/`vendor_notes` — schema change) · **D7** notify-me has no destination table | no — F18, D7 |
 | 9 | **Center-Insight** | 3/3 | not surveyed | **R6**, D13 | R6 | **D13** paid add-on model | no — one decision |
 | 10 | **Center-WhatsApp** | 3/3 | not surveyed | D4, D5 | — | **D4** auto-send · **D5** pack top-up | no |
 | 11 | **Center-Groups** | 5/5 | **token pass only** | D2, D12 | week strip, segmented control, stat row | **D2** weekday index · **D12** billing basis · §02 is Verified → **V2** | no |
@@ -77,11 +77,17 @@ components instead of reinventing them. `Admin-Accounts` has every section route
 gaps, `R5` and `R7`, are both READY, unprotected and Valify-free. `Admin-Platform` is fully routed
 with no backlog entries at all, so it is a structure-and-restyle pass with nothing to unblock.
 
-**4–7 are probably in the same class**, but I have not surveyed them and will not claim a number I
-have not measured. Each is fully routed with no backlog entries pointing at it, which is the same
-signal that puts Admin-Platform at 3 — but signal is not survey.
+**4–7 have all been surveyed since this table was first produced**, and the un-measured signal that
+used to put them here turned out to cut both ways. `Teacher-Home` (12/16) and `Teacher-Setup` (14/16)
+confirmed the "probably fine" read. `Teacher-Students` came back nearly clean (one gap, D15).
+`Teacher-Groups` did not — its survey (31 Jul, PR #273) found four live decision-blocked gaps
+(D18–D21) plus an entirely unbuilt, legal-blocked fifth section, landing it at roughly 2.2/5 rather
+than the "probably in the same class" this row used to carry. Route coverage alone would never have
+surfaced that; it took reading the screen against the drawing.
 
-**8–10 are one decision away each.** They are otherwise fully routed and unblocked.
+**8 is now surveyed too** (Center-Orders, 3.5/4, PR #272) and stays one decision away — F18 and D7,
+its only two gaps, are both schema/decision items, not survey unknowns. **9–10 remain un-surveyed**
+and are otherwise fully routed and unblocked pending their own decisions (D13, D4/D5).
 
 **11–13 are the three I already touched**, and they sit here rather than near the top precisely
 because route coverage flattered them. Center-Home is the worst: four of its five design sections
@@ -103,5 +109,13 @@ are buildable from data that exists today — `sessions`, `payments.method`, `en
   `method`**), `enrollments`, `invoices` (41 cols). No `payouts`, `center_balances` or `wallets`
   table exists, which is what makes the balance card genuinely blocked rather than merely unbuilt.
 
-**Not measured:** structure coverage for the 23 files marked *not surveyed*. Producing that number
-is step 1 of the per-file prompt, by design — see `PER-FILE-PROMPT.md`.
+- **Teacher-Groups' 2.2/5** — a section-level estimate (§01 ≈1, §02 ≈0.6 after this pass's avatar/banner
+  work, §03 ≈0.2 since the review-gate premise D18 describes doesn't exist at all, §04 ≈0.4 given D19/D20,
+  §05 = 0, unbuilt and legal-blocked), not a sub-element count like Teacher-Home's 12/16 or Teacher-Setup's
+  14/16. Recorded coarse rather than invented precise, per PR #273.
+- **Center-Orders' 3.5/4** — §01 and §02 counted whole (empty-state gap closed this pass, no other gaps
+  found on a full re-read); §03 and §04 each carry one confirmed gap (F18's print toggle, D7's notify
+  destination) and are counted at 0.75 each, per PR #272.
+
+**Not measured:** structure coverage for the 16 remaining files marked *not surveyed*. Producing that
+number is step 1 of the per-file prompt, by design — see `PER-FILE-PROMPT.md`.

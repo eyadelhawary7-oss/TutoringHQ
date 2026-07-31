@@ -68,15 +68,18 @@ If a row ever names one, that row is a mistake.
 | [#258](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/258) | `b9a9b61c` | 2026-07-31 | none — doc only (#257's SHA fill) | none | v41 |
 | [#259](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/259) | `658f53a1` | 2026-07-31 | `Teacher-Insight §01` (2 missing roadmap cards added), referral-attribution bug fixed; D14 corrected | `/{locale}/teacher/analytics`, `/{locale}/teacher/landing` | v41 |
 | [#260](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/260) | `bb2000c1` | 2026-07-31 | none — doc only (#259's SHA fill) | none | v41 |
-| [#261](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/261) | _pending_ | 2026-07-31 | none — doc only (Teacher-WhatsApp survey: D6 corrected/expanded, nothing safely buildable) | none | v41 |
+| [#261](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/261) | `6e0ca66` | 2026-07-31 | none — doc only (Teacher-WhatsApp survey: D6 corrected/expanded, nothing safely buildable) | none | v41 |
 | [#262](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/262) | `bd5593aa` | 2026-07-31 | `Admin-Platform §02` — TOP BY REVENUE centre rows now carry a real per-centre active-student count | `/{locale}/admin/analytics`, `/api/admin/overview` | v41 |
+| [#263](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/263) | `db56ae1` | 2026-07-31 | none — doc only (Admin-Platform re-verification: #224 confirmed, §02 student-count fix logged) | none | v41 |
 | [#264](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/264) | `827e2333` | 2026-07-31 | `Teacher-Students §02` — payment-history row caption ("Not collected yet" / "Paid · <method>") | `/{locale}/teacher/students` (`AllStudentsList.tsx`), `/api/teacher/private/students` | v41 → **v42** |
 | [#265](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/265) | `28bc257a` | 2026-07-31 | `Teacher-Setup §02` (group-proposal counter-offer autonote) | `/{locale}/teacher/centers` | v42 |
 | [#266](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/266) | `71fefa05` | 2026-07-31 | none — doc only (Teacher-Home re-verification: #225's fraction reconfirmed unchanged, no new gaps) | none | v42 |
 | [#267](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/267) | CLOSED | 2026-07-31 | superseded by #271 — forked before #266 merged, GitHub reported it unmergeable | none | v42 |
 | [#268](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/268) | `761da021` | 2026-07-31 | none — doc only (Teacher-Students re-verification: §02 payment-caption gap logged, D15 re-confirmed unchanged) | none | v42 |
 | [#270](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/270) | superseded by #271 | 2026-07-31 | none — doc only (Teacher-Setup re-verification: #227's claim corrected, D16/D17 reconfirmed) | none | v42 |
-| [#271](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/271) | _pending_ | 2026-07-31 | none — doc only (consolidates #267+#270: Admin-Accounts re-verification + Teacher-Setup re-verification, both rebased onto current master) | none | v42 |
+| [#271](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/271) | `b4f3ea3` | 2026-07-31 | none — doc only (consolidates #267+#270: Admin-Accounts re-verification + Teacher-Setup re-verification, both rebased onto current master) | none | v42 |
+| [#272](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/272) | `42e5607` | 2026-07-31 | `Center-Orders §01` — Arabic `ordersEmpty` string fixed, empty-state illustration built (`EmptyState`) | `/{locale}/orders` | v42 |
+| [#273](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/273) | `d7c2be6` | 2026-07-31 | `Teacher-Groups §02`/`§03` — roster-row avatar circles (pending + active), "N waiting to join" banner with Review CTA | `/{locale}/teacher/groups/[groupId]` | v42 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
