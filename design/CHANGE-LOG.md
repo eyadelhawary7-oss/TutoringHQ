@@ -70,6 +70,7 @@ If a row ever names one, that row is a mistake.
 | [#260](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/260) | `bb2000c1` | 2026-07-31 | none — doc only (#259's SHA fill) | none | v41 |
 | [#261](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/261) | _pending_ | 2026-07-31 | none — doc only (Teacher-WhatsApp survey: D6 corrected/expanded, nothing safely buildable) | none | v41 |
 | [#262](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/262) | `bd5593aa` | 2026-07-31 | `Admin-Platform §02` — TOP BY REVENUE centre rows now carry a real per-centre active-student count | `/{locale}/admin/analytics`, `/api/admin/overview` | v41 |
+| [#PRNUM](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/PRNUM) | _pending_ | 2026-07-31 | none — doc only (Teacher-Home re-verification: #225's fraction reconfirmed unchanged, no new gaps) | none | v41 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -1207,3 +1208,42 @@ missing field. Added `admin.platformAnalytics.studentsCount` to both `messages/e
 `wa_meta_templates`/`whatsapp_usage`/`centers`, plus a direct `select key,value from platform_config`
 for the §03 FEATURES/SYSTEM claims. `npx eslint` on the three touched files came back clean; full unit,
 E2E-smoke, i18n, bidi and build gates green on the PR. Squash-merged as `bd5593aa`.
+
+**Teacher-Home re-verification (31 July 2026)** — asked to confirm PR #225's fraction against the
+merged file, not memory, before accepting a "done" file at face value. Re-read
+`Merged-Teacher-Home.html` in full against a fresh read of the live `page.tsx`, `schedule/page.tsx`,
+`TeacherShell`, `TeacherNav`, `IncomeCalculator` and `FreeZoneBanner`, plus independent
+`information_schema` queries against production, then reconciled by hand against #225's own recorded
+numbers rather than trusting them on sight.
+
+**Result: #225 holds up on all three tracked states, nothing moved.** The unverified/self-collect
+state — the only one that renders for any real teacher today — re-confirmed at 6/7, same single gap.
+The verified/we-collect state re-confirmed 0/3, still fully blocked. §02 Teacher Schedule re-confirmed
+6/6, the brass 0-enrolled accent from #225 still live.
+
+| § | before (#225, 30 Jul) | after (confirmed 31 Jul) | what moved |
+|---|---|---|---|
+| §01 unverified/self-collect state | 6/7 | 6/7, unchanged | same single gap, still blocked on V1 |
+| §01 verified/we-collect state | 0/3, blocked V1/V3/V4 | 0/3, unchanged | cannot render for any real teacher; no balance to invent |
+| §02 Teacher Schedule | 5/6 pre-#225 → 6/6 after | 6/6, unchanged | brass 0-enrolled accent (`schedule/page.tsx:237`) re-confirmed live |
+| **Overall** | **12/16** | **12/16** | nothing moved |
+
+**V1 re-confirmed, not re-asserted.** Grepped `src/app/[locale]/teacher` for "Let us collect" /
+"Verify my ID" / "collect-for-you" — no match. Queried live `information_schema.columns` for anything
+verification/identity-shaped — only unrelated rows (`phone_verifications`,
+`students.phone_verified`/`parent_phone_verified`, `mfa_challenges`, `oauth_client_states`,
+`enrollment_otps`, `teacher_signup_otps`); no Valify or identity-verification table exists anywhere in
+the catalog. The "Let us collect for you / Verify my ID" banner still has nothing to link to.
+
+**V3/V4 re-confirmed, not re-asserted.** Grepped for "your balance" / "recent payouts" /
+"next processed" across the teacher portal — no match. No teacher-scoped payout ledger exists:
+`payout_requests` is centre-scoped, `commission_payouts` is EH-staff-scoped. The dormant settlement
+columns flagged 30 July are still untouched — `transactions.settlement_status` /
+`expected_settlement_at` / `settled_at` / `settlement_retry_count` and
+`teacher_profiles.payout_destination` all still exist and are still 0 rows touched (`SELECT count(*)
+FROM transactions WHERE settled_at IS NOT NULL OR settlement_retry_count > 0` = 0), zero code
+references.
+
+**No new safely-buildable gap found, no code changed.** The only remaining gaps are the same two
+blocks already logged as **V1** and **V3/V4** in `BUILD-AFTER-REDESIGN.md`. This entry documents a
+confirmed-unchanged fraction, not a build — no code PR accompanies it.
