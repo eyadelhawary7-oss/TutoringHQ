@@ -85,6 +85,8 @@ If a row ever names one, that row is a mistake.
 | [#276](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/276) | `f9c5342` | 2026-07-31 | none — doc only (batch-3 wrap-up: #275 logged, Center-Insight/Center-WhatsApp rows surveyed) | none | v42 |
 | [#277](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/277) | `726e928` | 2026-07-31 | `Center-Students §02`/`§04` — ID card tile, tinted balance card, sibling rows, lifetime-paid-since, import inline Fix | `/{locale}/students/[id]`, `/students/import` | v42 |
 | [#278](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/278) | `df8c42d` | 2026-07-31 | `Center-Groups §01` (fill bar, avg attendance, inline new-subject), `§04` (Current badge), `§05` (Now/Done badges) — plus `AttendanceHeatmap.tsx` i18n bug fix (hardcoded Arabic shown to English-locale users) | `/{locale}/groups`, `/{locale}/branches`, `/{locale}/schedule` | v42 |
+| [#279](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/279) | `7836769` | 2026-07-31 | none — doc only (#276 self-row, #277/#278 logged and surveyed) | none | v42 |
+| [#280](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/280) | `db28ae2` | 2026-07-31 | none visible — `NotificationBell.tsx` relative-time dedup (shared dashboard-chrome component, no design-facing change beyond consistent wording); D27/F23 logged | notification bell in the dashboard chrome (all locale-prefixed routes that render it) | v42 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by

@@ -649,6 +649,14 @@ left for later, it is the deliberate final state unless a pause feature is separ
 - **Touches:** none yet — this is the decision point. Building any of the plausibly-wireable types touches the payment-confirmation, attendance, enrollment, or billing-cron code paths respectively.
 - **Blocked by:** Eyad's call on which event types, if any, are worth wiring, and whether through one shared helper or per-writer.
 
+## D27 · The one real notification writer hardcodes English regardless of the recipient's locale
+- **What:** `cardOrderNotifications.ts`'s `insertInAppForCenterStaff` — the only one of D26's two real writers that actually reaches a center's own `/notifications` screen (`privacy_request` is admin-only) — inserts the same `title: "Order #${shortRef}"` / `body: labelForStatus(normTo)` (e.g. "Shipped") for every staff row, in English only. `users.preferred_locale` is a real, live, wired column elsewhere (`/api/me`, `/api/user/locale`, signup flows) but is never read here.
+- **Why it matters:** this is the one notification kind design §02 has a live analogue for today, and it always renders in English regardless of whether the Arabic-preferring owner or assistant reading it has `preferred_locale = 'ar'`.
+- **Why it's not a mechanical fix:** two different implementation shapes exist and nothing in the codebase already picks one — compose the string per-recipient at write time via `getTranslations` in a background/webhook context (a pattern used nowhere else today), or store an i18n key + params in the already-present `metadata jsonb` column and translate client-side at render. Picking wrong means redoing every future writer D26 eventually wires the same way.
+- **Found:** 31 July 2026, Center-Home re-verification (PR #280) — surfaces from `Center-Home`'s side since it reads the feed, but the fix lives in `Center-Orders`' `cardOrderNotifications.ts`.
+- **Touches:** `cardOrderNotifications.ts`, messaging copy, no schema.
+- **Blocked by:** Eyad's call on which composition pattern to standardize on before any writer (this one or a future D26 one) uses it.
+
 ---
 
 # §3 · BLOCKED ON VALIFY — verification and everything downstream
@@ -1106,6 +1114,13 @@ doc and `db/schema.snapshot`, same "drop or document" decision as before, not re
 - **Touches:** none — display/UX only, no schema, no protected file.
 - **Found:** 31 July 2026, Center-Students re-verification (#257). Items 3–4 built, item 1's reasoning
   sharpened, item 2 confirmed correctly blocked: 31 July 2026, PR #277.
+
+## F23 · Two dashboard CTAs link to `/students` query params the page never reads
+- **What:** `Merged-Center-Home` §01's unpaid-alert banner "Review" button links to `/students?filter=unpaid`, and the dashboard's "Add student" quick action links to `/students?action=add`. `src/app/[locale]/students/page.tsx` has zero `useSearchParams`/`searchParams` handling anywhere — both links silently land on the plain, unfiltered/unprompted roster instead of doing what they promise.
+- **Contrast, so this isn't guessed at:** `/payments?action=collect` (the dashboard's "Collect payment" quick action) *is* correctly wired via `useSearchParams` in `payments/page.tsx` — this exact pattern already works elsewhere in the app, it's just missing on `students/page.tsx`.
+- **Why not fixed where found:** the actual fix lives entirely in `students/page.tsx`, which is `Center-Students`' claimed file territory (its own sweep pass landed the same day, PR #277) — logging for whoever next has `Center-Students` open rather than a `Center-Home` agent colliding on another file's claimed lock.
+- **Found:** 31 July 2026, Center-Home re-verification (PR #280).
+- **Touches:** `src/app/[locale]/students/page.tsx` only. No schema, no protected file, no decision needed — reading `filter`/`action` and opening the matching filter/modal on load is mechanical once someone is in that file.
 
 ## Found, not yet formally logged — CEO survey findings needing a closer look
 - **A second CEO dashboard exists.** `/ceo` (surveyed here) and a separate `/ceo-dashboard` (`src/app/[locale]/(admin)/ceo-dashboard/CeoDashboardClient.tsx`, backed by its own `/api/ceo/financials`, `/api/ceo/growth-panel`, `/api/ceo/health-panel`, `/api/ceo/mrr`, `/api/ceo/command-strip` routes — none of which `/ceo` calls) both live behind the same middleware wall and the same `AdminSidebar` entry points. This is the same shape as the four pairs already tracked in `DUPLICATE-ROUTES.md` ("facts for a decision, nothing merged or deleted") — not added there yet since `/ceo-dashboard`'s own client wasn't read in full this pass; flagging for a follow-up read to do that comparison justice rather than guessing at what it uniquely carries.

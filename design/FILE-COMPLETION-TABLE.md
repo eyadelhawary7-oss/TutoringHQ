@@ -49,7 +49,7 @@ auto-merge — they come to Eyad. That is a routing rule, not a difficulty ratin
 | 10 | **Center-WhatsApp** | 3/3 | **§01 3/5, §02 0/5, §03 0/4** (§01 built this pass, #275; §02/§03 re-confirmed unchanged) | D4, D5 | search + WhatsApp-style preview + variables-used (this pass, #275) | **D4** per-template auto-send toggle — schema exists (`center_message_templates.auto_send`), 0 rows, zero readers, unmade product decision that spends WhatsApp credit unattended · **D5** §02/§03 are a different, already-shipped billing model (monthly per-parent pack + capped blasts) vs. the design's one-time credit top-up — building the design changes what existing customers are charged | no — D4, D5 |
 | 11 | **Center-Groups** | 5/5 | **~3.1/5** (section-level estimate, 31 Jul, PR #278 — §01 ≈0.9 after this pass's fill bar/avg-attendance/inline-subject builds, §02 ≈0.05 fully blocked, §03 (Rooms) ≈0.9 re-confirmed accurate, §04 (Branches) ≈0.4 carrying D23/F11 plus two new findings, §05 (Schedule) ≈0.85 after the Now/Done badges) | D2, D12, D23, F11 | heatmap i18n fix, schedule Now/Done, branch "Current" badge, capacity fill bar, avg-attendance stat, inline new-subject (this pass, #278) | **D12** §02 billing basis, no schema · **D23** §04 add-branch pricing clones the parent's price wholesale, no 199 EGP add-on · **F11** `capacity_cap`/`kind` dead columns, drop-or-document · two new findings (branch "Switch to this"/Dashboard buttons would be fake — `activeCenterId` isn't read by any operational page; branch address field has no schema, `delivery_address` is a different concept) | no — D12, D23, F11, two new decisions |
 | 12 | **Center-Students** | 4/4 | **~2.45/4** (§01 0.8/1, §02 0.75/1, §03 0.05/1, §04 0.85/1 — survey #257 baseline ~54%, re-verified + built 31 Jul, PR #277) | F12, F14, F15, F22, V1/V6 | ID card tile, tinted balance card, sibling rows, lifetime-paid-since, import inline Fix (this pass, #277; closes F22 items 3–4) | **F22** item 1 branch rollup — no cross-center query exists, needs an RLS-scope decision, not a display fix · item 2 aging/next-due sub-line — `getStudentBalances()` is a running aggregate with no per-invoice "next due" fact to read · **F12** `pending_enrollments` has no origin column · **F14** parent-phone-required copy vs. actually-optional validation · **F15** lifecycle+payment-badge fusion is a design decision · **V1/V6** §03 unconditional "Verified" badge, Valify not live (V6 amended to name this section) | no — F22 (2 open items), F12, F14, F15, V1 |
-| 13 | **Center-Home** | 2/2 | **token pass only** | — | alert row, 4 Today KPIs, digital share, schedule | balance card → **V3/V4** · §01 is Verified → **V6** | no |
+| 13 | **Center-Home** | 2/2 | **§01 4/5** (audit + #245/#247, 30–31 Jul; re-confirmed unchanged, PR #280) | D26, D27, F23, V3/V4/V6 | NotificationBell relative-time dedup (this pass, #280 — a consistency fix, not a new design element) | §01 balance card + "Verified" badge → **V3/V4/V6** (no `payouts`/`center_balances`/`wallets` table; `transactions.settlement_status`/`settled_at` exist but 0 populated rows) · §02 further parity → **D26** (only 2 of ~11 drawn notification types have a live writer) · **D27** the one real writer hardcodes English regardless of `preferred_locale` · **F23** two dashboard CTAs link to `/students` query params the page never reads (fix belongs to Center-Students) | no — V3/V4/V6, D26, D27 |
 | 14 | **Center-Setup** | 9/9 | not surveyed | D8, D9, D10, D11 | §01, §02, §04, §09 | **D8** seats · **D9** notif prefs · **D10** scanner prefs · **D11** region · §08 → **V6** | no |
 | 15 | **Public-Marketing** | 3/4 | not surveyed | **R1** | **R1 — unblocked 29 Jul** | §04 has no route yet | no — R1 is a build |
 | 16 | **Center-Attendance** | 1/2 | not surveyed | — | — | **V6** — both sections are Verified states | no |
@@ -94,10 +94,16 @@ decisions correctly reflected in what's *not* built, not open questions. Center-
 this pass's search/preview build, §02 0/5, §03 0/4, PR #275) is the cleanest of the three — D4 and D5
 are exactly the two decisions the original row named, nothing else surfaced.
 
-**11–13 are the three I already touched**, and they sit here rather than near the top precisely
-because route coverage flattered them. Center-Home is the worst: four of its five design sections
-are buildable from data that exists today — `sessions`, `payments.method`, `enrollments`,
-`invoices` — and none of them is on the live screen. Only the balance card is genuinely blocked.
+**11–13 have all been re-verified now** (batch-4 sweep, 31 Jul, PRs #278/#277/#280), and the picture
+has flipped from when this row-group was first written: back then all three were "token pass only"
+and Center-Home was called out as the worst of the three, on the strength of an earlier, shallower
+read. Re-verified section by section, it's the opposite — **Center-Home is the closest to done**
+(§01 4/5, only the balance card genuinely blocked on V3/V4/V6; §02's remaining gap is D26/D27, not a
+missing build). **Center-Groups is the roughest of the three** (~3.1/5) — its §04 Branches alone
+carries D23, F11, and two freshly-found decision items (a fake branch-switcher would be worse than no
+switcher; the address field has no schema). **Center-Students sits in between** (~2.45/4), with one
+open item (F22's aging/next-due sub-line) that turned out to need a product decision on what "next due"
+even means under a running-balance model, not a missing field.
 
 **14–20 carry real blockers** that no amount of work removes.
 
