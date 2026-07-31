@@ -607,6 +607,7 @@ Nothing in this section can start until V1 lands. Ordered so that V1 unblocks th
 - **Drawn in:** `Merged-CEO` §03.
 - **Touches:** money (read only).
 - **Blocked by:** V1 — technically buildable today, but **every row reads 0 / 100% until verification ships**, which is worse than not having it.
+- **Re-confirmed, 31 July 2026 (CEO survey).** Fresh `grep -i verified` across `/ceo`, `/ceo/teachers`, and both translation namespaces: zero matches, independently reproducing this entry's own claim rather than trusting it. Still holds exactly as written.
 
 ## V6 · `Center-Setup` §08 Team Verified · `Center-Home` §01 verified dashboard · `Center-Attendance` §01–§02
 - Verified state end to end. `Center-Attendance` is blocked **wholesale** — worth knowing before it comes up in the restyle order.
@@ -979,6 +980,25 @@ doc and `db/schema.snapshot`, same "drop or document" decision as before, not re
 - **Why this is one entry, not six:** every item traces back to the same two root causes — a payment-method vocabulary that the schema, the validator, and the UI don't all agree on, and a retry pipeline with no dedup for anything billing-relevant once a retry actually happens. Numbering them as unrelated bugs would hide that a coordinated fix (schema + validator + retry-dedup, decided together) closes all of them; patching any one in isolation risks exactly the trade described in item 2.
 - **Touches:** money, and auth (item 6).
 - **Blocked by:** nothing technical for the schema/enum decisions (items 3, 4) or the permission-gate fix (item 6) — all need Eyad's go-ahead given the standing stop condition on money and auth. Item 1 (the method-string typo) is fixed in this pass since it required no decision — it's a straight match to values the schema, the Zod enum, and other read-side code already agree are correct.
+
+## S9 · No CSRF on four CEO/admin mutation routes, one of them a platform-wide kill switch
+- **What:** `POST /api/ceo/leads`, `PATCH /api/ceo/actions/[id]`, `PATCH /api/ceo/platform-config`, and `PATCH /api/admin/centers/[id]` have no `validateCSRFRequest` call at all — confirmed by reading each route in full, contrasted directly against sibling admin routes that do call it (`src/app/api/admin/centers/route.ts`, `.../[id]/subscription/suspend/route.ts`). Same class of gap as S6/S7/S8, the fourth instance found this pass alone.
+- **Why this one is worse than the others:** `getAdminContext` (the auth these routes share) accepts a cookie-session fallback, not just a Bearer token — exactly the scenario CSRF protection exists for. `/api/ceo/platform-config` flips `maintenance_mode`/`wa_sending_enabled`/`read_only_mode`/`cron_paused` platform-wide; `/api/admin/centers/[id]` handles invoices, blacklisting, plan overrides, and cancellations. Mitigated somewhat by `proxy.ts`'s cross-origin `Origin` allowlist on mutating verbs — not a wide-open hole, but a real deviation from the project's own stated defense-in-depth rule.
+- **Not a trivial add:** the CEO page's own client helper (`getAuthJsonHeaders()`) never sends `X-CSRF-Token`/`X-Session-ID` today — adding server-side validation without a matching client change would break the UI outright. Needs both sides landed together.
+- **Touches:** auth, and money/account-state (the platform-config and center-mutation routes).
+- **Blocked by:** nothing technical. Waiting on Eyad's go-ahead, same as S6–S8.
+
+## F21 · Teacher-tier price fallback duplicates the documented single source of truth
+- **What:** `src/lib/ceoTeachers.ts`'s `TIER_MONTHLY_GROSS` (499/999/2499, used only when a subscription row has no `price_gross`) hardcodes the exact same figures `src/lib/teacherPlans.ts` — itself explicitly commented "single source of truth for the teacher subscription ladder" — already exports. Values agree today; nothing enforces they stay in sync, so a real price change in `teacherPlans.ts` would silently desync the CEO dashboard's own MRR figure with no type or test catching it. Same shape as F16 ("one number, two sources"), lower stakes since it's a read-only display fallback, not a charge computation.
+- **Not fixed:** touches the money-computation path on an admin dashboard; a one-line "import from teacherPlans instead" fix is probably right, but landing it wasn't treated as urgent enough to make unilaterally in this pass alongside everything else found on this file.
+- **Touches:** money (read-only, display).
+- **Found:** 31 July 2026, CEO survey.
+
+## Found, not yet formally logged — CEO survey findings needing a closer look
+- **A second CEO dashboard exists.** `/ceo` (surveyed here) and a separate `/ceo-dashboard` (`src/app/[locale]/(admin)/ceo-dashboard/CeoDashboardClient.tsx`, backed by its own `/api/ceo/financials`, `/api/ceo/growth-panel`, `/api/ceo/health-panel`, `/api/ceo/mrr`, `/api/ceo/command-strip` routes — none of which `/ceo` calls) both live behind the same middleware wall and the same `AdminSidebar` entry points. This is the same shape as the four pairs already tracked in `DUPLICATE-ROUTES.md` ("facts for a decision, nothing merged or deleted") — not added there yet since `/ceo-dashboard`'s own client wasn't read in full this pass; flagging for a follow-up read to do that comparison justice rather than guessing at what it uniquely carries.
+- **Section H of `/ceo` is dead weight, not a security control.** A hardcoded client-side string (`'CENTERHQ-ADMIN'`, visible in the shipped JS) gates 4 "danger" buttons that set the exact same `platform_config` keys already exposed as plain checkboxes in Section G — the real protection, `requireSuperAdminApi`, is server-side and identical either way. Section H adds confusion (a fake sense of an extra security layer) without adding any actual one. Likely worth deleting outright rather than "fixing" — a product call on whether Section H should exist at all, not made here.
+- **`legacyPayload` in `/api/ceo/dashboard`** builds a full extra response object (`mrr, arr, netNew30d, monthlyChurnRate, ...`) that nothing in `page.tsx` reads — confirmed by grep — yet still drives real extra Supabase queries every 30-second poll. A performance/cost cleanup, not a correctness bug.
+- **The sales-lead form hardcodes `governorate: 'cairo'`** with no field to change it — every lead entered through the CEO dashboard is tagged Cairo regardless of where the center actually is. Needs a real governorate selector, not a one-line fix.
 
 ---
 

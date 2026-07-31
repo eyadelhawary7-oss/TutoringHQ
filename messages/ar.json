@@ -3407,6 +3407,7 @@
       "announcementLabel": "شريط الإعلان",
       "confirmToggleTitle": "تأكيد التغيير",
       "confirmToggleBody": "هل تريد المتابعة؟",
+      "configUpdateFailed": "تعذّر حفظ هذا التغيير. حاول مرة أخرى.",
       "configKeys": {
         "maintenance_mode": "وضع الصيانة",
         "wa_sending_enabled": "إرسال واتساب",

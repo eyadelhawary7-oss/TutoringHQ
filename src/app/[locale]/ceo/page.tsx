@@ -237,11 +237,15 @@ export default function CeoDashboardPage() {
 
   async function patchPlatformConfig(key: string, value: unknown) {
     const headers = await getAuthJsonHeaders();
-    await fetch('/api/ceo/platform-config', {
+    const res = await fetch('/api/ceo/platform-config', {
       method: 'PATCH',
       headers,
       body: JSON.stringify({ key, value }),
     });
+    if (!res.ok) {
+      window.alert(t('ops.configUpdateFailed'));
+      return;
+    }
     void fetchDashboard();
   }
 
@@ -353,7 +357,7 @@ export default function CeoDashboardPage() {
                 <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 border-s-2 border-s-amber-400">
                   <p className="text-xs text-[var(--color-text-secondary)]">{t('hero.cashMtd')}</p>
                   <p className="text-xl font-mono font-bold text-[var(--color-text-primary)] mt-1">
-                    EGP {formatNumber(data.hero.cash_collected_mtd, locale)}
+                    {formatCurrency(data.hero.cash_collected_mtd, locale)}
                   </p>
                 </div>
                 <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4">
@@ -667,7 +671,7 @@ export default function CeoDashboardPage() {
                           )}
                           {action.revenue_at_risk > 0 && (
                             <span className="inline-block mt-1 bg-amber-400/10 text-amber-400 text-xs px-2 py-0.5 rounded-full">
-                              EGP {formatNumber(Number(action.revenue_at_risk), locale)} {t('actions.revenueAtRisk')}
+                              {formatCurrency(Number(action.revenue_at_risk), locale)} {t('actions.revenueAtRisk')}
                             </span>
                           )}
                           <div className="flex flex-wrap gap-2 mt-2">
@@ -996,7 +1000,7 @@ export default function CeoDashboardPage() {
                 <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 border-s-2 border-s-teal-500">
                   <p className="text-xs text-[var(--color-text-secondary)]">{t('cash.quarter')}</p>
                   <p className="text-lg font-mono font-bold text-teal-600 mt-1">
-                    EGP {formatNumber(data.cash.collected_this_quarter, locale)}
+                    {formatCurrency(data.cash.collected_this_quarter, locale)}
                   </p>
                 </div>
                 <div
@@ -1022,7 +1026,7 @@ export default function CeoDashboardPage() {
                 <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4">
                   <p className="text-xs text-[var(--color-text-secondary)]">{t('cash.packRevenue')}</p>
                   <p className="text-lg font-mono font-bold text-[var(--color-text-primary)] mt-1">
-                    EGP {formatNumber(data.cash.pack_revenue_mtd, locale)}
+                    {formatCurrency(data.cash.pack_revenue_mtd, locale)}
                   </p>
                   <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1">
                     {t('cash.totalCentersHint')}: {formatNumber(data.cash.total_centers, locale)}
@@ -1067,13 +1071,7 @@ export default function CeoDashboardPage() {
                           <input
                             type="checkbox"
                             checked={currentBool}
-                            onChange={() => {
-                              if (key === 'maintenance_mode' || key === 'wa_sending_enabled') {
-                                setConfirmConfigKey(key);
-                              } else {
-                                void patchPlatformConfig(key, !currentBool);
-                              }
-                            }}
+                            onChange={() => setConfirmConfigKey(key)}
                           />
                         </label>
                       );
