@@ -18,9 +18,12 @@
  *    is snapshotted into `invoices.metadata.processing_fee`, a jsonb key with no
  *    column and no aggregate anywhere in the product. Summing it would mean
  *    parsing metadata per invoice and inventing the total the design shows.
- *  - **Per-account student counts in TOP BY REVENUE.** The design shows
- *    "240 students" per row; that needs a per-centre roll-up this endpoint does
- *    not compute, so the rows carry plan and MRR, which are real.
+ *
+ * TOP BY REVENUE's student counts: the design shows "<plan> · 240 students" on
+ * centre rows only — its one teacher row reads "Teacher · <plan>", no count —
+ * and that split is intentional here too. `fetchCenterStudentCounts` fills a
+ * real, `is_active = true` count for the ranked centre rows; teacher rows never
+ * carry one, matching the design.
  */
 
 import { useMemo, useState } from 'react';
@@ -37,6 +40,8 @@ export interface TopAccountView {
   name: string | null;
   kind: 'center' | 'teacher';
   plan: string | null;
+  /** Active student count. Centre rows only — teacher rows never carry one, matching the design. */
+  students: number | null;
   mrr: number;
 }
 
@@ -173,12 +178,23 @@ export default function AnalyticsGrowthHeader({
                 key={`${row.kind}-${row.id}`}
                 avatar={initialsOf(row.name ?? '')}
                 title={row.name ?? tCommon('notSet')}
-                meta={[
-                  row.kind === 'teacher' ? t('kindTeacher') : t('kindCenter'),
-                  row.plan ? planLabel(row.plan) : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
+                // The design reads "<plan> · N students" on centre rows (no kind
+                // label) and "Teacher · <plan>" on teacher rows (no count) — kept
+                // asymmetric here rather than forcing one shape on both.
+                meta={
+                  row.kind === 'teacher'
+                    ? [t('kindTeacher'), row.plan ? planLabel(row.plan) : null]
+                        .filter(Boolean)
+                        .join(' · ')
+                    : [
+                        row.plan ? planLabel(row.plan) : null,
+                        row.students != null
+                          ? t('studentsCount', { count: formatNumber(row.students, locale) })
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')
+                }
                 badge={
                   <span className="shrink-0 text-sm font-semibold text-[var(--color-text-primary)]">
                     {formatCurrency(row.mrr, locale)}

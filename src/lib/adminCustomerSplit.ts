@@ -209,6 +209,31 @@ export async function fetchPaidInvoicesForMonth(
 }
 
 /**
+ * §02 TOP BY REVENUE — active student count per centre, for a specific set of
+ * IDs. Same filter as the §01 CUSTOMERS split's centre row
+ * (`center_id IS NOT NULL AND is_active = true`), kept as its own query rather
+ * than reused from there because only the ranked top-N rows are ever
+ * rendered, not every centre.
+ */
+export async function fetchCenterStudentCounts(
+  supabaseAdmin: SupabaseClient,
+  centerIds: string[],
+): Promise<Record<string, number>> {
+  if (centerIds.length === 0) return {};
+  const { data } = await supabaseAdmin
+    .from('students')
+    .select('center_id')
+    .in('center_id', centerIds)
+    .eq('is_active', true);
+  const counts: Record<string, number> = {};
+  for (const row of (data ?? []) as { center_id: string | null }[]) {
+    if (!row.center_id) continue;
+    counts[row.center_id] = (counts[row.center_id] ?? 0) + 1;
+  }
+  return counts;
+}
+
+/**
  * §02 TOP BY REVENUE and BY PLAN — both customer types in one ranking.
  *
  * The design's list mixes centres and solo teachers, so the rows carry a `kind`

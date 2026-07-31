@@ -8,6 +8,7 @@ import {
   fetchCustomerSplit,
   buildRevenueMix,
   fetchPaidInvoicesForMonth,
+  fetchCenterStudentCounts,
   rankTopAccounts,
   buildPlanMix,
   isBillableTeacherStatus,
@@ -527,7 +528,22 @@ export async function GET(request: Request) {
           mrr: Number(s.price_gross ?? 0),
         }));
 
-      topByRevenue = rankTopAccounts([...centreAccounts, ...teacherAccounts]);
+      const rankedAccounts = rankTopAccounts([...centreAccounts, ...teacherAccounts]);
+
+      // §02 TOP BY REVENUE — the design shows "<plan> · N students" on centre
+      // rows only (its one teacher row reads "Teacher · <plan>", no count), so
+      // this fills in real counts for just the ranked centre rows rather than
+      // every centre. Same definition as the §01 CUSTOMERS split
+      // (`students.center_id IS NOT NULL AND is_active = true`), scoped to the
+      // handful of IDs actually rendered.
+      const rankedCenterIds = rankedAccounts
+        .filter((r) => r.kind === 'center')
+        .map((r) => r.id);
+      const centerStudentCounts = await fetchCenterStudentCounts(supabaseAdmin, rankedCenterIds);
+      topByRevenue = rankedAccounts.map((r) =>
+        r.kind === 'center' ? { ...r, students: centerStudentCounts[r.id] ?? 0 } : r,
+      );
+
       planMix = buildPlanMix(byPlan as Record<string, number>, teacherSubs);
     } catch {
       // A split failure must not take the whole overview down with it.
