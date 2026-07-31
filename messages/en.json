@@ -5202,6 +5202,7 @@
       "topByRevenueHeading": "Top by revenue",
       "byPlanHeading": "By plan",
       "accountsCount": "{count} accounts",
+      "studentsCount": "{count} students",
       "kindCenter": "Center",
       "kindTeacher": "Teacher",
       "topEmptyTitle": "No paying accounts yet",
