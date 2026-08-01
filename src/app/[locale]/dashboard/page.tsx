@@ -14,7 +14,7 @@ import { useUser } from '@/contexts/UserContext';
 import { Link } from '@/i18n/routing';
 import PlanUsageCard from '@/components/dashboard/PlanUsageCard';
 import { ChartCard, SparklineChart } from '@/components/charts';
-import { KpiCard, SectionHeader } from '@/components/shared';
+import { EmptyState, KpiCard, SectionHeader } from '@/components/shared';
 import ListRow from '@/components/patterns/ListRow';
 
 const AreaChartComponent = dynamic(
@@ -49,6 +49,7 @@ import {
   MoreVertical,
   BarChart3,
   PieChart,
+  Calendar,
 } from 'lucide-react';
 
 const AR_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
@@ -299,6 +300,7 @@ export default function DashboardPage() {
   const tSettings = useTranslations('settings');
   const tCommon = useTranslations('common');
   const tBilling = useTranslations('billing');
+  const tEmpty = useTranslations('emptyStates');
   const tToast = useTranslations('toasts');
   const locale = useLocale();
   const router = useRouter();
@@ -1527,47 +1529,61 @@ export default function DashboardPage() {
             </>
           )}
 
-          {safeData.todaySchedule.length > 0 && (
-            <>
-              <div className="mb-3 max-w-6xl">
-                <SectionHeader
-                  title={t('todaySchedule')}
-                  sub={formatDate(new Date(), locale, { weekday: 'long' })}
-                />
-              </div>
-              <div className="mb-6 max-w-6xl space-y-2">
-                {safeData.todaySchedule.map((s) => (
-                  <ListRow
-                    key={s.id}
-                    title={s.groupName}
-                    meta={
-                      <>
-                        <span className="block font-semibold text-[var(--color-ink)]" dir="ltr">
-                          {formatTime(s.startTime.slice(0, 5), locale)}
-                        </span>
-                        <span className="block">
-                          {s.teacherName} · {s.roomName} · {formatNumber(s.memberCount, locale)}
-                        </span>
-                      </>
-                    }
-                    onOpen={s.groupId ? () => router.push(`/attendance?group=${s.groupId}&date=${cairoDateKey()}&tab=scan`) : undefined}
-                    badge={
-                      <span
-                        className={`shrink-0 rounded-pill px-2.5 py-1 text-xs font-semibold ${
-                          s.status === 'billed'
-                            ? 'bg-[var(--color-mint)] text-[var(--color-accent-deep)]'
-                            : s.status === 'next'
-                              ? 'bg-[var(--color-accent)]/15 text-[var(--color-accent-deep)]'
-                              : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'
-                        }`}
-                      >
-                        {s.status === 'billed' ? t('chipBilled') : s.status === 'next' ? t('chipNext') : t('chipLater')}
+          <div className="mb-3 max-w-6xl">
+            <SectionHeader
+              title={t('todaySchedule')}
+              sub={formatDate(new Date(), locale, { weekday: 'long' })}
+            />
+          </div>
+          {safeData.todaySchedule.length > 0 ? (
+            <div className="mb-6 max-w-6xl space-y-2">
+              {safeData.todaySchedule.map((s) => (
+                <ListRow
+                  key={s.id}
+                  title={s.groupName}
+                  meta={
+                    <>
+                      <span className="block font-semibold text-[var(--color-ink)]" dir="ltr">
+                        {formatTime(s.startTime.slice(0, 5), locale)}
                       </span>
-                    }
-                  />
-                ))}
-              </div>
-            </>
+                      <span className="block">
+                        {s.teacherName} · {s.roomName} · {formatNumber(s.memberCount, locale)}
+                      </span>
+                    </>
+                  }
+                  onOpen={s.groupId ? () => router.push(`/attendance?group=${s.groupId}&date=${cairoDateKey()}&tab=scan`) : undefined}
+                  badge={
+                    <span
+                      className={`shrink-0 rounded-pill px-2.5 py-1 text-xs font-semibold ${
+                        s.status === 'billed'
+                          ? 'bg-[var(--color-mint)] text-[var(--color-accent-deep)]'
+                          : s.status === 'next'
+                            ? 'bg-[var(--color-accent)]/15 text-[var(--color-accent-deep)]'
+                            : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'
+                      }`}
+                    >
+                      {s.status === 'billed' ? t('chipBilled') : s.status === 'next' ? t('chipNext') : t('chipLater')}
+                    </span>
+                  }
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="mb-6 max-w-6xl rounded-md border border-[var(--color-line)] bg-[var(--color-panel)]">
+              <EmptyState
+                icon={Calendar}
+                title={tEmpty('todaySchedule.title')}
+                description={tEmpty('todaySchedule.description')}
+                action={
+                  <Link
+                    href="/schedule"
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-teal-600 px-4 py-3 text-sm font-semibold text-white transition-all duration-150 hover:bg-teal-700"
+                  >
+                    {tEmpty('todaySchedule.action')}
+                  </Link>
+                }
+              />
+            </div>
           )}
 
           <div className="mb-4 max-w-6xl">

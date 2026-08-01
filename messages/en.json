@@ -991,6 +991,11 @@
       "title": "No orders yet",
       "description": "Order printed QR cards so students can scan themselves in at the door.",
       "action": "Order your first cards"
+    },
+    "todaySchedule": {
+      "title": "Nothing scheduled today",
+      "description": "Set up a recurring weekly schedule so today's sessions show up here automatically.",
+      "action": "Set up schedule"
     }
   },
   "validation": {
