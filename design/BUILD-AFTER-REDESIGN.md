@@ -767,6 +767,11 @@ Nothing in this section can start until V1 lands. Ordered so that V1 unblocks th
 - **Touches:** money, account state.
 - **Blocked by:** V1, V3. Bank-batch mechanics overlap X1.
 - **Groundwork already in the catalog, confirmed 29 July while building `Merged-Teacher-Home`:** `transactions.settlement_status` / `expected_settlement_at` / `settled_at` / `settlement_retry_count` all exist, and `teacher_profiles.payout_destination` (jsonb) exists. **All four are entirely dormant** — `select count(*) from transactions where settled_at is not null or settlement_retry_count > 0` returns 0, and `grep -rl "settlement_status\|payout_destination" src/` returns nothing. This is schema scaffolding for exactly this entry, not a partial implementation — nothing computes into it and nothing reads it. Recorded so whoever builds V4 checks it before adding parallel columns, and so a future survey doesn't mistake "column exists" for "feature exists" the way `public.groups` vs `student_groups` already did once (#223).
+- **Re-confirmed live, 1 August 2026 (Center-Home balance-card re-check, before deciding not to build it).**
+  `transactions` has exactly 3 rows total; `settled_at` is null on all 3 (0 populated, unchanged from
+  29 July). One more precision this pass adds: `settlement_status` is in fact non-null on all 3 —
+  every one reads the literal value `'not_applicable'`, not a pending/in-progress state. Doesn't change
+  the "entirely dormant" conclusion, just confirms it more exactly than "0 populated rows" alone did.
 
 ## V5 · CEO centers benchmark, verified vs unverified
 - **What:** An internal comparison of verified against unverified centers.
@@ -1108,6 +1113,21 @@ doc and `db/schema.snapshot`, same "drop or document" decision as before, not re
 - **Consequence for what was built:** Center-Home's Schedule section is built from `schedule_slots` (today's Cairo day-of-week only), joined to room/teacher names and `student_group_members` counts the same way `/schedule`'s own `groupToTeacher` already does. The design's Billed/Next/Later status chip has no stored equivalent to read, so it's derived at render time — end_time already passed = billed, the single soonest not-yet-ended slot = next, everything else = later — documented as an interpretation in `src/lib/todayScheduleStatus.ts`'s own comment, not a claim that money was specifically confirmed collected for that slot.
 - **Found:** 30 July 2026, building Center-Home's Schedule section.
 - **Touches:** none — read-only display, no schema change, no new table.
+- **Addendum, 1 August 2026 — the right table was never checked for how much real data is in it.**
+  Three separate passes (29–31 July, #245/#247/#280) each confirmed `schedule_slots` is the correct
+  source and re-read the live code against the design, but none of them queried the table's own row
+  count — they verified *which* table, never *how populated* it is. `select count(*) from schedule_slots`
+  returns **1**, for the entire production database, across every center and every day of the week.
+  The Schedule section was genuinely built correctly and genuinely matches the design, and was also
+  invisible for virtually every real center on virtually every day, silently, with no indication why —
+  found only when Eyad compared the live `/dashboard` against the design directly and asked whether the
+  balance card and Schedule list were "genuinely absent... confirmed directly against the live DOM, not
+  against your prior report." Fixed in #296: the section header now always renders, and an
+  `EmptyState` (the canonical primitive) shows instead of the section silently vanishing, with a CTA
+  into `/schedule` — the honest fix (configure a recurring slot), not an invented figure. Whether the
+  near-total absence of `schedule_slots` adoption is itself a bigger problem (onboarding, discoverability
+  of `/schedule`) is a separate, unopened question — flagging it here rather than assuming this ledger
+  entry closes it.
 
 ## F18 · Card-order Customize step has no per-field print toggle
 - **What:** `Merged-Center-Orders` §03 (Customize step) draws four on/off toggles for what prints on the card — Student name (on), QR code (on), Student photo (**off**, deliberately, in the reference frame), ID number (on). Live's `checkout/customize/page.tsx` only offers a card-**style** toggle (dark/light) plus a freeform `vendor_notes` text field — there is no per-field print control anywhere in the cart/order model.

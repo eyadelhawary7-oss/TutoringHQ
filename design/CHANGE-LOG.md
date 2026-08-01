@@ -101,6 +101,8 @@ If a row ever names one, that row is a mistake.
 | [#292](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/292) | `b96cb31` | 2026-07-31 | `students`/`groups`/`schedule` — migrated off the wrong `EmptyState` component onto the canonical one from `#220` | `/{locale}/students`, `/{locale}/groups`, `/{locale}/schedule` | v42 |
 | [#293](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/293) | `83cfa17` | 2026-07-31 | none — doc only (#291 self-row, #292 logged, EmptyState fraction updated 9.6%→13.9%) | none | v42 |
 | [#294](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/294) | `2bde01e` | 2026-07-31 | `payments` (dead-import removal, protected file, merged by Eyad directly) + `OrdersPageClient` — migrated off the wrong `EmptyState` component; old `empty-states/EmptyState.tsx` deleted | `/{locale}/payments`, `/{locale}/orders` | v42 |
+| [#295](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/295) | `8b1ee5c` | 2026-07-31 | none — doc only (final `EmptyState` correction after #294 landed — 11/72 real adopters, `#292`'s wrong "verified false" claim about `OrdersPageClient.tsx` corrected) | none | v42 |
+| [#296](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/296) | `4c5e29b` | 2026-08-01 | `Center-Home §01` — Schedule section empty-state (balance card confirmed still blocked, not built); merged by Eyad directly, held for review per this file's history | `/{locale}/dashboard` | v42 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
@@ -1537,3 +1539,66 @@ final) — `students`, `groups`, `schedule`, and `OrdersPageClient.tsx` all migr
 dead import removed; the old, non-conforming component deleted entirely, confirmed by a clean grep across
 the whole `src` tree showing zero remaining importers before the deletion landed.
 `design/PATTERN-ADOPTION-LEDGER.md` and **R4** updated to match.
+
+**Center-Home §01, 1 August 2026 — Eyad compared `/dashboard` and `/notifications` directly against
+`Merged-Center-Home.html` and found a structural mismatch a documented "4/5 built" fraction hadn't
+surfaced: the balance card absent, a "Quick Actions" grid with no equivalent in the design, and the
+Schedule list seemingly replaced by an undrawn "At a glance" section.** Asked for four things before any
+fix: was the balance card genuinely absent (confirm against the live DOM, not the prior report); same for
+Schedule and the Notifications header; was the global nav (hamburger/top bar/bottom tabs) ever addressed
+in any survey or is it pre-existing chrome outside every merged file; and, given two same-night incidents
+(`#262`, `#292`) where a bad grep produced a wrong "no match," re-verify every "done"/"N/N" claim for these
+two files specifically, fresh, not from memory.
+
+**Findings, each independently verified against the live code and a live schema query, not inferred:**
+- **Balance card** — genuinely absent, and this was already correctly documented (`#245`'s "1/5 not
+  built," re-confirmed by `#247`/`#280`) — not a wrong claim.
+- **Schedule list** — genuinely built and genuinely matches the design (`dashboard/page.tsx:1530-1571`),
+  **not** replaced by anything. It's gated on `safeData.todaySchedule.length > 0`, reading `schedule_slots`
+  — which turned out to have **exactly 1 row in the entire production database**. Three separate passes
+  (`#245`/`#247`/`#280`) had each confirmed *which* table is the right source and never checked *how
+  populated* it is — a narrower, more specific gap than "never opened the file," producing the identical
+  customer-facing symptom. Logged as an addendum to **F17** and **V4** in `BUILD-AFTER-REDESIGN.md`.
+- **"Quick Actions"** (a 4-item grid with zero design equivalent) traces via `git log -S` to commits from
+  February–April 2026 — 4-5 months before the redesign initiative began (`#209`/`#214`, late July) — and
+  was never mentioned in any prior audit. Pre-existing, not introduced by any redesign PR.
+- **Notifications header** — confirmed structurally missing the design's icon-button element; the live
+  component (`NotificationsPageClient.tsx:171-192`) renders only title + subtitle + button, relying
+  entirely on the global `AppShell` header above it. Never previously assessed — prior passes only ever
+  checked the unread-count math (`D26`'s own scope), never the header's own composition.
+- **Global nav** (`Sidebar`/`MobileTopBar`/`BottomTabBar`, in `AppShell.tsx`, mounted once at the root
+  layout) is genuinely global, out-of-frame chrome — no merged `design/*.html` file draws it. The only
+  place this project ever raised an equivalent nav/IA question is the **admin** portal's five-item bottom
+  nav vs. 17-item live sidebar (`INVENTORY.md`, `NEW-FEATURES.md` Appendix C) — the Center-portal
+  equivalent was simply never asked, not decided against. Logged in `FILE-COMPLETION-TABLE.md`'s
+  methodology notes so it isn't re-raised as a fresh miss.
+
+**Full audit of every file touched in tonight's batch sweep (rows 2-19): was the source `Merged-*.html`
+actually opened, per direct evidence in the landing PR, not inferred from route existence.** Every single
+file checked out — several PRs cite exact internal CSS class names from the raw markup (`mgd-num`,
+`.bigfoot`) that are very hard to produce without genuinely opening the file. This was not a widespread
+problem. Center-Home was the one real exception, and even there the file was opened three times with
+specific corroborating detail each time — what was missing was the data-population check described above,
+not the read itself.
+
+**Design-Patterns re-audited before Center-Home, per Eyad's own reasoning: every adopter inherits
+whatever the primitives themselves get wrong.** Read `Merged-Design-Patterns.html` fresh, diffed all six
+primitives' actual rendered layout (not just "does it exist") against the CSS spec, element by element.
+Two findings surfaced, both reviewed by Eyad and classified as intentional, not gaps needing a fix:
+a small (~3-point RGB) deviation on the internal-divider hairline color, and a corner-radius difference
+between the design's own token scale (`tokens.css`'s `--radius-lg`/`--radius-md`/etc., 16/12px) and the
+generic values several primitives actually render at via `tailwind.config.ts`'s legacy `borderRadius`
+mapping (12/10px). No further action — the finding stands as reviewed-and-accepted, recorded here so it
+isn't independently re-raised as a fresh discovery later.
+
+**Center-Home §01, fixed in `#296`, held for review and merged by Eyad directly given this file's history
+tonight.** Balance card: re-verified live, fresh, immediately before writing any code — `payouts`/
+`center_balances`/`wallets` still don't exist, `settled_at` still has zero populated rows. The only
+alternative — redefining "Available now" from other existing data (e.g. a running collections total) —
+was raised and explicitly declined by Eyad: inventing a feature definition backwards, from a label, under
+time pressure, for a card whose real meaning depends on a payout flow gated on Valify (**V1**) that
+doesn't exist yet. **Balance card stays unbuilt — not fabricated, not redefined, same block as always.**
+Schedule: needed no rebuild, since it already matched the design — needed an honest empty state for the
+near-universal zero-`schedule_slots` case instead of silently vanishing. Section header now always
+renders; falls back to the canonical `EmptyState` with a CTA into `/schedule` (the real fix — configure a
+recurring slot) when there's nothing to show. New `emptyStates.todaySchedule` key, en+ar.
