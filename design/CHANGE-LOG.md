@@ -103,10 +103,12 @@ If a row ever names one, that row is a mistake.
 | [#294](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/294) | `2bde01e` | 2026-07-31 | `payments` (dead-import removal, protected file, merged by Eyad directly) + `OrdersPageClient` — migrated off the wrong `EmptyState` component; old `empty-states/EmptyState.tsx` deleted | `/{locale}/payments`, `/{locale}/orders` | v42 |
 | [#295](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/295) | `8b1ee5c` | 2026-07-31 | none — doc only (final `EmptyState` correction after #294 landed — 11/72 real adopters, `#292`'s wrong "verified false" claim about `OrdersPageClient.tsx` corrected) | none | v42 |
 | [#296](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/296) | `4c5e29b` | 2026-08-01 | `Center-Home §01` — Schedule section empty-state (balance card confirmed still blocked, not built); merged by Eyad directly, held for review per this file's history | `/{locale}/dashboard` | v42 |
+| [#297](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/297) | `aa8115d4` | 2026-08-01 | none — doc only (logged #296, closed out the Center-Home §01 investigation episode) | none | v42 |
+| [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
-until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, and `#214`'s by
-this one.*
+until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
+one, and `#296`'s own row was filled by `#297`.*
 
 ### Notes per PR
 
@@ -1602,3 +1604,57 @@ Schedule: needed no rebuild, since it already matched the design — needed an h
 near-universal zero-`schedule_slots` case instead of silently vanishing. Section header now always
 renders; falls back to the canonical `EmptyState` with a CTA into `/schedule` (the real fix — configure a
 recurring slot) when there's nothing to show. New `emptyStates.todaySchedule` key, en+ar.
+
+**Center-Groups, 1 August 2026 — full re-survey and build, same standard as the Center-Home episode,
+per Eyad's explicit instruction.** Read `Merged-Center-Groups.html` fresh (all 1,317 lines) and every
+live route file fresh (`groups/page.tsx` 1,128 lines, `rooms/page.tsx` 415, `(dashboard)/branches/page.tsx`
+335, `schedule/page.tsx` 1,165) rather than trusting the existing ~3.1/5 estimate from PR #278.
+
+**A real discrepancy surfaced and was resolved before any of the actual survey work: a branch named
+`claude/center-groups-rebuild` already existed on the remote with unmerged-looking commits, and its
+associated PR (`#248`) showed `state: closed, merged: false` via the GitHub API.** Read literally, this
+looked like abandoned work whose findings never made it into the permanent record — worth investigating
+before reusing the branch name, per the standing "investigate unfamiliar state before overwriting" rule.
+`git log --oneline origin/master` told a different story: commit `81db40be`, titled exactly after `#248`
+("Center-Groups: safely-buildable gaps in §01/§03/§05 (#248)"), **is a confirmed ancestor of
+`origin/master`**, timestamped to the same second as the PR's own `closed_at`. The GitHub API's `merged`
+boolean was the wrong signal; the squash commit on `origin/master` was the right one — precisely the
+shape of CLAUDE.md Rule 4 ("PR state comes from the PR... check `merged`/`state`... or look for the squash
+commit in `git log origin/master`"), just inverted from its usual direction. Confirmed via direct grep
+that every specific item `#248` claimed (kebab-menu `handleDeleteGroup`, `teacher_name`/`center_cut_egp`
+rendering, `getStudentBalances` member badges, Rooms kebab edit/delete with a schema-checked cascade
+warning, Schedule prev/next-week nav + load dots + named-conflict copy) is genuinely live today — no
+work was lost, and none of it needed rebuilding. `#278` built a second, non-overlapping batch on top of
+it the same day. The local branch was renamed to `claude/center-groups-rebuild-v2` to avoid a needless
+force-push over real history rather than resolving the confusion by deleting anything.
+
+**Findings from the fresh re-diff, each independently verified, not inferred from either prior PR's own
+description:**
+- **§01 Groups — Waitlist tab is broken end to end, a materially different problem than "missing an Add
+  button."** The design's simple per-row promote action doesn't exist, but neither does anything else:
+  the live `notify-waitlist` route WhatsApps the first waitlisted parent asking them to reply yes/no and
+  logs a `waitlist_notifications` row — and nothing anywhere in the codebase ever reads that reply
+  (confirmed: the WhatsApp inbound webhook is a keyword-matched FAQ responder with no waitlist branch,
+  and `waitlist_notifications` has exactly one referencing file, insert-only). A real parent replying
+  "yes" today gets nothing back. Logged as **D32**. Fixed the narrower, undebatable half of it this pass:
+  a student added as a full member while still on that group's own waitlist previously stayed on the
+  waitlist forever, since nothing ever cleared `waitlist_group_id`/`waitlist_position` — now cleared via
+  a new `DELETE /api/groups/[groupId]/waitlist` route, wired from `handleAddMember`. Fixed the
+  position-assignment race this introduced (the existing `POST` computed position from a row `COUNT`,
+  which would start colliding with existing rows the first time a removal ever happened) by switching to
+  `MAX(position)+1`. The actual product decision — should promotion be automatic on a parent's WhatsApp
+  reply, a manual center-side action, or both — is Eyad's call, not built.
+- **§04 Branches — the existing `D23`/"two new findings" description undersold how structurally
+  different the live screen is.** It isn't the design's card list with two fake action chips; it's a
+  desktop admin table with **zero row actions of any kind** (grep confirms the only `onClick` in the
+  whole 335-line file is "Add branch") and **no address field anywhere** — not in the Add-branch form, not
+  in the API payload. Logged as **D31**, correcting §04's estimate down to ≈0.35. Not rebuilt: table vs.
+  card list is a real layout-paradigm choice for a data-dense multi-branch owner view, not an oversight,
+  the same shape of divergence as Center-Setup's Onboarding (`D28`).
+- **§02 (D12, billing basis) and §03/§05 re-confirmed unchanged** — genuinely still blocked, genuinely
+  still matching, respectively. No new findings on either.
+
+`design/BUILD-AFTER-REDESIGN.md` gets **D31** and **D32** (full detail, evidence, and exact fix
+description in each entry). `design/FILE-COMPLETION-TABLE.md` row 11 updated: ~3.1/5 → ~3.0/5, §04's
+sub-estimate corrected down, blocked-by list gains D31/D32, D2 marked closed (confirmed already-resolved
+by `#248`, never formally closed in this table before now).
