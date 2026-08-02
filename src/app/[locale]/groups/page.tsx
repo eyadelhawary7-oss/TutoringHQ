@@ -471,6 +471,21 @@ export default function GroupsPage() {
             : g,
         ),
       );
+      // A student enrolled while still on this group's waitlist would otherwise sit there
+      // forever - nothing else in this codebase ever clears waitlist_group_id/waitlist_position.
+      if (waitlist.some(w => w.id === studentId)) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          try {
+            await fetch(`/api/groups/${detailGroup.id}/waitlist`, {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+              body: JSON.stringify({ student_id: studentId }),
+            });
+            setWaitlist(prev => prev.filter(w => w.id !== studentId));
+          } catch {}
+        }
+      }
     } else {
       Sentry.captureException(error, { tags: { feature: 'groups', action: 'add_member' }, extra: { groupId: detailGroup.id, studentId } });
       toast.error(tToast('error'), errorDetail(error));
