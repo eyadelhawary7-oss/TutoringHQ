@@ -107,8 +107,28 @@ expiry, no ledger row and no sweeper. The two crons calling `cancel_reservation_
 (`cleanup-expired-sessions`, `check-stuck-payments`) never look at `withdrawal_requests`. An abandoned or
 errored request fences the center's credits **indefinitely** — unspendable and unwithdrawable.
 
-**2.6 — No CSRF on `POST /api/referrals/payout`** (already logged as **S7**). Low blast radius only
-because `available` is always 0 today; that stops being true the moment this system works.
+**2.6 — None of the three money-movement routes validates CSRF.** Wider than the existing **S7**, which
+only ever covered the referral route. Verified by direct grep — `validateCSRFRequest` appears **zero
+times** in all three:
+
+| route | what it does | CSRF |
+|---|---|---|
+| `POST /api/referrals/payout` | creates a referral payout request | **none** (S7) |
+| `POST /api/billing/withdrawal` | creates a credit withdrawal request | **none — not previously logged** |
+| `PATCH /api/admin/withdrawals/[id]` | **marks a withdrawal paid — authorises real money** | **none — not previously logged** |
+
+The admin route is the serious one: it is the gate that releases money, and it is unprotected. S7's "low
+blast radius because `available` is always 0" reasoning never applied to it at all, and stops applying to
+any of them the moment this system works.
+
+**2.7 — The two payout-initiating routes have asymmetric authorization, and unifying them could silently
+widen access.** `/api/billing/withdrawal` is **owner-only** (`auth.role !== 'owner'` → reject).
+`/api/referrals/payout` gates on a **delegable staff permission**, `can_request_referral_payouts` — which
+is currently `true` on exactly **1 row in the entire database**. Two routes that move money out of the same
+center enforce two different rules. **Decision 1 (unify the pipelines) must therefore also pick a gate**,
+and picking the weaker one would hand payout initiation to staff accounts at centers that today are
+owner-only, with no announcement. *Recommendation: unify on owner-only plus step-up auth, and treat
+`can_request_referral_payouts` as request-only — never release.*
 
 **→ DECISION 2.** Confirm all six are in scope as prerequisites. If any is deferred, say which — each one
 independently can pay real money twice or strand it.
@@ -508,6 +528,22 @@ scheduled nowhere, and nobody has noticed. The watchdog only iterates `cron_heal
 exist, so a cron that never ran once is invisible to it. *Fix:* seed the health row in the same migration;
 assert against a declared registry; add a CI check that every cron directory appears in `vercel.json` —
 which also catches the existing gap.
+
+**A14 · CSRF on the route that authorises money to leave** — `loses_money`. `PATCH /api/admin/withdrawals/[id]`
+has no CSRF validation and is the gate that marks a withdrawal paid. An admin with a live session who loads
+any page that can issue a cross-origin request is one forged call away from releasing a queued withdrawal
+nobody approved. Compounded by **A15**: the same route's handler double-pays on concurrent invocation
+(§2.2), so a forged call racing a legitimate click produces two payments and two success responses.
+*Fix:* `validateCSRFRequest` on all three routes in §2.6 before any payout work, with the client changes
+landed in the same PR — the CEO/admin client helpers do not send `X-CSRF-Token` today, so server-side
+validation added alone would break the UI.
+
+**A15 · Authorization asymmetry becomes a silent privilege widening** — `operational_only`, but it is the
+kind that turns into a loss. Unifying the two pipelines (Decision 1) means choosing one gate. If the
+delegable `can_request_referral_payouts` wins, every center whose credit withdrawals are owner-only today
+silently gains a second, non-owner path to move money — and the permission is currently set on exactly one
+row, so nobody would notice the semantics changed until it was used. *Fix:* make the gate an explicit part
+of Decision 1 rather than an implementation detail; separate *request* from *release* authority.
 
 **A13 · Six months in, the question is unanswerable.** There is no per-period statement, no completeness
 proof, and no way to see anything never recorded. *Fix:* a `payout_reconciliation_periods` table — one
