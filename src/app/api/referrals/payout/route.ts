@@ -6,11 +6,17 @@ import { parseBodyWithLimit } from '@/lib/validate';
 import { getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { resolveProcessingFeeAmount } from '@/lib/processingFee';
 import { computeReferralPayout, REFERRAL_WITHDRAWAL_MIN_EGP } from '@/lib/referralPayout';
+import { validateCSRFRequest } from '@/lib/csrf';
 
 export async function POST(request: NextRequest) {
   try {
     const auth = await requireCenterAuth(request);
     if (!auth.ok) return auth.response;
+    // PAYOUT-SYSTEM-SPEC.md §2.6 / S7: this route creates a money-movement
+    // request and had no CSRF check at all.
+    if (!validateCSRFRequest(request, auth.userId)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+    }
     // Permission gate added May 12 per docs/AUDIT_center_role_gating.md
     const permErr = requirePermission(auth, 'can_request_referral_payouts');
     if (permErr) return permErr;
