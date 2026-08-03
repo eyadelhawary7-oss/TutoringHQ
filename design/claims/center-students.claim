@@ -1,0 +1,7 @@
+file: src/app/[locale]/students/**
+pipeline: Merged-Center-Students
+worktree: /home/user/TutoringHQ/.claude/worktrees/wf_5d2c5083-a24-* (per-agent, workflow wf_5d2c5083-a24)
+branch: claude/parity-center-students
+claimed_by: design-parity-build-wave1
+claimed_at: 2026-08-03T13:17:08Z
+released:

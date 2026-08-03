@@ -1,0 +1,9 @@
+file: src/app/[locale]/dashboard/page.tsx
+pipeline: Merged-Center-Home §01
+worktree: /tmp/claude-0/-home-user-TutoringHQ/1b02b780-9469-592a-94ac-b8e40d55f381/scratchpad/wt-center-home (removed)
+branch: pipeline/center-home-dashboard (pushed to origin)
+claimed_by: center-home-dashboard-pipeline
+claimed_at: 2026-08-03T08:39:41Z
+released: 2026-08-03T13:04:22Z
+note: released by owner instruction — a second session owns the pipeline sweep.
+      Work is preserved on origin/pipeline/center-home-dashboard, not merged.
