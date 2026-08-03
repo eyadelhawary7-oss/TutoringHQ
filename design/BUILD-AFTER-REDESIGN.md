@@ -1271,6 +1271,29 @@ Removed from `src/app/[locale]/dashboard/page.tsx`. **Nothing here is a placemen
 
 **Pre-existing finding surfaced by the cleanup, not caused by it:** removing the At-a-glance monthly-revenue card removed the last consumer of `canViewRevenue` on this page — but the "Today · Collected" KPI shows a money figure and **was never gated by it**. That was true before this change too. It is now the only money figure on the dashboard, and it is ungated. Not fixed here (the design draws it unconditionally); flagged for a call.
 
+> **SUPERSEDED, 3 August 2026 — the code half of this entry was not merged.** A parallel session
+> (`pipeline/center-home-dashboard`, commits `5dd6d747` + `e242bb84`) did the same §01 rebuild and did
+> it better. Its work is kept; mine was withdrawn from PR #305, which is now docs-only. What theirs has
+> that mine did not:
+> - **`src/app/[locale]/dashboard/loading.tsx` — I missed this file entirely.** It still painted the
+>   *deleted* screen (`max-w-7xl mx-auto`, 4-up KPI grid, two chart panels, `rounded-xl`), so with my
+>   version merged every navigation to `/dashboard` would have flashed the design I had just removed.
+>   A real defect in my work, not a difference of opinion.
+> - **Two Cairo-day money bugs I did not find.** The digital-share meter bucketed payments by
+>   `new Date(p.paid_at).toISOString().slice(0,10)` — a **UTC** date — against Cairo day keys, so every
+>   payment taken between Cairo midnight and 02:00/03:00 bucketed a day early and Saturday's fell out of
+>   the week entirely; both the percentage and the EGP total under-reported. And the Collected KPI used
+>   the **device's** midnight (`setHours(0,0,0,0)`) rather than Cairo's.
+> - **The orphaned i18n keys cleaned up**, which I had deliberately left.
+> The `AlertCircle` glyph I added is already present in theirs, identically.
+>
+> **One difference that is a genuine decision, not a defect — it needs Eyad.** Their rebuild removes the
+> three live-only elements I deliberately kept and flagged above: the **payment-overdue / suspension
+> banner**, **`PlanUsageCard`**, and the **actions menu** (the only entry point to plan-gated Excel/CSV
+> export). Theirs is the stricter reading of "identical means identical" and may well be what was wanted.
+> But it means a centre about to be suspended for non-payment gets no warning on its home screen, and a
+> centre approaching its student cap gets none either. Recorded here rather than resolved either way.
+
 **Found/done:** 3 August 2026, Center-Home §01 restructure. Gates green: `tsc --noEmit` clean, `eslint` 0 errors, `i18n:check` / `check:bidi` / `check:tolocale` all OK.
 
 ## R12 · STOPPED — the "Verified" badge has no Valify credentials config point to build against, because no Valify integration exists at all

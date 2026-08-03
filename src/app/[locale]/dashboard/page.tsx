@@ -1,35 +1,76 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import dynamic from 'next/dynamic';
+import { useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { dbSelect } from '@/lib/db-proxy';
 import { getStudentBalances } from '@/lib/studentBalance';
+import { colors } from '@/lib/tokens';
 import { exportDashboardToExcel } from '@/lib/excel-export';
 import { hasPlanFeature } from '@/lib/plans';
 import { useUser } from '@/contexts/UserContext';
 import { Link } from '@/i18n/routing';
 import PlanUsageCard from '@/components/dashboard/PlanUsageCard';
+import { ChartCard, SparklineChart } from '@/components/charts';
 import { EmptyState, KpiCard, SectionHeader } from '@/components/shared';
 import ListRow from '@/components/patterns/ListRow';
 
-import { formatDate, formatNumber, formatPercent, formatCurrency, formatTime } from '@/lib/formatNumber';
+const AreaChartComponent = dynamic(
+  () => import('@/components/charts').then((m) => ({ default: m.AreaChartComponent })),
+  { ssr: false, loading: () => <div className="chq-skeleton h-48 w-full rounded-md" /> },
+);
+const DonutChart = dynamic(
+  () => import('@/components/charts').then((m) => ({ default: m.DonutChart })),
+  { ssr: false, loading: () => <div className="chq-skeleton h-48 w-full rounded-md" /> },
+);
+import { useToast } from '@/components/ui/ToastProvider';
+import { formatDate, formatGrowth, formatNumber, formatPercent, formatCurrency, formatRelativeMinutesAgo, formatTime } from '@/lib/formatNumber';
 import { getCairoWeekDayKeys, startOfCairoWeek, scheduleSlotsDayOfWeek } from '@/lib/cairo/week';
 import { cairoDateKey, startOfCairoDay, getCurrentCairoClock } from '@/lib/cairo/day';
 import { classifyTodaySchedule } from '@/lib/todayScheduleStatus';
+import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { type InactivePeriod, type InactiveStudent } from '@/components/dashboard/InactiveList';
+import { ClientOnly } from '@/components/ClientOnly';
 import {
   readDashboardCache as readScopedDashboardCache,
   writeDashboardCache as writeScopedDashboardCache,
 } from '@/lib/dashboardCache';
 import {
   QrCode,
+  TrendingUp,
+  TrendingDown,
+  CreditCard,
+  UserPlus,
   X,
+  ArrowUpRight,
+  Send,
   MoreVertical,
+  BarChart3,
+  PieChart,
   Calendar,
-  AlertCircle,
 } from 'lucide-react';
+
+const AR_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+const EN_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function formatMonthLabel(monthStr: string, locale: string): string {
+  const [y, m] = monthStr.split('-').map(Number);
+  if (locale === 'ar') return AR_MONTHS[(m || 1) - 1] ?? monthStr;
+  return EN_MONTHS[(m || 1) - 1] ?? monthStr;
+}
+
+/** X-axis labels for attendance trend: short English weekdays, long Arabic; never cache localized strings. */
+function formatAttendanceChartDayLabel(dayKey: string, locale: string, isToday: boolean): string {
+  if (isToday) return locale === 'ar' ? 'اليوم' : 'Today';
+  const d = new Date(`${dayKey}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return dayKey;
+  if (locale === 'ar') {
+    return d.toLocaleDateString('ar-EG', { weekday: 'long' });
+  }
+  return d.toLocaleDateString('en-US', { weekday: 'short' });
+}
 
 export interface RecentPaymentRow {
   id: string;
@@ -116,6 +157,14 @@ interface TodayScheduleRow {
   status: 'billed' | 'next' | 'later';
 }
 
+type AtRiskRow = {
+  id: string;
+  name: string;
+  student_number?: string | null;
+  days_since_last_scan: number;
+  attendance_rate_pct?: number;
+};
+
 const EMPTY_DASHBOARD_DATA: DashboardData = {
   todayAttendance: 0,
   totalStudents: 0,
@@ -168,23 +217,104 @@ function isDashboardCacheValid(p: unknown): p is DashboardData {
   );
 }
 
+function atRiskAttendanceIndicator(daysSinceLastScan: number): number {
+  return Math.max(5, Math.min(59, 100 - Math.min(30, daysSinceLastScan) * 3));
+}
+
+function KpiCommandCard({
+  label,
+  valueDisplay,
+  subLabel,
+  growth,
+  delayMs,
+  sparkline,
+  staleMetrics,
+  locale,
+}: {
+  label: string;
+  valueDisplay: ReactNode;
+  subLabel?: ReactNode;
+  /** Uses formatGrowth; chip hidden when prior period had no baseline (null). */
+  growth?: { current: number; prior: number } | null;
+  delayMs: number;
+  sparkline: { value: number }[];
+  /** When true, main KPI value is dimmed until fresh data arrives (sessionStorage rehydrate). */
+  staleMetrics?: boolean;
+  locale: string;
+}) {
+  const growthLabel =
+    growth != null && Number.isFinite(growth.prior) && Number.isFinite(growth.current)
+      ? formatGrowth(growth.current, growth.prior, locale)
+      : null;
+  const showTrend = growthLabel != null;
+  const negative =
+    growth != null &&
+    growth.prior > 0 &&
+    growth.current < growth.prior;
+
+  // Compose sublabel slot: optional subLabel text, growth chip, sparkline.
+  const composedSub = (
+    <div className="flex flex-col gap-2">
+      {subLabel ? (
+        <p className="text-[11px] text-[var(--color-text-muted)]">{subLabel}</p>
+      ) : null}
+      {showTrend ? (
+        <span
+          className={`inline-flex w-fit items-center gap-0.5 text-[11px] font-semibold ${
+            negative ? 'text-red-500' : 'text-emerald-500'
+          }`}
+        >
+          {!negative ? (
+            <TrendingUp className="h-3 w-3" aria-hidden />
+          ) : (
+            <TrendingDown className="h-3 w-3" aria-hidden />
+          )}
+          <span>{growthLabel}</span>
+        </span>
+      ) : null}
+      <div className="h-8 w-full opacity-95" aria-hidden suppressHydrationWarning>
+        {sparkline.length >= 2 ? (
+          <ClientOnly fallback={<div className="h-8 w-full" />}>
+            <SparklineChart data={sparkline} color="teal" height={32} />
+          </ClientOnly>
+        ) : (
+          <div className="h-8" />
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className={`chq-fade-in transition-opacity duration-300 ${staleMetrics ? 'opacity-70' : 'opacity-100'}`} style={{ animationDelay: `${delayMs}ms` }}>
+      <KpiCard
+        label={label}
+        value={<span className="tabular-nums">{valueDisplay}</span>}
+        subLabel={composedSub}
+      />
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const t = useTranslations('dashboard');
   const tSettings = useTranslations('settings');
   const tCommon = useTranslations('common');
   const tBilling = useTranslations('billing');
   const tEmpty = useTranslations('emptyStates');
+  const tToast = useTranslations('toasts');
   const locale = useLocale();
   const router = useRouter();
+  const { toast } = useToast();
   const { user } = useUser();
+  const canViewRevenue =
+    user?.role === 'owner' || user?.role === 'admin' || user?.role === 'super_admin' || user?.can_view_revenue === true;
+
   const [centerBilling, setCenterBilling] = useState<{ payment_due_date?: string; billing_status?: string; name?: string; plan?: string; export_access?: boolean } | null>(null);
   const [planUsage, setPlanUsage] = useState<{ plan: string; weeklyUniqueStudents: number; studentLimit: number } | null>(null);
   const [data, setData] = useState<DashboardData | null>(null);
   const [dashboardDataFresh, setDashboardDataFresh] = useState(false);
-  // No UI changes either of these today; the setters were already unreachable before
-  // the Merged-Center-Home cleanup, so only the values are destructured.
-  const [inactivePeriod] = useState<InactivePeriod>('7d');
-  const [timeRange] = useState<'7' | '30'>('7');
+  const [inactivePeriod, setInactivePeriod] = useState<InactivePeriod>('7d');
+  const [timeRange, setTimeRange] = useState<'7' | '30'>('7');
   const [centerId, setCenterId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [statsData, setStatsData] = useState<{
@@ -198,6 +328,13 @@ export default function DashboardPage() {
     enrollment_surge_days?: number | null;
   } | null>(null);
   const [surgeDismissed, setSurgeDismissed] = useState(false);
+  const [atRiskStudents, setAtRiskStudents] = useState<AtRiskRow[]>([]);
+  const [atRiskMeta, setAtRiskMeta] = useState<{
+    totalActive: number;
+    avgAttendancePct: number;
+    atRiskCount: number;
+  } | null>(null);
+  const [sendingReport, setSendingReport] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
 
@@ -710,6 +847,31 @@ export default function DashboardPage() {
     fetchStats();
   }, [centerId]);
 
+  useEffect(() => {
+    const fetchAtRisk = async () => {
+      if (!centerId) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      try {
+        const res = await fetch('/api/students/at-risk', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (res.ok) {
+          const json = (await res.json()) as {
+            students?: AtRiskRow[];
+            meta?: { totalActive: number; avgAttendancePct: number; atRiskCount: number };
+          };
+          setAtRiskStudents(json.students ?? []);
+          setAtRiskMeta(json.meta ?? null);
+        }
+      } catch {
+        setAtRiskStudents([]);
+        setAtRiskMeta(null);
+      }
+    };
+    void fetchAtRisk();
+  }, [centerId]);
+
   // Real-time updates
   useEffect(() => {
     if (!centerId) return;
@@ -727,6 +889,26 @@ export default function DashboardPage() {
       }
     };
 
+    const refetchAtRisk = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      try {
+        const res = await fetch('/api/students/at-risk', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (res.ok) {
+          const json = (await res.json()) as {
+            students?: AtRiskRow[];
+            meta?: { totalActive: number; avgAttendancePct: number; atRiskCount: number };
+          };
+          setAtRiskStudents(json.students ?? []);
+          setAtRiskMeta(json.meta ?? null);
+        }
+      } catch {
+        /* Non-fatal */
+      }
+    };
+
     const channel = supabase
       .channel('dashboard-updates')
       .on(
@@ -735,6 +917,7 @@ export default function DashboardPage() {
         () => {
           loadDashboard(centerId, inactivePeriod, timeRange === '30' ? 30 : 7);
           void refetchStats();
+          void refetchAtRisk();
         }
       )
       .on(
@@ -743,6 +926,7 @@ export default function DashboardPage() {
         () => {
           loadDashboard(centerId, inactivePeriod, timeRange === '30' ? 30 : 7);
           void refetchStats();
+          void refetchAtRisk();
         }
       )
       .subscribe();
@@ -849,7 +1033,92 @@ export default function DashboardPage() {
     return { cash, online, total, pct: Math.round((online / total) * 100) };
   }, [safeData.revenueChartData]);
 
+  const monthlyRevenueRaw = statsData?.monthlyRevenue ?? [];
+  const monthlyRevenueData = useMemo(
+    () =>
+      monthlyRevenueRaw.map((r) => ({
+        month: formatMonthLabel(r.month, locale),
+        revenue: Number(r.amount) || 0,
+      })),
+    [monthlyRevenueRaw, locale],
+  );
+
+  const attendanceChart7 = useMemo(() => {
+    const td = safeData.trendData;
+    const slice = td.length <= 7 ? td : td.slice(-7);
+    const todayKey = cairoDateKey(new Date());
+    return slice.map((d) => {
+      const isToday = d.dayKey === todayKey;
+      return {
+        date: formatAttendanceChartDayLabel(d.dayKey, locale, isToday),
+        count: d.count,
+      };
+    });
+  }, [safeData.trendData, locale]);
+
+  const attendanceWeekTotal = useMemo(
+    () => attendanceChart7.reduce((s, d) => s + d.count, 0),
+    [attendanceChart7],
+  );
+
+  const studentSparklinePoints = useMemo(
+    () => safeData.studentSparkline7d.map((n) => ({ value: n })),
+    [safeData.studentSparkline7d],
+  );
+
+  const attendanceSparklinePoints = useMemo(
+    () => attendanceChart7.map((d) => ({ value: d.count })),
+    [attendanceChart7],
+  );
+
+  const revenueMonthlySpark7 = useMemo(() => {
+    const slice = monthlyRevenueData.slice(-7);
+    return slice.map((r) => ({ value: r.revenue }));
+  }, [monthlyRevenueData]);
+
+  const pendingInvoicesSpark7 = useMemo(() => {
+    const c = safeData.pendingInvoicesCount;
+    return Array.from({ length: 7 }, () => ({ value: c }));
+  }, [safeData.pendingInvoicesCount]);
+
+  const hasAttendanceChartData = attendanceWeekTotal > 0;
+  const hasPaymentStatusData =
+    safeData.paidCount + safeData.pendingCount + safeData.latePaymentCount > 0;
+
+  const onSendReport = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error(tToast('error'), tCommon('error'));
+        return;
+      }
+      setSendingReport(true);
+      const res = await fetch('/api/dashboard/send-daily-summary', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        const code = j.error ?? '';
+        if (code === 'daily_summary_disabled') toast.error(tToast('error'), t('dailySummaryDisabled'));
+        else if (code === 'no_center_phone') toast.error(tToast('error'), t('dailySummaryNoPhone'));
+        else if (code === 'no_activity_yesterday') toast.info(t('dailySummaryNoActivity'));
+        else toast.error(tToast('error'), code || tCommon('error'));
+        return;
+      }
+      toast.success(t('dailySummarySent'));
+    } catch {
+      toast.error(tToast('error'), tCommon('error'));
+    } finally {
+      setSendingReport(false);
+    }
+  }, [toast, t, tToast, tCommon]);
+
   const attendanceTodayCount = Number(statsData?.attendanceToday ?? safeData.todayAttendance ?? 0);
+  const attendancePctOfTotal =
+    safeData.totalStudents > 0
+      ? Math.min(100, Math.round((attendanceTodayCount / safeData.totalStudents) * 10000) / 100)
+      : 0;
   // Merged-Center-Home §01 "Today" tile: the design's "Attendance 94%" is scanned-today
   // over EXPECTED today (todaySchedule's member count), not over the whole roster -
   // a different denominator than the pre-existing "At a glance" tile above, which is
@@ -1089,6 +1358,44 @@ export default function DashboardPage() {
         </div>
       </header>
 
+      <div className="mb-6 max-w-6xl">
+        <div className="mb-3">
+          <SectionHeader title={t('quickActions')} />
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Link
+            href="/students?action=add"
+            className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+          >
+            <UserPlus className="h-6 w-6 text-teal-500" aria-hidden />
+            <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t('addStudent')}</span>
+          </Link>
+          <Link
+            href="/attendance"
+            className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+          >
+            <QrCode className="h-6 w-6 text-teal-500" aria-hidden />
+            <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t('recordAttendance')}</span>
+          </Link>
+          <Link
+            href="/payments?action=collect"
+            className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+          >
+            <CreditCard className="h-6 w-6 text-teal-500" aria-hidden />
+            <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t('collectPayment')}</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => void onSendReport()}
+            disabled={sendingReport}
+            className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] disabled:opacity-50 btn-press chq-focus"
+          >
+            <Send className="h-6 w-6 text-teal-500" aria-hidden />
+            <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t('sendReport')}</span>
+          </button>
+        </div>
+      </div>
+
       {planUsage && planUsage.studentLimit < 999999 && (
         <div className="mb-4 max-w-6xl">
           <PlanUsageCard
@@ -1115,54 +1422,46 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-          {/* Digital share placeholder: percentage line, split bar, legend pair. */}
           <div className="rounded-md border border-[var(--color-line)] shadow-sm bg-[var(--color-panel)] p-4">
-            <div className="h-8 w-28 rounded bg-[var(--color-surface-2)] animate-pulse" />
-            <div className="mt-3 h-2 w-full rounded-full bg-[var(--color-surface-2)] animate-pulse" />
-            <div className="mt-3 flex gap-4">
-              <div className="h-3 w-24 rounded bg-[var(--color-surface-2)] animate-pulse" />
-              <div className="h-3 w-24 rounded bg-[var(--color-surface-2)] animate-pulse" />
-            </div>
-          </div>
-          {/* Schedule placeholder: the design draws four session rows. */}
-          <div className="space-y-2">
-            {[1, 2, 3, 4].map((i) => (
+            <div className="mb-3 h-4 w-32 rounded bg-[var(--color-surface-2)] animate-pulse" />
+            {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="flex items-center gap-3 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2.5"
-                aria-hidden
+                className="mb-2 rounded-md border border-[var(--color-line)] bg-[var(--color-tile)] px-3 py-2.5"
               >
-                <div className="h-8 w-12 shrink-0 rounded bg-[var(--color-surface-2)] animate-pulse" />
-                <div className="min-w-0 flex-1">
-                  <div className="h-4 w-32 rounded bg-[var(--color-surface-2)] animate-pulse" />
-                  <div className="mt-1.5 h-3 w-44 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                <div className="flex justify-between gap-2">
+                  <div className="h-4 w-36 rounded bg-[var(--color-surface-3)] animate-pulse" />
+                  <div className="h-3 w-10 rounded bg-[var(--color-surface-3)] animate-pulse" />
                 </div>
-                <div className="h-6 w-14 shrink-0 rounded-pill bg-[var(--color-surface-2)] animate-pulse" />
+                <div className="mt-2 h-1 w-full rounded-full bg-[var(--color-surface-3)]" />
               </div>
             ))}
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
+            <div className="md:col-span-3">
+              <div className="flex min-h-[200px] flex-col rounded-md border border-[var(--color-line)] shadow-sm bg-[var(--color-panel)] p-4">
+                <div className="mb-3 h-4 w-40 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                <div className="h-[168px] w-full rounded-lg bg-[var(--color-surface-2)] animate-pulse" />
+              </div>
+            </div>
+            <div className="flex flex-col md:col-span-2">
+              <div className="flex min-h-[240px] flex-col rounded-md border border-[var(--color-line)] shadow-sm bg-[var(--color-panel)] p-4">
+                <div className="mb-2 h-3 w-28 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                <div className="min-h-0 flex-1 rounded-md bg-[var(--color-tile)] animate-pulse" />
+              </div>
+            </div>
           </div>
         </div>
       ) : (
         <>
-          {/* Merged-Center-Home §01, in the design's own order: alert row, Today
-              KPIs, digital share, schedule. Two of the design's six blocks are
-              deliberately absent and neither is an oversight:
-              - The balance card (Available now / Pending / Unpaid / Processed) is
-                BLOCKED. Tuition money has never transited the platform, so every
-                one of those four figures would be invented. Eyad, 3 Aug: do not
-                fake, do not approximate.
-              - The "Verified" badge has nothing to read from. `centers` carries no
-                verification column (checked in information_schema, zero matches for
-                verif/valify/kyc/ident) and there is no Valify integration, env var
-                or platform_config key anywhere in the repo. See R12 in
-                design/BUILD-AFTER-REDESIGN.md. */}
+          {/* Merged-Center-Home §01: alert row, Today KPIs, digital share, schedule.
+              The design's balance card and "Verified" badge are not built here -
+              both depend on the online-collection/payout model (V3/V4) and center
+              verification (V1/V6), neither of which exists yet. See design/BUILD-AFTER-REDESIGN.md. */}
           {safeData.unpaidCount > 0 && (
             <div className="mb-4 max-w-6xl">
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[var(--color-brass)]/40 bg-[var(--color-surface-2)] p-4">
-                {/* The design's alert leads with a circle-exclamation glyph; without
-                    it the row reads as a card rather than a warning. */}
-                <AlertCircle className="h-5 w-5 shrink-0 text-[var(--color-brass)]" aria-hidden />
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0">
                   <p className="text-sm font-semibold text-[var(--color-brass)]">
                     {t('unpaidLinksTitle', { count: formatNumber(safeData.unpaidCount, locale) })}
                   </p>
@@ -1287,6 +1586,244 @@ export default function DashboardPage() {
             </div>
           )}
 
+          <div className="mb-4 max-w-6xl">
+            <SectionHeader title={tCommon('sectionAtAGlance')} />
+          </div>
+          <div className="mb-6 grid max-w-6xl grid-cols-2 gap-3">
+            <KpiCommandCard
+              label={t('activeStudents.label')}
+              subLabel={t('activeStudents.timeWindow', {
+                count: formatNumber(Number(safeData.totalStudents), locale),
+              })}
+              valueDisplay={formatNumber(Number(statsData?.activeStudentsThisWeek ?? 0), locale)}
+              growth={
+                safeData.studentSparkline7d.length >= 2
+                  ? {
+                      current: safeData.studentSparkline7d[safeData.studentSparkline7d.length - 1] ?? 0,
+                      prior: safeData.studentSparkline7d[0] ?? 0,
+                    }
+                  : null
+              }
+              delayMs={0}
+              sparkline={studentSparklinePoints}
+              staleMetrics={kpiStale}
+              locale={locale}
+            />
+            <KpiCommandCard
+              label={t('todayAttendance')}
+              valueDisplay={formatNumber(Number(attendanceTodayCount), locale)}
+              subLabel={
+                <>
+                  {formatPercent(Number(attendancePctOfTotal), locale)}
+                  <span className="mx-1 opacity-80">·</span>
+                  <span>{t('todayAttendanceSub')}</span>
+                </>
+              }
+              growth={{
+                current: attendanceTodayCount,
+                prior: safeData.yesterdayAttendanceCount,
+              }}
+              delayMs={100}
+              sparkline={attendanceSparklinePoints}
+              staleMetrics={kpiStale}
+              locale={locale}
+            />
+            {canViewRevenue ? (
+              <KpiCommandCard
+                label={t('monthlyRevenue')}
+                valueDisplay={formatCurrency(Number(safeData.monthConfirmed), locale)}
+                subLabel={t('monthlyRevenueSub')}
+                growth={
+                  monthlyRevenueRaw.length >= 2
+                    ? {
+                        current: Number(monthlyRevenueRaw[monthlyRevenueRaw.length - 1]?.amount) || 0,
+                        prior: Number(monthlyRevenueRaw[monthlyRevenueRaw.length - 2]?.amount) || 0,
+                      }
+                    : null
+                }
+                delayMs={200}
+                sparkline={revenueMonthlySpark7}
+                staleMetrics={kpiStale}
+                locale={locale}
+              />
+            ) : (
+              <KpiCommandCard
+                label={t('monthlyRevenue')}
+                valueDisplay={
+                  <span className="text-[var(--color-text-muted)] text-xs" aria-hidden>
+                    -
+                  </span>
+                }
+                delayMs={200}
+                sparkline={[]}
+                staleMetrics={kpiStale}
+                locale={locale}
+              />
+            )}
+            <KpiCommandCard
+              label={t('pendingPayments.label')}
+              subLabel={t('pendingPayments.unit')}
+              valueDisplay={formatNumber(Number(safeData.pendingInvoicesCount), locale)}
+              delayMs={300}
+              sparkline={pendingInvoicesSpark7}
+              staleMetrics={kpiStale}
+              locale={locale}
+            />
+          </div>
+
+          <div className="mb-6 max-w-6xl rounded-md border border-[var(--color-line)] shadow-sm bg-[var(--color-panel)] p-4">
+            <div className="mb-1 flex items-start justify-between gap-2">
+              <div>
+                <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{t('atRisk')}</h2>
+                <p className="text-xs text-[var(--color-text-muted)]">{t('atRiskDesc')}</p>
+              </div>
+              <Link
+                href="/students?filter=atrisk"
+                className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-teal-400 hover:text-teal-300 btn-press chq-focus"
+              >
+                {t('viewAll')}
+                <ArrowUpRight className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden />
+              </Link>
+            </div>
+            {atRiskStudents.length === 0 ? (
+              <div className="py-8 text-center text-sm text-[var(--color-text-secondary)] space-y-2">
+                {!atRiskMeta ? (
+                  <p className="text-teal-400">{t('allGood')}</p>
+                ) : atRiskMeta.totalActive === 0 ? (
+                  <p>{t('atRiskNoStudentsYet')}</p>
+                ) : atRiskMeta.avgAttendancePct > 80 ? (
+                  <p className="text-teal-400">{t('allGood')}</p>
+                ) : (
+                  <p className="text-[var(--color-text-muted)]">{t('atRiskStable')}</p>
+                )}
+              </div>
+            ) : (
+              <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {atRiskStudents.slice(0, 6).map((student) => {
+                  const rawPct =
+                    student.attendance_rate_pct ??
+                    atRiskAttendanceIndicator(student.days_since_last_scan);
+                  const pct = Math.min(100, Math.round(rawPct * 10) / 10);
+                  const barColor = pct < 40 ? 'bg-red-500' : 'bg-amber-500';
+                  return (
+                    <li
+                      key={student.id}
+                      className="rounded-md border border-[var(--color-line)] bg-[var(--color-tile)] px-3 py-2.5"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0 flex-1 text-end">
+                          <p className="truncate text-sm font-medium text-[var(--color-text-primary)]">{student.name}</p>
+                          <p className="truncate font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">
+                            {student.student_number ? (
+                              formatStudentNumberForDisplay(student.student_number)
+                            ) : (
+                              <span className="text-[var(--color-text-muted)] text-xs">-</span>
+                            )}
+                          </p>
+                        </div>
+                        <span
+                          className="shrink-0 tabular-nums text-xs font-semibold text-[var(--color-text-secondary)]"
+                          style={{
+                            fontFamily:
+                              'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                          }}
+                        >
+                          {formatPercent(pct, locale)}
+                        </span>
+                      </div>
+                      <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[var(--color-surface-3)]">
+                        <div
+                          className={`h-full rounded-full transition-all ${barColor}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          <div className="mb-4 max-w-6xl">
+            <SectionHeader title={tCommon('sectionTrends')} />
+          </div>
+          <div className="mb-6 grid max-w-6xl grid-cols-1 gap-4 md:grid-cols-5">
+            <div className="md:col-span-3">
+              <ChartCard
+                title={t('attendanceChart')}
+                value={hasAttendanceChartData ? formatNumber(Number(attendanceWeekTotal), locale) : undefined}
+                growthPair={hasAttendanceChartData ? {
+                  current: safeData.thisWeekScanTotal,
+                  prior: safeData.lastWeekScanTotal,
+                } : undefined}
+                trendLabel={hasAttendanceChartData ? t('vsLastWeek') : undefined}
+                minHeight={200}
+                footer={
+                  hasAttendanceChartData && safeData.generatedAt
+                    ? t('chartLastUpdated', {
+                        time: formatRelativeMinutesAgo(safeData.generatedAt, locale),
+                      })
+                    : undefined
+                }
+              >
+                {hasAttendanceChartData ? (
+                  <AreaChartComponent
+                    data={attendanceChart7 as Record<string, string | number>[]}
+                    dataKey="count"
+                    xKey="date"
+                    color="teal"
+                    height={200}
+                    integerYAxis
+                    dedupYAxisTicks
+                  />
+                ) : (
+                  <div className="flex h-[168px] flex-col items-center justify-center gap-2 text-center">
+                    <BarChart3 className="h-8 w-8 text-[var(--color-text-muted)]" aria-hidden />
+                    <p className="text-sm text-[var(--color-text-muted)]">{t('noDataForChart')}</p>
+                  </div>
+                )}
+              </ChartCard>
+            </div>
+            <div className="flex flex-col md:col-span-2">
+              <div className="flex h-full min-h-[240px] flex-col rounded-md border border-[var(--color-line)] shadow-sm bg-[var(--color-panel)] p-4">
+                <p className="text-xs font-medium text-[var(--color-text-muted)]">{t('paymentStatus')}</p>
+                <div className="min-h-0 flex-1">
+                  {hasPaymentStatusData ? (
+                    <DonutChart
+                      data={[
+                        { name: t('paid'), value: safeData.paidCount, color: colors.brand[500] },
+                        { name: t('pending'), value: safeData.pendingCount, color: colors.gold[500] },
+                        { name: t('overdue'), value: safeData.latePaymentCount, color: '#EF4444' },
+                      ]}
+                      height={200}
+                      centerLabel={t('collected')}
+                      centerValue={
+                        canViewRevenue
+                          ? formatCurrency(Number(safeData.monthConfirmed), locale)
+                          : tCommon('noData')
+                      }
+                      suffix=""
+                      tooltipValueFormatter={(v) => formatNumber(Number(v), locale)}
+                      centerValueFill="var(--color-text-primary)"
+                      centerLabelFill="var(--color-text-secondary)"
+                    />
+                  ) : (
+                    <div className="flex h-[168px] flex-col items-center justify-center gap-2 text-center">
+                      <PieChart className="h-8 w-8 text-[var(--color-text-muted)]" aria-hidden />
+                      <p className="text-sm text-[var(--color-text-muted)]">{t('noDataForChart')}</p>
+                    </div>
+                  )}
+                </div>
+                {hasPaymentStatusData && safeData.generatedAt ? (
+                  <p className="mt-2 border-t border-[var(--color-line)] pt-2 text-xs text-[var(--color-text-muted)]">
+                    {t('chartLastUpdated', {
+                      time: formatRelativeMinutesAgo(safeData.generatedAt, locale),
+                    })}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </div>
         </>
       )}
 
