@@ -4,4 +4,5 @@ worktree: /home/user/TutoringHQ/.claude/worktrees/wf_5d2c5083-a24-* (per-agent, 
 branch: claude/parity-teacher-students
 claimed_by: design-parity-build-wave1
 claimed_at: 2026-08-03T13:17:08Z
-released:
+released: 2026-08-03T20:37:07Z
+note: released on PR #310 open (adjudicated release:true; branch carried master merge so the PR cannot revert #308)
