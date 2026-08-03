@@ -777,11 +777,16 @@ export default function GroupsPage() {
             </p>
           )}
         </div>
+        {/* Design (§01, line 391): the 42px icon-only teal square — same
+            conversion as Branches. The label lives in aria-label + title. */}
         <button
+          type="button"
           onClick={openCreateForm}
-          className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
+          aria-label={t('addGroup')}
+          title={t('addGroup')}
+          className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl bg-teal-600 text-white transition-colors hover:bg-teal-700 btn-press chq-focus"
         >
-          <Plus size={16} /> {t('addGroup')}
+          <Plus size={22} aria-hidden />
         </button>
       </div>
 

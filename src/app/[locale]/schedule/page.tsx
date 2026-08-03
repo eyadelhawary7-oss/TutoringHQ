@@ -802,6 +802,11 @@ export default function SchedulePage() {
               <span className="text-sm font-semibold text-[var(--color-text-primary)]" dir="ltr">
                 {weekRangeLabel}
               </span>
+              {/* KEPT against the design, deliberately (recorded in the PR's
+                  flagged list): §05's wnav is prev/label/next only (design
+                  lines 1191-1195), but without this reset a user who paged N
+                  weeks away needs N taps back — the link only renders once
+                  they have left the current week. */}
               {weekOffset !== 0 && (
                 <button
                   type="button"
@@ -906,8 +911,14 @@ export default function SchedulePage() {
                               const isConflict = getConflictingSlotIds.has(slot.id);
                               const partnerName = conflictPartnerName.get(slot.id);
                               const palette = subjectPalette(slot.subject);
+                              // Design (§05, lines 1123-1130): the clash line
+                              // LEADS with the double-booked room — "Room 1
+                              // clash · overlaps Math 5:30".
                               const clashLabel = partnerName
-                                ? t('conflictWith', { name: partnerName })
+                                ? t('conflictWith', {
+                                    room: slot.room_name || tCommon('notAvailable'),
+                                    name: partnerName,
+                                  })
                                 : t('conflictShort');
                               return (
                                 <div
@@ -1088,8 +1099,14 @@ export default function SchedulePage() {
                               now: t('now'),
                               done: t('sessionDone'),
                               members: formatMemberCount(s.member_count ?? 0),
+                              // The conflict line replaces the meta line that
+                              // carries room_name, so it must itself name the
+                              // double-booked room (design §05 clash line).
                               conflict: conflictPartnerName.get(s.id)
-                                ? t('conflictWith', { name: conflictPartnerName.get(s.id) as string })
+                                ? t('conflictWith', {
+                                    room: s.room_name || tCommon('notAvailable'),
+                                    name: conflictPartnerName.get(s.id) as string,
+                                  })
                                 : t('conflictShort'),
                             }}
                           />
@@ -1124,7 +1141,10 @@ export default function SchedulePage() {
                         done: t('sessionDone'),
                         members: formatMemberCount(session.member_count ?? 0),
                         conflict: conflictPartnerName.get(session.id)
-                          ? t('conflictWith', { name: conflictPartnerName.get(session.id) as string })
+                          ? t('conflictWith', {
+                              room: session.room_name || tCommon('notAvailable'),
+                              name: conflictPartnerName.get(session.id) as string,
+                            })
                           : t('conflictShort'),
                       }}
                     />

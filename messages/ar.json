@@ -968,8 +968,8 @@
       "action": "عرض الماسح"
     },
     "groups": {
-      "title": "لم يتم إنشاء مجموعات بعد",
-      "description": "أنشئ مجموعات لتنظيم الطلاب حسب المادة",
+      "title": "لا توجد مجموعات بعد",
+      "description": "أنشئ أول مجموعة دراسية لضم الطلاب وتحديد الرسوم وتسجيل الحضور.",
       "action": "إضافة مجموعة"
     },
     "schedule": {
@@ -1597,7 +1597,7 @@
     "thisWeek": "هذا الأسبوع",
     "previousWeek": "الأسبوع السابق",
     "nextWeek": "الأسبوع القادم",
-    "conflictWith": "يتعارض مع {name}",
+    "conflictWith": "تعارض {room} · يتداخل مع {name}",
     "thu": "الخميس",
     "time": "الوقت",
     "title": "الجدول",
@@ -5603,11 +5603,11 @@
       "newSubjectOption": "+ مادة جديدة",
       "newSubjectPlaceholder": "اسم المادة"
     },
-    "enrolledOfCapacity": "{count} من {capacity}",
+    "enrolledOfCapacity": "{count}/{capacity}",
     "groupFull": "مكتملة",
     "headerCount": "{groups} مجموعات · {subjects} مواد",
     "headerCountEmpty": "لا شيء بعد",
-    "centerCutPct": "{pct} للسنتر",
+    "centerCutPct": "{pct} للمركز",
     "membersCount": "الأعضاء · {count}",
     "waitlistCount": "قائمة الانتظار · {count}",
     "presentOfSessions": "حضر {present}/{total}",
@@ -6352,7 +6352,7 @@
     "scheduleCount": "الجلسات",
     "allRooms": "كل الغرف",
     "noRoomsTitle": "لا توجد قاعات بعد",
-    "noRoomsDescription": "القاعات مساحات فعلية أو افتراضية حيث تُعقد الحصص. أنشئ قاعة لتبدأ الجدولة.",
+    "noRoomsDescription": "أضف أول قاعة حتى يمكن جدولة الحصص ورصد التعارضات.",
     "deleteConfirm": "هل تريد حذف هذه الغرفة؟ سيتم حذف أي حصص مجدولة فيها أيضًا.",
     "editRoom": "تعديل الغرفة",
     "delete": "حذف",

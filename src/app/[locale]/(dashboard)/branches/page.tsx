@@ -417,27 +417,43 @@ export default function BranchesPage() {
               <ExpandableRow
                 title={b.name}
                 meta={
-                  <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <>
                     {/* Design (§04): "12 El-Nasr St · main branch". The tag is
                         the min-created_at derivation; with no created_at data
                         no branch claims to be main. */}
                     {(() => {
                       const tag = mainBranchId == null ? null : b.id === mainBranchId ? t('mainBranch') : t('branchTag');
                       const line = [b.district, tag].filter(Boolean).join(' · ');
-                      return line ? <span>{line}</span> : null;
+                      return line ? <span className="block truncate">{line}</span> : null;
                     })()}
-                    <span className="font-mono tabular-nums">
-                      {formatNumber(b.students, locale)} {t('studentsLower')}
+                    {/* Design (§04, .mstat at ~1000-1017): three flex-1
+                        stacked value-over-label stat columns — .mv 15px/700
+                        mono over .ml 11px muted. Composed here because
+                        ExpandableRow is a read-only shared primitive; spans
+                        only, since this renders inside its title <button>. */}
+                    <span className="mt-2 flex gap-2">
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="truncate font-mono text-[15px] font-bold tabular-nums text-[var(--color-ink)]">
+                          {formatNumber(b.students, locale)}
+                        </span>
+                        <span className="mt-1 truncate text-[11px] text-[var(--color-muted)]">{t('studentsLower')}</span>
+                      </span>
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="truncate font-mono text-[15px] font-bold tabular-nums text-[var(--color-ink)]">
+                          {formatNumber(b.mrr, locale)}
+                        </span>
+                        <span className="mt-1 truncate text-[11px] text-[var(--color-muted)]">{t('egpPerMonth')}</span>
+                      </span>
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        {/* An em dash, never 0% — a branch with no session in
+                            the window has no attendance rate to report. */}
+                        <span className="truncate font-mono text-[15px] font-bold tabular-nums text-[var(--color-ink)]">
+                          {b.attendance_pct != null ? formatPercent(b.attendance_pct, locale) : '—'}
+                        </span>
+                        <span className="mt-1 truncate text-[11px] text-[var(--color-muted)]">{t('attendance')}</span>
+                      </span>
                     </span>
-                    <span className="font-mono tabular-nums">
-                      {formatNumber(b.mrr, locale)} {t('egpPerMonth')}
-                    </span>
-                    {/* An em dash, never 0% — a branch with no session in the
-                        window has no attendance rate to report. */}
-                    <span className="font-mono tabular-nums">
-                      {b.attendance_pct != null ? formatPercent(b.attendance_pct, locale) : '—'} {t('attendance')}
-                    </span>
-                  </span>
+                  </>
                 }
                 badge={
                   isCurrent ? (

@@ -968,8 +968,8 @@
       "action": "View Scanner"
     },
     "groups": {
-      "title": "No groups created yet",
-      "description": "Create groups to organize students by subject",
+      "title": "No groups yet",
+      "description": "Create your first class group to enrol students, set a fee, and take attendance.",
       "action": "Add Group"
     },
     "schedule": {
@@ -3158,7 +3158,7 @@
       "newSubjectOption": "+ New subject",
       "newSubjectPlaceholder": "Subject name"
     },
-    "enrolledOfCapacity": "{count} of {capacity}",
+    "enrolledOfCapacity": "{count}/{capacity}",
     "groupFull": "Full",
     "headerCount": "{groups} groups · {subjects} subjects",
     "headerCountEmpty": "None yet",
@@ -3320,7 +3320,7 @@
     "scheduleCount": "Sessions",
     "allRooms": "All Rooms",
     "noRoomsTitle": "No rooms yet",
-    "noRoomsDescription": "Rooms are physical or virtual spaces where sessions happen. Create one to build your schedule.",
+    "noRoomsDescription": "Add your first room so sessions can be scheduled and clashes flagged.",
     "deleteConfirm": "Delete this room? Any scheduled classes in it will be removed too.",
     "editRoom": "Edit room",
     "delete": "Delete",
@@ -3387,7 +3387,7 @@
     "thisWeek": "This Week",
     "previousWeek": "Previous week",
     "nextWeek": "Next week",
-    "conflictWith": "Overlaps {name}",
+    "conflictWith": "{room} clash · overlaps {name}",
     "noSessionsToday": "No sessions today",
     "noSessionsWeek": "No other sessions this week",
     "noSessionsSelectedDay": "No sessions on this day",

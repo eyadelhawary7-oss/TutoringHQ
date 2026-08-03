@@ -97,10 +97,18 @@ export async function GET(request: NextRequest) {
         .in('center_id', centerIds)
         .gte('paid_at', monthStart.toISOString())
         .lte('paid_at', monthEnd.toISOString()),
+      // ACTIVE students only (`students.is_active` verified in
+      // information_schema.columns, 2026-08-03): excludes is_active = false,
+      // keeps true + legacy NULL — the exact semantics of the `activeOnly`
+      // flag the outstanding calc below already uses (studentBalance.ts).
+      // Deliberate: this count feeds BOTH the attendance-rate denominator and
+      // the per-branch/Total Students KPI, so both now report the active
+      // roster rather than every row ever created.
       supabaseAdmin
         .from('students')
         .select('center_id')
-        .in('center_id', centerIds),
+        .in('center_id', centerIds)
+        .not('is_active', 'is', false),
       supabaseAdmin
         .from('users')
         .select('center_id')

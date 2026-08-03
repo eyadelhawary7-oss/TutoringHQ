@@ -48,6 +48,7 @@ export default function RoomsPage() {
   const [editError, setEditError] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const loadData = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -195,13 +196,23 @@ export default function RoomsPage() {
   const handleDeleteRoom = async (roomId: string) => {
     if (!centerId || !userId) return;
     setIsDeleting(true);
-    await dbDelete({
+    setDeleteError('');
+    const { error } = await dbDelete({
       table: 'rooms',
       filters: [
         { column: 'id', op: 'eq', value: roomId },
         { column: 'center_id', op: 'eq', value: centerId },
       ],
     });
+    // dbRequest resolves { data: null, error } instead of throwing, so this
+    // check is the only thing standing between a rejected delete (centre
+    // lock, CSRF 403, 5xx) and a forged success: without it we would still
+    // write the room_delete audit row and drop the room from state.
+    if (error) {
+      setDeleteError(typeof error === 'object' && error?.message ? String(error.message) : t('deleteInUse'));
+      setIsDeleting(false);
+      return;
+    }
     await auditLog({ centerId, userId, action: 'room_delete', entityType: 'rooms', entityId: roomId });
     setRooms(prev => prev.filter(r => r.id !== roomId));
     setConfirmDeleteId(null);
@@ -210,7 +221,16 @@ export default function RoomsPage() {
 
   const roomSheetActions = (room: Room): SheetAction[] => [
     { id: 'edit', label: tCommon('edit'), icon: Pencil, onSelect: () => openEdit(room) },
-    { id: 'delete', label: t('delete'), icon: Trash2, destructive: true, onSelect: () => setConfirmDeleteId(room.id) },
+    {
+      id: 'delete',
+      label: t('delete'),
+      icon: Trash2,
+      destructive: true,
+      onSelect: () => {
+        setDeleteError('');
+        setConfirmDeleteId(room.id);
+      },
+    },
   ];
 
   return (
@@ -223,16 +243,26 @@ export default function RoomsPage() {
             <p className="truncate text-sm text-[var(--color-text-secondary)] mt-0.5">{centerName}</p>
           )}
         </div>
+        {/* Design (§03, line 848): the 42px icon-only teal square — same
+            conversion as Branches. The label lives in aria-label + title. */}
         <button
           type="button"
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
+          aria-label={t('addRoom')}
+          title={t('addRoom')}
+          className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl bg-teal-600 text-white transition-colors hover:bg-teal-700 btn-press chq-focus"
         >
-          <Plus size={16} /> {t('addRoom')}
+          <Plus size={22} aria-hidden />
         </button>
       </div>
 
       <div className="relative min-h-[min(50vh,20rem)]">
+        {/* KEPT against the design, deliberately (recorded in the PR's flagged
+            list): §03 draws no loading frame for Rooms, but with no loading
+            state the "No rooms yet" empty screen would flash — a false claim —
+            on every visit while the list is still fetching. Groups' skeletons
+            are §01-designed; inventing matching skeletons here would be
+            undrawn design, so the minimal spinner stays. */}
         {isLoading && (
           <div
             className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-[var(--color-surface-0)]/80 backdrop-blur-[1px]"
@@ -301,23 +331,33 @@ export default function RoomsPage() {
                       one tap destroys a centre's schedule with no warning and
                       no error to recover from. */}
                   {confirmDeleteId === r.id && (
-                    <div className="mt-3 flex items-center gap-3 rounded-lg bg-[var(--color-surface-2)] p-2.5">
-                      <p className="flex-1 text-xs text-[var(--color-text-primary)]">{t('deleteConfirm')}</p>
-                      <button
-                        type="button"
-                        onClick={() => setConfirmDeleteId(null)}
-                        className="text-xs font-semibold text-[var(--color-text-secondary)] hover:underline"
-                      >
-                        {tCommon('cancel')}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={isDeleting}
-                        onClick={() => void handleDeleteRoom(r.id)}
-                        className="text-xs font-semibold text-[var(--color-danger)] hover:underline disabled:opacity-50"
-                      >
-                        {t('confirmDelete')}
-                      </button>
+                    <div className="mt-3 rounded-lg bg-[var(--color-surface-2)] p-2.5">
+                      <div className="flex items-center gap-3">
+                        <p className="flex-1 text-xs text-[var(--color-text-primary)]">{t('deleteConfirm')}</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setConfirmDeleteId(null);
+                            setDeleteError('');
+                          }}
+                          className="text-xs font-semibold text-[var(--color-text-secondary)] hover:underline"
+                        >
+                          {tCommon('cancel')}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isDeleting}
+                          onClick={() => void handleDeleteRoom(r.id)}
+                          className="text-xs font-semibold text-[var(--color-danger)] hover:underline disabled:opacity-50"
+                        >
+                          {t('confirmDelete')}
+                        </button>
+                      </div>
+                      {deleteError && (
+                        <p role="alert" className="mt-1.5 text-xs font-semibold text-[var(--color-danger)]">
+                          {deleteError}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
