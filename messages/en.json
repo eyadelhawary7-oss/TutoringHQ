@@ -39,7 +39,7 @@
     "capLabelCenter": "How many students a week?",
     "teacherLabel": "A teacher",
     "teacherFreeLine": "<b>Teaching only at centers is free, for good.</b> You see your groups, your students and your cut, and you pay nothing.",
-    "capLabelTeacher": "Running your own groups? How many students a week?",
+    "capLabelTeacher": "Running your own groups? How many active students a month?",
     "chipPlus": "{count}+",
     "perMonthUnit": "EGP a month",
     "perFirstUnit": "EGP for the first {count}",
@@ -47,9 +47,9 @@
     "altMonthly": "Or <b>{monthly} EGP a month</b> paid yearly, which is <b>{total} EGP</b> for the year.",
     "altAnnual": "You pay <b>{total} EGP</b> once. Ten months instead of twelve.",
     "overageMonthly": "Every student after that adds <b>{rate} EGP</b> a month.",
-    "overageAnnual": "Every student after that adds <b>{rate} EGP</b> a month, which is {yearly} EGP a year.",
+    "overageAnnual": "Every student after that adds <b>{rate} EGP</b> a month, billed monthly even on annual.",
     "exampleMonthly": "<b>{students} students</b> is {total} EGP a month, or {each} EGP each.",
-    "exampleAnnual": "<b>{students} students</b> is {total} EGP a month, or {each} EGP each. The two free months count on the extra students too.",
+    "exampleAnnual": "<b>{students} students</b> is {total} EGP a month, or {each} EGP each. The two free months apply to the base plan, not to the extra students.",
     "topCentersNote": "More than {count} students is Top Centers, and it is priced with you rather than off a list.",
     "teacherTier": {
       "teacher_standard": "Standard",
@@ -72,9 +72,16 @@
         "Students, groups and schedules",
         "Income, receipts and invoices",
         "Withdrawals to your own account",
-        "Everything exportable, any time you want to leave"
+        "Excel export of everything, from the Pro plan up"
       ],
       "punch": "Nobody pays more for a better product here. They pay more for a bigger one."
+    },
+    "addons": {
+      "kick": "If you need more",
+      "heading": "Add-ons",
+      "waPackName": "Parent WhatsApp pack",
+      "waPackSub": "Check-in, balance and absence alerts, sent to parents on their own",
+      "waPackPrice": "{price} / parent / mo"
     },
     "notes": {
       "vat": "<b>Every price on this page includes VAT.</b> Nothing is added at checkout.",
@@ -6693,7 +6700,7 @@
       "heading": "What center owners ask first",
       "q1": {
         "question": "Who owns what I put in?",
-        "answer": "You do. Export all of it to Excel in one action and leave whenever you like. We do not hold your students hostage to keep you subscribed."
+        "answer": "You do. From the Pro plan up you export all of it to Excel in one action, and you can leave whenever you like. We do not hold your students hostage to keep you subscribed."
       },
       "q2": {
         "question": "What if the internet drops mid-class?",
@@ -6701,7 +6708,7 @@
       },
       "q3": {
         "question": "How do I pay you?",
-        "answer": "Through Paymob: Visa, Mastercard, Meeza, mobile wallets like Vodafone Cash, or cash at kiosks such as Aman and Masary. Pay however suits you."
+        "answer": "By card, online, through Paymob. You can save your card so renewals go through on their own, and swap it whenever you like."
       },
       "q4": {
         "question": "Can I move plan later?",
@@ -9651,13 +9658,13 @@
       "freeCapacity": "Watch your cut from every center",
       "freePrice": "Free",
       "standardName": "Standard",
-      "standardCapacity": "{count} a week · {days} day trial",
+      "standardCapacity": "{count} active students a month · {days} day trial",
       "proName": "Pro",
-      "proCapacity": "{count} a week · analytics included",
+      "proCapacity": "{count} active students a month · analytics included",
       "scaleName": "Scale",
-      "scaleCapacity": "{count} a week, then {each} each. No ceiling",
+      "scaleCapacity": "{count} active students a month, then {each} each. No ceiling",
       "cta": "All plans and add-ons",
-      "undercta": "EGP a month, VAT included. Annual is two months free, on the extra students too."
+      "undercta": "EGP a month, VAT included. Annual is two months free on the base plan; extra students are billed monthly."
     }
   },
   "teacherBilling": {

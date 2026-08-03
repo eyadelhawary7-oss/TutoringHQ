@@ -13,6 +13,7 @@ import {
 import { teacherScaleExample } from '@/lib/pricing/teacherScaleExample';
 import { TEACHER_PLANS } from '@/lib/teacherPlans';
 import { usePublicPlanPrices } from '@/hooks/usePublicPlanPrices';
+import { usePublicWhatsappPackPrice } from '@/hooks/usePublicWhatsappPackPrice';
 import { usePublicAnnualMultiplier } from '@/components/summer/useSummerPublicConfig';
 import MarketingNav from '@/components/marketing/MarketingNav';
 import Kicker from '@/components/marketing/Kicker';
@@ -37,14 +38,22 @@ import MarketingFooter from '@/components/landing/MarketingFooter';
  *     anywhere in `public`; the design file says so itself. Rendering
  *     "Branches: 3" beside a real price would be a fabricated commitment. Only
  *     `weekly_student_limit` exists, and it is already the chip.
- *  2. The Add-ons rows (extra branch, team seat, advanced analytics, instant
- *     payout). No add-on price table exists and no constants exist in
- *     `src/lib/pricing*`. The four NOTES that sit under them are all checkable,
- *     so they survive and attach to the section above.
+ *  2. The Add-ons rows OTHER THAN the parent WhatsApp pack — extra branch,
+ *     team seat, standalone advanced analytics, blast packs "from 200", and
+ *     instant payout. No live price table or `platform_config` key exists for
+ *     any of those, so rendering their prices would fabricate commitments the
+ *     billing engine cannot honour. The parent WhatsApp pack row IS built: its
+ *     price is live config (`platform_config.pack_price_per_parent`, read by
+ *     `getAddonPrices()` in `pricingConfig.ts` and billed per parent by
+ *     `invoiceTemplates.ts`), served here via `/api/pricing/public-config`.
+ *     A `pricing_addons` table, if Eyad ever creates one for the other rows,
+ *     must EXCLUDE the parent WhatsApp price — a second home for a figure the
+ *     engine already bills from `platform_config` would let the two drift.
  *
  * Every figure on this page is live: center prices and caps from
- * `pricing_plans`, teacher prices/caps/trial/overage from `TEACHER_PLANS`, and
- * the annual multiplier from `pricing.interval.annual_multiplier`.
+ * `pricing_plans`, teacher prices/caps/trial/overage from `TEACHER_PLANS`, the
+ * annual multiplier from `pricing.interval.annual_multiplier`, and the parent
+ * WhatsApp pack price from `pack_price_per_parent`.
  */
 
 /** Worked example for the no-ceiling tier. Must sit above the Scale cap. */
@@ -75,6 +84,7 @@ export default function PricingPageClient() {
 
   const dyn = usePublicPlanPrices();
   const annualMultiplier = usePublicAnnualMultiplier();
+  const waPackPrice = usePublicWhatsappPackPrice();
 
   const n = (v: number) => formatNumber(v, locale);
   const n2 = (v: number) =>
@@ -121,9 +131,14 @@ export default function PricingPageClient() {
   const teacherAnnualTotal = getAnnualChargeRounded(teacherMonthly, annualMultiplier);
   const teacherShown = billing === 'annual' ? teacherAnnualMonthly : teacherMonthly;
 
-  // The no-ceiling readout's math lives in one pure, unit-tested helper
-  // (design L1864-1897): annual applies the same two-months-free multiplier to
-  // the overage rate as to the base, so the curve does not bend at the cap.
+  // The no-ceiling readout's math lives in one pure, unit-tested helper —
+  // with one deliberate divergence from the design's algorithm (L1864-1897):
+  // the two-months-free multiplier discounts the BASE only. The engine bills
+  // Scale overage at the flat monthly rate every month, annual subscribers
+  // included (`teacherOverageAmount` takes no interval; the
+  // `ensureTeacherOverageInvoice` cadence is monthly and independent of the
+  // base cycle), so a discounted annual overage rate would understate the
+  // invoice.
   const scaleEx = teacherScaleExample({
     baseMonthly: scale.priceGross,
     studentCap: scale.studentCap,
@@ -380,8 +395,7 @@ export default function PricingPageClient() {
                     {billing === 'monthly'
                       ? t.rich('overageMonthly', { rate: n(teacher.overage), b: bold })
                       : t.rich('overageAnnual', {
-                          rate: n2(scaleEx.overageRate),
-                          yearly: n(scaleEx.overageYearly),
+                          rate: n(scaleEx.overageRate),
                           b: bold,
                         })}
                   </p>
@@ -474,11 +488,37 @@ export default function PricingPageClient() {
           <p className="mt-4 text-[15px] font-bold leading-relaxed text-[var(--color-ink)]">
             {t('same.punch')}
           </p>
+        </div>
+      </section>
 
-          {/* The four notes from the design's Add-ons section. Every one is
-              checkable against live config — VAT 14% inclusive, the annual
-              multiplier, one trial per phone, cancel-to-period-end — so they
-              ship even though the add-on price rows above them cannot. */}
+      {/* ── Add-ons ───────────────────────────────────────────────────── */}
+      <section className="px-6 py-12">
+        <div className="mx-auto w-full max-w-2xl">
+          <Kicker>{t('addons.kick')}</Kicker>
+          <h2 className={sectionHead}>{t('addons.heading')}</h2>
+
+          {/* One row where the design draws six: the parent WhatsApp pack is
+              the only add-on whose price exists in live config
+              (`pack_price_per_parent` — the figure pack billing invoices per
+              parent). The other drawn rows have no live source; see the
+              header comment. */}
+          <div className="mt-4 flex items-center gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13px] font-semibold leading-snug text-[var(--color-ink)]">
+                {t('addons.waPackName')}
+              </span>
+              <span className="mt-1 block text-[11px] leading-relaxed text-[var(--color-muted)]">
+                {t('addons.waPackSub')}
+              </span>
+            </span>
+            <span className="mkt-mono shrink-0 whitespace-nowrap text-[13px] font-medium text-[var(--color-ink)]">
+              {t('addons.waPackPrice', { price: n(waPackPrice) })}
+            </span>
+          </div>
+
+          {/* The design's four notes, drawn under the add-on rows. Every one
+              is checkable against live config — VAT 14% inclusive, the annual
+              multiplier, one trial per phone, cancel-to-period-end. */}
           <div className="mt-4 flex flex-col gap-2">
             {notes.map((key) => (
               <p key={key} className="mkt-note text-xs leading-snug text-[var(--color-mid)]">
