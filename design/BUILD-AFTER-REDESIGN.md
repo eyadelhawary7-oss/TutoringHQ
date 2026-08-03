@@ -1250,6 +1250,67 @@ doc and `db/schema.snapshot`, same "drop or document" decision as before, not re
 - **Touches:** `src/config/site.ts`, `src/lib/supportWhatsApp.ts`, and every call site currently reading either source directly. No schema, no protected file.
 - **Blocked by:** nothing product-level — this is mechanical (pick one source, repoint every reader), but wasn't attempted in-pass since it touches multiple files beyond `Public-Marketing`'s own territory.
 
+## R11 · Center-Home dashboard — four live sections removed because the design does not draw them (Eyad, 3 Aug: "Design wins. Identical means identical.")
+Removed from `src/app/[locale]/dashboard/page.tsx`. **Nothing here is a placement decision** — per Eyad's Q2 answer, they are recorded where they lived and no new location is invented. Whether any of them returns, and where, is his call against a design that specifies it.
+
+| Removed | Lived at (pre-removal lines) | What it was | Data source | Still reachable elsewhere? |
+|---|---|---|---|---|
+| **Quick Actions** | 1361–1397, directly under the header | 4 nav tiles: Add student → `/students?action=add`, Record attendance → `/attendance`, Collect payment → `/payments?action=collect`, Send report → `POST /api/dashboard/send-daily-summary` | none (3 links) + 1 mutation | **3 of 4 yes** — all three links are ordinary nav to pages reachable from the sidebar. **"Send report" is the exception: this tile was its only trigger in the entire app** (`onSendReport`, removed with it). The cron `daily-summary` still runs; only the manual "send it now" button is gone. |
+| **At a glance** | 1589–1672, below Schedule | 4 `KpiCommandCard`s with sparklines + growth: Active students, Today's attendance, Monthly revenue, Pending payments | `statsData`, `safeData` | Partly — the same figures exist on `/students` and `/payments`; the sparkline+growth presentation does not exist anywhere else. |
+| **At risk students** | 1674–1745 | Up to 6 students with attendance % and a bar, "View all" → `/students?filter=atrisk` | `GET /api/students/at-risk` | **Yes, fully.** `src/components/students/AtRiskPanel.tsx` still calls the same route, so the feature survives; only the dashboard copy is gone. The route is **not** orphaned. |
+| **Trends** | 1747–1826 | Attendance area chart (7-day, vs-last-week growth) + payment-status donut (paid/pending/overdue, "Collected" centre value) | `safeData.trendData`, `paidCount`/`pendingCount`/`latePaymentCount` | **No.** These two charts existed only here. `/analytics` is a different, admin-scoped surface. |
+
+**Cascade removed with them** (all verified dead by lint after the fact, `0 errors`): the `at-risk` fetch effect and its realtime refetch, `onSendReport`, `KpiCommandCard`, `atRiskAttendanceIndicator`, `formatMonthLabel` + `AR_MONTHS`/`EN_MONTHS`, `formatAttendanceChartDayLabel`, six sparkline/chart memos, `canViewRevenue`, and 13 imports. The loading skeleton was rewritten to mirror the new (shorter) page rather than keep promising two charts that no longer render. Two `react-hooks/exhaustive-deps` warnings remain and are **pre-existing** — present in the same two places before this change.
+
+**Two things deliberately left alone, flagged rather than removed.** Both are live-only (the design draws neither) but removing them destroys function with no design replacement, which is a different decision than Q1/Q2:
+- **`PlanUsageCard`** (still at the top) — the only warning a center gets before hitting its student cap.
+- **The `MoreVertical` actions menu** — the only entry point to Excel/CSV export, a plan-gated **paid** feature.
+- Also left: the plan pill, the greeting in the H1 (design shows the bare center name), the enrollment-surge alert, and the payment-overdue banner. The last one is a suspension warning; removing it to match a design that never modelled billing state would be a safety regression, not fidelity.
+
+**Orphaned i18n keys, left in place on purpose.** ~15 `dashboard.*` keys now have zero call sites (`atRiskDesc`, `allGood`, `atRiskNoStudentsYet`, `atRiskStable`, `attendanceChart`, `paymentStatus`, `chartLastUpdated`, `noDataForChart`, `sendReport`, `todayAttendance`, `pendingPayments`, the four `dailySummary*` toasts, …). `check-i18n` enforces ar/en **parity**, not usage, so they do not fail the gate. Deleting them is a separate two-file change and would be premature while the sections' return is undecided. **`common.sectionAtAGlance` must not be deleted** — `/admin/billing`, `/admin/analytics`, `/students` and `/payments` all still render it.
+
+**Pre-existing finding surfaced by the cleanup, not caused by it:** removing the At-a-glance monthly-revenue card removed the last consumer of `canViewRevenue` on this page — but the "Today · Collected" KPI shows a money figure and **was never gated by it**. That was true before this change too. It is now the only money figure on the dashboard, and it is ungated. Not fixed here (the design draws it unconditionally); flagged for a call.
+
+> **SUPERSEDED, 3 August 2026 — the code half of this entry was not merged.** A parallel session
+> (`pipeline/center-home-dashboard`, commits `5dd6d747` + `e242bb84`) did the same §01 rebuild and did
+> it better. Its work is kept; mine was withdrawn from PR #305, which is now docs-only. What theirs has
+> that mine did not:
+> - **`src/app/[locale]/dashboard/loading.tsx` — I missed this file entirely.** It still painted the
+>   *deleted* screen (`max-w-7xl mx-auto`, 4-up KPI grid, two chart panels, `rounded-xl`), so with my
+>   version merged every navigation to `/dashboard` would have flashed the design I had just removed.
+>   A real defect in my work, not a difference of opinion.
+> - **Two Cairo-day money bugs I did not find.** The digital-share meter bucketed payments by
+>   `new Date(p.paid_at).toISOString().slice(0,10)` — a **UTC** date — against Cairo day keys, so every
+>   payment taken between Cairo midnight and 02:00/03:00 bucketed a day early and Saturday's fell out of
+>   the week entirely; both the percentage and the EGP total under-reported. And the Collected KPI used
+>   the **device's** midnight (`setHours(0,0,0,0)`) rather than Cairo's.
+> - **The orphaned i18n keys cleaned up**, which I had deliberately left.
+> The `AlertCircle` glyph I added is already present in theirs, identically.
+>
+> **One difference that is a genuine decision, not a defect — it needs Eyad.** Their rebuild removes the
+> three live-only elements I deliberately kept and flagged above: the **payment-overdue / suspension
+> banner**, **`PlanUsageCard`**, and the **actions menu** (the only entry point to plan-gated Excel/CSV
+> export). Theirs is the stricter reading of "identical means identical" and may well be what was wanted.
+> But it means a centre about to be suspended for non-payment gets no warning on its home screen, and a
+> centre approaching its student cap gets none either. Recorded here rather than resolved either way.
+
+**Found/done:** 3 August 2026, Center-Home §01 restructure. Gates green: `tsc --noEmit` clean, `eslint` 0 errors, `i18n:check` / `check:bidi` / `check:tolocale` all OK.
+
+## R12 · STOPPED — the "Verified" badge has no Valify credentials config point to build against, because no Valify integration exists at all
+**Instruction, Eyad, 3 Aug:** *"Verified badge: build it against the Valify credentials config point, placeholder credentials, fails visibly."* **Stopped and reported.** The named config point does not exist — not as a placeholder, not as an unset env var, not as a `platform_config` key.
+
+**Verified, three ways, 3 August 2026:**
+1. **Live schema.** `information_schema.columns` for `public.centers`, matching `%verif%`, `%valify%`, `%kyc%`, `%ident%` → **zero rows**. There is nowhere to store a per-center verification state.
+2. **Live config.** `platform_config` matching the same four patterns → **zero rows**. There is no credentials slot to populate, placeholder or otherwise.
+3. **Whole repo.** `valify` (case-insensitive) across `src/`, `scripts/`, `supabase/`, `messages/` → **3 hits, all of them comments saying it is not built**: `src/components/admin/AccountDetailHeader.tsx:15`, `src/components/admin/PlatformOverviewHeader.tsx:14`, `src/lib/centerAccountMetrics.ts:23`. No client, no env var, no route, no call site.
+
+**Why this is a stop and not a judgement call.** The instruction's own escape hatch — placeholder credentials that *fail visibly* — presumes a code path that attempts verification and can fail. There is no such path. The only things buildable today are (a) a badge hardcoded to "unverified", which is a lie dressed as a feature since it asserts a checked state that was never checked, or (b) a badge wired to a new `centers` column, which is exactly the *"anything needing a new column, table, or migration stops and reports to me"* rule. Both are stops. It also fails the same test as the blocked balance card: a "Verified" chip that no verification produced is the fake this instruction set out to prevent.
+
+**What unblocking actually needs, smallest first:** a Valify vendor agreement and sandbox credentials (nobody is named for this — see `STATE-OF-THE-BUILD.md` §5 item 3) → an env/`platform_config` credentials slot → a verification column or table on `centers` **(migration, needs Eyad)** → the client and the badge. The badge is the last 5% of that chain, not the first.
+
+**Left in the code as an explicit absence,** with the evidence inline, rather than silently omitted: see the block comment above the alert row in `src/app/[locale]/dashboard/page.tsx`.
+
+**Found:** 3 August 2026, Center-Home §01 feature-gap pass.
 ## S10 · A super-admin can exist with no database row at all, and the "row" check doesn't require a row
 - **What:** `SUPER_ADMIN_PHONES` (an env var) grants full super-admin authority on its own, with no corresponding `admin_users` record. `src/lib/admin-auth.ts` returns a session on `if (!adminRow && !adminByPhone) return null;` — the phone alone suffices — and then unconditionally assigns `internalRole = 'super_admin'` for `adminByPhone`, the top of the ladder. Verified live 3 August 2026: `admin_users` holds exactly **1** `super_admin` row (plus 1 `sales_manager`), so anyone else holding this authority today holds it entirely off-catalog.
 - **The second gate is not a second gate.** `requireSuperAdminRow` (`src/lib/admin-access.ts:136`) — the function whose name promises a database row — computes `adminUser?.role === 'super_admin' || isSuperAdminPhone(sessionPhone)`. It reads the *same env var* as the first check. Routes that call it believing they've added an independent DB-backed verification have added nothing. The name actively misleads; that's the part most likely to cause a future mistake.
