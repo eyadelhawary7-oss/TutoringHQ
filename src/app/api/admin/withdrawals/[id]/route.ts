@@ -5,6 +5,7 @@ import { sendWithdrawalProcessed } from '@/lib/centerNotify';
 import { formatNumber } from '@/lib/formatNumber';
 import { ownerContactByCenterId, resolveOwnerWaPhone } from '@/lib/ownerPhone';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { validateCSRFRequest } from '@/lib/csrf';
 
 const WA_AR = 'ar';
 
@@ -19,6 +20,15 @@ export async function PATCH(
   const row403 = await requireSuperAdminRow(auth.supabaseAdmin, auth.userId);
   if (row403) return row403;
   // super_admin only; can_approve_signups does not apply.
+  // PAYOUT-SYSTEM-SPEC.md §2.6 — the serious one. This is the gate that
+  // RELEASES real money, and it had no CSRF check. `requireSuperAdminApi`
+  // accepts a cookie session as well as a bearer token, which is exactly the
+  // scenario CSRF protection exists for. The admin/withdrawals client already
+  // sends X-CSRF-Token / X-Session-ID via getAuthHeaders, so this validates
+  // what is already being sent rather than breaking the UI.
+  if (!validateCSRFRequest(request, auth.userId)) {
+    return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+  }
 
   const { id: withdrawalId } = await params;
 

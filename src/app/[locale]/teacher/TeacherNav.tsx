@@ -1,6 +1,6 @@
 'use client';
 
-import { useTransition } from 'react';
+import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   Home,
@@ -16,13 +16,16 @@ import {
   LogOut,
   Globe2,
   Menu,
+  MoreHorizontal,
   ChevronRight,
   ChevronLeft,
   type LucideIcon,
 } from 'lucide-react';
 import { usePathname, useRouter } from '@/i18n/routing';
-import { supabase } from '@/lib/supabase';
 import { signOutToLogin } from '@/lib/auth/sign-out-client';
+import TeacherMoreSheet, { type MoreSheetItem } from './TeacherMoreSheet';
+import { useLocaleToggle } from './useLocaleToggle';
+import { hidesTeacherTabBar } from './teacherChrome';
 
 /**
  * Teacher portal navigation - persistent sidebar on desktop, bottom tab bar on
@@ -60,8 +63,11 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'settings', icon: Settings, route: '/teacher/settings' },
 ];
 
-// Compact subset for the mobile bottom tab bar.
-const MOBILE_KEYS = ['home', 'schedule', 'centers', 'income', 'groups', 'settings'];
+// The design's five-tab bar: four destinations plus More.
+const MOBILE_KEYS = ['home', 'schedule', 'centers', 'income'];
+
+// Everything the More sheet holds — the nav items the tab bar no longer shows.
+const MORE_KEYS = ['analytics', 'groups', 'students', 'billing', 'settings'];
 
 export default function TeacherNav({
   privateAccess,
@@ -76,29 +82,10 @@ export default function TeacherNav({
   const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
-  const [, startTransition] = useTransition();
+  const [moreOpen, setMoreOpen] = useState(false);
 
-  // Switch locale while keeping the current route (next-intl rewrites the
-  // prefix). Persist the choice server-side, best-effort, like the center
-  // sidebar - a failure there never blocks the visual switch.
-  const toggleLocale = () => {
-    const newLocale = locale === 'ar' ? 'en' : 'ar';
-    startTransition(() => {
-      router.replace(pathname, { locale: newLocale });
-    });
-    void (async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
-      fetch('/api/user/locale', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ locale: newLocale }),
-      }).catch(() => undefined);
-    })();
-  };
+  // Shared with the mobile appbar globe so the two switches cannot drift.
+  const toggleLocale = useLocaleToggle();
 
   // Collapsed rail expands toward the inline-end (content) direction; mirror
   // the chevron per locale, the same way the codebase mirrors back arrows.
@@ -112,6 +99,20 @@ export default function TeacherNav({
   // Locked items still navigate: the URL updates and the page shows its locked
   // state. No redirect, so the route is bookmarkable.
   const go = (item: NavItem) => router.push(item.route);
+
+  const moreItems: MoreSheetItem[] = NAV_ITEMS.filter((i) => MORE_KEYS.includes(i.key)).map(
+    (item) => ({
+      key: item.key,
+      icon: item.icon,
+      route: item.route,
+      locked: isLocked(item),
+      active: isActive(item),
+    }),
+  );
+  const moreActive = moreItems.some((i) => i.active);
+
+  // §02 is a pushed detail screen and draws no tab bar in either frame.
+  const hideTabBar = hidesTeacherTabBar(pathname);
 
   return (
     <>
@@ -223,38 +224,64 @@ export default function TeacherNav({
         </div>
       </aside>
 
-      {/* Mobile bottom tab bar */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] md:hidden">
-        {NAV_ITEMS.filter((i) => MOBILE_KEYS.includes(i.key)).map((item) => {
-          const Icon = item.icon;
-          const locked = isLocked(item);
-          const active = isActive(item);
-          return (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => go(item)}
-              className={[
-                'relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition-colors',
-                active ? 'text-[var(--color-teal-deep)]' : 'text-[var(--color-text-secondary)]',
-                locked ? 'opacity-55' : '',
-              ].join(' ')}
-            >
-              <span className="relative">
-                <Icon size={20} aria-hidden />
-                {locked && (
-                  <Lock
-                    size={10}
-                    className="absolute -end-1 -top-1 text-[var(--color-brass)]"
-                    aria-hidden
-                  />
-                )}
-              </span>
-              {t(item.key)}
-            </button>
-          );
-        })}
-      </nav>
+      {/* Mobile bottom tab bar - four destinations plus More. */}
+      {!hideTabBar && (
+        <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-[var(--color-border)] bg-[var(--color-surface-1)] px-1 pb-3 pt-2 md:hidden">
+          {NAV_ITEMS.filter((i) => MOBILE_KEYS.includes(i.key)).map((item) => {
+            const Icon = item.icon;
+            const locked = isLocked(item);
+            const active = isActive(item);
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => go(item)}
+                className={[
+                  'relative flex flex-1 flex-col items-center gap-1 text-[11px] font-semibold transition-colors',
+                  active ? 'text-[var(--color-teal)]' : 'text-[var(--color-text-disabled)]',
+                  locked ? 'opacity-55' : '',
+                ].join(' ')}
+              >
+                <span className="relative">
+                  <Icon size={23} aria-hidden />
+                  {locked && (
+                    <Lock
+                      size={10}
+                      className="absolute -end-1 -top-1 text-[var(--color-brass)]"
+                      aria-hidden
+                    />
+                  )}
+                </span>
+                {t(item.key)}
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            onClick={() => setMoreOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={moreOpen}
+            className={[
+              'relative flex flex-1 flex-col items-center gap-1 text-[11px] font-semibold transition-colors',
+              moreActive ? 'text-[var(--color-teal)]' : 'text-[var(--color-text-disabled)]',
+            ].join(' ')}
+          >
+            <MoreHorizontal size={23} aria-hidden />
+            {t('more')}
+          </button>
+        </nav>
+      )}
+
+      {moreOpen && (
+        <TeacherMoreSheet
+          items={moreItems}
+          onNavigate={(route) => {
+            setMoreOpen(false);
+            router.push(route);
+          }}
+          onClose={() => setMoreOpen(false)}
+        />
+      )}
     </>
   );
 }
