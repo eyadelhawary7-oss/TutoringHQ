@@ -1,6 +1,6 @@
 # Migration proposal 01 — `sessions` as the single class-occurrence log, `attendance_scans` consolidated onto it
 
-**Status: PROPOSED, NOT APPLIED. Needs Eyad's approval before anything is applied or built against.**
+**Status: PROPOSED, NOT APPLIED, AND §2.3 IS SUPERSEDED — see §5. Needs Eyad's approval before anything is applied or built against.**
 
 Eyad, 3 August: *"Sessions migration and attendance_scans consolidation first. It is a foundation — Groups §05, Attendance, and Center-Home's schedule all depend on it. Nothing else starts until it lands."* and *"STILL COMES TO ME, never auto-merged: … any new column, table, or migration. Propose, I approve, you apply."*
 
@@ -90,7 +90,53 @@ Per CLAUDE.md rule 5 this is a **manual apply to production**, then confirm in `
 
 ---
 
-## 5. What I need from you
+## 5. SUPERSEDED — corrections from `SESSIONS-MIGRATION-WARNINGS.md` (branch `claude/visual-identity-agent-pipeline-qp5dpn`, 5a1b008)
+
+**Another session reproduced three failures against live in the obvious form of this migration. §2.3 above is wrong as written. Do not apply it.** Corrections, and one item that doc left open which I have now closed.
+
+### 5.1 — My §2.3 index would double-charge students. Replace it.
+I proposed a unique index on `(slot_id, session_date)`. The warning doc's objection applies to any key built on an **instant**: a slot time edit, or the Egypt DST transition (09:00 Cairo is `07:00Z` on 2026-04-23 and `06:00Z` on 2026-04-24), mints a second row → second `session_id` → different `lesson:<session_id>:<student_id>` idempotency key → `fee_per_class` and `center_cut_egp` both charged **twice**. Reproduced live.
+
+My `session_date date` column would have masked but not fixed this, because nothing constrains it to agree with `scheduled_at`. Correct form, keyed on the **Cairo occurrence day** and excluding cancelled rows:
+
+```sql
+CREATE UNIQUE INDEX IF NOT EXISTS sessions_generated_occurrence_uniq
+  ON public.sessions (
+       schedule_id,
+       ((scheduled_at AT TIME ZONE 'Africa/Cairo')::date)
+     )
+  WHERE schedule_id IS NOT NULL
+    AND status <> 'cancelled';
+```
+`timezone(text, timestamptz)` is IMMUTABLE so this is directly indexable. `scheduled_at::date` is **STABLE** and Postgres rejects it. The `status <> 'cancelled'` predicate is **not cosmetic**: cancel-then-restart on the same Cairo day is a path that works in production today, and without the exclusion it starts failing with 23505.
+
+**This also removes the need for my proposed `session_date` column.** Dropped from the proposal.
+
+### 5.2 — `ADD CONSTRAINT` needs a guard
+Migrations here are hand-applied, so a partial apply leaves a script that errors on re-run (42710, verified). Every `ADD CONSTRAINT` must sit in a `DO` block testing `pg_constraint`. `CREATE INDEX`/`ADD COLUMN` take `IF NOT EXISTS` directly.
+
+### 5.3 — Two facts that change what a generator can be, both outside this migration
+- **`schedule_exceptions.schedule_id` FKs to `group_schedule`, not `schedule_slots`.** A generator iterating `schedule_slots` holds the wrong id class, so exception lookups match **zero rows forever** and cancelled classes regenerate silently. This repo has already shipped that exact bug once (`src/lib/parentPack.ts` documents it). Consequence: **centre-side generation has no cancellation mechanism at all today**, and building one is its own schema change.
+- **A generated `status='scheduled'` row is not inert.** `.../schedule/sessions/route.ts` checks the day window with no filter on status/kind/source/billed and returns `already_exists: true` **before** billing — so a placeholder would **suppress real billing**. A `source <> 'generated'` filter must land on that guard *and* the start route **before** any generator ships.
+- **`scheduled → finished` is blocked by `trg_guard_sessions_lifecycle`, a trigger, not RLS.** Adding an UPDATE policy alone would ship and do nothing.
+
+### 5.4 — `schedule_slots.parent_slot_id`: the open item, now closed
+The warning doc flagged this as **examined by nobody** — its reviewer died mid-run. I checked it.
+
+**Verified: it is a dead column.** Self-FK `REFERENCES schedule_slots(id) ON DELETE SET NULL`. Live: **1 slot, 0 with a parent**. Grep across `src/` and `supabase/`: **zero writers, zero readers** — it appears only in the baseline and in the archived migration that added it (`025_schedule_group_recurring.sql`, alongside `recurring` and `recurring_until`, under the heading "recurring slot support").
+
+**So ignoring it does not cause duplicate occurrences today** — nothing populates it. That is the direct answer to the open question.
+
+**But it is a latent duplicate-occurrence hazard, and the reason matters.** The column exists to support materialising a recurring slot into child *slot* rows. Recurrence today is expanded **at read time** by matching `day_of_week` — `src/app/[locale]/schedule/page.tsx:113` says so in its own comment: *"schedule_slots is a recurring weekly template with no per-occurrence…"*. If a `sessions` generator materialises occurrences **and** anyone later implements slot-expansion the way this column intends, there are two independent materialisation mechanisms for the same class-day, and they will collide.
+
+**Recommendation: drop `parent_slot_id` in this migration.** It is dead, it is unreferenced, and leaving it is an invitation to build the second mechanism. If you would rather keep it, then the generator must explicitly filter `WHERE parent_slot_id IS NULL` and that filter needs a comment explaining why.
+
+Also noted: the one live slot has `recurring = true` with `recurring_until = NULL` — an **unbounded** recurrence. A generator needs an explicit horizon; there is no natural end date in the data.
+
+---
+
+## 6. What I need from you
+
 
 1. Approve or amend **§2.1–2.3** (additive, safe, unblocks three files immediately).
 2. Answer **(a)** nullable `center_id` vs explicit `owner_scope` — I recommend `owner_scope`.
