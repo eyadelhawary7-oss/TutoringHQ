@@ -5,10 +5,14 @@ import { isUuid } from '@/lib/teacherPrivate';
 import { sendTemplateMessage } from '@/lib/whatsapp/client';
 import { formatCurrency } from '@/lib/formatNumber';
 import {
+  FEE_REMINDER_FALLBACK_TEXT,
   FEE_REMINDER_TEMPLATE,
   MAX_FEE_REMINDERS,
+  buildPaymentDetails,
+  nextClassDate,
   pickRemindableCharge,
   resolveFeeReminderBlock,
+  type TeacherPaymentProfile,
 } from '@/lib/teacherFeeReminder';
 
 const ROUTE_TAG = 'api/teacher/private/students/[studentId]/send-reminder';
@@ -71,7 +75,7 @@ export async function POST(
 
   const { data: pendingRows, error: pendingErr } = await auth.supabaseAdmin
     .from('transactions')
-    .select('id, amount_billed, payer_phone, fee_reminder_count, center_id, created_at')
+    .select('id, amount_billed, payer_phone, fee_reminder_count, center_id, group_id, created_at')
     .eq('teacher_id', auth.userId)
     .eq('student_id', studentId)
     .eq('kind', 'lesson')
@@ -86,6 +90,7 @@ export async function POST(
     payer_phone: string | null;
     fee_reminder_count: number | null;
     center_id: string | null;
+    group_id: string | null;
     created_at: string;
   }[];
 
@@ -111,6 +116,32 @@ export async function POST(
     .maybeSingle();
   const studentName = ((studentRow as { name?: string | null } | null)?.name ?? '').trim();
 
+  // Body params {{3}} and {{4}} built exactly as the cron builds them (shared
+  // helpers in teacherFeeReminder.ts): the teacher's real payment details with
+  // the no-details fallback ask, and the group's next class date. Both reads
+  // are best-effort like the cron's — a failed read degrades to the fallback /
+  // an empty date, it never fabricates a handle or a date.
+  const { data: profileRow } = await auth.supabaseAdmin
+    .from('teacher_profiles')
+    .select(
+      'instapay_address, wallet_phone, payment_phone, accepted_methods, default_payment_method',
+    )
+    .eq('user_id', auth.userId)
+    .maybeSingle();
+  const profile = (profileRow as TeacherPaymentProfile | null) ?? null;
+  const paymentDetails = profile ? buildPaymentDetails(profile) : null;
+  const detailsText = paymentDetails ?? FEE_REMINDER_FALLBACK_TEXT;
+
+  let scheduleRows: { day_of_week: number }[] = [];
+  if (charge.group_id) {
+    const { data: schedRows } = await auth.supabaseAdmin
+      .from('group_schedule')
+      .select('day_of_week')
+      .eq('group_id', charge.group_id);
+    scheduleRows = (schedRows as { day_of_week: number }[] | null) ?? [];
+  }
+  const nextDate = nextClassDate(scheduleRows);
+
   // Same four body parameters and the same order as the cron, so a manual send
   // and an automatic one are the same message.
   const feeStr = formatCurrency(Number(charge.amount_billed ?? 0), 'ar');
@@ -120,7 +151,7 @@ export async function POST(
       charge.center_id ?? '',
       charge.payer_phone as string,
       FEE_REMINDER_TEMPLATE,
-      { '1': studentName, '2': feeStr, '3': 'برجاء إرسال رسوم الحصة.', '4': '' },
+      { '1': studentName, '2': feeStr, '3': detailsText, '4': nextDate },
       { bodyParameterOrder: ['1', '2', '3', '4'] },
     );
   } catch (waErr) {
