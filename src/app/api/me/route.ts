@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { centerHasExportAccess, ownerHasEverPaidInvoice } from '@/lib/exportEntitlement';
+import { isDigitalStudentFeeCollectionEnabled } from '@/lib/digitalStudentFeeCollection';
 
 export async function GET(request: Request) {
   try {
@@ -328,13 +329,25 @@ export async function GET(request: Request) {
       }
     }
 
+    // THE single client exposure of the digital student-fee collection switch
+    // (platform_config 'digital_student_fee_collection.enabled', fail-closed —
+    // see src/lib/digitalStudentFeeCollection.ts). Screens that carry the
+    // §02 "collects digitally" framing gate on this boolean; while the flag is
+    // false (its live value) they render their pre-digital layout and nothing
+    // else — no placeholder banner, no "coming soon".
+    const digitalStudentFeeCollection = await isDigitalStudentFeeCollectionEnabled();
+
     return NextResponse.json({
       id: userRecord.id,
       role: userRecord.role ?? 'assistant',
       center_id: userRecord.center_id ?? null,
       name: userRecord.name ?? null,
       preferred_locale: userRecord.preferred_locale ?? 'ar',
-      user: { ...userRecord, center: center ?? null },
+      user: {
+        ...userRecord,
+        center: center ?? null,
+        digital_student_fee_collection: digitalStudentFeeCollection,
+      },
     });
 
   } catch (error) {
