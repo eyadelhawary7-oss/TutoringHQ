@@ -1,94 +1,16 @@
-import type { Metadata } from 'next';
-import Script from 'next/script';
-import { SITE_URL } from '@/config/site';
-import HomePageClient from '../HomePageClient';
+import { redirect } from 'next/navigation';
 
-export async function generateMetadata({
+/**
+ * `/center` is a live, indexed public URL, and every cross-link in
+ * design/Merged-Public-Marketing.html points at `/centers` instead. A redirect
+ * keeps the old address working rather than turning it into a 404; a redirect
+ * is not a drawn element, so it costs the design nothing.
+ */
+export default async function CenterLandingRedirect({
   params,
 }: {
   params: Promise<{ locale: string }>;
-}): Promise<Metadata> {
+}) {
   const { locale } = await params;
-  const isAr = locale === 'ar';
-
-  return {
-    title: isAr
-      ? 'TutoringHQ - نظام إدارة السنترات التعليمية'
-      : 'TutoringHQ - Tutoring Center Management System for Egypt',
-    description: isAr
-      ? 'نظام إدارة السنترات التعليمية في مصر. حضور QR، متابعة الطلاب، فواتير تلقائية وإشعارات واتساب.'
-      : "Egypt's tutoring center operating system. QR attendance, student tracking, automated billing & WhatsApp notifications.",
-  };
-}
-
-const softwareApplicationSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'SoftwareApplication',
-  name: 'TutoringHQ',
-  applicationCategory: 'BusinessApplication',
-  operatingSystem: 'Web, Android PWA, iOS PWA',
-  url: SITE_URL,
-  offers: { '@type': 'Offer', price: '999', priceCurrency: 'EGP' },
-  description: 'نظام إدارة السنترات التعليمية في مصر',
-  inLanguage: ['ar-EG', 'en-US'],
-  publisher: { '@type': 'Organization', name: 'EHG Intelligence Egypt' },
-};
-
-const faqSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: [
-    {
-      '@type': 'Question',
-      name: 'ما هو TutoringHQ؟',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'نظام إدارة متكامل للسنترات التعليمية في مصر يشمل حضور QR وإشعارات واتساب وفواتير تلقائية.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: 'كم تكلفة الاشتراك؟',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'تبدأ الأسعار من 999 جنيه شهرياً لخطة Solo.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: 'هل يعمل على الموبايل؟',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'نعم، TutoringHQ تطبيق PWA يعمل على Android وiOS بدون تنزيل.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: 'How does QR attendance work?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Each student gets a unique QR code. Staff scan it at the door; parents get instant WhatsApp notifications.',
-      },
-    },
-  ],
-};
-
-export default function CenterLandingPage() {
-  return (
-    <>
-      <HomePageClient />
-      <Script
-        id="ld-software-application"
-        type="application/ld+json"
-        strategy="lazyOnload"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareApplicationSchema) }}
-      />
-      <Script
-        id="ld-faq"
-        type="application/ld+json"
-        strategy="lazyOnload"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
-      />
-    </>
-  );
+  redirect(`/${locale}/centers`);
 }

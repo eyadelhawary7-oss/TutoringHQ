@@ -38,10 +38,16 @@ const PUBLIC_PATHS = [
   '/accept-invite',
   '/join',
   // Public marketing surfaces - these must render their own minimal header only
-  // (CenterHQ wordmark + Log in), never the authenticated app shell (top nav,
+  // (the wordmark + Log in), never the authenticated app shell (top nav,
   // sidebar, bottom tab bar), even when a logged-in center owner visits them.
   // The authenticated teacher portal lives at /teacher/(portal)/* (renders at
   // /teacher, /teacher/settings, ...) so /teacher/landing does not over-match it.
+  '/centers',
+  '/teachers',
+  '/talk-to-us',
+  '/cookies',
+  // Redirect-only now, kept so a logged-in owner hitting the old URL never
+  // flashes the app shell before the redirect resolves.
   '/center',
   '/teacher/landing',
   '/teacher/signup',

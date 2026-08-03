@@ -635,7 +635,7 @@ export default function LoginPage() {
               {t('noAccount')}
             </Link>
             <Link
-              href="/teacher/landing"
+              href="/teachers"
               style={{
                 ...SANS,
                 fontSize: '11px',

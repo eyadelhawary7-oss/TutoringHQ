@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
-import { Bodoni_Moda, Fraunces, IBM_Plex_Sans_Arabic, Playfair_Display } from 'next/font/google';
+import { Bodoni_Moda, Fraunces, IBM_Plex_Mono, IBM_Plex_Sans_Arabic, Playfair_Display } from 'next/font/google';
 import { routing } from '@/i18n/routing';
 import { notFound } from 'next/navigation';
 import { getMessages } from 'next-intl/server';
@@ -21,6 +21,21 @@ const plex = IBM_Plex_Sans_Arabic({
   variable: '--font-plex',
   display: 'swap',
   fallback: ['system-ui', 'sans-serif'],
+});
+
+// The tabular face on the public marketing screens (prices, totals, session
+// amounts). Applied only through `.mkt-mono` in globals.css — the app-wide
+// `--font-mono` token still resolves to Plex Sans, because repointing it would
+// change 264 `font-mono` call sites on screens other design files govern.
+// Arabic never renders in this face; `.mkt-mono` reverts to the Arabic face at
+// weight 700 under [dir="rtl"], which is what the design specifies.
+const plexMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  variable: '--font-plex-mono',
+  display: 'swap',
+  preload: false,
+  fallback: ['ui-monospace', 'monospace'],
 });
 
 const cairo = localFont({
@@ -175,7 +190,7 @@ export default async function LocaleLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body
-        className={`${plex.variable} ${cairo.variable} ${playfair.variable} ${bodoniModa.variable} ${fraunces.variable} antialiased bg-[var(--color-surface-0)] text-[var(--color-text-primary)] min-h-screen w-full font-cairo`}
+        className={`${plex.variable} ${plexMono.variable} ${cairo.variable} ${playfair.variable} ${bodoniModa.variable} ${fraunces.variable} antialiased bg-[var(--color-surface-0)] text-[var(--color-text-primary)] min-h-screen w-full font-cairo`}
         suppressHydrationWarning
       >
         <PostHogProvider>
