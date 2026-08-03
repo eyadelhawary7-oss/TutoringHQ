@@ -4,25 +4,33 @@ import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
 import type { PermissionKey } from '@/contexts/UserContext';
-import { LayoutDashboard, QrCode, Users } from 'lucide-react';
+import { ClipboardCheck, CreditCard, House, Users } from 'lucide-react';
 
 type TabDef = {
   navKey: string
   path: string
   segment: string
-  icon: typeof LayoutDashboard
+  icon: typeof Users
   permission?: PermissionKey
 }
 
+/**
+ * Merged-Center-Students §01 `.tabbar` — FOUR tabs, in this order:
+ *   Home (house) · Students (users) · Attend (clipboard-check) · Fees (card)
+ *
+ * Live carried three (Dashboard / Attendance / Students) with a QR glyph on
+ * attendance and no route to money at all. `/payments` is already listed in
+ * AUTHENTICATED_ROUTE_PREFIXES (src/proxy.ts), so adding the tab needs no
+ * proxy change.
+ */
 const TABS: TabDef[] = [
   {
-    navKey: 'dashboard',
+    navKey: 'home',
     path: '/dashboard',
     segment: 'dashboard',
-    icon: LayoutDashboard,
+    icon: House,
     permission: 'can_view_dashboard',
   },
-  { navKey: 'attendance', path: '/attendance', segment: 'attendance', icon: QrCode, permission: 'can_scan' },
   {
     navKey: 'students',
     path: '/students',
@@ -30,6 +38,8 @@ const TABS: TabDef[] = [
     icon: Users,
     permission: 'can_manage_students',
   },
+  { navKey: 'attend', path: '/attendance', segment: 'attendance', icon: ClipboardCheck, permission: 'can_scan' },
+  { navKey: 'fees', path: '/payments', segment: 'payments', icon: CreditCard, permission: 'can_view_payments' },
 ];
 
 function stripLocale(p: string) {
@@ -71,7 +81,16 @@ export function BottomTabBar() {
               href={path}
               className={`flex-1 flex flex-col items-center justify-center gap-0.5 px-1 py-1 min-w-0 transition-colors duration-150 ${active ? 'text-teal-600' : 'text-[var(--color-text-muted)]'}`}
             >
-              <Icon size={22} strokeWidth={active ? 2.25 : 1.75} className="shrink-0" />
+              {/* §01 `.tab.on .ic { border-radius:8px; background:#0E6B61; color:#fff }`
+                  — the active tab is a filled pill behind the glyph, not just
+                  teal ink. The label stays teal. */}
+              <span
+                className={`flex h-[26px] w-[26px] items-center justify-center transition-colors duration-150 ${
+                  active ? 'rounded-lg bg-[#0E6B61] text-white' : ''
+                }`}
+              >
+                <Icon size={active ? 18 : 22} strokeWidth={active ? 2.25 : 1.75} className="shrink-0" />
+              </span>
               <span
                 className={`text-[0.625rem] font-semibold leading-none truncate max-w-full transition-colors duration-150 ${active ? 'text-teal-600' : 'text-[var(--color-text-muted)]'}`}
               >
