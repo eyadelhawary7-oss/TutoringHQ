@@ -70,7 +70,7 @@ Paymob integration, or stay two? **Recommendation: unify.** They are the same op
 center's InstaPay handle — differing only in what accrued the balance. Two pipelines means two of every
 control in §6, and the controls are the expensive part.
 
-## 2. Blocking defects that must be fixed before anything ships
+## 2. Seven blocking defects that must be fixed before anything ships
 
 These are **live today**, found by direct code and catalog reads. Each is a prerequisite, not a nice-to-have.
 
@@ -130,7 +130,7 @@ and picking the weaker one would hand payout initiation to staff accounts at cen
 owner-only, with no announcement. *Recommendation: unify on owner-only plus step-up auth, and treat
 `can_request_referral_payouts` as request-only — never release.*
 
-**→ DECISION 2.** Confirm all six are in scope as prerequisites. If any is deferred, say which — each one
+**→ DECISION 2.** Confirm all seven are in scope as prerequisites. If any is deferred, say which — each one
 independently can pay real money twice or strand it.
 
 ## 3. The ledger (spec item 1)
@@ -556,8 +556,8 @@ control that forces someone to look on a schedule rather than in response to an 
 
 | # | Decision | My recommendation |
 |---|---|---|
-| 1 | Unify referral + credit payouts, or keep separate? | **Unify** |
-| 2 | Are all six §2 defects in scope as prerequisites? | **Yes — all six** |
+| 1 | Unify referral + credit payouts — **and, per §2.7, which authorization gate survives the merge?** The two routes disagree today: `/api/billing/withdrawal` is owner-only, `/api/referrals/payout` is a delegable permission. Unifying necessarily picks one. | **Unify, on owner-only + step-up auth.** Treat `can_request_referral_payouts` as *request*-only, never *release* — picking the weaker gate silently widens who can move money at every owner-only center |
+| 2 | Are all seven §2 defects in scope as prerequisites? | **Yes — all seven** |
 | 3 | Append-only double-entry ledger, or extend the mutable-column pattern? | **Double-entry, this subsystem only** |
 | 4 | How to eliminate the credit dual-authority window? | **(a) migrate the spend path in the same PR** |
 | 5 | Clearing days | **0 credits / 7 referral**, config-driven |
