@@ -255,8 +255,10 @@ describe('privacyQueueCounts — Merged-Admin-Platform §06', () => {
     // REGRESSION: the queue used to offer 'export' while the API stored
     // 'portability', so that chip matched zero rows and always would have. The
     // old fixtures hid it by inventing 'export' rows that no code path
-    // produces. Pin the vocabulary to the intake route's own allow-list.
-    const STORED = ['access', 'correction', 'deletion', 'restriction', 'portability', 'objection'];
+    // produces. Pin the vocabulary to the intake route's own allow-list —
+    // imported, not duplicated, so a route-side change breaks this test.
+    const { VALID_TYPES } = await import('@/app/api/privacy-request/route');
+    const STORED = [...VALID_TYPES];
     for (const filter of ['access', 'deletion', 'portability'] as const) {
       expect(STORED).toContain(filter);
       const rows = [{ status: 'pending', due_at: null, request_types: [filter] }];

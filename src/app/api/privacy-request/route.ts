@@ -25,7 +25,7 @@ import { sendPrivacyRequestConfirmation } from '@/lib/privacyRequestConfirmation
  * admin erasure path (`api/admin/privacy-requests/anonymize`) gates on
  * `types.includes('deletion')`, so that spelling is load-bearing.
  */
-const VALID_TYPES = new Set([
+export const VALID_TYPES = new Set([
   'access',
   'correction',
   'deletion',
