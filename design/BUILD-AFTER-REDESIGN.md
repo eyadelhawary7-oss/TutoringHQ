@@ -1311,6 +1311,32 @@ Removed from `src/app/[locale]/dashboard/page.tsx`. **Nothing here is a placemen
 **Left in the code as an explicit absence,** with the evidence inline, rather than silently omitted: see the block comment above the alert row in `src/app/[locale]/dashboard/page.tsx`.
 
 **Found:** 3 August 2026, Center-Home §01 feature-gap pass.
+## F26 · Four live routes read columns that do not exist — two are unconditional 404s on paid features, and CI cannot catch any of them
+Surfaced by the 19-file design-parity sweep, 3 August 2026, then **re-verified by hand** — every column checked in `information_schema` and every call site read in full, because this is exactly the shape of the 8 July student-detail outage and an agent's word is not evidence.
+
+**This is not a design gap. It is live breakage on production today.** All four pass `tsc`, `eslint` and every CI gate, because **CI has no live database** — precisely the failure mode CLAUDE.md rule 2 exists to prevent.
+
+**Live catalog, verified 3 Aug:** `card_orders.card_style` **0**, `centers.max_teachers` **0**, `centers.max_students` **0**, `card_order_status_transitions.created_at` **0** (the real column is `transitioned_at`, **1**), `public.bosta_shipments` **0**.
+
+| # | Site | Missing column | Verified behaviour |
+|---|---|---|---|
+| **1** | `src/app/api/admin/card-orders/[orderId]/pdf/route.ts:33` | `card_orders.card_style` | `.select('id, quantity, notes, students, card_style, …')` → PostgREST **42703** → `fetchError` truthy → `:37` returns **404 `not_found`**. **Unconditional. Every vendor print PDF for every card order is dead.** |
+| **2** | `src/app/api/settings/limits/route.ts:18` | `centers.max_teachers`, `centers.max_students` | Same 42703 → `centerError` truthy → `:22` returns **404 "Center not found"** for **every center, always**. The endpoint cannot succeed. |
+| **3** | `src/app/api/invite-user/route.ts:70` | `centers.max_teachers` | **Fails open, silently, and wrongly.** The error is **not destructured** (`const { data: centerPlanRow } = …`), so `centerPlanRow` is null and `maxTeam = Number(undefined ?? 2)` = **2**. Every plan is capped at 2 team members regardless of entitlement. Worse, `:80` reads the plan name from the same null object, so a Business center is told *"You've reached your team member limit for the **Starter** plan."* |
+| **4** | `src/lib/loadCardOrderDetail.ts:64` and `src/lib/cardOrderState.ts:215` | `card_order_status_transitions.created_at` | `.order('created_at')` on a non-existent column errors. In `loadCardOrderDetail` the error is not checked (`{ data: transitions }`), so `transitions` is null and **the order timeline renders empty**. In `cardOrderState` `if (error || !data) return` fires, so the transition enrichment (`transitioned_by`, `transitioned_by_role`, `reason`, `metadata`) **silently never writes** — an audit trail that looks implemented and records nothing. |
+
+**`card_style` is the worst of the four** because it is not merely unread — the checkout path **writes** it (`src/app/api/card-order-cart/checkout/route.ts`) and five sites read it (`src/types/admin-card-orders.ts:26`, `AdminOrdersClient.tsx:573`, `orders/checkout/review/page.tsx:167`, `api/admin/card-orders/route.ts:145,178`, and the PDF route). A whole feature was built against a column that was never added.
+
+**Explicitly NOT a defect, corrected from the sweep's own claim:** `bosta_shipments` does not exist either, but `src/lib/loadCardOrderDetail.ts:73-74` guards it — `const attempt = await …; if (!attempt.error && attempt.data)`. It degrades cleanly to no shipment row. The sweep called it a blocker; it isn't. Recorded so nobody "fixes" a working guard.
+
+**Likely a fourth strand of F19** ("team management broken in three independent ways in production"): #2 and #3 are both the seat-limit path, and #3 explains the hardcoded-2 behaviour F19 observed without identifying its cause.
+
+**Two possible fixes, and they are not equivalent — needs Eyad.** Either **add the columns** (migration, manual apply to production per rule 5) or **remove the reads** and accept the features they back. `card_style` cannot simply be dropped: checkout already writes it and the vendor PDF renders from it, so removing the read means deciding the dark/light card option does not exist. `max_teachers`/`max_students` is the cleaner call — plan limits arguably belong in `pricing_plans`/`plans.ts`, not on `centers`. #4 is unambiguous and needs no decision: rename the three `created_at` references to `transitioned_at`.
+
+**A guard worth adding regardless:** nothing in CI compares the columns named in `.select()` calls against the live catalog. That gap is why four of these shipped, and it is the same gap that caused 8 July. A catalog-diff check would have caught all four.
+
+**Found:** 3 August 2026, design-parity sweep (19 files, 38 agents), hand-verified the same day.
+**Blocked by:** Eyad's call on add-columns vs remove-reads for #1–#3. #4 is a free fix.
 ## S10 · A super-admin can exist with no database row at all, and the "row" check doesn't require a row
 - **What:** `SUPER_ADMIN_PHONES` (an env var) grants full super-admin authority on its own, with no corresponding `admin_users` record. `src/lib/admin-auth.ts` returns a session on `if (!adminRow && !adminByPhone) return null;` — the phone alone suffices — and then unconditionally assigns `internalRole = 'super_admin'` for `adminByPhone`, the top of the ladder. Verified live 3 August 2026: `admin_users` holds exactly **1** `super_admin` row (plus 1 `sales_manager`), so anyone else holding this authority today holds it entirely off-catalog.
 - **The second gate is not a second gate.** `requireSuperAdminRow` (`src/lib/admin-access.ts:136`) — the function whose name promises a database row — computes `adminUser?.role === 'super_admin' || isSuperAdminPhone(sessionPhone)`. It reads the *same env var* as the first check. Routes that call it believing they've added an independent DB-backed verification have added nothing. The name actively misleads; that's the part most likely to cause a future mistake.
