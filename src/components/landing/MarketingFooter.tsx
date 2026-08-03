@@ -44,8 +44,11 @@ export default function MarketingFooter({
 
   const wa = `https://wa.me/${SITE.supportWhatsAppIntl}`;
   const linkCls = 'block text-xs leading-snug text-[#ECE8DF]/76 transition-colors hover:text-white';
-  const headCls =
-    'mb-3 text-[11px] font-bold uppercase tracking-[.1em] text-[var(--color-mint-deep)] rtl:normal-case rtl:tracking-[.02em]';
+  // Column headings tint with the page's accent family: mint on teal screens,
+  // sand on /teachers (design `.fh` / `.t .fh`).
+  const headCls = `mb-3 text-[11px] font-bold uppercase tracking-[.1em] rtl:normal-case rtl:tracking-[.02em] ${
+    tone === 'teacher' ? 'text-[var(--color-canvas)]' : 'text-[var(--color-mint-deep)]'
+  }`;
 
   return (
     <footer className="bg-[#14181A] px-6 pb-6 pt-12 text-[var(--color-paper)]">
@@ -141,7 +144,11 @@ export default function MarketingFooter({
       </div>
 
       <div className="mt-4 border-t border-[#ECE8DF]/14 pt-6 text-[11px] leading-relaxed text-[#ECE8DF]/44">
-        <p>{t('legalLine')}</p>
+        <p>
+          {t.rich('legalLine', {
+            b: (chunks) => <b className="font-medium text-[#ECE8DF]/68">{chunks}</b>,
+          })}
+        </p>
         <p>{t('rightsLine')}</p>
       </div>
     </footer>

@@ -25,13 +25,13 @@
   },
   "pricingPage": {
     "metaTitle": "الأسعار – TutoringHQ",
-    "metaDescription": "قارِن خطط Solo إلى Enterprise وخطة كبار السناتر. أسعار شهرية وربع سنوية وسنوية شفافة لسناتر الدروس.",
+    "metaDescription": "منتج واحد بكل الأحجام. باقات السناتر من فردي لمؤسسات وباقات المدرسين، بأسعار شهرية أو سنوية شاملة الضريبة.",
     "title": "منتج واحد. إنت بس بتختار حجمه.",
     "subtitle": "كل الأسعار هنا شاملة الضريبة، وكل الباقات نفس البرنامج. اللي بتختاره هو كام طالب يشيل.",
     "billMonthly": "شهري",
     "billAnnual": "سنوي",
-    "annualBadge": "شهران مجانًا",
-    "ctaSignup": "ابدأ الآن",
+    "annualBadge": "شهرين مجانًا",
+    "ctaSignup": "ابدأ مجانًا",
     "talkToSomeoneCta": "تحب تتكلم مع حد الأول",
     "kick": "الأسعار",
     "centerLabel": "سنتر",
@@ -8689,7 +8689,7 @@
     "submittedTitle": "هنتصل بيك",
     "submittedSubtitle": "حد بيغطي {area} وصله طلبك دلوقتي.",
     "submittedSubtitleGeneric": "طلبك وصلنا.",
-    "step1": "مكالمة من رقم قاهرة، خلال يوم عمل واحد.",
+    "step1": "مكالمة من رقم قاهرة، <b>خلال يوم عمل واحد</b>.",
     "step2": "هيشرحلك على سنترك. من غير عروض ولا حجز مواعيد.",
     "step3": "تقدر تبدأ التجربة المجانية قبل ما يتصل. مش هتدفع في الحالتين.",
     "startFreeTrialCta": "ابدأ التجربة المجانية دلوقتي",
@@ -9924,7 +9924,7 @@
     "cookies": "سياسة الكوكيز",
     "talkHeading": "كلّمنا",
     "whatsappHours": "واتساب، من ١٠ ص لـ ٦ م",
-    "legalLine": "منصة TutoringHQ تُشغّلها شركة EHG Intelligence Egypt، شركة مسجّلة في مصر.",
+    "legalLine": "منصة <b>TutoringHQ</b> تُشغّلها شركة <b>EHG Intelligence Egypt</b>، شركة مسجّلة في مصر.",
     "rightsLine": "© ٢٠٢٦ جميع الحقوق محفوظة.",
     "ctaHeading": "ابدأ لما تكون جاهز",
     "ctaButton": "ابدأ مجانًا",
@@ -10092,7 +10092,6 @@
     "bannerTitle": "مجانًا لحد {freeUntil}",
     "bannerSub": "ابدأ النهارده. أول فاتورة {firstCharge}، ومفيش حاجة تتدفع دلوقتي.",
     "codeLabel": "كود",
-    "copyCode": "انسخ الكود {code}",
     "startFree": "ابدأ مجانًا"
   }
 }

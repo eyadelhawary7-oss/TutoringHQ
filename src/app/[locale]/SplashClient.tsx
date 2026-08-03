@@ -190,6 +190,10 @@ export default function SplashClient() {
             </a>
           </div>
           <SummerLine className="mt-3 text-center text-[11px] text-[var(--color-muted)]" />
+          {/* s01-8 slot — the design's second undercta line ("Online collection
+              switches on once your ID is verified.") is NOT built: verification
+              state has no live source yet (needs-migration item, out of this
+              build's scope). Add the line here once that lands. */}
         </div>
       </section>
 

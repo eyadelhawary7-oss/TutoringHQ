@@ -258,7 +258,9 @@ export default function TalkToUsPage() {
                     {formatNumber(i + 1, locale)}
                   </span>
                   <span className="text-xs leading-relaxed text-[var(--color-ink-body)]">
-                    {t(key)}
+                    {t.rich(key, {
+                      b: (chunks) => <b className="font-semibold">{chunks}</b>,
+                    })}
                   </span>
                 </div>
               ))}

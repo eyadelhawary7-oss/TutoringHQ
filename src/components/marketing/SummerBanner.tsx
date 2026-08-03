@@ -1,7 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import { Copy, Check } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { SUMMER_PROMO_CODE } from '@/lib/summer/copy';
@@ -11,12 +9,12 @@ import { useSummerPublicConfig, formatFloorLabel } from '@/components/summer/use
  * The `.banner` at the top of the landing page (design L110-120): flat, not
  * sticky, on `--ground`, sitting above the nav as the first thing in the page.
  *
- * Replaces `summer/SummerRibbon.tsx` on the public marketing screens. Three
+ * Replaces `summer/SummerRibbon.tsx` on the public marketing screens. Four
  * things about the ribbon are struck by the design and do not survive: the
- * Fraunces serif headline, the sticky positioning, and the full-strength
- * gradient. What DOES survive is the code chip's copy-to-clipboard behaviour —
- * the design draws a code chip, and making a code copyable is not a drawn
- * difference, while losing it is a real regression for anyone on a phone.
+ * Fraunces serif headline, the sticky positioning, the full-strength gradient,
+ * and the copy-to-clipboard button on the code chip — the design draws the chip
+ * as a static dashed span with no icon, and the code is display-only anyway
+ * (summer free mode is automatic, nothing is gated on typing it).
  *
  * Dates come from `platform_config` via `/api/pricing/public-config`; the whole
  * banner renders nothing when summer mode is off, rather than a stale date.
@@ -25,7 +23,6 @@ export default function SummerBanner() {
   const t = useTranslations('marketingSummer');
   const locale = useLocale();
   const state = useSummerPublicConfig();
-  const [copied, setCopied] = useState(false);
 
   if (!state) return null;
 
@@ -35,16 +32,6 @@ export default function SummerBanner() {
   // A code set in admin wins; the shared marketing code is the fallback so the
   // chip always renders. Display only — nothing is gated behind typing it.
   const code = state.promoCode || SUMMER_PROMO_CODE;
-
-  const copyCode = async () => {
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1600);
-    } catch {
-      /* clipboard unavailable — the chip stays a static display */
-    }
-  };
 
   return (
     <div
@@ -64,26 +51,18 @@ export default function SummerBanner() {
         </span>
       </span>
 
-      <button
-        type="button"
-        onClick={copyCode}
-        aria-label={t('copyCode', { code })}
-        className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-[11px]"
+      <span
+        className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-[11px]"
         style={{
           border: '1px dashed rgba(236,232,223,.4)',
           color: 'rgba(236,232,223,.9)',
         }}
       >
-        <span>{t('codeLabel')}</span>
+        {t('codeLabel')}{' '}
         <b className="mkt-mono tracking-[.05em] text-white" dir="ltr">
           {code}
         </b>
-        {copied ? (
-          <Check className="h-3.5 w-3.5" aria-hidden />
-        ) : (
-          <Copy className="h-3.5 w-3.5 opacity-80" aria-hidden />
-        )}
-      </button>
+      </span>
 
       <Link
         href="/signup"

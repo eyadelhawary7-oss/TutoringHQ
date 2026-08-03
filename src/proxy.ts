@@ -77,7 +77,10 @@ function applySecurityHeaders(response: NextResponse, requestId: string): NextRe
 }
 
 // --- Route helpers ---
-const publicRoutes = ['/login', '/signup', '/onboarding', '/suspended', '/auth/callback', '/accept-invite', '/forgot-password', '/status', '/pricing', '/centers', '/center', '/teachers', '/talk-to-us', '/privacy', '/terms', '/cookies', '/legal', '/session-expired', '/'];
+// '/demo-request' stays public even though the page is gone: next.config.ts
+// 308s it to /talk-to-us AFTER this middleware runs, and without the entry a
+// suspended owner hitting the old URL would be bounced to /suspended instead.
+const publicRoutes = ['/login', '/signup', '/onboarding', '/suspended', '/auth/callback', '/accept-invite', '/forgot-password', '/status', '/pricing', '/centers', '/center', '/teachers', '/talk-to-us', '/demo-request', '/privacy', '/terms', '/cookies', '/legal', '/session-expired', '/'];
 const apiRoutes = ['/auth/callback'];
 
 function isPublicRoute(pathname: string): boolean {

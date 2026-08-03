@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { formatNumber } from '@/lib/formatNumber';
@@ -10,6 +10,7 @@ import {
   ORDERED_SUBSCRIPTION_PLAN_KEYS,
   PLANS,
 } from '@/lib/pricing';
+import { teacherScaleExample } from '@/lib/pricing/teacherScaleExample';
 import { TEACHER_PLANS } from '@/lib/teacherPlans';
 import { usePublicPlanPrices } from '@/hooks/usePublicPlanPrices';
 import { usePublicAnnualMultiplier } from '@/components/summer/useSummerPublicConfig';
@@ -61,6 +62,17 @@ export default function PricingPageClient() {
   const [centerIdx, setCenterIdx] = useState(2);
   const [teacherIdx, setTeacherIdx] = useState(0);
 
+  // The old page swapped its whole body on `?for=teacher`; the rebuild stacks
+  // both blocks, so the deep link (still emitted by the teacher portal's
+  // FreeZoneBanner) scrolls to the teacher block instead. `#teacher` works too.
+  const teacherBlockRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const wantsTeacher =
+      new URLSearchParams(window.location.search).get('for') === 'teacher' ||
+      window.location.hash === '#teacher';
+    if (wantsTeacher) teacherBlockRef.current?.scrollIntoView({ block: 'start' });
+  }, []);
+
   const dyn = usePublicPlanPrices();
   const annualMultiplier = usePublicAnnualMultiplier();
 
@@ -109,12 +121,17 @@ export default function PricingPageClient() {
   const teacherAnnualTotal = getAnnualChargeRounded(teacherMonthly, annualMultiplier);
   const teacherShown = billing === 'annual' ? teacherAnnualMonthly : teacherMonthly;
 
-  // Annual applies the same two-months-free multiplier to the overage rate as
-  // it does to the base, so the curve does not bend at the cap (design L1880).
-  const overageRate =
-    billing === 'annual' ? (teacher.overage * annualMultiplier) / 12 : teacher.overage;
-  const exampleTotal =
-    teacherShown + (OVERAGE_EXAMPLE_STUDENTS - teacher.def.studentCap) * overageRate;
+  // The no-ceiling readout's math lives in one pure, unit-tested helper
+  // (design L1864-1897): annual applies the same two-months-free multiplier to
+  // the overage rate as to the base, so the curve does not bend at the cap.
+  const scaleEx = teacherScaleExample({
+    baseMonthly: scale.priceGross,
+    studentCap: scale.studentCap,
+    overagePerStudent: scale.overagePerStudent,
+    billing,
+    annualMultiplier,
+    students: OVERAGE_EXAMPLE_STUDENTS,
+  });
 
   const sameItems = t.raw('same.items') as string[];
   const notes = ['vat', 'annual', 'trial', 'cancel'] as const;
@@ -283,7 +300,9 @@ export default function PricingPageClient() {
 
           {/* ── A teacher ─────────────────────────────────────────────── */}
           <div
-            className="mt-4 rounded-2xl border bg-[var(--color-panel)] px-4 py-6"
+            id="teacher"
+            ref={teacherBlockRef}
+            className="mt-4 scroll-mt-4 rounded-2xl border bg-[var(--color-panel)] px-4 py-6"
             style={{ borderColor: 'var(--color-canvas)' }}
           >
             <div className="mb-3 flex items-center justify-between gap-2">
@@ -361,8 +380,8 @@ export default function PricingPageClient() {
                     {billing === 'monthly'
                       ? t.rich('overageMonthly', { rate: n(teacher.overage), b: bold })
                       : t.rich('overageAnnual', {
-                          rate: n2(overageRate),
-                          yearly: n(teacher.overage * annualMultiplier),
+                          rate: n2(scaleEx.overageRate),
+                          yearly: n(scaleEx.overageYearly),
                           b: bold,
                         })}
                   </p>
@@ -370,14 +389,14 @@ export default function PricingPageClient() {
                     {billing === 'monthly'
                       ? t.rich('exampleMonthly', {
                           students: n(OVERAGE_EXAMPLE_STUDENTS),
-                          total: n2(exampleTotal),
-                          each: n2(exampleTotal / OVERAGE_EXAMPLE_STUDENTS),
+                          total: n2(scaleEx.exampleTotal),
+                          each: n2(scaleEx.examplePerStudent),
                           b: boldPlain,
                         })
                       : t.rich('exampleAnnual', {
                           students: n(OVERAGE_EXAMPLE_STUDENTS),
-                          total: n2(exampleTotal),
-                          each: n2(exampleTotal / OVERAGE_EXAMPLE_STUDENTS),
+                          total: n2(scaleEx.exampleTotal),
+                          each: n2(scaleEx.examplePerStudent),
                           b: boldPlain,
                         })}
                   </p>

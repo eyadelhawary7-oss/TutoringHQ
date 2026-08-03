@@ -25,13 +25,13 @@
   },
   "pricingPage": {
     "metaTitle": "Pricing – TutoringHQ",
-    "metaDescription": "Compare Solo through Enterprise plans and Top Centers. Transparent monthly, quarterly, and annual pricing for tutoring centers.",
+    "metaDescription": "One product at every size. Center plans from Solo to Enterprise and teacher plans, priced monthly or annual, VAT included.",
     "title": "One product. You are only picking how big.",
     "subtitle": "Every price here includes VAT. Every plan is the same software. The only thing you choose is how many students it has to hold.",
     "billMonthly": "Monthly",
     "billAnnual": "Annual",
     "annualBadge": "2 months free",
-    "ctaSignup": "Get started",
+    "ctaSignup": "Start free",
     "talkToSomeoneCta": "Talk to someone first",
     "kick": "Pricing",
     "centerLabel": "A center",
@@ -8689,7 +8689,7 @@
     "submittedTitle": "We will call you",
     "submittedSubtitle": "Someone who covers {area} has it now.",
     "submittedSubtitleGeneric": "Your request is in.",
-    "step1": "A call from a Cairo number, within one working day.",
+    "step1": "A call from a Cairo number, <b>within one working day</b>.",
     "step2": "They walk your center through it. No slides, no demo booking.",
     "step3": "You can start the free trial before they call. It costs nothing either way.",
     "startFreeTrialCta": "Start free trial now",
@@ -9924,7 +9924,7 @@
     "cookies": "Cookie Policy",
     "talkHeading": "Talk to us",
     "whatsappHours": "WhatsApp, 10am to 6pm",
-    "legalLine": "TutoringHQ is operated by EHG Intelligence Egypt, a registered Egyptian company.",
+    "legalLine": "<b>TutoringHQ</b> is operated by <b>EHG Intelligence Egypt</b>, a registered Egyptian company.",
     "rightsLine": "© 2026 All rights reserved.",
     "ctaHeading": "Start whenever you are ready",
     "ctaButton": "Start free",
@@ -10092,7 +10092,6 @@
     "bannerTitle": "Free until {freeUntil}",
     "bannerSub": "Start today. First invoice {firstCharge}, nothing to pay now.",
     "codeLabel": "Code",
-    "copyCode": "Copy code {code}",
     "startFree": "Start free"
   }
 }
