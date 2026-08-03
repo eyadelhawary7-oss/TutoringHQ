@@ -8780,7 +8780,6 @@
     "startFreeTrialHint": "مش لازم تستنى المكالمة"
   },
   "teacherPortal": {
-    "headerTitle": "بوابة المدرس",
     "settings": "الإعدادات",
     "logout": "تسجيل الخروج",
     "nav": {
@@ -8799,7 +8798,9 @@
       "collapseSidebar": "طي الشريط الجانبي",
       "expandSidebar": "فتح الشريط الجانبي",
       "switchToEnglish": "English",
-      "switchToArabic": "عربي"
+      "switchToArabic": "عربي",
+      "more": "المزيد",
+      "back": "رجوع"
     },
     "schedule": {
       "pageTitle": "الجدول",
@@ -8964,19 +8965,11 @@
       "attendees": "{count} حاضر"
     },
     "studentsList": {
-      "searchPlaceholder": "ادور بالاسم أو رقم الموبايل",
+      "searchPlaceholder": "ابحث عن طالب",
       "groupFilterLabel": "فلتر بالمجموعة",
       "allGroups": "كل المجموعات",
       "noMatches": "مفيش طلاب مطابقين لبحثك.",
-      "detailTitle": "تفاصيل الطالب",
-      "close": "إغلاق",
-      "phoneLabel": "الموبايل",
-      "groupsLabel": "المجموعات",
       "outstandingLabel": "الرصيد المستحق",
-      "lastPaymentLabel": "آخر دفعة",
-      "noPayments": "مفيش مدفوعات لسه",
-      "paymentHistory": "سجل المدفوعات",
-      "noTransactions": "مفيش معاملات لسه.",
       "overCapWarning": "عندك أكتر من ٦٠ طالب على باقة ستاندرد. شيل طلبة لحد ما توصل ٦٠ علشان تقدر تكمل شغلك.",
       "studentCount": "{count} طالب",
       "contactHeading": "التواصل",
@@ -8986,10 +8979,28 @@
       "messageAction": "رسالة على واتساب",
       "pendingClassesCount": "{count} حصة لم تُحصّل بعد",
       "attendanceLabel": "الحضور",
-      "attendanceFraction": "{present} من {total} حاضر",
-      "pendingClassesCountOne": "{count} حصة واحدة لم تُحصّل بعد",
+      "attendanceFraction": "حاضر {present} من {total}",
+      "pendingClassesCountOne": "حصة واحدة لم تُحصّل بعد",
       "paidVia": "مدفوع · {method}",
-      "notCollectedYet": "لم تُحصّل بعد"
+      "notCollectedYet": "لم تُحصّل بعد",
+      "studentTitle": "الطالب",
+      "balanceHeading": "الرصيد",
+      "recentClasses": "الحصص الأخيرة",
+      "statusOutstanding": "متبقٍّ",
+      "callShort": "اتصال",
+      "messageShort": "رسالة",
+      "markCollected": "تأكيد التحصيل",
+      "sendReminder": "إرسال تذكير",
+      "settled": "كل الحصص اتحصّلت",
+      "noFinishedClasses": "مفيش حصص خلصت لسه",
+      "reminderUnavailable": "التذكيرات مش متاحة دلوقتي.",
+      "reminderDisabled": "تذكيرات الواتساب لسه مش مفعّلة.",
+      "reminderTemplatePending": "رسالة التذكير لسه في انتظار موافقة واتساب.",
+      "reminderNoPhone": "مفيش رقم للدافع محفوظ على الحصة دي.",
+      "reminderCapReached": "اتبعت تذكيرين للحصة دي بالفعل.",
+      "reminderSent": "اتبعت التذكير.",
+      "markCollectedError": "مقدرناش نسجّل التحصيل. جرّب تاني.",
+      "markCollectedPartial": "{failed} من {total} حصص مقدرناش نحصّلها."
     },
     "lockedIncome": {
       "heading": "لوحة دخلك",
