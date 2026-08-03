@@ -2063,3 +2063,89 @@ html:not(.dark) [data-admin="true"] textarea.admin-textarea {
   z-index: 100;
 }
 
+
+/* ══════════════════════════════════════════════════════════════════════
+   Public marketing screens — design/Merged-Public-Marketing.html
+   Scoped to the four public screens (/, /centers, /teachers, /pricing,
+   /talk-to-us). Everything here is either an animation Tailwind cannot
+   express or the design's Arabic mono-face override. No colour values:
+   every one is an existing §4 token from tokens.css.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* The design sets tabular figures in IBM Plex Mono in English and reverts to
+   the Arabic face at weight 700 in Arabic (design L152, L215, L221, L510…).
+   Scoped to .mkt-mono so the app-wide `font-mono` token — 264 call sites on
+   screens governed by other design files — is left alone. */
+.mkt-mono {
+  font-family: var(--font-plex-mono), ui-monospace, SFMono-Regular, monospace;
+  font-weight: 500;
+}
+[dir="rtl"] .mkt-mono {
+  font-family: inherit;
+  font-weight: 700;
+}
+
+/* ── Hero tap-and-settle object (design L158-195) ──────────────────────
+   One tap presses the button, then three rows settle NOT YET → SENT → PAID
+   on a stagger. Illustration only: no data source, nothing fetched. */
+@keyframes mkt-press {
+  0%   { transform: none;         background-color: var(--color-accent); }
+  42%  { transform: scale(.962);  background-color: var(--color-accent-deep); }
+  100% { transform: none;         background-color: var(--color-accent); }
+}
+@keyframes mkt-row-paid {
+  from { border-color: var(--color-line); }
+  to   { border-color: rgba(14, 107, 97, .32); }
+}
+@keyframes mkt-av-paid {
+  from { background-color: var(--color-tile); color: var(--color-muted); }
+  to   { background-color: var(--color-mint); color: var(--color-accent-deep); }
+}
+@keyframes mkt-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes mkt-fade-in  { from { opacity: 0; transform: scale(.78); } to { opacity: 1; transform: none; } }
+
+.mkt-tapbtn { animation: mkt-press .36s cubic-bezier(.3,.85,.3,1) .55s both; }
+.mkt-settle { --mkt-s: .95s; }
+.mkt-settle > .mkt-res:nth-child(1) { --mkt-d: 1.9s; }
+.mkt-settle > .mkt-res:nth-child(2) { --mkt-d: 2.5s; }
+.mkt-settle > .mkt-res:nth-child(3) { --mkt-d: 3.2s; }
+
+.mkt-res            { animation: mkt-row-paid .6s ease var(--mkt-d) both; }
+.mkt-res .mkt-av    { animation: mkt-av-paid  .6s ease var(--mkt-d) both; }
+.mkt-res .mkt-st-n,
+.mkt-res .mkt-r-n   { animation: mkt-fade-out .28s ease var(--mkt-s) both; }
+.mkt-res .mkt-st-p,
+.mkt-res .mkt-r-p   { animation: mkt-fade-in .3s ease var(--mkt-s) both,
+                                 mkt-fade-out .28s ease var(--mkt-d) forwards; }
+.mkt-res .mkt-st-d,
+.mkt-res .mkt-r-d   { animation: mkt-fade-in .5s ease var(--mkt-d) both; }
+
+.mkt-st-p, .mkt-st-d, .mkt-r-p, .mkt-r-d { opacity: 0; }
+
+/* Reduced motion renders the settled PAID state with no animation at all
+   (design L189-195). Not optional — the object has no other resting state. */
+@media (prefers-reduced-motion: reduce) {
+  .mkt-tapbtn,
+  .mkt-res,
+  .mkt-res .mkt-av,
+  .mkt-res .mkt-st-n, .mkt-res .mkt-st-p, .mkt-res .mkt-st-d,
+  .mkt-res .mkt-r-n,  .mkt-res .mkt-r-p,  .mkt-res .mkt-r-d { animation: none; }
+  .mkt-res { border-color: rgba(14, 107, 97, .32); }
+  .mkt-res .mkt-av { background-color: var(--color-mint); color: var(--color-accent-deep); }
+  .mkt-res .mkt-st-n, .mkt-res .mkt-st-p,
+  .mkt-res .mkt-r-n,  .mkt-res .mkt-r-p { opacity: 0; }
+  .mkt-res .mkt-st-d, .mkt-res .mkt-r-d { opacity: 1; }
+}
+
+/* Brass bullet on the pricing notes (design L557-559). */
+.mkt-note { padding-inline-start: 16px; position: relative; }
+.mkt-note::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 7px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-brass);
+}

@@ -6,17 +6,33 @@ import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import QRCode from 'qrcode';
-import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye, Printer, ShoppingCart, Phone, Pencil, Inbox, CircleHelp } from 'lucide-react';
-import { EmptyState, KpiCard, SectionHeader } from '@/components/shared';
+import {
+  AlertCircle,
+  Check,
+  CreditCard,
+  Download,
+  EllipsisVertical,
+  MessageCircle,
+  Plus,
+  QrCode,
+  Search,
+  Upload,
+  UserPlus,
+  Users,
+  X,
+} from 'lucide-react';
+import { KpiCard } from '@/components/shared';
 import { QRCard } from '@/components/QRCard';
 import { PrintStatementModal } from '@/components/PrintStatementModal';
 import { AtRiskPanel } from '@/components/students/AtRiskPanel';
-import { LifecycleBadge } from '@/components/students/LifecycleBadge';
+import { StandingBadge, standingAvatarClass } from '@/components/students/StandingBadge';
 import { SwipeRow } from '@/components/students/SwipeRow';
 import { FamilyLinkingSection } from '@/components/students/FamilyLinkingSection';
 import { useUser } from '@/contexts/UserContext';
 import { useCardOrderCart } from '@/hooks/useCardOrderCart';
 import { useToast } from '@/components/ui/ToastProvider';
+import { useBranchStore } from '@/stores/branchStore';
+import { getCsrfHeaders } from '@/lib/csrf-client';
 import {
   ANNOUNCEMENT_WARN_THRESHOLD,
   BLAST_PRICE_PER_PARENT,
@@ -24,13 +40,30 @@ import {
 } from '@/lib/parentPack';
 import { formatCurrency, formatNumber, formatPlainInteger } from '@/lib/formatNumber';
 import { getStudentBalances, sumOutstanding, type StudentBalance } from '@/lib/studentBalance';
+import {
+  cairoDaysSince,
+  deriveStanding,
+  getStudentStandings,
+  isBehind,
+  type Standing,
+  type StudentStandingRow,
+} from '@/lib/studentStanding';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
+import { initialsOf } from '@/lib/initials';
 import { memoryCacheGet, memoryCacheSet } from '@/lib/clientMemoryCache';
 
 // In-memory only (tab-scoped). The roster carries PII (names, phones, parent
 // phones) and must never be written to sessionStorage/localStorage.
 const STUDENTS_CACHE_KEY = 'chq_students_cache';
-const STUDENTS_PAGE_SIZE = 20;
+
+/**
+ * Merged-Center-Students §01/§03 draw ONE responsive column at every width — no
+ * desktop table, no pager. `filteredStudents` is already fully in memory (the
+ * fetch is unpaged), so removing pagination is a render cost, not a fetch cost;
+ * this caps the mapped list and offers an explicit "show more" past it rather
+ * than shipping an unbounded roster into the DOM.
+ */
+const ROSTER_RENDER_CHUNK = 200;
 
 /**
  * Filter chips, Merged-Center-Students §01 (`.chip` / `.chip.on` / `.chip.sm`).
@@ -62,10 +95,6 @@ const CHIP_ON =
 function chipClass(on: boolean) {
   return `${CHIP_BASE} px-4 py-2 text-base ${on ? CHIP_ON : CHIP_OFF}`;
 }
-/** `.chip.sm` — the lifecycle row carries six chips and needs the denser step. */
-function chipSmClass(on: boolean) {
-  return `${CHIP_BASE} px-3 py-2 text-sm ${on ? CHIP_ON : CHIP_OFF}`;
-}
 
 interface Student {
   id: string;
@@ -83,6 +112,8 @@ interface Student {
   is_active?: boolean;
   lifecycle_status?: 'enrolled' | 'active' | 'at_risk' | 'inactive' | 'churned';
   sibling_family_id?: string | null;
+  /** students.created_at — NOT NULL live; drives the "New" standing + "joined Nd ago". */
+  created_at?: string | null;
 }
 
 interface Subject {
@@ -97,94 +128,38 @@ interface Group {
   fee_per_class?: number;
 }
 
-type SortBy = 'name' | 'balance';
+/**
+ * Merged-Center-Students §03 `.seg` — a THREE-way segmented control replacing
+ * §01's four standing chips (§03 is the later frame of the same screen, so it
+ * wins). Behind = at_risk + overdue; Paid up = paid + new.
+ *
+ * The six-way lifecycle chip row it replaces filtered on
+ * `students.lifecycle_status`, which no code path maintains for payment
+ * standing. The column still exists and is still written by
+ * /api/students/lifecycle — this screen simply stops reading it.
+ */
+type Segment = 'all' | 'behind' | 'paid_up';
 
-type LifecycleFilter = 'all' | 'active' | 'at_risk' | 'inactive' | 'enrolled' | 'churned';
+const STANDING_LABEL_KEY: Record<Standing, 'standing_paid' | 'standing_at_risk' | 'standing_overdue' | 'standing_new'> = {
+  paid: 'standing_paid',
+  at_risk: 'standing_at_risk',
+  overdue: 'standing_overdue',
+  new: 'standing_new',
+};
+
+/** `intlDigits` contract shared with the detail page: digits, country-code-prefixed, no '+'. */
+function intlDigits(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const d = raw.replace(/\D/g, '');
+  if (!d) return null;
+  if (d.startsWith('20')) return d;
+  if (d.startsWith('0')) return `20${d.slice(1)}`;
+  return `20${d}`;
+}
 
 function readStudentsCache(): Student[] | null {
   if (typeof window === 'undefined') return null;
   return memoryCacheGet<Student[]>(STUDENTS_CACHE_KEY);
-}
-
-function matchesLifecycle(
-  s: Student,
-  f: LifecycleFilter
-): boolean {
-  if (f === 'all') return true;
-  const st = s.lifecycle_status;
-  switch (f) {
-    case 'active':
-      return st === 'active';
-    case 'at_risk':
-      return st === 'at_risk';
-    case 'inactive':
-      return st === 'inactive';
-    case 'churned':
-      return st === 'churned';
-    case 'enrolled':
-      return st === 'enrolled' || st == null || st === undefined;
-    default:
-      return true;
-  }
-}
-
-type StudentStatusLabelKey =
-  | 'status_enrolled'
-  | 'status_active'
-  | 'status_at_risk'
-  | 'status_inactive'
-  | 'status_churned';
-
-function studentStatusLabelKey(lifecycle: Student['lifecycle_status']): StudentStatusLabelKey {
-  const x = lifecycle ?? 'enrolled';
-  if (x === 'active') return 'status_active';
-  if (x === 'at_risk') return 'status_at_risk';
-  if (x === 'inactive') return 'status_inactive';
-  if (x === 'churned') return 'status_churned';
-  return 'status_enrolled';
-}
-
-function studentStatusLabelFallback(lifecycle: Student['lifecycle_status']): string {
-  const x = lifecycle ?? 'enrolled';
-  if (x === 'active') return 'Active';
-  if (x === 'at_risk') return 'At Risk';
-  if (x === 'inactive') return 'Inactive';
-  if (x === 'churned') return 'Churned';
-  return 'Enrolled';
-}
-
-type FilterLabelKey =
-  | 'filter_all'
-  | 'filter_active'
-  | 'filter_at_risk'
-  | 'filter_inactive'
-  | 'filter_enrolled'
-  | 'filter_churned';
-
-function lifecycleFilterLabelKey(f: LifecycleFilter): FilterLabelKey {
-  if (f === 'all') return 'filter_all';
-  if (f === 'active') return 'filter_active';
-  if (f === 'at_risk') return 'filter_at_risk';
-  if (f === 'inactive') return 'filter_inactive';
-  if (f === 'enrolled') return 'filter_enrolled';
-  return 'filter_churned';
-}
-
-type StatusHelpKey =
-  | 'statusHelp_all'
-  | 'statusHelp_active'
-  | 'statusHelp_at_risk'
-  | 'statusHelp_inactive'
-  | 'statusHelp_enrolled'
-  | 'statusHelp_churned';
-
-function lifecycleStatusHelpKey(f: LifecycleFilter): StatusHelpKey {
-  if (f === 'all') return 'statusHelp_all';
-  if (f === 'active') return 'statusHelp_active';
-  if (f === 'at_risk') return 'statusHelp_at_risk';
-  if (f === 'inactive') return 'statusHelp_inactive';
-  if (f === 'enrolled') return 'statusHelp_enrolled';
-  return 'statusHelp_churned';
 }
 
 export default function StudentsPage() {
@@ -196,10 +171,14 @@ export default function StudentsPage() {
   const tCommon = useTranslations('common');
   const tToast = useTranslations('toasts');
   const tConsent = useTranslations('guardianConsent');
+  const tp = useTranslations('payments');
   const { user, hasPermission, refreshUser } = useUser();
   const canViewPayments =
     user?.role === 'owner' || user?.role === 'admin' || user?.role === 'super_admin' || hasPermission('can_view_payments');
-  const { activeItemCount, addItem, addItemsBatch, isStudentInCart } = useCardOrderCart();
+  // `addItem`/`activeItemCount` fed the per-row cart action and the "Order cards"
+  // link, neither of which the design draws (`/orders` keeps its sidebar entry).
+  // Batch add survives because multi-select survives — see the bulk bar.
+  const { addItemsBatch, isStudentInCart } = useCardOrderCart();
   const { toast } = useToast();
 
   const [students, setStudents] = useState<Student[] | null>(() => readStudentsCache());
@@ -213,13 +192,33 @@ export default function StudentsPage() {
   // sum through sumOutstanding() rather than re-implementing the arithmetic.
   // null = balances have not loaded yet (distinct from "loaded, nobody owes").
   const [balanceRows, setBalanceRows] = useState<StudentBalance[] | null>(null);
+  // Standing rows (§01/§03) — balance PLUS the age of the oldest open charge,
+  // which getStudentBalances cannot provide. null = not loaded yet.
+  const [standingRows, setStandingRows] = useState<Map<string, StudentStandingRow> | null>(null);
+  // True when the balance/standing fold threw. The roster then keeps its chip
+  // column EMPTY (a defaulted mint "Paid" chip nobody verified is fake success
+  // on a money surface) and an inline strip says so — a console.error alone
+  // left the failure invisible and every row wearing "Paid" forever.
+  const [standingsFailed, setStandingsFailed] = useState(false);
+  const [overdueAfterDays, setOverdueAfterDays] = useState<number | undefined>(undefined);
+  const [newStudentDays, setNewStudentDays] = useState<number | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<SortBy>('name');
   const [subjectFilter, setSubjectFilter] = useState<string | null>(null);
-  const [lifecycleFilter, setLifecycleFilter] = useState<LifecycleFilter>('all');
+  const [segment, setSegment] = useState<Segment>('all');
   const [filterKey, setFilterKey] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [statusHelpOpen, setStatusHelpOpen] = useState(false);
+  const [rowMenuId, setRowMenuId] = useState<string | null>(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [renderLimit, setRenderLimit] = useState(ROSTER_RENDER_CHUNK);
+  // Collect payment, opened from the row swipe (§01's masthead names "pay" as
+  // the first swipe action; the roster had no money action at all before).
+  const [collectTarget, setCollectTarget] = useState<Student | null>(null);
+  const [collectAmount, setCollectAmount] = useState('');
+  // cash | instapay only: the two values that pass BOTH the collect route's
+  // allowlist AND the live payments_method_check constraint (verified in
+  // pg_constraint — 'bank_transfer' is not in it and every such insert 500s).
+  const [collectMethod, setCollectMethod] = useState<'cash' | 'instapay'>('cash');
+  const [collectSubmitting, setCollectSubmitting] = useState(false);
   const [addForm, setAddForm] = useState({
     name: '',
     phone: '',
@@ -237,8 +236,6 @@ export default function StudentsPage() {
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [qrModalStudent, setQrModalStudent] = useState<Student | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-  const [isGeneratingAll, setIsGeneratingAll] = useState(false);
-  const [generateProgress, setGenerateProgress] = useState({ current: 0, total: 0 });
   const [editStudent, setEditStudent] = useState<Student | null>(null);
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
@@ -254,7 +251,6 @@ export default function StudentsPage() {
   const [announcementSubmitting, setAnnouncementSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
   const [centerId, setCenterId] = useState<string | null>(null);
-  const [pendingCount, setPendingCount] = useState<number>(0);
   const [centerInfo, setCenterInfo] = useState<{
     name?: string;
     logo_url?: string;
@@ -267,12 +263,7 @@ export default function StudentsPage() {
     parent_pack_active_parents?: number;
   } | null>(null);
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
-  const parentPhonePopoverRef = useRef<HTMLDivElement>(null);
-  const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
-  const [parentPhoneDraft, setParentPhoneDraft] = useState('');
-  const [savingParentPhoneId, setSavingParentPhoneId] = useState<string | null>(null);
-  const [isDesktopLayout, setIsDesktopLayout] = useState(false);
-  const [studentListPage, setStudentListPage] = useState(1);
+  const rowMenuRef = useRef<HTMLDivElement>(null);
   const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
   const [studentCardDelivered, setStudentCardDelivered] = useState<Record<string, boolean>>({});
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
@@ -286,25 +277,15 @@ export default function StudentsPage() {
     });
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const mq = window.matchMedia('(min-width: 768px)');
-    const apply = () => setIsDesktopLayout(mq.matches);
-    apply();
-    mq.addEventListener('change', apply);
-    return () => mq.removeEventListener('change', apply);
-  }, []);
-
-  useEffect(() => {
-    if (openPopoverId == null) return;
+    if (rowMenuId == null) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpenPopoverId(null);
+      if (e.key === 'Escape') setRowMenuId(null);
     };
     const onMouseDown = (e: MouseEvent) => {
       const t = e.target as Node;
-      if (parentPhonePopoverRef.current?.contains(t)) return;
-      const el = t as HTMLElement;
-      if (el.closest?.('[data-parent-phone-trigger]')) return;
-      setOpenPopoverId(null);
+      if (rowMenuRef.current?.contains(t)) return;
+      if ((t as HTMLElement).closest?.('[data-row-menu-trigger]')) return;
+      setRowMenuId(null);
     };
     document.addEventListener('keydown', onKey);
     document.addEventListener('mousedown', onMouseDown);
@@ -312,30 +293,7 @@ export default function StudentsPage() {
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('mousedown', onMouseDown);
     };
-  }, [openPopoverId]);
-
-  const saveParentPhoneInline = async (studentId: string) => {
-    const value = parentPhoneDraft.trim();
-    setSavingParentPhoneId(studentId);
-    try {
-      const { error } = await dbUpdate({
-        table: 'students',
-        data: { parent_phone: value || null },
-        filters: [{ column: 'id', op: 'eq', value: studentId }],
-      });
-      if (error) {
-        toast.error(tToast('error'));
-        return;
-      }
-      setStudents((prev) =>
-        (prev ?? []).map((st) => (st.id === studentId ? { ...st, parent_phone: value || null } : st)),
-      );
-      setOpenPopoverId(null);
-      toast.success(value ? ts('parentPhoneSaved') : ts('parentPhoneCleared'));
-    } finally {
-      setSavingParentPhoneId(null);
-    }
-  };
+  }, [rowMenuId]);
 
   useEffect(() => {
     const loadStudents = async () => {
@@ -369,7 +327,10 @@ export default function StudentsPage() {
         const { data } = await dbSelect({
           table: 'students',
           select:
-            'id, name, phone, parent_phone, parent_consent_given, parent_pack_opted_in, subject, fee, payment_status, student_number, qr_code, grade_level, is_active, lifecycle_status, sibling_family_id, center_id',
+            // created_at feeds the §01 "New" standing and its "joined Nd ago"
+            // meta segment. NOT NULL on students, confirmed in
+            // information_schema.columns before it was added here.
+            'id, name, phone, parent_phone, parent_consent_given, parent_pack_opted_in, subject, fee, payment_status, student_number, qr_code, grade_level, is_active, lifecycle_status, sibling_family_id, created_at, center_id',
           filters: [{ column: 'center_id', op: 'eq', value: meData.user.center_id }],
           order: { column: 'name' },
         });
@@ -388,24 +349,28 @@ export default function StudentsPage() {
     loadStudents();
   }, []);
 
+  // The two standing thresholds live in platform_config (key/value — no DDL).
+  // Both rows are absent today, so the code defaults in studentStanding.ts
+  // apply; a failed read simply leaves them undefined and those defaults stand.
   useEffect(() => {
     if (!centerId) return;
     let cancelled = false;
-    const loadPendingCount = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+    void (async () => {
       try {
-        const res = await fetch('/api/students/pending', {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+        const res = await fetch('/api/students/ui-config', {
           headers: { Authorization: `Bearer ${session.access_token}` },
         });
-        if (!res.ok) return;
-        const data = (await res.json()) as { pending?: unknown[] };
-        if (!cancelled) setPendingCount(Array.isArray(data.pending) ? data.pending.length : 0);
+        if (!res.ok || cancelled) return;
+        const j = (await res.json()) as { overdueAfterDays?: number; newStudentDays?: number };
+        if (cancelled) return;
+        if (typeof j.overdueAfterDays === 'number') setOverdueAfterDays(j.overdueAfterDays);
+        if (typeof j.newStudentDays === 'number') setNewStudentDays(j.newStudentDays);
       } catch {
-        /* ignore */
+        /* defaults stand */
       }
-    };
-    loadPendingCount();
+    })();
     return () => {
       cancelled = true;
     };
@@ -431,8 +396,19 @@ export default function StudentsPage() {
       for (const [sid, b] of balances) balance[sid] = b.balance;
       setBalanceByStudent(balance);
       setBalanceRows(Array.from(balances.values()));
+
+      // Standing adds the one thing the balance helper cannot: the Cairo-day age
+      // of the oldest open charge, which every "N days overdue" / "oldest N days"
+      // string in §01/§02/§03 reads. Same exclusions, and the net figure runs
+      // through the same computeBalance, so the two can never disagree.
+      setStandingRows(await getStudentStandings(supabase, { centerId: cid }));
+      setStandingsFailed(false);
       } catch (err) {
         console.error('[students] loadBalanceData failed', err);
+        // Surface it: standingRows stays null, so no chip renders anywhere —
+        // the strip below the search bar tells the user why (blocker fix:
+        // silent catch + 'paid' default painted unverified mint badges).
+        setStandingsFailed(true);
       }
     };
     loadBalanceData();
@@ -492,7 +468,7 @@ export default function StudentsPage() {
     return Array.from(subs).sort();
   }, [groups]);
 
-  const studentsList = students ?? [];
+  const studentsList = useMemo(() => students ?? [], [students]);
   const studentsStale = Boolean(students !== null && !studentsListFresh);
 
   /**
@@ -516,19 +492,56 @@ export default function StudentsPage() {
     return { count: behind.length, amount: sumOutstanding(behind) };
   }, [balanceRows]);
 
-  const subjectCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
+  /**
+   * Standing per student (§01 badge / §03 segmentation), from the shared fold.
+   *
+   * Until the standing query lands every row reads 'paid' — the neutral state —
+   * rather than flashing a debt badge nobody has verified yet. `deriveStanding`
+   * is the ONE place the four states are decided; the roster never re-derives.
+   */
+  const standingById = useMemo(() => {
+    const map = new Map<string, Standing>();
+    if (standingRows === null) return map;
+    const now = new Date();
     for (const s of studentsList) {
-      const subs = studentGroupsMap[s.id]?.subjects ?? [];
-      for (const sub of subs) {
-        counts[sub] = (counts[sub] ?? 0) + 1;
-      }
+      const row = standingRows.get(s.id);
+      if (!row) continue;
+      map.set(
+        s.id,
+        deriveStanding(row, now, { overdueAfterDays, newStudentDays }),
+      );
     }
-    return counts;
-  }, [studentsList, studentGroupsMap]);
+    return map;
+  }, [standingRows, studentsList, overdueAfterDays, newStudentDays]);
+
+  const standingOf = useCallback(
+    (id: string): Standing => standingById.get(id) ?? 'paid',
+    [standingById],
+  );
+
+  /**
+   * §03's amber alert: how many are behind, what they owe in total, and how old
+   * the oldest debt is. All three come from the same standing fold, so the
+   * headline count and the money underneath can never describe different people.
+   * Renders nothing at zero.
+   */
+  const behindSummary = useMemo(() => {
+    if (standingRows === null) return null;
+    let count = 0;
+    let oldestDays = 0;
+    const rows: StudentBalance[] = [];
+    for (const s of studentsList) {
+      const row = standingRows.get(s.id);
+      if (!row || !isBehind(standingOf(s.id))) continue;
+      count += 1;
+      oldestDays = Math.max(oldestDays, row.oldestUnpaidDays ?? 0);
+      rows.push({ studentId: s.id, charge: row.charge, paid: row.paid, balance: row.balance });
+    }
+    return { count, oldestDays, total: sumOutstanding(rows) };
+  }, [standingRows, studentsList, standingOf]);
 
   const filteredStudents = useMemo(() => {
-    let list = studentsList.filter((s) => {
+    return studentsList.filter((s) => {
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matchName = s.name?.toLowerCase().includes(q);
@@ -544,24 +557,26 @@ export default function StudentsPage() {
         const subs = studentGroupsMap[s.id]?.subjects ?? [];
         if (!subs.includes(subjectFilter)) return false;
       }
-      if (!matchesLifecycle(s, lifecycleFilter)) return false;
+      if (segment === 'behind' && !isBehind(standingOf(s.id))) return false;
+      if (segment === 'paid_up' && isBehind(standingOf(s.id))) return false;
       return true;
     });
-    if (sortBy === 'name') {
-      list = [...list].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-    } else {
-      list = [...list].sort((a, b) => (balanceByStudent[b.id] ?? 0) - (balanceByStudent[a.id] ?? 0));
-    }
-    return list;
-  }, [studentsList, searchQuery, subjectFilter, lifecycleFilter, sortBy, studentGroupsMap, balanceByStudent]);
+  }, [studentsList, searchQuery, subjectFilter, segment, studentGroupsMap, standingOf]);
 
-  const studentTotalCount = filteredStudents.length;
-  const studentTotalPages = Math.max(1, Math.ceil(studentTotalCount / STUDENTS_PAGE_SIZE));
-  const studentPageClamped = Math.min(studentListPage, studentTotalPages);
-  const paginatedStudents = useMemo(() => {
-    const start = (studentPageClamped - 1) * STUDENTS_PAGE_SIZE;
-    return filteredStudents.slice(start, start + STUDENTS_PAGE_SIZE);
-  }, [filteredStudents, studentPageClamped]);
+  /**
+   * §03 splits the ALL segment into a BEHIND group over an ALL STUDENTS group.
+   * Behind / Paid up render flat, with no group label — as drawn.
+   */
+  const groupedStudents = useMemo(() => {
+    const capped = filteredStudents.slice(0, renderLimit);
+    if (segment !== 'all') return [{ labelKey: null as string | null, rows: capped }];
+    const behind = capped.filter((s) => isBehind(standingOf(s.id)));
+    const rest = capped.filter((s) => !isBehind(standingOf(s.id)));
+    const out: { labelKey: string | null; rows: Student[] }[] = [];
+    if (behind.length > 0) out.push({ labelKey: 'groupBehind', rows: behind });
+    if (rest.length > 0) out.push({ labelKey: behind.length > 0 ? 'groupAll' : null, rows: rest });
+    return out;
+  }, [filteredStudents, segment, standingOf, renderLimit]);
 
   useEffect(() => {
     if (!centerId || studentsList.length === 0) return;
@@ -597,23 +612,6 @@ export default function StudentsPage() {
     };
   }, [centerId, studentsList]);
 
-  const addStudentToCart = useCallback(
-    async (studentId: string) => {
-      if (isStudentInCart(studentId)) {
-        toast.info(ts('alreadyInOrder'));
-        return;
-      }
-      if (studentCardDelivered[studentId]) return;
-      try {
-        await addItem({ kind: 'student', student_id: studentId });
-        toast.success(tCart('toast.added'));
-      } catch {
-        toast.error(tToast('error'));
-      }
-    },
-    [isStudentInCart, studentCardDelivered, addItem, toast, ts, tCart, tToast],
-  );
-
   const toggleBulkStudent = useCallback((id: string) => {
     setBulkSelected((prev) => {
       const next = new Set(prev);
@@ -639,20 +637,72 @@ export default function StudentsPage() {
   }, [bulkSelected, isStudentInCart, studentCardDelivered, addItemsBatch, toast, tCart, tToast]);
 
   useEffect(() => {
-    setStudentListPage(1);
-  }, [searchQuery, subjectFilter, lifecycleFilter, sortBy]);
+    setRenderLimit(ROSTER_RENDER_CHUNK);
+  }, [searchQuery, subjectFilter, segment]);
 
-  useEffect(() => {
-    setStudentListPage((p) => Math.min(p, studentTotalPages));
-  }, [studentTotalPages]);
+  /**
+   * §01 meta + KPI sub-label: how many branches this center belongs to.
+   * A "branch" is a `centers` row sharing an `organizations.id` — there is no
+   * `branches` table. BranchSwitcher already hydrates this store from
+   * GET /api/branches, which returns the single own-center array with
+   * plan:'single' when the center has no organization_id (0 of 2 live).
+   * Falls back to 1 — the center itself — never to the design's sample 3.
+   */
+  const branches = useBranchStore((s) => s.branches);
+  const branchCount = Math.max(1, branches.length);
 
-  const isFirstStudentPage = studentPageClamped <= 1;
-  const isLastStudentPage = studentPageClamped >= studentTotalPages;
-
-  const maxBalanceAcross = useMemo(
-    () => Math.max(1, ...studentsList.map((s) => balanceByStudent[s.id] ?? 0)),
-    [studentsList, balanceByStudent]
-  );
+  /**
+   * Collect payment from a roster row — the SAME server-gated endpoint the
+   * detail page posts to (POST /api/payments/collect, center forced server-side,
+   * CSRF headers attached). No new money path is introduced here.
+   */
+  const handleRosterCollect = useCallback(async () => {
+    const target = collectTarget;
+    if (!target) return;
+    const amount = Number.parseFloat(collectAmount.replace(/,/g, ''));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error(tToast('error'), tCommon('error'));
+      return;
+    }
+    setCollectSubmitting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error(tToast('error'), tCommon('error'));
+        return;
+      }
+      const headers = await getCsrfHeaders(session.access_token);
+      const res = await fetch('/api/payments/collect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+          ...headers,
+        },
+        body: JSON.stringify({ student_id: target.id, amount, method: collectMethod, group_id: null }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || tCommon('error'));
+      toast.success(tToast('saved'));
+      setCollectTarget(null);
+      setCollectAmount('');
+      setCollectMethod('cash');
+      // Re-fold balances AND standings so the row's money column and badge move
+      // together — never one without the other.
+      if (centerId) {
+        const balances = await getStudentBalances(supabase, { centerId });
+        const next: Record<string, number> = {};
+        for (const [sid, b] of balances) next[sid] = b.balance;
+        setBalanceByStudent(next);
+        setBalanceRows(Array.from(balances.values()));
+        setStandingRows(await getStudentStandings(supabase, { centerId }));
+      }
+    } catch (err) {
+      toast.error(tToast('error'), err instanceof Error ? err.message : tCommon('error'));
+    } finally {
+      setCollectSubmitting(false);
+    }
+  }, [collectTarget, collectAmount, collectMethod, centerId, toast, tToast, tCommon]);
 
   const activeParentsForAnnounce =
     user?.center?.parent_pack_active_parents ?? centerInfo?.parent_pack_active_parents ?? 0;
@@ -800,41 +850,6 @@ export default function StudentsPage() {
     `);
     printWindow.document.close();
     printWindow.print();
-  };
-
-  const handleGenerateAllQR = async () => {
-    const needQR = studentsList.filter((s) => !s.qr_code);
-    if (needQR.length === 0) {
-      toast.info(ts('allStudentsHaveQR', { defaultValue: 'All students already have QR codes' }));
-      return;
-    }
-    setIsGeneratingAll(true);
-    setGenerateProgress({ current: 0, total: needQR.length });
-    try {
-      for (let i = 0; i < needQR.length; i++) {
-        const student = needQR[i];
-        setGenerateProgress({ current: i + 1, total: needQR.length });
-        const dataUrl = await QRCode.toDataURL(student.id, {
-          width: 300,
-          margin: 2,
-          color: { dark: '#000000', light: '#FFFFFF' },
-        });
-        await dbUpdate({
-          table: 'students',
-          data: { qr_code: dataUrl },
-          filters: [{ column: 'id', op: 'eq', value: student.id }],
-        });
-        setStudents((prev) =>
-          (prev ?? []).map((s) => (s.id === student.id ? { ...s, qr_code: dataUrl } : s))
-        );
-      }
-      toast.success(ts('qrGeneratedNew', { count: needQR.length, defaultValue: `Generating QR codes for ${needQR.length} new students...` }));
-    } catch (err) {
-      console.error('Bulk QR error:', err);
-    } finally {
-      setIsGeneratingAll(false);
-      setGenerateProgress({ current: 0, total: 0 });
-    }
   };
 
   const openEdit = (s: Student) => {
@@ -1122,47 +1137,114 @@ export default function StudentsPage() {
     <>
       <div className="min-h-screen w-full min-w-0 overflow-x-clip bg-[var(--color-surface-0)] page-enter max-md:pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0">
         <div className="px-4 pt-4 pb-3 max-w-3xl mx-auto w-full">
-          <div className="mb-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{ts('title')}</h1>
-              <span
-                className={`inline-flex items-center rounded-full bg-teal-600 text-white text-xs font-semibold px-2.5 py-0.5 tabular-nums shrink-0 transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}
-              >
-                {students === null ? '-' : formatNumber(studentsList.length, locale)}
-              </span>
+          {/* §01/§03 `.topbar` — a 17px/600 title over a 12px meta line.
+              The design's single bar also carries a hamburger and a bell; both
+              are already the global shell (AppShell → MobileTopBar), so they are
+              deliberately NOT duplicated here. The one divergence is the shell
+              bar showing the wordmark where the design shows the page title —
+              the page owns the title row instead, stacking two rows. */}
+          <div
+            className={`mb-3 flex items-center gap-3 transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}
+          >
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-[17px] font-semibold leading-tight text-[var(--color-text-primary)]">
+                {ts('title')}
+              </h1>
+              {/* KEPT AGAINST THE DESIGN'S COPY — its roster meta (design line
+                  846) reads "142 enrolled · 8 behind". This meta keeps the
+                  "{active} active · {branches} branches" form, but `active`
+                  counts students.is_active: the flag /api/students/[id]
+                  actually writes and the standing fold, at-risk API and import
+                  already read. NOT lifecycle_status — that column is 'enrolled'
+                  on every live row (column default; its sole writer is the
+                  manual AtRiskPanel PATCH via /api/students/lifecycle), so
+                  filtering it for 'active' rendered "0 active" over a populated
+                  roster. Same source as the KPI tile below, so the two cannot
+                  contradict; `branches` is the real branch count, floored at 1
+                  — never the design's sample 3. */}
+              <p className="mt-0.5 text-xs text-[#80827A] tabular-nums">
+                {students === null
+                  ? '\u00a0'
+                  : ts('rosterMeta', {
+                      active: formatNumber(
+                        studentsList.filter((s) => s.is_active === true).length,
+                        locale,
+                      ),
+                      branches: formatNumber(branchCount, locale),
+                    })}
+              </p>
             </div>
-            <p className="text-xs text-[var(--color-text-secondary)] mt-1">{ts('subtitle')}</p>
           </div>
 
-          <div className="flex items-center gap-2 mb-4">
-            <div className="flex-1 min-w-0 rounded-xl bg-[var(--color-surface-1)] ring-1 ring-[var(--color-border-subtle)] border-0 shadow-sm focus-within:ring-2 focus-within:ring-teal-500 transition-shadow duration-150">
-              <div className="relative">
-                <Search size={18} className="absolute top-1/2 -translate-y-1/2 start-4 text-[var(--color-text-muted)] pointer-events-none" />
-                <input
-                  type="search"
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setFilterKey((k) => k + 1);
-                  }}
-                  placeholder={ts('search_placeholder')}
-                  className="w-full bg-transparent ps-12 pe-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none border-0 rounded-xl"
-                  dir="auto"
-                />
-              </div>
+          {/* §01 search + add: a 44px `.field` and a 44×44 `.addbtn` square. The
+              button's label moves to aria-label so the control stays named. */}
+          <div className="mb-3 flex items-center gap-2.5">
+            <div className="flex h-11 flex-1 min-w-0 items-center gap-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 focus-within:border-teal-500 transition-colors duration-150">
+              <Search size={18} className="shrink-0 text-[var(--color-text-muted)]" aria-hidden />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setFilterKey((k) => k + 1);
+                }}
+                placeholder={ts('search_placeholder')}
+                className="w-full min-w-0 border-0 bg-transparent text-[13px] text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-muted)]"
+                dir="auto"
+              />
             </div>
             <button
               type="button"
               onClick={() => setShowAddModal(true)}
-              className="btn-lift shrink-0 flex items-center gap-1.5 px-4 py-3 min-h-[48px] bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-xl transition-all duration-150 shadow-sm btn-press chq-focus"
+              aria-label={ts('add_student')}
+              className="btn-lift grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-teal-600 text-white shadow-sm transition-all duration-150 hover:bg-teal-700 btn-press chq-focus"
             >
-              <Plus size={18} /> <span className="hidden sm:inline">{ts('add_student')}</span>
+              <Plus size={22} aria-hidden />
             </button>
           </div>
 
-          <div className="mb-3">
-            <SectionHeader title={tCommon('sectionAtAGlance')} />
-          </div>
+          {/* Fold failure is SAID, not swallowed: when the balance/standing
+              load throws, every chip stays absent (see the srow memo) and this
+              strip says why. Mutually exclusive with the amber alert below —
+              that one needs standingRows, which a failed fold leaves null. */}
+          {standingsFailed ? (
+            <div className="mb-3 flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3">
+              <AlertCircle size={20} className="shrink-0 text-destructive" aria-hidden />
+              <p className="min-w-0 flex-1 text-[13px] text-destructive">
+                {ts('standingsLoadError')}
+              </p>
+            </div>
+          ) : null}
+
+          {/* §03 `.alert` — the amber "N behind on payment" strip. Nothing at
+              zero: an alert that always fires is not an alert. */}
+          {behindSummary && behindSummary.count > 0 ? (
+            <div className="mb-3 flex items-center gap-2 rounded-xl border border-[rgba(138,94,22,.25)] bg-[#F4EBD7] px-4 py-3">
+              <AlertCircle size={20} className="shrink-0 text-[#9A6B1F]" aria-hidden />
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-bold text-[#9A6B1F]">
+                  {ts('behindAlertTitle', { count: formatNumber(behindSummary.count, locale) })}
+                </p>
+                <p className="mt-0.5 text-[11px] text-[#9A6B1F] opacity-85 tabular-nums">
+                  {ts('behindAlertSub', {
+                    total: formatCurrency(Math.round(behindSummary.total), locale),
+                    days: formatNumber(behindSummary.oldestDays, locale),
+                  })}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSegment('behind');
+                  setFilterKey((k) => k + 1);
+                }}
+                className="shrink-0 rounded-lg bg-[#9A6B1F] px-3 py-2 text-[11px] font-bold text-[#FFFDF8] btn-press chq-focus"
+              >
+                {ts('behindAlertAction')}
+              </button>
+            </div>
+          ) : null}
+
           <div className="grid grid-cols-2 gap-3 mb-4">
             {students === null ? (
               <>
@@ -1179,12 +1261,16 @@ export default function StudentsPage() {
               <div className={`contents transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}>
                 <KpiCard
                   label={ts('active_students')}
+                  // students.is_active, never lifecycle_status — same source and
+                  // same reason as the topbar meta above (see that memo).
                   value={formatNumber(
-                    studentsList.filter((s) => s.lifecycle_status === 'active').length,
+                    studentsList.filter((s) => s.is_active === true).length,
                     locale,
                   )}
-                  subLabel={ts('ofTotalStudents', {
-                    count: formatNumber(studentsList.length, locale),
+                  // §01: "across 3 branches". Real count from the branch store
+                  // (GET /api/branches), floored at 1 — the center itself.
+                  subLabel={ts('acrossBranches', {
+                    count: formatNumber(branchCount, locale),
                   })}
                   tone="success"
                 />
@@ -1207,7 +1293,10 @@ export default function StudentsPage() {
                           amount: formatCurrency(Math.round(unpaid.amount), locale),
                         })
                   }
-                  tone="warning"
+                  // §01 draws the unpaid tile's sub in danger ink. KpiCard's
+                  // `tone` already colours the sub-label, and --color-danger IS
+                  // #9C3322 (globals.css) — no new prop needed for it.
+                  tone="danger"
                 />
               </div>
             )}
@@ -1240,136 +1329,117 @@ export default function StudentsPage() {
               ))}
             </div>
 
-            <div className="flex items-start gap-2">
-            <div className="flex flex-wrap gap-2 pb-1 flex-1 min-w-0">
-              {(['all', 'active', 'at_risk', 'inactive', 'enrolled', 'churned'] as const).map((f) => (
+            {/* §03 `.seg` — a three-way segmented control replacing §01's
+                lifecycle chips. Behind = at_risk + overdue; Paid up = paid + new.
+                The design's fourth "Covered" state needs a per-student
+                monthly-plan flag that does not exist (see needsMigration M2) and
+                is deliberately NOT rendered. */}
+            <div
+              className="flex rounded-xl border border-[var(--color-border-subtle)] bg-[#F2EEE5] p-1"
+              role="tablist"
+              aria-label={ts('filter_all')}
+            >
+              {(['all', 'behind', 'paid_up'] as const).map((seg) => (
                 <button
-                  key={f}
+                  key={seg}
                   type="button"
+                  role="tab"
+                  aria-selected={segment === seg}
                   onClick={() => {
-                    setLifecycleFilter(f);
+                    setSegment(seg);
                     setFilterKey((k) => k + 1);
                   }}
-                  className={chipSmClass(lifecycleFilter === f)}
+                  className={`flex-1 rounded-lg py-3 text-center text-xs font-semibold transition-colors duration-150 btn-press chq-focus ${
+                    segment === seg
+                      ? 'bg-[var(--color-surface-1)] text-[var(--color-accent-deep)] shadow-sm'
+                      : 'text-[var(--color-mid)]'
+                  }`}
                 >
-                  {ts(lifecycleFilterLabelKey(f))}
+                  {ts(seg === 'all' ? 'seg_all' : seg === 'behind' ? 'seg_behind' : 'seg_paidUp')}
                 </button>
               ))}
-            </div>
-              <button
-                type="button"
-                className="shrink-0 rounded-full p-2 text-teal-600 hover:bg-[var(--color-surface-2)] btn-press chq-focus"
-                aria-label={ts('statusHelpTitle')}
-                onClick={() => setStatusHelpOpen(true)}
-              >
-                <CircleHelp className="h-5 w-5" aria-hidden />
-              </button>
             </div>
           </div>
         </div>
 
         <div className="px-4 max-w-3xl mx-auto w-full space-y-4 pb-6">
-          <AtRiskPanel />
+          {/* KEPT AGAINST THE DESIGN, behind the alert's Review action: the
+              at-risk panel carries the lifecycle <select>, which is the ONLY UI
+              that can move a student out of at_risk (PATCH /api/students/lifecycle),
+              and a per-student parent reminder. §03's amber alert restores the
+              reminder at the detail level but nothing restores the status edit.
+              Reachable only from the Behind segment so it never competes with
+              the roster the design draws. */}
+          {segment === 'behind' ? <AtRiskPanel /> : null}
 
           {students === null ? (
+            /* §01 loading skeleton: a 44px search + 44 square, two KPI blocks,
+               ONE chip row, then four `.srow` skeletons. The old desktop-table
+               skeleton is gone with the table. */
             <div className="space-y-3" aria-busy="true">
-              <div className="hidden md:block rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] overflow-hidden card-shadow">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-[var(--color-surface-2)]">
-                        <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-secondary)]">
-                          {ts('name')}
-                        </th>
-                        <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-secondary)]">
-                          {ts('studentId')}
-                        </th>
-                        <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-secondary)]">
-                          {ts('parentPhone')}
-                        </th>
-                        <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-secondary)]">
-                          {ts('balance')}
-                        </th>
-                        <th className="px-4 py-3 text-end font-semibold text-[var(--color-text-secondary)]">
-                          {tCommon('actions')}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[...Array(8)].map((_, i) => (
-                        <tr
-                          key={i}
-                          className="border-b border-[var(--color-border-subtle)] last:border-b-0 transition-colors duration-150"
-                        >
-                          <td className="px-4 py-4 align-top">
-                            <div className="flex items-start gap-2">
-                              <div className="h-9 w-9 shrink-0 rounded-full bg-[var(--color-surface-2)] animate-pulse" />
-                              <div className="min-w-0 flex-1 space-y-2 pt-0.5">
-                                <div className="h-4 w-36 max-w-full rounded bg-[var(--color-surface-2)] animate-pulse" />
-                                <div className="h-3 w-20 rounded bg-[var(--color-surface-2)] animate-pulse" />
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 align-top">
-                            <div className="h-4 w-24 rounded bg-[var(--color-surface-2)] animate-pulse" />
-                          </td>
-                          <td className="px-4 py-4 align-top">
-                            <div className="h-4 w-28 rounded bg-[var(--color-surface-2)] animate-pulse" />
-                          </td>
-                          <td className="px-4 py-4 align-top">
-                            <div className="h-4 w-16 rounded bg-[var(--color-surface-2)] animate-pulse" />
-                          </td>
-                          <td className="px-4 py-4 align-top text-end">
-                            <div className="ms-auto h-8 w-20 rounded-lg bg-[var(--color-surface-2)] animate-pulse" />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+              <div className="flex items-center gap-2.5">
+                <div className="h-11 flex-1 rounded-xl bg-[var(--color-surface-2)] animate-pulse" />
+                <div className="h-11 w-11 shrink-0 rounded-xl bg-[var(--color-surface-2)] animate-pulse" />
               </div>
-              <div className="flex flex-col gap-2 md:hidden">
-                {[...Array(8)].map((_, i) => (
+              <div className="grid grid-cols-2 gap-3">
+                {[0, 1].map((i) => (
+                  <div key={i} className="h-[76px] rounded-xl bg-[var(--color-surface-2)] animate-pulse" />
+                ))}
+              </div>
+              <div className="flex gap-2">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="h-8 w-20 rounded-full bg-[var(--color-surface-2)] animate-pulse" />
+                ))}
+              </div>
+              <div className="flex flex-col gap-2">
+                {[0, 1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className="card p-4 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow"
+                    className="flex items-center gap-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-4 py-3"
                   >
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-9 h-9 rounded-full shrink-0 bg-[var(--color-surface-2)] animate-pulse" />
-                      <div className="flex-1 min-w-0 space-y-2">
-                        <div className="h-4 w-40 rounded bg-[var(--color-surface-2)] animate-pulse" />
-                        <div className="h-3 w-24 rounded bg-[var(--color-surface-2)] animate-pulse" />
-                      </div>
+                    <div className="h-[38px] w-[38px] shrink-0 rounded-xl bg-[var(--color-surface-2)] animate-pulse" />
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="h-[13px] w-3/5 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                      <div className="h-[11px] w-4/5 rounded bg-[var(--color-surface-2)] animate-pulse" />
                     </div>
-                    <div className="h-3 w-32 rounded bg-[var(--color-surface-2)] animate-pulse" />
+                    <div className="h-[22px] w-[58px] shrink-0 rounded-full bg-[var(--color-surface-2)] animate-pulse" />
                   </div>
                 ))}
               </div>
             </div>
           ) : students.length === 0 ? (
-            <EmptyState
-              icon={Users}
-              title={tEmpty('students.title')}
-              description={tEmpty('students.description')}
-              action={
-                <div className="flex flex-col items-stretch gap-3 w-full">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddModal(true)}
-                    className="btn-lift shrink-0 flex items-center justify-center gap-1.5 px-4 py-3 min-h-[48px] w-full bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-xl transition-all duration-150 shadow-sm btn-press chq-focus"
-                  >
-                    {tEmpty('students.action')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => router.push('/students/import')}
-                    className="btn-lift flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[40px] w-full border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow"
-                  >
-                    {tEmpty('students.importAction')}
-                  </button>
+            /* §01 empty state: a 76×76 mint tile, an 18px title, a ~30ch body,
+               and the two buttons pinned below. The shared EmptyState cannot
+               produce this shape, so it is rendered inline in this branch only. */
+            <div className="flex min-h-[52vh] flex-col">
+              <div className="flex flex-1 flex-col items-center justify-center gap-2 px-8 text-center">
+                <div className="grid h-[76px] w-[76px] place-items-center rounded-3xl bg-[var(--color-mint)] text-[var(--color-accent-deep)]">
+                  <Users size={34} aria-hidden />
                 </div>
-              }
-            />
+                <h2 className="mt-2 text-lg font-semibold text-[var(--color-text-primary)]">
+                  {tEmpty('students.title')}
+                </h2>
+                <p className="max-w-[30ch] text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
+                  {tEmpty('students.description')}
+                </p>
+              </div>
+              <div className="flex flex-col gap-2.5 px-4 pb-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(true)}
+                  className="btn-lift flex h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-teal-600 text-[15px] font-semibold text-white shadow-sm transition-all duration-150 hover:bg-teal-700 btn-press chq-focus"
+                >
+                  <UserPlus size={18} aria-hidden /> {tEmpty('students.action')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.push('/students/import')}
+                  className="btn-lift flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[13px] font-semibold text-[var(--color-text-primary)] transition-all duration-150 btn-press chq-focus"
+                >
+                  <Upload size={18} aria-hidden /> {tEmpty('students.importAction')}
+                </button>
+              </div>
+            </div>
           ) : (
             <div
               key={filterKey}
@@ -1377,688 +1447,367 @@ export default function StudentsPage() {
             >
               {filteredStudents.length === 0 ? (
                 <div className="card p-10 flex flex-col items-center gap-3 mt-4">
-                  <svg
-                    width="40"
-                    height="40"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    viewBox="0 0 24 24"
-                    className="text-[var(--color-text-tertiary)]"
-                  >
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                  </svg>
+                  <Users size={40} className="text-[var(--color-text-tertiary)]" aria-hidden />
                   <p className="text-sm font-medium text-[var(--color-text-secondary)]">{ts('empty_title')}</p>
                   <p className="text-xs text-[var(--color-text-tertiary)]">{ts('empty_subtitle')}</p>
                 </div>
               ) : (
                 <>
-                  <div className="hidden md:block rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] overflow-hidden mb-2 card-shadow">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="bg-[var(--color-surface-2)]">
-                            <th className="px-2 py-3 w-10">
-                              <input
-                                type="checkbox"
-                                aria-label={tCart('picker.selectAllFiltered')}
-                                checked={
-                                  paginatedStudents.some((s) => !studentCardDelivered[s.id] && !isStudentInCart(s.id)) &&
-                                  paginatedStudents
-                                    .filter((s) => !studentCardDelivered[s.id] && !isStudentInCart(s.id))
-                                    .every((s) => bulkSelected.has(s.id))
-                                }
-                                disabled={paginatedStudents.every((s) => studentCardDelivered[s.id] || isStudentInCart(s.id))}
-                                onChange={() => {
-                                  const eligible = paginatedStudents.filter(
-                                    (st) => !studentCardDelivered[st.id] && !isStudentInCart(st.id),
-                                  );
-                                  const allOn =
-                                    eligible.length > 0 && eligible.every((st) => bulkSelected.has(st.id));
-                                  setBulkSelected((prev) => {
-                                    const next = new Set(prev);
-                                    if (allOn) {
-                                      for (const st of eligible) next.delete(st.id);
-                                    } else {
-                                      for (const st of eligible) next.add(st.id);
-                                    }
-                                    return next;
-                                  });
-                                }}
-                              />
-                            </th>
-                            <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-secondary)]">
-                              {ts('name')}
-                            </th>
-                            <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-secondary)]">
-                              {ts('studentId')}
-                            </th>
-                            <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-secondary)]">
-                              {ts('parentPhone')}
-                            </th>
-                            <th className="px-4 py-3 text-start font-semibold text-[var(--color-text-secondary)]">
-                              {ts('balance')}
-                            </th>
-                            <th className="px-4 py-3 text-end font-semibold text-[var(--color-text-secondary)]">
-                              {tCommon('actions')}
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {paginatedStudents.map((s) => {
-                            const bal = balanceByStudent[s.id] ?? 0;
-                            const balNum = Number(bal);
-                            const statusKey = studentStatusLabelKey(s.lifecycle_status);
-                            const hasParent = s.parent_phone != null && String(s.parent_phone).trim() !== '';
-                            return (
-                              <tr
-                                key={s.id}
-                                className="transition-colors duration-150 hover:bg-[var(--color-surface-2)]"
-                              >
-                                <td className="px-2 py-4 align-top">
+                  {groupedStudents.map((group) => (
+                    <div key={group.labelKey ?? 'flat'}>
+                      {/* §03 `.dl` group label — only under the ALL segment. */}
+                      {group.labelKey ? (
+                        <p className="mx-1 mb-2 mt-3 text-[11px] font-bold tracking-wide text-[#80827A]">
+                          {ts(group.labelKey === 'groupBehind' ? 'groupBehind' : 'groupAll')}
+                        </p>
+                      ) : null}
+                      <div className="flex flex-col gap-2">
+                        {group.rows.map((s) => {
+                          const standing = standingOf(s.id);
+                          const row = standingRows?.get(s.id) ?? null;
+                          const balNum = Number(balanceByStudent[s.id] ?? 0);
+                          const behind = isBehind(standing);
+                          const waDigits = intlDigits(s.parent_phone ?? s.phone);
+                          // §01 meta line: subject · grade · one standing-dependent
+                          // tail. Every segment drops out when its source is null —
+                          // no placeholders, no "missed 0".
+                          const metaParts = [
+                            s.subject || null,
+                            s.grade_level ? ts('gradeLabel', { grade: s.grade_level }) : null,
+                            standing === 'overdue' || standing === 'at_risk'
+                              ? balNum > 0
+                                ? ts('owesAmount', { amount: formatCurrency(balNum, locale) })
+                                : null
+                              : null,
+                            standing === 'at_risk' && (row?.absentCount ?? 0) > 0
+                              ? ts('missedSessions', {
+                                  count: formatNumber(row?.absentCount ?? 0, locale),
+                                })
+                              : null,
+                            standing === 'new' && s.created_at
+                              ? ts('joinedAgo', {
+                                  // Cairo calendar days, same arithmetic as every
+                                  // other ageing string on this screen — never
+                                  // wall-clock division that shifts at midnight UTC.
+                                  days: formatNumber(cairoDaysSince(s.created_at), locale),
+                                })
+                              : null,
+                          ].filter(Boolean);
+                          return (
+                            <SwipeRow
+                              key={s.id}
+                              onLongPress={() => {
+                                setSelectMode(true);
+                                toggleBulkStudent(s.id);
+                              }}
+                              actions={[
+                                // §01 masthead: pay / message / edit / remove.
+                                ...(canViewPayments
+                                  ? [
+                                      {
+                                        label: tp('collectPayment'),
+                                        variant: 'default' as const,
+                                        icon: <CreditCard size={16} />,
+                                        onClick: () => {
+                                          setCollectTarget(s);
+                                          setCollectAmount(balNum > 0 ? String(Math.round(balNum)) : '');
+                                          setCollectMethod('cash');
+                                        },
+                                      },
+                                    ]
+                                  : []),
+                                ...(waDigits
+                                  ? [
+                                      {
+                                        label: ts('swipe_message'),
+                                        variant: 'default' as const,
+                                        icon: <MessageCircle size={16} />,
+                                        onClick: () => {
+                                          window.open(
+                                            `https://wa.me/${waDigits}`,
+                                            '_blank',
+                                            'noopener,noreferrer',
+                                          );
+                                        },
+                                      },
+                                    ]
+                                  : []),
+                                {
+                                  label: ts('swipe_edit'),
+                                  variant: 'default' as const,
+                                  icon: (
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                    </svg>
+                                  ),
+                                  onClick: () => openEdit(s),
+                                },
+                                {
+                                  label: ts('swipe_delete'),
+                                  variant: 'danger' as const,
+                                  icon: (
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                      <polyline points="3 6 5 6 21 6" />
+                                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                      <path d="M10 11v6M14 11v6" />
+                                    </svg>
+                                  ),
+                                  onClick: () => setDeleteTarget(s),
+                                },
+                              ]}
+                            >
+                              {/* §01/§03 `.srow` — avatar, name + one meta line,
+                                  a standing chip or money column, and a kebab.
+                                  Nothing else. */}
+                              <div className="flex items-center gap-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-4 py-3 shadow-sm">
+                                {selectMode ? (
                                   <input
                                     type="checkbox"
+                                    className="shrink-0"
+                                    aria-label={s.name}
                                     checked={bulkSelected.has(s.id)}
                                     disabled={studentCardDelivered[s.id] || isStudentInCart(s.id)}
                                     onChange={() => toggleBulkStudent(s.id)}
-                                    onClick={(e) => e.stopPropagation()}
                                   />
-                                </td>
-                                <td className="px-4 py-4 align-top">
-                                  <div className="text-start">
-                                    <Link
-                                      href={`/students/${s.id}`}
-                                      className="inline-block btn-press chq-focus rounded-md outline-offset-2"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      <span className="font-semibold text-[var(--color-text-primary)]">{s.name}</span>
-                                    </Link>
-                                    <div className="mt-1">
-                                      <LifecycleBadge status={s.lifecycle_status} label={ts(statusKey, { defaultValue: studentStatusLabelFallback(s.lifecycle_status) })} />
-                                    </div>
-                                    {s.grade_level ? (
-                                      <p className="mt-0.5 text-xs text-[var(--color-text-tertiary)]">
-                                        {ts('gradeLabel', { grade: s.grade_level })}
-                                      </p>
-                                    ) : null}
-                                  </div>
-                                </td>
-                                <td className="px-4 py-4 align-top font-mono text-[var(--color-text-primary)]" dir="ltr">
-                                  {s.student_number ? formatStudentNumberForDisplay(s.student_number) : tCommon('notSet')}
-                                </td>
-                                <td className="px-4 py-4 align-top relative">
-                                  <div
-                                    className="relative inline-block"
-                                    onClick={(e) => e.stopPropagation()}
-                                    onKeyDown={(e) => e.stopPropagation()}
-                                    role="presentation"
-                                  >
-                                    {!hasParent ? (
-                                      <button
-                                        type="button"
-                                        data-parent-phone-trigger
-                                        className="inline-flex items-center justify-center rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] btn-press chq-focus"
-                                        aria-label={ts('addParentPhone')}
-                                        onClick={() => {
-                                          setOpenPopoverId(s.id);
-                                          setParentPhoneDraft('');
-                                        }}
-                                      >
-                                        <Phone className="h-4 w-4" />
-                                      </button>
-                                    ) : (
-                                      <button
-                                        type="button"
-                                        data-parent-phone-trigger
-                                        className="inline-flex items-center gap-1.5 rounded-lg p-1 text-start hover:bg-[var(--color-surface-2)] btn-press chq-focus"
-                                        onClick={() => {
-                                          setOpenPopoverId(s.id);
-                                          setParentPhoneDraft(String(s.parent_phone ?? ''));
-                                        }}
-                                      >
-                                        <span className="text-xs text-[var(--color-text-secondary)] max-w-[140px] truncate" dir="ltr">
-                                          {s.parent_phone}
-                                        </span>
-                                        <Pencil className="h-3.5 w-3.5 shrink-0 text-[var(--color-text-muted)]" aria-hidden />
-                                      </button>
-                                    )}
-                                    {openPopoverId === s.id && isDesktopLayout ? (
-                                      <div
-                                        ref={parentPhonePopoverRef}
-                                        className="absolute z-50 mt-1 min-w-[220px] rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-1)] p-3 shadow-lg start-0"
-                                        onClick={(e) => e.stopPropagation()}
-                                        role="dialog"
-                                        aria-label={hasParent ? ts('editParentPhone') : ts('addParentPhone')}
-                                      >
-                                        <input
-                                          type="tel"
-                                          value={parentPhoneDraft}
-                                          onChange={(e) => setParentPhoneDraft(e.target.value)}
-                                          placeholder={ts('parentPhonePlaceholder')}
-                                          dir="ltr"
-                                          className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2 text-sm"
-                                        />
-                                        <div className="mt-2 flex gap-2">
-                                          <button
-                                            type="button"
-                                            disabled={savingParentPhoneId === s.id}
-                                            className="flex-1 rounded-lg bg-teal-600 px-3 py-2 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-50 btn-press chq-focus"
-                                            onClick={() => void saveParentPhoneInline(s.id)}
-                                          >
-                                            {savingParentPhoneId === s.id ? tCommon('loading') : ts('save')}
-                                          </button>
-                                          <button
-                                            type="button"
-                                            className="rounded-lg border border-[var(--color-border-default)] px-3 py-2 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] btn-press chq-focus"
-                                            onClick={() => setOpenPopoverId(null)}
-                                          >
-                                            {ts('cancel')}
-                                          </button>
-                                        </div>
-                                      </div>
-                                    ) : null}
-                                  </div>
-                                </td>
-                                <td className="px-4 py-4 align-top">
-                                  {balNum > 0 ? (
-                                    <span className="text-sm font-medium text-red-600 tabular-nums">
-                                      {formatCurrency(balNum, locale)}
-                                    </span>
-                                  ) : (
-                                    <span className="text-sm text-[var(--color-text-muted)]">{ts('no_balance')}</span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-4 align-top text-end">
-                                  <div className="flex flex-wrap justify-end gap-0.5">
-                                    <button
-                                      type="button"
-                                      onClick={() => openEdit(s)}
-                                      className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] transition-colors duration-150 btn-press chq-focus"
-                                      title={tCommon('edit')}
-                                    >
-                                      <Edit size={18} />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => openQRModal(s)}
-                                      className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] transition-colors duration-150 btn-press chq-focus"
-                                      title={ts('viewQR')}
-                                    >
-                                      <Eye size={18} />
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2 md:hidden">
-                {paginatedStudents.map((s, index) => {
-                  const bal = balanceByStudent[s.id] ?? 0;
-                  const balNum = Number(bal);
-                  const statusKey = studentStatusLabelKey(s.lifecycle_status);
-                  const hasParent = s.parent_phone != null && String(s.parent_phone).trim() !== '';
-                  const idLineClass = searchQuery.trim()
-                    ? 'text-xs text-[var(--color-text-muted)]'
-                    : 'text-xs text-[var(--color-text-tertiary)]';
-                  return (
-                    <SwipeRow
-                      key={s.id}
-                      actions={[
-                        {
-                          label: ts('addToCardOrder'),
-                          variant: 'default',
-                          icon: (
-                            <ShoppingCart
-                              size={16}
-                              className={isStudentInCart(s.id) ? 'text-teal-500 fill-teal-500' : 'text-[var(--color-text-muted)]'}
-                            />
-                          ),
-                          onClick: () => {
-                            void addStudentToCart(s.id);
-                          },
-                        },
-                        {
-                          label: ts('swipe_edit'),
-                          variant: 'default',
-                          icon: (
-                            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                            </svg>
-                          ),
-                          onClick: () => openEdit(s),
-                        },
-                        {
-                          label: ts('swipe_scan'),
-                          variant: 'default',
-                          icon: <QrCode size={16} />,
-                          onClick: () => router.push('/attendance'),
-                        },
-                        {
-                          label: ts('swipe_delete'),
-                          variant: 'danger',
-                          icon: (
-                            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                              <polyline points="3 6 5 6 21 6" />
-                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                              <path d="M10 11v6M14 11v6" />
-                            </svg>
-                          ),
-                          onClick: () => setDeleteTarget(s),
-                        },
-                      ]}
-                    >
-                      <div
-                        className="cursor-pointer rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 shadow-sm transition-colors duration-fast ease-out hover:border-[var(--color-accent)] student-card-enter"
-                        style={{ animationDelay: `${Math.min(index * 30, 150)}ms` }}
-                        onClick={() => openQRModal(s)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            openQRModal(s);
-                          }
-                        }}
-                        role="button"
-                        tabIndex={0}
-                      >
-                        <div className="flex items-center gap-3 mb-2">
-                          <input
-                            type="checkbox"
-                            className="mt-1 shrink-0"
-                            checked={bulkSelected.has(s.id)}
-                            disabled={studentCardDelivered[s.id] || isStudentInCart(s.id)}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={() => toggleBulkStudent(s.id)}
-                          />
-                          {/* §01 `.av`: 38×38 at radius 12 — a rounded square,
-                              not a circle. The fill was an inline
-                              rgba(13,148,136,.12), the old v3 brand teal at 12%,
-                              which is not a §4 colour even after the scale fold. */}
-                          <div className="h-[38px] w-[38px] shrink-0 rounded-md bg-[var(--color-mint)] text-[var(--color-accent-deep)] font-semibold text-base flex items-center justify-center">
-                            {(s.name ?? '?').charAt(0).toUpperCase()}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <Link
-                                href={`/students/${s.id}`}
-                                className="text-md font-semibold text-[var(--color-ink)] truncate btn-press chq-focus rounded outline-offset-2"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                {s.name}
-                              </Link>
-                              <LifecycleBadge status={s.lifecycle_status} label={ts(statusKey, { defaultValue: studentStatusLabelFallback(s.lifecycle_status) })} />
-                              {s.parent_consent_given && (
-                                <span
-                                  className="badge badge-success text-[10px] px-1.5 py-0"
-                                  title={ts('parentConsented', { defaultValue: 'Parent consented' })}
-                                >
-                                  ✓
-                                </span>
-                              )}
-                            </div>
-                            {s.student_number ? (
-                              <p className={`${idLineClass} mt-0.5`} dir="ltr">
-                                {formatStudentNumberForDisplay(s.student_number)}
-                              </p>
-                            ) : null}
-                            {s.phone ? (
-                              <p className="text-xs text-[var(--color-text-tertiary)] font-mono mt-0.5" dir="ltr">
-                                {s.phone}
-                              </p>
-                            ) : null}
-                            {s.grade_level ? (
-                              <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
-                                {ts('gradeLabel', { grade: s.grade_level })}
-                              </p>
-                            ) : null}
-                            {/* Design (Merged-Center-Students §01): the row meta line
-                                is "owes 300 EGP" - real-time balance, same helper
-                                (getStudentBalances) already backing this page's own
-                                KPI tiles and sort-by-balance, not a new computation. */}
-                            {balNum > 0 && (
-                              <p className="text-xs font-semibold text-amber-700 mt-0.5">
-                                {ts('owesAmount', { amount: formatCurrency(balNum, locale) })}
-                              </p>
-                            )}
-                            <div
-                              className="relative mt-2 inline-flex flex-wrap items-center gap-2"
-                              onClick={(e) => e.stopPropagation()}
-                              onKeyDown={(e) => e.stopPropagation()}
-                              role="presentation"
-                            >
-                              {!hasParent ? (
-                                <button
-                                  type="button"
-                                  data-parent-phone-trigger
-                                  className="inline-flex items-center justify-center rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] btn-press chq-focus"
-                                  aria-label={ts('addParentPhone')}
-                                  onClick={() => {
-                                    setOpenPopoverId(s.id);
-                                    setParentPhoneDraft('');
-                                  }}
-                                >
-                                  <Phone className="h-4 w-4" />
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  data-parent-phone-trigger
-                                  className="inline-flex items-center gap-1.5 rounded-lg py-1 pe-2 text-start hover:bg-[var(--color-surface-2)] btn-press chq-focus"
-                                  onClick={() => {
-                                    setOpenPopoverId(s.id);
-                                    setParentPhoneDraft(String(s.parent_phone ?? ''));
-                                  }}
-                                >
-                                  <span className="text-xs text-[var(--color-text-secondary)]" dir="ltr">
-                                    {s.parent_phone}
-                                  </span>
-                                  <Pencil className="h-3.5 w-3.5 shrink-0 text-[var(--color-text-muted)]" aria-hidden />
-                                </button>
-                              )}
-                              {openPopoverId === s.id && !isDesktopLayout ? (
+                                ) : null}
                                 <div
-                                  ref={parentPhonePopoverRef}
-                                  className="absolute z-[60] start-0 top-full mt-1 min-w-[220px] rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-1)] p-3 shadow-lg"
-                                  onClick={(e) => e.stopPropagation()}
-                                  role="dialog"
-                                  aria-label={hasParent ? ts('editParentPhone') : ts('addParentPhone')}
+                                  className={`grid h-[38px] w-[38px] shrink-0 place-items-center rounded-xl text-[13px] font-semibold ${
+                                    behind ? 'bg-[#F4EBD7] text-[#9A6B1F]' : standingAvatarClass(standing)
+                                  }`}
+                                  aria-hidden
                                 >
-                                  <input
-                                    type="tel"
-                                    value={parentPhoneDraft}
-                                    onChange={(e) => setParentPhoneDraft(e.target.value)}
-                                    placeholder={ts('parentPhonePlaceholder')}
-                                    dir="ltr"
-                                    className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2 text-sm"
-                                  />
-                                  <div className="mt-2 flex gap-2">
-                                    <button
-                                      type="button"
-                                      disabled={savingParentPhoneId === s.id}
-                                      className="flex-1 rounded-lg bg-teal-600 px-3 py-2 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-50 btn-press chq-focus"
-                                      onClick={() => void saveParentPhoneInline(s.id)}
-                                    >
-                                      {savingParentPhoneId === s.id ? tCommon('loading') : ts('save')}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="rounded-lg border border-[var(--color-border-default)] px-3 py-2 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] btn-press chq-focus"
-                                      onClick={() => setOpenPopoverId(null)}
-                                    >
-                                      {ts('cancel')}
-                                    </button>
-                                  </div>
+                                  {initialsOf(s.name)}
                                 </div>
-                              ) : null}
-                            </div>
-                            {(studentGroupsMap[s.id]?.names ?? []).length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-1.5">
-                                {(studentGroupsMap[s.id]?.names ?? []).slice(0, 3).map((n, gi) => (
-                                  <span
-                                    key={gi}
-                                    className="px-2 py-0.5 rounded-full text-[10px] font-medium border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)]"
+                                <div className="min-w-0 flex-1">
+                                  <Link
+                                    href={`/students/${s.id}`}
+                                    className="block truncate text-[15px] font-semibold leading-tight text-[var(--color-text-primary)] btn-press chq-focus rounded outline-offset-2"
                                   >
-                                    {n}
-                                  </span>
-                                ))}
-                                {(studentGroupsMap[s.id]?.names ?? []).length > 3 && (
-                                  <span className="text-[10px] text-[var(--color-text-tertiary)]">
-                                    +{(studentGroupsMap[s.id]?.names ?? []).length - 3}
+                                    {s.name}
+                                  </Link>
+                                  {metaParts.length > 0 ? (
+                                    <p className="mt-1 truncate text-xs text-[#80827A]">
+                                      {metaParts.join(' · ')}
+                                    </p>
+                                  ) : null}
+                                </div>
+                                {/* §03: behind rows carry an amber money column
+                                    (amount over age), settled rows a mint chip.
+                                    The age comes from the FIFO fold, never from
+                                    a wall-clock guess. NOTHING renders until the
+                                    fold lands (standingRows !== null — the same
+                                    gate the detail page puts on balance !==
+                                    null): before it, standingOf() is only the
+                                    'paid' default, and a mint "Paid" chip on a
+                                    student who may owe is exactly the fake
+                                    success this money surface must never show. */}
+                                {standingRows === null ? null : behind && balNum > 0 ? (
+                                  <div className="shrink-0 text-end">
+                                    <b className="block text-[13px] font-bold tabular-nums text-[#9A6B1F]">
+                                      {formatCurrency(balNum, locale)}
+                                    </b>
+                                    {row?.oldestUnpaidDays != null ? (
+                                      <span className="text-[11px] text-[#9A6B1F] opacity-80">
+                                        {ts('daysCount', {
+                                          count: formatNumber(row.oldestUnpaidDays, locale),
+                                        })}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                ) : behind || segment === 'all' ? (
+                                  // A behind row that has no positive figure to
+                                  // show still gets its real badge — never the
+                                  // mint "Paid up" chip, which would contradict
+                                  // the very filter that surfaced it.
+                                  <StandingBadge
+                                    standing={standing}
+                                    label={ts(STANDING_LABEL_KEY[standing])}
+                                  />
+                                ) : (
+                                  <span className="shrink-0 rounded-full bg-[var(--color-mint)] px-3 py-1 text-[11px] font-bold text-[var(--color-accent-deep)]">
+                                    {ts('paidUpChip')}
                                   </span>
                                 )}
+                                {/* §01 row kebab — where the roster's surviving
+                                    per-row functions live now that the action
+                                    strip is gone. Also the keyboard-reachable
+                                    path into multi-select. */}
+                                <div className="relative shrink-0">
+                                  <button
+                                    type="button"
+                                    data-row-menu-trigger
+                                    aria-label={tCommon('actions')}
+                                    aria-expanded={rowMenuId === s.id}
+                                    onClick={() => setRowMenuId(rowMenuId === s.id ? null : s.id)}
+                                    className="ms-1 p-0.5 text-[#B0B1A7] btn-press chq-focus"
+                                  >
+                                    <EllipsisVertical size={18} aria-hidden />
+                                  </button>
+                                  {rowMenuId === s.id ? (
+                                    <div
+                                      ref={rowMenuRef}
+                                      role="menu"
+                                      className="absolute end-0 top-full z-50 mt-1 min-w-[200px] rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-1)] p-1 shadow-lg"
+                                    >
+                                      <button
+                                        type="button"
+                                        role="menuitem"
+                                        className="w-full rounded-lg px-3 py-2 text-start text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)]"
+                                        onClick={() => {
+                                          setRowMenuId(null);
+                                          openEdit(s);
+                                        }}
+                                      >
+                                        {tCommon('edit')}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        role="menuitem"
+                                        className="w-full rounded-lg px-3 py-2 text-start text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)]"
+                                        onClick={() => {
+                                          setRowMenuId(null);
+                                          void openQRModal(s);
+                                        }}
+                                      >
+                                        {ts('viewQR')}
+                                      </button>
+                                      {canViewPayments ? (
+                                        <button
+                                          type="button"
+                                          role="menuitem"
+                                          className="w-full rounded-lg px-3 py-2 text-start text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)]"
+                                          onClick={() => {
+                                            setRowMenuId(null);
+                                            setPrintStudent({ id: s.id, name: s.name });
+                                          }}
+                                        >
+                                          {ts('statement.printStatement')}
+                                        </button>
+                                      ) : null}
+                                      {/* KEPT AGAINST THE DESIGN: the parent-pack
+                                          opt-in is the only per-student entry
+                                          point to a PAID WhatsApp feature. The
+                                          design draws no replacement, so it moves
+                                          into the kebab rather than being deleted. */}
+                                      {user?.center?.parent_pack_enabled === true ? (
+                                        <button
+                                          type="button"
+                                          role="menuitemcheckbox"
+                                          aria-checked={!!s.parent_pack_opted_in}
+                                          disabled={
+                                            togglingIds.has(s.id) ||
+                                            s.is_active !== true ||
+                                            !s.parent_phone ||
+                                            String(s.parent_phone).trim() === ''
+                                          }
+                                          title={
+                                            s.is_active !== true
+                                              ? ts('packDisabledInactive')
+                                              : !s.parent_phone || String(s.parent_phone).trim() === ''
+                                                ? ts('packDisabledNoPhone')
+                                                : undefined
+                                          }
+                                          className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-start text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] disabled:cursor-not-allowed disabled:opacity-50"
+                                          onClick={() => {
+                                            setRowMenuId(null);
+                                            void handlePackToggle(s);
+                                          }}
+                                        >
+                                          <span>{ts('parentPackOptIn')}</span>
+                                          {s.parent_pack_opted_in ? (
+                                            <Check size={14} className="shrink-0 text-teal-600" aria-hidden />
+                                          ) : null}
+                                        </button>
+                                      ) : null}
+                                      <button
+                                        type="button"
+                                        role="menuitem"
+                                        className="w-full rounded-lg px-3 py-2 text-start text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)]"
+                                        onClick={() => {
+                                          setRowMenuId(null);
+                                          setSelectMode(true);
+                                          toggleBulkStudent(s.id);
+                                        }}
+                                      >
+                                        {ts('selectAction')}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        role="menuitem"
+                                        className="w-full rounded-lg px-3 py-2 text-start text-sm text-[var(--color-danger)] hover:bg-[var(--color-surface-2)]"
+                                        onClick={() => {
+                                          setRowMenuId(null);
+                                          setDeleteTarget(s);
+                                        }}
+                                      >
+                                        {tCommon('delete')}
+                                      </button>
+                                    </div>
+                                  ) : null}
+                                </div>
                               </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {balNum > 0 ? (
-                          <div className="space-y-1.5">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-xs text-red-600 font-medium">{ts('balance_due')}:</span>
-                              <span className="text-xs font-semibold text-red-600 tabular-nums">
-                                {formatCurrency(balNum, locale)}
-                              </span>
-                            </div>
-                            <div className="balance-bar">
-                              <div
-                                className="balance-bar-fill"
-                                style={{ width: `${Math.min(100, (balNum / maxBalanceAcross) * 100)}%` }}
-                              />
-                            </div>
-                          </div>
-                        ) : (
-                          <p className="text-xs text-[var(--color-text-muted)]">{ts('no_balance')}</p>
-                        )}
-
-                        {user?.center?.parent_pack_enabled === true && (
-                          <div
-                            className="flex items-center justify-between gap-2 pt-2 mt-2 border-t border-[var(--color-border-subtle)]"
-                            onClick={(e) => e.stopPropagation()}
-                            onKeyDown={(e) => e.stopPropagation()}
-                            role="presentation"
-                          >
-                            <span className="text-xs text-[var(--color-text-secondary)]">{ts('parentPackOptIn')}</span>
-                            {(() => {
-                              const canOptIn =
-                                s.is_active === true &&
-                                s.parent_phone != null &&
-                                String(s.parent_phone).trim() !== '';
-                              const toggleDisabled = !canOptIn || togglingIds.has(s.id);
-                              const tip = !s.is_active
-                                ? ts('packDisabledInactive')
-                                : !s.parent_phone || String(s.parent_phone).trim() === ''
-                                  ? ts('packDisabledNoPhone')
-                                  : undefined;
-                              return (
-                                <button
-                                  type="button"
-                                  role="switch"
-                                  aria-checked={!!s.parent_pack_opted_in}
-                                  disabled={toggleDisabled}
-                                  title={tip}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (canOptIn) void handlePackToggle(s);
-                                  }}
-                                  className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${s.parent_pack_opted_in ? 'bg-teal-600' : 'bg-[var(--color-surface-3)]'} btn-press chq-focus`}
-                                >
-                                  {/* RTL-EXEMPT: knob uses physical translateX until refactored to inset-based thumb */}
-                                  <span
-                                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-[var(--color-surface-1)] shadow transition-transform ${s.parent_pack_opted_in ? 'translate-x-4' : 'translate-x-0.5'}`}
-                                  />
-                                </button>
-                              );
-                            })()}
-                          </div>
-                        )}
-
-                        <div className="hidden md:flex flex-wrap items-center justify-end gap-1 pt-3 mt-2 border-t border-[var(--color-border-subtle)]">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void addStudentToCart(s.id);
-                            }}
-                            className={`p-2 rounded-lg hover:bg-[var(--color-surface-2)] active:scale-95 transition-transform ${isStudentInCart(s.id) ? 'text-teal-500' : 'text-[var(--color-text-muted)]'} btn-press chq-focus`}
-                            aria-label={ts('addToCardOrder')}
-                            title={ts('addToCardOrder')}
-                          >
-                            <ShoppingCart size={14} className={isStudentInCart(s.id) ? 'fill-teal-500' : ''} />
-                          </button>
-                          {canViewPayments && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setPrintStudent({ id: s.id, name: s.name });
-                              }}
-                              className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] btn-press chq-focus"
-                              title={ts('statement.printStatement')}
-                            >
-                              <Printer size={14} />
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEdit(s);
-                            }}
-                            className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] btn-press chq-focus"
-                            title={tCommon('edit')}
-                          >
-                            <Edit size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openQRModal(s);
-                            }}
-                            className="p-2 rounded-lg hover:bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] btn-press chq-focus"
-                            title={ts('viewQR')}
-                          >
-                            <Eye size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteTarget(s);
-                            }}
-                            className="p-2 rounded-lg hover:bg-[rgba(239,68,68,0.12)] text-[var(--color-danger)] btn-press chq-focus"
-                            title={tCommon('delete')}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    </SwipeRow>
-                  );
-                })}
-                  </div>
-                  {studentTotalPages > 1 ? (
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow">
-                      <span className="text-sm text-[var(--color-text-secondary)]">
-                        {ts('pageOf', { page: studentPageClamped, total: studentTotalPages })}
-                      </span>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setStudentListPage((p) => Math.max(1, p - 1))}
-                          disabled={isFirstStudentPage}
-                          className={`px-3 py-1.5 rounded-lg text-sm font-medium border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] transition-colors btn-press chq-focus ${
-                            isFirstStudentPage ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-surface-0)]'
-                          }`}
-                        >
-                          {ts('prevPage')}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setStudentListPage((p) => Math.min(studentTotalPages, p + 1))}
-                          disabled={isLastStudentPage}
-                          className={`px-3 py-1.5 rounded-lg text-sm font-medium border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] text-[var(--color-text-primary)] transition-colors btn-press chq-focus ${
-                            isLastStudentPage ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-surface-0)]'
-                          }`}
-                        >
-                          {ts('nextPage')}
-                        </button>
+                            </SwipeRow>
+                          );
+                        })}
                       </div>
                     </div>
+                  ))}
+                  {filteredStudents.length > renderLimit ? (
+                    <button
+                      type="button"
+                      onClick={() => setRenderLimit((n) => n + ROSTER_RENDER_CHUNK)}
+                      className="mt-3 w-full rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] py-3 text-[13px] font-semibold text-[var(--color-accent-deep)] btn-press chq-focus"
+                    >
+                      {ts('loadMore', {
+                        count: formatNumber(filteredStudents.length - renderLimit, locale),
+                      })}
+                    </button>
                   ) : null}
                 </>
               )}
             </div>
           )}
+        </div>
 
-          <div className="pt-2">
-            <div className="mb-3">
-              <SectionHeader title={tCommon('moreActions')} />
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Link
-                href="/students/import"
-                className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow"
-              >
-                <Upload size={16} /> {ts('import')}
-              </Link>
-              <Link
-                href="/orders"
-                className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow btn-press chq-focus"
-                aria-label={ts('order_cards')}
-              >
-                <ShoppingCart size={16} />
-                {ts('order_cards')}
-                {activeItemCount > 0 ? (
-                  <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-teal-500 text-white text-[10px] font-bold leading-none">
-                    {activeItemCount > 99 ? '99+' : activeItemCount}
-                  </span>
-                ) : null}
-              </Link>
-              <Link
-                href="/students/pending"
-                className="btn-lift relative flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow btn-press chq-focus"
-                aria-label={ts('pendingRequests')}
-              >
-                <Inbox size={16} /> {ts('pendingRequests')}
-                {pendingCount > 0 ? (
-                  <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-teal-500 text-white text-[10px] font-bold leading-none">
-                    {pendingCount > 99 ? '99+' : pendingCount}
-                  </span>
-                ) : null}
-              </Link>
-              {(user?.role === 'owner' || user?.role === 'admin' || user?.role === 'super_admin') && (
+        {/* §03 `.footer` — a full-width primary pinned under the list. It opens
+            the SAME add modal as §01's `.addbtn` square; the square keeps the
+            accessible name so screen readers get one "Add student" control, not
+            two. */}
+        {students !== null && students.length > 0 ? (
+          <div className="sticky bottom-0 z-30 border-t border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] px-4 pb-6 pt-3">
+            <div className="max-w-3xl mx-auto w-full">
+              {/* KEPT AGAINST THE DESIGN: Send Announcement is a PAID blast that
+                  debits centers.announcement_balance and has no other entry point
+                  anywhere in the app. The design draws no home for it, so it sits
+                  here as a text button — and only for a center that actually has
+                  active pack parents, which is nobody live, so the common roster
+                  matches the design exactly. */}
+              {canSendAnnouncement ? (
                 <button
                   type="button"
-                  disabled={!canSendAnnouncement}
                   onClick={() => {
                     setAnnouncementBlastType(null);
                     setAnnouncementMessage('');
                     setShowAnnouncementModal(true);
                   }}
-                  className="btn-lift flex items-center gap-1.5 px-3 py-2.5 min-h-[40px] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow disabled:opacity-50 disabled:cursor-not-allowed btn-press chq-focus"
+                  className="mb-2 w-full py-2 text-center text-[13px] font-semibold text-[var(--color-accent-deep)] btn-press chq-focus"
                 >
                   {ts('sendAnnouncement')}
                 </button>
-              )}
-              <span className="mx-1 h-6 w-px bg-[var(--color-border-subtle)]" aria-hidden />
-              <span className="text-xs text-[var(--color-text-tertiary)]">{ts('sort')}</span>
+              ) : null}
               <button
                 type="button"
-                onClick={() => {
-                  setSortBy('name');
-                  setFilterKey((k) => k + 1);
-                }}
-                className={`px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 border ${
-                  sortBy === 'name'
-                    ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
-                    : 'bg-[var(--color-surface-1)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)] hover:border-teal-500/40'
-                } btn-press chq-focus`}
+                aria-hidden
+                tabIndex={-1}
+                onClick={() => setShowAddModal(true)}
+                className="btn-lift flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 p-4 text-[15px] font-bold text-white shadow-sm transition-all duration-150 hover:bg-teal-700 btn-press"
               >
-                {ts('sortName')}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSortBy('balance');
-                  setFilterKey((k) => k + 1);
-                }}
-                className={`px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 border ${
-                  sortBy === 'balance'
-                    ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
-                    : 'bg-[var(--color-surface-1)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)] hover:border-teal-500/40'
-                } btn-press chq-focus`}
-              >
-                {ts('sortBalance')}
+                <Plus size={18} aria-hidden /> {ts('add_student')}
               </button>
             </div>
           </div>
-        </div>
+        ) : null}
       </div>
 
       {/* Add Student Modal */}
@@ -2506,10 +2255,26 @@ export default function StudentsPage() {
         </div>
       )}
 
+      {/* KEPT AGAINST THE DESIGN: the design draws no checkbox, but its masthead
+          explicitly contracts long-press multi-select — and a selection with no
+          confirm affordance is a dead gesture. Only appears after a deliberate
+          long-press (or the kebab's Select item). */}
       {bulkSelected.size > 0 ? (
         <div className="fixed start-0 end-0 bottom-[calc(56px+env(safe-area-inset-bottom,0px))] md:bottom-6 z-[70] flex justify-center px-4 pointer-events-none">
           <div className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shadow-xl px-4 py-3 max-w-lg w-full">
-            <span className="text-sm text-[var(--color-text-secondary)] flex-1 tabular-nums">{bulkSelected.size}</span>
+            <span className="text-sm text-[var(--color-text-secondary)] flex-1 tabular-nums">
+              {formatNumber(bulkSelected.size, locale)}
+            </span>
+            <button
+              type="button"
+              className="shrink-0 rounded-xl px-3 py-2 text-sm font-semibold text-[var(--color-text-secondary)] btn-press chq-focus"
+              onClick={() => {
+                setBulkSelected(new Set());
+                setSelectMode(false);
+              }}
+            >
+              {tCommon('cancel')}
+            </button>
             <button
               type="button"
               data-testid="students-bulk-add-cart"
@@ -2523,6 +2288,79 @@ export default function StudentsPage() {
         </div>
       ) : null}
 
+      {/* Collect payment from a roster row (§01 swipe action "pay"). Posts to
+          the SAME POST /api/payments/collect the detail page uses — no new money
+          path, no client-side ledger write. */}
+      {collectTarget ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => !collectSubmitting && setCollectTarget(null)}
+          role="presentation"
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-labelledby="roster-collect-title"
+          >
+            <h3 id="roster-collect-title" className="mb-1 text-lg font-bold text-[var(--color-text-primary)]">
+              {tp('collectPayment')}
+            </h3>
+            <p className="mb-4 text-sm text-[var(--color-text-secondary)]">{collectTarget.name}</p>
+            <label className="mb-1 block text-xs font-medium text-[var(--color-text-secondary)]">
+              {tp('amount')}
+            </label>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              value={collectAmount}
+              onChange={(e) => setCollectAmount(e.target.value)}
+              dir="ltr"
+              placeholder="0"
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2 font-mono text-sm text-[var(--color-text-primary)]"
+            />
+            <label className="mb-1 mt-4 block text-xs font-medium text-[var(--color-text-secondary)]">
+              {tp('paymentMethod')}
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {(['cash', 'instapay'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setCollectMethod(m)}
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors btn-press chq-focus ${
+                    collectMethod === m
+                      ? 'border-teal-600 bg-teal-600/15 text-teal-700'
+                      : 'border-[var(--color-border)] text-[var(--color-text-secondary)]'
+                  }`}
+                >
+                  {tp(m === 'cash' ? 'method_cash' : 'method_instapay')}
+                </button>
+              ))}
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                disabled={collectSubmitting}
+                onClick={() => setCollectTarget(null)}
+                className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm text-[var(--color-text-primary)] disabled:opacity-50 btn-press chq-focus"
+              >
+                {tCommon('cancel')}
+              </button>
+              <button
+                type="button"
+                disabled={collectSubmitting}
+                onClick={() => void handleRosterCollect()}
+                className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-700 disabled:opacity-50 btn-press chq-focus"
+              >
+                {collectSubmitting ? tCommon('loading') : tp('recordPayment')}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {/* Print Statement Modal */}
       {printStudent && (
         <PrintStatementModal
@@ -2532,54 +2370,6 @@ export default function StudentsPage() {
           onClose={() => setPrintStudent(null)}
         />
       )}
-
-      {/* Student lifecycle filters, definitions */}
-      {statusHelpOpen ? (
-        <div
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="status-help-title"
-          onClick={() => setStatusHelpOpen(false)}
-        >
-          <div
-            className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <h2 id="status-help-title" className="text-lg font-semibold text-[var(--color-text-primary)]">
-                {ts('statusHelpTitle')}
-              </h2>
-              <button
-                type="button"
-                className="rounded-lg p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]"
-                onClick={() => setStatusHelpOpen(false)}
-                aria-label={ts('closeModal')}
-              >
-                <X className="h-5 w-5" aria-hidden />
-              </button>
-            </div>
-            <p className="mb-4 text-sm text-[var(--color-text-secondary)]">{ts('statusHelpIntro')}</p>
-            <ul className="space-y-3 text-sm text-[var(--color-text-primary)]">
-              {(['all', 'active', 'at_risk', 'inactive', 'enrolled', 'churned'] as const).map((k) => (
-                <li key={k}>
-                  <span className="font-semibold text-teal-600">
-                    {ts(lifecycleFilterLabelKey(k))}
-                  </span>
-                  <span className="text-[var(--color-text-secondary)]">, {ts(lifecycleStatusHelpKey(k))}</span>
-                </li>
-              ))}
-            </ul>
-            <button
-              type="button"
-              className="mt-6 w-full rounded-lg bg-teal-600 py-2.5 text-sm font-semibold text-white hover:bg-teal-700"
-              onClick={() => setStatusHelpOpen(false)}
-            >
-              {ts('closeModal')}
-            </button>
-          </div>
-        </div>
-      ) : null}
 
     </>
   );

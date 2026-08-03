@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from 'react';
 import { cairoDateKey } from '@/lib/cairo/day';
+import { ANNUAL_BILLED_MONTHS_DEFAULT } from '@/lib/pricing';
 import { summerBannerPhase, type SummerBannerPhase } from '@/lib/summer/phase';
 
 export interface PublicSummerConfig {
@@ -46,6 +47,37 @@ export function useSummerPublicConfig(): SummerPublicState | null {
   }, []);
 
   return state;
+}
+
+/**
+ * The live annual multiplier — `pricing.interval.annual_multiplier`, the number
+ * of months charged per year (10 today, i.e. "two months free"). Served by the
+ * same 60s-cached public endpoint.
+ *
+ * Display paths must use this rather than the compile-time default, or the
+ * price shown and the price charged can drift the moment the value is edited in
+ * admin. Falls back to `ANNUAL_BILLED_MONTHS_DEFAULT` while the fetch is in
+ * flight or if it fails — the same fallback the server helper applies.
+ */
+export function usePublicAnnualMultiplier(): number {
+  const [multiplier, setMultiplier] = useState(ANNUAL_BILLED_MONTHS_DEFAULT);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/pricing/public-config')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        const m = data?.interval?.annualMultiplier;
+        if (typeof m === 'number' && Number.isFinite(m) && m > 0) setMultiplier(m);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return multiplier;
 }
 
 /** Format a YYYY-MM-DD as a short month/day label in the locale (noon-UTC anchor). */

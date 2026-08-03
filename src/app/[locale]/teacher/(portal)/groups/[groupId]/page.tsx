@@ -428,7 +428,12 @@ export default function TeacherGroupDetailPage({
                           {initialsOf(r.student.name)}
                         </span>
                         <div className="min-w-0">
-                          <p className="font-medium text-[var(--color-text-primary)]">{r.student.name}</p>
+                          <Link
+                            href={`/teacher/students/${r.student.id}`}
+                            className="block truncate font-medium text-[var(--color-text-primary)] underline-offset-2 hover:underline"
+                          >
+                            {r.student.name}
+                          </Link>
                           <p className="text-sm text-[var(--color-text-muted)]" dir="ltr">
                             {r.student.phone}
                           </p>
@@ -536,7 +541,12 @@ export default function TeacherGroupDetailPage({
                           {initialsOf(r.student.name)}
                         </span>
                         <div>
-                          <p className="font-medium text-[var(--color-text-primary)]">{r.student.name}</p>
+                          <Link
+                            href={`/teacher/students/${r.student.id}`}
+                            className="block truncate font-medium text-[var(--color-text-primary)] underline-offset-2 hover:underline"
+                          >
+                            {r.student.name}
+                          </Link>
                           <p className="text-sm text-[var(--color-text-muted)]" dir="ltr">
                             {r.student.phone}
                           </p>

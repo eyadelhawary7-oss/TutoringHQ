@@ -20,7 +20,7 @@ export async function generateMetadata({
 }
 
 // Neutral, persona-spanning schema for the splash root. The center-specific
-// SoftwareApplication + FAQ schema now lives on /center where it belongs.
+// SoftwareApplication + FAQ schema lives on /centers where it belongs.
 const organizationSchema = {
   '@context': 'https://schema.org',
   '@type': 'Organization',

@@ -8,9 +8,21 @@ import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbDelete, auditLog } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
 import { EmptyState, PageHeader } from '@/components/shared';
-import { Plus, Clock, X, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  Plus,
+  Clock,
+  X,
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  MoreVertical,
+  Trash2,
+  ClipboardCheck,
+} from 'lucide-react';
+import { ActionSheet, type SheetAction } from '@/components/patterns';
 import { useToast } from '@/components/ui/ToastProvider';
-import { formatTime, formatNumber, formatPercent, formatDate } from '@/lib/formatNumber';
+import { formatTime, formatNumber, formatDate } from '@/lib/formatNumber';
+import { subjectPalette } from '@/lib/subjectPalette';
 import { cairoDateKey, getCurrentCairoClock, parseCairoYmd } from '@/lib/cairo/day';
 import { cairoYmdToJsWeekday, getCairoWeekColumnOrder, getCairoWeekDays } from '@/lib/cairo/week';
 
@@ -38,6 +50,132 @@ interface ScheduleSlot {
   room_name?: string;
   group_name?: string;
   member_count?: number;
+  /**
+   * The GROUP's subject, not `schedule_slots.subject`.
+   *
+   * Both columns exist, but the slot's copy is only ever written at insert
+   * (handleAddSlot) and drifts the moment a group's subject is edited. The
+   * design tints a session by the subject its group teaches, so the group's
+   * value is the one that must drive the colour.
+   */
+  subject?: string | null;
+}
+
+/**
+ * "4:00 PM" -> { main: "4:00", suffix: "PM" } for the design's stacked 46px
+ * time column. Splits on any whitespace Intl may emit — including the narrow
+ * no-break space it uses in several locales — and falls back to one line when
+ * the locale has no separate suffix, rather than slicing the string blindly.
+ */
+function splitClockLabel(formatted: string): { main: string; suffix: string | null } {
+  const parts = formatted.split(/[\s  ]+/).filter(Boolean);
+  if (parts.length < 2) return { main: formatted, suffix: null };
+  return { main: parts[0]!, suffix: parts.slice(1).join(' ') };
+}
+
+interface SessionRowProps {
+  session: ScheduleSlot;
+  /** The by-room board already names the room in its header. */
+  showRoom: boolean;
+  timing: 'now' | 'done' | null;
+  conflict: boolean;
+  locale: string;
+  onOpen: () => void;
+  onMore: () => void;
+  labels: {
+    open: string;
+    more: string;
+    notAvailable: string;
+    now: string;
+    done: string;
+    members: string;
+    conflict: string;
+  };
+}
+
+/**
+ * One session row, to `Merged-Center-Groups` §05 (design lines 1112-1132).
+ *
+ *   fixed 46px time column (4:00 over PM) · 3px subject stripe on the start
+ *   edge · name over "Room 2 · 24 students" · Now badge · three-dot
+ *
+ * Two things here are corrections rather than restyling:
+ *
+ *  - the by-time list previously showed NO conflict indicator at all, so the
+ *    default view of the schedule silently hid room double-bookings. A clash
+ *    now replaces the meta line and turns the stripe red in both day views.
+ *  - the stripe is `border-inline-start`, not `border-left`, so it sits on the
+ *    correct edge in Arabic.
+ */
+function SessionRow({
+  session,
+  showRoom,
+  timing,
+  conflict,
+  locale,
+  onOpen,
+  onMore,
+  labels,
+}: SessionRowProps) {
+  const clock = splitClockLabel(formatTime(formatTimeForDisplay(session.start_time), locale));
+  const stripe = conflict ? '#9C3322' : subjectPalette(session.subject).fg;
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      title={conflict ? labels.conflict : labels.open}
+      className={`flex cursor-pointer items-center gap-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3 shadow-sm transition-colors hover:bg-[var(--color-surface-2)] ${
+        timing === 'done' ? 'opacity-60' : ''
+      }`}
+      style={{ borderInlineStartWidth: '3px', borderInlineStartColor: stripe, borderInlineStartStyle: 'solid' }}
+    >
+      <div className="w-[46px] shrink-0 text-center">
+        <div className="font-mono text-sm font-semibold leading-tight text-[var(--color-text-primary)]">{clock.main}</div>
+        {clock.suffix && (
+          <div className="text-xs leading-tight text-[var(--color-text-muted)]">{clock.suffix}</div>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
+          {session.group_name || labels.notAvailable}
+        </div>
+        {conflict ? (
+          <div className="mt-0.5 flex items-center gap-1 text-xs font-semibold" style={{ color: '#9C3322' }}>
+            <AlertTriangle size={12} className="shrink-0" aria-hidden />
+            <span className="truncate">{labels.conflict}</span>
+          </div>
+        ) : (
+          <div className="mt-0.5 truncate font-mono text-xs text-[var(--color-text-secondary)]">
+            {showRoom ? `${session.room_name || labels.notAvailable} · ${labels.members}` : labels.members}
+            {timing === 'done' ? ` · ${labels.done}` : ''}
+          </div>
+        )}
+      </div>
+      {timing === 'now' && (
+        <span className="shrink-0 rounded-full bg-[#DFEEEB] px-2 py-0.5 text-xs font-semibold text-[#0A514A]">
+          ● {labels.now}
+        </span>
+      )}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onMore();
+        }}
+        aria-label={labels.more}
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]"
+      >
+        <MoreVertical size={20} />
+      </button>
+    </div>
+  );
 }
 
 const CAIRO_COL_ORDER = getCairoWeekColumnOrder();
@@ -107,8 +245,17 @@ export default function SchedulePage() {
   // Design (Merged-Center-Groups §05): a By time / By room toggle, so free
   // rooms and how heavily each is used are visible, not just the time order.
   const [dayView, setDayView] = useState<'time' | 'room'>('time');
+  /**
+   * Design (§05): Day / Week is a CHOICE, not a viewport.
+   *
+   * Before this the week grid was `hidden md:block` and the day list
+   * `md:hidden`, so a phone could never reach the week grid and a desktop could
+   * never reach the day list. Both now render at every width, under this state.
+   */
+  const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
   const [minuteTick, setMinuteTick] = useState(0);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  /** One shared sheet for every session row — §04's "one sheet, one gesture". */
+  const [sheetSlot, setSheetSlot] = useState<ScheduleSlot | null>(null);
   // Design (Merged-Center-Groups §05): prev/next week nav + a "13 - 19 July"
   // label. schedule_slots is a recurring weekly template with no per-occurrence
   // date, so every week shows the same pattern - navigating only changes which
@@ -240,12 +387,16 @@ export default function SchedulePage() {
     setRooms(roomsData);
     setGroups(groupsData);
     setSlots(
-      slotsData.map((s) => ({
-        ...s,
-        room_name: roomsData.find((r) => r.id === s.room_id)?.name ?? '',
-        group_name: s.group_id ? groupsData.find((g) => g.id === s.group_id)?.name ?? '' : '',
-        member_count: s.group_id ? memberCountByGroup[s.group_id] ?? 0 : 0,
-      })),
+      slotsData.map((s) => {
+        const group = s.group_id ? groupsData.find((g) => g.id === s.group_id) : undefined;
+        return {
+          ...s,
+          room_name: roomsData.find((r) => r.id === s.room_id)?.name ?? '',
+          group_name: group?.name ?? '',
+          subject: group?.subject ?? null,
+          member_count: s.group_id ? memberCountByGroup[s.group_id] ?? 0 : 0,
+        };
+      }),
     );
     setIsLoading(false);
   };
@@ -282,13 +433,10 @@ export default function SchedulePage() {
     requestAnimationFrame(() => el.scrollTo({ top: scrollY, behavior: 'smooth' }));
   }, [isLoading, rooms.length, displaySlots]);
 
-  const scrollColumnIntoView = (jsDay: number) => {
-    document.getElementById(`schedule-col-${jsDay}`)?.scrollIntoView({
-      behavior: 'smooth',
-      inline: 'center',
-      block: 'nearest',
-    });
-  };
+  // `scrollColumnIntoView` lived here to centre a day column when the day strip
+  // was tapped. The strip now belongs to the day view and the grid to the week
+  // view, so nothing can scroll a column into view any more — the helper went
+  // with its only caller rather than sitting unused.
 
   const hasConflict = useMemo(() => {
     if (!formRoomId) return false;
@@ -448,29 +596,71 @@ export default function SchedulePage() {
   /**
    * Per-room breakdown of the SELECTED day.
    *
-   * Utilisation is booked minutes over the length of the day this board
-   * actually shows (FIRST_HOUR to the last grid hour) — a room booked 3 of
-   * those 15 hours reads 20%. It is deliberately time-based, not seat-based:
-   * rooms.capacity is a seat count and student headcount per slot is not
-   * fetched here, so a seat ratio would be a figure with no source behind it.
+   * The header carries a SESSION COUNT and, when any of them clash, an overlap
+   * badge — which is what the design asks and what a room header can actually
+   * explain. The old "% booked" figure was booked-minutes over the board's
+   * 15-hour window; nothing on screen said that, so 20% read as a capacity
+   * number it never was.
    *
    * Rooms with nothing booked are kept and shown free — the design's whole
    * reason for this view is seeing which rooms are open.
    */
   const dayRoomBreakdown = (() => {
-    const dayMinutes = HOURS.length * 60;
     const slotsToday = displaySlots.filter((s) => Number(s.day_of_week) === selectedDay);
     return rooms.map((room) => {
       const slots = slotsToday
         .filter((s) => s.room_id === room.id)
         .sort((a, b) => timeToMinutes(a.start_time) - timeToMinutes(b.start_time));
-      const bookedMinutes = slots.reduce((sum, s) => {
-        const mins = timeToMinutes(s.end_time) - timeToMinutes(s.start_time);
-        return sum + (mins > 0 ? mins : 0);
-      }, 0);
-      const percent = dayMinutes > 0 ? Math.min(100, Math.round((bookedMinutes / dayMinutes) * 100)) : 0;
-      return { room, slots, percent };
+      const overlaps = slots.some((s) => getConflictingSlotIds.has(s.id));
+      return { room, slots, overlaps };
     });
+  })();
+
+  /** Distinct subjects actually present in the loaded slots — the §05 legend. */
+  const legendSubjects = Array.from(
+    new Set(displaySlots.map((s) => s.subject).filter((v): v is string => !!v && v.trim() !== '')),
+  ).sort((a, b) => a.localeCompare(b));
+
+  const slotSheetActions = (slot: ScheduleSlot): SheetAction[] => {
+    const actions: SheetAction[] = [];
+    if (slot.group_id) {
+      actions.push({
+        id: 'attendance',
+        label: t('takeAttendance'),
+        icon: ClipboardCheck,
+        onSelect: () => openAttendance(slot.group_id),
+      });
+    }
+    // Filtered out rather than rendered disabled: an assistant should not see a
+    // delete they cannot perform.
+    if (canEdit) {
+      actions.push({
+        id: 'delete',
+        label: t('delete'),
+        icon: Trash2,
+        destructive: true,
+        onSelect: () => handleDeleteSlot(slot.id, true),
+      });
+    }
+    return actions;
+  };
+
+  /**
+   * Design (§05): the topbar subtitle names the view you are actually in —
+   * "Week view", "Sunday 13 · by room", or the month.
+   *
+   * It replaces the old assistant-only "View only" string, which said nothing
+   * about the schedule; the read-only state is already the inline badge beside
+   * the title, which is where the design's own topbar puts it.
+   */
+  const headerSubtitle = (() => {
+    if (viewMode === 'week') return t('weekView');
+    const dayLabel = labelForWeekday(selectedDay);
+    const dom = dateOfMonthForWeekday(selectedDay);
+    if (dayView === 'room') {
+      return `${dayLabel}${dom != null ? ` ${formatNumber(dom, locale)}` : ''} · ${t('byRoom')}`;
+    }
+    return formatDate(weekAnchorDate, locale, { month: 'long', year: 'numeric' });
   })();
 
   const { hour: cairoHour, minute: cairoMinute } = getCurrentCairoClock();
@@ -512,23 +702,27 @@ export default function SchedulePage() {
             )}
           </>
         }
-        subtitle={
-          (user?.role === 'assistant' || user?.role === 'teacher') && hasPermission('can_view_schedule')
-            ? t('viewOnly', { defaultValue: 'View only' })
-            : undefined
-        }
+        subtitle={headerSubtitle}
       >
+        {/* Design (§05): a 42px teal icon square. BOTH live guards are kept —
+            the role gate (an assistant must not reach the add form at all) and
+            the no-rooms disabled state with its tooltip out to /rooms, because
+            schedule_slots.room_id FKs to rooms and a session cannot be created
+            without one. The design draws a bare square; a bare square here
+            would be a control that errors for half the people who can see it. */}
         {!isReadOnly && canEdit && (
           <span className="group relative inline-flex flex-col items-end">
             <button
               type="button"
               aria-disabled={rooms.length === 0}
+              aria-label={t('addSession')}
+              title={t('addSession')}
               onClick={() => rooms.length > 0 && setShowAddModal(true)}
-              className={`flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors ${
+              className={`flex h-[42px] w-[42px] items-center justify-center rounded-xl bg-teal-600 text-white transition-colors hover:bg-teal-700 btn-press chq-focus ${
                 rooms.length === 0 ? 'opacity-50 cursor-not-allowed hover:bg-teal-600' : ''
               }`}
             >
-              <Plus size={16} /> {t('addSession')}
+              <Plus size={22} aria-hidden />
             </button>
             {rooms.length === 0 ? (
               <span className="pointer-events-none absolute top-full end-0 z-50 mt-1 hidden max-w-[220px] rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-3 py-2 text-start text-xs text-[var(--color-text-secondary)] shadow-lg group-hover:pointer-events-auto group-hover:block">
@@ -570,12 +764,32 @@ export default function SchedulePage() {
         />
       ) : (
         <>
-          {/* Design (§05): "13 - 19 July" + prev/next week nav. The grid always
-              shows the same recurring weekly pattern; this only moves which
-              calendar dates the pills above it label. Hidden on the teacher's
-              mobile Today/This-week list (a separate layout below that isn't
-              driven by weekDays), shown on its desktop grid same as everyone. */}
-          <div className={`mb-3 items-center justify-between gap-2 ${isTeacher ? 'hidden md:flex' : 'flex'}`}>
+          {/* Design (§05): Day / Week. The view is now a choice rather than a
+              consequence of screen width — before this a phone could not reach
+              the week grid at all and a desktop could not reach the day list. */}
+          <div className={`mb-3 gap-1 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-1 ${isTeacher ? 'hidden md:flex' : 'flex'}`}>
+            {(['day', 'week'] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setViewMode(mode)}
+                aria-pressed={viewMode === mode}
+                className={`min-h-[40px] flex-1 rounded-lg text-sm font-semibold transition-colors ${
+                  viewMode === mode
+                    ? 'bg-teal-600 text-white'
+                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'
+                }`}
+              >
+                {mode === 'day' ? t('day') : t('week')}
+              </button>
+            ))}
+          </div>
+
+          {/* Design (§05): "13 - 19 July" + prev/next week nav, INSIDE the week
+              view — it moves which calendar dates the grid heads are labelled
+              with, which is meaningless while a single day is on screen. The
+              grid itself always shows the same recurring weekly pattern. */}
+          <div className={`mb-3 items-center justify-between gap-2 ${viewMode === 'week' && !(isTeacher) ? 'flex' : viewMode === 'week' ? 'hidden md:flex' : 'hidden'}`}>
             <button
               type="button"
               onClick={() => setWeekOffset((v) => v - 1)}
@@ -588,6 +802,11 @@ export default function SchedulePage() {
               <span className="text-sm font-semibold text-[var(--color-text-primary)]" dir="ltr">
                 {weekRangeLabel}
               </span>
+              {/* KEPT against the design, deliberately (recorded in the PR's
+                  flagged list): §05's wnav is prev/label/next only (design
+                  lines 1191-1195), but without this reset a user who paged N
+                  weeks away needs N taps back — the link only renders once
+                  they have left the current week. */}
               {weekOffset !== 0 && (
                 <button
                   type="button"
@@ -608,45 +827,25 @@ export default function SchedulePage() {
             </button>
           </div>
 
-          <div className="hidden md:block">
-            <div className="flex gap-1 bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] rounded-xl p-1 mb-4 overflow-x-auto snap-x snap-mandatory scrollbar-thin">
-              {CAIRO_COL_ORDER.map((day) => (
-                <button
-                  key={day}
-                  type="button"
-                  aria-label={labelForWeekday(day)}
-                  onClick={() => {
-                    setSelectedDay(day);
-                    scrollColumnIntoView(day);
-                  }}
-                  className={`snap-start shrink-0 flex min-h-[44px] min-w-[44px] flex-1 flex-col items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold tabular-nums transition-colors ${
-                    selectedDay === day
-                      ? 'bg-teal-600 text-white ring-2 ring-teal-400/40'
-                      : isWeekend(day)
-                        ? 'bg-[var(--color-surface-0)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]'
-                        : 'bg-[var(--color-surface-0)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'
-                  }`}
-                >
-                  <span className="text-[10px] font-medium opacity-80 leading-none">{t(SHORT_DAY_KEYS[day])}</span>
-                  <span className="text-sm leading-tight mt-0.5">
-                    {dateOfMonthForWeekday(day) != null
-                      ? formatNumber(dateOfMonthForWeekday(day) as number, locale)
-                      : ''}
-                  </span>
-                  {/* Design's day-pill load dots - up to 3, one per session that day. */}
-                  {slotCountForDay(day) > 0 && (
-                    <span className="mt-0.5 flex gap-0.5" aria-hidden>
-                      {Array.from({ length: Math.min(3, slotCountForDay(day)) }).map((_, i) => (
-                        <span
-                          key={i}
-                          className={`h-1 w-1 rounded-full ${selectedDay === day ? 'bg-white/80' : 'bg-teal-500/70'}`}
-                        />
-                      ))}
+          <div className={viewMode === 'week' ? (isTeacher ? 'hidden md:block' : 'block') : 'hidden'}>
+            {/* Design (§05): a subject legend, built from the subjects ACTUALLY
+                present in the loaded slots and coloured through the same
+                palette function the blocks use. A hardcoded Physics/Chemistry/
+                Math/English list would disagree with the grid the moment a
+                centre taught a fifth subject. */}
+            {legendSubjects.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-3 px-0.5 text-xs text-[var(--color-text-muted)]">
+                {legendSubjects.map((s) => {
+                  const p = subjectPalette(s);
+                  return (
+                    <span key={s} className="inline-flex items-center gap-1.5">
+                      <i className="inline-block h-2.5 w-2.5 rounded-xs" style={{ background: p.bg }} aria-hidden />
+                      <bdi>{s}</bdi>
                     </span>
-                  )}
-                </button>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
 
             <div className="overflow-x-auto rounded-xl border border-[var(--color-border-subtle)] shadow-sm">
               <div className="min-w-[720px] bg-[var(--color-surface-1)]">
@@ -665,17 +864,39 @@ export default function SchedulePage() {
                     <div className="border-e border-[var(--color-border-subtle)] px-3 py-3 text-xs font-medium text-[var(--color-text-muted)]">
                       {t('time')}
                     </div>
-                    {CAIRO_COL_ORDER.map((day) => (
-                      <div
-                        key={day}
-                        id={`schedule-col-${day}`}
-                        className={`border-e border-[var(--color-border-subtle)] px-3 py-3 text-center text-xs font-medium text-[var(--color-text-muted)] last:border-e-0 ${
-                          selectedDay === day ? 'ring-1 ring-inset ring-teal-500/35' : ''
-                        }`}
-                      >
-                        {labelForWeekday(day)}
-                      </div>
-                    ))}
+                    {/* Design (§05): weekday stacked over date-of-month, the
+                        selected day's number in teal and the weekend's muted.
+                        Both come from `weekDays`, so the heads follow week
+                        navigation instead of naming a fixed calendar week. */}
+                    {CAIRO_COL_ORDER.map((day) => {
+                      const dom = dateOfMonthForWeekday(day);
+                      return (
+                        <div
+                          key={day}
+                          id={`schedule-col-${day}`}
+                          className={`border-e border-[var(--color-border-subtle)] px-3 py-2 text-center last:border-e-0 ${
+                            selectedDay === day ? 'ring-1 ring-inset ring-teal-500/35' : ''
+                          }`}
+                        >
+                          <span className="block text-xs font-medium text-[var(--color-text-muted)]">
+                            {labelForWeekday(day)}
+                          </span>
+                          {dom != null && (
+                            <span
+                              className={`block text-sm font-semibold tabular-nums ${
+                                selectedDay === day
+                                  ? 'text-teal-600'
+                                  : isWeekend(day)
+                                    ? 'text-[#A6A79D]'
+                                    : 'text-[var(--color-text-secondary)]'
+                              }`}
+                            >
+                              {formatNumber(dom, locale)}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                   {HOURS.map((hour) => (
                     <div key={hour} className="grid grid-cols-8 border-b border-[var(--color-border-subtle)] min-h-[60px]">
@@ -688,6 +909,17 @@ export default function SchedulePage() {
                           <div key={day} className="border-e border-[var(--color-border-subtle)] last:border-e-0 p-1.5">
                             {cellSlots.map((slot) => {
                               const isConflict = getConflictingSlotIds.has(slot.id);
+                              const partnerName = conflictPartnerName.get(slot.id);
+                              const palette = subjectPalette(slot.subject);
+                              // Design (§05, lines 1123-1130): the clash line
+                              // LEADS with the double-booked room — "Room 1
+                              // clash · overlaps Math 5:30".
+                              const clashLabel = partnerName
+                                ? t('conflictWith', {
+                                    room: slot.room_name || tCommon('notAvailable'),
+                                    name: partnerName,
+                                  })
+                                : t('conflictShort');
                               return (
                                 <div
                                   key={slot.id}
@@ -700,64 +932,34 @@ export default function SchedulePage() {
                                       openAttendance(slot.group_id);
                                     }
                                   }}
-                                  title={tAtt('captureTitle')}
-                                  className={`relative rounded-xl p-2 cursor-pointer transition-colors group border shadow-sm ${
-                                    isConflict
-                                      ? 'bg-red-500/10 hover:bg-red-500/15 border-red-500/40'
-                                      : 'bg-[var(--color-surface-1)] hover:bg-[var(--color-surface-2)] border-[var(--color-border-subtle)]'
-                                  }`}
+                                  title={isConflict ? clashLabel : tAtt('captureTitle')}
+                                  /* Design (§05): a clash is an OUTLINE, not a
+                                     red fill — the block keeps its subject
+                                     colour so the grid still reads as a
+                                     timetable. aria-label carries the meaning
+                                     so it is never colour-only. */
+                                  aria-label={isConflict ? clashLabel : undefined}
+                                  className="relative cursor-pointer rounded-xl p-2 shadow-sm transition-opacity hover:opacity-90"
+                                  style={{
+                                    background: palette.bg,
+                                    color: palette.fg,
+                                    ...(isConflict
+                                      ? { outline: '1.5px solid #9C3322', outlineOffset: '-1.5px' }
+                                      : {}),
+                                  }}
                                 >
-                                  {isConflict && (() => {
-                                    const partnerName = conflictPartnerName.get(slot.id);
-                                    return (
-                                      <span
-                                        className="absolute top-1 end-1"
-                                        title={partnerName ? t('conflictWith', { name: partnerName }) : t('conflictShort')}
-                                      >
-                                        <AlertTriangle className="w-3.5 h-3.5 text-red-500" aria-hidden />
-                                      </span>
-                                    );
-                                  })()}
-                                  <p
-                                    className={`text-xs font-semibold truncate pe-5 ${
-                                      isConflict ? 'text-red-800' : 'text-[var(--color-text-primary)]'
-                                    }`}
-                                  >
+                                  <p className="truncate text-xs font-semibold">
                                     {slot.group_name || tCommon('notAvailable')}
                                   </p>
-                                  <p
-                                    className={`text-xs truncate ${
-                                      isConflict ? 'text-red-700' : 'text-[var(--color-text-secondary)]'
-                                    }`}
-                                  >
+                                  <p className="truncate text-xs opacity-80">
                                     {slot.room_name || tCommon('notAvailable')}
                                   </p>
-                                  <p
-                                    className={`text-xs ${
-                                      isConflict ? 'text-red-600' : 'text-[var(--color-text-tertiary)]'
-                                    }`}
-                                  >
+                                  <p className="text-xs opacity-70">
                                     <span dir="ltr">
                                       {formatTime(formatTimeForDisplay(slot.start_time), locale)} –{' '}
                                       {formatTime(formatTimeForDisplay(slot.end_time), locale)}
                                     </span>
                                   </p>
-                                  {canEdit && (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteSlot(slot.id);
-                                      }}
-                                      className={`hidden group-hover:block absolute top-1 end-1 p-0.5 rounded ${
-                                        isConflict
-                                          ? 'hover:bg-red-500/20 text-red-700'
-                                          : 'hover:bg-[var(--color-surface-2)] text-teal-600'
-                                      }`}
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  )}
                                 </div>
                               );
                             })}
@@ -769,9 +971,15 @@ export default function SchedulePage() {
                 </div>
               </div>
             </div>
+            {/* Design (§05): the caption that explains the outline. Without it
+                the red ring is an unexplained decoration. */}
+            <p className="mt-2 flex items-center gap-1.5 px-0.5 text-xs text-[var(--color-text-muted)]">
+              <AlertTriangle size={12} className="shrink-0 text-[#9C3322]" aria-hidden />
+              {t('gridCaption')}
+            </p>
           </div>
 
-          <div className={`md:hidden ${isTeacher ? 'hidden' : 'block'}`}>
+          <div className={viewMode === 'day' ? (isTeacher ? 'hidden md:block' : 'block') : 'hidden'}>
             <div className="-mx-1 mb-3 flex snap-x snap-mandatory gap-1.5 overflow-x-auto px-1 pb-2">
               {CAIRO_COL_ORDER.map((day) => (
                 <button
@@ -793,9 +1001,10 @@ export default function SchedulePage() {
                       ? formatNumber(dateOfMonthForWeekday(day) as number, locale)
                       : ''}
                   </span>
+                  {/* Design's day-pill load dots — up to FOUR, one per session. */}
                   {slotCountForDay(day) > 0 && (
                     <span className="mt-0.5 flex gap-0.5" aria-hidden>
-                      {Array.from({ length: Math.min(3, slotCountForDay(day)) }).map((_, i) => (
+                      {Array.from({ length: Math.min(4, slotCountForDay(day)) }).map((_, i) => (
                         <span
                           key={i}
                           className={`h-1 w-1 rounded-full ${selectedDay === day ? 'bg-white/80' : 'bg-teal-500/70'}`}
@@ -806,76 +1015,103 @@ export default function SchedulePage() {
                 </button>
               ))}
             </div>
-            <div className="mb-3 inline-flex rounded-lg border border-[var(--color-border-subtle)] p-0.5">
-              {(['time', 'room'] as const).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setDayView(mode)}
-                  className={`min-h-[36px] rounded-md px-3 text-xs font-semibold transition-colors ${
-                    dayView === mode
-                      ? 'bg-teal-600 text-white'
-                      : 'text-[var(--color-text-secondary)]'
-                  }`}
-                >
-                  {mode === 'time' ? t('byTime') : t('byRoom')}
-                </button>
-              ))}
-            </div>
+            {/* Design (§05): a full-width segmented control, the same shape as
+                Day / Week above it. Still hidden for teachers — the by-room
+                board is a room-management view, not a teaching one. */}
+            {!isTeacher && (
+              <div className="mb-3 flex w-full gap-1 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-1">
+                {(['time', 'room'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setDayView(mode)}
+                    aria-pressed={dayView === mode}
+                    className={`min-h-[38px] flex-1 rounded-md text-sm font-semibold transition-colors ${
+                      dayView === mode
+                        ? 'bg-teal-600 text-white'
+                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'
+                    }`}
+                  >
+                    {mode === 'time' ? t('byTime') : t('byRoom')}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {dayView === 'room' ? (
               rooms.length === 0 ? (
                 <p className="py-2 text-sm text-[var(--color-text-secondary)]">{t('noSessionsSelectedDay')}</p>
               ) : (
-                dayRoomBreakdown.map(({ room, slots, percent }) => (
-                  <div
-                    key={room.id}
-                    className="mb-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3"
-                  >
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                dayRoomBreakdown.map(({ room, slots, overlaps }) => (
+                  <div key={room.id} className="mb-4">
+                    {/* Design (§05): room name, session count, and an overlap
+                        badge pushed to the end when any of them clash. */}
+                    <div className="mb-2 flex items-center gap-2">
                       <span className="text-sm font-bold text-[var(--color-text-primary)]">{room.name}</span>
-                      <span
-                        className={`text-xs font-semibold ${
-                          slots.length === 0 ? 'text-[var(--color-text-muted)]' : 'text-teal-700'
-                        }`}
-                      >
+                      <span className="font-mono text-xs text-[var(--color-text-muted)]">
                         {slots.length === 0
-                          ? t('roomFreeToday')
-                          : t('roomUtilisation', { percent: formatPercent(percent, locale) })}
+                          ? `· ${t('roomFreeToday')}`
+                          : t('sessionsCount', { count: formatNumber(slots.length, locale) })}
                       </span>
+                      {overlaps && (
+                        <span
+                          className="ms-auto inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold"
+                          style={{ background: '#F4E5E2', color: '#9C3322' }}
+                        >
+                          <AlertTriangle size={11} aria-hidden />
+                          {t('overlapBadge')}
+                        </span>
+                      )}
                     </div>
-                    {slots.length > 0 && (
-                      <ul className="mt-2 space-y-1">
-                        {slots.map((s) => {
-                          const timing = sessionTimingState(s.start_time, s.end_time, selectedDay === cairoTodayWd);
-                          return (
-                          <li key={s.id} className={`flex flex-wrap items-baseline gap-x-2 text-xs ${timing === 'done' ? 'opacity-60' : ''}`}>
-                            <span className="font-mono text-teal-600" dir="ltr">
-                              {formatTime(formatTimeForDisplay(s.start_time), locale)} –{' '}
-                              {formatTime(formatTimeForDisplay(s.end_time), locale)}
-                            </span>
-                            <span className="text-[var(--color-text-primary)]">
-                              {s.group_name || tCommon('notAvailable')}
-                            </span>
-                            {timing === 'now' && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-semibold text-teal-700">
-                                ● {t('now')}
-                              </span>
-                            )}
-                            {timing === 'done' && (
-                              <span className="text-[var(--color-text-muted)]">· {t('sessionDone')}</span>
-                            )}
-                            {getConflictingSlotIds.has(s.id) && (
-                              <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 font-semibold text-amber-700">
-                                {conflictPartnerName.get(s.id)
-                                  ? t('conflictWith', { name: conflictPartnerName.get(s.id) as string })
-                                  : t('conflictShort')}
-                              </span>
-                            )}
-                          </li>
-                          );
-                        })}
-                      </ul>
+                    {slots.length === 0 ? (
+                      /* Design (§05): a free room is an INVITATION, not a blank.
+                         Tapping pre-fills the add form with this room and the
+                         selected day. Gated on the same rules as the topbar's
+                         add control — an assistant taps nothing here. */
+                      <button
+                        type="button"
+                        disabled={isReadOnly || !canEdit}
+                        onClick={() => {
+                          setFormRoomId(room.id);
+                          setFormDay(selectedDay);
+                          setShowAddModal(true);
+                        }}
+                        className="w-full rounded-xl border border-dashed border-[#CDB98A] p-3 text-center text-xs font-semibold text-[#9A6B1F] disabled:cursor-default disabled:opacity-60 btn-press chq-focus"
+                      >
+                        {t('roomOpenAllDay')}
+                      </button>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {slots.map((s) => (
+                          <SessionRow
+                            key={s.id}
+                            session={s}
+                            showRoom={false}
+                            timing={sessionTimingState(s.start_time, s.end_time, selectedDay === cairoTodayWd)}
+                            conflict={getConflictingSlotIds.has(s.id)}
+                            locale={locale}
+                            onOpen={() => openAttendance(s.group_id)}
+                            onMore={() => setSheetSlot(s)}
+                            labels={{
+                              open: tAtt('captureTitle'),
+                              more: t('moreActions'),
+                              notAvailable: tCommon('notAvailable'),
+                              now: t('now'),
+                              done: t('sessionDone'),
+                              members: formatMemberCount(s.member_count ?? 0),
+                              // The conflict line replaces the meta line that
+                              // carries room_name, so it must itself name the
+                              // double-booked room (design §05 clash line).
+                              conflict: conflictPartnerName.get(s.id)
+                                ? t('conflictWith', {
+                                    room: s.room_name || tCommon('notAvailable'),
+                                    name: conflictPartnerName.get(s.id) as string,
+                                  })
+                                : t('conflictShort'),
+                            }}
+                          />
+                        ))}
+                      </div>
                     )}
                   </div>
                 ))
@@ -883,86 +1119,37 @@ export default function SchedulePage() {
             ) : displaySlots.filter((s) => Number(s.day_of_week) === selectedDay).length === 0 ? (
               <p className="py-2 text-sm text-[var(--color-text-secondary)]">{t('noSessionsSelectedDay')}</p>
             ) : (
-              displaySlots
-                .filter((s) => Number(s.day_of_week) === selectedDay)
-                .map((session) => {
-                  const timing = sessionTimingState(session.start_time, session.end_time, selectedDay === cairoTodayWd);
-                  return (
-                  <div
-                    key={session.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => openAttendance(session.group_id)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        openAttendance(session.group_id);
-                      }
-                    }}
-                    title={tAtt('captureTitle')}
-                    className={`mb-2 cursor-pointer rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3 shadow-sm transition-colors hover:bg-[var(--color-surface-2)] ${timing === 'done' ? 'opacity-60' : ''}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="font-mono text-sm text-teal-600">
-                        <span dir="ltr">
-                          {formatTime(formatTimeForDisplay(session.start_time), locale)} –{' '}
-                          {formatTime(formatTimeForDisplay(session.end_time), locale)}
-                        </span>
-                      </div>
-                      {timing === 'now' && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-semibold text-teal-700">
-                          ● {t('now')}
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-0.5 text-sm font-bold text-[var(--color-text-primary)]">
-                      {session.group_name || tCommon('notAvailable')}
-                    </div>
-                    <div className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
-                      {session.room_name || tCommon('notAvailable')} • {formatMemberCount(session.member_count ?? 0)}
-                      {timing === 'done' ? ` • ${t('sessionDone')}` : ''}
-                    </div>
-                    {canEdit && (
-                      confirmDeleteId === session.id ? (
-                        <div className="mt-2 flex items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setConfirmDeleteId(null);
-                              handleDeleteSlot(session.id, true);
-                            }}
-                            className="flex min-h-[44px] items-center text-xs font-semibold text-red-600 hover:underline"
-                          >
-                            {t('confirmDelete', { defaultValue: 'Sure?' })}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setConfirmDeleteId(null);
-                            }}
-                            className="flex min-h-[44px] items-center text-xs font-semibold text-[var(--color-text-secondary)] hover:underline"
-                          >
-                            {tCommon('cancel')}
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setConfirmDeleteId(session.id);
-                          }}
-                          className="mt-2 flex min-h-[44px] min-w-[44px] items-center text-xs font-semibold text-red-600 hover:underline"
-                        >
-                          {t('delete')}
-                        </button>
-                      )
-                    )}
-                  </div>
-                  );
-                })
+              <div className="flex flex-col gap-2">
+                {displaySlots
+                  .filter((s) => Number(s.day_of_week) === selectedDay)
+                  .sort((a, b) => timeToMinutes(a.start_time) - timeToMinutes(b.start_time))
+                  .map((session) => (
+                    <SessionRow
+                      key={session.id}
+                      session={session}
+                      showRoom
+                      timing={sessionTimingState(session.start_time, session.end_time, selectedDay === cairoTodayWd)}
+                      conflict={getConflictingSlotIds.has(session.id)}
+                      locale={locale}
+                      onOpen={() => openAttendance(session.group_id)}
+                      onMore={() => setSheetSlot(session)}
+                      labels={{
+                        open: tAtt('captureTitle'),
+                        more: t('moreActions'),
+                        notAvailable: tCommon('notAvailable'),
+                        now: t('now'),
+                        done: t('sessionDone'),
+                        members: formatMemberCount(session.member_count ?? 0),
+                        conflict: conflictPartnerName.get(session.id)
+                          ? t('conflictWith', {
+                              room: session.room_name || tCommon('notAvailable'),
+                              name: conflictPartnerName.get(session.id) as string,
+                            })
+                          : t('conflictShort'),
+                      }}
+                    />
+                  ))}
+              </div>
             )}
           </div>
 
@@ -1160,6 +1347,16 @@ export default function SchedulePage() {
           </div>
         </div>
       )}
+
+      {/* The shared sheet every session row opens — replaces the inline
+          Delete -> "Sure?" pair that used to sit inside each card. */}
+      <ActionSheet
+        open={sheetSlot !== null}
+        onClose={() => setSheetSlot(null)}
+        title={sheetSlot?.group_name || tCommon('notAvailable')}
+        subtitle={sheetSlot?.room_name || undefined}
+        actions={sheetSlot ? slotSheetActions(sheetSlot) : []}
+      />
     </div>
   );
 }
