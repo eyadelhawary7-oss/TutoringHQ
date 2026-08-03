@@ -1,559 +1,499 @@
 'use client';
 
 import { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
-import { formatCurrency, formatNumber } from '@/lib/formatNumber';
+import { formatNumber } from '@/lib/formatNumber';
 import {
   getAnnualChargeRounded,
   getAnnualMonthlyFromBase,
   ORDERED_SUBSCRIPTION_PLAN_KEYS,
   PLANS,
 } from '@/lib/pricing';
-import type { SubscriptionPlanKey } from '@/lib/pricing';
 import { TEACHER_PLANS } from '@/lib/teacherPlans';
-import { Menu, X, Check } from 'lucide-react';
-import PricingBannerClient from '@/components/landing/PricingBannerClient';
-import MarketingFooter from '@/components/landing/MarketingFooter';
-import PublicLocaleToggle from '@/components/PublicLocaleToggle';
-import PlanComparisonTable from '@/components/teacher/PlanComparisonTable';
 import { usePublicPlanPrices } from '@/hooks/usePublicPlanPrices';
-import { SITE } from '@/config/site';
+import { usePublicAnnualMultiplier } from '@/components/summer/useSummerPublicConfig';
+import MarketingNav from '@/components/marketing/MarketingNav';
+import Kicker from '@/components/marketing/Kicker';
+import SummerLine from '@/components/marketing/SummerLine';
+import MarketingFooter from '@/components/landing/MarketingFooter';
 
-const CONTACT_MAIL = `mailto:${SITE.supportEmail}`;
+/**
+ * `/pricing`.
+ *
+ * The six center tiers are NOT six cards. They differ only by capacity, so the
+ * page is one object with a capacity control: move the chips and exactly two
+ * things change — the tier name and the price. Everything else holds still,
+ * which is the argument made visually rather than written out. The audience
+ * tablist is gone too; both blocks are always on screen.
+ *
+ * Two things the design draws are deliberately NOT built, because nothing in
+ * the live database can source them:
+ *
+ *  1. The "What changes with size" rows inside the readout — Branches, Team
+ *     seats and WhatsApp notifications a month. There is no branch limit, no
+ *     seat limit and no notification quota on `pricing_plans`, on `centers`, or
+ *     anywhere in `public`; the design file says so itself. Rendering
+ *     "Branches: 3" beside a real price would be a fabricated commitment. Only
+ *     `weekly_student_limit` exists, and it is already the chip.
+ *  2. The Add-ons rows (extra branch, team seat, advanced analytics, instant
+ *     payout). No add-on price table exists and no constants exist in
+ *     `src/lib/pricing*`. The four NOTES that sit under them are all checkable,
+ *     so they survive and attach to the section above.
+ *
+ * Every figure on this page is live: center prices and caps from
+ * `pricing_plans`, teacher prices/caps/trial/overage from `TEACHER_PLANS`, and
+ * the annual multiplier from `pricing.interval.annual_multiplier`.
+ */
 
-type Audience = 'center' | 'teacher';
+/** Worked example for the no-ceiling tier. Must sit above the Scale cap. */
+const OVERAGE_EXAMPLE_STUDENTS = 200;
+
+type Billing = 'monthly' | 'annual';
 
 export default function PricingPageClient() {
   const t = useTranslations('pricingPage');
-  const tp = useTranslations('pricingPage.teacher');
-  const m = useTranslations('landing.marketing');
   const locale = useLocale();
-  const searchParams = useSearchParams();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [contactOpen, setContactOpen] = useState(false);
-  const [audience, setAudience] = useState<Audience>(
-    searchParams?.get('for') === 'teacher' ? 'teacher' : 'center',
+  const isAr = locale === 'ar';
+
+  const [billing, setBilling] = useState<Billing>('monthly');
+  // Starter is the design's default selection on the center control.
+  const [centerIdx, setCenterIdx] = useState(2);
+  const [teacherIdx, setTeacherIdx] = useState(0);
+
+  const dyn = usePublicPlanPrices();
+  const annualMultiplier = usePublicAnnualMultiplier();
+
+  const n = (v: number) => formatNumber(v, locale);
+  const n2 = (v: number) =>
+    formatNumber(v, locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const bold = (chunks: React.ReactNode) => (
+    <b className="mkt-mono font-medium text-[var(--color-ink)]">{chunks}</b>
   );
-  const [interval, setInterval] = useState<'monthly' | 'annual'>('monthly');
-  const dynamicPlanPrices = usePublicPlanPrices();
-  const centerFeatures = (t.raw('centerFeatures') as string[]) ?? [];
+  const boldPlain = (chunks: React.ReactNode) => (
+    <b className="font-semibold text-[var(--color-ink)]">{chunks}</b>
+  );
 
-  // Teacher prices are monthly-billed today; annual is display-only (×10 = "2 months
-  // free"), computed from TEACHER_PLANS until teacher annual checkout is wired.
-  const teacherPriceLine = (gross: number) => {
-    const perMonth = interval === 'annual' ? getAnnualMonthlyFromBase(gross) : gross;
-    return `${formatCurrency(perMonth, locale)}${t('perMonthSuffix')}`;
-  };
-  const teacherAnnualNote = (gross: number) =>
-    interval === 'annual'
-      ? t('billedAnnually', { amount: formatCurrency(getAnnualChargeRounded(gross), locale) })
-      : '';
+  // ── Center tiers ───────────────────────────────────────────────────
+  const centerTiers = ORDERED_SUBSCRIPTION_PLAN_KEYS.map((key) => {
+    const plan = PLANS[key];
+    const live = dyn[key];
+    return {
+      key,
+      name: isAr ? plan.arabicName : plan.englishName,
+      cap: live.weeklyStudentLimit ?? plan.weeklyStudentLimit ?? 0,
+      monthly: live.quarterlyAllIn,
+      annualMonthly: live.annualEffectiveMonthly,
+      annualTotal: live.annualTotal,
+      popular: plan.landingBadge === 'popular',
+    };
+  });
+  const center = centerTiers[Math.min(centerIdx, centerTiers.length - 1)];
+  const centerShown = billing === 'annual' ? center.annualMonthly : center.monthly;
 
-  const freeFeatures = [tp('freeFeature1'), tp('freeFeature2')];
-  const standardFeatures = [
-    tp('feature1'),
-    tp('feature2'),
-    tp('feature3'),
-    tp('feature4'),
-    tp('standardCapSummary'),
-    tp('standardGuestLimit'),
+  // ── Teacher tiers ──────────────────────────────────────────────────
+  // Three flat tiers plus the no-ceiling reading of the top one. Caps, prices
+  // and the overage rate all come from TEACHER_PLANS, which mirrors the live
+  // `teacher_subscription_plan*` config the billing engine charges from.
+  const scale = TEACHER_PLANS.teacher_scale;
+  const teacherTiers = [
+    { def: TEACHER_PLANS.teacher_standard, note: 'standard' as const, overage: 0 },
+    { def: TEACHER_PLANS.teacher_pro, note: 'pro' as const, overage: 0 },
+    { def: scale, note: 'scale' as const, overage: 0 },
+    { def: scale, note: 'scalePlus' as const, overage: scale.overagePerStudent },
   ];
-  const proFeatures = (tp.raw('proFeatures') as string[]) ?? [];
-  const scaleFeatures = (tp.raw('scaleFeatures') as string[]) ?? [];
+  const teacher = teacherTiers[Math.min(teacherIdx, teacherTiers.length - 1)];
+  const teacherName = t(`teacherTier.${teacher.def.key}` as 'teacherTier.teacher_standard');
+  const teacherMonthly = teacher.def.priceGross;
+  const teacherAnnualMonthly = getAnnualMonthlyFromBase(teacherMonthly, annualMultiplier);
+  const teacherAnnualTotal = getAnnualChargeRounded(teacherMonthly, annualMultiplier);
+  const teacherShown = billing === 'annual' ? teacherAnnualMonthly : teacherMonthly;
 
-  const selectAudience = (next: Audience) => {
-    setAudience(next);
-    // Keep the URL shareable/bookmarkable without a full navigation.
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      url.searchParams.set('for', next);
-      window.history.replaceState(null, '', url.toString());
-    }
-  };
+  // Annual applies the same two-months-free multiplier to the overage rate as
+  // it does to the base, so the curve does not bend at the cap (design L1880).
+  const overageRate =
+    billing === 'annual' ? (teacher.overage * annualMultiplier) / 12 : teacher.overage;
+  const exampleTotal =
+    teacherShown + (OVERAGE_EXAMPLE_STUDENTS - teacher.def.studentCap) * overageRate;
+
+  const sameItems = t.raw('same.items') as string[];
+  const notes = ['vat', 'annual', 'trial', 'cancel'] as const;
+
+  const chipBase =
+    'inline-flex min-h-[38px] items-center rounded-xl border px-3 text-xs font-medium transition-colors';
+  const sectionHead =
+    'm-0 text-[22px] font-bold leading-snug tracking-[-.01em] text-[var(--color-ink)] rtl:tracking-normal';
+
+  const readoutShell =
+    'mt-3 rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] p-4';
 
   return (
     <main
-      data-chq-pricing
-      className="min-h-screen bg-[var(--color-surface-0)] text-[var(--color-text-primary)]"
+      dir={isAr ? 'rtl' : 'ltr'}
+      className="flex min-h-screen w-full flex-col bg-[var(--color-paper)] text-[var(--color-ink-body)]"
     >
-      <PricingBannerClient locale={locale} variant="strip" />
-      <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-surface-1)]/90 backdrop-blur-md">
-        <div className="relative mx-auto flex h-14 max-w-6xl items-center px-4 md:h-16 md:px-6">
-          <button
-            type="button"
-            className="absolute start-4 top-1/2 z-10 inline-flex -translate-y-1/2 rounded-lg p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] md:hidden btn-press chq-focus"
-            aria-expanded={mobileOpen}
-            aria-label={mobileOpen ? m('closeMenuAria') : m('openMenuAria')}
-            onClick={() => setMobileOpen((o) => !o)}
+      <MarketingNav tone="center" />
+
+      <section className="px-6 pb-[34px] pt-7">
+        <div className="mx-auto w-full max-w-2xl">
+          <Kicker>{t('kick')}</Kicker>
+          <h1 className="m-0 text-[30px] font-bold leading-tight tracking-[-.015em] text-[var(--color-ink)] rtl:tracking-normal">
+            {t('title')}
+          </h1>
+          <p className="mt-3 text-[13px] leading-relaxed text-[var(--color-ink-body)]">
+            {t('subtitle')}
+          </p>
+
+          {/* ── Billing tray. "2 months free" sits inside the Annual button
+                 and is always visible, so the saving is legible before you
+                 press it rather than only after. ─────────────────────── */}
+          <div
+            className="mt-4 flex gap-1 rounded-xl border border-[var(--color-line)] p-1"
+            style={{ backgroundColor: 'var(--color-tile)' }}
+            role="tablist"
+            aria-label={`${t('billMonthly')} / ${t('billAnnual')}`}
           >
-            {mobileOpen ? <X className="h-6 w-6" aria-hidden /> : <Menu className="h-6 w-6" aria-hidden />}
-          </button>
-          <div className="mx-auto flex w-full max-w-full items-center justify-center gap-4 md:mx-0 md:justify-between">
-            <Link href="/" locale={locale} className="flex items-center gap-2 btn-press chq-focus rounded-lg">
-              <span className="text-lg tracking-tight">
-                <span
-                  style={{
-                    fontFamily: 'var(--font-bodoni)',
-                    fontWeight: 700,
-                    letterSpacing: '2px',
-                    color: 'var(--color-text-primary)',
-                  }}
-                >
-                  Tutoring
-                </span>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-bodoni)',
-                    fontWeight: 700,
-                    letterSpacing: '2px',
-                    color: 'var(--color-teal)',
-                  }}
-                >
-                  HQ
-                </span>
-              </span>
-            </Link>
-
-            <nav className="hidden flex-1 items-center justify-center gap-8 md:flex" aria-label="Main">
-              <Link
-                href="/"
-                className="text-sm text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] btn-press chq-focus rounded-lg px-1 py-0.5"
-              >
-                {t('navHome')}
-              </Link>
-              <PublicLocaleToggle />
-              <Link
-                href={audience === 'teacher' ? '/teacher/signup' : '/signup'}
-                className="rounded-xl bg-[var(--color-teal)] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-teal-deep)] inline-flex btn-press chq-focus"
-              >
-                {m('finalCtaButton')}
-              </Link>
-            </nav>
-          </div>
-        </div>
-
-        {mobileOpen ? (
-          <div className="border-t border-[var(--color-border)] bg-[var(--color-surface-1)]/95 px-4 py-4 md:hidden">
-            <div className="flex flex-col gap-1">
-              <Link
-                href="/"
-                className="rounded-xl px-3 py-3 text-[var(--color-text-secondary)] btn-press chq-focus"
-                onClick={() => setMobileOpen(false)}
-              >
-                {t('navHome')}
-              </Link>
-              <div className="px-3 py-2">
-                <PublicLocaleToggle />
-              </div>
-              <Link
-                href={audience === 'teacher' ? '/teacher/signup' : '/signup'}
-                className="mt-2 rounded-xl bg-[var(--color-teal)] py-3 text-center font-semibold text-white btn-press chq-focus"
-                onClick={() => setMobileOpen(false)}
-              >
-                {m('finalCtaButton')}
-              </Link>
-            </div>
-          </div>
-        ) : null}
-      </header>
-
-      <section className="px-4 py-14 md:px-6 md:py-20">
-        <div className="mx-auto max-w-6xl">
-          <h1 className="text-center text-3xl font-bold text-[var(--color-text-primary)] md:text-4xl">{t('title')}</h1>
-          <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-[var(--color-text-muted)] md:text-base">{t('subtitle')}</p>
-
-          {/* Audience toggle: Centers (teal) / Teachers (brass) */}
-          <div className="mt-8 flex justify-center">
-            <div
-              role="tablist"
-              aria-label={t('title')}
-              className="inline-flex rounded-full border border-[var(--color-border)] bg-[var(--color-surface-1)] p-1"
-            >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={audience === 'center'}
-                onClick={() => selectAudience('center')}
-                className="rounded-full px-5 py-2 text-sm font-semibold transition-colors btn-press chq-focus"
-                style={
-                  audience === 'center'
-                    ? { background: 'var(--color-teal)', color: '#ffffff' }
-                    : { color: 'var(--color-text-secondary)' }
-                }
-              >
-                {t('toggleCenters')}
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={audience === 'teacher'}
-                onClick={() => selectAudience('teacher')}
-                className="rounded-full px-5 py-2 text-sm font-semibold transition-colors btn-press chq-focus"
-                style={
-                  audience === 'teacher'
-                    ? { background: 'var(--color-brass)', color: '#ffffff' }
-                    : { color: 'var(--color-text-secondary)' }
-                }
-              >
-                {t('toggleTeachers')}
-              </button>
-            </div>
-          </div>
-
-          {/* Billing interval toggle: Monthly | Annual (both tabs) */}
-          <div className="mt-5 flex flex-col items-center gap-2">
-            <div
-              role="tablist"
-              aria-label={t('billMonthly') + ' / ' + t('billAnnual')}
-              className="inline-flex rounded-full border border-[var(--color-border)] bg-[var(--color-surface-1)] p-1"
-            >
-              {(['monthly', 'annual'] as const).map((iv) => (
+            {(['monthly', 'annual'] as const).map((iv) => {
+              const on = billing === iv;
+              return (
                 <button
                   key={iv}
                   type="button"
                   role="tab"
-                  aria-selected={interval === iv}
-                  onClick={() => setInterval(iv)}
-                  className="rounded-full px-5 py-1.5 text-sm font-semibold transition-colors btn-press chq-focus"
+                  aria-selected={on}
+                  onClick={() => setBilling(iv)}
+                  className="flex min-h-[42px] flex-1 flex-col items-center justify-center gap-1 rounded-lg text-[13px] leading-tight"
                   style={
-                    interval === iv
-                      ? { background: 'var(--color-brass)', color: '#ffffff' }
-                      : { color: 'var(--color-text-secondary)' }
+                    on
+                      ? {
+                          backgroundColor: 'var(--color-panel)',
+                          color: 'var(--color-ink)',
+                          fontWeight: 700,
+                          boxShadow: '0 1px 3px rgba(20,24,26,.09)',
+                        }
+                      : { color: 'var(--color-mid)', fontWeight: 600 }
                   }
                 >
                   {iv === 'monthly' ? t('billMonthly') : t('billAnnual')}
+                  {iv === 'annual' ? (
+                    <small
+                      className="text-[11px] font-semibold"
+                      style={{ color: 'var(--color-brass)' }}
+                    >
+                      {t('annualBadge')}
+                    </small>
+                  ) : null}
                 </button>
-              ))}
-            </div>
-            {interval === 'annual' ? (
+              );
+            })}
+          </div>
+
+          {/* ── A center ──────────────────────────────────────────────── */}
+          <div
+            className="mt-4 rounded-2xl border bg-[var(--color-panel)] px-4 py-6"
+            style={{ borderColor: 'var(--color-mint-deep)' }}
+          >
+            <div className="mb-3 flex items-center justify-between gap-2">
               <span
-                className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium"
-                style={{ background: 'var(--color-brass-soft)', color: 'var(--color-brass)' }}
+                className="inline-flex items-center rounded-full px-3 py-2 text-[11px] font-bold uppercase tracking-[.1em] rtl:normal-case rtl:tracking-[.02em]"
+                style={{ backgroundColor: 'var(--color-mint)', color: 'var(--color-accent-deep)' }}
               >
-                {t('annualBadge')}
+                {t('centerLabel')}
               </span>
+              <span
+                className="text-[11px] font-bold uppercase tracking-[.06em] rtl:normal-case rtl:tracking-[.02em]"
+                style={{
+                  color: 'var(--color-brass)',
+                  visibility: center.popular ? 'visible' : 'hidden',
+                }}
+              >
+                {t('mostChosen')}
+              </span>
+            </div>
+
+            <div className="mb-2 text-[11px] font-semibold text-[var(--color-muted)]">
+              {t('capLabelCenter')}
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {centerTiers.map((tier, i) => {
+                const on = i === centerIdx;
+                return (
+                  <button
+                    key={tier.key}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => setCenterIdx(i)}
+                    className={`${chipBase} mkt-mono`}
+                    style={
+                      on
+                        ? {
+                            backgroundColor: 'var(--color-accent)',
+                            borderColor: 'var(--color-accent)',
+                            color: '#fff',
+                          }
+                        : {
+                            backgroundColor: 'var(--color-panel)',
+                            borderColor: 'var(--color-line)',
+                            color: 'var(--color-mid)',
+                          }
+                    }
+                  >
+                    {n(tier.cap)}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className={readoutShell}>
+              <div className="text-[17px] font-bold leading-tight text-[var(--color-ink)]">
+                {center.name}
+              </div>
+              <div className="mt-2 flex flex-wrap items-baseline gap-1">
+                <span className="mkt-mono text-[30px] leading-none text-[var(--color-ink)]">
+                  {n(centerShown)}
+                </span>
+                <span className="text-xs text-[var(--color-muted)]">{t('perMonthUnit')}</span>
+              </div>
+              <p className="mt-2 text-xs text-[var(--color-mid)]">
+                {t.rich('perStudent', {
+                  amount: n2(center.cap > 0 ? centerShown / center.cap : 0),
+                  b: bold,
+                })}
+              </p>
+              <p className="mt-3 border-t border-[var(--color-hairline)] pt-3 text-[11px] leading-snug text-[var(--color-muted)]">
+                {billing === 'monthly'
+                  ? t.rich('altMonthly', {
+                      monthly: n(center.annualMonthly),
+                      total: n(center.annualTotal),
+                      b: boldPlain,
+                    })
+                  : t.rich('altAnnual', { total: n(center.annualTotal), b: boldPlain })}
+              </p>
+            </div>
+
+            {centerIdx === centerTiers.length - 1 ? (
+              <p
+                className="mt-3 rounded-lg p-3 text-[11px] leading-snug text-[var(--color-mid)]"
+                style={{ backgroundColor: 'var(--color-tile)' }}
+              >
+                {t('topCentersNote', { count: n(center.cap) })}
+              </p>
             ) : null}
           </div>
 
-          {audience === 'center' ? (
-            <>
-              <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-5">
-                {ORDERED_SUBSCRIPTION_PLAN_KEYS.map((planKey) => {
-                  const p = PLANS[planKey as SubscriptionPlanKey];
-                  const dyn = dynamicPlanPrices[planKey as SubscriptionPlanKey];
-                  const title = locale === 'ar' ? p.arabicName : p.englishName;
-                  const cap = dyn.weeklyStudentLimit ?? p.weeklyStudentLimit;
-                  const studentsLine =
-                    cap != null
-                      ? locale === 'ar'
-                        ? t('studentsCapAr', { count: formatNumber(cap, locale) })
-                        : t('studentsCapEn', { count: formatNumber(cap, locale) })
-                      : '';
-                  const isPopular = p.landingBadge === 'popular';
-                  const isEntry = p.landingBadge === 'entry';
-                  const perMonth =
-                    interval === 'annual' ? dyn.annualEffectiveMonthly : dyn.quarterlyAllIn;
-
-                  return (
-                    <div
-                      key={planKey}
-                      className={`flex flex-col rounded-2xl border p-6 text-start ${
-                        isPopular
-                          ? 'border-[var(--color-brass)]/50 bg-[var(--color-surface-1)] ring-1 ring-[var(--color-brass)]/25'
-                          : 'border-[var(--color-border)] bg-[var(--color-surface-1)]'
-                      }`}
-                      style={{ borderTopColor: 'var(--color-brass)', borderTopWidth: '3px' }}
-                    >
-                      <div className="flex min-h-[28px] flex-wrap items-center gap-2">
-                        {isEntry ? (
-                          <span className="inline-block rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-2 py-0.5 text-xs text-[var(--color-text-muted)]">
-                            {t('badgeEntry')}
-                          </span>
-                        ) : null}
-                        {isPopular ? (
-                          <span
-                            className="inline-block rounded-full px-2 py-0.5 text-xs font-medium text-white"
-                            style={{ background: 'var(--color-brass)' }}
-                          >
-                            {t('badgePopular')}
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="mt-3 text-lg font-bold text-[var(--color-text-primary)]">{title}</p>
-                      <p className="mt-3 flex items-baseline gap-1">
-                        <span className="font-mono text-2xl font-bold tabular-nums text-[var(--color-text-primary)]">
-                          {formatCurrency(perMonth, locale)}
-                        </span>
-                        <span className="text-sm text-[var(--color-text-muted)]">{t('perMonthSuffix')}</span>
-                      </p>
-                      <p className="mt-1 min-h-[16px] text-xs text-[var(--color-text-muted)]">
-                        {interval === 'annual'
-                          ? t('billedAnnually', { amount: formatCurrency(dyn.annualTotal, locale) })
-                          : ''}
-                      </p>
-                      <ul className="mt-5 space-y-2.5">
-                        {centerFeatures.map((feature, i) => (
-                          <li
-                            key={i}
-                            className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]"
-                          >
-                            <Check
-                              size={16}
-                              className="mt-0.5 shrink-0"
-                              style={{ color: 'var(--color-brass)' }}
-                              aria-hidden
-                            />
-                            <span>{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      <p className="mt-4 text-xs font-medium" style={{ color: 'var(--color-brass)' }}>
-                        {studentsLine}
-                      </p>
-                      <p className="mt-2 text-[11px] text-[var(--color-text-muted)]">{t('priceDisclaimer')}</p>
-                      <Link
-                        href="/signup"
-                        className="mt-6 inline-flex w-full justify-center rounded-xl py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-press chq-focus"
-                        style={{ background: 'var(--color-brass)' }}
-                      >
-                        {t('ctaSignup')}
-                      </Link>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="mt-10 rounded-2xl border border-[var(--color-brass)]/30 bg-[var(--color-brass-soft)] p-6 md:p-8">
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold text-[var(--color-text-primary)] md:text-2xl">{t('topCentersTitle')}</h2>
-                    <p className="mt-1 text-sm font-medium" style={{ color: 'var(--color-brass)' }}>{t('topCentersSubtitle')}</p>
-                    <p className="mt-2 text-sm text-[var(--color-text-muted)]">{t('topCentersStudents')}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setContactOpen(true)}
-                    className="shrink-0 rounded-xl border border-[var(--color-brass)]/40 px-6 py-3 text-sm font-semibold transition-opacity hover:opacity-90 btn-press chq-focus"
-                    style={{ background: 'var(--color-brass-soft)', color: 'var(--color-brass)' }}
-                  >
-                    {t('topCentersCta')}
-                  </button>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="mx-auto mt-12 max-w-6xl">
-              <div className="text-center">
-                <h2 className="text-xl font-bold text-[var(--color-text-primary)] md:text-2xl">{tp('heading')}</h2>
-                <p className="mx-auto mt-2 max-w-sm text-sm text-[var(--color-text-secondary)]">{tp('sub')}</p>
-              </div>
-              <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {/* Free — the hook */}
-                <div
-                  className="flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-start shadow-[var(--shadow-card)]"
-                  style={{ borderTopColor: 'var(--color-brass)', borderTopWidth: '3px' }}
-                >
-                  <p className="text-lg font-bold text-[var(--color-text-primary)]">{tp('freeName')}</p>
-                  <p className="mt-3 text-2xl font-bold text-[var(--color-text-primary)]">{tp('freePrice')}</p>
-                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">{tp('freeNote')}</p>
-                  <ul className="mt-5 space-y-2.5">
-                    {freeFeatures.map((feature, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
-                        <Check size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--color-brass)' }} aria-hidden />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    href="/teacher/signup"
-                    className="mt-6 inline-flex w-full justify-center rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface-0)] px-6 py-3 text-center text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
-                  >
-                    {tp('freeCta')}
-                  </Link>
-                </div>
-
-                {/* Standard (499) */}
-                <div
-                  className="flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-start shadow-[var(--shadow-card)]"
-                  style={{ borderTopColor: 'var(--color-brass)', borderTopWidth: '3px' }}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-lg font-bold text-[var(--color-text-primary)]">{tp('planName')}</p>
-                    <span
-                      className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium"
-                      style={{ background: 'var(--color-brass-soft)', color: 'var(--color-brass)' }}
-                    >
-                      {tp('trialBadge')}
-                    </span>
-                  </div>
-                  <p className="mt-3 text-2xl font-bold text-[var(--color-text-primary)]">
-                    {teacherPriceLine(TEACHER_PLANS.teacher_standard.priceGross)}
-                  </p>
-                  {interval === 'annual' ? (
-                    <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-                      {teacherAnnualNote(TEACHER_PLANS.teacher_standard.priceGross)}
-                    </p>
-                  ) : null}
-                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">{tp('priceNote')}</p>
-                  <p className="mt-1 text-xs font-medium" style={{ color: 'var(--color-brass)' }}>{tp('perStudent')}</p>
-                  <ul className="mt-5 space-y-2.5">
-                    {standardFeatures.map((feature, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
-                        <Check size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--color-brass)' }} aria-hidden />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    href="/teacher/signup"
-                    className="mt-6 inline-flex w-full justify-center rounded-xl px-6 py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-press chq-focus"
-                    style={{ background: 'var(--color-brass)' }}
-                  >
-                    {tp('cta')}
-                  </Link>
-                </div>
-
-                {/* Pro (999) — Best for Part-Time */}
-                <div
-                  className="flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-start shadow-[var(--shadow-card)]"
-                  style={{ borderTopColor: 'var(--color-brass)', borderTopWidth: '3px' }}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-lg font-bold text-[var(--color-text-primary)]">{tp('proTitle')}</p>
-                    <span
-                      className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
-                      style={{ background: 'var(--color-brass)' }}
-                    >
-                      {tp('bestForPartTime')}
-                    </span>
-                  </div>
-                  <p className="mt-3 text-2xl font-bold text-[var(--color-text-primary)]">
-                    {teacherPriceLine(TEACHER_PLANS.teacher_pro.priceGross)}
-                  </p>
-                  {interval === 'annual' ? (
-                    <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-                      {teacherAnnualNote(TEACHER_PLANS.teacher_pro.priceGross)}
-                    </p>
-                  ) : null}
-                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">{tp('proPriceNote')}</p>
-                  <p className="mt-1 text-xs font-medium" style={{ color: 'var(--color-brass)' }}>{tp('proPerStudent')}</p>
-                  <ul className="mt-5 space-y-2.5">
-                    {proFeatures.map((feature, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
-                        <Check size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--color-brass)' }} aria-hidden />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    href="/teacher/signup?plan=pro"
-                    className="mt-6 inline-flex w-full justify-center rounded-xl px-6 py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-press chq-focus"
-                    style={{ background: 'var(--color-brass)' }}
-                  >
-                    {tp('proCtaButton')}
-                  </Link>
-                </div>
-
-                {/* Scale (2499) */}
-                <div
-                  className="flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-start shadow-[var(--shadow-card)]"
-                  style={{ borderTopColor: 'var(--color-brass)', borderTopWidth: '3px' }}
-                >
-                  <p className="text-lg font-bold text-[var(--color-text-primary)]">{tp('scaleTitle')}</p>
-                  <p className="mt-3 text-2xl font-bold text-[var(--color-text-primary)]">
-                    {teacherPriceLine(TEACHER_PLANS.teacher_scale.priceGross)}
-                  </p>
-                  {interval === 'annual' ? (
-                    <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-                      {teacherAnnualNote(TEACHER_PLANS.teacher_scale.priceGross)}
-                    </p>
-                  ) : null}
-                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">{tp('scalePriceNote')}</p>
-                  <p className="mt-1 text-xs font-medium" style={{ color: 'var(--color-brass)' }}>{tp('scalePerStudent')}</p>
-                  <ul className="mt-5 space-y-2.5">
-                    {scaleFeatures.map((feature, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
-                        <Check size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--color-brass)' }} aria-hidden />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    href="/teacher/signup?plan=scale"
-                    className="mt-6 inline-flex w-full justify-center rounded-xl px-6 py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-press chq-focus"
-                    style={{ background: 'var(--color-brass)' }}
-                  >
-                    {tp('scaleCtaButton')}
-                  </Link>
-                </div>
-              </div>
-              <p className="mx-auto mt-6 max-w-2xl text-center text-xs text-[var(--color-text-muted)]">
-                {tp('justification')}
-              </p>
-              <p className="mx-auto mt-2 max-w-2xl text-center text-xs text-[var(--color-text-muted)]">
-                {tp('activeStudentNote')}
-              </p>
-              <PlanComparisonTable interval={interval} />
+          {/* ── A teacher ─────────────────────────────────────────────── */}
+          <div
+            className="mt-4 rounded-2xl border bg-[var(--color-panel)] px-4 py-6"
+            style={{ borderColor: 'var(--color-canvas)' }}
+          >
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <span
+                className="inline-flex items-center rounded-full px-3 py-2 text-[11px] font-bold uppercase tracking-[.1em] rtl:normal-case rtl:tracking-[.02em]"
+                style={{ backgroundColor: 'var(--color-sand)', color: 'var(--color-brass)' }}
+              >
+                {t('teacherLabel')}
+              </span>
             </div>
-          )}
 
-          <div className="mx-auto mt-12 flex max-w-md flex-col items-stretch gap-3 text-center">
-            <Link
-              href={audience === 'teacher' ? '/teacher/signup' : '/signup'}
-              className="rounded-xl bg-[var(--color-teal)] px-8 py-4 text-center text-base font-semibold text-white transition-colors hover:bg-[var(--color-teal-deep)] btn-press chq-focus"
+            <p
+              className="mb-3 rounded-xl px-4 py-3 text-xs leading-relaxed"
+              style={{ backgroundColor: 'var(--color-sand)', color: 'var(--color-brass)' }}
             >
-              {m('finalCtaButton')}
-            </Link>
-            <Link
-              href="/talk-to-us"
-              className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] px-8 py-4 text-center text-base font-semibold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] btn-press chq-focus"
+              {t.rich('teacherFreeLine', {
+                b: (chunks) => <b className="font-bold">{chunks}</b>,
+              })}
+            </p>
+
+            <div className="mb-2 text-[11px] font-semibold text-[var(--color-muted)]">
+              {t('capLabelTeacher')}
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {teacherTiers.map((tier, i) => {
+                const on = i === teacherIdx;
+                const label = tier.overage
+                  ? t('chipPlus', { count: n(tier.def.studentCap) })
+                  : n(tier.def.studentCap);
+                return (
+                  <button
+                    key={tier.note}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => setTeacherIdx(i)}
+                    className={`${chipBase} mkt-mono`}
+                    style={
+                      on
+                        ? {
+                            backgroundColor: 'var(--color-brass)',
+                            borderColor: 'var(--color-brass)',
+                            color: '#fff',
+                          }
+                        : {
+                            backgroundColor: 'var(--color-panel)',
+                            borderColor: 'var(--color-line)',
+                            color: 'var(--color-mid)',
+                          }
+                    }
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className={readoutShell}>
+              <div className="text-[17px] font-bold leading-tight text-[var(--color-ink)]">
+                {teacherName}
+              </div>
+              <div className="mt-2 flex flex-wrap items-baseline gap-1">
+                <span className="mkt-mono text-[30px] leading-none text-[var(--color-ink)]">
+                  {n(teacherShown)}
+                </span>
+                <span className="text-xs text-[var(--color-muted)]">
+                  {teacher.overage
+                    ? t('perFirstUnit', { count: n(teacher.def.studentCap) })
+                    : t('perMonthUnit')}
+                </span>
+              </div>
+
+              {teacher.overage ? (
+                <>
+                  <p className="mt-2 text-xs text-[var(--color-mid)]">
+                    {billing === 'monthly'
+                      ? t.rich('overageMonthly', { rate: n(teacher.overage), b: bold })
+                      : t.rich('overageAnnual', {
+                          rate: n2(overageRate),
+                          yearly: n(teacher.overage * annualMultiplier),
+                          b: bold,
+                        })}
+                  </p>
+                  <p className="mt-3 border-t border-[var(--color-hairline)] pt-3 text-[11px] leading-snug text-[var(--color-muted)]">
+                    {billing === 'monthly'
+                      ? t.rich('exampleMonthly', {
+                          students: n(OVERAGE_EXAMPLE_STUDENTS),
+                          total: n2(exampleTotal),
+                          each: n2(exampleTotal / OVERAGE_EXAMPLE_STUDENTS),
+                          b: boldPlain,
+                        })
+                      : t.rich('exampleAnnual', {
+                          students: n(OVERAGE_EXAMPLE_STUDENTS),
+                          total: n2(exampleTotal),
+                          each: n2(exampleTotal / OVERAGE_EXAMPLE_STUDENTS),
+                          b: boldPlain,
+                        })}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="mt-2 text-xs text-[var(--color-mid)]">
+                    {t.rich('perStudent', {
+                      amount: n2(teacherShown / teacher.def.studentCap),
+                      b: bold,
+                    })}
+                  </p>
+                  <p className="mt-3 border-t border-[var(--color-hairline)] pt-3 text-[11px] leading-snug text-[var(--color-muted)]">
+                    {billing === 'monthly'
+                      ? t.rich('altMonthly', {
+                          monthly: n(teacherAnnualMonthly),
+                          total: n(teacherAnnualTotal),
+                          b: boldPlain,
+                        })
+                      : t.rich('altAnnual', { total: n(teacherAnnualTotal), b: boldPlain })}
+                  </p>
+                </>
+              )}
+            </div>
+
+            <p
+              className="mt-3 rounded-lg p-3 text-[11px] leading-snug text-[var(--color-mid)]"
+              style={{ backgroundColor: 'var(--color-tile)' }}
             >
-              {t('talkToSomeoneCta')}
-            </Link>
+              {teacher.note === 'standard'
+                ? t('teacherNoteStandard', { days: n(teacher.def.trialDays) })
+                : teacher.note === 'pro'
+                  ? t('teacherNotePro')
+                  : teacher.note === 'scale'
+                    ? t('teacherNoteScale')
+                    : t('teacherNoteScalePlus')}
+            </p>
           </div>
-          <p className="mx-auto mt-6 max-w-4xl text-center text-xs text-[var(--color-text-muted)]">
-            {t('footerNote')}
-          </p>
         </div>
       </section>
 
-      <MarketingFooter createAccountHref={audience === 'teacher' ? '/teacher/signup' : '/signup'} />
+      {/* ── The same either way ───────────────────────────────────────── */}
+      <section
+        className="border-y border-[var(--color-line)] px-6 py-12"
+        style={{ backgroundColor: 'var(--color-tile)' }}
+      >
+        <div className="mx-auto w-full max-w-2xl">
+          <Kicker>{t('same.kick')}</Kicker>
+          <h2 className={sectionHead}>{t('same.heading')}</h2>
+          <p className="mt-3 text-[13px] leading-relaxed text-[var(--color-ink-body)]">
+            {t('same.lede')}
+          </p>
+          <div className="mt-4 rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-1">
+            {sameItems.map((item) => (
+              <div
+                key={item}
+                className="flex items-start gap-2 border-b border-[var(--color-hairline)] py-3 last:border-b-0"
+              >
+                <span
+                  className="mt-1 grid shrink-0 place-items-center rounded-full text-[11px]"
+                  style={{
+                    width: 17,
+                    height: 17,
+                    backgroundColor: 'var(--color-mint)',
+                    color: 'var(--color-accent-deep)',
+                  }}
+                  aria-hidden
+                >
+                  ✓
+                </span>
+                <span className="text-[13px] leading-snug text-[var(--color-ink-body)]">{item}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 text-[15px] font-bold leading-relaxed text-[var(--color-ink)]">
+            {t('same.punch')}
+          </p>
 
-      {contactOpen ? (
-        <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="pricing-contact-title"
-          onClick={() => setContactOpen(false)}
-        >
-          <div
-            className="w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 id="pricing-contact-title" className="text-lg font-bold text-[var(--color-text-primary)]">
-              {t('contactModalTitle')}
-            </h2>
-            <p className="mt-2 text-sm text-[var(--color-text-muted)]">{t('contactModalBody')}</p>
-            <a
-              href={CONTACT_MAIL}
-              className="mt-6 flex w-full justify-center rounded-xl py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-              style={{ background: 'var(--color-brass)' }}
-            >
-              {t('contactModalEmail')}
-            </a>
-            <button
-              type="button"
-              className="mt-3 w-full rounded-xl border border-[var(--color-border)] py-2.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]"
-              onClick={() => setContactOpen(false)}
-            >
-              {t('contactModalClose')}
-            </button>
+          {/* The four notes from the design's Add-ons section. Every one is
+              checkable against live config — VAT 14% inclusive, the annual
+              multiplier, one trial per phone, cancel-to-period-end — so they
+              ship even though the add-on price rows above them cannot. */}
+          <div className="mt-4 flex flex-col gap-2">
+            {notes.map((key) => (
+              <p key={key} className="mkt-note text-xs leading-snug text-[var(--color-mid)]">
+                {t.rich(`notes.${key}` as 'notes.vat', { b: boldPlain })}
+              </p>
+            ))}
           </div>
         </div>
-      ) : null}
+      </section>
+
+      {/* ── Final CTA ─────────────────────────────────────────────────── */}
+      <section className="px-6 pb-9 pt-2">
+        <div className="mx-auto w-full max-w-2xl">
+          <Link
+            href="/signup"
+            className="flex min-h-[52px] w-full items-center justify-center rounded-xl text-[15px] font-bold text-[var(--color-paper)]"
+            style={{ backgroundColor: 'var(--color-accent)' }}
+          >
+            {t('ctaSignup')}
+          </Link>
+          <Link
+            href="/talk-to-us"
+            className="mt-2 flex min-h-[52px] w-full items-center justify-center rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] text-[15px] font-semibold text-[var(--color-ink)]"
+          >
+            {t('talkToSomeoneCta')}
+          </Link>
+          <SummerLine
+            variant="fcta"
+            className="mt-3 text-center text-[11px] leading-snug text-[var(--color-muted)]"
+          />
+        </div>
+      </section>
+
+      <MarketingFooter howItWorksHref="/" />
     </main>
   );
 }

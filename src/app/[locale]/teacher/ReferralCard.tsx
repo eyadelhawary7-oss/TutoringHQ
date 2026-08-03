@@ -4,9 +4,13 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Gift } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { SITE_URL } from '@/config/site';
 import CopyButton from './CopyButton';
 
-const REFERRAL_BASE = 'https://tutoringhq.app/teacher/landing';
+// Points at the canonical teacher marketing page. /teacher/landing still
+// redirects here and carries ?ref= through, so links already shared keep
+// working — but new ones should not go through a redirect hop.
+const REFERRAL_BASE = `${SITE_URL}/teachers`;
 
 /**
  * Lightweight referral hook (free zone home). Reads the teacher's referral_code

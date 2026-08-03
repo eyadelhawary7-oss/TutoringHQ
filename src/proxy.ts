@@ -77,7 +77,7 @@ function applySecurityHeaders(response: NextResponse, requestId: string): NextRe
 }
 
 // --- Route helpers ---
-const publicRoutes = ['/login', '/signup', '/onboarding', '/suspended', '/auth/callback', '/accept-invite', '/forgot-password', '/status', '/pricing', '/demo-request', '/talk-to-us', '/privacy', '/terms', '/legal', '/session-expired', '/'];
+const publicRoutes = ['/login', '/signup', '/onboarding', '/suspended', '/auth/callback', '/accept-invite', '/forgot-password', '/status', '/pricing', '/centers', '/center', '/teachers', '/talk-to-us', '/privacy', '/terms', '/cookies', '/legal', '/session-expired', '/'];
 const apiRoutes = ['/auth/callback'];
 
 function isPublicRoute(pathname: string): boolean {
@@ -130,8 +130,14 @@ function pathRequiresAuthentication(cleanPath: string): boolean {
  * but are not part of the authenticated portal, so they must be exempt from the
  * center-user wall below. Without this, a center owner clicking "I'm a teacher"
  * in the marketing nav gets bounced to /dashboard instead of seeing the page.
+ *
+ * `/teachers` is the PUBLIC teacher marketing page. It must be listed here and
+ * not only in `publicRoutes`, because `pathIsTeacherNamespace()` below matches
+ * `/teachers` as part of the reserved namespace and is what walls a logged-in
+ * center user out. `pathIsPublicTeacherPage()` is checked first and
+ * short-circuits that rule, so the exemption has to live here to take effect.
  */
-const PUBLIC_TEACHER_PATHS = ['/teacher/landing', '/teacher/signup'];
+const PUBLIC_TEACHER_PATHS = ['/teacher/landing', '/teacher/signup', '/teachers'];
 
 function pathIsPublicTeacherPage(cleanPath: string): boolean {
   return PUBLIC_TEACHER_PATHS.some(
