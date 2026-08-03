@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
-import { dbUpdate } from '@/lib/db-proxy';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { useUser } from '@/contexts/UserContext';
 import { useBranchStore } from '@/stores/branchStore';
@@ -16,11 +15,11 @@ import {
   Users,
   Repeat,
   LineChart,
+  LayoutGrid,
   Pencil,
-  X,
 } from 'lucide-react';
 import { Link } from '@/i18n/routing';
-import { formatNumber, formatPercent } from '@/lib/formatNumber';
+import { formatCurrency, formatNumber, formatPercent } from '@/lib/formatNumber';
 
 interface BranchRow {
   id: string;
@@ -29,6 +28,12 @@ interface BranchRow {
   mrr: number;
   outstanding: number;
   district: string | null;
+  /**
+   * From /api/branches. Feeds the "main branch" tag: the org's OLDEST centre
+   * is main — a documented derivation, because no primary/main marker column
+   * exists in the live catalog (recorded as a migration ask).
+   */
+  created_at: string | null;
   /** null — never 0 — when the branch ran no session in the trailing 30 days. */
   attendance_pct: number | null;
 }
@@ -66,6 +71,26 @@ export default function BranchesPage() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  /**
+   * The one config point for the add-branch price notice:
+   * platform_config['branch_addon.monthly_price_egp'] via /api/branches.
+   * Absent live today → null → the notice does not render at all. No invented
+   * 199, no billing claim the engine does not make.
+   */
+  const [addonPrice, setAddonPrice] = useState<number | null>(null);
+
+  // Both sheets close on Escape, matching their scrim tap.
+  useEffect(() => {
+    if (!showAddForm && !editingBranch) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowAddForm(false);
+        setEditingBranch(null);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [showAddForm, editingBranch]);
 
   const loadData = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -82,9 +107,17 @@ export default function BranchesPage() {
       const branchesData = await branchesRes.json();
       const consolidatedData = consolidatedRes.ok ? await consolidatedRes.json() : null;
 
+      // /api/branches is the source for district + created_at (the main-branch
+      // derivation input); /api/analytics/consolidated is the source for stats.
+      const branchMeta = new Map<string, { district: string | null; created_at: string | null }>();
       if (branchesData?.branches) {
         setPlan((branchesData.plan as 'single' | 'multi') ?? 'single');
         setOrgName((branchesData.organization_name as string | null) ?? null);
+        for (const b of branchesData.branches as { id: string; district?: string | null; created_at?: string | null }[]) {
+          branchMeta.set(b.id, { district: b.district ?? null, created_at: b.created_at ?? null });
+        }
+        const addonRaw = branchesData.branch_addon_monthly_price_egp;
+        setAddonPrice(typeof addonRaw === 'number' && Number.isFinite(addonRaw) && addonRaw > 0 ? addonRaw : null);
       }
 
       if (consolidatedData?.by_branch && consolidatedData.by_branch.length > 0) {
@@ -95,13 +128,14 @@ export default function BranchesPage() {
           students: b.students,
           mrr: b.mrr,
           outstanding: b.outstanding,
-          district: b.district ?? null,
+          district: branchMeta.get(b.center_id)?.district ?? b.district ?? null,
+          created_at: branchMeta.get(b.center_id)?.created_at ?? null,
           attendance_pct: b.attendance_pct ?? null,
         }));
         setConsolidated({ ...consolidatedData, by_branch: rows });
         setBranches(rows);
       } else if (branchesData?.branches) {
-        const br = branchesData.branches as { id: string; name: string; district?: string | null }[];
+        const br = branchesData.branches as { id: string; name: string; district?: string | null; created_at?: string | null }[];
         const rows: BranchRow[] = br.map((b) => ({
           id: b.id,
           name: b.name,
@@ -109,6 +143,7 @@ export default function BranchesPage() {
           mrr: 0,
           outstanding: 0,
           district: b.district ?? null,
+          created_at: b.created_at ?? null,
           attendance_pct: null,
         }));
         setBranches(rows);
@@ -158,14 +193,12 @@ export default function BranchesPage() {
   };
 
   /**
-   * Editing writes `centers.name` / `centers.district` through the db proxy,
-   * which force-scopes `centers` on `id` = the caller's own centre. So a branch
-   * can only be renamed WHILE IT IS THE ACTIVE ONE; editing a sibling would
-   * need a dedicated REST route. The action is therefore offered only on the
-   * current branch rather than loosening the proxy scope.
+   * Editing goes through PATCH /api/branches — a narrow REST route (owner-only,
+   * CSRF, org-scoped in its WHERE clause), NOT the legacy /api/db proxy, which
+   * bans new callers and force-scopes `centers` to the caller's own centre.
+   * Because the route scopes by organization, an owner can rename ANY branch of
+   * the org, not just the one they are standing in.
    */
-  const canEditBranch = (b: BranchRow) => isOwner && user?.center_id === b.id;
-
   const openEdit = (b: BranchRow) => {
     setEditingBranch(b);
     setEditName(b.name);
@@ -175,23 +208,35 @@ export default function BranchesPage() {
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingBranch || !editName.trim()) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
     setSavingEdit(true);
     setError(null);
-    const { error: updateError } = await dbUpdate({
-      table: 'centers',
-      data: { name: editName.trim(), district: editDistrict.trim() || null },
-      filters: [{ column: 'id', op: 'eq', value: editingBranch.id }],
-    });
-    if (updateError) {
-      setError(typeof updateError === 'object' && updateError?.message ? String(updateError.message) : tToast('error'));
+    try {
+      const res = await fetch('/api/branches', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+          ...(await getCsrfHeaders(session.access_token)),
+        },
+        body: JSON.stringify({
+          id: editingBranch.id,
+          name: editName.trim(),
+          district: editDistrict.trim() || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
+      setBranches((prev) =>
+        prev.map((b) => (b.id === editingBranch.id ? { ...b, name: editName.trim(), district: editDistrict.trim() || null } : b)),
+      );
+      setEditingBranch(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : tToast('error'));
+    } finally {
       setSavingEdit(false);
-      return;
     }
-    setBranches((prev) =>
-      prev.map((b) => (b.id === editingBranch.id ? { ...b, name: editName.trim(), district: editDistrict.trim() || null } : b)),
-    );
-    setEditingBranch(null);
-    setSavingEdit(false);
   };
 
   const switchToBranch = (b: BranchRow) => {
@@ -205,7 +250,7 @@ export default function BranchesPage() {
     const actions: SheetAction[] = [
       { id: 'switch', label: t('switchToThis'), icon: Repeat, onSelect: () => switchToBranch(b) },
     ];
-    if (canEditBranch(b)) {
+    if (isOwner) {
       actions.push({ id: 'edit', label: t('edit'), icon: Pencil, onSelect: () => openEdit(b) });
     }
     return actions;
@@ -213,9 +258,35 @@ export default function BranchesPage() {
 
   const branchInlineActions = (b: BranchRow): InlineAction[] => [
     { id: 'switch', label: t('switchToThis'), icon: Repeat, onSelect: () => switchToBranch(b) },
-    { id: 'dashboard', label: t('dashboard'), icon: LineChart, onSelect: () => { window.location.href = `/${locale}/dashboard`; } },
-    { id: 'edit', label: t('edit'), icon: Pencil, onSelect: () => openEdit(b), disabled: !canEditBranch(b) },
+    {
+      id: 'dashboard',
+      label: t('dashboard'),
+      icon: LineChart,
+      // Design (§04): the Dashboard chip means THAT branch's dashboard, so it
+      // switches first. The store persists (zustand persist), so the value
+      // survives the full navigation.
+      onSelect: () => {
+        setActiveCenterId(b.id);
+        window.location.href = `/${locale}/dashboard`;
+      },
+    },
+    { id: 'edit', label: t('edit'), icon: Pencil, onSelect: () => openEdit(b), disabled: !isOwner },
   ];
+
+  /**
+   * The org's oldest centre wears the design's "main branch" tag. There is no
+   * marker column (recorded migration ask); until one exists the derivation is
+   * min(created_at), and when created_at is unavailable NO branch claims to be
+   * main rather than all of them claiming not to be.
+   */
+  const mainBranchId = (() => {
+    let best: BranchRow | null = null;
+    for (const b of branches) {
+      if (!b.created_at) continue;
+      if (!best || b.created_at < (best.created_at as string)) best = b;
+    }
+    return best?.id ?? null;
+  })();
 
   if (loading && branches.length === 0) {
     return (
@@ -250,7 +321,15 @@ export default function BranchesPage() {
   if (plan === 'single') {
     return (
       <div className="min-h-screen w-full bg-[var(--color-surface-0)] p-6" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
-        <PageHeader title={t('title')} subtitle={t('upgradeBody')} />
+        {/* Same "{name} · {n} branches" pattern as the multi screen, with the
+            real centre name — the upgrade copy lives in the card below. */}
+        <PageHeader
+          title={t('title')}
+          subtitle={t('headerSubtitle', {
+            org: user?.center?.name ?? '',
+            count: formatNumber(Math.max(branches.length, 1), locale),
+          })}
+        />
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-8 max-w-lg">
           <div className="flex items-center gap-4 mb-6">
             <div className="w-14 h-14 rounded-xl bg-teal-100 flex items-center justify-center">
@@ -278,7 +357,7 @@ export default function BranchesPage() {
       <PageHeader
         title={t('title')}
         subtitle={t('headerSubtitle', {
-          org: orgName ?? '',
+          org: orgName ?? user?.center?.name ?? '',
           count: formatNumber(branches.length, locale),
         })}
       >
@@ -326,59 +405,6 @@ export default function BranchesPage() {
         </div>
       )}
 
-      {showAddForm && isOwner && (
-        <div className="mb-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-md font-semibold text-[var(--color-text-primary)]">{t('addBranch')}</h2>
-            <button
-              type="button"
-              onClick={() => setShowAddForm(false)}
-              className="rounded-lg p-1.5 hover:bg-[var(--color-surface-2)]"
-              aria-label={tCommon('cancel')}
-            >
-              <X size={18} />
-            </button>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">{t('branchName')}</label>
-              <input
-                type="text"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder={t('branchNamePlaceholder')}
-                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-teal-500 focus:ring-2 focus:ring-teal-500"
-              />
-            </div>
-            <div>
-              {/* Maps to the existing `centers.district`; there is no
-                  `centers.address` column and none was added. */}
-              <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">{t('areaAddress')}</label>
-              <input
-                type="text"
-                value={newDistrict}
-                onChange={(e) => setNewDistrict(e.target.value)}
-                placeholder={t('areaAddressPlaceholder')}
-                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-teal-500 focus:ring-2 focus:ring-teal-500"
-              />
-            </div>
-          </div>
-          {/* The design's "Extra branch add-on · 199 EGP / mo" notice is NOT
-              rendered: no priced add-on exists in pricing_plans or
-              platform_config, and POST /api/branches clones the parent centre's
-              full plan price. Printing 199 EGP against that code path would
-              state a price the system does not charge. */}
-          <button
-            onClick={handleAddBranch}
-            disabled={adding || !newName.trim()}
-            className="mt-3 flex h-[46px] w-full items-center justify-center gap-2 rounded-md bg-teal-600 font-medium text-white transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus size={18} />}
-            {t('addBranch')}
-          </button>
-        </div>
-      )}
-
       <h2 className="mb-2 text-sm font-semibold text-[var(--color-text-secondary)]">{t('branchesSection')}</h2>
       <div className="flex flex-col gap-2">
         {branches.map((b) => {
@@ -392,7 +418,14 @@ export default function BranchesPage() {
                 title={b.name}
                 meta={
                   <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    {b.district && <span>{b.district}</span>}
+                    {/* Design (§04): "12 El-Nasr St · main branch". The tag is
+                        the min-created_at derivation; with no created_at data
+                        no branch claims to be main. */}
+                    {(() => {
+                      const tag = mainBranchId == null ? null : b.id === mainBranchId ? t('mainBranch') : t('branchTag');
+                      const line = [b.district, tag].filter(Boolean).join(' · ');
+                      return line ? <span>{line}</span> : null;
+                    })()}
                     <span className="font-mono tabular-nums">
                       {formatNumber(b.students, locale)} {t('studentsLower')}
                     </span>
@@ -424,42 +457,120 @@ export default function BranchesPage() {
         })}
       </div>
 
-      {editingBranch && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setEditingBranch(null)}>
-          <div className="w-full max-w-sm rounded-2xl bg-[var(--color-surface-1)] shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-[var(--color-border)] p-6">
-              <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('edit')}</h2>
-              <button onClick={() => setEditingBranch(null)} className="rounded-lg p-2 hover:bg-[var(--color-surface-2)]" aria-label={tCommon('close')}>
-                <X className="h-5 w-5 text-[var(--color-text-secondary)]" />
-              </button>
-            </div>
-            <form onSubmit={handleSaveEdit} className="space-y-4 p-6">
+      {/* Add-branch bottom sheet (design §04 "EN · add branch"): grab handle,
+          name, area, the config-gated add-on notice, ONE primary button. No
+          Cancel — scrim tap and Escape close, like every sheet here. */}
+      {showAddForm && isOwner && (
+        <div className="fixed inset-0 z-50" role="presentation">
+          <div className="absolute inset-0 bg-[rgba(20,22,20,0.34)]" onClick={() => setShowAddForm(false)} aria-hidden />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('addBranch')}
+            className="absolute inset-x-0 bottom-0 rounded-t-3xl bg-[var(--color-panel)] px-6 pb-6 pt-2 shadow-[0_-10px_40px_rgba(0,0,0,0.16)]"
+          >
+            <div className="mx-auto mb-3 mt-1 h-1 w-10 rounded-pill bg-[var(--color-line)]" aria-hidden />
+            <h2 className="mb-3 text-lg font-bold text-[var(--color-text-primary)]">{t('addBranch')}</h2>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void handleAddBranch();
+              }}
+              className="space-y-3"
+            >
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-[var(--color-text-primary)]">{t('branchName')}</label>
+                <label className="mb-1 block text-sm font-medium text-[var(--color-text-secondary)]">{t('branchName')}</label>
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder={t('branchNamePlaceholder')}
+                  autoFocus
+                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/25"
+                />
+              </div>
+              <div>
+                {/* Maps to the existing `centers.district`; there is no
+                    `centers.address` column and none was added. */}
+                <label className="mb-1 block text-sm font-medium text-[var(--color-text-secondary)]">{t('areaAddress')}</label>
+                <input
+                  type="text"
+                  value={newDistrict}
+                  onChange={(e) => setNewDistrict(e.target.value)}
+                  placeholder={t('areaAddressPlaceholder')}
+                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/25"
+                />
+              </div>
+              {/* Renders ONLY when platform_config['branch_addon.monthly_price_egp']
+                  exists and is positive — it does not exist live, so today this
+                  notice is absent. When Eyad prices the add-on (config value +
+                  the billing-engine line that charges it), it appears with no
+                  code change. Never a hardcoded 199. */}
+              {addonPrice != null && (
+                <div className="flex items-center gap-2.5 rounded-md border border-[rgba(138,94,22,0.25)] bg-[#FBFAF5] px-3 py-2.5">
+                  <LayoutGrid size={16} className="shrink-0 text-[#8A5E16]" aria-hidden />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-semibold text-[var(--color-text-secondary)]">{t('addonTitle')}</p>
+                    <p className="font-mono text-xs text-[var(--color-text-muted)]">
+                      {t('addonLine', { price: formatCurrency(addonPrice, locale) })}
+                    </p>
+                  </div>
+                </div>
+              )}
+              <button
+                type="submit"
+                disabled={adding || !newName.trim()}
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-md bg-teal-600 font-semibold text-white transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50 btn-press chq-focus"
+              >
+                {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus size={18} aria-hidden />}
+                {t('addBranch')}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit-branch bottom sheet — same presentation as Add, per the design's
+          one-sheet language. Submits to PATCH /api/branches (org-scoped). */}
+      {editingBranch && (
+        <div className="fixed inset-0 z-50" role="presentation">
+          <div className="absolute inset-0 bg-[rgba(20,22,20,0.34)]" onClick={() => setEditingBranch(null)} aria-hidden />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('edit')}
+            className="absolute inset-x-0 bottom-0 rounded-t-3xl bg-[var(--color-panel)] px-6 pb-6 pt-2 shadow-[0_-10px_40px_rgba(0,0,0,0.16)]"
+          >
+            <div className="mx-auto mb-3 mt-1 h-1 w-10 rounded-pill bg-[var(--color-line)]" aria-hidden />
+            <h2 className="mb-1 text-lg font-bold text-[var(--color-text-primary)]">{t('edit')}</h2>
+            <p className="mb-3 truncate text-sm text-[var(--color-text-muted)]">{editingBranch.name}</p>
+            <form onSubmit={handleSaveEdit} className="space-y-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-[var(--color-text-secondary)]">{t('branchName')}</label>
                 <input
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2.5 text-sm"
+                  autoFocus
+                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/25"
                   required
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-[var(--color-text-primary)]">{t('areaAddress')}</label>
+                <label className="mb-1 block text-sm font-medium text-[var(--color-text-secondary)]">{t('areaAddress')}</label>
                 <input
                   value={editDistrict}
                   onChange={(e) => setEditDistrict(e.target.value)}
                   placeholder={t('areaAddressPlaceholder')}
-                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2.5 text-sm"
+                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/25"
                 />
               </div>
-              <div className="flex justify-end gap-3">
-                <button type="button" onClick={() => setEditingBranch(null)} className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-text-primary)]">
-                  {tCommon('cancel')}
-                </button>
-                <button type="submit" disabled={savingEdit} className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50">
-                  {tCommon('save')}
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={savingEdit}
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-md bg-teal-600 font-semibold text-white transition-colors hover:bg-teal-700 disabled:opacity-50 btn-press chq-focus"
+              >
+                {tCommon('save')}
+              </button>
             </form>
           </div>
         </div>

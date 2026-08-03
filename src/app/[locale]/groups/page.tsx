@@ -45,6 +45,14 @@ interface Group {
   fee_per_class?: number;
   /** Center's share of fee_per_class, in EGP. The design's "center 30%" is derived from it. */
   center_cut_egp?: number | null;
+  /**
+   * The OUTSIDE teacher who runs this group — `student_groups.teacher_id`
+   * (verified in information_schema.columns). This, not the schedule slots, is
+   * the design's teacher signal: `handleAddSlot` fills `schedule_slots.teacher_id`
+   * with the CREATING ADMIN's user id, so a slot-derived name would show the
+   * admin as the group's teacher.
+   */
+  teacher_id?: string | null;
   /** Member count (same as student_count; kept for mutations). */
   member_count?: number;
   /** Display count for UI (synced with member_count). */
@@ -136,6 +144,14 @@ export default function GroupsPage() {
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [addForm, setAddForm] = useState({ name: '', subjectId: '', fee_per_class: '', centerCutPct: '', maxCapacity: '' });
   const [isAdding, setIsAdding] = useState(false);
+  /**
+   * §02 (Center Groups Verified) gate — /api/me's exposure of the platform
+   * switch `digital_student_fee_collection.enabled`. False live today, so the
+   * §01 layout stands; when the platform flips the flag, the mint banner, the
+   * ALL GROUPS label and the "{teacher} · {n} students" row line render with no
+   * code change. Fail-closed: anything but `true` keeps it off.
+   */
+  const [digitalCollection, setDigitalCollection] = useState(false);
   const [members, setMembers] = useState<{ student_id: string; student_name: string }[]>([]);
   const [studentOtherGroups, setStudentOtherGroups] = useState<Record<string, string[]>>({});
   const [addMemberSearch, setAddMemberSearch] = useState('');
@@ -170,6 +186,7 @@ export default function GroupsPage() {
     const cid = meData.user.center_id;
     setCenterId(cid);
     setUserId(meData.user.id);
+    setDigitalCollection(meData.user.digital_student_fee_collection === true);
 
     const { data: centerRow } = await dbSelect({
       table: 'centers',
@@ -184,7 +201,7 @@ export default function GroupsPage() {
     const [groupsRes, studentsRes, subjectsRes, slotsRes, roomsRes, scansRes] = await Promise.all([
       dbSelect({
         table: 'student_groups',
-        select: 'id, name, subject, fee_per_class, center_cut_egp, max_capacity',
+        select: 'id, name, subject, fee_per_class, center_cut_egp, max_capacity, teacher_id',
         filters: [{ column: 'center_id', op: 'eq', value: cid }],
         order: { column: 'name' },
       }),
@@ -200,12 +217,14 @@ export default function GroupsPage() {
         filters: [{ column: 'center_id', op: 'eq', value: cid }],
         order: { column: 'name' },
       }),
-      // day_of_week / start_time / end_time / room_id join the existing teacher
-      // lookup so the card can carry the design's "Sun · Tue · 4:00 PM · Room 2"
-      // line. All five verified present in information_schema.columns.
+      // day_of_week / start_time / room_id feed the design's
+      // "Sun · Tue · 4:00 PM · Room 2" line. All verified present in
+      // information_schema.columns. `teacher_id` is deliberately NOT read here:
+      // handleAddSlot fills it with the creating admin's user id, so it must
+      // never feed the teacher chip (that comes from student_groups.teacher_id).
       dbSelect({
         table: 'schedule_slots',
-        select: 'group_id, teacher_id, day_of_week, start_time, end_time, room_id',
+        select: 'group_id, day_of_week, start_time, end_time, room_id',
         filters: [{ column: 'center_id', op: 'eq', value: cid }],
       }),
       dbSelect({
@@ -228,7 +247,6 @@ export default function GroupsPage() {
     const subjectsData = (subjectsRes.data || []) as Subject[];
     const slotsData = (slotsRes.data || []) as {
       group_id?: string | null;
-      teacher_id: string;
       day_of_week?: string | null;
       start_time?: string | null;
       end_time?: string | null;
@@ -306,20 +324,24 @@ export default function GroupsPage() {
       attendance[gid] = { dates, presentByDate, presentByStudent };
     }
 
-    const groupToTeacher: Record<string, string> = {};
-    const teacherIds = [...new Set(slotsData.map(s => s.teacher_id).filter(Boolean))];
+    /**
+     * Teacher names come from `student_groups.teacher_id` — the true outside-
+     * teacher pointer — resolved through `users`. The previous slot-derived
+     * lookup keyed off `schedule_slots.teacher_id`, which handleAddSlot fills
+     * with the CREATING ADMIN's user id, so it displayed the admin who typed
+     * the slot as the group's teacher. A group whose teacher_id resolves to no
+     * users row shows no teacher rather than a guess.
+     */
+    const teacherNameById: Record<string, string> = {};
+    const teacherIds = [...new Set(groupsData.map((g) => g.teacher_id).filter((v): v is string => !!v))];
     if (teacherIds.length > 0) {
       const { data: usersData } = await dbSelect({
         table: 'users',
         select: 'id, name',
         filters: [{ column: 'id', op: 'in', value: teacherIds }],
       });
-      const users = (usersData || []) as { id: string; name: string | null }[];
-      const userMap = Object.fromEntries(users.map(u => [u.id, u.name || '—']));
-      for (const slot of slotsData) {
-        if (slot.group_id && slot.teacher_id && !groupToTeacher[slot.group_id]) {
-          groupToTeacher[slot.group_id] = userMap[slot.teacher_id] ?? '—';
-        }
+      for (const u of (usersData || []) as { id: string; name: string | null }[]) {
+        if (u.name && u.name.trim()) teacherNameById[u.id] = u.name.trim();
       }
     }
 
@@ -330,7 +352,7 @@ export default function GroupsPage() {
         subject: g.subject ?? null,
         member_count: n,
         student_count: n,
-        teacher_name: groupToTeacher[g.id] ?? null,
+        teacher_name: g.teacher_id ? teacherNameById[g.teacher_id] ?? null : null,
         schedule: scheduleByGroup[g.id],
       };
     }));
@@ -410,6 +432,20 @@ export default function GroupsPage() {
   const inviteUrlFor = (groupId: string) =>
     `https://tutoringhq.app/${locale}/join/${centerCode ?? centerId ?? ''}/${groupId}`;
 
+  /**
+   * What the invite row DISPLAYS. The design's `thq.eg/j/PHY10` short domain
+   * does not exist — it is an externality behind the ONE env key
+   * NEXT_PUBLIC_INVITE_LINK_BASE (unset live). When the domain is registered
+   * and the env set, the row shows `{base}/{code}/{groupId}`; until then it
+   * shows the real canonical URL. The COPY button always writes the canonical
+   * working URL either way — the display never shortens what gets shared.
+   */
+  const inviteDisplayFor = (groupId: string) => {
+    const base = (process.env.NEXT_PUBLIC_INVITE_LINK_BASE ?? '').trim().replace(/\/+$/, '');
+    if (!base) return inviteUrlFor(groupId);
+    return `${base}/${centerCode ?? centerId ?? ''}/${groupId}`;
+  };
+
   const openCreateForm = () => {
     setEditingGroupId(null);
     setAddForm({ name: '', subjectId: '', fee_per_class: '', centerCutPct: '', maxCapacity: '' });
@@ -473,6 +509,17 @@ export default function GroupsPage() {
     const subjectName = subjects.find(s => s.id === addForm.subjectId)?.name ?? '';
     const maxCap = addForm.maxCapacity.trim() ? parseInt(addForm.maxCapacity, 10) : null;
     const cappedValue = maxCap && maxCap > 0 ? maxCap : null;
+
+    // MONEY GUARD: `studentBalance.ts` prices PAST attended sessions at the
+    // CURRENT fee_per_class, so editing the fee retroactively reprices
+    // history — every member's amount due changes for sessions already taken.
+    // The edit is allowed (same form, per the design) but never silently.
+    if (formMode === 'edit' && editingGroupId) {
+      const prevFee = Number(groups.find((g) => g.id === editingGroupId)?.fee_per_class ?? 0);
+      if (prevFee > 0 && fee !== prevFee && !confirm(t('feeEditRepricingWarning'))) {
+        return;
+      }
+    }
 
     setIsAdding(true);
     try {
@@ -779,7 +826,22 @@ export default function GroupsPage() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <>
+          {/* §02 (Center Groups Verified), design lines 676/750 — renders ONLY
+              while platform_config's digital_student_fee_collection.enabled is
+              true. It is false in production today, so this banner does not
+              exist for any live centre; nothing about it is "coming soon". */}
+          {digitalCollection && (
+            <div className="rounded-md border border-[rgba(14,107,97,0.2)] bg-[#DFEEEB] px-4 py-3 text-xs leading-relaxed text-[#0A514A]">
+              {t('digitalCollectionNote')}
+            </div>
+          )}
+          {digitalCollection && (
+            <p className="mb-1 px-1 text-xs font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
+              {t('allGroups')}
+            </p>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {groups.map(g => {
             // Design (Merged-Center-Groups §01) shows enrolment AGAINST capacity
             // — "24/30" — not a bare headcount, because the question a center
@@ -796,11 +858,15 @@ export default function GroupsPage() {
             const Glyph = SUBJECT_GLYPHS[palette.index] ?? BookOpen;
             const fee = Number(g.fee_per_class ?? 0);
             const cut = Number(g.center_cut_egp ?? 0);
-            // The teacher chip is an OUTSIDE-teacher signal. A "center 0%" pill
-            // on an in-house group is noise, and a cut with no fee behind it
-            // cannot be expressed as a percent at all.
-            const showTeacherChip = !!g.teacher_name && cut > 0 && fee > 0;
-            const cutPct = showTeacherChip ? Math.round((cut / fee) * 100) : 0;
+            // The teacher chip is an OUTSIDE-teacher signal: it renders exactly
+            // when `student_groups.teacher_id` resolved to a user. The percent
+            // segment needs both a fee and a cut behind it — a cut with no fee
+            // cannot be expressed as a percent, so the segment is omitted, not
+            // shown as 0%. Under the §02 flag the teacher moves into the row
+            // line instead, so the chip stands down.
+            const showTeacherChip = !digitalCollection && !!g.teacher_name;
+            const showCutPct = showTeacherChip && cut > 0 && fee > 0;
+            const cutPct = showCutPct ? Math.round((cut / fee) * 100) : 0;
             return (
             <div
               key={g.id}
@@ -823,8 +889,16 @@ export default function GroupsPage() {
                   <h3 className="truncate font-semibold text-[var(--color-text-primary)]">{g.name}</h3>
                   {/* Design (§01): "Sun · Tue · 4:00 PM · Room 2". Each part is
                       omitted when absent rather than shown as a placeholder, so
-                      a group with no slot yet simply has no line. */}
+                      a group with no slot yet simply has no line. Under the §02
+                      flag (design lines 680-702) the line is
+                      "{teacher} · {n} students" instead. */}
                   {(() => {
+                    if (digitalCollection) {
+                      const parts: string[] = [];
+                      if (g.teacher_name) parts.push(g.teacher_name);
+                      parts.push(t('studentsCountLine', { count: formatNumber(enrolled, locale) }));
+                      return <p className="truncate text-xs text-[var(--color-text-muted)]">{parts.join(' · ')}</p>;
+                    }
                     const sch = g.schedule;
                     const parts: string[] = [];
                     if (sch) {
@@ -841,7 +915,8 @@ export default function GroupsPage() {
                   {showTeacherChip && (
                     <span className="mt-1.5 inline-flex items-center gap-1 rounded-pill bg-[#F4EBD7] px-2 py-0.5 text-xs font-semibold text-[#9A6B1F]">
                       <GraduationCap size={13} aria-hidden />
-                      <bdi>{g.teacher_name}</bdi> · {t('centerCutPct', { pct: formatPercent(cutPct, locale) })}
+                      <bdi>{g.teacher_name}</bdi>
+                      {showCutPct && <> · {t('centerCutPct', { pct: formatPercent(cutPct, locale) })}</>}
                     </span>
                   )}
                 </div>
@@ -887,7 +962,8 @@ export default function GroupsPage() {
             </div>
             );
           })}
-        </div>
+          </div>
+        </>
       )}
 
       {/* New / edit group — a full screen, not a modal (design §01 "New group") */}
@@ -1108,10 +1184,11 @@ export default function GroupsPage() {
                 </div>
               </div>
 
-              {/* Invite link. The URL shown is byte-identical to what the button
-                  copies — no short `thq.eg/j/...` form exists in the schema or
-                  in DNS, so inventing one would put a dead link on screen.
-                  See needsMigration N3. */}
+              {/* Invite link. Displayed text comes from inviteDisplayFor —
+                  the canonical URL until NEXT_PUBLIC_INVITE_LINK_BASE exists
+                  (the design's `thq.eg/j/...` domain is not registered, so no
+                  short form is invented). The copy button ALWAYS copies the
+                  full working canonical URL. */}
               <div className="flex items-center gap-2.5 rounded-md bg-[var(--color-surface-2)]/60 p-2.5">
                 <Link2 size={18} className="shrink-0 text-[var(--color-text-secondary)]" aria-hidden />
                 <span
@@ -1119,7 +1196,7 @@ export default function GroupsPage() {
                   dir="ltr"
                   title={inviteUrlFor(detailGroup.id)}
                 >
-                  {inviteUrlFor(detailGroup.id)}
+                  {inviteDisplayFor(detailGroup.id)}
                 </span>
                 <button
                   type="button"

@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
-import { Plus, DoorOpen, X, MoreVertical, Users, Pencil, Trash2 } from 'lucide-react';
+import { Plus, DoorOpen, MoreVertical, Users, Pencil, Trash2 } from 'lucide-react';
 import { ActionSheet, type SheetAction } from '@/components/patterns';
 import { formatNumber } from '@/lib/formatNumber';
 import { cairoDateKey } from '@/lib/cairo/day';
@@ -112,6 +112,20 @@ export default function RoomsPage() {
       setShowAddModal(true);
     }
   }, [searchParams]);
+
+  // Design (§03): the add/edit sheets have no Cancel button — scrim tap and
+  // Escape are the two ways out, same as the shared ActionSheet.
+  useEffect(() => {
+    if (!showAddModal && !editingRoom) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowAddModal(false);
+        setEditingRoom(null);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [showAddModal, editingRoom]);
 
   const handleAddRoom = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -332,79 +346,112 @@ export default function RoomsPage() {
         )}
       </div>
 
-      {/* Add Room */}
+      {/* Add Room — the design's bottom sheet (§03 "EN · add room"): grab
+          handle, name auto-focused, capacity, ONE full-width primary. No
+          Cancel: scrim tap and Escape close. */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
-          <div className="bg-[var(--color-surface-1)] rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-6 border-b border-[var(--color-border-subtle)]">
-              <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('addRoom')}</h2>
-              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-[var(--color-surface-2)] rounded-lg transition-colors"><X className="w-5 h-5 text-[var(--color-text-secondary)]" /></button>
-            </div>
-            <form onSubmit={handleAddRoom} className="p-6 space-y-4">
+        <div className="fixed inset-0 z-50" role="presentation">
+          <div className="absolute inset-0 bg-[rgba(20,24,22,0.42)]" onClick={() => setShowAddModal(false)} aria-hidden />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('addRoom')}
+            className="absolute inset-x-0 bottom-0 rounded-t-3xl bg-[var(--color-panel)] px-4 pb-6 pt-2 shadow-[0_-8px_30px_rgba(28,33,30,0.18)]"
+          >
+            <div className="mx-auto mb-3 mt-1 h-1 w-[38px] rounded-pill bg-[var(--color-line)]" aria-hidden />
+            <h2 className="px-1 pb-3 text-lg font-semibold text-[var(--color-text-primary)]">{t('addRoom')}</h2>
+            <form onSubmit={handleAddRoom} className="space-y-3.5">
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('roomName')}</label>
-                <input
-                  value={addName}
-                  onChange={e => setAddName(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  required
-                />
+                <label className="mb-1 block px-1 text-xs text-[var(--color-text-muted)]">{t('roomName')}</label>
+                <div className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 focus-within:border-teal-600 focus-within:ring-[3px] focus-within:ring-teal-600/12">
+                  <DoorOpen size={17} className="shrink-0 text-[var(--color-text-muted)]" aria-hidden />
+                  <input
+                    value={addName}
+                    onChange={e => setAddName(e.target.value)}
+                    autoFocus
+                    className="min-w-0 flex-1 bg-transparent py-3 text-sm text-[var(--color-text-primary)] outline-none"
+                    required
+                  />
+                </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('capacity')}</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={addCapacity}
-                  onChange={e => setAddCapacity(e.target.value)}
-                  placeholder={t('capacityPlaceholder')}
-                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
+                <label className="mb-1 block px-1 text-xs text-[var(--color-text-muted)]">{t('capacity')}</label>
+                <div className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 focus-within:border-teal-600 focus-within:ring-[3px] focus-within:ring-teal-600/12">
+                  <Users size={17} className="shrink-0 text-[var(--color-text-muted)]" aria-hidden />
+                  <input
+                    type="number"
+                    min={1}
+                    value={addCapacity}
+                    onChange={e => setAddCapacity(e.target.value)}
+                    placeholder={t('capacityPlaceholder')}
+                    className="min-w-0 flex-1 bg-transparent py-3 font-mono text-sm text-[var(--color-text-primary)] outline-none placeholder:font-sans placeholder:text-[var(--color-text-tertiary)]"
+                  />
+                </div>
               </div>
               {addError && <p className="text-sm text-[var(--color-danger)]">{addError}</p>}
-              <div className="flex justify-end gap-3 pt-0">
-                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 border border-[var(--color-border)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors">{tCommon('cancel')}</button>
-                <button type="submit" disabled={isAdding} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50">{tCommon('save')}</button>
-              </div>
+              <button
+                type="submit"
+                disabled={isAdding}
+                className="flex h-[50px] w-full items-center justify-center gap-2 rounded-md bg-[var(--color-accent)] text-md font-semibold text-[var(--color-panel)] hover:bg-[var(--color-accent-deep)] disabled:opacity-50 btn-press chq-focus"
+              >
+                <Plus size={19} aria-hidden />
+                {t('addRoom')}
+              </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* Edit Room */}
+      {/* Edit Room — same sheet presentation. The edit path itself is
+          design-sanctioned (§03 masthead: "the three-dot for edit and remove");
+          the sheet shape keeps this screen to one form pattern. */}
       {editingRoom && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setEditingRoom(null)}>
-          <div className="bg-[var(--color-surface-1)] rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-6 border-b border-[var(--color-border-subtle)]">
-              <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('editRoom')}</h2>
-              <button onClick={() => setEditingRoom(null)} className="p-2 hover:bg-[var(--color-surface-2)] rounded-lg transition-colors"><X className="w-5 h-5 text-[var(--color-text-secondary)]" /></button>
-            </div>
-            <form onSubmit={handleSaveEdit} className="p-6 space-y-4">
+        <div className="fixed inset-0 z-50" role="presentation">
+          <div className="absolute inset-0 bg-[rgba(20,24,22,0.42)]" onClick={() => setEditingRoom(null)} aria-hidden />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('editRoom')}
+            className="absolute inset-x-0 bottom-0 rounded-t-3xl bg-[var(--color-panel)] px-4 pb-6 pt-2 shadow-[0_-8px_30px_rgba(28,33,30,0.18)]"
+          >
+            <div className="mx-auto mb-3 mt-1 h-1 w-[38px] rounded-pill bg-[var(--color-line)]" aria-hidden />
+            <h2 className="px-1 pb-3 text-lg font-semibold text-[var(--color-text-primary)]">{t('editRoom')}</h2>
+            <form onSubmit={handleSaveEdit} className="space-y-3.5">
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('roomName')}</label>
-                <input
-                  value={editName}
-                  onChange={e => setEditName(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  required
-                />
+                <label className="mb-1 block px-1 text-xs text-[var(--color-text-muted)]">{t('roomName')}</label>
+                <div className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 focus-within:border-teal-600 focus-within:ring-[3px] focus-within:ring-teal-600/12">
+                  <DoorOpen size={17} className="shrink-0 text-[var(--color-text-muted)]" aria-hidden />
+                  <input
+                    value={editName}
+                    onChange={e => setEditName(e.target.value)}
+                    autoFocus
+                    className="min-w-0 flex-1 bg-transparent py-3 text-sm text-[var(--color-text-primary)] outline-none"
+                    required
+                  />
+                </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5">{t('capacity')}</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={editCapacity}
-                  onChange={e => setEditCapacity(e.target.value)}
-                  placeholder={t('capacityPlaceholder')}
-                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
+                <label className="mb-1 block px-1 text-xs text-[var(--color-text-muted)]">{t('capacity')}</label>
+                <div className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 focus-within:border-teal-600 focus-within:ring-[3px] focus-within:ring-teal-600/12">
+                  <Users size={17} className="shrink-0 text-[var(--color-text-muted)]" aria-hidden />
+                  <input
+                    type="number"
+                    min={1}
+                    value={editCapacity}
+                    onChange={e => setEditCapacity(e.target.value)}
+                    placeholder={t('capacityPlaceholder')}
+                    className="min-w-0 flex-1 bg-transparent py-3 font-mono text-sm text-[var(--color-text-primary)] outline-none placeholder:font-sans placeholder:text-[var(--color-text-tertiary)]"
+                  />
+                </div>
               </div>
               {editError && <p className="text-sm text-[var(--color-danger)]">{editError}</p>}
-              <div className="flex justify-end gap-3 pt-0">
-                <button type="button" onClick={() => setEditingRoom(null)} className="px-4 py-2 border border-[var(--color-border)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] text-sm font-semibold rounded-lg transition-colors">{tCommon('cancel')}</button>
-                <button type="submit" disabled={isSaving} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50">{tCommon('save')}</button>
-              </div>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="flex h-[50px] w-full items-center justify-center gap-2 rounded-md bg-[var(--color-accent)] text-md font-semibold text-[var(--color-panel)] hover:bg-[var(--color-accent-deep)] disabled:opacity-50 btn-press chq-focus"
+              >
+                {tCommon('save')}
+              </button>
             </form>
           </div>
         </div>
