@@ -4,4 +4,5 @@ worktree: /home/user/TutoringHQ/.claude/worktrees/wf_5d2c5083-a24-* (per-agent, 
 branch: claude/parity-center-groups
 claimed_by: design-parity-build-wave1
 claimed_at: 2026-08-03T13:17:08Z
-released:
+released: 2026-08-03T22:55:54Z
+note: merged to master via PR #313
