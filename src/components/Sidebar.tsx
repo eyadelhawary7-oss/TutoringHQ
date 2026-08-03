@@ -28,6 +28,8 @@ import {
   Gift,
   ShoppingCart,
   Wallet,
+  Upload,
+  Inbox,
 } from 'lucide-react';
 import { ChangePinModal } from '@/components/admin/ChangePinModal';
 import { BranchSwitcher } from '@/components/layout/BranchSwitcher';
@@ -120,6 +122,13 @@ export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarPr
         { key: 'dashboard', href: '/dashboard', icon: LayoutDashboard, permission: 'can_view_dashboard' },
         { key: 'attendance', href: '/attendance', icon: QrCode, permission: 'can_scan' },
         { key: 'students', href: '/students', icon: Users, permission: 'can_manage_students' },
+        // Both relocated from the roster's "More actions" bar, which
+        // Merged-Center-Students §01 does not draw. Neither has any other entry
+        // point in the app: /students/import becomes unreachable the moment the
+        // empty state disappears at one student, and /students/pending — the
+        // sign-up approval queue — has never had a second route into it.
+        { key: 'import', href: '/students/import', icon: Upload, permission: 'can_manage_students' },
+        { key: 'pending', href: '/students/pending', icon: Inbox, permission: 'can_manage_students' },
         { key: 'payments', href: '/payments', icon: CreditCard, permission: 'can_view_payments' },
         { key: 'schedule', href: '/schedule', icon: Calendar, permission: 'can_view_schedule' },
       ],

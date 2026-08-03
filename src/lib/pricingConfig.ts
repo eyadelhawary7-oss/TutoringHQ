@@ -110,6 +110,12 @@ const ADDON_DEFAULTS: AddonPrices = {
   shippingCost: 115,
 };
 
+/** Code defaults for the two standing thresholds — mirrored in studentStanding.ts. */
+const STUDENT_STANDING_DEFAULTS = {
+  overdueAfterDays: 7,
+  newStudentDays: 7,
+};
+
 const PROMO_DEFAULTS: PromoConfig = {
   enabled: false,
   discountPct: 40,
@@ -277,6 +283,38 @@ export async function getAddonPrices(): Promise<AddonPrices> {
     whatsappParentPack: num(rows['pack_price_per_parent'], ADDON_DEFAULTS.whatsappParentPack),
     cardOrderBase: num(rows['qr_card_price'], ADDON_DEFAULTS.cardOrderBase),
     shippingCost: num(rows['pricing.shipping.default_cost'], ADDON_DEFAULTS.shippingCost),
+  };
+}
+
+/**
+ * The three numbers the Students screens need from platform_config, in ONE read.
+ *
+ * `qr_card_price` is the same key `getAddonPrices()` already reads — it is the
+ * single config point behind Merged-Center-Students §02's "Printed QR ID card ·
+ * from N EGP" banner. The row is ABSENT from platform_config live, so the code
+ * default applies; swapping in a real price is a one-row insert and nothing else.
+ *
+ * `student_overdue_after_days` / `student_new_for_days` are the two standing
+ * thresholds (see src/lib/studentStanding.ts). platform_config is a key/value
+ * table, so neither needs DDL. Both are plain numbers with sane defaults, not
+ * credentials — there is no placeholder-failure mode to design for.
+ */
+export interface StudentUiConfig {
+  qrCardPrice: number;
+  overdueAfterDays: number;
+  newStudentDays: number;
+}
+
+export async function getStudentUiConfig(): Promise<StudentUiConfig> {
+  const rows = await readKeys([
+    'qr_card_price',
+    'student_overdue_after_days',
+    'student_new_for_days',
+  ]);
+  return {
+    qrCardPrice: num(rows['qr_card_price'], ADDON_DEFAULTS.cardOrderBase),
+    overdueAfterDays: num(rows['student_overdue_after_days'], STUDENT_STANDING_DEFAULTS.overdueAfterDays),
+    newStudentDays: num(rows['student_new_for_days'], STUDENT_STANDING_DEFAULTS.newStudentDays),
   };
 }
 

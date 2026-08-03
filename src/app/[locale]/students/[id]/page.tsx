@@ -12,24 +12,31 @@ import { useUser } from '@/contexts/UserContext';
 import QRCode from 'qrcode';
 import {
   ArrowLeft,
-  ClipboardList,
+  Check,
+  ChevronLeft,
+  ChevronRight,
   CreditCard,
   Download,
+  EllipsisVertical,
   IdCard,
   MessageCircle,
   Pencil,
   Phone,
+  Plus,
   Printer,
   X,
 } from 'lucide-react';
-import { KpiCard } from '@/components/shared';
 import { QRCard } from '@/components/QRCard';
+import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { FamilyLinkingSection } from '@/components/students/FamilyLinkingSection';
+import { StandingBadge, standingAvatarClass } from '@/components/students/StandingBadge';
 import { ReceiptModal } from '@/components/payments/ReceiptModal';
+import { PrintStatementModal } from '@/components/PrintStatementModal';
 import { pushRecentlyViewedStudent } from '@/lib/recentlyViewedStudents';
-import { formatDateTime, formatDate, formatNumber, formatCurrency } from '@/lib/formatNumber';
+import { formatDate, formatNumber, formatCurrency } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { getStudentBalances } from '@/lib/studentBalance';
+import { deriveStanding, getStudentStandings, type Standing, type StudentStandingRow } from '@/lib/studentStanding';
 import { initialsOf } from '@/lib/initials';
 
 type FamilyRow = { id: string; family_name: string | null; parent_phone: string | null; parent_name: string | null };
@@ -64,10 +71,24 @@ type CollectMethod = 'cash' | 'instapay' | 'bank_transfer';
 interface ScanRecord {
   id: string;
   scanned_at: string;
+  /**
+   * `attendance_scans.status` is CHECK-constrained to present | absent (or NULL)
+   * — verified in pg_constraint (`attendance_scans_status_chk`). There is no
+   * 'late', so §02's three-state badge ships as TWO states. See needsMigration M1.
+   */
+  status?: string | null;
+  session_date?: string | null;
   group_id?: string | null;
-  payment_status_at_scan?: string | null;
-  payment_method?: string | null;
-  payment_recorded?: boolean;
+}
+
+/** A logged collection — §03's Payments section. All six columns verified live. */
+interface PaymentRecord {
+  id: string;
+  amount: number | null;
+  method: string | null;
+  status: string | null;
+  paid_at: string | null;
+  group_id?: string | null;
 }
 
 // Only plain columns that physically exist on the students table (the
@@ -78,18 +99,14 @@ interface ScanRecord {
 const STUDENT_SELECT =
   'id, name, student_number, phone, parent_phone, parent_pack_opted_in, parent_consent_given, sibling_family_id, subject, grade_level, qr_code, created_at';
 
-function deriveResultBadge(scan: ScanRecord, t: (k: string) => string): { label: string; cls: string } {
-  if (scan.payment_status_at_scan === 'paid') {
-    return { label: t('resultPaid'), cls: 'bg-green-100 text-green-700' };
-  }
-  if (scan.payment_recorded && scan.payment_method) {
-    const digital = ['instapay', 'vodacash', 'vodafone_cash', 'orange', 'orange_cash', 'fawry', 'bank', 'bank_transfer'];
-    if (digital.includes(String(scan.payment_method).toLowerCase())) {
-      return { label: t('resultPending'), cls: 'bg-purple-100 text-purple-700' };
-    }
-    return { label: t('resultPaid'), cls: 'bg-green-100 text-green-700' };
-  }
-  return { label: t('resultUnpaid'), cls: 'bg-yellow-100 text-yellow-700' };
+/**
+ * §03 payment-method chip: a TWO-WAY DISPLAY FOLD, not a stored value.
+ * `payments.method` is CHECK-constrained to cash | instapay | vodacash | orange
+ * | fawry | bank — there is no 'online' and no 'card'. Cash reads amber, every
+ * other (electronic) method reads mint "Online".
+ */
+function isCashMethod(method: string | null | undefined): boolean {
+  return String(method ?? '').toLowerCase() === 'cash';
 }
 
 /** Digits, country-code-prefixed, no leading '+' - the wa.me / tel: contract used across the app. */
@@ -198,11 +215,35 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   const [siblings, setSiblings] = useState<SiblingRow[]>([]);
   const [delivered, setDelivered] = useState(false);
   const [scans, setScans] = useState<ScanRecord[]>([]);
+  const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [groupNameMap, setGroupNameMap] = useState<Record<string, string>>({});
+  const [groupSubjectMap, setGroupSubjectMap] = useState<Record<string, string | null>>({});
   const [groups, setGroups] = useState<GroupRow[]>([]);
   const [memberGroupIds, setMemberGroupIds] = useState<string[]>([]);
   const [attendanceLoading, setAttendanceLoading] = useState(true);
   const [centerInfo, setCenterInfo] = useState<CenterInfo | null>(null);
+  // Standing = balance + the Cairo-day age of the oldest open charge. The
+  // §02 "12 days overdue · since 01/07" line and §03's hero hint both read it.
+  const [standing, setStanding] = useState<StudentStandingRow | null>(null);
+  const [thresholds, setThresholds] = useState<{ overdueAfterDays?: number; newStudentDays?: number }>({});
+  /**
+   * Attendance as a ratio (§02 stat tile). `scheduled` counts sessions that have
+   * already happened for the student's groups.
+   *
+   * "this term" CANNOT be honoured: academic_years and academic_periods are both
+   * 0 rows live, so there is no window to scope to. The sub-label therefore says
+   * which window it actually used — never "this term" over an all-time ratio.
+   */
+  const [attendance, setAttendance] = useState<{ attended: number; scheduled: number; scoped: boolean } | null>(null);
+  /** Earliest future scheduled session + that group's per-class fee, or null. */
+  const [nextDue, setNextDue] = useState<{ at: string; amount: number | null } | null>(null);
+  /** platform_config.qr_card_price. null = read failed → the banner drops the price clause. */
+  const [qrCardPrice, setQrCardPrice] = useState<number | null>(null);
+  /** Reminders actually sent to this student, or null when unmatchable. */
+  const [reminderCount, setReminderCount] = useState<number | null>(null);
+  const [showPrintStatement, setShowPrintStatement] = useState(false);
+  const [pageMenuOpen, setPageMenuOpen] = useState(false);
+  const [remindSubmitting, setRemindSubmitting] = useState(false);
 
   // ID card quick action (Merged-Center-Students §02: Message / Call / ID card /
   // Edit). Live had Call/Message/Collect payment/Edit - viewing or printing this
@@ -298,10 +339,12 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         // student's current group memberships (to prefill the edit modal).
         if (row) {
           setAttendanceLoading(true);
-          const [scansSel, groupsSel, membersSel] = await Promise.all([
+          const [scansSel, groupsSel, membersSel, paySel] = await Promise.all([
             dbSelect({
               table: 'attendance_scans',
-              select: 'id, scanned_at, group_id, payment_status_at_scan, payment_method, payment_recorded',
+              // status + session_date drive §02's Present/Absent badge and its
+              // "Sun 13/07" date. Both columns confirmed in information_schema.
+              select: 'id, scanned_at, session_date, status, group_id',
               filters: [
                 { column: 'center_id', op: 'eq', value: cid },
                 { column: 'student_id', op: 'eq', value: row.id },
@@ -319,15 +362,136 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
               select: 'group_id',
               filters: [{ column: 'student_id', op: 'eq', value: row.id }],
             }),
+            // §03 Payments section. payments is center-scoped in the proxy's
+            // TABLE_SCOPE, so this is the same gate every other read here uses.
+            dbSelect({
+              table: 'payments',
+              select: 'id, amount, method, status, paid_at, group_id',
+              filters: [
+                { column: 'center_id', op: 'eq', value: cid },
+                { column: 'student_id', op: 'eq', value: row.id },
+              ],
+              order: { column: 'paid_at', ascending: false },
+            }),
           ]);
           if (!cancelled) {
-            setScans((scansSel.data || []) as ScanRecord[]);
+            const scanRows = (scansSel.data || []) as ScanRecord[];
+            setScans(scanRows);
+            setPayments((paySel.data || []) as PaymentRecord[]);
             const grps = (groupsSel.data || []) as GroupRow[];
             setGroups(grps);
             setGroupNameMap(Object.fromEntries(grps.map((g) => [g.id, g.name])));
-            setMemberGroupIds(((membersSel.data || []) as { group_id: string }[]).map((m) => m.group_id));
+            setGroupSubjectMap(Object.fromEntries(grps.map((g) => [g.id, g.subject ?? null])));
+            const memberIds = ((membersSel.data || []) as { group_id: string }[]).map((m) => m.group_id);
+            setMemberGroupIds(memberIds);
             setAttendanceLoading(false);
+
+            // Attendance ratio + next due. `sessions` is not in the proxy's
+            // TABLE_SCOPE, but its RLS SELECT policy admits the center's own
+            // groups (`sessions_select`), so the browser client reads it directly.
+            if (memberIds.length > 0) {
+              void (async () => {
+                try {
+                  // Is there a current academic year at all? Both academic_years
+                  // and academic_periods are EMPTY live, so this normally answers
+                  // "no" and the label below tells the truth about that.
+                  let scoped = false;
+                  try {
+                    const { data: yr } = await supabase
+                      .from('academic_years')
+                      .select('id')
+                      .eq('center_id', cid)
+                      .eq('is_current', true)
+                      .limit(1);
+                    scoped = Array.isArray(yr) && yr.length > 0;
+                  } catch {
+                    scoped = false;
+                  }
+                  const nowIso = new Date().toISOString();
+                  const { data: past } = await supabase
+                    .from('sessions')
+                    .select('id')
+                    .in('group_id', memberIds)
+                    .in('status', ['finished', 'scheduled'])
+                    .lte('scheduled_at', nowIso);
+                  const attended = scanRows.filter((sc) => sc.status !== 'absent').length;
+                  if (!cancelled) {
+                    setAttendance({
+                      attended,
+                      scheduled: Array.isArray(past) ? past.length : 0,
+                      scoped,
+                    });
+                  }
+                  const { data: upcoming } = await supabase
+                    .from('sessions')
+                    .select('scheduled_at, group_id')
+                    .in('group_id', memberIds)
+                    .eq('status', 'scheduled')
+                    .gt('scheduled_at', nowIso)
+                    .order('scheduled_at', { ascending: true })
+                    .limit(1);
+                  const nx = Array.isArray(upcoming) ? upcoming[0] : null;
+                  if (!cancelled && nx) {
+                    const g = grps.find((x) => x.id === (nx as { group_id: string }).group_id);
+                    setNextDue({
+                      at: (nx as { scheduled_at: string }).scheduled_at,
+                      amount: g?.fee ?? null,
+                    });
+                  }
+                } catch (err) {
+                  // Fail quiet, never fake: with no session data the ratio tile
+                  // and the "Next due" line simply do not render.
+                  console.error('[student-detail] session stats failed', err);
+                }
+              })();
+            }
           }
+        }
+
+        // Standing (oldest open charge age) + the two thresholds + the ID-card
+        // price + the reminder count. Each is independent and each failure mode
+        // is "the clause is omitted", never "a number is invented".
+        if (row) {
+          getStudentStandings(supabase, { studentIds: [row.id] })
+            .then((map) => {
+              if (!cancelled) setStanding(map.get(row.id) ?? null);
+            })
+            .catch((err) => console.error('[student-detail] standing load failed', err));
+
+          void (async () => {
+            try {
+              const res = await fetch('/api/students/ui-config', {
+                headers: { Authorization: `Bearer ${session.access_token}` },
+              });
+              if (!res.ok || cancelled) return;
+              const j = (await res.json()) as {
+                qrCardPrice?: number;
+                overdueAfterDays?: number;
+                newStudentDays?: number;
+              };
+              if (cancelled) return;
+              if (typeof j.qrCardPrice === 'number') setQrCardPrice(j.qrCardPrice);
+              setThresholds({
+                overdueAfterDays: j.overdueAfterDays,
+                newStudentDays: j.newStudentDays,
+              });
+            } catch {
+              /* price clause is omitted; thresholds fall back to code defaults */
+            }
+          })();
+
+          void (async () => {
+            try {
+              const res = await fetch(`/api/students/reminder-count?student_id=${encodeURIComponent(row.id)}`, {
+                headers: { Authorization: `Bearer ${session.access_token}` },
+              });
+              if (!res.ok || cancelled) return;
+              const j = (await res.json()) as { count?: number; matchable?: boolean };
+              if (!cancelled && j.matchable && typeof j.count === 'number') setReminderCount(j.count);
+            } catch {
+              /* clause omitted */
+            }
+          })();
         }
 
         if (row && session.access_token) {
@@ -380,12 +544,73 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       const b = balanceMap.get(row.id);
       setBalance(b?.balance ?? 0);
       setLifetimePaid(b?.paid ?? 0);
+      // Standing and the payments list move with the balance — a collect that
+      // updated the figure but left "12 days overdue" and the last-payment row
+      // stale would be the screen contradicting itself.
+      setStanding((await getStudentStandings(supabase, { studentIds: [row.id] })).get(row.id) ?? null);
+      const paySel = await dbSelect({
+        table: 'payments',
+        select: 'id, amount, method, status, paid_at, group_id',
+        filters: [
+          { column: 'center_id', op: 'eq', value: centerId },
+          { column: 'student_id', op: 'eq', value: row.id },
+        ],
+        order: { column: 'paid_at', ascending: false },
+      });
+      setPayments((paySel.data || []) as PaymentRecord[]);
       setFamily(await fetchFamilyForStudent(row.sibling_family_id ?? null, session.access_token));
       setSiblings(await fetchSiblings(row.sibling_family_id ?? null, centerId, row.id));
     } catch (err) {
       console.error('[student-detail] reloadStudent failed', err);
     }
   }, [centerId, id]);
+
+  /**
+   * §03's Remind action. POST /api/whatsapp/send-balance-reminder returns
+   * `{ ok:true, sent:n, results:[…] }` and SILENTLY SKIPS a student with no
+   * phone (route lines 86-90), so `ok:true` alone is not success. The toast
+   * reflects `sent`: a success only when exactly one went out, otherwise the
+   * route's own reason ("No phone"). Never a green tick over nothing sent.
+   */
+  const handleRemind = async () => {
+    if (!student || remindSubmitting) return;
+    setRemindSubmitting(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error(tToast('error'), tCommon('error'));
+        return;
+      }
+      const res = await fetch('/api/whatsapp/send-balance-reminder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+          ...(await getCsrfHeaders(session.access_token)),
+        },
+        body: JSON.stringify({ student_id: student.id }),
+      });
+      const data = (await res.json().catch(() => null)) as
+        | { ok?: boolean; sent?: number; results?: { error?: string }[]; error?: string }
+        | null;
+      if (!res.ok) {
+        toast.error(tToast('error'), data?.error ?? tCommon('error'));
+        return;
+      }
+      if ((data?.sent ?? 0) === 1) {
+        toast.success(tDetail('reminderSent'));
+        setReminderCount((n) => (n === null ? n : n + 1));
+        return;
+      }
+      toast.error(tDetail('reminderNotSent'), data?.results?.[0]?.error ?? undefined);
+    } catch (err) {
+      toast.error(tToast('error'), err instanceof Error ? err.message : tCommon('error'));
+    } finally {
+      setRemindSubmitting(false);
+    }
+  };
 
   const onOrderCard = async () => {
     if (!student || delivered || isStudentInCart(student.id)) return;
@@ -639,297 +864,672 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   }
 
   const inCart = isStudentInCart(student.id);
-  const visits = scans.length;
-  const lastSeen = scans[0]?.scanned_at ?? null;
+  const studentDigits = intlDigits(student.phone);
+  const parentDigits = intlDigits(family?.parent_phone ?? student.parent_phone);
+  // deriveStanding is the ONE place the four states are decided (roster and
+  // detail read the same function), so the badge here can never disagree with
+  // the badge on the row that linked to it.
+  const standingValue: Standing = standing
+    ? deriveStanding(standing, new Date(), thresholds)
+    : 'paid';
+  const owes = (balance ?? 0) > 0;
+  const recentScans = scans.slice(0, 3);
+  const recentPayments = payments.slice(0, 5);
+  const identityMeta = [
+    student.subject,
+    student.grade_level ? tDetail('gradeLabel', { grade: student.grade_level }) : null,
+  ].filter(Boolean);
 
   return (
-    <div className="min-h-screen px-4 py-6 max-w-lg mx-auto bg-[var(--color-surface-0)] pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-8">
-      <button type="button" className="text-sm text-teal-600 mb-6 flex items-center gap-1" onClick={() => router.back()}>
-        <ArrowLeft size={16} /> {tDetail('back')}
-      </button>
-      <div className="flex items-center gap-3">
-        <span
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-mint)] text-sm font-semibold text-[var(--color-accent-deep)]"
-          aria-hidden
-        >
-          {initialsOf(student.name)}
-        </span>
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="truncate text-xl font-bold text-[var(--color-text-primary)]">{student.name}</h1>
-            {/* Design (§02): a payment-standing badge beside the name. Same
-                real-time balance the KPI card below reads - not a new figure. */}
-            {balance !== null && (
-              <span
-                className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
-                  balance > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-                }`}
-              >
-                {balance > 0 ? tDetail('overdue') : tDetail('paidUp')}
-              </span>
-            )}
-          </div>
-          {(student.subject || student.grade_level || student.phone) && (
-            <p className="truncate text-sm text-[var(--color-text-secondary)]">
-              {[
-                student.subject,
-                student.grade_level ? tDetail('gradeLabel', { grade: student.grade_level }) : null,
-                student.phone,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
+    <div className="min-h-screen flex flex-col bg-[var(--color-surface-0)]">
+      <div className="mx-auto flex w-full max-w-lg flex-1 flex-col">
+        {/* §02 `.topbar` — a 42×42 back square at the START edge (the chevron
+            mirrors in RTL), the name over subject · grade, and a kebab carrying
+            what the design removes from the body. */}
+        <div className="flex items-center gap-3 px-4 pt-2 pb-3">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            aria-label={tDetail('back')}
+            className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[var(--color-text-secondary)] btn-press chq-focus"
+          >
+            <DirectionalIcon icon={ChevronLeft} className="h-5 w-5" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[17px] font-semibold leading-tight text-[var(--color-text-primary)]">
+              {student.name}
             </p>
-          )}
-        </div>
-      </div>
-      {student.student_number ? (
-        <p className="text-sm font-mono text-[var(--color-text-tertiary)] mt-1" dir="ltr">
-          <bdi>{formatStudentNumberForDisplay(student.student_number)}</bdi>
-        </p>
-      ) : null}
-
-      {/* 1. Balance leads (read-only, live-computed; positive = owed, negative = credit).
-          Design (Merged-Center-Students §02): "live balance front and center". It sat
-          below the visits / last-seen row, so the screen answered "how often do they
-          come" before "do they owe". Same argument as the roster tiles in §01. */}
-      {balance !== null && (
-        <div
-          className={`mt-6 rounded-md border px-4 py-3.5 ${
-            balance > 0
-              ? 'border-[var(--color-danger)]/20 bg-[var(--color-danger-muted)]'
-              : 'border-[var(--color-success)]/20 bg-[var(--color-success-muted)]'
-          }`}
-        >
-          <p
-            className={`text-xs font-semibold ${balance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'}`}
-          >
-            {tDetail('balance')}
-          </p>
-          <p
-            className={`num mt-1.5 text-3xl font-bold leading-none tabular-nums ${
-              balance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'
-            }`}
-            dir="ltr"
-          >
-            {formatCurrency(balance, locale)}
-          </p>
-        </div>
-      )}
-
-      {/* 2. Stat row */}
-      <div className={`${balance !== null ? 'mt-3' : 'mt-6'} grid grid-cols-3 gap-3`}>
-        <KpiCard
-          label={tDetail('visits')}
-          value={<span className="tabular-nums">{formatNumber(visits, locale)}</span>}
-        />
-        <KpiCard label={tDetail('lastSeen')} value={lastSeen ? formatDate(lastSeen, locale, 'short') : '—'} />
-        {lifetimePaid !== null && (
-          <KpiCard
-            label={tDetail('lifetimePaid')}
-            value={<span className="tabular-nums" dir="ltr">{formatCurrency(lifetimePaid, locale)}</span>}
-            // Design (§02): "Lifetime paid 3,400 EGP · since Sep 2025" - the
-            // enrollment month, read straight off students.created_at (NOT
-            // NULL live, confirmed via information_schema).
-            subLabel={
-              student.created_at
-                ? tDetail('sinceEnrolled', {
-                    date: formatDate(student.created_at, locale, { month: 'short', year: 'numeric' }),
-                  })
-                : undefined
-            }
-          />
-        )}
-      </div>
-
-      {/* 2. Quick actions. Design (§02) draws Message / Call / ID card / Edit -
-          live order matched, and "ID card" (view/print this student's own QR,
-          same pattern as the roster page's Eye action) is added alongside the
-          existing Collect payment tile rather than replacing it. */}
-      {(() => {
-        const studentDigits = intlDigits(student.phone);
-        return (canCollect || canEdit || studentDigits) && (
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            {studentDigits && (
-              <a
-                href={`https://wa.me/${studentDigits}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+            {identityMeta.length > 0 ? (
+              <p className="truncate text-xs text-[#80827A]">{identityMeta.join(' · ')}</p>
+            ) : null}
+          </div>
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              aria-label={tCommon('actions')}
+              aria-expanded={pageMenuOpen}
+              onClick={() => setPageMenuOpen((v) => !v)}
+              className="grid h-[42px] w-[42px] place-items-center rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[var(--color-text-secondary)] btn-press chq-focus"
+            >
+              <EllipsisVertical size={20} aria-hidden />
+            </button>
+            {pageMenuOpen ? (
+              <div
+                role="menu"
+                className="absolute end-0 top-full z-50 mt-1 min-w-[220px] rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-1)] p-1 shadow-lg"
               >
-                <MessageCircle className="h-6 w-6 text-teal-500" aria-hidden />
-                <span className="text-sm font-semibold text-[var(--color-text-primary)]">{tDetail('messageAction')}</span>
-              </a>
-            )}
-            {studentDigits && (
-              <a
-                href={`tel:+${studentDigits}`}
-                className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+                {canCollect ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setPageMenuOpen(false);
+                      setShowPrintStatement(true);
+                    }}
+                    className="w-full rounded-lg px-3 py-2 text-start text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)]"
+                  >
+                    {ts('statement.printStatement')}
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setPageMenuOpen(false);
+                    void openIdCard();
+                  }}
+                  className="w-full rounded-lg px-3 py-2 text-start text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)]"
+                >
+                  {ts('viewQR')}
+                </button>
+                {/* The standalone student-number line the design does NOT draw
+                    lives here instead of on the header. */}
+                {student.student_number ? (
+                  <p
+                    className="px-3 py-2 font-mono text-xs text-[var(--color-text-tertiary)]"
+                    dir="ltr"
+                  >
+                    <bdi>{formatStudentNumberForDisplay(student.student_number)}</bdi>
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="flex flex-1 flex-col gap-3 px-4 pb-4">
+          {/* §02 `.idhdr` — a 54×54 rounded tile tinted by standing (the live
+              circle was a fixed mint), the name at 20px, and the standing badge
+              at the row end replacing the ad-hoc red/green pill. */}
+          <div className="flex items-center gap-3">
+            <div
+              className={`grid h-[54px] w-[54px] shrink-0 place-items-center rounded-2xl text-[22px] font-semibold ${standingAvatarClass(standingValue)}`}
+              aria-hidden
+            >
+              {initialsOf(student.name)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-xl font-semibold text-[var(--color-text-primary)]">
+                {student.name}
+              </h1>
+              <p className="truncate text-xs text-[#80827A]">
+                {[
+                  student.subject,
+                  student.grade_level ? tDetail('gradeLabel', { grade: student.grade_level }) : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+                {student.phone ? (
+                  <>
+                    {identityMeta.length > 0 ? ' · ' : ''}
+                    <span className="font-mono" dir="ltr">
+                      {student.phone}
+                    </span>
+                  </>
+                ) : null}
+              </p>
+            </div>
+            {balance !== null ? (
+              <StandingBadge
+                standing={standingValue}
+                label={ts(
+                  standingValue === 'paid'
+                    ? 'standing_paid'
+                    : standingValue === 'overdue'
+                      ? 'standing_overdue'
+                      : standingValue === 'at_risk'
+                        ? 'standing_at_risk'
+                        : 'standing_new',
+                )}
+              />
+            ) : null}
+          </div>
+
+          {/* Balance. §03 draws the owing state as a TEAL GRADIENT hero (its
+              later frame wins over §02's red card); §02's mint card stays for
+              the settled state. */}
+          {balance !== null ? (
+            owes ? (
+              <div className="rounded-2xl bg-[linear-gradient(150deg,#0E6B61,#0A514A)] p-6 text-[#F2EEE5]">
+                <p className="text-xs opacity-90">{tDetail('outstanding')}</p>
+                <p className="num mt-1 text-[30px] font-bold leading-none tabular-nums" dir="ltr">
+                  {formatCurrency(balance, locale)}
+                </p>
+                {/* Three clauses, and only the ones with a real source render.
+                    "N sessions unpaid" and "oldest <date>" come from the FIFO
+                    fold; "reminded N times" only when wa_message_queue could
+                    actually be matched to this student's phone AND is non-zero. */}
+                {(() => {
+                  const hint = [
+                    standing && standing.openChargeCount > 0
+                      ? tDetail('sessionsUnpaid', {
+                          count: formatNumber(standing.openChargeCount, locale),
+                        })
+                      : null,
+                    standing?.oldestUnpaidAt
+                      ? tDetail('oldestCharge', {
+                          date: formatDate(standing.oldestUnpaidAt, locale, 'short'),
+                        })
+                      : null,
+                    reminderCount !== null && reminderCount > 0
+                      ? tDetail('remindedTimes', { count: formatNumber(reminderCount, locale) })
+                      : null,
+                  ].filter(Boolean);
+                  if (hint.length === 0) return null;
+                  return (
+                    <p className="mt-2 text-[11px] leading-relaxed opacity-[.82]">
+                      {hint.join(' · ')}
+                    </p>
+                  );
+                })()}
+                {standing?.oldestUnpaidDays != null && standing.oldestUnpaidAt ? (
+                  <p className="mt-2 text-xs opacity-[.82] tabular-nums">
+                    {tDetail('overdueSince', {
+                      days: formatNumber(standing.oldestUnpaidDays, locale),
+                      date: formatDate(standing.oldestUnpaidAt, locale, 'short'),
+                    })}
+                  </p>
+                ) : null}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-[rgba(26,109,77,.18)] bg-[#E4F0E9] p-6">
+                <p className="text-xs font-semibold text-[#1A6D4D] opacity-85">{tDetail('balance')}</p>
+                <p className="num mt-1.5 text-[34px] font-bold leading-none tabular-nums text-[#1A6D4D]" dir="ltr">
+                  {formatCurrency(balance, locale)}
+                  <span className="ms-2 text-[15px] font-semibold">· {tDetail('paidUp')}</span>
+                </p>
+                {/* "Next due <date> · <amount>" — DERIVED, never stored: the
+                    earliest future scheduled session of a group this student
+                    belongs to, priced at that group's fee_per_class. Omitted
+                    entirely when there is no such session; no placeholder date. */}
+                {nextDue ? (
+                  <p className="mt-2 text-xs text-[#5D635C] tabular-nums">
+                    {nextDue.amount != null
+                      ? tDetail('nextDueWithAmount', {
+                          date: formatDate(nextDue.at, locale, 'short'),
+                          amount: formatCurrency(nextDue.amount, locale),
+                        })
+                      : tDetail('nextDue', { date: formatDate(nextDue.at, locale, 'short') })}
+                  </p>
+                ) : null}
+              </div>
+            )
+          ) : null}
+
+          {/* §03 `.acts` — two secondary actions directly under the hero. */}
+          {canCollect ? (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={remindSubmitting}
+                onClick={() => void handleRemind()}
+                className="flex-1 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] py-3 text-center text-xs font-semibold text-[var(--color-accent-deep)] disabled:opacity-50 btn-press chq-focus"
               >
-                <Phone className="h-6 w-6 text-teal-500" aria-hidden />
-                <span className="text-sm font-semibold text-[var(--color-text-primary)]">{tDetail('callAction')}</span>
-              </a>
-            )}
+                {remindSubmitting ? tCommon('loading') : tDetail('remind')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCollectMethod('cash');
+                  setCollectAmount(owes ? String(Math.round(balance ?? 0)) : '');
+                  setShowCollect(true);
+                }}
+                className="flex-1 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] py-3 text-center text-xs font-semibold text-[var(--color-accent-deep)] btn-press chq-focus"
+              >
+                {tDetail('recordCash')}
+              </button>
+            </div>
+          ) : null}
+
+          {/* §02 `.statrow` — TWO tiles, not three. Visits and Last seen are not
+              drawn and are gone. */}
+          <div className="flex gap-2">
+            <div className="flex-1 rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
+              <p className="text-xs text-[#80827A]">{tDetail('attendance')}</p>
+              <p className="num mt-1 text-[22px] font-semibold leading-none tabular-nums text-[var(--color-text-primary)]" dir="ltr">
+                {attendance && attendance.scheduled > 0
+                  ? `${formatNumber(attendance.attended, locale)}/${formatNumber(attendance.scheduled, locale)}`
+                  : formatNumber(scans.filter((sc) => sc.status !== 'absent').length, locale)}
+              </p>
+              {/* Tells the truth about which window it used. academic_years is
+                  EMPTY live, so this reads "all time" — never "this term" over
+                  an all-time ratio. */}
+              <p className="mt-1 text-xs text-[#80827A]">
+                {attendance?.scoped ? tDetail('windowThisTerm') : tDetail('windowAllTime')}
+              </p>
+            </div>
+            {lifetimePaid !== null ? (
+              <div className="flex-1 rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
+                <p className="text-xs text-[#80827A]">{tDetail('lifetimePaid')}</p>
+                <p className="num mt-1 text-[22px] font-semibold leading-none tabular-nums text-[var(--color-text-primary)]" dir="ltr">
+                  {formatCurrency(lifetimePaid, locale)}
+                </p>
+                {student.created_at ? (
+                  <p className="mt-1 text-xs text-[#80827A]">
+                    {tDetail('sinceEnrolled', {
+                      date: formatDate(student.created_at, locale, { month: 'short', year: 'numeric' }),
+                    })}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+
+          {/* §02 `.qact` — four equal tiles at ~64px: Message / Call / ID card /
+              Edit. All four ALWAYS render; Message and Call are disabled (not
+              removed) when the student has no phone, so the row never collapses
+              to a 2- or 3-up the design does not draw. */}
+          <div className="flex gap-2">
+            <a
+              href={studentDigits ? `https://wa.me/${studentDigits}` : undefined}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-disabled={!studentDigits}
+              className={`flex flex-1 flex-col items-center gap-1 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-1 py-3 ${
+                studentDigits ? 'btn-press chq-focus' : 'pointer-events-none opacity-50'
+              }`}
+            >
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--color-mint)] text-[var(--color-accent-deep)]">
+                <MessageCircle size={18} aria-hidden />
+              </span>
+              <span className="text-[11px] font-semibold text-[var(--color-mid)]">
+                {tDetail('messageAction')}
+              </span>
+            </a>
+            <a
+              href={studentDigits ? `tel:+${studentDigits}` : undefined}
+              aria-disabled={!studentDigits}
+              className={`flex flex-1 flex-col items-center gap-1 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-1 py-3 ${
+                studentDigits ? 'btn-press chq-focus' : 'pointer-events-none opacity-50'
+              }`}
+            >
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--color-mint)] text-[var(--color-accent-deep)]">
+                <Phone size={18} aria-hidden />
+              </span>
+              <span className="text-[11px] font-semibold text-[var(--color-mid)]">
+                {tDetail('callAction')}
+              </span>
+            </a>
             <button
               type="button"
               onClick={() => void openIdCard()}
-              className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+              className="flex flex-1 flex-col items-center gap-1 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-1 py-3 btn-press chq-focus"
             >
-              <IdCard className="h-6 w-6 text-teal-500" aria-hidden />
-              <span className="text-sm font-semibold text-[var(--color-text-primary)]">{tDetail('idCardAction')}</span>
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--color-mint)] text-[var(--color-accent-deep)]">
+                <IdCard size={18} aria-hidden />
+              </span>
+              <span className="text-[11px] font-semibold text-[var(--color-mid)]">
+                {tDetail('idCardAction')}
+              </span>
             </button>
-            {canCollect && (
-              <button
-                type="button"
-                onClick={() => setShowCollect(true)}
-                className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
-              >
-                <CreditCard className="h-6 w-6 text-teal-500" aria-hidden />
-                <span className="text-sm font-semibold text-[var(--color-text-primary)]">{tp('collectPayment')}</span>
-              </button>
-            )}
-            {canEdit && (
-              <button
-                type="button"
-                onClick={openEdit}
-                className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-4 text-center shadow-sm transition-colors hover:bg-[var(--color-surface-2)] btn-press chq-focus"
-              >
-                <Pencil className="h-6 w-6 text-teal-500" aria-hidden />
-                <span className="text-sm font-semibold text-[var(--color-text-primary)]">{tCommon('edit')}</span>
-              </button>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* 3. Parent / Family. Design (§02) lists the parent AND every sibling as
-          their own contact row (name, role, phone/subject). Live previously
-          rendered only the single `families` summary row - the sibling half
-          (other students sharing this one's sibling_family_id) is added below,
-          same-center scoped, excluding this student. */}
-      <section className="mt-6">
-        <h2 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">{tDetail('family')}</h2>
-        <div className="rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] divide-y divide-[var(--color-line)]">
-          {family ? (
-            <div className="flex items-center gap-3 p-4">
-              <span
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[var(--color-tile)] text-xs font-semibold text-[var(--color-text-secondary)]"
-                aria-hidden
-              >
-                {initialsOf(family.parent_name || family.family_name || '?')}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-[var(--color-text-primary)]">
-                  {family.parent_name || family.family_name || tCommon('notAvailable')}
-                </p>
-                <p className="text-xs text-[var(--color-text-secondary)]">{tDetail('parentRole')}</p>
-              </div>
-              {family.parent_phone ? (
-                <p className="shrink-0 text-xs font-mono text-[var(--color-text-tertiary)]" dir="ltr">
-                  {family.parent_phone}
-                </p>
-              ) : null}
-            </div>
-          ) : (
-            <p className="p-4 text-sm text-[var(--color-text-secondary)]">{tDetail('noFamilyLinked')}</p>
-          )}
-          {siblings.map((sib) => (
-            <div key={sib.id} className="flex items-center gap-3 p-4">
-              <span
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[var(--color-mint)] text-xs font-semibold text-[var(--color-accent-deep)]"
-                aria-hidden
-              >
-                {initialsOf(sib.name)}
-              </span>
-              <div className="min-w-0 flex-1">
-                <Link
-                  href={`/students/${sib.id}`}
-                  className="block truncate text-sm font-medium text-[var(--color-text-primary)] hover:underline"
-                >
-                  {sib.name}
-                </Link>
-                <p className="truncate text-xs text-[var(--color-text-secondary)]">
-                  {[tDetail('siblingRole'), sib.subject, sib.grade_level ? tDetail('gradeLabel', { grade: sib.grade_level }) : null]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 4. Attendance history (per-student) */}
-      <div className="mt-6">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-[var(--color-text-primary)] mb-3">
-          <ClipboardList size={16} className="text-teal-600" /> {tAtt('history')}
-        </h2>
-        <div className="rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] overflow-hidden">
-          {attendanceLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin h-6 w-6 border-2 border-teal-500 border-t-transparent rounded-full" />
-            </div>
-          ) : scans.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-[var(--color-text-secondary)] text-center">{tAtt('noDataInPeriod')}</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--color-line)] bg-[var(--color-surface-0)]">
-                    <th className="text-start py-2.5 px-4 text-xs font-semibold text-[var(--color-text-secondary)]">{tAtt('dateTime')}</th>
-                    <th className="text-start py-2.5 px-4 text-xs font-semibold text-[var(--color-text-secondary)]">{tAtt('group')}</th>
-                    <th className="text-start py-2.5 px-4 text-xs font-semibold text-[var(--color-text-secondary)]">{tAtt('result')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {scans.map((sc) => {
-                    const badge = deriveResultBadge(sc, tAtt);
-                    const grp = sc.group_id ? groupNameMap[sc.group_id] : null;
-                    return (
-                      <tr key={sc.id} className="border-b border-[var(--color-line)] last:border-0">
-                        <td className="py-2.5 px-4 text-[var(--color-text-secondary)] text-start" dir="ltr">
-                          {sc.scanned_at
-                            ? formatDateTime(sc.scanned_at, locale, { dateStyle: 'short', timeStyle: 'short' })
-                            : tCommon('notSet')}
-                        </td>
-                        <td className="py-2.5 px-4 text-[var(--color-text-secondary)] text-start">
-                          {grp ?? tCommon('notAvailable')}
-                        </td>
-                        <td className="py-2.5 px-4 text-start">
-                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${badge.cls}`}>{badge.label}</span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 5. Order card (bottom) */}
-      {!delivered ? (
-        <div className="mt-6 flex flex-col gap-3">
-          {inCart ? (
-            <div className="space-y-2">
-              <button type="button" disabled className="w-full py-3 rounded-md bg-[var(--color-surface-2)] text-sm font-semibold text-[var(--color-text-muted)]">
-                {tDetail('inCart')}
-              </button>
-              <Link href="/orders" className="block text-center text-sm font-semibold text-teal-600 underline">
-                {tCart('toast.viewCart')}
-              </Link>
-            </div>
-          ) : (
             <button
               type="button"
-              className="w-full py-3 rounded-md bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold"
-              onClick={() => void onOrderCard()}
+              onClick={openEdit}
+              disabled={!canEdit}
+              className={`flex flex-1 flex-col items-center gap-1 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-1 py-3 ${
+                canEdit ? 'btn-press chq-focus' : 'opacity-50'
+              }`}
             >
-              {tDetail('orderCard')}
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--color-mint)] text-[var(--color-accent-deep)]">
+                <Pencil size={18} aria-hidden />
+              </span>
+              <span className="text-[11px] font-semibold text-[var(--color-mid)]">{tCommon('edit')}</span>
             </button>
-          )}
+          </div>
+
+          {/* §03 Payments. `payments` is 0 rows live but has an ACTIVE writer
+              (POST /api/payments/collect), so this is a real feature with an
+              empty table — not a dead one. */}
+          <section>
+            <div className="mb-2 flex items-baseline justify-between">
+              <h2 className="text-[13px] font-semibold text-[var(--color-mid)]">{tDetail('paymentsTitle')}</h2>
+              <Link href="/payments" className="text-xs font-semibold text-[#0E6B61]">
+                {tDetail('seeAll')}
+              </Link>
+            </div>
+            <div className="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-1">
+              {recentPayments.length === 0 ? (
+                <p className="py-3 text-[13px] text-[var(--color-text-secondary)]">
+                  {tDetail('noPayments')}
+                </p>
+              ) : (
+                recentPayments.map((p, i) => {
+                  const subject = p.group_id ? groupSubjectMap[p.group_id] : null;
+                  const st = String(p.status ?? '').toLowerCase();
+                  const known = st === 'confirmed' || st === 'paid' || st === 'pending';
+                  return (
+                    <div
+                      key={p.id}
+                      className={`flex items-center gap-2 py-3 text-[13px] ${
+                        i < recentPayments.length - 1 ? 'border-b border-[#F0ECE2]' : ''
+                      }`}
+                    >
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-bold ${
+                          isCashMethod(p.method)
+                            ? 'bg-[#F4EBD7] text-[#9A6B1F]'
+                            : 'bg-[var(--color-mint)] text-[#0E6B61]'
+                        }`}
+                      >
+                        {tDetail(isCashMethod(p.method) ? 'methodCash' : 'methodOnline')}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-[var(--color-mid)]">
+                        {[p.paid_at ? formatDate(p.paid_at, locale, 'short') : null, subject]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                      <span className="shrink-0 font-semibold tabular-nums" dir="ltr">
+                        {formatCurrency(Number(p.amount ?? 0), locale)}
+                      </span>
+                      {/* No "Failed" chip: nothing in the codebase ever writes
+                          payments.status = 'failed'. An unrecognised value shows
+                          its raw text in neutral styling rather than being
+                          silently classed as Paid. */}
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-bold ${
+                          !known
+                            ? 'bg-[#F0ECE2] text-[#9C3322]'
+                            : st === 'pending'
+                              ? 'bg-[#F4EBD7] text-[#9A6B1F]'
+                              : 'bg-[var(--color-mint)] text-[#0E6B61]'
+                        }`}
+                      >
+                        {known ? tDetail(st === 'pending' ? 'statusUnpaid' : 'statusPaid') : String(p.status ?? '')}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </section>
+
+          {/* §03 Contacts — one `.person` card per human WITH a phone, each
+              carrying its own Call and WhatsApp buttons. Replaces §02's inert
+              family row (§03 is the later frame of the same screen). */}
+          <section>
+            <h2 className="mb-2 text-[15px] font-bold text-[var(--color-text-primary)]">
+              {tDetail('contacts')}
+            </h2>
+            {parentDigits || studentDigits ? (
+              <div className="flex flex-col gap-2">
+                {parentDigits ? (
+                  <div className="rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--color-tile)] text-[13px] font-bold text-[var(--color-mid)]">
+                        {initialsOf(family?.parent_name || family?.family_name || student.name)}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13px] font-semibold text-[var(--color-text-primary)]">
+                          {family?.parent_name || family?.family_name || tDetail('parentRole')}
+                        </p>
+                        <p className="text-[11px] text-[#80827A]">{tDetail('parentRole')}</p>
+                        <p className="mt-1 font-mono text-xs text-[var(--color-mid)]" dir="ltr">
+                          {family?.parent_phone ?? student.parent_phone}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-2 flex gap-2">
+                      <a
+                        href={`tel:+${parentDigits}`}
+                        className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-tile)] py-3 text-xs font-bold text-[#3A3F3A] btn-press chq-focus"
+                      >
+                        <Phone size={15} aria-hidden /> {tDetail('call')}
+                      </a>
+                      <a
+                        href={`https://wa.me/${parentDigits}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-[rgba(18,104,74,.2)] bg-[var(--color-mint)] py-3 text-xs font-bold text-[#0E6B61] btn-press chq-focus"
+                      >
+                        <MessageCircle size={15} aria-hidden /> {tDetail('whatsapp')}
+                      </a>
+                    </div>
+                  </div>
+                ) : null}
+                {studentDigits ? (
+                  <div className="rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--color-tile)] text-[13px] font-bold text-[var(--color-mid)]">
+                        {initialsOf(student.name)}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13px] font-semibold text-[var(--color-text-primary)]">
+                          {student.name}
+                        </p>
+                        <p className="text-[11px] text-[#80827A]">{tDetail('studentRole')}</p>
+                        <p className="mt-1 font-mono text-xs text-[var(--color-mid)]" dir="ltr">
+                          {student.phone}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-2 flex gap-2">
+                      <a
+                        href={`tel:+${studentDigits}`}
+                        className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-tile)] py-3 text-xs font-bold text-[#3A3F3A] btn-press chq-focus"
+                      >
+                        <Phone size={15} aria-hidden /> {tDetail('call')}
+                      </a>
+                      <a
+                        href={`https://wa.me/${studentDigits}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-[rgba(18,104,74,.2)] bg-[var(--color-mint)] py-3 text-xs font-bold text-[#0E6B61] btn-press chq-focus"
+                      >
+                        <MessageCircle size={15} aria-hidden /> {tDetail('whatsapp')}
+                      </a>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <p className="rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-[13px] text-[var(--color-text-secondary)]">
+                {tDetail('noFamilyLinked')}
+              </p>
+            )}
+          </section>
+
+          {/* Siblings keep §02's chevron row treatment. §03 does not draw them,
+              but dropping them would remove the only sibling navigation there is. */}
+          {siblings.length > 0 ? (
+            <section>
+              <h2 className="mb-2 text-[13px] font-semibold text-[var(--color-mid)]">
+                {tDetail('family')}
+              </h2>
+              <div className="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-1">
+                {siblings.map((sib, i) => (
+                  <Link
+                    key={sib.id}
+                    href={`/students/${sib.id}`}
+                    className={`flex items-center gap-2 py-3 ${
+                      i < siblings.length - 1 ? 'border-b border-[#F0ECE2]' : ''
+                    }`}
+                  >
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--color-mint)] text-xs font-semibold text-[var(--color-accent-deep)]">
+                      {initialsOf(sib.name)}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
+                        {sib.name}
+                      </p>
+                      <p className="truncate text-xs text-[#80827A]">
+                        {[
+                          tDetail('siblingRole'),
+                          sib.subject,
+                          sib.grade_level ? tDetail('gradeLabel', { grade: sib.grade_level }) : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </p>
+                    </div>
+                    <DirectionalIcon icon={ChevronRight} className="h-[18px] w-[18px] text-[#80827A]" />
+                  </Link>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {/* §02 Recent attendance — the THREE most recent scans, with a See-all
+              link to the full list. */}
+          <section>
+            <div className="mb-2 flex items-baseline justify-between">
+              <h2 className="text-[13px] font-semibold text-[var(--color-mid)]">
+                {tDetail('recentAttendance')}
+              </h2>
+              <Link href="/attendance" className="text-xs font-semibold text-[#0E6B61]">
+                {tDetail('seeAll')}
+              </Link>
+            </div>
+            <div className="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-1">
+              {attendanceLoading ? (
+                <div className="flex justify-center py-6">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-teal-500 border-t-transparent" />
+                </div>
+              ) : recentScans.length === 0 ? (
+                <p className="py-3 text-[13px] text-[var(--color-text-secondary)]">
+                  {tAtt('noDataInPeriod')}
+                </p>
+              ) : (
+                recentScans.map((sc, i) => {
+                  const absent = sc.status === 'absent';
+                  const grp = sc.group_id ? groupNameMap[sc.group_id] : null;
+                  return (
+                    <div
+                      key={sc.id}
+                      className={`flex items-center gap-2 py-3 ${
+                        i < recentScans.length - 1 ? 'border-b border-[#F0ECE2]' : ''
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="num text-[13px] font-semibold text-[var(--color-text-primary)]">
+                          {formatDate(sc.session_date ?? sc.scanned_at, locale, {
+                            weekday: 'short',
+                            day: '2-digit',
+                            month: '2-digit',
+                          })}
+                        </p>
+                        {grp ? <p className="truncate text-xs text-[#80827A]">{grp}</p> : null}
+                      </div>
+                      {/* TWO states, not three. attendance_scans.status is
+                          CHECK-constrained to present | absent — a "Late" badge
+                          derived from scanned_at vs sessions.scheduled_at would
+                          be a different fact wearing the design's label. M1. */}
+                      <span
+                        className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-semibold ${
+                          absent ? 'bg-[#F4E5E2] text-[#9C3322]' : 'bg-[#E4F0E9] text-[#1A6D4D]'
+                        }`}
+                      >
+                        {absent ? <X size={12} aria-hidden /> : <Check size={12} strokeWidth={2.5} aria-hidden />}
+                        {tDetail(absent ? 'attendanceAbsent' : 'attendancePresent')}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </section>
+
+          {/* §02 Order-ID-card CTA, two states. Live correctly hides it once the
+              card is delivered — the design draws no delivered state, so that
+              stays. */}
+          {!delivered ? (
+            inCart ? (
+              <div className="flex items-center gap-3 rounded-2xl border border-[rgba(14,107,97,.2)] bg-[var(--color-mint)] px-3.5 py-3">
+                <span className="grid h-[38px] w-[38px] shrink-0 place-items-center rounded-xl bg-[var(--color-surface-1)] text-[#0A514A]">
+                  <Check size={20} aria-hidden />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-[#0A514A]">{tDetail('inCart')}</p>
+                  {qrCardPrice !== null ? (
+                    <p className="text-xs text-[#0A514A] opacity-80 tabular-nums">
+                      {tDetail('cardInCartSub', {
+                        count: formatNumber(1, locale),
+                        amount: formatCurrency(qrCardPrice, locale),
+                      })}
+                    </p>
+                  ) : null}
+                </div>
+                <Link
+                  href="/orders"
+                  className="shrink-0 rounded-full bg-[#0E6B61] px-3 py-1.5 text-[13px] font-semibold text-[#FFFDF8]"
+                >
+                  {tCart('toast.viewCart')}
+                </Link>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 rounded-2xl border border-dashed border-[#CDB98A] bg-[var(--color-surface-1)] px-3.5 py-3">
+                <span className="grid h-[38px] w-[38px] shrink-0 place-items-center rounded-xl bg-[#F4EBD7] text-[#9A6B1F]">
+                  <CreditCard size={20} aria-hidden />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                    {tDetail('cardTitle')}
+                  </p>
+                  {/* The price is the REAL configured number
+                      (platform_config.qr_card_price, code default when the row
+                      is absent — which it is). When the read fails the clause is
+                      dropped; the design's sample 25 is never rendered. */}
+                  <p className="text-xs text-[#80827A] tabular-nums">
+                    {qrCardPrice !== null
+                      ? tDetail('cardSubWithPrice', {
+                          amount: formatCurrency(qrCardPrice, locale),
+                        })
+                      : tDetail('cardSub')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void onOrderCard()}
+                  className="shrink-0 rounded-full bg-[#F4EBD7] px-3 py-1.5 text-[13px] font-semibold text-[#9A6B1F] btn-press chq-focus"
+                >
+                  {tDetail('orderAction')}
+                </button>
+              </div>
+            )
+          ) : null}
         </div>
-      ) : null}
+
+        {/* §02 `.bottombar` — ONE primary over a scrim. Owing → Collect payment
+            (the money action); settled → New payment. Both open the same collect
+            modal. No bar at all without the permission — never a dead button.
+            §03's "Send reminder" primary would occupy this same slot, so it is
+            the `.act` Remind button above instead; two stacked bottom bars is
+            not something either frame draws. */}
+        {canCollect ? (
+          <div className="sticky bottom-0 flex gap-2 bg-[linear-gradient(0deg,var(--color-surface-0)_70%,transparent)] px-4 pb-4 pt-3">
+            <button
+              type="button"
+              onClick={() => {
+                setCollectAmount(owes ? String(Math.round(balance ?? 0)) : '');
+                setShowCollect(true);
+              }}
+              className="btn-lift flex h-[50px] flex-1 items-center justify-center gap-2 rounded-xl bg-[#0E6B61] text-[15px] font-semibold text-[#FFFDF8] shadow-sm btn-press chq-focus"
+            >
+              {owes ? <CreditCard size={18} aria-hidden /> : <Plus size={18} aria-hidden />}
+              {owes ? tp('collectPayment') : tp('newPayment')}
+            </button>
+          </div>
+        ) : null}
+      </div>
 
       {/* Collect Payment modal */}
       {showCollect && (
@@ -1185,6 +1785,17 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
       )}
+
+      {/* Print statement — moved off the (undrawn) body CTA row into the
+          top-bar kebab, same modal the roster uses. */}
+      {showPrintStatement ? (
+        <PrintStatementModal
+          studentId={student.id}
+          studentName={student.name}
+          isOpen
+          onClose={() => setShowPrintStatement(false)}
+        />
+      ) : null}
 
       <ReceiptModal
         isOpen={!!receipt}
