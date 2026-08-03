@@ -3108,6 +3108,7 @@
     "selectGroup": "Select a group to manage members",
     "deleteConfirm": "Delete this group?",
     "deleteGroup": "Delete group",
+    "deleteGroupConsequence": "Removes the group and its member list",
     "moreActions": "More",
     "centerCutLabel": "Center's cut",
     "memberPaid": "Paid",

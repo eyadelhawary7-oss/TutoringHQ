@@ -5546,6 +5546,7 @@
     "selectGroup": "تحديد مجموعة لإدارة الأعضاء",
     "deleteConfirm": "حذف هذه المجموعة",
     "deleteGroup": "حذف المجموعة",
+    "deleteGroupConsequence": "يحذف المجموعة وقائمة أعضائها",
     "moreActions": "المزيد",
     "centerCutLabel": "نصيب السنتر",
     "memberPaid": "مدفوع",

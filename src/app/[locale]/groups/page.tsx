@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbDelete, auditLog } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
 import { Link as RouterLink } from '@/i18n/routing';
-import { Plus, BookOpen, X, Users, Search, Link as LinkIcon, ClipboardList, MoreVertical } from 'lucide-react';
+import { Plus, BookOpen, X, Users, Search, Link as LinkIcon, ClipboardList, MoreVertical, Trash2 } from 'lucide-react';
 import { AttendanceHeatmap } from '@/components/AttendanceHeatmap';
 import { EmptyState, EmptyStateAction } from '@/components/shared';
-import { CapacityBar } from '@/components/patterns';
+import { ActionSheet, CapacityBar } from '@/components/patterns';
 import { useToast } from '@/components/ui/ToastProvider';
 import { formatCurrency, formatNumber, formatDate, formatPercent, formatTime } from '@/lib/formatNumber';
 import { getCairoWeekColumnOrder, getCairoWeekDays } from '@/lib/cairo/week';
@@ -247,16 +247,6 @@ export default function GroupsPage() {
   };
 
   useEffect(() => { loadData(); }, []);
-
-  const cardMenuRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!openCardMenuId) return;
-    const onClickAway = (e: MouseEvent) => {
-      if (cardMenuRef.current && !cardMenuRef.current.contains(e.target as Node)) setOpenCardMenuId(null);
-    };
-    document.addEventListener('mousedown', onClickAway);
-    return () => document.removeEventListener('mousedown', onClickAway);
-  }, [openCardMenuId]);
 
   useEffect(() => {
     if (!detailGroup) {
@@ -573,6 +563,10 @@ export default function GroupsPage() {
     }
   };
 
+  // The group whose card three-dot is open — drives the one shared ActionSheet
+  // below (Merged-Design-Patterns §04/§05: one sheet, its contents fit the row).
+  const menuGroup = openCardMenuId ? groups.find((g) => g.id === openCardMenuId) ?? null : null;
+
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen w-full bg-[var(--color-surface-0)] space-y-6 animate-fade-in">
       {/* Page header */}
@@ -662,39 +656,20 @@ export default function GroupsPage() {
                   >
                     <LinkIcon size={16} />
                   </button>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpenCardMenuId((v) => (v === g.id ? null : g.id));
-                      }}
-                      className="ms-1 p-1 text-[var(--color-text-muted)] hover:text-[var(--color-teal)] transition-colors"
-                      aria-label={t('moreActions', { defaultValue: 'More' })}
-                    >
-                      <MoreVertical size={16} />
-                    </button>
-                    {openCardMenuId === g.id && (
-                      <div
-                        ref={cardMenuRef}
-                        role="menu"
-                        onClick={(e) => e.stopPropagation()}
-                        className="absolute end-0 top-8 z-10 w-32 rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-1 shadow-lg"
-                      >
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={() => {
-                            setOpenCardMenuId(null);
-                            handleDeleteGroup(g.id);
-                          }}
-                          className="block w-full rounded-md px-3 py-2 text-start text-sm font-medium text-[var(--color-danger)] hover:bg-[var(--color-surface-2)]"
-                        >
-                          {t('deleteGroup', { defaultValue: 'Delete group' })}
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  {/* Merged-Design-Patterns §05: the card's three-dot opens the
+                      shared ActionSheet (rendered once, after the grid), not a
+                      bespoke popover. Same single action the popover had. */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenCardMenuId(g.id);
+                    }}
+                    className="ms-1 p-1 text-[var(--color-text-muted)] hover:text-[var(--color-teal)] transition-colors"
+                    aria-label={t('moreActions')}
+                  >
+                    <MoreVertical size={16} />
+                  </button>
                 </div>
               </div>
               <h3 className="font-semibold text-[var(--color-text-primary)] mb-1">{g.name}</h3>
@@ -742,6 +717,32 @@ export default function GroupsPage() {
             );
           })}
         </div>
+      )}
+
+      {/* Merged-Design-Patterns §05 · the card's quick menu. The same shared
+          sheet every row opens — the hand-rolled popover this replaces had
+          exactly one action, so the sheet carries exactly one: contents fit
+          the row, the sheet itself never changes shape. handleDeleteGroup
+          keeps its own confirm() — the sheet is a menu, not the confirmation. */}
+      {menuGroup && (
+        <ActionSheet
+          open
+          onClose={() => setOpenCardMenuId(null)}
+          title={menuGroup.name}
+          subtitle={menuGroup.subject ?? undefined}
+          actions={[
+            {
+              id: 'delete-group',
+              label: t('deleteGroup'),
+              description: t('deleteGroupConsequence'),
+              icon: Trash2,
+              destructive: true,
+              onSelect: () => {
+                void handleDeleteGroup(menuGroup.id);
+              },
+            },
+          ]}
+        />
       )}
 
       {/* Add Group Modal */}

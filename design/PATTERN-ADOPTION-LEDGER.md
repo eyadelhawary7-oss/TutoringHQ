@@ -76,7 +76,7 @@ flagged file when its own row comes up again.
 | `StillWorking` | 1 (`students/page.tsx`, 3 Aug) | 137 | **0.7%** |
 | `ActionSpinner` | 0 | 137 | **0%** |
 | `ListRow` | 5 | 14 | **35.7%** |
-| `ActionSheet` | 0 | 3 | **0%** |
+| `ActionSheet` | 1 (`groups/page.tsx`, 3 Aug) | 3 | **33.3%** |
 | `RecordActionBar` | 0 | 4 | **0%** |
 | `ExpandableRow` | 0 | 1 | **0%** |
 | `SegmentedControl` (new, 3 Aug) | 2 | 3 | **66.7%** |
@@ -84,10 +84,18 @@ flagged file when its own row comes up again.
 | `GroupCard` (new, 3 Aug) | 0 | — | — |
 | `StatusPill` (new, 3 Aug) | 0 | — | — |
 
-`ActionSpinner`, `ActionSheet`, `RecordActionBar`, `ExpandableRow`, `GroupCard` and `StatusPill` have
-**zero adopters**, confirmed by grepping the exact identifiers outside `src/components/patterns/` and
+`ActionSpinner`, `RecordActionBar`, `ExpandableRow`, `GroupCard` and `StatusPill` have **zero
+adopters**, confirmed by grepping the exact identifiers outside `src/components/patterns/` and
 `src/components/shared/`. Their SHAPE is now correct against the design; their reach is not. Those are
 two different problems and only the first was in scope for the 3 August pass.
+
+**`ActionSheet`'s one adoption is the groups card quick menu, not the students row §04 draws.** The
+groups card's three-dot opened a hand-rolled one-item popover (`role="menu"`, Delete only); it now
+opens the shared sheet with the identical single action (Delete group, destructive, with its
+consequence line) — a 1:1 conversion on the surface §05's first frame draws, with no function added
+or removed. The denominator stays 3 (the three hand-rolled menus below); the other two —
+`admin/centers` and `rooms` — stay per-file. Students specifically was not forced — see the next
+paragraph.
 
 **`ExpandableRow`/`ActionSheet` on the students list was attempted and deliberately abandoned.** It is
 the adoption `Merged-Design-Patterns` §06 draws, and it is not a conversion: the live mobile student
@@ -95,6 +103,13 @@ row is ~330 lines inside `SwipeRow` carrying inline parent-phone editing, cart s
 controls, none of which `ExpandableRow`'s `title`/`meta`/`badge` surface can hold. Wedging it in would
 fork the primitive, which is the one thing `components/patterns/index.ts` says not to do. It needs the
 students file's own sweep, where removing `SwipeRow` and rehoming that row content is the actual job.
+
+**`RecordActionBar` stays at zero deliberately.** The "group page" §05 draws it on does not exist as a
+route — the live surface is a slide-over inside `groups/page.tsx`, and the only honest actions there
+today are already inline (copy invite link, delete). §05's bar exists to pin a record's real primary
+action ("Take attendance"); no such per-group flow exists yet, and a pinned bar with an invented
+primary is a fabricated hierarchy, which is worse than an unadopted component. It adopts in the sweep
+that builds the group record page.
 
 `SegmentedControl`'s denominator is 3 hand-rolled controls; **2 were converged and the third
 deliberately was not.** `teacher/AllStudentsList.tsx` is a horizontally-scrolling filter row of N
@@ -303,11 +318,14 @@ RTL chevron-swap line verbatim**), `settings/general/page.tsx`, `settings/money/
 `components/attendance/ScanTab.tsx`, `rooms/page.tsx` (grid card, not a stacked row — same functional
 job), `groups/page.tsx` (same grid-vs-row caveat).
 
-### ActionSheet — 0/3 (0%)
+### ActionSheet — 1/3 (33.3%)
+
+**Adopted (3 Aug):** `groups/page.tsx` — the per-card `MoreVertical` → `role="menu"` Delete popover is
+now the shared sheet, same single action, plus the §04 consequence line (`groups.deleteGroupConsequence`).
 
 **Ad hoc:** `admin/centers/page.tsx` (per-row `MoreVertical` → hand-built `role="menu"` panel:
 viewDetails/suspend/blacklist/reactivate/changePlan/delete), `rooms/page.tsx` (per-card `MoreVertical` →
-`role="menu"` Edit/Delete), `groups/page.tsx` (per-card `MoreVertical` → `role="menu"` Delete).
+`role="menu"` Edit/Delete).
 
 ### RecordActionBar — 0/4 (0%)
 

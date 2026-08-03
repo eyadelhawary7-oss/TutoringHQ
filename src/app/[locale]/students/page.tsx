@@ -1559,7 +1559,7 @@ export default function StudentsPage() {
                                             className="flex-1 rounded-lg bg-teal-600 px-3 py-2 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-50 btn-press chq-focus"
                                             onClick={() => void saveParentPhoneInline(s.id)}
                                           >
-                                            {savingParentPhoneId === s.id ? tCommon('loading') : ts('save')}
+                                            {ts('save')}
                                           </button>
                                           <button
                                             type="button"
@@ -1796,7 +1796,7 @@ export default function StudentsPage() {
                                       className="flex-1 rounded-lg bg-teal-600 px-3 py-2 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-50 btn-press chq-focus"
                                       onClick={() => void saveParentPhoneInline(s.id)}
                                     >
-                                      {savingParentPhoneId === s.id ? tCommon('loading') : ts('save')}
+                                      {ts('save')}
                                     </button>
                                     <button
                                       type="button"
@@ -2210,7 +2210,7 @@ export default function StudentsPage() {
               </label>
               <div className="flex gap-2 justify-end mt-4">
                 <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-lg text-sm border border-[var(--color-border)] btn-press chq-focus">{tCommon('cancel')}</button>
-                <button type="submit" disabled={isAdding} className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 transition-colors disabled:opacity-50 btn-press chq-focus">{isAdding ? tCommon('loading') : tCommon('save')}</button>
+                <button type="submit" disabled={isAdding} className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 transition-colors disabled:opacity-50 btn-press chq-focus">{tCommon('save')}</button>
               </div>
             </form>
           </div>
@@ -2288,7 +2288,7 @@ export default function StudentsPage() {
             </div>
             <div className="flex gap-2 justify-end mt-4">
               <button onClick={() => setEditStudent(null)} className="px-4 py-2 rounded-lg text-sm border border-[var(--color-border)] btn-press chq-focus">{tCommon('cancel')}</button>
-              <button onClick={saveEdit} disabled={isSavingEdit} className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 transition-colors disabled:opacity-50 btn-press chq-focus">{isSavingEdit ? tCommon('loading') : tCommon('save')}</button>
+              <button onClick={saveEdit} disabled={isSavingEdit} className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 transition-colors disabled:opacity-50 btn-press chq-focus">{tCommon('save')}</button>
             </div>
           </div>
         </div>
@@ -2513,7 +2513,7 @@ export default function StudentsPage() {
               }}
               className="mt-4 w-full py-3 rounded-xl text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed btn-press chq-focus"
             >
-              {announcementSubmitting ? tCommon('loading') : ts('announcementConfirm')}
+              {ts('announcementConfirm')}
             </button>
           </div>
         </div>

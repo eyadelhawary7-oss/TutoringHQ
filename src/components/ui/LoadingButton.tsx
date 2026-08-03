@@ -16,6 +16,13 @@ import { SuccessCheck } from './SuccessCheck';
  * the moment they most need it, and on a payments screen that is the difference
  * between waiting and pressing again. The label is invariant across all four
  * states; only the glyph and the dimming change.
+ *
+ * Size stability is the CALLER's width: the drawn `.inflight` is full-width, so
+ * its size cannot change. On an auto-width instance the in-flight glyph adds
+ * ~24px, so a button inside a footer that must not move should be given a width
+ * (w-full or a fixed one) at the call site — this component does not invent
+ * one, because reserving an empty glyph slot at idle is chrome the design does
+ * not draw.
  */
 interface LoadingButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   state?: 'idle' | 'loading' | 'success' | 'error';
@@ -66,7 +73,7 @@ export function LoadingButton({
       ].join(' ')}
     >
       {isLoading && (
-        <svg className="animate-spin h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <svg className="animate-spin motion-reduce:animate-none h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.3" />
           <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
         </svg>
