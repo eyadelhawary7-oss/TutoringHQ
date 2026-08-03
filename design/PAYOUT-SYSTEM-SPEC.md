@@ -364,6 +364,21 @@ dependency) and must pack pages to the limit.
 
 ### 7.1 — Where the approve permission must live (answering the question raised with the revision)
 
+> **✅ DECIDED — 3 August, Eyad.** A **separate permission: `can_approve_payouts`**, new and distinct from
+> `can_request_referral_payouts`. Decision 1 keeps request and release apart and this must not collapse
+> them.
+>
+> **Reading this against §7.1's invariant — they are compatible, and the implementer must not resolve the
+> ambiguity the wrong way.** `can_*` is the naming convention of `public.users` *columns*, but nothing
+> requires the permission to be one. The compatible shape is a **permission key** — `permission =
+> 'can_approve_payouts'` — on a row in the platform-side `permissions` table, which is already FK'd to
+> `admin_users`, already CEO/admin-team-gated, and already soft-revokes via `enabled = false` while
+> preserving `created_at`. That satisfies the decided name *and* the disjoint-domain invariant.
+>
+> **⚠ Do not add a `can_approve_payouts` column to `public.users`.** If it lands there, the self-grant
+> hole below applies in full: the center owner — the payee — grants it to themselves in one request.
+> The name was decided; the table was not, and the two are not the same question.
+
 **It must be a separate permission, and — more strongly — it must not live on `public.users` at all.**
 
 Decision 1 kept *request* and *release* apart. Reusing `can_request_referral_payouts` for approval would
@@ -402,6 +417,35 @@ resolving the actor's tier server-side, reading the cap in-transaction, failing 
 log in the same transaction. `REVOKE ALL FROM anon, authenticated`; grant `service_role` only.
 
 ### 7.2 — What the cap must actually say, because as written it bounds one row and not one manager
+
+> **✅ DECIDED — 3 August, Eyad.** Manager approval is capped at **10,000 EGP per payout**. A payout above
+> the cap **goes to the CEO** — it is not split. **The check runs on the requested amount, not the released
+> amount.** No splitting into smaller payouts to evade the cap.
+>
+> **This closes the worst of the ambiguities below and leaves one open.**
+>
+> **Closed — "the amount" is now defined.** Checking the *requested* figure resolves the four-to-five-way
+> ambiguity in the second bullet below, and resolves it the **safe** way. The permissive reading was
+> `net_minor` ("what the center receives"), which would let a gross of 10,546.31 through a 10,000 cap.
+> Requested amount is the gross the center asked for, so nothing above 10,000 leaves on a delegated
+> approval. Record it explicitly as: **the cap is compared against the requested gross, before any fee,
+> VAT or credit-conversion arithmetic**, and store the compared figure in the log as
+> `amount_compared_minor`. The piastres/EGP unit hazard still applies and the config key must name its
+> unit.
+>
+> **Still open — the stated intent needs a mechanism the stated rule does not supply.** "No splitting into
+> smaller payouts to evade the cap" is the requirement; a per-payout check on the requested amount does
+> not by itself deliver it. A per-payout check stops one 15,000 request being *entered* as 2 × 7,500. It
+> does not stop a center owed 30,000 from requesting 9,999 three times in sequence — each request is
+> genuinely under the cap, each approval is individually compliant, and `one_open_payout_per_center` only
+> serialises them, it does not limit how many may occur. **Something must count across payouts for the
+> intent to hold.** The minimum that does it: a rolling per-approver window (daily and monthly) plus an
+> anti-splitting rule that hard-blocks N approvals to the same center inside a window. **→ OPEN: which
+> window and which limits?** Flagged rather than chosen — the intent is unambiguous, the numbers are
+> yours.
+>
+> The `settled_pending_bank` and resend gaps below are **not** closed by this decision and remain
+> live: both let money move without a fresh capped approval.
 
 **The stated rule caps a single payout. It does not cap the approver.** Verified evasions, each requiring
 no bug and no rule violation:
@@ -765,13 +809,19 @@ seven §2 defects are prerequisites. It ships without waiting for V3.
 specified before it is safe.** All four are worked through in §7 and all four were verified against the
 live system, not reasoned about abstractly:
 
-1. **Approval authority must live outside `public.users`.** The existing staff-permissions route is
-   owner-gated with **no self-target check**, so any `can_approve_*` column on `users` is self-grantable
-   by the center owner — the payee granting themselves release authority. §7.1.
-2. **The cap as stated bounds one row, not one manager.** Four sub-cap approvals move 30,000; ten centers
-   in an afternoon move 99,990; and because the natural reading of "the amount" is the permissive one,
-   **more than 10,000 EGP can leave on a single compliant approval**. It must become a rolling
-   per-approver aggregate. §7.2.
+1. **Approval authority must live outside `public.users`.** ✅ *Name decided: `can_approve_payouts`,
+   distinct from `can_request_referral_payouts`.* The **table is still the open half** — the existing
+   staff-permissions route is owner-gated with **no self-target check**, so a `can_approve_payouts`
+   *column on `users`* would be self-grantable by the center owner, the payee granting themselves release
+   authority. Implement it as a permission **key** on the `admin_users`-side `permissions` table, which
+   satisfies both the decided name and the disjoint-domain invariant. §7.1.
+2. **The cap bounds one row, not one manager.** ✅ *Decided: 10,000 EGP per payout, checked on the
+   **requested** amount, above-cap goes to the CEO.* Checking the requested gross **closes** the
+   four-to-five-way "which amount" ambiguity, and closes it safely — the permissive `net_minor` reading
+   would have let a gross of 10,546.31 through. **Still open:** the stated intent, *"no splitting"*,
+   needs a mechanism the per-payout rule does not supply — a center owed 30,000 can request 9,999 three
+   times in sequence, each individually compliant. A rolling per-approver window plus an anti-splitting
+   rule is the minimum that delivers the intent. §7.2.
 3. **Revocation does not reach an already-approved payout**, and the cap in force at approval time is
    currently unprovable after the fact. §7.3.
 4. **"Never deletable, including by the CEO" cannot be delivered as stated** — the CEO holds `postgres`,
