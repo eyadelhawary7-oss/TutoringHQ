@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
-import { LogOut } from 'lucide-react';
+import { useLocale } from 'next-intl';
+import { usePathname } from '@/i18n/routing';
 import { useLayout } from '@/contexts/LayoutContext';
-import { signOutToLogin } from '@/lib/auth/sign-out-client';
 import TeacherNav from './TeacherNav';
 import TeacherTrialBanner from './TeacherTrialBanner';
+import { hidesTeacherTabBar } from './teacherChrome';
 import { NudgeBanner } from '@/components/billing/NudgeBanner';
 
 /**
@@ -22,8 +22,8 @@ export default function TeacherShell({
   privateAccess: boolean;
   children: ReactNode;
 }) {
-  const t = useTranslations('teacherPortal');
   const locale = useLocale();
+  const pathname = usePathname();
   const { setHideShell } = useLayout();
 
   // Desktop sidebar collapse. In-memory only - resetting to expanded on a fresh
@@ -46,26 +46,14 @@ export default function TeacherShell({
         onToggleCollapse={() => setCollapsed((v) => !v)}
       />
 
-      {/* Mobile-only top header (the desktop brand + logout live in the
-          sidebar). */}
-      <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-4 md:hidden">
-        <div className="flex items-baseline gap-2">
-          <span className="font-bold text-[var(--color-text-primary)]">TutoringHQ</span>
-          <span className="text-sm text-[var(--color-text-muted)]">{t('headerTitle')}</span>
-        </div>
-        <button
-          onClick={() => signOutToLogin(locale)}
-          aria-label={t('logout')}
-          className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border-subtle)] px-3 py-1.5 text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-0)]"
-        >
-          <LogOut size={14} aria-hidden />
-          <span className="hidden sm:inline">{t('logout')}</span>
-        </button>
-      </header>
+      {/* The design draws no mobile brand/logout header - each screen opens on
+          its own appbar (TeacherAppBar). Log out moved to the More sheet, which
+          is now mobile's only sign-out (the sidebar copy is md:flex). */}
 
       <main
         className={[
-          'w-full pb-24 transition-[padding] duration-200 md:pb-6',
+          'w-full transition-[padding] duration-200 md:pb-6',
+          hidesTeacherTabBar(pathname) ? 'pb-6' : 'pb-24',
           collapsed ? 'md:ps-12' : 'md:ps-60',
         ].join(' ')}
       >

@@ -1,5 +1,6 @@
 'use client';
 
+import { getCsrfHeaders } from '@/lib/csrf-client';
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Banknote } from 'lucide-react';
@@ -80,11 +81,13 @@ export function ReferralWithdrawalPanel({
         data: { session },
       } = await supabase.auth.getSession();
       if (!session) throw new Error('Unauthorized');
+      const csrf = await getCsrfHeaders(session.access_token);
       const res = await fetch('/api/referrals/payout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
+          ...csrf,
         },
         body: JSON.stringify({
           amount_requested: amount,

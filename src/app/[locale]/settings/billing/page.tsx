@@ -1,5 +1,6 @@
 'use client';
 
+import { getCsrfHeaders } from '@/lib/csrf-client';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
@@ -1118,9 +1119,10 @@ export default function BillingPage() {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       if (!token) throw new Error(t('loadError'));
+      const csrf = await getCsrfHeaders(token);
       const res = await fetch('/api/billing/withdrawal', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...csrf },
         body: JSON.stringify({ creditAmount: amt }),
       });
       const data = (await res.json().catch(() => ({}))) as {
