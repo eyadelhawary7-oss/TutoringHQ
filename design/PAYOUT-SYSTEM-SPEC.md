@@ -2,9 +2,15 @@
 
 **Produced 2 August 2026. Nothing here is built. No code was written.**
 
-This is a document to **review and answer against**, not to build from. Every open decision is marked
-**`→ DECISION`** and phrased so it can be answered by picking an option. Where I have a recommendation I
-say so and argue it; where the answer is genuinely yours, I do not pre-empt it.
+**✅ All nine decisions answered by Eyad, 3 August 2026** — each is marked `✅ DECISION n — ANSWERED` at the
+point it was raised, and summarised in §11. Eight were accepted as recommended; **Decision 8 was decided
+against the recommendation** (single CEO approver rather than maker–checker) and its consequences are
+worked through in §7. The original questions and reasoning are left in place unedited as the record of
+what was weighed.
+
+**This is still not a document to build from directly.** Two things remain outstanding and both gate
+implementation: the Paymob commercial conversation, and the seven questions in §8 that need written
+answers from Paymob. One decision also opened a new question — see §11.
 
 Sources: the live production catalog (Supabase `lczmjpnbuhnsislcvzar`), the live codebase, and Paymob's
 own documentation across three estates (`payouts.paymobsolutions.com/docs`, `developers.paymob.com`, the
@@ -65,7 +71,7 @@ Current live terms:
 | cadence | on request | quarterly window |
 | approval | **none exists — see §2** | `PATCH /api/admin/withdrawals/[id]` |
 
-**→ DECISION 1.** Do (a) and (b) become one payout pipeline with one ledger, one approval queue and one
+**✅ DECISION 1 — ANSWERED: unify, on owner-only + step-up auth.** Do (a) and (b) become one payout pipeline with one ledger, one approval queue and one
 Paymob integration, or stay two? **Recommendation: unify.** They are the same operation — move EGP to a
 center's InstaPay handle — differing only in what accrued the balance. Two pipelines means two of every
 control in §6, and the controls are the expensive part.
@@ -130,7 +136,7 @@ and picking the weaker one would hand payout initiation to staff accounts at cen
 owner-only, with no announcement. *Recommendation: unify on owner-only plus step-up auth, and treat
 `can_request_referral_payouts` as request-only — never release.*
 
-**→ DECISION 2.** Confirm all seven are in scope as prerequisites. If any is deferred, say which — each one
+**✅ DECISION 2 — ANSWERED: yes, all seven.** Confirm all seven are in scope as prerequisites. If any is deferred, say which — each one
 independently can pay real money twice or strand it.
 
 ## 3. The ledger (spec item 1)
@@ -205,12 +211,12 @@ payout_provider_events -- raw Paymob callbacks and inquiry results, append-only
    Manual settlements require a NOT NULL bank reference. Without this, every hand-sent InstaPay silently
    under-reports the Paymob float — see attack **A6**.
 
-**→ DECISION 3.** Append-only double-entry, or extend the existing mutable-column pattern? The alternative
+**✅ DECISION 3 — ANSWERED: append-only double-entry, this subsystem only.** Append-only double-entry, or extend the existing mutable-column pattern? The alternative
 is genuinely cheaper to build and consistent with the rest of the codebase; it is also how the current
 withdrawal bug (§2.2) became possible. I recommend double-entry **for this subsystem only** — not a
 migration of the whole product.
 
-**→ DECISION 4.** During transition, `centers.credit_balance` and the new ledger would both be authoritative
+**✅ DECISION 4 — ANSWERED: option (a), migrate the credit-spend path in the same PR.** During transition, `centers.credit_balance` and the new ledger would both be authoritative
 over the same credits. `billingEngine.ts` still calls `spend_credits_atomic` (:244) and
 `earn_credits_atomic` (:261), neither of which can see the ledger. **This dual-authority window can pay the
 same credits out twice** — see attack **A5**. Pick one: (a) migrate the credit-spend path in the same PR,
@@ -253,7 +259,7 @@ the ledger entry. If a payout is returned by the bank, the restoring `+` entry m
 `cleared_at` of the transaction it reverses — otherwise the center's own returned money is invisible for
 another 7 days and can miss the quarterly window entirely. See attack **A8**.
 
-**→ DECISION 5.** Confirm 0 days for credits and 7 for referral, or set your own numbers. Note that
+**✅ DECISION 5 — ANSWERED: 0 days credits / 7 days referral, config-driven.** Confirm 0 days for credits and 7 for referral, or set your own numbers. Note that
 lowering the number later releases every held entry for every center **simultaneously** — a step-change in
 payable liability against a fixed Paymob float, which is its own incident.
 
@@ -287,7 +293,7 @@ pretend otherwise.
 a support crisis starts. Every clawback posting carries a `reason_key` rendered bilingually, with the
 originating event linked.
 
-**→ DECISION 6.** Confirm the ladder (net → block → invoice → write off), and set the threshold above which
+**✅ DECISION 6 — ANSWERED: ladder confirmed (net → block → invoice → write off); invoice threshold still to be set.** Confirm the ladder, and set the threshold above which
 a clawback goes to invoice rather than sitting as a receivable.
 
 ## 6. When a payout fails partway through Paymob's side (spec item 5)
@@ -338,23 +344,56 @@ dependency) and must pack pages to the limit.
 
 ## 7. Approval (spec item 6)
 
-**Recommendation: maker–checker for every payout above a threshold; nothing fully automatic in v1.**
+> ### ✅ DECIDED — 3 August 2026, Eyad
+> **CEO approval is final. No maker–checker, no threshold, no second approver at any amount.**
+> Combined with the answer to Decision 7 (always-manual for v1), the v1 model is: **every payout is
+> approved by one person, the CEO, regardless of size.**
+>
+> This **overrules the recommendation below**, which argued for maker–checker above a threshold. The
+> original reasoning is left in place unedited — it is the record of what was weighed, and the two
+> considerations it raises do not disappear just because the decision went the other way. They convert
+> into consequences, stated immediately after.
 
-Two arguments carry this. First, **Paymob's own Payouts dashboard implements maker–checker with a PIN** —
+**Consequences of a single-approver model — these are not objections, they are what the design must now
+carry:**
+
+1. **The automated controls become the only defence.** With no second human, nothing sits between a wrong
+   number and money leaving except the caps and anomaly checks below. Under maker–checker they were
+   belt-and-braces; now they are the brace. **Every control in the list below moves from recommended to
+   required**, and the anomaly check in particular can no longer merely "force manual review" — manual
+   review is already the only mode. It must *block* and require an explicit override that is itself
+   audited.
+2. **The CEO is a single point of failure for all outbound money.** If they are unavailable, payouts stop
+   entirely — and §2.1 proves this project has already shipped a queue that silently stopped, for a
+   feature nobody was watching. A named fallback is a business decision, not an engineering one, but the
+   spec should not pretend the exposure isn't there. **→ OPEN: who acts if the CEO is unavailable for a
+   full quarterly window?** Answering "nobody, payouts wait" is a legitimate answer; leaving it unasked
+   is not.
+3. **Decisions 7 and 8 govern different axes and do not conflict.** D7's "hybrid later" is
+   *automatic vs. manual*. D8's "no threshold" is *one approver vs. two*. If a future release adds
+   auto-release below a threshold, anything still routed to a human remains **CEO-only** — the D8 answer
+   survives that change and should not be re-litigated as part of it.
+
+**The original recommendation, superseded, retained as the record:**
+
+~~Recommendation: maker–checker for every payout above a threshold; nothing fully automatic in v1.~~
+
+Two arguments carried it. First, **Paymob's own Payouts dashboard implements maker–checker with a PIN** —
 the provider treating this operation as warranting two humans is a strong signal. Second, the failure modes
 in §6 are all *silent*: an over-payment does not throw, it succeeds twice.
 
 | option | when it fits | cost |
 |---|---|---|
 | Fully automatic on a schedule | high volume, low value, mature reconciliation | a bug pays out 100× with nobody in the loop |
-| **Auto below threshold, manual above** | **recommended after v1 proves stable** | needs a trustworthy threshold |
-| Always manual admin approval | **recommended for v1** | an unstaffed queue silently stops all payouts |
+| Auto below threshold, manual above | possible after v1 proves stable (per D7) | needs a trustworthy threshold |
+| **Always manual, single approver (CEO)** | **← CHOSEN for v1** | an unstaffed queue silently stops all payouts; no second pair of eyes |
 | Maker–checker (two distinct admins) | highest value | slowest; needs two available admins |
 
-**Controls that apply regardless of which is chosen:**
+**Controls — all now required, not optional (see consequence 1):**
 
 - Per-payout maximum, per-run maximum, and a **daily aggregate cap**.
-- An anomaly check: this payout is N× the center's trailing average → force manual review.
+- An anomaly check: this payout is N× the center's trailing average → **hard block, with an explicit
+  audited override.** ("Force manual review" is meaningless now that every payout is manually reviewed.)
 - A **kill switch** that halts all releases, reachable without a deploy.
 - **Step-up auth on approval**, reusing `verifyPasswordForSensitiveAction` — the mechanism already exists
   and is already used for permission edits. Do not invent a new one.
@@ -364,10 +403,13 @@ in §6 are all *silent*: an over-payment does not throw, it succeeds twice.
   how payouts silently stop for a quarter — and §2.1 shows this project has already shipped exactly that
   failure once.
 
-**→ DECISION 7.** Pick the approval model for v1, and name the threshold if you pick a hybrid.
+**✅ DECISION 7 — ANSWERED.** Always-manual for v1; hybrid considered later.
 
-**→ DECISION 8.** Who is the approver — super-admin only (`isSuperAdminPhone`), or a new named permission?
-And is maker–checker two *different* humans, enforced?
+**✅ DECISION 8 — ANSWERED.** CEO approval is final. Single approver, no maker–checker, no threshold, no
+second approver at any amount. *Implementation note:* the approver gate is `isSuperAdminPhone`, and
+step-up auth via `verifyPasswordForSensitiveAction` stays — a single approver makes confirming the human
+at the keyboard more important, not less, since there is no second person who would notice a session
+left open.
 
 ## 8. What Paymob integration actually requires (spec item 3)
 
@@ -552,19 +594,41 @@ settled/fees/vat/returned totals, and `unexplained_delta_minor`. **A period cann
 delta is non-zero**; closing with variance requires a named human and a written reason. This is the only
 control that forces someone to look on a schedule rather than in response to an alert nobody wired up.
 
-## 11. Decisions summary
+## 11. Decisions — all nine answered
 
-| # | Decision | My recommendation |
+**✅ ANSWERED IN FULL, 3 August 2026, by Eyad.** Eight decisions were accepted as recommended; **Decision 8
+was decided against the recommendation** and is marked as such. This section is now a record of what was
+decided, not a set of open questions.
+
+| # | Decision | Answer |
 |---|---|---|
-| 1 | Unify referral + credit payouts — **and, per §2.7, which authorization gate survives the merge?** The two routes disagree today: `/api/billing/withdrawal` is owner-only, `/api/referrals/payout` is a delegable permission. Unifying necessarily picks one. | **Unify, on owner-only + step-up auth.** Treat `can_request_referral_payouts` as *request*-only, never *release* — picking the weaker gate silently widens who can move money at every owner-only center |
-| 2 | Are all seven §2 defects in scope as prerequisites? | **Yes — all seven** |
-| 3 | Append-only double-entry ledger, or extend the mutable-column pattern? | **Double-entry, this subsystem only** |
-| 4 | How to eliminate the credit dual-authority window? | **(a) migrate the spend path in the same PR** |
-| 5 | Clearing days | **0 credits / 7 referral**, config-driven |
-| 6 | Clawback ladder and invoice threshold | **net → block → invoice → write off** |
-| 7 | Approval model for v1 | **always-manual v1**, hybrid later |
-| 8 | Who approves, and is maker–checker enforced? | **super-admin + step-up auth**; maker–checker above a threshold |
-| 9 | Does System 1 ship before V3 at all? | **Yes — that is the point of the split** |
+| 1 | Unify referral + credit payouts — and, per §2.7, which authorization gate survives the merge? | ✅ **Unify, on owner-only + step-up auth.** `can_request_referral_payouts` is *request*-only, never *release* |
+| 2 | Are all seven §2 defects in scope as prerequisites? | ✅ **Yes — all seven** |
+| 3 | Append-only double-entry ledger, or extend the mutable-column pattern? | ✅ **Double-entry, this subsystem only** |
+| 4 | How to eliminate the credit dual-authority window? | ✅ **(a) migrate the spend path in the same PR** |
+| 5 | Clearing days | ✅ **0 credits / 7 referral**, config-driven |
+| 6 | Clawback ladder and invoice threshold | ✅ **net → block → invoice → write off** |
+| 7 | Approval model for v1 | ✅ **Always-manual for v1**, hybrid considered later |
+| 8 | Who approves, and is maker–checker enforced? | ⚠️ **DECIDED AGAINST RECOMMENDATION. CEO approval is final — single approver, no maker–checker, no threshold, no second approver at any amount.** Recommendation had been maker–checker above a threshold. See §7 for the three consequences this carries |
+| 9 | Does System 1 ship before V3 at all? | ✅ **Yes — that is the point of the split** |
 
-**Not decisions — facts to act on:** start the Paymob commercial conversation now (it gates everything and
-runs in parallel), and get written answers to the seven questions in §8.
+**What the answers mean together.** System 1 is now fully specified: one unified payout pipeline on an
+append-only double-entry ledger, owner-only to request, **CEO-only to approve at any amount**, always
+manual in v1, credits migrated off the old rail in the same PR, 0/7-day clearing, and a
+net → block → invoice → write off clawback ladder. All seven §2 defects are prerequisites. It ships
+without waiting for V3.
+
+**One consequence of Decision 8 that changes the build, not just the doc.** With no second approver, the
+automated controls in §7 stop being belt-and-braces and become the only thing between a wrong number and
+money leaving. They are **required, not recommended**, and the anomaly check must **block with an audited
+override** rather than "force manual review" — which now means nothing, since every payout is manually
+reviewed by definition.
+
+**One question the answers opened rather than closed.** Decision 8 makes the CEO a single point of failure
+for all outbound money. **→ OPEN: who acts if the CEO is unavailable for a full quarterly window?**
+"Nobody, payouts wait" is a legitimate answer and would close it; leaving it unasked is what §2.1 already
+did once, and that queue silently stopped.
+
+**Not decisions — facts to act on, both still outstanding:** start the Paymob commercial conversation now
+(onboarding is manual and gates the whole integration), and get written answers to the seven questions in
+§8.
