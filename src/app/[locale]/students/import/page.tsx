@@ -9,7 +9,7 @@ import { Link } from '@/i18n/routing';
 import { parseFile, autoDetectMapping, type ParsedData, type ColumnMapping } from '@/lib/excel-parser';
 import { normalizePhone } from '@/lib/utils/phone';
 import QRCode from 'qrcode';
-import { Check, ChevronDown, ChevronLeft, Download, Info, Upload, X } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, ChevronLeft, Download, Info, Upload, X } from 'lucide-react';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 
 /**
@@ -424,6 +424,16 @@ export default function ImportStudentsPage() {
 
           {step === 'upload' && (
             <>
+              {/* §04 heading block — all three frames lead the body with an
+                  `.h2` (17px/600) over a `.sub` (13px, #5D635C). */}
+              <div>
+                <h2 className="text-[17px] font-semibold text-[var(--color-text-primary)]">
+                  {t('stepUpload')}
+                </h2>
+                <p className="mt-[3px] text-[13px] leading-normal text-[#5D635C]">
+                  {t('stepUploadSub')}
+                </p>
+              </div>
               {/* §04 inverts the order: the drop card leads, the template link
                   follows it as a `.btn-text` with a download glyph. */}
               <div
@@ -498,6 +508,15 @@ export default function ImportStudentsPage() {
 
           {step === 'map' && parsedData && (
             <>
+              {/* §04 heading block, map frame. */}
+              <div>
+                <h2 className="text-[17px] font-semibold text-[var(--color-text-primary)]">
+                  {t('stepMap')}
+                </h2>
+                <p className="mt-[3px] text-[13px] leading-normal text-[#5D635C]">
+                  {t('stepMapSub')}
+                </p>
+              </div>
               {/* §04 replaces the horizontally scrolling table with a VERTICAL
                   card of rows: source header over target field, a green check
                   when matched, a "Choose field…" affordance when not. The native
@@ -563,6 +582,18 @@ export default function ImportStudentsPage() {
 
           {step === 'preview' && parsedData && (
             <>
+              {/* §04 heading block, review frame — the sub carries the file's
+                  TOTAL row count ("42 rows found in your file."), the one
+                  figure the two tiles below split into ready/needs-fix.
+                  `rowsFound` already holds that exact copy in both locales. */}
+              <div>
+                <h2 className="text-[17px] font-semibold text-[var(--color-text-primary)]">
+                  {t('stepPreview')}
+                </h2>
+                <p className="mt-[3px] text-[13px] leading-normal text-[#5D635C]">
+                  {t('rowsFound', { count: formatPlainInteger(parsedData.rows.length, locale) })}
+                </p>
+              </div>
               {/* §04 Review: two bordered count tiles side by side. */}
               <div className="flex gap-2">
                 <div className="flex flex-1 flex-col items-start gap-0.5 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-4 py-3">
@@ -699,6 +730,9 @@ export default function ImportStudentsPage() {
               className="btn-lift flex h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-[#0E6B61] text-[15px] font-semibold text-[#FFFDF8] shadow-sm disabled:opacity-50 btn-press chq-focus"
             >
               {tCommon('next')}
+              {/* §04 draws this step's Continue with a trailing forward arrow;
+                  DirectionalIcon flips it in RTL. */}
+              <DirectionalIcon icon={ArrowRight} className="h-[18px] w-[18px]" />
             </button>
           </div>
         ) : null}

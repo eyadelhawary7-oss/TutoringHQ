@@ -195,6 +195,11 @@ export default function StudentsPage() {
   // Standing rows (§01/§03) — balance PLUS the age of the oldest open charge,
   // which getStudentBalances cannot provide. null = not loaded yet.
   const [standingRows, setStandingRows] = useState<Map<string, StudentStandingRow> | null>(null);
+  // True when the balance/standing fold threw. The roster then keeps its chip
+  // column EMPTY (a defaulted mint "Paid" chip nobody verified is fake success
+  // on a money surface) and an inline strip says so — a console.error alone
+  // left the failure invisible and every row wearing "Paid" forever.
+  const [standingsFailed, setStandingsFailed] = useState(false);
   const [overdueAfterDays, setOverdueAfterDays] = useState<number | undefined>(undefined);
   const [newStudentDays, setNewStudentDays] = useState<number | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
@@ -397,8 +402,13 @@ export default function StudentsPage() {
       // string in §01/§02/§03 reads. Same exclusions, and the net figure runs
       // through the same computeBalance, so the two can never disagree.
       setStandingRows(await getStudentStandings(supabase, { centerId: cid }));
+      setStandingsFailed(false);
       } catch (err) {
         console.error('[students] loadBalanceData failed', err);
+        // Surface it: standingRows stays null, so no chip renders anywhere —
+        // the strip below the search bar tells the user why (blocker fix:
+        // silent catch + 'paid' default painted unverified mint badges).
+        setStandingsFailed(true);
       }
     };
     loadBalanceData();
@@ -1140,16 +1150,24 @@ export default function StudentsPage() {
               <h1 className="truncate text-[17px] font-semibold leading-tight text-[var(--color-text-primary)]">
                 {ts('title')}
               </h1>
-              {/* Both §01 and §03 draw the same meta: "128 active · 3 branches".
-                  `active` is the same lifecycle_status='active' count the KPI tile
-                  shows, so the two cannot contradict; `branches` is the real branch
-                  count, floored at 1 — never the design's sample 3. */}
+              {/* KEPT AGAINST THE DESIGN'S COPY — its roster meta (design line
+                  846) reads "142 enrolled · 8 behind". This meta keeps the
+                  "{active} active · {branches} branches" form, but `active`
+                  counts students.is_active: the flag /api/students/[id]
+                  actually writes and the standing fold, at-risk API and import
+                  already read. NOT lifecycle_status — that column is 'enrolled'
+                  on every live row (column default; its sole writer is the
+                  manual AtRiskPanel PATCH via /api/students/lifecycle), so
+                  filtering it for 'active' rendered "0 active" over a populated
+                  roster. Same source as the KPI tile below, so the two cannot
+                  contradict; `branches` is the real branch count, floored at 1
+                  — never the design's sample 3. */}
               <p className="mt-0.5 text-xs text-[#80827A] tabular-nums">
                 {students === null
                   ? '\u00a0'
                   : ts('rosterMeta', {
                       active: formatNumber(
-                        studentsList.filter((s) => s.lifecycle_status === 'active').length,
+                        studentsList.filter((s) => s.is_active === true).length,
                         locale,
                       ),
                       branches: formatNumber(branchCount, locale),
@@ -1184,6 +1202,19 @@ export default function StudentsPage() {
               <Plus size={22} aria-hidden />
             </button>
           </div>
+
+          {/* Fold failure is SAID, not swallowed: when the balance/standing
+              load throws, every chip stays absent (see the srow memo) and this
+              strip says why. Mutually exclusive with the amber alert below —
+              that one needs standingRows, which a failed fold leaves null. */}
+          {standingsFailed ? (
+            <div className="mb-3 flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3">
+              <AlertCircle size={20} className="shrink-0 text-destructive" aria-hidden />
+              <p className="min-w-0 flex-1 text-[13px] text-destructive">
+                {ts('standingsLoadError')}
+              </p>
+            </div>
+          ) : null}
 
           {/* §03 `.alert` — the amber "N behind on payment" strip. Nothing at
               zero: an alert that always fires is not an alert. */}
@@ -1230,8 +1261,10 @@ export default function StudentsPage() {
               <div className={`contents transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}>
                 <KpiCard
                   label={ts('active_students')}
+                  // students.is_active, never lifecycle_status — same source and
+                  // same reason as the topbar meta above (see that memo).
                   value={formatNumber(
-                    studentsList.filter((s) => s.lifecycle_status === 'active').length,
+                    studentsList.filter((s) => s.is_active === true).length,
                     locale,
                   )}
                   // §01: "across 3 branches". Real count from the branch store
@@ -1562,8 +1595,14 @@ export default function StudentsPage() {
                                 {/* §03: behind rows carry an amber money column
                                     (amount over age), settled rows a mint chip.
                                     The age comes from the FIFO fold, never from
-                                    a wall-clock guess. */}
-                                {behind && balNum > 0 ? (
+                                    a wall-clock guess. NOTHING renders until the
+                                    fold lands (standingRows !== null — the same
+                                    gate the detail page puts on balance !==
+                                    null): before it, standingOf() is only the
+                                    'paid' default, and a mint "Paid" chip on a
+                                    student who may owe is exactly the fake
+                                    success this money surface must never show. */}
+                                {standingRows === null ? null : behind && balNum > 0 ? (
                                   <div className="shrink-0 text-end">
                                     <b className="block text-[13px] font-bold tabular-nums text-[#9A6B1F]">
                                       {formatCurrency(balNum, locale)}
