@@ -91,6 +91,14 @@ export default function MarketingFooter({ createAccountHref, onCreateAccountClic
             <Link href="/legal/cookie" className="text-sm text-[#ECE8DF]/76 transition-colors hover:text-white">
               {t('cookies')}
             </Link>
+            {/* s08-3: the design does not draw this footer, so "identical" does
+                not bind here — coverage does. Without this row the DPA and the
+                public data-rights form are unreachable from the marketing site.
+                The three deep links above stay, because people already expect
+                them. */}
+            <Link href="/legal" className="text-sm text-[#ECE8DF]/76 transition-colors hover:text-white">
+              {t('legal')}
+            </Link>
           </div>
         </div>
 

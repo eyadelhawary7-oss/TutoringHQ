@@ -1,18 +1,7 @@
 {
   "legal": {
-    "terms": {
-      "title": "Terms of Service",
-      "placeholderBody": "These Terms of Service are interim documentation while legal review is completed. Final terms pending review by Adsero · interim copy applies until 9 May 2026.\n\nBy using TutoringHQ you agree to operate in good faith and comply with applicable laws and our acceptable use expectations.\n\nWe may update these terms and will publish changes here with an updated \"Last updated\" date.",
-      "processingFeeHeading": "Processing fee",
-      "processingFeeBody": "A flat processing fee of {amount} is added to each Paymob-charged subscription invoice and shown at checkout and on every invoice. VAT is included in the displayed totals.",
-      "processingFeePlaceholderNote": "[Placeholder — final processing-fee wording pending Adsero legal review.]",
-      "lastUpdated": "Last updated: 9 May 2026"
-    },
-    "privacy": {
-      "title": "Privacy Policy",
-      "placeholderBody": "This Privacy Policy is interim documentation while legal review is completed. Final policy pending review by Adsero · interim copy applies until 9 May 2026.\n\nWe process personal data to deliver TutoringHQ services and improve reliability and security.\n\nWe may update this policy and will publish changes here with an updated \"Last updated\" date.",
-      "lastUpdated": "Last updated: 9 May 2026"
-    }
+    "terms": { "title": "Terms and Conditions" },
+    "privacy": { "title": "Privacy Policy" }
   },
   "plan": {
     "solo": "Solo",
@@ -5244,7 +5233,7 @@
       "filter_all": "All",
       "filter_access": "Access",
       "filter_deletion": "Deletion",
-      "filter_export": "Export",
+      "filter_portability": "Export",
       "slaNote": "PDPL requires a response within {days} days of a verified request. Due soon flags anything under 5 days, including anything already past its date."
     },
     "platformConfigGroupFeatures": "Features",
@@ -10119,6 +10108,7 @@
     "privacy": "Privacy Policy",
     "terms": "Terms and Conditions",
     "cookies": "Cookie Policy",
+    "legal": "All legal documents",
     "talkHeading": "Talk to us",
     "whatsappHours": "WhatsApp, 10am to 6pm",
     "legalLine": "TutoringHQ is operated by EHG Intelligence Egypt, a registered Egyptian company.",

@@ -2,58 +2,93 @@
 
 import { useState } from 'react';
 import { useLocale } from 'next-intl';
-import { Loader2, CheckCircle2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { Link } from '@/i18n/routing';
+import { formatNumber } from '@/lib/formatNumber';
+import LegalChrome from '../LegalChrome';
+import { renderInline } from '../richText';
+import {
+  DONE_COPY,
+  FORM_COPY,
+  LEGAL_CHROME,
+  RELATIONSHIPS,
+  RELATIONSHIP_LABELS,
+  REQUEST_TYPES,
+  REQUEST_TYPE_LABELS,
+  isArabic,
+  pick,
+  type Relationship,
+  type RequestType,
+} from '../legalContent';
 
 /**
- * Public PDPL data-rights request form. Submits to POST /api/privacy-request.
- * Bilingual-inline (locale switch), cream, RTL logical props.
+ * `Merged-Public-Legal` §01, frames 11-14 — the public PDPL data-rights form and
+ * its confirmation. Posts to `POST /api/privacy-request`.
+ *
+ * Changes worth naming, because they are behaviour and not just paint:
+ *
+ *  - **Multi-select request types.** The old single `<select>` meant a subject
+ *    wanting access *and* deletion had to file twice; `request_types` was always
+ *    a `text[]`.
+ *  - **`restriction` added**, so all six PDPL rights the Privacy Policy promises
+ *    are actually offered. The five-value list silently dropped one.
+ *  - **`relationship` is now captured.** The column existed and rendered
+ *    permanently null in the admin queue because nothing ever wrote it.
+ *  - **Email is required.** The design makes it the reply channel ("so we can
+ *    send our reply"), and with the phone confirmation unconfigured it is the
+ *    only channel a reply can reach — labelling it optional would be untrue.
+ *
+ * The labels are the design's imperatives (Access / Correct / Delete / …); the
+ * values posted are the PDPL right-names.
  */
-type RequestType = 'access' | 'correction' | 'deletion' | 'portability' | 'objection';
+
+const FIELD_CLASS =
+  'w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-[13px] text-[var(--color-ink)] placeholder:text-[var(--color-faint)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30';
+
+const LABEL_CLASS = 'mx-1 mb-1 mt-3 block text-xs font-semibold text-[var(--color-ink-body)]';
+
+function chipClass(on: boolean): string {
+  return [
+    'chq-focus rounded-lg border-[1.5px] px-3 py-3 text-xs font-semibold transition-colors',
+    on
+      ? 'border-[var(--color-accent)] bg-[var(--color-mint)] text-[var(--color-accent-deep)]'
+      : 'border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-mid)]',
+  ].join(' ');
+}
 
 export default function PrivacyRequestPage() {
   const locale = useLocale();
-  const isAr = locale === 'ar' || locale.startsWith('ar-');
+  const isAr = isArabic(locale);
+  const T = (v: { en: string; ar: string }) => pick(v, isAr);
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [requestType, setRequestType] = useState<RequestType>('access');
+  const [relationship, setRelationship] = useState<Relationship | null>(null);
+  const [types, setTypes] = useState<Set<RequestType>>(new Set());
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [confirmationSent, setConfirmationSent] = useState(false);
 
-  const t = {
-    title: isAr ? 'طلب حقوق البيانات الشخصية' : 'Personal Data Rights Request',
-    subtitle: isAr
-      ? 'قدّم طلباً بخصوص بياناتك الشخصية بموجب قانون حماية البيانات المصري.'
-      : 'Submit a request regarding your personal data under the Egyptian PDPL.',
-    name: isAr ? 'الاسم' : 'Name',
-    phone: isAr ? 'رقم الهاتف' : 'Phone number',
-    email: isAr ? 'البريد الإلكتروني (اختياري)' : 'Email (optional)',
-    type: isAr ? 'نوع الطلب' : 'Request type',
-    message: isAr ? 'تفاصيل الطلب' : 'Message',
-    submit: isAr ? 'إرسال الطلب' : 'Submit request',
-    submitting: isAr ? 'جارٍ الإرسال...' : 'Submitting...',
-    error: isAr ? 'حدث خطأ ما. حاول مرة أخرى.' : 'Something went wrong. Please try again.',
-    success: isAr
-      ? 'تم استلام طلبك. سنتواصل معك قريباً.'
-      : 'Your request has been received. We will be in touch shortly.',
-    types: {
-      access: isAr ? 'الاطلاع على البيانات' : 'Access',
-      correction: isAr ? 'تصحيح البيانات' : 'Correction',
-      deletion: isAr ? 'حذف البيانات' : 'Deletion',
-      portability: isAr ? 'نقل البيانات' : 'Portability',
-      objection: isAr ? 'الاعتراض على المعالجة' : 'Objection',
-    } as Record<RequestType, string>,
+  const toggleType = (t: RequestType) => {
+    setTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(t)) next.delete(t);
+      else next.add(t);
+      return next;
+    });
   };
 
   const handleSubmit = async () => {
     setError(null);
-    if (name.trim().length < 2 || !phone.trim()) {
-      setError(t.error);
-      return;
-    }
+    if (name.trim().length < 2) return setError(T(FORM_COPY.errorName));
+    if (!phone.trim()) return setError(T(FORM_COPY.errorPhone));
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return setError(T(FORM_COPY.errorEmail));
+    if (!relationship) return setError(T(FORM_COPY.errorRelationship));
+    if (types.size === 0) return setError(T(FORM_COPY.errorTypes));
+
     setSubmitting(true);
     try {
       const res = await fetch('/api/privacy-request', {
@@ -62,126 +97,228 @@ export default function PrivacyRequestPage() {
         body: JSON.stringify({
           name: name.trim(),
           phone: phone.trim(),
-          email: email.trim() || undefined,
-          requestType,
+          email: email.trim(),
+          relationship,
+          requestTypes: Array.from(types),
           message: message.trim(),
+          locale,
         }),
       });
       if (res.ok) {
+        const payload = (await res.json().catch(() => null)) as
+          | { confirmationSent?: boolean }
+          | null;
+        setConfirmationSent(payload?.confirmationSent === true);
         setDone(true);
         return;
       }
-      setError(t.error);
+      setError(T(FORM_COPY.errorGeneric));
     } catch {
-      setError(t.error);
+      setError(T(FORM_COPY.errorGeneric));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const inputClass =
-    'w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2 text-start text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-teal-deep)] focus:ring-2 focus:ring-[var(--color-teal-deep)]/30';
-
   if (done) {
+    const steps = [DONE_COPY.step1, DONE_COPY.step2, DONE_COPY.step3];
     return (
-      <div className="mx-auto max-w-md px-4 py-16 text-center">
-        <CheckCircle2 size={48} className="mx-auto text-[var(--color-teal-deep)]" aria-hidden />
-        <p className="mt-4 text-[var(--color-text-primary)]">{t.success}</p>
-      </div>
+      <>
+        <LegalChrome
+          locale={locale}
+          backHref="/legal"
+          backIcon="x"
+          backLabel={T(LEGAL_CHROME.backToLegal)}
+          title={T(DONE_COPY.title)}
+        />
+
+        <div className="flex flex-1 flex-col items-center justify-center px-8 py-8 text-center">
+          <div className="mb-4 flex h-[66px] w-[66px] items-center justify-center rounded-full bg-[var(--color-mint)] text-[var(--color-accent-deep)]">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-8 w-8"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2.4}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+          </div>
+
+          <h2 className="mb-2 text-[22px] font-bold text-[var(--color-ink)]">
+            {T(DONE_COPY.heading)}
+          </h2>
+
+          {/* Truthful by construction: the phone sentence renders only when the
+              route actually reports a confirmation went out. */}
+          <p className="max-w-[32ch] text-[13px] leading-[1.6] text-[var(--color-mid)]">
+            {T(confirmationSent ? DONE_COPY.subtextPhone : DONE_COPY.subtextEmail)}
+          </p>
+
+          <div className="mt-4 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-1">
+            {steps.map((step, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-2 border-b border-[var(--color-hairline)] py-3 text-start last:border-b-0"
+              >
+                <span className="font-mono flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[var(--color-tile)] text-[11px] font-bold text-[var(--color-mid)]">
+                  {formatNumber(i + 1, locale)}
+                </span>
+                <p className="text-xs leading-[1.5] text-[var(--color-ink-body)]">
+                  {renderInline(T(step), isAr)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex-shrink-0 border-t border-[var(--color-line)] bg-[var(--color-paper)] px-4 pb-6 pt-3">
+          <Link
+            href="/legal"
+            className="chq-focus block w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-4 text-center text-[15px] font-bold text-[var(--color-ink-body)] transition-colors hover:bg-[var(--color-tile)]"
+          >
+            {T(LEGAL_CHROME.backToLegal)}
+          </Link>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 py-10 md:py-14">
-      <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t.title}</h1>
-      <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{t.subtitle}</p>
+    <>
+      <LegalChrome
+        locale={locale}
+        backHref="/legal"
+        backLabel={T(LEGAL_CHROME.backToAll)}
+        title={T(FORM_COPY.title)}
+        subtitle={T(FORM_COPY.subtitle)}
+      />
 
-      <div className="mt-8 flex flex-col gap-4">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
-            {t.name}
-          </label>
-          <input
-            type="text"
-            value={name}
-            maxLength={120}
-            onChange={(e) => setName(e.target.value)}
-            className={inputClass}
-          />
+      <div className="flex-1 overflow-y-auto px-4 pb-6 pt-1">
+        <div className="mx-1 rounded-xl border border-[var(--color-mint-deep)] bg-[var(--color-mint)] px-4 py-3 text-[11px] leading-[1.55] text-[var(--color-accent-deep)]">
+          <b className="font-bold">{T(FORM_COPY.calloutLead)}</b> {T(FORM_COPY.calloutBody)}
         </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
-            {t.phone}
-          </label>
-          <input
-            type="tel"
-            inputMode="tel"
-            dir="ltr"
-            value={phone}
-            maxLength={20}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="01xxxxxxxxx"
-            className={inputClass}
-          />
+
+        <label className={LABEL_CLASS} htmlFor="pr-name">
+          {T(FORM_COPY.nameLabel)}
+        </label>
+        <input
+          id="pr-name"
+          type="text"
+          value={name}
+          maxLength={120}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={T(FORM_COPY.namePlaceholder)}
+          className={FIELD_CLASS}
+        />
+
+        <label className={LABEL_CLASS} htmlFor="pr-phone">
+          {T(FORM_COPY.phoneLabel)}
+        </label>
+        <input
+          id="pr-phone"
+          type="tel"
+          inputMode="tel"
+          dir="ltr"
+          value={phone}
+          maxLength={20}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder={T(FORM_COPY.phonePlaceholder)}
+          className={`${FIELD_CLASS} text-start`}
+        />
+
+        <label className={LABEL_CLASS} htmlFor="pr-email">
+          {T(FORM_COPY.emailLabel)}{' '}
+          <span className="text-[11px] font-normal text-[var(--color-muted)]">
+            {T(FORM_COPY.emailHint)}
+          </span>
+        </label>
+        <input
+          id="pr-email"
+          type="email"
+          dir="ltr"
+          value={email}
+          maxLength={160}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder={T(FORM_COPY.emailPlaceholder)}
+          className={`${FIELD_CLASS} text-start`}
+        />
+
+        <span className={LABEL_CLASS}>{T(FORM_COPY.relationshipLabel)}</span>
+        <div
+          role="radiogroup"
+          aria-label={T(FORM_COPY.relationshipLabel)}
+          className="mt-1 flex flex-wrap gap-1"
+        >
+          {RELATIONSHIPS.map((r) => (
+            <button
+              key={r}
+              type="button"
+              role="radio"
+              aria-checked={relationship === r}
+              onClick={() => setRelationship(r)}
+              className={chipClass(relationship === r)}
+            >
+              {T(RELATIONSHIP_LABELS[r])}
+            </button>
+          ))}
         </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
-            {t.email}
-          </label>
-          <input
-            type="email"
-            dir="ltr"
-            value={email}
-            maxLength={160}
-            onChange={(e) => setEmail(e.target.value)}
-            className={inputClass}
-          />
+
+        <span className={LABEL_CLASS}>{T(FORM_COPY.typesLabel)}</span>
+        <div role="group" aria-label={T(FORM_COPY.typesLabel)} className="mt-1 flex flex-wrap gap-1">
+          {REQUEST_TYPES.map((t) => (
+            <button
+              key={t}
+              type="button"
+              aria-pressed={types.has(t)}
+              onClick={() => toggleType(t)}
+              className={chipClass(types.has(t))}
+            >
+              {T(REQUEST_TYPE_LABELS[t])}
+            </button>
+          ))}
         </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
-            {t.type}
-          </label>
-          <select
-            value={requestType}
-            onChange={(e) => setRequestType(e.target.value as RequestType)}
-            className={inputClass}
+
+        <label className={LABEL_CLASS} htmlFor="pr-details">
+          {T(FORM_COPY.detailsLabel)}
+        </label>
+        <textarea
+          id="pr-details"
+          value={message}
+          maxLength={2000}
+          rows={3}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder={T(FORM_COPY.detailsPlaceholder)}
+          className={FIELD_CLASS}
+        />
+
+        {error ? (
+          <p
+            role="alert"
+            className="mx-1 mt-3 rounded-xl border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-4 py-3 text-xs text-[var(--color-danger)]"
           >
-            {(Object.keys(t.types) as RequestType[]).map((key) => (
-              <option key={key} value={key}>
-                {t.types[key]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
-            {t.message}
-          </label>
-          <textarea
-            value={message}
-            maxLength={2000}
-            rows={4}
-            onChange={(e) => setMessage(e.target.value)}
-            className={inputClass}
-          />
-        </div>
-
-        {error && (
-          <div className="rounded-lg border border-[var(--color-danger-muted)] bg-[var(--color-danger-muted)] p-3 text-sm text-[var(--color-danger)]">
             {error}
-          </div>
-        )}
+          </p>
+        ) : null}
+      </div>
 
+      <div className="flex-shrink-0 border-t border-[var(--color-line)] bg-[var(--color-paper)] px-4 pb-6 pt-3">
+        <p className="mb-2 text-center text-[11px] leading-[1.45] text-[var(--color-muted)]">
+          {T(FORM_COPY.footNote)}
+        </p>
         <button
           type="button"
           onClick={handleSubmit}
           disabled={submitting}
-          className="flex items-center justify-center gap-2 rounded-lg bg-[var(--color-teal-deep)] px-4 py-2.5 font-medium text-primary-foreground transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          className="chq-focus flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-accent)] p-4 text-[15px] font-bold text-[var(--color-panel)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-          {submitting ? t.submitting : t.submit}
+          {submitting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+          {submitting ? T(FORM_COPY.submitting) : T(FORM_COPY.submit)}
         </button>
       </div>
-    </div>
+    </>
   );
 }
