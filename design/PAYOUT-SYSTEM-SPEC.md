@@ -2,15 +2,24 @@
 
 **Produced 2 August 2026. Nothing here is built. No code was written.**
 
-**✅ All nine decisions answered by Eyad, 3 August 2026** — each is marked `✅ DECISION n — ANSWERED` at the
-point it was raised, and summarised in §11. Eight were accepted as recommended; **Decision 8 was decided
-against the recommendation** (single CEO approver rather than maker–checker) and its consequences are
-worked through in §7. The original questions and reasoning are left in place unedited as the record of
+**✅ All nine decisions answered by Eyad, 3 August 2026, and every follow-on question closed** — each is
+marked `✅ DECISION n — ANSWERED` at the point it was raised, and summarised in §11. Eight were accepted as
+recommended; **Decision 8 was decided against the recommendation and then revised** — final model is
+delegated approval with a cap (CEO final at any amount, optional CEO-granted manager approval below a
+config-driven 10,000 EGP cap, plus a 10,000 EGP per-center rolling-7-day cap) — and its consequences are
+worked through in §7. The four follow-on questions the revision opened are all now answered: the
+permission's name and table (§7.1), anti-splitting (§7.2), CEO unavailability (§7.5), and the external
+hash-chain sink (§7.4). The original questions and reasoning are left in place unedited as the record of
 what was weighed.
 
-**This is still not a document to build from directly.** Two things remain outstanding and both gate
-implementation: the Paymob commercial conversation, and the seven questions in §8 that need written
-answers from Paymob. One decision also opened a new question — see §11.
+**This is still not a document to build from directly**, but what blocks it is now external, not internal.
+Two things remain outstanding and both gate implementation: the Paymob commercial conversation
+(onboarding is manual on their side), and the seven questions in §8 that need written answers from Paymob.
+Nothing else is waiting on a decision.
+
+**One thing this spec produced that lives outside it:** the `SUPER_ADMIN_PHONES` hole surfaced in §7.5 is
+logged as **S10** in `BUILD-AFTER-REDESIGN.md`, because it is a defect in the existing admin surface
+independently of whether this feature is ever built.
 
 Sources: the live production catalog (Supabase `lczmjpnbuhnsislcvzar`), the live codebase, and Paymob's
 own documentation across three estates (`payouts.paymobsolutions.com/docs`, `developers.paymob.com`, the
@@ -433,19 +442,46 @@ log in the same transaction. `REVOKE ALL FROM anon, authenticated`; grant `servi
 > `amount_compared_minor`. The piastres/EGP unit hazard still applies and the config key must name its
 > unit.
 >
-> **Still open — the stated intent needs a mechanism the stated rule does not supply.** "No splitting into
-> smaller payouts to evade the cap" is the requirement; a per-payout check on the requested amount does
-> not by itself deliver it. A per-payout check stops one 15,000 request being *entered* as 2 × 7,500. It
-> does not stop a center owed 30,000 from requesting 9,999 three times in sequence — each request is
-> genuinely under the cap, each approval is individually compliant, and `one_open_payout_per_center` only
-> serialises them, it does not limit how many may occur. **Something must count across payouts for the
-> intent to hold.** The minimum that does it: a rolling per-approver window (daily and monthly) plus an
-> anti-splitting rule that hard-blocks N approvals to the same center inside a window. **→ OPEN: which
-> window and which limits?** Flagged rather than chosen — the intent is unambiguous, the numbers are
-> yours.
+> **✅ ANTI-SPLITTING — DECIDED 3 August, Eyad. Two checks, both enforced, either one exceeded sends the
+> payout to the CEO:**
+> 1. **10,000 EGP per payout** (on the requested gross, as above).
+> 2. **10,000 EGP total per center per rolling 7 days.**
+>
+> The second closes the sequential-splitting hole: a center owed 30,000 can no longer be paid via
+> 9,999 × 3, because the second and third approvals fall inside the window and the running total exceeds
+> the cap. Both checks run inside the same `SECURITY DEFINER` RPC, in-transaction, against the immutable
+> log.
+>
+> **Implementation notes, each of which is a way to get this wrong:**
+> - **"Rolling 7 days" means a moving window, not a calendar week.** Compute it as
+>   `approved_at > now() - interval '7 days'`, not `date_trunc('week', ...)` — a calendar week resets at a
+>   known instant and hands back a fresh 10,000 every Monday, which is the same splitting hole with a
+>   longer period. Cairo-time boundaries are irrelevant here for the same reason: the window is relative
+>   to each approval, not to a day boundary.
+> - **The window sums approvals, not settlements.** A payout that was approved and later failed or was
+>   returned still consumed window capacity at approval time. Whether a failed payout should release its
+>   window slot is a real question and the safe default is **no** — otherwise a manager can approve,
+>   induce a failure, and re-approve. *Recorded as the safe default; say so if you want the opposite.*
+> - **The check must include the payout being approved**, i.e. `SUM(existing in window) + this_amount >
+>   cap → deny`, not `SUM(existing) > cap`. The off-by-one here permits 19,999.
+> - **Concurrency:** both checks must be evaluated under the same per-center advisory lock as the balance
+>   read (§3 invariant 4), or two simultaneous approvals each see a pre-approval total and both pass.
+>
+> **One residual, recorded not reopened.** Both caps are scoped **per center**, so they bound each
+> relationship but not the delegate's aggregate: a manager may approve 10,000 for center A, 10,000 for
+> center B, and so on. With 10 active centers that is 100,000 EGP per 7 days across the estate, all
+> compliant. That is a defensible position — splitting is a per-center behaviour and the per-center cap
+> is what addresses it — but the delegate's total exposure is bounded by *center count*, not by the cap.
+> If a per-approver ceiling is ever wanted, it is a third check of the same shape and costs nothing extra
+> to add later.
 >
 > The `settled_pending_bank` and resend gaps below are **not** closed by this decision and remain
 > live: both let money move without a fresh capped approval.
+
+**The original analysis, retained as the record of what the decision was made against.** Read it as the
+argument, not the requirement — the decided rule is the box above. Two of its five "therefores" are now
+satisfied (the amount definition, and a per-center window cap); three are not, and remain live build
+requirements: the `settled_pending_bank` gap, the terminal-state enumeration, and resends.
 
 **The stated rule caps a single payout. It does not cap the approver.** Verified evasions, each requiring
 no bug and no rule violation:
@@ -530,9 +566,31 @@ property only becomes real when the chain head is published on a cadence to a si
 domain whose credentials the CEO does not hold**. That is an organisational decision, not an engineering
 one, and it is the only thing that makes the word "never" true.
 
-**→ OPEN: does the chain head go to an external sink, and who holds that credential?** If the answer is
-"nobody but the CEO", then the spec should say *tamper-evident within the platform* and stop claiming
-more.
+> **✅ DECIDED — 3 August, Eyad. The chain head goes to an external sink. The CEO holds that credential,
+> nobody else, and it is not stored anywhere the application can reach.**
+>
+> This is the answer that makes the guarantee real rather than aspirational, and it is the correct trust
+> model: a credential the application could reach is a credential an application compromise reaches too,
+> which would defeat the entire point.
+>
+> **It has one consequence that must be designed for, not discovered.** If the application cannot reach
+> the sink, **the application cannot publish the chain head.** Publication is therefore an out-of-band act
+> performed by the CEO — and that makes **the publication cadence the tamper-detection window.** Tampering
+> between two publications is undetectable; tampering before the first publication is invisible forever.
+> Three things follow:
+> - **The cadence is a security parameter, not an operational preference.** Weekly publication means a
+>   one-week detection window. Pick it deliberately.
+> - **A missed publication silently widens the window**, and nothing inside the system can alert on it —
+>   the system cannot see the sink. This is structurally the §2.1 failure shape: a control that lapses
+>   quietly because the thing that would notice is the thing that stopped. The mitigation is a reminder
+>   the CEO receives out-of-band, not an in-app alert.
+> - **What is published should be only `seq` + `row_hash`** — no amounts, no destinations, no PII — so the
+>   sink carries no data worth stealing and its exposure is limited to proving the chain.
+>
+> With this, the honest claim the spec can make is: **the log is tamper-evident, with a detection window
+> equal to the publication interval, provided the CEO publishes on schedule.** That is materially stronger
+> than "tamper-evident within the platform" and it is achievable. It is still not "impossible to alter" —
+> nothing is, against the owner of the database — and the spec should not say otherwise.
 
 **Non-negotiable regardless:** the payout log write must be **in the same transaction as the payout state
 change**, so that if the log fails, the payout fails. It must be server-side only, deriving amount,
@@ -545,14 +603,37 @@ approver and destination from server state, never from the request body.
    the list below is required, not recommended**, and the anomaly check must *block* with an audited
    override rather than "force manual review" — manual review is already the only mode.
 2. **Delegation narrows the CEO-availability gap but does not close it.** Payouts at or above the cap
-   still stop dead if the CEO is unavailable. **→ OPEN: who acts if the CEO is unavailable for a full
-   quarterly window?** "Nobody, payouts wait" remains a legitimate answer. Note the ungoverned informal
-   answer that exists today: appending a phone to `SUPER_ADMIN_PHONES` mints a CEO with **no database
-   row at all**, and the supposedly independent second check reads the same env var. That path is
-   forensically anonymous — the log would record an approver uuid matching no row in any table — and
-   `SUPER_ADMIN_PHONES` is not in `scripts/check-env.ts`. **Payout approval must require a real
-   `admin_users.role='super_admin'` row and must not accept env-phone alone**, and the log must record
-   the authority source (`db_row` | `env_phone`) as a NOT NULL column.
+   still stop dead if the CEO is unavailable.
+
+   > **✅ CEO UNAVAILABILITY — DECIDED 3 August, Eyad: payouts wait. No fallback approver, at any
+   > amount, for any duration.**
+   >
+   > This is the right answer and it is the *only* one consistent with D8, because a fallback approver
+   > is a second approver with extra steps. Recording what it commits to:
+   > - **An above-cap payout has exactly one path to release, ever.** No break-glass, no time-based
+   >   escalation, no "auto-approve after N days". A queue that grows during an absence is the intended
+   >   behaviour, not a defect to engineer around later.
+   > - **The system must therefore never let an unpaid queue look like a paid one.** Requests must age
+   >   visibly — `requested_at` surfaced on the center's own view with an honest "awaiting approval"
+   >   state, no ETA the platform cannot honour. The failure this prevents is a center believing its
+   >   money was sent because the UI went quiet.
+   > - **No expiry on a pending request.** Auto-cancelling an aged request would silently convert
+   >   "waiting" into "denied" without anyone deciding it, which is the §2.1 shape again.
+   >
+   > **The one thing this decision does not survive on its own** is the ungoverned path that exists
+   > today. Appending a phone to `SUPER_ADMIN_PHONES` mints a CEO with **no database row at all**, and
+   > the supposedly independent second check (`requireSuperAdminRow`, `admin-access.ts:136`) calls
+   > `isSuperAdminPhone` too — so both gates read the same env var. `admin-auth.ts` returns a session on
+   > `adminRow || adminByPhone`; the phone alone suffices. That path is forensically anonymous: the log
+   > would record an approver uuid matching no row in any table. `SUPER_ADMIN_PHONES` is also absent
+   > from `scripts/check-env.ts`, so nothing warns when it is set, changed, or wrong.
+   >
+   > **Decided alongside:** every super-admin must have a real database row. **Payout approval must
+   > require a real `admin_users.role='super_admin'` row and must not accept env-phone alone**, and the
+   > log must record the authority source (`db_row` | `env_phone`) as a NOT NULL column so the
+   > distinction is provable after the fact rather than inferred. Logged as **S10** in
+   > `BUILD-AFTER-REDESIGN.md` — it is a hole in the existing admin surface, not only in this feature,
+   > so it is tracked there and not only here.
 3. **Decisions 7 and 8 govern different axes.** D7's "hybrid later" is *automatic vs. manual*; D8 is
    *who may approve, and up to what*. A future auto-release threshold does not reopen D8.
 
@@ -805,37 +886,50 @@ CEO-granted manager delegation below a config-driven cap**, always manual in v1,
 old rail in the same PR, 0/7-day clearing, and a net → block → invoice → write off clawback ladder. All
 seven §2 defects are prerequisites. It ships without waiting for V3.
 
-**The revision to Decision 8 does not merely relax the model — it introduces four things that must be
-specified before it is safe.** All four are worked through in §7 and all four were verified against the
-live system, not reasoned about abstractly:
+**The revision to Decision 8 does not merely relax the model — it introduced four things that had to be
+specified before it was safe.** All four are worked through in §7 and all four were verified against the
+live system, not reasoned about abstractly. **Three are now settled** (1, 2, 4); **one remains a build
+requirement rather than a decision** (3 — it needs code, not an answer):
 
 1. **Approval authority must live outside `public.users`.** ✅ *Name decided: `can_approve_payouts`,
-   distinct from `can_request_referral_payouts`.* The **table is still the open half** — the existing
-   staff-permissions route is owner-gated with **no self-target check**, so a `can_approve_payouts`
-   *column on `users`* would be self-grantable by the center owner, the payee granting themselves release
-   authority. Implement it as a permission **key** on the `admin_users`-side `permissions` table, which
-   satisfies both the decided name and the disjoint-domain invariant. §7.1.
+   distinct from `can_request_referral_payouts`.* ✅ *Table decided: **never** on `public.users`.* The
+   reason it mattered: the existing staff-permissions route is owner-gated with **no self-target check**,
+   so a `can_approve_payouts` *column on `users`* would be self-grantable by the center owner — the payee
+   granting themselves release authority. Implement it as a permission **key** on the `admin_users`-side
+   `permissions` table, which satisfies both the decided name and the disjoint-domain invariant. §7.1.
 2. **The cap bounds one row, not one manager.** ✅ *Decided: 10,000 EGP per payout, checked on the
    **requested** amount, above-cap goes to the CEO.* Checking the requested gross **closes** the
    four-to-five-way "which amount" ambiguity, and closes it safely — the permissive `net_minor` reading
-   would have let a gross of 10,546.31 through. **Still open:** the stated intent, *"no splitting"*,
-   needs a mechanism the per-payout rule does not supply — a center owed 30,000 can request 9,999 three
-   times in sequence, each individually compliant. A rolling per-approver window plus an anti-splitting
-   rule is the minimum that delivers the intent. §7.2.
+   would have let a gross of 10,546.31 through. ✅ *Anti-splitting decided: a second check of 10,000 EGP
+   per center per **rolling 7 days**, either check exceeded sends the payout to the CEO.* This supplies
+   the mechanism the per-payout rule alone could not — the 9,999-three-times sequence now hits the
+   window cap on the second request. **Residual, recorded not reopened:** both caps are per-center, so a
+   delegate holding the permission across many centers is bounded by center count rather than by the cap.
+   §7.2.
 3. **Revocation does not reach an already-approved payout**, and the cap in force at approval time is
    currently unprovable after the fact. §7.3.
 4. **"Never deletable, including by the CEO" cannot be delivered as stated** — the CEO holds `postgres`,
    and nothing inside Postgres binds the owner of Postgres. Tamper-*evident* is achievable; tamper-*proof*
-   is not, absent an external sink whose credentials the CEO does not hold. §7.4.
+   is not. ✅ *Sink decided: the external sink credential is held by Eyad alone and is not stored anywhere
+   the application can reach.* That is the correct security posture and it fixes the claim the spec may
+   make: **the log is tamper-evident with a detection window equal to the publication interval**, and
+   because the application cannot reach the sink, publication is an out-of-band act whose cadence *is*
+   that window — a missed publication silently widens it and nothing in-system can alert on it. §7.4.
 
-**Two questions the answers opened rather than closed.**
-- **→ OPEN: who acts if the CEO is unavailable for a full quarterly window?** Delegation narrows this but
-  does not close it — anything at or above the cap still stops. "Nobody, payouts wait" is legitimate. Note
-  the ungoverned answer that exists today: editing `SUPER_ADMIN_PHONES` mints a CEO with no database row,
-  forensically anonymous. §7.5.
-- **→ OPEN: does the immutable log's hash-chain head go to an external sink, and who holds that
-  credential?** If the answer is "nobody but the CEO", the spec should claim tamper-evidence and stop
-  there rather than claim a guarantee the system cannot keep. §7.4.
+**Both remaining questions are now answered.**
+- **✅ CEO unavailability: payouts wait. No fallback approver, at any amount, for any duration.** An
+  above-cap payout has exactly one path to release. Requests must age visibly rather than expire. The
+  ungoverned path that exists today — editing `SUPER_ADMIN_PHONES` to mint a CEO with no database row —
+  is closed by requiring a real `admin_users` row for payout approval, and is logged as **S10** because
+  it is a hole in the existing admin surface independently of this feature. §7.5.
+- **✅ Sink: Eyad holds the credential, unreachable by the application.** See item 4 above and §7.4 for
+  what the spec may and may not claim as a result.
+
+**Two implementation traps, agreed and settled, recorded so they cannot be re-litigated into the code:**
+`can_approve_payouts` **never** lives on `public.users` (item 1 — the staff-permissions route has no
+self-target check, so a column there is self-grantable by the payee), and the cap config key **names its
+unit explicitly** (`payout_delegate_cap_minor`, piastres — not a bare `..._cap` that reads as EGP to the
+next person who touches it, per §2's amount-unit defect).
 
 **Not decisions — facts to act on, both still outstanding:** start the Paymob commercial conversation now
 (onboarding is manual and gates the whole integration), and get written answers to the seven questions in
