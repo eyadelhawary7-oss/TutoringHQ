@@ -10123,5 +10123,9 @@
     "whatsappHours": "واتساب، من ١٠ ص لـ ٦ م",
     "legalLine": "منصة TutoringHQ تُشغّلها شركة EHG Intelligence Egypt، شركة مسجّلة في مصر.",
     "rightsLine": "© ٢٠٢٦ جميع الحقوق محفوظة."
+  },
+  "patterns": {
+    "manager": "مدير",
+    "slowMessage": "أبطأ من المعتاد. لسه بنستنى الاتصال."
   }
 }

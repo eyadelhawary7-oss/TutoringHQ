@@ -19,7 +19,7 @@ import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { EmptyState } from '@/components/shared';
-import { ListRow, ListSkeleton } from '@/components/patterns';
+import { ListRow, ListSkeleton, SegmentedControl } from '@/components/patterns';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { formatNumber } from '@/lib/formatNumber';
@@ -291,28 +291,15 @@ export default function AdminTeacherLinksPage() {
         </button>
       </div>
 
-      <div
-        role="tablist"
-        aria-label={t('title')}
-        className="inline-flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] p-1"
-      >
-        {(['byCenter', 'byTeacher', 'unassigned'] as const).map((g) => (
-          <button
-            key={g}
-            role="tab"
-            type="button"
-            aria-selected={grouping === g}
-            onClick={() => setGrouping(g)}
-            className={`btn-press chq-focus min-h-[40px] rounded-md px-4 py-2 text-sm font-semibold transition-colors ${
-              grouping === g
-                ? 'bg-teal-600 text-white'
-                : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'
-            }`}
-          >
-            {t(`tab_${g}`)}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        label={t('title')}
+        value={grouping}
+        onChange={(id) => setGrouping(id as Grouping)}
+        segments={(['byCenter', 'byTeacher', 'unassigned'] as const).map((g) => ({
+          id: g,
+          label: t(`tab_${g}`),
+        }))}
+      />
 
       {error && (
         <p className="text-sm text-red-600" role="alert">
@@ -349,7 +336,6 @@ export default function AdminTeacherLinksPage() {
                           {formatNumber(c.teachers.length, locale)}
                         </span>
                       }
-                      chevron={false}
                     />
                   ))}
                 </div>
@@ -386,7 +372,6 @@ export default function AdminTeacherLinksPage() {
                           {formatNumber(x.centers.length, locale)}
                         </span>
                       }
-                      chevron={false}
                     />
                   ))}
                 </div>
@@ -414,7 +399,6 @@ export default function AdminTeacherLinksPage() {
                       avatar={initialsOf(x.name ?? '')}
                       title={x.name ?? t('unnamedTeacher')}
                       meta={t('notLinked')}
-                      chevron={false}
                     />
                   ))}
                 </div>
@@ -439,7 +423,6 @@ export default function AdminTeacherLinksPage() {
                         {t('pendingBadge')}
                       </span>
                     }
-                    chevron={false}
                   />
                 ))}
               </div>

@@ -891,7 +891,6 @@ export default function PaymentsPage() {
                 state={collectSubmitting ? 'loading' : 'idle'}
                 onClick={() => void handleCollectPayment()}
                 className="btn-primary px-4 py-2 rounded-lg text-sm font-semibold"
-                loadingText={tCommon('loading')}
               >
                 {tp('recordPayment')}
               </LoadingButton>
@@ -928,7 +927,6 @@ export default function PaymentsPage() {
                 state={confirmingId === confirmModal.id ? 'loading' : 'idle'}
                 onClick={() => handleConfirm(confirmModal.id)}
                 className="btn-primary px-4 py-2 rounded-lg text-sm font-semibold"
-                loadingText={tCommon('loading')}
               >
                 {tCommon('confirm')}
               </LoadingButton>

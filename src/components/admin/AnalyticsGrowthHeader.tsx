@@ -30,7 +30,7 @@ import { useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Users } from 'lucide-react';
 import { EmptyState } from '@/components/shared';
-import { ListRow } from '@/components/patterns';
+import { ListRow, SegmentedControl } from '@/components/patterns';
 import { initialsOf } from '@/lib/initials';
 import { formatCurrency, formatNumber, formatPercent } from '@/lib/formatNumber';
 import type { CustomerSplitView } from '@/components/admin/PlatformOverviewHeader';
@@ -100,28 +100,15 @@ export default function AnalyticsGrowthHeader({
 
   return (
     <section className="mb-6 space-y-5">
-      <div
-        role="tablist"
-        aria-label={t('segmentLabel')}
-        className="inline-flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] p-1"
-      >
-        {(['all', 'centers', 'teachers'] as const).map((s) => (
-          <button
-            key={s}
-            role="tab"
-            type="button"
-            aria-selected={segment === s}
-            onClick={() => setSegment(s)}
-            className={`btn-press chq-focus min-h-[40px] rounded-md px-4 py-2 text-sm font-semibold transition-colors ${
-              segment === s
-                ? 'bg-teal-600 text-white'
-                : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'
-            }`}
-          >
-            {t(`segment_${s}`)}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        label={t('segmentLabel')}
+        value={segment}
+        onChange={(id) => setSegment(id as Segment)}
+        segments={(['all', 'centers', 'teachers'] as const).map((s) => ({
+          id: s,
+          label: t(`segment_${s}`),
+        }))}
+      />
 
       <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 text-center">
         <p className="text-sm text-[var(--color-text-muted)]">{t('mrrHeading')}</p>
@@ -170,6 +157,10 @@ export default function AnalyticsGrowthHeader({
             title={t('topEmptyTitle')}
             description={t('topEmptyBody')}
             alt={t('topEmptyAlt')}
+            // §01 "insight, too early to be useful": a ranking with nothing
+            // behind it yet is not a state anyone can act on, so it takes the
+            // quiet tile and offers no button. It fills itself.
+            tone="quiet"
           />
         ) : (
           <div className="space-y-2">
@@ -200,7 +191,6 @@ export default function AnalyticsGrowthHeader({
                     {formatCurrency(row.mrr, locale)}
                   </span>
                 }
-                chevron={false}
               />
             ))}
           </div>

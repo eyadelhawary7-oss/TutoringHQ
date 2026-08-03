@@ -17,6 +17,34 @@ twice (once by the original audit, once by a follow-up check that trusted an emp
 second look) before being caught a third time — this is a direct, human-directed fix, not a proactive
 sweep of the other five primitives, which stay untouched below.
 
+**Updated 3 August 2026 — the primitives changed SHAPE; the fractions below did not move much.**
+A visual-parity pass against `Merged-Design-Patterns.html` corrected all six primitives against the
+drawn measurements and landed three new ones (`SegmentedControl`, `CapacityBar`, `GroupCard`) plus
+`StatusPill` and `EmptyStateAction`. **Read the fractions below as "adopters of the OLD shape" for
+anything not re-verified after that pass** — a per-file sweep converting a screen now converts it
+against the corrected primitive, which is the whole reason the shape was fixed before the sweeps
+rather than during them.
+
+Three deliberate omissions were recorded in that pass and are not gaps to be closed later:
+
+- **§03's swipe row is not, and will not become, a pattern primitive.** `components/students/SwipeRow.tsx`
+  stays students-local. §06 is the file's own conclusion (design:1301) and resolves §03 in favour of
+  tap-to-expand plus the shared sheet; promoting a competing gesture is how one list ends up with two
+  ways to reach the same five actions. Its measurements were brought onto the design (64px buttons,
+  192px total) but it is not exported from `components/patterns`.
+- **§03's press-and-hold floating menu is not built.** Same reason — design:1034, "one sheet, one
+  gesture". A third gesture to reach an identical action set contradicts the file's own conclusion.
+- **§03's always-on icon row is not built.** `ListRow` keeps its single trailing affordance. If a
+  screen ever genuinely needs it, `.minibtn` is `34×34 rounded-sm bg-[--color-tile] text-[--color-mid]`
+  and `.minibtn.pay` is `bg-[--color-mint] text-[--color-accent-deep]`.
+
+Two design defects were logged rather than reproduced: the off-palette `#2563EB` at design:914 (one
+occurrence, no token, nothing consumes it — a message action takes `--color-accent`), and `#8A5E16`
+as the badge warning text (not a token; `--color-brass` `#9A6B1F` kept instead of adding a 171st hex).
+One design inconsistency was logged as a query: §05 draws the capacity bar teal at 80%, brass at 90%
+and teal again at 100%; `CapacityBar` applies brass from 90 up, since a full group is not less urgent
+than a nearly-full one.
+
 **Method.** Three independent read-only audits, one per primitive family, each opened and read every
 candidate file directly — no classification is based on a grep snippet alone, and none trusts
 `CHANGE-LOG.md`, `FILE-COMPLETION-TABLE.md`, or `PER-FILE-PROMPT.md`'s claims about what's already
@@ -41,16 +69,41 @@ flagged file when its own row comes up again.
 
 | Primitive | Real adopters | Denominator | Fraction |
 |---|---|---|---|
-| `EmptyState` (`shared/EmptyState.tsx`) | 11 files (13 call sites) | 72 | **15.3%** |
-| Loading states (`ListSkeleton`/`RecordSkeleton`/`StillWorking`/`ActionSpinner`) | 1 file (`ListSkeleton` only) | 137 | **0.7%** |
+| `EmptyState` (`shared/EmptyState.tsx`) | 12 files | 72 | **16.7%** |
+| `EmptyStateAction` (new, 3 Aug) | 3 | 72 | **4.2%** |
+| `ListSkeleton` | 1 | 137 | **0.7%** |
+| `RecordSkeleton` | 1 (`settings/billing/loading.tsx`, 3 Aug) | 137 | **0.7%** |
+| `StillWorking` | 1 (`students/page.tsx`, 3 Aug) | 137 | **0.7%** |
+| `ActionSpinner` | 0 | 137 | **0%** |
 | `ListRow` | 5 | 14 | **35.7%** |
 | `ActionSheet` | 0 | 3 | **0%** |
 | `RecordActionBar` | 0 | 4 | **0%** |
 | `ExpandableRow` | 0 | 1 | **0%** |
+| `SegmentedControl` (new, 3 Aug) | 2 | 3 | **66.7%** |
+| `CapacityBar` (new, 3 Aug) | 1 (`groups/page.tsx`) | — | — |
+| `GroupCard` (new, 3 Aug) | 0 | — | — |
+| `StatusPill` (new, 3 Aug) | 0 | — | — |
 
-`RecordSkeleton`, `StillWorking`, `ActionSpinner`, `ActionSheet`, `RecordActionBar`, and `ExpandableRow` —
-six of the ten primitives/sub-primitives shipped in #220 — have **zero adopters anywhere in the
-codebase**, confirmed by grepping the exact identifiers outside `src/components/patterns/` itself.
+`ActionSpinner`, `ActionSheet`, `RecordActionBar`, `ExpandableRow`, `GroupCard` and `StatusPill` have
+**zero adopters**, confirmed by grepping the exact identifiers outside `src/components/patterns/` and
+`src/components/shared/`. Their SHAPE is now correct against the design; their reach is not. Those are
+two different problems and only the first was in scope for the 3 August pass.
+
+**`ExpandableRow`/`ActionSheet` on the students list was attempted and deliberately abandoned.** It is
+the adoption `Merged-Design-Patterns` §06 draws, and it is not a conversion: the live mobile student
+row is ~330 lines inside `SwipeRow` carrying inline parent-phone editing, cart state and per-row
+controls, none of which `ExpandableRow`'s `title`/`meta`/`badge` surface can hold. Wedging it in would
+fork the primitive, which is the one thing `components/patterns/index.ts` says not to do. It needs the
+students file's own sweep, where removing `SwipeRow` and rehoming that row content is the actual job.
+
+`SegmentedControl`'s denominator is 3 hand-rolled controls; **2 were converged and the third
+deliberately was not.** `teacher/AllStudentsList.tsx` is a horizontally-scrolling filter row of N
+group pills, not §05's fixed three-way `.seg` — with ten groups, `flex-1` segments would be 10% wide
+each. It is a different control that happens to share `role="tablist"`.
+
+`CapacityBar` and `GroupCard` have no meaningful denominator yet: `student_groups.max_capacity` is
+populated on 1 of 4 live rows, so `CapacityBar` renders nothing on most groups by design — see its
+sentinel guard. That is correct behaviour, not a gap.
 
 ---
 

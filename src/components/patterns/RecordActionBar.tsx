@@ -12,7 +12,13 @@ interface RecordActionBarProps {
   secondary?: { id: string; icon: LucideIcon; label: string; onSelect: () => void }[];
   /** Opens the same shared ActionSheet the row's three-dot opens. */
   onMore: () => void;
-  moreLabel?: string;
+  /**
+   * Accessible name for the More button. REQUIRED and with no English fallback,
+   * matching `ExpandableRow.moreLabel` — these two primitives should not have
+   * opposite conventions for the same button. `common.moreActions` exists in
+   * both locales; pass `t('moreActions')`.
+   */
+  moreLabel: string;
 }
 
 /**
@@ -71,7 +77,7 @@ export default function RecordActionBar({
       <button
         type="button"
         onClick={onMore}
-        aria-label={moreLabel ?? 'More'}
+        aria-label={moreLabel}
         className="flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-body)] hover:bg-[var(--color-tile)] btn-press chq-focus"
       >
         <MoreHorizontal className="h-5 w-5" aria-hidden />

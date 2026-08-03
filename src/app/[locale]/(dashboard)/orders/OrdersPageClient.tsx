@@ -19,7 +19,7 @@ import { CardOrderCartContents } from '@/components/orders/CardOrderCartContents
 import { CardOrderMobileStickyFooter } from '@/components/orders/CardOrderMobileStickyFooter';
 import { useCardOrderCart } from '@/hooks/useCardOrderCart';
 import { useToast } from '@/components/ui/ToastProvider';
-import { EmptyState, SectionHeader } from '@/components/shared';
+import { EmptyState, EmptyStateAction, SectionHeader } from '@/components/shared';
 
 export type CardOrdersShippingQuote = {
   hasGovernorate: boolean;
@@ -433,16 +433,23 @@ export default function OrdersPageClient({
               icon={IdCard}
               title={tEmpty('cardOrders.title')}
               description={tEmpty('cardOrders.description')}
+              // §01 "the quiet kind — empty because it is early, not because
+              // something is missing". Cards are optional; attendance works
+              // from the phone without them. The design draws this state with
+              // the quiet icon and a single GHOST button, not a filled primary
+              // — the route stays findable without the screen pushing a
+              // purchase at a center that has not asked for one.
+              tone="quiet"
               action={
-                <button
-                  type="button"
-                  onClick={() =>
-                    document.getElementById('card-order-new-order')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                  }
-                  className="w-full flex items-center justify-center gap-1.5 px-4 py-3 min-h-[48px] bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-xl transition-all duration-150 shadow-sm"
-                >
-                  {tEmpty('cardOrders.action')}
-                </button>
+                <EmptyStateAction
+                  ghost={{
+                    label: tEmpty('cardOrders.action'),
+                    onClick: () =>
+                      document
+                        .getElementById('card-order-new-order')
+                        ?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+                  }}
+                />
               }
             />
           ) : orders.length === 0 && !histLoading ? (

@@ -8,7 +8,8 @@ export { default as KpiCard } from './KpiCard';
 // Canonical alias - KpiCard is the canonical "StatCard" used across admin Overview, Finance, dashboard, students, payments.
 export { default as StatCard } from './KpiCard';
 export { default as SectionHeader } from './SectionHeader';
-export { default as EmptyState } from './EmptyState';
+export { default as EmptyState, EmptyStateAction } from './EmptyState';
+export { default as StatusPill, type StatusPillProps, type StatusPillTone } from './StatusPill';
 export { default as PageHeader } from './PageHeader';
 export { default as Card } from './Card';
 export { default as ComingSoon } from './ComingSoon';

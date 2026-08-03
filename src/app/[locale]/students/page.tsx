@@ -7,13 +7,14 @@ import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import QRCode from 'qrcode';
 import { Plus, Search, QrCode, Upload, Users, X, Download, Edit, Trash2, Eye, Printer, ShoppingCart, Phone, Pencil, Inbox, CircleHelp } from 'lucide-react';
-import { EmptyState, KpiCard, SectionHeader } from '@/components/shared';
+import { EmptyState, EmptyStateAction, KpiCard, SectionHeader } from '@/components/shared';
 import { QRCard } from '@/components/QRCard';
 import { PrintStatementModal } from '@/components/PrintStatementModal';
 import { AtRiskPanel } from '@/components/students/AtRiskPanel';
 import { LifecycleBadge } from '@/components/students/LifecycleBadge';
 import { SwipeRow } from '@/components/students/SwipeRow';
 import { FamilyLinkingSection } from '@/components/students/FamilyLinkingSection';
+import { StillWorking } from '@/components/patterns';
 import { useUser } from '@/contexts/UserContext';
 import { useCardOrderCart } from '@/hooks/useCardOrderCart';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -196,6 +197,7 @@ export default function StudentsPage() {
   const tCommon = useTranslations('common');
   const tToast = useTranslations('toasts');
   const tConsent = useTranslations('guardianConsent');
+  const tPatterns = useTranslations('patterns');
   const { user, hasPermission, refreshUser } = useUser();
   const canViewPayments =
     user?.role === 'owner' || user?.role === 'admin' || user?.role === 'super_admin' || hasPermission('can_view_payments');
@@ -204,6 +206,23 @@ export default function StudentsPage() {
 
   const [students, setStudents] = useState<Student[] | null>(() => readStudentsCache());
   const [studentsListFresh, setStudentsListFresh] = useState(false);
+  /**
+   * Merged-Design-Patterns §02, "when it is taking too long": after a few
+   * seconds a sweeping skeleton stops being honest, because it implies
+   * something is about to happen. The band says the connection is slow and the
+   * screen keeps waiting — it does NOT replace the skeleton and it does NOT
+   * offer a retry. This screen is where §02 draws the state, and the database
+   * is in London while the people using this are in Egypt.
+   */
+  const [listIsSlow, setListIsSlow] = useState(false);
+  useEffect(() => {
+    if (students !== null) {
+      setListIsSlow(false);
+      return;
+    }
+    const id = setTimeout(() => setListIsSlow(true), 6000);
+    return () => clearTimeout(id);
+  }, [students]);
   const [printStudent, setPrintStudent] = useState<{ id: string; name: string } | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -1273,6 +1292,8 @@ export default function StudentsPage() {
 
           {students === null ? (
             <div className="space-y-3" aria-busy="true">
+              {/* Above the still-sweeping skeleton, never instead of it. */}
+              {listIsSlow && <StillWorking message={tPatterns('slowMessage')} />}
               <div className="hidden md:block rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] overflow-hidden card-shadow">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -1352,22 +1373,14 @@ export default function StudentsPage() {
               title={tEmpty('students.title')}
               description={tEmpty('students.description')}
               action={
-                <div className="flex flex-col items-stretch gap-3 w-full">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddModal(true)}
-                    className="btn-lift shrink-0 flex items-center justify-center gap-1.5 px-4 py-3 min-h-[48px] w-full bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-xl transition-all duration-150 shadow-sm btn-press chq-focus"
-                  >
-                    {tEmpty('students.action')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => router.push('/students/import')}
-                    className="btn-lift flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[40px] w-full border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:border-teal-500/40 text-xs font-semibold rounded-xl transition-all duration-150 bg-[var(--color-surface-1)] card-shadow"
-                  >
-                    {tEmpty('students.importAction')}
-                  </button>
-                </div>
+                <EmptyStateAction
+                  label={tEmpty('students.action')}
+                  onClick={() => setShowAddModal(true)}
+                  ghost={{
+                    label: tEmpty('students.importAction'),
+                    onClick: () => router.push('/students/import'),
+                  }}
+                />
               }
             />
           ) : (

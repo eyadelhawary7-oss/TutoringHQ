@@ -524,7 +524,6 @@ export default function AdminReferralsPage() {
                                 </span>
                               )
                             }
-                            chevron={false}
                           />
                         ))}
                       </div>

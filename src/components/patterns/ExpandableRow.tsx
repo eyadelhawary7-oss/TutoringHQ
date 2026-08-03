@@ -9,6 +9,15 @@ export interface InlineAction {
   icon: LucideIcon;
   onSelect: () => void;
   disabled?: boolean;
+  /**
+   * `.chip.pri` — filled accent, white glyph and label. Exactly one of the
+   * three should carry it: the action the row exists to make easy.
+   *
+   * An explicit flag rather than "whichever is first", so a caller whose top
+   * action is not the first in its own list is not forced to reorder to get
+   * the right chip filled.
+   */
+  primary?: boolean;
 }
 
 interface ExpandableRowProps {
@@ -36,6 +45,13 @@ interface ExpandableRowProps {
  *   .exphead { row; gap 12 }
  *   .expacts { row; gap 8 }
  *   .chip    { flex 1; column; gap 4; padding 12 4; 1px #E2DDD1; radius 12; 11px/600 }
+ *   .chip svg      { #0E6B61 }
+ *   .chip.pri      { #0E6B61 fill; white label and glyph }
+ *   .chip.more     { #F2EEE5 fill; dashed border; #5D635C label and glyph }
+ *
+ * Three explicit chip colours, no inheritance. The More chip is deliberately
+ * the odd one out — recessed fill, dashed border, muted glyph — because it is
+ * an escape hatch to the full sheet, not a fourth action of equal weight.
  *
  * §06 merges §03 and §04 rather than replacing them: tapping expands to the top
  * three actions inline, the More chip opens the full sheet, and the three-dot
@@ -83,7 +99,7 @@ export default function ExpandableRow({
           type="button"
           onClick={onMore}
           aria-label={moreLabel}
-          className="flex h-11 w-11 min-h-[44px] shrink-0 items-center justify-center rounded-md text-[var(--color-ink-body)] hover:bg-[var(--color-tile)] btn-press chq-focus"
+          className="flex h-11 w-11 min-h-[44px] shrink-0 items-center justify-center rounded-md text-[var(--color-faint)] hover:bg-[var(--color-tile)] btn-press chq-focus"
         >
           <MoreVertical className="h-5 w-5" aria-hidden />
         </button>
@@ -114,6 +130,11 @@ export default function ExpandableRow({
         {badge}
       </div>
 
+      {/* The rule between the header and the chips. The 2px negative inline
+          margin is the design's bleed; -mx- is symmetric, so it is RTL-safe
+          without a logical-property variant. */}
+      <div aria-hidden className="-mx-[2px] h-px bg-[var(--color-tile)]" />
+
       <div className="flex gap-2">
         {inlineActions.slice(0, 3).map((a) => {
           const Icon = a.icon;
@@ -123,9 +144,16 @@ export default function ExpandableRow({
               type="button"
               onClick={a.onSelect}
               disabled={a.disabled}
-              className="flex min-w-0 flex-1 flex-col items-center gap-1 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-1 py-3 text-xs font-semibold text-[var(--color-ink-body)] disabled:opacity-50 btn-press chq-focus"
+              className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-md border px-1 py-3 text-xs font-semibold disabled:opacity-50 btn-press chq-focus ${
+                a.primary
+                  ? 'border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-panel)]'
+                  : 'border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-body)]'
+              }`}
             >
-              <Icon className="h-5 w-5" aria-hidden />
+              <Icon
+                className={`h-5 w-5 ${a.primary ? 'text-[var(--color-panel)]' : 'text-[var(--color-accent)]'}`}
+                aria-hidden
+              />
               <span className="max-w-full truncate">{a.label}</span>
             </button>
           );
@@ -133,9 +161,9 @@ export default function ExpandableRow({
         <button
           type="button"
           onClick={onMore}
-          className="flex min-w-0 flex-1 flex-col items-center gap-1 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-1 py-3 text-xs font-semibold text-[var(--color-ink-body)] btn-press chq-focus"
+          className="flex min-w-0 flex-1 flex-col items-center gap-1 rounded-md border border-dashed border-[var(--color-line)] bg-[var(--color-tile)] px-1 py-3 text-xs font-semibold text-[var(--color-mid)] btn-press chq-focus"
         >
-          <MoreVertical className="h-5 w-5" aria-hidden />
+          <MoreVertical className="h-5 w-5 text-[var(--color-mid)]" aria-hidden />
           <span className="max-w-full truncate">{moreLabel}</span>
         </button>
       </div>

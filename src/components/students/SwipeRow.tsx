@@ -14,8 +14,21 @@ type Props = {
   actions: Action[];
 };
 
+/**
+ * `Merged-Design-Patterns` §03 draws the swipe row at `.sbtn{width:64px}` and
+ * `.srowc{transform:translateX(-192px)}` — three actions of 64, 192 total.
+ * These were 72 and 180, which made the third button visibly narrower than the
+ * first two once the row was fully open.
+ *
+ * This stays a students-local component and is deliberately NOT promoted to
+ * `components/patterns`. §06 is the file's own conclusion and it resolves §03
+ * in favour of tap-to-expand plus the shared sheet; making a competing gesture
+ * a primitive is how a list ends up with two ways to reach the same five
+ * actions.
+ */
 const SWIPE_THRESHOLD = 60;
-const MAX_SWIPE = 180;
+const MAX_SWIPE = 192;
+const ACTION_WIDTH = 64;
 
 export function SwipeRow({ children, actions }: Props) {
   const [offset, setOffset] = useState(0);
@@ -45,7 +58,7 @@ export function SwipeRow({ children, actions }: Props) {
   const handleTouchEnd = useCallback(() => {
     startXRef.current = null;
     if (offset > SWIPE_THRESHOLD) {
-      const actionWidth = Math.min(MAX_SWIPE, actions.length * 72);
+      const actionWidth = Math.min(MAX_SWIPE, actions.length * ACTION_WIDTH);
       setOffset(actionWidth);
       setIsOpen(true);
     } else {
@@ -77,7 +90,7 @@ export function SwipeRow({ children, actions }: Props) {
               action.onClick();
               close();
             }}
-            className={`flex flex-col items-center justify-center gap-1 flex-1 text-xs font-medium px-3 min-w-[60px] transition-opacity duration-fast ${action.variant === 'danger' ? 'bg-[var(--color-danger)] text-white' : 'bg-[var(--color-surface-3)] text-[var(--color-text-primary)]'}`}
+            className={`flex flex-col items-center justify-center gap-1 flex-1 text-xs font-medium px-3 w-16 transition-opacity duration-fast ${action.variant === 'danger' ? 'bg-[var(--color-danger)] text-white' : 'bg-[var(--color-surface-3)] text-[var(--color-text-primary)]'}`}
           >
             {action.icon}
             {action.label}

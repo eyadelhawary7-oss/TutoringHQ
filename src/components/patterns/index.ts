@@ -19,3 +19,6 @@ export { default as ListRow } from './ListRow';
 export { default as RecordActionBar } from './RecordActionBar';
 export { default as ExpandableRow, type InlineAction } from './ExpandableRow';
 export { ListSkeleton, RecordSkeleton, StillWorking, ActionSpinner } from './LoadingStates';
+export { default as SegmentedControl, type Segment } from './SegmentedControl';
+export { default as CapacityBar } from './CapacityBar';
+export { default as GroupCard } from './GroupCard';

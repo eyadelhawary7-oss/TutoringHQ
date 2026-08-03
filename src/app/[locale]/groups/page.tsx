@@ -8,7 +8,8 @@ import { useUser } from '@/contexts/UserContext';
 import { Link as RouterLink } from '@/i18n/routing';
 import { Plus, BookOpen, X, Users, Search, Link as LinkIcon, ClipboardList, MoreVertical } from 'lucide-react';
 import { AttendanceHeatmap } from '@/components/AttendanceHeatmap';
-import { EmptyState } from '@/components/shared';
+import { EmptyState, EmptyStateAction } from '@/components/shared';
+import { CapacityBar } from '@/components/patterns';
 import { useToast } from '@/components/ui/ToastProvider';
 import { formatCurrency, formatNumber, formatDate, formatPercent, formatTime } from '@/lib/formatNumber';
 import { getCairoWeekColumnOrder, getCairoWeekDays } from '@/lib/cairo/week';
@@ -603,13 +604,10 @@ export default function GroupsPage() {
           title={tEmpty('groups.title')}
           description={tEmpty('groups.description')}
           action={
-            <button
-              type="button"
+            <EmptyStateAction
+              label={tEmpty('groups.action')}
               onClick={() => setShowAddModal(true)}
-              className="flex items-center justify-center gap-2 px-4 py-2 w-full bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
-            >
-              {tEmpty('groups.action')}
-            </button>
+            />
           }
         />
       ) : (
@@ -907,6 +905,17 @@ export default function GroupsPage() {
                       ? ` / ${formatNumber(detailGroup.max_capacity, locale)}`
                       : ''}
                   </p>
+                  {/* Merged-Design-Patterns §05 `.capbar`. Renders nothing at
+                      all when the group has no cap set — which is most live
+                      groups — rather than drawing a bar against the 999
+                      sentinel the line above already treats as "no cap". */}
+                  <div className="mt-2">
+                    <CapacityBar
+                      value={detailGroup.student_count ?? detailGroup.member_count ?? 0}
+                      max={detailGroup.max_capacity}
+                      label={tCommon('capacity')}
+                    />
+                  </div>
                 </div>
                 {/* Written on group creation (handleAddGroup) but never selected
                     back or shown anywhere until now. */}

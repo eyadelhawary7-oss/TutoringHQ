@@ -3,9 +3,22 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react';
 import { SuccessCheck } from './SuccessCheck';
 
+/**
+ * `Merged-Design-Patterns` §02, "an action in flight":
+ *
+ *   "The button keeps its own label rather than turning into the word Loading,
+ *    it dims rather than disappearing, and it stays the same size so nothing
+ *    under it moves."
+ *
+ * There is deliberately NO `loadingText` prop. This component used to have one
+ * and both of its call sites passed the literal word "Loading", which is the
+ * exact failure the rule names — the person loses sight of what they pressed at
+ * the moment they most need it, and on a payments screen that is the difference
+ * between waiting and pressing again. The label is invariant across all four
+ * states; only the glyph and the dimming change.
+ */
 interface LoadingButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   state?: 'idle' | 'loading' | 'success' | 'error';
-  loadingText?: string;
   successText?: string;
   errorText?: string;
   children: ReactNode;
@@ -23,7 +36,6 @@ const VARIANT_CLASSES: Record<string, string> = {
 
 export function LoadingButton({
   state = 'idle',
-  loadingText,
   successText,
   errorText,
   children,
@@ -45,7 +57,10 @@ export function LoadingButton({
         'inline-flex items-center justify-center gap-2',
         'px-4 py-2 rounded-lg font-medium text-sm',
         'transition-colors duration-150',
-        'disabled:opacity-60 disabled:cursor-not-allowed',
+        'disabled:cursor-not-allowed',
+        // §02: dims rather than disappearing. .inflight is opacity .72; the
+        // idle-disabled case keeps the heavier 60 it already had.
+        isLoading ? 'opacity-[0.72]' : 'disabled:opacity-60',
         VARIANT_CLASSES[variant] ?? VARIANT_CLASSES.primary,
         className,
       ].join(' ')}
@@ -57,13 +72,7 @@ export function LoadingButton({
         </svg>
       )}
       {isSuccess && <SuccessCheck size={18} color="currentColor" />}
-      {isLoading
-        ? (loadingText ?? children)
-        : isSuccess
-          ? (successText ?? children)
-          : isError
-            ? (errorText ?? children)
-            : children}
+      {isSuccess ? (successText ?? children) : isError ? (errorText ?? children) : children}
     </button>
   );
 }

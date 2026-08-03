@@ -10123,5 +10123,9 @@
     "whatsappHours": "WhatsApp, 10am to 6pm",
     "legalLine": "TutoringHQ is operated by EHG Intelligence Egypt, a registered Egyptian company.",
     "rightsLine": "© 2026 All rights reserved."
+  },
+  "patterns": {
+    "manager": "Manager",
+    "slowMessage": "Slower than usual. Still waiting for the connection."
   }
 }
