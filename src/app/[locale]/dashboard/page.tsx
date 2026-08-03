@@ -12,7 +12,7 @@ import { EmptyState, KpiCard, SectionHeader } from '@/components/shared';
 import ListRow from '@/components/patterns/ListRow';
 import { formatDate, formatNumber, formatPercent, formatCurrency, formatTime } from '@/lib/formatNumber';
 import { getCairoWeekDayKeys, scheduleSlotsDayOfWeek } from '@/lib/cairo/week';
-import { cairoDateKey, startOfCairoDay, getCurrentCairoClock } from '@/lib/cairo/day';
+import { cairoDateKey, startOfCairoDay, getCurrentCairoClock, cairoPaidAtDayUtcBounds } from '@/lib/cairo/day';
 import { classifyTodaySchedule } from '@/lib/todayScheduleStatus';
 import {
   readDashboardCache as readScopedDashboardCache,
@@ -133,12 +133,6 @@ export default function DashboardPage() {
    */
   const [statsData, setStatsData] = useState<{ attendanceToday: number } | null>(null);
 
-  const startOfToday = () => {
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    return now.toISOString();
-  };
-
   // Read the id out before the callback closes over it. Closing over `user`
   // itself makes React Compiler infer the whole context object as the
   // dependency, which no longer matches `user?.id` in the array below and
@@ -147,13 +141,27 @@ export default function DashboardPage() {
 
   const loadDashboard = useCallback(async (cId: string) => {
     try {
-      const todayStart = startOfToday();
-      const todayEnd = new Date();
-      todayEnd.setHours(23, 59, 59, 999);
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const todayCairoKey = cairoDateKey();
       const todayDow = scheduleSlotsDayOfWeek(todayCairoKey);
+      // "Today" is the CAIRO day for all three consumers below (the payments
+      // fetch bound, the Collected KPI, and the attendance fallback count).
+      // These used to be the DEVICE's midnight — `new Date().setHours(0,0,0,0)`
+      // and `setHours(23,59,59,999)` — so a phone left on another timezone, or
+      // any UTC runtime, measured a different day than the one the rest of the
+      // screen labels.
+      //
+      // startOfCairoDay() is NOT usable here: it returns UTC *noon* on the Cairo
+      // date as a nominal anchor for day-difference arithmetic (see its doc in
+      // lib/cairo/day.ts, and its correct use for unpaidLinksOldestDays below).
+      // Using it to bound a timestamp would drop every payment before 12:00 UTC
+      // — i.e. most of the Cairo working day. cairoPaidAtDayUtcBounds resolves
+      // the real UTC instants for the Cairo calendar day, DST included, and is
+      // half-open [start, endExclusive) so nothing is double-counted at the seam.
+      const { start: todayStart, endExclusive: todayEndExclusive } = cairoPaidAtDayUtcBounds(todayCairoKey);
+      const todayStartMs = todayStart.getTime();
+      const todayEndExclusiveMs = todayEndExclusive.getTime();
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       const [
         paymentsResult,
@@ -167,7 +175,7 @@ export default function DashboardPage() {
           filters: [
             { column: 'center_id', op: 'eq', value: cId },
             { column: 'paid_at', op: 'gte', value: thirtyDaysAgo.toISOString() },
-            { column: 'paid_at', op: 'lte', value: todayEnd.toISOString() },
+            { column: 'paid_at', op: 'lt', value: todayEndExclusive.toISOString() },
           ],
         }),
         dbSelect({
@@ -258,14 +266,14 @@ export default function DashboardPage() {
 
       const todayPayments = paymentsData.filter(p => {
         if (!p.paid_at) return false;
-        const d = new Date(p.paid_at);
-        return d >= new Date(todayStart) && d <= todayEnd;
+        const ms = new Date(p.paid_at).getTime();
+        return ms >= todayStartMs && ms < todayEndExclusiveMs;
       });
       const todayRevenue = todayPayments.filter(p => p.confirmed).reduce((sum, p) => sum + parseFloat(String(p.amount || 0)), 0);
 
       const todayScans = scansData.filter(s => {
-        const d = new Date(s.scanned_at);
-        return d >= new Date(todayStart) && d <= todayEnd;
+        const ms = new Date(s.scanned_at).getTime();
+        return ms >= todayStartMs && ms < todayEndExclusiveMs;
       });
       const attendanceCount = todayScans.length;
 
@@ -299,7 +307,14 @@ export default function DashboardPage() {
         const byMethod = { ...defaultMethods };
         paymentsData.filter(p => p.confirmed && p.paid_at).forEach(p => {
           const d = new Date(p.paid_at!);
-          if (d.toISOString().slice(0, 10) !== dayKey) return;
+          // chartDayKeys are CAIRO day keys, so the payment's day must be
+          // derived the same way. `d.toISOString().slice(0, 10)` is the UTC
+          // date, which disagrees with Cairo for every payment taken between
+          // Cairo midnight and 02:00/03:00 (UTC+2 winter, UTC+3 summer): those
+          // bucketed a day early, and the ones on the week's first day (Sat)
+          // fell outside chartDayKeys entirely and vanished from both the
+          // percentage and the EGP total.
+          if (cairoDateKey(d) !== dayKey) return;
           const m = (p.method || 'cash').toLowerCase();
           const amt = parseFloat(String(p.amount || 0));
           if (m === 'cash') byMethod.cash += amt;
