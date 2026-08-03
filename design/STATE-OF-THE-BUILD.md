@@ -361,6 +361,7 @@ fabricated arithmetic (D4), replacing stale Admin-Money §07 prices (D5), adding
 | S7 | No CSRF on referral payout route | Open — low blast-radius only because D22 keeps the balance at 0; the two should land together |
 | S8 | No CSRF on any subscription-billing mutation + two fictitious money figures on `/settings/billing` | Open |
 | S9 | No CSRF on 4 CEO/admin routes, one a platform-wide kill switch | Open |
+| S10 | A super-admin can exist with no `admin_users` row (`SUPER_ADMIN_PHONES` alone grants it), and `requireSuperAdminRow` reads the same env var rather than requiring a row — authority with no forensic trail, no `check-env` coverage | Open — needs Eyad. **Sequencing:** create the rows *before* changing the gate, or the change locks the only super-admin out |
 
 ### §6 · FOUNDATIONS DEBT
 
@@ -486,3 +487,18 @@ actively working the next step:
    table — has no owner driving it forward beyond "waiting on Valify." Nobody in any document reviewed
    for this file is named as the person chasing a Valify vendor agreement, sandbox credentials, or a
    go-live date. Until someone is, "blocked on Valify" is not a schedule, it's an open-ended pause.
+
+   **Amended 3 August 2026 — half of this is now closed, and the half that isn't is unchanged.**
+   `design/PAYOUT-SYSTEM-SPEC.md` exists and its nine decisions are all answered by Eyad. But the spec's
+   own §0 splits the problem in two, and only one half moved:
+   - **System 1 (referral and credit payouts) is decided and shippable.** It pays out platform-owed
+     credit, needs no Valify and no third-party fund custody, and is no longer ownerless.
+   - **System 2 (tuition settlement — the V1→V3→V4 chain this item describes) is unchanged.** Still
+     blocked, still unowned, and the spec deliberately cross-references it rather than speccing it,
+     because there is no point designing a ledger for a switch that isn't wired
+     (`digital_student_fee_collection.enabled` has no row in `platform_config` at all, so the module
+     reads fail-closed to false). The Valify-chasing gap above stands exactly as written.
+   - **One new owner-shaped item the spec produced:** the Paymob Payouts commercial conversation.
+     Onboarding is manual on Paymob's side and gates the whole integration, and the seven questions in
+     spec §8 need written answers from them. Nobody is named for it. This is the one item where the
+     delay is external and starting late costs calendar time directly.
