@@ -120,6 +120,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
     cleanPath === '/ceo-dashboard' ||
     cleanPath.startsWith('/ceo-dashboard/');
   const showShell = !isPublic && !hideShell;
+  /**
+   * Merged-Center-Students §02 masthead, verbatim: "A sub-screen: back bar at the
+   * start edge, one primary action bar, NO TAB BAR." The student detail page owns
+   * a sticky primary of its own; a tab bar underneath it would stack two bottom
+   * bars. `/students` itself keeps the tab bar — only the detail route drops it.
+   */
+  const isStudentDetailRoute = /^\/students\/[^/]+$/.test(cleanPath) &&
+    !['import', 'pending', 'print'].includes(cleanPath.split('/')[2] ?? '');
 
   const pageTitleKey =
     PAGE_TITLE_MAP[cleanPath] ??
@@ -214,7 +222,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </main>
       </div>
 
-      {!isAdminRoute && !kioskChromeHidden && (
+      {!isAdminRoute && !kioskChromeHidden && !isStudentDetailRoute && (
         <div className="lg:hidden">
           <BottomTabBar />
         </div>

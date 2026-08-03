@@ -67,9 +67,11 @@ export async function GET(request: NextRequest) {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
+    // `district` is the centre's own area field (verified in
+    // information_schema.columns) — the design's per-branch meta line.
     const { data: centers } = await supabaseAdmin
       .from('centers')
-      .select('id, name')
+      .select('id, name, district')
       .eq('organization_id', organizationId);
 
     const centerIds = (centers ?? []).map((c) => c.id);
@@ -84,21 +86,38 @@ export async function GET(request: NextRequest) {
 
     // N+1 fix per docs/AUDIT_n_plus_1_hotpath_may13.md
     // Replaced 4N per-center queries with 3 batched .in() queries + in-memory grouping.
-    const [paymentsRes, studentsRes, usersRes] = await Promise.all([
+    // Trailing 30 days for the per-branch attendance rate. Columns verified in
+    // information_schema.columns: attendance_scans.center_id, .student_id,
+    // .session_date, .scanned_at.
+    const attendanceSince = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const [paymentsRes, studentsRes, usersRes, scansRes] = await Promise.all([
       supabaseAdmin
         .from('payments')
         .select('center_id, amount, status')
         .in('center_id', centerIds)
         .gte('paid_at', monthStart.toISOString())
         .lte('paid_at', monthEnd.toISOString()),
+      // ACTIVE students only (`students.is_active` verified in
+      // information_schema.columns, 2026-08-03): excludes is_active = false,
+      // keeps true + legacy NULL — the exact semantics of the `activeOnly`
+      // flag the outstanding calc below already uses (studentBalance.ts).
+      // Deliberate: this count feeds BOTH the attendance-rate denominator and
+      // the per-branch/Total Students KPI, so both now report the active
+      // roster rather than every row ever created.
       supabaseAdmin
         .from('students')
         .select('center_id')
-        .in('center_id', centerIds),
+        .in('center_id', centerIds)
+        .not('is_active', 'is', false),
       supabaseAdmin
         .from('users')
         .select('center_id')
         .in('center_id', centerIds),
+      supabaseAdmin
+        .from('attendance_scans')
+        .select('center_id, student_id, session_date, scanned_at')
+        .in('center_id', centerIds)
+        .gte('scanned_at', attendanceSince.toISOString()),
     ]);
 
     const mrrByCenter: Record<string, number> = {};
@@ -116,7 +135,44 @@ export async function GET(request: NextRequest) {
       staffCountByCenter[u.center_id] = (staffCountByCenter[u.center_id] ?? 0) + 1;
     }
 
-    const byBranch: { center_id: string; name: string; mrr: number; students: number; outstanding: number; staff_count: number }[] = [];
+    /**
+     * Per-branch attendance for the trailing 30 days.
+     *
+     * present = distinct (student_id, session_date) pairs — the same
+     * de-duplication the group heatmap uses, so two scans of one student on one
+     * day are one attendance.
+     * possible = active students × the number of days that branch actually ran
+     * a session. Days with no session are not counted against the branch.
+     *
+     * `null` — never 0 — when the branch ran no session in the window. A branch
+     * that has not met has no attendance rate, and rendering that as 0% would
+     * read as "nobody comes".
+     */
+    const scanDaysByCenter: Record<string, Set<string>> = {};
+    const scanPairsByCenter: Record<string, Set<string>> = {};
+    for (const s of (scansRes.data ?? []) as {
+      center_id: string | null;
+      student_id: string;
+      session_date?: string | null;
+      scanned_at?: string | null;
+    }[]) {
+      if (!s.center_id) continue;
+      const date = s.session_date ?? s.scanned_at?.split('T')[0] ?? '';
+      if (!date) continue;
+      (scanDaysByCenter[s.center_id] ??= new Set()).add(date);
+      (scanPairsByCenter[s.center_id] ??= new Set()).add(`${s.student_id}|${date}`);
+    }
+
+    const byBranch: {
+      center_id: string;
+      name: string;
+      mrr: number;
+      students: number;
+      outstanding: number;
+      staff_count: number;
+      attendance_pct: number | null;
+      district: string | null;
+    }[] = [];
     let totalMrr = 0;
     let totalStudents = 0;
     let totalOutstanding = 0;
@@ -133,6 +189,14 @@ export async function GET(request: NextRequest) {
       totalStudents += studentCount;
       totalOutstanding += outstanding;
 
+      const sessionDays = scanDaysByCenter[c.id]?.size ?? 0;
+      const presentPairs = scanPairsByCenter[c.id]?.size ?? 0;
+      const possible = sessionDays * studentCount;
+      const attendancePct =
+        sessionDays === 0 || possible <= 0
+          ? null
+          : Math.min(100, Math.round((presentPairs / possible) * 100));
+
       byBranch.push({
         center_id: c.id,
         name: (c as { name?: string }).name ?? '',
@@ -140,6 +204,8 @@ export async function GET(request: NextRequest) {
         students: studentCount,
         outstanding,
         staff_count: staffCount,
+        attendance_pct: attendancePct,
+        district: (c as { district?: string | null }).district ?? null,
       });
     }
 
