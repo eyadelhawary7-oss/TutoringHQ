@@ -7103,8 +7103,6 @@
     "announcementSentToast": "تم الإرسال إلى {count} ولي أمر · التكلفة: {cost} ج.م",
     "packOptInError": "فشل تحديث الاشتراك في باقة ولي الأمر",
     "regenerateQRConfirm": "هل تريد إعادة إنشاء رمز QR؟",
-    "allStudentsHaveQR": "جميع الطلاب لديهم رمز QR بالفعل",
-    "qrGeneratedNew": "تم إنشاء رمز QR جديد",
     "addStudentSuccess": "تمت إضافة الطالب بنجاح",
     "empty_title": "لا يوجد طلاب بعد",
     "empty_subtitle": "أضف أول طالب لبدء الاستخدام",

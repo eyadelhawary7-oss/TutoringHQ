@@ -62,11 +62,20 @@ type StudentRow = {
  * household); this is the missing per-member half. */
 type SiblingRow = { id: string; name: string; subject: string | null; grade_level: string | null };
 
-type GroupRow = { id: string; name: string; subject: string | null; fee?: number };
+type GroupRow = { id: string; name: string; subject: string | null; fee_per_class?: number | null };
 
 type CenterInfo = { name: string; logo_url: string | null };
 
-type CollectMethod = 'cash' | 'instapay' | 'bank_transfer';
+/**
+ * Only methods that pass BOTH gates a collect must clear: the route allowlist
+ * in POST /api/payments/collect AND the live `payments_method_check` constraint
+ * (cash | instapay | vodacash | orange | fawry | bank — verified in
+ * pg_constraint). 'bank_transfer' passed the route but is NOT in the DB
+ * constraint, so every such insert 500s; the option is removed rather than
+ * shipped as a guaranteed failure. The route↔constraint mismatch itself is
+ * flagged for Eyad — mapping values in a money endpoint is not a UI call.
+ */
+type CollectMethod = 'cash' | 'instapay';
 
 interface ScanRecord {
   id: string;
@@ -435,7 +444,10 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                     const g = grps.find((x) => x.id === (nx as { group_id: string }).group_id);
                     setNextDue({
                       at: (nx as { scheduled_at: string }).scheduled_at,
-                      amount: g?.fee ?? null,
+                      // student_groups.fee_per_class — the column the groupsSel
+                      // query actually selects (there is no `.fee` key on these
+                      // rows, and student_groups has no monthly_fee).
+                      amount: g?.fee_per_class ?? null,
                     });
                   }
                 } catch (err) {
@@ -704,8 +716,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
     printWindow.print();
   };
 
-  const methodLabel = (m: CollectMethod) =>
-    tp(m === 'cash' ? 'method_cash' : m === 'instapay' ? 'method_instapay' : 'method_bank_transfer');
+  const methodLabel = (m: CollectMethod) => tp(m === 'cash' ? 'method_cash' : 'method_instapay');
 
   // Opens the SAME server-gated flow used elsewhere (POST /api/payments/collect);
   // center_id is forced server-side, the student is already fixed to this page.
@@ -1565,7 +1576,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
               <div>
                 <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">{tp('paymentMethod')}</label>
                 <div className="flex flex-wrap gap-2">
-                  {(['cash', 'instapay', 'bank_transfer'] as const).map((m) => (
+                  {(['cash', 'instapay'] as const).map((m) => (
                     <button
                       key={m}
                       type="button"

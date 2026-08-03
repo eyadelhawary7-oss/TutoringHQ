@@ -41,6 +41,7 @@ import {
 import { formatCurrency, formatNumber, formatPlainInteger } from '@/lib/formatNumber';
 import { getStudentBalances, sumOutstanding, type StudentBalance } from '@/lib/studentBalance';
 import {
+  cairoDaysSince,
   deriveStanding,
   getStudentStandings,
   isBehind,
@@ -208,7 +209,10 @@ export default function StudentsPage() {
   // the first swipe action; the roster had no money action at all before).
   const [collectTarget, setCollectTarget] = useState<Student | null>(null);
   const [collectAmount, setCollectAmount] = useState('');
-  const [collectMethod, setCollectMethod] = useState<'cash' | 'instapay' | 'bank_transfer'>('cash');
+  // cash | instapay only: the two values that pass BOTH the collect route's
+  // allowlist AND the live payments_method_check constraint (verified in
+  // pg_constraint — 'bank_transfer' is not in it and every such insert 500s).
+  const [collectMethod, setCollectMethod] = useState<'cash' | 'instapay'>('cash');
   const [collectSubmitting, setCollectSubmitting] = useState(false);
   const [addForm, setAddForm] = useState({
     name: '',
@@ -227,8 +231,6 @@ export default function StudentsPage() {
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [qrModalStudent, setQrModalStudent] = useState<Student | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-  const [isGeneratingAll, setIsGeneratingAll] = useState(false);
-  const [generateProgress, setGenerateProgress] = useState({ current: 0, total: 0 });
   const [editStudent, setEditStudent] = useState<Student | null>(null);
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
@@ -456,7 +458,7 @@ export default function StudentsPage() {
     return Array.from(subs).sort();
   }, [groups]);
 
-  const studentsList = students ?? [];
+  const studentsList = useMemo(() => students ?? [], [students]);
   const studentsStale = Boolean(students !== null && !studentsListFresh);
 
   /**
@@ -479,17 +481,6 @@ export default function StudentsPage() {
     const behind = balanceRows.filter((b) => b.balance > 0);
     return { count: behind.length, amount: sumOutstanding(behind) };
   }, [balanceRows]);
-
-  const subjectCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const s of studentsList) {
-      const subs = studentGroupsMap[s.id]?.subjects ?? [];
-      for (const sub of subs) {
-        counts[sub] = (counts[sub] ?? 0) + 1;
-      }
-    }
-    return counts;
-  }, [studentsList, studentGroupsMap]);
 
   /**
    * Standing per student (§01 badge / §03 segmentation), from the shared fold.
@@ -849,41 +840,6 @@ export default function StudentsPage() {
     `);
     printWindow.document.close();
     printWindow.print();
-  };
-
-  const handleGenerateAllQR = async () => {
-    const needQR = studentsList.filter((s) => !s.qr_code);
-    if (needQR.length === 0) {
-      toast.info(ts('allStudentsHaveQR', { defaultValue: 'All students already have QR codes' }));
-      return;
-    }
-    setIsGeneratingAll(true);
-    setGenerateProgress({ current: 0, total: needQR.length });
-    try {
-      for (let i = 0; i < needQR.length; i++) {
-        const student = needQR[i];
-        setGenerateProgress({ current: i + 1, total: needQR.length });
-        const dataUrl = await QRCode.toDataURL(student.id, {
-          width: 300,
-          margin: 2,
-          color: { dark: '#000000', light: '#FFFFFF' },
-        });
-        await dbUpdate({
-          table: 'students',
-          data: { qr_code: dataUrl },
-          filters: [{ column: 'id', op: 'eq', value: student.id }],
-        });
-        setStudents((prev) =>
-          (prev ?? []).map((s) => (s.id === student.id ? { ...s, qr_code: dataUrl } : s))
-        );
-      }
-      toast.success(ts('qrGeneratedNew', { count: needQR.length, defaultValue: `Generating QR codes for ${needQR.length} new students...` }));
-    } catch (err) {
-      console.error('Bulk QR error:', err);
-    } finally {
-      setIsGeneratingAll(false);
-      setGenerateProgress({ current: 0, total: 0 });
-    }
   };
 
   const openEdit = (s: Student) => {
@@ -1497,15 +1453,10 @@ export default function StudentsPage() {
                               : null,
                             standing === 'new' && s.created_at
                               ? ts('joinedAgo', {
-                                  days: formatNumber(
-                                    Math.max(
-                                      0,
-                                      Math.round(
-                                        (Date.now() - new Date(s.created_at).getTime()) / 86400000,
-                                      ),
-                                    ),
-                                    locale,
-                                  ),
+                                  // Cairo calendar days, same arithmetic as every
+                                  // other ageing string on this screen — never
+                                  // wall-clock division that shifts at midnight UTC.
+                                  days: formatNumber(cairoDaysSince(s.created_at), locale),
                                 })
                               : null,
                           ].filter(Boolean);
@@ -2334,7 +2285,7 @@ export default function StudentsPage() {
               {tp('paymentMethod')}
             </label>
             <div className="flex flex-wrap gap-2">
-              {(['cash', 'instapay', 'bank_transfer'] as const).map((m) => (
+              {(['cash', 'instapay'] as const).map((m) => (
                 <button
                   key={m}
                   type="button"
@@ -2345,7 +2296,7 @@ export default function StudentsPage() {
                       : 'border-[var(--color-border)] text-[var(--color-text-secondary)]'
                   }`}
                 >
-                  {tp(m === 'cash' ? 'method_cash' : m === 'instapay' ? 'method_instapay' : 'method_bank_transfer')}
+                  {tp(m === 'cash' ? 'method_cash' : 'method_instapay')}
                 </button>
               ))}
             </div>

@@ -1652,8 +1652,6 @@
     "announcementSentToast": "Sent to {count} parents · Cost: {cost} EGP",
     "packOptInError": "Failed to update parent pack opt-in",
     "regenerateQRConfirm": "Regenerate QR code?",
-    "allStudentsHaveQR": "All students already have a QR code",
-    "qrGeneratedNew": "New QR code generated",
     "addStudentSuccess": "Student added successfully",
     "empty_title": "No students yet",
     "empty_subtitle": "Add your first student to get started",
