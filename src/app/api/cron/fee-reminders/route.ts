@@ -6,142 +6,27 @@ import { insertCronLogSuccess, insertCronLogFailure } from '@/lib/cron/cronLog';
 import { supabaseAdmin as supabaseAdminHealth } from '@/lib/supabase-admin';
 import { isTemplateApproved } from '@/lib/centerNotify';
 import { sendTemplateMessage } from '@/lib/whatsapp/client';
-import { formatCurrency, formatDate } from '@/lib/formatNumber';
+import { formatCurrency } from '@/lib/formatNumber';
+import {
+  FEE_REMINDER_FALLBACK_TEXT,
+  FEE_REMINDER_TEMPLATE,
+  MAX_FEE_REMINDERS,
+  buildPaymentDetails,
+  nextClassDate,
+  type TeacherPaymentProfile,
+} from '@/lib/teacherFeeReminder';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
-const FEE_REMINDER_TEMPLATE = 'chq_fee_reminder';
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const FIRST_REMINDER_AGE_MS = ONE_DAY_MS; // class ended > 24h ago
 const SECOND_REMINDER_GAP_MS = 3 * ONE_DAY_MS; // ~3 days after the first
-const MAX_REMINDERS = 2;
-const CAIRO_TZ = 'Africa/Cairo';
-
-const PAYMENT_METHODS = ['cash', 'instapay', 'vodafone_cash', 'other'] as const;
-type PaymentMethod = (typeof PAYMENT_METHODS)[number];
-
-type TeacherPaymentProfile = {
-  instapay_address: string | null;
-  wallet_phone: string | null;
-  payment_phone: string | null;
-  accepted_methods: string[] | null;
-  default_payment_method: string | null;
-};
-
-/** Arabic label for a payment method (matches the teacher settings copy). */
-const METHOD_LABEL_AR: Record<PaymentMethod, string> = {
-  cash: 'كاش',
-  instapay: 'إنستا باي',
-  vodafone_cash: 'فودافون كاش',
-  other: 'غير كده',
-};
-
-function methodDetail(profile: TeacherPaymentProfile, method: PaymentMethod): string | null {
-  switch (method) {
-    case 'instapay':
-      return profile.instapay_address
-        ? `${METHOD_LABEL_AR.instapay}: ${profile.instapay_address}`
-        : METHOD_LABEL_AR.instapay;
-    case 'vodafone_cash':
-      return profile.wallet_phone
-        ? `${METHOD_LABEL_AR.vodafone_cash}: ${profile.wallet_phone}`
-        : METHOD_LABEL_AR.vodafone_cash;
-    case 'cash':
-      // Cash needs no handle; the payment_phone (if any) is a coordination number.
-      return profile.payment_phone
-        ? `${METHOD_LABEL_AR.cash} (${profile.payment_phone})`
-        : METHOD_LABEL_AR.cash;
-    case 'other':
-      return profile.payment_phone
-        ? `${METHOD_LABEL_AR.other}: ${profile.payment_phone}`
-        : null;
-    default:
-      return null;
-  }
-}
-
-/**
- * Builds the payment-details line for the reminder: the teacher's DEFAULT method
- * first, then the other accepted methods. Returns null when the teacher has
- * entered no usable payment details at all (no handles AND no accepted methods),
- * which signals the fallback path.
- */
-function buildPaymentDetails(profile: TeacherPaymentProfile): string | null {
-  const accepted = (profile.accepted_methods ?? []).filter(
-    (m): m is PaymentMethod => (PAYMENT_METHODS as readonly string[]).includes(m),
-  );
-  const hasAnyHandle = Boolean(
-    profile.instapay_address || profile.wallet_phone || profile.payment_phone,
-  );
-  if (accepted.length === 0 && !hasAnyHandle) {
-    return null;
-  }
-
-  const ordered: PaymentMethod[] = [];
-  const def = profile.default_payment_method;
-  if (def && (PAYMENT_METHODS as readonly string[]).includes(def) && accepted.includes(def as PaymentMethod)) {
-    ordered.push(def as PaymentMethod);
-  }
-  for (const m of accepted) {
-    if (!ordered.includes(m)) ordered.push(m);
-  }
-
-  // No accepted methods but a handle exists: infer from the handle.
-  if (ordered.length === 0) {
-    if (profile.instapay_address) ordered.push('instapay');
-    else if (profile.wallet_phone) ordered.push('vodafone_cash');
-    else if (profile.payment_phone) ordered.push('other');
-  }
-
-  const lines = ordered
-    .map((m) => methodDetail(profile, m))
-    .filter((line): line is string => Boolean(line));
-
-  if (lines.length === 0) return null;
-  return lines.join('\n');
-}
-
-/**
- * Best-effort next class date for a group from group_schedule (recurring weekly
- * slots, day_of_week 0=Sun..6=Sat). Returns a Cairo-formatted Arabic date string
- * for the soonest upcoming slot, or '' when no schedule exists.
- */
-function nextClassDate(
-  scheduleRows: { day_of_week: number }[] | null | undefined,
-): string {
-  if (!scheduleRows || scheduleRows.length === 0) return '';
-
-  // Today's day-of-week in Cairo (0=Sun..6=Sat) via en-US weekday.
-  const weekdayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const todayName = new Intl.DateTimeFormat('en-US', {
-    timeZone: CAIRO_TZ,
-    weekday: 'long',
-  })
-    .format(new Date())
-    .toLowerCase();
-  const todayDow = weekdayNames.indexOf(todayName);
-  if (todayDow < 0) return '';
-
-  let minAhead = 8;
-  for (const row of scheduleRows) {
-    const dow = Number(row.day_of_week);
-    if (!Number.isInteger(dow) || dow < 0 || dow > 6) continue;
-    // Days until the next occurrence (>=1, so we always point to a future class).
-    let ahead = dow - todayDow;
-    if (ahead <= 0) ahead += 7;
-    if (ahead < minAhead) minAhead = ahead;
-  }
-  if (minAhead > 7) return '';
-
-  const target = new Date(Date.now() + minAhead * ONE_DAY_MS);
-  return formatDate(target, 'ar', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    timeZone: CAIRO_TZ,
-  });
-}
+// Template name, reminder cap and the message-construction helpers
+// (buildPaymentDetails / nextClassDate / the fallback ask) live in
+// src/lib/teacherFeeReminder.ts, shared with the manual Send-reminder endpoint
+// so the two paths always build the identical message and enforce one cap.
+const MAX_REMINDERS = MAX_FEE_REMINDERS;
 
 export async function POST(request: Request) {
   const cronStart = Date.now();
@@ -298,7 +183,7 @@ export async function POST(request: Request) {
 
       const feeStr = formatCurrency(Number(charge.amount_billed ?? 0), 'ar');
       // Fallback copy: no fabricated details, no link — just a plain ask.
-      const detailsText = hasDetails ? (paymentDetails as string) : 'برجاء إرسال رسوم الحصة.';
+      const detailsText = hasDetails ? (paymentDetails as string) : FEE_REMINDER_FALLBACK_TEXT;
 
       const centerId = (charge.center_id as string | null) ?? '';
 

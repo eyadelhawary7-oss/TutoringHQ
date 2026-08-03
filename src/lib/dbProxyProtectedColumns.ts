@@ -156,6 +156,16 @@ export const CENTERS_PROTECTED_COLUMNS: ReadonlySet<string> = new Set([
   'upgrade_count_this_period',
   // Test / internal flags that must not be tenant-writable
   'is_test',
+  // PAYOUT DESTINATION (PAYOUT-SYSTEM-SPEC.md §2.3, attack A2).
+  // This is where money LEAVES to. Anyone holding a center session could
+  // previously rewrite it through the /api/db proxy, because `centers` is a
+  // direct TABLE_SCOPE entry and this column was not fenced. Blast radius is
+  // limited today only because /api/billing/withdrawal snapshots the number
+  // onto the request row at request time — but any future design that reads
+  // the destination at RELEASE time instead reintroduces it in full.
+  // Changing a payout destination must go through a reviewed route, never the
+  // generic proxy.
+  'instapay_number',
 ]);
 
 /**

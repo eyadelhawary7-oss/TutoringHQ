@@ -8758,7 +8758,6 @@
     "startFreeTrialHint": "You do not have to wait for the call"
   },
   "teacherPortal": {
-    "headerTitle": "Teacher portal",
     "settings": "Settings",
     "logout": "Log out",
     "nav": {
@@ -8777,7 +8776,9 @@
       "collapseSidebar": "Collapse sidebar",
       "expandSidebar": "Expand sidebar",
       "switchToEnglish": "English",
-      "switchToArabic": "عربي"
+      "switchToArabic": "عربي",
+      "more": "More",
+      "back": "Back"
     },
     "schedule": {
       "pageTitle": "Schedule",
@@ -8942,19 +8943,11 @@
       "attendees": "{count} present"
     },
     "studentsList": {
-      "searchPlaceholder": "Search by name or phone",
+      "searchPlaceholder": "Search students",
       "groupFilterLabel": "Filter by group",
       "allGroups": "All groups",
       "noMatches": "No students match your search.",
-      "detailTitle": "Student details",
-      "close": "Close",
-      "phoneLabel": "Phone",
-      "groupsLabel": "Groups",
       "outstandingLabel": "Outstanding balance",
-      "lastPaymentLabel": "Last payment",
-      "noPayments": "No payments yet",
-      "paymentHistory": "Payment history",
-      "noTransactions": "No transactions yet.",
       "overCapWarning": "You have more than 60 students on the Standard plan. Remove students down to 60 to keep working.",
       "studentCount": "{count} students",
       "contactHeading": "Contact",
@@ -8964,10 +8957,28 @@
       "messageAction": "Message on WhatsApp",
       "pendingClassesCount": "{count} classes not yet collected",
       "attendanceLabel": "Attendance",
-      "attendanceFraction": "{present} of {total} present",
+      "attendanceFraction": "Present {present} of {total}",
       "pendingClassesCountOne": "{count} class not yet collected",
       "paidVia": "Paid · {method}",
-      "notCollectedYet": "Not collected yet"
+      "notCollectedYet": "Not collected yet",
+      "studentTitle": "Student",
+      "balanceHeading": "Balance",
+      "recentClasses": "Recent classes",
+      "statusOutstanding": "Outstanding",
+      "callShort": "Call",
+      "messageShort": "Message",
+      "markCollected": "Mark collected",
+      "sendReminder": "Send reminder",
+      "settled": "All classes collected",
+      "noFinishedClasses": "No finished classes yet",
+      "reminderUnavailable": "Reminders are unavailable right now.",
+      "reminderDisabled": "WhatsApp reminders are not switched on yet.",
+      "reminderTemplatePending": "The reminder message is still awaiting WhatsApp approval.",
+      "reminderNoPhone": "No payer number saved for this charge.",
+      "reminderCapReached": "Two reminders have already been sent for this charge.",
+      "reminderSent": "Reminder sent.",
+      "markCollectedError": "Could not mark as collected. Try again.",
+      "markCollectedPartial": "{failed} of {total} charges could not be collected."
     },
     "lockedIncome": {
       "heading": "Your income dashboard",
