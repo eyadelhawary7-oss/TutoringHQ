@@ -2,9 +2,15 @@
 
 **Produced 2 August 2026. Nothing here is built. No code was written.**
 
-This is a document to **review and answer against**, not to build from. Every open decision is marked
-**`→ DECISION`** and phrased so it can be answered by picking an option. Where I have a recommendation I
-say so and argue it; where the answer is genuinely yours, I do not pre-empt it.
+**✅ All nine decisions answered by Eyad, 3 August 2026** — each is marked `✅ DECISION n — ANSWERED` at the
+point it was raised, and summarised in §11. Eight were accepted as recommended; **Decision 8 was decided
+against the recommendation** (single CEO approver rather than maker–checker) and its consequences are
+worked through in §7. The original questions and reasoning are left in place unedited as the record of
+what was weighed.
+
+**This is still not a document to build from directly.** Two things remain outstanding and both gate
+implementation: the Paymob commercial conversation, and the seven questions in §8 that need written
+answers from Paymob. One decision also opened a new question — see §11.
 
 Sources: the live production catalog (Supabase `lczmjpnbuhnsislcvzar`), the live codebase, and Paymob's
 own documentation across three estates (`payouts.paymobsolutions.com/docs`, `developers.paymob.com`, the
@@ -65,12 +71,12 @@ Current live terms:
 | cadence | on request | quarterly window |
 | approval | **none exists — see §2** | `PATCH /api/admin/withdrawals/[id]` |
 
-**→ DECISION 1.** Do (a) and (b) become one payout pipeline with one ledger, one approval queue and one
+**✅ DECISION 1 — ANSWERED: unify, on owner-only + step-up auth.** Do (a) and (b) become one payout pipeline with one ledger, one approval queue and one
 Paymob integration, or stay two? **Recommendation: unify.** They are the same operation — move EGP to a
 center's InstaPay handle — differing only in what accrued the balance. Two pipelines means two of every
 control in §6, and the controls are the expensive part.
 
-## 2. Blocking defects that must be fixed before anything ships
+## 2. Seven blocking defects that must be fixed before anything ships
 
 These are **live today**, found by direct code and catalog reads. Each is a prerequisite, not a nice-to-have.
 
@@ -130,7 +136,7 @@ and picking the weaker one would hand payout initiation to staff accounts at cen
 owner-only, with no announcement. *Recommendation: unify on owner-only plus step-up auth, and treat
 `can_request_referral_payouts` as request-only — never release.*
 
-**→ DECISION 2.** Confirm all six are in scope as prerequisites. If any is deferred, say which — each one
+**✅ DECISION 2 — ANSWERED: yes, all seven.** Confirm all seven are in scope as prerequisites. If any is deferred, say which — each one
 independently can pay real money twice or strand it.
 
 ## 3. The ledger (spec item 1)
@@ -205,12 +211,12 @@ payout_provider_events -- raw Paymob callbacks and inquiry results, append-only
    Manual settlements require a NOT NULL bank reference. Without this, every hand-sent InstaPay silently
    under-reports the Paymob float — see attack **A6**.
 
-**→ DECISION 3.** Append-only double-entry, or extend the existing mutable-column pattern? The alternative
+**✅ DECISION 3 — ANSWERED: append-only double-entry, this subsystem only.** Append-only double-entry, or extend the existing mutable-column pattern? The alternative
 is genuinely cheaper to build and consistent with the rest of the codebase; it is also how the current
 withdrawal bug (§2.2) became possible. I recommend double-entry **for this subsystem only** — not a
 migration of the whole product.
 
-**→ DECISION 4.** During transition, `centers.credit_balance` and the new ledger would both be authoritative
+**✅ DECISION 4 — ANSWERED: option (a), migrate the credit-spend path in the same PR.** During transition, `centers.credit_balance` and the new ledger would both be authoritative
 over the same credits. `billingEngine.ts` still calls `spend_credits_atomic` (:244) and
 `earn_credits_atomic` (:261), neither of which can see the ledger. **This dual-authority window can pay the
 same credits out twice** — see attack **A5**. Pick one: (a) migrate the credit-spend path in the same PR,
@@ -253,7 +259,7 @@ the ledger entry. If a payout is returned by the bank, the restoring `+` entry m
 `cleared_at` of the transaction it reverses — otherwise the center's own returned money is invisible for
 another 7 days and can miss the quarterly window entirely. See attack **A8**.
 
-**→ DECISION 5.** Confirm 0 days for credits and 7 for referral, or set your own numbers. Note that
+**✅ DECISION 5 — ANSWERED: 0 days credits / 7 days referral, config-driven.** Confirm 0 days for credits and 7 for referral, or set your own numbers. Note that
 lowering the number later releases every held entry for every center **simultaneously** — a step-change in
 payable liability against a fixed Paymob float, which is its own incident.
 
@@ -287,7 +293,7 @@ pretend otherwise.
 a support crisis starts. Every clawback posting carries a `reason_key` rendered bilingually, with the
 originating event linked.
 
-**→ DECISION 6.** Confirm the ladder (net → block → invoice → write off), and set the threshold above which
+**✅ DECISION 6 — ANSWERED: ladder confirmed (net → block → invoice → write off); invoice threshold still to be set.** Confirm the ladder, and set the threshold above which
 a clawback goes to invoice rather than sitting as a receivable.
 
 ## 6. When a payout fails partway through Paymob's side (spec item 5)
@@ -338,23 +344,239 @@ dependency) and must pack pages to the limit.
 
 ## 7. Approval (spec item 6)
 
-**Recommendation: maker–checker for every payout above a threshold; nothing fully automatic in v1.**
+> ### ✅ DECIDED — 3 August 2026, Eyad · **REVISED same day. This supersedes the earlier "no delegation" answer.**
+>
+> **Delegated approval with a cap:**
+> - **CEO can approve any amount, always final, no second approver ever.**
+> - **CEO can optionally grant a manager permission to approve payouts under 10,000 EGP.** Off by
+>   default; the CEO enables it explicitly per person.
+> - **A manager cannot approve at or above the cap. No override, no exception.**
+> - **The permission is CEO-grantable and CEO-revocable only.**
+> - **Every payout is logged immutably** regardless of amount or approver: who approved, exact amount,
+>   destination, timestamp, CEO-or-delegated, and outcome. Append-only, never editable, never deletable,
+>   including by the CEO.
+> - **The cap is config-driven and CEO-changeable.**
+>
+> **What this supersedes.** The earlier answer — *"no maker–checker, no threshold, no second approver at
+> any amount"* — is withdrawn in part. *"No second approver ever"* survives intact: approval is still
+> single-signature, and nothing here reintroduces maker–checker. What changes is that approval authority
+> is no longer CEO-exclusive; it is CEO-plus-optionally-delegated-under-a-cap.
 
-Two arguments carry this. First, **Paymob's own Payouts dashboard implements maker–checker with a PIN** —
+### 7.1 — Where the approve permission must live (answering the question raised with the revision)
+
+> **✅ DECIDED — 3 August, Eyad.** A **separate permission: `can_approve_payouts`**, new and distinct from
+> `can_request_referral_payouts`. Decision 1 keeps request and release apart and this must not collapse
+> them.
+>
+> **Reading this against §7.1's invariant — they are compatible, and the implementer must not resolve the
+> ambiguity the wrong way.** `can_*` is the naming convention of `public.users` *columns*, but nothing
+> requires the permission to be one. The compatible shape is a **permission key** — `permission =
+> 'can_approve_payouts'` — on a row in the platform-side `permissions` table, which is already FK'd to
+> `admin_users`, already CEO/admin-team-gated, and already soft-revokes via `enabled = false` while
+> preserving `created_at`. That satisfies the decided name *and* the disjoint-domain invariant.
+>
+> **⚠ Do not add a `can_approve_payouts` column to `public.users`.** If it lands there, the self-grant
+> hole below applies in full: the center owner — the payee — grants it to themselves in one request.
+> The name was decided; the table was not, and the two are not the same question.
+
+**It must be a separate permission, and — more strongly — it must not live on `public.users` at all.**
+
+Decision 1 kept *request* and *release* apart. Reusing `can_request_referral_payouts` for approval would
+collapse them and reintroduce self-approval. But verification found a sharper reason, and it is decisive:
+
+**`PATCH /api/settings/staff/[userId]/permissions` is gated only on `auth.role === 'owner'` and has no
+self-target check.** `auth.userId` appears twice in that file, both times inside the `audit_log` insert,
+never as a guard. It writes all eight `CenterPermission` columns — including
+`can_request_referral_payouts`. So **any `can_approve_*` column added to `public.users` is self-grantable
+by the center owner — who is the payee.** The payee would be granting themselves release authority over
+their own money, in one request, with the CEO never in the loop. Unbounded in sub-cap increments.
+
+**Therefore, as a spec invariant:** the **approver identity domain (`admin_users`) and the payee identity
+domain (`public.users`) are disjoint by construction.** No `public.users` row may ever hold payout
+approval authority. This is the natural extension of Decision 1 rather than a departure from it —
+*request authority is center-side, release authority is platform-side, and they live in different tables
+so that no single grant path can produce both.*
+
+Two further reasons the boolean-permission shape is wrong here, both verified:
+
+- **`hasPermission` cannot express a cap.** Its body is `if (isSuperAdmin) return true; if (role ===
+  'owner') return true; return permissions[p] === true`. No amount parameter, no deny path. Reused as-is,
+  the cap would be absent for exactly the two actors who most need bounding and enforced for nobody.
+- **A new `can_*` column inherits zero protection.** The live `chq_prevent_user_escalation` trigger guards
+  six columns (2 of the 17 `can_*` columns), and its whole body is gated on `IF NEW.id = auth.uid()` —
+  which under a service-role connection evaluates to **NULL, not false**, so the `IF` is skipped and the
+  trigger fires on **zero real grant paths**. `USERS_PROTECTED_COLUMNS` is a hardcoded 10-entry deny-list
+  in a third file. The only control actually holding is the table-level `UPDATE` revoke from
+  `authenticated` — which nobody designed as a payout defence.
+
+**Recommended shape:** approval authority is a row in the platform-side `permissions` table (already
+FK'd to `admin_users`, already CEO/admin-team-gated, already soft-revoked via `enabled=false` preserving
+`created_at`), and the decision itself is made inside a `SECURITY DEFINER` RPC that is the **sole writer
+of approval state** — reading the amount from the locked payout row rather than from a parameter,
+resolving the actor's tier server-side, reading the cap in-transaction, failing closed, and writing the
+log in the same transaction. `REVOKE ALL FROM anon, authenticated`; grant `service_role` only.
+
+### 7.2 — What the cap must actually say, because as written it bounds one row and not one manager
+
+> **✅ DECIDED — 3 August, Eyad.** Manager approval is capped at **10,000 EGP per payout**. A payout above
+> the cap **goes to the CEO** — it is not split. **The check runs on the requested amount, not the released
+> amount.** No splitting into smaller payouts to evade the cap.
+>
+> **This closes the worst of the ambiguities below and leaves one open.**
+>
+> **Closed — "the amount" is now defined.** Checking the *requested* figure resolves the four-to-five-way
+> ambiguity in the second bullet below, and resolves it the **safe** way. The permissive reading was
+> `net_minor` ("what the center receives"), which would let a gross of 10,546.31 through a 10,000 cap.
+> Requested amount is the gross the center asked for, so nothing above 10,000 leaves on a delegated
+> approval. Record it explicitly as: **the cap is compared against the requested gross, before any fee,
+> VAT or credit-conversion arithmetic**, and store the compared figure in the log as
+> `amount_compared_minor`. The piastres/EGP unit hazard still applies and the config key must name its
+> unit.
+>
+> **Still open — the stated intent needs a mechanism the stated rule does not supply.** "No splitting into
+> smaller payouts to evade the cap" is the requirement; a per-payout check on the requested amount does
+> not by itself deliver it. A per-payout check stops one 15,000 request being *entered* as 2 × 7,500. It
+> does not stop a center owed 30,000 from requesting 9,999 three times in sequence — each request is
+> genuinely under the cap, each approval is individually compliant, and `one_open_payout_per_center` only
+> serialises them, it does not limit how many may occur. **Something must count across payouts for the
+> intent to hold.** The minimum that does it: a rolling per-approver window (daily and monthly) plus an
+> anti-splitting rule that hard-blocks N approvals to the same center inside a window. **→ OPEN: which
+> window and which limits?** Flagged rather than chosen — the intent is unambiguous, the numbers are
+> yours.
+>
+> The `settled_pending_bank` and resend gaps below are **not** closed by this decision and remain
+> live: both let money move without a fresh capped approval.
+
+**The stated rule caps a single payout. It does not cap the approver.** Verified evasions, each requiring
+no bug and no rule violation:
+
+- **Splitting.** Center owed 30,000. Four sub-cap approvals — 9,999 · 9,999 · 9,999 · 3 — and it is out.
+  Every one individually compliant; the immutable log faithfully records four lawful approvals. Across
+  ten centers in one sitting: **99,990 EGP in an afternoon**, since `one_open_payout_per_center` is
+  per-center.
+- **`settled_pending_bank` is missing from the open-payout index.** That state means *the bank has not
+  moved this money yet and we are still asking* — yet the concurrency guard treats it as closed, so the
+  slot frees while funds are in flight. Four Bank Card approvals in fifteen minutes = 39,996 EGP. If the
+  §4 hold keys off the same set, it also **releases the hold**, so `available_now` returns to full and
+  the same obligation can be requested again — a double-pay, not merely a cap evasion.
+- **A resend is not an approval, so it is not capped.** §6 permits resend of an `indeterminate` payout.
+  One 9,999 approval plus one resend = 19,998 out, with the cap never consulted on the second.
+- **"The amount" is four to five different numbers** — `gross_minor`, `net_minor`, `fee_minor`,
+  `vat_minor`, and on the credit rail `credits_deducted` vs `cash_amount`, which differ by exactly 2×.
+  The most natural reading, *"the amount the center receives"* (`net_minor`), is the **permissive** one:
+  capping net at 9,999.99 permits a gross of 10,546.31 on the referral fee formula. **More than 10,000
+  EGP leaves the account on one compliant manager approval** — the sentence is false as written.
+- **Piastres vs EGP.** The ledger stores `amount_minor` in piastres; every legacy table and Paymob itself
+  speak EGP decimals. A cap written as `10000` compared on the wrong side of the conversion is either
+  100 EGP or 1,000,000 EGP. Pin the unit in the config key name.
+
+**Therefore the cap must be specified as:**
+1. **A rolling aggregate per approver**, not per payout — daily and monthly, evaluated in-transaction over
+   the immutable log, scoped to *that approver* (a global cap cannot distinguish CEO from delegate).
+2. **Plus a per-center-per-window cap**, and an explicit anti-splitting rule: N approvals to the same
+   center inside a window hard-blocks.
+3. **Compared against `GREATEST(gross_minor, net_minor + fee_minor + vat_minor)`** — the larger of the
+   liability extinguished and the float debited — with the compared figure stored in the log as
+   `amount_compared_minor` beside its components, so the record shows what the check actually looked at.
+4. **Terminal states enumerated, not open ones.** Define "a payout blocks until it is *terminal*" with
+   terminal = `{settled, failed, returned}`, so a state added later defaults to blocking.
+5. **Resends routed through the identical RPC** and subject to the same caps — and a **delegated approver
+   may never authorize a resend**, at any amount. That decision requires reading ambiguous provider
+   evidence against an irrevocable rail with no idempotency key. CEO-only.
+
+### 7.3 — Three things the revision assumes that are not true today
+
+1. **"CEO-grantable and CEO-revocable only" is not enforceable as things stand** — see 7.1. It becomes
+   enforceable only once approval authority leaves `public.users`.
+2. **Revocation does not reach an already-approved payout.** `approved` and `submitting` are distinct
+   states with a gap the spec says may be days wide, and nothing re-checks authority at release. A
+   manager approves eight payouts across eight centers at 9,500 each; the CEO revokes two hours later
+   believing the exposure is closed; the release job pays all **76,000 EGP** two days on. *Fix:* re-evaluate
+   authority and cap at **every transition that can still move money**, and make revocation a transaction
+   that sweeps that actor's approved-but-unsubmitted payouts back to `requested` and logs the sweep.
+3. **The cap is changeable through a route with no CSRF, no audit row, and no `updated_by`.**
+   `PATCH /api/admin/platform-config` contains zero `validateCSRFRequest` calls and writes no audit
+   record; `platform_config.updated_by` exists but is written by exactly one other route. So *"the cap
+   was 10,000 at the time of approval"* is **unprovable after the fact**. Raise it to clear one large
+   payout, forget to lower it, and six 95,000 approvals are all lawful and unattributable. *Fix:* cap
+   changes are themselves append-only log events, and the **cap in force is snapshotted onto each
+   approval row** rather than read back later.
+
+### 7.4 — On "never deletable, including by the CEO": this cannot be delivered as stated
+
+Reported plainly rather than recorded as met.
+
+The CEO holds the Supabase dashboard, and therefore the `postgres` role. **Nothing that runs inside
+Postgres can stop the owner of Postgres.** Verified: guard triggers work against `service_role` but are
+defeated by `TRUNCATE` (row triggers do not fire, and TRUNCATE is currently granted and unblocked), by
+dropping the trigger, or by re-granting privileges. **RLS is irrelevant here** — `service_role` and
+`postgres` both carry `rolbypassrls = true`, and `FORCE ROW LEVEL SECURITY` is off. Event triggers that
+could block a `DROP TRIGGER` require superuser, which Supabase does not grant.
+
+Three further facts about the log path as it exists today, all worse than the storage question:
+
+- **Audit writes fail silently and invisibly.** The dominant pattern across 33 call sites is
+  `try { await supabaseAdmin.from('audit_log').insert(...) } catch { /* ignore */ }` — and supabase-js
+  **returns** `{error}` rather than throwing, so the `catch` never fires and the failure is dropped
+  without even being logged. An approval could pay with no log row and no alert.
+- **`created_at` is caller-supplied** on at least one live writer, with no `BEFORE INSERT` trigger, so
+  rows can be backdated today.
+- **`auditLog()` is client-side and takes `action`/`details` from the caller** — the browser decides what
+  gets recorded. Unusable as approval evidence.
+
+**What is achievable is tamper-evident, not tamper-proof:** a hash chain (pgcrypto is installed) makes
+silent *edits* detectable, but proves nothing while its head lives in the same database it protects. The
+property only becomes real when the chain head is published on a cadence to a sink in a **different trust
+domain whose credentials the CEO does not hold**. That is an organisational decision, not an engineering
+one, and it is the only thing that makes the word "never" true.
+
+**→ OPEN: does the chain head go to an external sink, and who holds that credential?** If the answer is
+"nobody but the CEO", then the spec should say *tamper-evident within the platform* and stop claiming
+more.
+
+**Non-negotiable regardless:** the payout log write must be **in the same transaction as the payout state
+change**, so that if the log fails, the payout fails. It must be server-side only, deriving amount,
+approver and destination from server state, never from the request body.
+
+### 7.5 — Consequences that survive the revision
+
+1. **The automated controls are still the only defence.** Single-signature approval means nothing sits
+   between a wrong number and money leaving except the caps and anomaly checks below. **Every control in
+   the list below is required, not recommended**, and the anomaly check must *block* with an audited
+   override rather than "force manual review" — manual review is already the only mode.
+2. **Delegation narrows the CEO-availability gap but does not close it.** Payouts at or above the cap
+   still stop dead if the CEO is unavailable. **→ OPEN: who acts if the CEO is unavailable for a full
+   quarterly window?** "Nobody, payouts wait" remains a legitimate answer. Note the ungoverned informal
+   answer that exists today: appending a phone to `SUPER_ADMIN_PHONES` mints a CEO with **no database
+   row at all**, and the supposedly independent second check reads the same env var. That path is
+   forensically anonymous — the log would record an approver uuid matching no row in any table — and
+   `SUPER_ADMIN_PHONES` is not in `scripts/check-env.ts`. **Payout approval must require a real
+   `admin_users.role='super_admin'` row and must not accept env-phone alone**, and the log must record
+   the authority source (`db_row` | `env_phone`) as a NOT NULL column.
+3. **Decisions 7 and 8 govern different axes.** D7's "hybrid later" is *automatic vs. manual*; D8 is
+   *who may approve, and up to what*. A future auto-release threshold does not reopen D8.
+
+**The original recommendation, superseded, retained as the record:**
+
+~~Recommendation: maker–checker for every payout above a threshold; nothing fully automatic in v1.~~
+
+Two arguments carried it. First, **Paymob's own Payouts dashboard implements maker–checker with a PIN** —
 the provider treating this operation as warranting two humans is a strong signal. Second, the failure modes
 in §6 are all *silent*: an over-payment does not throw, it succeeds twice.
 
 | option | when it fits | cost |
 |---|---|---|
 | Fully automatic on a schedule | high volume, low value, mature reconciliation | a bug pays out 100× with nobody in the loop |
-| **Auto below threshold, manual above** | **recommended after v1 proves stable** | needs a trustworthy threshold |
-| Always manual admin approval | **recommended for v1** | an unstaffed queue silently stops all payouts |
+| Auto below threshold, manual above | possible after v1 proves stable (per D7) | needs a trustworthy threshold |
+| Always manual, single approver (CEO only) | superseded by the revision | an unstaffed queue silently stops all payouts; no second pair of eyes |
+| **Always manual, CEO + capped delegate** | **← CHOSEN for v1 (revised)** | narrows the availability gap, but the cap must bound the *approver* and not the *payout* — see §7.2 |
 | Maker–checker (two distinct admins) | highest value | slowest; needs two available admins |
 
-**Controls that apply regardless of which is chosen:**
+**Controls — all now required, not optional (see consequence 1):**
 
 - Per-payout maximum, per-run maximum, and a **daily aggregate cap**.
-- An anomaly check: this payout is N× the center's trailing average → force manual review.
+- An anomaly check: this payout is N× the center's trailing average → **hard block, with an explicit
+  audited override.** ("Force manual review" is meaningless now that every payout is manually reviewed.)
 - A **kill switch** that halts all releases, reachable without a deploy.
 - **Step-up auth on approval**, reusing `verifyPasswordForSensitiveAction` — the mechanism already exists
   and is already used for permission edits. Do not invent a new one.
@@ -364,10 +586,17 @@ in §6 are all *silent*: an over-payment does not throw, it succeeds twice.
   how payouts silently stop for a quarter — and §2.1 shows this project has already shipped exactly that
   failure once.
 
-**→ DECISION 7.** Pick the approval model for v1, and name the threshold if you pick a hybrid.
+**✅ DECISION 7 — ANSWERED.** Always-manual for v1; hybrid considered later.
 
-**→ DECISION 8.** Who is the approver — super-admin only (`isSuperAdminPhone`), or a new named permission?
-And is maker–checker two *different* humans, enforced?
+**✅ DECISION 8 — ANSWERED, then REVISED 3 August (see the block at the top of §7).** Final form:
+**delegated approval with a cap** — CEO approves any amount and is always final with no second approver
+ever; the CEO may optionally grant a named manager the right to approve below a config-driven 10,000 EGP
+cap; that permission is CEO-grantable and CEO-revocable only; every payout is logged immutably.
+*Implementation notes, all load-bearing:* the approver gate must be a real `admin_users.role='super_admin'`
+row and **must not accept `SUPER_ADMIN_PHONES` env-phone alone** (§7.5); approval authority must live
+outside `public.users` entirely (§7.1); the cap must be a rolling per-approver aggregate, not a
+per-payout ceiling (§7.2); and step-up auth via `verifyPasswordForSensitiveAction` stays — single-signature
+approval makes confirming the human at the keyboard more important, not less.
 
 ## 8. What Paymob integration actually requires (spec item 3)
 
@@ -552,19 +781,62 @@ settled/fees/vat/returned totals, and `unexplained_delta_minor`. **A period cann
 delta is non-zero**; closing with variance requires a named human and a written reason. This is the only
 control that forces someone to look on a schedule rather than in response to an alert nobody wired up.
 
-## 11. Decisions summary
+## 11. Decisions — all nine answered
 
-| # | Decision | My recommendation |
+**✅ ANSWERED IN FULL, 3 August 2026, by Eyad.** Eight decisions were accepted as recommended; **Decision 8
+was decided against the recommendation** and is marked as such. This section is now a record of what was
+decided, not a set of open questions.
+
+| # | Decision | Answer |
 |---|---|---|
-| 1 | Unify referral + credit payouts, or keep separate? | **Unify** |
-| 2 | Are all six §2 defects in scope as prerequisites? | **Yes — all six** |
-| 3 | Append-only double-entry ledger, or extend the mutable-column pattern? | **Double-entry, this subsystem only** |
-| 4 | How to eliminate the credit dual-authority window? | **(a) migrate the spend path in the same PR** |
-| 5 | Clearing days | **0 credits / 7 referral**, config-driven |
-| 6 | Clawback ladder and invoice threshold | **net → block → invoice → write off** |
-| 7 | Approval model for v1 | **always-manual v1**, hybrid later |
-| 8 | Who approves, and is maker–checker enforced? | **super-admin + step-up auth**; maker–checker above a threshold |
-| 9 | Does System 1 ship before V3 at all? | **Yes — that is the point of the split** |
+| 1 | Unify referral + credit payouts — and, per §2.7, which authorization gate survives the merge? | ✅ **Unify, on owner-only + step-up auth.** `can_request_referral_payouts` is *request*-only, never *release* |
+| 2 | Are all seven §2 defects in scope as prerequisites? | ✅ **Yes — all seven** |
+| 3 | Append-only double-entry ledger, or extend the mutable-column pattern? | ✅ **Double-entry, this subsystem only** |
+| 4 | How to eliminate the credit dual-authority window? | ✅ **(a) migrate the spend path in the same PR** |
+| 5 | Clearing days | ✅ **0 credits / 7 referral**, config-driven |
+| 6 | Clawback ladder and invoice threshold | ✅ **net → block → invoice → write off** |
+| 7 | Approval model for v1 | ✅ **Always-manual for v1**, hybrid considered later |
+| 8 | Who approves, and is maker–checker enforced? | ⚠️ **DECIDED AGAINST RECOMMENDATION, THEN REVISED. Final: delegated approval with a cap** — CEO approves any amount, always final, no second approver ever; CEO may optionally grant a named manager approval rights **below a config-driven 10,000 EGP cap**; CEO-grantable and CEO-revocable only; every payout logged immutably. Supersedes the earlier "no delegation at any amount" answer. See §7 — the model needs four changes before it holds, and one requirement (§7.4) cannot be delivered as stated |
+| 9 | Does System 1 ship before V3 at all? | ✅ **Yes — that is the point of the split** |
 
-**Not decisions — facts to act on:** start the Paymob commercial conversation now (it gates everything and
-runs in parallel), and get written answers to the seven questions in §8.
+**What the answers mean together.** System 1 is now fully specified: one unified payout pipeline on an
+append-only double-entry ledger, owner-only to request, **CEO to approve at any amount plus an optional
+CEO-granted manager delegation below a config-driven cap**, always manual in v1, credits migrated off the
+old rail in the same PR, 0/7-day clearing, and a net → block → invoice → write off clawback ladder. All
+seven §2 defects are prerequisites. It ships without waiting for V3.
+
+**The revision to Decision 8 does not merely relax the model — it introduces four things that must be
+specified before it is safe.** All four are worked through in §7 and all four were verified against the
+live system, not reasoned about abstractly:
+
+1. **Approval authority must live outside `public.users`.** ✅ *Name decided: `can_approve_payouts`,
+   distinct from `can_request_referral_payouts`.* The **table is still the open half** — the existing
+   staff-permissions route is owner-gated with **no self-target check**, so a `can_approve_payouts`
+   *column on `users`* would be self-grantable by the center owner, the payee granting themselves release
+   authority. Implement it as a permission **key** on the `admin_users`-side `permissions` table, which
+   satisfies both the decided name and the disjoint-domain invariant. §7.1.
+2. **The cap bounds one row, not one manager.** ✅ *Decided: 10,000 EGP per payout, checked on the
+   **requested** amount, above-cap goes to the CEO.* Checking the requested gross **closes** the
+   four-to-five-way "which amount" ambiguity, and closes it safely — the permissive `net_minor` reading
+   would have let a gross of 10,546.31 through. **Still open:** the stated intent, *"no splitting"*,
+   needs a mechanism the per-payout rule does not supply — a center owed 30,000 can request 9,999 three
+   times in sequence, each individually compliant. A rolling per-approver window plus an anti-splitting
+   rule is the minimum that delivers the intent. §7.2.
+3. **Revocation does not reach an already-approved payout**, and the cap in force at approval time is
+   currently unprovable after the fact. §7.3.
+4. **"Never deletable, including by the CEO" cannot be delivered as stated** — the CEO holds `postgres`,
+   and nothing inside Postgres binds the owner of Postgres. Tamper-*evident* is achievable; tamper-*proof*
+   is not, absent an external sink whose credentials the CEO does not hold. §7.4.
+
+**Two questions the answers opened rather than closed.**
+- **→ OPEN: who acts if the CEO is unavailable for a full quarterly window?** Delegation narrows this but
+  does not close it — anything at or above the cap still stops. "Nobody, payouts wait" is legitimate. Note
+  the ungoverned answer that exists today: editing `SUPER_ADMIN_PHONES` mints a CEO with no database row,
+  forensically anonymous. §7.5.
+- **→ OPEN: does the immutable log's hash-chain head go to an external sink, and who holds that
+  credential?** If the answer is "nobody but the CEO", the spec should claim tamper-evidence and stop
+  there rather than claim a guarantee the system cannot keep. §7.4.
+
+**Not decisions — facts to act on, both still outstanding:** start the Paymob commercial conversation now
+(onboarding is manual and gates the whole integration), and get written answers to the seven questions in
+§8.
