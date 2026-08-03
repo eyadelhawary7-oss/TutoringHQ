@@ -7,12 +7,18 @@ import {
   nextQuarterFirstOnOrAfter,
 } from '@/lib/cairoBillingCalendar';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { validateCSRFRequest } from '@/lib/csrf';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   const auth = await requireCenterAuth(request);
   if (!auth.ok) return auth.response;
+  // PAYOUT-SYSTEM-SPEC.md §2.6: creates a credit-withdrawal request. Not
+  // previously logged under S7, which only ever covered the referral route.
+  if (!validateCSRFRequest(request, auth.userId)) {
+    return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+  }
   if (auth.role !== 'owner') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
