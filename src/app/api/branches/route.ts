@@ -96,6 +96,12 @@ export async function POST(request: NextRequest) {
     if (!name || name.length < 2) {
       return NextResponse.json({ error: 'Branch name required (min 2 characters)' }, { status: 400 });
     }
+    // The design's "Area / address" field. It maps to the EXISTING
+    // `centers.district` (text, nullable) — there is no `centers.address`
+    // column in the live catalog and none may be added here. Optional: a branch
+    // with no area recorded is valid, and stores NULL rather than ''.
+    const districtRaw = typeof body.district === 'string' ? body.district.trim() : '';
+    const district = districtRaw.length > 0 ? districtRaw.slice(0, 200) : null;
 
     // Get first center in org for plan/billing defaults
     const { data: firstCenter } = await supabaseAdmin
@@ -136,6 +142,7 @@ export async function POST(request: NextRequest) {
       status: 'active',
       owner_name: fc?.owner_name ?? '',
       phone: fc?.phone ?? null,
+      district,
     };
 
     const { data: newCenter, error } = await supabaseAdmin
@@ -189,7 +196,7 @@ export async function GET(request: NextRequest) {
       if (centerId) {
         const { data: singleCenter, error: cErr } = await supabaseAdmin
           .from('centers')
-          .select('id, name, logo_url')
+          .select('id, name, logo_url, district')
           .eq('id', centerId)
           .maybeSingle();
         if (cErr) {
@@ -215,7 +222,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabaseAdmin
       .from('centers')
-      .select('id, name, logo_url')
+      .select('id, name, logo_url, district')
       .eq('organization_id', organizationId)
       .order('name');
 
@@ -229,16 +236,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Get org plan
+    // Get org plan + name. `organizations.name` is NOT NULL in the live catalog
+    // but the row itself can be missing, so the caller still needs a fallback.
     const { data: org } = await supabaseAdmin
       .from('organizations')
-      .select('plan')
+      .select('plan, name')
       .eq('id', organizationId)
       .single();
 
     return NextResponse.json({
       branches: centers ?? [],
       plan: (org as { plan?: string } | null)?.plan ?? 'single',
+      organization_name: (org as { name?: string } | null)?.name ?? null,
     });
   } catch (err) {
     return NextResponse.json(

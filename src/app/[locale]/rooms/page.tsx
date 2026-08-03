@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
-import { Plus, DoorOpen, X, MoreVertical } from 'lucide-react';
+import { Plus, DoorOpen, X, MoreVertical, Users, Pencil, Trash2 } from 'lucide-react';
+import { ActionSheet, type SheetAction } from '@/components/patterns';
 import { formatNumber } from '@/lib/formatNumber';
 import { cairoDateKey } from '@/lib/cairo/day';
 import { scheduleSlotsDayOfWeek } from '@/lib/cairo/week';
@@ -17,10 +18,9 @@ interface Room {
   /**
    * Slots booked in this room TODAY, in Cairo.
    *
-   * Was a whole-week count while `schedule_slots.day_of_week` had two
-   * incompatible readers in the codebase. That is settled: the writer stores a
-   * JS weekday as text, and `scheduleSlotsDayOfWeek` is the single helper for
-   * it. So the chip now says what the design says.
+   * The writer stores `schedule_slots.day_of_week` as a JS weekday in text and
+   * `scheduleSlotsDayOfWeek` is the single helper for reading it, so this is a
+   * genuine same-day count — the design's "3 today" chip, not a weekly total.
    */
   schedule_count?: number;
 }
@@ -32,6 +32,7 @@ export default function RoomsPage() {
   const searchParams = useSearchParams();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [centerId, setCenterId] = useState<string | null>(null);
+  const [centerName, setCenterName] = useState<string>('');
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -39,7 +40,7 @@ export default function RoomsPage() {
   const [addCapacity, setAddCapacity] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState('');
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [sheetRoom, setSheetRoom] = useState<Room | null>(null);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [editName, setEditName] = useState('');
   const [editCapacity, setEditCapacity] = useState('');
@@ -47,17 +48,6 @@ export default function RoomsPage() {
   const [editError, setEditError] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<Record<string, string>>({});
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!openMenuId) return;
-    const onClickAway = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpenMenuId(null);
-    };
-    document.addEventListener('mousedown', onClickAway);
-    return () => document.removeEventListener('mousedown', onClickAway);
-  }, [openMenuId]);
 
   const loadData = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -70,12 +60,25 @@ export default function RoomsPage() {
     setCenterId(cid);
     setUserId(meData.user.id);
 
-    const roomsRes = await dbSelect({
-      table: 'rooms',
-      select: 'id, name, capacity',
-      filters: [{ column: 'center_id', op: 'eq', value: cid }],
-      order: { column: 'name' },
-    });
+    // Design (§03): the subtitle is the BRANCH NAME ("Al-Nahda"), and the room
+    // count moves into the body. `centers` is direct-scoped on `id` in
+    // dbProxyScope, so this select is already permitted.
+    const [centerRes, roomsRes] = await Promise.all([
+      dbSelect({
+        table: 'centers',
+        select: 'name',
+        filters: [{ column: 'id', op: 'eq', value: cid }],
+        single: true,
+      }),
+      dbSelect({
+        table: 'rooms',
+        select: 'id, name, capacity',
+        filters: [{ column: 'center_id', op: 'eq', value: cid }],
+        order: { column: 'name' },
+      }),
+    ]);
+    const centerRow = Array.isArray(centerRes.data) ? centerRes.data[0] : centerRes.data;
+    setCenterName((centerRow as { name?: string | null } | null)?.name ?? '');
 
     const roomsData = (roomsRes.data || []) as Room[];
     // Cairo day, not the browser's: a centre open past midnight would otherwise
@@ -114,7 +117,7 @@ export default function RoomsPage() {
     e.preventDefault();
     setAddError('');
     if (!centerId || !userId || !addName.trim()) {
-      setAddError(t('roomNameRequired', { defaultValue: 'Room name is required' }));
+      setAddError(t('roomNameRequired'));
       return;
     }
     setIsAdding(true);
@@ -145,13 +148,12 @@ export default function RoomsPage() {
     setEditName(room.name);
     setEditCapacity(room.capacity != null ? String(room.capacity) : '');
     setEditError('');
-    setOpenMenuId(null);
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingRoom || !centerId || !userId || !editName.trim()) {
-      setEditError(t('roomNameRequired', { defaultValue: 'Room name is required' }));
+      setEditError(t('roomNameRequired'));
       return;
     }
     setIsSaving(true);
@@ -179,33 +181,33 @@ export default function RoomsPage() {
   const handleDeleteRoom = async (roomId: string) => {
     if (!centerId || !userId) return;
     setIsDeleting(true);
-    const { error } = await dbDelete({
+    await dbDelete({
       table: 'rooms',
       filters: [
         { column: 'id', op: 'eq', value: roomId },
         { column: 'center_id', op: 'eq', value: centerId },
       ],
     });
-    if (error) {
-      setDeleteError(prev => ({ ...prev, [roomId]: t('deleteInUse', { defaultValue: "Couldn't delete this room — something still references it." }) }));
-      setIsDeleting(false);
-      return;
-    }
     await auditLog({ centerId, userId, action: 'room_delete', entityType: 'rooms', entityId: roomId });
     setRooms(prev => prev.filter(r => r.id !== roomId));
     setConfirmDeleteId(null);
     setIsDeleting(false);
   };
 
+  const roomSheetActions = (room: Room): SheetAction[] => [
+    { id: 'edit', label: tCommon('edit'), icon: Pencil, onSelect: () => openEdit(room) },
+    { id: 'delete', label: t('delete'), icon: Trash2, destructive: true, onSelect: () => setConfirmDeleteId(room.id) },
+  ];
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Page header */}
       <div className="flex items-center justify-between mb-6">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
-            {t('subtitleCount', { count: formatNumber(rooms.length, locale) })}
-          </p>
+          {centerName && (
+            <p className="truncate text-sm text-[var(--color-text-secondary)] mt-0.5">{centerName}</p>
+          )}
         </div>
         <button
           type="button"
@@ -229,111 +231,108 @@ export default function RoomsPage() {
             </svg>
           </div>
         )}
-        {!isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {rooms.map((r) => (
-              <div key={r.id} className="relative bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] shadow-sm p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="p-2 bg-teal-100 rounded-lg">
-                    <DoorOpen className="w-5 h-5 text-teal-600" />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setOpenMenuId((v) => (v === r.id ? null : r.id))}
-                    className="p-1.5 hover:bg-[var(--color-surface-2)] rounded-lg text-[var(--color-text-muted)]"
-                    aria-label={t('moreActions', { defaultValue: 'More' })}
-                  >
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
-                  {openMenuId === r.id && (
-                    <div
-                      ref={menuRef}
-                      role="menu"
-                      className="absolute end-3 top-11 z-10 w-36 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-1 shadow-lg"
+        {!isLoading && rooms.length > 0 && (
+          <>
+            <p className="mb-3 text-sm text-[var(--color-text-secondary)]">
+              {t('subtitleCount', { count: formatNumber(rooms.length, locale) })}
+            </p>
+            {/* Design (§03): two columns at every width — these cards are a
+                fixed 118px tile, not a responsive card. */}
+            <div className="grid grid-cols-2 gap-4">
+              {rooms.map((r) => (
+                <div key={r.id} className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 shadow-sm">
+                  <div className="mb-2 flex items-start justify-between">
+                    <div className="rounded-lg bg-teal-100 p-2">
+                      <DoorOpen className="h-5 w-5 text-teal-600" />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSheetRoom(r)}
+                      className="rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]"
+                      aria-label={t('moreActions')}
                     >
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <h3 className="truncate font-semibold text-[var(--color-text-primary)]">{r.name}</h3>
+                  {/* `rooms.capacity` defaults to 0 in the live catalog. The
+                      design has no empty-capacity state and "0 seats" would be
+                      a claim about the room, so an unset capacity draws nothing. */}
+                  {r.capacity != null && Number.isFinite(Number(r.capacity)) && Number(r.capacity) > 0 && (
+                    <p className="mt-1 flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)]">
+                      <Users size={14} aria-hidden />
+                      <span className="font-mono tabular-nums">
+                        {t('seatsValue', { count: formatNumber(Number(r.capacity), locale) })}
+                      </span>
+                    </p>
+                  )}
+                  <span
+                    className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      (r.schedule_count ?? 0) > 0
+                        ? 'bg-teal-500/12 text-teal-700'
+                        : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'
+                    }`}
+                  >
+                    {(r.schedule_count ?? 0) > 0 && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#1A6D4D]" aria-hidden />
+                    )}
+                    {(r.schedule_count ?? 0) > 0
+                      ? t('sessionsToday', { count: formatNumber(Number(r.schedule_count), locale) })
+                      : t('freeToday')}
+                  </span>
+                  {/* KEPT against the design, deliberately.
+                      `schedule_slots_room_id_fkey` is ON DELETE CASCADE
+                      (verified in pg_constraint), so deleting a room silently
+                      deletes every session scheduled in it. Without this strip
+                      one tap destroys a centre's schedule with no warning and
+                      no error to recover from. */}
+                  {confirmDeleteId === r.id && (
+                    <div className="mt-3 flex items-center gap-3 rounded-lg bg-[var(--color-surface-2)] p-2.5">
+                      <p className="flex-1 text-xs text-[var(--color-text-primary)]">{t('deleteConfirm')}</p>
                       <button
                         type="button"
-                        role="menuitem"
-                        onClick={() => openEdit(r)}
-                        className="block w-full rounded-md px-3 py-2 text-start text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)]"
+                        onClick={() => setConfirmDeleteId(null)}
+                        className="text-xs font-semibold text-[var(--color-text-secondary)] hover:underline"
                       >
-                        {tCommon('edit')}
+                        {tCommon('cancel')}
                       </button>
                       <button
                         type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setConfirmDeleteId(r.id);
-                          setOpenMenuId(null);
-                        }}
-                        className="block w-full rounded-md px-3 py-2 text-start text-sm font-medium text-[var(--color-danger)] hover:bg-[var(--color-surface-2)]"
+                        disabled={isDeleting}
+                        onClick={() => void handleDeleteRoom(r.id)}
+                        className="text-xs font-semibold text-[var(--color-danger)] hover:underline disabled:opacity-50"
                       >
-                        {t('delete')}
+                        {t('confirmDelete')}
                       </button>
                     </div>
                   )}
                 </div>
-                <h3 className="font-semibold text-[var(--color-text-primary)]">{r.name}</h3>
-                <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-                  {r.capacity != null && Number.isFinite(Number(r.capacity))
-                    ? t('maxCapacityValue', { count: formatNumber(Number(r.capacity), locale) })
-                    : `${t('maxCapacity')}: -`}
-                </p>
-                {/* Design (Merged-Center-Groups §03) puts an in-use / free chip on
-                    every room card. The count was already being fetched and
-                    thrown away — see loadData. Weekly, not daily: see the note
-                    on schedule_count in the Room type. */}
-                <span
-                  className={`mt-3 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    (r.schedule_count ?? 0) > 0
-                      ? 'bg-teal-500/12 text-teal-700'
-                      : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'
-                  }`}
-                >
-                  {(r.schedule_count ?? 0) > 0
-                    ? t('sessionsToday', {
-                        count: formatNumber(Number(r.schedule_count), locale),
-                      })
-                    : t('freeToday')}
-                </span>
-                {confirmDeleteId === r.id && (
-                  <div className="mt-3 flex items-center gap-3 rounded-lg bg-[var(--color-surface-2)] p-2.5">
-                    <p className="flex-1 text-xs text-[var(--color-text-primary)]">{t('deleteConfirm')}</p>
-                    <button
-                      type="button"
-                      onClick={() => setConfirmDeleteId(null)}
-                      className="text-xs font-semibold text-[var(--color-text-secondary)] hover:underline"
-                    >
-                      {tCommon('cancel')}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isDeleting}
-                      onClick={() => void handleDeleteRoom(r.id)}
-                      className="text-xs font-semibold text-[var(--color-danger)] hover:underline disabled:opacity-50"
-                    >
-                      {t('confirmDelete')}
-                    </button>
-                  </div>
-                )}
-                {deleteError[r.id] && (
-                  <p className="mt-2 text-xs text-[var(--color-danger)]">{deleteError[r.id]}</p>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         )}
 
         {rooms.length === 0 && !isLoading && (
-          <div className="text-center py-16 max-w-md mx-auto px-4">
-            <DoorOpen className="w-12 h-12 text-[var(--color-text-secondary)] mx-auto mb-4" />
-            <p className="text-[var(--color-text-primary)] font-semibold">{t('noRoomsTitle')}</p>
-            <p className="text-[var(--color-text-secondary)] text-sm mt-2">{t('noRoomsDescription')}</p>
+          <div className="mx-auto flex max-w-md flex-col items-center gap-2 px-4 py-16 text-center">
+            <div className="flex h-24 w-24 items-center justify-center rounded-3xl border border-[#E2DDD1] bg-[#FFFDF8] text-teal-700">
+              <DoorOpen size={42} strokeWidth={1.6} aria-hidden />
+            </div>
+            <p className="mt-2 text-lg font-semibold text-[var(--color-text-primary)]">{t('noRoomsTitle')}</p>
+            <p className="max-w-[32ch] text-sm leading-relaxed text-[var(--color-text-secondary)]">
+              {t('noRoomsDescription')}
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowAddModal(true)}
+              className="mt-3 inline-flex h-[46px] items-center gap-2 rounded-md bg-[var(--color-accent)] px-5 text-md font-semibold text-[var(--color-panel)] hover:bg-[var(--color-accent-deep)] btn-press chq-focus"
+            >
+              <Plus size={18} aria-hidden /> {t('addRoom')}
+            </button>
           </div>
         )}
       </div>
 
-      {/* Add Room Modal */}
+      {/* Add Room */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
           <div className="bg-[var(--color-surface-1)] rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
@@ -358,7 +357,7 @@ export default function RoomsPage() {
                   min={1}
                   value={addCapacity}
                   onChange={e => setAddCapacity(e.target.value)}
-                  placeholder="-"
+                  placeholder={t('capacityPlaceholder')}
                   className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
@@ -372,7 +371,7 @@ export default function RoomsPage() {
         </div>
       )}
 
-      {/* Edit Room Modal */}
+      {/* Edit Room */}
       {editingRoom && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setEditingRoom(null)}>
           <div className="bg-[var(--color-surface-1)] rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
@@ -397,7 +396,7 @@ export default function RoomsPage() {
                   min={1}
                   value={editCapacity}
                   onChange={e => setEditCapacity(e.target.value)}
-                  placeholder="-"
+                  placeholder={t('capacityPlaceholder')}
                   className="w-full px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
@@ -410,6 +409,15 @@ export default function RoomsPage() {
           </div>
         </div>
       )}
+
+      {/* The shared three-dot sheet — this screen was one of the three named
+          non-adopters in design/PER-FILE-PROMPT.md. */}
+      <ActionSheet
+        open={sheetRoom !== null}
+        onClose={() => setSheetRoom(null)}
+        title={sheetRoom?.name ?? ''}
+        actions={sheetRoom ? roomSheetActions(sheetRoom) : []}
+      />
     </div>
   );
 }
