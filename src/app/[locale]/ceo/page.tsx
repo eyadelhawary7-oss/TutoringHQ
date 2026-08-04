@@ -10,6 +10,8 @@ import { MobileWrapper } from '@/components/shell/MobileWrapper';
 import type { CeoCenterHealthTierRow, CeoDashboardData, CeoTrialsWatch, LeadStage } from '@/types/ceo';
 import { ChevronDown } from 'lucide-react';
 import { formatNumber, formatDateTime, formatCurrency } from '@/lib/formatNumber';
+import { getCsrfHeaders } from '@/lib/csrf-client';
+import { EGYPT_GOVERNORATES, governorateLabel } from '@/lib/egyptGovernorates';
 
 const SECTION_IDS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] as const;
 
@@ -80,6 +82,7 @@ export default function CeoDashboardPage() {
   const [leadName, setLeadName] = useState('');
   const [leadPhone, setLeadPhone] = useState('');
   const [leadDistrict, setLeadDistrict] = useState('');
+  const [leadGovernorate, setLeadGovernorate] = useState<string>('cairo');
   const [leadPlan, setLeadPlan] = useState<string>('starter');
   const [leadStage, setLeadStage] = useState<LeadStage>('lead');
   const [leadSource, setLeadSource] = useState('');
@@ -186,7 +189,10 @@ export default function CeoDashboardPage() {
   async function getAuthJsonHeaders(): Promise<Record<string, string>> {
     const { data: { session } } = await supabase.auth.getSession();
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+    if (session?.access_token) {
+      headers.Authorization = `Bearer ${session.access_token}`;
+      Object.assign(headers, await getCsrfHeaders(session.access_token));
+    }
     return headers;
   }
 
@@ -203,7 +209,7 @@ export default function CeoDashboardPage() {
         name: leadName,
         phone: leadPhone,
         district: leadDistrict || null,
-        governorate: 'cairo',
+        governorate: leadGovernorate,
         plan_interest: leadPlan,
         stage: leadStage,
         source: leadSource || null,
@@ -216,6 +222,7 @@ export default function CeoDashboardPage() {
       setLeadName('');
       setLeadPhone('');
       setLeadDistrict('');
+      setLeadGovernorate('cairo');
       setLeadPlan('starter');
       setLeadStage('lead');
       setLeadSource('');
@@ -797,6 +804,18 @@ export default function CeoDashboardPage() {
                     placeholder={t('pipeline.fieldDistrict')}
                     className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
                   />
+                  <select
+                    value={leadGovernorate}
+                    onChange={(e) => setLeadGovernorate(e.target.value)}
+                    aria-label={t('pipeline.fieldGovernorate')}
+                    className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                  >
+                    {EGYPT_GOVERNORATES.map((g) => (
+                      <option key={g.value} value={g.value}>
+                        {governorateLabel(g, locale === 'ar' ? 'ar' : 'en')}
+                      </option>
+                    ))}
+                  </select>
                   <select
                     value={leadPlan}
                     onChange={(e) => setLeadPlan(e.target.value)}
