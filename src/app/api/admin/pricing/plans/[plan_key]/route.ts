@@ -1,5 +1,5 @@
 import { requireSuperAdminApi } from '@/lib/admin-auth';
-import { requireSuperAdminRow } from '@/lib/admin-access';
+import { requireSuperAdmin } from '@/lib/admin-access';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { NextRequest, NextResponse } from 'next/server';
 import { parseBodyWithLimit } from '@/lib/validate';
@@ -14,8 +14,8 @@ export async function PATCH(request: NextRequest, ctx: { params: Promise<{ plan_
   const auth = await requireSuperAdminApi(request);
   if (!auth.ok) return auth.response;
 
-  const row403 = await requireSuperAdminRow(auth.supabaseAdmin, auth.userId);
-  if (row403) return row403;
+  const denied = await requireSuperAdmin(auth.supabaseAdmin, auth.userId);
+  if (denied) return denied;
   // Enforces admin_users.role === 'super_admin' (or SUPER_ADMIN_PHONES). can_approve_signups does not unlock pricing PATCH.
 
   if (!validateCSRFRequest(request, auth.userId)) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSuperAdminApi } from '@/lib/admin-auth';
-import { requireSuperAdminRow } from '@/lib/admin-access';
+import { requireSuperAdmin } from '@/lib/admin-access';
 import { parseIncludeTestCenters } from '@/lib/adminIncludeTest';
 import { getPaymobHealthMode } from '@/lib/paymobGuardLogic';
 import { cronPathToLogName } from '@/lib/cron/cronLog';
@@ -36,8 +36,8 @@ export async function GET(request: NextRequest) {
   const auth = await requireSuperAdminApi(request);
   if (!auth.ok) return auth.response;
 
-  const row403 = await requireSuperAdminRow(auth.supabaseAdmin, auth.userId);
-  if (row403) return row403;
+  const denied = await requireSuperAdmin(auth.supabaseAdmin, auth.userId);
+  if (denied) return denied;
 
   const includeTest = parseIncludeTestCenters(request);
 

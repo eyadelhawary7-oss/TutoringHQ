@@ -6,15 +6,15 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSuperAdminApi } from '@/lib/admin-auth';
-import { requireSuperAdminRow } from '@/lib/admin-access';
+import { requireSuperAdmin } from '@/lib/admin-access';
 import { syncWaMetaTemplates } from '@/lib/waTemplateSync';
 
 export async function POST(request: NextRequest) {
   const auth = await requireSuperAdminApi(request);
   if (!auth.ok) return auth.response;
 
-  const row403 = await requireSuperAdminRow(auth.supabaseAdmin, auth.userId);
-  if (row403) return row403;
+  const denied = await requireSuperAdmin(auth.supabaseAdmin, auth.userId);
+  if (denied) return denied;
 
   const result = await syncWaMetaTemplates(auth.supabaseAdmin);
   if (!result.ok) {
