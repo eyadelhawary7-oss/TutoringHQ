@@ -1,8 +1,85 @@
 /**
- * Lists process.env.<NAME> references under src/ and compares them to keys in .env.example.
+ * Two independent checks:
+ *
+ * 1. **Parity** — lists `process.env.<NAME>` references under `src/` and compares them to
+ *    keys in `.env.example`. This is a *static* check. It proves a name is documented; it
+ *    proves nothing about whether the variable is actually set anywhere.
+ *
+ * 2. **Fail-closed secret audit** (added 4 Aug 2026) — for the small set of secrets whose
+ *    absence does not degrade a feature but *disables* one outright, checks the value in the
+ *    current process environment for presence AND well-formedness. The parity check above
+ *    passes happily for `CSRF_SECRET` because the name appears in both places, which is
+ *    exactly why it never surfaced the risk: `.env.example` ships the literal placeholder
+ *    `CSRF_SECRET=your-key-here`, which is not 64 hex characters, so a developer who copies
+ *    `.env.example` verbatim gets a *malformed* secret and every mutation 403s with no clue
+ *    why. Run this against a real environment (`vercel env pull`, then `npm run check:env`)
+ *    before shipping anything that adds a `validateCSRFRequest` call.
  */
 import fs from 'fs';
 import path from 'path';
+
+/**
+ * Secrets that fail CLOSED: when missing or malformed the affected routes REJECT rather
+ * than fall back. Each validator must mirror the runtime check in the module named below —
+ * if they drift, this audit gives false assurance, which is worse than no audit.
+ */
+const CRITICAL_SECRETS: {
+  name: string;
+  source: string;
+  validate: (v: string) => boolean;
+  requirement: string;
+  consequence: string;
+}[] = [
+  {
+    name: 'CSRF_SECRET',
+    source: 'src/lib/csrf.ts (isCSRFEnabled / getKey)',
+    // Mirrors isCSRFEnabled(): exactly 64 hex chars (32 bytes) or CSRF cannot be enforced.
+    validate: (v) => v.length === 64 && /^[0-9a-fA-F]+$/.test(v),
+    requirement: 'exactly 64 hex characters (32 bytes)',
+    consequence:
+      'validateCSRFRequest() returns false and EVERY protected mutation returns 403 — in ' +
+      'every environment, not just production. getKey() additionally throws when ' +
+      "NODE_ENV === 'production'. This is fail-closed by design; do not weaken the check, " +
+      'set the secret. Generate one with: openssl rand -hex 32',
+  },
+];
+
+/** Returns the number of critical secrets that are missing or malformed. */
+function auditCriticalSecrets(): number {
+  const problems: string[] = [];
+
+  for (const s of CRITICAL_SECRETS) {
+    const value = process.env[s.name];
+    if (!value) {
+      problems.push(`${s.name} — NOT SET (required: ${s.requirement})`);
+    } else if (!s.validate(value)) {
+      problems.push(
+        `${s.name} — SET BUT MALFORMED (${value.length} chars; required: ${s.requirement})`
+      );
+    }
+  }
+
+  if (problems.length === 0) {
+    console.log('OK: all fail-closed secrets are present and well-formed.');
+    return 0;
+  }
+
+  console.log('');
+  console.log('FAIL-CLOSED SECRETS MISSING OR MALFORMED IN THIS ENVIRONMENT:');
+  for (const p of problems) console.log(`  ${p}`);
+  console.log('');
+  for (const s of CRITICAL_SECRETS) {
+    console.log(`  ${s.name} (enforced by ${s.source})`);
+    console.log(`    If unset/malformed: ${s.consequence}`);
+  }
+  console.log('');
+  console.log(
+    '  NOTE: this reflects the environment this script is running in. It cannot see ' +
+      'Vercel Production/Preview env vars unless you pulled them first (vercel env pull).'
+  );
+
+  return problems.length;
+}
 
 const SRC_ROOT = path.join(__dirname, '..', 'src');
 const ENV_EXAMPLE_PATH = path.join(__dirname, '..', '.env.example');
@@ -70,20 +147,24 @@ function main(): void {
     if (!fromCode.has(k)) unusedInCode.push(k);
   }
 
+  // Run BOTH checks before exiting. The parity check used to `process.exit()` inline, which
+  // would have hidden the secret audit behind an unrelated .env.example mismatch.
+  let failed = false;
+
   if (missingFromExample.length > 0) {
     console.log('MISSING FROM .env.example:');
     for (const n of missingFromExample) console.log(n);
-    process.exit(1);
-  }
-
-  if (unusedInCode.length > 0) {
+    failed = true;
+  } else if (unusedInCode.length > 0) {
     console.log('WARNING: unused in code (safe to remove):');
     for (const n of unusedInCode) console.log(n);
-    process.exit(0);
+  } else {
+    console.log('OK: .env.example matches code references.');
   }
 
-  console.log('OK: .env.example matches code references.');
-  process.exit(0);
+  if (auditCriticalSecrets() > 0) failed = true;
+
+  process.exit(failed ? 1 : 0);
 }
 
 main();
