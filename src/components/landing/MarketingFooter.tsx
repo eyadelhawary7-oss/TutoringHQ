@@ -110,6 +110,14 @@ export default function MarketingFooter({
           <Link href="/cookies" className={linkCls}>
             {t('cookies')}
           </Link>
+          {/* s08-3: the design does not draw this footer, so "identical" does
+              not bind here — coverage does. Without this row the DPA and the
+              public data-rights form are unreachable from the marketing site.
+              The three deep links above stay, because people already expect
+              them. */}
+          <Link href="/legal" className={linkCls}>
+            {t('legal')}
+          </Link>
         </div>
 
         <div className="min-w-[116px]">
