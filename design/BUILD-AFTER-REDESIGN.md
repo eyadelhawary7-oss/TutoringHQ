@@ -827,6 +827,7 @@ Nothing in this section can start until V1 lands. Ordered so that V1 unblocks th
 - **Blocked by:** V1.
 - **Re-confirmed, 31 July 2026 (Center-Attendance survey), independently on both sides.** Design side: both of `Merged-Center-Attendance.html`'s sections draw the **"Verified"** badge unconditionally in every single frame (5 of 5 in §01, plain "Active · verified" subtitle text in §02) — there is no unverified/locked/pending frame anywhere in the file for either section; a grep for "unverified"/"pending verification" across the whole mock returns zero hits. Live side: re-derived Valify's status from scratch (repo grep, live-schema check, live-catalog table-name search) without re-reading this entry first — same conclusion, nothing new: no `national_id`/`verification_status`/`kyc` column anywhere, no Valify SDK or route, `/attendance`'s own code has zero verification-aware branches (it renders identically for every center, gated only on subscription/billing status, a different axis entirely). Still blocked, still wholesale, still V1.
 - **Added, 31 July 2026 (Center-Students survey, PR #277).** `Merged-Center-Students` §03 (Center Students Verified) draws the identical unconditional "Verified"/"موثّق" badge in every one of its frames (roster header, both detail frames, recipient sheet) with zero unverified-state frames anywhere — the same diagnostic test as the other three files above, and it hadn't been named here yet even though it was already logged as blocked in `FILE-COMPLETION-TABLE.md`/`CHANGE-LOG.md`. Same root cause, same V1 dependency, folded in rather than left as an undocumented fourth instance.
+- **Re-confirmed, 4 August 2026 (Center-Students parity pass).** Fresh grep for `Verified`/`موثّق`/`verification_status`/`national_id` across `src/app/[locale]/students/**` returns zero matches — §03 remains entirely unbuilt (not a false "Verified" badge shipped, simply the verified-state screens don't exist yet), which is the correct, honest outcome given V1. Nothing to fix; noted so a future pass doesn't re-discover this from scratch.
 
 ---
 
@@ -1172,6 +1173,7 @@ grammatically backwards translations, fixed (no decision needed)
 - **Found:** 30 July 2026, building `Merged-Center-Students` §04.
 - **Build:** add an origin/source column to `pending_enrollments`, stamp it at both insert sites, surface it as the badge/detail-row the design already draws.
 - **Blocked by:** nothing technical; out of scope for a display-only pass (needs a migration).
+- **Re-confirmed live, 4 August 2026, Center-Students parity pass.** Fresh `information_schema.columns` read against project `lczmjpnbuhnsislcvzar`: `pending_enrollments` still has exactly `id, center_id, group_id, student_name, student_phone, parent_phone, notes, status, created_at, student_id` — no origin-like column, unchanged from the original finding. Also checked the request-detail sub-screen's other two fields the design draws with no live source ("Grade", "School" in §04's expanded request-detail frame) — `students/pending/page.tsx` correctly renders neither; it only surfaces `student_name`, `student_phone`, `parent_phone`, `notes` and a relative "asked" timestamp, the fields that actually exist. No fabricated Grade/School/origin data found anywhere on this screen — the honest-state rule is being followed here, not violated.
 
 ## F13 · `students.grade_level` has zero writers — the display added this pass will stay blank until something writes it
 - **What:** the roster and student-detail screens now show a "Grade {n}" line when `grade_level` is set (this pass). Live, no code path (add-student, edit-student, `/students/import`) ever writes it — confirmed 0 of 4 live students have a non-null value, and grepping every students-table insert/update site for `grade_level` returns none.
@@ -1185,12 +1187,18 @@ grammatically backwards translations, fixed (no decision needed)
 - **Found:** 30 July 2026, building `Merged-Center-Students` §04.
 - **Build:** decide whether missing parent phone should join the "needs a fix" skip list (§04 already has one, for blank names) alongside a copy check, or stay optional and the design copy is what's wrong.
 - **Blocked by:** Eyad's call on which one is correct.
+- **Sharpened, not closed, 4 August 2026, Center-Students parity pass.** This entry was framed as "the copy vs. the validation disagree — establish which is wrong," on the theory that one side might be a plain bug rather than a real decision. Checked both sides directly rather than guessing:
+  - The design's own Review-step worked example (§04, the "NEEDS A FIX" list) draws **two** flagged rows, not one: "Row 12 · Missing parent phone" *and* "Row 27 · Grade not recognised." The prose hint above it and this worked example agree with each other — the design is internally consistent that missing parent phone is meant to be caught and flagged exactly like a missing name, not just mentioned in passing copy.
+  - Live's own copy was checked too, specifically for the self-contradiction this framing implied might exist (the app claiming a requirement it doesn't enforce): `parentPhoneHint` (`messages/en.json`/`ar.json`, rendered at `import/page.tsx:490`) is a soft encouragement ("Add it now and every reminder, receipt and absence alert has somewhere to go"), not a "required" claim. There is no live copy anywhere on this screen asserting parent phone is required while the validation lets it slide — no in-code self-contradiction to fix as a bug.
+  - **Conclusion: neither side is "simply wrong."** This is design-vs-live, not live-vs-live, and the live behaviour (accept rows with no parent phone) is a real, working, unremarked-on path for centers importing attendance-only rosters today. Flipping it to match the design would change what those centers can import — the original entry's product-decision framing holds up under scrutiny; it is not a bug hiding behind confusing docs. Left as Eyad's call, now with the stronger evidence that the design's copy and its own worked example both point the same way, so whichever way he decides, at least the design side isn't internally conflicted.
+- **Not touched:** `students/import/page.tsx` — still fully optional parent phone, no `reasonMissingParentPhone` skip added.
 
 ## F15 · Two independent status axes (lifecycle vs payment standing) exist per student and are never shown together as one badge
 - **What:** a student carries two separately-computed status concepts: a lifecycle/attendance status (`active`/`at_risk`/`inactive`/`enrolled`/`churned`, driven by scan recency — the roster's `LifecycleBadge`) and a payment standing (paid/unpaid, now `getStudentBalances`-driven after this pass's fixes). Neither `Merged-Center-Students` nor live code fuses them into one badge — the roster shows a `LifecycleBadge` and a balance figure as two separate elements.
 - **Why it's logged, not built:** no screen this pass asked for a fused badge, and inventing a combined taxonomy (does "at-risk AND unpaid" render as one badge or two?) is a design decision, not a bug fix.
 - **Found:** 30 July 2026, building `Merged-Center-Students` §01/§02.
 - **For whoever designs this next:** both axes are already independently correct and already available (`lifecycle_status` column, `getStudentBalances`) — this is purely a "how do we show both at once" question, no new data needed.
+- **Re-confirmed unchanged, 4 August 2026 (Center-Students parity pass).** Still two separate elements on the roster row (`StandingBadge` + a balance figure), still no fused taxonomy anywhere in `students/page.tsx`. No screen in this pass's territory asked for a fused badge; left as a design decision, not built.
 
 ## F16 · One session, six places where "one number" had two sources — the shape, not six separate bugs
 - **The pattern:** every instance below has the identical shape. A database column is written once, usually at insert, and never updated again. The real, current value is only ever obtainable by summing live rows elsewhere — here, always `attendance_scans` (charges) and `payments` (collections). Some screen or job reads the frozen column instead, because it's a single flat field rather than a join-and-sum, and it silently drifts from reality the moment anything happens after that first write. Nothing errors. Every query succeeds. It just answers a question about the moment of insert while presenting itself as the answer right now.
@@ -1284,15 +1292,21 @@ grammatically backwards translations, fixed (no decision needed)
 ## F22 · Center-Students re-verification — four small, previously-unlogged display gaps
 - **What, found together, 31 July 2026, re-verifying `Merged-Center-Students.html` against live code
   fresh (post-#239/#249), not from memory:**
-  1. **§01 Roster — still open.** The design's header/KPI assume a multi-branch rollup — subtitle "128
-     active · **3 branches**", KPI sub "across 3 branches". Live shows a total student count only, no
-     branch breakdown. **Sharpened, 31 July (PR #277):** this isn't a missing field, it's a genuinely
-     different aggregate. `src/stores/branchStore.ts`/`BranchSwitcher.tsx` swap the *single active*
-     `center_id` between separate, fully independent `centers` rows one at a time
-     (`setActiveCenterId(b.id)`) — there is no cross-center rollup query anywhere (`grep -n 'branch'
-     src/app/[locale]/students/page.tsx` → zero matches). A combined count needs a real
-     sum-across-every-`center_id`-an-owner-can-see query, plus a decision on whether RLS should ever
-     let one view span multiple tenants — a bigger question than this file's redesign pass.
+  1. **§01 Roster — still open, corrected 4 August 2026 (see F22 addendum below — the original
+     "no cross-center rollup query anywhere" / "zero matches" claim below was wrong; do not treat it
+     as a finding).** The design's header/KPI assume a multi-branch rollup — subtitle "128
+     active · **3 branches**", KPI sub "across 3 branches". Live's `branchCount`
+     (`src/stores/branchStore.ts`, hydrated by `BranchSwitcher` from `GET /api/branches`) is a real
+     cross-center count for organizations that have `organization_id` set: `src/app/api/branches/route.ts`'s
+     GET handler queries `centers` filtered by `organization_id` — every sibling center in the org,
+     optionally narrowed by `branch_user_assignments` — not just the caller's own row; the
+     single-own-center-array fallback only fires when the user has no `organization_id`. What is
+     genuinely NOT rolled up is the *paired* `active` count: `students/page.tsx` fetches `students`
+     filtered to `center_id = meData.user.center_id` only, so a real 3-branch org's KPI would read
+     e.g. "42 active · 3 branches" where 42 is one branch's own active count against a correct org-wide
+     branch count of 3 — a scope mismatch between the two clauses, not an absent rollup. Fixing the
+     `active` half needs the same RLS-scope decision (should one roster view ever sum students across
+     sibling `center_id`s) already named below — a bigger question than this file's redesign pass.
   2. **§02 Student Detail — still open.** No aging/next-due sub-line under the balance figure at all.
      The design shows "12 days overdue · since 01/07/2026" (owes state) or "Next due 01/08/2026 · 400
      EGP" (paid state). **Confirmed why, 31 July (PR #277):** `getStudentBalances()` is a running
@@ -1314,13 +1328,32 @@ grammatically backwards translations, fixed (no decision needed)
 - **Touches:** none — display/UX only, no schema, no protected file.
 - **Found:** 31 July 2026, Center-Students re-verification (#257). Items 3–4 built, item 1's reasoning
   sharpened, item 2 confirmed correctly blocked: 31 July 2026, PR #277.
+- **Re-confirmed 4 August 2026, Center-Students parity pass — CORRECTION, not a re-confirmation, on
+  item 1.** A first pass re-read both items and wrote "item 1 (branch rollup) — `grep -n 'branch'
+  src/app/[locale]/students/page.tsx` still returns zero matches" — that grep claim is false. Running
+  it for real returns 14 matches (the `useBranchStore` import, the `branches`/`branchCount`
+  declarations, and both render sites), and none of them were new to this pass — the same lines exist
+  verbatim on `origin/master`. A second, actual read of `src/app/api/branches/route.ts`'s GET handler
+  (not assumed from the `students/page.tsx` comment alone) shows it queries `centers` by
+  `organization_id` across every sibling center when the user has one set — a genuine cross-center
+  query exists. The real, narrower gap (see the corrected item 1 write-up above): `branchCount` can be
+  a true org-wide figure, but the KPI's `active` half is fetched scoped to the caller's own
+  `center_id` only, so the two clauses of "N active · M branches" don't share a scope for any org with
+  more than one center. Still needs the RLS-scope decision on whether one roster view should ever sum
+  students across sibling centers — that part of the original conclusion holds; the evidence offered
+  for it did not, and is corrected here rather than left standing. Item 2 (aging/next-due sub-line) —
+  `getStudentBalances()` (`src/lib/studentBalance.ts`) is still a running Σcharges−Σpayments aggregate
+  with no per-invoice "next due" fact; still needs a product decision on what "next due" means under
+  that model — unaffected by the item-1 correction. Items 3–4 (ID card tile, import inline Fix)
+  re-verified still present and working, see the code citations under F22 above.
 
-## F23 · Two dashboard CTAs link to `/students` query params the page never reads
+## F23 · Two dashboard CTAs link to `/students` query params the page never reads — CLOSED, 4 August 2026
 - **What:** `Merged-Center-Home` §01's unpaid-alert banner "Review" button links to `/students?filter=unpaid`, and the dashboard's "Add student" quick action links to `/students?action=add`. `src/app/[locale]/students/page.tsx` has zero `useSearchParams`/`searchParams` handling anywhere — both links silently land on the plain, unfiltered/unprompted roster instead of doing what they promise.
 - **Contrast, so this isn't guessed at:** `/payments?action=collect` (the dashboard's "Collect payment" quick action) *is* correctly wired via `useSearchParams` in `payments/page.tsx` — this exact pattern already works elsewhere in the app, it's just missing on `students/page.tsx`.
 - **Why not fixed where found:** the actual fix lives entirely in `students/page.tsx`, which is `Center-Students`' claimed file territory (its own sweep pass landed the same day, PR #277) — logging for whoever next has `Center-Students` open rather than a `Center-Home` agent colliding on another file's claimed lock.
 - **Found:** 31 July 2026, Center-Home re-verification (PR #280).
 - **Touches:** `src/app/[locale]/students/page.tsx` only. No schema, no protected file, no decision needed — reading `filter`/`action` and opening the matching filter/modal on load is mechanical once someone is in that file.
+- **Closed, 4 August 2026, Center-Students parity pass (`claude/parity-center-students-w2`).** `students/page.tsx` now reads `useSearchParams()` once on mount: `?filter=unpaid` sets the existing `segment` state to `'behind'` (the same state the roster's own "Overdue"/"At risk" segmented control already drives, matching the semantics `isBehind()` uses elsewhere in the file), and `?action=add` opens the existing `showAddModal` state — the same state a manual "Add student" click sets. No new state, no new modal, no schema: both query params now drive state the component already had. Verified against the live component (`grep -n segment` / `showAddModal` in the file) before wiring, not assumed from the design or from `payments/page.tsx`'s pattern alone.
 
 ## F24 · My Teachers §09 Slots tab is a different feature than the design draws
 - **What:** Live (`/api/center/group-slots`, `/api/teacher/group-slots`) is: a teacher who already has a negotiated, attached group proposes a specific weekly meeting time; the center confirms it and optionally assigns a room ("the slot step sits after cut-agreed," per the route's own comment). `Merged-Center-Setup` §09 draws a marketplace: the center posts an open, teacher-less time slot; multiple teachers propose to fill it; the center picks a winner and sets the cut.
