@@ -8853,6 +8853,7 @@
       "greetingFallbackName": "there",
       "centersTile": "What centers owe me",
       "centersPending": "Pending from centers",
+      "centersSettled": "All centers settled",
       "centersEmpty": "No centers linked",
       "joinCenterCta": "Join a center",
       "incomeTile": "Income this month",
@@ -8878,7 +8879,8 @@
       "ctaResubscribe": "Resubscribe",
       "resubscribeLockedBody": "You're on the free baseline — your center monitoring and center cut stay active. Your private students, groups, history, and records are safe and nothing is deleted. Return to a paid plan anytime and pick up exactly where you left off.",
       "startTrialCta": "Start your free trial",
-      "trialCtaBody": "Unlock your private practice with a 14-day free trial."
+      "trialCtaBody": "Unlock your private practice with a 14-day free trial.",
+      "growHeading": "Grow your private practice"
     },
     "pages": {
       "centers": "Centers",
