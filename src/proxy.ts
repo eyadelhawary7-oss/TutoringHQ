@@ -32,6 +32,11 @@ const PUBLIC_WEBHOOK_PREFIXES = [
   '/api/bosta/webhook',
   '/api/whatsapp/webhook',
   '/api/whatsapp/inbound',
+  // Valify identity-verification callback. Public by necessity (Valify has no
+  // session with us) and therefore verifies its own HMAC with a timing-safe
+  // compare, failing closed in every environment. See
+  // src/app/api/webhooks/valify/route.ts.
+  '/api/webhooks/valify',
 ];
 
 function isPublicWebhookPath(pathname: string): boolean {
