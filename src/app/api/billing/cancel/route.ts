@@ -4,6 +4,7 @@ import { createAction } from '@/lib/ceo';
 import { sendFreeformMessage } from '@/lib/whatsapp/client';
 import { formatDate } from '@/lib/formatNumber';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { validateCSRFRequest } from '@/lib/csrf';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,11 @@ function periodEndLabel(ymd: string | null | undefined): string {
 export async function POST(request: NextRequest) {
   const auth = await requireCenterAuth(request);
   if (!auth.ok) return auth.response;
+  // S8: schedules a subscription cancellation - no CSRF check existed.
+  // Matches the pattern already used by billing/withdrawal.
+  if (!validateCSRFRequest(request, auth.userId)) {
+    return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+  }
   if (auth.role !== 'owner') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }

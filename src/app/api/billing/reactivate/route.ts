@@ -12,6 +12,7 @@ import { reactivateCenterFromSession } from '@/lib/combinedPaymentFinalize';
 import { normalizeBillingPeriod, type BillingPeriod } from '@/lib/pricing';
 import { createPaymobCheckoutEgp, createPaymobIframeForExistingOrder } from '@/lib/paymobCenterCheckout';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { validateCSRFRequest } from '@/lib/csrf';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,12 @@ export async function POST(request: NextRequest) {
   // allowSuspended: suspended owners must be able to pay to reactivate.
   const auth = await requireCenterAuth(request, { allowSuspended: true });
   if (!auth.ok) return auth.response;
+  // S8: charges the center (or spends credits) to lift a suspension - no CSRF
+  // check existed. Matches the pattern already used by billing/cancel and
+  // billing/withdrawal.
+  if (!validateCSRFRequest(request, auth.userId)) {
+    return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+  }
   if (auth.role !== 'owner') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }

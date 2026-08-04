@@ -14,6 +14,7 @@ import {
 } from '@/lib/pricing';
 import { createPaymobCheckoutEgp } from '@/lib/paymobCenterCheckout';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { validateCSRFRequest } from '@/lib/csrf';
 import { getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { applyProcessingFee, buildInvoiceTaxSnapshot } from '@/lib/processingFee';
 import { repriceSubscriptionInvoice } from '@/lib/repriceSubscriptionInvoice';
@@ -76,6 +77,12 @@ async function mintCheckoutForInvoice(
 export async function POST(request: NextRequest) {
   const auth = await requireCenterAuth(request);
   if (!auth.ok) return auth.response;
+  // S8: this route charges the center via Paymob (a plan upgrade) and had no
+  // CSRF check at all. Matches the pattern already used by billing/cancel
+  // and billing/withdrawal.
+  if (!validateCSRFRequest(request, auth.userId)) {
+    return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+  }
   if (auth.role !== 'owner') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }

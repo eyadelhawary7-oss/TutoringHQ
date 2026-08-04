@@ -41,7 +41,7 @@ const ICONS: Record<TimelineStage, React.ElementType> = {
 
 export type TransitionLite = {
   to_status?: string | null;
-  created_at?: string | null;
+  transitioned_at?: string | null;
 };
 
 function norm(s: string | null | undefined): string {
@@ -52,7 +52,7 @@ function latestTimeForStage(transitions: TransitionLite[], stage: TimelineStage)
   let best: string | null = null;
   for (const t of transitions) {
     if (norm(t.to_status) !== stage) continue;
-    const c = t.created_at;
+    const c = t.transitioned_at;
     if (!c) continue;
     if (!best || new Date(c).getTime() > new Date(best).getTime()) best = c;
   }

@@ -64,7 +64,7 @@ async function buildHydratedPayload(
       .from('card_order_status_transitions')
       .select('*')
       .eq('card_order_id', id)
-      .order('created_at', { ascending: true }),
+      .order('transitioned_at', { ascending: true }),
   ]);
 
   let shipRow: Record<string, unknown> | null = null;
@@ -149,14 +149,14 @@ async function buildHydratedPayload(
 
 function derivePaidAtIso(transitions: CardOrderTransitionRow[]): string | null {
   const sorted = [...transitions].sort((a, b) => {
-    const ta = String(a.created_at ?? '');
-    const tb = String(b.created_at ?? '');
+    const ta = String(a.transitioned_at ?? '');
+    const tb = String(b.transitioned_at ?? '');
     return new Date(ta).getTime() - new Date(tb).getTime();
   });
   for (const t of sorted) {
     const to = String(transitionToStatus(t as Record<string, unknown>) ?? '').toLowerCase();
     if (to === 'paid') {
-      const c = t.created_at;
+      const c = t.transitioned_at;
       if (typeof c === 'string' && c) return c;
     }
   }

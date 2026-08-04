@@ -36,10 +36,12 @@ TABLE center_invites rls=true force_rls=false
 TABLE center_message_templates rls=true force_rls=false
 TABLE center_metrics_daily rls=true force_rls=false
 TABLE center_notes rls=true force_rls=false
+TABLE center_payouts rls=true force_rls=false
 TABLE center_reengagement_log rls=true force_rls=false
 TABLE centers rls=true force_rls=false
 TABLE ceo_action_queue rls=true force_rls=false
 TABLE chargebacks rls=true force_rls=false
+TABLE collection_enablement rls=true force_rls=false
 TABLE combined_payment_sessions rls=true force_rls=false
 TABLE commission_audit_log rls=true force_rls=false
 TABLE commission_payouts rls=true force_rls=false
@@ -65,6 +67,9 @@ TABLE groups rls=true force_rls=false
 TABLE holidays rls=true force_rls=false
 TABLE in_app_notifications rls=true force_rls=false
 TABLE invoices rls=true force_rls=false
+TABLE ledger_accounts rls=true force_rls=false
+TABLE ledger_entries rls=true force_rls=false
+TABLE ledger_transactions rls=true force_rls=false
 TABLE mrr_snapshots rls=true force_rls=false
 TABLE organizations rls=true force_rls=false
 TABLE pack_requests rls=true force_rls=false
@@ -73,6 +78,9 @@ TABLE parent_pack_billing rls=true force_rls=false
 TABLE parent_pack_monthly_counts rls=true force_rls=false
 TABLE parent_portal_tokens rls=true force_rls=false
 TABLE payments rls=true force_rls=false
+TABLE payout_approval_log rls=true force_rls=false
+TABLE payout_provider_events rls=true force_rls=false
+TABLE payout_reconciliation_periods rls=true force_rls=false
 TABLE payout_requests rls=true force_rls=false
 TABLE pending_enrollments rls=true force_rls=false
 TABLE pending_signups rls=true force_rls=false
@@ -127,6 +135,8 @@ TABLE trial_claims rls=true force_rls=false
 TABLE upgrade_log rls=true force_rls=false
 TABLE users rls=true force_rls=false
 TABLE vendors rls=true force_rls=false
+TABLE verification_attempts rls=true force_rls=false
+TABLE verification_records rls=true force_rls=false
 TABLE wa_conversations rls=true force_rls=false
 TABLE wa_inactivity_alerts rls=true force_rls=false
 TABLE wa_keyword_routes rls=true force_rls=false
@@ -490,6 +500,32 @@ COLUMN center_notes.body ord=4 type=text notnull=true default=∅
 COLUMN center_notes.is_pinned ord=5 type=boolean notnull=true default=false
 COLUMN center_notes.created_at ord=6 type=timestamp with time zone notnull=true default=now()
 COLUMN center_notes.updated_at ord=7 type=timestamp with time zone notnull=true default=now()
+COLUMN center_payouts.id ord=1 type=uuid notnull=true default=gen_random_uuid()
+COLUMN center_payouts.center_id ord=2 type=uuid notnull=true default=∅
+COLUMN center_payouts.status ord=3 type=text notnull=true default='requested'::text
+COLUMN center_payouts.source ord=4 type=text notnull=true default=∅
+COLUMN center_payouts.gross_minor ord=5 type=bigint notnull=true default=∅
+COLUMN center_payouts.fee_minor ord=6 type=bigint notnull=true default=0
+COLUMN center_payouts.vat_minor ord=7 type=bigint notnull=true default=0
+COLUMN center_payouts.net_minor ord=8 type=bigint notnull=true default=∅
+COLUMN center_payouts.rail ord=9 type=text notnull=true default=∅
+COLUMN center_payouts.snap_issuer ord=10 type=text notnull=false default=∅
+COLUMN center_payouts.snap_msisdn ord=11 type=text notnull=false default=∅
+COLUMN center_payouts.snap_bank_code ord=12 type=text notnull=false default=∅
+COLUMN center_payouts.snap_account_or_iban ord=13 type=text notnull=false default=∅
+COLUMN center_payouts.snap_full_name ord=14 type=text notnull=false default=∅
+COLUMN center_payouts.client_reference_id ord=15 type=uuid notnull=true default=gen_random_uuid()
+COLUMN center_payouts.client_reference ord=16 type=text notnull=true default=∅
+COLUMN center_payouts.provider_transaction_id ord=17 type=text notnull=false default=∅
+COLUMN center_payouts.cap_in_force_minor ord=18 type=bigint notnull=false default=∅
+COLUMN center_payouts.amount_compared_minor ord=19 type=bigint notnull=false default=∅
+COLUMN center_payouts.requested_at ord=20 type=timestamp with time zone notnull=true default=now()
+COLUMN center_payouts.requested_by ord=21 type=uuid notnull=false default=∅
+COLUMN center_payouts.approved_by ord=22 type=uuid notnull=false default=∅
+COLUMN center_payouts.approved_at ord=23 type=timestamp with time zone notnull=false default=∅
+COLUMN center_payouts.submitted_at ord=24 type=timestamp with time zone notnull=false default=∅
+COLUMN center_payouts.settled_at ord=25 type=timestamp with time zone notnull=false default=∅
+COLUMN center_payouts.updated_at ord=26 type=timestamp with time zone notnull=true default=now()
 COLUMN center_reengagement_log.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN center_reengagement_log.center_id ord=2 type=uuid notnull=true default=∅
 COLUMN center_reengagement_log.sent_at ord=3 type=timestamp with time zone notnull=false default=now()
@@ -653,6 +689,12 @@ COLUMN chargebacks.is_test ord=13 type=boolean notnull=true default=false
 COLUMN chargebacks.details ord=14 type=jsonb notnull=true default='{}'::jsonb
 COLUMN chargebacks.created_by ord=15 type=uuid notnull=false default=∅
 COLUMN chargebacks.created_at ord=16 type=timestamp with time zone notnull=true default=now()
+COLUMN collection_enablement.id ord=1 type=uuid notnull=true default=gen_random_uuid()
+COLUMN collection_enablement.principal_kind ord=2 type=text notnull=true default=∅
+COLUMN collection_enablement.center_id ord=3 type=uuid notnull=false default=∅
+COLUMN collection_enablement.user_id ord=4 type=uuid notnull=true default=∅
+COLUMN collection_enablement.enabled_at ord=5 type=timestamp with time zone notnull=true default=now()
+COLUMN collection_enablement.disabled_at ord=6 type=timestamp with time zone notnull=false default=∅
 COLUMN combined_payment_sessions.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN combined_payment_sessions.center_id ord=2 type=uuid notnull=false default=∅
 COLUMN combined_payment_sessions.paymob_order_id ord=3 type=text notnull=false default=∅
@@ -946,6 +988,28 @@ COLUMN invoices.teacher_id ord=38 type=uuid notnull=false default=∅
 COLUMN invoices.vat_rate ord=39 type=numeric notnull=false default=∅
 COLUMN invoices.vat_amount ord=40 type=numeric notnull=false default=∅
 COLUMN invoices.processing_fee ord=41 type=numeric notnull=false default=∅
+COLUMN ledger_accounts.id ord=1 type=uuid notnull=true default=gen_random_uuid()
+COLUMN ledger_accounts.center_id ord=2 type=uuid notnull=true default=∅
+COLUMN ledger_accounts.kind ord=3 type=text notnull=true default=∅
+COLUMN ledger_accounts.currency ord=4 type=text notnull=true default='EGP'::text
+COLUMN ledger_accounts.created_at ord=5 type=timestamp with time zone notnull=true default=now()
+COLUMN ledger_entries.id ord=1 type=uuid notnull=true default=gen_random_uuid()
+COLUMN ledger_entries.transaction_id ord=2 type=uuid notnull=true default=∅
+COLUMN ledger_entries.account_id ord=3 type=uuid notnull=true default=∅
+COLUMN ledger_entries.amount_minor ord=4 type=bigint notnull=true default=∅
+COLUMN ledger_entries.created_at ord=5 type=timestamp with time zone notnull=true default=now()
+COLUMN ledger_transactions.id ord=1 type=uuid notnull=true default=gen_random_uuid()
+COLUMN ledger_transactions.occurred_at ord=2 type=timestamp with time zone notnull=true default=now()
+COLUMN ledger_transactions.cairo_date ord=3 type=date notnull=false default=((occurred_at AT TIME ZONE 'Africa/Cairo'::text))::date
+COLUMN ledger_transactions.kind ord=4 type=text notnull=true default=∅
+COLUMN ledger_transactions.center_id ord=5 type=uuid notnull=true default=∅
+COLUMN ledger_transactions.payout_id ord=6 type=uuid notnull=false default=∅
+COLUMN ledger_transactions.reverses_id ord=7 type=uuid notnull=false default=∅
+COLUMN ledger_transactions.idempotency_key ord=8 type=text notnull=true default=∅
+COLUMN ledger_transactions.actor ord=9 type=text notnull=false default=∅
+COLUMN ledger_transactions.reason_key ord=10 type=text notnull=false default=∅
+COLUMN ledger_transactions.metadata ord=11 type=jsonb notnull=true default='{}'::jsonb
+COLUMN ledger_transactions.cleared_at ord=12 type=timestamp with time zone notnull=false default=∅
 COLUMN mrr_snapshots.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN mrr_snapshots.snapshot_date ord=2 type=date notnull=true default=∅
 COLUMN mrr_snapshots.total_mrr ord=3 type=numeric(12,2) notnull=true default=0
@@ -1007,6 +1071,48 @@ COLUMN payments.confirmed ord=9 type=boolean notnull=false default=false
 COLUMN payments.confirmed_by ord=10 type=uuid notnull=false default=∅
 COLUMN payments.confirmed_at ord=11 type=timestamp with time zone notnull=false default=∅
 COLUMN payments.group_id ord=12 type=uuid notnull=false default=∅
+COLUMN payout_approval_log.seq ord=1 type=bigint notnull=true default=nextval('payout_approval_log_seq_seq'::regclass)
+COLUMN payout_approval_log.payout_id ord=2 type=uuid notnull=true default=∅
+COLUMN payout_approval_log.center_id ord=3 type=uuid notnull=true default=∅
+COLUMN payout_approval_log.approver_admin_user_id ord=4 type=uuid notnull=true default=∅
+COLUMN payout_approval_log.approver_tier ord=5 type=text notnull=true default=∅
+COLUMN payout_approval_log.authority_source ord=6 type=text notnull=true default=∅
+COLUMN payout_approval_log.amount_compared_minor ord=7 type=bigint notnull=true default=∅
+COLUMN payout_approval_log.gross_minor ord=8 type=bigint notnull=true default=∅
+COLUMN payout_approval_log.fee_minor ord=9 type=bigint notnull=true default=∅
+COLUMN payout_approval_log.vat_minor ord=10 type=bigint notnull=true default=∅
+COLUMN payout_approval_log.net_minor ord=11 type=bigint notnull=true default=∅
+COLUMN payout_approval_log.cap_in_force_minor ord=12 type=bigint notnull=true default=∅
+COLUMN payout_approval_log.window_approved_minor ord=13 type=bigint notnull=true default=∅
+COLUMN payout_approval_log.destination_digest ord=14 type=text notnull=true default=∅
+COLUMN payout_approval_log.is_resend ord=15 type=boolean notnull=true default=false
+COLUMN payout_approval_log.step_up_verified ord=16 type=boolean notnull=true default=∅
+COLUMN payout_approval_log.outcome ord=17 type=text notnull=true default=∅
+COLUMN payout_approval_log.created_at ord=18 type=timestamp with time zone notnull=true default=now()
+COLUMN payout_approval_log.prev_row_hash ord=19 type=text notnull=false default=∅
+COLUMN payout_approval_log.row_hash ord=20 type=text notnull=true default=∅
+COLUMN payout_provider_events.id ord=1 type=uuid notnull=true default=gen_random_uuid()
+COLUMN payout_provider_events.source ord=2 type=text notnull=true default=∅
+COLUMN payout_provider_events.raw_body ord=3 type=jsonb notnull=true default=∅
+COLUMN payout_provider_events.received_at ord=4 type=timestamp with time zone notnull=true default=now()
+COLUMN payout_provider_events.hmac_verified ord=5 type=boolean notnull=true default=false
+COLUMN payout_provider_events.matched_payout_id ord=6 type=uuid notnull=false default=∅
+COLUMN payout_provider_events.inquiry_enqueued_at ord=7 type=timestamp with time zone notnull=false default=∅
+COLUMN payout_provider_events.processing_error ord=8 type=text notnull=false default=∅
+COLUMN payout_reconciliation_periods.id ord=1 type=uuid notnull=true default=gen_random_uuid()
+COLUMN payout_reconciliation_periods.cairo_month ord=2 type=date notnull=true default=∅
+COLUMN payout_reconciliation_periods.opening_budget_minor ord=3 type=bigint notnull=false default=∅
+COLUMN payout_reconciliation_periods.closing_budget_minor ord=4 type=bigint notnull=false default=∅
+COLUMN payout_reconciliation_periods.topups_minor ord=5 type=bigint notnull=true default=0
+COLUMN payout_reconciliation_periods.settled_minor ord=6 type=bigint notnull=true default=0
+COLUMN payout_reconciliation_periods.fees_minor ord=7 type=bigint notnull=true default=0
+COLUMN payout_reconciliation_periods.vat_minor ord=8 type=bigint notnull=true default=0
+COLUMN payout_reconciliation_periods.returned_minor ord=9 type=bigint notnull=true default=0
+COLUMN payout_reconciliation_periods.unexplained_delta_minor ord=10 type=bigint notnull=false default=∅
+COLUMN payout_reconciliation_periods.closed_at ord=11 type=timestamp with time zone notnull=false default=∅
+COLUMN payout_reconciliation_periods.closed_by ord=12 type=uuid notnull=false default=∅
+COLUMN payout_reconciliation_periods.closed_with_variance_reason ord=13 type=text notnull=false default=∅
+COLUMN payout_reconciliation_periods.created_at ord=14 type=timestamp with time zone notnull=true default=now()
 COLUMN payout_requests.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN payout_requests.center_id ord=2 type=uuid notnull=true default=∅
 COLUMN payout_requests.amount_requested ord=3 type=numeric(12,2) notnull=true default=∅
@@ -1624,6 +1730,29 @@ COLUMN vendors.pickup_address ord=4 type=text notnull=true default=∅
 COLUMN vendors.city ord=5 type=text notnull=true default='Cairo'::text
 COLUMN vendors.is_active ord=6 type=boolean notnull=false default=true
 COLUMN vendors.created_at ord=7 type=timestamp with time zone notnull=false default=now()
+COLUMN verification_attempts.id ord=1 type=uuid notnull=true default=gen_random_uuid()
+COLUMN verification_attempts.reference_id ord=2 type=text notnull=true default=∅
+COLUMN verification_attempts.subject_type ord=3 type=text notnull=true default=∅
+COLUMN verification_attempts.center_id ord=4 type=uuid notnull=false default=∅
+COLUMN verification_attempts.user_id ord=5 type=uuid notnull=false default=∅
+COLUMN verification_attempts.state ord=6 type=text notnull=true default='pending'::text
+COLUMN verification_attempts.expires_at ord=7 type=timestamp with time zone notnull=true default=∅
+COLUMN verification_attempts.created_at ord=8 type=timestamp with time zone notnull=true default=now()
+COLUMN verification_records.id ord=1 type=uuid notnull=true default=gen_random_uuid()
+COLUMN verification_records.subject_type ord=2 type=text notnull=true default=∅
+COLUMN verification_records.center_id ord=3 type=uuid notnull=false default=∅
+COLUMN verification_records.user_id ord=4 type=uuid notnull=false default=∅
+COLUMN verification_records.state ord=5 type=text notnull=true default='unverified'::text
+COLUMN verification_records.last_outcome ord=6 type=text notnull=false default=∅
+COLUMN verification_records.national_id ord=7 type=text notnull=false default=∅
+COLUMN verification_records.legal_name ord=8 type=text notnull=false default=∅
+COLUMN verification_records.verified_at ord=9 type=timestamp with time zone notnull=false default=∅
+COLUMN verification_records.verified_cairo_day ord=10 type=date notnull=false default=∅
+COLUMN verification_records.provider ord=11 type=text notnull=true default='valify'::text
+COLUMN verification_records.provider_reference ord=12 type=text notnull=false default=∅
+COLUMN verification_records.retention_basis ord=13 type=text notnull=true default='egyptian_tax_record'::text
+COLUMN verification_records.created_at ord=14 type=timestamp with time zone notnull=true default=now()
+COLUMN verification_records.updated_at ord=15 type=timestamp with time zone notnull=true default=now()
 COLUMN wa_conversations.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN wa_conversations.center_id ord=2 type=uuid notnull=true default=∅
 COLUMN wa_conversations.contact_phone ord=3 type=text notnull=true default=∅
@@ -1949,6 +2078,15 @@ CONSTRAINT center_notes.center_notes_author_id_fkey type=f def=FOREIGN KEY (auth
 CONSTRAINT center_notes.center_notes_body_check type=c def=CHECK ((char_length(body) >= 1))
 CONSTRAINT center_notes.center_notes_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT center_notes.center_notes_pkey type=p def=PRIMARY KEY (id)
+CONSTRAINT center_payouts.center_payouts_approved_by_fkey type=f def=FOREIGN KEY (approved_by) REFERENCES admin_users(id) ON DELETE RESTRICT
+CONSTRAINT center_payouts.center_payouts_approved_needs_snapshot type=c def=CHECK (((status = 'requested'::text) OR ((approved_by IS NOT NULL) AND (approved_at IS NOT NULL) AND (cap_in_force_minor IS NOT NULL) AND (amount_compared_minor IS NOT NULL) AND ((snap_msisdn IS NOT NULL) OR (snap_account_or_iban IS NOT NULL)))))
+CONSTRAINT center_payouts.center_payouts_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE RESTRICT
+CONSTRAINT center_payouts.center_payouts_money_nonneg type=c def=CHECK (((gross_minor > 0) AND (fee_minor >= 0) AND (vat_minor >= 0) AND (net_minor > 0) AND (net_minor <= gross_minor)))
+CONSTRAINT center_payouts.center_payouts_pkey type=p def=PRIMARY KEY (id)
+CONSTRAINT center_payouts.center_payouts_rail_check type=c def=CHECK ((rail = ANY (ARRAY['paymob_payouts'::text, 'manual_instapay'::text])))
+CONSTRAINT center_payouts.center_payouts_requested_by_fkey type=f def=FOREIGN KEY (requested_by) REFERENCES users(id) ON DELETE SET NULL
+CONSTRAINT center_payouts.center_payouts_source_check type=c def=CHECK ((source = ANY (ARRAY['referral_earnings'::text, 'credit_balance'::text])))
+CONSTRAINT center_payouts.center_payouts_status_check type=c def=CHECK ((status = ANY (ARRAY['requested'::text, 'approved'::text, 'submitting'::text, 'submitted'::text, 'indeterminate'::text, 'settled'::text, 'settled_pending_bank'::text, 'failed'::text, 'returned'::text, 'reversing'::text])))
 CONSTRAINT center_reengagement_log.center_reengagement_log_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT center_reengagement_log.center_reengagement_log_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT centers.centers_approved_by_fkey type=f def=FOREIGN KEY (approved_by) REFERENCES auth.users(id)
@@ -1987,6 +2125,11 @@ CONSTRAINT chargebacks.chargebacks_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT chargebacks.chargebacks_status_chk type=c def=CHECK ((status = ANY (ARRAY['opened'::text, 'won'::text, 'lost'::text])))
 CONSTRAINT chargebacks.chargebacks_teacher_id_fkey type=f def=FOREIGN KEY (teacher_id) REFERENCES teacher_profiles(user_id) ON DELETE SET NULL
 CONSTRAINT chargebacks.chargebacks_transaction_id_fkey type=f def=FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE RESTRICT
+CONSTRAINT collection_enablement.collection_enablement_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT collection_enablement.collection_enablement_center_required_for_center type=c def=CHECK (((principal_kind <> 'center'::text) OR (center_id IS NOT NULL)))
+CONSTRAINT collection_enablement.collection_enablement_kind_check type=c def=CHECK ((principal_kind = ANY (ARRAY['center'::text, 'teacher'::text])))
+CONSTRAINT collection_enablement.collection_enablement_pkey type=p def=PRIMARY KEY (id)
+CONSTRAINT collection_enablement.collection_enablement_user_id_fkey type=f def=FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 CONSTRAINT combined_payment_sessions.combined_payment_sessions_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE RESTRICT
 CONSTRAINT combined_payment_sessions.combined_payment_sessions_finalized_by_check type=c def=CHECK (((finalized_by IS NULL) OR (finalized_by = ANY (ARRAY['webhook'::text, 'cron'::text, 'credits'::text]))))
 CONSTRAINT combined_payment_sessions.combined_payment_sessions_money_nonneg type=c def=CHECK (((credit_amount >= (0)::numeric) AND (paymob_amount >= (0)::numeric) AND (total_amount >= (0)::numeric)))
@@ -2117,6 +2260,16 @@ CONSTRAINT invoices.invoices_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT invoices.invoices_status_check type=c def=CHECK ((status = ANY (ARRAY['pending'::text, 'paid'::text, 'overdue'::text, 'cancelled'::text, 'approved'::text, 'rejected'::text, 'failed'::text, 'chargeback'::text])))
 CONSTRAINT invoices.invoices_tax_snapshot_nonneg type=c def=CHECK ((((vat_amount IS NULL) OR (vat_amount >= (0)::numeric)) AND ((processing_fee IS NULL) OR (processing_fee >= (0)::numeric)) AND ((vat_rate IS NULL) OR ((vat_rate >= (0)::numeric) AND (vat_rate <= (1)::numeric)))))
 CONSTRAINT invoices.invoices_teacher_id_fkey type=f def=FOREIGN KEY (teacher_id) REFERENCES teacher_profiles(user_id) ON DELETE RESTRICT
+CONSTRAINT ledger_accounts.ledger_accounts_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE RESTRICT
+CONSTRAINT ledger_accounts.ledger_accounts_currency_check type=c def=CHECK ((currency = 'EGP'::text))
+CONSTRAINT ledger_accounts.ledger_accounts_kind_check type=c def=CHECK ((kind = ANY (ARRAY['referral_earnings'::text, 'credit_balance'::text, 'payable'::text, 'paid_out'::text, 'reserve_withheld'::text, 'clawback_receivable'::text, 'paymob_budget'::text, 'platform_bank_instapay'::text, 'payout_fees'::text])))
+CONSTRAINT ledger_accounts.ledger_accounts_pkey type=p def=PRIMARY KEY (id)
+CONSTRAINT ledger_entries.ledger_entries_account_id_fkey type=f def=FOREIGN KEY (account_id) REFERENCES ledger_accounts(id) ON DELETE RESTRICT
+CONSTRAINT ledger_entries.ledger_entries_pkey type=p def=PRIMARY KEY (id)
+CONSTRAINT ledger_entries.ledger_entries_transaction_id_fkey type=f def=FOREIGN KEY (transaction_id) REFERENCES ledger_transactions(id) ON DELETE RESTRICT
+CONSTRAINT ledger_transactions.ledger_transactions_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE RESTRICT
+CONSTRAINT ledger_transactions.ledger_transactions_pkey type=p def=PRIMARY KEY (id)
+CONSTRAINT ledger_transactions.ledger_transactions_reverses_id_fkey type=f def=FOREIGN KEY (reverses_id) REFERENCES ledger_transactions(id)
 CONSTRAINT mrr_snapshots.mrr_snapshots_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT mrr_snapshots.mrr_snapshots_snapshot_date_key type=u def=UNIQUE (snapshot_date)
 CONSTRAINT mrr_snapshots.mrr_snapshots_total_mrr_nonneg type=c def=CHECK ((total_mrr >= (0)::numeric))
@@ -2149,6 +2302,19 @@ CONSTRAINT payments.payments_method_check type=c def=CHECK ((method = ANY (ARRAY
 CONSTRAINT payments.payments_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT payments.payments_recorded_by_fkey type=f def=FOREIGN KEY (recorded_by) REFERENCES users(id) ON DELETE SET NULL
 CONSTRAINT payments.payments_student_id_fkey type=f def=FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE RESTRICT
+CONSTRAINT payout_approval_log.payout_approval_log_approver_admin_user_id_fkey type=f def=FOREIGN KEY (approver_admin_user_id) REFERENCES admin_users(id) ON DELETE RESTRICT
+CONSTRAINT payout_approval_log.payout_approval_log_authority_check type=c def=CHECK ((authority_source = ANY (ARRAY['db_row'::text, 'env_phone'::text])))
+CONSTRAINT payout_approval_log.payout_approval_log_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE RESTRICT
+CONSTRAINT payout_approval_log.payout_approval_log_outcome_check type=c def=CHECK ((outcome = ANY (ARRAY['approved'::text, 'refused_cap'::text, 'refused_authority'::text, 'revoked_sweep'::text])))
+CONSTRAINT payout_approval_log.payout_approval_log_payout_id_fkey type=f def=FOREIGN KEY (payout_id) REFERENCES center_payouts(id) ON DELETE RESTRICT
+CONSTRAINT payout_approval_log.payout_approval_log_pkey type=p def=PRIMARY KEY (seq)
+CONSTRAINT payout_approval_log.payout_approval_log_tier_check type=c def=CHECK ((approver_tier = ANY (ARRAY['ceo'::text, 'delegate'::text])))
+CONSTRAINT payout_provider_events.payout_provider_events_matched_payout_id_fkey type=f def=FOREIGN KEY (matched_payout_id) REFERENCES center_payouts(id) ON DELETE SET NULL
+CONSTRAINT payout_provider_events.payout_provider_events_pkey type=p def=PRIMARY KEY (id)
+CONSTRAINT payout_provider_events.payout_provider_events_source_check type=c def=CHECK ((source = ANY (ARRAY['callback'::text, 'inquiry'::text, 'budget_inquiry'::text, 'topup_inquiry'::text])))
+CONSTRAINT payout_reconciliation_periods.payout_recon_close_requires_zero_or_reason type=c def=CHECK (((closed_at IS NULL) OR ((closed_by IS NOT NULL) AND ((COALESCE(unexplained_delta_minor, (0)::bigint) = 0) OR ((closed_with_variance_reason IS NOT NULL) AND (length(btrim(closed_with_variance_reason)) >= 20))))))
+CONSTRAINT payout_reconciliation_periods.payout_reconciliation_periods_closed_by_fkey type=f def=FOREIGN KEY (closed_by) REFERENCES admin_users(id) ON DELETE RESTRICT
+CONSTRAINT payout_reconciliation_periods.payout_reconciliation_periods_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT payout_requests.payout_requests_amount_requested_nonneg type=c def=CHECK ((amount_requested >= (0)::numeric))
 CONSTRAINT payout_requests.payout_requests_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT payout_requests.payout_requests_pkey type=p def=PRIMARY KEY (id)
@@ -2422,6 +2588,21 @@ CONSTRAINT users.users_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT users.users_preferred_locale_check type=c def=CHECK ((preferred_locale = ANY (ARRAY['ar'::text, 'en'::text])))
 CONSTRAINT users.users_role_check type=c def=CHECK ((role = ANY (ARRAY['owner'::text, 'admin'::text, 'assistant'::text, 'teacher'::text, 'super_admin'::text])))
 CONSTRAINT vendors.vendors_pkey type=p def=PRIMARY KEY (id)
+CONSTRAINT verification_attempts.verification_attempts_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT verification_attempts.verification_attempts_one_subject_check type=c def=CHECK ((((subject_type = 'center'::text) AND (center_id IS NOT NULL) AND (user_id IS NULL)) OR ((subject_type = 'teacher'::text) AND (user_id IS NOT NULL) AND (center_id IS NULL))))
+CONSTRAINT verification_attempts.verification_attempts_pkey type=p def=PRIMARY KEY (id)
+CONSTRAINT verification_attempts.verification_attempts_state_check type=c def=CHECK ((state = ANY (ARRAY['pending'::text, 'completed'::text, 'expired'::text, 'abandoned'::text])))
+CONSTRAINT verification_attempts.verification_attempts_subject_type_check type=c def=CHECK ((subject_type = ANY (ARRAY['center'::text, 'teacher'::text])))
+CONSTRAINT verification_attempts.verification_attempts_user_id_fkey type=f def=FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+CONSTRAINT verification_records.verification_records_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT verification_records.verification_records_last_outcome_check type=c def=CHECK (((last_outcome IS NULL) OR (last_outcome = ANY (ARRAY['passed'::text, 'failed'::text, 'abandoned'::text, 'expired'::text, 'provider_error'::text]))))
+CONSTRAINT verification_records.verification_records_one_subject_check type=c def=CHECK ((((subject_type = 'center'::text) AND (center_id IS NOT NULL) AND (user_id IS NULL)) OR ((subject_type = 'teacher'::text) AND (user_id IS NOT NULL) AND (center_id IS NULL))))
+CONSTRAINT verification_records.verification_records_pkey type=p def=PRIMARY KEY (id)
+CONSTRAINT verification_records.verification_records_retention_basis_check type=c def=CHECK ((retention_basis = ANY (ARRAY['egyptian_tax_record'::text, 'erasable'::text])))
+CONSTRAINT verification_records.verification_records_state_check type=c def=CHECK ((state = ANY (ARRAY['unverified'::text, 'pending'::text, 'verified'::text, 'rejected'::text])))
+CONSTRAINT verification_records.verification_records_subject_type_check type=c def=CHECK ((subject_type = ANY (ARRAY['center'::text, 'teacher'::text])))
+CONSTRAINT verification_records.verification_records_user_id_fkey type=f def=FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+CONSTRAINT verification_records.verification_records_verified_shape_check type=c def=CHECK ((((state = 'verified'::text) AND (verified_at IS NOT NULL)) OR ((state <> 'verified'::text) AND (verified_at IS NULL) AND (verified_cairo_day IS NULL) AND (national_id IS NULL) AND (legal_name IS NULL))))
 CONSTRAINT wa_conversations.wa_conversations_center_id_contact_phone_key type=u def=UNIQUE (center_id, contact_phone)
 CONSTRAINT wa_conversations.wa_conversations_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT wa_conversations.wa_conversations_pkey type=p def=PRIMARY KEY (id)
@@ -2558,6 +2739,11 @@ INDEX idx_center_message_templates_center ON center_message_templates def=CREATE
 INDEX center_metrics_daily_center_date_idx ON center_metrics_daily def=CREATE INDEX center_metrics_daily_center_date_idx ON public.center_metrics_daily USING btree (center_id, metric_date DESC)
 INDEX idx_center_notes_center ON center_notes def=CREATE INDEX idx_center_notes_center ON public.center_notes USING btree (center_id, created_at DESC)
 INDEX idx_center_notes_pinned ON center_notes def=CREATE INDEX idx_center_notes_pinned ON public.center_notes USING btree (center_id) WHERE (is_pinned = true)
+INDEX center_payouts_client_reference_id_uniq ON center_payouts def=CREATE UNIQUE INDEX center_payouts_client_reference_id_uniq ON public.center_payouts USING btree (client_reference_id)
+INDEX center_payouts_client_reference_uniq ON center_payouts def=CREATE UNIQUE INDEX center_payouts_client_reference_uniq ON public.center_payouts USING btree (client_reference)
+INDEX center_payouts_provider_txn_uniq ON center_payouts def=CREATE UNIQUE INDEX center_payouts_provider_txn_uniq ON public.center_payouts USING btree (provider_transaction_id) WHERE (provider_transaction_id IS NOT NULL)
+INDEX center_payouts_queue_idx ON center_payouts def=CREATE INDEX center_payouts_queue_idx ON public.center_payouts USING btree (status, requested_at)
+INDEX one_open_payout_per_center ON center_payouts def=CREATE UNIQUE INDEX one_open_payout_per_center ON public.center_payouts USING btree (center_id) WHERE (status = ANY (ARRAY['requested'::text, 'approved'::text, 'submitting'::text, 'submitted'::text, 'indeterminate'::text, 'settled_pending_bank'::text, 'reversing'::text]))
 INDEX idx_reengagement_center_sent ON center_reengagement_log def=CREATE INDEX idx_reengagement_center_sent ON public.center_reengagement_log USING btree (center_id, sent_at DESC)
 INDEX centers_is_test_idx ON centers def=CREATE INDEX centers_is_test_idx ON public.centers USING btree (is_test) WHERE (is_test = true)
 INDEX centers_phone_unique_real ON centers def=CREATE UNIQUE INDEX centers_phone_unique_real ON public.centers USING btree (phone) WHERE (is_test = false)
@@ -2584,6 +2770,7 @@ INDEX chargebacks_center_id_idx ON chargebacks def=CREATE INDEX chargebacks_cent
 INDEX chargebacks_gateway_ref_key ON chargebacks def=CREATE UNIQUE INDEX chargebacks_gateway_ref_key ON public.chargebacks USING btree (gateway_ref) WHERE (gateway_ref IS NOT NULL)
 INDEX chargebacks_status_idx ON chargebacks def=CREATE INDEX chargebacks_status_idx ON public.chargebacks USING btree (status)
 INDEX chargebacks_transaction_id_idx ON chargebacks def=CREATE INDEX chargebacks_transaction_id_idx ON public.chargebacks USING btree (transaction_id)
+INDEX collection_enablement_active_uniq ON collection_enablement def=CREATE UNIQUE INDEX collection_enablement_active_uniq ON public.collection_enablement USING btree (user_id) WHERE (disabled_at IS NULL)
 INDEX idx_combined_payment_sessions_center ON combined_payment_sessions def=CREATE INDEX idx_combined_payment_sessions_center ON public.combined_payment_sessions USING btree (center_id)
 INDEX idx_combined_payment_sessions_order ON combined_payment_sessions def=CREATE INDEX idx_combined_payment_sessions_order ON public.combined_payment_sessions USING btree (paymob_order_id)
 INDEX idx_combined_sessions_order_paid ON combined_payment_sessions def=CREATE UNIQUE INDEX idx_combined_sessions_order_paid ON public.combined_payment_sessions USING btree (paymob_order_id) WHERE (status = 'paid'::text)
@@ -2639,6 +2826,12 @@ INDEX idx_invoices_paymob_order ON invoices def=CREATE INDEX idx_invoices_paymob
 INDEX idx_invoices_status ON invoices def=CREATE INDEX idx_invoices_status ON public.invoices USING btree (status)
 INDEX idx_invoices_teacher_id ON invoices def=CREATE INDEX idx_invoices_teacher_id ON public.invoices USING btree (teacher_id) WHERE (teacher_id IS NOT NULL)
 INDEX idx_invoices_teacher_status ON invoices def=CREATE INDEX idx_invoices_teacher_status ON public.invoices USING btree (teacher_id, status) WHERE (owner_type = 'teacher'::text)
+INDEX ledger_accounts_center_kind_uniq ON ledger_accounts def=CREATE UNIQUE INDEX ledger_accounts_center_kind_uniq ON public.ledger_accounts USING btree (center_id, kind)
+INDEX ledger_entries_account_idx ON ledger_entries def=CREATE INDEX ledger_entries_account_idx ON public.ledger_entries USING btree (account_id)
+INDEX ledger_entries_transaction_idx ON ledger_entries def=CREATE INDEX ledger_entries_transaction_idx ON public.ledger_entries USING btree (transaction_id)
+INDEX ledger_transactions_center_idx ON ledger_transactions def=CREATE INDEX ledger_transactions_center_idx ON public.ledger_transactions USING btree (center_id, occurred_at DESC)
+INDEX ledger_transactions_idempotency_uniq ON ledger_transactions def=CREATE UNIQUE INDEX ledger_transactions_idempotency_uniq ON public.ledger_transactions USING btree (idempotency_key)
+INDEX ledger_transactions_payout_idx ON ledger_transactions def=CREATE INDEX ledger_transactions_payout_idx ON public.ledger_transactions USING btree (payout_id) WHERE (payout_id IS NOT NULL)
 INDEX idx_organizations_owner ON organizations def=CREATE INDEX idx_organizations_owner ON public.organizations USING btree (owner_user_id)
 INDEX idx_pack_requests_center_updated ON pack_requests def=CREATE INDEX idx_pack_requests_center_updated ON public.pack_requests USING btree (center_id, updated_at DESC)
 INDEX pack_requests_one_open_per_center ON pack_requests def=CREATE UNIQUE INDEX pack_requests_one_open_per_center ON public.pack_requests USING btree (center_id) WHERE (status <> ALL (ARRAY['issued'::text, 'cancelled'::text]))
@@ -2659,7 +2852,11 @@ INDEX idx_payments_confirmed_by ON payments def=CREATE INDEX idx_payments_confir
 INDEX idx_payments_group ON payments def=CREATE INDEX idx_payments_group ON public.payments USING btree (group_id) WHERE (group_id IS NOT NULL)
 INDEX idx_payments_recorded_by ON payments def=CREATE INDEX idx_payments_recorded_by ON public.payments USING btree (recorded_by) WHERE (recorded_by IS NOT NULL)
 INDEX idx_payments_student ON payments def=CREATE INDEX idx_payments_student ON public.payments USING btree (student_id)
+INDEX payout_approval_log_window_idx ON payout_approval_log def=CREATE INDEX payout_approval_log_window_idx ON public.payout_approval_log USING btree (center_id, created_at DESC) WHERE (outcome = 'approved'::text)
+INDEX payout_provider_events_unprocessed_idx ON payout_provider_events def=CREATE INDEX payout_provider_events_unprocessed_idx ON public.payout_provider_events USING btree (received_at) WHERE (inquiry_enqueued_at IS NULL)
+INDEX payout_reconciliation_periods_month_uniq ON payout_reconciliation_periods def=CREATE UNIQUE INDEX payout_reconciliation_periods_month_uniq ON public.payout_reconciliation_periods USING btree (cairo_month)
 INDEX idx_payout_requests_center ON payout_requests def=CREATE INDEX idx_payout_requests_center ON public.payout_requests USING btree (center_id)
+INDEX one_open_payout_request_per_center ON payout_requests def=CREATE UNIQUE INDEX one_open_payout_request_per_center ON public.payout_requests USING btree (center_id) WHERE (status = ANY (ARRAY['pending'::text, 'approved'::text]))
 INDEX idx_pending_enrollments_center_id ON pending_enrollments def=CREATE INDEX idx_pending_enrollments_center_id ON public.pending_enrollments USING btree (center_id)
 INDEX idx_pending_enrollments_group_id ON pending_enrollments def=CREATE INDEX idx_pending_enrollments_group_id ON public.pending_enrollments USING btree (group_id)
 INDEX idx_pending_enrollments_student_id ON pending_enrollments def=CREATE INDEX idx_pending_enrollments_student_id ON public.pending_enrollments USING btree (student_id)
@@ -2773,6 +2970,11 @@ INDEX uq_transactions_lesson_session_student ON transactions def=CREATE UNIQUE I
 INDEX idx_users_center_id ON users def=CREATE INDEX idx_users_center_id ON public.users USING btree (center_id)
 INDEX idx_users_organization ON users def=CREATE INDEX idx_users_organization ON public.users USING btree (organization_id)
 INDEX idx_users_phone ON users def=CREATE INDEX idx_users_phone ON public.users USING btree (phone) WHERE (phone IS NOT NULL)
+INDEX verification_attempts_center_idx ON verification_attempts def=CREATE INDEX verification_attempts_center_idx ON public.verification_attempts USING btree (center_id) WHERE (center_id IS NOT NULL)
+INDEX verification_attempts_reference_uniq ON verification_attempts def=CREATE UNIQUE INDEX verification_attempts_reference_uniq ON public.verification_attempts USING btree (reference_id)
+INDEX verification_attempts_user_idx ON verification_attempts def=CREATE INDEX verification_attempts_user_idx ON public.verification_attempts USING btree (user_id) WHERE (user_id IS NOT NULL)
+INDEX verification_records_center_uniq ON verification_records def=CREATE UNIQUE INDEX verification_records_center_uniq ON public.verification_records USING btree (center_id) WHERE (center_id IS NOT NULL)
+INDEX verification_records_user_uniq ON verification_records def=CREATE UNIQUE INDEX verification_records_user_uniq ON public.verification_records USING btree (user_id) WHERE (user_id IS NOT NULL)
 INDEX idx_wa_conversations_center ON wa_conversations def=CREATE INDEX idx_wa_conversations_center ON public.wa_conversations USING btree (center_id)
 INDEX idx_wa_conversations_human_queue ON wa_conversations def=CREATE INDEX idx_wa_conversations_human_queue ON public.wa_conversations USING btree (center_id, is_in_human_queue) WHERE (is_in_human_queue = true)
 INDEX idx_wa_conversations_phone ON wa_conversations def=CREATE INDEX idx_wa_conversations_phone ON public.wa_conversations USING btree (contact_phone)
@@ -2806,6 +3008,7 @@ INDEX idx_whatsapp_usage_center ON whatsapp_usage def=CREATE INDEX idx_whatsapp_
 INDEX idx_whatsapp_usage_center_month ON whatsapp_usage def=CREATE INDEX idx_whatsapp_usage_center_month ON public.whatsapp_usage USING btree (center_id, billed_month)
 INDEX idx_whatsapp_usage_student ON whatsapp_usage def=CREATE INDEX idx_whatsapp_usage_student ON public.whatsapp_usage USING btree (student_id)
 INDEX idx_withdrawal_requests_processed_by ON withdrawal_requests def=CREATE INDEX idx_withdrawal_requests_processed_by ON public.withdrawal_requests USING btree (processed_by) WHERE (processed_by IS NOT NULL)
+INDEX one_pending_withdrawal_per_center ON withdrawal_requests def=CREATE UNIQUE INDEX one_pending_withdrawal_per_center ON public.withdrawal_requests USING btree (center_id) WHERE (status = 'pending'::text)
 POLICY academic_periods.academic_periods_delete cmd=DELETE permissive=PERMISSIVE roles=public using=(center_id IN ( SELECT users.center_id FROM users WHERE (users.id = auth.uid()))) check=∅
 POLICY academic_periods.academic_periods_insert cmd=INSERT permissive=PERMISSIVE roles=public using=∅ check=(center_id IN ( SELECT users.center_id FROM users WHERE (users.id = auth.uid())))
 POLICY academic_periods.academic_periods_select cmd=SELECT permissive=PERMISSIVE roles=public using=(center_id IN ( SELECT users.center_id FROM users WHERE (users.id = auth.uid()))) check=∅
@@ -2859,9 +3062,11 @@ POLICY center_message_templates.center_message_templates_select cmd=SELECT permi
 POLICY center_message_templates.center_message_templates_update cmd=UPDATE permissive=PERMISSIVE roles=public using=(center_id IN ( SELECT users.center_id FROM users WHERE (users.id = auth.uid()))) check=∅
 POLICY center_metrics_daily.service_role_all_center_metrics cmd=ALL permissive=PERMISSIVE roles=service_role using=true check=true
 POLICY center_notes.center_notes_admin_all cmd=ALL permissive=PERMISSIVE roles=public using=(EXISTS ( SELECT 1 FROM admin_users WHERE (admin_users.id = auth.uid()))) check=∅
+POLICY center_payouts.center_payouts_center_read cmd=SELECT permissive=PERMISSIVE roles=authenticated using=(center_id = ( SELECT u.center_id FROM users u WHERE (u.id = auth.uid()))) check=∅
 POLICY center_reengagement_log.service role only cmd=ALL permissive=PERMISSIVE roles=public using=(auth.role() = 'service_role'::text) check=∅
 POLICY centers.centers_select_own cmd=SELECT permissive=PERMISSIVE roles=authenticated using=(id = get_auth_center_id()) check=∅
 POLICY ceo_action_queue.Super admin manages action queue cmd=ALL permissive=PERMISSIVE roles=public using=(EXISTS ( SELECT 1 FROM users WHERE ((users.id = auth.uid()) AND (users.role = 'super_admin'::text)))) check=∅
+POLICY collection_enablement.collection_enablement_self_read cmd=SELECT permissive=PERMISSIVE roles=authenticated using=(user_id = auth.uid()) check=∅
 POLICY combined_payment_sessions.center_read_own_payment_sessions cmd=SELECT permissive=PERMISSIVE roles=authenticated using=(center_id = ( SELECT users.center_id FROM users WHERE (users.id = auth.uid()) LIMIT 1)) check=∅
 POLICY combined_payment_sessions.service_role_all_combined_sessions cmd=ALL permissive=PERMISSIVE roles=service_role using=true check=∅
 POLICY commission_audit_log.commission_audit_log_super_admin_select cmd=SELECT permissive=PERMISSIVE roles=public using=(EXISTS ( SELECT 1 FROM admin_users WHERE ((admin_users.id = auth.uid()) AND (admin_users.role = 'super_admin'::text)))) check=∅
@@ -2908,6 +3113,9 @@ POLICY in_app_notifications.in_app_notifications_select_own cmd=SELECT permissiv
 POLICY in_app_notifications.in_app_notifications_update_own cmd=UPDATE permissive=PERMISSIVE roles=authenticated using=(auth.uid() = user_id) check=(auth.uid() = user_id)
 POLICY invoices.invoices_select_own_center cmd=SELECT permissive=PERMISSIVE roles=authenticated using=(center_id = get_auth_center_id()) check=∅
 POLICY invoices.invoices_select_own_teacher cmd=SELECT permissive=PERMISSIVE roles=public using=((owner_type = 'teacher'::text) AND (teacher_id = auth.uid())) check=∅
+POLICY ledger_accounts.ledger_accounts_center_read cmd=SELECT permissive=PERMISSIVE roles=authenticated using=(center_id = ( SELECT u.center_id FROM users u WHERE (u.id = auth.uid()))) check=∅
+POLICY ledger_entries.ledger_entries_center_read cmd=SELECT permissive=PERMISSIVE roles=authenticated using=(EXISTS ( SELECT 1 FROM (ledger_accounts a JOIN users u ON ((u.id = auth.uid()))) WHERE ((a.id = ledger_entries.account_id) AND (a.center_id = u.center_id)))) check=∅
+POLICY ledger_transactions.ledger_transactions_center_read cmd=SELECT permissive=PERMISSIVE roles=authenticated using=(center_id = ( SELECT u.center_id FROM users u WHERE (u.id = auth.uid()))) check=∅
 POLICY mrr_snapshots.service_role_all_mrr_snapshots cmd=ALL permissive=PERMISSIVE roles=service_role using=true check=∅
 POLICY organizations.Users can view own org cmd=SELECT permissive=PERMISSIVE roles=authenticated using=((owner_user_id = auth.uid()) OR (id IN ( SELECT users.organization_id FROM users WHERE ((users.id = auth.uid()) AND (users.organization_id IS NOT NULL))))) check=∅
 POLICY pack_requests.pack_requests_deny_all cmd=ALL permissive=PERMISSIVE roles=public using=false check=∅
@@ -3000,6 +3208,8 @@ POLICY users.users_select_own_center cmd=SELECT permissive=PERMISSIVE roles=auth
 POLICY users.users_update_own_row cmd=UPDATE permissive=PERMISSIVE roles=authenticated using=(id = auth.uid()) check=((id = auth.uid()) AND (center_id = get_auth_center_id()))
 POLICY vendors.authenticated_read_vendors cmd=SELECT permissive=PERMISSIVE roles=authenticated using=true check=∅
 POLICY vendors.service_role_all_vendors cmd=ALL permissive=PERMISSIVE roles=service_role using=true check=∅
+POLICY verification_attempts.verification_attempts_select_own cmd=SELECT permissive=PERMISSIVE roles=public using=(((subject_type = 'center'::text) AND (center_id IN ( SELECT users.center_id FROM users WHERE (users.id = auth.uid())))) OR ((subject_type = 'teacher'::text) AND (user_id = auth.uid()))) check=∅
+POLICY verification_records.verification_records_select_own cmd=SELECT permissive=PERMISSIVE roles=public using=(((subject_type = 'center'::text) AND (center_id IN ( SELECT users.center_id FROM users WHERE (users.id = auth.uid())))) OR ((subject_type = 'teacher'::text) AND (user_id = auth.uid()))) check=∅
 POLICY wa_conversations.wa_conversations_service_only cmd=ALL permissive=PERMISSIVE roles=public using=false check=∅
 POLICY wa_inactivity_alerts.wa_inactivity_alerts_service_only cmd=ALL permissive=PERMISSIVE roles=public using=false check=∅
 POLICY wa_keyword_routes.wa_keyword_routes_service_only cmd=ALL permissive=PERMISSIVE roles=public using=false check=∅
@@ -3036,6 +3246,7 @@ TRIGGER card_order_carts_set_updated_at ON card_order_carts def=CREATE TRIGGER c
 TRIGGER card_orders_log_status_transition ON card_orders def=CREATE TRIGGER card_orders_log_status_transition AFTER UPDATE OF status ON public.card_orders FOR EACH ROW EXECUTE FUNCTION log_card_order_status_transition()
 TRIGGER trg_chq_prevent_card_order_tampering ON card_orders def=CREATE TRIGGER trg_chq_prevent_card_order_tampering BEFORE UPDATE ON public.card_orders FOR EACH ROW WHEN ((auth.uid() IS NOT NULL)) EXECUTE FUNCTION chq_prevent_card_order_tampering()
 TRIGGER center_notes_updated_at ON center_notes def=CREATE TRIGGER center_notes_updated_at BEFORE UPDATE ON public.center_notes FOR EACH ROW EXECUTE FUNCTION set_center_notes_updated_at()
+TRIGGER chq_center_payouts_guard ON center_payouts def=CREATE TRIGGER chq_center_payouts_guard BEFORE DELETE OR UPDATE ON public.center_payouts FOR EACH ROW EXECUTE FUNCTION chq_guard_center_payouts()
 TRIGGER auto_assign_center_code ON centers def=CREATE TRIGGER auto_assign_center_code BEFORE INSERT ON public.centers FOR EACH ROW WHEN ((new.center_code IS NULL)) EXECUTE FUNCTION assign_center_code()
 TRIGGER set_referral_code ON centers def=CREATE TRIGGER set_referral_code BEFORE INSERT ON public.centers FOR EACH ROW WHEN (((new.referral_code IS NULL) OR (length(COALESCE(TRIM(BOTH FROM new.referral_code), ''::text)) <> 8))) EXECUTE FUNCTION generate_referral_code_8char()
 TRIGGER trg_chq_prevent_center_escalation ON centers def=CREATE TRIGGER trg_chq_prevent_center_escalation BEFORE UPDATE ON public.centers FOR EACH ROW WHEN ((auth.uid() IS NOT NULL)) EXECUTE FUNCTION chq_prevent_center_escalation()
@@ -3051,9 +3262,15 @@ TRIGGER set_updated_at_group_proposals ON group_proposals def=CREATE TRIGGER set
 TRIGGER trg_guard_group_proposals_update ON group_proposals def=CREATE TRIGGER trg_guard_group_proposals_update BEFORE UPDATE ON public.group_proposals FOR EACH ROW EXECUTE FUNCTION guard_group_proposals_update()
 TRIGGER set_invoice_number ON invoices def=CREATE TRIGGER set_invoice_number BEFORE INSERT ON public.invoices FOR EACH ROW WHEN ((new.invoice_number IS NULL)) EXECUTE FUNCTION generate_invoice_number()
 TRIGGER trg_chq_prevent_invoice_tampering ON invoices def=CREATE TRIGGER trg_chq_prevent_invoice_tampering BEFORE UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION chq_prevent_invoice_tampering()
+TRIGGER chq_ledger_entries_append_only ON ledger_entries def=CREATE TRIGGER chq_ledger_entries_append_only BEFORE DELETE OR UPDATE ON public.ledger_entries FOR EACH ROW EXECUTE FUNCTION chq_block_ledger_mutation()
+TRIGGER chq_ledger_entries_balanced ON ledger_entries def=CREATE TRIGGER chq_ledger_entries_balanced AFTER INSERT ON public.ledger_entries REFERENCING NEW TABLE AS new_entries FOR EACH STATEMENT EXECUTE FUNCTION chq_assert_ledger_balanced()
+TRIGGER chq_ledger_transactions_append_only ON ledger_transactions def=CREATE TRIGGER chq_ledger_transactions_append_only BEFORE DELETE OR UPDATE ON public.ledger_transactions FOR EACH ROW EXECUTE FUNCTION chq_block_ledger_mutation()
 TRIGGER pack_requests_touch_updated ON pack_requests def=CREATE TRIGGER pack_requests_touch_updated BEFORE UPDATE ON public.pack_requests FOR EACH ROW EXECUTE FUNCTION touch_pack_requests_updated_at()
 TRIGGER trg_chq_block_pack_billing_write ON parent_pack_billing def=CREATE TRIGGER trg_chq_block_pack_billing_write BEFORE DELETE OR UPDATE ON public.parent_pack_billing FOR EACH ROW WHEN ((auth.uid() IS NOT NULL)) EXECUTE FUNCTION chq_block_pack_billing_write()
 TRIGGER trg_payments_auto_confirm_cash ON payments def=CREATE TRIGGER trg_payments_auto_confirm_cash BEFORE INSERT ON public.payments FOR EACH ROW EXECUTE FUNCTION payments_auto_confirm_cash()
+TRIGGER chq_payout_approval_log_append_only ON payout_approval_log def=CREATE TRIGGER chq_payout_approval_log_append_only BEFORE DELETE OR UPDATE ON public.payout_approval_log FOR EACH ROW EXECUTE FUNCTION chq_block_ledger_mutation()
+TRIGGER chq_payout_approval_log_chain ON payout_approval_log def=CREATE TRIGGER chq_payout_approval_log_chain BEFORE INSERT ON public.payout_approval_log FOR EACH ROW EXECUTE FUNCTION chq_payout_approval_chain()
+TRIGGER chq_payout_provider_events_append_only ON payout_provider_events def=CREATE TRIGGER chq_payout_provider_events_append_only BEFORE DELETE ON public.payout_provider_events FOR EACH ROW EXECUTE FUNCTION chq_block_ledger_mutation()
 TRIGGER trg_privacy_requests_updated_at ON privacy_requests def=CREATE TRIGGER trg_privacy_requests_updated_at BEFORE UPDATE ON public.privacy_requests FOR EACH ROW EXECUTE FUNCTION set_privacy_requests_updated_at()
 TRIGGER sales_leads_updated_at ON sales_leads def=CREATE TRIGGER sales_leads_updated_at BEFORE UPDATE ON public.sales_leads FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()
 TRIGGER trg_saved_cards_updated_at ON saved_cards def=CREATE TRIGGER trg_saved_cards_updated_at BEFORE UPDATE ON public.saved_cards FOR EACH ROW EXECUTE FUNCTION set_saved_card_updated_at()
@@ -3069,6 +3286,7 @@ TRIGGER trg_teacher_center_requests_updated_at ON teacher_center_requests def=CR
 TRIGGER trg_guard_teacher_subscriptions_lifecycle ON teacher_subscriptions def=CREATE TRIGGER trg_guard_teacher_subscriptions_lifecycle BEFORE UPDATE ON public.teacher_subscriptions FOR EACH ROW EXECUTE FUNCTION guard_teacher_subscriptions_lifecycle()
 TRIGGER trg_guard_transactions_lifecycle ON transactions def=CREATE TRIGGER trg_guard_transactions_lifecycle BEFORE UPDATE ON public.transactions FOR EACH ROW EXECUTE FUNCTION guard_transactions_lifecycle()
 TRIGGER trg_chq_prevent_user_escalation ON users def=CREATE TRIGGER trg_chq_prevent_user_escalation BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION chq_prevent_user_escalation()
+TRIGGER trg_verification_records_updated_at ON verification_records def=CREATE TRIGGER trg_verification_records_updated_at BEFORE UPDATE ON public.verification_records FOR EACH ROW EXECUTE FUNCTION touch_verification_records_updated_at()
 FUNCTION accept_teacher_center_invite(p_teacher_user_id uuid, p_center_id uuid) returns=teacher_center lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=a41f063a1760e2c70352f100f31cb830
 FUNCTION append_commission_pause(p_center_id uuid) returns=void lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=3f31892e9a385e707e0ec32c2e71a8e1
 FUNCTION append_only_block_mutations() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=48e2ab70d43dbfd279c67e9b8022f353
@@ -3092,13 +3310,18 @@ FUNCTION calculate_next_billing_date(cycle_start date, period text) returns=date
 FUNCTION can_manage_students_fn() returns=boolean lang=sql kind=f volatility=s strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=b6226ce929f193b4c2c489df224ed25a
 FUNCTION can_record_payments_fn() returns=boolean lang=sql kind=f volatility=s strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=f897f2c9dd38682cae43964d797b7e75
 FUNCTION cancel_reservation_atomic(p_center_id uuid, p_amount numeric) returns=void lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=3d7a4610ba33301d1e5fbddef9341b5b
+FUNCTION chq_assert_ledger_balanced() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=∅ bodymd5=02ec2de4bf17cc07219a56b97585781e
+FUNCTION chq_block_ledger_mutation() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=∅ bodymd5=39b613e2ac071be8662c39e7a1a3f96d
 FUNCTION chq_block_pack_billing_write() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=43d87432fc0e8e4db8b7ba3e95f7297f
+FUNCTION chq_guard_center_payouts() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=∅ bodymd5=24c0b00eeb0234f2746acb9ec6395470
+FUNCTION chq_payout_approval_chain() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=∅ bodymd5=23b81cc085bed3bce7945140576dea19
 FUNCTION chq_prevent_blast_tampering() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=24863a7bb019727a30b00b995d1c835d
 FUNCTION chq_prevent_card_order_tampering() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=091461d8f42451646a7006bad74ba344
 FUNCTION chq_prevent_center_escalation() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=3703bc2948868b42f54fd542be31812a
 FUNCTION chq_prevent_invoice_tampering() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=b76657c4b6caf0ae9830369b9b334c89
 FUNCTION chq_prevent_user_escalation() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=1dab8d39926194932a13cdef614c8bd1
 FUNCTION close_commission_pause(p_center_id uuid) returns=void lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=8d4aa64e45821deda2d747ffa1ff0240
+FUNCTION collection_enable_for_principal(p_center_id uuid, p_user_id uuid, p_principal_kind text) returns=TABLE(enablement_id uuid, enabled_at timestamp with time zone) lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=9f9b58590ed2c5f113ec93dd6e41b9eb
 FUNCTION complete_onboarding_step_rpc(p_center_id uuid, p_step integer) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=ab6cbba75f3402dfeb1dda810267a08c
 FUNCTION compute_active_days(p_commission_id uuid) returns=integer lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public bodymd5=61a37ae2fc3a22350b4d725ff9245089
 FUNCTION compute_benchmark_snapshots(p_snapshot_date date) returns=integer lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=efd701b2f62b0586252d926c51e2d295
@@ -3142,6 +3365,10 @@ FUNCTION is_teacher_private_locked() returns=boolean lang=sql kind=f volatility=
 FUNCTION issue_student_credit(p_student_id uuid, p_teacher_id uuid, p_amount numeric, p_reason text, p_source_transaction_id uuid, p_actor_id uuid) returns=uuid lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=1b1ea3b7f20ae60244de8d5f7c114d01
 FUNCTION log_card_order_status_transition() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=f24a2533518c4f6f1ff7781d84bda500
 FUNCTION payments_auto_confirm_cash() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public bodymd5=cfae3b3cc1557c105ef1428aae489214
+FUNCTION payout_approve(p_payout_id uuid, p_approver_admin_user_id uuid, p_authority_source text, p_is_resend boolean, p_step_up_verified boolean, p_idempotency_key text) returns=TABLE(payout_id uuid, status text, amount_compared_minor bigint, cap_in_force_minor bigint) lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=9392d83b10316a774f660640eac0d143
+FUNCTION payout_available_minor(p_center_id uuid) returns=bigint lang=sql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=5f3e7585d2ee4825456369f5c34ce1a1
+FUNCTION payout_request_create(p_center_id uuid, p_requested_gross_minor bigint, p_source text, p_rail text, p_requested_by uuid, p_idempotency_key text) returns=TABLE(payout_id uuid, status text, requested_at timestamp with time zone) lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=6343e5a5816b248706d1d21478a91bf7
+FUNCTION payout_transition(p_payout_id uuid, p_to_status text, p_actor_admin_user_id uuid, p_idempotency_key text) returns=TABLE(payout_id uuid, status text) lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=886ee63c27c695b8482991fd9aca969d
 FUNCTION process_due_subscriptions(p_as_of timestamp with time zone) returns=TABLE(action_taken text, subscription_id uuid) lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=ff528d8763ed878854cd4179fba8e70e
 FUNCTION process_payment_rpc(p_center_id uuid, p_invoice_id uuid, p_amount numeric, p_payment_method text, p_recorded_by uuid) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=16a88f099f5af175d83da7df4fc22411
 FUNCTION propose_group_slot(p_group_id uuid, p_actor_user_id uuid, p_day_of_week smallint, p_start_time time without time zone, p_end_time time without time zone, p_room_id uuid, p_note text) returns=group_slot_proposals lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=3bdc198d1a7766b49eeccdc43ae909e4
@@ -3172,6 +3399,7 @@ FUNCTION set_updated_at_now() returns=trigger lang=plpgsql kind=f volatility=v s
 FUNCTION spend_credits_atomic(p_center_id uuid, p_amount numeric, p_reference_id uuid, p_reference_type text) returns=boolean lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=e511c949ee4507fedf808e80ec321ad9
 FUNCTION teacher_private_access(p_user_id uuid) returns=boolean lang=sql kind=f volatility=s strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=b9492f8d7982c3a9466eced6aa72c63a
 FUNCTION touch_pack_requests_updated_at() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=da5ac28a58c8b4bb30209bf0d3d7082c
+FUNCTION touch_verification_records_updated_at() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=∅ bodymd5=5bdc21b8fa8fb1231bdb021e09a5bc8e
 FUNCTION trigger_recalc_lifecycle_on_scan() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=9e483b7071ae7ed8b9222abeecbc5a30
 FUNCTION try_finalize_payment_session(p_session_id uuid, p_finalized_by text) returns=boolean lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=17bc1f648ba7f7b2359b65d9d23e85f3
 FUNCTION update_billing_amount() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public bodymd5=69f67dddbe9d5af3a1649da356269f37
@@ -3180,6 +3408,7 @@ FUNCTION upgrade_teacher_to_pro(p_user_id uuid) returns=jsonb lang=plpgsql kind=
 FUNCTION upgrade_teacher_to_scale(p_user_id uuid) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=44d026ca3ac9886458f1bbbb451a636c
 FUNCTION upsert_scan_metric(p_center_id uuid, p_scanned_at timestamp with time zone, p_metric_date date) returns=void lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=05de7817094ec45fe896784e9d2377e1
 FUNCTION validate_reports_to() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public bodymd5=b9975be1b5c3a8e0d7e910883193b8ea
+FUNCTION withdrawal_mark_paid_atomic(p_withdrawal_id uuid, p_admin_user_id uuid, p_notes text) returns=TABLE(withdrawal_id uuid, status text, already_processed boolean) lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=215894b70653b4c93c331a2b97b02f5a
 VIEW ar_by_student def= WITH pending_bills AS ( SELECT t.teacher_id, t.student_id, sum(t.amount_billed) AS unpaid_amount, count(*) AS unpaid_count FROM transactions t WHERE ((t.kind = 'lesson'::text) AND (t.status = 'pending'::text)) GROUP BY t.teacher_id, t.student_id ), paid_bills AS ( SELECT t.teacher_id, t.student_id, sum(t.amount_billed) AS paid_amount, count(*) AS paid_count FROM transactions t WHERE ((t.kind = 'lesson'::text) AND (t.status = 'paid'::text)) GROUP BY t.teacher_id, t.student_id ), active_credits AS ( SELECT sc.teacher_id, sc.student_id, sum(sc.amount) AS active_credit_amount FROM student_credits sc WHERE (sc.status = 'active'::text) GROUP BY sc.teacher_id, sc.student_id ) SELECT COALESCE(pb.teacher_id, pd.teacher_id, ac.teacher_id) AS teacher_id, COALESCE(pb.student_id, pd.student_id, ac.student_id) AS student_id, COALESCE(pb.unpaid_amount, (0)::numeric) AS unpaid_amount, COALESCE(pb.unpaid_count, (0)::bigint) AS unpaid_count, COALESCE(ac.active_credit_amount, (0)::numeric) AS active_credit_amount, GREATEST((COALESCE(pb.unpaid_amount, (0)::numeric) - COALESCE(ac.active_credit_amount, (0)::numeric)), (0)::numeric) AS outstanding_amount, COALESCE(pd.paid_amount, (0)::numeric) AS paid_amount, COALESCE(pd.paid_count, (0)::bigint) AS paid_count FROM ((pending_bills pb FULL JOIN paid_bills pd ON (((pd.teacher_id = pb.teacher_id) AND (pd.student_id = pb.student_id)))) FULL JOIN active_credits ac ON (((ac.teacher_id = COALESCE(pb.teacher_id, pd.teacher_id)) AND (ac.student_id = COALESCE(pb.student_id, pd.student_id)))));
 VIEW ar_by_teacher def= SELECT teacher_id, sum(unpaid_amount) AS total_unpaid, sum(active_credit_amount) AS total_active_credit, sum(outstanding_amount) AS total_outstanding, sum(paid_amount) AS total_paid, count(*) FILTER (WHERE (outstanding_amount > (0)::numeric)) AS students_with_balance FROM ar_by_student GROUP BY teacher_id;
 TABLE_GRANT academic_periods grantee=anon priv=DELETE grantable=NO
@@ -6052,7 +6281,12 @@ ROUTINE_GRANT can_manage_students_fn grantee=service_role priv=EXECUTE grantable
 ROUTINE_GRANT can_record_payments_fn grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT can_record_payments_fn grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT cancel_reservation_atomic grantee=service_role priv=EXECUTE grantable=NO
+ROUTINE_GRANT chq_assert_ledger_balanced grantee=PUBLIC priv=EXECUTE grantable=NO
+ROUTINE_GRANT chq_block_ledger_mutation grantee=PUBLIC priv=EXECUTE grantable=NO
+ROUTINE_GRANT chq_guard_center_payouts grantee=PUBLIC priv=EXECUTE grantable=NO
+ROUTINE_GRANT chq_payout_approval_chain grantee=PUBLIC priv=EXECUTE grantable=NO
 ROUTINE_GRANT close_commission_pause grantee=service_role priv=EXECUTE grantable=NO
+ROUTINE_GRANT collection_enable_for_principal grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT complete_onboarding_step_rpc grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT compute_active_days grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT compute_active_days grantee=service_role priv=EXECUTE grantable=NO
@@ -6155,6 +6389,10 @@ ROUTINE_GRANT payments_auto_confirm_cash grantee=PUBLIC priv=EXECUTE grantable=N
 ROUTINE_GRANT payments_auto_confirm_cash grantee=anon priv=EXECUTE grantable=NO
 ROUTINE_GRANT payments_auto_confirm_cash grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT payments_auto_confirm_cash grantee=service_role priv=EXECUTE grantable=NO
+ROUTINE_GRANT payout_approve grantee=service_role priv=EXECUTE grantable=NO
+ROUTINE_GRANT payout_available_minor grantee=service_role priv=EXECUTE grantable=NO
+ROUTINE_GRANT payout_request_create grantee=service_role priv=EXECUTE grantable=NO
+ROUTINE_GRANT payout_transition grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT process_due_subscriptions grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT process_payment_rpc grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT propose_group_slot grantee=service_role priv=EXECUTE grantable=NO
@@ -6218,6 +6456,7 @@ ROUTINE_GRANT touch_pack_requests_updated_at grantee=PUBLIC priv=EXECUTE grantab
 ROUTINE_GRANT touch_pack_requests_updated_at grantee=anon priv=EXECUTE grantable=NO
 ROUTINE_GRANT touch_pack_requests_updated_at grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT touch_pack_requests_updated_at grantee=service_role priv=EXECUTE grantable=NO
+ROUTINE_GRANT touch_verification_records_updated_at grantee=PUBLIC priv=EXECUTE grantable=NO
 ROUTINE_GRANT try_finalize_payment_session grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT update_billing_amount grantee=PUBLIC priv=EXECUTE grantable=NO
 ROUTINE_GRANT update_billing_amount grantee=anon priv=EXECUTE grantable=NO
@@ -6237,6 +6476,7 @@ ROUTINE_GRANT validate_reports_to grantee=PUBLIC priv=EXECUTE grantable=NO
 ROUTINE_GRANT validate_reports_to grantee=anon priv=EXECUTE grantable=NO
 ROUTINE_GRANT validate_reports_to grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT validate_reports_to grantee=service_role priv=EXECUTE grantable=NO
+ROUTINE_GRANT withdrawal_mark_paid_atomic grantee=service_role priv=EXECUTE grantable=NO
 STORAGE_POLICY objects.Authenticated users can update logos cmd=UPDATE roles=authenticated using=(bucket_id = 'center-logos'::text) check=∅
 STORAGE_POLICY objects.Authenticated users can upload logos cmd=INSERT roles=authenticated using=∅ check=(bucket_id = 'center-logos'::text)
 STORAGE_POLICY objects.invoice_pdfs_authenticated_select_own_center cmd=SELECT roles=authenticated using=((bucket_id = 'invoice-pdfs'::text) AND ((storage.foldername(name))[1] = 'invoices'::text) AND ((storage.foldername(name))[2] IN ( SELECT (u.center_id)::text AS center_id FROM users u WHERE ((u.id = auth.uid()) AND (u.center_id IS NOT NULL))))) check=∅
