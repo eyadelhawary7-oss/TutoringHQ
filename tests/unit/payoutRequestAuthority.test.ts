@@ -300,6 +300,26 @@ describe('§2.7 — nothing new may reference can_request_referral_payouts', () 
     'src/app/api/settings/staff/[userId]/permissions/route.ts',
     'src/app/[locale]/settings/team/page.tsx',
     'src/components/settings/StaffMemberCard.tsx',
+    // ── Decision 1's unified path. Both mention the permission ONLY to record
+    // that it is deliberately NOT consulted, and both gate STRICTER than it.
+    //
+    // Reviewed 2026-08-04, reading the code and not the comment:
+    //   `POST /api/payouts/request` gates on `auth.role !== 'owner'` → 403, with
+    //   `isSuperAdmin` explicitly NOT an alternative arm. That is tighter than
+    //   `hasMoneyRequestAuthority`, which also passes a delegated admin/assistant
+    //   holding the flag. The literal string appears once, in the `detail.note`
+    //   of that refusal, explaining the omission to whoever reads the response.
+    //   `requestPayout.ts` mentions it only in the header comment quoting
+    //   §2.7/Decision 1. Neither file imports `centerPermissions`, reads
+    //   `auth.permissions`, or branches on the flag.
+    //
+    // These are the tripwire's intended false positives: it matches the literal
+    // string anywhere in a file, so documenting "we do not use this" trips it.
+    // That is the correct trade — a scan that skipped comments could be walked
+    // around with a template string — so they are allowlisted, not exempted by
+    // narrowing the scan.
+    'src/app/api/payouts/request/route.ts',
+    'src/lib/collectionPayout/requestPayout.ts',
   ].map((p) => p.split('/').join(sep));
 
   function walk(dir: string): string[] {
@@ -330,6 +350,42 @@ describe('§2.7 — nothing new may reference can_request_referral_payouts', () 
     ).toEqual([]);
     // Guard against the allowlist silently rotting into a no-op.
     expect(referencing.length).toBeGreaterThan(0);
+  });
+
+  it('the Decision 1 files mention the permission without consulting it', () => {
+    // The allowlist entry above asserts these two files gate STRICTER than the
+    // permission and only name it to say so. Without this test that claim is a
+    // comment: both files are allowlisted, so a later edit adding a real
+    // `auth.permissions[PERMISSION]` read would pass the scan above, and the
+    // INDIRECT_HANDLES test below only catches reaching the gate by import.
+    // A direct flag read needs neither. This closes that seam.
+    const DECISION_1_FILES = [
+      'src/app/api/payouts/request/route.ts',
+      'src/lib/collectionPayout/requestPayout.ts',
+    ].map((p) => p.split('/').join(sep));
+
+    for (const rel of DECISION_1_FILES) {
+      const src = readFileSync(join(ROOT, rel), 'utf8');
+      expect(
+        src.includes('auth.permissions'),
+        `${rel} reads auth.permissions. It is on the unified owner-only path ` +
+          '(PAYOUT-SYSTEM-SPEC.md Decision 1) and must not consult a delegable ' +
+          'flag — that would widen payout initiation to staff accounts at every ' +
+          'centre, which is the exact widening Decision 1 refused.',
+      ).toBe(false);
+    }
+
+    // And the stricter gate the allowlist entry credits it with is still there.
+    const routeSrc = readFileSync(
+      join(ROOT, 'src/app/api/payouts/request/route.ts'.split('/').join(sep)),
+      'utf8',
+    );
+    expect(
+      /auth\.role\s*!==\s*'owner'/.test(routeSrc),
+      "POST /api/payouts/request no longer refuses on `auth.role !== 'owner'`. " +
+        'The allowlist entry for this file is justified by that gate being ' +
+        'STRICTER than the permission; if the gate changed, re-review the entry.',
+    ).toBe(true);
   });
 
   it('no approval/release-shaped API path references it', () => {

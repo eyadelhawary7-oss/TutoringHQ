@@ -2,7 +2,26 @@
 
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Search, X } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowUpCircle,
+  BadgeCheck,
+  BarChart3,
+  Bell,
+  Gift,
+  HandCoins,
+  Megaphone,
+  type LucideIcon,
+  Package,
+  QrCode,
+  Rocket,
+  Search,
+  Trash2,
+  Truck,
+  UserPlus,
+  Wallet,
+  X,
+} from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { PageHeader } from '@/components/shared';
 import {
@@ -29,6 +48,39 @@ function formatTemplateName(raw: string): string {
     .filter(Boolean)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
+}
+
+/**
+ * Keyword -> icon map so the template list can be scanned at a glance, mirroring the design's
+ * per-row icon (Merged-Center-WhatsApp §01). Ordered most-specific-first; falls back to a
+ * category-level icon, then a generic bell. No schema involved - purely a display mapping over
+ * `template_name`/`category`, both of which are real live columns.
+ */
+const NAME_ICON_RULES: [RegExp, LucideIcon][] = [
+  [/absence|inactivity|dormancy|reactivation_warning/, AlertTriangle],
+  [/balance_due|fee_reminder|payment_retry|nudge_(due|prebill|locked)|renewal_overdue/, Wallet],
+  [/payment_confirmed|payment_failed|pack_invoice/, BadgeCheck],
+  [/referral_commission|withdrawal_processed/, HandCoins],
+  [/welcome/, Gift],
+  [/scan_notification/, QrCode],
+  [/weekly_summary|daily_summary|term_summary|ceo_briefing/, BarChart3],
+  [/card_order|vendor_new_order|order_shipped/, Truck],
+  [/team_invite/, UserPlus],
+  [/onboarding_step/, Rocket],
+  [/upgrade_nudge|nudge_card_expiry/, ArrowUpCircle],
+  [/data_deletion_notice/, Trash2],
+];
+
+const CATEGORY_ICON: Record<string, LucideIcon> = {
+  card_orders: Package,
+  MARKETING: Megaphone,
+  UTILITY: Bell,
+};
+
+function iconForTemplate(templateName: string, category: string): LucideIcon {
+  const match = NAME_ICON_RULES.find(([pattern]) => pattern.test(templateName));
+  if (match) return match[1];
+  return CATEGORY_ICON[category] ?? Bell;
 }
 
 function statusBadgeClasses(status: string): string {
@@ -66,6 +118,13 @@ export default function WhatsAppTemplatesClient({
     if (!previewName) return [];
     return extractVariableTokens(previewBodyForTemplate(previewName));
   }, [previewName]);
+
+  const categoryLabel = (category: string): string => {
+    if (category === 'card_orders') return t('categoryCardOrders');
+    if (category === 'MARKETING') return t('categoryMarketing');
+    if (category === 'UTILITY') return t('categoryUtility');
+    return category;
+  };
 
   const normalizedSearch = search.trim().toLowerCase();
   const filteredTemplates = useMemo(() => {
@@ -148,38 +207,46 @@ export default function WhatsAppTemplatesClient({
             </div>
           ) : null}
           <div className="grid gap-3 sm:grid-cols-2">
-            {filteredTemplates.map((row) => (
-              <article
-                key={row.template_name}
-                className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 shadow-sm flex flex-col gap-3"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-[var(--color-text-primary)] break-words">
-                      {formatTemplateName(row.template_name)}
-                    </p>
-                    <p className="font-mono text-[11px] text-[var(--color-text-tertiary)] break-all mt-0.5">
-                      {row.template_name}
-                    </p>
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border border-[var(--color-border-subtle)]">
-                        {t('categoryLabel')}: {row.category}
-                      </span>
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${statusBadgeClasses(row.status)}`}>
-                        {row.status}
-                      </span>
+            {filteredTemplates.map((row) => {
+              const Icon = iconForTemplate(row.template_name, row.category);
+              return (
+                <article
+                  key={row.template_name}
+                  className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 shadow-sm flex flex-col gap-3"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-500/15 text-teal-700">
+                        <Icon className="h-5 w-5" aria-hidden />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-[var(--color-text-primary)] break-words">
+                          {formatTemplateName(row.template_name)}
+                        </p>
+                        <p className="font-mono text-[11px] text-[var(--color-text-tertiary)] break-all mt-0.5">
+                          {row.template_name}
+                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border border-[var(--color-border-subtle)]">
+                            {categoryLabel(row.category)}
+                          </span>
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${statusBadgeClasses(row.status)}`}>
+                            {row.status}
+                          </span>
+                        </div>
+                      </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewName(row.template_name)}
+                      className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-1.5 text-xs font-semibold text-teal-700 hover:bg-[var(--color-surface-2)]"
+                    >
+                      {t('preview')}
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewName(row.template_name)}
-                    className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-1.5 text-xs font-semibold text-teal-700 hover:bg-[var(--color-surface-2)]"
-                  >
-                    {t('preview')}
-                  </button>
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
           {templates.length === 0 ? (
             <p className="text-sm text-[var(--color-text-tertiary)]">{t('noTemplates')}</p>

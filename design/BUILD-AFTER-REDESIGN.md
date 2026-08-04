@@ -341,6 +341,7 @@ resolve — this entry describes a bug that was already fixed before it was logg
 - **Touches:** money.
 - **Source:** `DATA-GAPS.md` §0.2. Marked absent, then present, then present-but-orphaned — **check the readers, not just the schema.**
 - **Re-confirmed, 31 July 2026 (Center-WhatsApp survey).** `center_message_templates` still has zero application-code references anywhere in `src` — grepped fresh, not assumed. The live `/whatsapp` route reads `wa_meta_templates` instead (a different table entirely — Meta's own approval mirror, `status` CHECK-constrained to PENDING/APPROVED/REJECTED/IN_REVIEW, no `enabled`/`auto_send` column at all). Still stuck exactly as described; nothing to build until this decision lands.
+- **Re-confirmed again, 4 August 2026 (Center-WhatsApp parity pass, live catalog query not repo grep this time).** `select count(*) from center_message_templates` → 0 rows, live, right now. `information_schema.columns` for `wa_meta_templates` confirms exactly `id, template_name, category, status, variables_count, created_at, updated_at` — still no `enabled`/`auto_send` anywhere on the table the screen actually reads. Nothing changed since 31 July; nothing built here this pass either.
 
 ## D5 · WhatsApp Pack as a one-time top-up
 - **What:** Replace the per-parent monthly pack with a one-time credit that never expires.
@@ -349,6 +350,7 @@ resolve — this entry describes a bug that was already fixed before it was logg
 - **Touches:** money. **This changes what an existing customer is charged.**
 - **Blocks:** D6.
 - **Re-confirmed, 31 July 2026 (Center-WhatsApp survey), with the exact live numbers.** Subscription side: `PACK_PRICE_PER_PARENT = 12` EGP/parent/month (`src/lib/parentPack.ts:8`). Blast side: `BLAST_PRICE_PER_PARENT_INCLUSIVE = 9.8` EGP/parent per announcement, capped at 2/month (hardcoded independently in three places), gated by a plan-tiered monthly allowance (`ANNOUNCEMENT_CAPS`, nano 700 through top_centers 99999). None of it maps to the design's per-message credit tiers (200 msgs/200 EGP, 1,000/750, 5,000/2,500, custom by volume) or its "never expires, carries over" balance framing. §03 (Custom Flow) is the same model's custom-amount extension and is confirmed absent from live code by exhaustive grep — building it first would mean building the custom-amount UI for a pricing model (§02) that doesn't exist yet. Also found, independent of this decision: the announcement route's own stored audit breakdown (`base_amount` 6.72 × `service_fee` 6% × `vat` 14% ≈ 8.10) does not sum to the 9.8 actually charged — a pre-existing internal inconsistency in the current model, worth a look whenever D5 is decided either way.
+- **Re-confirmed, 4 August 2026 (Center-WhatsApp parity pass).** Re-read `WhatsAppPackClient.tsx` and `parentPack.ts` fresh rather than trusting the 31 July note: same two constants, same shape, still a monthly per-parent subscription plus a capped announcement blast with a single running `announcement_balance` column — nothing resembling the design's fixed-tier one-time top-up (§02) or its tap-to-custom-amount flow (§03) exists anywhere in `src`. Not built this pass, same reason as before.
 
 ## D6 · Teacher WhatsApp screen and message allowance
 - **What:** Balance, what used it, the template list, and a 3-tier pack purchase (200/1,000/5,000
@@ -419,6 +421,54 @@ resolve — this entry describes a bug that was already fixed before it was logg
 - **Touches:** money.
 - **Blocked by:** D5, the allowance/spend-wiring decision, the pack-model decision, and Meta template
   approval (external) for the messaging half.
+- **Re-verified live, 4 August 2026 (Teacher-WhatsApp parity pass, `claude/parity-teacher-whatsapp-w2`).**
+  Every claim above re-checked against today's production catalog and today's `src/`, not re-stated
+  from the ledger. Nothing has moved since 31 July:
+  - `git log --since=2026-07-31` on `parentPack.ts`, `invoiceTemplates.ts`, `whatsapp-pack/*`,
+    `teacherScheduleNotifications.ts`, `teacherFeeReminder.ts` and the migrations directory shows two
+    unrelated commits (sessions-consolidation migration, Teacher-Students parity) and nothing touching
+    this area.
+  - `information_schema.columns`: `teacher_profiles.blast_credits_subscription` /
+    `blast_credits_purchased` still both `numeric default 0`, still present.
+  - `grep -rn "deduct_blast_credits" src/ supabase/` still returns only the two migration definitions
+    (`baseline.sql`, `migrations_archive/20260612000005_teacher_pro_rpcs.sql`) — zero call sites in
+    application code.
+  - `wa_meta_templates` live rows, checked by name: `chq_fee_reminder` is still `PENDING`.
+    `chq_schedule_changed` / `chq_class_cancelled` / `chq_class_rescheduled` / `chq_class_reminder`
+    still have **no row at all** (query returns nothing for all four, not a status value). Also
+    confirmed while in there: `chq_parent_welcome`, `chq_payment_confirmed` and `chq_payment_failed`
+    are all `APPROVED` at Meta — approval is not what blocks Welcome or the payment pair; see below.
+  - `studentParentPackWelcome.ts` re-read in full: every exported function takes `centerId`, not
+    `teacherId`, and every DB read/write in the file (`sendTemplateMessage`, `syncParentPackActive...`)
+    is keyed off it. A teacher's private (center-less) student has no `centerId` to key this on — the
+    "doesn't exist for teachers" finding holds structurally, not just by absence of a route.
+  - `wa_message_queue` columns re-dumped: `id, center_id, to_phone, template_name, variables, body,
+    status, waba_message_id, error_message, created_at, updated_at` — still no `teacher_id`, still no
+    other FK to attribute a send to a teacher.
+  - Nav check, not in the prior survey: `src/app/[locale]/teacher/TeacherNav.tsx`'s `NAV_ITEMS` /
+    `MOBILE_KEYS` / `MORE_KEYS` have no WhatsApp entry in either the desktop rail, the mobile tab bar,
+    or the "More" sheet. This is not a dead link or a 404 waiting to happen — there is no partial nav
+    wiring to clean up. The screen is absent in the one place a teacher would look for it, cleanly.
+  - **Precise per-template answer, so the decision is answerable without re-deriving it:**
+
+    | Design template | What it needs, precisely | Owner of that need |
+    |---|---|---|
+    | Welcome | A teacher-keyed send path. `studentParentPackWelcome.ts` is `centerId`-shaped end to end; a teacher's private students have no center to key off. This is a code/schema change (a teacher variant of the welcome sender, or a schema path that lets private students route through it), not a config flip. | Eyad — new send path or schema |
+    | Fee reminder | Nothing to build — the cron (`/api/cron/fee-reminders`) already covers teacher-billed private lessons via `transactions.teacher_id`. Blocked purely on `chq_fee_reminder` moving from `PENDING` to `APPROVED` at Meta. Same block a center's fee reminder has today. | Meta (external, platform-wide) |
+    | Session changed | Code is real and already firing sends (`teacherScheduleNotifications.ts` → `chq_schedule_changed`/`chq_class_cancelled`/`chq_class_rescheduled`/`chq_class_reminder`), but none of the four templates were ever submitted to Meta — no row in `wa_meta_templates` at all. Needs submission first, then approval. One step earlier than fee reminder. | Meta (external) + whoever owns template submission |
+    | Payment link ("sent by us") | Does not exist for anyone, center or teacher. The only approved payment-adjacent templates (`chq_payment_confirmed`/`chq_payment_failed`) confirm a center's own subscription payment *to* TutoringHQ, not a parent-facing "your session was paid" link. This is a net-new template plus a net-new send trigger. | Eyad — new feature, platform-wide |
+    | Receipt ("sent by us") | Same gap as Payment link — no parent-facing receipt template or trigger exists anywhere in the codebase today. | Eyad — new feature, platform-wide |
+
+    Two of five (fee reminder, session changed) need nothing from Eyad — they need Meta, and are
+    already platform-wide blocks other files' fee-reminder claims should account for too. Three of
+    five (Welcome, Payment link, Receipt) need a product/engineering decision before Meta submission
+    is even the next step.
+  - **Nothing was built this pass.** The screen has no live route, nothing links to it, and every
+    frame the design draws (balance, templates, pack) sits directly on the unresolved credit-spend
+    and pack-model decisions above. Building any part of it — even a read-only balance display — would
+    mean shipping the same permanently-one-directional number `Teacher-Money`'s `TeacherPlanSection`
+    already shows today, in a second place, which is the exact anti-pattern this pass is told to avoid.
+    `Teacher-Money` itself is one of the six protected files and out of scope for this branch regardless.
 
 ## D7 · Card-order notify-me — a write with no destination
 - **The decision:** where does a notify-me registration go?
@@ -520,17 +570,64 @@ whose core Add-branch flow sits on top of this unresolved billing question.
   server-side and thread it into the client component's 5 signup CTAs as `?ref=` — no client-side
   `useSearchParams()`, since that would need a Suspense boundary this page doesn't have and risks
   breaking static rendering.
+- **Re-confirmed 4 August 2026 (Teacher-Insight parity pass, `claude/parity-teacher-insight-w2`).**
+  Read `Merged-Teacher-Insight.html` section by section against the live screen fresh, no code
+  changed. §01 Analytics holds at ~0.9/1: `AnalyticsView.tsx`'s `PileBPlaceholders` renders all 5 of
+  the design's "what you'll unlock" cards (`dropoutTitle`/`trendingTitle`/`missingTitle`/
+  `avgSessionTitle`/`missedIncomeTitle`) with real, non-placeholder Arabic copy, for both the Pro and
+  Standard (locked) states — the #259 fix holds. §02 Referrals is still the flat +1-free-month loop,
+  not the design's 25/10/5% program; `ReferralCard.tsx` now points at `/teachers?ref=` (moved off the
+  old `/teacher/landing` redirect hop since PR #314's Public-Marketing rewrite) and `TeachersClient.tsx`
+  still threads `?ref=` into its signup CTAs, carried via `signupHref` — the hero primary CTA directly,
+  plus two more via `MarketingFooter`'s `createAccountHref` prop (the CTA-band button and the footer
+  "create account" link), 3 referral-aware CTAs total on the page, not the "5" an earlier note in this
+  same entry claimed for the pre-rewrite page. The attribution fix from this same entry survived PR
+  #314's rewrite intact, re-verified by reading both files. Every column `teacherAnalytics.ts`
+  and `buildTeacherAnalytics` read — `student_groups.{fee_per_class,kind,status,teacher_id}`,
+  `enrollments.{group_id,student_id,status}`, `students.{id,name,is_guest}`,
+  `group_schedule.{group_id,day_of_week}`, `schedule_exceptions.{group_id,exception_date,kind,new_date}`,
+  `transactions.{group_id,teacher_net,paid_at,teacher_id,kind,status,is_test}`,
+  `sessions.{id,group_id,scheduled_at,status}`, `attendance_scans.{session_id,student_id,scanned_at}`,
+  `ar_by_student.{student_id,outstanding_amount,unpaid_amount,unpaid_count,teacher_id}`,
+  `teacher_subscriptions.{plan_key,teacher_id}` — was checked directly against
+  `information_schema.columns` on project `lczmjpnbuhnsislcvzar`; all present, no F26-class drift.
+  D14 itself is unchanged: still Eyad's call, still the file's only real gap.
 - **Drawn in:** `Merged-Teacher-Insight` §02.
 - **Touches:** money.
 
 ## D15 · "Mark collected" and "Send reminder" on the teacher's student-detail balance card
+> ### ✅ CLOSED — built 3 Aug 2026, PR #310 (commit `4435369`)
+> Both buttons shipped. **`Mark collected`** opens the same four-method picker (`cash | instapay |
+> vodafone_cash | other`) the two existing callers use, then fires one `POST
+> /api/teacher/private/transactions/[id]/mark-paid` per pending charge (the balance is an aggregate,
+> the endpoint settles one charge at a time) and reports how many failed without zeroing the card
+> optimistically. **`Send reminder`** is new — `POST
+> /api/teacher/private/students/[studentId]/send-reminder`, gated by `requireTeacherPrivateAccess`
+> and the same tenant check as the GET, reusing the nightly cron's exact template and body-parameter
+> construction (moved into `src/lib/teacherFeeReminder.ts` so the two paths cannot drift) and the same
+> `fee_reminder_count` / `fee_reminder_last_at` cadence columns so the two paths cannot double-send.
+> It ships **fail-visible, not fake-visible**: `chq_fee_reminder` is still PENDING at Meta and the
+> `platform_config` row `teacher.fee_reminder.manual_enabled` does not exist — re-confirmed live on
+> this pass (`select count(*) from platform_config where key =
+> 'teacher.fee_reminder.manual_enabled'` → 0) — so a missing row reads as off, the button ships
+> disabled, and a one-line reason prints underneath. There is no code path that reports a send that
+> did not happen.
+> **Re-verified this pass (4 Aug 2026), independent of the PR's own account:** read
+> `students/[studentId]/page.tsx`, the `mark-paid` and `send-reminder` routes, and
+> `students/[studentId]/route.ts` directly; confirmed live against `information_schema.columns` on
+> project `lczmjpnbuhnsislcvzar` that every column the new code reads or writes actually exists —
+> `transactions.{fee_reminder_count,fee_reminder_last_at,payer_phone,session_id,paid_at,method,
+> amount_billed,is_test}`, `teacher_profiles.{instapay_address,wallet_phone,payment_phone,
+> accepted_methods,default_payment_method}`, `group_schedule.day_of_week`, `students.parent_phone`,
+> `sessions.{scheduled_at,status}`, `attendance_scans.*` — all present. `npm run typecheck`, `lint`,
+> `verify:stabilization` and `test:unit` (1597 tests) all pass on `origin/master` unmodified.
+> **This entry, `FILE-COMPLETION-TABLE.md` row 5, and the row's `no — D15` status column were all
+> one day stale** — the table still listed D15 as the file's sole open item after the PR that closed
+> it had already merged. `git log --oneline origin/master` shows `4435369` predates this pass by a
+> day. Table corrected below (see `FILE-COMPLETION-TABLE.md`).
 - **What:** the design's Balance card carries two buttons: `Mark collected` (the teacher confirms a parent paid them directly) and `Send reminder` (nudge the parent about an outstanding balance).
 - **Drawn in:** `Merged-Teacher-Students` §02.
-- **Found:** 30 July 2026, building `Merged-Teacher-Students`. Not built — this is a WRITE that changes money state, on a screen with no protected-file wall. Per the standing rule, behaviour decides, not filename.
-- **`Mark collected` is mostly plumbing, not a new decision.** `POST /api/teacher/private/transactions/[id]/mark-paid` already exists, is already audited (`apply_transaction_transition`, idempotent, ownership-checked), and is already called from two places today — `GroupClassesTab` and the session-detail page. Wiring a third caller from student-detail reuses it; it does not invent new money logic. The one open question is UI, not backend: the endpoint requires a `method` (`cash | instapay | vodafone_cash | other`), so a single-tap "Mark collected" button needs a small method picker, same as the two existing callers already have.
-- **`Send reminder` has no existing per-student manual trigger.** The only related code is a bulk nightly cron (`send-balance-reminder`); sending one on a teacher's tap, per student, per outstanding balance, is new functionality, not reuse. It would also spend WhatsApp cost per send, which is the same class of decision as D4/D5.
-- **Touches:** money (write), WhatsApp cost (for the reminder).
-- **Blocked by:** Eyad's call on whether to build `Mark collected` (small UI reusing an existing endpoint) and, separately, whether/how to build `Send reminder` (new, and cost-bearing).
+- **Touches:** money (write), WhatsApp cost (for the reminder, currently blocked external — see above).
 
 ## D16 · The center-class commission engine is dormant — every teacher's "Owed" figure on `Merged-Teacher-Setup` §02 reads 0.00 EGP, live, today
 - **What:** the design's hero ("Owed to you across centers", This month / All time) and the per-center "Owed" figures are drawn as one populated block. Live, this is split across two already-shipped components — `CenterCutsSection` (`/api/teacher/center-cuts`) and `CenterEarningsSection` (`/api/teacher/center-attendance`) — and both read `transactions.kind = 'center_fee'`, which has never had a row written to it in production.
@@ -727,19 +824,19 @@ left for later, it is the deliberate final state unless a pause feature is separ
 - **Found:** narratively, 31 July 2026 (Center-Setup survey); formally logged with a code, 31 July 2026, PR #282.
 - **Touches:** none yet — this is the decision point.
 
-## D29 · `Merged-Public-Marketing` §03's add-ons section is mostly fabricated pricing
+## D29 · `Merged-Public-Marketing` §03's add-ons section is mostly fabricated pricing — PARTIALLY CLOSED, PR #314; re-verified live 4 August 2026
 - **What:** the design draws 6 add-on line items on `/pricing` (extra branch 299/mo, team seat 99/mo, a standalone "Advanced analytics" purchase at 149/mo, "Instant payout" per use, and two WhatsApp-pack tiers). Grepped `src/lib/pricing*.ts` and `docs/PRICING_SPEC.md`: only **"Parent WhatsApp pack" (12 EGP/parent/mo)** has a real, matching config value (`pricingConfig.ts`'s `whatsappParentPack: 12`). The other five have zero backing pricing config or billing logic anywhere in the codebase.
-- **Why it's not a display fix:** "WhatsApp packs — from 200, bought when needed, don't expire" directly conflicts with the live billing model (`PACK_PRICE_PER_PARENT` is a monthly per-parent subscription, not a purchasable non-expiring credit block) — the same root cause as the already-logged **D5** (Center-WhatsApp). Showing these five items as real prices would be advertising SKUs that don't exist; showing correct numbers means either building the SKUs or rewriting the drawing.
-- **Found:** 31 July 2026, Public-Marketing re-verification (PR #286) — the prior same-day survey (#254) had flagged this section as "unconfirmed" rather than asserted-missing; this pass closed that gap with a definitive answer.
-- **Touches:** none yet — this is a decision point (which add-ons become real SKUs, at what price) before any pricing-page copy or billing code changes.
-- **Blocked by:** Eyad's call on which add-ons ship as real, chargeable products.
+- **Built, PR #314 (`f74d71c4`, "Fix five adjudicator blockers"):** `PricingPageClient.tsx`'s Add-ons section now renders exactly one row — the parent WhatsApp pack — priced live from `platform_config.pack_price_per_parent` via `/api/pricing/public-config` → `usePublicWhatsappPackPrice()`. **Re-verified live against the catalog this pass (4 Aug 2026, project `lczmjpnbuhnsislcvzar`):** `platform_config` row `{"key":"pack_price_per_parent","value":12}` exists and matches the rendered `12`. The other five drawn rows are not rendered at all — no fabricated price ships. The component's own header comment states the same "What changes with size" rows (Branches/seats/notification quota) were also dropped for the identical reason: confirmed live, `pricing_plans` and `centers` carry no branch-limit, seat-limit or notification-quota column of any kind (full column list pulled this pass).
+- **Still open — Eyad's call, not a display fix:** whether the other five add-ons (extra branch, team seat, standalone analytics, blast packs, instant payout) become real, chargeable SKUs, and at what price. "WhatsApp packs — from 200, bought when needed, don't expire" also still directly conflicts with the live billing model (`pack_price_per_parent` is a monthly per-parent subscription, not a purchasable non-expiring credit block) if it were ever built literally — same root cause as **D5** (Center-WhatsApp).
+- **Found:** 31 July 2026, Public-Marketing re-verification (PR #286). **Narrowed from "mostly fabricated" to "1 of 6 real, 5 of 6 correctly withheld," PR #314, same day; re-confirmed against the live catalog 4 August 2026 (no code changed, verification only).**
+- **Touches:** `src/app/[locale]/pricing/PricingPageClient.tsx`, `src/app/api/pricing/public-config/route.ts`, `src/hooks/usePublicWhatsappPackPrice.ts` — all built. The 5 remaining rows touch nothing yet.
+- **Blocked by:** Eyad's call on which of the remaining 5 add-ons ship as real, chargeable products.
 
-## D30 · A marketing claim the design's own header calls "banned by your own rules" is still live
-- **What:** `ComparisonTable`'s row8 (the default 8-row set rendered on `/center`) shows an unsourced "8–12 hours saved" admin-time claim. `Merged-Public-Marketing.html`'s own header copy for this section explicitly states this class of claim was removed as "banned by your own rules" — implying a prior decision against unverified time-savings claims that the live row still contradicts.
-- **Why this needs a decision, not a mechanical fix:** removing or rewriting the row is a copy/compliance call (what, if anything, replaces it), not a bug fix — the row is intentional-looking content, not a leftover.
-- **Found:** 31 July 2026, Public-Marketing re-verification (PR #286).
-- **Touches:** `messages/en.json`/`messages/ar.json`'s `landing.compare.row8`, no schema, no protected file.
-- **Blocked by:** Eyad's call on whether to remove the row, replace it with a sourced claim, or keep it and treat the design's own "banned" note as no longer applicable.
+## D30 · A marketing claim the design's own header calls "banned by your own rules" is still live — CLOSED, PR #314; re-verified live 4 August 2026
+- **What:** `ComparisonTable`'s row8 (the default 8-row set rendered on `/center`) showed an unsourced "8–12 hours saved" admin-time claim. `Merged-Public-Marketing.html`'s own header copy for this section explicitly states this class of claim was removed as "banned by your own rules."
+- **Closed:** PR #314 deleted the old `ComparisonTable`/`LandingFAQ` components wholesale (`src/components/landing/ComparisonTable.tsx`, -217 lines) and replaced them with `landing.compare` (6 rows, `CentersClient.tsx`) and `teacherLanding.compare` (6 rows, `TeachersClient.tsx`), neither of which carries a time-savings row of any kind. **Re-verified live this pass, 4 August 2026:** read both compare objects in full from `messages/en.json` — 6 rows each (attendance, telling the parent, sending a way to pay, concurrent staff, backup, receipts) — and grepped `messages/en.json`/`ar.json` and every file under `src/app/[locale]/{page,SplashClient,centers,teachers,pricing,talk-to-us}*` and `src/components/marketing/` for "hour"/"ساعة" in a savings context: the only surviving "hours saved" string anywhere in the repo is `onboarding/page.tsx`'s `roiHoursSaved` — a different screen entirely (Center-Setup's Onboarding, `D28` territory, not a Public-Marketing file).
+- **Found:** 31 July 2026, Public-Marketing re-verification (PR #286). **Closed, PR #314, same day.**
+- **Touches:** `messages/en.json`/`messages/ar.json`'s old `landing.compare.row8` key (deleted), `src/components/landing/ComparisonTable.tsx` (deleted).
 
 ## D31 · `Merged-Center-Groups` §04 Branches — the live screen is a different layout paradigm, not a design with missing chips
 - **What:** the existing record (row 11, `D23`/`F11`) described §04 as carrying a pricing decision (`D23`) plus two findings from the 31 July pass (a fake "Switch to this"/"Dashboard" pair, no address schema). Re-read `Merged-Center-Groups.html` §04 fresh against the live `(dashboard)/branches/page.tsx` (all 335 lines) for tonight's Center-Groups pass and found the gap is bigger and different in kind: the design draws a mobile card list (`.brow` cards, one expanded to show four action chips — Switch to this / Dashboard / Edit / More) with a Current badge, three inline mini-stats (students / EGP-month / attendance%), and an Add-branch sheet collecting name **and address**. Live is a desktop admin table (columns: name+Current badge / students / monthly revenue / outstanding / staff count — two of which, outstanding and staff count, have no design equivalent at all) plus two bar charts with no design equivalent. There is no kebab, menu, or row action of any kind anywhere in the file — confirmed by grep, the only `onClick` in the whole component is the "Add branch" button. Edit and "More" were never previously logged as missing; they simply don't exist, the same as the already-known Switch-to-this/Dashboard pair. The Add-branch form collects only a name — no address field exists in the form, the API payload, or the `centers` table.
@@ -770,6 +867,20 @@ rather than deleted so nobody re-opens a layout question that already shipped.
 - **Touches:** `WhatsApp` (an existing, currently-dead-end automated message parents already receive in production), `students.waitlist_group_id`/`waitlist_position` (no schema change, existing columns).
 - **Blocked by:** Eyad's call on which promotion model is correct. No `waitlist_requested_at`/similar timestamp column exists either (checked live: `students`'s only waitlist columns are `waitlist_group_id` uuid and `waitlist_position` integer) — the design's "Requested 09/07" per-row date has no backing field and would need a migration; flagged, not added, since backfilling a real join-date for existing rows isn't possible (no historical data to backfill from).
 
+## F30 · `/teachers`' comparison table carried the same fabricated "card or wallet" payment claim that `/centers`' twin table was already adjudicated and fixed for — CLOSED this pass
+- **What:** `messages/*.json`'s `landing.compare.row3.centerhq` ("A link with every invoice, card or wallet" / "بطاقة أو محفظة") was the exact wording PR #314's post-adjudication fix (`190f8216`, "drop the wallet-payment claim the branch introduced") already replaced on the **center** audience page, because no wallet payment path exists — payment links are single-integration Paymob card only (`PAYMOB_INTEGRATION_ID` is one global env var, not per-tenant; `src/lib/paymob.ts` has no wallet branch). That fix was applied to `landing.compare` (`/centers`) but never mirrored to `teacherLanding.compare` (`/teachers`) — same row, same claim, same underlying fact, left uncorrected on the sibling page.
+- **Verified live, 4 August 2026:** `messages/en.json` line 9579 / `messages/ar.json` line 9579, `teacherLanding.compare.row3.centerhq`, carried the identical uncorrected string. Teacher invoices go through the same single Paymob integration as center invoices (`src/app/api/teacher/paymob/invoice-status/route.ts`, `src/lib/midnightBillingAdapter.ts`) — no wallet path for teachers either.
+- **Fixed this pass, no decision needed** (same mechanical correction already adjudicated for the center page): EN → "A link with every invoice, paid by card"; AR → "رابط مع كل فاتورة، تُدفع بالبطاقة". i18n parity holds (key unchanged, value only).
+- **Found:** 4 August 2026, Public-Marketing re-survey (this pass).
+- **Touches:** `messages/en.json`, `messages/ar.json` (`teacherLanding.compare.row3.centerhq`). No schema, no protected file.
+
+## D34 · `/pricing`'s "same either way" list claims "Withdrawals to your own account" as a feature every tier includes — no live withdrawal mechanism exists for anyone
+- **What:** `PricingPageClient.tsx`'s `pricingPage.same.items[6]` renders "Withdrawals to your own account" (design line 1613, `Merged-Public-Marketing.html` §03) as one of eight bullets under "There is no cheaper version of the software" — presented as a universal, already-working capability at every price tier, for both centers and teachers.
+- **Verified live, 4 August 2026 (project `lczmjpnbuhnsislcvzar`):** this is the exact capability the existing ledger entry **V4** ("Provider balance, clearing and withdrawal") already documents as **entirely dormant** — `transactions.settlement_status`/`expected_settlement_at`/`settled_at`/`settlement_retry_count` and `teacher_profiles.payout_destination` are schema scaffolding with zero live rows and zero readers/writers in `src/`. Re-confirmed this pass: `grep -rn "payout_destination\|settlement_status" src/ --include=*.ts --include=*.tsx` returns nothing outside migrations; `grep -rln "withdraw" src/app/api/teacher/` returns only group-proposal "withdraw request" routes (an unrelated feature, withdrawing a *proposal*, not money). All Paymob collection — center and teacher alike — runs through one global `PAYMOB_INTEGRATION_ID` (not per-tenant), so a card payment settles into a single platform-held Paymob balance; there is no code path, live or dormant-but-partial, that moves money from that balance into any center's or teacher's own bank account.
+- **Why this is a decision, not a mechanical fix (unlike F30's wallet-claim wording, which had one obvious accurate substitute):** there is no narrower true replacement claim to substitute — the capability the bullet describes does not exist for anyone today, in any form, so correcting the wording (rather than deciding whether/how to phrase what money-movement *does* happen, e.g. the live flat-cut teacher-payout arrangement in `D16`/`F9`, or leaving a placeholder pending V4) is itself the product call. It also sits squarely on **V4**'s territory — money movement for verified/unverified accounts is explicitly reserved for the protected `Center-Money`/`Teacher-Money`/`Verification-Payouts` files, not this one.
+- **Found:** 4 August 2026, Public-Marketing re-survey (this pass).
+- **Touches:** `messages/en.json`/`messages/ar.json`'s `pricingPage.same.items[6]`. No schema. Overlaps the already-protected `Center-Money`/`Teacher-Money`/`Verification-Payouts` files and the already-logged **V4**.
+- **Blocked by:** V1, V3 (same blockers as V4) plus Eyad's call on what, if anything, truthfully replaces the claim in the meantime.
 ## D33 · Analytics month-end forecast tile and projection bar have no decided extrapolation method
 - **What:** `Merged-Center-Insight` §01's EN-overview frame draws a `ktile.fc` "Projected · month-end" KPI (21,500 EGP, badged "forecast") and a dashed sixth bar on the revenue chart ("Jul*", "* projected from current pace") alongside the five actual months. Both are a month-end estimate derived from partial-month data, not a stored or historical figure.
 - **Found:** 4 August 2026, `Center-Insight` parity pass. Read `/api/analytics/revenue/route.ts` in full (all fields it returns: `mrr`, `outstanding_total`, `collection_rate`, `avg_payment_per_student`, `revenue_by_group`, `mrr_trend`, `payment_method_distribution`, `attendance_heatmap`, `aging_report`, `income_by_month`, `expenses_by_month`, `pnl_months`) and grepped the whole `analytics` route tree plus `(dashboard)/analytics/page.tsx` and every chart component it imports for `forecast`/`project` — zero matches anywhere. This is not a partially-built feature; no code path computes a projection today.
@@ -1411,12 +1522,11 @@ grammatically backwards translations, fixed (no decision needed)
 - **Found:** 31 July 2026, Center-Setup re-verification (PR #282).
 - **Touches:** none yet — this is a scope decision (does the marketplace model replace or sit alongside the attached-group model?), not a mechanical build.
 
-## F25 · Two parallel WhatsApp support-number config sources, used inconsistently
-- **What:** `SITE.supportWhatsAppIntl` (`src/config/site.ts`) and `NEXT_PUBLIC_SUPPORT_WHATSAPP` (a separate env var) are both read as "the" support WhatsApp number, by different call sites across the public marketing pages, with no single source of truth.
-- **Why it matters:** whichever page reads the one that's unset silently disables its WhatsApp CTA (the button/link simply doesn't render, per the existing `if (WA_SUPPORT)` guard pattern) rather than falling back to the other source — a support channel can go quietly missing on some pages but not others depending only on which env var happens to be configured.
-- **Found:** 31 July 2026, Public-Marketing re-verification (PR #286).
-- **Touches:** `src/config/site.ts`, `src/lib/supportWhatsApp.ts`, and every call site currently reading either source directly. No schema, no protected file.
-- **Blocked by:** nothing product-level — this is mechanical (pick one source, repoint every reader), but wasn't attempted in-pass since it touches multiple files beyond `Public-Marketing`'s own territory.
+## F25 · Two parallel WhatsApp support-number config sources, used inconsistently — CLOSED, PR #314; re-verified live 4 August 2026
+- **What:** `SITE.supportWhatsAppIntl` (`src/config/site.ts`) and `NEXT_PUBLIC_SUPPORT_WHATSAPP` (a separate env var) were both read as "the" support WhatsApp number, by different call sites across the public marketing pages, with no single source of truth. Whichever page read the one that was unset silently disabled its WhatsApp CTA.
+- **Closed:** PR #314 rewrote `src/lib/supportWhatsApp.ts` so every PUBLIC call site (`getSupportWhatsAppWaMeBase`, `getSupportWhatsAppWaMeWithText`, `getSupportWhatsAppDisplayLabel`) reads only the `SITE` constant (`src/config/site.ts`); `NEXT_PUBLIC_SUPPORT_WHATSAPP` no longer feeds any public link, only the SERVER alert path (`getAdminOrSupportWhatsAppDigits`, cron/vendor-failure alerts) which is a deliberately separate, unchanged channel. **Re-read the file live this pass, 4 August 2026** — the module's own header comment states the split explicitly and the code matches it exactly; `talk-to-us/page.tsx` calls `supportWhatsAppLink()` from the same `SITE` constant.
+- **Found:** 31 July 2026, Public-Marketing re-verification (PR #286). **Closed, PR #314, same day.**
+- **Touches:** `src/config/site.ts`, `src/lib/supportWhatsApp.ts`, `src/app/[locale]/talk-to-us/page.tsx`, and other public call sites — all repointed.
 
 ## R11 · Center-Home dashboard — four live sections removed because the design does not draw them (Eyad, 3 Aug: "Design wins. Identical means identical.")
 Removed from `src/app/[locale]/dashboard/page.tsx`. **Nothing here is a placement decision** — per Eyad's Q2 answer, they are recorded where they lived and no new location is invented. Whether any of them returns, and where, is his call against a design that specifies it.
