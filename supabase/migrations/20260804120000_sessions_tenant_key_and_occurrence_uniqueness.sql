@@ -132,7 +132,9 @@ COMMENT ON COLUMN public.sessions.center_id IS
 -- Eyad: this is my addition, not one of the four things you approved. Delete
 -- from here to the END OF 1b marker and the rest of the file still applies
 -- cleanly; the cost of deleting it is that Phase 1 code must set center_id on
--- every sessions INSERT itself.
+-- every sessions INSERT itself. (If you strike it, db/schema.snapshot needs
+-- regenerating — `npm run schema:snapshot` — or the schema-drift gate goes
+-- red on the function and trigger lines. Say the word and I'll do it.)
 -- ----------------------------------------------------------------------------
 
 CREATE OR REPLACE FUNCTION public.sessions_derive_center_id()
@@ -162,6 +164,14 @@ COMMENT ON FUNCTION public.sessions_derive_center_id() IS
   'Keeps sessions.center_id agreeing with student_groups.center_id so the '
   'tenant key cannot drift NULL on rows written before application code sets '
   'it. Derives only; asserts nothing about ownership (see the column comment).';
+
+-- A SECURITY DEFINER function is EXECUTE-able by PUBLIC by default. Postgres
+-- checks EXECUTE at CREATE TRIGGER time, not at fire time, so revoking it does
+-- not stop the trigger — it only removes a definer-rights function from the
+-- callable surface. (It returns `trigger`, so it is not directly callable and
+-- PostgREST will not expose it; this is belt-and-braces, and matches the
+-- standing "revoke anonymous EXECUTE on SECURITY DEFINER helpers" rule.)
+REVOKE ALL ON FUNCTION public.sessions_derive_center_id() FROM PUBLIC;
 
 -- END OF 1b ------------------------------------------------------------------
 
@@ -348,7 +358,15 @@ COMMIT;
 --   UNION ALL SELECT 'backfilled rows (want 2)', count(*) FROM public.sessions
 --     WHERE center_id IS NOT NULL
 --   UNION ALL SELECT 'derive trigger (0 if you struck 1b)', count(*) FROM pg_trigger
---     WHERE tgname='trg_sessions_derive_center_id';
+--     WHERE tgname='trg_sessions_derive_center_id'
+--   UNION ALL SELECT 'PUBLIC execute revoked (want 0)', count(*)
+--     FROM information_schema.routine_privileges
+--     WHERE routine_name='sessions_derive_center_id' AND grantee='PUBLIC';
 --
--- Expect 1,1,0,1,1,2,1 — or 1,1,0,1,1,2,0 if block 1b was struck.
+-- Expect 1,1,0,1,1,2,1,0 — or 1,1,0,1,1,2,0,0 if block 1b was struck.
+--
+-- This whole file was rebuilt from scratch on a clean Postgres 17.10 and
+-- introspected before being pushed, so it is known to parse and apply; the
+-- resulting diff against db/schema.snapshot is exactly the eight added and
+-- three removed lines this migration intends, and nothing else.
 -- ============================================================================
