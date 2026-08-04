@@ -744,6 +744,20 @@ left for later, it is the deliberate final state unless a pause feature is separ
 - **Touches:** layout paradigm, no schema change required to just rename this finding correctly; a schema change (new `centers` address column) would be required to actually build the design's Edit/Add-branch address fields.
 - **Blocked by:** Eyad's call on whether Branches should move toward the design's card+actions layout at all, and if so, whether address becomes a real field. Not built this pass — `D23`'s pricing question is unchanged and still separately blocking regardless of this layout question.
 
+**CLOSED, 4 August 2026 (PR #313, merged to master before this session started).** Independently
+re-read `branches/page.tsx` fresh for this session's Center-Groups re-verification, before trusting
+this entry — it now uses the shared `ExpandableRow` (title, three-stat meta row, `Current` badge,
+inline Switch-to-this/Dashboard/Edit chips, a `More` sheet), exactly the card+action-chips paradigm
+this entry said was entirely missing. The address field is answered too, not ignored: it maps to
+the live `centers.district` column (confirmed in `information_schema.columns`, 3 Aug per the PR,
+re-confirmed 4 Aug) rather than inventing a `centers.address` the schema does not have — labelled
+"Area / address" in the UI, which is an honest field-mapping choice, not a silent renaming. `D23`'s
+pricing decision is correctly still open and untouched by this: the add-branch sheet now shows an
+add-on notice only when `platform_config['branch_addon.monthly_price_egp']` is set (absent live, so
+nothing renders today), which stops the screen from asserting a 199 EGP charge the billing engine
+does not make, but does not decide what that charge should be. Closing this line item; kept here
+rather than deleted so nobody re-opens a layout question that already shipped.
+
 ## D32 · Waitlist promotion has no working path end to end — the WhatsApp opt-in fires into a void, and there was never a manual alternative
 - **What:** `Merged-Center-Groups` §01's Waitlist tab draws a per-row "Add" button that promotes a waitlisted student straight into full membership. Reading `groups/page.tsx`'s actual waitlist tab fresh, live never offered that action — only a read-only waitlist list plus a separate "add someone new to the waitlist" picker. Looking for how promotion happens today led to `notify-waitlist/route.ts`: when a seat opens (a member is removed under capacity), it WhatsApp-messages the first waitlisted parent asking them to reply "yes" or "no", and logs a `waitlist_notifications` row with `response: 'pending'`. Grepped every reference to `waitlist_notifications` in `src/` (one file, insert-only) and the WhatsApp inbound webhook (`api/whatsapp/inbound/route.ts`, a keyword-matched FAQ auto-responder with no waitlist branch at all) — **nothing anywhere ever reads that reply or completes the promotion.** A parent who replies "yes" gets nothing back; the row sits at `pending` forever; the student is never enrolled by this flow, regardless of how the parent answers.
 - **A second, compounding bug this pass fixes:** even bypassing the broken WhatsApp loop and adding a waitlisted student as a full member through the ordinary Add-member flow left their waitlist entry in place forever — nothing in the codebase ever cleared `students.waitlist_group_id`/`waitlist_position`. Fixed this pass (safe, no decision needed): `handleAddMember` now clears both fields via a new `DELETE /api/groups/[groupId]/waitlist` route when the student being added was on that group's own waitlist, and the waitlist POST route's position assignment was changed from a `COUNT`-based formula (which would start colliding once removals became possible) to `MAX(position)+1`.
@@ -751,6 +765,19 @@ left for later, it is the deliberate final state unless a pause feature is separ
 - **Found:** 1 August 2026, Center-Groups full re-survey.
 - **Touches:** `WhatsApp` (an existing, currently-dead-end automated message parents already receive in production), `students.waitlist_group_id`/`waitlist_position` (no schema change, existing columns).
 - **Blocked by:** Eyad's call on which promotion model is correct. No `waitlist_requested_at`/similar timestamp column exists either (checked live: `students`'s only waitlist columns are `waitlist_group_id` uuid and `waitlist_position` integer) — the design's "Requested 09/07" per-row date has no backing field and would need a migration; flagged, not added, since backfilling a real join-date for existing rows isn't possible (no historical data to backfill from).
+
+**Re-verified 4 August 2026, independently, before trusting this entry's own wording.** The phrase
+"there was never a manual alternative" in this entry's own title reads as stronger than what the
+body actually says — re-reading `groups/page.tsx` fresh (PR #313 is already on master), the design's
+simple per-row "Add" button is live today: `handleAddMember`, wired to the waitlist row's `Add`
+control, inserts the student into `student_group_members` and then clears
+`waitlist_group_id`/`waitlist_position` via `DELETE /api/groups/[groupId]/waitlist` (the stale-entry
+fix this entry already describes). That is a complete, working, manual promotion path matching the
+design's button — not a gap. What is still unbuilt, and still Eyad's call exactly as this entry
+already says, is only the automatic half: nothing reads a parent's WhatsApp "yes" reply to the
+`notify-waitlist` message, so that path remains a dead end. Not re-closing this entry (the
+automatic-path decision is real and unmade) but correcting the framing so a future reader does not
+re-build the manual button that already exists.
 
 ---
 
@@ -1079,6 +1106,54 @@ to a percentage of `fee_per_class` as this entry originally speculated the desig
 conversion is a display-formatting choice, not a data gap, and was left alone rather than guessed at.
 `capacity_cap` and `kind` remain unbuilt — re-confirmed still zero references in `src/` outside this
 doc and `db/schema.snapshot`, same "drop or document" decision as before, not resolved here.
+
+**Re-confirmed live a third time, 4 August 2026.** `select column_name, data_type from
+information_schema.columns where table_name='student_groups' and column_name in
+('capacity_cap','kind')` on project `lczmjpnbuhnsislcvzar` still returns both (`integer`, `text`) —
+they were not dropped and nothing started writing or reading either since 31 July. Grepped `src/`
+again for both names: still zero hits outside this document. Unchanged, still Eyad's drop-or-document
+call, not touched.
+
+## F26 · `branches`/`groups`/`rooms` i18n — eight live Arabic strings were English leftovers or
+grammatically backwards translations, fixed (no decision needed)
+- **What:** re-reading every EN/AR pair actually resolved by `useTranslations('groups')`,
+  `useTranslations('rooms')` and `useTranslations('branches')` (the three real top-level namespaces
+  `groups/page.tsx`, `rooms/page.tsx` and `branches/page.tsx` read from — there are decoy copies of
+  several of these same key names sitting unread in `common` and `heatmap`, confirmed by checking
+  which `useTranslations()` call each screen actually uses before touching anything) turned up eight
+  live, user-facing bugs, not display gaps:
+  - `groups.pleaseWait` — Arabic value was the literal English string `"Please Wait"`, verbatim.
+  - `groups.validFeeRequired` — half-translated: `"Valid رسوم مطلوب"` (the English word "Valid"
+    left in place ahead of the Arabic).
+  - `groups.groupNameRequired` — `"مجموعة الاسم مطلوب"`, word-for-word substitution in the wrong
+    Arabic word order (reads "Group the-name required" instead of "اسم المجموعة مطلوب", "the
+    group's name is required").
+  - `groups.subjectRequired` — `"مادة مطلوب"`, missing the feminine agreement Arabic grammar
+    requires (`مطلوب` → `مطلوبة` since `مادة` is feminine).
+  - `groups.noWaitlist` — `"لا قائمة الانتظار"`, a sentence fragment with no verb (reads "no the
+    waiting-list" rather than "لا توجد قائمة انتظار", "there is no waiting list").
+  - `rooms.roomNameRequired` — the same backwards-word-order bug as `groupNameRequired`:
+    `"قاعة الاسم مطلوب"` instead of `"اسم القاعة مطلوب"`.
+  - `branches.totalMrr` — `"الإجمالي بالرنين المغناطيسي"`, which does not mean "Total MRR": `رنين
+    مغناطيسي` is the Arabic medical term for magnetic resonance (as in `التصوير بالرنين
+    المغناطيسي`, MRI). The string literally read "Total by Magnetic Resonance."
+  - `branches.outstanding` — `"المستحق غير المسدد / المبلغ المتبقي المستحق"`, two draft phrasings
+    left joined by a slash instead of one being chosen.
+- **Why fixed, not logged:** pure translation-text corrections, no schema, no product decision, no
+  behaviour change — exactly the class of fix the standing rule on Arabic quality asks for.
+- **Live-vs-dead, checked before fixing, not assumed:** `groups.pleaseWait`/`validFeeRequired`/
+  `groupNameRequired`/`subjectRequired`/`noWaitlist` and `rooms.roomNameRequired` are all in active
+  use today (`groups/page.tsx`'s add/edit-group validation toasts and the waitlist-empty line;
+  `rooms/page.tsx`'s add/edit-room validation). `branches.totalMrr`/`outstanding` are currently
+  **dead** — PR #313 (4 Aug, already on master) moved Branches from a 3-KPI table to the design's
+  2-KPI layout and neither string is read by anything in `src/` today (grepped `t('totalMrr')` /
+  `t('outstanding')` scoped to the `branches` namespace specifically, since both key names are
+  reused with different, correct copy in unrelated namespaces like `teacherPortal.centerCuts` and
+  `adminWaPack`). Fixed anyway since the wrong text still ships in the translation bundle and would
+  silently resurface correct-looking but wrong if a third KPI is ever restored.
+- **Found:** 4 August 2026, Center-Groups re-verification pass (this session).
+- **Verified:** `npx tsx scripts/check-i18n.ts` (key parity), `npm run verify:stabilization`,
+  `npm run typecheck`, `npm run lint`, `npm run test:unit` all green after the fix.
 
 ## F12 · `pending_enrollments` cannot say whether a request came from an invite link or self-serve sign-up — the design shows both as distinct badges
 - **What:** `Merged-Center-Students` §04's Pending screen draws two distinct origin badges ("Invite link" vs "Sign-up") on every request row, plus a "Came via" field in the request-detail view. Live, `pending_enrollments` has no column for this — confirmed both live insert call sites (`src/app/api/join/[center_code]/[group_id]/route.ts` and `src/app/api/join/pending-enrollment/route.ts`) write the identical column set (`center_id, group_id, student_id, student_name, student_phone, parent_phone, notes, status`), and the list query in `src/app/api/students/pending/route.ts` selects no origin-like field because none exists.
