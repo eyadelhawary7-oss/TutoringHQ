@@ -179,9 +179,14 @@ opposite directions:
 `requireMoneyRequestPermission` (`src/lib/centerPermissions.ts`). The gate is now:
 
 ```
+intent ≠ 'request'  ->  THROW                          -- checked first, before role or flag (see below)
+
 pass ⇔ role = 'owner'                                  -- identical to /api/billing/withdrawal
      ∨ (role ∈ {admin, assistant} ∧ flag = true)       -- an explicit, live, owner-granted delegation
 ```
+
+The `intent` precondition was added by the second commit on this branch and is described in full below —
+it is the strongest control here, and it is a precondition on *every* arm, not an extra arm.
 
 Three arms that `requirePermission` allowed are closed:
 
@@ -212,6 +217,64 @@ loudly on the first call in every environment instead of silently granting. The 
 `ReleaseAuthorityPermission = Exclude<CenterPermission, RequestOnlyMoneyPermission>` makes it a compile
 error as well. `tests/unit/payoutRequestAuthority.test.ts` pins all of it, including a source scan that
 fails if any new file in `src/` references the permission or if any approval/release-shaped API path does.
+
+**That tripwire alone was evadable, and the second commit on this branch closed the hole.** The audit
+disclosed it rather than leaving it to be found later. `assertNotReleaseAuthority` fires on the *literal
+permission string*, and the string scan greps for the same literal, so a release path written by
+indirection —
+
+```ts
+requireMoneyRequestPermission(auth, REQUEST_ONLY_MONEY_PERMISSIONS[0])
+```
+
+— type-checked, passed every test then in the file, and **granted on the owner arm**, without a single
+string literal anywhere for either control to catch. That shape is exactly §7.1's payee-self-approval
+failure: the centre owner approving their own payout. Two complementary controls now close it, and both
+were verified by mutation rather than by reading:
+
+1. **A required `intent` argument, checked at runtime.** `hasMoneyRequestAuthority` and
+   `requireMoneyRequestPermission` take a third parameter `intent: MoneyMovementIntent` (`'request' |
+   'release'`), and `assertRequestIntent()` is the first statement in the gate — it runs *before* any
+   role or flag is looked at. There is no default value. Three properties follow, and the third is the
+   one that matters most:
+   - Passing `'release'` **throws in every environment**, on the first call, for **every** identity shape
+     — owner, delegated admin/assistant, centre-less role, `isSuperAdmin`, and a tampered role string
+     alike. There is no principal a release path can find that slips through. It is a throw and not a
+     403 because reaching it means a code path was wired to the wrong authority source: a programming
+     error, not a user error. Fail closed and loud.
+   - A release path can therefore only reach the gate by writing `'request'` next to code that approves
+     money — a lie that is visible in the diff. This cannot make a determined author safe; it can only
+     make the mistake impossible to commit silently.
+   - **Omitting the argument entirely also throws.** TypeScript rejects the two-argument call, but a JS
+     caller, an `as any` escape, or a transpiled call that drops the argument lands on `intent ===
+     undefined`, which is not `'request'`, so `assertRequestIntent` throws on that too. The gate cannot
+     be reached by *forgetting* about it — only by an explicit, reviewable claim. (This property was
+     found by a test written to assert something weaker.)
+
+2. **A second source scan, over the indirect handles.** The original scan matched only the literal
+   permission string, so the indirect form never appeared in it at all. A second scan now fails if any
+   file under `src/` mentions `REQUEST_ONLY_MONEY_PERMISSIONS`, `hasMoneyRequestAuthority`,
+   `requireMoneyRequestPermission`, `assertRequestIntent` or `RequestOnlyMoneyPermission` outside a
+   two-entry allowlist — the gate itself (`src/lib/centerPermissions.ts`) and the one request route
+   (`src/app/api/referrals/payout/route.ts`). *Reaching the authority at all* outside the reviewed set
+   is the signal, whatever string the call uses. This catches at review time what the `intent` argument
+   catches at runtime, which is earlier and cheaper. The allowlist is asserted non-empty so it cannot
+   rot into a no-op.
+
+The one call site states its intent explicitly: `requireMoneyRequestPermission(auth,
+'can_request_referral_payouts', 'request')`. No real caller changed behaviour.
+
+**Blast radius, stated plainly: the `assertNotReleaseAuthority` throw sits at the top of the *shared*
+`hasPermission`, so it is on the path of six other routes, not just the payout route.** Those routes are
+`/api/academic`, `/api/orders/[orderId]/reorder`, `/api/paymob/create-payment-key`,
+`/api/settings/billing`, `/api/card-order-cart/checkout` and `/api/centers/me`. If any of them ever
+passed a request-only permission they would get an **uncaught throw — a 500 — instead of a 403**. None
+can today: verified by grep that they pass only `can_manage_academic_calendar`, `can_place_card_orders`,
+`can_manage_billing` and `can_edit_center_profile`, none of which is in
+`REQUEST_ONLY_MONEY_PERMISSIONS`. The change can only ever deny, never grant, so the direction is safe —
+but "the withdrawal route was not touched" understates the surface, and anyone adding a permission to
+`REQUEST_ONLY_MONEY_PERMISSIONS` later must check these six call sites before doing so. (Client-side
+`hasPermission` in `UserContext` is a different, single-argument helper and is unaffected.)
 
 > ### ⚠ OPEN FOR EYAD — which gate survives the unification, and does the permission survive at all
 >
