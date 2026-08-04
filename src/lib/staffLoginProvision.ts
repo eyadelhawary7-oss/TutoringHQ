@@ -1,7 +1,7 @@
 import { randomBytes } from 'crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/nextjs';
-import { normalizePhone } from '@/lib/utils/phone';
+import { normalizePhone, authEmailFromPhone } from '@/lib/utils/phone';
 import { mintForFallback } from '@/lib/pinSetupTokens';
 import { sendPinSetupLink } from '@/lib/centerNotify';
 
@@ -37,10 +37,11 @@ export async function provisionStaffLogin(
   args: { phone: string; name?: string | null },
 ): Promise<ProvisionStaffLoginResult> {
   const normalized = normalizePhone((args.phone ?? '').trim());
-  const digits = normalized.replace(/\D/g, '');
-  if (!digits) throw new Error('provisionStaffLogin: missing/invalid phone');
+  // Refuse to WRITE a phone that does not canonicalize to a valid Egyptian
+  // mobile E.164 (authEmailFromPhone returns null in exactly that case).
+  const authEmail = authEmailFromPhone(normalized);
+  if (!authEmail) throw new Error('provisionStaffLogin: missing/invalid phone');
 
-  const authEmail = `${digits}@centerhq.local`;
   // 256 bits of entropy, never disclosed; overwritten when the employee sets their PIN.
   const placeholderPassword = randomBytes(32).toString('base64url');
 

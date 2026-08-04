@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { normalizePhone, isValidEgyptianMobileE164, phonesMatch } from '@/lib/utils/phone';
 
 /**
  * How many balance reminders this center has actually SENT to one student.
@@ -24,12 +25,6 @@ import { NextRequest, NextResponse } from 'next/server';
  * so this cannot be read from the browser client — hence the route.
  */
 const BALANCE_REMINDER_TEMPLATE = 'chq_balance_reminder';
-
-/** Digit-only tail comparison — the queue stores whatever form the sender used. */
-function phoneTail(raw: string | null | undefined): string | null {
-  const d = (raw ?? '').replace(/\D/g, '');
-  return d.length >= 9 ? d.slice(-9) : null;
-}
 
 export async function GET(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -75,8 +70,12 @@ export async function GET(request: NextRequest) {
     .maybeSingle();
   if (!student) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const tail = phoneTail((student as { phone?: string | null }).phone);
-  if (!tail) return NextResponse.json({ count: 0, matchable: false });
+  const studentPhone = (student as { phone?: string | null }).phone ?? null;
+  // Matchable only when the student's phone is a valid canonical mobile; a zero
+  // here means "cannot show", not "never reminded" (see the note above).
+  if (!isValidEgyptianMobileE164(normalizePhone(studentPhone ?? ''))) {
+    return NextResponse.json({ count: 0, matchable: false });
+  }
 
   const { data: rows } = await admin
     .from('wa_message_queue')
@@ -85,8 +84,10 @@ export async function GET(request: NextRequest) {
     .eq('template_name', BALANCE_REMINDER_TEMPLATE)
     .eq('status', 'sent');
 
+  // Canonical E.164 equality, not a last-9 tail match: two different numbers
+  // sharing a 9-digit suffix must NOT be counted as the same student.
   const count = ((rows ?? []) as { to_phone: string }[]).filter(
-    (r) => phoneTail(r.to_phone) === tail,
+    (r) => phonesMatch(r.to_phone, studentPhone),
   ).length;
 
   return NextResponse.json({ count, matchable: true });

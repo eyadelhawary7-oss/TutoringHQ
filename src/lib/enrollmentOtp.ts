@@ -1,5 +1,5 @@
 import { createHash, randomInt } from 'crypto';
-import { normalizePhone, isValidEgyptianMobileE164 } from '@/lib/utils/phone';
+import { normalizePhone, isValidEgyptianMobileE164, phonesMatch } from '@/lib/utils/phone';
 
 /**
  * Shared input parsing / hashing / masking for the public student
@@ -66,7 +66,7 @@ export function parseEnrollmentInput(body: unknown): ParseResult {
     if (!isValidEgyptianMobileE164(parentPhone)) {
       return { ok: false, code: 'invalid_parent_phone' };
     }
-    if (parentPhone === studentPhone) {
+    if (phonesMatch(parentPhone, studentPhone)) {
       return { ok: false, code: 'parent_phone_same' };
     }
   }

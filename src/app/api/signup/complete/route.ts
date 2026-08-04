@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { normalizePhone } from '@/lib/utils/phone';
+import { normalizePhone, isValidEgyptianMobileE164, phonesMatch, authEmailFromPhone } from '@/lib/utils/phone';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { isWeakPin } from '@/lib/weakPins';
@@ -60,9 +60,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
-    const normPhone = (p: string) => normalizePhone(p).replace(/\D/g, '');
-    const userDigits = normPhone(user.phone || '');
-    if (!userDigits) {
+    if (!isValidEgyptianMobileE164(normalizePhone(user.phone || ''))) {
       return NextResponse.json({ error: 'Phone number is required on your account to complete signup.' }, { status: 400 });
     }
 
@@ -76,10 +74,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to resolve center' }, { status: 500 });
     }
 
-    const matching = (pendingCenters ?? []).filter((row) => {
-      const cd = normPhone((row as { phone?: string | null }).phone || '');
-      return cd && cd === userDigits;
-    });
+    // Match the caller's account phone to a pending center by canonical E.164
+    // equality (never digit-substring). phonesMatch fails closed on invalid.
+    const matching = (pendingCenters ?? []).filter((row) =>
+      phonesMatch((row as { phone?: string | null }).phone, user.phone),
+    );
 
     if (matching.length === 0) {
       return NextResponse.json(
@@ -125,8 +124,10 @@ export async function POST(request: Request) {
     // Generate PIN and phone-based email
     const pin = generatePin();
     const normalizedPhone = normalizePhone(user.phone || center.phone || '');
-    const phoneDigits = normalizedPhone.replace(/\D/g, '');
-    const emailForAuth = `${phoneDigits}@centerhq.local`;
+    const emailForAuth = authEmailFromPhone(normalizedPhone);
+    if (!emailForAuth) {
+      return NextResponse.json({ error: 'Phone number is required on your account to complete signup.' }, { status: 400 });
+    }
 
     const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
       email: emailForAuth,
