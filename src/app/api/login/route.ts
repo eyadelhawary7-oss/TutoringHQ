@@ -70,8 +70,6 @@ export async function POST(request: Request) {
     }
 
     // Auth email via the shared derivation (matches signup/accept-invite exactly).
-    // phoneDigits is still needed for the admin_users.phone digit-form match below.
-    const phoneDigits = normalizedPhone.replace(/\D/g, '');
     const emailForAuth = authEmailFromPhone(normalizedPhone);
     if (!emailForAuth) {
       // A phone that is not a valid Egyptian mobile can never own an account.
@@ -92,9 +90,12 @@ export async function POST(request: Request) {
       // exposed to PostgREST and supabase-js has no getUserByEmail):
       //   - email column: the derived `<digits>@centerhq.local` auth email
       //     (audit/seed internal accounts store the auth email here), OR
-      //   - phone column: the E.164 phone or its bare digits (production internal
-      //     accounts store a human email but a real phone; the `+` prefix is
-      //     inconsistent across rows, so match both forms).
+      //   - phone column: the canonical +20 E.164 phone. Every admin_users row
+      //     is E.164 as of the 4 Aug data normalisation (verified: 2/2 rows read
+      //     +20). The bare-digits arm that briefly sat beside this one existed
+      //     only to survive the window between #316 landing and that data fix;
+      //     both are done, so matching a non-canonical form is now dead weight
+      //     and would quietly re-admit the inconsistency the fix removed.
       // public.users.role is NEVER consulted for admin status (documented prior P0).
       // This only gates whether we return the derived email; the actual admin
       // authorization still happens downstream in /api/admin/check.
@@ -102,7 +103,7 @@ export async function POST(request: Request) {
         .from('admin_users')
         .select('id')
         .or(
-          `email.eq.${emailForAuth},phone.eq.${normalizedPhone},phone.eq.${phoneDigits}`,
+          `email.eq.${emailForAuth},phone.eq.${normalizedPhone}`,
         )
         .limit(1)
         .maybeSingle();
