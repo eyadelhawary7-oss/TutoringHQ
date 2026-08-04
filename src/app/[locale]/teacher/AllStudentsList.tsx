@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Search, UserRound } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { formatNumber, formatPhoneIntlGrouped } from '@/lib/formatNumber';
+import { groupTagTone } from '@/lib/groupTagTone';
 import { initialsOf } from '@/lib/initials';
 
 type StudentRow = {
@@ -261,7 +262,7 @@ export default function AllStudentsList() {
                     {e.groups.map((g) => (
                       <span
                         key={g.id}
-                        className="shrink-0 rounded-[var(--radius-xs)] bg-[var(--color-mint)] px-2 py-1 text-[11px] font-semibold text-[var(--color-teal-deep)]"
+                        className={`shrink-0 rounded-[var(--radius-xs)] px-2 py-1 text-[11px] font-semibold ${groupTagTone(g.id)}`}
                       >
                         {g.name ?? '-'}
                       </span>

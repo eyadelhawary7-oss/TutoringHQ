@@ -104,11 +104,25 @@ If a row ever names one, that row is a mistake.
 | [#295](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/295) | `8b1ee5c` | 2026-07-31 | none — doc only (final `EmptyState` correction after #294 landed — 11/72 real adopters, `#292`'s wrong "verified false" claim about `OrdersPageClient.tsx` corrected) | none | v42 |
 | [#296](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/296) | `4c5e29b` | 2026-08-01 | `Center-Home §01` — Schedule section empty-state (balance card confirmed still blocked, not built); merged by Eyad directly, held for review per this file's history | `/{locale}/dashboard` | v42 |
 | [#297](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/297) | `aa8115d4` | 2026-08-01 | none — doc only (logged #296, closed out the Center-Home §01 investigation episode) | none | v42 |
-| [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
+| [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `253297bc` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
+| *(gap — see the note below this table)* | | 2026-08-01 → 08-04 | 32 merged PRs, `#300`–`#338`, were never given rows here | | v42 → v45 |
+| [#339](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/339) | `(on merge)` | 2026-08-04 | `Teacher-Students §01`, `§02` — the design's second group-tag tint (`.tag.b`) built as a per-group tint | `/{locale}/teacher/students`, `/{locale}/teacher/students/[studentId]` | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
-one, and `#296`'s own row was filled by `#297`.*
+one, and `#296`'s own row was filled by `#297`.* **`#298`'s own `(on merge)` was never filled in and
+is corrected above to `253297bc`, read from `git log origin/master`.**
+
+**This table has a 32-PR hole and the rows above it should not be read as a complete history.**
+`git log --oneline 253297bc..origin/master` returns exactly 32 squash merges between `#298`
+(`253297bc`) and this PR — `#300`–`#308`, `#310`–`#314`, `#316`–`#330`, `#333`, `#337`, `#338` —
+none of which has a row here, even though several changed live screens (`#310` Teacher-Students, `#312` Center-Students,
+`#313`/`#321` Center-Groups, `#314`/`#327` Public-Marketing, `#318` Center-Home, `#322` Phase 4,
+`#324` Center-Setup, `#326` Center-Insight, `#328` Center-WhatsApp) and the `SW_VERSION` column
+therefore skips v43, v44 and v45 entirely. Backfilling 33 rows from commit subjects alone would mean
+writing "screens touched" and "routes touched" cells I have not verified against those diffs, so the
+hole is marked rather than filled with plausible guesses — the same reason this log's own header
+tells you to read it before touching anything. Backfill is its own pass.
 
 ### Notes per PR
 
@@ -1658,3 +1672,58 @@ description:**
 description in each entry). `design/FILE-COMPLETION-TABLE.md` row 11 updated: ~3.1/5 → ~3.0/5, §04's
 sub-estimate corrected down, blocked-by list gains D31/D32, D2 marked closed (confirmed already-resolved
 by `#248`, never formally closed in this table before now).
+
+**Teacher-Students, third pass (4 August 2026) — the `.tag.b` brass group tag, built.** Surveyed
+`Merged-Teacher-Students.html` element by element against the live route before writing anything,
+and confirmed against the live catalog (project `lczmjpnbuhnsislcvzar`) rather than against `#310`'s
+or `#333`'s own accounts of themselves.
+
+**Structure: 2 of 2 sections drawn, before and after.** §01 is served by
+`/{locale}/teacher/students` (`AllStudentsList.tsx`) and §02 by the real page
+`/{locale}/teacher/students/[studentId]`, both confirmed present. Every drawn element in both
+sections has a live counterpart: §01's appbar, search, group chips, count header, avatar + name +
+group tag + inline 12px chevron + LTR-grouped phone + 18px end chevron, and the five-tab bar; §02's
+72px avatar head, Contact card with per-row Call/Message, the outstanding-balance card *and* its
+`.settled` alternate, the attendance card with bar, and the Recent-classes rows with their
+"Not collected yet" / "Paid · <method>" captions. `hidesTeacherTabBar()` even reproduces §02's
+missing `.tabbar`. Nothing structural was found to build; D15 is genuinely closed, as `#333` said.
+
+**One drawn element was still missing, and it is now built.** §01 draws two group-tag tints — `.tag`
+(`#0A514A` on `#DFEEEB`) and `.tag.b` (`#9A6B1F` on `#F4EBD7`) — and the correlation across the
+frame is exact: the two rows tagged `Physics` are mint, the one row tagged `Physics Sun 4PM` is
+brass. Two groups on screen, two tones, one tone per group. `#310` declined it as "no stated rule and
+no live column distinguishes them", which is true of a *status* reading; it is not true of an
+*identity* reading, and identity is what the frame actually shows. New `src/lib/groupTagTone.ts`
+returns one of the design's two colour pairs from an FNV-1a hash of `student_groups.id`, and both
+§01's chip and §02's `.ptags` pill now call it.
+
+**Why a hash and not a list index.** §01 resolves tags from the teacher's whole group set; §02
+resolves them from only the groups one student is enrolled in. An index-based tone would paint the
+same group two different colours across the two screens — the design shows `Physics` mint in both
+sections. Hashing the id is the only assignment stable everywhere the tag appears; five unit tests in
+`tests/unit/groupTagTone.test.ts` pin that property, including that both tones are actually reachable
+across a realistic group set.
+
+**The tint carries no meaning beyond group identity**, and the helper's doc comment says so in
+those words. Neither tone means paid, overdue, full or pending. No column was invented, no query
+changed, no migration needed — `student_groups.id` was already being read and rendered as the tag's
+`key`.
+
+**Two deviations remain and are still correctly not built, both for reasons outside this file.**
+Phone numbers render in the app's tabular Plex Sans, not IBM Plex Mono: `--font-mono` resolves to
+`var(--font-plex)` in `globals.css:14` and repointing it is a global typography call across 264
+`font-mono` call sites on screens other design files govern. And the session attendance sheet's
+student name stays unlinked — it sits inside the presence-toggle button, so nesting a link there
+would break attendance marking, which is that screen's primary action.
+
+**Shared primitives, checked not assumed.** `patterns/ListRow` is not usable for §01: its `.av` is a
+40×40 mint *square* at `--radius-md` with teal-deep text, while `.sav` here is a 40×40 *circle* on
+`#F2EEE5` with a `#E2DDD1` border, and `ListRow` has no slot for inline group tags in the title or a
+`dir="ltr"` phone sub-line. The rule's trigger list (row action, quick menu, group action bar,
+expand sheet) also does not fire — §01's row is a plain navigation `Link` with no action affordance.
+Recorded here rather than silently worked around.
+
+Gates: `npm run typecheck` clean, `npm run lint` 0 errors (145 pre-existing warnings, all in
+`tests/unit/**`, none in a touched file), `npm run test:unit` 1926 passed / 202 files,
+`npm run verify:stabilization` OK on all three (i18n parity at 4064 resolved keys — no new keys were
+needed, the tint reuses existing markup). `SW_VERSION` v45 → v46.

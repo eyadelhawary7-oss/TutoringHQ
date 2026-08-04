@@ -12,6 +12,7 @@ import {
   formatPercent,
   formatPhoneIntlGrouped,
 } from '@/lib/formatNumber';
+import { groupTagTone } from '@/lib/groupTagTone';
 import { initialsOf } from '@/lib/initials';
 import TeacherAppBar from '../../../TeacherAppBar';
 
@@ -270,7 +271,7 @@ export default function TeacherStudentDetailPage({
           {groups.map((g) => (
             <span
               key={g.id}
-              className="rounded-[var(--radius-pill)] bg-[var(--color-mint)] px-3 py-1 text-[11px] font-semibold text-[var(--color-teal-deep)]"
+              className={`rounded-[var(--radius-pill)] px-3 py-1 text-[11px] font-semibold ${groupTagTone(g.id)}`}
             >
               {g.name ?? '-'}
             </span>
