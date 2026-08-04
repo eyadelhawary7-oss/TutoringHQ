@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { normalizePhone, isValidEgyptianMobileE164 } from '@/lib/utils/phone';
+import { normalizePhone, isValidEgyptianMobileE164, authEmailFromPhone } from '@/lib/utils/phone';
 import { isWeakPin } from '@/lib/weakPins';
 import { rateLimit, rateLimitExceededResponse, getUpstashRedis } from '@/lib/ratelimit';
 import { hashOtp, TEACHER_SIGNUP_OTP_MAX_ATTEMPTS } from '@/lib/teacherSignupOtp';
@@ -184,7 +184,10 @@ export async function POST(request: Request) {
   // Code matches. verified_at is set only AFTER the account is created (below) so
   // a transient failure leaves the code usable for retry.
 
-  const authEmail = `${phoneDigits}@centerhq.local`;
+  const authEmail = authEmailFromPhone(phone);
+  if (!authEmail) {
+    return NextResponse.json({ error: 'Invalid phone', code: 'INVALID_PHONE' }, { status: 400 });
+  }
 
   // Duplicate pre-check: one account per phone. createUser's unique-email
   // error is the race-safe backstop below.

@@ -9,6 +9,7 @@ import { getCsrfHeaders } from '@/lib/csrf-client';
 import { isWeakPin } from '@/lib/weakPins';
 import { formatDate } from '@/lib/formatNumber';
 import { isProOrAbove } from '@/lib/teacherPlans';
+import { phoneFromCenterhqAuthEmail } from '@/lib/utils/phone';
 import MyCodeCard from '../../MyCodeCard';
 
 /**
@@ -146,9 +147,8 @@ export default function TeacherSettingsPage() {
         data: { session },
       } = await supabase.auth.getSession();
       const email = session?.user?.email ?? '';
-      const digits = email.endsWith('@centerhq.local')
-        ? email.split('@')[0]
-        : (session?.user?.phone ?? '').replace(/\D/g, '');
+      const digits =
+        phoneFromCenterhqAuthEmail(email) ?? (session?.user?.phone ?? '').replace(/\D/g, '');
       setPhone(digits ? formatRegisteredPhone(digits) : null);
 
       // Subscription summary (best-effort: a failure hides the detail, the

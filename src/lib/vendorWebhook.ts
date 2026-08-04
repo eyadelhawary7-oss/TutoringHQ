@@ -2,20 +2,18 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { sendOperationalWhatsappText } from '@/lib/centerNotify';
 import { autoBookBosta } from '@/lib/autoBookBosta';
 import { applyCardOrderTransition, IllegalCardOrderTransitionError } from '@/lib/cardOrderState';
+import { phonesMatch } from '@/lib/utils/phone';
 
-function digitsOnly(s: string): string {
-  return s.replace(/\D/g, '');
-}
-
-/** Matches Meta inbound `from` to a vendor row (same rules as isVendorInboundPhone). */
+/**
+ * Matches Meta inbound `from` to a vendor row. Canonicalizes both numbers to
+ * +20 E.164 and compares exactly (via `phonesMatch`). The previous last-10
+ * trailing-digit match was a defect: two different numbers sharing the last 10
+ * digits would falsely match, and `slice(-10)` on a short value matched too
+ * broadly. `phonesMatch` fails closed on anything that is not a valid Egyptian
+ * mobile.
+ */
 function waDigitsMatch(fromWa: string, vendorWa: string | null | undefined): boolean {
-  const fromDigits = digitsOnly(fromWa);
-  const v = digitsOnly(String(vendorWa ?? ''));
-  if (!fromDigits || !v) return false;
-  if (v === fromDigits) return true;
-  const tailMatch = (a: string, b: string) =>
-    a.length >= 10 && b.length >= 10 && (a.endsWith(b.slice(-10)) || b.endsWith(a.slice(-10)));
-  return tailMatch(v, fromDigits);
+  return phonesMatch(fromWa, vendorWa);
 }
 
 const ORDER_UUID_RE =
@@ -26,21 +24,13 @@ export async function isVendorInboundPhone(
   supabase: SupabaseClient,
   waFrom: string,
 ): Promise<boolean> {
-  const fromDigits = digitsOnly(waFrom);
-  if (!fromDigits) return false;
-
   const { data: rows } = await supabase
     .from('vendors')
     .select('whatsapp_number')
     .eq('is_active', true);
 
   for (const r of rows ?? []) {
-    const v = digitsOnly(String((r as { whatsapp_number?: string }).whatsapp_number ?? ''));
-    if (!v) continue;
-    if (v === fromDigits) return true;
-    const tailMatch = (a: string, b: string) =>
-      a.length >= 10 && b.length >= 10 && (a.endsWith(b.slice(-10)) || b.endsWith(a.slice(-10)));
-    if (tailMatch(v, fromDigits)) return true;
+    if (phonesMatch(waFrom, (r as { whatsapp_number?: string }).whatsapp_number)) return true;
   }
   return false;
 }

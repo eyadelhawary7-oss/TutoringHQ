@@ -3,7 +3,7 @@ import { getAdminContext } from '@/lib/admin-auth';
 import { verifyPasswordForSensitiveAction } from '@/lib/verify-password';
 import { logAdminAction } from '@/lib/audit';
 import { validateCSRFRequest } from '@/lib/csrf';
-import { normalizePhone } from '@/lib/utils/phone';
+import { normalizePhone, authEmailFromPhone } from '@/lib/utils/phone';
 import { generateReferralCode } from '@/lib/referral';
 import { sendWelcomeTemplate } from '@/lib/centerNotify';
 import { NextRequest, NextResponse } from 'next/server';
@@ -743,8 +743,11 @@ export async function PUT(request: Request) {
     // Approve - create auth user and owner profile
     const pin = Math.floor(100000 + Math.random() * 900000).toString();
     const normalizedPhone = normalizePhone(center.phone as string);
-    const phoneDigits = normalizedPhone.replace(/\D/g, '');
-    const authEmail = `${phoneDigits}@centerhq.local`;
+    const phoneDigits = normalizedPhone.replace(/\D/g, ''); // kept for the wa.me credentials link below
+    const authEmail = authEmailFromPhone(normalizedPhone);
+    if (!authEmail) {
+      return NextResponse.json({ error: 'Center phone is not a valid Egyptian mobile number' }, { status: 400 });
+    }
 
     const { data: authData, error: createAuthError } = await supabaseAdmin.auth.admin.createUser({
       email: authEmail,
