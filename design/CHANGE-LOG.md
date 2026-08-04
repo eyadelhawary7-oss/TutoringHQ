@@ -105,6 +105,7 @@ If a row ever names one, that row is a mistake.
 | [#296](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/296) | `4c5e29b` | 2026-08-01 | `Center-Home §01` — Schedule section empty-state (balance card confirmed still blocked, not built); merged by Eyad directly, held for review per this file's history | `/{locale}/dashboard` | v42 |
 | [#297](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/297) | `aa8115d4` | 2026-08-01 | none — doc only (logged #296, closed out the Center-Home §01 investigation episode) | none | v42 |
 | [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
+| [#339](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/339) | `(on merge)` | 2026-08-04 | `Teacher-Groups §01` (row chevron, stacked per-class label), `§02` (stat tiles, Add student / Edit group action pair, inline "Recent classes"), `§03` (group summary line, queue notes, joined-on date, requests on the shared `ExpandableRow`, roster rows on the shared `ListRow`, one shared `ActionSheet` for both). `§04` not built (D20), `§05` untouched (money/legal) | `/{locale}/teacher/groups`, `/{locale}/teacher/groups/[groupId]` | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
@@ -1658,3 +1659,44 @@ description:**
 description in each entry). `design/FILE-COMPLETION-TABLE.md` row 11 updated: ~3.1/5 → ~3.0/5, §04's
 sub-estimate corrected down, blocked-by list gains D31/D32, D2 marked closed (confirmed already-resolved
 by `#248`, never formally closed in this table before now).
+
+### `#339` — Teacher-Groups: build the unblocked structure (2026-08-04)
+
+The previous pass on this file was instructed to *log* gaps rather than build them, and did. That
+instruction is withdrawn; this pass built everything §01–§03 draws whose backing columns exist.
+Structure coverage **≈2.3/5 → ≈3.5/5** (element-level count, §-by-§, in the PR body).
+
+Built, all off columns confirmed present in `information_schema` on project `lczmjpnbuhnsislcvzar`
+this pass — no new column, no migration, nothing inferred from a migration file:
+
+- **§01** — the group row gains the design's chevron affordance (glyph swapped per locale, not
+  CSS-mirrored) and the `.gfee` shape: amount over a quiet "per class" label.
+- **§02** — the `.gstats` pair (Students / Per class) and the `.gacts` primary+ghost pair
+  (Add student / Edit group), both previously absent from the group screen; the icon-only edit
+  button they replace is gone. **"Recent classes"** now renders inline on Overview — the three
+  latest, date · N present · class total — off the same `GET .../classes` the Classes tab already
+  uses. Display-only on purpose: settling a charge is a money-state write and stays where it is.
+- **§03** — the group summary line (`N students · fee per session`), both queue explanation notes,
+  and `Joined <date>` on enrolled rows from `enrollments.joined_at`, which the roster API has been
+  returning and the UI has been discarding since it was written.
+- **§03, shared primitives** — pending requests are now `ExpandableRow` (oldest open, Approve /
+  Decline inline, More chip), enrolled students are now `ListRow`, and **one** `ActionSheet`
+  serves both: open student, call/WhatsApp student, call/WhatsApp parent, then decline or remove.
+  Only phone numbers that exist get an entry. Remove still goes through the existing inline
+  confirm — the sheet arms it, it does not fire it.
+
+Not built, each with the exact reason:
+
+- **§03 "School"** — `students` has 39 columns; none of `school` / `school_name` / `school_id`.
+  New column, so it stops here (**D18**).
+- **§03 "Note from them"** — `enrollments` has exactly 9 columns (`id, group_id, student_id,
+  status, payer, source, approved_by, joined_at, created_at`). No note column. New column
+  (**D18**).
+- **§03's review gate as a real gate** — **D18**, unchanged: both create paths auto-activate.
+- **§03's `/j/7K2M9P` short link** — **D21**. `group_join_links` exists with a `token` column and
+  **0 rows**; no code reads or writes it. Scaffolding, not a ready fix.
+- **§04 Class Session** — **D20**. Which of the two divergent "run a class" builds is canonical is
+  still open, so neither was extended; building into either one would be answering D20 by stealth.
+  (`F10`'s live timer sits inside that same section and is likewise untouched — though note
+  `sessions.started_at` *does* exist live, contrary to F10's original wording.)
+- **§05 Class Session Verified** — money/legal-adjacent, untouched by standing policy.
