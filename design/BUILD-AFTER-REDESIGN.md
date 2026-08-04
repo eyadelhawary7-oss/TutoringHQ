@@ -528,8 +528,11 @@ whose core Add-branch flow sits on top of this unresolved billing question.
   Standard (locked) states — the #259 fix holds. §02 Referrals is still the flat +1-free-month loop,
   not the design's 25/10/5% program; `ReferralCard.tsx` now points at `/teachers?ref=` (moved off the
   old `/teacher/landing` redirect hop since PR #314's Public-Marketing rewrite) and `TeachersClient.tsx`
-  still threads `?ref=` into all 5 signup CTAs — the attribution fix from this same entry survived that
-  rewrite intact, re-verified by reading both files, not inferred. Every column `teacherAnalytics.ts`
+  still threads `?ref=` into its signup CTAs, carried via `signupHref` — the hero primary CTA directly,
+  plus two more via `MarketingFooter`'s `createAccountHref` prop (the CTA-band button and the footer
+  "create account" link), 3 referral-aware CTAs total on the page, not the "5" an earlier note in this
+  same entry claimed for the pre-rewrite page. The attribution fix from this same entry survived PR
+  #314's rewrite intact, re-verified by reading both files. Every column `teacherAnalytics.ts`
   and `buildTeacherAnalytics` read — `student_groups.{fee_per_class,kind,status,teacher_id}`,
   `enrollments.{group_id,student_id,status}`, `students.{id,name,is_guest}`,
   `group_schedule.{group_id,day_of_week}`, `schedule_exceptions.{group_id,exception_date,kind,new_date}`,
