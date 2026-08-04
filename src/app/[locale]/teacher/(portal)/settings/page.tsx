@@ -11,6 +11,8 @@ import { formatDate } from '@/lib/formatNumber';
 import { isProOrAbove } from '@/lib/teacherPlans';
 import { phoneFromCenterhqAuthEmail } from '@/lib/utils/phone';
 import MyCodeCard from '../../MyCodeCard';
+import CollectPaymentsRow from '@/components/verification/CollectPaymentsRow';
+import { useVerificationState } from '@/hooks/useVerificationState';
 
 /**
  * Teacher profile settings. A thin form over PATCH /api/teacher/profile (the
@@ -59,6 +61,7 @@ export default function TeacherSettingsPage() {
   const t = useTranslations('teacherSettings');
   const locale = useLocale();
   const router = useRouter();
+  const { state: verification } = useVerificationState();
 
   const [displayName, setDisplayName] = useState('');
   const [subject, setSubject] = useState('');
@@ -434,6 +437,12 @@ export default function TeacherSettingsPage() {
           </button>
         </div>
       </div>
+
+      {/* `Merged-Teacher-Setup` §01 — "Collect payments for me". Sits directly
+          above Payment details, as the design places it, because it is what
+          decides whether that section is "Payment details" (parents pay you)
+          or "Payout details" (we pay you). Today it is always the former. */}
+      <CollectPaymentsRow state={verification} />
 
       {/* Payment details (parent pays the teacher directly; relayed in reminders) */}
       <section className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 shadow-card">

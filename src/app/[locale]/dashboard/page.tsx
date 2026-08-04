@@ -19,6 +19,8 @@ import {
   writeDashboardCache as writeScopedDashboardCache,
 } from '@/lib/dashboardCache';
 import { AlertCircle, Calendar, QrCode } from 'lucide-react';
+import VerificationBadge from '@/components/verification/VerificationBadge';
+import { useVerificationState } from '@/hooks/useVerificationState';
 
 /**
  * Merged-Center-Home §01 `.kv span`: the trailing "%" renders at 11px/500 muted
@@ -120,6 +122,9 @@ export default function DashboardPage() {
   const locale = useLocale();
   const router = useRouter();
   const { user } = useUser();
+  // Imported, never re-derived. The badge below is the only place this centre's
+  // verification state is rendered, and the state itself comes from one module.
+  const { state: verification } = useVerificationState();
 
   const [centerBilling, setCenterBilling] = useState<{ name?: string; plan?: string } | null>(null);
   const [data, setData] = useState<DashboardData | null>(null);
@@ -555,10 +560,19 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[var(--color-surface-0)] p-4 page-enter pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:p-6 md:pb-6">
       <div className="max-w-6xl">
         {/* §01 .topbar — centre name (.tt 17/700), Cairo date (.ts 11 muted),
-            and the far-end pill (.vbadge). The design's pill reads "Verified";
-            centre trust-verification state does not exist in the schema (no
-            column on `centers`), so the slot keeps the plan name it already
-            carried rather than fabricating a trust signal. */}
+            and the far-end pill (.vbadge).
+
+            The design's pill reads "Verified" in every frame it draws, with no
+            unverified twin. The slot now renders the REAL state from the one
+            verification state machine (`useVerificationState` →
+            `/api/verification/state` → `resolveVerificationState`) instead of
+            either fabricating a trust signal or silently omitting one.
+
+            Today that badge reads "Verification unavailable", because the
+            Valify credentials are placeholders and `centers` has no
+            verification column (both re-verified live, 4 Aug 2026). It will
+            read "Verified" only when a real webhook has said so. The plan pill
+            stays; it was never the same thing as a trust signal. */}
         <header className="mb-3 flex items-center gap-2">
           <div className="min-w-0 text-start">
             <h1 className="truncate text-lg font-bold leading-tight text-[var(--color-text-primary)]">
@@ -572,9 +586,12 @@ export default function DashboardPage() {
               })}
             </p>
           </div>
-          <span className="ms-auto shrink-0 rounded-pill border border-[var(--color-accent)]/[0.22] bg-[var(--color-mint)] px-3 py-1 text-xs font-bold text-[var(--color-accent-deep)]">
-            {planLabel}
-          </span>
+          <div className="ms-auto flex shrink-0 items-center gap-2">
+            <VerificationBadge state={verification} />
+            <span className="shrink-0 rounded-pill border border-[var(--color-accent)]/[0.22] bg-[var(--color-mint)] px-3 py-1 text-xs font-bold text-[var(--color-accent-deep)]">
+              {planLabel}
+            </span>
+          </div>
         </header>
 
         {data === null ? (

@@ -35,6 +35,8 @@ import {
 import { canonicalPlanId } from '@/lib/plans';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
 import type { CenterRow } from '@/types/admin';
+import { useAdminVerificationAvailability } from '@/hooks/useAdminVerificationAvailability';
+import { adminVerificationView } from '@/lib/verification/uiState';
 
 const PLAN_SORT_ORDER: Record<string, number> = {
   nano: 1,
@@ -50,14 +52,32 @@ function AdminCentersPageInner() {
   const tCommon = useTranslations('common');
   const tStatus = useTranslations('status');
   const tBilling = useTranslations('billing');
+  const tVerification = useTranslations('verification');
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { closeMainSidebar } = useSidebar() ?? {};
   const { setHideShell } = useLayout();
+  const { state: verification } = useAdminVerificationAvailability();
+  // `Merged-Admin-Platform` §01 draws an "Unverified" filter pill on both
+  // /admin/centers and /admin/teachers. It cannot work: filtering on
+  // verification needs a `verification_status` column, and `centers` has 128
+  // columns and no such thing (re-verified live 4 Aug 2026). The pill is drawn
+  // DISABLED with its reason rather than dropped — a filter that is simply
+  // absent tells an operator nothing, and they will keep looking for it.
+  const verificationGate = adminVerificationView(verification);
 
-  const statusFilter = searchParams?.get('status') ?? 'all';
+  const statusFilterRaw = searchParams?.get('status') ?? 'all';
+  /**
+   * A hand-typed `?status=unverified` must not reach the API while the filter
+   * is gated. `/api/admin/centers` would run `.eq('status','unverified')`
+   * against `centers.status`, whose vocabulary has no such value, and return
+   * zero rows — an empty list reading as "no unverified centres", which is a
+   * confident wrong answer rather than a visible failure. Fall back to `all`.
+   */
+  const statusFilter =
+    statusFilterRaw === 'unverified' && verificationGate.gated ? 'all' : statusFilterRaw;
   const filterPlan = searchParams?.get('plan') ?? 'all';
   const centerSearch = searchParams?.get('q') ?? '';
   const sortBy = searchParams?.get('sort') ?? 'newest';
@@ -451,8 +471,38 @@ function AdminCentersPageInner() {
                           : t('suspended')}
                 </button>
               ))}
+
+              {/* The design's fifth pill. Disabled while verification state has
+                  no live source; it enables itself the moment one exists. */}
+              <button
+                type="button"
+                disabled={verificationGate.gated}
+                title={
+                  verificationGate.causeKey
+                    ? tVerification(verificationGate.causeKey)
+                    : undefined
+                }
+                onClick={
+                  verificationGate.gated
+                    ? undefined
+                    : () => updateParams({ status: 'unverified', page: '1' })
+                }
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  statusFilter === 'unverified'
+                    ? 'bg-primary/20 text-primary'
+                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'
+                } disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent`}
+              >
+                {tVerification('badge.unverified')}
+              </button>
             </div>
           </div>
+
+          {verificationGate.gated && (
+            <p className="-mt-2 mb-4 text-xs leading-relaxed text-[var(--color-text-muted)]">
+              {tVerification('admin.filterUnverifiedDisabled')}
+            </p>
+          )}
 
           {selectedIds.size > 0 && (
             <div className="flex items-center gap-3 flex-wrap bg-primary/10 border border-primary/25 rounded-xl p-4 mb-4">

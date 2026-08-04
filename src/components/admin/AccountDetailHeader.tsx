@@ -11,9 +11,22 @@
  * MANAGE rows jump to the section that already owns each concern rather than
  * duplicating it.
  *
+ * The **Verified chip** is now BUILT and state-driven — see the chip row below.
+ * It reads the one verification state machine and says whatever is true, which
+ * today is "Not configured" with the named cause. It was previously omitted for
+ * a missing column; omission left the design's unconditional "Verified" chip
+ * with no honest counterpart, so an operator could not tell "unverified" from
+ * "we never built this".
+ *
+ * **"National ID on file · Valify · 2 9805 15 01 02345" is still NOT drawn, and
+ * will not be.** The design renders the full number on four frames of §01.
+ * `design/VERIFICATION-SPEC.md` §9.2 item 3 and §9.7 settle it: none of the
+ * twelve verified screens needs the number, internal staff have less reason to
+ * see it than the owner does, and §7.7/§7.8 flag that admin has no
+ * least-privilege control over it. The chip carries no ID and has no prop that
+ * could take one.
+ *
  * OMITTED, each for a named missing column — never stubbed, never greyed:
- *  - **Verified chip + "National ID on file · Valify"**. No verification column
- *    on `centers`. Blocked on V1.
  *  - **Branches row.** No `branches` table exists.
  *  - **"Log in as center" action.** No impersonation exists anywhere in the
  *    codebase; the row would be a button with nothing behind it.
@@ -40,6 +53,8 @@ import {
 } from 'lucide-react';
 import { formatCurrency, formatDate, formatNumber, formatPercent } from '@/lib/formatNumber';
 import { initialsOf } from '@/lib/initials';
+import AdminVerificationChip from '@/components/verification/AdminVerificationChip';
+import { useAdminVerificationAvailability } from '@/hooks/useAdminVerificationAvailability';
 
 export interface AccountMetrics {
   studentCount: number;
@@ -75,6 +90,10 @@ export default function AccountDetailHeader({
   const t = useTranslations('admin.accountDetail');
   const tCommon = useTranslations('common');
   const locale = useLocale();
+  // Feature-level availability, not per-centre: with no verification column in
+  // the live schema there is no per-centre state to fetch. When the migration
+  // lands, this becomes a per-centre read and the chip needs no change.
+  const { state: verification } = useAdminVerificationAvailability();
   const isRTL = locale === 'ar';
   const Chevron = isRTL ? ChevronLeft : ChevronRight;
 
@@ -171,12 +190,17 @@ export default function AccountDetailHeader({
             <span className={`rounded-md px-2 py-0.5 text-xs font-medium capitalize ${statusClass}`}>
               {statusLabel}
             </span>
+            <AdminVerificationChip state={verification} />
             {createdAt && (
               <span className="text-xs text-[var(--color-text-muted)]">
                 {t('customerSince', { date: formatDate(createdAt, locale) })}
               </span>
             )}
           </div>
+          {/* The named cause, spelled out once per screen rather than on every
+              chip. An operator seeing "Not configured" needs to know whether to
+              set credentials or apply a migration. */}
+          <AdminVerificationChip state={verification} variant="cause" className="mt-2" />
         </div>
       </div>
 

@@ -10130,5 +10130,55 @@
     "bannerSub": "Start today. First invoice {firstCharge}, nothing to pay now.",
     "codeLabel": "Code",
     "startFree": "Start free"
+  },
+  "verification": {
+    "badge": {
+      "verified": "Verified",
+      "unverified": "Not verified",
+      "pending": "Verification in progress",
+      "failed": "Verification did not pass",
+      "expired": "Verification expired",
+      "providerError": "Verification problem",
+      "unavailable": "Verification unavailable"
+    },
+    "cta": {
+      "verifyMyId": "Verify my ID",
+      "verifyToSwitchOn": "Verify to switch on",
+      "whatYoullNeed": "About 2 minutes · commercial registration or National ID · secured by Valify",
+      "reason": {
+        "unavailable": "Identity verification is not switched on yet, so this cannot be started. Nothing is wrong with your account. We will tell you the moment it is available.",
+        "pending": "Your check is still running. We will update this as soon as the result arrives — you do not need to start again.",
+        "providerError": "We could not read the result of your last check. Nothing has changed on your account. Please try again later."
+      }
+    },
+    "collection": {
+      "reason": {
+        "unavailable": "Online collection is not switched on yet. Keep recording payments by hand — nothing about how you get paid has changed.",
+        "pending": "Online collection switches on once your check finishes.",
+        "unverified": "Online collection switches on once your ID is verified."
+      }
+    },
+    "collectForYou": {
+      "title": "Let us collect for you",
+      "body": "Verify your ID and TutoringHQ collects every student payment through the app, then pays you automatically. No more chasing parents.",
+      "subline": "Hassle-free · paid straight to you · we handle the tax receipt"
+    },
+    "settingsRow": {
+      "title": "Collect payments for me",
+      "subtitleUnverified": "Verify your ID to turn this on",
+      "subtitleUnavailable": "Not available yet. Parents keep paying you directly.",
+      "subtitleOn": "On. We invoice parents and process your payout every Thursday."
+    },
+    "admin": {
+      "status": {
+        "notConfigured": "Not configured"
+      },
+      "cause": {
+        "providerNotConfigured": "Valify credentials are not set on this deployment, so no identity check can run and no verification state exists to show.",
+        "providerPlaceholder": "Valify credentials are still the example placeholder values, so no identity check can run. Set the real credentials on the deployment.",
+        "stateSourceMissing": "The verification columns are not in the live database. The migration proposal is written but has not been applied by hand."
+      },
+      "filterUnverifiedDisabled": "The Unverified filter needs verification state, which this database does not store yet."
+    }
   }
 }

@@ -15,6 +15,10 @@ import { useTeacherContext } from '../useTeacherContext';
 import { useStartTrial } from '../useStartTrial';
 import { getTeacherPlan, isProOrAbove } from '@/lib/teacherPlans';
 import { resolveTeacherPrivateView } from '@/lib/teacherPrivateView';
+import CollectForYouCard from '@/components/verification/CollectForYouCard';
+import VerificationBadge from '@/components/verification/VerificationBadge';
+import { useVerificationState } from '@/hooks/useVerificationState';
+import { isVerified } from '@/lib/verification/state';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -105,6 +109,9 @@ export default function TeacherDashboardPage() {
 
   const { ctx, loading, error, reload } = useTeacherContext();
   const [summary, setSummary] = useState<Summary | null>(null);
+  // `Merged-Teacher-Home` §01 draws two frames in one screen. Which one a
+  // teacher sees is decided HERE, by the one state machine, and nowhere else.
+  const { state: verification } = useVerificationState();
 
   const state = ctx?.state ?? 'center_only';
   const hasPrivateAccess = ctx?.hasPrivateAccess ?? false;
@@ -236,12 +243,26 @@ export default function TeacherDashboardPage() {
       {summary === null ? (
         <div className="h-7 w-56 animate-pulse rounded-lg bg-[var(--color-surface-2)]" />
       ) : (
-        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
-          {t(greetingKeyForHour(new Date().getHours()), {
-            name: summary.displayName?.trim() || t('greetingFallbackName'),
-          })}
-        </h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
+            {t(greetingKeyForHour(new Date().getHours()), {
+              name: summary.displayName?.trim() || t('greetingFallbackName'),
+            })}
+          </h1>
+          {/* The design's `.vchip` beside the greeting, drawn as "Verified" in
+              every frame. It now says whatever is true. */}
+          <VerificationBadge state={verification} />
+        </div>
       )}
+
+      {/* `Merged-Teacher-Home` §01 UNVERIFIED frame. The live teacher home had
+          no verification surface at all — not a false badge, but silence, which
+          left a teacher no way to learn that collection exists. The card is
+          shown whenever collection is not genuinely on, with its CTA disabled
+          and explained. The VERIFIED frame (balance card, Pending/Available,
+          Thursday payouts, recent payouts) is `Merged-Teacher-Money` —
+          PROTECTED, deliberately not built here. */}
+      {!isVerified(verification) && <CollectForYouCard state={verification} />}
 
       {!hasPrivateAccess && <OnboardingChecklist />}
 
