@@ -106,7 +106,7 @@ If a row ever names one, that row is a mistake.
 | [#297](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/297) | `aa8115d4` | 2026-08-01 | none — doc only (logged #296, closed out the Center-Home §01 investigation episode) | none | v42 |
 | [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `253297bc` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
 | *(gap — see the note below this table)* | | 2026-08-01 → 08-04 | 32 merged PRs, `#300`–`#338`, were never given rows here | | v42 → v45 |
-| [#339](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/339) | `(on merge)` | 2026-08-04 | `Teacher-Students §01`, `§02` — the design's second group-tag tint (`.tag.b`) built as a per-group tint | `/{locale}/teacher/students`, `/{locale}/teacher/students/[studentId]` | v45 → **v46** |
+| [#343](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/343) | `(on merge)` | 2026-08-04 | `Teacher-Students §01`, `§02` — the design's second group-tag tint (`.tag.b`) built as a per-group tint | `/{locale}/teacher/students`, `/{locale}/teacher/students/[studentId]` | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
