@@ -29,6 +29,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import {
   assertNotReleaseAuthority,
+  assertRequestIntent,
   hasMoneyRequestAuthority,
   hasPermission,
   isRequestOnlyMoneyPermission,
@@ -76,30 +77,30 @@ function withdrawalRouteWouldAllow(auth: CenterAuthContext): boolean {
 describe('§2.7 — the referral payout gate is owner OR an explicit delegation', () => {
   it('allows the owner (the arm the withdrawal route also allows)', () => {
     const auth = makeAuth('owner');
-    expect(hasMoneyRequestAuthority(auth, 'can_request_referral_payouts')).toBe(true);
-    expect(requireMoneyRequestPermission(auth, 'can_request_referral_payouts')).toBeNull();
+    expect(hasMoneyRequestAuthority(auth, 'can_request_referral_payouts', 'request')).toBe(true);
+    expect(requireMoneyRequestPermission(auth, 'can_request_referral_payouts', 'request')).toBeNull();
   });
 
   it('preserves the one live holder: an owner row with the flag set still passes', () => {
     // The single production row with can_request_referral_payouts = true is an
     // owner. Its behaviour must not change.
     const auth = makeAuth('owner', { can_request_referral_payouts: true });
-    expect(requireMoneyRequestPermission(auth, 'can_request_referral_payouts')).toBeNull();
+    expect(requireMoneyRequestPermission(auth, 'can_request_referral_payouts', 'request')).toBeNull();
   });
 
   it('allows an assistant the owner has explicitly delegated to', () => {
     const auth = makeAuth('assistant', { can_request_referral_payouts: true });
-    expect(hasMoneyRequestAuthority(auth, 'can_request_referral_payouts')).toBe(true);
+    expect(hasMoneyRequestAuthority(auth, 'can_request_referral_payouts', 'request')).toBe(true);
   });
 
   it('allows a centre admin the owner has explicitly delegated to', () => {
     const auth = makeAuth('admin', { can_request_referral_payouts: true });
-    expect(hasMoneyRequestAuthority(auth, 'can_request_referral_payouts')).toBe(true);
+    expect(hasMoneyRequestAuthority(auth, 'can_request_referral_payouts', 'request')).toBe(true);
   });
 
   it('denies an assistant without the flag', () => {
     const auth = makeAuth('assistant');
-    const denied = requireMoneyRequestPermission(auth, 'can_request_referral_payouts');
+    const denied = requireMoneyRequestPermission(auth, 'can_request_referral_payouts', 'request');
     expect(denied).toBeInstanceOf(Response);
     expect((denied as Response).status).toBe(403);
   });
@@ -111,7 +112,7 @@ describe('§2.7 — the referral payout gate is owner OR an explicit delegation'
     // sibling withdrawal route rejects the same identity.
     const superAdmin = makeAuth('super_admin', {}, true);
     expect(hasPermission(superAdmin, 'can_manage_billing')).toBe(true); // unchanged elsewhere
-    expect(hasMoneyRequestAuthority(superAdmin, 'can_request_referral_payouts')).toBe(false);
+    expect(hasMoneyRequestAuthority(superAdmin, 'can_request_referral_payouts', 'request')).toBe(false);
     expect(withdrawalRouteWouldAllow(superAdmin)).toBe(false);
   });
 
@@ -121,7 +122,7 @@ describe('§2.7 — the referral payout gate is owner OR an explicit delegation'
     for (const role of ['teacher', 'super_admin']) {
       const auth = makeAuth(role, { can_request_referral_payouts: true });
       expect(
-        hasMoneyRequestAuthority(auth, 'can_request_referral_payouts'),
+        hasMoneyRequestAuthority(auth, 'can_request_referral_payouts', 'request'),
         `role ${role} must not pass on the flag alone`,
       ).toBe(false);
     }
@@ -132,7 +133,7 @@ describe('§2.7 — the referral payout gate is owner OR an explicit delegation'
       if (role === 'owner') continue;
       const auth = makeAuth(role);
       expect(
-        hasMoneyRequestAuthority(auth, 'can_request_referral_payouts'),
+        hasMoneyRequestAuthority(auth, 'can_request_referral_payouts', 'request'),
         `role ${JSON.stringify(role)} must not pass`,
       ).toBe(false);
     }
@@ -150,6 +151,7 @@ describe('§2.7 — the referral payout gate is owner OR an explicit delegation'
           const referralAllows = hasMoneyRequestAuthority(
             auth,
             'can_request_referral_payouts',
+            'request',
           );
           if (referralAllows && !withdrawalRouteWouldAllow(auth)) {
             expect(
@@ -186,6 +188,81 @@ describe('§2.7 — can_request_referral_payouts is REQUEST-ONLY, never release'
     );
     expect(() => requirePermission(owner, 'can_request_referral_payouts')).toThrow(
       /REQUEST-ONLY/,
+    );
+  });
+
+  it('closes the indirection hole: the money-request gate refuses a release intent', () => {
+    // The hole this closes, found by the adversarial audit on PR #319 and
+    // recorded there before it was fixed:
+    //
+    //     requireMoneyRequestPermission(auth, REQUEST_ONLY_MONEY_PERMISSIONS[0])
+    //
+    // type-checked, passed all 17 tests, and GRANTED on the owner arm — with no
+    // string literal to grep for. For a release path that is §7.1's
+    // payee-self-approval shape: the centre owner approving their own payout.
+    //
+    // `intent` is required and has no default, so a release path must now write
+    // 'request' next to code that approves money — a lie visible in the diff —
+    // or pass 'release' and throw on the first call, in every environment.
+    const owner = makeAuth('owner');
+    const viaIndirection = REQUEST_ONLY_MONEY_PERMISSIONS[0];
+
+    expect(() => hasMoneyRequestAuthority(owner, viaIndirection, 'release')).toThrow(
+      /REQUEST-ONLY/,
+    );
+    expect(() => requireMoneyRequestPermission(owner, viaIndirection, 'release')).toThrow(
+      /REQUEST-ONLY/,
+    );
+    // The throw names the intent that was attempted, so the stack trace says
+    // what the caller was doing rather than only what it may not do.
+    expect(() => assertRequestIntent('release', 'can_request_referral_payouts')).toThrow(
+      /'release' intent/,
+    );
+
+    // And the legitimate direction is unaffected — indirection included.
+    expect(hasMoneyRequestAuthority(owner, viaIndirection, 'request')).toBe(true);
+    expect(() =>
+      assertRequestIntent('request', 'can_request_referral_payouts'),
+    ).not.toThrow();
+  });
+
+  it('the release intent is refused for every role, not just the owner arm', () => {
+    // A release path must not be able to find ANY identity that slips through.
+    for (const role of ['owner', 'admin', 'assistant', 'teacher', 'super_admin', 'bogus']) {
+      for (const flag of [true, false]) {
+        for (const isSuperAdmin of [true, false]) {
+          const auth = makeAuth(role, { can_request_referral_payouts: flag }, isSuperAdmin);
+          expect(
+            () => hasMoneyRequestAuthority(auth, 'can_request_referral_payouts', 'release'),
+            `release intent must throw for role=${role} flag=${flag} isSuperAdmin=${isSuperAdmin}`,
+          ).toThrow(/REQUEST-ONLY/);
+        }
+      }
+    }
+  });
+
+  it('the intent argument is required, and omitting it fails closed at runtime too', () => {
+    // Two independent guarantees, and the runtime one matters more: a JS caller,
+    // an `as any` escape, or a transpiled call that drops the argument reaches
+    // `intent === undefined`, which is not 'request' and therefore THROWS. The
+    // gate cannot be reached by forgetting about it.
+    const owner = makeAuth('owner');
+
+    expect(() =>
+      // @ts-expect-error intent is required — omitting it must not compile
+      hasMoneyRequestAuthority(owner, 'can_request_referral_payouts'),
+    ).toThrow(/REQUEST-ONLY/);
+    expect(() =>
+      // @ts-expect-error intent is required — omitting it must not compile
+      requireMoneyRequestPermission(owner, 'can_request_referral_payouts'),
+    ).toThrow(/REQUEST-ONLY/);
+    expect(() =>
+      // @ts-expect-error 'approve' is not a MoneyMovementIntent
+      hasMoneyRequestAuthority(owner, 'can_request_referral_payouts', 'approve'),
+    ).toThrow(/REQUEST-ONLY/);
+
+    expect(hasMoneyRequestAuthority(owner, 'can_request_referral_payouts', 'request')).toBe(
+      true,
     );
   });
 
@@ -264,6 +341,49 @@ describe('§2.7 — nothing new may reference can_request_referral_payouts', () 
       offenders,
       `Release-shaped route(s) referencing ${PERMISSION}:\n${offenders.join('\n')}`,
     ).toEqual([]);
+  });
+
+  it('the scan cannot be walked around by indirection', () => {
+    // The scan above matches the LITERAL permission string, so a release path
+    // written as `hasMoneyRequestAuthority(auth, REQUEST_ONLY_MONEY_PERMISSIONS[0], …)`
+    // would never appear in `referencing` at all. The `intent` argument now
+    // catches that at runtime; this catches it at review time, which is earlier
+    // and cheaper. Reaching the constant or the gate outside the reviewed set is
+    // itself the signal, whatever string the call uses.
+    const INDIRECT_HANDLES = [
+      'REQUEST_ONLY_MONEY_PERMISSIONS',
+      'hasMoneyRequestAuthority',
+      'requireMoneyRequestPermission',
+      'assertRequestIntent',
+      'RequestOnlyMoneyPermission',
+    ];
+    const ALLOWED_INDIRECT = [
+      // the gate itself
+      'src/lib/centerPermissions.ts',
+      // the one REQUEST route
+      'src/app/api/referrals/payout/route.ts',
+    ].map((p) => p.split('/').join(sep));
+
+    const offenders = walk(join(ROOT, 'src'))
+      .filter((f) => /\.(ts|tsx)$/.test(f))
+      .map((f) => ({ rel: relative(ROOT, f), src: readFileSync(f, 'utf8') }))
+      .filter(({ src }) => INDIRECT_HANDLES.some((h) => src.includes(h)))
+      .map(({ rel }) => rel)
+      .filter((rel) => !ALLOWED_INDIRECT.includes(rel))
+      .sort();
+
+    expect(
+      offenders,
+      `File(s) reaching the request-only money gate indirectly:\n${offenders.join('\n')}\n\n` +
+        'Reaching it through the constant or the helper rather than the literal ' +
+        `'${PERMISSION}' bypasses the string scan above. If this is a REQUEST path, ` +
+        'add it to ALLOWED_INDIRECT with a reason. If it approves, releases or ' +
+        'disburses money, it must not use this authority at all — release ' +
+        'authority is platform-side (admin_users), never public.users ' +
+        '(PAYOUT-SYSTEM-SPEC.md §2.7, §7.1).',
+    ).toEqual([]);
+    // The allowlist must not rot into a no-op.
+    expect(ALLOWED_INDIRECT.length).toBeGreaterThan(0);
   });
 
   it('the request route uses the money-request gate, not the generic one', () => {

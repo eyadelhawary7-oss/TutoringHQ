@@ -25,7 +25,14 @@ export async function POST(request: NextRequest) {
     // owner OR an explicitly-delegated centre staff member — never the flag
     // alone on a centre-less identity. The pipelines are NOT unified here;
     // Decision 1 is Eyad's and is still open.
-    const permErr = requireMoneyRequestPermission(auth, 'can_request_referral_payouts');
+    // The third argument is the intent, and it is required. This route only ever
+    // CREATES a payout request; nothing here approves, releases or disburses one.
+    // A release path passing 'release' throws on the first call.
+    const permErr = requireMoneyRequestPermission(
+      auth,
+      'can_request_referral_payouts',
+      'request',
+    );
     if (permErr) return permErr;
 
     const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;

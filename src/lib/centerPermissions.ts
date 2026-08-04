@@ -66,6 +66,52 @@ export function assertNotReleaseAuthority(permission: string): void {
 }
 
 /**
+ * Which side of a money movement a call is authorising.
+ *
+ * WHY THIS EXISTS. The tripwire above catches the mistake the spec names — a
+ * release path reaching for `requirePermission(auth, 'can_request_referral_payouts')`
+ * — but it was evadable by indirection, and the audit on PR #319 said so out
+ * loud rather than leaving it to be discovered:
+ *
+ *     requireMoneyRequestPermission(auth, REQUEST_ONLY_MONEY_PERMISSIONS[0])
+ *
+ * type-checks, passes every test, and GRANTS on the owner arm. For a release
+ * path that is §7.1's payee-self-approval shape — the centre owner approving
+ * their own payout — reached without a single string literal to grep for.
+ *
+ * The fix is to make intent unstateable by accident. `intent` is required and
+ * has no default, so every call site must say which side it is on, and the
+ * only way to reach the money-request gate from a release path is to write
+ * `'request'` next to code that approves money. That is a lie a reviewer can
+ * see in the diff, which is the whole point: this cannot make a determined
+ * author safe, it can only make the mistake impossible to commit silently.
+ *
+ * Passing `'release'` throws, in every environment, on the first call.
+ */
+export type MoneyMovementIntent = 'request' | 'release';
+
+/**
+ * Runtime half of the intent guard. Throws — not a 403 — because reaching it
+ * means a release path was wired to a request-only authority source. That is a
+ * programming error, and it fails closed and loud.
+ */
+export function assertRequestIntent(
+  intent: MoneyMovementIntent,
+  permission: RequestOnlyMoneyPermission,
+): void {
+  if (intent !== 'request') {
+    throw new Error(
+      `[centerPermissions] '${permission}' was used to authorise a '${intent}' ` +
+        'intent. It is REQUEST-ONLY: it can initiate a payout request and can ' +
+        'never approve, release or disburse one (PAYOUT-SYSTEM-SPEC.md §2.7, ' +
+        '§7.1). Release authority is platform-side (admin_users), never ' +
+        'public.users — a centre principal must never be able to approve a ' +
+        'payout to itself.',
+    );
+  }
+}
+
+/**
  * Centre-bound staff roles that can legitimately hold a delegated permission.
  *
  * Verified against the live catalog on 2026-08-04 — `public.users_center_check`:
@@ -174,7 +220,9 @@ function permissionDenied(permission: string): Response {
 export function hasMoneyRequestAuthority(
   auth: CenterAuthContext,
   permission: RequestOnlyMoneyPermission,
+  intent: MoneyMovementIntent,
 ): boolean {
+  assertRequestIntent(intent, permission);
   if (auth.role === 'owner') return true;
   if (!DELEGABLE_CENTER_STAFF_ROLES.includes(auth.role)) return false;
   return auth.permissions[permission] === true;
@@ -187,7 +235,8 @@ export function hasMoneyRequestAuthority(
 export function requireMoneyRequestPermission(
   auth: CenterAuthContext,
   permission: RequestOnlyMoneyPermission,
+  intent: MoneyMovementIntent,
 ): Response | null {
-  if (hasMoneyRequestAuthority(auth, permission)) return null;
+  if (hasMoneyRequestAuthority(auth, permission, intent)) return null;
   return permissionDenied(permission);
 }
