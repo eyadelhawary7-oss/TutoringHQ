@@ -18,7 +18,6 @@ import { resolveTeacherPrivateView } from '@/lib/teacherPrivateView';
 import CollectForYouCard from '@/components/verification/CollectForYouCard';
 import VerificationBadge from '@/components/verification/VerificationBadge';
 import { useVerificationState } from '@/hooks/useVerificationState';
-import { isVerified } from '@/lib/verification/state';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -262,7 +261,7 @@ export default function TeacherDashboardPage() {
           and explained. The VERIFIED frame (balance card, Pending/Available,
           Thursday payouts, recent payouts) is `Merged-Teacher-Money` —
           PROTECTED, deliberately not built here. */}
-      {!isVerified(verification) && <CollectForYouCard state={verification} />}
+      {!verification.isVerified && <CollectForYouCard state={verification} />}
 
       {!hasPrivateAccess && <OnboardingChecklist />}
 

@@ -1,19 +1,17 @@
 import { describe, it, expect } from 'vitest';
+import { isPlaceholderValue } from '@/lib/valifyConfig';
+import type { ValifyUnconfiguredCause } from '@/lib/valifyGuardLogic';
 import {
-  readVerificationConfig,
-  requireVerificationConfig,
-  isPlaceholderValue,
-  VerificationNotConfiguredError,
-  VERIFICATION_CONFIG_ENV_KEYS,
-} from '@/lib/verification/config';
-import {
-  resolveVerificationState,
-  isVerified,
-  VERIFICATION_STATUSES,
-  type VerificationState,
-} from '@/lib/verification/state';
+  resolveEffectiveState,
+  VERIFICATION_STATES,
+  VERIFICATION_OUTCOMES,
+  type EffectiveVerification,
+  type PersistedVerificationState,
+  type VerificationOutcome,
+} from '@/lib/verificationState';
 import {
   verificationBadgeView,
+  verificationOutcomeNoteKey,
   verifyCtaView,
   digitalCollectionView,
   adminVerificationView,
@@ -25,228 +23,79 @@ import arMessages from '../../messages/ar.json';
  * THE FAILURE PATH IS THE POINT OF THIS FILE.
  *
  * Valify does not exist as an integration. Online collection is not live. The
- * verification columns are not in the live schema (re-verified 4 Aug 2026:
- * `centers` has 128 columns and none of them is `verification_status`).
+ * identity schema is not in the live database.
  *
- * So the state these tests care most about is the unconfigured one, and what
- * they assert is that NOTHING claims success in it. A green checkmark backed by
- * no integration is the worst outcome this feature can produce; every test
- * below exists to make that outcome impossible to ship.
+ * Re-verified live against project lczmjpnbuhnsislcvzar on 4 August 2026, by the
+ * consolidation agent, running each query rather than repeating a header:
+ *
+ *   • columns in `public` matching %verif%/%national%/%kyc%/%valify%  → 6
+ *     (`backup_log.last_verified_at`, `enrollment_otps.verified_at`,
+ *      `phone_verifications.verified_at`, `students.parent_phone_verified`,
+ *      `students.phone_verified`, `teacher_signup_otps.verified_at`)
+ *     — every one of them OTP or backup integrity. ZERO identity columns.
+ *   • `public.centers`            → 128 columns
+ *   • `public.teacher_profiles`   →  24 columns
+ *   • base tables in `public`     → 142, including neither `verification_records`
+ *     nor `verification_attempts`
+ *
+ * So the state every surface renders today is `unconfigured`, and what these
+ * tests assert is that NOTHING claims success in it. A green checkmark backed by
+ * no integration is the worst outcome this feature can produce; every test below
+ * exists to make that outcome impossible to ship.
+ *
+ * SCOPE. The config point itself (`valifyConfig` + `valifyGuardLogic`) is tested
+ * exhaustively in `tests/unit/valifyGuard.test.ts` and the state machine in
+ * `tests/unit/verificationState.test.ts`. This file tests the VIEW layer — the
+ * mapping every screen renders through — plus the one config fact the view layer
+ * depends on: that the strict placeholder vocabulary is the one in effect.
  */
 
-const REAL_ENV = {
-  VALIFY_BASE_URL: 'https://verify.valifysolutions.com',
-  VALIFY_API_KEY: 'vk_live_abc123',
-  VALIFY_FLOW_ID: '0f3c1a52-1111-2222-3333-444455556666',
-  VALIFY_WEBHOOK_SECRET: 's3cr3t-webhook-signing-key',
-};
+/** Every state a surface can be handed, unconfigured first because it is today's. */
+const UNCONFIGURED_CAUSES = [
+  'valify_not_configured',
+  'verification_schema_not_applied',
+] as const satisfies readonly ValifyUnconfiguredCause[];
 
-const PLACEHOLDER_ENV = {
-  VALIFY_BASE_URL: 'placeholder',
-  VALIFY_API_KEY: 'placeholder',
-  VALIFY_FLOW_ID: 'placeholder',
-  VALIFY_WEBHOOK_SECRET: 'placeholder',
-};
+function live(
+  state: PersistedVerificationState,
+  last_outcome: VerificationOutcome | null = null,
+): EffectiveVerification {
+  return resolveEffectiveState(
+    { state, verified_at: state === 'verified' ? '2026-07-12T00:00:00Z' : null, legal_name: null, national_id: null, last_outcome },
+    null,
+  );
+}
 
-describe('the one config point', () => {
-  it('reports not-configured when the env is empty, naming every missing key', () => {
-    const result = readVerificationConfig({});
-    expect(result.configured).toBe(false);
-    if (result.configured) throw new Error('unreachable');
-    expect(result.cause).toBe('missing_credentials');
-    expect(result.missing).toEqual([...VERIFICATION_CONFIG_ENV_KEYS]);
+/** The exact state every live surface renders today. */
+const unconfigured = resolveEffectiveState(null, 'valify_not_configured');
+
+describe('the placeholder vocabulary the whole feature keys on', () => {
+  it('is the strict one — there is only one isPlaceholderValue and it catches "test" and angle brackets', () => {
+    // There were briefly two, with different vocabularies: one treated `test`
+    // and any value containing `<` as a placeholder and the other did not, so
+    // the same .env could be live to one module and dead to the other. The
+    // permissive one is deleted. These two tokens are what distinguished them.
+    expect(isPlaceholderValue('test')).toBe(true);
+    expect(isPlaceholderValue('<your-url>')).toBe(true);
   });
 
-  it('treats the .env.example placeholder values as NOT configured', () => {
-    // This is the case a truthy-string check would get wrong, and getting it
-    // wrong hands the user a verified badge backed by nothing.
-    const result = readVerificationConfig(PLACEHOLDER_ENV);
-    expect(result.configured).toBe(false);
-    if (result.configured) throw new Error('unreachable');
-    expect(result.cause).toBe('placeholder_credentials');
-    expect(result.placeholder).toEqual([...VERIFICATION_CONFIG_ENV_KEYS]);
-  });
-
-  it('reports not-configured when even ONE key is still a placeholder', () => {
-    const result = readVerificationConfig({ ...REAL_ENV, VALIFY_WEBHOOK_SECRET: 'placeholder' });
-    expect(result.configured).toBe(false);
-    if (result.configured) throw new Error('unreachable');
-    // The webhook secret is the trust anchor; a partial config must not pass.
-    expect(result.placeholder).toEqual(['VALIFY_WEBHOOK_SECRET']);
-  });
-
-  it('reports not-configured when a key is whitespace only', () => {
-    expect(readVerificationConfig({ ...REAL_ENV, VALIFY_API_KEY: '   ' }).configured).toBe(false);
-  });
-
-  it('recognises the placeholder dialects that actually ship in .env.example', () => {
-    for (const v of ['placeholder', 'your-key-here', 'PLACEHOLDER', ' TODO ', 'https://example.com', '<your-url>', '']) {
+  it('recognises the dialects that actually ship in .env.example', () => {
+    for (const v of [
+      'placeholder',
+      'your-key-here',
+      'PLACEHOLDER',
+      ' TODO ',
+      'https://example.com',
+      '',
+    ]) {
       expect(isPlaceholderValue(v), `${JSON.stringify(v)} should be a placeholder`).toBe(true);
     }
     expect(isPlaceholderValue('vk_live_abc123')).toBe(false);
     expect(isPlaceholderValue('https://verify.valifysolutions.com')).toBe(false);
   });
-
-  it('reports configured only when all four keys hold real values', () => {
-    const result = readVerificationConfig(REAL_ENV);
-    expect(result.configured).toBe(true);
-    if (!result.configured) throw new Error('unreachable');
-    expect(result.apiKey).toBe('vk_live_abc123');
-    // Trailing slashes stripped so client URL joins cannot double up.
-    expect(readVerificationConfig({ ...REAL_ENV, VALIFY_BASE_URL: 'https://v.co/' }).configured).toBe(true);
-  });
 });
 
-describe('requireVerificationConfig refuses loudly with a named cause', () => {
-  it('throws rather than returning a degraded object when unset', () => {
-    expect(() => requireVerificationConfig({})).toThrow(VerificationNotConfiguredError);
-  });
-
-  it('throws when the values are placeholders', () => {
-    expect(() => requireVerificationConfig(PLACEHOLDER_ENV)).toThrow(VerificationNotConfiguredError);
-  });
-
-  it('carries a stable machine-readable code and the offending keys', () => {
-    try {
-      requireVerificationConfig({ ...REAL_ENV, VALIFY_API_KEY: undefined });
-      throw new Error('should have thrown');
-    } catch (err) {
-      expect(err).toBeInstanceOf(VerificationNotConfiguredError);
-      const e = err as VerificationNotConfiguredError;
-      expect(e.code).toBe('verification_not_configured');
-      expect(e.causeCode).toBe('missing_credentials');
-      expect(e.missing).toContain('VALIFY_API_KEY');
-      // The message must be diagnosable from one log line, not "something failed".
-      expect(e.message).toContain('VALIFY_API_KEY');
-      expect(e.message).toContain('not configured');
-    }
-  });
-
-  it('returns the credentials when they are real', () => {
-    expect(requireVerificationConfig(REAL_ENV).flowId).toBe(REAL_ENV.VALIFY_FLOW_ID);
-  });
-});
-
-describe('the state machine never fabricates a pass', () => {
-  it('reports unavailable with a named cause when credentials are missing', () => {
-    const state = resolveVerificationState({
-      config: readVerificationConfig({}),
-      stateSourceAvailable: true,
-      row: { verification_status: 'verified', verified_at: '2026-07-12T00:00:00Z', valify_transaction_id: 'VF-1' },
-    });
-    // THE CENTRAL ASSERTION OF THIS BRANCH. A row saying "verified" is not
-    // enough: with no live integration no webhook could have written it, so it
-    // is test data, a manual edit or a default. We refuse to render it.
-    expect(state.available).toBe(false);
-    if (state.available) throw new Error('unreachable');
-    expect(state.cause).toBe('provider_not_configured');
-    expect(isVerified(state)).toBe(false);
-  });
-
-  it('distinguishes placeholder credentials from absent ones', () => {
-    const state = resolveVerificationState({
-      config: readVerificationConfig(PLACEHOLDER_ENV),
-      stateSourceAvailable: true,
-      row: null,
-    });
-    expect(state.available).toBe(false);
-    if (state.available) throw new Error('unreachable');
-    expect(state.cause).toBe('provider_placeholder_credentials');
-  });
-
-  it('reports state_source_missing when the migration is unapplied', () => {
-    const state = resolveVerificationState({
-      config: readVerificationConfig(REAL_ENV),
-      stateSourceAvailable: false,
-      row: null,
-    });
-    expect(state.available).toBe(false);
-    if (state.available) throw new Error('unreachable');
-    expect(state.cause).toBe('state_source_missing');
-    // Names the file an operator has to apply, not just "unavailable".
-    expect(state.detail).toContain('20260804140000_verification_state_columns.sql');
-    expect(isVerified(state)).toBe(false);
-  });
-
-  it('checks config BEFORE the row, so an unconfigured deploy can never read as verified', () => {
-    // Both broken: the config cause must win, because it is the one that makes
-    // the row untrustworthy in the first place.
-    const state = resolveVerificationState({
-      config: readVerificationConfig({}),
-      stateSourceAvailable: false,
-      row: null,
-    });
-    if (state.available) throw new Error('unreachable');
-    expect(state.cause).toBe('provider_not_configured');
-  });
-
-  it('maps a subject with no row to unverified, not to an outage', () => {
-    const state = resolveVerificationState({
-      config: readVerificationConfig(REAL_ENV),
-      stateSourceAvailable: true,
-      row: null,
-    });
-    expect(state).toEqual({ available: true, status: 'unverified', verifiedAt: null, providerRef: null });
-  });
-
-  it('maps an unrecognised status to provider_error, never quietly to unverified', () => {
-    const state = resolveVerificationState({
-      config: readVerificationConfig(REAL_ENV),
-      stateSourceAvailable: true,
-      row: { verification_status: 'manual_review', verified_at: null, valify_transaction_id: 'VF-9' },
-    });
-    if (!state.available) throw new Error('unreachable');
-    expect(state.status).toBe('provider_error');
-    expect(isVerified(state)).toBe(false);
-  });
-
-  it('drops a verified_at that does not belong to a pass', () => {
-    const state = resolveVerificationState({
-      config: readVerificationConfig(REAL_ENV),
-      stateSourceAvailable: true,
-      row: { verification_status: 'failed', verified_at: '2026-07-12T00:00:00Z', valify_transaction_id: null },
-    });
-    if (!state.available) throw new Error('unreachable');
-    // Otherwise a surface renders "Not verified · verified 12/07/2025".
-    expect(state.verifiedAt).toBeNull();
-  });
-
-  it('reports verified ONLY for a real pass with real credentials and a live source', () => {
-    const state = resolveVerificationState({
-      config: readVerificationConfig(REAL_ENV),
-      stateSourceAvailable: true,
-      row: { verification_status: 'verified', verified_at: '2026-07-12T00:00:00Z', valify_transaction_id: 'VF-1' },
-    });
-    expect(isVerified(state)).toBe(true);
-  });
-
-  it('isVerified is false for every status except verified, and for every unavailable cause', () => {
-    for (const status of VERIFICATION_STATUSES) {
-      const state = resolveVerificationState({
-        config: readVerificationConfig(REAL_ENV),
-        stateSourceAvailable: true,
-        row: {
-          verification_status: status,
-          verified_at: status === 'verified' ? '2026-07-12T00:00:00Z' : null,
-          valify_transaction_id: null,
-        },
-      });
-      expect(isVerified(state), status).toBe(status === 'verified');
-    }
-    for (const cause of ['provider_not_configured', 'provider_placeholder_credentials', 'state_source_missing'] as const) {
-      expect(isVerified({ available: false, cause, detail: '' })).toBe(false);
-    }
-  });
-});
-
-describe('no surface claims success when the config is a placeholder', () => {
-  // The exact state every live surface renders today.
-  const unconfigured: VerificationState = resolveVerificationState({
-    config: readVerificationConfig(PLACEHOLDER_ENV),
-    stateSourceAvailable: false,
-    row: null,
-  });
-
+describe('no surface claims success while the config holds placeholders', () => {
   it('the badge says unavailable and is NOT hidden', () => {
     const view = verificationBadgeView(unconfigured);
     expect(view.tone).toBe('unavailable');
@@ -255,12 +104,32 @@ describe('no surface claims success when the config is a placeholder', () => {
     expect(view.show).toBe(true);
   });
 
-  it('the badge never reads verified in any unavailable state', () => {
-    for (const cause of ['provider_not_configured', 'provider_placeholder_credentials', 'state_source_missing'] as const) {
-      const view = verificationBadgeView({ available: false, cause, detail: '' });
+  it('the badge never reads verified in any unconfigured cause', () => {
+    for (const cause of UNCONFIGURED_CAUSES) {
+      const view = verificationBadgeView(resolveEffectiveState(null, cause));
       expect(view.labelKey).not.toBe('badge.verified');
       expect(view.tone).not.toBe('verified');
     }
+  });
+
+  it('THE CENTRAL ASSERTION: a stored "verified" row is refused while the guard is unhappy', () => {
+    // With no live integration no webhook could have written that row, so it is
+    // test data, a manual edit, or a migration default. Rendering it is the
+    // green-checkmark-backed-by-nothing failure this whole phase exists to stop.
+    const v = resolveEffectiveState(
+      {
+        state: 'verified',
+        verified_at: '2026-07-12T00:00:00Z',
+        legal_name: 'Someone',
+        national_id: '12345678901234',
+        last_outcome: 'passed',
+      },
+      'valify_not_configured',
+    );
+    expect(v.isVerified).toBe(false);
+    expect(verificationBadgeView(v).labelKey).toBe('badge.unavailable');
+    expect(digitalCollectionView(v).on).toBe(false);
+    expect(verifyCtaView(v).alreadyVerified).toBe(false);
   });
 
   it('the Verify CTA is DISABLED with a readable reason, not hidden', () => {
@@ -271,21 +140,22 @@ describe('no surface claims success when the config is a placeholder', () => {
   });
 
   it('the CTA is enabled only from a retryable entry point on a live feature', () => {
-    const live = (status: (typeof VERIFICATION_STATUSES)[number]) =>
-      verifyCtaView({ available: true, status, verifiedAt: null, providerRef: null });
-    expect(live('unverified').enabled).toBe(true);
-    expect(live('failed').enabled).toBe(true);
-    expect(live('expired').enabled).toBe(true);
+    expect(verifyCtaView(live('unverified')).enabled).toBe(true);
+    expect(verifyCtaView(live('rejected')).enabled).toBe(true);
+    // The three "nothing happened" outcomes all land in unverified and are all
+    // retryable — that is exactly why they do not need statuses of their own.
+    expect(verifyCtaView(live('unverified', 'expired')).enabled).toBe(true);
+    expect(verifyCtaView(live('unverified', 'provider_error')).enabled).toBe(true);
+    expect(verifyCtaView(live('unverified', 'abandoned')).enabled).toBe(true);
     // A second redirect mid-flight costs another Valify charge.
-    expect(live('pending').enabled).toBe(false);
-    expect(live('provider_error').enabled).toBe(false);
-    expect(live('verified').alreadyVerified).toBe(true);
+    expect(verifyCtaView(live('pending')).enabled).toBe(false);
+    expect(verifyCtaView(live('verified')).alreadyVerified).toBe(true);
   });
 
   it('every disabled CTA carries a reason key — a greyed control is never unexplained', () => {
-    for (const status of VERIFICATION_STATUSES) {
-      const view = verifyCtaView({ available: true, status, verifiedAt: null, providerRef: null });
-      if (!view.enabled && !view.alreadyVerified) expect(view.reasonKey).not.toBeNull();
+    for (const state of ['unverified', 'pending', 'verified', 'rejected'] as const) {
+      const view = verifyCtaView(live(state));
+      if (!view.enabled && !view.alreadyVerified) expect(view.reasonKey, state).not.toBeNull();
     }
     expect(verifyCtaView(unconfigured).reasonKey).not.toBeNull();
   });
@@ -295,29 +165,30 @@ describe('no surface claims success when the config is a placeholder', () => {
       on: false,
       reasonKey: 'collection.reason.unavailable',
     });
-    for (const status of VERIFICATION_STATUSES) {
-      const view = digitalCollectionView({ available: true, status, verifiedAt: null, providerRef: null });
-      expect(view.on, status).toBe(status === 'verified');
-      if (!view.on) expect(view.reasonKey, status).not.toBeNull();
+    for (const state of ['unverified', 'pending', 'verified', 'rejected'] as const) {
+      const view = digitalCollectionView(live(state));
+      expect(view.on, state).toBe(state === 'verified');
+      if (!view.on) expect(view.reasonKey, state).not.toBeNull();
     }
   });
 
   it('admin sees "not configured" with the NAMED cause and its filters gated', () => {
     const view = adminVerificationView(unconfigured);
     expect(view.labelKey).toBe('admin.status.notConfigured');
-    expect(view.causeKey).toBe('admin.cause.providerPlaceholder');
+    expect(view.causeKey).toBe('admin.cause.valifyNotConfigured');
     expect(view.gated).toBe(true);
   });
 
   it('admin gets a different named cause per failure, so it is actionable', () => {
-    expect(adminVerificationView({ available: false, cause: 'provider_not_configured', detail: '' }).causeKey)
-      .toBe('admin.cause.providerNotConfigured');
-    expect(adminVerificationView({ available: false, cause: 'state_source_missing', detail: '' }).causeKey)
-      .toBe('admin.cause.stateSourceMissing');
+    expect(
+      adminVerificationView(resolveEffectiveState(null, 'verification_schema_not_applied')).causeKey,
+    ).toBe('admin.cause.verificationSchemaNotApplied');
+    expect(adminVerificationView(resolveEffectiveState(null, 'valify_not_configured')).causeKey).toBe(
+      'admin.cause.valifyNotConfigured',
+    );
   });
 
   it('providers are NOT told which env var is missing — that is a deployment detail', () => {
-    // Tenant-facing copy must not leak our config state.
     const providerCopy = [
       verifyCtaView(unconfigured).reasonKey,
       verificationBadgeView(unconfigured).labelKey,
@@ -330,6 +201,42 @@ describe('no surface claims success when the config is a placeholder', () => {
   });
 });
 
+describe('six outcomes still readable through five states', () => {
+  /**
+   * The distinction B carried as three extra statuses (`failed`, `expired`,
+   * `provider_error`) has to survive the collapse into A's five states, or the
+   * consolidation lost information rather than deduplicating it. It survives in
+   * `last_outcome`, and this is where a user can see it.
+   */
+  it('an expired link is a neutral badge with its own sentence, not a rejection', () => {
+    const v = live('unverified', 'expired');
+    expect(verificationBadgeView(v).tone).toBe('neutral');
+    expect(verificationBadgeView(v).labelKey).toBe('badge.unverified');
+    expect(verificationOutcomeNoteKey(v)).toBe('outcome.expired');
+  });
+
+  it('a provider error is distinguishable from a plain unverified and from a fail', () => {
+    expect(verificationOutcomeNoteKey(live('unverified', 'provider_error'))).toBe(
+      'outcome.providerError',
+    );
+    expect(verificationOutcomeNoteKey(live('unverified', null))).toBeNull();
+    expect(verificationBadgeView(live('rejected', 'failed')).tone).toBe('attention');
+  });
+
+  it('every outcome that lands in unverified or rejected has a sentence, except a pass', () => {
+    for (const outcome of VERIFICATION_OUTCOMES) {
+      const note = verificationOutcomeNoteKey(live('unverified', outcome));
+      if (outcome === 'passed') expect(note).toBeNull();
+      else expect(note, outcome).not.toBeNull();
+    }
+  });
+
+  it('a verified or pending provider is given no history to misread', () => {
+    expect(verificationOutcomeNoteKey(live('verified', 'passed'))).toBeNull();
+    expect(verificationOutcomeNoteKey(live('pending', 'abandoned'))).toBeNull();
+  });
+});
+
 describe('every key these views emit exists in BOTH message files', () => {
   function lookup(messages: Record<string, unknown>, dotted: string): unknown {
     return dotted
@@ -337,14 +244,14 @@ describe('every key these views emit exists in BOTH message files', () => {
       .reduce<unknown>((acc, part) => (acc as Record<string, unknown> | undefined)?.[part], messages);
   }
 
-  // Collect every key any view can produce, across every reachable state.
-  const states: VerificationState[] = [
-    ...(['provider_not_configured', 'provider_placeholder_credentials', 'state_source_missing'] as const).map(
-      (cause): VerificationState => ({ available: false, cause, detail: '' }),
-    ),
-    ...VERIFICATION_STATUSES.map(
-      (status): VerificationState => ({ available: true, status, verifiedAt: null, providerRef: null }),
-    ),
+  // Collect every key any view can produce, across every reachable state and
+  // every reachable outcome. Nothing is hand-listed that a view can emit.
+  const states: EffectiveVerification[] = [
+    ...UNCONFIGURED_CAUSES.map((cause) => resolveEffectiveState(null, cause)),
+    ...VERIFICATION_STATES.filter((s) => s !== 'unconfigured').flatMap((s) => [
+      live(s as PersistedVerificationState),
+      ...VERIFICATION_OUTCOMES.map((o) => live(s as PersistedVerificationState, o)),
+    ]),
   ];
 
   const keys = new Set<string>([
@@ -361,6 +268,8 @@ describe('every key these views emit exists in BOTH message files', () => {
   ]);
   for (const state of states) {
     keys.add(verificationBadgeView(state).labelKey);
+    const note = verificationOutcomeNoteKey(state);
+    if (note) keys.add(note);
     const cta = verifyCtaView(state);
     keys.add(cta.labelKey);
     if (cta.reasonKey) keys.add(cta.reasonKey);
@@ -389,5 +298,18 @@ describe('every key these views emit exists in BOTH message files', () => {
     const ar = flatten((arMessages as Record<string, unknown>).verification).sort();
     expect(en).toEqual(ar);
     expect(en.length).toBeGreaterThan(0);
+  });
+
+  it('no message key is orphaned — every verification.* key some view emits is emitted', () => {
+    // The reverse direction of the check above: catches a key left behind by a
+    // deleted status (`badge.failed`, `badge.expired`, `badge.providerError`
+    // and `cta.reason.providerError` all went when B's six statuses did).
+    const flatten = (obj: unknown, prefix = ''): string[] =>
+      typeof obj === 'object' && obj !== null
+        ? Object.entries(obj).flatMap(([k, v]) => flatten(v, prefix ? `${prefix}.${k}` : k))
+        : [prefix];
+    const declared = flatten((enMessages as Record<string, unknown>).verification);
+    const orphans = declared.filter((k) => !keys.has(k));
+    expect(orphans, `unused verification keys: ${orphans.join(', ')}`).toEqual([]);
   });
 });

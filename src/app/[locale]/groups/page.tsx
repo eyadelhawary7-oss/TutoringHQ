@@ -38,7 +38,6 @@ import { initialsOf } from '@/lib/initials';
 import { getStudentBalances, type StudentBalance } from '@/lib/studentBalance';
 import * as Sentry from '@sentry/nextjs';
 import { useVerificationState } from '@/hooks/useVerificationState';
-import { isVerified } from '@/lib/verification/state';
 
 interface Group {
   id: string;
@@ -186,10 +185,13 @@ export default function GroupsPage() {
    * gated on a passed identity check (VERIFICATION-SPEC §6), so a centre that
    * has not verified must keep the §01 layout even after the platform flips.
    *
-   * `isVerified` is false for every unavailable state, so this is fail-closed
-   * twice over — and today it is false because Valify is not configured.
+   * `state.isVerified` is the ONE boolean `resolveEffectiveState` guarantees
+   * cannot be true while the Valify guard is unhappy — an `unconfigured`
+   * deployment resolves to false no matter what any stored row says. So this is
+   * fail-closed twice over, and today it is false because Valify is not
+   * configured (all four VALIFY_* values are placeholders).
    */
-  const digitalCollectionActive = platformDigitalCollection && isVerified(verification);
+  const digitalCollectionActive = platformDigitalCollection && verification.isVerified;
 
   // Design (§01 New group form): a "+ New" chip inline in the subject picker,
   // so a center doesn't have to abandon group creation to add a subject first.

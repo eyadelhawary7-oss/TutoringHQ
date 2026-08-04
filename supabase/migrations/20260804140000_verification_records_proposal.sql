@@ -18,9 +18,31 @@
 -- * reports success, and no surface renders a verified badge.                 *
 -- ****************************************************************************
 --
+-- ****************************************************************************
+-- * APPLY ORDER: THIS IS THE FIRST OF TWO. Apply this file, then              *
+-- *   20260804150000_PROPOSAL_payout_system_1_ledger.sql                      *
+-- * The payout engine's money gate                                            *
+-- * (src/lib/collectionPayout/verificationGate.ts) reads the tables created    *
+-- * here to decide whether a principal may be paid out, so the ledger is not   *
+-- * useful before this exists.                                                *
+-- *                                                                            *
+-- * Both files were numbered 20260804140000 on their original branches, along  *
+-- * with a third proposal that added verification columns to `centers` and     *
+-- * `teacher_profiles`. `supabase_migrations.schema_migrations.version` is a   *
+-- * PRIMARY KEY: only one could ever have been recorded, and the others would  *
+-- * have looked applied while never having run. The ledger was renumbered to   *
+-- * 150000; the columns-on-centers proposal is DELETED, not renumbered,        *
+-- * because its facts now live in the tables below — see part 6(a) for why     *
+-- * that was a privacy decision and not a tidiness one.                        *
+-- *                                                                            *
+-- * Verified live 4 August 2026: the highest version in                        *
+-- * supabase_migrations.schema_migrations is 20260804094631, so 20260804140000 *
+-- * is free.                                                                   *
+-- ****************************************************************************
+--
 -- PRECONDITIONS — re-queried LIVE against project lczmjpnbuhnsislcvzar on
--- 4 August 2026, immediately before writing this file. Not inferred, not
--- carried over from a spec.
+-- 4 August 2026. Every line was re-run by the consolidation agent, not carried
+-- over from the branch this file came from.
 --
 --   verification_records ..................... ABSENT (0 rows in
 --                                              information_schema.tables)
@@ -469,9 +491,32 @@ COMMIT;
 --
 -- (a) NO COLUMNS ON `centers` OR `users`. Verification is a separate concern
 --     with its own retention rule and its own column-level privileges. Putting
---     national_id on `centers` — a 108-column table read by dozens of
---     `select('*')` call sites — would leak it everywhere by default. The
---     separate table is what makes part 4's column grants meaningful.
+--     national_id on `centers` would leak it everywhere by default, and this is
+--     the reasoning that decided the whole shape of this migration, so it is
+--     written out rather than asserted:
+--
+--       • `public.centers` has 128 columns (re-verified live 4 Aug 2026 —
+--         an earlier draft of this comment said 108, which was wrong).
+--       • Its ONLY SELECT policy is
+--           centers_select_own USING (id = get_auth_center_id())
+--         and `public.teacher_profiles`'s only SELECT policy is
+--           teacher_profiles_select_own USING (user_id = auth.uid())
+--         — both re-verified live from pg_policies, same day.
+--       • RLS grants a ROW. It cannot withhold a COLUMN. So a national_id on
+--         either table is readable by the authenticated owner of that row,
+--         straight out of PostgREST, with no application code involved.
+--       • Four existing `select('*')` call sites on `centers` would start
+--         carrying it the moment the column appeared, without anyone editing
+--         them: src/app/api/admin/centers/route.ts (two, at the list and the
+--         detail query), src/app/api/admin/centers/[id]/route.ts, and
+--         src/lib/mrrSnapshot.ts.
+--
+--     A rival proposal did exactly that — verification_status, verified_at,
+--     valify_transaction_id, verified_name, payout_name_matches and national_id
+--     as columns on `centers` and `teacher_profiles`, with no REVOKE/GRANT
+--     block. It is DELETED, and this is why. Column-level privilege is the only
+--     mechanism that stops the leak, and it only exists if the number lives in
+--     a table whose grants we control — which is part 4 above.
 --
 -- (b) NO `payout_name_matches` COLUMN. VERIFICATION-SPEC §9.7 recommends
 --     storing a boolean computed once at payout-details entry INSTEAD of

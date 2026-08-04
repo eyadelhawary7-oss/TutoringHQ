@@ -198,7 +198,7 @@ export default function SplashClient() {
               state to read and the line would be a product claim, not a status.
               The claim is not true yet: identity verification has no live
               integration (the Valify credentials are placeholders — see
-              `src/lib/verification/config.ts`, the one config point) and
+              `src/lib/valifyConfig.ts`, the one config point) and
               `platform_config.digital_student_fee_collection.enabled` is
               `false` in production, verified live 4 Aug 2026. Printing it here
               would promise a visitor something no account can currently do,

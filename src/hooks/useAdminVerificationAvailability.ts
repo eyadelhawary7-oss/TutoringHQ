@@ -2,25 +2,41 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import type { VerificationState, VerificationUnavailableCause } from '@/lib/verification/state';
+import type { ValifyUnconfiguredCause } from '@/lib/valifyGuardLogic';
+import type { EffectiveVerification } from '@/lib/verificationState';
 
 /**
  * Admin-side accessor for whether identity verification is live at all.
  *
  * Same fail-closed contract as `useVerificationState`: never null, never
- * optimistic, and every failure mode resolves to unavailable-with-a-cause. An
- * admin screen that cannot reach this endpoint must not draw "Connected".
+ * optimistic, and every failure mode resolves to `unconfigured` with a named
+ * cause. An admin screen that cannot reach this endpoint must not draw
+ * "Connected".
+ *
+ * Shape is A's `EffectiveVerification`, the same type the server-side state
+ * machine returns, so the admin surfaces and the provider surfaces read one
+ * vocabulary.
  */
-function unavailable(cause: VerificationUnavailableCause, detail: string): VerificationState {
-  return { available: false, cause, detail };
+function unconfigured(cause: ValifyUnconfiguredCause): EffectiveVerification {
+  return {
+    state: 'unconfigured',
+    cause,
+    isVerified: false,
+    canStartVerification: false,
+    verified_at: null,
+    last_outcome: null,
+  };
 }
 
+const STATES = ['unconfigured', 'unverified', 'pending', 'verified', 'rejected'] as const;
+const CAUSES = ['valify_not_configured', 'verification_schema_not_applied'] as const;
+
 export function useAdminVerificationAvailability(): {
-  state: VerificationState;
+  state: EffectiveVerification;
   loading: boolean;
 } {
-  const [state, setState] = useState<VerificationState>(() =>
-    unavailable('provider_not_configured', 'Verification availability has not loaded yet.'),
+  const [state, setState] = useState<EffectiveVerification>(() =>
+    unconfigured('valify_not_configured'),
   );
   const [loading, setLoading] = useState(true);
 
@@ -37,29 +53,34 @@ export function useAdminVerificationAvailability(): {
         });
         if (cancelled) return;
         if (!res.ok) {
-          setState(
-            unavailable(
-              'provider_not_configured',
-              `Verification availability request failed with ${res.status}.`,
-            ),
-          );
+          setState(unconfigured('valify_not_configured'));
           return;
         }
-        const json = (await res.json()) as { state?: VerificationState };
+        const json = (await res.json()) as { state?: Record<string, unknown> };
         if (cancelled) return;
-        if (!json.state || typeof json.state.available !== 'boolean') {
-          setState(
-            unavailable('provider_not_configured', 'Verification availability response malformed.'),
-          );
+        const s = json.state;
+        if (
+          !s ||
+          typeof s.state !== 'string' ||
+          !(STATES as readonly string[]).includes(s.state) ||
+          typeof s.isVerified !== 'boolean'
+        ) {
+          setState(unconfigured('valify_not_configured'));
           return;
         }
-        setState(json.state);
+        setState({
+          state: s.state as EffectiveVerification['state'],
+          cause:
+            typeof s.cause === 'string' && (CAUSES as readonly string[]).includes(s.cause)
+              ? (s.cause as ValifyUnconfiguredCause)
+              : null,
+          isVerified: s.isVerified === true && s.state === 'verified',
+          canStartVerification: s.canStartVerification === true,
+          verified_at: typeof s.verified_at === 'string' ? s.verified_at : null,
+          last_outcome: null,
+        });
       } catch {
-        if (!cancelled) {
-          setState(
-            unavailable('provider_not_configured', 'Verification availability request threw.'),
-          );
-        }
+        if (!cancelled) setState(unconfigured('valify_not_configured'));
       } finally {
         if (!cancelled) setLoading(false);
       }

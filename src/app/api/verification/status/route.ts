@@ -17,6 +17,20 @@
  * (VERIFICATION-SPEC §9.2, §9.5, and the §7.7/§7.8 PDPL conflicts). An endpoint
  * that returns them is one careless component away from putting a national ID on
  * a screen.
+ *
+ * ALSO DELIBERATELY NOT RETURNED: the Valify provider reference. A second
+ * endpoint, `GET /api/verification/state`, briefly existed alongside this one and
+ * returned it as `providerRef` while its own type comment said "BACKEND ONLY —
+ * never rendered in any UI (VERIFICATION-SPEC §9.7)". Both endpoints answered the
+ * same question, so that one is DELETED and its callers point here. The reference
+ * did not come with it: shipping a field to the browser labelled "never render
+ * this" is a dare, and the surfaces that consume this route need the state, not
+ * the vendor's transaction id.
+ *
+ * `subjectKind` DID come with it, and is returned below. Callers legitimately
+ * need to know whether they are looking at a centre or a solo teacher — the copy
+ * and the destination screens differ — and it is derived server-side from the
+ * session, never from request input.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -70,16 +84,23 @@ export async function GET(request: NextRequest) {
     throw e;
   }
 
-  return NextResponse.json({
-    state: effective.state,
-    cause: effective.cause,
-    isVerified: effective.isVerified,
-    canStartVerification: effective.canStartVerification,
-    verifiedAt: effective.verified_at,
-    lastOutcome: effective.last_outcome,
-    capabilities: capabilitiesFor(effective.state),
-    // Present only when there is something to explain, so a client rendering
-    // `message` unconditionally shows nothing in the normal case.
-    message: effective.cause ? refusalMessage(effective.cause) : null,
-  });
+  return NextResponse.json(
+    {
+      subjectKind: subject.kind,
+      state: effective.state,
+      cause: effective.cause,
+      isVerified: effective.isVerified,
+      canStartVerification: effective.canStartVerification,
+      verifiedAt: effective.verified_at,
+      lastOutcome: effective.last_outcome,
+      capabilities: capabilitiesFor(effective.state),
+      // Present only when there is something to explain, so a client rendering
+      // `message` unconditionally shows nothing in the normal case.
+      message: effective.cause ? refusalMessage(effective.cause) : null,
+    },
+    // Verification state changes out of band, when the webhook lands. A cached
+    // "unverified" outliving the pass that replaced it is the one staleness this
+    // surface cannot afford.
+    { headers: { 'Cache-Control': 'no-store' } },
+  );
 }

@@ -15,6 +15,7 @@ import path from 'path';
 // this whole report exists to prevent. valifyConfig.ts has no imports of its
 // own, so pulling it into a plain tsx script is safe.
 import { VALIFY_ENV_KEYS, isPlaceholderValue } from '../src/lib/valifyConfig';
+import { ENV_KEYS as COLLECTION_PAYOUT_ENV_KEYS } from '../src/lib/collectionPayout/config';
 
 const SRC_ROOT = path.join(__dirname, '..', 'src');
 const ENV_EXAMPLE_PATH = path.join(__dirname, '..', '.env.example');
@@ -66,9 +67,27 @@ interface ConfigSurface {
 
 const CONFIG_SURFACES: readonly ConfigSurface[] = [
   {
-    name: 'Valify (identity verification / e-KYC)',
+    name: 'Valify (identity verification / e-KYC) — src/lib/valifyConfig.ts',
     keys: VALIFY_ENV_KEYS,
     required: ['VALIFY_API_KEY', 'VALIFY_BASE_URL', 'VALIFY_WEBHOOK_SECRET'],
+  },
+  {
+    // A SECOND named surface, and the fact that there are two is a live open
+    // question for Eyad rather than an oversight — see
+    // design/PHASE4-CONSOLIDATION-NOTES.md §4. Different vendor (Paymob
+    // Payouts, not Valify), disjoint credentials, and neither module reads the
+    // other's keys. Listing both here is what makes "there are two" visible on
+    // every run instead of discoverable by grep.
+    name: 'Paymob Payouts (payout rail) — src/lib/collectionPayout/config.ts',
+    keys: Object.values(COLLECTION_PAYOUT_ENV_KEYS),
+    required: [
+      COLLECTION_PAYOUT_ENV_KEYS.railBaseUrl,
+      COLLECTION_PAYOUT_ENV_KEYS.railClientId,
+      COLLECTION_PAYOUT_ENV_KEYS.railClientSecret,
+      COLLECTION_PAYOUT_ENV_KEYS.railUsername,
+      COLLECTION_PAYOUT_ENV_KEYS.railPassword,
+      COLLECTION_PAYOUT_ENV_KEYS.railCallbackHmacSecret,
+    ],
   },
 ];
 

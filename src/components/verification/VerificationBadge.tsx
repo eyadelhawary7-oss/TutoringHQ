@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { BadgeCheck, Clock, ShieldAlert, ShieldOff, Shield } from 'lucide-react';
-import type { VerificationState } from '@/lib/verification/state';
+import type { EffectiveVerification } from '@/lib/verificationState';
 import { verificationBadgeView, type VerificationTone } from '@/lib/verification/uiState';
 
 /**
@@ -44,7 +44,7 @@ export default function VerificationBadge({
   state,
   className = '',
 }: {
-  state: VerificationState;
+  state: EffectiveVerification;
   className?: string;
 }) {
   const t = useTranslations('verification');

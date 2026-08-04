@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { ShieldCheck } from 'lucide-react';
-import type { VerificationState } from '@/lib/verification/state';
+import type { EffectiveVerification } from '@/lib/verificationState';
 import { digitalCollectionView, verifyCtaView } from '@/lib/verification/uiState';
 import VerifyIdCta from './VerifyIdCta';
 
@@ -29,7 +29,7 @@ export default function CollectForYouCard({
   state,
   onStart,
 }: {
-  state: VerificationState;
+  state: EffectiveVerification;
   onStart?: () => void;
 }) {
   const t = useTranslations('verification');

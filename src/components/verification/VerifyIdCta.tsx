@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
-import type { VerificationState } from '@/lib/verification/state';
+import type { EffectiveVerification } from '@/lib/verificationState';
 import { verifyCtaView } from '@/lib/verification/uiState';
 
 /**
@@ -33,7 +33,7 @@ export default function VerifyIdCta({
   labelKeyOverride,
   className = '',
 }: {
-  state: VerificationState;
+  state: EffectiveVerification;
   onStart?: () => void;
   /** e.g. `cta.verifyToSwitchOn` for the centre attendance opt-in. */
   labelKeyOverride?: string;

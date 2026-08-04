@@ -565,14 +565,17 @@ export default function DashboardPage() {
             The design's pill reads "Verified" in every frame it draws, with no
             unverified twin. The slot now renders the REAL state from the one
             verification state machine (`useVerificationState` →
-            `/api/verification/state` → `resolveVerificationState`) instead of
+            `/api/verification/status` → `resolveEffectiveState`) instead of
             either fabricating a trust signal or silently omitting one.
 
             Today that badge reads "Verification unavailable", because the
-            Valify credentials are placeholders and `centers` has no
-            verification column (both re-verified live, 4 Aug 2026). It will
-            read "Verified" only when a real webhook has said so. The plan pill
-            stays; it was never the same thing as a trust signal. */}
+            Valify credentials are placeholders AND the `verification_records`
+            table does not exist — both re-verified live against project
+            lczmjpnbuhnsislcvzar on 4 August 2026 (142 base tables in `public`,
+            neither `verification_records` nor `verification_attempts` among
+            them). It will read "Verified" only when a real HMAC-verified
+            webhook has said so; no other actor can reach that state. The plan
+            pill stays; it was never the same thing as a trust signal. */}
         <header className="mb-3 flex items-center gap-2">
           <div className="min-w-0 text-start">
             <h1 className="truncate text-lg font-bold leading-tight text-[var(--color-text-primary)]">

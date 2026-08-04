@@ -61,11 +61,21 @@ function AdminCentersPageInner() {
   const { setHideShell } = useLayout();
   const { state: verification } = useAdminVerificationAvailability();
   // `Merged-Admin-Platform` §01 draws an "Unverified" filter pill on both
-  // /admin/centers and /admin/teachers. It cannot work: filtering on
-  // verification needs a `verification_status` column, and `centers` has 128
-  // columns and no such thing (re-verified live 4 Aug 2026). The pill is drawn
-  // DISABLED with its reason rather than dropped — a filter that is simply
+  // /admin/centers and /admin/teachers. It cannot work today: filtering on
+  // verification needs somewhere for verification state to live, and there is
+  // nowhere. Re-verified live against project lczmjpnbuhnsislcvzar on 4 August
+  // 2026: `public.centers` has 128 columns and not one identity-verification
+  // column among them; `public.teacher_profiles` has 24, likewise; and
+  // `verification_records` / `verification_attempts` are both absent from
+  // `information_schema.tables` (142 base tables, neither of them). The pill is
+  // drawn DISABLED with its reason rather than dropped — a filter that is simply
   // absent tells an operator nothing, and they will keep looking for it.
+  //
+  // Note the state will NOT arrive as a column on `centers`. It arrives as
+  // `verification_records`, because a national ID on `centers` would be readable
+  // by every centre owner: RLS grants a row and cannot withhold a column, and
+  // `centers_select_own USING (id = get_auth_center_id())` is the only SELECT
+  // policy on that table.
   const verificationGate = adminVerificationView(verification);
 
   const statusFilterRaw = searchParams?.get('status') ?? 'all';

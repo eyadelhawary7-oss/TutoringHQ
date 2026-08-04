@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLocale } from 'next-intl';
-import type { VerificationState } from '@/lib/verification/state';
+import type { EffectiveVerification } from '@/lib/verificationState';
 import { digitalCollectionView, verifyCtaView } from '@/lib/verification/uiState';
 
 /**
@@ -27,7 +27,7 @@ import { digitalCollectionView, verifyCtaView } from '@/lib/verification/uiState
  * screens are `Merged-Teacher-Money` / `Merged-Verification-Payouts`, both
  * PROTECTED. The self-collect note stays, because it is currently true.
  */
-export default function CollectPaymentsRow({ state }: { state: VerificationState }) {
+export default function CollectPaymentsRow({ state }: { state: EffectiveVerification }) {
   const t = useTranslations('verification');
   const locale = useLocale();
   const Chevron = locale === 'ar' ? ChevronLeft : ChevronRight;
@@ -37,7 +37,7 @@ export default function CollectPaymentsRow({ state }: { state: VerificationState
 
   const subtitle = collection.on
     ? t('settingsRow.subtitleOn')
-    : !state.available
+    : state.state === 'unconfigured'
       ? t('settingsRow.subtitleUnavailable')
       : t('settingsRow.subtitleUnverified');
 

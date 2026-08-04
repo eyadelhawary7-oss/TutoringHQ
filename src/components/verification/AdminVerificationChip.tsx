@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { BadgeCheck, Clock, ShieldAlert, ShieldOff, Shield } from 'lucide-react';
-import type { VerificationState } from '@/lib/verification/state';
+import type { EffectiveVerification } from '@/lib/verificationState';
 import { adminVerificationView, type VerificationTone } from '@/lib/verification/uiState';
 
 /**
@@ -50,7 +50,7 @@ export default function AdminVerificationChip({
   variant = 'chip',
   className = '',
 }: {
-  state: VerificationState;
+  state: EffectiveVerification;
   variant?: 'chip' | 'cause';
   className?: string;
 }) {
