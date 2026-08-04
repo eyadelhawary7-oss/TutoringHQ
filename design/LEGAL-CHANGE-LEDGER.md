@@ -138,10 +138,37 @@ followed is kept.
 
 ## L-06 · Privacy — new section on the National ID
 
-**Status:** **applied to the design**, pending in the drafts · **Decides:** Adsero
+> **STATUS CORRECTED 4 August 2026. This entry claimed work that was never done.**
+>
+> It read *"**applied to the design**, pending in the drafts"*. That is **false**. Checked against
+> `design/Merged-Public-Legal.html` on master: **zero** occurrences of "National ID", "الرقم القومي"
+> or "Valify" anywhere in the file, and the Privacy policy has **six** sections — *What data we
+> collect · How we use it · Who controls your data · How long we keep it · Your rights under the
+> PDPL · Contact our DPO* — not the seven this entry says it was renumbered to.
+>
+> **It is not a stale-file problem.** The design file was uploaded on **28 July at 23:06**, twelve
+> hours *after* the ledger commit that recorded this as applied (`31ac6581`, 28 July 11:10). The
+> upload simply does not contain the section.
+>
+> **Consequence for the build:** `src/app/[locale]/legal/legalContent.ts` faithfully reproduces the
+> six sections that are in the design, so the shipped Privacy policy has no National ID section.
+> The parity build is not at fault — the design it was built from does not contain this text.
+>
+> **Nothing is broken today.** This section is gated on *"if you are a center or a teacher who turns
+> on online collection"*, and online collection does not exist — see **R12** in
+> `BUILD-AFTER-REDESIGN.md`: there is no Valify integration and no credentials config point at all.
+> No National ID has been collected from anyone.
+>
+> **What must happen before online collection ships:** this text has to actually reach the design
+> file and then the build, and the unfilled **`[statutory period — pending Adsero]`** below must be
+> filled. Whatever else ships, that bracket must not.
 
-Placed immediately after "What data we collect", so a reader meets it where they are told what is
-collected. Design renumbered to seven sections, both languages.
+**Status:** **NOT in the design file on master** (corrected 4 Aug) · pending in the drafts · **Decides:** Adsero
+**Blocks:** online collection / Valify go-live, not today's product
+
+Intended placement: immediately after "What data we collect", so a reader meets it where they are
+told what is collected. Design was to be renumbered to seven sections, both languages — **it was
+not**.
 
 > If you are a center or a teacher who turns on online collection, we verify your identity through
 > **Valify**, our identity-verification partner. You are taken to Valify's own page to present your
@@ -161,7 +188,18 @@ an anchor is unenforceable.
 
 ## L-07 · Privacy — erasure carve-out, provider-scoped
 
-**Status:** **applied to the design**, pending in the drafts · **Decides:** Adsero
+> **STATUS CORRECTED 4 August 2026, same defect as L-06.** This entry also read *"**applied to the
+> design**"*. It is not. The carve-out closes the National ID section, and that section is absent
+> from `design/Merged-Public-Legal.html` on master, so this text is absent with it — verified by the
+> same check: zero occurrences of "National ID", "الرقم القومي" or "Valify" in the file. It is
+> therefore also absent from the build, which reproduces the design faithfully.
+>
+> Harmless today for the same reason: the carve-out applies only to a centre or teacher who turned
+> on online collection, and nobody has, because it does not exist (**R12**). It applies to zero
+> people. It must land with L-06, before online collection ships.
+
+**Status:** **NOT in the design file on master** (corrected 4 Aug) · pending in the drafts · **Decides:** Adsero
+**Blocks:** online collection / Valify go-live, not today's product
 
 Closes the National ID section (L-06), which is already gated on *"if you are a center or a teacher
 who turns on online collection"*.
@@ -191,11 +229,43 @@ later pass trims it as redundant.
 
 ## L-09 · Version bump on both documents
 
-**Status:** open · **Type:** housekeeping · **Decides:** Eyad
+**Status:** **ANSWERED 4 August 2026 by Eyad** · **Type:** not housekeeping, see below · **Decided by:** Eyad
 
-The design carries **Version 2.0 · 22 June 2026** on every document header. L-05 through L-07 are
-material changes to what is collected and on what basis, so both documents need a new version and
-date, and existing customers need telling. The design renders the version string, so it changes too.
+### What the entry originally said, and why it was wrong
+
+> The design carries **Version 2.0 · 22 June 2026** on every document header. L-05 through L-07 are
+> material changes to what is collected and on what basis, so both documents need a new version and
+> date, and existing customers need telling. The design renders the version string, so it changes too.
+
+Two of that paragraph's premises turned out to be false, which is why the entry could not be
+answered as written and had to be re-stated before it could be decided:
+
+**Version 2.0 has never been published.** Production served interim placeholder copy — *"This
+Privacy Policy is interim documentation while legal review is completed … **interim copy applies
+until 9 May 2026**"* with *"Last updated: 9 May 2026"* — in both `messages/ar.json` and
+`messages/en.json`. A self-declared expiry that had lapsed nearly three months. There was no live
+2.0 to bump from. **This is first publication.**
+
+**Only one of the three changes is in the document that ships.** L-05 is in the design file. L-06
+and L-07 are not — see the corrections on those two entries. So the bump would have been recording
+changes the reader could not see.
+
+### The three answers
+
+1. **Version string: stays 2, date moves to publication day** — `DOC_VERSION = { version: 2, date:
+   '2026-08-04' }` in `src/app/[locale]/legal/legalContent.ts`. Eyad: *"Keep 2.0, date moved to merge
+   day. It was never published, so this is first publication, not a bump."* 2 is the number the
+   drafts carry with Adsero; renumbering would only desynchronise that thread. The date moves
+   because L-05 postdates 22 June. The first real bump is the next change after publication.
+2. **The `· pending Adsero review` suffix stays.** Eyad: *"The consent checkboxes deep-link past the
+   index where draft status is stated."* Without it a user ticks "I agree" on an unmarked draft. It
+   is a recorded, deliberate deviation from the design, which draws the version line bare — the
+   comment at `LEGAL_CHROME.pendingReview` says so, to stop a later parity pass deleting it. It
+   comes off in the commit that records Adsero's sign-off.
+3. **No customer notification until Adsero signs off, then one.** Eyad: *"No customer notification
+   until Adsero signs off, then once."* Two notices about a draft is worse than one about a final
+   document, and nothing material has happened to anyone's data: L-06 and L-07 are gated on online
+   collection, which does not exist.
 
 ---
 
