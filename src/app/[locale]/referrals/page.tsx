@@ -178,7 +178,13 @@ export default function ReferralsPage() {
         </div>
 
         <div className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow p-6">
-          <h2 className="font-bold text-[var(--color-text-primary)] mb-4">{t('commissionStructureTitle')}</h2>
+          <h2 className="font-bold text-[var(--color-text-primary)] mb-1">{t('commissionStructureTitle')}</h2>
+          {/* The chips carry a bare percentage and a month range; the old
+              tier1Value/tier2Value/tier3Value strings were the only place the
+              screen said what the percentage was OF. Those three are retired
+              (two of them just restated the number now rendered in the chip),
+              and the basis is stated once, here, above the ladder. */}
+          <p className="text-xs text-[var(--color-text-secondary)] mb-4 leading-snug">{t('commissionBasis')}</p>
           {/* Merged-Center-Insight §03's rate-decay step chips. The ladder itself
               comes from COMMISSION_TIERS (referralProgram.ts), the live rule per
               D2 — the design's own "months 2-6" is the corrected-away number. */}

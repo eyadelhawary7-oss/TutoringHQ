@@ -24,10 +24,17 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
  * collected/outstanding breakdown underneath it. The live analytics API
  * already computes `collection_rate` and `outstanding_total` — this was
  * previously fetched and thrown away; the KPI tile only ever showed the
- * percentage. `outstanding` here is the running balance, not this month's
- * uncollected slice specifically (the API has no month-scoped complement
- * of `collection_rate`), so it is labelled as a running total rather than
- * implied to sum with `collected` to the same period.
+ * percentage.
+ *
+ * The two figures under the ring are on **different time bases**, so they
+ * carry different labels: `collected` is this month's confirmed payments
+ * (`analytics.collectedThisMonth`), while `outstanding` is the running
+ * balance across active students accumulated to date, not this month's
+ * uncollected slice (the API has no month-scoped complement of
+ * `collection_rate`). It is therefore labelled `analytics.outstandingRunning`
+ * — "Outstanding (running total)" / "المستحق (إجمالي متراكم)" — and not the
+ * bare `analytics.outstandingTotal` the KPI tiles use, so the pair is not
+ * read as two halves of one month's billing.
  */
 export default function CollectionRateGauge({ rate, collected, outstanding, locale }: CollectionRateGaugeProps) {
   const t = useTranslations('analytics');
@@ -74,7 +81,7 @@ export default function CollectionRateGauge({ rate, collected, outstanding, loca
             </div>
           </div>
           <div>
-            <div className="text-xs text-[var(--color-text-muted)]">{t('outstandingTotal')}</div>
+            <div className="text-xs text-[var(--color-text-muted)]">{t('outstandingRunning')}</div>
             <div className="font-semibold text-amber-600 dark:text-amber-400 tabular-nums">
               {formatCurrency(outstanding, locale)}
             </div>
