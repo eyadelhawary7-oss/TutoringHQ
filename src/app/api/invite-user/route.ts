@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { rateLimit, rateLimitExceededResponse } from '@/lib/ratelimit';
 import { inviteUserSchema } from '@/lib/validations';
 import { validateCSRFRequest } from '@/lib/csrf';
-import { normalizePhone } from '@/lib/utils/phone';
+import { normalizePhone, phonesMatch } from '@/lib/utils/phone';
 import { requireOwnerAdminCenter } from '@/lib/requireOwnerAdminCenter';
 import { sendTeamInvite } from '@/lib/centerNotify';
 import { supabaseAdmin } from '@/lib/supabase-admin';
@@ -54,10 +54,9 @@ export async function POST(request: Request) {
       }, { status: 404 });
     }
 
-    const digitsOf = (p: string) => p.replace(/\D/g, '').replace(/^0/, '').replace(/^20/, '');
-    const currentPhoneNorm = digitsOf(currentUser.phone || '');
-    const inviteePhoneNorm = digitsOf(phoneE164);
-    if (currentPhoneNorm && inviteePhoneNorm && currentPhoneNorm === inviteePhoneNorm) {
+    // Self-invite guard: canonicalize both to +20 E.164 and compare exactly.
+    // The old digits-only strip-and-compare was the trailing-match defect.
+    if (phonesMatch(currentUser.phone, phoneE164)) {
       return NextResponse.json({ error: 'Cannot invite yourself to the team' }, { status: 403 });
     }
 

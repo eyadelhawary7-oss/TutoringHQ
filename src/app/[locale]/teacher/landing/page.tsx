@@ -1,29 +1,21 @@
-import type { Metadata } from 'next';
-import TeacherLandingClient from './TeacherLandingClient';
+import { redirect } from 'next/navigation';
 
-export async function generateMetadata({
+/**
+ * `/teacher/landing` was the public teacher marketing page; the design moves it
+ * to `/teachers`, which every cross-link now points at. This stays as a
+ * redirect because the old address is live and indexed.
+ *
+ * The `?ref=` passthrough is NOT optional: teacher referral links in
+ * circulation carry it, and `/teachers` threads it on to `/teacher/signup`.
+ */
+export default async function TeacherLandingRedirect({
   params,
-}: {
-  params: Promise<{ locale: string }>;
-}): Promise<Metadata> {
-  const { locale } = await params;
-  const isAr = locale === 'ar';
-
-  return {
-    title: isAr
-      ? 'TutoringHQ للمدرسين | اجمع دخلك من السناتر والخصوصي'
-      : 'TutoringHQ for teachers | All your income, centers and private, in one place',
-    description: isAr
-      ? 'سواء بتدرّس في سنتر أو عندك طلاب خصوصي، TutoringHQ بيجمع كل دخلك في شاشة واحدة ويبعت روابط الدفع لوحده. تجربة مجانية للـ Engine الخصوصي.'
-      : 'Whether you teach at a center or have private students, TutoringHQ brings all your income into one screen and sends payment links automatically. Free trial for the private engine.',
-  };
-}
-
-export default async function TeacherLandingPage({
   searchParams,
 }: {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{ ref?: string }>;
 }) {
+  const { locale } = await params;
   const { ref } = await searchParams;
-  return <TeacherLandingClient referralCode={ref ?? null} />;
+  redirect(`/${locale}/teachers${ref ? `?ref=${encodeURIComponent(ref)}` : ''}`);
 }

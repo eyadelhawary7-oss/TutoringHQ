@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { getClientIp, rateLimit, rateLimitExceededResponse } from '@/lib/ratelimit';
-import { normalizePhone } from '@/lib/utils/phone';
+import { normalizePhone, authEmailFromPhone } from '@/lib/utils/phone';
 import { parseBodyWithLimit } from '@/lib/validate';
 
 /**
@@ -69,9 +69,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // Auth email format: phoneDigits@centerhq.local (matches signup/accept-invite)
+    // Auth email via the shared derivation (matches signup/accept-invite exactly).
+    // phoneDigits is still needed for the admin_users.phone digit-form match below.
     const phoneDigits = normalizedPhone.replace(/\D/g, '');
-    const emailForAuth = `${phoneDigits}@centerhq.local`;
+    const emailForAuth = authEmailFromPhone(normalizedPhone);
+    if (!emailForAuth) {
+      // A phone that is not a valid Egyptian mobile can never own an account.
+      return NextResponse.json({ error: 'Phone number not registered' }, { status: 404 });
+    }
 
     if (!user) {
       // No public.users row. The phone may still belong to an internal/admin-only

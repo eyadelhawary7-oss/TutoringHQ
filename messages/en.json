@@ -25,92 +25,69 @@
   },
   "pricingPage": {
     "metaTitle": "Pricing – TutoringHQ",
-    "metaDescription": "Compare Solo through Enterprise plans and Top Centers. Transparent monthly, quarterly, and annual pricing for tutoring centers.",
-    "navHome": "Home",
-    "title": "Plans for every size",
-    "subtitle": "Monthly and annual billing. All amounts include VAT where applicable.",
-    "toggleCenters": "Centers",
-    "toggleTeachers": "Teachers",
-    "studentsCapEn": "Up to {count} students/week",
-    "studentsCapAr": "حتى {count} طالب/أسبوع",
-    "badgeEntry": "Entry level",
-    "badgePopular": "Most popular",
+    "metaDescription": "One product at every size. Center plans from Solo to Enterprise and teacher plans, priced monthly or annual, VAT included.",
+    "title": "One product. You are only picking how big.",
+    "subtitle": "Every price here includes VAT. Every plan is the same software. The only thing you choose is how many students it has to hold.",
     "billMonthly": "Monthly",
     "billAnnual": "Annual",
     "annualBadge": "2 months free",
-    "perMonthSuffix": "/mo",
-    "billedAnnually": "billed annually at {amount}",
-    "centerFeatures": [
-      "Full attendance, grades & payments",
-      "Unlimited groups, sessions & rooms",
-      "QR scanner & offline check-in",
-      "Automated WhatsApp to parents",
-      "Finance, payroll & reports"
-    ],
-    "priceDisclaimer": "Figures follow our published price list; invoiced amounts prevail.",
-    "ctaSignup": "Get started",
-    "topCentersTitle": "Top Centers",
-    "topCentersSubtitle": "كبار السناتر",
-    "topCentersStudents": "2,000+ students/week",
-    "topCentersCta": "Custom pricing →",
+    "ctaSignup": "Start free",
     "talkToSomeoneCta": "Talk to someone first",
-    "footerNote": "Questions? Email support@ehgintelligence.com",
-    "contactModalTitle": "Contact us about Top Centers",
-    "contactModalBody": "Tell us about your scale and we will follow up with a tailored quote.",
-    "contactModalEmail": "Email support@ehgintelligence.com",
-    "contactModalClose": "Close",
-    "teacher": {
-      "heading": "For teachers",
-      "sub": "Center tracking is always free. Pick the tier that fits how many students you teach.",
-      "justification": "If a student pays you at least 300 EGP a session, so even the top tier costs you about 2% of that.",
-      "activeStudentNote": "An \"active student\" is one who checked in at least once during the billing month.",
-      "freeName": "Free",
-      "freePrice": "Free",
-      "freeNote": "Center monitoring only. Read your cut from the centers you teach at. No subscription needed.",
-      "freeFeature1": "View the centers you teach at",
-      "freeFeature2": "Center attendance and earnings",
-      "freeCta": "Start for free",
-      "planName": "Standard",
-      "price": "499 EGP / month",
-      "priceNote": "Up to 20 active students.",
-      "perStudent": "as low as ~25 EGP / student",
-      "trialBadge": "14-day free trial",
-      "feature1": "Create private groups with join links",
-      "feature2": "Record student payments (cash / InstaPay / Vodafone Cash)",
-      "feature3": "Class schedule",
-      "feature4": "Full income view: private and all centers",
-      "standardCapSummary": "Up to 20 active students",
-      "standardGuestLimit": "Registered students only (no guest attendees)",
-      "guestAttendees": "Guest attendees without enrollment (up to 10 per session)",
-      "cta": "Start free trial",
-      "proTitle": "Pro",
-      "proPrice": "999 EGP / month",
-      "proPriceNote": "Up to 50 active students.",
-      "proPerStudent": "as low as ~20 EGP / student",
-      "proNoTrial": "No free trial",
-      "bestForPartTime": "Best for Part-Time",
-      "proCtaButton": "Start with Pro",
-      "proFeatures": [
-        "Everything in Standard",
-        "Up to 50 active students",
-        "Guest attendees without enrollment (up to 10 per session)",
-        "Full income history (all time)",
-        "Advanced analytics",
-        "100 EGP WhatsApp credit monthly",
-        "Student notes",
-        "CSV export"
+    "kick": "Pricing",
+    "centerLabel": "A center",
+    "mostChosen": "Most chosen",
+    "capLabelCenter": "How many students a week?",
+    "teacherLabel": "A teacher",
+    "teacherFreeLine": "<b>Teaching only at centers is free, for good.</b> You see your groups, your students and your cut, and you pay nothing.",
+    "capLabelTeacher": "Running your own groups? How many active students a month?",
+    "chipPlus": "{count}+",
+    "perMonthUnit": "EGP a month",
+    "perFirstUnit": "EGP for the first {count}",
+    "perStudent": "Works out at <b>{amount} EGP</b> a student.",
+    "altMonthly": "Or <b>{monthly} EGP a month</b> paid yearly, which is <b>{total} EGP</b> for the year.",
+    "altAnnual": "You pay <b>{total} EGP</b> once. Ten months instead of twelve.",
+    "overageMonthly": "Every student after that adds <b>{rate} EGP</b> a month.",
+    "overageAnnual": "Every student after that adds <b>{rate} EGP</b> a month, billed monthly even on annual.",
+    "exampleMonthly": "<b>{students} students</b> is {total} EGP a month, or {each} EGP each.",
+    "exampleAnnual": "<b>{students} students</b> is {total} EGP a month, or {each} EGP each. The two free months apply to the base plan, not to the extra students.",
+    "topCentersNote": "More than {count} students is Top Centers, and it is priced with you rather than off a list.",
+    "teacherTier": {
+      "teacher_standard": "Standard",
+      "teacher_pro": "Pro",
+      "teacher_scale": "Scale"
+    },
+    "teacherNoteStandard": "Comes with a {days} day trial.",
+    "teacherNotePro": "Advanced analytics is included at this size.",
+    "teacherNoteScale": "The largest flat price. Past this it grows with you.",
+    "teacherNoteScalePlus": "No ceiling. Every student you add costs less per head than the one before.",
+    "same": {
+      "kick": "The same either way",
+      "heading": "There is no cheaper version of the software.",
+      "lede": "Only a smaller one. Whichever size you land on, all of this is in it.",
+      "items": [
+        "Attendance that writes the invoice in the same tap",
+        "WhatsApp payment links, sent on their own",
+        "Cash recorded in one tap, for one student, for one session",
+        "Join links and an approval queue",
+        "Students, groups and schedules",
+        "Income, receipts and invoices",
+        "Withdrawals to your own account",
+        "Excel export of everything, from the Pro plan up"
       ],
-      "scaleTitle": "Scale",
-      "scalePrice": "2,499 EGP / month",
-      "scalePriceNote": "Up to 100 active students, then +20 EGP per extra active student (trued up at month end).",
-      "scalePerStudent": "as low as ~25 EGP / student (then 20 each above 100)",
-      "scaleCtaButton": "Start with Scale",
-      "scaleFeatures": [
-        "Everything in Pro",
-        "Up to 100 active students",
-        "+20 EGP per active student above 100",
-        "Trued up at the end of the month"
-      ]
+      "punch": "Nobody pays more for a better product here. They pay more for a bigger one."
+    },
+    "addons": {
+      "kick": "If you need more",
+      "heading": "Add-ons",
+      "waPackName": "Parent WhatsApp pack",
+      "waPackSub": "Check-in, balance and absence alerts, sent to parents on their own",
+      "waPackPrice": "{price} / parent / mo"
+    },
+    "notes": {
+      "vat": "<b>Every price on this page includes VAT.</b> Nothing is added at checkout.",
+      "annual": "<b>Annual is ten months for twelve.</b> Two of them free, not a percentage dressed up.",
+      "trial": "<b>One free trial per phone number, once.</b> It does not come back.",
+      "cancel": "<b>Cancel whenever you like.</b> Access runs to the end of the period you have paid for."
     }
   },
   "invoice": {
@@ -343,7 +320,12 @@
     "upgradeCta": "Upgrade Cta",
     "upgradeDescription": "Upgrade Description",
     "upgradeTitle": "Upgrade Title",
-    "you": "You"
+    "you": "You",
+    "home": "Home",
+    "attend": "Attend",
+    "fees": "Fees",
+    "import": "Import students",
+    "pending": "Pending requests"
   },
   "common": {
     "sectionAtAGlance": "At a glance",
@@ -957,7 +939,7 @@
   "emptyStates": {
     "students": {
       "title": "No students yet",
-      "description": "Add your first student to get started",
+      "description": "Your roster is empty. Add a student by hand, or bring the whole list over from a spreadsheet.",
       "action": "Add Student",
       "importAction": "Import from file"
     },
@@ -967,8 +949,8 @@
       "action": "View Scanner"
     },
     "groups": {
-      "title": "No groups created yet",
-      "description": "Create groups to organize students by subject",
+      "title": "No groups yet",
+      "description": "Create your first class group to enrol students, set a fee, and take attendance.",
       "action": "Add Group"
     },
     "schedule": {
@@ -1041,7 +1023,9 @@
     "subjectRequired": "Subject Required",
     "title": "Title",
     "validFeeRequired": "Valid Fee Required",
-    "waitlist": "Waitlist"
+    "waitlist": "Waitlist",
+    "less": "Less",
+    "more": "More"
   },
   "idCards": {
     "totalOrders": "Total Orders",
@@ -1518,14 +1502,14 @@
     "title": "Import Students",
     "upload": "Upload File",
     "chooseFile": "Choose File",
-    "dragDrop": "Drag & drop file here or click to browse",
-    "acceptedFormats": "CSV, XLSX, or XLS",
+    "dragDrop": "Choose a file",
+    "acceptedFormats": "CSV or Excel, up to 500 rows",
     "preview": "Preview Data",
     "mapColumns": "Map Columns",
     "studentName": "Student Name",
     "phone": "Student Phone",
     "parentPhone": "Parent Phone",
-    "parentPhoneHint": "WhatsApp number of parent or guardian",
+    "parentPhoneHint": "The parent's WhatsApp number is how the center reaches home. Add it now and every reminder, receipt and absence alert has somewhere to go.",
     "subject": "Subject",
     "monthlyFee": "Fee Per Lesson",
     "confirm": "Confirm Import",
@@ -1544,28 +1528,24 @@
     "mapToNotes": "Notes",
     "mapToGroup": "Group",
     "importCount": "Import {count} Students",
-    "readyToAdd": "{count} ready to add",
-    "needFix": "{count} need a fix",
+    "readyToAdd": "ready to add",
+    "needFix": "need a fix",
     "needsFixTitle": "Needs a fix",
     "rowLabel": "Row {n}",
     "reasonMissingName": "Missing student name",
     "skippedNote": "Type a name below to include a row, or fix it in the file and upload again.",
     "fixNamePlaceholder": "Student's name",
-    "stepUpload": "Upload",
-    "stepMap": "Map Columns",
-    "stepPreview": "Preview & Import",
+    "stepUpload": "Upload a file",
+    "stepUploadSub": "Bring your student list in from a spreadsheet.",
+    "stepMap": "Match columns",
+    "stepMapSub": "We matched these automatically. Fix any that look off.",
+    "stepPreview": "Review",
     "studentNumber": "Student #",
-    "studentNumberPending": "Assigned when you import (from your center sequence)",
     "group": "Group",
-    "groupResolution": "Match Groups",
-    "groupResolutionHint": "Match each group from your file to a group in TutoringHQ",
-    "csvGroup": "From your file",
-    "dbGroup": "TutoringHQ group",
-    "skipGroup": "Don't assign a group",
-    "noGroupsFound": "No groups found. Create groups first, then import.",
-    "noCsvGroupValues": "No group values in your file for the mapped group column. You can continue to the preview.",
-    "importWithoutGroupsBody": "No groups found. You can still import students without group assignment.",
-    "importReady": "Ready to Import"
+    "chooseField": "Choose field…",
+    "columnsLeftToMatch": "{count} column left to match. You can also skip it.",
+    "addNStudents": "Add {count} students",
+    "fixAction": "Fix"
   },
   "students": {
     "allGroups": "All Groups",
@@ -1607,45 +1587,21 @@
     "studentId": "Student Id",
     "subject": "Subject",
     "title": "Students",
-    "subtitle": "Manage your enrolled students",
-    "import": "Import",
-    "order_cards": "Order Cards",
-    "pendingRequests": "Pending Requests",
     "sendAnnouncement": "Send Announcement",
     "add_student": "Add Student",
     "total_students": "Total Students",
     "active_students": "Active Students",
     "unpaidStudents": "Unpaid",
-    "ofTotalStudents": "of {count} total",
     "unpaidAmountDue": "{amount} due",
     "search_placeholder": "Search students...",
-    "filter_all": "All",
-    "filter_active": "Active",
+    "filter_all": "All standing",
     "filter_at_risk": "At Risk",
-    "filter_inactive": "Inactive",
-    "filter_enrolled": "Enrolled",
-    "filter_churned": "Churned",
-    "statusHelpTitle": "Student statuses",
-    "statusHelpIntro": "Filters use each student's lifecycle status.",
-    "statusHelp_all": "Every student in your center.",
-    "statusHelp_active": "Currently attending and engaged based on recent scans.",
-    "statusHelp_at_risk": "Low attendance or long gaps since their last scan.",
-    "statusHelp_inactive": "No recent attendance within your tracking window.",
-    "statusHelp_enrolled": "Registered but may not yet have regular attendance.",
-    "statusHelp_churned": "Stopped attending or formally marked as churned.",
-    "sort": "Sort",
-    "sortName": "Sort by Name",
-    "sortBalance": "Sort by Balance",
-    "status_at_risk": "At Risk",
-    "status_enrolled": "Enrolled",
     "no_balance": "No balance",
     "last_sessions": "Last Sessions",
     "balance_due": "Balance Due",
     "owesAmount": "Owes {amount}",
     "parentPackOptIn": "WhatsApp Pack",
-    "addToCardOrder": "Add to Card Order",
     "swipe_edit": "Edit",
-    "swipe_scan": "Scan",
     "swipe_delete": "Delete",
     "studentName": "Student Name",
     "parentSection": "Parent Information",
@@ -1656,12 +1612,8 @@
     "cardOrderCartSelected": "{count} student selected",
     "cardOrderCartSelectedPlural": "{count} students selected",
     "cardOrderCartClearAll": "Clear cart",
-    "addParentPhone": "Add Parent Phone",
     "gradeLabel": "Grade {grade}",
     "viewQR": "View QR Code",
-    "prevPage": "Previous",
-    "nextPage": "Next",
-    "pageOf": "Page {page} of {total}",
     "print_card_count": "Card count: {count}",
     "print_cards": "Print Cards",
     "printShowGroup": "Show Group",
@@ -1678,21 +1630,14 @@
     "announcementCapWarning": "You have used {balance} of {cap} blasts this month",
     "announcementCapReached": "Monthly blast limit reached. Resets next month.",
     "announcementSentToast": "Sent to {count} parents · Cost: {cost} EGP",
-    "parentPhoneSaved": "Parent phone saved",
-    "parentPhoneCleared": "Parent phone cleared",
     "packOptInError": "Failed to update parent pack opt-in",
     "regenerateQRConfirm": "Regenerate QR code?",
-    "allStudentsHaveQR": "All students already have a QR code",
-    "qrGeneratedNew": "New QR code generated",
     "addStudentSuccess": "Student added successfully",
     "empty_title": "No students yet",
     "empty_subtitle": "Add your first student to get started",
-    "editParentPhone": "Edit parent phone",
     "parentPhonePlaceholder": "Parent phone number",
     "save": "Save",
     "cancel": "Cancel",
-    "alreadyInOrder": "Already in an order",
-    "addedToOrder": "Added to order",
     "parentConsented": "Parent consented",
     "packDisabledInactive": "Parent pack disabled: student inactive",
     "packDisabledNoPhone": "Parent pack disabled: no parent phone",
@@ -1716,7 +1661,28 @@
       "createGroup": "Create",
       "groupFeePlaceholder": "Fee per class (EGP)"
     },
-    "status_active": "Active"
+    "rosterMeta": "{active} active · {branches} branches",
+    "acrossBranches": "across {count} branches",
+    "standing_paid": "Paid",
+    "standing_at_risk": "At risk",
+    "standing_overdue": "Overdue",
+    "standing_new": "New",
+    "seg_all": "All",
+    "seg_behind": "Behind",
+    "seg_paidUp": "Paid up",
+    "groupBehind": "BEHIND",
+    "groupAll": "ALL STUDENTS",
+    "behindAlertTitle": "{count} behind on payment",
+    "behindAlertSub": "{total} · oldest {days} days",
+    "behindAlertAction": "Review",
+    "daysCount": "{count} days",
+    "paidUpChip": "Paid up",
+    "standingsLoadError": "Couldn't load payment standing, so no paid or behind badges are shown. Refresh to try again.",
+    "missedSessions": "missed {count}",
+    "joinedAgo": "joined {days}d ago",
+    "loadMore": "Show {count} more",
+    "selectAction": "Select",
+    "swipe_message": "Message"
   },
   "print": {
     "title": "Print Student Cards",
@@ -2369,13 +2335,27 @@
     "students": "Students",
     "monthlyRevenue": "Monthly Revenue",
     "outstanding": "Outstanding",
-    "staffCount": "Staff",
     "totalMrr": "Total MRR",
     "totalStudents": "Total Students",
     "totalOutstanding": "Total Outstanding",
-    "studentsByBranch": "Students by Branch",
-    "revenueByBranch": "Revenue by Branch",
-    "current": "Current"
+    "current": "Current",
+    "headerSubtitle": "{org} · {count} branches",
+    "thisMonthEgp": "This month · EGP",
+    "attendance": "attendance",
+    "switchToThis": "Switch to this",
+    "dashboard": "Dashboard",
+    "edit": "Edit",
+    "more": "More",
+    "areaAddress": "Area / address",
+    "mainBranch": "main branch",
+    "branchTag": "branch",
+    "addonTitle": "Extra branch add-on",
+    "addonLine": "{price} / mo · billed via Paymob",
+    "areaAddressPlaceholder": "Street, district, city",
+    "studentsLower": "students",
+    "egpPerMonth": "EGP / mo",
+    "branchesSection": "Branches",
+    "switched": "Switched branch"
   },
   "academic": {
     "title": "Academic Year",
@@ -2535,7 +2515,8 @@
     "csv_export_filters": "Filters applied",
     "csv_export_filters_none": "none",
     "csv_export_note": "This file contains only the rows listed above. Rows outside the date range, or excluded by the filters, are not in it.",
-    "exportCountLabel": "Export {count} rows"
+    "exportCountLabel": "Export {count} rows",
+    "newPayment": "New payment"
   },
   "attendance": {
     "title": "Attendance History",
@@ -2565,9 +2546,6 @@
     "studentsPresent": "Students Present",
     "noDataInPeriod": "No attendance data in this period",
     "noGroupsYet": "No groups created yet",
-    "resultPaid": "Attended + Paid",
-    "resultUnpaid": "Attended without payment",
-    "resultPending": "Digital payment pending",
     "rangeSummary": "Showing {count} scans from {from} – {to}",
     "captureTitle": "Take attendance",
     "tabScan": "QR scan",
@@ -3096,8 +3074,36 @@
       "newSubjectOption": "+ New subject",
       "newSubjectPlaceholder": "Subject name"
     },
-    "enrolledOfCapacity": "{count} of {capacity}",
-    "groupFull": "Full"
+    "enrolledOfCapacity": "{count}/{capacity}",
+    "groupFull": "Full",
+    "headerCount": "{groups} groups · {subjects} subjects",
+    "headerCountEmpty": "None yet",
+    "centerCutPct": "center {pct}",
+    "membersCount": "Members · {count}",
+    "waitlistCount": "Waitlist · {count}",
+    "presentOfSessions": "Present {present}/{total}",
+    "memberOverdue": "Overdue",
+    "addMember": "Add member",
+    "editGroup": "Edit group",
+    "recentSessions": "Recent sessions",
+    "seeAll": "See all",
+    "sessionPresent": "{present}/{total} present",
+    "waitlistExplainer": "In join order. Promote when a seat opens; the parent is notified automatically.",
+    "digitalCollectionNote": "Every group collects digitally by default. To take one payment in cash, switch that student while taking attendance.",
+    "studentsCountLine": "{count} students",
+    "feeEditRepricingWarning": "Changing the fee also reprices past attended sessions — balances are computed from the current fee per lesson, so members' amounts due will change retroactively. Continue?",
+    "inviteLink": "Invite link",
+    "copyLink": "Copy invite link",
+    "capacityLabel": "Capacity",
+    "capacitySuffix": "students",
+    "feeSuffixEgp": "EGP",
+    "centerCutHelper": "Only if an outside teacher runs this group",
+    "enrolled": "Enrolled",
+    "waiting": "Waiting",
+    "createGroupCta": "Create a group",
+    "newGroupTitle": "New group",
+    "hidePicker": "Hide list",
+    "centerCutPctInvalid": "Center's cut must be between 0 and 100%."
   },
   "joinFlow": {
     "errorTitle": "This group link is no longer active.",
@@ -3230,7 +3236,7 @@
     "scheduleCount": "Sessions",
     "allRooms": "All Rooms",
     "noRoomsTitle": "No rooms yet",
-    "noRoomsDescription": "Rooms are physical or virtual spaces where sessions happen. Create one to build your schedule.",
+    "noRoomsDescription": "Add your first room so sessions can be scheduled and clashes flagged.",
     "deleteConfirm": "Delete this room? Any scheduled classes in it will be removed too.",
     "editRoom": "Edit room",
     "delete": "Delete",
@@ -3239,7 +3245,9 @@
     "deleteInUse": "Couldn't delete this room — something still references it.",
     "roomNameRequired": "Room Name Required",
     "sessionsToday": "{count} today",
-    "freeToday": "Free today"
+    "freeToday": "Free today",
+    "seatsValue": "{count} seats",
+    "capacityPlaceholder": "e.g. 25 seats"
   },
   "schedule": {
     "title": "Schedule",
@@ -3295,7 +3303,7 @@
     "thisWeek": "This Week",
     "previousWeek": "Previous week",
     "nextWeek": "Next week",
-    "conflictWith": "Overlaps {name}",
+    "conflictWith": "{room} clash · overlaps {name}",
     "noSessionsToday": "No sessions today",
     "noSessionsWeek": "No other sessions this week",
     "noSessionsSelectedDay": "No sessions on this day",
@@ -3303,12 +3311,19 @@
     "addRoomFirstLink": "Open Rooms",
     "byTime": "By time",
     "byRoom": "By room",
-    "roomUtilisation": "{percent} booked",
     "roomFreeToday": "Free today",
     "roomNoCapacity": "no capacity set",
     "conflictShort": "Clash",
     "now": "Now",
-    "sessionDone": "done"
+    "sessionDone": "done",
+    "week": "Week",
+    "weekView": "Week view",
+    "sessionsCount": "· {count} sessions",
+    "overlapBadge": "overlap",
+    "roomOpenAllDay": "Open all day · tap + to use it",
+    "gridCaption": "Red outline marks a room clash · swipe for Fri–Sat",
+    "takeAttendance": "Take attendance",
+    "moreActions": "More"
   },
   "setPin": {
     "header": "Set your PIN",
@@ -5840,12 +5855,9 @@
       "badgeSaved": "Saved for later"
     },
     "studentDetail": {
-      "orderCard": "Order card",
       "inCart": "In cart",
       "back": "Back",
       "notFound": "Student not found.",
-      "visits": "Visits",
-      "lastSeen": "Last seen",
       "lifetimePaid": "Lifetime paid",
       "gradeLabel": "Grade {grade}",
       "callAction": "Call",
@@ -5853,12 +5865,44 @@
       "family": "Family",
       "noFamilyLinked": "No family linked yet",
       "balance": "Balance",
-      "overdue": "Overdue",
       "paidUp": "Paid up",
       "idCardAction": "ID card",
       "parentRole": "Parent",
       "siblingRole": "Sibling",
-      "sinceEnrolled": "since {date}"
+      "sinceEnrolled": "since {date}",
+      "outstanding": "Outstanding",
+      "overdueSince": "{days} days overdue · since {date}",
+      "nextDue": "Next due {date}",
+      "nextDueWithAmount": "Next due {date} · {amount}",
+      "sessionsUnpaid": "{count} sessions unpaid",
+      "oldestCharge": "oldest {date}",
+      "remindedTimes": "reminded {count} times",
+      "attendance": "Attendance",
+      "windowThisTerm": "this term",
+      "windowAllTime": "all time",
+      "recentAttendance": "Recent attendance",
+      "seeAll": "See all",
+      "attendancePresent": "Present",
+      "attendanceAbsent": "Absent",
+      "paymentsTitle": "Payments",
+      "noPayments": "No payments yet",
+      "methodCash": "Cash",
+      "methodOnline": "Online",
+      "statusPaid": "Paid",
+      "statusUnpaid": "Unpaid",
+      "contacts": "Contacts",
+      "studentRole": "Student",
+      "call": "Call",
+      "whatsapp": "WhatsApp",
+      "remind": "Remind",
+      "recordCash": "Record cash",
+      "reminderSent": "Reminder sent",
+      "reminderNotSent": "Reminder not sent",
+      "cardTitle": "Printed QR ID card",
+      "cardSub": "Scannable at the door",
+      "cardSubWithPrice": "Scannable at the door · from {amount}",
+      "cardInCartSub": "{count} card · {amount}",
+      "orderAction": "Order"
     },
     "nav": {
       "viewCart": "View cart",
@@ -6410,14 +6454,10 @@
         }
       }
     },
-    "pricing": {
-      "largerCentresHeading": "For larger centers"
-    },
+    "pricing": {},
     "login": "Log In",
     "register": "Register Your Center",
     "heroPillBadge": "Management + QR + Center",
-    "heroBadge": "Egypt's #1 Tutoring Center Management Platform",
-    "heroTitle": "Run your center\nfrom first class to last pound",
     "heroTitle1": "Manage Your Tutoring Center",
     "heroTitle2": "Smarter & Easier",
     "heroSubtitle": "The complete platform for managing tutoring centers in Egypt",
@@ -6633,196 +6673,170 @@
     "submitRequest": "Submit Request",
     "submitting": "Submitting",
     "terms": "Terms",
-    "navSignup": "Get started",
-    "heroSub": "From QR attendance to fee collection, everything in one place",
-    "heroCta": "Start free",
-    "watchDemo": "See how it works",
-    "featuresTitle": "Everything you need to run your center",
-    "finalCtaTitle": "Start managing your center today",
-    "finalCta": {
-      "setup": "Set up your center in under 15 minutes",
-      "payment": "Pay by card, mobile wallet, or cash at 100,000+ kiosks"
-    },
-    "problem": {
-      "heading": "Running a center shouldn't feel like firefighting.",
-      "body": "Every day: spreadsheets that don't match, notebooks with missing pages, WhatsApp groups full of parent questions, a cash box no one wants to count. A student attends but the invoice never gets sent. A parent asks for proof of payment, no one can find it. You can't even tell which groups are profitable.",
-      "connector": "TutoringHQ replaces all of it. One platform. Built for Egyptian tutoring centers."
-    },
-    "trust": {
-      "heading": "Your data isn't held hostage.",
-      "subheading": "Encrypted, isolated, and exportable. Backed up every night.",
-      "tile1": {
-        "title": "Encrypted end-to-end",
-        "body": "AES-256 encryption at rest, TLS 1.3 in transit."
-      },
-      "tile2": {
-        "title": "Tenant-isolated",
-        "body": "Row-level security per center. Other centers can never see your data."
-      },
-      "tile3": {
-        "title": "Exportable anytime",
-        "body": "All data as Excel or CSV in one click. No lock-in."
-      },
-      "tile4": {
-        "title": "Backed up nightly",
-        "body": "Daily encrypted backups, kept 7 days."
-      }
-    },
     "compare": {
-      "heading": "Why center owners switch.",
-      "subheading": "Excel and notebooks work, until they don't.",
-      "colCriterion": "Criterion",
+      "kick": "Against what you use now",
+      "heading": "Excel and notebooks work, until they do not",
       "colSpreadsheet": "Spreadsheet",
       "colPaper": "Paper book",
       "colCenterhq": "TutoringHQ",
       "row1": {
-        "criterion": "Tracks who attended each session",
-        "spreadsheet": "Manual data entry, mistakes common",
-        "paper": "Yes, but slow + error-prone",
-        "centerhq": "✓ QR scan, instant, accurate"
+        "criterion": "Recording who attended",
+        "spreadsheet": "Typed in by hand, after the fact",
+        "paper": "Written by hand, during the class",
+        "centerhq": "Scanned at the door, as they walk in"
       },
       "row2": {
-        "criterion": "Notifies parent when student attends or misses",
-        "spreadsheet": "✗ Manual WhatsApp/SMS to each parent",
-        "paper": "✗ Manual or none",
-        "centerhq": "✓ Automatic WhatsApp on every scan"
+        "criterion": "Telling the parent",
+        "spreadsheet": "You message each one yourself",
+        "paper": "You message each one yourself",
+        "centerhq": "Sent on its own, on every scan"
       },
       "row3": {
-        "criterion": "Collects fees online + tracks cash",
-        "spreadsheet": "~ Manual tracking only",
-        "paper": "~ Cash only, no proof",
-        "centerhq": "✓ Paymob online + cash logging"
+        "criterion": "Sending a way to pay",
+        "spreadsheet": "It cannot",
+        "paper": "It cannot",
+        "centerhq": "A link with every invoice, paid by card"
       },
       "row4": {
-        "criterion": "Shows monthly revenue + which groups are profitable",
-        "spreadsheet": "~ If you build the formulas yourself",
-        "paper": "✗ Manual calculation",
-        "centerhq": "✓ Built-in MRR + cohort analysis"
+        "criterion": "Two people working at once",
+        "spreadsheet": "Two versions and an argument",
+        "paper": "One person at a time",
+        "centerhq": "Roles and permissions, everyone at once"
       },
       "row5": {
-        "criterion": "Works when internet is down",
-        "spreadsheet": "~ Excel local, online sheets break",
-        "paper": "✓ Always works (no tech needed)",
-        "centerhq": "✓ Scanner + dashboard work offline, sync later"
+        "criterion": "If it is lost",
+        "spreadsheet": "Whatever you last remembered to save",
+        "paper": "Gone",
+        "centerhq": "Backed up every night, kept seven days"
       },
       "row6": {
-        "criterion": "Multiple staff use simultaneously",
-        "spreadsheet": "✗ Conflicts + version chaos",
-        "paper": "✗ One person at a time",
-        "centerhq": "✓ Roles + permissions for staff"
-      },
-      "row7": {
-        "criterion": "Backups if computer/notebook is lost",
-        "spreadsheet": "✗ You forgot to save",
-        "paper": "✗ Lost forever",
-        "centerhq": "✓ Daily encrypted cloud backups"
-      },
-      "row8": {
-        "criterion": "Time spent on admin per week (100 students)",
-        "spreadsheet": "8–12 hours",
-        "paper": "12–15 hours",
-        "centerhq": "✓ 1–2 hours"
+        "criterion": "Proving a parent paid",
+        "spreadsheet": "A cell that says paid",
+        "paper": "A tick, if someone made one",
+        "centerhq": "A numbered receipt you can send again"
       }
     },
     "faq": {
-      "heading": "Common questions",
-      "subheading": "Center owners ask these first.",
+      "kick": "Before you start",
+      "heading": "What center owners ask first",
       "q1": {
-        "question": "Who owns the data I put into TutoringHQ?",
-        "answer": "You do. Always. Your students, parents, payments, and history belong to your center. If you ever leave, we export everything as Excel + CSV in one click. No lock-in."
+        "question": "Who owns what I put in?",
+        "answer": "You do. From the Pro plan up you export all of it to Excel in one action, and you can leave whenever you like. We do not hold your students hostage to keep you subscribed."
       },
       "q2": {
-        "question": "How long does it take to set up?",
-        "answer": "About 15 minutes. Register, then add students three ways: import from Excel, add manually, or share a group link they self-join (you approve from your dashboard). Assign cards, start scanning. No installation, no servers, no IT person needed."
+        "question": "What if the internet drops mid-class?",
+        "answer": "The scanner keeps working and syncs when the connection comes back. WhatsApp messages queue and send once you are online again."
       },
       "q3": {
-        "question": "I already use a spreadsheet / paper book / WhatsApp. Why switch?",
-        "answer": "Because at scale, those break down. A single spreadsheet can't tell you which group is profitable. A paper book can't send a parent a payment reminder. A WhatsApp group can't track who's paid and who hasn't. TutoringHQ does all of it in one place, and the data is searchable, exportable, and accurate."
+        "question": "How do I pay you?",
+        "answer": "By card, online, through Paymob. You can save your card so renewals go through on their own, and swap it whenever you like."
       },
       "q4": {
-        "question": "What if my center's internet is unreliable?",
-        "answer": "The QR scanner works fully offline. Scan attendance even with no WiFi, and the data syncs automatically when connection returns. Designed specifically for Egyptian centers on shaky 3G/4G."
-      },
-      "q5": {
-        "question": "Can I cancel my subscription anytime?",
-        "answer": "Yes. Contact ops@ehgintelligence.com to cancel, no automatic renewal traps. We don't refund partial months (you keep access through the period you paid for) but there's no penalty for leaving."
-      },
-      "q6": {
-        "question": "How do I pay for my subscription?",
-        "answer": "Pay your TutoringHQ subscription and any invoices (like card orders) through Paymob. We accept Visa, Mastercard, Meeza, mobile wallets like Vodafone Cash, and cash at 100,000+ kiosks across Egypt (Aman, Masary). Pay how it suits you."
-      },
-      "q7": {
-        "question": "Who do I talk to if something breaks?",
-        "answer": "ops@ehgintelligence.com or WhatsApp +20 100 123 4567. Responses within 24 hours, usually faster. The founder personally reads every message during the early months."
-      },
-      "q8": {
-        "question": "How is my data protected?",
-        "answer": "All data is encrypted in transit (HTTPS) and at rest (database encryption). Center data is isolated per tenant, no other center can ever see yours. Daily backups to encrypted cloud storage. We follow Egyptian PDPL (Law 151) standards."
+        "question": "Can I move plan later?",
+        "answer": "Yes, at any time. Move up when you outgrow your capacity, move down when you do not need it. The change lands on your next invoice and nothing is lost."
       }
     },
-    "marketing": {
-      "navFeatures": "Features",
-      "navPricing": "Pricing",
-      "navTeacher": "I'm a teacher",
-      "navContact": "Contact us",
-      "login": "Log in",
-      "heroBadge": "The #1 tutoring center management platform in Egypt",
-      "howTitle": "How it works",
-      "step1Title": "Register your center",
-      "step1Desc": "Create your account in under 5 minutes",
-      "step2Title": "Add your students",
-      "step2Desc": "Import from Excel or add them manually",
-      "step3Title": "Start managing",
-      "step3Desc": "QR attendance, invoices, WhatsApp, all automated",
-      "f1Title": "QR attendance",
-      "f1Desc": "Scan a student card and record attendance in a second",
-      "f2Title": "Invoices & fees",
-      "f2Desc": "Track payments and send WhatsApp reminders automatically",
-      "f3Title": "Financial analytics",
-      "f3Desc": "Revenue and attendance reports in one dashboard",
-      "f4Title": "Parent pack",
-      "f4Desc": "Automatically notify parents about absences and balances due",
-      "f5Title": "Multi-branch",
-      "f5Desc": "Run more than one branch from one dashboard",
-      "f6Title": "Works offline",
-      "f6Desc": "The scanner works even without a connection",
-      "pricingSubtitle": "All plans include: QR attendance, invoicing, WhatsApp, financial reports",
-      "soloBadge": "Entry level",
-      "pricePerMonthSuffix": "/mo",
-      "soloName": "Solo",
-      "soloStudents": "Up to 50 students",
-      "priceSuffixMo": "EGP/mo",
-      "nanoName": "Nano",
-      "nanoPrice": "EGP 2,000/mo",
-      "nanoPeriod": "(quarterly billing)",
-      "nanoStudents": "Up to 120 students",
-      "nanoBadge": "For growing centers",
-      "starterName": "Starter",
-      "starterPrice": "EGP 4,500/mo",
-      "starterStudents": "Up to 200 students",
-      "popularBadge": "Most popular",
-      "proName": "Pro",
-      "proPrice": "EGP 8,000/mo",
-      "proStudents": "Up to 500 students",
-      "businessName": "Business",
-      "businessStudents": "Up to 1,000 students",
-      "enterpriseName": "Enterprise",
-      "enterpriseStudents": "Up to 2,000 students",
-      "pricingCta": "View all plans & comparison",
-      "finalCtaButton": "Get started",
-      "footerTagline": "TutoringHQ, tutoring center management platform",
-      "footerSupportLabel": "WhatsApp support",
-      "footerRights": "© 2026 EHG Intelligence. All rights reserved.",
-      "openMenuAria": "Open menu",
-      "closeMenuAria": "Close menu",
-      "switchLocaleAria": "Switch language",
-      "trustBandKicker": "Trusted nationwide",
-      "trustBandTitle": "Built for tutoring centers that outgrow spreadsheets",
-      "trustBandBody": "Attendance, billing, parent messaging, and reporting in one platform, secure and ready to scale.",
-      "trustBandPricing": "View pricing",
-      "trustBandContact": "Contact us"
+    "title": "Title",
+    "centers": {
+      "kick": "For centers",
+      "heroTitle": "The door tells the system. The system does the rest.",
+      "heroSub": "Reception scans a student on the way in. That one scan marks them present, writes the invoice, sends the link, and moves the number on your screen. Nobody types anything twice.",
+      "billed": "BILLED",
+      "inTonight": "{count} in tonight",
+      "ctaStart": "Start free",
+      "ctaPricing": "See pricing",
+      "proofRows": [
+        {
+          "initials": "MH",
+          "name": "Mariam Hassan",
+          "sub": "In at 5:02 PM · by Reception"
+        },
+        {
+          "initials": "OK",
+          "name": "Omar Khaled",
+          "sub": "In at 5:04 PM · by Reception"
+        },
+        {
+          "initials": "NA",
+          "name": "Nour Ali",
+          "sub": "In at 5:07 PM · by Reception"
+        }
+      ]
     },
-    "title": "Title"
+    "oneScan": {
+      "kick": "One scan",
+      "heading": "What that single tap actually does",
+      "items": [
+        {
+          "title": "Marks them present",
+          "body": "Against the right group, the right session, the right night."
+        },
+        {
+          "title": "Writes the invoice",
+          "body": "At the price you set for that group. Not a price we set."
+        },
+        {
+          "title": "Sends the payment link",
+          "body": "On WhatsApp, to the parent if you have their number, otherwise the student."
+        },
+        {
+          "title": "Moves your money",
+          "body": "Tonight's total and the month's total, both live, both on one screen."
+        }
+      ]
+    },
+    "centerOnly": {
+      "kick": "Center only",
+      "heading": "Things a solo teacher never needs",
+      "rows": [
+        {
+          "name": "Owners and assistants take attendance",
+          "sub": "Teachers never do. Not a setting, it is how the product is built."
+        },
+        {
+          "name": "Staff with their own logins",
+          "sub": "Each one sees what their role allows and nothing else."
+        },
+        {
+          "name": "Branches under one center",
+          "sub": "Separate doors, separate rooms, one set of numbers."
+        },
+        {
+          "name": "Teacher payouts",
+          "sub": "Split to each teacher's own account, or land in yours. Your call."
+        }
+      ]
+    },
+    "plans": {
+      "kick": "Priced by size",
+      "heading": "Same software at every size",
+      "body": "You are not buying features. You are buying capacity. Every plan below is the identical product.",
+      "capacity": "{count} students a week",
+      "cta": "All plans and add-ons",
+      "undercta": "EGP a month, VAT included. Annual is two months free."
+    },
+    "data": {
+      "kick": "Your data",
+      "heading": "Yours, and you can take it out",
+      "cells": [
+        {
+          "title": "Encrypted",
+          "body": "AES-256 at rest, TLS 1.3 in transit."
+        },
+        {
+          "title": "Walled off",
+          "body": "Row level security. No other center can reach yours."
+        },
+        {
+          "title": "Exportable",
+          "body": "Everything to Excel or CSV, whenever you want."
+        },
+        {
+          "title": "Backed up",
+          "body": "Every night, encrypted, kept seven days."
+        }
+      ]
+    }
   },
   "ceo": {
     "brandTitle": "TutoringHQ",
@@ -8670,8 +8684,6 @@
     "totalStudents": "Total students",
     "collectionRate": "Collection rate",
     "trend": "Trend",
-    "revenueByBranch": "Revenue by branch",
-    "studentsByBranch": "Students by branch",
     "paymentMethods": "Payment methods",
     "weeklyAttendance": "Weekly attendance",
     "monthlyRevenue": "Monthly revenue",
@@ -8686,19 +8698,6 @@
     "error": "Something went wrong, try again",
     "retry": "Retry"
   },
-  "promoPopup": {
-    "ariaLabel": "Promotional offer",
-    "closeAria": "Close popup",
-    "copy": "Copy",
-    "copied": "Copied!"
-  },
-  "demoRequest": {
-    "stub": {
-      "title": "Request a demo",
-      "message": "Our demo request form is coming soon. For now, please contact us on WhatsApp and we'll arrange a walkthrough within 24 hours.",
-      "whatsappCta": "Contact us on WhatsApp"
-    }
-  },
   "talkToUs": {
     "title": "Have us call you",
     "lede": "Five things, then someone who knows your area calls you back. Usually the same day, always within one working day.",
@@ -8708,7 +8707,7 @@
     "centerNameLabel": "Center name",
     "areaLabel": "Area",
     "areaHint": "This decides who calls you, so keep it specific.",
-    "areaPlaceholder": "Select your governorate",
+    "areaPlaceholder": "Giza · 6th of October",
     "studentCountLabel": "Roughly how many students",
     "submitCta": "Ask for a call",
     "whatsappFallback": "Or message us on WhatsApp, 10am to 6pm",
@@ -8716,14 +8715,18 @@
     "submittedTitle": "We will call you",
     "submittedSubtitle": "Someone who covers {area} has it now.",
     "submittedSubtitleGeneric": "Your request is in.",
-    "step1": "A call from a Cairo number, within one working day.",
+    "step1": "A call from a Cairo number, <b>within one working day</b>.",
     "step2": "They walk your center through it. No slides, no demo booking.",
     "step3": "You can start the free trial before they call. It costs nothing either way.",
     "startFreeTrialCta": "Start free trial now",
-    "startFreeTrialHint": "You do not have to wait for the call"
+    "startFreeTrialHint": "You do not have to wait for the call",
+    "brandSub": "Talk to us",
+    "namePlaceholder": "Who we ask for",
+    "phonePlaceholder": "01X XXXX XXXX",
+    "centerNamePlaceholder": "What is on the sign",
+    "studentCountPlaceholder": "120"
   },
   "teacherPortal": {
-    "headerTitle": "Teacher portal",
     "settings": "Settings",
     "logout": "Log out",
     "nav": {
@@ -8742,7 +8745,9 @@
       "collapseSidebar": "Collapse sidebar",
       "expandSidebar": "Expand sidebar",
       "switchToEnglish": "English",
-      "switchToArabic": "عربي"
+      "switchToArabic": "عربي",
+      "more": "More",
+      "back": "Back"
     },
     "schedule": {
       "pageTitle": "Schedule",
@@ -8907,19 +8912,11 @@
       "attendees": "{count} present"
     },
     "studentsList": {
-      "searchPlaceholder": "Search by name or phone",
+      "searchPlaceholder": "Search students",
       "groupFilterLabel": "Filter by group",
       "allGroups": "All groups",
       "noMatches": "No students match your search.",
-      "detailTitle": "Student details",
-      "close": "Close",
-      "phoneLabel": "Phone",
-      "groupsLabel": "Groups",
       "outstandingLabel": "Outstanding balance",
-      "lastPaymentLabel": "Last payment",
-      "noPayments": "No payments yet",
-      "paymentHistory": "Payment history",
-      "noTransactions": "No transactions yet.",
       "overCapWarning": "You have more than 60 students on the Standard plan. Remove students down to 60 to keep working.",
       "studentCount": "{count} students",
       "contactHeading": "Contact",
@@ -8929,10 +8926,28 @@
       "messageAction": "Message on WhatsApp",
       "pendingClassesCount": "{count} classes not yet collected",
       "attendanceLabel": "Attendance",
-      "attendanceFraction": "{present} of {total} present",
+      "attendanceFraction": "Present {present} of {total}",
       "pendingClassesCountOne": "{count} class not yet collected",
       "paidVia": "Paid · {method}",
-      "notCollectedYet": "Not collected yet"
+      "notCollectedYet": "Not collected yet",
+      "studentTitle": "Student",
+      "balanceHeading": "Balance",
+      "recentClasses": "Recent classes",
+      "statusOutstanding": "Outstanding",
+      "callShort": "Call",
+      "messageShort": "Message",
+      "markCollected": "Mark collected",
+      "sendReminder": "Send reminder",
+      "settled": "All classes collected",
+      "noFinishedClasses": "No finished classes yet",
+      "reminderUnavailable": "Reminders are unavailable right now.",
+      "reminderDisabled": "WhatsApp reminders are not switched on yet.",
+      "reminderTemplatePending": "The reminder message is still awaiting WhatsApp approval.",
+      "reminderNoPhone": "No payer number saved for this charge.",
+      "reminderCapReached": "Two reminders have already been sent for this charge.",
+      "reminderSent": "Reminder sent.",
+      "markCollectedError": "Could not mark as collected. Try again.",
+      "markCollectedPartial": "{failed} of {total} charges could not be collected."
     },
     "lockedIncome": {
       "heading": "Your income dashboard",
@@ -9535,218 +9550,13 @@
     "backToBilling": "Back to billing",
     "unavailable": "Could not load your subscription."
   },
-  "splash": {
-    "headline": "The operating system for everyone who teaches in Egypt",
-    "context": "Attendance, billing, and income, whether you run a center or teach privately.",
-    "does": {
-      "attendance": {
-        "title": "Attendance",
-        "body": "QR at the door for centers, tap-to-confirm for teachers. Always know who showed up."
-      },
-      "billing": {
-        "title": "Billing",
-        "body": "Automatic invoices after every class. Payment links on WhatsApp. Cash tracked with one tap."
-      },
-      "income": {
-        "title": "Income",
-        "body": "Every pound you earn, from every center and every private group, in one place."
-      }
-    },
-    "center": {
-      "title": "I run a center",
-      "brief": "Manage your staff, attendance, and income, from the first class to the last pound.",
-      "cta": "Learn more"
-    },
-    "teacher": {
-      "title": "I'm a teacher",
-      "brief": "Your private groups, your cut from every center, and all your income on one screen.",
-      "cta": "Learn more"
-    },
-    "login": "Log in",
-    "privacy": "Privacy Policy",
-    "terms": "Terms",
-    "cookies": "Cookie Policy",
-    "rights": "All rights reserved. TutoringHQ, a product of EHG Intelligence.",
-    "switchLocaleAria": "Switch language",
-    "footerNavAria": "Legal links",
-    "hero": {
-      "startFree": "Start free",
-      "seeHow": "See how it works"
-    },
-    "preview": {
-      "regionLabel": "Sample center dashboard",
-      "greeting": "Good evening",
-      "name": "Mohamed Ahmed",
-      "statLabel": "Students attended today",
-      "expected": "expected",
-      "in": "✓ in",
-      "caption": "Your whole center on one screen, live.",
-      "rows": [
-        {
-          "name": "Sara Mahmoud",
-          "group": "Math · Grade 3 Sec",
-          "time": "5:02 PM"
-        },
-        {
-          "name": "Omar Khaled",
-          "group": "Physics · Grade 2 Sec",
-          "time": "5:04 PM"
-        },
-        {
-          "name": "Nour Ali",
-          "group": "Chemistry · Grade 3 Sec",
-          "time": "5:07 PM"
-        }
-      ]
-    },
-    "how": {
-      "eyebrow": "Up and running today",
-      "header": "Three steps to your first class",
-      "steps": [
-        {
-          "title": "Create your account",
-          "body": "A phone number and a PIN. No card needed to start."
-        },
-        {
-          "title": "Add your students",
-          "body": "Bring in your center or your private groups. Import a list or add them by hand."
-        },
-        {
-          "title": "Start running it",
-          "body": "QR at the door, invoices on their own, WhatsApp reminders, and every pound on one screen."
-        }
-      ]
-    },
-    "faq": {
-      "eyebrow": "Before you start",
-      "header": "Questions, answered",
-      "items": [
-        {
-          "q": "Is it in Arabic?",
-          "a": "Yes, fully Arabic and built right to left, the way you actually work."
-        },
-        {
-          "q": "Do I need a card to start?",
-          "a": "No. Start free with no card. Your first invoice comes later, and you see it before anything is charged."
-        },
-        {
-          "q": "Does it work on a cheap tablet?",
-          "a": "Yes. It is built to run on low-cost Android tablets, even on weak Wi-Fi at the door."
-        },
-        {
-          "q": "Is my data safe?",
-          "a": "Your students and your money data stay private to you. TutoringHQ is run by a registered Egyptian company."
-        },
-        {
-          "q": "What happens after summer?",
-          "a": "You pick the plan that fits your size. You always see the exact amount before anything is charged."
-        },
-        {
-          "q": "Can centers and teachers both use it?",
-          "a": "Yes. Centers run staff and attendance. Teachers track private groups and their cut from each center."
-        }
-      ]
-    },
-    "trust": {
-      "title": "Your data stays private to you.",
-      "sub": "TutoringHQ is a product of EHG Intelligence, a registered Egyptian company."
-    },
-    "chooser": {
-      "title": "Start free",
-      "subtitle": "Pick what fits you. No card needed to start.",
-      "close": "Close",
-      "center": {
-        "title": "I run a center",
-        "brief": "Staff, attendance, and billing for your whole center."
-      },
-      "teacher": {
-        "title": "I'm a teacher",
-        "brief": "Your private groups and your cut from every center."
-      }
-    },
-    "contact": "Reach us at"
-  },
   "teacherLanding": {
-    "login": "Log in",
-    "badge": "For teachers",
-    "heroTitle": "Get the money stress off your mind",
-    "heroSub": "Whether you teach at a center or have private students, TutoringHQ brings all your income into one screen and sends payment links on its own.",
-    "ctaPrimary": "Start your free trial",
-    "ctaSecondary": "Log in",
-    "nav": {
-      "features": "Features",
-      "pricing": "Pricing",
-      "contact": "Contact us",
-      "openMenu": "Open menu",
-      "closeMenu": "Close menu"
-    },
-    "pain": {
-      "heading": "Teaching shouldn't feel like accounting.",
-      "body": "Every day: different centers, private students, and by the end you don't know what you earned. Chasing payments, calculating splits by hand, wondering who paid and who didn't. TutoringHQ puts it all in one screen. See every pound you earn, and let the invoices send themselves.",
-      "connector": "TutoringHQ solves all of it."
-    },
-    "features": {
-      "f1": {
-        "title": "Center monitoring",
-        "body": "See your cut from every center automatically. No manual math."
-      },
-      "f2": {
-        "title": "Private groups",
-        "body": "Create your own groups, share a join link, students enroll themselves."
-      },
-      "f3": {
-        "title": "One-tap billing",
-        "body": "Finish the class, tap once, every student gets their invoice on WhatsApp."
-      },
-      "f4": {
-        "title": "Unified income",
-        "body": "Your private earnings and center cuts, one total, one screen."
-      },
-      "f5": {
-        "title": "Cash and digital",
-        "body": "Mark cash paid with one tap. Digital via Paymob (coming soon). No commission on cash."
-      },
-      "f6": {
-        "title": "WhatsApp notifications",
-        "body": "Parents get automatic messages for attendance, payment links, and reminders."
-      }
-    },
-    "featuresTitle": "Everything in one place",
-    "pricingPreview": {
-      "heading": "Simple pricing",
-      "seeFullPricing": "See full pricing"
-    },
-    "mock": {
-      "label": "Your income this month",
-      "total": "EGP 138,500",
-      "fromCenters": "From centers",
-      "fromCentersAmount": "84,500",
-      "fromPrivate": "Private groups",
-      "fromPrivateAmount": "54,000"
-    },
-    "how": {
-      "title": "How it works",
-      "step1": {
-        "title": "Sign up free",
-        "body": "Create your account in 2 minutes, no card needed."
-      },
-      "step2": {
-        "title": "Add your groups and students",
-        "body": "Private groups get a join link; center work links automatically when your center invites you."
-      },
-      "step3": {
-        "title": "Finish a class, get paid",
-        "body": "Mark attendance, tap finish, payment links go out on WhatsApp automatically."
-      }
-    },
-    "finalCta": {
-      "title": "Ready to keep all your income in one place?"
-    },
-    "trialTerms": "14-day free trial for the private engine · then EGP 499/month · no card now · center tracking always free",
+    "heroTitle": "Every pound you earn, from everywhere, on one screen.",
+    "heroSub": "Your cut from each center you teach at, sitting next to what your own groups brought in. One total. No adding it up on the back of a page at midnight.",
+    "ctaPrimary": "Start free",
     "compare": {
-      "heading": "Why teachers switch.",
-      "subheading": "A notebook records. It cannot send.",
-      "colCriterion": "Criterion",
+      "kick": "Against what you use now",
+      "heading": "A notebook records. It cannot send.",
       "colSpreadsheet": "Spreadsheet",
       "colPaper": "Notebook",
       "colCenterhq": "TutoringHQ",
@@ -9754,42 +9564,42 @@
         "criterion": "Knowing what a center owes you",
         "spreadsheet": "You work it out yourself, each month",
         "paper": "You work it out yourself, each month",
-        "centerhq": "✓ Read from the attendance, as it happens"
+        "centerhq": "Read from the attendance, as it happens"
       },
       "row2": {
         "criterion": "Telling a student what they owe",
         "spreadsheet": "You message them one by one",
         "paper": "You mention it, and hope",
-        "centerhq": "✓ Sent on WhatsApp when the class ends"
+        "centerhq": "Sent on WhatsApp when the class ends"
       },
       "row3": {
         "criterion": "Sending a way to pay",
-        "spreadsheet": "✗ It cannot",
-        "paper": "✗ It cannot",
-        "centerhq": "✓ A link with every invoice, card or wallet"
+        "spreadsheet": "It cannot",
+        "paper": "It cannot",
+        "centerhq": "A link with every invoice, card or wallet"
       },
       "row4": {
         "criterion": "Center income beside your own",
         "spreadsheet": "Only if you build it and maintain it",
         "paper": "Two books, and neither one adds up",
-        "centerhq": "✓ Two numbers, one total, one screen"
+        "centerhq": "Two numbers, one total, one screen"
       },
       "row5": {
         "criterion": "If it is lost",
-        "spreadsheet": "✗ Whatever you last remembered to save",
-        "paper": "✗ Gone",
-        "centerhq": "✓ Backed up every night, kept seven days"
+        "spreadsheet": "Whatever you last remembered to save",
+        "paper": "Gone",
+        "centerhq": "Backed up every night, kept seven days"
       },
       "row6": {
         "criterion": "Proving a student paid",
         "spreadsheet": "A cell that says paid",
         "paper": "A tick, if you made one",
-        "centerhq": "✓ A numbered receipt you can send again"
+        "centerhq": "A numbered receipt you can send again"
       }
     },
     "faq": {
-      "heading": "Before you start",
-      "subheading": "What teachers ask first.",
+      "kick": "Before you start",
+      "heading": "What teachers ask first",
       "q1": {
         "question": "Will my center see my private students?",
         "answer": "No. Your own groups are yours alone. A center you teach at sees only the groups it runs, and never your private income."
@@ -9797,7 +9607,83 @@
       "q2": {
         "question": "I only teach at centers. What do I pay?",
         "answer": "Nothing, and that is not a trial. Watching your cut from the centers you teach at is free permanently. You pay only if you start running your own groups."
+      },
+      "q3": {
+        "question": "Do I set my own prices?",
+        "answer": "You do. You set the price for each of your groups, and the invoice is written at that price. We never set it and we never take a cut of it."
+      },
+      "q4": {
+        "question": "What if a student pays cash?",
+        "answer": "Record it in one tap, against that student and that session. It counts towards the same total as a link payment, and the receipt looks the same."
       }
+    },
+    "kick": "For teachers",
+    "ctaPricing": "See pricing",
+    "freeForever": "Teaching only at centers costs nothing, for good.",
+    "income": {
+      "centerInitials": "NP",
+      "centerName": "Nile Prep Academy",
+      "centerSub": "Your cut, worked out from attendance",
+      "ownInitials": "YG",
+      "ownName": "Your own groups",
+      "ownSub": "Physics, three groups, 54 students",
+      "totalLabel": "This month"
+    },
+    "evening": {
+      "kick": "The evening",
+      "heading": "Teaching should not feel like accounting",
+      "body": "Different centers on different nights. Private students in between. By Thursday you are not sure what you earned, who paid, or which center still owes you. So you either chase people or you let it go, and both of those cost you money.",
+      "items": [
+        {
+          "title": "Finish the class",
+          "body": "Tick who came. That is the only input."
+        },
+        {
+          "title": "Links go out",
+          "body": "Every student gets theirs on WhatsApp, without you."
+        },
+        {
+          "title": "The total moves",
+          "body": "Center cuts and your own groups, one running number."
+        }
+      ]
+    },
+    "teacherOnly": {
+      "kick": "Teacher only",
+      "heading": "What you get that a center does not need",
+      "rows": [
+        {
+          "name": "Your cut from every center, calculated",
+          "sub": "Read from the attendance the center already took. No manual maths, no arguments."
+        },
+        {
+          "name": "Your own groups, with join links",
+          "sub": "Send one link, students fill four fields, you approve who is really yours."
+        },
+        {
+          "name": "Cash counted in one tap",
+          "sub": "Someone hands you money instead of paying the link. It still counts, and it still shows."
+        },
+        {
+          "name": "Center work stays free",
+          "sub": "You only pay when you run your own groups. Watching your center income costs nothing, ever."
+        }
+      ]
+    },
+    "plans": {
+      "kick": "Priced by size",
+      "heading": "Free at centers. Paid only for your own.",
+      "freeName": "Center work",
+      "freeCapacity": "Watch your cut from every center",
+      "freePrice": "Free",
+      "standardName": "Standard",
+      "standardCapacity": "{count} active students a month · {days} day trial",
+      "proName": "Pro",
+      "proCapacity": "{count} active students a month · analytics included",
+      "scaleName": "Scale",
+      "scaleCapacity": "{count} active students a month, then {each} each. No ceiling",
+      "cta": "All plans and add-ons",
+      "undercta": "EGP a month, VAT included. Annual is two months free on the base plan; extra students are billed monthly."
     }
   },
   "teacherBilling": {
@@ -10075,7 +9961,174 @@
     "cookies": "Cookie Policy",
     "talkHeading": "Talk to us",
     "whatsappHours": "WhatsApp, 10am to 6pm",
-    "legalLine": "TutoringHQ is operated by EHG Intelligence Egypt, a registered Egyptian company.",
-    "rightsLine": "© 2026 All rights reserved."
+    "legalLine": "<b>TutoringHQ</b> is operated by <b>EHG Intelligence Egypt</b>, a registered Egyptian company.",
+    "rightsLine": "© 2026 All rights reserved.",
+    "ctaHeading": "Start whenever you are ready",
+    "ctaButton": "Start free",
+    "howItWorks": "How it works",
+    "languageLabel": "Language"
+  },
+  "splash": {
+    "kick": "For centers and teachers",
+    "headline": "You teach. We collect.",
+    "lede": "Attendance, invoices, reminders, cash, and the parent who is certain he already paid. Eighteen students or two thousand, that side of it is ours.",
+    "hero": {
+      "tapCta": "Mark all present",
+      "statusNotYet": "NOT YET",
+      "statusSent": "SENT",
+      "statusPaid": "PAID",
+      "rows": [
+        {
+          "initials": "MH",
+          "name": "Mariam Hassan",
+          "sub": "Physics · Sun 4PM"
+        },
+        {
+          "initials": "OK",
+          "name": "Omar Khaled",
+          "sub": "Physics · Sun 4PM"
+        },
+        {
+          "initials": "NA",
+          "name": "Nour Ali",
+          "sub": "Chemistry · Sun 6PM"
+        }
+      ]
+    },
+    "sigcap": "One tap marks the room present and sends every invoice in it. <b>The green comes back without you.</b>",
+    "cta": {
+      "startFree": "Start free",
+      "seeHow": "See how it works"
+    },
+    "pair": {
+      "kick": "Same product, two sizes",
+      "heading": "The same row. Eighteen of them, or two thousand.",
+      "lede": "A center and an independent teacher are not two different products here. They are the same one, carrying different weight.",
+      "totalLabel": "Billed tonight",
+      "center": {
+        "label": "A center",
+        "rows": [
+          {
+            "initials": "MH",
+            "name": "Mariam Hassan",
+            "sub": "In at 5:02 PM · by Reception"
+          },
+          {
+            "initials": "OK",
+            "name": "Omar Khaled",
+            "sub": "In at 5:04 PM · by Reception"
+          },
+          {
+            "initials": "NA",
+            "name": "Nour Ali",
+            "sub": "In at 5:07 PM · by Reception"
+          }
+        ],
+        "more": "and {count} more tonight",
+        "body": "Reception scans them at the door and that same tap bills them. Owners and assistants take attendance, teachers never do.",
+        "pillCapacity": "Up to {count} students",
+        "pills": [
+          "Branches",
+          "Staff permissions",
+          "Teacher payouts"
+        ],
+        "link": "What a center gets"
+      },
+      "teacher": {
+        "label": "A teacher",
+        "rows": [
+          {
+            "initials": "MH",
+            "name": "Mariam Hassan",
+            "sub": "Your group · Physics Sun 4PM"
+          },
+          {
+            "initials": "OK",
+            "name": "Omar Khaled",
+            "sub": "Your group · Physics Sun 4PM"
+          },
+          {
+            "initials": "NA",
+            "name": "Nour Ali",
+            "sub": "Your group · Physics Sun 4PM"
+          }
+        ],
+        "more": "and {count} more in this group",
+        "body": "Your cut from every center you teach at sits next to what your own groups brought in. One screen, one total, no arithmetic at midnight.",
+        "pillPrice": "Your groups from {price}",
+        "pills": [
+          "Center work stays free",
+          "One income screen",
+          "Cash in one tap"
+        ],
+        "link": "What a teacher gets"
+      }
+    },
+    "steps": {
+      "kick": "Up and running today",
+      "heading": "Three steps to your first class",
+      "items": [
+        {
+          "title": "Make your account",
+          "body": "A phone number and a six digit code. No card, no paperwork."
+        },
+        {
+          "title": "Send your join link",
+          "body": "Students open it, fill in four things, and wait. You approve the ones who are really yours. One link fills a whole group."
+        },
+        {
+          "title": "Take the first attendance",
+          "body": "That tap writes the invoice and sends the WhatsApp link. There is no fourth step."
+        }
+      ]
+    },
+    "faq": {
+      "kick": "Before you start",
+      "heading": "Questions, answered",
+      "summerQ": "What happens after summer?",
+      "summerA": "Free until {freeUntil}. After that a {trialDays} day trial, and your first invoice lands no earlier than {firstCharge}. Cancel before it and you pay nothing at all.",
+      "items": [
+        {
+          "q": "Is it in Arabic?",
+          "a": "Arabic first, right to left, written for Egypt rather than translated into it. English is there if you prefer it, and neither version is a copy of the other."
+        },
+        {
+          "q": "Do I need a card to start?",
+          "a": "No. Start free with no card. Your first invoice comes later, and you see it before anything is charged."
+        },
+        {
+          "q": "Does it work on a cheap tablet?",
+          "a": "Yes. It is built to run on low-cost Android tablets, even on weak Wi-Fi at the door."
+        },
+        {
+          "q": "Is my data safe?",
+          "a": "Your students and your money data stay private to you. TutoringHQ is run by a registered Egyptian company."
+        },
+        {
+          "q": "Can a center and a teacher both use it?",
+          "a": "Yes. Centers run staff and attendance. Teachers track their own groups and their cut from each center."
+        }
+      ]
+    },
+    "trust": {
+      "heading": "Your data stays yours.",
+      "body": "Every center is walled off from every other center. Export all of it whenever you like, and leave whenever you like."
+    }
+  },
+  "marketingNav": {
+    "label": "Main",
+    "pricing": "Pricing",
+    "login": "Log in",
+    "switchLocale": "Switch language"
+  },
+  "marketingSummer": {
+    "undercta": "No card. Nothing to pay until {firstCharge}.",
+    "freeAndFirst": "Free until {freeUntil}. First invoice {firstCharge}.",
+    "fcta": "Free until {freeUntil}. First invoice {firstCharge}, nothing to pay now.",
+    "fctaTeacher": "Center work is free. Your own groups are free until {freeUntil}.",
+    "bannerTitle": "Free until {freeUntil}",
+    "bannerSub": "Start today. First invoice {firstCharge}, nothing to pay now.",
+    "codeLabel": "Code",
+    "startFree": "Start free"
   }
 }

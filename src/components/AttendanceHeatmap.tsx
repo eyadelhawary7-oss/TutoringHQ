@@ -16,6 +16,18 @@ type Props = {
   weeks?: number;
 };
 
+/**
+ * The design's ramp (`Merged-Center-Groups` line 478), lightest to darkest.
+ * Five steps, and the first one is "a session happened and nobody came" — not
+ * "no session". Days with no session are not drawn at all in this layout.
+ */
+const RAMP = ['#E6EFE9', '#BFE0D5', '#6FBFAE', '#2A8F7D', '#0A514A'] as const;
+
+/** 8 columns × 2 rows — one cell per SESSION, newest last (design lines 474-477). */
+const COLUMNS = 8;
+const ROWS = 2;
+const MAX_CELLS = COLUMNS * ROWS;
+
 export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
   const t = useTranslations('heatmap');
   const locale = useLocale();
@@ -47,83 +59,52 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
     return () => { cancelled = true; };
   }, [groupId, weeks]);
 
-  function formatLocalDate(date: Date): string {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const cutoff = new Date(today);
-  cutoff.setDate(today.getDate() - weeks * 7);
-
-  const cellMap: Record<string, number> = {};
-  for (const cell of cells) {
-    cellMap[cell.date] = cell.present;
-  }
-
-  const allDays: string[] = [];
-  const cursor = new Date(cutoff);
-  while (cursor <= today) {
-    allDays.push(formatLocalDate(cursor));
-    cursor.setDate(cursor.getDate() + 1);
-  }
-
-  const startDayOfWeek = cutoff.getDay();
-  const paddingCells = Array(startDayOfWeek).fill(null) as null[];
-
-  function getCellColor(dateStr: string): string {
-    const present = cellMap[dateStr];
-    if (present === undefined || present === 0) return 'bg-[var(--color-surface-2)]';
-    if (groupSize <= 0) return 'bg-teal-300';
+  /**
+   * Ramp step for a session's headcount.
+   *
+   * With no known group size there is no ratio to compute, so the cell takes
+   * the middle step rather than inventing a full or empty one — a session that
+   * happened must never render as the "nobody came" colour just because the
+   * roster count was unavailable.
+   */
+  function rampIndex(present: number): number {
+    if (present <= 0) return 0;
+    if (groupSize <= 0) return 2;
     const pct = present / groupSize;
-    if (pct >= 0.8) return 'bg-teal-500';
-    if (pct >= 0.5) return 'bg-teal-300';
-    return 'bg-teal-100';
+    if (pct < 0.4) return 1;
+    if (pct < 0.6) return 2;
+    if (pct < 0.8) return 3;
+    return 4;
   }
 
-  function getCellTooltip(dateStr: string): string {
-    const present = cellMap[dateStr];
-    const formattedDate = formatDate(dateStr + 'T12:00:00Z', locale, {
+  function cellTooltip(cell: HeatmapCell): string {
+    const formattedDate = formatDate(cell.date + 'T12:00:00Z', locale, {
       weekday: 'short',
       day: 'numeric',
       month: 'short',
     });
-    if (present === undefined || present === 0) {
+    if (cell.present <= 0) {
       return `${formattedDate} - ${t('legend.none')}`;
     }
-    return `${formattedDate} - ${t('presentOfTotal', { present: formatNumber(present, locale), total: formatNumber(groupSize, locale) })}`;
+    return `${formattedDate} - ${t('presentOfTotal', {
+      present: formatNumber(cell.present, locale),
+      total: formatNumber(groupSize, locale),
+    })}`;
   }
 
   const isRTL = locale === 'ar';
   const dir = isRTL ? 'rtl' : 'ltr';
-  // Narrow weekday labels (Sun..Sat, matching startDayOfWeek's JS getDay() order)
-  // computed per-locale via Intl rather than a hardcoded Arabic-only array, so
-  // English renders never showed an Arabic calendar header.
-  const dayHeaders = Array.from({ length: 7 }, (_, i) =>
-    new Date(Date.UTC(2023, 0, 1 + i)).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US', {
-      weekday: 'narrow',
-      timeZone: 'UTC',
-    })
-  );
 
   if (loading) {
     return (
-      <div className="space-y-1 p-2">
-        {Array(weeks)
-          .fill(null)
-          .map((_, i) => (
-            <div key={i} className="flex gap-1">
-              {Array(7)
-                .fill(null)
-                .map((_, j) => (
-                  <div key={j} className="w-4 h-4 rounded-sm bg-[var(--color-surface-2)] animate-pulse" />
-                ))}
-            </div>
-          ))}
+      <div className="space-y-1 p-2" aria-busy="true" aria-live="polite">
+        {Array.from({ length: ROWS }).map((_, i) => (
+          <div key={i} className="flex gap-1">
+            {Array.from({ length: COLUMNS }).map((_, j) => (
+              <div key={j} className="h-4 w-4 rounded-xs bg-[var(--color-surface-2)] animate-pulse" />
+            ))}
+          </div>
+        ))}
       </div>
     );
   }
@@ -144,48 +125,50 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
     );
   }
 
-  const allCells: (string | null)[] = [...paddingCells, ...allDays];
+  // The route returns cells oldest-first. The design's newest cell is the LAST
+  // one in the second row, so an under-filled grid pads at the START.
+  const recent = cells.slice(-MAX_CELLS);
+  const padding = MAX_CELLS - recent.length;
 
   return (
-    <div className="p-2 space-y-2" dir={dir}>
-      <p className="text-xs font-medium text-[var(--color-text-secondary)] text-end">
+    <div className="space-y-2 p-2" dir={dir}>
+      <p className="text-xs font-medium text-[var(--color-text-secondary)] text-start">
         {t('attendanceLastWeeks', { weeks: formatNumber(weeks, locale) })}
       </p>
 
-      <div className="flex gap-1">
-        {dayHeaders.map((d, i) => (
-          <div key={i} className="w-4 text-center text-xs text-[var(--color-text-muted)]">
-            {d}
-          </div>
+      <div
+        className="grid w-fit gap-1"
+        style={{ gridTemplateColumns: `repeat(${COLUMNS}, 1rem)` }}
+        role="img"
+        aria-label={t('attendanceLastWeeks', { weeks: formatNumber(weeks, locale) })}
+      >
+        {Array.from({ length: padding }).map((_, i) => (
+          <div key={`pad-${i}`} className="h-4 w-4" aria-hidden />
+        ))}
+        {recent.map((cell) => (
+          <div
+            key={cell.date}
+            title={cellTooltip(cell)}
+            className="h-4 w-4 rounded-xs cursor-default"
+            style={{ background: RAMP[rampIndex(cell.present)] }}
+          />
         ))}
       </div>
 
-      <div className="grid gap-1" style={{ gridTemplateColumns: 'repeat(7, 1rem)' }}>
-        {allCells.map((dateStr, i) =>
-          dateStr === null ? (
-            <div key={`pad-${i}`} className="w-4 h-4" />
-          ) : (
-            <div
-              key={dateStr}
-              title={getCellTooltip(dateStr)}
-              className={`w-4 h-4 rounded-sm cursor-default ${getCellColor(dateStr)}`}
-            />
-          )
-        )}
-      </div>
-
-      <div className="flex gap-3 flex-wrap">
-        {[
-          { color: 'bg-[var(--color-surface-2)]', label: t('legend.none') },
-          { color: 'bg-teal-100', label: t('legend.low') },
-          { color: 'bg-teal-300', label: t('legend.medium') },
-          { color: 'bg-teal-500', label: t('legend.high') },
-        ].map(({ color, label }) => (
-          <div key={label} className="flex items-center gap-1">
-            <div className={`w-3 h-3 rounded-sm ${color}`} />
-            <span className="text-xs text-[var(--color-text-muted)]">{label}</span>
-          </div>
+      {/* Design line 478: an unlabelled Less -> More ramp. The per-cell tooltip
+          above carries the readable figure, so dropping the four labelled
+          swatches does not remove the only accessible reading of a cell. */}
+      <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+        <span>{t('less')}</span>
+        {RAMP.map((color) => (
+          <i
+            key={color}
+            className="inline-block h-3 w-3 rounded-xs"
+            style={{ background: color }}
+            aria-hidden
+          />
         ))}
+        <span>{t('more')}</span>
       </div>
     </div>
   );

@@ -28,6 +28,8 @@ import {
   Gift,
   ShoppingCart,
   Wallet,
+  Upload,
+  Inbox,
 } from 'lucide-react';
 import { ChangePinModal } from '@/components/admin/ChangePinModal';
 import { BranchSwitcher } from '@/components/layout/BranchSwitcher';
@@ -36,6 +38,7 @@ import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { signOutToLogin } from '@/lib/auth/sign-out-client';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { formatPlainInteger } from '@/lib/formatNumber';
 
 /** Desktop sidebar width in px (Tailwind w-60) */
 const SIDEBAR_EXPANDED = 240;
@@ -92,6 +95,45 @@ export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarPr
     checkAdmin();
   }, []);
 
+  /**
+   * Count badge for the Pending link. The badge travelled here WITH the link
+   * when the roster's "More actions" bar was removed (Merged-Center-Students §01
+   * draws no such bar): /students/pending is the sign-up approval queue, and
+   * without the count nothing anywhere says requests are waiting. Same
+   * GET /api/students/pending the roster used; fetched only for users who can
+   * actually see the link. A failed read just leaves the badge off.
+   */
+  const canSeePending =
+    !!user?.center_id &&
+    (user.role === 'owner' ||
+      user.role === 'admin' ||
+      user.role === 'super_admin' ||
+      hasPermission('can_manage_students'));
+  const [pendingCount, setPendingCount] = useState(0);
+  useEffect(() => {
+    if (!canSeePending) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session || cancelled) return;
+        const res = await fetch('/api/students/pending', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as { pending?: unknown[] };
+        if (!cancelled) setPendingCount(Array.isArray(data.pending) ? data.pending.length : 0);
+      } catch {
+        /* badge stays off */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [canSeePending]);
+
   const handleLogout = async () => {
     await signOutToLogin(locale);
   };
@@ -120,6 +162,13 @@ export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarPr
         { key: 'dashboard', href: '/dashboard', icon: LayoutDashboard, permission: 'can_view_dashboard' },
         { key: 'attendance', href: '/attendance', icon: QrCode, permission: 'can_scan' },
         { key: 'students', href: '/students', icon: Users, permission: 'can_manage_students' },
+        // Both relocated from the roster's "More actions" bar, which
+        // Merged-Center-Students §01 does not draw. Neither has any other entry
+        // point in the app: /students/import becomes unreachable the moment the
+        // empty state disappears at one student, and /students/pending — the
+        // sign-up approval queue — has never had a second route into it.
+        { key: 'import', href: '/students/import', icon: Upload, permission: 'can_manage_students' },
+        { key: 'pending', href: '/students/pending', icon: Inbox, permission: 'can_manage_students' },
         { key: 'payments', href: '/payments', icon: CreditCard, permission: 'can_view_payments' },
         { key: 'schedule', href: '/schedule', icon: Calendar, permission: 'can_view_schedule' },
       ],
@@ -264,6 +313,12 @@ export default function Sidebar({ mobileDrawerOpen = false, onClose }: SidebarPr
                     {showBadge ? (
                       <span className="ms-auto px-1.5 py-0.5 text-[10px] font-semibold bg-teal-500/20 text-teal-400 rounded shrink-0">
                         {t('newBadge')}
+                      </span>
+                    ) : null}
+                    {/* §04 draws Pending's count as a red-tint pill; zero renders nothing. */}
+                    {key === 'pending' && pendingCount > 0 ? (
+                      <span className="ms-auto flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-[#F4E5E2] px-1.5 text-[10px] font-bold leading-none tabular-nums text-[#9C3322]">
+                        {pendingCount > 99 ? '99+' : formatPlainInteger(pendingCount, locale)}
                       </span>
                     ) : null}
                   </Link>

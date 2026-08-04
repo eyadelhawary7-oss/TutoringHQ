@@ -12,8 +12,10 @@ type Route = {
 
 const ROUTES: Route[] = [
   { path: '/', priority: 1.0, changeFrequency: 'daily' },
-  { path: '/center', priority: 0.9, changeFrequency: 'weekly' },
-  { path: '/teacher/landing', priority: 0.9, changeFrequency: 'weekly' },
+  // The audience pages moved to /centers and /teachers; /center and
+  // /teacher/landing are 307/308 redirects now and must not be advertised.
+  { path: '/centers', priority: 0.9, changeFrequency: 'weekly' },
+  { path: '/teachers', priority: 0.9, changeFrequency: 'weekly' },
   { path: '/pricing', priority: 0.9, changeFrequency: 'weekly' },
   { path: '/compare/spreadsheets', priority: 0.8, changeFrequency: 'weekly' },
   { path: '/features/qr-attendance', priority: 0.8, changeFrequency: 'weekly' },

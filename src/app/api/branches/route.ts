@@ -96,6 +96,12 @@ export async function POST(request: NextRequest) {
     if (!name || name.length < 2) {
       return NextResponse.json({ error: 'Branch name required (min 2 characters)' }, { status: 400 });
     }
+    // The design's "Area / address" field. It maps to the EXISTING
+    // `centers.district` (text, nullable) — there is no `centers.address`
+    // column in the live catalog and none may be added here. Optional: a branch
+    // with no area recorded is valid, and stores NULL rather than ''.
+    const districtRaw = typeof body.district === 'string' ? body.district.trim() : '';
+    const district = districtRaw.length > 0 ? districtRaw.slice(0, 200) : null;
 
     // Get first center in org for plan/billing defaults
     const { data: firstCenter } = await supabaseAdmin
@@ -136,6 +142,7 @@ export async function POST(request: NextRequest) {
       status: 'active',
       owner_name: fc?.owner_name ?? '',
       phone: fc?.phone ?? null,
+      district,
     };
 
     const { data: newCenter, error } = await supabaseAdmin
@@ -170,6 +177,114 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/**
+ * PATCH: Rename a branch / set its area. Owner only, CSRF-required, and
+ * org-scoped: the target centre must belong to the caller's organization —
+ * a centre id from another tenant is a 404, indistinguishable from "gone".
+ *
+ * This exists so the Branches screen's Edit action works on EVERY branch of
+ * the org. The legacy /api/db proxy force-scopes `centers` writes to the
+ * caller's OWN centre (and new proxy callers are banned), so without this
+ * route a sibling branch could never be renamed.
+ */
+export async function PATCH(request: NextRequest) {
+  try {
+    const ctx = await getAuthContext(request);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    if (!validateCSRFRequest(request, ctx.userId)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+    }
+
+    const { organizationId, supabaseAdmin } = ctx;
+
+    // Same suspension / lock gate as POST: a locked centre must not edit branches.
+    if (ctx.centerId) {
+      const gate = await centerAccessGateResponse(supabaseAdmin, ctx.centerId);
+      if (gate) return gate;
+    }
+
+    if (!organizationId) {
+      return NextResponse.json(
+        { error: 'Multi-branch requires an organization. Your centre may need a data migration.' },
+        { status: 400 },
+      );
+    }
+
+    const { data: userRecord } = await supabaseAdmin
+      .from('users')
+      .select('role')
+      .eq('id', ctx.userId)
+      .maybeSingle();
+
+    if ((userRecord as { role?: string } | null)?.role !== 'owner') {
+      return NextResponse.json({ error: 'Only owners can edit branches' }, { status: 403 });
+    }
+
+    const body = (await parseBodyWithLimit(request, 65536).catch(() => ({}))) as Record<string, unknown>;
+    const id = typeof body.id === 'string' ? body.id.trim() : '';
+    if (!id) {
+      return NextResponse.json({ error: 'Branch id required' }, { status: 400 });
+    }
+
+    const updates: Record<string, unknown> = {};
+    if (body.name !== undefined) {
+      const name = typeof body.name === 'string' ? body.name.trim() : '';
+      if (!name || name.length < 2) {
+        return NextResponse.json({ error: 'Branch name required (min 2 characters)' }, { status: 400 });
+      }
+      updates.name = name;
+    }
+    if (body.district !== undefined) {
+      // Same mapping as POST: the design's "Area / address" is the existing
+      // `centers.district` (verified live) — never a new address column.
+      const districtRaw = typeof body.district === 'string' ? body.district.trim() : '';
+      updates.district = districtRaw.length > 0 ? districtRaw.slice(0, 200) : null;
+    }
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
+    }
+
+    // ORG SCOPE, enforced in the WHERE clause itself: the update matches only a
+    // centre that carries the caller's organization_id. Zero rows back = not
+    // yours or not there; both answer 404.
+    const { data: updated, error } = await supabaseAdmin
+      .from('centers')
+      .update(updates)
+      .eq('id', id)
+      .eq('organization_id', organizationId)
+      .select('id, name, district')
+      .maybeSingle();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    if (!updated) {
+      return NextResponse.json({ error: 'Branch not found' }, { status: 404 });
+    }
+
+    try {
+      await supabaseAdmin.from('audit_log').insert({
+        center_id: id,
+        user_id: ctx.userId,
+        action: 'branch_update',
+        entity_type: 'centers',
+        entity_id: id,
+        details: updates,
+      });
+    } catch (auditErr) {
+      console.error('[PATCH /api/branches] audit_log', auditErr);
+    }
+
+    return NextResponse.json({ branch: updated });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}
+
 /** GET: List all branches (centers) in the user's organization. Respects branch_user_assignments. */
 export async function GET(request: NextRequest) {
   try {
@@ -189,7 +304,7 @@ export async function GET(request: NextRequest) {
       if (centerId) {
         const { data: singleCenter, error: cErr } = await supabaseAdmin
           .from('centers')
-          .select('id, name, logo_url')
+          .select('id, name, logo_url, district, created_at')
           .eq('id', centerId)
           .maybeSingle();
         if (cErr) {
@@ -213,9 +328,13 @@ export async function GET(request: NextRequest) {
     const hasAssignments = (assignments?.length ?? 0) > 0;
     const assignedCenterIds = (assignments ?? []).map((a) => a.center_id);
 
+    // `created_at` feeds the client's "main branch" tag — the org's OLDEST
+    // centre. There is no primary/main marker column in the live catalog
+    // (organizations has none; adding one is a recorded migration ask), so the
+    // derivation is documented rather than invented.
     let query = supabaseAdmin
       .from('centers')
-      .select('id, name, logo_url')
+      .select('id, name, logo_url, district, created_at')
       .eq('organization_id', organizationId)
       .order('name');
 
@@ -229,16 +348,42 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Get org plan
+    // Get org plan + name. `organizations.name` is NOT NULL in the live catalog
+    // but the row itself can be missing, so the caller still needs a fallback.
     const { data: org } = await supabaseAdmin
       .from('organizations')
-      .select('plan')
+      .select('plan, name')
       .eq('id', organizationId)
       .single();
+
+    /**
+     * THE ONE CONFIG POINT for the design's "Extra branch add-on · 199 EGP/mo"
+     * notice: platform_config key `branch_addon.monthly_price_egp`. The key
+     * does not exist live today, so this returns null and the client renders
+     * NO price notice — not an invented 199, not a billing claim the engine
+     * does not make. Pricing the add-on (the key's value AND the billing-engine
+     * line that would actually charge it) is Eyad's decision; setting the key
+     * turns the notice on with no code change.
+     */
+    let branchAddonMonthlyPriceEgp: number | null = null;
+    try {
+      const { data: addonRow } = await supabaseAdmin
+        .from('platform_config')
+        .select('value')
+        .eq('key', 'branch_addon.monthly_price_egp')
+        .maybeSingle();
+      const raw = (addonRow as { value?: unknown } | null)?.value;
+      const n = typeof raw === 'number' ? raw : Number(raw);
+      if (Number.isFinite(n) && n > 0) branchAddonMonthlyPriceEgp = n;
+    } catch {
+      branchAddonMonthlyPriceEgp = null;
+    }
 
     return NextResponse.json({
       branches: centers ?? [],
       plan: (org as { plan?: string } | null)?.plan ?? 'single',
+      organization_name: (org as { name?: string } | null)?.name ?? null,
+      branch_addon_monthly_price_egp: branchAddonMonthlyPriceEgp,
     });
   } catch (err) {
     return NextResponse.json(
