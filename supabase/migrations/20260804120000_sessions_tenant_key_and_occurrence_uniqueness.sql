@@ -188,7 +188,7 @@ COMMENT ON FUNCTION public.sessions_derive_center_id() IS
 --
 -- The statement below is left exactly as applied — rewriting SQL that has
 -- already run would be worse than the defect. The actual fix is proposed in
--- supabase/migrations/20260804210000_revoke_anon_authenticated_sessions_derive_center_id.sql
+-- supabase/migrations/20260804210000_revoke_anon_execute_sessions_derive_center_id.sql
 -- (NOT APPLIED; Eyad applies it by hand). Do not treat this surface as closed
 -- until that file has been applied and its post-apply check returns 0.
 REVOKE ALL ON FUNCTION public.sessions_derive_center_id() FROM PUBLIC;
@@ -394,7 +394,7 @@ COMMIT;
 --      AND grantee IN ('anon','authenticated');
 --
 -- On production this returns 2, not 0 — see the correction note in block 1b and
--- the follow-up file 20260804210000_revoke_anon_authenticated_sessions_derive_center_id.sql.
+-- the follow-up file 20260804210000_revoke_anon_execute_sessions_derive_center_id.sql.
 --
 -- This whole file was rebuilt from scratch on a clean Postgres 17.10 and
 -- introspected before being pushed, so it is known to parse and apply; the
