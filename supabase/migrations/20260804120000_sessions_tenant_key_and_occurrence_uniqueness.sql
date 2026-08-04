@@ -169,8 +169,28 @@ COMMENT ON FUNCTION public.sessions_derive_center_id() IS
 -- checks EXECUTE at CREATE TRIGGER time, not at fire time, so revoking it does
 -- not stop the trigger — it only removes a definer-rights function from the
 -- callable surface. (It returns `trigger`, so it is not directly callable and
--- PostgREST will not expose it; this is belt-and-braces, and matches the
--- standing "revoke anonymous EXECUTE on SECURITY DEFINER helpers" rule.)
+-- PostgREST will not expose it.)
+--
+-- CORRECTION, added after this file was applied — READ THIS BEFORE TRUSTING
+-- THE LINE BELOW. The original version of this comment also claimed the REVOKE
+-- "matches the standing 'revoke anonymous EXECUTE on SECURITY DEFINER helpers'
+-- rule". IT DOES NOT, and that claim was written by Claude, not by Eyad.
+-- `REVOKE ... FROM PUBLIC` removes only the implicit PUBLIC grant. Supabase's
+-- explicit default grants to `anon` and `authenticated` are separate ACL
+-- entries and are untouched by it. Verified live on 4 August 2026, after this
+-- file had run:
+--     proacl = {postgres=X/postgres, anon=X/postgres,
+--               authenticated=X/postgres, service_role=X/postgres}
+-- PUBLIC is gone; anon and authenticated still hold EXECUTE. Compare
+-- spend_credits_atomic, {postgres, service_role}, which is the correct shape.
+-- Severity is low (trigger return type, so no PostgREST exposure and no direct
+-- call path) but the comment asserted a property the catalog does not have.
+--
+-- The statement below is left exactly as applied — rewriting SQL that has
+-- already run would be worse than the defect. The actual fix is proposed in
+-- supabase/migrations/20260804210000_revoke_anon_execute_sessions_derive_center_id.sql
+-- (NOT APPLIED; Eyad applies it by hand). Do not treat this surface as closed
+-- until that file has been applied and its post-apply check returns 0.
 REVOKE ALL ON FUNCTION public.sessions_derive_center_id() FROM PUBLIC;
 
 -- END OF 1b ------------------------------------------------------------------
@@ -364,6 +384,17 @@ COMMIT;
 --     WHERE routine_name='sessions_derive_center_id' AND grantee='PUBLIC';
 --
 -- Expect 1,1,0,1,1,2,1,0 — or 1,1,0,1,1,2,0,0 if block 1b was struck.
+--
+-- CORRECTION, added after this file was applied: the last check above is
+-- necessary but NOT sufficient, and reading a 0 from it as "the EXECUTE surface
+-- is closed" is exactly the mistake the block-1b comment made. Add:
+--
+--   SELECT count(*) FROM information_schema.routine_privileges
+--    WHERE specific_schema='public' AND routine_name='sessions_derive_center_id'
+--      AND grantee IN ('anon','authenticated');
+--
+-- On production this returns 2, not 0 — see the correction note in block 1b and
+-- the follow-up file 20260804210000_revoke_anon_execute_sessions_derive_center_id.sql.
 --
 -- This whole file was rebuilt from scratch on a clean Postgres 17.10 and
 -- introspected before being pushed, so it is known to parse and apply; the

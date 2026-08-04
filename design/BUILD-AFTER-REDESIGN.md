@@ -245,7 +245,7 @@ found while checking this table's own staleness before starting the next file).
 - **Build:** the rate/countdown display against the **live** ladder — 25% → 10% → 5% (D2). The design's month-6 drop is wrong.
 - **Touches:** money (read only — displays a commission calculated elsewhere).
 - **Blocked by:** **D22** (below). The credit-versus-withdraw block on the same screen is **V4** and stays blocked regardless.
-- **Re-confirmed independently, 31 July 2026 (Center-Insight survey).** Read `/api/referral/route.ts` and `/api/referrals/payout/route.ts` fresh, without re-reading this entry first: both still read/deduct exclusively against `referral_reward_records`. Same table, same finding, arrived at cold — still blocked, still correct. Also found in the same pass: the payout route has no CSRF check (**S6**-class gap, logged separately as **S7**), currently low-blast-radius only because this table's balance is always 0 in production.
+- **Re-confirmed independently, 31 July 2026 (Center-Insight survey).** Read `/api/referral/route.ts` and `/api/referrals/payout/route.ts` fresh, without re-reading this entry first: both still read/deduct exclusively against `referral_reward_records`. Same table, same finding, arrived at cold — still blocked, still correct. Also found in the same pass: the payout route has no CSRF check (**S6**-class gap, logged separately as **S7**), currently low-blast-radius only because this table's balance is always 0 in production. **The CSRF half is since closed — S7, PR #308, `d728da75`. D22 itself is not:** re-read on master 4 August 2026, `/api/referrals/payout/route.ts:59` still reads `.from('referral_reward_records')`. Wrong table, unchanged.
 
 ## R7 · Admin teacher list and teacher account detail
 - **What:** The teacher half of the admin portal — a solo-teacher list beside the center list.
@@ -1137,13 +1137,49 @@ correction is in `TOKEN-SPEC.md` §2.
 - **Blocked by:** nothing technical. Waiting on Eyad's go-ahead to land it as its own PR, separate from the design-restructure chain.
 
 ## S7 · No CSRF on the referral payout route
+> ### ✅ CLOSED — PR #308, merged as `d728da75`, 3 August 2026
+> No migration involved; this one is code-only and is live on master.
+>
+> Verified by reading the route on master on 4 August 2026, not from the PR description
+> (rule 2 — an AI-written PR body is not evidence). `src/app/api/referrals/payout/route.ts`
+> imports `validateCSRFRequest` from `@/lib/csrf` and calls it immediately after
+> `requireCenterAuth`, ahead of the permission gate and ahead of any body parsing:
+>
+> ```ts
+> if (!validateCSRFRequest(request, auth.userId)) {
+>   return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+> }
+> ```
+>
+> The client half is there too, so this is not a route that now 403s its own caller:
+> `src/components/referrals/ReferralWithdrawalPanel.tsx` attaches
+> `await getCsrfHeaders(session.access_token)` to the POST. End-to-end.
+>
+> **S6 is NOT closed with it, and do not read this as a general CSRF sweep.** Re-checked the
+> same day: none of the five WhatsApp-Pack mutation routes (`parent-pack/announcement`,
+> `parent-pack/request`, `settings/parent-pack`, `parent-pack/student/[id]`,
+> `parent-pack/toggle`) calls `validateCSRFRequest`. **S6 stays open.** S9's four routes
+> (`ceo/leads`, `ceo/actions/[id]`, `ceo/platform-config`, `admin/centers/[id]`) also still
+> have none — **S9 stays open**. **S8 is now partial, not open-as-written:** the same PR added
+> `validateCSRFRequest` to `/api/billing/withdrawal` (and to `/api/admin/withdrawals/[id]`),
+> which S8 names, so whoever picks S8 up must re-enumerate its route list against master
+> rather than trusting the original entry. Not re-scoped here.
+>
+> The entry below is kept as written — it is the record of how the gap was found and why the
+> D22 interaction mattered, and that reasoning stays true after the fix. Only its **Blocked by**
+> line is struck through, since leaving that one reading "waiting on Eyad" is the thing that
+> would send someone to do work that is already done.
+>
+> **D22 is untouched by this.** The payout route still reads its balance from
+> `referral_reward_records`. Closing S7 closed the CSRF gap, not the wrong-table one.
+
 > ### ✅ CLOSED — fixed on `master`, PR #308 ("Fix three PAYOUT-SYSTEM-SPEC §2 defects that need no migration"), confirmed live 4 August 2026.
 > `src/app/api/referrals/payout/route.ts` now calls `validateCSRFRequest(request, auth.userId)` immediately after `requireCenterAuth`, with an inline comment naming this exact entry ("PAYOUT-SYSTEM-SPEC.md §2.6 / S7: this route creates a money-movement request and had no CSRF check at all."). Read the full route fresh during the `Center-Insight` parity pass, without re-reading this entry first — the check is real, correctly placed before the permission gate and the body parse, and returns 403 on failure. Re-confirmed against `git log origin/master` per the standing PR-state rule: PR #308 is merged, not just branch-present. Nothing left to build here.
 - **What:** `POST /api/referrals/payout` (`ReferralWithdrawalPanel.tsx`, `Merged-Center-Insight` §03) has no `validateCSRFRequest` call — confirmed by direct read of the full route plus a repo-wide grep. Gating today is `requireCenterAuth` (bearer token) + `requirePermission(auth, 'can_request_referral_payouts')` + `src/proxy.ts`'s CORS-origin check — none of which is CSRF-token validation.
 - **Why it matters, with the caveat that matters more:** this creates a real `payout_requests` row against a center's referral commission balance — the same class of gap as **S6**. The blast radius today is small because of **D22** below: the balance it checks is always read from `referral_reward_records`, a table with zero live writers, so `available` is always 0 in production and the route 400s before anything is created. If D22 is ever resolved by repointing reads at `referral_commissions` (the table the real cron writes), this route inherits real money exposure the moment that happens — so the CSRF fix and D22 are worth landing together, not treating this one as low-priority because of the other.
 - **Contrast case, found the same pass:** `POST /api/whatsapp/send-balance-reminder` (used one screen over, on Analytics' Aging report) does call `validateCSRFRequest` correctly, and its client caller (`AgingReport.tsx`) correctly attaches `X-CSRF-Token`/`X-Session-ID` via `getCsrfHeaders()`. Whatever pattern protects that route was not extended to this one.
 - **Touches:** auth, and money.
-- **Blocked by:** nothing technical. Waiting on Eyad's go-ahead, same as S6.
+- **Blocked by:** ~~nothing technical. Waiting on Eyad's go-ahead, same as S6.~~ **Nothing — closed by PR #308, see the header above.** S6 is the one still waiting.
 
 ---
 
@@ -1599,7 +1635,8 @@ Surfaced by the 19-file design-parity sweep, 3 August 2026, then **re-verified b
 - **The standing rule for whoever builds the generator.** Occurrences live in `sessions`. Slots stay templates. **Do not re-add `parent_slot_id`, or any equivalent parent/child pointer on `schedule_slots`, as part of building a sessions generator.** If a future requirement appears to need per-occurrence *slot* rows, that is a deliberate schema decision that must reconcile with `sessions_generated_occurrence_uniq` first — it is not an implementation detail of a generator. The rule is also carried in-database as `COMMENT ON TABLE public.schedule_slots`, so it survives anyone who never reads this file.
 - **Two adjacent facts a generator author will need anyway** (from `SESSIONS-MIGRATION-WARNINGS.md` §5.3, both outside the migration): `schedule_exceptions.schedule_id` FKs to **`group_schedule`, not `schedule_slots`**, so a generator iterating slots holds the wrong id class and exception lookups match zero rows forever — meaning centre-side generation has **no cancellation mechanism at all** today; and the one live slot is `recurring = true` with `recurring_until = NULL`, an **unbounded** recurrence with no natural horizon.
 - **Found:** 4 August 2026, closing the item the warnings doc marked "examined by nobody" after its reviewer died mid-run.
-- **Status:** column drop is part of `supabase/migrations/20260804120000_sessions_tenant_key_and_occurrence_uniqueness.sql`, proposed and awaiting Eyad's manual apply (rule 5). The standing rule above outlives the migration.
+- **Status — APPLIED, 4 August 2026.** The column drop shipped as part of `supabase/migrations/20260804120000_sessions_tenant_key_and_occurrence_uniqueness.sql`, applied by hand to production and recorded in the migration history as version **`20260804094631`** (`sessions_tenant_key_and_occurrence_uniqueness`) — the last entry in that history. Re-verified live against the catalog on 4 August: `schedule_slots.parent_slot_id` returns **0** rows from `information_schema.columns`, `sessions.center_id` and `sessions.started_at` are both present, `sessions_generated_occurrence_uniq` and `sessions_center_id_fkey` both exist, 2 rows backfilled, `trg_sessions_derive_center_id` present. This entry previously said "proposed and awaiting Eyad's manual apply", which was true when written and false by the time anyone read it. The standing rule above outlives the migration.
+- **Version-string drift — the migration history is not an index of which files have run.** The FILE is named `20260804120000`; `apply_migration` stamped it **`20260804094631`**. The same drift exists on the two migrations before it: `20260730090000_permissions_canonical_admin_store.sql` is recorded as `20260729184405`, and `20260730110000_students_inactive_reason.sql` as `20260730122204`. So a filename cannot be looked up in `supabase_migrations.schema_migrations`, and absence from that table is **not** evidence a file has not been applied — match on the migration *name*, or better, check the catalog for the objects the file creates.
 
 ## F28 · F26 undercounted its own finding — the card-order checkout INSERT itself is broken, not just downstream reads, and the blast radius is bigger than documented
 - **What F26 said (3 Aug):** `card_orders.card_style` doesn't exist; the one confirmed unconditional break was `src/app/api/admin/card-orders/[orderId]/pdf/route.ts` (admin vendor-print PDF, 404 on every call).
@@ -1653,6 +1690,31 @@ Surfaced by the 19-file design-parity sweep, 3 August 2026, then **re-verified b
 - **Section H of `/ceo` is dead weight, not a security control.** A hardcoded client-side string (`'CENTERHQ-ADMIN'`, visible in the shipped JS) gates 4 "danger" buttons that set the exact same `platform_config` keys already exposed as plain checkboxes in Section G — the real protection, `requireSuperAdminApi`, is server-side and identical either way. Section H adds confusion (a fake sense of an extra security layer) without adding any actual one. Likely worth deleting outright rather than "fixing" — a product call on whether Section H should exist at all, not made here.
 - **`legacyPayload` in `/api/ceo/dashboard` — CLOSED, PR #288.** Built a full extra response object (`mrr, arr, netNew30d, monthlyChurnRate, ...`) that nothing in `page.tsx` read — confirmed by a fresh full grep of the only reachable caller before removing — yet drove 7 real extra Supabase queries every 30-second poll, plus unused `from`/`to` range-param parsing that only fed them. Removed; the route now returns exactly `CeoDashboardData`, the type it already claimed to satisfy.
 - **The sales-lead form hardcodes `governorate: 'cairo'`** with no field to change it — every lead entered through the CEO dashboard is tagged Cairo regardless of where the center actually is. Needs a real governorate selector, not a one-line fix.
+
+## F35 · The schema-drift gate cannot verify a REVOKE at all, and goes green on the exact class of change it exists to catch
+
+- **What:** `.github/workflows/schema-drift.yml` runs `scripts/schema/rebuild.sh` — apply `test-shim.sql`, then every `supabase/migrations/*.sql` in lexical order against an **empty** database — and diffs the introspected result against the committed `db/schema.snapshot`. **Neither side is production.** The gate proves *migrations produce snapshot*. It proves nothing about the live catalog, and for grant changes it cannot even prove that much.
+- **Why a REVOKE specifically is invisible.** Supabase issues default `EXECUTE` privileges to `anon` and `authenticated` on functions in `public`. **Those grants do not exist in a local rebuild** — nothing creates them. So a migration whose entire purpose is `REVOKE ... FROM anon` removes something that was never there, produces **zero** diff, and the gate reports success. The statement is a no-op locally and load-bearing in production, and the gate reads the no-op.
+- **This is not hypothetical — it is how the defect below shipped.** `20260804120000` (applied as `20260804094631`) contained `REVOKE ALL ON FUNCTION public.sessions_derive_center_id() FROM PUBLIC` under a comment claiming it satisfied the standing *revoke anonymous EXECUTE on SECURITY DEFINER helpers* rule. `REVOKE ... FROM PUBLIC` removes only the implicit `PUBLIC` grant; the explicit `anon` and `authenticated` entries are separate ACL rows and survived it. Live `proacl` after that migration ran: `{postgres=X/postgres, anon=X/postgres, authenticated=X/postgres, service_role=X/postgres}`. **schema-drift was green throughout.** It could not have been anything else.
+- **The asymmetry that makes this worse than a plain blind spot.** A `GRANT` *does* show up — it creates a `ROUTINE_GRANT` line in the rebuild, so the gate fails if the snapshot is stale. A `REVOKE` of a Supabase default does not. **So the gate is green when a privilege is wrongly retained, and red when one is correctly added.** It fails in the safe direction and passes in the dangerous one. Confirmed on 4 August by rebuilding the follow-up migration three times on a clean Postgres 17.10: the revoke-only draft produced a byte-identical snapshot (6242 objects); the archive-idiom version, which adds `GRANT EXECUTE ... TO authenticated, service_role`, produced exactly two added lines (6244) and turned the gate red until the snapshot was regenerated.
+- **`schema-drift-live.yml` is the workflow that would catch it, and it has never run.** It compares the LIVE catalog against the snapshot. It has failed on every scheduled run from 28 July through 4 August — eight consecutive days, zero successes — every one on its own missing-secret guard: `SCHEMA_DRIFT_DATABASE_URL is not set, so the live schema-drift gate CANNOT run`. That guard is correct behaviour (it was deliberately built to fail loudly rather than skip green), but the consequence is that **production has not been machine-compared to the snapshot on any day in this window.**
+
+### The rule, which is the point of this entry
+
+> **A grant or revoke change is not verified by CI. `schema-drift` green is not evidence for it.**
+> Any migration containing `GRANT`, `REVOKE`, `ALTER DEFAULT PRIVILEGES`, or an `OWNER TO` change must be confirmed by querying the **live** catalog after applying — `pg_proc.proacl`, `aclexplode()`, `information_schema.role_routine_grants`, `pg_class.relacl` — and the result recorded. Not inferred from the statement succeeding, and not inferred from a green gate.
+
+The same applies to any post-apply verification query written into a migration: the §6 block in `20260804120000` checked `grantee='PUBLIC'` and returned a reassuring `0` while the real gap sat one grantee over. **A verification query that only checks the thing you already believed is not a verification query.**
+
+### What would actually close it
+
+1. Wire `SCHEMA_DRIFT_DATABASE_URL` (a read-only prod DSN — `USAGE` + `SELECT` on catalogs is enough) so `schema-drift-live.yml` runs. This is the single highest-value fix and needs no code.
+2. Extend `scripts/schema/test-shim.sql` to create the `anon` / `authenticated` / `service_role` roles **and** Supabase's default `EXECUTE` grants, so a local rebuild has something for a `REVOKE` to remove and the diff becomes meaningful. Without this, item 1 is the only real defence.
+3. Treat a grant-touching migration as requiring a recorded live-catalog check before its PR merges, the same way rule 5 already treats the apply itself.
+
+- **Found:** 4 August 2026, while correcting the `sessions_derive_center_id` grant. Found by querying the live catalog, not by any gate — which is the entry's own evidence for itself.
+- **Related:** F26 (code reading columns that do not exist — same root cause, CI has no live database), and the `20260804210000` follow-up migration, whose header carries a short form of this note.
+- **Blocked by:** nothing technical for items 2 and 3. Item 1 needs Eyad to add the repo secret.
 
 ---
 

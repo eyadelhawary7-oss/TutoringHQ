@@ -6412,6 +6412,8 @@ ROUTINE_GRANT resolve_or_create_student grantee=service_role priv=EXECUTE granta
 ROUTINE_GRANT respond_center_group_proposal grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT respond_group_proposal grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT respond_teacher_code_group_proposal grantee=service_role priv=EXECUTE grantable=NO
+ROUTINE_GRANT sessions_derive_center_id grantee=authenticated priv=EXECUTE grantable=NO
+ROUTINE_GRANT sessions_derive_center_id grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT set_center_notes_updated_at grantee=PUBLIC priv=EXECUTE grantable=NO
 ROUTINE_GRANT set_center_notes_updated_at grantee=anon priv=EXECUTE grantable=NO
 ROUTINE_GRANT set_center_notes_updated_at grantee=authenticated priv=EXECUTE grantable=NO
