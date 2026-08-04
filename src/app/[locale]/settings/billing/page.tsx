@@ -866,11 +866,13 @@ export default function BillingPage() {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       if (!token) throw new Error(t('loadError'));
+      const csrf = await getCsrfHeaders(token);
       const res = await fetch('/api/billing/upgrade', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
+          ...csrf,
         },
         body: JSON.stringify({ newPlan: selectedPlan, newBillingPeriod: selectedPeriod }),
       });
@@ -903,11 +905,13 @@ export default function BillingPage() {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       if (!token) throw new Error(t('loadError'));
+      const csrf = await getCsrfHeaders(token);
       const res = await fetch('/api/billing/downgrade', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
+          ...csrf,
         },
         body: JSON.stringify({ newPlan: selectedPlan, newBillingPeriod: selectedPeriod }),
       });
@@ -941,11 +945,13 @@ export default function BillingPage() {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       if (!token) throw new Error(t('loadError'));
+      const csrf = await getCsrfHeaders(token);
       const res = await fetch('/api/billing/reactivate', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
+          ...csrf,
         },
         body: JSON.stringify({
           useCredits,
@@ -1176,11 +1182,13 @@ export default function BillingPage() {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       if (!token) throw new Error(t('loadError'));
+      const csrf = await getCsrfHeaders(token);
       const res = await fetch('/api/billing/cancel', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
+          ...csrf,
         },
         body: JSON.stringify({ reason: cancelReason }),
       });
