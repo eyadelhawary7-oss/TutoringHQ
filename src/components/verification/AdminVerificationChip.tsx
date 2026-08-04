@@ -3,7 +3,11 @@
 import { useTranslations } from 'next-intl';
 import { BadgeCheck, Clock, ShieldAlert, ShieldOff, Shield } from 'lucide-react';
 import type { EffectiveVerification } from '@/lib/verificationState';
-import { adminVerificationView, type VerificationTone } from '@/lib/verification/uiState';
+import {
+  adminVerificationViewForScope,
+  type VerificationDatumScope,
+  type VerificationTone,
+} from '@/lib/verification/uiState';
 
 /**
  * Admin-facing verification chip. Unlike the provider-facing badge, this one
@@ -48,14 +52,28 @@ export default function AdminVerificationChip({
    * and repeating a paragraph on every chip is unreadable.
    */
   variant = 'chip',
+  /**
+   * How wide the `state` actually reaches. `subject` means it was read for the
+   * centre or teacher on screen. `deployment` means it describes the FEATURE on
+   * this deployment and knows nothing about any subject — in which case this
+   * renders only the `unconfigured` answer and NOTHING otherwise, rather than
+   * asserting a per-subject fact nobody measured. See
+   * `adminVerificationViewForScope`.
+   *
+   * The default is `subject` because that is the only scope in which every label
+   * is honest; a caller holding a deployment-level datum must say so.
+   */
+  scope = 'subject',
   className = '',
 }: {
   state: EffectiveVerification;
   variant?: 'chip' | 'cause';
+  scope?: VerificationDatumScope;
   className?: string;
 }) {
   const t = useTranslations('verification');
-  const view = adminVerificationView(state);
+  const view = adminVerificationViewForScope(state, scope);
+  if (!view) return null;
   const Icon = TONE_ICON[view.tone];
 
   if (variant === 'cause') {

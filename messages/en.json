@@ -10222,6 +10222,16 @@
     "enable": {
       "ownerOnly": "Only the owner can switch on online collection. This cannot be delegated.",
       "payoutDestinationMissing": "Add the account we should pay you into before switching on online collection."
+    },
+    "request": {
+      "ownerOnly": "Only the owner can request a payout. This cannot be delegated.",
+      "amountInvalid": "Enter a whole amount above zero to request a payout. Nothing has been requested.",
+      "sourceInvalid": "We could not tell which balance you want to cash out, so nothing has been requested.",
+      "principalInvalid": "This account cannot request a payout. Nothing has been requested.",
+      "payoutDestinationMissing": "Add the account we should pay you into before requesting a payout.",
+      "insufficientAvailable": "That is more than you have available right now. Nothing has been requested.",
+      "stepUpRequired": "Confirm your PIN to request a payout. Nothing has been requested yet.",
+      "stepUpFailed": "That PIN was not correct. Nothing has been requested."
     }
   }
 }

@@ -15,7 +15,10 @@ import {
   verifyCtaView,
   digitalCollectionView,
   adminVerificationView,
+  adminVerificationViewForScope,
 } from '@/lib/verification/uiState';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import enMessages from '../../messages/en.json';
 import arMessages from '../../messages/ar.json';
 
@@ -311,5 +314,77 @@ describe('every key these views emit exists in BOTH message files', () => {
     const declared = flatten((enMessages as Record<string, unknown>).verification);
     const orphans = declared.filter((k) => !keys.has(k));
     expect(orphans, `unused verification keys: ${orphans.join(', ')}`).toEqual([]);
+  });
+});
+
+/**
+ * A DEPLOYMENT-LEVEL DATUM MUST NOT ASSERT A PER-SUBJECT FACT.
+ *
+ * `AccountDetailHeader` — ONE centre's detail page — renders the admin chip from
+ * `useAdminVerificationAvailability()`, which reads
+ * `/api/admin/verification/availability`. That endpoint has no `center_id` and
+ * answers whether the FEATURE is live, not whether THIS centre is verified.
+ *
+ * Today the two coincide, which is exactly why this was easy to miss: nothing is
+ * configured, so the chip reads "Not configured" and that is true of the
+ * deployment AND of every centre on it. It stops being true the moment Valify is
+ * configured and the identity migration is applied — `resolveEffectiveState(null,
+ * null)` then yields `unverified`, and an unscoped chip would assert "Not
+ * verified" on EVERY centre's detail page, including the verified ones, off a
+ * read that never looked at any centre. That change would arrive on a config
+ * edit, with no code deploy to review.
+ *
+ * These tests deliberately assert the POST-CONFIGURATION world rather than
+ * today's, because today's is the one state in which the defect is invisible.
+ */
+describe('scope: a deployment-level datum may not speak for a subject', () => {
+  const perSubject = (state: PersistedVerificationState) =>
+    resolveEffectiveState(
+      { state, verified_at: null, legal_name: null, national_id: null, last_outcome: null },
+      null,
+    );
+
+  it('renders the unconfigured answer, which is true of every subject at once', () => {
+    for (const cause of ['valify_not_configured', 'verification_schema_not_applied'] as const) {
+      const view = adminVerificationViewForScope(resolveEffectiveState(null, cause), 'deployment');
+      expect(view, cause).not.toBeNull();
+      expect(view?.labelKey).toBe('admin.status.notConfigured');
+      expect(view?.causeKey).not.toBeNull();
+    }
+  });
+
+  it('renders NOTHING once verification is live — the state of the world after the migration', () => {
+    // The exact value /api/admin/verification/availability returns when the
+    // credentials are real and the tables exist: no record, no guard cause.
+    const postMigration = resolveEffectiveState(null, null);
+    expect(postMigration.state).toBe('unverified');
+    expect(adminVerificationViewForScope(postMigration, 'deployment')).toBeNull();
+  });
+
+  it('renders nothing for every per-subject state, not only "unverified"', () => {
+    for (const state of ['unverified', 'pending', 'verified', 'rejected'] as const) {
+      expect(adminVerificationViewForScope(perSubject(state), 'deployment'), state).toBeNull();
+    }
+  });
+
+  it('a subject-scoped datum is unchanged — this narrows nothing that was honest', () => {
+    for (const state of ['unverified', 'pending', 'verified', 'rejected'] as const) {
+      const v = perSubject(state);
+      expect(adminVerificationViewForScope(v, 'subject')).toEqual(adminVerificationView(v));
+    }
+    const unconf = resolveEffectiveState(null, 'valify_not_configured');
+    expect(adminVerificationViewForScope(unconf, 'subject')).toEqual(adminVerificationView(unconf));
+  });
+
+  it('AccountDetailHeader passes scope="deployment" on every chip it renders', () => {
+    const src = readFileSync(
+      resolve(__dirname, '../../src/components/admin/AccountDetailHeader.tsx'),
+      'utf8',
+    );
+    const usages = src.match(/<AdminVerificationChip[\s\S]*?\/>/g) ?? [];
+    expect(usages.length).toBeGreaterThan(0);
+    for (const usage of usages) {
+      expect(usage, usage).toMatch(/scope="deployment"/);
+    }
   });
 });

@@ -241,3 +241,52 @@ export function adminVerificationView(v: EffectiveVerification): AdminVerificati
   const badge = verificationBadgeView(v);
   return { tone: badge.tone, labelKey: badge.labelKey, causeKey: null, gated: false };
 }
+
+/**
+ * How wide the datum a surface is holding actually reaches.
+ *
+ *   `subject`    — this state was read FOR the centre/teacher on screen.
+ *   `deployment` — this state describes the FEATURE on this deployment. It came
+ *                  from `/api/admin/verification/availability`, which has no
+ *                  `center_id` and returns no per-subject answer.
+ */
+export type VerificationDatumScope = 'subject' | 'deployment';
+
+/**
+ * The admin chip view, or `null` when the surface has nothing it may honestly
+ * say.
+ *
+ * ── THE FABRICATION THIS EXISTS TO PREVENT ───────────────────────────────────
+ *
+ * `AccountDetailHeader` renders a verification chip on ONE CENTRE's detail page
+ * from `useAdminVerificationAvailability()`, which is DEPLOYMENT-level state.
+ * Today that is harmless and reads "Not configured", which is true of the
+ * deployment and therefore true of every centre on it.
+ *
+ * It stops being harmless the moment Valify is configured and the identity
+ * migration is applied. `/api/admin/verification/availability` then returns
+ * `resolveEffectiveState(null, null)` — a null record with no guard cause —
+ * which yields `state: 'unverified'`. The chip would assert **"Not verified"**
+ * on EVERY centre's detail page, including the verified ones, off a datum that
+ * never looked at any centre. An operator would read a per-centre fact that was
+ * never measured, and the change would arrive silently as a config change with
+ * no code deploy to review.
+ *
+ * So: a deployment-scoped datum may only render the `unconfigured` answer, which
+ * is the one answer that is simultaneously true of the deployment and of every
+ * subject on it. Every other state is per-subject and this returns null rather
+ * than a confident wrong label. Rendering nothing is the honest option here —
+ * unlike `verificationBadgeView`, where hiding the badge would leave a provider
+ * with no trust signal at all, an omitted admin chip is simply an operator
+ * looking at the same page they saw before this feature existed.
+ *
+ * The fix for the omission is to give the surface a per-centre read. This
+ * function is what makes the absence of one visible instead of fabricated.
+ */
+export function adminVerificationViewForScope(
+  v: EffectiveVerification,
+  scope: VerificationDatumScope,
+): AdminVerificationView | null {
+  if (scope === 'subject') return adminVerificationView(v);
+  return v.state === 'unconfigured' ? adminVerificationView(v) : null;
+}

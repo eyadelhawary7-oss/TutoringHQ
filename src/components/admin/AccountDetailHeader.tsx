@@ -18,6 +18,23 @@
  * with no honest counterpart, so an operator could not tell "unverified" from
  * "we never built this".
  *
+ * ⚠ **The chip is passed `scope="deployment"`, and that is load-bearing.** The
+ * datum behind it is `useAdminVerificationAvailability()`, which asks
+ * `/api/admin/verification/availability` — an endpoint with NO `center_id` that
+ * returns whether the FEATURE is live, not whether THIS centre is verified.
+ * Today the two coincide: nothing is configured, so "Not configured" is true of
+ * the deployment and of every centre on it. They stop coinciding the moment
+ * Valify is configured and the identity migration is applied, at which point
+ * that endpoint returns `resolveEffectiveState(null, null)` = `unverified` and
+ * an unscoped chip would assert **"Not verified" on every centre's detail page,
+ * including the verified ones**, off a read that never looked at any centre —
+ * a per-centre fact that was never measured, arriving silently on a config
+ * change with no code deploy to review. With `scope="deployment"` the chip
+ * renders the `unconfigured` answer and NOTHING else, so the missing per-centre
+ * read shows up as an absence rather than as a confident wrong label. Wiring a
+ * real per-centre read is what removes the scope prop; until then the honest
+ * state of this header is "we do not know about this centre".
+ *
  * **"National ID on file · Valify · 2 9805 15 01 02345" is still NOT drawn, and
  * will not be.** The design renders the full number on four frames of §01.
  * `design/VERIFICATION-SPEC.md` §9.2 item 3 and §9.7 settle it: none of the
@@ -190,7 +207,7 @@ export default function AccountDetailHeader({
             <span className={`rounded-md px-2 py-0.5 text-xs font-medium capitalize ${statusClass}`}>
               {statusLabel}
             </span>
-            <AdminVerificationChip state={verification} />
+            <AdminVerificationChip state={verification} scope="deployment" />
             {createdAt && (
               <span className="text-xs text-[var(--color-text-muted)]">
                 {t('customerSince', { date: formatDate(createdAt, locale) })}
@@ -199,8 +216,15 @@ export default function AccountDetailHeader({
           </div>
           {/* The named cause, spelled out once per screen rather than on every
               chip. An operator seeing "Not configured" needs to know whether to
-              set credentials or apply a migration. */}
-          <AdminVerificationChip state={verification} variant="cause" className="mt-2" />
+              set credentials or apply a migration. Same deployment scope as the
+              chip above: once verification is live this renders nothing, because
+              this header holds no per-centre datum to explain. */}
+          <AdminVerificationChip
+            state={verification}
+            variant="cause"
+            scope="deployment"
+            className="mt-2"
+          />
         </div>
       </div>
 
