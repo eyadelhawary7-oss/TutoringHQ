@@ -1,6 +1,6 @@
 # Migration proposal 01 — `sessions` as the single class-occurrence log, `attendance_scans` consolidated onto it
 
-**Status: PROPOSED, NOT APPLIED, AND §2.3 IS SUPERSEDED — see §5. Needs Eyad's approval before anything is applied or built against.**
+**Status: APPROVED 4 August (all four decisions, §6). DDL WRITTEN, NOT APPLIED — `supabase/migrations/20260804120000_sessions_tenant_key_and_occurrence_uniqueness.sql`, see §7. Eyad applies it by hand (rule 5). §2.3 as originally written is SUPERSEDED — see §5. No code reads any of these columns until the apply is confirmed in `information_schema`.**
 
 Eyad, 3 August: *"Sessions migration and attendance_scans consolidation first. It is a foundation — Groups §05, Attendance, and Center-Home's schedule all depend on it. Nothing else starts until it lands."* and *"STILL COMES TO ME, never auto-merged: … any new column, table, or migration. Propose, I approve, you apply."*
 
@@ -199,12 +199,47 @@ If you would rather keep it, the generator must carry an explicit `WHERE parent_
 
 ---
 
-## 7. What I need from you
+## 7. The DDL — written, not applied
 
+All four answers approved by Eyad on 4 August. The DDL is:
 
+**`supabase/migrations/20260804120000_sessions_tenant_key_and_occurrence_uniqueness.sql`**
 
-1. Approve or amend **§2.1–2.3** (additive, safe, unblocks three files immediately).
-2. Answer **(a)** nullable `center_id` vs explicit `owner_scope` — I recommend `owner_scope`.
-3. Answer **(b)** eager cron vs lazy read-through — I recommend lazy.
-4. Answer **(c)** drop the duplicate columns vs deprecate — I recommend drop.
-5. **§2.4 is deliberately not specified as final SQL** until the 34-call-site audit runs. I am starting that audit now; it needs no approval and produces the column-by-column map that makes §2.4 safe.
+Per rule 5 it is a **manual apply to production by Eyad**. Merging the file does not apply it. No code reads any column in it until it is applied and confirmed present in `information_schema.columns`.
+
+### What is in it
+
+| part | change | source |
+|---|---|---|
+| 1 | `sessions.center_id uuid` + FK + backfill + `(center_id, scheduled_at DESC)` index, documented as a **tenant key with no ownership meaning** | §6(a) |
+| 1b | trigger deriving `center_id` from the group — **my addition, not one of the four; strike-able** | below |
+| 2 | `sessions.started_at timestamptz` | §2.2 |
+| 3 | `sessions_generated_occurrence_uniq` on `(schedule_id, Cairo occurrence day)` `WHERE schedule_id IS NOT NULL AND status <> 'cancelled'` | §5.1 |
+| 4 | `DROP COLUMN schedule_slots.parent_slot_id` + the latent-hazard log | §6(d), F27 |
+
+Every `ADD CONSTRAINT` sits in a `DO` block testing `pg_constraint` (§5.2); every `ADD COLUMN` / `CREATE INDEX` uses `IF NOT EXISTS`. The file re-runs cleanly after a partial apply.
+
+### One change from the approved text: `slot_id` is not in the DDL
+
+§2.3 asked for `sessions.slot_id uuid REFERENCES schedule_slots(id)`. **That column already exists under another name.** Live catalog, 4 August:
+
+```
+sessions_schedule_id_fkey
+  FOREIGN KEY (schedule_id) REFERENCES schedule_slots(id) ON DELETE SET NULL
+```
+
+`sessions.schedule_id` **is** the slot reference. Adding `slot_id` would put two columns on one table pointing at the same table meaning the same thing — the D22 shape, and the same mistake §6(a) caught with `owner_scope`. The corrected §5.1 index already keys on `schedule_id`; part 3 matches it. Nothing §2.3 wanted `slot_id` for is lost.
+
+### One thing I added that you did not approve — block 1b
+
+The part-1 backfill is one-shot. Without a trigger, every `sessions` INSERT written from today leaves `center_id` NULL until application code is changed to set it, and a tenant key that is silently NULL on new rows is worse than no tenant key: a later RLS predicate reading it matches nothing, or — written the other way — everything. Block 1b derives it from the group the row is already FK'd to, so it cannot disagree with `student_groups.center_id`.
+
+It is fenced with `-- END OF 1b`. Delete the block and the rest applies cleanly; the cost is that Phase 1 code must set `center_id` on every `sessions` INSERT itself. It touches no lifecycle rule and leaves `trg_guard_sessions_lifecycle` alone.
+
+### Preconditions, re-queried live immediately before writing the file
+
+`sessions.center_id` absent · `sessions.started_at` absent · `schedule_slots.parent_slot_id` present with **0** rows populated · 4 `sessions` rows, **0** with `schedule_id` (so part 3's partial index covers zero rows and cannot fail on creation) · **0** duplicate `(schedule_id, Cairo day)` pairs, checked not assumed · **2** sessions whose group has a `center_id`, which is what the backfill touches · **0** `attendance_scans` with a NULL `session_id`, which is explicitly *not* grounds for NOT NULL · all four object names free · `timezone(text, timestamptz)` IMMUTABLE, so the Cairo expression is directly indexable.
+
+### Still outstanding after this lands
+
+**§2.4's duplicate-column drops** (`payment_method`/`method`, `payment_status_at_scan`/`status`) are approved in principle but not written, and `ALTER COLUMN attendance_scans.session_id SET NOT NULL` is **held back on your instruction** until the centre scanner path populates it. Both are listed as deliberate omissions in part 5 of the DDL file. They come back as a second migration after the 34-call-site audit.
