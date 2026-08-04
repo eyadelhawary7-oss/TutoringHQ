@@ -10130,5 +10130,52 @@
     "bannerSub": "Start today. First invoice {firstCharge}, nothing to pay now.",
     "codeLabel": "Code",
     "startFree": "Start free"
+  },
+  "collectionPayout": {
+    "cause": {
+      "collection_payout_not_configured": "Online collection and payouts are not switched on yet. Nothing has been charged and nothing has been sent.",
+      "rail_credentials_placeholder": "The payout provider is not connected yet, so money cannot be sent.",
+      "rail_callback_hmac_placeholder": "The payout provider's security key is not set, so we cannot trust anything it tells us.",
+      "collection_switch_off": "Online collection is switched off across the platform.",
+      "rate_card_unset": "The collection fee rates have not been set, so we cannot quote a price.",
+      "delegate_cap_unset": "The approval limit has not been set, so only the CEO can approve a payout.",
+      "releases_halted": "Payout releases are paused.",
+      "config_unreadable": "We could not read the payout settings, so nothing will be sent.",
+      "ledger_not_migrated": "The payout ledger has not been set up on the database yet.",
+      "approver_refused": "You are not allowed to approve this payout.",
+      "cap_refused": "This payout is above your approval limit.",
+      "payout_not_found": "That payout could not be found.",
+      "illegal_transition": "That change is not allowed from the payout's current state.",
+      "rail_cannot_release": "This payout cannot be sent: the payout provider is not connected.",
+      "step_up_auth_required": "Confirm your PIN to approve this payout.",
+      "engine_error": "Something went wrong and nothing was changed."
+    },
+    "verification": {
+      "stateNotInSchema": "Identity verification is not available yet. Online collection stays off until it is, and nothing about your account has changed."
+    },
+    "approver": {
+      "envPhoneRefused": "Payout approval needs a real admin account, not a phone number on a list.",
+      "noAdminRow": "You do not have an admin account, so you cannot approve payouts.",
+      "notAnApprover": "You have not been granted payout approval.",
+      "stepUpFailed": "That PIN was not correct. Nothing was approved."
+    },
+    "cap": {
+      "notAnApprover": "You have not been granted payout approval. Only the CEO can approve this.",
+      "resendRequiresCeo": "Only the CEO can re-send a payout, at any amount.",
+      "overPerPayout": "This payout is at or above the approval limit, so only the CEO can approve it.",
+      "overRollingWindow": "This centre has reached its 7-day approval limit, so only the CEO can approve it."
+    },
+    "payout": {
+      "awaitingApproval": "Waiting for approval. Nothing has been sent yet.",
+      "noFallbackApprover": "Only the CEO can approve this. There is no stand-in, and the request will not expire while it waits.",
+      "illegalTransition": "That change is not allowed from the payout's current state."
+    },
+    "balance": {
+      "notSourced": "We cannot show a balance yet, so this reads zero. It means unknown, not empty."
+    },
+    "enable": {
+      "ownerOnly": "Only the owner can switch on online collection. This cannot be delegated.",
+      "payoutDestinationMissing": "Add the account we should pay you into before switching on online collection."
+    }
   }
 }

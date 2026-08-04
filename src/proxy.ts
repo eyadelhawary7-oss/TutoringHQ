@@ -32,6 +32,13 @@ const PUBLIC_WEBHOOK_PREFIXES = [
   '/api/bosta/webhook',
   '/api/whatsapp/webhook',
   '/api/whatsapp/inbound',
+  // Payout provider (Paymob Payouts) server-to-server callback. Public by
+  // necessity — the provider has no session with us. It verifies its own HMAC
+  // with a timing-safe compare and, while the HMAC secret holds a placeholder,
+  // rejects every callback with a 503 rather than accepting it (attack A1:
+  // an unauthenticated callback lets a centre owner fabricate a "failed" event
+  // for a payout that already settled and get their balance credited back).
+  '/api/webhooks/payout-provider',
 ];
 
 function isPublicWebhookPath(pathname: string): boolean {
