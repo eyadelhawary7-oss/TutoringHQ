@@ -138,6 +138,7 @@ export function AdminSidebar({
   const isPlatformConfig = activeRoute?.includes('admin/platform-config');
   const isWaPack = activeRoute?.includes('admin/whatsapp-pack');
   const isWithdrawals = activeRoute?.includes('admin/withdrawals');
+  const isPayoutRequests = activeRoute?.includes('admin/payout-requests');
   const isReferrals = activeRoute?.includes('admin/referrals');
   const isReferralRewards = activeRoute?.includes('admin/referral-rewards');
   const isHealth = activeRoute?.includes('admin/health');
@@ -155,6 +156,7 @@ export function AdminSidebar({
   /** Sub-routes under admin - main Overview entry must not stay highlighted on these. */
   const onDedicatedAdminSubpage =
     isWithdrawals ||
+    isPayoutRequests ||
     isRenewals ||
     isFinance ||
     isPricing ||
@@ -553,6 +555,18 @@ export function AdminSidebar({
           isActive: !!isWithdrawals,
           canShow: canShowPermKey('withdrawals'),
           href: '/admin/withdrawals',
+        },
+        {
+          // PAYOUT-SYSTEM-SPEC §2.1 — the referral payout approval queue. Gated
+          // on the existing super-only `withdrawals` permission key rather than
+          // a new one: both entries are the CEO's money queues, and release
+          // authority for payouts is super_admin-only on the API side too.
+          key: 'payoutRequests',
+          icon: Banknote,
+          label: t('payoutRequests'),
+          isActive: !!isPayoutRequests,
+          canShow: canShowPermKey('withdrawals'),
+          href: '/admin/payout-requests',
         },
         {
           key: 'internalTeam',
