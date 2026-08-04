@@ -2028,6 +2028,7 @@
     "title": "Financial Intelligence",
     "mrr": "Monthly Revenue",
     "outstandingTotal": "Outstanding Total",
+    "collectedThisMonth": "Collected This Month",
     "collectionRate": "Collection Rate",
     "avgPaymentPerStudent": "Avg Payment/Student",
     "revenueByGroup": "Revenue by Group",

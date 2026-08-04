@@ -4,11 +4,19 @@ import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
-import { Gift, Copy, Link2, Wallet, Users, MessageCircle } from 'lucide-react';
+import { Gift, Copy, Link2, Wallet, Users, MessageCircle, ChevronRight } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
 import KpiCard from '@/components/shared/KpiCard';
 import { ReferralWithdrawalPanel } from '@/components/referrals/ReferralWithdrawalPanel';
-import { formatDate, formatNumber } from '@/lib/formatNumber';
+import { formatDate, formatNumber, formatPercent } from '@/lib/formatNumber';
+import { COMMISSION_TIERS } from '@/lib/referralProgram';
+
+// Tone per tier, matching Merged-Center-Insight §03's .s25/.s10/.s5 step chips
+// (teal → gold → neutral, in that order). COMMISSION_TIERS is the single
+// live source of truth for the ladder itself (D2: live wins, 10% runs
+// months 2-12, not the design's months 2-6).
+const TIER_TONE_CLASS = ['badge-success', 'badge-gold', 'badge-neutral'] as const;
+const TIER_LABEL_KEY = ['tier1Label', 'tier2Label', 'tier3Label'] as const;
 
 function maskCenterName(name: string): string {
   if (!name || name.length < 2) return '***';
@@ -171,20 +179,24 @@ export default function ReferralsPage() {
 
         <div className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow p-6">
           <h2 className="font-bold text-[var(--color-text-primary)] mb-4">{t('commissionStructureTitle')}</h2>
-          <ul className="space-y-2 text-sm text-[var(--color-text-secondary)]">
-            <li className="flex flex-wrap items-baseline justify-between gap-2 py-2 border-b border-[var(--color-border-subtle)] last:border-0">
-              <span className="font-medium text-[var(--color-text-primary)]">{t('tier1Label')}</span>
-              <span className="text-[var(--color-text-secondary)]">{t('tier1Value')}</span>
-            </li>
-            <li className="flex flex-wrap items-baseline justify-between gap-2 py-2 border-b border-[var(--color-border-subtle)] last:border-0">
-              <span className="font-medium text-[var(--color-text-primary)]">{t('tier2Label')}</span>
-              <span className="text-[var(--color-text-secondary)]">{t('tier2Value')}</span>
-            </li>
-            <li className="flex flex-wrap items-baseline justify-between gap-2 py-2 border-b border-[var(--color-border-subtle)] last:border-0">
-              <span className="font-medium text-[var(--color-text-primary)]">{t('tier3Label')}</span>
-              <span className="text-[var(--color-text-secondary)]">{t('tier3Value')}</span>
-            </li>
-          </ul>
+          {/* Merged-Center-Insight §03's rate-decay step chips. The ladder itself
+              comes from COMMISSION_TIERS (referralProgram.ts), the live rule per
+              D2 — the design's own "months 2-6" is the corrected-away number. */}
+          <div className="flex items-stretch gap-1.5">
+            {COMMISSION_TIERS.map((tier, i) => (
+              <div key={tier.fromMonth} className="flex items-stretch gap-1.5 flex-1">
+                {i > 0 && (
+                  <div className="flex items-center text-[var(--color-text-muted)] shrink-0">
+                    <ChevronRight className="w-4 h-4 rtl:rotate-180" aria-hidden />
+                  </div>
+                )}
+                <div className={`flex-1 rounded-xl text-center py-3 px-2 ${TIER_TONE_CLASS[i] ?? 'badge-neutral'}`}>
+                  <div className="text-lg font-bold tabular-nums">{formatPercent(tier.ratePct, locale)}</div>
+                  <div className="text-[11px] mt-1 opacity-85">{t(TIER_LABEL_KEY[i] ?? 'tier3Label')}</div>
+                </div>
+              </div>
+            ))}
+          </div>
           <p className="text-xs text-[var(--color-text-amber)] mt-4 leading-snug">{t('tierCondition')}</p>
         </div>
 
