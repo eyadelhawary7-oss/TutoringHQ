@@ -4087,6 +4087,7 @@
       "emptyAlt": "Roles can be changed at any time.",
       "permissionSummary": "{count} areas",
       "joinedOn": "Joined {date}",
+      "lastSignedIn": "Last signed in {ago}",
       "customRoleNote": "Ticking anything the chosen role does not already grant saves this person as a custom role. Confirm with your own password.",
       "lockedRoleNote": "Owner and admin permissions are fixed and cannot be edited here.",
       "permissionsSaved": "Permissions saved.",
@@ -5142,6 +5143,7 @@
         "invoices": "Invoices",
         "students": "Students",
         "staff": "Teachers & staff",
+        "branches": "Branches",
         "activityLog": "Activity log",
         "notes": "Internal notes"
       },

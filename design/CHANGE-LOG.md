@@ -105,6 +105,7 @@ If a row ever names one, that row is a mistake.
 | [#296](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/296) | `4c5e29b` | 2026-08-01 | `Center-Home §01` — Schedule section empty-state (balance card confirmed still blocked, not built); merged by Eyad directly, held for review per this file's history | `/{locale}/dashboard` | v42 |
 | [#297](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/297) | `aa8115d4` | 2026-08-01 | none — doc only (logged #296, closed out the Center-Home §01 investigation episode) | none | v42 |
 | [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
+| [#338](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/338) | `(on merge)` | 2026-08-04 | `Admin-Accounts §01` — the MANAGE **Branches** row, previously mislogged as schema-blocked; `Admin-Accounts §02` — the member sheet's recency line | `/{locale}/admin/centers/[id]`, `/{locale}/admin/internal-team` | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
@@ -1658,3 +1659,79 @@ description:**
 description in each entry). `design/FILE-COMPLETION-TABLE.md` row 11 updated: ~3.1/5 → ~3.0/5, §04's
 sub-estimate corrected down, blocked-by list gains D31/D32, D2 marked closed (confirmed already-resolved
 by `#248`, never formally closed in this table before now).
+
+---
+
+**Admin-Accounts, build pass (4 August 2026, PR #338) — one recorded blocker was not a blocker, and
+the reason it looked like one is the useful part.** Asked to take the file as close to 100% as is
+honestly reachable, and told explicitly that the previous pass's instruction to *log* rather than
+*build* was withdrawn. Re-surveyed all four sections against the live routes and against
+`information_schema` on project `lczmjpnbuhnsislcvzar` before writing any code.
+
+**§01's Branches row was buildable the whole time. The blocker was a category error, not a missing
+column.** Both `AccountDetailHeader.tsx` and `centerAccountMetrics.ts` carried the same recorded
+reason: *"No `branches` table exists"* — and that sentence is true. `information_schema.tables`
+returns no `branches`; the only near-match is `branch_user_assignments`, which really does record
+staff↔branch visibility rather than branches. Every one of those checks was correct. They were all
+checks for a **table**, and in this product a branch is not a table — **a branch is a `centers` row,
+and `centers.organization_id` is what groups them.** `src/app/api/branches/route.ts` is live and is
+the only definition of a branch the product has: its POST creates a branch by inserting a `centers`
+row carrying the caller's `organization_id`, and its GET returns the branch list as
+`centers where organization_id = <org>`. Searching for the noun and stopping at its absence is what
+hid a column that was sitting in the same table the screen already loads. Recorded so the next survey
+checks the *concept* against live code, not just the *name* against `information_schema`.
+
+- **Built:** `resolveBranchCount()` + an org-scoped count in `fetchCenterAccountMetrics`, and the
+  MANAGE row in the design's own position (after Teachers & staff, before Activity log). Figure, no
+  chevron — the same treatment Students and Teachers & staff already get, because the count is real
+  and the admin-side destination is what does not exist.
+- **A centre with no `organization_id` is one branch, not zero.** `/api/branches` says the same in its
+  own words, returning `{ branches: [thatCentre], plan: 'single' }`. Zero would have printed
+  "Branches 0" on every ordinary single-site centre — wrong, and the kind of wrong nobody re-checks
+  once it is on screen. Pinned in `tests/unit/centerAccountBranchCount.test.ts`, which also pins that a
+  genuine org-count of 0 passes through unrewritten and that a failed count stays `null` (row drops its
+  figure) rather than collapsing to 0.
+- **No `is_test` filter, deliberately, against the house default.** `/api/branches` applies none, so
+  this count equals what the centre's own branch switcher shows its owner. An admin screen quietly
+  disagreeing with the owner about how many branches they have is worse than including a seed row;
+  this is a structural count, not a finance aggregate.
+- **Live today:** `organizations` holds 5 rows and `centers` holds 2, of which **0** carry a non-null
+  `organization_id` — so every centre currently resolves through the standalone path to 1. That is the
+  real answer for the data that exists, not a placeholder.
+
+**§02's recency line built, and deliberately NOT under the caption the design draws.** The design says
+"Last active 2 hours ago". `public.admin_users` has no activity column (live: `id, name, email, role,
+created_at, phone, custom_permissions`), and the only recency datum in existence is
+`auth.users.last_sign_in_at` — which is a **sign-in, not activity**. A member who signed in three days
+ago and has been working in the portal all morning reads "3d ago" on that column and "now" on the
+design's label. So the UI says **"Last signed in"** and the datum and the caption agree again;
+relabelling the column to match the drawn caption is precisely how a plausible wrong number ships and
+is never questioned afterwards. `admin_users.id` confirmed 1:1 with `auth.users.id` live (2 of 2)
+before the join was written. `auth` is not exposed over PostgREST, so the read goes through the
+service-role Auth admin API by id — bounded work, since this is EH Group's internal staff list, not a
+tenant-scaled table. A member who has never signed in renders no line at all.
+
+**Everything else in the file stays blocked, and each on a named missing column — re-verified live this
+pass, not carried over from the previous entry.**
+
+| gap | § | exact blocker, checked live 4 Aug 2026 |
+|---|---|---|
+| Verified chip, per-centre | §01 | **V1.** `centers` has no `verification_status`/`verified_at`. The chip is built but pinned `scope="deployment"`; a per-centre read needs the column. |
+| "National ID on file · Valify" row | §01 | **V1**, plus a standing design decision — `design/VERIFICATION-SPEC.md` §9.2/§9.7 settle that no verified screen needs the number. Not a gap to close. |
+| "Log in as center" action | §01 | No impersonation primitive exists anywhere. Needs new auth infrastructure, not a UI row. |
+| §01 teacher half | §01 | **R7-CLOSED** — built 28 Jul, closed unmerged on Eyad's call ("one teacher console, not two"). A resolved decision, not a pending gap. |
+| Link type (Visiting/Permanent) | §03 | `teacher_center_requests` is `id, teacher_id, center_id, status, message, created_at, updated_at, responded_at, responded_by, initiated_by` — **no link-type column**. Needs a migration → stops here per the standing rule. |
+| SIGNUP REWARD block | §04 | Re-checked properly rather than accepted: `centers.referral_reward_status`/`referral_reward_amount` **do** exist and **are** written (admin centre-management §10) — but they are the **referrer's** reward, not the design's credit applied to the **referred** account. No program-level signup-credit config and no code path applies one. Genuinely absent; the near-miss columns are a different concept wearing a similar name. |
+
+| § | before (31 Jul) | after (#338) | what moved |
+|---|---|---|---|
+| §01 Admin Account Detail — centre half | 0.8/1 (16/20) | **0.85/1 (17/20)** | Branches row built off `centers.organization_id` |
+| §01 Admin Account Detail — teacher half | 0/1 | 0/1, unchanged | R7-CLOSED, Eyad's decision |
+| §02 Admin Staff | 1/1 | 1/1 | recency line added inside an already-complete section |
+| §03 Admin Center Assignments | 0.9/1 | 0.9/1, unchanged | Link-type control still needs a new column |
+| §04 Admin Referrals | 0.8/1 | 0.8/1, unchanged | SIGNUP REWARD still has no backing |
+| **Overall (tracked sections)** | **3.5/4** | **3.55/4** | one mislogged blocker cleared; the other five are real |
+
+**Gates:** typecheck clean, lint 0 errors (145 pre-existing test-file warnings, none in touched files),
+`test:unit` 202 files / 1925 tests passed, `verify:stabilization` OK (4066 t() keys, en/ar parity,
+bidi, tolocale). `SW_VERSION` v45 → v46.
