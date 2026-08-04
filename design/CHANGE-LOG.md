@@ -105,6 +105,8 @@ If a row ever names one, that row is a mistake.
 | [#296](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/296) | `4c5e29b` | 2026-08-01 | `Center-Home §01` — Schedule section empty-state (balance card confirmed still blocked, not built); merged by Eyad directly, held for review per this file's history | `/{locale}/dashboard` | v42 |
 | [#297](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/297) | `aa8115d4` | 2026-08-01 | none — doc only (logged #296, closed out the Center-Home §01 investigation episode) | none | v42 |
 | [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
+| ⚠ **gap — rows for #299…#341 were never logged here.** Master is at `26f8b3b3` (#337) and `public/sw.js` was at **v45** when the next row was written; this table's last entry is #298 at v42. Not backfilled: reconstructing 39 rows from commit subjects would be invention, which is the one thing this file exists to prevent. Recorded so the gap is visible rather than silent. | | | | | |
+| [#342](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/342) | `(on merge)` | 2026-08-04 | `Teacher-Home §01` — Centers-tile zero state + fabricated-zero fix, `.sec` growth label, Subscription tile restyled to the design's `.card.sub`/`.subbtn` in all three states | `/{locale}/teacher` | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
@@ -1274,6 +1276,63 @@ missing field. Added `admin.platformAnalytics.studentsCount` to both `messages/e
 `wa_meta_templates`/`whatsapp_usage`/`centers`, plus a direct `select key,value from platform_config`
 for the §03 FEATURES/SYSTEM claims. `npx eslint` on the three touched files came back clean; full unit,
 E2E-smoke, i18n, bidi and build gates green on the PR. Squash-merged as `bd5593aa`.
+
+**Teacher-Home, third pass (4 August 2026, #342)** — asked to take the file to as close to 100% as is
+honestly reachable and to BUILD gaps rather than log them. The first thing built was a re-survey, and it
+overturned the file's own recorded position.
+
+**The recorded 12/16 was stale, and the row said nothing about why.** `FILE-COMPLETION-TABLE.md` carried
+`Teacher-Home` at 12/16 blocked on V1/V3/V4, re-confirmed 31 July. In between, **PR #322 (Phase 4:
+identity verification + online collection + payout System 1) landed two of those three as live UI** —
+`/teacher` now imports `CollectForYouCard`, `VerificationBadge` and `useVerificationState`. The design's
+`.verify` promo card and its `.vchip` beside the greeting both render today. Neither the completion table
+nor this log's notes had been updated, so the file read as more blocked than it was:
+
+| § | recorded 31 Jul | actual before #342 | why it moved |
+|---|---|---|---|
+| §01 unverified/self-collect | 6/7 | **7/7** | `CollectForYouCard` (#322) — CTA disabled with a named reason, not a fake live button |
+| §01 verified/we-collect | 0/3 | **1/3** | `VerificationBadge` (#322) renders whatever is true, not the design's unconditional "Verified" |
+| §02 Teacher Schedule | 6/6 | 6/6 | unchanged |
+| **Overall** | **12/16** | **14/16** | two of three blockers were already built |
+
+**A fabricated zero, found by building the design's own copy.** The design's Centers-tile subline reads
+"All centers settled" on the zero state. Building it meant asking when the figure is genuinely zero — and
+it was not always. `centersOutstanding` was `Number(cuts?.totalOutstanding) || 0`, so a failed or non-OK
+`/api/teacher/center-cuts` rendered a confident **0 EGP** with no signal that nothing had been read. The
+income and groups tiles beside it already carried null-on-failure and fell back to the skeleton; the
+Centers tile was the odd one out. Fixed to `number | null` first, then the design's copy on top. Worth
+recording as a pattern: **the design's zero-state copy is a good detector for a fabricated zero**, because
+it forces the question of whether the zero was measured.
+
+**The last two are blocked on missing objects, named exactly.** Checked against `information_schema` on
+`lczmjpnbuhnsislcvzar`, not against #322's own description of what it shipped:
+
+| unbuilt | the exact thing that does not exist |
+|---|---|
+| §01 wallet card (balance / Available / Pending / Next processed) | no identity-verification table — `verification_records` absent; `teacher_profiles` has 24 columns, none `verification_status` or `verified_at`. **#322 shipped the code, its migration is not applied to production** — the case its own `verification_schema_not_applied` cause exists for. `isVerified` cannot be true for any teacher |
+| §01 Recent payouts list | no teacher-scoped payout ledger. `payout_requests` is centre-scoped (`center_id`), `commission_payouts` is EH-staff-scoped (`staff_id`). No teacher balance column anywhere; `teacher_profiles.payout_destination` is a destination, not a balance, still dormant |
+
+Both are also drawn in `Merged-Teacher-Money` / `Merged-Verification-Payouts`, two of the six protected
+files, so they come to Eyad regardless of the schema. **Triple-blocked, and the schema half is the one a
+future pass is most likely to get wrong** — #322's presence in the tree makes verification look shipped.
+It is shipped as code and unapplied as schema, which is the July-8 shape exactly: CI has no live database,
+so the missing table passes every gate.
+
+**F7 was already closed and nobody had said so.** `BUILD-AFTER-REDESIGN.md` F7 flags `text-white/80`/`/70`
+contrast on `TeacherLandingClient.tsx` as "belongs in the Teacher-Home restyle". That file no longer
+exists and `grep -rn "text-white/" src/app/[locale]/teacher/` returns nothing. Recorded rather than
+re-hunted next pass.
+
+**Two design/live divergences left deliberately unbuilt**, both because building them would make the screen
+less honest, not more faithful: the design shows the income calculator in a *trialing* frame while live
+gates it to the free zone (live's calculator carries a "create your first group" CTA the design has no
+button for, so a subscribed teacher would get a wrong CTA), and the design's calculator subline promises
+"Verify and we collect it for you" where live shows the 5%-on-digital fee note (collection is not switched
+on; swapping a fee disclosure for that promise is a regression).
+
+**This log's own table is 39 PRs behind** — last row #298 at v42, master at #337 with `sw.js` at v45. Flagged
+in the table itself rather than backfilled from commit subjects, which would be invention.
+
 
 **Teacher-Home re-verification (31 July 2026)** — asked to confirm PR #225's fraction against the
 merged file, not memory, before accepting a "done" file at face value. Re-read
