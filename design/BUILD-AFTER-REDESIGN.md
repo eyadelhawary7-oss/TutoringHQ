@@ -1114,7 +1114,7 @@ they were not dropped and nothing started writing or reading either since 31 Jul
 again for both names: still zero hits outside this document. Unchanged, still Eyad's drop-or-document
 call, not touched.
 
-## F28 · `branches`/`groups`/`rooms` i18n — eight live Arabic strings were English leftovers or
+## F31 · `branches`/`groups`/`rooms` i18n — eight live Arabic strings were English leftovers or
 grammatically backwards translations, fixed (no decision needed)
 - **What:** re-reading every EN/AR pair actually resolved by `useTranslations('groups')`,
   `useTranslations('rooms')` and `useTranslations('branches')` (the three real top-level namespaces
@@ -1154,6 +1154,16 @@ grammatically backwards translations, fixed (no decision needed)
 - **Found:** 4 August 2026, Center-Groups re-verification pass (this session).
 - **Verified:** `npx tsx scripts/check-i18n.ts` (key parity), `npm run verify:stabilization`,
   `npm run typecheck`, `npm run lint`, `npm run test:unit` all green after the fix.
+- **ID history (read this before assigning the next F-number):** this entry was first filed as a
+  duplicate `F26`, renumbered to `F28`, and renumbered again to `F31` on 4 August 2026. Reason:
+  several parity branches were open against `master` at once, each picking "the next free ID" by
+  grepping only `master` plus its own branch — so they all picked the same ones. Checked against
+  every open branch, not just `master`: **`F28` is claimed by three branches** (this one, PR #324
+  Center-Setup, PR #325 Center-Orders), **`F29` by two** (PR #324, PR #325), and **`F30` by one**
+  (PR #327 Public-Marketing). `F31` is the lowest ID free across `master` and all open branches as
+  of 4 Aug. The `F28`/`F29` double-claims between PR #324 and PR #325 are still unresolved and are
+  not this branch's to fix — whoever merges those two second must renumber. **Grep the open
+  branches, not just `master`, before taking an F-number.**
 
 ## F12 · `pending_enrollments` cannot say whether a request came from an invite link or self-serve sign-up — the design shows both as distinct badges
 - **What:** `Merged-Center-Students` §04's Pending screen draws two distinct origin badges ("Invite link" vs "Sign-up") on every request row, plus a "Came via" field in the request-detail view. Live, `pending_enrollments` has no column for this — confirmed both live insert call sites (`src/app/api/join/[center_code]/[group_id]/route.ts` and `src/app/api/join/pending-enrollment/route.ts`) write the identical column set (`center_id, group_id, student_id, student_name, student_phone, parent_phone, notes, status`), and the list query in `src/app/api/students/pending/route.ts` selects no origin-like field because none exists.
