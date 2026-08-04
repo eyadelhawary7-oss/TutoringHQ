@@ -21,7 +21,15 @@
 import { useLocale, useTranslations } from 'next-intl';
 import { formatNumber } from '@/lib/formatNumber';
 
-export type PrivacyTypeFilter = 'all' | 'access' | 'deletion' | 'export';
+/**
+ * LIVE BUG, fixed here: this filter used to offer `'export'`, but nothing ever
+ * wrote that value — `api/privacy-request` stores the PDPL right-name
+ * `'portability'`. `filterByPrivacyType` does `request_types.includes(filter)`,
+ * so the Export chip matched zero rows and always would have. The visible label
+ * stays "Export" (the design's wording); only the stored value it matches
+ * changed, which also moved the message key to `filter_portability`.
+ */
+export type PrivacyTypeFilter = 'all' | 'access' | 'deletion' | 'portability';
 
 export interface PrivacyQueueRow {
   status: string;
@@ -103,7 +111,7 @@ export default function PrivacyQueueHeader({ rows, filter, onFilter, slaDays }: 
       </div>
 
       <div className="flex flex-wrap gap-2" role="tablist" aria-label={t('filterLabel')}>
-        {(['all', 'access', 'deletion', 'export'] as const).map((f) => (
+        {(['all', 'access', 'deletion', 'portability'] as const).map((f) => (
           <button
             key={f}
             role="tab"

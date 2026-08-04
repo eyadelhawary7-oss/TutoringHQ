@@ -27,6 +27,13 @@ const adminAlertsInsert = vi.fn(async () => ({ error: null }));
 const adminUsersSelect = vi.fn(async () => ({ data: [{ id: 'admin-1' }], error: null }));
 const inAppInsert = vi.fn(async () => ({ error: null }));
 
+// The route now attempts a WhatsApp confirmation to the requester, whose
+// template name lives in platform_config. Default: unset (value null), i.e. the
+// shipped state — which must yield confirmationSent:false and a 201 anyway.
+const platformConfigValue = vi.fn<() => Promise<{ data: { value: unknown } | null; error: null }>>(
+  async () => ({ data: null, error: null }),
+);
+
 const adminClient = {
   from: (table: string) => {
     switch (table) {
@@ -38,6 +45,10 @@ const adminClient = {
         return { select: adminUsersSelect };
       case 'in_app_notifications':
         return { insert: inAppInsert };
+      case 'platform_config':
+        return {
+          select: () => ({ eq: () => ({ maybeSingle: () => platformConfigValue() }) }),
+        };
       default:
         throw new Error(`unexpected table in privacy-request mock: ${table}`);
     }
@@ -81,7 +92,8 @@ const VALID_BODY = {
   name: 'Mona Said',
   phone: '01012345678',
   email: 'mona@example.com',
-  requestType: 'deletion',
+  relationship: 'parent',
+  requestTypes: ['deletion'],
   message: 'Please delete my data.',
 };
 
@@ -91,6 +103,8 @@ beforeEach(() => {
   privacyInsert.mockClear();
   privacyInsertOutcome.mockReset();
   privacyInsertOutcome.mockResolvedValue({ data: { id: 'stub-request-id' }, error: null });
+  platformConfigValue.mockReset();
+  platformConfigValue.mockResolvedValue({ data: null, error: null });
   adminAlertsInsert.mockClear();
   adminUsersSelect.mockClear();
   inAppInsert.mockClear();
@@ -102,17 +116,94 @@ describe('POST /api/privacy-request', () => {
     const res = await POST(makeRequest(VALID_BODY));
 
     expect(res.status).toBe(201);
-    expect(((await res.json()) as { message: string }).message).toBe('Request received');
+    const bodyJson = (await res.json()) as { message: string; confirmationSent: boolean };
+    expect(bodyJson.message).toBe('Request received');
+    // Template key unset (the shipped state) -> the route must SAY so, so the
+    // confirmation screen can drop the "on its way to your phone" sentence.
+    expect(bodyJson.confirmationSent).toBe(false);
 
     expect(privacyInsert).toHaveBeenCalledTimes(1);
     const payload = privacyInsert.mock.calls[0][0];
     expect(payload.full_name).toBe('Mona Said');
     expect(payload.phone).toBe(normalizePhone('01012345678'));
     expect(payload.email).toBe('mona@example.com');
-    // request_types is an array column - the single form value is wrapped.
+    expect(payload.relationship).toBe('parent');
     expect(payload.request_types).toEqual(['deletion']);
     expect(payload.description).toBe('Please delete my data.');
     expect(payload.status).toBe('pending');
+  });
+
+  it('multi-select -> all picked rights stored, de-duplicated, order preserved', async () => {
+    const res = await POST(
+      makeRequest({
+        ...VALID_BODY,
+        requestTypes: ['access', 'deletion', 'access', 'restriction'],
+      }),
+    );
+
+    expect(res.status).toBe(201);
+    // One request, three rights. Previously a subject wanting access AND
+    // deletion had to submit the form twice.
+    expect(privacyInsert.mock.calls[0][0].request_types).toEqual([
+      'access',
+      'deletion',
+      'restriction',
+    ]);
+  });
+
+  it('relationship omitted -> stored as null, still 201', async () => {
+    const { relationship: _omit, ...noRel } = VALID_BODY;
+    void _omit;
+    const res = await POST(makeRequest(noRel));
+
+    expect(res.status).toBe(201);
+    expect(privacyInsert.mock.calls[0][0].relationship).toBeNull();
+  });
+
+  it('invalid relationship -> 400, no insert', async () => {
+    const res = await POST(makeRequest({ ...VALID_BODY, relationship: 'auditor' }));
+
+    expect(res.status).toBe(400);
+    expect(privacyInsert).not.toHaveBeenCalled();
+  });
+
+  it('empty requestTypes -> 400, no insert', async () => {
+    const res = await POST(makeRequest({ ...VALID_BODY, requestTypes: [] }));
+
+    expect(res.status).toBe(400);
+    expect(privacyInsert).not.toHaveBeenCalled();
+  });
+
+  it('one bad member in requestTypes rejects the whole request', async () => {
+    const res = await POST(
+      makeRequest({ ...VALID_BODY, requestTypes: ['access', 'sell_my_data'] }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(privacyInsert).not.toHaveBeenCalled();
+  });
+
+  it('missing email -> 400: it is the reply channel, not an optional extra', async () => {
+    const { email: _omit, ...noEmail } = VALID_BODY;
+    void _omit;
+    const res = await POST(makeRequest(noEmail));
+
+    expect(res.status).toBe(400);
+    expect(privacyInsert).not.toHaveBeenCalled();
+  });
+
+  it('malformed email -> 400, no insert', async () => {
+    const res = await POST(makeRequest({ ...VALID_BODY, email: 'mona@' }));
+
+    expect(res.status).toBe(400);
+    expect(privacyInsert).not.toHaveBeenCalled();
+  });
+
+  it('restriction is accepted - all six PDPL rights are offerable', async () => {
+    const res = await POST(makeRequest({ ...VALID_BODY, requestTypes: ['restriction'] }));
+
+    expect(res.status).toBe(201);
+    expect(privacyInsert.mock.calls[0][0].request_types).toEqual(['restriction']);
   });
 
   it('rate limit exceeded -> 429, no insert', async () => {
@@ -142,8 +233,8 @@ describe('POST /api/privacy-request', () => {
     expect(privacyInsert).not.toHaveBeenCalled();
   });
 
-  it('invalid requestType -> 400, no insert', async () => {
-    const res = await POST(makeRequest({ ...VALID_BODY, requestType: 'sell_my_data' }));
+  it('invalid requestTypes -> 400, no insert', async () => {
+    const res = await POST(makeRequest({ ...VALID_BODY, requestTypes: ['sell_my_data'] }));
 
     expect(res.status).toBe(400);
     expect(privacyInsert).not.toHaveBeenCalled();
