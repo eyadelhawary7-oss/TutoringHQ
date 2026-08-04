@@ -19,6 +19,7 @@ type OrderRow = {
 
 export function CheckoutSuccessClient({ orderId }: { orderId: string }) {
   const t = useTranslations('checkout.success');
+  const tCommon = useTranslations('common');
   const locale = useLocale();
   const [order, setOrder] = useState<OrderRow | null>(null);
 
@@ -79,11 +80,11 @@ export function CheckoutSuccessClient({ orderId }: { orderId: string }) {
           <p>
             {t('total')}:{' '}
             <span className="font-semibold text-[var(--color-text-primary)] tabular-nums">
-              {order?.total_amount != null ? formatCurrency(Number(order.total_amount), locale) : ','}
+              {order?.total_amount != null ? formatCurrency(Number(order.total_amount), locale) : tCommon('notAvailable')}
             </span>
           </p>
           <p>
-            {t('delivery')}: {order?.delivery_governorate ?? ','}, {order?.delivery_address?.trim() || ','}
+            {t('delivery')}: {order?.delivery_governorate ?? tCommon('notAvailable')}, {order?.delivery_address?.trim() || tCommon('notAvailable')}
           </p>
         </div>
       </details>
