@@ -656,7 +656,7 @@ whose core Add-branch flow sits on top of this unresolved billing question.
 - **Blocked by:** Eyad's decision on whether/when to build the page. Left as-is in the meantime — it matches the design, and hiding a designed feature is itself a decision beyond restyle scope.
 - **Reconfirmed 4 August 2026 (Teacher-Setup structural build, PR #344).** Re-read `JoinCenterCard.tsx` directly: `PROFILE_BASE` is still the literal `'https://tutoringhq.app/teacher/profile'` and the share tab still renders both a copyable link and a QR at `${PROFILE_BASE}/${teacherId}`. Re-globbed the whole app-router tree: still no `teacher/profile/[…]` page anywhere under `src/app/[locale]/`. Unchanged, still a 404, still Eyad's call.
 
-## D34 · The verified-state Payout details section needs three columns `teacher_profiles` does not have
+## D36 · The verified-state Payout details section needs three columns `teacher_profiles` does not have
 - **What:** `Merged-Teacher-Setup` §01's verified frame replaces "Payment details" (where parents pay the teacher directly) with **"Payout details"** — Account holder ("Matches your verified ID"), Bank, and IBAN, plus the Thursday-cycle explainer. This is the file's one remaining structural hole, and the only reason its coverage is 15/16 rather than 16/16.
 - **Drawn in:** `Merged-Teacher-Setup` §01, verified frame (EN and AR).
 - **Found:** 29–31 July 2026 as the un-itemised half of the "0/2" V1 gap; **promoted to its own entry 4 August 2026** (PR #344) because its sibling half — the collect-payments toggle — has since shipped (`e7f5dd20`, PR #322) and the two no longer share a blocker. The toggle needed Valify state; this needs schema.
